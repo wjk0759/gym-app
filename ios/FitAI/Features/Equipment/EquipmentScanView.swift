@@ -313,7 +313,7 @@ struct EquipmentScanView: View {
                 equipment: candidate.exercise.equipment,
                 videoURL: candidate.exercise.videoURL?.absoluteString,
                 notes: "来自拍照识别",
-                photoData: imageData
+                photoData: selectedImage?.jpegData(compressionQuality: 0.5) ?? imageData
             )
         )
         savedSlugs.insert(candidate.exercise.slug)
