@@ -4,10 +4,10 @@ enum Theme {
     static let background = Color(red: 0.051, green: 0.063, blue: 0.086)
     static let surface = Color.white.opacity(0.06)
     static let surfaceStrong = Color.white.opacity(0.11)
-    static let stroke = Color.white.opacity(0.08)
+    static let stroke = Color.white.opacity(0.09)
     static let accent = Color(red: 0.36, green: 0.86, blue: 0.55)
-    static let secondaryText = Color.white.opacity(0.62)
-    static let tertiaryText = Color.white.opacity(0.38)
+    static let secondaryText = Color.white.opacity(0.66)
+    static let tertiaryText = Color.white.opacity(0.50)
     static let danger = Color(red: 0.95, green: 0.42, blue: 0.38)
     static let warning = Color(red: 0.98, green: 0.72, blue: 0.30)
 }

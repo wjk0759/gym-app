@@ -75,6 +75,18 @@ enum Equipment: String, Codable, CaseIterable, Identifiable {
         case .kettlebell: return "壶铃"
         }
     }
+
+    var symbolName: String {
+        switch self {
+        case .bodyweight: return "figure.strengthtraining.functional"
+        case .dumbbell: return "dumbbell"
+        case .barbell: return "figure.strengthtraining.traditional"
+        case .machine: return "gearshape.fill"
+        case .cable: return "point.3.connected.trianglepath.dotted"
+        case .band: return "link"
+        case .kettlebell: return "figure.cross.training"
+        }
+    }
 }
 
 enum MuscleGroup: String, Codable, CaseIterable, Identifiable {

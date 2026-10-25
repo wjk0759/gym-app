@@ -5,6 +5,30 @@ struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var manager = SubscriptionManager()
+    @State private var selectedProductID: String?
+
+    private var effectiveProduct: Product? {
+        manager.products.first { $0.id == selectedProductID }
+            ?? manager.products.first { $0.id == SubscriptionManager.ProductID.yearly }
+            ?? manager.products.first
+    }
+
+    private var annualSaving: Int? {
+        guard let monthly = manager.products.first(where: {
+            $0.id == SubscriptionManager.ProductID.monthly
+        }),
+              let yearly = manager.products.first(where: {
+                  $0.id == SubscriptionManager.ProductID.yearly
+              }) else {
+            return nil
+        }
+        let monthlyPrice = NSDecimalNumber(decimal: monthly.price).doubleValue
+        let yearlyPrice = NSDecimalNumber(decimal: yearly.price).doubleValue
+        guard monthlyPrice > 0, yearlyPrice > 0 else { return nil }
+        let fullYear = monthlyPrice * 12
+        let saving = Int(((fullYear - yearlyPrice) / fullYear * 100).rounded())
+        return saving > 0 ? saving : nil
+    }
 
     var body: some View {
         NavigationStack {
@@ -20,7 +44,10 @@ struct PaywallView: View {
                 .padding(.bottom, 20)
             }
             .background(Theme.background.ignoresSafeArea())
-            .navigationTitle("FitAI Pro")
+            .safeAreaInset(edge: .bottom) {
+                purchaseBar
+            }
+            .navigationTitle("练途 Pro")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -42,6 +69,45 @@ struct PaywallView: View {
                 }
             } message: {
                 Text(manager.message ?? "")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var purchaseBar: some View {
+        if !manager.isPro, let product = effectiveProduct {
+            VStack(spacing: 8) {
+                Button {
+                    Task { await manager.purchase(product) }
+                } label: {
+                    HStack {
+                        Text("立即订阅")
+                        Spacer()
+                        Text(product.displayPrice)
+                    }
+                    .font(.headline)
+                    .foregroundStyle(Color.black)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 15)
+                    .background(
+                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            .fill(Theme.accent)
+                    )
+                }
+                .buttonStyle(.plain)
+
+                Text("自动续期，可随时在系统设置中取消")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 10)
+            .padding(.bottom, 8)
+            .background(.ultraThinMaterial)
+            .overlay(alignment: .top) {
+                Rectangle()
+                    .fill(Theme.stroke)
+                    .frame(height: 1)
             }
         }
     }
@@ -100,7 +166,7 @@ struct PaywallView: View {
     private var productsSection: some View {
         if manager.isPro {
             VStack(spacing: 10) {
-                Label("已订阅 FitAI Pro", systemImage: "checkmark.seal.fill")
+                Label("已订阅练途 Pro", systemImage: "checkmark.seal.fill")
                     .font(.headline)
                     .foregroundStyle(Theme.accent)
                 Text("所有 Pro 功能已解锁。")
@@ -122,7 +188,7 @@ struct PaywallView: View {
             VStack(spacing: 12) {
                 Text("订阅即将开放")
                     .font(.headline)
-                Text("FitAI Pro 正在准备中，稍后可以在 App Store 完成订阅。")
+                Text("练途 Pro 正在准备中，稍后可以在 App Store 完成订阅。")
                     .font(.caption)
                     .foregroundStyle(Theme.secondaryText)
                     .multilineTextAlignment(.center)
@@ -135,34 +201,76 @@ struct PaywallView: View {
             .card()
         } else {
             VStack(spacing: 10) {
-                ForEach(manager.products, id: \.id) { product in
+                ForEach(orderedProducts, id: \.id) { product in
+                    let selected = effectiveProduct?.id == product.id
+                    let yearly = product.id == SubscriptionManager.ProductID.yearly
+
                     Button {
-                        Task { await manager.purchase(product) }
+                        selectedProductID = product.id
                     } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(product.displayName)
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.white)
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 5) {
+                                HStack(spacing: 6) {
+                                    Text(product.displayName)
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(.white)
+                                    if yearly {
+                                        Text("推荐")
+                                            .font(.system(size: 9, weight: .bold))
+                                            .foregroundStyle(Color.black)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 3)
+                                            .background(Theme.accent, in: Capsule())
+                                        if let annualSaving {
+                                            Text("省 \(annualSaving)%")
+                                                .font(.system(size: 9, weight: .bold))
+                                                .foregroundStyle(Theme.accent)
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 3)
+                                                .background(Theme.accent.opacity(0.10), in: Capsule())
+                                        }
+                                    }
+                                }
                                 Text(product.description)
                                     .font(.caption2)
                                     .foregroundStyle(Theme.secondaryText)
                                     .lineLimit(2)
                             }
+
                             Spacer()
+
                             Text(product.displayPrice)
                                 .font(.headline)
-                                .foregroundStyle(Theme.accent)
+                                .foregroundStyle(selected ? Theme.accent : .white)
+
+                            Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                                .font(.title3)
+                                .foregroundStyle(selected ? Theme.accent : Theme.tertiaryText)
                         }
                         .padding(14)
                         .background(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(Theme.surfaceStrong)
+                                .fill(selected ? Theme.accent.opacity(0.08) : Theme.surfaceStrong)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(
+                                    selected ? Theme.accent.opacity(0.75) : Theme.stroke,
+                                    lineWidth: selected ? 1.5 : 1
+                                )
                         )
                     }
                     .buttonStyle(.plain)
                 }
             }
+        }
+    }
+
+    private var orderedProducts: [Product] {
+        manager.products.sorted { lhs, rhs in
+            if lhs.id == SubscriptionManager.ProductID.yearly { return true }
+            if rhs.id == SubscriptionManager.ProductID.yearly { return false }
+            return lhs.id < rhs.id
         }
     }
 

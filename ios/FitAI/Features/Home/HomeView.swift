@@ -22,13 +22,13 @@ struct HomeView: View {
                         noPlanCard
                     }
 
-                    weekCard
-
-                    nutritionCard
-
                     if let plan = store.plan {
                         aiReviewCard(plan: plan)
                     }
+
+                    weekCard
+
+                    nutritionCard
 
                     recentCard
                 }
@@ -151,10 +151,10 @@ struct HomeView: View {
                         .foregroundStyle(Theme.secondaryText)
                 }
 
-                HStack(spacing: 10) {
-                    metric(title: "动作", value: "\(day.exercises.count) 个")
-                    metric(title: "预计", value: "\(day.estimatedMinutes) 分钟")
-                    metric(title: "完成", value: "\(Int(store.weeklyCompletion * 100))%")
+                HStack(spacing: 24) {
+                    inlineMetric(title: "动作", value: "\(day.exercises.count) 个")
+                    inlineMetric(title: "预计", value: "\(day.estimatedMinutes) 分钟")
+                    Spacer()
                 }
 
                 VStack(spacing: 8) {
@@ -242,8 +242,8 @@ struct HomeView: View {
         .card()
     }
 
-    private func metric(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
+    private func inlineMetric(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
@@ -251,9 +251,6 @@ struct HomeView: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.white)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-        .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     // MARK: - 周进度
@@ -264,7 +261,7 @@ struct HomeView: View {
                 Text("本周完成")
                     .font(.headline)
                 Spacer()
-                Text("\(store.currentWeekSessions.count)/\(store.profile.weeklyDays) 练")
+                Text("\(store.currentWeekSessions.count)/\(store.profile.weeklyDays) 次")
                     .font(.subheadline)
                     .foregroundStyle(Theme.secondaryText)
             }
@@ -275,7 +272,7 @@ struct HomeView: View {
 
             HStack(spacing: 16) {
                 stat(value: "\(store.sessions.count)", title: "累计训练")
-                stat(value: "\(Int(store.totalVolume / 1000))k", title: "总容量 kg")
+                stat(value: "\(Int(store.totalVolume))", title: "总容量 kg")
                 stat(value: "\(store.currentWeekSessions.count)", title: "本周")
             }
         }
@@ -340,6 +337,9 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
+                    Text("AI 复盘")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
                     Text(plan.title)
                         .font(.headline)
                         .foregroundStyle(.white)
@@ -365,9 +365,16 @@ struct HomeView: View {
                     showAdjustConfirm = true
                 }
             } label: {
-                Label("让 AI 复盘并调整", systemImage: "wand.and.stars")
+                HStack {
+                    Label("让 AI 复盘并调整", systemImage: "wand.and.stars")
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Theme.accent)
+                .padding(.top, 2)
             }
-            .buttonStyle(SecondaryButtonStyle())
+            .buttonStyle(.plain)
         }
         .card()
     }

@@ -27,22 +27,25 @@ struct WorkoutSessionView: View {
                 progressHeader
 
                 ScrollView {
-                    VStack(spacing: 16) {
-                        if let restRemaining {
-                            restCard(restRemaining)
-                        }
+                        VStack(spacing: 16) {
+                            if let restRemaining {
+                                restCard(restRemaining)
+                            }
 
-                        if let exercise = currentExercise {
-                            exerciseCard(exercise)
-                            setCard(exercise)
-                        } else {
-                            summaryCard
+                            if let exercise = currentExercise {
+                                exerciseCard(exercise)
+                                setCard(exercise)
+                            } else {
+                                summaryCard
+                            }
                         }
+                        .padding(20)
+                        .padding(.bottom, 24)
                     }
-                    .padding(20)
-                    .padding(.bottom, 24)
                 }
-            }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    workoutActionBar
+                }
             .background(Theme.background.ignoresSafeArea())
             .navigationTitle("训练中")
             .navigationBarTitleDisplayMode(.inline)
@@ -217,34 +220,6 @@ struct WorkoutSessionView: View {
                     .foregroundStyle(Theme.tertiaryText)
             }
 
-            if done < exercise.sets {
-                Button("完成第 \(done + 1) 组") {
-                    completeSet(exercise)
-                }
-                .buttonStyle(PrimaryButtonStyle())
-            } else {
-                Button(nextTitle) {
-                    advance()
-                }
-                .buttonStyle(PrimaryButtonStyle())
-            }
-
-            HStack {
-                Button("跳过这个动作") {
-                    advance()
-                }
-                .font(.caption)
-                .foregroundStyle(Theme.tertiaryText)
-
-                Spacer()
-
-                if done > 0 {
-                    Text("已完成 \(done) 组")
-                        .font(.caption)
-                        .foregroundStyle(Theme.accent)
-                }
-            }
-
             if done > 0,
                let last = logs.last,
                last.slug == exercise.slug {
@@ -257,6 +232,56 @@ struct WorkoutSessionView: View {
             }
         }
         .card()
+    }
+
+    private var workoutActionBar: some View {
+        VStack(spacing: 8) {
+            if let exercise = currentExercise {
+                let done = completedSets(for: exercise)
+
+                HStack {
+                    Button("跳过这个动作") {
+                        advance()
+                    }
+                    .font(.caption)
+                    .foregroundStyle(Theme.tertiaryText)
+
+                    Spacer()
+
+                    if done > 0 {
+                        Text("已完成 \(done) 组")
+                            .font(.caption)
+                            .foregroundStyle(Theme.accent)
+                    }
+                }
+
+                if done < exercise.sets {
+                    Button("完成第 \(done + 1) 组") {
+                        completeSet(exercise)
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                } else {
+                    Button(nextTitle) {
+                        advance()
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                }
+            } else {
+                Button("保存并结束") {
+                    finish()
+                }
+                .buttonStyle(PrimaryButtonStyle())
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(Theme.stroke)
+                .frame(height: 1)
+        }
     }
 
     private var nextTitle: String {
@@ -316,11 +341,6 @@ struct WorkoutSessionView: View {
                     }
                 }
             }
-
-            Button("保存并结束") {
-                finish()
-            }
-            .buttonStyle(PrimaryButtonStyle())
 
             Text("记录会用于下一次计划调整。至少完成一组再保存，AI 才能判断负荷。")
                 .font(.caption2)

@@ -200,7 +200,7 @@ struct EquipmentLibraryView: View {
                 } else {
                     ZStack {
                         Theme.surfaceStrong
-                        Image(systemName: "dumbbell")
+                        Image(systemName: equipmentSymbol(item))
                             .font(.system(size: 30, weight: .light))
                             .foregroundStyle(Theme.accent)
                     }
@@ -209,6 +209,22 @@ struct EquipmentLibraryView: View {
             .clipped()
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .padding(8)
+    }
+
+    private func equipmentSymbol(_ item: EquipmentItem) -> String {
+        if let muscle = item.muscle {
+            switch muscle {
+            case .legs, .glutes, .core:
+                return "figure.strengthtraining.functional"
+            case .cardio:
+                return "figure.run"
+            case .chest, .back, .shoulders:
+                return "figure.strengthtraining.traditional"
+            case .arms:
+                return "dumbbell"
+            }
+        }
+        return item.equipment?.symbolName ?? "dumbbell"
     }
 }
 
@@ -345,6 +361,7 @@ struct EquipmentItemDetailView: View {
     let itemID: UUID
 
     @State private var showDelete = false
+    @State private var showEdit = false
 
     private var item: EquipmentItem? {
         store.equipmentLibrary.first { $0.id == itemID }
@@ -417,6 +434,12 @@ struct EquipmentItemDetailView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("关闭") { dismiss() }
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("编辑") { showEdit = true }
+                }
+            }
+            .sheet(isPresented: $showEdit) {
+                EquipmentEditView(itemID: itemID)
             }
             .confirmationDialog(
                 "从器械库删除？",
@@ -437,27 +460,125 @@ struct EquipmentItemDetailView: View {
     @ViewBuilder
     private func videoSection(_ item: EquipmentItem) -> some View {
         if let text = item.videoURL, let url = URL(string: text) {
-            VStack(alignment: .leading, spacing: 8) {
-                Label("教学视频", systemImage: "play.rectangle")
+            VStack(alignment: .leading, spacing: 10) {
+                Label("教学视频", systemImage: "play.rectangle.fill")
                     .font(.headline)
                 VideoPlayer(player: AVPlayer(url: url))
                     .frame(height: 210)
                     .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                Button {
+                    showEdit = true
+                } label: {
+                    Label("编辑视频与备注", systemImage: "pencil")
+                }
+                .buttonStyle(SecondaryButtonStyle())
                 Text("视频素材需自制或已授权；上线前请确认授权链。")
                     .font(.caption2)
                     .foregroundStyle(Theme.tertiaryText)
             }
             .card()
         } else {
-            VStack(alignment: .leading, spacing: 8) {
-                Label("教学视频", systemImage: "play.rectangle")
-                    .font(.headline)
-                Text("还没有视频地址。编辑器械时填入 HLS/MP4 链接后，这里会直接播放。")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Theme.accent.opacity(0.10))
+                            .frame(width: 46, height: 46)
+                        Image(systemName: "play.rectangle")
+                            .foregroundStyle(Theme.accent)
+                    }
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("还没有教学视频")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                        Text("添加一个视频地址，下次训练前可以直接看动作示范。")
+                            .font(.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                Button {
+                    showEdit = true
+                } label: {
+                    Label("添加教学视频", systemImage: "plus")
+                }
+                .buttonStyle(SecondaryButtonStyle())
             }
             .card()
         }
+    }
+}
+
+struct EquipmentEditView: View {
+    @Environment(AppStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+
+    let itemID: UUID
+
+    @State private var videoURL = ""
+    @State private var notes = ""
+
+    private var item: EquipmentItem? {
+        store.equipmentLibrary.first { $0.id == itemID }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    TextField("教学视频 HLS/MP4 链接", text: $videoURL)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .padding(12)
+                        .background(
+                            Theme.surfaceStrong,
+                            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        )
+                        .card()
+
+                    TextField("备注，例如：调节座位高度在 3 档", text: $notes, axis: .vertical)
+                        .lineLimit(3...5)
+                        .padding(12)
+                        .background(
+                            Theme.surfaceStrong,
+                            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        )
+                        .card()
+
+                    Button("保存") {
+                        save()
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                }
+                .padding(20)
+            }
+            .background(Theme.background.ignoresSafeArea())
+            .navigationTitle("编辑器械")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+            }
+            .onAppear {
+                videoURL = item?.videoURL ?? ""
+                notes = item?.notes ?? ""
+            }
+        }
+    }
+
+    private func save() {
+        guard var current = item else {
+            dismiss()
+            return
+        }
+        let trimmedVideo = videoURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        current.videoURL = trimmedVideo.isEmpty ? nil : trimmedVideo
+        current.notes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+        store.updateEquipment(current)
+        dismiss()
     }
 }
 

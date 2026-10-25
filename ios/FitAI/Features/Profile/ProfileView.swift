@@ -22,17 +22,25 @@ struct ProfileView: View {
                     profileCard
                     accountCard
                     proCard
+
+                    sectionLabel("身体与目标")
                     metricsCard
                     goalCard
+
+                    sectionLabel("健康与工具")
                     reminderCard
                     healthCard
                     bodyAnalysisCard
                     equipmentLibraryCard
+
+                    sectionLabel("计划与偏好")
                     planCard
 #if DEBUG
                     aiCard
 #endif
                     preferenceCard
+
+                    sectionLabel("关于与数据")
                     complianceCard
                     resetCard
                 }
@@ -112,6 +120,16 @@ struct ProfileView: View {
         .card()
     }
 
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Theme.tertiaryText)
+            .textCase(.uppercase)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 8)
+            .padding(.horizontal, 2)
+    }
+
     private var accountCard: some View {
         VStack(alignment: .leading, spacing: 11) {
             HStack {
@@ -183,7 +201,7 @@ struct ProfileView: View {
             }
 
             VStack(alignment: .leading, spacing: 3) {
-                Text("FitAI Pro")
+                Text("练途 Pro")
                     .font(.headline)
                     .foregroundStyle(.white)
                 Text("解锁 AI 计划、教练对话与器械识别")
@@ -217,7 +235,7 @@ struct ProfileView: View {
             }
             HStack(spacing: 12) {
                 metric("累计训练", "\(store.sessions.count) 次")
-                metric("总容量", "\(Int(store.totalVolume / 1000))k kg")
+                metric("总容量", "\(Int(store.totalVolume)) kg")
             }
         }
         .card()

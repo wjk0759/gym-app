@@ -295,7 +295,7 @@ struct LoginView: View {
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(consent ? Theme.accent : Theme.tertiaryText)
 
-                    Text("我已阅读并同意以下协议，且已年满 14 周岁")
+                    Text("我已阅读并同意相关协议，且已年满 14 周岁")
                         .font(.caption)
                         .foregroundStyle(Theme.secondaryText)
                         .fixedSize(horizontal: false, vertical: true)
@@ -389,12 +389,12 @@ struct LoginView: View {
             .padding(13)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                Theme.surface,
+                color.opacity(0.08),
                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Theme.stroke, lineWidth: 1)
+                    .stroke(color.opacity(0.24), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)

@@ -20,12 +20,6 @@ struct OnboardingView: View {
                 goalCard
                 safetyCard
 
-                Button(action: save) {
-                    Text("生成我的计划")
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                .padding(.top, 4)
-
                 Text("继续即表示你已阅读并同意《用户协议》与《隐私政策》。健康数据仅用于生成训练与饮食建议。")
                     .font(.caption2)
                     .foregroundStyle(Theme.tertiaryText)
@@ -38,6 +32,19 @@ struct OnboardingView: View {
         }
         .background(Theme.background.ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: 0) {
+                Divider().overlay(Theme.stroke)
+                Button(action: save) {
+                    Text("生成我的计划")
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+                .padding(.bottom, 8)
+            }
+            .background(.ultraThinMaterial)
+        }
         .onAppear {
             if !store.profile.nickname.isEmpty {
                 draft = store.profile

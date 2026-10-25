@@ -14,6 +14,19 @@ struct CoachChatView: View {
         "每天要吃多少蛋白质？"
     ]
 
+    private struct StarterPrompt: Identifiable {
+        let text: String
+        let icon: String
+        var id: String { text }
+    }
+
+    private let starters = [
+        StarterPrompt(text: "今天练什么？", icon: "calendar"),
+        StarterPrompt(text: "没有器械怎么替代？", icon: "dumbbell"),
+        StarterPrompt(text: "深蹲膝盖不舒服", icon: "cross.case"),
+        StarterPrompt(text: "训练后很酸正常吗？", icon: "bed.double")
+    ]
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -58,7 +71,10 @@ struct CoachChatView: View {
                     }
                 }
 
-                suggestionBar
+                if !store.chat.isEmpty {
+                    suggestionBar
+                }
+
                 inputBar
             }
             .background(Theme.background.ignoresSafeArea())
@@ -77,42 +93,102 @@ struct CoachChatView: View {
     }
 
     private var welcome: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) {
-                Image(systemName: "brain.head.profile")
-                    .font(.title2)
-                    .foregroundStyle(Theme.accent)
-                Text("训练有问题，直接问")
-                    .font(.title3.weight(.bold))
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 11) {
+                    ZStack {
+                        Circle()
+                            .fill(Theme.accent.opacity(0.13))
+                            .frame(width: 42, height: 42)
+                        Image(systemName: "brain.head.profile")
+                            .font(.headline)
+                            .foregroundStyle(Theme.accent)
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("训练有问题，直接问")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                        Text("结合档案、计划和训练记录回答")
+                            .font(.caption2)
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                }
+
+                Text("涉及疼痛、孕期、术后等情况，我会建议你就医，而不是继续加练。")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .card()
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text("快速开始")
+                    .font(.headline)
                     .foregroundStyle(.white)
-            }
 
-            Text("我会结合你的档案、当前计划和训练记录回答。涉及疼痛、孕期、术后等情况，我会建议你就医，而不是继续加练。")
-                .font(.subheadline)
-                .foregroundStyle(Theme.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
-
-            VStack(alignment: .leading, spacing: 8) {
-                bullet("动作怎么做、怎么替代")
-                bullet("今天该练什么")
-                bullet("训练后酸痛、平台期怎么办")
-                bullet("蛋白质和热量怎么安排")
+                LazyVGrid(
+                    columns: [GridItem(.flexible()), GridItem(.flexible())],
+                    spacing: 10
+                ) {
+                    ForEach(starters) { item in
+                        Button {
+                            send(item.text)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 9) {
+                                Image(systemName: item.icon)
+                                    .font(.headline)
+                                    .foregroundStyle(Theme.accent)
+                                Text(item.text)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.white)
+                                    .multilineTextAlignment(.leading)
+                                    .lineLimit(2)
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
+                            .padding(12)
+                            .background(
+                                Theme.surfaceStrong,
+                                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            weeklyRecap
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .card()
     }
 
-    private func bullet(_ text: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Circle()
-                .fill(Theme.accent)
-                .frame(width: 5, height: 5)
-                .padding(.top, 6)
-            Text(text)
-                .font(.subheadline)
-                .foregroundStyle(.white)
+    private var weeklyRecap: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack {
+                Text("本周状态")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                Spacer()
+                Text("第 \(store.currentPlanWeek) 周")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+
+            Text("\(store.currentWeekSessions.count)/\(store.profile.weeklyDays) 练 · 完成率 \(Int(store.weeklyCompletion * 100))%")
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+
+            Button {
+                send("帮我复盘一下本周训练，接下来应该怎么调整？")
+            } label: {
+                Label("让教练复盘本周", systemImage: "sparkles")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+            }
+            .buttonStyle(.plain)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card(padding: 14)
     }
 
     private func bubble(_ message: ChatMessage) -> some View {

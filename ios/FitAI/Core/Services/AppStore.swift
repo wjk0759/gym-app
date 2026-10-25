@@ -323,6 +323,14 @@ final class AppStore {
         persist()
     }
 
+    func updateEquipment(_ item: EquipmentItem) {
+        guard let index = equipmentLibrary.firstIndex(where: { $0.id == item.id }) else {
+            return
+        }
+        equipmentLibrary[index] = item
+        persist()
+    }
+
     func addBodyAnalysis(_ analysis: BodyAnalysis) {
         bodyAnalyses.insert(analysis, at: 0)
         persist()

@@ -248,6 +248,7 @@ function normalizeState(value) {
   next.authConsent = false;
   next.authError = "";
   next.authDevCode = "";
+  next.paywallPlan = next.paywallPlan || "yearly";
   return next;
 }
 
@@ -295,6 +296,7 @@ function initialState() {
     authConsent: false,
     authError: "",
     authDevCode: "",
+    paywallPlan: "yearly",
     workout: null,
     pro: false,
     reminder: "19:00"
@@ -561,7 +563,7 @@ function loginScreen() {
 
         <button class="row gap8" style="margin-top:12px;background:transparent;border:0;padding:0;color:var(--muted)" onclick="app.previewAuthConsent()">
           <span style="width:17px;height:17px;border-radius:5px;display:grid;place-items:center;border:1px solid ${state.authConsent ? "var(--accent)" : "var(--stroke-strong)"};background:${state.authConsent ? "var(--accent)" : "transparent"};color:#04120a;font-size:12px">${state.authConsent ? "✓" : ""}</span>
-          <span class="tiny" style="text-align:left">我已阅读并同意用户协议与隐私政策，且已年满 14 周岁</span>
+          <span class="tiny" style="text-align:left">我已阅读并同意相关协议，且已年满 14 周岁</span>
         </button>
 
         ${state.authError ? `<div class="tiny" style="margin-top:10px;color:var(--danger);line-height:1.6">${esc(state.authError)}</div>` : ""}
@@ -576,8 +578,8 @@ function loginScreen() {
       </div>
 
       <div class="row gap8">
-        <button class="btn btn-secondary grow" onclick="app.previewSocial('微信')">微信登录</button>
-        <button class="btn btn-secondary grow" onclick="app.previewSocial('QQ')">QQ 登录</button>
+        <button class="social-login wechat" onclick="app.previewSocial('微信')"><span class="social-icon">微</span>微信登录</button>
+        <button class="social-login qq" onclick="app.previewSocial('QQ')"><span class="social-icon">Q</span>QQ 登录</button>
       </div>
 
       <div class="tiny faint center" style="line-height:1.6">Web 预览为模拟登录。iOS App 使用真实手机验证码、密码和微信/QQ OAuth。</div>
@@ -613,10 +615,9 @@ function home() {
           <div class="tiny faint">第 1 周</div>
         </div>
 
-        <div class="row gap8" style="margin:14px 0 10px">
-          <div class="metric"><div class="value">${day.exercises.length} 个</div><div class="label">动作</div></div>
-          <div class="metric"><div class="value">${estimatedMinutes(day)} 分钟</div><div class="label">预计</div></div>
-          <div class="metric"><div class="value">${ratio}%</div><div class="label">本周完成</div></div>
+        <div class="row gap12" style="margin:14px 0 10px;align-items:flex-end">
+          <div class="grow"><div class="small strong">${day.exercises.length} 个</div><div class="tiny faint">动作</div></div>
+          <div class="grow"><div class="small strong">${estimatedMinutes(day)} 分钟</div><div class="tiny faint">预计</div></div>
         </div>
 
         <div>
@@ -634,14 +635,27 @@ function home() {
       </div>
 
       <div class="card">
+        <div class="between">
+          <div>
+            <div class="tiny accent strong">AI 复盘</div>
+            <div class="h3" style="margin-top:3px">${state.plan.title}</div>
+            <div class="tiny muted" style="margin-top:3px">第 ${state.plan.version} 版 · ${state.plan.days.length} 个训练日</div>
+          </div>
+          <span class="accent">↗</span>
+        </div>
+        <div class="tiny muted" style="margin-top:10px">完成率 ${ratio}%。AI 会按完成率和负荷趋势调整下一版。</div>
+        <button class="link" style="margin-top:10px" onclick="app.adjustPlan()">✦ 让 AI 复盘并调整 →</button>
+      </div>
+
+      <div class="card">
         <div class="between" style="margin-bottom:10px">
           <div class="h3">本周完成</div>
-          <div class="small muted">${weekSessions}/${state.profile.weeklyDays} 练</div>
+          <div class="small muted">${weekSessions}/${state.profile.weeklyDays} 次</div>
         </div>
         <div class="bar"><span style="width:${ratio}%"></span></div>
         <div class="row gap12" style="margin-top:12px">
           <div class="grow"><div class="h3">${state.sessions.length}</div><div class="tiny faint">累计训练</div></div>
-          <div class="grow"><div class="h3">18.4k</div><div class="tiny faint">总容量 kg</div></div>
+          <div class="grow"><div class="h3">18,400</div><div class="tiny faint">总容量 kg</div></div>
           <div class="grow"><div class="h3">${weekSessions}</div><div class="tiny faint">本周</div></div>
         </div>
       </div>
@@ -653,18 +667,6 @@ function home() {
           <div class="tiny muted" style="margin-top:3px">${remainingKcal > 0 ? `还可摄入 ${remainingKcal} kcal · 蛋白质还差 ${remainingProtein}g` : `已达到今日热量目标 · 蛋白质还差 ${remainingProtein}g`}</div>
         </div>
         <div class="faint">›</div>
-      </div>
-
-      <div class="card">
-        <div class="between">
-          <div>
-            <div class="h3">${state.plan.title}</div>
-            <div class="tiny muted" style="margin-top:3px">第 ${state.plan.version} 版 · ${state.plan.days.length} 个训练日</div>
-          </div>
-          <span class="accent">↗</span>
-        </div>
-        <div class="tiny muted" style="margin-top:10px">完成率 ${ratio}%。AI 会按完成率和负荷趋势调整下一版。</div>
-        <button class="btn btn-secondary" style="margin-top:12px" onclick="app.adjustPlan()">✦ 让 AI 复盘并调整</button>
       </div>
 
       <div class="card">
@@ -701,20 +703,16 @@ function planScreen() {
           <h1 class="h1">训练计划</h1>
           <div class="tiny muted" style="margin-top:4px">第 ${state.plan.version} 版 · 4 周</div>
         </div>
-        <button class="icon-btn" onclick="app.regeneratePlan()">↻</button>
       </div>
 
       <div class="card">
         <div class="between">
           <div class="badge">当前计划</div>
-          <div class="tiny faint">v${state.plan.version}</div>
+          <button class="link" style="color:var(--muted)" onclick="app.regeneratePlan()">重新生成</button>
         </div>
         <div class="h2" style="margin-top:9px">${state.plan.title}</div>
-        <div class="tiny muted" style="margin-top:4px">${state.plan.days.length} 个训练日 · 每周 ${state.profile.weeklyDays} 练</div>
-        <div class="row gap8" style="margin-top:12px">
-          <button class="btn btn-secondary btn-sm grow" onclick="app.adjustPlan()">✦ AI 调整</button>
-          <button class="btn btn-secondary btn-sm grow" onclick="app.regeneratePlan()">重新生成</button>
-        </div>
+        <div class="tiny muted" style="margin-top:4px">共 ${state.plan.days.length} 个训练日 · 当前第 ${state.selectedWeek} 周</div>
+        <button class="btn btn-primary" style="margin-top:12px" onclick="app.adjustPlan()">✦ AI 复盘并调整</button>
       </div>
 
       <div class="week-tabs">
@@ -805,6 +803,8 @@ function planDayScreen() {
 
 function coachScreen() {
   const suggestions = ["今天练什么？", "没有器械怎么替代？", "深蹲膝盖不舒服", "训练后很酸正常吗？", "每天要吃多少蛋白质？"];
+  const weekSessions = state.sessions.filter((s) => s.thisWeek).length;
+  const ratio = Math.min(100, Math.round((weekSessions / Math.max(1, state.profile.weeklyDays)) * 100));
   return `
     <div class="chat-screen">
       <div class="chat-head">
@@ -816,10 +816,32 @@ function coachScreen() {
         ${state.chats.length === 0 ? `
           <div class="card" style="margin-top:12px">
             <div class="row gap10" style="margin-bottom:10px">
-              <span style="font-size:22px;color:var(--accent)">🧠</span>
-              <div class="h3">训练有问题，直接问</div>
+              <div class="coach-avatar">AI</div>
+              <div>
+                <div class="h3">训练有问题，直接问</div>
+                <div class="tiny faint" style="margin-top:2px">结合档案、计划和训练记录回答</div>
+              </div>
             </div>
-            <div class="small muted" style="line-height:1.65">我会结合你的档案、当前计划和训练记录回答。涉及疼痛、孕期、术后等情况，会建议你就医，而不是继续加练。</div>
+            <div class="small muted" style="line-height:1.65">涉及疼痛、孕期、术后等情况，会建议你就医，而不是继续加练。</div>
+          </div>
+
+          <div class="h3" style="margin:16px 2px 2px">快速开始</div>
+          <div class="coach-starters">
+            ${[
+              "今天练什么？",
+              "没有器械怎么替代？",
+              "深蹲膝盖不舒服",
+              "训练后很酸正常吗？"
+            ].map((text) => `<button class="suggestion-card" onclick="app.sendChat('${text}')">${text}</button>`).join("")}
+          </div>
+
+          <div class="card tight" style="margin-top:12px">
+            <div class="between">
+              <div class="small strong">本周状态</div>
+              <div class="tiny faint">第 ${state.selectedWeek} 周</div>
+            </div>
+            <div class="tiny muted" style="margin-top:5px">${weekSessions}/${state.profile.weeklyDays} 练 · 完成率 ${ratio}%</div>
+            <button class="link" style="margin-top:9px" onclick="app.sendChat('帮我复盘一下本周训练，接下来应该怎么调整？')">让教练复盘本周 →</button>
           </div>
         ` : state.chats.map((message) => `
           <div class="chat-row ${message.role}">
@@ -830,9 +852,11 @@ function coachScreen() {
           </div>
         `).join("")}
 
-        <div class="suggestions" style="margin-top:10px">
-          ${suggestions.map((text) => `<button class="suggestion" onclick="app.sendChat('${text.replace(/'/g, "\\'")}')">${text}</button>`).join("")}
-        </div>
+        ${state.chats.length ? `
+          <div class="suggestions" style="margin-top:10px">
+            ${suggestions.map((text) => `<button class="suggestion" onclick="app.sendChat('${text.replace(/'/g, "\\'")}')">${text}</button>`).join("")}
+          </div>
+        ` : ""}
       </div>
 
       <div class="composer">
@@ -901,6 +925,24 @@ function equipmentScreen() {
   `;
 }
 
+function equipGlyph(item) {
+  const muscle = item.muscle || "";
+  if (muscle.includes("有氧")) return "🏃";
+  if (muscle.includes("腿") || muscle.includes("臀")) return "🦵";
+  if (muscle.includes("背")) return "🏋️";
+  if (muscle.includes("肩") || muscle.includes("手臂")) return "💪";
+  if (muscle.includes("核心")) return "🧘";
+  const map = {
+    "固定器械": "⚙️",
+    "哑铃": "💪",
+    "杠铃": "🏋️",
+    "有氧": "🏃",
+    "绳索": "🪢",
+    "徒手": "🤸"
+  };
+  return map[item.equip] || "🏋️";
+}
+
 function equipmentLibraryScreen() {
   const items = state.equipmentLibrary;
   return `
@@ -933,7 +975,7 @@ function equipmentLibraryScreen() {
         <div class="equipment-grid">
           ${items.map((item) => `
             <div class="equipment-tile" onclick="app.openEquipItem('${item.id}')">
-              <div class="equipment-tile-image">🏋️</div>
+              <div class="equipment-tile-image">${equipGlyph(item)}</div>
               <div class="equipment-tile-name">${esc(item.name)}</div>
               <div class="equipment-tile-meta">${item.muscle} · ${item.equip}</div>
               <div class="equipment-tile-video ${item.video ? "ready" : ""}">
@@ -1045,7 +1087,7 @@ function equipmentItemScreen() {
     <div class="stack">
       ${headerBack("器械详情", "app.equipmentLibraryOpen()")}
       <div class="card center">
-        <div style="font-size:40px;margin-bottom:8px">🏋️</div>
+        <div style="font-size:40px;margin-bottom:8px">${equipGlyph(item)}</div>
         <div class="h2">${esc(item.name)}</div>
         <div class="small accent" style="margin-top:4px">${item.muscle} · ${item.equip}</div>
         ${item.notes ? `<div class="tiny muted" style="margin-top:10px">${esc(item.notes)}</div>` : ""}
@@ -1053,8 +1095,13 @@ function equipmentItemScreen() {
 
       <div class="card">
         <div class="row gap8" style="margin-bottom:8px"><span class="accent">▶</span><span class="h3">教学视频</span></div>
-        <div class="tiny muted">${item.video ? "已配置视频地址，真实 App 会直接播放。" : "还没有视频地址。真实 App 里可在添加/编辑器械时填入 HLS/MP4 链接。"}</div>
-        <div style="height:150px;border-radius:14px;margin-top:10px;background:linear-gradient(135deg,#1a2028,#0d1016);display:grid;place-items:center;color:var(--faint)">视频占位</div>
+        ${item.video
+          ? `<div class="tiny muted">已配置视频地址，真实 App 会直接播放。</div>
+             <div style="height:150px;border-radius:14px;margin-top:10px;background:linear-gradient(135deg,#1a2028,#0d1016);display:grid;place-items:center;color:var(--faint)">视频占位</div>`
+          : `<div class="tiny muted" style="line-height:1.6">还没有教学视频。添加一个视频地址，下次训练前可以直接看动作示范。</div>`}
+        <button class="btn btn-secondary" style="margin-top:12px" onclick="app.editEquipVideo('${item.id}')">
+          ${item.video ? "编辑视频与备注" : "添加教学视频"}
+        </button>
       </div>
 
       <button class="btn btn-danger" onclick="app.deleteEquipItem('${item.id}')">从器械库删除</button>
@@ -1210,12 +1257,14 @@ function profileScreen() {
         <div class="row gap12">
           <div class="nutrition-icon" style="color:var(--warning);background:rgba(250,184,77,.12)">♛</div>
           <div class="grow">
-            <div class="h3">FitAI Pro</div>
+            <div class="h3">练途 Pro</div>
             <div class="tiny muted" style="margin-top:3px">${state.pro ? "已订阅 · 所有功能已解锁" : "解锁 AI 计划、教练对话与器械识别"}</div>
           </div>
           <div class="accent small">${state.pro ? "管理" : "查看"}</div>
         </div>
       </div>
+
+      <div class="section-kicker">身体与目标</div>
 
       <div class="card">
         <div class="row gap8">
@@ -1228,7 +1277,7 @@ function profileScreen() {
         </div>
         <div class="row gap8" style="margin-top:8px">
           <div class="metric"><div class="value">${state.sessions.length} 次</div><div class="label">累计训练</div></div>
-          <div class="metric"><div class="value">18.4k kg</div><div class="label">总容量</div></div>
+          <div class="metric"><div class="value">18,400 kg</div><div class="label">总容量</div></div>
         </div>
       </div>
 
@@ -1238,6 +1287,8 @@ function profileScreen() {
         <div class="between" style="margin-top:7px"><span class="small muted">目标腰围</span><span class="small strong">${p.targetWaist} cm</span></div>
         <div class="tiny faint" style="margin-top:8px">减重建议不超过 0.5kg/周，不追求极端速度。</div>
       </div>
+
+      <div class="section-kicker">健康与工具</div>
 
       <div class="card">
         <div class="between">
@@ -1292,6 +1343,8 @@ function profileScreen() {
         ${state.disliked.length ? `<button class="btn btn-secondary" style="margin-top:10px" onclick="app.clearPreferences()">清除训练偏好</button>` : ""}
       </div>
 
+      <div class="section-kicker">关于与数据</div>
+
       <div class="card">
         <div class="h3" style="margin-bottom:8px">关于与合规</div>
         <div class="list-row" onclick="app.mockPrivacy()"><span class="grow small">隐私政策</span><span class="faint">›</span></div>
@@ -1307,7 +1360,7 @@ function profileScreen() {
         <button class="btn btn-danger" style="margin-top:10px" onclick="app.resetAll()">注销并删除全部数据</button>
       </div>
 
-      <div class="tiny faint center" style="padding-bottom:8px">FitAI Web Preview · v0.1</div>
+      <div class="tiny faint center" style="padding-bottom:8px">练途 Web Preview · v0.1</div>
     </div>
   `;
 }
@@ -1318,6 +1371,8 @@ function nutritionScreen() {
   const targets = nutritionTargets();
   const totals = nutritionTotals();
   const ratio = Math.min(100, Math.round((totals.kcal / Math.max(1, targets.kcal)) * 100));
+  const remainingKcal = Math.max(0, targets.kcal - Math.round(totals.kcal));
+  const remainingProtein = Math.max(0, targets.protein - Math.round(totals.p));
   const meals = ["早餐", "午餐", "晚餐", "加餐"];
 
   return `
@@ -1326,7 +1381,8 @@ function nutritionScreen() {
       <div class="card">
         <div class="tiny muted">今日热量目标</div>
         <div class="kcal-hero" style="margin-top:4px"><span class="num">${targets.kcal}</span><span class="unit">kcal</span></div>
-        <div class="tiny faint" style="margin-top:6px">按${state.profile.goal}目标与每周 ${state.profile.weeklyDays} 练估算，结果是区间。</div>
+        <div class="tiny accent" style="margin-top:6px;font-weight:600">${remainingKcal > 0 ? `还可摄入 ${remainingKcal} kcal · 蛋白质还差 ${remainingProtein}g` : `已达到今日热量目标 · 蛋白质还差 ${remainingProtein}g`}</div>
+        <div class="tiny faint" style="margin-top:4px">按${state.profile.goal}目标与每周 ${state.profile.weeklyDays} 练估算，结果是区间。</div>
       </div>
 
       <div class="card nutrition-card" onclick="app.openFoodPhoto()">
@@ -1619,7 +1675,7 @@ function foodResults(query) {
 function paywallScreen() {
   return `
     <div class="stack">
-      ${headerBack("FitAI Pro")}
+      ${headerBack("练途 Pro")}
       <div class="card hero center">
         <div class="crown">♛</div>
         <div class="h2">把 AI 教练带在身边</div>
@@ -1639,22 +1695,28 @@ function paywallScreen() {
 
       ${state.pro ? `
         <div class="card center">
-          <div class="h3 accent">✓ 已订阅 FitAI Pro</div>
+          <div class="h3 accent">✓ 已订阅练途 Pro</div>
           <div class="tiny muted" style="margin-top:5px">所有 Pro 功能已解锁。</div>
         </div>
       ` : `
-        <button class="plan-option" onclick="app.buy('monthly')">
-          <div style="text-align:left"><div class="title">月度订阅</div><div class="desc">随时取消</div></div>
-          <div class="price">¥28 / 月</div>
-        </button>
-        <button class="plan-option" onclick="app.buy('yearly')">
-          <div style="text-align:left"><div class="title">年度订阅</div><div class="desc">约 ¥16.5 / 月</div></div>
-          <div class="price">¥198 / 年</div>
-        </button>
+        <div class="stack" style="gap:9px">
+          <button class="plan-option ${state.paywallPlan === "monthly" ? "selected" : ""}" onclick="app.selectPaywall('monthly')">
+            <div style="text-align:left"><div class="title">月度订阅</div><div class="desc">随时取消</div></div>
+            <div class="price">¥28 / 月</div>
+          </button>
+          <button class="plan-option ${state.paywallPlan === "yearly" ? "selected" : ""}" onclick="app.selectPaywall('yearly')">
+            <div style="text-align:left">
+              <div class="row gap6"><div class="title">年度订阅</div><span class="save-badge">推荐 · 省 41%</span></div>
+              <div class="desc">约 ¥16.5 / 月</div>
+            </div>
+            <div class="price">¥198 / 年</div>
+          </button>
+        </div>
+        <button class="btn btn-primary" style="margin-top:12px" onclick="app.buy(state.paywallPlan)">立即订阅 · ${state.paywallPlan === "yearly" ? "¥198 / 年" : "¥28 / 月"}</button>
       `}
 
       <button class="link" style="display:block;margin:8px auto" onclick="app.restorePurchase()">恢复购买</button>
-      <div class="tiny faint center" style="line-height:1.6">订阅会自动续期，可随时在系统设置中取消。预览版不会真的扣款。</div>
+      <div class="tiny faint center" style="line-height:1.6">订阅会自动续期，可随时在系统设置中取消。</div>
     </div>
   `;
 }
@@ -2525,10 +2587,17 @@ window.app = {
   },
 
   buy(plan) {
+    state.paywallPlan = plan;
     state.pro = true;
     save();
     render();
     toast(plan === "yearly" ? "模拟购买成功：年度订阅" : "模拟购买成功：月度订阅");
+  },
+
+  selectPaywall(plan) {
+    state.paywallPlan = plan;
+    save();
+    render();
   },
 
   restorePurchase() {
@@ -2845,6 +2914,19 @@ window.app = {
     save();
     render();
     toast(`已保存 ${ex.name} 到器械库`);
+  },
+
+  editEquipVideo(id) {
+    const item = state.equipmentLibrary.find((entry) => entry.id === id);
+    if (!item) return;
+    const url = prompt("教学视频地址（留空表示移除）", item.video ? "https://" : "");
+    if (url === null) return;
+    const notes = prompt("备注（例如：座位高度 3 档）", item.notes || "");
+    item.video = Boolean(url.trim());
+    if (notes !== null) item.notes = notes.trim();
+    save();
+    render();
+    toast(item.video ? "教学视频已保存" : "已移除教学视频");
   },
 
   deleteEquipItem(id) {

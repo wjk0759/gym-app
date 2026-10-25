@@ -31,12 +31,21 @@ struct PlanHomeView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showHistory = true
+                    Menu {
+                        Button {
+                            showHistory = true
+                        } label: {
+                            Label("计划版本历史", systemImage: "clock.arrow.circlepath")
+                        }
+                        Button(role: .destructive) {
+                            showRegenerate = true
+                        } label: {
+                            Label("重新生成计划", systemImage: "arrow.clockwise")
+                        }
                     } label: {
-                        Image(systemName: "clock.arrow.circlepath")
+                        Image(systemName: "ellipsis.circle")
                     }
-                    .accessibilityLabel("计划版本历史")
+                    .accessibilityLabel("更多计划操作")
                 }
             }
             .sheet(isPresented: $showHistory) {
@@ -163,30 +172,21 @@ struct PlanHomeView: View {
                 .font(.title3.weight(.bold))
                 .foregroundStyle(.white)
 
-            Text("\(plan.weeks) 周 · \(plan.firstWeek.count) 练/周 · 当前第 \(store.currentPlanWeek) 周")
+            Text("共 \(plan.days.count) 个训练日 · 当前第 \(store.currentPlanWeek) 周")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
 
-            HStack(spacing: 10) {
-                Button {
-                    if store.currentWeekSessions.isEmpty {
-                        store.toast = "还没有训练记录，先完成一次训练再让 AI 调整。"
-                        showMessage = true
-                    } else {
-                        showAdjust = true
-                    }
-                } label: {
-                    Label("AI 调整", systemImage: "wand.and.stars")
+            Button {
+                if store.currentWeekSessions.isEmpty {
+                    store.toast = "还没有训练记录，先完成一次训练再让 AI 调整。"
+                    showMessage = true
+                } else {
+                    showAdjust = true
                 }
-                .buttonStyle(SecondaryButtonStyle())
-
-                Button {
-                    showRegenerate = true
-                } label: {
-                    Label("重新生成", systemImage: "arrow.clockwise")
-                }
-                .buttonStyle(SecondaryButtonStyle())
+            } label: {
+                Label("AI 复盘并调整", systemImage: "wand.and.stars")
             }
+            .buttonStyle(PrimaryButtonStyle())
         }
         .card()
     }
