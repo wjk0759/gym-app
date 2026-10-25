@@ -297,6 +297,19 @@ final class AppStore {
         }
     }
 
+    func updateSession(_ session: WorkoutSession) {
+        guard let index = sessions.firstIndex(where: { $0.id == session.id }) else {
+            return
+        }
+        sessions[index] = session
+        persist()
+    }
+
+    func deleteSession(_ id: UUID) {
+        sessions.removeAll { $0.id == id }
+        persist()
+    }
+
     func addFoodLog(_ log: FoodLog) {
         foodLogs.insert(log, at: 0)
         persist()

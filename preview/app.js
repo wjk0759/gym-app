@@ -230,6 +230,8 @@ function normalizeState(value) {
   next.bodyConsent = false;
   next.bodyAnalysis = next.bodyAnalysis || null;
   next.equipmentItemId = next.equipmentItemId || null;
+  next.sessionDraft = null;
+  next.sessionEditing = false;
   return next;
 }
 
@@ -259,6 +261,8 @@ function initialState() {
     bodyConsent: false,
     bodyAnalysis: null,
     equipmentItemId: null,
+    sessionDraft: null,
+    sessionEditing: false,
     workout: null,
     pro: false,
     reminder: "19:00"
@@ -1466,15 +1470,71 @@ function workoutSummary(day) {
 /* ---------------- Session detail ---------------- */
 
 function sessionScreen() {
-  const session = state.sessions.find((item) => item.id === state.sessionId);
-  if (!session) return home();
+  const saved = state.sessions.find((item) => item.id === state.sessionId);
+  if (!saved) return home();
+  const session = state.sessionEditing && state.sessionDraft ? state.sessionDraft : saved;
   const volume = session.items.reduce((sum, item) => sum + item.weight * item.reps * item.sets, 0);
+
+  if (state.sessionEditing) {
+    return `
+      <div class="stack">
+        ${headerBack("编辑训练记录", "app.sessionCancel()")}
+        <div class="card">
+          <div class="form-label">训练名称</div>
+          <input type="text" value="${esc(session.title)}" onchange="app.sessionField('title', this.value)">
+          <div class="form-label" style="margin-top:10px">时长（分钟）</div>
+          <input type="number" min="1" max="300" value="${session.duration}" onchange="app.sessionField('duration', this.value)">
+          <div class="form-label" style="margin-top:10px">训练感受</div>
+          <div class="seg">
+            ${[1, 2, 3, 4, 5].map((value) => `
+              <button class="${session.feeling === value ? "active" : ""}" onclick="app.sessionFeeling(${value})">
+                ${["😫", "😕", "😐", "🙂", "💪"][value - 1]}
+              </button>
+            `).join("")}
+          </div>
+        </div>
+
+        ${session.items.map((item, index) => `
+          <div class="card">
+            <div class="between">
+              <div class="h3">${esc(item.name)}</div>
+              <button class="trash-btn" onclick="app.sessionDeleteItem(${index})">🗑</button>
+            </div>
+            <div class="row gap8" style="margin-top:10px">
+              <div class="grow">
+                <div class="tiny faint">重量 kg</div>
+                <input type="number" min="0" step="0.5" value="${item.weight}" onchange="app.sessionItem(${index}, 'weight', this.value)">
+              </div>
+              <div class="grow">
+                <div class="tiny faint">次数</div>
+                <input type="number" min="0" value="${item.reps}" onchange="app.sessionItem(${index}, 'reps', this.value)">
+              </div>
+              <div class="grow">
+                <div class="tiny faint">组数</div>
+                <input type="number" min="1" value="${item.sets}" onchange="app.sessionItem(${index}, 'sets', this.value)">
+              </div>
+            </div>
+          </div>
+        `).join("")}
+
+        <button class="btn btn-secondary" onclick="app.sessionAddItem()">＋ 添加动作</button>
+        <button class="btn btn-primary" onclick="app.sessionSave()">保存修改</button>
+        <button class="btn btn-danger" onclick="app.deleteSession()">删除这条记录</button>
+      </div>
+    `;
+  }
+
   return `
     <div class="stack">
       ${headerBack("训练详情")}
       <div class="card">
-        <div class="h2">${session.title}</div>
-        <div class="tiny muted" style="margin-top:4px">${session.date}</div>
+        <div class="between">
+          <div>
+            <div class="h2">${esc(session.title)}</div>
+            <div class="tiny muted" style="margin-top:4px">${session.date}</div>
+          </div>
+          <button class="link" onclick="app.sessionEdit()">编辑</button>
+        </div>
         <div class="row gap8" style="margin-top:12px">
           <div class="metric"><div class="value">${session.duration}</div><div class="label">分钟</div></div>
           <div class="metric"><div class="value">${session.items.reduce((sum, item) => sum + item.sets, 0)}</div><div class="label">组数</div></div>
@@ -1489,6 +1549,7 @@ function sessionScreen() {
           </div>
         `).join("")}
       </div>
+      <button class="btn btn-danger" onclick="app.deleteSession()">删除这条记录</button>
     </div>
   `;
 }
@@ -1864,9 +1925,95 @@ window.app = {
 
   openSession(id) {
     state.sessionId = id;
+    const session = state.sessions.find((item) => item.id === id);
+    state.sessionDraft = session ? JSON.parse(JSON.stringify(session)) : null;
+    state.sessionEditing = false;
     state.screen = "sessionDetail";
     save();
     render();
+  },
+
+  sessionEdit() {
+    const session = state.sessions.find((item) => item.id === state.sessionId);
+    if (!session) return;
+    state.sessionDraft = JSON.parse(JSON.stringify(session));
+    state.sessionEditing = true;
+    render();
+  },
+
+  sessionCancel() {
+    state.sessionEditing = false;
+    state.sessionDraft = null;
+    render();
+  },
+
+  sessionField(key, value) {
+    if (!state.sessionDraft) return;
+    if (key === "duration") {
+      state.sessionDraft.duration = Math.max(1, Number(value) || 1);
+    } else {
+      state.sessionDraft[key] = value;
+    }
+  },
+
+  sessionFeeling(value) {
+    if (!state.sessionDraft) return;
+    state.sessionDraft.feeling = value;
+    render();
+  },
+
+  sessionItem(index, key, value) {
+    if (!state.sessionDraft || !state.sessionDraft.items[index]) return;
+    const number = Math.max(0, Number(value) || 0);
+    state.sessionDraft.items[index][key] = key === "sets" ? Math.max(1, number) : number;
+  },
+
+  sessionAddItem() {
+    if (!state.sessionDraft) return;
+    const name = prompt("动作名称", "自定义动作");
+    if (!name) return;
+    state.sessionDraft.items.push({ name, weight: 0, reps: 10, sets: 3 });
+    render();
+  },
+
+  sessionDeleteItem(index) {
+    if (!state.sessionDraft) return;
+    state.sessionDraft.items.splice(index, 1);
+    render();
+  },
+
+  sessionSave() {
+    if (!state.sessionDraft) return;
+    const draft = state.sessionDraft;
+    draft.title = String(draft.title || "").trim() || "训练记录";
+    draft.duration = Math.max(1, Number(draft.duration) || 1);
+    draft.feeling = Math.min(5, Math.max(1, Number(draft.feeling) || 3));
+    draft.items = draft.items.map((item) => ({
+      name: item.name,
+      weight: Math.max(0, Number(item.weight) || 0),
+      reps: Math.max(0, Number(item.reps) || 0),
+      sets: Math.max(1, Number(item.sets) || 1)
+    }));
+    draft.volume = draft.items.reduce((sum, item) => sum + item.weight * item.reps * item.sets, 0);
+    const index = state.sessions.findIndex((item) => item.id === draft.id);
+    if (index >= 0) state.sessions[index] = draft;
+    state.sessionEditing = false;
+    state.sessionDraft = null;
+    save();
+    render();
+    toast("训练记录已保存，首页数据已同步");
+  },
+
+  deleteSession() {
+    if (!confirm("删除这条训练记录？删除后无法恢复。")) return;
+    state.sessions = state.sessions.filter((item) => item.id !== state.sessionId);
+    state.sessionEditing = false;
+    state.sessionDraft = null;
+    state.screen = "tabs";
+    state.tab = "home";
+    save();
+    render();
+    toast("已删除训练记录");
   },
 
   sendChat(text) {
@@ -2259,6 +2406,16 @@ if (previewParams.has("tab") || previewParams.has("screen") || previewParams.get
   }
   state.screen = previewParams.has("screen") ? previewParams.get("screen") : "tabs";
   if (previewParams.has("tab")) state.tab = previewParams.get("tab");
+}
+if (previewParams.has("session")) {
+  const session = state.sessions.find((item) => item.id === previewParams.get("session"));
+  if (session) {
+    state.onboarded = true;
+    state.sessionId = session.id;
+    state.sessionDraft = JSON.parse(JSON.stringify(session));
+    state.screen = "sessionDetail";
+    state.sessionEditing = previewParams.get("editSession") === "1";
+  }
 }
 
 render();

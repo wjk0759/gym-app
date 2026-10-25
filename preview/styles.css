@@ -466,7 +466,7 @@ input[type="range"] {
   background: transparent;
 }
 
-input[type="text"], input[type="time"] {
+input[type="text"], input[type="time"], input[type="number"] {
   width: 100%;
   border: 1px solid transparent;
   outline: 0;
@@ -479,7 +479,16 @@ input[type="text"], input[type="time"] {
 }
 
 input[type="text"]::placeholder { color: var(--faint); }
-input[type="text"]:focus, input[type="time"]:focus { border-color: rgba(92, 219, 140, 0.5); }
+input[type="text"]:focus, input[type="time"]:focus, input[type="number"]:focus {
+  border-color: rgba(92, 219, 140, 0.5);
+}
+
+input[type="number"] { -moz-appearance: textfield; }
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 
 /* ---------- onboarding ---------- */
 
