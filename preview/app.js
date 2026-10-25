@@ -2362,6 +2362,12 @@ function workoutSummary(day) {
   const minutes = Math.max(1, Math.round((Date.now() - workout.startedAt) / 60000));
   return `
     <div class="stack">
+      <div class="page-header row between">
+        <button class="icon-btn" onclick="app.exitWorkout()">✕</button>
+        <div class="h3">训练总结</div>
+        <div style="width:34px"></div>
+      </div>
+
       <div class="card">
         <div class="h2">训练完成</div>
         <div class="tiny muted" style="margin-top:4px">${day.title}</div>
@@ -2531,6 +2537,8 @@ function render() {
 
   const root = document.getElementById("app");
   if (!root) return;
+
+  document.querySelector(".device")?.classList.toggle("camera-mode", state.screen === "equipmentCamera");
 
   if (!state.authenticated) {
     const loginRoute = "login";

@@ -252,7 +252,7 @@ body {
   -webkit-backdrop-filter: blur(16px) saturate(130%);
 }
 
-.device:has(.app.camera-mode) .status-scrim {
+.device.camera-mode .status-scrim {
   display: none;
 }
 
@@ -1209,7 +1209,8 @@ input[type="number"]::-webkit-inner-spin-button {
   flex-direction: column;
   gap: 2px;
   position: sticky;
-  top: 6px;
+  /* 预留器械页 sticky 标题的高度，避免肌群筛选贴到标题下面 */
+  top: 52px;
 }
 
 .muscle-item {
