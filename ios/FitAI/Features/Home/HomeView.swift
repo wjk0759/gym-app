@@ -24,6 +24,8 @@ struct HomeView: View {
 
                     weekCard
 
+                    nutritionCard
+
                     if let plan = store.plan {
                         aiReviewCard(plan: plan)
                     }
@@ -267,6 +269,41 @@ struct HomeView: View {
     }
 
     // MARK: - AI 复盘
+
+    private var nutritionCard: some View {
+        let targets = DietPlanner.targets(profile: store.profile)
+
+        return NavigationLink {
+            NutritionView()
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Theme.accent.opacity(0.12))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: "fork.knife")
+                        .foregroundStyle(Theme.accent)
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("今日饮食")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Text("\(targets.kcal) kcal · 蛋白质 \(targets.protein)g")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            .card()
+        }
+        .buttonStyle(.plain)
+    }
 
     private func aiReviewCard(plan: TrainingPlan) -> some View {
         VStack(alignment: .leading, spacing: 12) {

@@ -135,6 +135,7 @@ struct UserProfile: Codable, Equatable {
     var sessionMinutes: Int = 45
     var goalType: GoalType = .buildMuscle
     var targetWeightKG: Double = 75
+    var targetWaistCM: Double? = nil
     var targetDate: Date = Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
     var isOnboarded: Bool = false
 

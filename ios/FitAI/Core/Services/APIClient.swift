@@ -26,6 +26,16 @@ private struct EquipmentScanResponse: Decodable {
     let candidates: [Candidate]
 }
 
+private struct MeituanLinkResponse: Decodable {
+    let deeplink: String?
+    let h5URL: String?
+
+    enum CodingKeys: String, CodingKey {
+        case deeplink
+        case h5URL = "h5_url"
+    }
+}
+
 struct APIClient {
     static let shared = APIClient()
 
@@ -79,6 +89,9 @@ struct APIClient {
         var payload: [String: Any] = ["type": apiGoalType(profile.goalType)]
         if profile.goalType != .endurance {
             payload["target_weight_kg"] = profile.targetWeightKG
+        }
+        if let targetWaist = profile.targetWaistCM {
+            payload["target_waist_cm"] = targetWaist
         }
         let body = try JSONSerialization.data(withJSONObject: payload)
         try await sendVoid(path: "me/goal", method: "PUT", body: body)
@@ -140,6 +153,25 @@ struct APIClient {
             }
             return EquipmentCandidate(exercise: exercise, confidence: candidate.confidence)
         }
+    }
+
+    // MARK: - 饮食 / 外卖
+
+    func meituanLink(keyword: String) async throws -> URL? {
+        let encoded = keyword.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? keyword
+        let data = try await perform(
+            path: "diet/meituan-link?keyword=\(encoded)",
+            method: "GET",
+            body: nil
+        )
+        let response = try decoder.decode(MeituanLinkResponse.self, from: data)
+        if let text = response.deeplink, let url = URL(string: text) {
+            return url
+        }
+        if let text = response.h5URL, let url = URL(string: text) {
+            return url
+        }
+        return nil
     }
 
     // MARK: - 网络

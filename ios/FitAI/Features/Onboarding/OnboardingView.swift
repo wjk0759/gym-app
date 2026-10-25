@@ -282,6 +282,13 @@ struct OnboardingView: View {
                     step: 0.5,
                     unit: "kg"
                 )
+                MetricSlider(
+                    title: "目标腰围",
+                    value: targetWaistBinding,
+                    range: 50...150,
+                    step: 1,
+                    unit: "cm"
+                )
             }
 
             DatePicker(
@@ -312,8 +319,14 @@ struct OnboardingView: View {
         .card(padding: 14)
     }
 
-    private func toggle(_ item: Equipment) {
-        if draft.equipment.contains(item) {
+    private var targetWaistBinding: Binding<Double> {
+        Binding(
+            get: { draft.targetWaistCM ?? draft.waistCM },
+            set: { draft.targetWaistCM = $0 }
+        )
+    }
+
+    private func toggle(_ item: Equipment) {        if draft.equipment.contains(item) {
             if item != .bodyweight {
                 draft.equipment.remove(item)
             }

@@ -142,6 +142,18 @@ struct ProfileView: View {
                 }
             }
 
+            if let targetWaist = store.profile.targetWaistCM {
+                HStack {
+                    Text("目标腰围")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.secondaryText)
+                    Spacer()
+                    Text(String(format: "%.0f cm", targetWaist))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                }
+            }
+
             HStack {
                 Text("目标日期")
                     .font(.subheadline)
