@@ -82,6 +82,9 @@ const ICONS = {
   coach: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-5 4v-4H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>',
   equipment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3M17 8h3M7 6v4M17 6v4M7 8h10"/><circle cx="12" cy="16" r="4"/></svg>',
   dumbbell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8v8M4 10v4M17.5 8v8M20 10v4M8 12h8"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.6"/><path d="m20 20-3.7-3.7"/></svg>',
+  camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.6-2h6.8L17 8h3v10H4z"/><circle cx="12" cy="13" r="3"/></svg>',
+  library: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.7"/><rect x="13" y="4" width="7" height="7" rx="1.7"/><rect x="4" y="13" width="7" height="7" rx="1.7"/><rect x="13" y="13" width="7" height="7" rx="1.7"/></svg>',
   user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.6-3.6 3.1-5.5 7-5.5s6.4 1.9 7 5.5"/></svg>',
   settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>'
 };
@@ -1242,14 +1245,17 @@ function equipmentPickerScreen() {
   return `
     <div class="stack equipment-picker">
       <div class="equipment-sticky-tools">
-        <div class="equipment-tools-topline">
-          <button class="link muted-link" onclick="app.equipmentLibraryOpen()">器械库</button>
-        </div>
-
-        <div class="equipment-search-row">
-          <span class="search-glyph">⌕</span>
-          <input id="equipment-picker-search" type="text" placeholder="输入动作名字搜索" value="${esc(state.equipSearchQuery)}" oninput="app.equipmentPickerQuery(this.value)">
-          <button class="equipment-camera-btn" onclick="app.equipmentRecognitionOpen()">◉ 识别</button>
+        <div class="equipment-search-line">
+          <div class="equipment-search-row">
+            <span class="equipment-search-icon">${ICONS.search}</span>
+            <input id="equipment-picker-search" type="text" placeholder="搜索动作名称" value="${esc(state.equipSearchQuery)}" oninput="app.equipmentPickerQuery(this.value)">
+            <button class="equipment-scan-btn" onclick="app.equipmentRecognitionOpen()" aria-label="拍照识别器械" title="拍照识别">
+              ${ICONS.camera}
+            </button>
+          </div>
+          <button class="equipment-library-btn" onclick="app.equipmentLibraryOpen()" aria-label="器械库" title="器械库">
+            ${ICONS.library}
+          </button>
         </div>
 
         <div id="equipment-search-scope" class="equipment-search-scope" ${searching ? "" : "hidden"}>搜索全部动作，当前分类暂不生效</div>
@@ -1261,14 +1267,16 @@ function equipmentPickerScreen() {
         </div>
       </div>
 
-      <div class="equipment-picker-body">
-        <div class="muscle-rail">
+      <div class="equipment-muscle-row">
+        <span class="equipment-muscle-label">肌群</span>
+        <div class="equipment-muscle-scroll">
           ${muscles.map((label) => `
-            <button class="muscle-item ${state.equipMuscle === label ? "active" : ""}" onclick="app.equipmentPickerMuscle('${label}')">${label}</button>
+            <button class="muscle-chip ${state.equipMuscle === label ? "active" : ""}" onclick="app.equipmentPickerMuscle('${label}')">${label}</button>
           `).join("")}
         </div>
-        <div class="exercise-pick-grid" id="equipment-picker-grid">${equipmentPickerGrid()}</div>
       </div>
+
+      <div class="exercise-pick-grid" id="equipment-picker-grid">${equipmentPickerGrid()}</div>
 
       <button class="equipment-selection-fab no-drag ${selected.length ? "has-items" : ""}" onclick="app.equipmentSelectionToggle()" aria-label="已选动作，共 ${selected.length} 个">
         ${ICONS.dumbbell}
@@ -2651,13 +2659,38 @@ function enableDragScroll(container) {
   }, { passive: true });
 }
 
+let equipmentScrollFrame = 0;
+
+function syncEquipmentScrollState() {
+  const root = document.getElementById("app");
+  if (!root) return;
+  const active = state.screen === "tabs" && state.tab === "equipment" && root.scrollTop > 8;
+  root.classList.toggle("equipment-scrolled", active);
+}
+
+function setupEquipmentScrollState() {
+  const root = document.getElementById("app");
+  if (!root || root.dataset.equipmentScrollReady === "1") return;
+  root.dataset.equipmentScrollReady = "1";
+  root.addEventListener("scroll", () => {
+    if (equipmentScrollFrame) return;
+    equipmentScrollFrame = requestAnimationFrame(() => {
+      equipmentScrollFrame = 0;
+      syncEquipmentScrollState();
+    });
+  }, { passive: true });
+  syncEquipmentScrollState();
+}
+
 function setupDragScroll() {
   const root = document.getElementById("app");
   if (!root) return;
   enableDragScroll(root);
   root.querySelectorAll(
-    ".chat-scroll, .equipment-selection-list, .equipment-filter-scroll, .week-tabs, .suggestions, .coach-skill-bar"
+    ".chat-scroll, .equipment-selection-list, .equipment-filter-scroll, .equipment-muscle-scroll, .week-tabs, .suggestions, .coach-skill-bar"
   ).forEach(enableDragScroll);
+  setupEquipmentScrollState();
+  syncEquipmentScrollState();
 }
 
 /* ---------------- render ---------------- */
@@ -2685,7 +2718,10 @@ function render() {
     document.getElementById("tabbar").innerHTML = "";
     document.getElementById("tabbar").className = "tabbar hidden";
     if (loginChanged) {
-      requestAnimationFrame(() => { root.scrollTop = 0; });
+      requestAnimationFrame(() => {
+        root.scrollTop = 0;
+        syncEquipmentScrollState();
+      });
     }
     setupDragScroll();
     return;
@@ -2738,7 +2774,10 @@ function render() {
   document.getElementById("tabbar").innerHTML = tabbar();
   document.getElementById("tabbar").className = "tabbar" + (state.onboarded && state.screen === "tabs" ? "" : " hidden");
   if (routeChanged) {
-    requestAnimationFrame(() => { root.scrollTop = 0; });
+    requestAnimationFrame(() => {
+      root.scrollTop = 0;
+      syncEquipmentScrollState();
+    });
   }
 
   if (state.screen === "tabs" && state.tab === "coach") {

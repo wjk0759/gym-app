@@ -60,9 +60,8 @@ struct EquipmentPickerView: View {
             equipmentTools
 
             AppScrollView {
-                HStack(alignment: .top, spacing: 10) {
-                    muscleRail
-
+                VStack(alignment: .leading, spacing: 12) {
+                    muscleFilters
                     exerciseGrid
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -121,14 +120,19 @@ struct EquipmentPickerView: View {
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
-        .padding(.bottom, 10)
+        .padding(.bottom, 11)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.ultraThinMaterial)
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(Theme.stroke)
-                .frame(height: 1)
-        }
+        .background(
+            .ultraThinMaterial,
+            in: UnevenRoundedRectangle(
+                topLeadingRadius: 0,
+                bottomLeadingRadius: 20,
+                bottomTrailingRadius: 20,
+                topTrailingRadius: 0,
+                style: .continuous
+            )
+        )
+        .shadow(color: .black.opacity(0.18), radius: 14, y: 8)
     }
 
     private var searchScopeHint: some View {
@@ -230,8 +234,10 @@ struct EquipmentPickerView: View {
     private var searchBar: some View {
         HStack(spacing: 9) {
             Image(systemName: "magnifyingglass")
+                .font(.subheadline.weight(.medium))
                 .foregroundStyle(Theme.tertiaryText)
-            TextField("输入动作名字搜索", text: $query)
+
+            TextField("搜索动作名称", text: $query)
                 .textInputAutocapitalization(.never)
                 .foregroundStyle(.white)
                 .submitLabel(.search)
@@ -240,42 +246,67 @@ struct EquipmentPickerView: View {
                 showScanner = true
             } label: {
                 Image(systemName: "camera.viewfinder")
-                    .font(.headline)
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(Theme.accent)
+                    .frame(width: 32, height: 32)
+                    .background(Theme.accent.opacity(0.12), in: Circle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("识别器械")
+            .accessibilityLabel("拍照识别器械")
         }
-        .padding(.horizontal, 13)
-        .padding(.vertical, 12)
-        .background(Theme.surfaceStrong, in: Capsule())
+        .padding(.leading, 13)
+        .padding(.trailing, 7)
+        .padding(.vertical, 7)
+        .background(
+            Theme.surfaceStrong,
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Theme.stroke, lineWidth: 1)
+        )
     }
 
-    private var muscleRail: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            muscleButton(nil, title: "全部")
-            ForEach(muscleOrder) { muscle in
-                muscleButton(muscle, title: muscle.label)
+    private var muscleFilters: some View {
+        HStack(spacing: 8) {
+            Text("肌群")
+                .font(.caption2)
+                .foregroundStyle(Theme.tertiaryText)
+                .fixedSize()
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 3) {
+                    muscleChip(nil, title: "全部")
+                    ForEach(muscleOrder) { muscle in
+                        muscleChip(muscle, title: muscle.label)
+                    }
+                }
             }
         }
-        .frame(width: 62, alignment: .leading)
     }
 
-    private func muscleButton(_ muscle: MuscleGroup?, title: String) -> some View {
-        Button {
+    private func muscleChip(_ muscle: MuscleGroup?, title: String) -> some View {
+        let active = selectedMuscle == muscle
+
+        return Button {
             selectedMuscle = muscle
         } label: {
-            HStack(spacing: 0) {
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .fill(selectedMuscle == muscle ? Theme.accent : Color.clear)
-                    .frame(width: 3, height: 20)
-                Text(title)
-                    .font(.subheadline.weight(selectedMuscle == muscle ? .semibold : .regular))
-                    .foregroundStyle(selectedMuscle == muscle ? Theme.accent : Theme.secondaryText)
-                    .padding(.leading, 8)
-                Spacer(minLength: 0)
-            }
-            .padding(.vertical, 8)
+            Text(title)
+                .font(.caption.weight(active ? .bold : .medium))
+                .foregroundStyle(active ? Theme.accent : Theme.secondaryText)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 6)
+                .background(
+                    active ? Theme.accent.opacity(0.14) : Color.clear,
+                    in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .stroke(
+                            active ? Theme.accent.opacity(0.26) : Color.clear,
+                            lineWidth: 1
+                        )
+                )
         }
         .buttonStyle(.plain)
     }
@@ -312,12 +343,19 @@ struct EquipmentPickerView: View {
         Button(action: action) {
             Text(title)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(selected ? Color.black : Theme.accent)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .foregroundStyle(selected ? Theme.accent : Theme.secondaryText)
+                .padding(.horizontal, 11)
+                .padding(.vertical, 7)
                 .background(
-                    selected ? Theme.accent : Theme.accent.opacity(0.10),
-                    in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    selected ? Theme.accent.opacity(0.14) : Color.white.opacity(0.035),
+                    in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(
+                            selected ? Theme.accent.opacity(0.38) : Theme.stroke,
+                            lineWidth: 1
+                        )
                 )
         }
         .buttonStyle(.plain)
