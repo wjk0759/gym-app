@@ -2538,7 +2538,10 @@ function render() {
   const root = document.getElementById("app");
   if (!root) return;
 
-  document.querySelector(".device")?.classList.toggle("camera-mode", state.screen === "equipmentCamera");
+  document.querySelector(".device")?.classList.toggle(
+    "camera-mode",
+    state.authenticated && state.screen === "equipmentCamera"
+  );
 
   if (!state.authenticated) {
     const loginRoute = "login";
