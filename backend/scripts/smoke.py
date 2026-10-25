@@ -146,6 +146,27 @@ def main() -> None:
         assert scan["candidates"], scan
         print("scan:", scan["candidates"][0]["name_zh"], scan["needs_confirmation"])
 
+        response = client.post(
+            "/api/v1/body/analyze",
+            files={"file": ("body.jpg", PNG, "image/jpeg")},
+            headers=headers,
+        )
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["focus_areas"], body
+        print("body analysis:", body["summary"][:30], body["focus_areas"])
+
+        response = client.post(
+            "/api/v1/plans/generate",
+            json={
+                "force": True,
+                "equipment_slugs": ["lat_pulldown", "leg_press"],
+            },
+            headers=headers,
+        )
+        assert response.status_code == 200, response.text
+        print("equipment-filtered plan days:", len(response.json()["days"]))
+
         response = client.get("/api/v1/exercises/search?q=深蹲")
         assert response.status_code == 200, response.text
         print("search:", [item["name_zh"] for item in response.json()["items"]])

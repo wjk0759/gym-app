@@ -11,6 +11,7 @@ struct ProfileView: View {
     @State private var showPlaceholder = false
     @State private var showExport = false
     @State private var showPaywall = false
+    @State private var showBodyAnalysis = false
 
     var body: some View {
         NavigationStack {
@@ -22,6 +23,8 @@ struct ProfileView: View {
                     goalCard
                     reminderCard
                     healthCard
+                    bodyAnalysisCard
+                    equipmentLibraryCard
                     planCard
                     aiCard
                     preferenceCard
@@ -339,6 +342,78 @@ struct ProfileView: View {
             }
             showMessage = true
         }
+    }
+
+    private var bodyAnalysisCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("体型照片分析")
+                        .font(.headline)
+                    Text("拍一张照片，获取训练重点建议")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+                Spacer()
+                Image(systemName: "figure.stand")
+                    .foregroundStyle(Theme.accent)
+            }
+
+            if let latest = store.bodyAnalyses.first {
+                Text(latest.summary)
+                    .font(.caption)
+                    .foregroundStyle(Theme.secondaryText)
+                    .lineLimit(2)
+                HStack(spacing: 6) {
+                    ForEach(latest.focusAreas) { muscle in
+                        TagChip(text: muscle.label, selected: true)
+                    }
+                }
+            } else {
+                Text("照片只用于本次分析，不写入训练记录。分析结果仅作训练重点参考。")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+
+            Button("拍照分析体型") {
+                showBodyAnalysis = true
+            }
+            .buttonStyle(SecondaryButtonStyle())
+        }
+        .card()
+        .sheet(isPresented: $showBodyAnalysis) {
+            BodyPhotoAnalysisView()
+        }
+    }
+
+    private var equipmentLibraryCard: some View {
+        NavigationLink {
+            EquipmentLibraryView()
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Theme.accent.opacity(0.12))
+                        .frame(width: 42, height: 42)
+                    Image(systemName: "square.stack.3d.up")
+                        .foregroundStyle(Theme.accent)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("我的器械库")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Text("已录入 \(store.equipmentLibrary.count) 件 · 教学视频与计划")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            .card()
+        }
+        .buttonStyle(.plain)
     }
 
     private var planCard: some View {

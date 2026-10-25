@@ -9,6 +9,9 @@ final class AppStore {
     var chat: [ChatMessage] = []
     var foodLogs: [FoodLog] = []
     var dislikedSlugs: Set<String> = []
+    var equipmentLibrary: [EquipmentItem] = []
+    var bodyAnalyses: [BodyAnalysis] = []
+    var useEquipmentLibraryForPlans = true
     var isGenerating = false
     var isReplying = false
     var toast: String?
@@ -72,6 +75,11 @@ final class AppStore {
         return recentSets.reduce(0.0) { $0 + $1.rpe } / Double(recentSets.count)
     }
 
+    var equipmentSlugsForPlan: [String] {
+        guard useEquipmentLibraryForPlans else { return [] }
+        return equipmentLibrary.compactMap(\.slug)
+    }
+
     // MARK: - 建档与计划
 
     func completeOnboarding(_ draft: UserProfile) {
@@ -94,20 +102,25 @@ final class AppStore {
 
         isGenerating = true
         let snapshot = profile
+        let librarySlugs = equipmentSlugsForPlan
 
         if useRemoteAI {
             Task { @MainActor in
                 do {
                     try await APIClient.shared.syncProfile(snapshot)
                     try? await APIClient.shared.syncGoal(snapshot)
-                    var generated = try await APIClient.shared.generatePlan(force: force)
+                    var generated = try await APIClient.shared.generatePlan(
+                        force: force,
+                        equipmentSlugs: librarySlugs
+                    )
                     generated.version = max(generated.version, (self.plan?.version ?? 0) + 1)
                     self.plan = generated
                     self.toast = "已由 AI 生成计划"
                 } catch {
                     var fallback = PlanGenerator.generate(
                         profile: snapshot,
-                        dislikedSlugs: self.dislikedSlugs
+                        dislikedSlugs: self.dislikedSlugs,
+                        equipmentSlugs: librarySlugs
                     )
                     fallback.version = (self.plan?.version ?? 0) + 1
                     self.plan = fallback
@@ -124,7 +137,8 @@ final class AppStore {
             guard let self else { return }
             var generated = PlanGenerator.generate(
                 profile: snapshot,
-                dislikedSlugs: self.dislikedSlugs
+                dislikedSlugs: self.dislikedSlugs,
+                equipmentSlugs: librarySlugs
             )
             generated.version = (self.plan?.version ?? 0) + 1
             self.plan = generated
@@ -204,6 +218,58 @@ final class AppStore {
 
     func clearPreferences() {
         dislikedSlugs.removeAll()
+        persist()
+    }
+
+    // MARK: - 器械库与体型分析
+
+    func addEquipment(_ item: EquipmentItem) {
+        equipmentLibrary.insert(item, at: 0)
+        persist()
+    }
+
+    func removeEquipment(_ id: UUID) {
+        equipmentLibrary.removeAll { $0.id == id }
+        persist()
+    }
+
+    func addBodyAnalysis(_ analysis: BodyAnalysis) {
+        bodyAnalyses.insert(analysis, at: 0)
+        persist()
+    }
+
+    func applyBodyAnalysis(_ analysis: BodyAnalysis) {
+        guard var current = plan else {
+            toast = "先生成训练计划，再应用体型分析"
+            return
+        }
+
+        current.version += 1
+        current.days = current.days.map { day in
+            var newDay = day
+            newDay.id = UUID()
+            newDay.exercises = day.exercises.map { item in
+                var newItem = item
+                newItem.id = UUID()
+                if let muscle = item.exercise?.muscle,
+                   analysis.focusAreas.contains(muscle) {
+                    newItem.sets = min(6, item.sets + 1)
+                }
+                return newItem
+            }
+            return newDay
+        }
+        plan = current
+
+        if let index = bodyAnalyses.firstIndex(where: { $0.id == analysis.id }) {
+            bodyAnalyses[index].appliedToPlan = true
+        } else {
+            var copy = analysis
+            copy.appliedToPlan = true
+            bodyAnalyses.insert(copy, at: 0)
+        }
+
+        toast = "已应用体型分析：重点部位每周增加 1 组"
         persist()
     }
 
@@ -298,6 +364,9 @@ final class AppStore {
         notificationsEnabled = false
         useRemoteAI = AppConfig.useRemoteAI
         healthKitEnabled = false
+        equipmentLibrary = []
+        bodyAnalyses = []
+        useEquipmentLibraryForPlans = true
         reminderHour = 19
         reminderMinute = 0
         try? FileManager.default.removeItem(at: fileURL)
@@ -369,6 +438,9 @@ final class AppStore {
         var notificationsEnabled: Bool
         var useRemoteAI: Bool?
         var healthKitEnabled: Bool?
+        var equipmentLibrary: [EquipmentItem]?
+        var bodyAnalyses: [BodyAnalysis]?
+        var useEquipmentLibraryForPlans: Bool?
     }
 
     private func load() {
@@ -387,6 +459,9 @@ final class AppStore {
         notificationsEnabled = state.notificationsEnabled
         useRemoteAI = state.useRemoteAI ?? AppConfig.useRemoteAI
         healthKitEnabled = state.healthKitEnabled ?? false
+        equipmentLibrary = state.equipmentLibrary ?? []
+        bodyAnalyses = state.bodyAnalyses ?? []
+        useEquipmentLibraryForPlans = state.useEquipmentLibraryForPlans ?? true
     }
 
     func persist() {
@@ -401,7 +476,10 @@ final class AppStore {
             reminderMinute: reminderMinute,
             notificationsEnabled: notificationsEnabled,
             useRemoteAI: useRemoteAI,
-            healthKitEnabled: healthKitEnabled
+            healthKitEnabled: healthKitEnabled,
+            equipmentLibrary: equipmentLibrary,
+            bodyAnalyses: bodyAnalyses,
+            useEquipmentLibraryForPlans: useEquipmentLibraryForPlans
         )
         guard let data = try? JSONEncoder().encode(state) else { return }
         try? data.write(to: fileURL, options: .atomic)
@@ -416,7 +494,9 @@ final class AppStore {
             chat: chat,
             foodLogs: foodLogs,
             dislikedSlugs: Array(dislikedSlugs).sorted(),
-            healthKitEnabled: healthKitEnabled
+            healthKitEnabled: healthKitEnabled,
+            bodyAnalyses: bodyAnalyses,
+            equipmentLibrary: equipmentLibrary
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -434,5 +514,7 @@ final class AppStore {
         let foodLogs: [FoodLog]
         let dislikedSlugs: [String]
         let healthKitEnabled: Bool
+        let bodyAnalyses: [BodyAnalysis]
+        let equipmentLibrary: [EquipmentItem]
     }
 }

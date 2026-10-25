@@ -74,9 +74,14 @@ enum PlanGenerator {
 
     static func generate(
         profile: UserProfile,
-        dislikedSlugs: Set<String> = []
+        dislikedSlugs: Set<String> = [],
+        equipmentSlugs: [String] = []
     ) -> TrainingPlan {
-        let available = allowedExercises(profile, disliked: dislikedSlugs)
+        let available = allowedExercises(
+            profile,
+            disliked: dislikedSlugs,
+            equipmentSlugs: equipmentSlugs
+        )
         let weeklyDays = max(1, min(7, profile.weeklyDays))
         let weekdays = defaultWeekdays[weeklyDays] ?? Array(1...weeklyDays)
         let split = splits[weeklyDays] ?? splits[3]!
@@ -234,7 +239,8 @@ enum PlanGenerator {
 
     private static func allowedExercises(
         _ profile: UserProfile,
-        disliked: Set<String>
+        disliked: Set<String>,
+        equipmentSlugs: [String]
     ) -> [Exercise] {
         let banned = injuryTags(profile.injuries)
         let equipment = profile.availableEquipment
@@ -243,8 +249,20 @@ enum PlanGenerator {
             let injuryOK = banned.isDisjoint(with: Set(exercise.contraindications))
             return equipmentOK && injuryOK
         }
-        let preferred = eligible.filter { !disliked.contains($0.slug) }
-        let result = preferred.count >= 8 ? preferred : eligible
+
+        var libraryNarrowed = eligible
+        if !equipmentSlugs.isEmpty {
+            let preferred = Set(equipmentSlugs)
+            let narrowed = eligible.filter {
+                preferred.contains($0.slug) || $0.equipment == .bodyweight
+            }
+            if narrowed.count >= 8 {
+                libraryNarrowed = narrowed
+            }
+        }
+
+        let preferred = libraryNarrowed.filter { !disliked.contains($0.slug) }
+        let result = preferred.count >= 8 ? preferred : libraryNarrowed
         return result.isEmpty ? ExerciseLibrary.all : result
     }
 

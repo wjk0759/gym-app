@@ -45,6 +45,7 @@ class GoalIn(BaseModel):
 
 class PlanGenerateIn(BaseModel):
     force: bool = False
+    equipment_slugs: list[str] = Field(default_factory=list, max_length=50)
 
 
 class PlanExercisePatch(BaseModel):

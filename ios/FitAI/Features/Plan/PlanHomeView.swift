@@ -112,6 +112,11 @@ struct PlanHomeView: View {
             Text("点任意训练日可以换动作、改组数。AI 会记住你的修改，下一次复盘时参考。")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
+            if store.useEquipmentLibraryForPlans && !store.equipmentLibrary.isEmpty {
+                Text("已启用器械库：\(store.equipmentLibrary.count) 件，生成计划时优先使用。")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .card(padding: 14)

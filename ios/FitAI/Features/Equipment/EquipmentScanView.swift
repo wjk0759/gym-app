@@ -14,12 +14,14 @@ struct EquipmentScanView: View {
     @State private var isScanning = false
     @State private var showCamera = false
     @State private var searchText = ""
+    @State private var savedSlugs: Set<String> = []
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
                     header
+                    libraryShortcut
 
                     imageArea
 
@@ -103,6 +105,36 @@ struct EquipmentScanView: View {
         .padding(.top, 4)
     }
 
+    private var libraryShortcut: some View {
+        NavigationLink {
+            EquipmentLibraryView()
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Theme.accent.opacity(0.12))
+                        .frame(width: 42, height: 42)
+                    Image(systemName: "square.stack.3d.up")
+                        .foregroundStyle(Theme.accent)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("我的器械库")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Text("已录入 \(store.equipmentLibrary.count) 件 · 查看教学视频")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            .card()
+        }
+        .buttonStyle(.plain)
+    }
+
     @ViewBuilder
     private var imageArea: some View {
         if let selectedImage {
@@ -163,41 +195,67 @@ struct EquipmentScanView: View {
             )
 
             ForEach(candidates) { candidate in
-                Button {
-                    selectedExercise = candidate.exercise
-                } label: {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(candidate.exercise.nameZH)
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.white)
-                                Text("\(candidate.exercise.muscle.label) · \(candidate.exercise.equipment.label)")
-                                    .font(.caption2)
-                                    .foregroundStyle(Theme.secondaryText)
-                            }
-                            Spacer()
-                            Text("\(Int(candidate.confidence * 100))%")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(candidate.confidence >= 0.6 ? Theme.accent : Theme.warning)
-                        }
-
-                        ProgressView(value: candidate.confidence)
-                            .tint(candidate.confidence >= 0.6 ? Theme.accent : Theme.warning)
-
-                        if candidate.confidence < 0.6 {
-                            Text("需要确认：这张图可能不是这个器械")
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(candidate.exercise.nameZH)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.white)
+                            Text("\(candidate.exercise.muscle.label) · \(candidate.exercise.equipment.label)")
                                 .font(.caption2)
-                                .foregroundStyle(Theme.warning)
+                                .foregroundStyle(Theme.secondaryText)
                         }
+                        Spacer()
+                        Text("\(Int(candidate.confidence * 100))%")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(candidate.confidence >= 0.6 ? Theme.accent : Theme.warning)
                     }
-                    .padding(12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(Theme.surfaceStrong)
-                    )
+
+                    ProgressView(value: candidate.confidence)
+                        .tint(candidate.confidence >= 0.6 ? Theme.accent : Theme.warning)
+
+                    if candidate.confidence < 0.6 {
+                        Text("需要确认：这张图可能不是这个器械")
+                            .font(.caption2)
+                            .foregroundStyle(Theme.warning)
+                    }
+
+                    HStack {
+                        Button {
+                            saveToLibrary(candidate)
+                        } label: {
+                            Label(
+                                isSaved(candidate) ? "已保存" : "保存到器械库",
+                                systemImage: isSaved(candidate) ? "checkmark.circle.fill" : "plus.circle"
+                            )
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(isSaved(candidate) ? Theme.tertiaryText : Theme.accent)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isSaved(candidate))
+
+                        Spacer()
+
+                        Button {
+                            selectedExercise = candidate.exercise
+                        } label: {
+                            Text("查看动作 ›")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(Theme.secondaryText)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.top, 2)
                 }
-                .buttonStyle(.plain)
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Theme.surfaceStrong)
+                )
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    selectedExercise = candidate.exercise
+                }
             }
         }
         .card()
@@ -238,6 +296,27 @@ struct EquipmentScanView: View {
             }
         }
         .card()
+    }
+
+    private func isSaved(_ candidate: EquipmentCandidate) -> Bool {
+        savedSlugs.contains(candidate.exercise.slug)
+            || store.equipmentLibrary.contains { $0.slug == candidate.exercise.slug }
+    }
+
+    private func saveToLibrary(_ candidate: EquipmentCandidate) {
+        guard !isSaved(candidate) else { return }
+        store.addEquipment(
+            EquipmentItem(
+                name: candidate.exercise.nameZH,
+                slug: candidate.exercise.slug,
+                muscle: candidate.exercise.muscle,
+                equipment: candidate.exercise.equipment,
+                videoURL: candidate.exercise.videoURL?.absoluteString,
+                notes: "来自拍照识别",
+                photoData: imageData
+            )
+        )
+        savedSlugs.insert(candidate.exercise.slug)
     }
 
     @MainActor

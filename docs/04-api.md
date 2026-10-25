@@ -129,11 +129,15 @@
 #### `POST /plans/generate`
 
 ```json
-{"force": false}
+{
+  "force": false,
+  "equipment_slugs": ["lat_pulldown", "leg_press"]
+}
 ```
 
 - `force=false`：已有 active 计划则直接返回
 - `force=true`：归档旧计划，生成新版本
+- `equipment_slugs`：用户器械库中已录入的动作 slug；后端优先从这些动作 + 徒手动作里编排，数量不足时回退到档案器械类型
 
 返回 200：
 
@@ -304,7 +308,34 @@ data: {"session_id": "uuid", "safety_flag": null}
 
 返回动作列表，用于手动兜底。
 
-### 2.7 饮食（P1 占位）
+### 2.7 体型照片分析
+
+#### `POST /body/analyze`
+
+`multipart/form-data`，字段 `file`（jpeg/png，≤8MB）。
+
+```json
+{
+  "summary": "整体比例比较均衡，建议把训练重点放在背部与臀部，配合核心稳定。",
+  "focus_areas": ["back", "glutes", "core"],
+  "recommendations": [
+    "每周增加 1 次背部训练，优先高位下拉、坐姿划船",
+    "臀部训练加入臀推或臀桥，每周 2 次"
+  ],
+  "confidence": 0.82,
+  "disclaimer": "照片分析仅用于训练重点参考，不构成体脂率、体态诊断或医疗建议。",
+  "model": "mock"
+}
+```
+
+规则：
+
+- 原图不落盘、不入库，只返回本次分析结果
+- 不做体脂率、体态诊断或医疗建议
+- 客户端必须单独同意后才上传；远程模式需在隐私政策中说明
+- 真实视觉模型上线前完成敏感个人信息单独同意与内容安全评估
+
+### 2.8 饮食（P1 占位）
 
 #### `POST /diet/plan`
 

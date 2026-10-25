@@ -61,6 +61,7 @@ async def generate(
             goal_type=goal_type,
             goal=goal_to_dict(goal),
             weeks=4,
+            equipment_slugs=payload.equipment_slugs,
         )
     except PlanValidationError as exc:
         raise HTTPException(

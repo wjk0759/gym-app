@@ -133,6 +133,8 @@ static let apiBaseURL = URL(string: "http://192.168.1.20:8000/api/v1")!
 - **远程链路**：`AppStore.generatePlan() / sendChat()` 已接 `APIClient`，失败会回退本地
 - **想加通知闹钟样式**：新增 `AlarmKitScheduler.swift`，用 `@available(iOS 26, *)` 包裹，失败回退现有调度器
 - **Apple 健康**：`HealthKitService` 已接；需要 Xcode 里开启 HealthKit capability 并做真机授权
+- **体型照片分析**：`BodyPhotoAnalysisView` + `/body/analyze`；照片不落盘，需单独同意
+- **器械库**：`EquipmentLibraryView`；`useEquipmentLibraryForPlans` 控制生成计划时是否优先使用
 
 ## 隐私与订阅
 

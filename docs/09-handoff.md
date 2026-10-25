@@ -8,12 +8,14 @@
 | 数据库 | 完成 | PostgreSQL + pgvector 建表脚本 |
 | 后端 | 可运行 | FastAPI + SQLite/PostgreSQL，AI 默认 Mock |
 | 后端测试 | 通过 | 7 个校验器单测 + 端到端 smoke |
-| iOS 工程 | 代码完成 | 33 个 Swift 文件，CI 模拟器编译通过（单测需本地 Mac） |
+| iOS 工程 | 代码完成 | 36 个 Swift 文件，CI 模拟器编译通过（单测需本地 Mac） |
 | iOS 编译 | **未验证** | Windows 无法编译，需 Mac 或 GitHub Actions |
 | 真实 AI | 远程链路已接 | 启动后端、打开「我的 → AI 服务」远程开关、填 `.env` API Key |
 | 教学视频 | 已接播放链路 | 在 `Resources/videos.json` 填动作 slug → 视频 URL；素材需自制/授权 |
 | 支付/登录 | 未接 | P1 |
 | 饮食/外卖 | 基础版 | 热量/三餐/40 种食物记录可用；美团未配置 |
+| 器械/视频 | 基础版 | 拍照识别、器械库、教学视频播放；素材需自制/授权 |
+| 体型分析 | 基础版 | 照片分析训练重点、应用到计划；不做体脂/医疗诊断 |
 | 订阅 | 基础版 | StoreKit 2 购买/恢复页已接，商品 ID 需在 App Store Connect 配置 |
 
 ## 2. 现在就能验证的

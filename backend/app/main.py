@@ -10,7 +10,7 @@ from .config import settings
 from .db import Base, SessionLocal, engine
 from .deps import DEMO_USER_ID
 from .models import User
-from .routers import auth, coach, diet, equipment, plans, profile, workouts
+from .routers import auth, body, coach, diet, equipment, plans, profile, workouts
 from .seed import seed_exercises
 
 CODE_BY_STATUS = {
@@ -88,7 +88,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 API_PREFIX = "/api/v1"
-for module in (auth, profile, plans, workouts, coach, equipment, diet):
+for module in (auth, profile, plans, workouts, coach, equipment, diet, body):
     app.include_router(module.router, prefix=API_PREFIX)
 
 

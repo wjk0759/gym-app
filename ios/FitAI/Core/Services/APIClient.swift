@@ -36,6 +36,22 @@ private struct MeituanLinkResponse: Decodable {
     }
 }
 
+private struct BodyAnalysisResponse: Decodable {
+    let summary: String
+    let focusAreas: [String]
+    let recommendations: [String]
+    let confidence: Double
+    let disclaimer: String
+
+    enum CodingKeys: String, CodingKey {
+        case summary
+        case focusAreas = "focus_areas"
+        case recommendations
+        case confidence
+        case disclaimer
+    }
+}
+
 struct APIClient {
     static let shared = APIClient()
 
@@ -115,8 +131,14 @@ struct APIClient {
 
     // MARK: - 计划
 
-    func generatePlan(force: Bool = true) async throws -> TrainingPlan {
-        let body = try JSONSerialization.data(withJSONObject: ["force": force])
+    func generatePlan(
+        force: Bool = true,
+        equipmentSlugs: [String] = []
+    ) async throws -> TrainingPlan {
+        let body = try JSONSerialization.data(withJSONObject: [
+            "force": force,
+            "equipment_slugs": equipmentSlugs
+        ])
         return try await send(path: "plans/generate", method: "POST", body: body)
     }
 
@@ -132,19 +154,10 @@ struct APIClient {
     // MARK: - 器械识别
 
     func scanEquipment(imageData: Data) async throws -> [EquipmentCandidate] {
-        let boundary = "Boundary-\(UUID().uuidString)"
-        var body = Data()
-        body.append(contentsOf: Data("--\(boundary)\r\n".utf8))
-        body.append(contentsOf: Data("Content-Disposition: form-data; name=\"file\"; filename=\"photo.jpg\"\r\n".utf8))
-        body.append(contentsOf: Data("Content-Type: image/jpeg\r\n\r\n".utf8))
-        body.append(imageData)
-        body.append(contentsOf: Data("\r\n--\(boundary)--\r\n".utf8))
-
-        let data = try await perform(
+        let data = try await upload(
             path: "equipment/scan",
-            method: "POST",
-            body: body,
-            contentType: "multipart/form-data; boundary=\(boundary)"
+            imageData: imageData,
+            filename: "photo.jpg"
         )
         let response = try decoder.decode(EquipmentScanResponse.self, from: data)
         return response.candidates.compactMap { candidate in
@@ -153,6 +166,24 @@ struct APIClient {
             }
             return EquipmentCandidate(exercise: exercise, confidence: candidate.confidence)
         }
+    }
+
+    // MARK: - 体型照片分析
+
+    func analyzeBody(imageData: Data) async throws -> BodyAnalysis {
+        let data = try await upload(
+            path: "body/analyze",
+            imageData: imageData,
+            filename: "body.jpg"
+        )
+        let response = try decoder.decode(BodyAnalysisResponse.self, from: data)
+        return BodyAnalysis(
+            summary: response.summary,
+            focusAreas: response.focusAreas.compactMap { MuscleGroup(rawValue: $0) },
+            recommendations: response.recommendations,
+            confidence: response.confidence,
+            disclaimer: response.disclaimer
+        )
     }
 
     // MARK: - 饮食 / 外卖
@@ -187,6 +218,29 @@ struct APIClient {
 
     private func sendVoid(path: String, method: String, body: Data?) async throws {
         _ = try await perform(path: path, method: method, body: body)
+    }
+
+    private func upload(
+        path: String,
+        imageData: Data,
+        filename: String
+    ) async throws -> Data {
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var body = Data()
+        body.append(contentsOf: Data("--\(boundary)\r\n".utf8))
+        body.append(contentsOf: Data(
+            "Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".utf8
+        ))
+        body.append(contentsOf: Data("Content-Type: image/jpeg\r\n\r\n".utf8))
+        body.append(imageData)
+        body.append(contentsOf: Data("\r\n--\(boundary)--\r\n".utf8))
+
+        return try await perform(
+            path: path,
+            method: "POST",
+            body: body,
+            contentType: "multipart/form-data; boundary=\(boundary)"
+        )
     }
 
     private func perform(

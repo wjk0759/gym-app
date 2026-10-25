@@ -101,7 +101,10 @@ def _session_exercise_count(minutes: int) -> int:
 
 
 def _allowed_exercises(
-    db: Session, equipment: list[str] | None, injuries: list[str] | None
+    db: Session,
+    equipment: list[str] | None,
+    injuries: list[str] | None,
+    preferred_slugs: list[str] | None = None,
 ) -> list[Exercise]:
     allowed_equipment = set(equipment or ["bodyweight"])
     allowed_equipment.add("bodyweight")
@@ -115,6 +118,18 @@ def _allowed_exercises(
         if banned & set(exercise.contraindications or []):
             continue
         result.append(exercise)
+
+    if preferred_slugs:
+        preferred = set(preferred_slugs)
+        narrowed = [
+            item
+            for item in result
+            if item.slug in preferred or item.equipment == "bodyweight"
+        ]
+        # 器械库太少时不强行限制，避免生成不出完整计划
+        if len(narrowed) >= 8:
+            result = narrowed
+
     return result
 
 
@@ -263,6 +278,7 @@ def _user_prompt(
     goal: Any,
     available: list[Exercise],
     weeks: int,
+    equipment_slugs: list[str] | None = None,
 ) -> str:
     candidates = [
         {
@@ -287,6 +303,7 @@ def _user_prompt(
             "session_minutes": profile.session_minutes,
             "goal_type": goal_type,
             "goal": goal,
+            "equipment_library_slugs": equipment_slugs or [],
         },
         "weeks": weeks,
         "candidates": candidates,
@@ -306,8 +323,11 @@ async def generate_plan(
     goal_type: str,
     goal: Any = None,
     weeks: int = 4,
+    equipment_slugs: list[str] | None = None,
 ) -> dict:
-    available = _allowed_exercises(db, profile.equipment, profile.injuries)
+    available = _allowed_exercises(
+        db, profile.equipment, profile.injuries, equipment_slugs
+    )
     if not available:
         available = db.execute(select(Exercise)).scalars().all()
 
@@ -320,7 +340,14 @@ async def generate_plan(
         try:
             raw = await llm.complete_json(
                 _system_prompt(),
-                _user_prompt(profile, goal_type, goal, available, weeks),
+                _user_prompt(
+                    profile,
+                    goal_type,
+                    goal,
+                    available,
+                    weeks,
+                    equipment_slugs,
+                ),
             )
             cleaned, warnings = validate_plan(
                 raw,
