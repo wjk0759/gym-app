@@ -106,7 +106,7 @@ open FitAI.xcodeproj
 
 在 Xcode 的 Signing & Capabilities 里选择你的 Team，然后选模拟器运行。详细步骤见 `docs/08-ios-setup.md`。
 
-App 默认使用本地 Mock 数据，不依赖后端。要在真机上连本地后端，把 `ios/FitAI/Core/Services/AppConfig.swift` 里的 `apiBaseURL` 改成电脑局域网 IP，并打开 `useRemoteAI`。
+App 默认使用本地 Mock 数据，不依赖后端。启动后端后，在 App 的「我的 → AI 服务」打开远程模式，即可切换为真实接口；请求失败会自动回退本地。要在真机上连本地后端，把 `ios/FitAI/Core/Services/AppConfig.swift` 里的 `apiBaseURL` 改成电脑局域网 IP。
 
 ---
 
@@ -114,9 +114,9 @@ App 默认使用本地 Mock 数据，不依赖后端。要在真机上连本地�
 
 | 模块 | 现在 | 接真实服务要做什么 |
 |---|---|---|
-| 计划生成 | 本地规则引擎（按器械/目标/频率编排） | 后端 `POST /plans/generate` 接已备案大模型，输出 JSON 后过校验器 |
-| AI 教练 | 关键词回复 + 安全话术 | 后端 RAG + 流式输出 + 输入输出审核 |
-| 器械识别 | 从动作库随机返回候选 | 接多模态模型 + 自建器械库 + 低置信度转人工确认 |
+| 计划生成 | 本地规则引擎（按器械/目标/频率编排） | 在「我的 → AI 服务」打开远程模式，或调后端 `POST /plans/generate` |
+| AI 教练 | 关键词回复 + 安全话术 | 打开远程模式后走 `/coach/chat`，失败自动回退本地 |
+| 器械识别 | 从动作库随机返回候选 | 打开远程模式后走 `/equipment/scan` 多模态识别 |
 | 通知 | `UNUserNotificationCenter` 每周重复提醒 | iOS 26+ 接 AlarmKit 做系统级闹钟样式 |
 | 登录 | 本地假登录 | Sign in with Apple + 后端 JWT |
 | 支付 | 无 | StoreKit 2 订阅 |

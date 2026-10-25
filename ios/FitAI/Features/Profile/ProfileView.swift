@@ -19,6 +19,7 @@ struct ProfileView: View {
                     goalCard
                     reminderCard
                     planCard
+                    aiCard
                     complianceCard
                     resetCard
                 }
@@ -266,6 +267,63 @@ struct ProfileView: View {
             }
         }
         .card()
+    }
+
+    private var aiCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("AI 服务")
+                        .font(.headline)
+                    Text(store.useRemoteAI ? "远程模式 · 调用后端模型" : "本地模式 · 规则模板")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+                Spacer()
+                Toggle("", isOn: remoteBinding)
+                    .labelsHidden()
+                    .tint(Theme.accent)
+            }
+
+            Text(store.useRemoteAI
+                 ? "生成计划、教练对话、器械识别会请求后端；请求失败会自动回退到本地。"
+                 : "当前不联网，使用内置规则生成计划。切到远程需要先启动 backend。")
+                .font(.caption2)
+                .foregroundStyle(Theme.tertiaryText)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(AppConfig.apiBaseURL.absoluteString)
+                .font(.caption2)
+                .foregroundStyle(Theme.secondaryText)
+
+            Button("测试连接") {
+                testConnection()
+            }
+            .buttonStyle(SecondaryButtonStyle())
+        }
+        .card()
+    }
+
+    private var remoteBinding: Binding<Bool> {
+        Binding(
+            get: { store.useRemoteAI },
+            set: {
+                store.useRemoteAI = $0
+                store.persist()
+            }
+        )
+    }
+
+    private func testConnection() {
+        Task { @MainActor in
+            do {
+                let ok = try await APIClient.shared.health()
+                message = ok ? "后端连接成功。" : "能连上后端，但健康检查返回异常。"
+            } catch {
+                message = "连接失败：\(error.localizedDescription)"
+            }
+            showMessage = true
+        }
     }
 
     private var complianceCard: some View {

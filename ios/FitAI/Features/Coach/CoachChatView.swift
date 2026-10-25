@@ -28,11 +28,29 @@ struct CoachChatView: View {
                                     bubble(message)
                                         .id(message.id)
                                 }
+
+                                if store.isReplying {
+                                    HStack(spacing: 8) {
+                                        ProgressView()
+                                            .tint(Theme.accent)
+                                        Text("教练正在输入…")
+                                            .font(.caption)
+                                            .foregroundStyle(Theme.secondaryText)
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 4)
+                                }
                             }
                             .padding(20)
                         }
                     }
                     .onChange(of: store.chat.count) { _, _ in
+                        guard let last = store.chat.last else { return }
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            proxy.scrollTo(last.id, anchor: .bottom)
+                        }
+                    }
+                    .onChange(of: store.isReplying) { _, _ in
                         guard let last = store.chat.last else { return }
                         withAnimation(.easeOut(duration: 0.2)) {
                             proxy.scrollTo(last.id, anchor: .bottom)
@@ -181,13 +199,13 @@ struct CoachChatView: View {
                     .frame(width: 42, height: 42)
                     .background(
                         Circle().fill(
-                            input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                            input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || store.isReplying
                                 ? Theme.secondaryText.opacity(0.4)
                                 : Theme.accent
                         )
                     )
             }
-            .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || store.isReplying)
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
@@ -197,7 +215,7 @@ struct CoachChatView: View {
 
     private func send(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        guard !trimmed.isEmpty, !store.isReplying else { return }
         store.sendChat(trimmed)
         input = ""
         focused = false

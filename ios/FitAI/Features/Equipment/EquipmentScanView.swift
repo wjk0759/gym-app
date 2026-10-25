@@ -259,6 +259,23 @@ struct EquipmentScanView: View {
     private func scan() {
         guard let data = imageData else { return }
         isScanning = true
+
+        if store.useRemoteAI {
+            Task { @MainActor in
+                do {
+                    let remote = try await APIClient.shared.scanEquipment(imageData: data)
+                    candidates = remote.isEmpty
+                        ? EquipmentService.recognize(imageData: data)
+                        : remote
+                } catch {
+                    candidates = EquipmentService.recognize(imageData: data)
+                }
+                isScanning = false
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+            }
+            return
+        }
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             candidates = EquipmentService.recognize(imageData: data)
             isScanning = false

@@ -75,20 +75,27 @@ cd ..\backend
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-2. 修改 `FitAI/Core/Services/AppConfig.swift`：
+2. App 内打开：**我的 → AI 服务 → 使用远程 AI**，点「测试连接」确认。
+
+3. 真机需要和电脑同一 Wi-Fi；如果 IP 不是本机，修改 `FitAI/Core/Services/AppConfig.swift`：
 
 ```swift
 static let apiBaseURL = URL(string: "http://192.168.1.20:8000/api/v1")!
-static let useRemoteAI = true
 ```
 
-3. 真机需要和电脑同一 Wi-Fi；Info.plist 已允许本地 HTTP。
+打开远程模式后：
+
+- 生成计划前会自动同步档案和目标到后端
+- 计划、教练对话、器械识别都走真实接口
+- 任何请求失败都会回退到本地规则，不会卡住核心流程
+- Info.plist 已允许本地 HTTP；上架前必须换成 HTTPS
 
 ## 下一步改哪里
 
-- **想改计划逻辑**：`Core/Services/PlanGenerator.swift`
+- **想改计划逻辑**：`Core/Services/PlanGenerator.swift`（本地兜底）或后端 `app/services/plan_generator.py`
 - **想改页面视觉**：`Core/Design/Theme.swift` + 各 Feature
-- **想接真实 AI**：`AppStore.generatePlan()` 和 `CoachService.reply()` 换成 `APIClient`
+- **想换模型**：改 `backend/.env` 的 `LLM_PROVIDER / LLM_MODEL`；iOS 端不用改
+- **远程链路**：`AppStore.generatePlan() / sendChat()` 已接 `APIClient`，失败会回退本地
 - **想加通知闹钟样式**：新增 `AlarmKitScheduler.swift`，用 `@available(iOS 26, *)` 包裹，失败回退现有调度器
 - **想加 HealthKit**：先加 entitlement 和 Info.plist 用途文案，再做授权与写入
 

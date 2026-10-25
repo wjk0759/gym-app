@@ -8,10 +8,12 @@ final class AppStore {
     var sessions: [WorkoutSession] = []
     var chat: [ChatMessage] = []
     var isGenerating = false
+    var isReplying = false
     var toast: String?
     var reminderHour = 19
     var reminderMinute = 0
     var notificationsEnabled = false
+    var useRemoteAI = AppConfig.useRemoteAI
 
     private let fileURL: URL = {
         let directory = FileManager.default.urls(
@@ -75,6 +77,29 @@ final class AppStore {
 
         isGenerating = true
         let snapshot = profile
+
+        if useRemoteAI {
+            Task { @MainActor in
+                do {
+                    try await APIClient.shared.syncProfile(snapshot)
+                    try? await APIClient.shared.syncGoal(snapshot)
+                    var generated = try await APIClient.shared.generatePlan(force: force)
+                    generated.version = max(generated.version, (self.plan?.version ?? 0) + 1)
+                    self.plan = generated
+                    self.toast = "已由 AI 生成计划"
+                } catch {
+                    var fallback = PlanGenerator.generate(profile: snapshot)
+                    fallback.version = (self.plan?.version ?? 0) + 1
+                    self.plan = fallback
+                    self.toast = "AI 服务不可用，已使用本地模板"
+                }
+                self.isGenerating = false
+                self.persist()
+                self.rescheduleNotifications()
+            }
+            return
+        }
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) { [weak self] in
             guard let self else { return }
             var generated = PlanGenerator.generate(profile: snapshot)
@@ -82,16 +107,18 @@ final class AppStore {
             self.plan = generated
             self.isGenerating = false
             self.persist()
+            self.rescheduleNotifications()
+        }
+    }
 
-            if self.notificationsEnabled {
-                Task { @MainActor in
-                    _ = await NotificationScheduler.shared.schedule(
-                        plan: self.plan,
-                        hour: self.reminderHour,
-                        minute: self.reminderMinute
-                    )
-                }
-            }
+    private func rescheduleNotifications() {
+        guard notificationsEnabled else { return }
+        Task { @MainActor in
+            _ = await NotificationScheduler.shared.schedule(
+                plan: self.plan,
+                hour: self.reminderHour,
+                minute: self.reminderMinute
+            )
         }
     }
 
@@ -163,15 +190,40 @@ final class AppStore {
     func sendChat(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+
         chat.append(ChatMessage(role: .user, text: trimmed))
-        chat.append(
-            CoachService.reply(to: trimmed, profile: profile, plan: plan)
-        )
+
+        if useRemoteAI {
+            isReplying = true
+            persist()
+            Task { @MainActor in
+                do {
+                    let response = try await APIClient.shared.sendChat(message: trimmed)
+                    self.chat.append(
+                        ChatMessage(
+                            role: .assistant,
+                            text: response.reply,
+                            isSafety: response.safetyFlag != nil
+                        )
+                    )
+                } catch {
+                    self.chat.append(
+                        CoachService.reply(to: trimmed, profile: self.profile, plan: self.plan)
+                    )
+                }
+                self.isReplying = false
+                self.persist()
+            }
+            return
+        }
+
+        chat.append(CoachService.reply(to: trimmed, profile: profile, plan: plan))
         persist()
     }
 
     func clearChat() {
         chat.removeAll()
+        isReplying = false
         persist()
     }
 
@@ -188,6 +240,7 @@ final class AppStore {
         sessions = []
         chat = []
         notificationsEnabled = false
+        useRemoteAI = AppConfig.useRemoteAI
         reminderHour = 19
         reminderMinute = 0
         try? FileManager.default.removeItem(at: fileURL)
@@ -230,6 +283,7 @@ final class AppStore {
         var reminderHour: Int
         var reminderMinute: Int
         var notificationsEnabled: Bool
+        var useRemoteAI: Bool?
     }
 
     private func load() {
@@ -244,6 +298,7 @@ final class AppStore {
         reminderHour = state.reminderHour
         reminderMinute = state.reminderMinute
         notificationsEnabled = state.notificationsEnabled
+        useRemoteAI = state.useRemoteAI ?? AppConfig.useRemoteAI
     }
 
     func persist() {
@@ -254,7 +309,8 @@ final class AppStore {
             chat: chat,
             reminderHour: reminderHour,
             reminderMinute: reminderMinute,
-            notificationsEnabled: notificationsEnabled
+            notificationsEnabled: notificationsEnabled,
+            useRemoteAI: useRemoteAI
         )
         guard let data = try? JSONEncoder().encode(state) else { return }
         try? data.write(to: fileURL, options: .atomic)
