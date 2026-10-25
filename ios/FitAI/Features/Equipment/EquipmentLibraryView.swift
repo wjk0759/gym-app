@@ -94,7 +94,7 @@ struct EquipmentLibraryView: View {
 
     private var addEntry: some View {
         NavigationLink {
-            EquipmentScanView()
+            EquipmentRecognitionView()
         } label: {
             HStack(spacing: 12) {
                 ZStack {

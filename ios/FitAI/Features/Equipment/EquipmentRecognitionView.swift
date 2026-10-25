@@ -1,9 +1,8 @@
 import PhotosUI
-import AVKit
 import SwiftUI
 import UIKit
 
-struct EquipmentScanView: View {
+struct EquipmentRecognitionView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 
@@ -202,69 +201,6 @@ struct EquipmentScanView: View {
         )
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("拍一下器械\n马上知道怎么用")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-            Text("搜索动作库、拍一张照片，或从相册选择。识别后会给出动作要领与替代方案。")
-                .font(.subheadline)
-                .foregroundStyle(Theme.secondaryText)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 4)
-    }
-
-    @ViewBuilder
-    private var imageArea: some View {
-        if let selectedImage {
-            Image(uiImage: selectedImage)
-                .resizable()
-                .scaledToFill()
-                .frame(height: 220)
-                .frame(maxWidth: .infinity)
-                .clipped()
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(alignment: .topTrailing) {
-                    Button {
-                        self.selectedImage = nil
-                        imageData = nil
-                        candidates = []
-                        photoItem = nil
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.white)
-                            .padding(8)
-                            .background(.black.opacity(0.55), in: Circle())
-                    }
-                    .padding(10)
-                }
-        } else {
-            VStack(spacing: 10) {
-                Image(systemName: "camera.viewfinder")
-                    .font(.system(size: 38, weight: .light))
-                    .foregroundStyle(Theme.accent)
-                Text("拍一张器械照片")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.white)
-                Text("支持常见固定器械、绳索、杠铃与哑铃")
-                    .font(.caption)
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 220)
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(
-                        Theme.stroke,
-                        style: StrokeStyle(lineWidth: 1, dash: [6, 6])
-                    )
-            )
-        }
-    }
-
     private var resultSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionTitle(
@@ -396,105 +332,13 @@ struct EquipmentScanView: View {
         guard let data = imageData else { return }
         isScanning = true
 
-        if store.useRemoteAI && store.isPro {
-            Task { @MainActor in
-                do {
-                    let remote = try await APIClient.shared.scanEquipment(imageData: data)
-                    candidates = remote.isEmpty
-                        ? EquipmentService.recognize(imageData: data)
-                        : remote
-                } catch {
-                    candidates = EquipmentService.recognize(imageData: data)
-                }
-                isScanning = false
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
-            }
-            return
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            candidates = EquipmentService.recognize(imageData: data)
+        Task { @MainActor in
+            candidates = await EquipmentRecognitionService.recognize(
+                imageData: data,
+                preferRemote: store.useRemoteAI && store.isPro
+            )
             isScanning = false
             UINotificationFeedbackGenerator().notificationOccurred(.success)
-        }
-    }
-}
-
-struct ExerciseDetailView: View {
-    @Environment(\.dismiss) private var dismiss
-    @Environment(AppStore.self) private var store
-
-    let exercise: Exercise
-
-    @ViewBuilder
-    private var videoSection: some View {
-        if let videoURL = exercise.videoURL {
-            VideoPlayer(player: AVPlayer(url: videoURL))
-                .frame(height: 210)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        } else {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Image(systemName: "play.rectangle")
-                        .foregroundStyle(Theme.accent)
-                    Text("教学视频")
-                        .font(.headline)
-                }
-                Text("还没有配置视频。把授权素材上传后，在 videos.json 里填上动作 slug 与播放地址即可。")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
-            }
-            .card()
-        }
-    }
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(exercise.nameZH)
-                            .font(.title2.weight(.bold))
-                            .foregroundStyle(.white)
-                        Text("\(exercise.muscle.label) · \(exercise.equipment.label)")
-                            .font(.subheadline)
-                            .foregroundStyle(Theme.accent)
-                    }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("动作要领")
-                            .font(.headline)
-                        Text(exercise.instructions)
-                            .font(.subheadline)
-                            .foregroundStyle(Theme.secondaryText)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .card()
-
-                    videoSection
-                    Button {
-                        store.sendChat("\(exercise.nameZH)怎么用？需要注意什么？")
-                        dismiss()
-                    } label: {
-                        Label("问教练这个动作", systemImage: "bubble.left")
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-
-                    Text("如果动作过程中出现关节刺痛、麻木或肿胀，请停止并咨询医生。")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-                .padding(20)
-                .padding(.bottom, 20)
-            }
-            .background(AppBackground())
-            .navigationTitle("动作详情")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭") { dismiss() }
-                }
-            }
         }
     }
 }

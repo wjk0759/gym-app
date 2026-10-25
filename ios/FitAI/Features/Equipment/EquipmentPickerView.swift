@@ -82,7 +82,7 @@ struct EquipmentPickerView: View {
             }
         }
         .navigationDestination(isPresented: $showScanner) {
-            EquipmentScanView { exercise in
+            EquipmentRecognitionView { exercise in
                 if !selectedExercises.contains(where: { $0.slug == exercise.slug }) {
                     selectedExercises.append(exercise)
                 }

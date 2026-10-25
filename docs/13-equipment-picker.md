@@ -32,6 +32,18 @@
 - 识别候选可加入已选动作
 - 原有器械识别服务与本地 Mock 逻辑保留
 
+## 代码复用与模块拆分
+
+- `EquipmentRecognitionService`
+  - 统一“远程视觉模型优先、失败回退本地识别”的逻辑
+  - 识别页、器械库、器械选择器共用
+- `EquipmentRecognitionView`
+  - 只负责照片、候选、保存/加入已选交互
+  - 器械选择器和器械库只传入回调，不再各自实现识别流程
+- `ExerciseDetailView`
+  - 从识别文件拆出，独立负责动作详情和教学视频
+- 网页预览删除旧的识别页和旧添加入口，识别统一走 `equipmentRecognitionScreen`
+
 ## 与旧版器械库的关系
 
 旧器械库仍然存在：
