@@ -439,7 +439,7 @@ struct WorkoutDetailView: View {
     }
 
     private func addExercise(_ exercise: Exercise) {
-        let base = exercise.equipment == .bodyweight ? 0 : 10
+        let base: Double = exercise.equipment == .bodyweight ? 0 : 10
         for index in 1...3 {
             draft.sets.append(
                 SetLog(
