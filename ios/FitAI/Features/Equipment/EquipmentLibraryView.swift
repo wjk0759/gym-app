@@ -6,36 +6,59 @@ import UIKit
 struct EquipmentLibraryView: View {
     @Environment(AppStore.self) private var store
 
-    @State private var showAdd = false
-    @State private var selectedItem: EquipmentItem?
+    private enum EquipmentSheet: Identifiable {
+        case search
+        case manual(Data?)
+        case detail(UUID)
+
+        var id: String {
+            switch self {
+            case .search: return "search"
+            case .manual: return "manual"
+            case .detail(let id): return "detail-\(id.uuidString)"
+            }
+        }
+    }
+
+    @State private var activeSheet: EquipmentSheet?
+    @State private var photoItem: PhotosPickerItem?
+    @State private var showCamera = false
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
                 header
-                toggleCard
+                addEquipmentCard
+
+                HStack {
+                    Text("已添加的器械")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Spacer()
+                    Text("\(store.equipmentLibrary.count) 件")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+                .padding(.top, 2)
 
                 if store.equipmentLibrary.isEmpty {
                     EmptyStateView(
                         icon: "dumbbell",
                         title: "器械库还是空的",
-                        message: "识别器械后保存，或手动添加，之后就能在这里看教学视频。"
+                        message: "点上方「搜索」「拍照」或「相册」添加第一件器械，之后就能在这里看教学视频。"
                     )
-                    Button("添加器械") { showAdd = true }
-                        .buttonStyle(PrimaryButtonStyle())
                 } else {
                     ForEach(store.equipmentLibrary) { item in
                         Button {
-                            selectedItem = item
+                            activeSheet = .detail(item.id)
                         } label: {
                             equipmentRow(item)
                         }
                         .buttonStyle(.plain)
                     }
-
-                    Button("再添加一件器械") { showAdd = true }
-                        .buttonStyle(SecondaryButtonStyle())
                 }
+
+                toggleCard
 
                 Text("器械库会作为 AI 生成计划的可用器械来源。删除器械不会删除历史训练记录。")
                     .font(.caption2)
@@ -51,17 +74,42 @@ struct EquipmentLibraryView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    showAdd = true
+                    activeSheet = .manual(nil)
                 } label: {
                     Image(systemName: "plus")
                 }
             }
         }
-        .sheet(isPresented: $showAdd) {
-            AddEquipmentView()
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .search:
+                EquipmentSearchView()
+            case .manual(let photoData):
+                AddEquipmentView(initialPhotoData: photoData)
+            case .detail(let id):
+                EquipmentItemDetailView(itemID: id)
+            }
         }
-        .sheet(item: $selectedItem) { item in
-            EquipmentItemDetailView(itemID: item.id)
+        .fullScreenCover(isPresented: $showCamera) {
+            CameraPicker { picked in
+                guard let data = picked.jpegData(compressionQuality: 0.7) else { return }
+                showCamera = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    activeSheet = .manual(data)
+                }
+            }
+            .ignoresSafeArea()
+        }
+        .onChange(of: photoItem?.itemIdentifier) { _, _ in
+            guard let item = photoItem else { return }
+            Task { @MainActor in
+                defer { photoItem = nil }
+                guard let data = try? await item.loadTransferable(type: Data.self),
+                      let image = UIImage(data: data) else {
+                    return
+                }
+                activeSheet = .manual(image.jpegData(compressionQuality: 0.7))
+            }
         }
     }
 
@@ -70,13 +118,79 @@ struct EquipmentLibraryView: View {
             Text("已录入 \(store.equipmentLibrary.count) 件器械")
                 .font(.title3.weight(.bold))
                 .foregroundStyle(.white)
-            Text("拍照识别或手动添加，集中查看教学视频，并让 AI 按你的器械安排计划。")
+            Text("搜索动作库、拍照或上传相册添加器械，添加后集中查看教学视频，并让 AI 按你的器械安排计划。")
                 .font(.subheadline)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .card()
+    }
+
+    private var addEquipmentCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("添加器械")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Text("搜索动作库，或拍照/相册上传")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+                Spacer()
+                Image(systemName: "plus.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(Theme.accent)
+            }
+
+            HStack(spacing: 8) {
+                Button {
+                    activeSheet = .search
+                } label: {
+                    addActionTile("magnifyingglass", "搜索")
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    showCamera = true
+                } label: {
+                    addActionTile("camera", "拍照")
+                }
+                .buttonStyle(.plain)
+
+                PhotosPicker(selection: $photoItem, matching: .images) {
+                    addActionTile("photo", "相册")
+                }
+            }
+
+            Button {
+                activeSheet = .manual(nil)
+            } label: {
+                Label("手动填写名称、视频与备注", systemImage: "square.and.pencil")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+            }
+            .buttonStyle(.plain)
+        }
+        .card()
+    }
+
+    private func addActionTile(_ icon: String, _ title: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.title3.weight(.medium))
+                .foregroundStyle(Theme.accent)
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(
+            Theme.surfaceStrong,
+            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+        )
     }
 
     private var toggleCard: some View {
@@ -152,6 +266,137 @@ struct EquipmentLibraryView: View {
                         .foregroundStyle(Theme.accent)
                 )
         }
+    }
+}
+
+struct EquipmentSearchView: View {
+    @Environment(AppStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var query = ""
+    @FocusState private var searchFocused: Bool
+
+    private var results: [Exercise] {
+        Array(ExerciseLibrary.search(query).prefix(60))
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("输入器械或动作名称，选中后直接加入器械库，并自动带上教学视频。")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    TextField("例如：高位下拉、腿举", text: $query)
+                        .focused($searchFocused)
+                        .submitLabel(.search)
+                        .padding(12)
+                        .background(
+                            Theme.surfaceStrong,
+                            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        )
+
+                    HStack {
+                        Text("搜索结果")
+                            .font(.headline)
+                        Spacer()
+                        Text("\(results.count) 个")
+                            .font(.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                    }
+                    .padding(.top, 2)
+
+                    if results.isEmpty {
+                        EmptyStateView(
+                            icon: "magnifyingglass",
+                            title: "没有找到",
+                            message: "换个关键词，或关闭后用「手动填写」添加自定义器械。"
+                        )
+                    } else {
+                        ForEach(results) { exercise in
+                            searchRow(exercise)
+                        }
+                    }
+
+                    Text("找不到自定义器械？关闭搜索后点「手动填写」，可以自己填名称、视频和备注。")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                        .padding(.top, 4)
+                }
+                .padding(20)
+                .padding(.bottom, 20)
+            }
+            .background(Theme.background.ignoresSafeArea())
+            .navigationTitle("搜索器械")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("关闭") { dismiss() }
+                }
+            }
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    searchFocused = true
+                }
+            }
+        }
+    }
+
+    private func searchRow(_ exercise: Exercise) -> some View {
+        let added = store.equipmentLibrary.contains { $0.slug == exercise.slug }
+        return Button {
+            add(exercise)
+        } label: {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(exercise.nameZH)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                    Text("\(exercise.muscle.label) · \(exercise.equipment.label)")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+
+                Spacer()
+
+                if added {
+                    Text("已添加")
+                        .font(.caption)
+                        .foregroundStyle(Theme.tertiaryText)
+                } else {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(Theme.accent)
+                }
+            }
+            .padding(12)
+            .background(
+                Theme.surfaceStrong,
+                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(added)
+    }
+
+    private func add(_ exercise: Exercise) {
+        guard !store.equipmentLibrary.contains(where: { $0.slug == exercise.slug }) else {
+            return
+        }
+        store.addEquipment(
+            EquipmentItem(
+                name: exercise.nameZH,
+                slug: exercise.slug,
+                muscle: exercise.muscle,
+                equipment: exercise.equipment,
+                videoURL: exercise.videoURL?.absoluteString,
+                notes: "从动作库搜索添加"
+            )
+        )
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        dismiss()
     }
 }
 
@@ -302,6 +547,10 @@ struct AddEquipmentView: View {
     @State private var showExercisePicker = false
     @State private var message = ""
     @State private var showAlert = false
+
+    init(initialPhotoData: Data? = nil) {
+        _photoData = State(initialValue: initialPhotoData)
+    }
 
     var body: some View {
         NavigationStack {
