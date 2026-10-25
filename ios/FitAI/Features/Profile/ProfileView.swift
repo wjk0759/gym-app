@@ -9,6 +9,7 @@ struct ProfileView: View {
     @State private var showMessage = false
     @State private var message = ""
     @State private var showPlaceholder = false
+    @State private var showExport = false
 
     var body: some View {
         NavigationStack {
@@ -37,16 +38,19 @@ struct ProfileView: View {
                 Text(message)
             }
             .confirmationDialog(
-                "清除所有本地数据？",
+                "注销并删除全部数据？",
                 isPresented: $showReset,
                 titleVisibility: .visible
             ) {
-                Button("清除并重新开始", role: .destructive) {
+                Button("注销并删除", role: .destructive) {
                     store.resetAll()
                 }
                 Button("取消", role: .cancel) {}
             } message: {
-                Text("档案、计划、训练记录和对话都会被删除，无法恢复。")
+                Text("档案、计划、训练记录、饮食记录和对话都会被删除，无法恢复。")
+            }
+            .sheet(isPresented: $showExport) {
+                DataExportView()
             }
         }
     }
@@ -347,7 +351,25 @@ struct ProfileView: View {
 
             infoRow("隐私政策", icon: "hand.raised")
             infoRow("用户协议", icon: "doc.text")
-            infoRow("数据导出与注销", icon: "person.crop.circle.badge.minus")
+
+            Button {
+                showExport = true
+            } label: {
+                HStack {
+                    Image(systemName: "square.and.arrow.up")
+                        .foregroundStyle(Theme.accent)
+                        .frame(width: 22)
+                    Text("导出我的数据")
+                        .font(.subheadline)
+                        .foregroundStyle(.white)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+            }
+            .buttonStyle(.plain)
+
             infoRow("生成式 AI 备案信息", icon: "checkmark.seal")
 
             Text("本产品不提供医疗诊断或治疗建议。孕期、术后、心血管疾病或关节急性疼痛，请先咨询医生。")
@@ -389,15 +411,15 @@ struct ProfileView: View {
 
     private var resetCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("本地数据")
+            Text("注销与本地数据")
                 .font(.headline)
-            Text("当前版本的数据只保存在这台设备上。清除后无法恢复。")
+            Text("当前版本没有账号体系，数据只在这台设备上。注销即删除本机全部数据，无法恢复。")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
             Button(role: .destructive) {
                 showReset = true
             } label: {
-                Text("清除所有数据")
+                Text("注销并删除全部数据")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Theme.danger)
                     .frame(maxWidth: .infinity)

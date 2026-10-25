@@ -338,4 +338,29 @@ final class AppStore {
         guard let data = try? JSONEncoder().encode(state) else { return }
         try? data.write(to: fileURL, options: .atomic)
     }
+
+    func exportData() -> String {
+        let payload = ExportPayload(
+            exportedAt: Date(),
+            profile: profile,
+            plan: plan,
+            sessions: sessions,
+            chat: chat,
+            foodLogs: foodLogs
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        guard let data = try? encoder.encode(payload) else { return "{}" }
+        return String(data: data, encoding: .utf8) ?? "{}"
+    }
+
+    private struct ExportPayload: Codable {
+        let exportedAt: Date
+        let profile: UserProfile
+        let plan: TrainingPlan?
+        let sessions: [WorkoutSession]
+        let chat: [ChatMessage]
+        let foodLogs: [FoodLog]
+    }
 }
