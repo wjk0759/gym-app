@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.db
+*.sqlite3
+
+# Node（预留）
+node_modules/
+dist/
+
+# Xcode
+.DS_Store
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.moved-aside
+FitAI.xcodeproj/
+
+# 本地素材
+*.mp4
+*.mov
+*.heic
+*.psd
+*.sketch
+*.fig
+
+# IDE
+.vscode/
+.idea/
