@@ -267,14 +267,6 @@ function normalizeState(value) {
   next.foodPhotoModel = "";
   next.customFoods = Array.isArray(next.customFoods) ? next.customFoods : [];
   next.foodCustomDraft = null;
-  next.trainingSection = next.trainingSection || "today";
-  if (!["today", "plan", "review"].includes(next.trainingSection)) {
-    next.trainingSection = "today";
-  }
-  if (next.tab === "plan") {
-    next.tab = "home";
-    next.trainingSection = "plan";
-  }
   next.equipSearchQuery = "";
   next.equipPhotoSource = next.equipPhotoSource || "拍照";
   next.authenticated = !!next.authenticated;
@@ -309,7 +301,6 @@ function initialState() {
     foodLogs: demoLogs(),
     customFoods: [],
     foodCustomDraft: null,
-    trainingSection: "today",
     disliked: [],
     selectedWeek: 1,
     planDayId: null,
@@ -501,7 +492,8 @@ function nutritionTotals() {
 function tabbar() {
   if (!state.onboarded || state.screen !== "tabs") return "";
   const items = [
-    ["home", "训练", ICONS.home],
+    ["home", "今日", ICONS.home],
+    ["plan", "计划", ICONS.plan],
     ["coach", "教练", ICONS.coach],
     ["equipment", "器械", ICONS.equipment],
     ["profile", "我的", ICONS.user]
@@ -837,38 +829,13 @@ function legalModal() {
 
 /* ---------------- Home ---------------- */
 
-function trainingSwitcher(section) {
-  return `
-    <div class="training-switch">
-      <div class="seg training-seg">
-        ${[
-          ["today", "今日"],
-          ["plan", "计划"],
-          ["review", "复盘"]
-        ].map(([id, label]) => `
-          <button class="${section === id ? "active" : ""}" onclick="app.setTrainingSection('${id}')">${label}</button>
-        `).join("")}
-      </div>
-    </div>
-  `;
-}
-
-function trainingScreen() {
-  const section = state.trainingSection || "today";
-  const content = section === "plan"
-    ? planScreen()
-    : section === "review"
-      ? reviewScreen()
-      : home();
-  return `${trainingSwitcher(section)}${content}`;
-}
-
 function home() {
   const day = todayDay();
   const targets = nutritionTargets();
   const totals = nutritionTotals();
   const weekSessions = state.sessions.filter((s) => s.thisWeek).length;
   const ratio = Math.min(100, Math.round((weekSessions / Math.max(1, state.profile.weeklyDays)) * 100));
+  const preview = planAdjustmentPreview();
   const remainingKcal = Math.max(0, targets.kcal - Math.round(totals.kcal));
   const remainingProtein = Math.max(0, targets.protein - Math.round(totals.p));
 
@@ -906,6 +873,25 @@ function home() {
         </div>
 
         <button class="btn btn-primary" style="margin-top:14px" onclick="app.startWorkout()">开始训练</button>
+      </div>
+
+      <div class="card">
+        <div class="between">
+          <div>
+            <div class="tiny accent strong">AI 复盘</div>
+            <div class="h3" style="margin-top:3px">${state.plan.title}</div>
+            <div class="tiny muted" style="margin-top:3px">第 ${state.plan.version} 版 · ${state.plan.days.length} 个训练日</div>
+          </div>
+          <span class="accent">↗</span>
+        </div>
+        <div class="row gap8" style="margin-top:10px">
+          <div class="review-metric"><div class="tiny faint">本周完成</div><div class="small strong">${weekSessions}/${Math.max(1, state.profile.weeklyDays)} 次</div></div>
+          <div class="review-metric"><div class="tiny faint">平均 RPE</div><div class="small strong">${preview.averageRPE ? preview.averageRPE.toFixed(1) : "—"}</div></div>
+          <div class="review-metric"><div class="tiny faint">训练容量</div><div class="small strong">${state.sessions.filter((s) => s.thisWeek).reduce((sum, s) => sum + s.volume, 0).toLocaleString()} kg</div></div>
+        </div>
+        <div class="small strong" style="margin-top:10px">${weekSessions ? `这次复盘：${preview.headline}` : "先记录一次训练，复盘才有数据。"}</div>
+        <div class="tiny muted" style="margin-top:4px;line-height:1.6">${weekSessions ? preview.detail : "完成率、平均 RPE 与训练容量会一起参与判断。"}</div>
+        <button class="link" style="margin-top:10px" onclick="app.adjustPlan()">✦ 让 AI 复盘并调整 →</button>
       </div>
 
       <div class="card">
@@ -953,80 +939,11 @@ function home() {
   `;
 }
 
-/* ---------------- Training review ---------------- */
-
-function reviewScreen() {
-  const preview = planAdjustmentPreview();
-  const weekSessions = state.sessions.filter((session) => session.thisWeek);
-  const volume = weekSessions.reduce((sum, session) => sum + session.volume, 0);
-
-  return `
-    <div class="stack">
-      <div class="card">
-        <div class="row gap8">
-          <span class="accent">↗</span>
-          <div class="h3">本周复盘</div>
-        </div>
-        <div class="tiny muted" style="margin-top:6px;line-height:1.6">
-          复盘不是给你打分，而是根据本周实际完成情况，决定下一版训练是加量、减量还是保持。
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="between">
-          <div class="h3">本周数据</div>
-          <div class="tiny accent strong">${weekSessions.length}/${Math.max(1, state.profile.weeklyDays)} 次</div>
-        </div>
-        <div class="bar" style="margin-top:9px"><span style="width:${Math.min(100, Math.round(weekSessions.length / Math.max(1, state.profile.weeklyDays) * 100))}%"></span></div>
-        <div class="row gap8" style="margin-top:12px">
-          <div class="review-metric"><div class="tiny faint">完成率</div><div class="small strong">${preview.completionRate ? Math.round(preview.completionRate * 100) : 0}%</div></div>
-          <div class="review-metric"><div class="tiny faint">平均 RPE</div><div class="small strong">${preview.averageRPE ? preview.averageRPE.toFixed(1) : "—"}</div></div>
-          <div class="review-metric"><div class="tiny faint">训练容量</div><div class="small strong">${volume.toLocaleString()} kg</div></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="between">
-          <div>
-            <div class="tiny accent strong">下版建议</div>
-            <div class="h3" style="margin-top:4px">${weekSessions.length ? preview.headline : "先完成一次训练"}</div>
-          </div>
-          <div class="tiny faint">当前 v${state.plan.version}</div>
-        </div>
-        <div class="tiny muted" style="margin-top:8px;line-height:1.6">${weekSessions.length ? preview.detail : "完成率、平均 RPE 与训练容量会一起参与判断。"}</div>
-        <div class="tiny faint" style="margin-top:8px;line-height:1.6">会生成新版本；旧版本可在计划历史恢复，训练记录不会被覆盖。</div>
-        <button class="btn btn-primary" style="margin-top:12px" onclick="app.adjustPlan()">生成调整版</button>
-      </div>
-
-      <div class="card">
-        <div class="between">
-          <div class="h3">本周训练记录</div>
-          <div class="tiny faint">${weekSessions.length} 次</div>
-        </div>
-        ${weekSessions.length ? weekSessions.slice(0, 5).map((session) => `
-          <div class="recent-row" onclick="app.openSession('${session.id}')">
-            <div class="grow">
-              <div class="small strong">${session.title}</div>
-              <div class="tiny faint">${session.date}</div>
-            </div>
-            <div style="text-align:right">
-              <div class="small accent" style="font-weight:650">${session.volume} kg</div>
-              <div class="tiny faint">${session.duration} 分钟</div>
-            </div>
-            <div class="faint">›</div>
-          </div>
-        `).join("") : `<div class="tiny muted" style="margin-top:10px">本周还没有训练记录。完成一次训练后，这里会出现可点击的明细。</div>`}
-      </div>
-
-      <button class="btn btn-secondary" onclick="app.setTrainingSection('plan')">查看训练计划</button>
-    </div>
-  `;
-}
-
 /* ---------------- Plan ---------------- */
 
 function planScreen() {
   const days = state.plan.days.filter((day) => day.week === state.selectedWeek);
+  const preview = planAdjustmentPreview();
   return `
     <div class="stack">
       <div class="between">
@@ -1042,7 +959,9 @@ function planScreen() {
           <button class="link" style="color:var(--muted)" onclick="app.regeneratePlan()">重新生成</button>
         </div>
         <div class="h2" style="margin-top:9px">${state.plan.title}</div>
-        <div class="tiny muted" style="margin-top:4px">共 ${state.plan.days.length} 个训练日 · 当前第 ${state.selectedWeek} 周</div>
+        <div class="tiny muted" style="margin-top:4px">共 ${state.plan.days.length} 个训练日 · 当前第 ${state.selectedWeek} 周 · 本周完成 ${preview.completed}/${Math.max(1, state.profile.weeklyDays)}</div>
+        <div class="tiny accent" style="margin-top:8px;line-height:1.6">${preview.completed ? `复盘预告：${preview.detail}` : "完成一次训练后，这里会显示具体的复盘调整。"}</div>
+        <button class="btn btn-primary" style="margin-top:12px" onclick="app.adjustPlan()">✦ 复盘并调整</button>
       </div>
 
       <div class="week-tabs">
@@ -2526,15 +2445,9 @@ function render() {
     return;
   }
 
-  if (state.tab === "plan") {
-    state.tab = "home";
-    state.trainingSection = "plan";
-  }
-
   const routeKey = [
     state.screen,
     state.tab,
-    state.trainingSection || "",
     state.planDayId || "",
     state.sessionId || "",
     state.equipmentItemId || ""
@@ -2545,7 +2458,8 @@ function render() {
   let html = "";
   if (state.screen === "onboarding") html = onboarding();
   else if (state.screen === "tabs") {
-    if (state.tab === "home") html = trainingScreen();
+    if (state.tab === "home") html = home();
+    else if (state.tab === "plan") html = planScreen();
     else if (state.tab === "coach") html = coachScreen();
     else if (state.tab === "equipment") html = equipmentLibraryScreen();
     else html = profileScreen();
@@ -2770,7 +2684,6 @@ window.app = {
       state.onboarded = true;
       state.screen = "tabs";
       state.tab = "home";
-      state.trainingSection = "today";
       save();
       render();
       toast("已生成 4 周计划，开始训练吧");
@@ -2784,7 +2697,6 @@ window.app = {
     state.onboarded = true;
     state.screen = "tabs";
     state.tab = "home";
-    state.trainingSection = "today";
     save();
     render();
     toast("已载入示例数据");
@@ -2855,7 +2767,6 @@ window.app = {
     }
     state.screen = "tabs";
     state.tab = "home";
-    state.trainingSection = "today";
     save();
     render();
     toast("登录成功（预览模拟）");
@@ -2875,7 +2786,6 @@ window.app = {
     }
     state.screen = "tabs";
     state.tab = "home";
-    state.trainingSection = "today";
     state.authError = "";
     save();
     render();
@@ -2897,20 +2807,7 @@ window.app = {
 
   tab(tab) {
     state.screen = "tabs";
-    if (tab === "plan") {
-      state.tab = "home";
-      state.trainingSection = "plan";
-    } else {
-      state.tab = tab;
-    }
-    save();
-    render();
-  },
-
-  setTrainingSection(section) {
-    state.screen = "tabs";
-    state.tab = "home";
-    state.trainingSection = section;
+    state.tab = tab;
     save();
     render();
   },
@@ -2937,27 +2834,22 @@ window.app = {
   back() {
     if (state.screen === "foodCustom") { state.foodCustomDraft = null; state.screen = "foodAdd"; }
     else if (state.screen === "foodAdd") state.screen = "nutrition";
-    else if (state.screen === "planDay") { state.screen = "tabs"; state.tab = "home"; state.trainingSection = "plan"; }
+    else if (state.screen === "planDay") { state.screen = "tabs"; state.tab = "plan"; }
     else if (state.screen === "paywall") { state.screen = "tabs"; state.tab = "profile"; }
-    else if (state.screen === "sessionDetail") { state.screen = "tabs"; state.tab = "home"; state.trainingSection = "today"; }
+    else if (state.screen === "sessionDetail") { state.screen = "tabs"; state.tab = "home"; }
     else if (state.screen === "exerciseDetail") { state.screen = "tabs"; state.tab = "equipment"; }
     else if (state.screen === "equipmentItem") { state.screen = "tabs"; state.tab = "equipment"; }
     else if (state.screen === "equipmentAdd") { state.screen = "tabs"; state.tab = "equipment"; }
     else if (state.screen === "equipmentSearch" || state.screen === "equipmentPhoto") state.screen = "equipmentAdd";
     else if (state.screen === "bodyAnalysis") { state.screen = "tabs"; state.tab = "profile"; }
-    else { state.screen = "tabs"; state.tab = "home"; state.trainingSection = "today"; }
+    else { state.screen = "tabs"; state.tab = "home"; }
     save();
     render();
   },
 
   backTo(tab) {
     state.screen = "tabs";
-    if (tab === "plan") {
-      state.tab = "home";
-      state.trainingSection = "plan";
-    } else {
-      state.tab = tab;
-    }
+    state.tab = tab;
     save();
     render();
   },
@@ -3012,8 +2904,7 @@ window.app = {
 
   savePlanDay() {
     state.screen = "tabs";
-    state.tab = "home";
-    state.trainingSection = "plan";
+    state.tab = "plan";
     save();
     render();
     toast("训练日已保存");
@@ -3160,7 +3051,6 @@ window.app = {
     stopRestTimer();
     state.screen = "tabs";
     state.tab = "home";
-    state.trainingSection = "today";
     save();
     render();
     toast("训练已保存");
@@ -3173,7 +3063,6 @@ window.app = {
     stopRestTimer();
     state.screen = "tabs";
     state.tab = "home";
-    state.trainingSection = "today";
     save();
     render();
   },
@@ -3266,7 +3155,6 @@ window.app = {
     state.sessionDraft = null;
     state.screen = "tabs";
     state.tab = "home";
-    state.trainingSection = "today";
     save();
     render();
     toast("已删除训练记录");
@@ -3749,8 +3637,7 @@ window.app = {
     state.plan = applyEquipmentLibrary(buildPlan(state.profile));
     state.plan.version += 1;
     state.screen = "tabs";
-    state.tab = "home";
-    state.trainingSection = "plan";
+    state.tab = "plan";
     save();
     render();
     toast("已按器械库生成新计划");

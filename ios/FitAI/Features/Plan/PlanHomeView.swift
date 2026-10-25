@@ -3,87 +3,92 @@ import SwiftUI
 struct PlanHomeView: View {
     @Environment(AppStore.self) private var store
 
-    /// 嵌入训练 Tab 时由 TrainingHubView 提供导航标题和底部 Tab。
-    var embedded = false
-
     @State private var selectedWeek = 1
     @State private var didSelectCurrentWeek = false
     @State private var showRegenerate = false
+    @State private var showAdjust = false
+    @State private var showMessage = false
     @State private var showHistory = false
 
-    init(embedded: Bool = false) {
-        self.embedded = embedded
-    }
-
     var body: some View {
-        if embedded {
-            content
-        } else {
-            NavigationStack {
-                content
-                    .navigationTitle("训练计划")
-                    .navigationBarTitleDisplayMode(.large)
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 16) {
+                    if store.isGenerating {
+                        generatingCard
+                    } else if let plan = store.plan {
+                        planContent(plan)
+                    } else {
+                        emptyCard
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .padding(.bottom, 28)
             }
-        }
-    }
-
-    private var content: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                if store.isGenerating {
-                    generatingCard
-                } else if let plan = store.plan {
-                    planContent(plan)
-                } else {
-                    emptyCard
+            .background(AppBackground())
+            .navigationTitle("训练计划")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button {
+                            showHistory = true
+                        } label: {
+                            Label("计划版本历史", systemImage: "clock.arrow.circlepath")
+                        }
+                        Button(role: .destructive) {
+                            showRegenerate = true
+                        } label: {
+                            Label("重新生成计划", systemImage: "arrow.clockwise")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
+                    .accessibilityLabel("更多计划操作")
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
-            .padding(.bottom, 28)
-        }
-        .background(AppBackground())
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button {
-                        showHistory = true
-                    } label: {
-                        Label("计划版本历史", systemImage: "clock.arrow.circlepath")
-                    }
-                    Button(role: .destructive) {
-                        showRegenerate = true
-                    } label: {
-                        Label("重新生成计划", systemImage: "arrow.clockwise")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
+            .sheet(isPresented: $showHistory) {
+                PlanHistoryView()
+            }
+            .onAppear {
+                syncWeekSelection()
+            }
+            .onChange(of: store.plan?.id) { _, _ in
+                didSelectCurrentWeek = false
+                syncWeekSelection()
+            }
+            .confirmationDialog(
+                "重新生成计划？",
+                isPresented: $showRegenerate,
+                titleVisibility: .visible
+            ) {
+                Button("重新生成", role: .destructive) {
+                    selectedWeek = 1
+                    store.generatePlan()
                 }
-                .accessibilityLabel("更多计划操作")
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("当前计划会被归档，历史训练记录保留。")
             }
-        }
-        .sheet(isPresented: $showHistory) {
-            PlanHistoryView()
-        }
-        .onAppear {
-            syncWeekSelection()
-        }
-        .onChange(of: store.plan?.id) { _, _ in
-            didSelectCurrentWeek = false
-            syncWeekSelection()
-        }
-        .confirmationDialog(
-            "重新生成计划？",
-            isPresented: $showRegenerate,
-            titleVisibility: .visible
-        ) {
-            Button("重新生成", role: .destructive) {
-                selectedWeek = 1
-                store.generatePlan()
+            .confirmationDialog(
+                "根据本周训练调整？",
+                isPresented: $showAdjust,
+                titleVisibility: .visible
+            ) {
+                Button("生成调整版") {
+                    store.adjustPlan()
+                    showMessage = true
+                }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("\(store.planAdjustmentPreview.detail)\n\n会生成一个新版本，并替换当前计划；历史版本和训练记录保留。")
             }
-            Button("取消", role: .cancel) {}
-        } message: {
-            Text("当前计划会被归档，历史训练记录保留。")
+            .alert("计划已更新", isPresented: $showMessage) {
+                Button("知道了", role: .cancel) {}
+            } message: {
+                Text(store.toast ?? "")
+            }
         }
     }
 
@@ -149,6 +154,7 @@ struct PlanHomeView: View {
     }
 
     private func headerCard(_ plan: TrainingPlan) -> some View {
+        let preview = store.planAdjustmentPreview
         let completed = store.currentWeekSessions.count
 
         return VStack(alignment: .leading, spacing: 12) {
@@ -172,6 +178,23 @@ struct PlanHomeView: View {
             Text("共 \(plan.days.count) 个训练日 · 当前第 \(store.currentPlanWeek) 周 · 本周完成 \(completed)/\(max(1, store.profile.weeklyDays))")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
+
+            Text(completed == 0 ? "完成一次训练后，这里会显示具体的复盘调整。" : "复盘预告：\(preview.detail)")
+                .font(.caption)
+                .foregroundStyle(completed == 0 ? Theme.tertiaryText : Theme.accent)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                if store.currentWeekSessions.isEmpty {
+                    store.toast = "还没有训练记录，先完成一次训练再让 AI 调整。"
+                    showMessage = true
+                } else {
+                    showAdjust = true
+                }
+            } label: {
+                Label("复盘并调整", systemImage: "wand.and.stars")
+            }
+            .buttonStyle(PrimaryButtonStyle())
         }
         .card()
     }

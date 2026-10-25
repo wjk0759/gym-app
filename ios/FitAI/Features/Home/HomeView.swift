@@ -3,59 +3,68 @@ import SwiftUI
 struct HomeView: View {
     @Environment(AppStore.self) private var store
 
-    /// 嵌入训练 Tab 时由 TrainingHubView 提供导航标题和底部 Tab。
-    var embedded = false
-
     @State private var showWorkout = false
+    @State private var showAdjustConfirm = false
+    @State private var showAdjustResult = false
     @State private var selectedSession: WorkoutSession?
 
-    init(embedded: Bool = false) {
-        self.embedded = embedded
-    }
-
     var body: some View {
-        if embedded {
-            content
-        } else {
-            NavigationStack {
-                content
-                    .navigationTitle("今日")
-                    .navigationBarTitleDisplayMode(.large)
-            }
-        }
-    }
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 16) {
+                    greeting
 
-    private var content: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                greeting
+                    if store.isGenerating {
+                        generatingCard
+                    } else if let plan = store.plan {
+                        todayCard(plan: plan)
+                    } else {
+                        noPlanCard
+                    }
 
-                if store.isGenerating {
-                    generatingCard
-                } else if let plan = store.plan {
-                    todayCard(plan: plan)
-                } else {
-                    noPlanCard
+                    if let plan = store.plan {
+                        aiReviewCard(plan: plan)
+                    }
+
+                    weekCard
+
+                    nutritionCard
+
+                    recentCard
                 }
-
-                weekCard
-
-                nutritionCard
-
-                recentCard
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .padding(.bottom, 28)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
-            .padding(.bottom, 28)
-        }
-        .background(AppBackground())
-        .fullScreenCover(isPresented: $showWorkout) {
-            if let day = store.todayDay {
-                WorkoutSessionView(day: day)
+            .background(AppBackground())
+            .navigationTitle("今日")
+            .navigationBarTitleDisplayMode(.large)
+            .fullScreenCover(isPresented: $showWorkout) {
+                if let day = store.todayDay {
+                    WorkoutSessionView(day: day)
+                }
             }
-        }
-        .sheet(item: $selectedSession) { session in
-            WorkoutDetailView(session: session)
+            .sheet(item: $selectedSession) { session in
+                WorkoutDetailView(session: session)
+            }
+            .confirmationDialog(
+                "用本周训练复盘并调整？",
+                isPresented: $showAdjustConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("生成调整版") {
+                    store.adjustPlan()
+                    showAdjustResult = true
+                }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("\(store.planAdjustmentPreview.detail)\n\n会生成一个新版本，当前计划会被替换，历史版本保留。")
+            }
+            .alert("计划已调整", isPresented: $showAdjustResult) {
+                Button("知道了", role: .cancel) {}
+            } message: {
+                Text(store.toast ?? "")
+            }
         }
     }
 
@@ -324,6 +333,84 @@ struct HomeView: View {
             .card()
         }
         .buttonStyle(.plain)
+    }
+
+    private func aiReviewCard(plan: TrainingPlan) -> some View {
+        let preview = store.planAdjustmentPreview
+        let completed = store.currentWeekSessions.count
+        let averageRPE = store.currentWeekAverageRPE
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("AI 复盘")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                    Text(plan.title)
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+                    Text("第 \(plan.version) 版 · \(plan.weeks) 周 · \(plan.days.count) 个训练日")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+                Spacer()
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                    .foregroundStyle(Theme.accent)
+            }
+
+            HStack(spacing: 8) {
+                reviewMetric("本周完成", "\(completed)/\(max(1, store.profile.weeklyDays)) 次")
+                reviewMetric("平均 RPE", averageRPE > 0 ? averageRPE.formatted(.number.precision(.fractionLength(1))) : "—")
+                reviewMetric("训练容量", "\(Int(store.currentWeekVolume)) kg")
+            }
+
+            Text(completed == 0 ? "先记录一次训练，复盘才有数据。" : "这次复盘：\(preview.headline)")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white)
+            Text(completed == 0 ? "完成率、平均 RPE 与训练容量会一起参与判断。" : preview.detail)
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                if store.currentWeekSessions.isEmpty {
+                    store.toast = "最近 7 天还没有训练记录。先完成一次训练，AI 才有数据可复盘。"
+                    showAdjustResult = true
+                } else {
+                    showAdjustConfirm = true
+                }
+            } label: {
+                HStack {
+                    Label("让 AI 复盘并调整", systemImage: "wand.and.stars")
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Theme.accent)
+                .padding(.top, 2)
+            }
+            .buttonStyle(.plain)
+        }
+        .card()
+    }
+
+    private func reviewMetric(_ title: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(Theme.tertiaryText)
+            Text(value)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 7)
+        .padding(.horizontal, 8)
+        .background(
+            Theme.surfaceStrong,
+            in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+        )
     }
 
     // MARK: - 最近训练
