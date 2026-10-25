@@ -26,7 +26,14 @@ xcodebuild test \
   -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
 
-CI 会自动选第一个可用模拟器并运行 `FitAITests`。
+CI 会生成工程并做模拟器编译。单元测试目前建议在 Mac 本地运行：
+
+```bash
+xcodebuild test \
+  -project FitAI.xcodeproj \
+  -scheme FitAI \
+  -destination 'platform=iOS Simulator,name=iPhone 16'
+```
 
 首次运行会进入建档流程。所有数据保存在 App 的 Documents 目录，不需要后端。
 
