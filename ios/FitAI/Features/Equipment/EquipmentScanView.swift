@@ -13,83 +13,95 @@ struct EquipmentScanView: View {
     @State private var selectedExercise: Exercise?
     @State private var isScanning = false
     @State private var showCamera = false
-    @State private var searchText = ""
     @State private var savedSlugs: Set<String> = []
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    header
-                    libraryShortcut
+        ScrollView {
+            VStack(spacing: 16) {
+                header
+                quickActions
+                imageArea
 
-                    imageArea
-
-                    HStack(spacing: 10) {
-                        Button {
-                            showCamera = true
-                        } label: {
-                            Label("拍照", systemImage: "camera")
+                Button {
+                    scan()
+                } label: {
+                    if isScanning {
+                        HStack(spacing: 8) {
+                            ProgressView().tint(.black)
+                            Text("识别中…")
                         }
-                        .buttonStyle(SecondaryButtonStyle())
-
-                        PhotosPicker(selection: $photoItem, matching: .images) {
-                            Label("相册", systemImage: "photo")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(Theme.accent)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 13)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .fill(Theme.accent.opacity(0.10))
-                                )
-                        }
+                    } else {
+                        Text("识别器械")
                     }
-
-                    Button {
-                        scan()
-                    } label: {
-                        if isScanning {
-                            HStack(spacing: 8) {
-                                ProgressView().tint(.black)
-                                Text("识别中…")
-                            }
-                        } else {
-                            Text("识别器械")
-                        }
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(imageData == nil || isScanning)
-
-                    if !candidates.isEmpty {
-                        resultSection
-                    }
-
-                    manualSearch
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .padding(.bottom, 28)
-            }
-            .background(Theme.background.ignoresSafeArea())
-            .navigationTitle("器械识别")
-            .navigationBarTitleDisplayMode(.large)
-            .onChange(of: photoItem?.itemIdentifier) { _, _ in
-                guard let item = photoItem else { return }
-                Task { @MainActor in
-                    await load(item)
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(imageData == nil || isScanning)
+
+                if !candidates.isEmpty {
+                    resultSection
                 }
             }
-            .fullScreenCover(isPresented: $showCamera) {
-                CameraPicker { image in
-                    apply(image)
-                }
-                .ignoresSafeArea()
-            }
-            .sheet(item: $selectedExercise) { exercise in
-                ExerciseDetailView(exercise: exercise)
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .padding(.bottom, 28)
+        }
+        .background(Theme.background.ignoresSafeArea())
+        .navigationTitle("添加器械")
+        .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: photoItem?.itemIdentifier) { _, _ in
+            guard let item = photoItem else { return }
+            Task { @MainActor in
+                await load(item)
             }
         }
+        .fullScreenCover(isPresented: $showCamera) {
+            CameraPicker { image in
+                apply(image)
+            }
+            .ignoresSafeArea()
+        }
+        .sheet(item: $selectedExercise) { exercise in
+            ExerciseDetailView(exercise: exercise)
+        }
+    }
+
+    private var quickActions: some View {
+        HStack(spacing: 8) {
+            NavigationLink {
+                EquipmentSearchView()
+            } label: {
+                quickActionTile("magnifyingglass", "搜索")
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                showCamera = true
+            } label: {
+                quickActionTile("camera", "拍照")
+            }
+            .buttonStyle(.plain)
+
+            PhotosPicker(selection: $photoItem, matching: .images) {
+                quickActionTile("photo", "相册")
+            }
+        }
+    }
+
+    private func quickActionTile(_ icon: String, _ title: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.title3.weight(.medium))
+                .foregroundStyle(Theme.accent)
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(
+            Theme.surfaceStrong,
+            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+        )
     }
 
     private var header: some View {
@@ -97,42 +109,12 @@ struct EquipmentScanView: View {
             Text("拍一下器械\n马上知道怎么用")
                 .font(.system(size: 26, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
-            Text("识别后会给出动作要领与替代方案。看不清就换一个角度，或者手动搜索。")
+            Text("搜索动作库、拍一张照片，或从相册选择。识别后会给出动作要领与替代方案。")
                 .font(.subheadline)
                 .foregroundStyle(Theme.secondaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 4)
-    }
-
-    private var libraryShortcut: some View {
-        NavigationLink {
-            EquipmentLibraryView()
-        } label: {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(Theme.accent.opacity(0.12))
-                        .frame(width: 42, height: 42)
-                    Image(systemName: "square.stack.3d.up")
-                        .foregroundStyle(Theme.accent)
-                }
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("我的器械库")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                    Text("已录入 \(store.equipmentLibrary.count) 件 · 查看教学视频")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-            .card()
-        }
-        .buttonStyle(.plain)
     }
 
     @ViewBuilder
@@ -255,43 +237,6 @@ struct EquipmentScanView: View {
                 .contentShape(Rectangle())
                 .onTapGesture {
                     selectedExercise = candidate.exercise
-                }
-            }
-        }
-        .card()
-    }
-
-    private var manualSearch: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SectionTitle(title: "找不到？手动搜索", subtitle: "输入器械或动作名称")
-
-            TextField("例如：高位下拉、腿举", text: $searchText)
-                .padding(12)
-                .background(
-                    Theme.surfaceStrong,
-                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                )
-
-            ForEach(Array(ExerciseLibrary.search(searchText).prefix(5))) { exercise in
-                if !searchText.isEmpty {
-                    Button {
-                        selectedExercise = exercise
-                    } label: {
-                        HStack {
-                            Text(exercise.nameZH)
-                                .font(.subheadline)
-                                .foregroundStyle(.white)
-                            Spacer()
-                            Text(exercise.equipment.label)
-                                .font(.caption2)
-                                .foregroundStyle(Theme.secondaryText)
-                            Image(systemName: "chevron.right")
-                                .font(.caption2)
-                                .foregroundStyle(Theme.tertiaryText)
-                        }
-                        .padding(.vertical, 6)
-                    }
-                    .buttonStyle(.plain)
                 }
             }
         }

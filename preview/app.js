@@ -770,18 +770,16 @@ function equipmentScreen() {
   const equipment = state.equipment;
   return `
     <div class="stack">
+      ${headerBack("添加器械", "app.tab('equipment')")}
       <div>
-        <h1 class="h1">器械识别</h1>
-        <div class="tiny muted" style="margin-top:4px">拍一下器械，马上知道怎么用</div>
+        <h1 class="h1">拍一下器械</h1>
+        <div class="tiny muted" style="margin-top:4px">马上知道怎么用</div>
       </div>
 
-      <div class="card nutrition-card" onclick="app.equipmentLibraryOpen()">
-        <div class="nutrition-icon">🏋️</div>
-        <div class="grow">
-          <div class="h3">我的器械库</div>
-          <div class="tiny muted" style="margin-top:3px">已录入 ${state.equipmentLibrary.length} 件 · 查看教学视频</div>
-        </div>
-        <div class="faint">›</div>
+      <div class="row gap8">
+        <button class="btn btn-secondary btn-sm grow" onclick="app.equipmentSearchOpen()">🔍 搜索</button>
+        <button class="btn btn-secondary btn-sm grow" onclick="app.mockPhoto('拍照')">📷 拍照</button>
+        <button class="btn btn-secondary btn-sm grow" onclick="app.mockPhoto('相册')">🖼 相册</button>
       </div>
 
       <div class="photo-area ${equipment.scanned ? "filled" : ""}">
@@ -790,17 +788,12 @@ function equipmentScreen() {
         <div class="tiny">${equipment.scanned ? "点击下方识别器械" : "支持常见固定器械、绳索、杠铃与哑铃"}</div>
       </div>
 
-      <div class="row gap8">
-        <button class="btn btn-secondary btn-sm grow" onclick="app.mockPhoto()">模拟拍照</button>
-        <button class="btn btn-secondary btn-sm grow" onclick="app.mockPhoto()">从相册选择</button>
-      </div>
-
       <button class="btn btn-primary" onclick="app.scanEquipment()">识别器械</button>
 
       ${equipment.candidates.length ? `
         <div class="card">
           <div class="h3">识别结果</div>
-          <div class="tiny muted" style="margin-top:3px">点击查看动作要领</div>
+          <div class="tiny muted" style="margin-top:3px">保存后返回上一页查看已添加的器械</div>
           ${equipment.candidates.map((candidate) => `
             <div class="result-row" onclick="app.openExercise('${candidate.slug}')">
               <div class="between">
@@ -822,53 +815,27 @@ function equipmentScreen() {
         </div>
       ` : ""}
 
-      <div class="card">
-        <div class="h3" style="margin-bottom:8px">找不到？手动搜索</div>
-        <input id="equip-search" type="text" placeholder="例如：高位下拉、腿举" oninput="app.equipSearch(this.value)">
-        <div id="equip-results" style="margin-top:8px">${equipResults(equipment.query)}</div>
-      </div>
+      <div class="tiny faint" style="line-height:1.6">照片只用于识别，不保存。识别结果仅供选择动作，具体器械使用请以现场说明为准。</div>
     </div>
   `;
-}
-
-function equipResults(query) {
-  const list = Object.keys(EX).filter((slug) => {
-    if (!query) return true;
-    return EX[slug].name.includes(query) || EX[slug].muscle.includes(query);
-  }).slice(0, 5);
-  return list.map((slug) => `
-    <div class="result-row" onclick="app.openExercise('${slug}')">
-      <div class="between">
-        <div class="small">${EX[slug].name}</div>
-        <div class="tiny faint">${EX[slug].equip} ›</div>
-      </div>
-    </div>
-  `).join("");
 }
 
 function equipmentLibraryScreen() {
   const items = state.equipmentLibrary;
   return `
     <div class="stack">
-      ${headerBack("我的器械库", "app.backTo('equipment')")}
-      <div class="card">
-        <div class="h3">已录入 ${items.length} 件器械</div>
-        <div class="tiny muted" style="margin-top:4px">搜索动作库、拍照或上传相册添加器械，添加后集中查看教学视频，并让 AI 按你的器械安排计划。</div>
+      <div>
+        <h1 class="h1">器械</h1>
+        <div class="tiny muted" style="margin-top:4px">已添加的器械 · 教学视频与 AI 计划</div>
       </div>
 
-      <div class="card">
-        <div class="between">
-          <div>
-            <div class="h3">添加器械</div>
-            <div class="tiny faint" style="margin-top:2px">搜索动作库，或拍照/相册上传</div>
-          </div>
-          <div class="accent">＋</div>
+      <div class="card nutrition-card" onclick="app.equipmentAddOpen()">
+        <div class="nutrition-icon">＋</div>
+        <div class="grow">
+          <div class="h3">添加器械</div>
+          <div class="tiny muted" style="margin-top:3px">搜索、拍照或相册录入</div>
         </div>
-        <div class="row gap8" style="margin-top:10px">
-          <button class="btn btn-secondary btn-sm grow" onclick="app.equipmentSearchOpen()">🔍 搜索</button>
-          <button class="btn btn-secondary btn-sm grow" onclick="app.equipmentPhotoOpen('拍照')">📷 拍照</button>
-          <button class="btn btn-secondary btn-sm grow" onclick="app.equipmentPhotoOpen('相册')">🖼 相册</button>
-        </div>
+        <div class="faint">›</div>
       </div>
 
       <div class="between" style="padding:2px 2px 0">
@@ -879,7 +846,7 @@ function equipmentLibraryScreen() {
       ${items.length === 0 ? `
         <div class="card">
           <div class="h3">器械库还是空的</div>
-          <div class="tiny muted" style="margin-top:5px">点上方「搜索」「拍照」或「相册」添加第一件器械。</div>
+          <div class="tiny muted" style="margin-top:5px">点上方「添加器械」搜索、拍照或从相册上传第一件器械。</div>
         </div>
       ` : items.map((item) => `
         <div class="card" style="cursor:pointer" onclick="app.openEquipItem('${item.id}')">
@@ -952,7 +919,7 @@ function equipmentSearchScreen() {
 
   return `
     <div class="stack">
-      ${headerBack("搜索器械", "app.equipmentLibraryOpen()")}
+      ${headerBack("搜索器械", "app.equipmentAddOpen()")}
       <div class="card">
         <div class="tiny muted">输入器械或动作名称，选中后直接加入器械库，并自动带上教学视频。</div>
         <input id="equipment-search-input" type="text" placeholder="例如：高位下拉、腿举" value="${esc(state.equipSearchQuery)}" oninput="app.equipmentSearchInput(this.value)" style="margin-top:10px" autofocus>
@@ -962,7 +929,7 @@ function equipmentSearchScreen() {
         <div class="tiny faint" id="equipment-search-count">${results.length} 个</div>
       </div>
       <div id="equipment-search-results">${equipmentSearchResults(state.equipSearchQuery)}</div>
-      <div class="tiny faint" style="line-height:1.6">找不到自定义器械？关闭搜索后，可以在真实 App 里用「手动填写」补充名称、视频和备注。</div>
+      <div class="tiny faint" style="line-height:1.6">找不到自定义器械？返回后可以在真实 App 里用「手动填写」补充名称、视频和备注。</div>
     </div>
   `;
 }
@@ -971,7 +938,7 @@ function equipmentPhotoScreen() {
   const source = state.equipPhotoSource;
   return `
     <div class="stack">
-      ${headerBack("添加器械", "app.equipmentLibraryOpen()")}
+      ${headerBack("添加器械", "app.equipmentAddOpen()")}
       <div class="card">
         <div class="h3">${source === "拍照" ? "拍一张器械照片" : "选择一张器械照片"}</div>
         <div class="tiny muted" style="margin-top:5px">支持常见固定器械、绳索、杠铃与哑铃。照片只用于识别，不保存。</div>
@@ -1833,7 +1800,7 @@ function render() {
     if (state.tab === "home") html = home();
     else if (state.tab === "plan") html = planScreen();
     else if (state.tab === "coach") html = coachScreen();
-    else if (state.tab === "equipment") html = equipmentScreen();
+    else if (state.tab === "equipment") html = equipmentLibraryScreen();
     else html = profileScreen();
   } else if (state.screen === "planDay") html = planDayScreen();
   else if (state.screen === "nutrition") html = nutritionScreen();
@@ -1843,7 +1810,7 @@ function render() {
   else if (state.screen === "workout") html = workoutScreen();
   else if (state.screen === "sessionDetail") html = sessionScreen();
   else if (state.screen === "exerciseDetail") html = exerciseScreen();
-  else if (state.screen === "equipmentLibrary") html = equipmentLibraryScreen();
+  else if (state.screen === "equipmentAdd") html = equipmentScreen();
   else if (state.screen === "equipmentSearch") html = equipmentSearchScreen();
   else if (state.screen === "equipmentPhoto") html = equipmentPhotoScreen();
   else if (state.screen === "equipmentItem") html = equipmentItemScreen();
@@ -1981,9 +1948,9 @@ window.app = {
     else if (state.screen === "paywall") { state.screen = "tabs"; state.tab = "profile"; }
     else if (state.screen === "sessionDetail") { state.screen = "tabs"; state.tab = "home"; }
     else if (state.screen === "exerciseDetail") { state.screen = "tabs"; state.tab = "equipment"; }
-    else if (state.screen === "equipmentLibrary") { state.screen = "tabs"; state.tab = "equipment"; }
-    else if (state.screen === "equipmentItem") state.screen = "equipmentLibrary";
-    else if (state.screen === "equipmentSearch" || state.screen === "equipmentPhoto") state.screen = "equipmentLibrary";
+    else if (state.screen === "equipmentItem") { state.screen = "tabs"; state.tab = "equipment"; }
+    else if (state.screen === "equipmentAdd") { state.screen = "tabs"; state.tab = "equipment"; }
+    else if (state.screen === "equipmentSearch" || state.screen === "equipmentPhoto") state.screen = "equipmentAdd";
     else if (state.screen === "bodyAnalysis") { state.screen = "tabs"; state.tab = "profile"; }
     else { state.screen = "tabs"; state.tab = "home"; }
     save();
@@ -2313,12 +2280,12 @@ window.app = {
     }, 20);
   },
 
-  mockPhoto() {
+  mockPhoto(source = "拍照") {
     state.equipment.scanned = true;
     state.equipment.candidates = [];
     save();
     render();
-    toast("已模拟拍摄一张器械照片");
+    toast(source === "相册" ? "已从相册选择一张器械照片" : "已模拟拍摄一张器械照片");
   },
 
   scanEquipment() {
@@ -2331,13 +2298,6 @@ window.app = {
     save();
     render();
     toast("识别完成，置信度低的候选请手动确认");
-  },
-
-  equipSearch(query) {
-    state.equipment.query = query;
-    const box = document.getElementById("equip-results");
-    if (box) box.innerHTML = equipResults(query);
-    save();
   },
 
   openExercise(slug) {
@@ -2555,7 +2515,14 @@ window.app = {
   },
 
   equipmentLibraryOpen() {
-    state.screen = "equipmentLibrary";
+    state.screen = "tabs";
+    state.tab = "equipment";
+    save();
+    render();
+  },
+
+  equipmentAddOpen() {
+    state.screen = "equipmentAdd";
     save();
     render();
   },
@@ -2592,7 +2559,8 @@ window.app = {
       notes: "从动作库搜索添加"
     });
     state.equipSearchQuery = "";
-    state.screen = "equipmentLibrary";
+    state.screen = "tabs";
+    state.tab = "equipment";
     save();
     render();
     toast(`已添加 ${ex.name}`);
@@ -2622,7 +2590,8 @@ window.app = {
       video: false,
       notes: `来自${state.equipPhotoSource}（预览模拟）`
     });
-    state.screen = "equipmentLibrary";
+    state.screen = "tabs";
+    state.tab = "equipment";
     save();
     render();
     toast(`已通过${state.equipPhotoSource}添加 ${ex.name}`);
@@ -2683,7 +2652,8 @@ window.app = {
 
   deleteEquipItem(id) {
     state.equipmentLibrary = state.equipmentLibrary.filter((item) => item.id !== id);
-    state.screen = "equipmentLibrary";
+    state.screen = "tabs";
+    state.tab = "equipment";
     save();
     render();
     toast("已从器械库删除");

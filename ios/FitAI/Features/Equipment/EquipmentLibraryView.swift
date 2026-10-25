@@ -7,13 +7,11 @@ struct EquipmentLibraryView: View {
     @Environment(AppStore.self) private var store
 
     private enum EquipmentSheet: Identifiable {
-        case search
-        case manual(Data?)
+        case manual
         case detail(UUID)
 
         var id: String {
             switch self {
-            case .search: return "search"
             case .manual: return "manual"
             case .detail(let id): return "detail-\(id.uuidString)"
             }
@@ -21,14 +19,11 @@ struct EquipmentLibraryView: View {
     }
 
     @State private var activeSheet: EquipmentSheet?
-    @State private var photoItem: PhotosPickerItem?
-    @State private var showCamera = false
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                header
-                addEquipmentCard
+                addEntry
 
                 HStack {
                     Text("已添加的器械")
@@ -45,7 +40,7 @@ struct EquipmentLibraryView: View {
                     EmptyStateView(
                         icon: "dumbbell",
                         title: "器械库还是空的",
-                        message: "点上方「搜索」「拍照」或「相册」添加第一件器械，之后就能在这里看教学视频。"
+                        message: "点上方「添加器械」搜索、拍照或从相册上传第一件器械。"
                     )
                 } else {
                     ForEach(store.equipmentLibrary) { item in
@@ -69,12 +64,12 @@ struct EquipmentLibraryView: View {
             .padding(.bottom, 24)
         }
         .background(Theme.background.ignoresSafeArea())
-        .navigationTitle("我的器械库")
+        .navigationTitle("器械")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    activeSheet = .manual(nil)
+                    activeSheet = .manual
                 } label: {
                     Image(systemName: "plus")
                 }
@@ -82,115 +77,46 @@ struct EquipmentLibraryView: View {
         }
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
-            case .search:
-                EquipmentSearchView()
-            case .manual(let photoData):
-                AddEquipmentView(initialPhotoData: photoData)
+            case .manual:
+                AddEquipmentView()
             case .detail(let id):
                 EquipmentItemDetailView(itemID: id)
             }
         }
-        .fullScreenCover(isPresented: $showCamera) {
-            CameraPicker { picked in
-                guard let data = picked.jpegData(compressionQuality: 0.7) else { return }
-                showCamera = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                    activeSheet = .manual(data)
-                }
-            }
-            .ignoresSafeArea()
-        }
-        .onChange(of: photoItem?.itemIdentifier) { _, _ in
-            guard let item = photoItem else { return }
-            Task { @MainActor in
-                defer { photoItem = nil }
-                guard let data = try? await item.loadTransferable(type: Data.self),
-                      let image = UIImage(data: data) else {
-                    return
-                }
-                activeSheet = .manual(image.jpegData(compressionQuality: 0.7))
-            }
-        }
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("已录入 \(store.equipmentLibrary.count) 件器械")
-                .font(.title3.weight(.bold))
-                .foregroundStyle(.white)
-            Text("搜索动作库、拍照或上传相册添加器械，添加后集中查看教学视频，并让 AI 按你的器械安排计划。")
-                .font(.subheadline)
-                .foregroundStyle(Theme.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .card()
-    }
+    private var addEntry: some View {
+        NavigationLink {
+            EquipmentScanView()
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Theme.accent.opacity(0.12))
+                        .frame(width: 46, height: 46)
+                    Image(systemName: "plus")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(Theme.accent)
+                }
 
-    private var addEquipmentCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("添加器械")
                         .font(.headline)
                         .foregroundStyle(.white)
-                    Text("搜索动作库，或拍照/相册上传")
-                        .font(.caption2)
+                    Text("搜索动作库，或拍照/相册录入")
+                        .font(.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
+
                 Spacer()
-                Image(systemName: "plus.circle.fill")
-                    .font(.title3)
-                    .foregroundStyle(Theme.accent)
-            }
 
-            HStack(spacing: 8) {
-                Button {
-                    activeSheet = .search
-                } label: {
-                    addActionTile("magnifyingglass", "搜索")
-                }
-                .buttonStyle(.plain)
-
-                Button {
-                    showCamera = true
-                } label: {
-                    addActionTile("camera", "拍照")
-                }
-                .buttonStyle(.plain)
-
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    addActionTile("photo", "相册")
-                }
-            }
-
-            Button {
-                activeSheet = .manual(nil)
-            } label: {
-                Label("手动填写名称、视频与备注", systemImage: "square.and.pencil")
+                Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.tertiaryText)
             }
-            .buttonStyle(.plain)
+            .card()
         }
-        .card()
-    }
-
-    private func addActionTile(_ icon: String, _ title: String) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.title3.weight(.medium))
-                .foregroundStyle(Theme.accent)
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.white)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(
-            Theme.surfaceStrong,
-            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-        )
+        .buttonStyle(.plain)
     }
 
     private var toggleCard: some View {
@@ -281,65 +207,58 @@ struct EquipmentSearchView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    Text("输入器械或动作名称，选中后直接加入器械库，并自动带上教学视频。")
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("输入器械或动作名称，选中后直接加入器械库，并自动带上教学视频。")
+                    .font(.caption)
+                    .foregroundStyle(Theme.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                TextField("例如：高位下拉、腿举", text: $query)
+                    .focused($searchFocused)
+                    .submitLabel(.search)
+                    .padding(12)
+                    .background(
+                        Theme.surfaceStrong,
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    )
+
+                HStack {
+                    Text("搜索结果")
+                        .font(.headline)
+                    Spacer()
+                    Text("\(results.count) 个")
                         .font(.caption)
                         .foregroundStyle(Theme.secondaryText)
-                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.top, 2)
 
-                    TextField("例如：高位下拉、腿举", text: $query)
-                        .focused($searchFocused)
-                        .submitLabel(.search)
-                        .padding(12)
-                        .background(
-                            Theme.surfaceStrong,
-                            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        )
-
-                    HStack {
-                        Text("搜索结果")
-                            .font(.headline)
-                        Spacer()
-                        Text("\(results.count) 个")
-                            .font(.caption)
-                            .foregroundStyle(Theme.secondaryText)
+                if results.isEmpty {
+                    EmptyStateView(
+                        icon: "magnifyingglass",
+                        title: "没有找到",
+                        message: "换个关键词，或返回器械库后用右上角「+」手动填写。"
+                    )
+                } else {
+                    ForEach(results) { exercise in
+                        searchRow(exercise)
                     }
-                    .padding(.top, 2)
+                }
 
-                    if results.isEmpty {
-                        EmptyStateView(
-                            icon: "magnifyingglass",
-                            title: "没有找到",
-                            message: "换个关键词，或关闭后用「手动填写」添加自定义器械。"
-                        )
-                    } else {
-                        ForEach(results) { exercise in
-                            searchRow(exercise)
-                        }
-                    }
-
-                    Text("找不到自定义器械？关闭搜索后点「手动填写」，可以自己填名称、视频和备注。")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
-                        .padding(.top, 4)
-                }
-                .padding(20)
-                .padding(.bottom, 20)
+                Text("找不到自定义器械？返回器械库后点右上角「+」，可以自己填名称、视频和备注。")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .padding(.top, 4)
             }
-            .background(Theme.background.ignoresSafeArea())
-            .navigationTitle("搜索器械")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭") { dismiss() }
-                }
-            }
-            .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                    searchFocused = true
-                }
+            .padding(20)
+            .padding(.bottom, 20)
+        }
+        .background(Theme.background.ignoresSafeArea())
+        .navigationTitle("搜索器械")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                searchFocused = true
             }
         }
     }

@@ -18,10 +18,12 @@ struct MainTabView: View {
                     Label("教练", systemImage: "bubble.left.and.bubble.right")
                 }
 
-            EquipmentScanView()
-                .tabItem {
-                    Label("器械", systemImage: "camera.viewfinder")
-                }
+            NavigationStack {
+                EquipmentLibraryView()
+            }
+            .tabItem {
+                Label("器械", systemImage: "dumbbell")
+            }
 
             ProfileView()
                 .tabItem {
