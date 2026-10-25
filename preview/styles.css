@@ -1109,45 +1109,15 @@ input[type="number"]::-webkit-inner-spin-button {
   padding: 8px 20px 11px;
   border-radius: 0 0 22px 22px;
   background: transparent;
-  transition:
-    background-color 280ms ease,
-    box-shadow 280ms ease,
-    padding 220ms ease,
-    gap 220ms ease;
+  backdrop-filter: blur(26px) saturate(150%);
+  -webkit-backdrop-filter: blur(26px) saturate(150%);
+  transition: background-color 280ms ease, box-shadow 280ms ease;
+  will-change: background-color, box-shadow;
 }
 
 .app.equipment-scrolled .equipment-sticky-tools {
-  gap: 6px;
-  padding-top: 6px;
-  padding-bottom: 9px;
   background: rgba(11, 13, 17, 0.82);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.26);
-  backdrop-filter: blur(26px) saturate(150%);
-  -webkit-backdrop-filter: blur(26px) saturate(150%);
-}
-
-.app.equipment-scrolled .equipment-search-row {
-  padding-top: 7px;
-  padding-bottom: 7px;
-}
-
-.app.equipment-scrolled .equipment-scan-btn {
-  width: 32px;
-  height: 32px;
-  flex-basis: 32px;
-  border-radius: 10px;
-}
-
-.app.equipment-scrolled .equipment-library-btn {
-  width: 42px;
-  height: 42px;
-  flex-basis: 42px;
-  border-radius: 13px;
-}
-
-.app.equipment-scrolled .equipment-filter {
-  padding-top: 6px;
-  padding-bottom: 6px;
 }
 
 .equipment-search-scope {
@@ -1163,21 +1133,18 @@ input[type="number"]::-webkit-inner-spin-button {
   left: 20px;
   bottom: 90px;
   z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 46px;
-  padding: 0 14px 0 12px;
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
   border: 1px solid var(--stroke);
-  border-radius: 99px;
-  background: rgba(24, 26, 31, 0.82);
+  border-radius: 50%;
+  background: rgba(24, 26, 31, 0.84);
   color: var(--muted);
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 650;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(26px) saturate(160%);
   -webkit-backdrop-filter: blur(26px) saturate(160%);
+  transform-origin: bottom left;
   transition: 160ms ease;
 }
 
@@ -1187,14 +1154,18 @@ input[type="number"]::-webkit-inner-spin-button {
   background: rgba(25, 42, 31, 0.88);
 }
 
-.equipment-selection-fab svg { width: 18px; height: 18px; }
+.equipment-selection-fab svg { width: 21px; height: 21px; }
 
 .equipment-selection-fab-count {
+  position: absolute;
+  top: -3px;
+  right: -3px;
   min-width: 18px;
   height: 18px;
   padding: 0 4px;
   display: grid;
   place-items: center;
+  border: 2px solid var(--bg);
   border-radius: 99px;
   background: var(--accent);
   color: #04120a;
@@ -1203,8 +1174,14 @@ input[type="number"]::-webkit-inner-spin-button {
   line-height: 1;
 }
 
-.equipment-selection-fab-label { white-space: nowrap; }
-.equipment-selection-fab-chevron { color: var(--faint); font-size: 12px; }
+.app.route-changed .equipment-selection-fab {
+  animation: selection-fab-in 360ms cubic-bezier(0.22, 0.8, 0.24, 1) 60ms both;
+}
+
+@keyframes selection-fab-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 .app.selection-open { overflow: hidden; }
 
@@ -1213,7 +1190,6 @@ input[type="number"]::-webkit-inner-spin-button {
   .chat-scroll,
   .equipment-selection-list,
   .equipment-filter-scroll,
-  .equipment-muscle-scroll,
   .week-tabs,
   .suggestions,
   .coach-skill-bar {
@@ -1538,47 +1514,41 @@ body.dragging-scroll * {
   color: var(--accent);
 }
 
-.equipment-muscle-row {
-  display: flex;
-  align-items: center;
+.equipment-content-layout {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr);
   gap: 8px;
-  min-width: 0;
-  margin-top: 2px;
+  align-items: start;
 }
 
-.equipment-muscle-label {
-  flex: 0 0 auto;
-  color: var(--faint);
-  font-size: 10.5px;
-  letter-spacing: 0.03em;
-}
-
-.equipment-muscle-scroll {
-  flex: 1;
-  min-width: 0;
+.muscle-sidebar {
+  position: sticky;
+  top: calc(var(--equipment-tools-height, 113px) + 12px);
+  z-index: 12;
   display: flex;
-  gap: 3px;
-  overflow-x: auto;
-  padding: 2px 0;
-  mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 18px), transparent 100%);
-  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 18px), transparent 100%);
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.022);
 }
 
-.muscle-chip {
+.muscle-side-item {
   appearance: none;
-  flex: 0 0 auto;
-  border: 1px solid transparent;
+  width: 100%;
+  border: 0;
   border-radius: 9px;
-  padding: 6px 9px;
+  padding: 7px;
   background: transparent;
   color: var(--muted);
   font: inherit;
   font-size: 12px;
-  transition: 150ms ease;
+  text-align: left;
+  transition: background-color 150ms ease, color 150ms ease;
 }
 
-.muscle-chip.active {
-  border-color: rgba(92, 219, 140, 0.26);
+.muscle-side-item.active {
   background: var(--accent-dim);
   color: var(--accent);
   font-weight: 700;

@@ -1267,26 +1267,23 @@ function equipmentPickerScreen() {
         </div>
       </div>
 
-      <div class="equipment-muscle-row">
-        <span class="equipment-muscle-label">肌群</span>
-        <div class="equipment-muscle-scroll">
+      <div class="equipment-content-layout">
+        <aside class="muscle-sidebar" aria-label="肌群筛选">
           ${muscles.map((label) => `
-            <button class="muscle-chip ${state.equipMuscle === label ? "active" : ""}" onclick="app.equipmentPickerMuscle('${label}')">${label}</button>
+            <button class="muscle-side-item ${state.equipMuscle === label ? "active" : ""}" onclick="app.equipmentPickerMuscle('${label}')">${label}</button>
           `).join("")}
-        </div>
+        </aside>
+
+        <div class="exercise-pick-grid" id="equipment-picker-grid">${equipmentPickerGrid()}</div>
       </div>
-
-      <div class="exercise-pick-grid" id="equipment-picker-grid">${equipmentPickerGrid()}</div>
-
-      <button class="equipment-selection-fab no-drag ${selected.length ? "has-items" : ""}" onclick="app.equipmentSelectionToggle()" aria-label="已选动作，共 ${selected.length} 个">
-        ${ICONS.dumbbell}
-        ${selected.length ? `<span class="equipment-selection-fab-count">${selected.length}</span>` : ""}
-        <span class="equipment-selection-fab-label">已选动作</span>
-        <span class="equipment-selection-fab-chevron">↑</span>
-      </button>
-
-      ${state.equipSelectionOpen ? equipmentSelectionPanel(selected) : ""}
     </div>
+
+    <button class="equipment-selection-fab no-drag ${selected.length ? "has-items" : ""}" onclick="app.equipmentSelectionToggle()" aria-label="已选动作，共 ${selected.length} 个">
+      ${ICONS.dumbbell}
+      ${selected.length ? `<span class="equipment-selection-fab-count">${selected.length}</span>` : ""}
+    </button>
+
+    ${state.equipSelectionOpen ? equipmentSelectionPanel(selected) : ""}
   `;
 }
 
@@ -2660,12 +2657,36 @@ function enableDragScroll(container) {
 }
 
 let equipmentScrollFrame = 0;
+let equipmentToolsObserver = null;
+
+function syncEquipmentLayout() {
+  const root = document.getElementById("app");
+  if (!root) return;
+  const tools = root.querySelector(".equipment-sticky-tools");
+  if (!tools) {
+    root.style.removeProperty("--equipment-tools-height");
+    return;
+  }
+  root.style.setProperty("--equipment-tools-height", `${tools.offsetHeight}px`);
+}
+
+function setupEquipmentLayout() {
+  syncEquipmentLayout();
+  const tools = document.querySelector(".equipment-sticky-tools");
+  if (!tools) return;
+  if (typeof ResizeObserver === "undefined") return;
+  if (equipmentToolsObserver) equipmentToolsObserver.disconnect();
+  equipmentToolsObserver = new ResizeObserver(() => syncEquipmentLayout());
+  equipmentToolsObserver.observe(tools);
+}
 
 function syncEquipmentScrollState() {
   const root = document.getElementById("app");
   if (!root) return;
-  const active = state.screen === "tabs" && state.tab === "equipment" && root.scrollTop > 8;
-  root.classList.toggle("equipment-scrolled", active);
+  const onEquipment = state.screen === "tabs" && state.tab === "equipment";
+  const wasScrolled = root.classList.contains("equipment-scrolled");
+  const shouldBeScrolled = onEquipment && (wasScrolled ? root.scrollTop > 2 : root.scrollTop > 18);
+  root.classList.toggle("equipment-scrolled", shouldBeScrolled);
 }
 
 function setupEquipmentScrollState() {
@@ -2690,6 +2711,7 @@ function setupDragScroll() {
     ".chat-scroll, .equipment-selection-list, .equipment-filter-scroll, .equipment-muscle-scroll, .week-tabs, .suggestions, .coach-skill-bar"
   ).forEach(enableDragScroll);
   setupEquipmentScrollState();
+  setupEquipmentLayout();
   syncEquipmentScrollState();
 }
 
@@ -2720,6 +2742,7 @@ function render() {
     if (loginChanged) {
       requestAnimationFrame(() => {
         root.scrollTop = 0;
+        syncEquipmentLayout();
         syncEquipmentScrollState();
       });
     }
@@ -2776,6 +2799,7 @@ function render() {
   if (routeChanged) {
     requestAnimationFrame(() => {
       root.scrollTop = 0;
+      syncEquipmentLayout();
       syncEquipmentScrollState();
     });
   }
@@ -3871,6 +3895,7 @@ window.app = {
     if (grid) grid.innerHTML = equipmentPickerGrid();
     const scope = document.getElementById("equipment-search-scope");
     if (scope) scope.hidden = !String(value || "").trim();
+    requestAnimationFrame(syncEquipmentLayout);
     save();
   },
 

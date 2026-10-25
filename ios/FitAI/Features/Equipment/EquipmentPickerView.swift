@@ -12,6 +12,7 @@ struct EquipmentPickerView: View {
     @State private var query = ""
     @State private var showScanner = false
     @State private var showSelectionPanel = false
+    @State private var showSelectionButton = false
     @State private var feedback: String?
     @State private var customDay: PlanDay?
 
@@ -59,16 +60,18 @@ struct EquipmentPickerView: View {
         VStack(spacing: 0) {
             equipmentTools
 
-            AppScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    muscleFilters
+            HStack(alignment: .top, spacing: 8) {
+                muscleSidebar
+
+                AppScrollView {
                     exerciseGrid
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 12)
+                        .padding(.bottom, 28)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 28)
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
         }
         .background(AppBackground())
         .navigationTitle("选择动作")
@@ -84,13 +87,16 @@ struct EquipmentPickerView: View {
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            HStack {
-                selectionFloatingButton
-                Spacer(minLength: 0)
+            if showSelectionButton {
+                HStack {
+                    selectionFloatingButton
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 6)
+                .padding(.bottom, 8)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 6)
-            .padding(.bottom, 8)
         }
         .navigationDestination(isPresented: $showScanner) {
             EquipmentRecognitionView { exercise in
@@ -104,6 +110,14 @@ struct EquipmentPickerView: View {
         }
         .overlay(alignment: .top) {
             feedbackBanner
+        }
+        .onAppear {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.86)) {
+                showSelectionButton = true
+            }
+        }
+        .onDisappear {
+            showSelectionButton = false
         }
     }
 
@@ -152,37 +166,30 @@ struct EquipmentPickerView: View {
             )
             showSelectionPanel = true
         } label: {
-            HStack(spacing: 8) {
+            ZStack(alignment: .topTrailing) {
                 Image(systemName: selectedExercises.isEmpty ? "dumbbell" : "dumbbell.fill")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(selectedExercises.isEmpty ? Theme.tertiaryText : Theme.accent)
+                    .frame(width: 50, height: 50)
+                    .background(.ultraThinMaterial, in: Circle())
+                    .overlay(
+                        Circle().stroke(
+                            selectedExercises.isEmpty ? Theme.stroke : Theme.accent.opacity(0.5),
+                            lineWidth: 1
+                        )
+                    )
+                    .shadow(color: .black.opacity(0.26), radius: 16, y: 8)
 
                 if !selectedExercises.isEmpty {
                     Text("\(selectedExercises.count)")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
                         .foregroundStyle(.black)
                         .frame(minWidth: 18, minHeight: 18)
                         .background(Theme.accent, in: Capsule())
+                        .offset(x: 3, y: -3)
                 }
-
-                Text("已选动作")
-                    .font(.subheadline.weight(.semibold))
-
-                Image(systemName: "chevron.up")
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(Theme.tertiaryText)
             }
-            .foregroundStyle(selectedExercises.isEmpty ? Theme.secondaryText : Color.white)
-            .padding(.horizontal, 15)
-            .padding(.vertical, 11)
-            .background(.ultraThinMaterial, in: Capsule())
-            .overlay(
-                Capsule().stroke(
-                    selectedExercises.isEmpty ? Theme.stroke : Theme.accent.opacity(0.5),
-                    lineWidth: 1
-                )
-            )
-            .shadow(color: .black.opacity(0.26), radius: 16, y: 8)
+            .frame(width: 54, height: 54)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("已选动作，共 \(selectedExercises.count) 个")
@@ -267,25 +274,24 @@ struct EquipmentPickerView: View {
         )
     }
 
-    private var muscleFilters: some View {
-        HStack(spacing: 8) {
-            Text("肌群")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize()
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 3) {
-                    muscleChip(nil, title: "全部")
-                    ForEach(muscleOrder) { muscle in
-                        muscleChip(muscle, title: muscle.label)
-                    }
-                }
+    private var muscleSidebar: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            muscleSideButton(nil, title: "全部")
+            ForEach(muscleOrder) { muscle in
+                muscleSideButton(muscle, title: muscle.label)
             }
         }
+        .padding(.horizontal, 5)
+        .padding(.vertical, 6)
+        .frame(width: 60, alignment: .leading)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Theme.stroke, lineWidth: 1)
+        )
     }
 
-    private func muscleChip(_ muscle: MuscleGroup?, title: String) -> some View {
+    private func muscleSideButton(_ muscle: MuscleGroup?, title: String) -> some View {
         let active = selectedMuscle == muscle
 
         return Button {
@@ -294,18 +300,12 @@ struct EquipmentPickerView: View {
             Text(title)
                 .font(.caption.weight(active ? .bold : .medium))
                 .foregroundStyle(active ? Theme.accent : Theme.secondaryText)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 7)
                 .background(
                     active ? Theme.accent.opacity(0.14) : Color.clear,
                     in: RoundedRectangle(cornerRadius: 9, style: .continuous)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .stroke(
-                            active ? Theme.accent.opacity(0.26) : Color.clear,
-                            lineWidth: 1
-                        )
                 )
         }
         .buttonStyle(.plain)
