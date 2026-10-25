@@ -22,13 +22,16 @@ final class AppStore {
     var useRemoteAI = AppConfig.useRemoteAI
     var healthKitEnabled = false
 
-    private let fileURL: URL = {
+    private var currentUserID: String? = AuthTokenStore.shared.userID
+
+    private var fileURL: URL {
         let directory = FileManager.default.urls(
             for: .documentDirectory,
             in: .userDomainMask
         ).first ?? URL(fileURLWithPath: NSTemporaryDirectory())
-        return directory.appendingPathComponent("fitai-state.json")
-    }()
+        let filename = currentUserID.map { "fitai-state-\($0).json" } ?? "fitai-state.json"
+        return directory.appendingPathComponent(filename)
+    }
 
     init() {
         load()
@@ -463,6 +466,21 @@ final class AppStore {
     }
 
     func resetAll() {
+        try? FileManager.default.removeItem(at: fileURL)
+        resetInMemory()
+        NotificationScheduler.shared.cancelAll()
+    }
+
+    /// 登录账号切换时使用独立本地数据文件，避免 A 账号看到 B 账号数据。
+    func switchUser(_ userID: String?) {
+        guard userID != currentUserID else { return }
+        persist()
+        currentUserID = userID
+        resetInMemory()
+        load()
+    }
+
+    private func resetInMemory() {
         profile = UserProfile()
         plan = nil
         planHistory = []
@@ -478,8 +496,6 @@ final class AppStore {
         useEquipmentLibraryForPlans = true
         reminderHour = 19
         reminderMinute = 0
-        try? FileManager.default.removeItem(at: fileURL)
-        NotificationScheduler.shared.cancelAll()
     }
 
     @discardableResult
@@ -556,6 +572,7 @@ final class AppStore {
     private func load() {
         guard let data = try? Data(contentsOf: fileURL),
               let state = try? JSONDecoder().decode(PersistedState.self, from: data) else {
+            resetInMemory()
             return
         }
         profile = state.profile

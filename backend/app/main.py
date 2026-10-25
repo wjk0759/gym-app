@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .config import settings
-from .db import Base, SessionLocal, engine
+from .db import Base, SessionLocal, engine, ensure_schema
 from .deps import DEMO_USER_ID
 from .models import User
 from .routers import admin, auth, body, coach, diet, equipment, plans, profile, workouts
@@ -32,7 +32,9 @@ CODE_BY_STATUS = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    ensure_schema()
     Base.metadata.create_all(bind=engine)
+    ensure_schema()
     with SessionLocal() as db:
         seed_exercises(db)
         if db.get(User, DEMO_USER_ID) is None:

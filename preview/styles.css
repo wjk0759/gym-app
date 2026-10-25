@@ -466,7 +466,7 @@ input[type="range"] {
   background: transparent;
 }
 
-input[type="text"], input[type="time"], input[type="number"] {
+input[type="text"], input[type="time"], input[type="number"], input[type="tel"], input[type="password"] {
   width: 100%;
   border: 1px solid transparent;
   outline: 0;
@@ -478,8 +478,8 @@ input[type="text"], input[type="time"], input[type="number"] {
   font-family: inherit;
 }
 
-input[type="text"]::placeholder { color: var(--faint); }
-input[type="text"]:focus, input[type="time"]:focus, input[type="number"]:focus {
+input[type="text"]::placeholder, input[type="tel"]::placeholder, input[type="password"]::placeholder { color: var(--faint); }
+input[type="text"]:focus, input[type="time"]:focus, input[type="number"]:focus, input[type="tel"]:focus, input[type="password"]:focus {
   border-color: rgba(92, 219, 140, 0.5);
 }
 
@@ -793,6 +793,12 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .equipment-tile-video.ready { color: var(--accent); }
+
+.login-stack { padding-bottom: 20px; }
+.login-stack input { min-width: 0; }
+.login-stack .row > input { width: auto; flex: 1; }
+.login-stack .row > button { flex-shrink: 0; }
+.login-stack .row > .small { flex-shrink: 0; }
 
 @media (max-width: 900px) {
   body { padding: 0; align-items: stretch; }

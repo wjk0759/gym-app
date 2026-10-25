@@ -196,6 +196,80 @@ def main() -> None:
         assert response.status_code == 501, response.text
         print("meituan: not configured (expected)")
 
+        # 手机验证码登录：未注册自动建号 + JWT + 刷新 + 退出
+        auth_phone = "13800138000"
+        response = client.post(
+            "/api/v1/auth/phone/send-code",
+            json={"phone": auth_phone, "purpose": "login"},
+        )
+        assert response.status_code == 200, response.text
+        auth_code = response.json()["dev_code"]
+        response = client.post(
+            "/api/v1/auth/phone/login",
+            json={
+                "phone": auth_phone,
+                "code": auth_code,
+                "agreed_terms": True,
+                "device_name": "smoke-test",
+            },
+        )
+        assert response.status_code == 200, response.text
+        auth = response.json()
+        assert auth["access_token"] and auth["refresh_token"], auth
+        bearer = {"Authorization": f"Bearer {auth['access_token']}"}
+        me = client.get("/api/v1/auth/me", headers=bearer)
+        assert me.status_code == 200, me.text
+        assert me.json()["phone"] == auth_phone
+        refreshed = client.post(
+            "/api/v1/auth/refresh",
+            json={"refresh_token": auth["refresh_token"]},
+        )
+        assert refreshed.status_code == 200, refreshed.text
+        bearer = {"Authorization": f"Bearer {refreshed.json()['access_token']}"}
+        client.post("/api/v1/auth/logout", headers=bearer)
+        assert client.get("/api/v1/auth/me", headers=bearer).status_code == 401
+        print("auth phone:", auth_phone, "refresh/logout ok")
+
+        # 账号密码：首次登录自动注册
+        password_payload = {
+            "account": "smoke_user_01",
+            "password": "Smoke12345",
+            "agreed_terms": True,
+            "device_name": "smoke-test",
+        }
+        first_password_login = client.post(
+            "/api/v1/auth/password/login", json=password_payload
+        )
+        assert first_password_login.status_code == 200, first_password_login.text
+        assert first_password_login.json()["is_new_user"] is True
+        second_password_login = client.post(
+            "/api/v1/auth/password/login", json=password_payload
+        )
+        assert second_password_login.status_code == 200, second_password_login.text
+        assert second_password_login.json()["is_new_user"] is False
+        print("auth password: auto-register + login ok")
+
+        # 微信模拟 OAuth：start -> callback -> one-time ticket -> exchange
+        start = client.get("/api/v1/auth/oauth/wechat/start")
+        assert start.status_code == 200, start.text
+        from urllib.parse import parse_qs, urlparse
+
+        state = parse_qs(urlparse(start.json()["authorize_url"]).query)["state"][0]
+        callback = client.get(
+            f"/api/v1/auth/oauth/wechat/callback?code=mock-wechat-smoke&state={state}",
+            follow_redirects=False,
+        )
+        assert callback.status_code == 302, callback.text
+        ticket = parse_qs(urlparse(callback.headers["location"]).query)["ticket"][0]
+        social = client.post(
+            "/api/v1/auth/oauth/exchange",
+            json={"ticket": ticket, "agreed_terms": True, "device_name": "smoke-test"},
+        )
+        assert social.status_code == 200, social.text
+        assert social.json()["access_token"], social.text
+        assert social.json()["is_new_user"] is True
+        print("auth wechat mock: oauth ticket exchange ok")
+
         admin_headers = {"X-Admin-Token": "dev-admin-token"}
         assert client.get("/api/v1/admin/stats").status_code == 401
         assert client.get(

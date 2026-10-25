@@ -25,15 +25,26 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSCameraUsageDescription</key>
-	<string>用于拍摄健身器械，识别器械并展示使用方法。</string>
+	<string>用于拍摄器械、体型或饮食照片，进行识别与分析。</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>用于读取体重与训练数据，帮助你追踪身体变化。</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>用于把完成的训练写入 Apple 健康，作为你的训练记录。</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>用于选择器械照片进行识别。</string>
+	<string>用于选择器械、体型或饮食照片进行识别与分析。</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>用于保存训练相关的图片。</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.fitai.app.auth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fitai</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>

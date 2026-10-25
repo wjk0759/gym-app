@@ -33,6 +33,65 @@
 
 ### 2.1 认证
 
+认证方式：`Authorization: Bearer <access_token>`。Access Token 默认 30 分钟，Refresh Token 默认 30 天，刷新时轮换。
+
+#### `POST /auth/phone/send-code`
+
+```json
+{"phone": "13800138000", "purpose": "login"}
+```
+
+开发环境 `SMS_PROVIDER=dev` 会返回 `dev_code`；生产配置 webhook 短信网关后不返回验证码。
+
+#### `POST /auth/phone/login`
+
+```json
+{"phone": "13800138000", "code": "123456", "device_name": "iPhone", "agreed_terms": true}
+```
+
+未注册手机号会自动建号并静默登录。
+
+#### `POST /auth/password/login`
+
+```json
+{"account": "13800138000", "password": "Test12345", "agreed_terms": true}
+```
+
+账号可以是手机号或用户名。未注册账号会按输入密码自动创建。
+
+#### `GET /auth/me`
+
+返回当前用户、档案、目标、登录方式和是否需要完成建档。
+
+#### `POST /auth/refresh`
+
+```json
+{"refresh_token": "..."}
+```
+
+成功返回新的 access/refresh token；旧 refresh token 立即失效。
+
+#### `POST /auth/logout`
+
+需要 Bearer Token，撤销当前会话。
+
+#### 微信 / QQ OAuth
+
+- `GET /auth/oauth/{provider}/start`：返回 `authorize_url`、`mode`、`callback_scheme`
+- `GET /auth/oauth/{provider}/callback`：服务端换取第三方用户信息，302 到 App 的 `fitai://auth/callback?ticket=...`
+- `POST /auth/oauth/exchange`：用一次性 ticket 换取 JWT
+- `POST /auth/oauth/{provider}/login`：给原生微信/QQ SDK 直接传 code 的预留接口
+
+未配置 `WECHAT_APP_ID` / `WECHAT_APP_SECRET` 或 QQ 对应密钥时，开发环境提供模拟授权页；生产环境返回未配置，不会伪造真实第三方登录。
+
+#### 安全与审计
+
+- 密码使用 scrypt 加盐哈希
+- Refresh Token 只保存 SHA-256 哈希
+- 验证码 5 分钟有效、60 秒重发限制、错误 5 次失效
+- 登录失败、刷新、退出、设置密码写入 `auth_events`
+- 开发环境可使用 `X-User-Id` 兼容旧客户端；生产环境必须使用 Bearer
+
 #### `POST /auth/dev-login`（仅开发）
 
 ```json
@@ -43,13 +102,7 @@
 {"user_id": "uuid", "access_token": "dev-token", "expires_in": 86400}
 ```
 
-> 生产替换为 `POST /auth/apple`：客户端传 `identity_token`，服务端校验 Apple 公钥后签发 JWT。不存 Apple 密码。
-
-#### `POST /auth/apple`（P1）
-
-```json
-{"identity_token": "...", "authorization_code": "...", "nickname": "小林"}
-```
+> 生产环境还需要补 Sign in with Apple，以满足 App Store 对第三方登录的审核要求。
 
 ### 2.2 档案与目标
 

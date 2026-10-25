@@ -79,6 +79,16 @@ private struct FoodAnalysisResponse: Decodable {
     let model: String?
 }
 
+private struct TokenRefreshResponse: Decodable {
+    let accessToken: String
+    let refreshToken: String
+
+    enum CodingKeys: String, CodingKey {
+        case accessToken = "access_token"
+        case refreshToken = "refresh_token"
+    }
+}
+
 struct APIClient {
     static let shared = APIClient()
 
@@ -299,7 +309,8 @@ struct APIClient {
         path: String,
         method: String,
         body: Data?,
-        contentType: String = "application/json"
+        contentType: String = "application/json",
+        retried: Bool = false
     ) async throws -> Data {
         guard let url = URL(string: baseURL.absoluteString + "/" + path) else {
             throw APIError(message: "接口地址不合法")
@@ -308,7 +319,11 @@ struct APIClient {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue(contentType, forHTTPHeaderField: "Content-Type")
-        request.setValue(userID, forHTTPHeaderField: "X-User-Id")
+        if let token = AuthTokenStore.shared.accessToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        } else {
+            request.setValue(userID, forHTTPHeaderField: "X-User-Id")
+        }
         request.httpBody = body
         request.timeoutInterval = 60
 
@@ -316,11 +331,53 @@ struct APIClient {
         guard let http = response as? HTTPURLResponse else {
             throw APIError(message: "网络响应异常")
         }
+        if http.statusCode == 401,
+           !retried,
+           AuthTokenStore.shared.refreshToken != nil {
+            if await refreshAccessToken() {
+                return try await perform(
+                    path: path,
+                    method: method,
+                    body: body,
+                    contentType: contentType,
+                    retried: true
+                )
+            }
+        }
         guard (200..<300).contains(http.statusCode) else {
             let text = String(data: data, encoding: .utf8) ?? ""
             throw APIError(message: "服务返回 \(http.statusCode)：\(text.prefix(200))")
         }
         return data
+    }
+
+    private func refreshAccessToken() async -> Bool {
+        guard let refreshToken = AuthTokenStore.shared.refreshToken,
+              let url = URL(string: AppConfig.apiBaseURL.absoluteString + "/auth/refresh") else {
+            return false
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: [
+            "refresh_token": refreshToken
+        ])
+        request.timeoutInterval = 20
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse,
+                  (200..<300).contains(http.statusCode) else {
+                return false
+            }
+            let refresh = try JSONDecoder().decode(TokenRefreshResponse.self, from: data)
+            AuthTokenStore.shared.updateTokens(
+                accessToken: refresh.accessToken,
+                refreshToken: refresh.refreshToken
+            )
+            return true
+        } catch {
+            return false
+        }
     }
 
     private func birthDateString(age: Int) -> String {

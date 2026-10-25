@@ -13,13 +13,80 @@ create extension if not exists vector;
 
 -- ---------- 用户 ----------
 create table users (
-    id            uuid primary key default gen_random_uuid(),
-    apple_sub     text unique,
-    phone         text unique,
-    created_at    timestamptz not null default now(),
-    updated_at    timestamptz not null default now(),
-    deleted_at    timestamptz
+    id             uuid primary key default gen_random_uuid(),
+    apple_sub      text unique,
+    phone          text unique,
+    username       text unique,
+    password_hash  text,
+    wechat_openid  text unique,
+    wechat_unionid text unique,
+    qq_openid      text unique,
+    avatar_url     text,
+    status         text not null default 'active'
+                   check (status in ('active', 'suspended', 'deleted')),
+    last_login_at  timestamptz,
+    created_at     timestamptz not null default now(),
+    updated_at     timestamptz not null default now(),
+    deleted_at     timestamptz
 );
+
+create index users_wechat_unionid_idx on users (wechat_unionid);
+
+-- ---------- 认证 ----------
+create table auth_sessions (
+    id                 uuid primary key default gen_random_uuid(),
+    user_id            uuid not null references users(id) on delete cascade,
+    refresh_token_hash text not null unique,
+    device_name        text,
+    ip_address         text,
+    user_agent         text,
+    created_at         timestamptz not null default now(),
+    last_used_at       timestamptz not null default now(),
+    expires_at         timestamptz not null,
+    revoked_at         timestamptz
+);
+
+create index auth_sessions_user_idx on auth_sessions (user_id, last_used_at desc);
+
+create table sms_codes (
+    id         uuid primary key default gen_random_uuid(),
+    phone      text not null,
+    purpose    text not null default 'login',
+    code_hash  text not null,
+    attempts   integer not null default 0,
+    used_at    timestamptz,
+    expires_at timestamptz not null,
+    created_at timestamptz not null default now()
+);
+
+create index sms_codes_phone_idx on sms_codes (phone, created_at desc);
+
+create table oauth_tickets (
+    id           uuid primary key default gen_random_uuid(),
+    user_id      uuid not null references users(id) on delete cascade,
+    provider     text not null,
+    is_new_user  boolean not null default false,
+    used_at      timestamptz,
+    expires_at   timestamptz not null,
+    created_at   timestamptz not null default now()
+);
+
+create index oauth_tickets_user_idx on oauth_tickets (user_id, created_at desc);
+
+create table auth_events (
+    id         uuid primary key default gen_random_uuid(),
+    user_id    uuid references users(id) on delete set null,
+    event      text not null,
+    method     text not null default '',
+    success    boolean not null default true,
+    ip_address text,
+    user_agent text,
+    detail     jsonb not null default '{}',
+    created_at timestamptz not null default now()
+);
+
+create index auth_events_user_idx on auth_events (user_id, created_at desc);
+create index auth_events_event_idx on auth_events (event, created_at desc);
 
 -- ---------- 档案 ----------
 create table profiles (

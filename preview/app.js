@@ -239,6 +239,15 @@ function normalizeState(value) {
   next.foodPhotoModel = "";
   next.equipSearchQuery = "";
   next.equipPhotoSource = next.equipPhotoSource || "拍照";
+  next.authenticated = !!next.authenticated;
+  next.authMode = next.authMode || "phone";
+  next.authPhone = next.authPhone || "13800138000";
+  next.authCode = next.authCode || "";
+  next.authAccount = next.authAccount || "";
+  next.authPassword = next.authPassword || "";
+  next.authConsent = false;
+  next.authError = "";
+  next.authDevCode = "";
   return next;
 }
 
@@ -277,6 +286,15 @@ function initialState() {
     foodPhotoModel: "",
     equipSearchQuery: "",
     equipPhotoSource: "拍照",
+    authenticated: false,
+    authMode: "phone",
+    authPhone: "13800138000",
+    authCode: "",
+    authAccount: "",
+    authPassword: "",
+    authConsent: false,
+    authError: "",
+    authDevCode: "",
     workout: null,
     pro: false,
     reminder: "19:00"
@@ -504,6 +522,67 @@ function bmiText(profile) {
   const value = h > 0 ? Number(profile.weight) / (h * h) : 0;
   const label = value < 18.5 ? "偏瘦" : value < 24 ? "正常" : value < 28 ? "偏高" : "肥胖";
   return `${value.toFixed(1)} · ${label}`;
+}
+
+/* ---------------- Login ---------------- */
+
+function loginScreen() {
+  const phoneMode = state.authMode === "phone";
+  return `
+    <div class="stack login-stack">
+      <div style="text-align:center;padding:26px 0 4px">
+        <div class="nutrition-icon" style="width:64px;height:64px;margin:0 auto 14px;font-size:28px;border-radius:20px;color:#04120a;background:var(--accent)">F</div>
+        <div class="h1">练途</div>
+        <div class="tiny muted" style="margin-top:5px">会记住你练过什么的 AI 健身教练</div>
+      </div>
+
+      <div class="card">
+        <div class="seg">
+          <button class="${phoneMode ? "active" : ""}" onclick="app.previewAuthMode('phone')">手机验证码</button>
+          <button class="${!phoneMode ? "active" : ""}" onclick="app.previewAuthMode('password')">账号密码</button>
+        </div>
+
+        ${phoneMode ? `
+          <div class="row gap8" style="margin-top:12px">
+            <span class="small muted" style="padding-left:2px">+86</span>
+            <input id="login-phone" class="grow" type="tel" inputmode="numeric" placeholder="手机号" value="${esc(state.authPhone)}" oninput="app.previewAuthField('authPhone', this.value)">
+          </div>
+          <div class="row gap8" style="margin-top:9px">
+            <input id="login-code" class="grow" type="tel" inputmode="numeric" placeholder="6 位验证码" value="${esc(state.authCode)}" oninput="app.previewAuthField('authCode', this.value)">
+            <button class="btn btn-secondary btn-sm" style="width:104px" onclick="app.previewSendCode()">获取验证码</button>
+          </div>
+          ${state.authDevCode ? `<div class="tiny" style="margin-top:8px;color:var(--warning)">开发验证码 ${state.authDevCode}，已自动填入</div>` : ""}
+          <div class="tiny faint" style="margin-top:8px;line-height:1.6">未注册手机号验证通过后自动创建账号，并静默登录。</div>
+        ` : `
+          <input id="login-account" type="text" placeholder="手机号或用户名" value="${esc(state.authAccount)}" oninput="app.previewAuthField('authAccount', this.value)" style="margin-top:12px">
+          <input id="login-password" type="password" placeholder="密码（至少 8 位，含字母和数字）" value="${esc(state.authPassword)}" oninput="app.previewAuthField('authPassword', this.value)" style="margin-top:9px">
+          <div class="tiny faint" style="margin-top:8px;line-height:1.6">未注册账号会按输入的密码自动创建，并静默登录。</div>
+        `}
+
+        <button class="row gap8" style="margin-top:12px;background:transparent;border:0;padding:0;color:var(--muted)" onclick="app.previewAuthConsent()">
+          <span style="width:17px;height:17px;border-radius:5px;display:grid;place-items:center;border:1px solid ${state.authConsent ? "var(--accent)" : "var(--stroke-strong)"};background:${state.authConsent ? "var(--accent)" : "transparent"};color:#04120a;font-size:12px">${state.authConsent ? "✓" : ""}</span>
+          <span class="tiny" style="text-align:left">我已阅读并同意用户协议与隐私政策，且已年满 14 周岁</span>
+        </button>
+
+        ${state.authError ? `<div class="tiny" style="margin-top:10px;color:var(--danger);line-height:1.6">${esc(state.authError)}</div>` : ""}
+
+        <button class="btn btn-primary" style="margin-top:12px" onclick="app.previewLogin()">${phoneMode ? "登录 / 注册" : "登录 / 自动注册"}</button>
+      </div>
+
+      <div class="row gap10" style="align-items:center">
+        <div class="grow" style="height:1px;background:var(--stroke)"></div>
+        <div class="tiny faint">其他方式登录</div>
+        <div class="grow" style="height:1px;background:var(--stroke)"></div>
+      </div>
+
+      <div class="row gap8">
+        <button class="btn btn-secondary grow" onclick="app.previewSocial('微信')">微信登录</button>
+        <button class="btn btn-secondary grow" onclick="app.previewSocial('QQ')">QQ 登录</button>
+      </div>
+
+      <div class="tiny faint center" style="line-height:1.6">Web 预览为模拟登录。iOS App 使用真实手机验证码、密码和微信/QQ OAuth。</div>
+    </div>
+  `;
 }
 
 /* ---------------- Home ---------------- */
@@ -1114,6 +1193,16 @@ function profileScreen() {
             <div class="tiny muted" style="margin-top:3px">${p.goal} · ${p.experience} · 每周 ${p.weeklyDays} 练</div>
           </div>
           <button class="link" onclick="app.restartOnboarding()">编辑</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="between">
+          <div>
+            <div class="h3">账号与安全</div>
+            <div class="tiny muted" style="margin-top:3px">预览模拟登录 · ${esc(state.authPhone || "13800138000")}</div>
+          </div>
+          <button class="link" style="color:var(--danger)" onclick="app.previewLogout()">退出登录</button>
         </div>
       </div>
 
@@ -1794,6 +1883,14 @@ function render() {
   const root = document.getElementById("app");
   if (!root) return;
 
+  if (!state.authenticated) {
+    root.innerHTML = loginScreen();
+    root.className = "app no-tabs";
+    document.getElementById("tabbar").innerHTML = "";
+    document.getElementById("tabbar").className = "tabbar hidden";
+    return;
+  }
+
   let html = "";
   if (state.screen === "onboarding") html = onboarding();
   else if (state.screen === "tabs") {
@@ -1919,6 +2016,7 @@ window.app = {
   },
 
   skipOnboarding() {
+    state.authenticated = true;
     state.profile = { ...DEFAULT_PROFILE };
     state.plan = applyEquipmentLibrary(buildPlan(state.profile));
     state.onboarded = true;
@@ -1927,6 +2025,105 @@ window.app = {
     save();
     render();
     toast("已载入示例数据");
+  },
+
+  previewAuthMode(mode) {
+    state.authMode = mode;
+    state.authError = "";
+    save();
+    render();
+  },
+
+  previewAuthField(key, value) {
+    state[key] = value;
+    save();
+  },
+
+  previewAuthConsent() {
+    state.authConsent = !state.authConsent;
+    state.authError = "";
+    save();
+    render();
+  },
+
+  previewSendCode() {
+    if (!/^1\d{10}$/.test(state.authPhone)) {
+      state.authError = "请输入正确的 11 位手机号";
+      render();
+      return;
+    }
+    state.authDevCode = "123456";
+    state.authCode = "123456";
+    state.authError = "";
+    save();
+    render();
+    toast("开发验证码 123456 已填入");
+  },
+
+  previewLogin() {
+    if (!state.authConsent) {
+      state.authError = "请先阅读并同意用户协议与隐私政策";
+      render();
+      return;
+    }
+    if (state.authMode === "phone") {
+      if (!/^1\d{10}$/.test(state.authPhone)) {
+        state.authError = "请输入正确的 11 位手机号";
+        render();
+        return;
+      }
+      if (state.authCode.length !== 6) {
+        state.authError = "请输入 6 位验证码";
+        render();
+        return;
+      }
+    } else if (state.authAccount.length < 4 || state.authPassword.length < 8) {
+      state.authError = "请输入账号和至少 8 位密码";
+      render();
+      return;
+    }
+
+    state.authenticated = true;
+    state.authError = "";
+    if (!state.onboarded) {
+      state.profile = { ...DEFAULT_PROFILE };
+      state.plan = applyEquipmentLibrary(buildPlan(state.profile));
+      state.onboarded = true;
+    }
+    state.screen = "tabs";
+    state.tab = "home";
+    save();
+    render();
+    toast("登录成功（预览模拟）");
+  },
+
+  previewSocial(provider) {
+    if (!state.authConsent) {
+      state.authError = "请先阅读并同意用户协议与隐私政策";
+      render();
+      return;
+    }
+    state.authenticated = true;
+    if (!state.onboarded) {
+      state.profile = { ...DEFAULT_PROFILE };
+      state.plan = applyEquipmentLibrary(buildPlan(state.profile));
+      state.onboarded = true;
+    }
+    state.screen = "tabs";
+    state.tab = "home";
+    state.authError = "";
+    save();
+    render();
+    toast(`已通过${provider}登录（预览模拟）`);
+  },
+
+  previewLogout() {
+    state.authenticated = false;
+    state.authError = "";
+    state.authConsent = false;
+    save();
+    render();
+    toast("已退出登录");
   },
 
   tab(tab) {
@@ -2818,6 +3015,7 @@ if (previewParams.has("tab") || previewParams.has("screen") || previewParams.get
     state.plan = applyEquipmentLibrary(buildPlan(state.profile));
     state.onboarded = true;
   }
+  state.authenticated = true;
   state.screen = previewParams.has("screen") ? previewParams.get("screen") : "tabs";
   if (previewParams.has("tab")) state.tab = previewParams.get("tab");
 }

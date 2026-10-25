@@ -23,6 +23,24 @@ class Settings(BaseSettings):
     # 后台管理。生产环境必须通过 ADMIN_TOKEN 覆盖；开发环境未配置时使用 dev-admin-token。
     admin_token: str = ""
 
+    # 认证。生产环境必须配置 JWT_SECRET；开发环境未配置时使用固定开发密钥。
+    jwt_secret: str = ""
+    access_token_minutes: int = 30
+    refresh_token_days: int = 30
+
+    # 短信：dev 返回开发验证码；webhook 把验证码 POST 给自定义短信网关。
+    sms_provider: str = "dev"
+    sms_webhook_url: str = ""
+    sms_webhook_token: str = ""
+
+    # 微信/QQ OAuth。未配置时开发环境提供模拟授权页，生产环境返回未配置。
+    wechat_app_id: str = ""
+    wechat_app_secret: str = ""
+    qq_app_id: str = ""
+    qq_app_secret: str = ""
+    oauth_callback_base: str = ""
+    app_callback_scheme: str = "fitai"
+
     cors_origins: str = "*"
 
     @property

@@ -44,6 +44,7 @@
 - 计划版本历史：重新生成或 AI 调整后保留旧版本，可查看和恢复
 - 训练保护：0 组不落记录、支持撤销上一组、参考上次重量/次数
 - 后台数据管理系统：用户、计划、训练、对话、识别、动作库与操作审计
+- 企业级登录：手机验证码、账号密码、微信/QQ OAuth、自动注册、JWT + Refresh Token、会话撤销
 - 器械拍照/选图 → 识别候选（本地 Mock / 远程视觉）→ 动作卡片与视频播放
 - 饮食计划（本地热量与三餐模板 + 食物库记录）→ 美团跳转占位
 - Apple 健康：读取体重、写入完成的训练
@@ -127,6 +128,28 @@ http://127.0.0.1:8000/admin
 - 操作日志：所有后台写操作审计
 
 > 注意：饮食记录、体型照片分析和器械库目前主要存储在 iOS 本地，后台只能读取已经同步到服务端的数据。要做完整数据管理，下一步需要补这些模块的端到端同步。
+
+### 登录配置
+
+后端默认使用开发短信模式：`POST /auth/phone/send-code` 会返回 `dev_code`，登录页会自动填入。手机号首次验证会自动建号，账号密码首次登录也会自动注册。
+
+`.env` 关键配置：
+
+```ini
+JWT_SECRET=请替换为强随机字符串
+SMS_PROVIDER=dev
+# 或接入短信网关：
+# SMS_PROVIDER=webhook
+# SMS_WEBHOOK_URL=https://your-sms-gateway.example.com/send
+
+WECHAT_APP_ID=
+WECHAT_APP_SECRET=
+QQ_APP_ID=
+QQ_APP_SECRET=
+OAUTH_CALLBACK_BASE=http://127.0.0.1:8000
+```
+
+未配置微信/QQ 密钥时，开发环境会打开模拟授权页验证完整 OAuth 链路；生产环境不会伪造第三方登录。真实一键登录还需要在开放平台配置 AppID、Universal Links/回调，并在 iOS 侧接官方 SDK。
 
 默认使用 SQLite，零依赖启动。要切换到 PostgreSQL：
 

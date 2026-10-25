@@ -18,6 +18,47 @@ class DevLoginIn(BaseModel):
     nickname: str = Field(default="体验用户", max_length=50)
 
 
+class SmsSendIn(BaseModel):
+    phone: str = Field(min_length=11, max_length=20)
+    purpose: Literal["login", "set_password"] = "login"
+
+
+class PhoneLoginIn(BaseModel):
+    phone: str = Field(min_length=11, max_length=20)
+    code: str = Field(min_length=4, max_length=8)
+    device_name: str | None = Field(default=None, max_length=120)
+    agreed_terms: bool = False
+
+
+class PasswordLoginIn(BaseModel):
+    account: str = Field(min_length=4, max_length=50)
+    password: str = Field(min_length=8, max_length=72)
+    device_name: str | None = Field(default=None, max_length=120)
+    agreed_terms: bool = False
+
+
+class RefreshIn(BaseModel):
+    refresh_token: str = Field(min_length=20, max_length=200)
+    device_name: str | None = Field(default=None, max_length=120)
+
+
+class OAuthExchangeIn(BaseModel):
+    ticket: str = Field(min_length=10, max_length=200)
+    device_name: str | None = Field(default=None, max_length=120)
+    agreed_terms: bool = False
+
+
+class OAuthCodeIn(BaseModel):
+    code: str = Field(min_length=2, max_length=500)
+    redirect_uri: str | None = Field(default=None, max_length=500)
+    device_name: str | None = Field(default=None, max_length=120)
+    agreed_terms: bool = False
+
+
+class PasswordSetIn(BaseModel):
+    password: str = Field(min_length=8, max_length=72)
+
+
 class ProfileIn(BaseModel):
     nickname: str = Field(default="", max_length=50)
     sex: Sex = "male"

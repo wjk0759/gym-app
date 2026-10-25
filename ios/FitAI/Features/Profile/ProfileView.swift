@@ -3,9 +3,11 @@ import SwiftUI
 
 struct ProfileView: View {
     @Environment(AppStore.self) private var store
+    @Environment(AuthStore.self) private var auth
 
     @State private var reminderDate = Date()
     @State private var showReset = false
+    @State private var showLogout = false
     @State private var showMessage = false
     @State private var message = ""
     @State private var showPlaceholder = false
@@ -18,6 +20,7 @@ struct ProfileView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     profileCard
+                    accountCard
                     proCard
                     metricsCard
                     goalCard
@@ -58,6 +61,18 @@ struct ProfileView: View {
             } message: {
                 Text("档案、计划、训练记录、饮食记录和对话都会被删除，无法恢复。")
             }
+            .confirmationDialog(
+                "退出当前账号？",
+                isPresented: $showLogout,
+                titleVisibility: .visible
+            ) {
+                Button("退出登录", role: .destructive) {
+                    Task { await auth.logout() }
+                }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("退出后需要重新登录。当前设备上的训练数据不会自动删除。")
+            }
             .sheet(isPresented: $showExport) {
                 DataExportView()
             }
@@ -95,6 +110,66 @@ struct ProfileView: View {
             .foregroundStyle(Theme.accent)
         }
         .card()
+    }
+
+    private var accountCard: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("账号与安全")
+                        .font(.headline)
+                    Text("登录态已加密保存在本机 Keychain")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+                Spacer()
+                Image(systemName: "lock.shield.fill")
+                    .foregroundStyle(Theme.accent)
+            }
+
+            HStack {
+                Text("登录账号")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.secondaryText)
+                Spacer()
+                Text(maskedPhone)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.white)
+            }
+
+            HStack {
+                Text("用户 ID")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.secondaryText)
+                Spacer()
+                Text(String(auth.userID?.prefix(8) ?? ""))
+                    .font(.caption.monospaced())
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+
+            Button {
+                showLogout = true
+            } label: {
+                Text("退出登录")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.danger)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 11)
+                    .background(
+                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            .fill(Theme.danger.opacity(0.09))
+                    )
+            }
+            .buttonStyle(.plain)
+        }
+        .card()
+    }
+
+    private var maskedPhone: String {
+        guard let phone = auth.phone, phone.count == 11 else {
+            return "已登录"
+        }
+        return "\(phone.prefix(3))****\(phone.suffix(4))"
     }
 
     private var proCard: some View {

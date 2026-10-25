@@ -531,6 +531,15 @@ def user_detail(user_id: str, actor: AdminAuth, db: DBSession):
             "updated_at": _iso(user.updated_at),
             "deleted_at": _iso(user.deleted_at),
             "phone": user.phone,
+            "username": user.username,
+            "last_login_at": _iso(user.last_login_at),
+            "status": user.status,
+            "auth_methods": {
+                "phone": bool(user.phone),
+                "password": bool(user.password_hash),
+                "wechat": bool(user.wechat_openid),
+                "qq": bool(user.qq_openid),
+            },
         },
         "profile": profile_to_dict(profile) if profile else None,
         "metrics": {
