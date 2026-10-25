@@ -1498,7 +1498,7 @@ function profileDraftSegmented(key, options) {
   const draft = state.profileDraft;
   return `<div class="seg">${options.map((option) => {
     const active = String(draft[key]) === String(option) ? "active" : "";
-    return `<button class="${active}" onclick="app.profileDraftSelect('${key}', ${JSON.stringify(option)})">${option}</button>`;
+    return `<button class="${active}" data-draft-seg="${key}" data-value="${option}" onclick="app.profileDraftSelect('${key}', ${JSON.stringify(option)})">${option}</button>`;
   }).join("")}</div>`;
 }
 
@@ -1542,7 +1542,7 @@ function profileEditScreen() {
         <div class="tiny muted" style="margin-top:3px;margin-bottom:12px">只安排你能用上的动作</div>
         <div class="chips">
           ${["徒手", "哑铃", "杠铃", "固定器械", "绳索", "弹力带", "壶铃"].map((item) => `
-            <button class="chip ${draft.equipment.includes(item) ? "active" : ""}" onclick="app.profileDraftToggleEquip('${item}')">${item}</button>
+            <button class="chip ${draft.equipment.includes(item) ? "active" : ""}" data-equip="${item}" onclick="app.profileDraftToggleEquip('${item}')">${item}</button>
           `).join("")}
         </div>
       </div>
@@ -2263,7 +2263,7 @@ function render() {
     const loginChanged = lastRouteKey !== loginRoute;
     lastRouteKey = loginRoute;
     root.innerHTML = loginScreen() + legalModal();
-    root.className = "app no-tabs";
+    root.className = "app no-tabs" + (loginChanged ? " route-changed" : "");
     document.getElementById("tabbar").innerHTML = "";
     document.getElementById("tabbar").className = "tabbar hidden";
     if (loginChanged) {
@@ -2310,7 +2310,8 @@ function render() {
   root.innerHTML = html + legalModal();
   root.className = "app"
     + (state.screen === "tabs" ? "" : " no-tabs")
-    + (state.screen === "tabs" && state.tab === "coach" ? " chat-mode" : "");
+    + (state.screen === "tabs" && state.tab === "coach" ? " chat-mode" : "")
+    + (routeChanged ? " route-changed" : "");
   document.getElementById("tabbar").innerHTML = tabbar();
   document.getElementById("tabbar").className = "tabbar" + (state.onboarded && state.screen === "tabs" ? "" : " hidden");
   if (routeChanged) {
@@ -2402,17 +2403,30 @@ window.app = {
     if (!state.profileDraft) return;
     state.profileDraft[key] = Number.isNaN(Number(value)) ? value : Number(value);
     save();
-    render();
+
+    if (key === "goal") {
+      render();
+      return;
+    }
+
+    document.querySelectorAll(`[data-draft-seg="${key}"]`).forEach((button) => {
+      button.classList.toggle("active", button.dataset.value === String(value));
+    });
   },
 
   profileDraftToggleEquip(name) {
     if (!state.profileDraft) return;
     const list = state.profileDraft.equipment;
-    state.profileDraft.equipment = list.includes(name)
-      ? list.filter((item) => item !== name)
-      : list.concat(name);
+    const active = !list.includes(name);
+    state.profileDraft.equipment = active
+      ? list.concat(name)
+      : list.filter((item) => item !== name);
     save();
-    render();
+    document.querySelectorAll("[data-equip]").forEach((button) => {
+      if (button.dataset.equip === name) {
+        button.classList.toggle("active", active);
+      }
+    });
   },
 
   openProfileEdit() {
