@@ -119,53 +119,7 @@ struct NutritionView: View {
                 .buttonStyle(SecondaryButtonStyle())
             } else {
                 ForEach(MealType.allCases) { meal in
-                    let logs = store.todayFoodLogs.filter { $0.meal == meal }
-                    if !logs.isEmpty {
-                        HStack {
-                            Text(meal.label)
-                                .font(.subheadline.weight(.semibold))
-                            Spacer()
-                            Text("\(Int(logs.reduce(0.0) { $0 + $1.kcal })) kcal")
-                                .font(.caption)
-                                .foregroundStyle(Theme.secondaryText)
-                            Button {
-                                selectedMeal = meal
-                                showAddFood = true
-                            } label: {
-                                Image(systemName: "plus.circle")
-                                    .font(.caption)
-                                    .foregroundStyle(Theme.accent)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        .padding(.top, 4)
-
-                        ForEach(logs) { log in
-                            HStack(spacing: 10) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(log.foodName)
-                                        .font(.subheadline)
-                                        .foregroundStyle(.white)
-                                    Text("\(log.grams.formatted()) g")
-                                        .font(.caption2)
-                                        .foregroundStyle(Theme.tertiaryText)
-                                }
-                                Spacer()
-                                Text("\(Int(log.kcal)) kcal")
-                                    .font(.caption)
-                                    .foregroundStyle(Theme.secondaryText)
-                                Button(role: .destructive) {
-                                    store.removeFoodLog(log.id)
-                                } label: {
-                                    Image(systemName: "trash")
-                                        .font(.caption2)
-                                        .foregroundStyle(Theme.danger.opacity(0.8))
-                                }
-                                .buttonStyle(.plain)
-                            }
-                            .padding(.vertical, 3)
-                        }
-                    }
+                    mealLogSection(meal)
                 }
 
                 Button {
@@ -178,6 +132,57 @@ struct NutritionView: View {
             }
         }
         .card()
+    }
+
+    @ViewBuilder
+    private func mealLogSection(_ meal: MealType) -> some View {
+        let logs = store.todayFoodLogs.filter { $0.meal == meal }
+        if !logs.isEmpty {
+            HStack {
+                Text(meal.label)
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                Text("\(Int(logs.reduce(0.0) { $0 + $1.kcal })) kcal")
+                    .font(.caption)
+                    .foregroundStyle(Theme.secondaryText)
+                Button {
+                    selectedMeal = meal
+                    showAddFood = true
+                } label: {
+                    Image(systemName: "plus.circle")
+                        .font(.caption)
+                        .foregroundStyle(Theme.accent)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.top, 4)
+
+            ForEach(logs) { log in
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(log.foodName)
+                            .font(.subheadline)
+                            .foregroundStyle(.white)
+                        Text("\(log.grams.formatted()) g")
+                            .font(.caption2)
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                    Spacer()
+                    Text("\(Int(log.kcal)) kcal")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                    Button(role: .destructive) {
+                        store.removeFoodLog(log.id)
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.caption2)
+                            .foregroundStyle(Theme.danger.opacity(0.8))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.vertical, 3)
+            }
+        }
     }
 
     private var suggestionHeader: some View {
