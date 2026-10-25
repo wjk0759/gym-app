@@ -39,11 +39,6 @@ struct HomeView: View {
             .background(Theme.background.ignoresSafeArea())
             .navigationTitle("今日")
             .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    SettingsToolbarButton()
-                }
-            }
             .fullScreenCover(isPresented: $showWorkout) {
                 if let day = store.todayDay {
                     WorkoutSessionView(day: day)

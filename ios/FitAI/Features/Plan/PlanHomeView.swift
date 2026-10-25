@@ -47,9 +47,6 @@ struct PlanHomeView: View {
                     }
                     .accessibilityLabel("更多计划操作")
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    SettingsToolbarButton()
-                }
             }
             .sheet(isPresented: $showHistory) {
                 PlanHistoryView()

@@ -39,6 +39,9 @@ struct SettingsView: View {
 
                 sectionLabel("数据与隐私")
                 privacyCard
+
+                sectionLabel("账号操作")
+                logoutCard
             }
             .padding(.horizontal, 20)
             .padding(.top, 8)
@@ -109,7 +112,12 @@ struct SettingsView: View {
                     .font(.caption.monospaced())
                     .foregroundStyle(Theme.tertiaryText)
             }
+        }
+        .card()
+    }
 
+    private var logoutCard: some View {
+        VStack(spacing: 10) {
             Button {
                 showLogout = true
             } label: {
@@ -117,10 +125,10 @@ struct SettingsView: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Theme.danger)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 11)
+                    .padding(.vertical, 12)
                     .background(
-                        RoundedRectangle(cornerRadius: 11, style: .continuous)
-                            .fill(Theme.danger.opacity(0.09))
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Theme.danger.opacity(0.10))
                     )
             }
             .buttonStyle(.plain)
@@ -128,6 +136,7 @@ struct SettingsView: View {
             Text("退出登录不会删除训练计划、训练记录或身体数据。")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
+                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .card()

@@ -81,9 +81,6 @@ struct EquipmentLibraryView: View {
                     Image(systemName: "plus")
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                SettingsToolbarButton()
-            }
         }
         .sheet(item: $activeSheet) { sheet in
             switch sheet {

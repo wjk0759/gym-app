@@ -731,12 +731,9 @@ function home() {
 
   return `
     <div class="stack">
-      <div class="between" style="align-items:flex-start">
-        <div class="greeting">
-          <div class="h1">晚上好，${esc(state.profile.name)}</div>
-          <div class="date">10月25日 · 周日</div>
-        </div>
-        ${settingsButton()}
+      <div class="greeting">
+        <div class="h1">晚上好，${esc(state.profile.name)}</div>
+        <div class="date">10月25日 · 周日</div>
       </div>
 
       <div class="card">
@@ -837,7 +834,6 @@ function planScreen() {
           <h1 class="h1">训练计划</h1>
           <div class="tiny muted" style="margin-top:4px">第 ${state.plan.version} 版 · 4 周</div>
         </div>
-        ${settingsButton()}
       </div>
 
       <div class="card">
@@ -942,12 +938,9 @@ function coachScreen() {
   const ratio = Math.min(100, Math.round((weekSessions / Math.max(1, state.profile.weeklyDays)) * 100));
   return `
     <div class="chat-screen">
-      <div class="chat-head row between" style="align-items:flex-start">
-        <div>
-          <h1 class="h1">AI 教练</h1>
-          <div class="tiny muted" style="margin-top:4px">结合档案、计划和训练记录回答</div>
-        </div>
-        ${settingsButton()}
+      <div class="chat-head">
+        <h1 class="h1">AI 教练</h1>
+        <div class="tiny muted" style="margin-top:4px">结合档案、计划和训练记录回答</div>
       </div>
 
       <div class="chat-scroll" id="chat-scroll">
@@ -1085,12 +1078,9 @@ function equipmentLibraryScreen() {
   const items = state.equipmentLibrary;
   return `
     <div class="stack">
-      <div class="between" style="align-items:flex-start">
-        <div>
-          <h1 class="h1">器械</h1>
-          <div class="tiny muted" style="margin-top:4px">已添加的器械 · 教学视频与 AI 计划</div>
-        </div>
-        ${settingsButton()}
+      <div>
+        <h1 class="h1">器械</h1>
+        <div class="tiny muted" style="margin-top:4px">已添加的器械 · 教学视频与 AI 计划</div>
       </div>
 
       <div class="card nutrition-card" onclick="app.equipmentAddOpen()">
@@ -1571,8 +1561,6 @@ function settingsScreen() {
       <div class="card">
         <div class="h3">账号与安全</div>
         <div class="tiny muted" style="margin-top:3px">登录账号 · ${esc(maskedPhone)}</div>
-        <button class="btn btn-danger" style="margin-top:12px" onclick="app.previewLogout()">退出登录</button>
-        <div class="tiny faint" style="margin-top:9px">退出登录不会删除训练计划、训练记录或身体数据。</div>
       </div>
 
       <div class="section-kicker">训练设置</div>
@@ -1614,9 +1602,15 @@ function settingsScreen() {
         <div class="list-row" onclick="app.exportData()"><span class="grow small">导出我的数据</span><span class="faint">›</span></div>
         <div class="list-row" onclick="app.openLegal('ai')"><span class="grow small">生成式 AI 备案信息</span><span class="faint">›</span></div>
         <div class="tiny faint" style="margin-top:8px">本产品不提供医疗诊断。孕期、术后、心血管疾病或关节急性疼痛，请先咨询医生。</div>
+        <div class="tiny faint" style="margin-top:6px">练途 Web Preview · v0.1</div>
       </div>
 
-      <div class="tiny faint center" style="padding-bottom:8px">练途 Web Preview · v0.1</div>
+      <div class="section-kicker">账号操作</div>
+
+      <div class="card">
+        <button class="btn btn-danger" onclick="app.previewLogout()">退出登录</button>
+        <div class="tiny faint" style="margin-top:9px;text-align:center">退出登录不会删除训练计划、训练记录或身体数据。</div>
+      </div>
     </div>
   `;
 }
@@ -2546,6 +2540,7 @@ window.app = {
 
   closeSettings() {
     state.screen = "tabs";
+    state.tab = "profile";
     save();
     render();
   },
