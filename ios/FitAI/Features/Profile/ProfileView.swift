@@ -10,7 +10,7 @@ struct ProfileView: View {
     @State private var showLogout = false
     @State private var showMessage = false
     @State private var message = ""
-    @State private var showPlaceholder = false
+    @State private var legalDocument: LegalDocumentKind?
     @State private var showExport = false
     @State private var showPaywall = false
     @State private var showBodyAnalysis = false
@@ -83,6 +83,9 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showExport) {
                 DataExportView()
+            }
+            .sheet(item: $legalDocument) { kind in
+                LegalDocumentView(kind: kind)
             }
         }
     }
@@ -635,8 +638,12 @@ struct ProfileView: View {
             Text("关于与合规")
                 .font(.headline)
 
-            infoRow("隐私政策", icon: "hand.raised")
-            infoRow("用户协议", icon: "doc.text")
+            infoRow("隐私政策", icon: "hand.raised") {
+                legalDocument = .privacy
+            }
+            infoRow("用户协议", icon: "doc.text") {
+                legalDocument = .terms
+            }
 
             Button {
                 showExport = true
@@ -656,7 +663,9 @@ struct ProfileView: View {
             }
             .buttonStyle(.plain)
 
-            infoRow("生成式 AI 备案信息", icon: "checkmark.seal")
+            infoRow("生成式 AI 备案信息", icon: "checkmark.seal") {
+                legalDocument = .ai
+            }
 
             Text("本产品不提供医疗诊断或治疗建议。孕期、术后、心血管疾病或关节急性疼痛，请先咨询医生。")
                 .font(.caption2)
@@ -668,17 +677,14 @@ struct ProfileView: View {
                 .foregroundStyle(Theme.tertiaryText)
         }
         .card()
-        .alert("功能占位", isPresented: $showPlaceholder) {
-            Button("知道了", role: .cancel) {}
-        } message: {
-            Text("上线前需要替换为正式的隐私政策、用户协议与备案信息。")
-        }
     }
 
-    private func infoRow(_ title: String, icon: String) -> some View {
-        Button {
-            showPlaceholder = true
-        } label: {
+    private func infoRow(
+        _ title: String,
+        icon: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
             HStack {
                 Image(systemName: icon)
                     .foregroundStyle(Theme.accent)
