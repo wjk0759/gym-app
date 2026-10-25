@@ -916,6 +916,245 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .equipment-tile-video.ready { color: var(--accent); }
 
+/* ---------- equipment picker ---------- */
+
+.equipment-picker { padding-bottom: 96px; }
+.equipment-picker .h1 { font-size: 24px; }
+
+.muted-link { color: var(--muted); font-size: 12px; }
+
+.selected-exercise-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.selected-exercise-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  max-width: 230px;
+  padding: 7px 9px;
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  background: var(--surface-strong);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.selected-exercise-chip span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selected-exercise-chip button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1;
+  padding: 0;
+}
+
+.equipment-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 13px;
+  border-radius: 14px;
+  background: var(--surface-strong);
+}
+
+.equipment-search-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 15px;
+}
+
+.equipment-search-row input:focus { border: 0; }
+
+.search-glyph { color: var(--faint); font-size: 22px; line-height: 1; }
+
+.equipment-camera-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.equipment-filter-scroll {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 0;
+}
+
+.equipment-filter {
+  appearance: none;
+  border: 0;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  padding: 8px 12px;
+  background: rgba(92, 219, 140, 0.10);
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.equipment-filter.active { background: var(--accent); color: #07130b; }
+
+.equipment-picker-body {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.muscle-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: sticky;
+  top: 6px;
+}
+
+.muscle-item {
+  appearance: none;
+  border: 0;
+  border-left: 3px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  padding: 8px 0 8px 8px;
+}
+
+.muscle-item.active { color: var(--accent); border-left-color: var(--accent); font-weight: 700; }
+
+.exercise-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.exercise-pick-card {
+  appearance: none;
+  border: 1px solid var(--stroke);
+  border-radius: 16px;
+  padding: 8px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  overflow: hidden;
+}
+
+.exercise-pick-card.selected { border-color: rgba(92, 219, 140, 0.7); }
+
+.exercise-pick-art {
+  position: relative;
+  height: 108px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 45% 35%, rgba(255,255,255,.08), transparent 48%),
+    linear-gradient(145deg, #32363d, #202327);
+}
+
+.exercise-pick-glyph { font-size: 36px; filter: grayscale(.2); }
+
+.exercise-pick-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 3px 6px;
+  border-radius: 7px 7px 7px 2px;
+  background: var(--accent);
+  color: #07130b;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.exercise-pick-check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: #07130b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.exercise-pick-name {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.exercise-pick-meta {
+  margin-top: 3px;
+  color: var(--faint);
+  font-size: 10.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.equipment-compose-bar {
+  position: sticky;
+  bottom: 84px;
+  z-index: 7;
+  display: flex;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid var(--stroke);
+  border-radius: 17px;
+  background: rgba(24, 26, 31, 0.88);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.25);
+}
+
+.equipment-compose-bar .btn { flex: 1; }
+
+.equipment-compose-bar .btn:disabled,
+.equipment-compose-bar .btn[disabled] { opacity: .45; }
+
+.recognition-head-card { display: flex; align-items: center; gap: 14px; }
+
+.recognition-thumb {
+  width: 96px;
+  height: 96px;
+  flex: 0 0 96px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #5b4632, #2d392e 60%, #151b16);
+  font-size: 36px;
+}
+
+.recognition-empty { padding: 18px 16px; }
+
 .login-page {
   display: flex;
   flex-direction: column;

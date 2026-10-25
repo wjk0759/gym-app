@@ -19,7 +19,7 @@ struct MainTabView: View {
                 }
 
             NavigationStack {
-                EquipmentLibraryView()
+                EquipmentPickerView()
             }
             .tabItem {
                 Label("器械", systemImage: "dumbbell")

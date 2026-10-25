@@ -269,6 +269,11 @@ function normalizeState(value) {
   next.foodCustomDraft = null;
   next.equipSearchQuery = "";
   next.equipPhotoSource = next.equipPhotoSource || "拍照";
+  next.equipSelected = Array.isArray(next.equipSelected) ? next.equipSelected : [];
+  next.equipMuscle = next.equipMuscle || "全部";
+  next.equipFilter = next.equipFilter || "全部";
+  next.equipRecognitionCandidates = Array.isArray(next.equipRecognitionCandidates) ? next.equipRecognitionCandidates : [];
+  next.equipRecognitionPhoto = !!next.equipRecognitionPhoto;
   next.authenticated = !!next.authenticated;
   next.authMode = next.authMode || "phone";
   next.authPhone = next.authPhone || "13800138000";
@@ -324,6 +329,11 @@ function initialState() {
     foodPhotoModel: "",
     equipSearchQuery: "",
     equipPhotoSource: "拍照",
+    equipSelected: [],
+    equipMuscle: "全部",
+    equipFilter: "全部",
+    equipRecognitionCandidates: [],
+    equipRecognitionPhoto: false,
     authenticated: false,
     authMode: "phone",
     authPhone: "13800138000",
@@ -1231,14 +1241,158 @@ function equipGlyph(item) {
   return map[item.equip] || "🏋️";
 }
 
+function equipmentPickerExercises() {
+  const query = String(state.equipSearchQuery || "").trim();
+  return Object.keys(EX).filter((slug) => {
+    const item = EX[slug];
+    const searchMatch = !query
+      || item.name.includes(query)
+      || item.muscle.includes(query)
+      || item.equip.includes(query);
+    const muscleMatch = state.equipMuscle === "全部" || item.muscle === state.equipMuscle;
+    const savedMatch = state.equipFilter !== "已添加"
+      || state.equipmentLibrary.some((entry) => entry.slug === slug);
+    const equipmentMatch = state.equipFilter === "全部"
+      || state.equipFilter === "已添加"
+      || item.equip === state.equipFilter;
+    return searchMatch && muscleMatch && savedMatch && equipmentMatch;
+  }).sort((a, b) => {
+    const aSaved = state.equipmentLibrary.some((entry) => entry.slug === a);
+    const bSaved = state.equipmentLibrary.some((entry) => entry.slug === b);
+    if (aSaved !== bSaved) return aSaved ? -1 : 1;
+    return EX[a].name.localeCompare(EX[b].name, "zh-CN");
+  });
+}
+
+function equipmentPickerGrid() {
+  const list = equipmentPickerExercises();
+  if (!list.length) {
+    return `<div class="tiny muted" style="padding:24px 10px;text-align:center">没有匹配的动作，换个肌群或器械试试。</div>`;
+  }
+  return list.map((slug) => {
+    const item = EX[slug];
+    const selected = state.equipSelected.includes(slug);
+    return `
+      <button class="exercise-pick-card ${selected ? "selected" : ""}" onclick="app.equipmentPickerToggle('${slug}')">
+        <div class="exercise-pick-art">
+          <span class="exercise-pick-glyph">${equipGlyph({ muscle: item.muscle, equip: item.equip })}</span>
+          ${item.video !== false ? `<span class="exercise-pick-badge">讲解</span>` : ""}
+          ${selected ? `<span class="exercise-pick-check">✓</span>` : ""}
+        </div>
+        <div class="exercise-pick-name">${esc(item.name)}</div>
+        <div class="exercise-pick-meta">${item.muscle} · ${item.equip}</div>
+      </button>
+    `;
+  }).join("");
+}
+
+function equipmentPickerScreen() {
+  const muscles = ["全部", "胸", "背", "腿", "臀", "肩", "手臂", "核心", "有氧"];
+  const equipment = ["全部", "已添加", ...new Set(Object.values(EX).map((item) => item.equip))];
+  const selected = state.equipSelected.map((slug) => ({ slug, ...EX[slug] })).filter((item) => item.name);
+
+  return `
+    <div class="stack equipment-picker">
+      <div class="between">
+        <div class="row gap8">
+          <div class="h1">已选择动作</div>
+          <span class="accent small strong">${selected.length}</span>
+        </div>
+        <button class="link muted-link" onclick="app.equipmentLibraryOpen()">器械库</button>
+      </div>
+
+      ${selected.length ? `
+        <div class="selected-exercise-scroll">
+          ${selected.map((item) => `
+            <div class="selected-exercise-chip">
+              <span>${equipGlyph({ muscle: item.muscle, equip: item.equip })}</span>
+              <span>${esc(item.name)}</span>
+              <button onclick="app.equipmentPickerToggle('${item.slug}')">×</button>
+            </div>
+          `).join("")}
+        </div>
+      ` : `<div class="tiny muted">从下面选择动作，组合成一次训练。</div>`}
+
+      <div class="equipment-search-row">
+        <span class="search-glyph">⌕</span>
+        <input id="equipment-picker-search" type="text" placeholder="输入动作名字搜索" value="${esc(state.equipSearchQuery)}" oninput="app.equipmentPickerQuery(this.value)">
+        <button class="equipment-camera-btn" onclick="app.equipmentRecognitionOpen()">◉ 识别</button>
+      </div>
+
+      <div class="equipment-filter-scroll">
+        ${equipment.map((label) => `
+          <button class="equipment-filter ${state.equipFilter === label ? "active" : ""}" onclick="app.equipmentPickerFilter('${label}')">${label}</button>
+        `).join("")}
+      </div>
+
+      <div class="equipment-picker-body">
+        <div class="muscle-rail">
+          ${muscles.map((label) => `
+            <button class="muscle-item ${state.equipMuscle === label ? "active" : ""}" onclick="app.equipmentPickerMuscle('${label}')">${label}</button>
+          `).join("")}
+        </div>
+        <div class="exercise-pick-grid" id="equipment-picker-grid">${equipmentPickerGrid()}</div>
+      </div>
+
+      <div class="equipment-compose-bar">
+        <button class="btn btn-secondary" onclick="app.equipmentPickerClear()" ${selected.length ? "" : "disabled"}>清空</button>
+        <button class="btn btn-primary" onclick="app.equipmentPickerCompose()" ${selected.length ? "" : "disabled"}>${selected.length ? `组合 ${selected.length} 个动作` : "组合动作"}</button>
+      </div>
+    </div>
+  `;
+}
+
+function equipmentRecognitionScreen() {
+  const candidates = state.equipRecognitionCandidates || [];
+  return `
+    <div class="stack">
+      ${headerBack("器械识别", "app.equipmentTabOpen()")}
+      <div class="card recognition-head-card">
+        <div class="recognition-thumb">${state.equipRecognitionPhoto ? "🏋" : "📷"}</div>
+        <div class="grow">
+          <div class="tiny faint">照片识别</div>
+          <div class="h2">识别你的器械</div>
+          <div class="tiny muted">从最匹配到相似候选</div>
+          <button class="link" style="margin-top:8px" onclick="app.equipmentRecognitionPhoto()">${state.equipRecognitionPhoto ? "重新拍照" : "拍照或选图"}</button>
+        </div>
+      </div>
+
+      <div class="between" style="padding:0 2px">
+        <div class="h3">匹配器械</div>
+        <div class="tiny faint">${candidates.length} 个候选</div>
+      </div>
+
+      ${candidates.length ? candidates.map((candidate) => `
+        <div class="card tight">
+          <div class="between">
+            <div>
+              <div class="small strong">${esc(EX[candidate.slug].name)}</div>
+              <div class="tiny faint">${EX[candidate.slug].muscle} · ${EX[candidate.slug].equip}</div>
+            </div>
+            <div class="tiny accent">${Math.round(candidate.confidence * 100)}%</div>
+          </div>
+          <button class="link" style="margin-top:8px" onclick="app.equipmentRecognitionSave('${candidate.slug}')">＋ 加入已选动作</button>
+        </div>
+      `).join("") : `
+        <div class="card recognition-empty">
+          <div class="h3">${state.equipRecognitionPhoto ? "暂未识别到动作库中的器械" : "先拍一张器械照片"}</div>
+          <div class="tiny muted" style="margin-top:8px;line-height:1.7">${state.equipRecognitionPhoto ? "请拍摄完整器械。边缘灰色物体、遮挡严重或只露出局部的照片，可能无法辨别。" : "支持常见固定器械、绳索、杠铃与哑铃。照片只用于本次识别，不保存。"}</div>
+          <div class="row gap8" style="margin-top:14px">
+            <button class="btn btn-secondary" onclick="app.equipmentRecognitionPhoto()">${state.equipRecognitionPhoto ? "重新拍照" : "模拟拍照"}</button>
+            ${state.equipRecognitionPhoto ? `<button class="btn btn-primary" onclick="app.equipmentRecognitionScan()">开始识别</button>` : ""}
+          </div>
+        </div>
+      `}
+    </div>
+  `;
+}
+
 function equipmentLibraryScreen() {
   const items = state.equipmentLibrary;
   return `
     <div class="stack">
-      <div>
-        <h1 class="h1">器械</h1>
-        <div class="tiny muted" style="margin-top:4px">已添加的器械 · 教学视频与 AI 计划</div>
-      </div>
+      ${headerBack("器械库", "app.equipmentTabOpen()")}
+      <div class="tiny muted">已添加的器械 · 教学视频与 AI 计划</div>
 
       <div class="card nutrition-card" onclick="app.equipmentAddOpen()">
         <div class="nutrition-icon">＋</div>
@@ -2508,7 +2662,7 @@ function render() {
     if (state.tab === "home") html = home();
     else if (state.tab === "plan") html = planScreen();
     else if (state.tab === "coach") html = coachScreen();
-    else if (state.tab === "equipment") html = equipmentLibraryScreen();
+    else if (state.tab === "equipment") html = equipmentPickerScreen();
     else html = profileScreen();
   } else if (state.screen === "planDay") html = planDayScreen();
   else if (state.screen === "nutrition") html = nutritionScreen();
@@ -2523,6 +2677,8 @@ function render() {
   else if (state.screen === "history") html = historyScreen();
   else if (state.screen === "exerciseDetail") html = exerciseScreen();
   else if (state.screen === "equipmentAdd") html = equipmentScreen();
+  else if (state.screen === "equipmentLibrary") html = equipmentLibraryScreen();
+  else if (state.screen === "equipmentRecognition") html = equipmentRecognitionScreen();
   else if (state.screen === "equipmentSearch") html = equipmentSearchScreen();
   else if (state.screen === "equipmentPhoto") html = equipmentPhotoScreen();
   else if (state.screen === "equipmentItem") html = equipmentItemScreen();
@@ -2887,8 +3043,9 @@ window.app = {
     else if (state.screen === "paywall") { state.screen = "tabs"; state.tab = "profile"; }
     else if (state.screen === "sessionDetail") { state.screen = "tabs"; state.tab = "home"; }
     else if (state.screen === "exerciseDetail") { state.screen = "tabs"; state.tab = "equipment"; }
-    else if (state.screen === "equipmentItem") { state.screen = "tabs"; state.tab = "equipment"; }
-    else if (state.screen === "equipmentAdd") { state.screen = "tabs"; state.tab = "equipment"; }
+    else if (state.screen === "equipmentItem") { state.screen = "equipmentLibrary"; }
+    else if (state.screen === "equipmentAdd") { state.screen = "equipmentLibrary"; }
+    else if (state.screen === "equipmentLibrary" || state.screen === "equipmentRecognition") { state.screen = "tabs"; state.tab = "equipment"; }
     else if (state.screen === "equipmentSearch" || state.screen === "equipmentPhoto") state.screen = "equipmentAdd";
     else if (state.screen === "bodyAnalysis") { state.screen = "tabs"; state.tab = "profile"; }
     else { state.screen = "tabs"; state.tab = "home"; }
@@ -3556,11 +3713,138 @@ window.app = {
     toast(`${meal}已加入 ${total} kcal`);
   },
 
-  equipmentLibraryOpen() {
+  equipmentTabOpen() {
     state.screen = "tabs";
     state.tab = "equipment";
     save();
     render();
+  },
+
+  equipmentLibraryOpen() {
+    state.screen = "equipmentLibrary";
+    save();
+    render();
+  },
+
+  equipmentPickerToggle(slug) {
+    if (state.equipSelected.includes(slug)) {
+      state.equipSelected = state.equipSelected.filter((item) => item !== slug);
+    } else {
+      state.equipSelected = [...state.equipSelected, slug];
+    }
+    save();
+    render();
+  },
+
+  equipmentPickerClear() {
+    state.equipSelected = [];
+    save();
+    render();
+  },
+
+  equipmentPickerMuscle(value) {
+    state.equipMuscle = value;
+    save();
+    render();
+  },
+
+  equipmentPickerFilter(value) {
+    state.equipFilter = value;
+    save();
+    render();
+  },
+
+  equipmentPickerQuery(value) {
+    state.equipSearchQuery = value;
+    const grid = document.getElementById("equipment-picker-grid");
+    if (grid) grid.innerHTML = equipmentPickerGrid();
+    save();
+  },
+
+  equipmentPickerCompose() {
+    const selected = state.equipSelected
+      .map((slug) => ({ slug, ...EX[slug] }))
+      .filter((item) => item.name);
+    if (!selected.length) return toast("先选择动作");
+    const day = {
+      id: `combo-${Date.now()}`,
+      week: 1,
+      weekday: 7,
+      title: "组合训练",
+      focus: [...new Set(selected.map((item) => item.muscle))],
+      exercises: selected.map((item, index) => ({
+        id: `combo-ex-${Date.now()}-${index}`,
+        slug: item.slug,
+        sets: 3,
+        reps: "10-12",
+        weight: item.base || 0,
+        rest: 60,
+        rpe: 7.5
+      }))
+    };
+    state.plan.days.push(day);
+    const first = day.exercises[0];
+    state.workout = {
+      dayId: day.id,
+      index: 0,
+      setIndex: 0,
+      weight: first.weight,
+      reps: parseReps(first.reps),
+      logs: [],
+      rest: 0,
+      startedAt: Date.now(),
+      feeling: 4,
+      notes: ""
+    };
+    state.equipSelected = [];
+    state.screen = "workout";
+    save();
+    render();
+  },
+
+  equipmentRecognitionOpen() {
+    state.screen = "equipmentRecognition";
+    save();
+    render();
+  },
+
+  equipmentRecognitionPhoto() {
+    state.equipRecognitionPhoto = true;
+    state.equipRecognitionCandidates = [];
+    save();
+    render();
+  },
+
+  equipmentRecognitionScan() {
+    if (!state.equipRecognitionPhoto) return toast("先拍一张器械照片");
+    state.equipRecognitionCandidates = [
+      { slug: "lat_pulldown", confidence: 0.91 },
+      { slug: "seated_row", confidence: 0.64 },
+      { slug: "face_pull", confidence: 0.48 }
+    ];
+    save();
+    render();
+  },
+
+  equipmentRecognitionSave(slug) {
+    if (!state.equipmentLibrary.some((entry) => entry.slug === slug)) {
+      const ex = EX[slug];
+      state.equipmentLibrary.push({
+        id: `e${Date.now()}`,
+        name: ex.name,
+        slug,
+        muscle: ex.muscle,
+        equip: ex.equip,
+        video: false,
+        notes: "来自器械识别"
+      });
+    }
+    if (!state.equipSelected.includes(slug)) {
+      state.equipSelected.push(slug);
+    }
+    save();
+    render();
+    toast("已加入已选动作");
   },
 
   equipmentAddOpen() {

@@ -18,9 +18,8 @@ struct EquipmentScanView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                header
+                scanHeaderCard
                 quickActions
-                imageArea
 
                 Button {
                     scan()
@@ -37,16 +36,14 @@ struct EquipmentScanView: View {
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(imageData == nil || isScanning)
 
-                if !candidates.isEmpty {
-                    resultSection
-                }
+                matchesSection
             }
             .padding(.horizontal, 20)
             .padding(.top, 8)
             .padding(.bottom, 28)
         }
         .background(AppBackground())
-        .navigationTitle("添加器械")
+        .navigationTitle("器械识别")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: photoItem?.itemIdentifier) { _, _ in
             guard let item = photoItem else { return }
@@ -63,6 +60,100 @@ struct EquipmentScanView: View {
         .sheet(item: $selectedExercise) { exercise in
             ExerciseDetailView(exercise: exercise)
         }
+    }
+
+    private var scanHeaderCard: some View {
+        HStack(alignment: .top, spacing: 14) {
+            Group {
+                if let selectedImage {
+                    Image(uiImage: selectedImage)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    ZStack {
+                        Theme.surfaceStrong
+                        Image(systemName: "camera.viewfinder")
+                            .font(.system(size: 28, weight: .light))
+                            .foregroundStyle(Theme.accent)
+                    }
+                }
+            }
+            .frame(width: 96, height: 96)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text("照片识别")
+                    .font(.caption)
+                    .foregroundStyle(Theme.tertiaryText)
+                Text("识别你的器械")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                Text("从最匹配到相似候选")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.secondaryText)
+
+                HStack(spacing: 12) {
+                    Button("重新拍照") {
+                        showCamera = true
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+
+                    PhotosPicker(selection: $photoItem, matching: .images) {
+                        Text("从相册选择")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Theme.secondaryText)
+                    }
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .card()
+    }
+
+    private var matchesSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("匹配器械")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                Spacer()
+                Text("\(candidates.count) 个候选")
+                    .font(.caption)
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+
+            if isScanning {
+                HStack(spacing: 8) {
+                    ProgressView().tint(Theme.accent)
+                    Text("正在从动作库匹配…")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+                .padding(.vertical, 8)
+            } else if candidates.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(selectedImage == nil
+                         ? "先拍摄或选择一张器械照片。"
+                         : "暂未识别到动作库中的器械，请拍摄完整器械。")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if selectedImage != nil {
+                        Text("拍摄建议：让器械完整进入画面，避免只露出边缘；暗光、遮挡或只拍局部都会降低识别率。")
+                            .font(.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.vertical, 4)
+            } else {
+                resultSection
+            }
+        }
+        .card()
     }
 
     private var quickActions: some View {
@@ -240,7 +331,6 @@ struct EquipmentScanView: View {
                 }
             }
         }
-        .card()
     }
 
     private func isSaved(_ candidate: EquipmentCandidate) -> Bool {
