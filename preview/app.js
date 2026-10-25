@@ -1863,6 +1863,16 @@ function render() {
       if (chat) chat.scrollTop = chat.scrollHeight;
     }, 20);
   }
+
+  if (state.screen === "equipmentSearch") {
+    setTimeout(() => {
+      const input = document.getElementById("equipment-search-input");
+      if (input) {
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+      }
+    }, 30);
+  }
 }
 
 function coachReply(text) {
