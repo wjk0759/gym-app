@@ -48,7 +48,7 @@ struct BodyPhotoAnalysisView: View {
                 .padding(20)
                 .padding(.bottom, 20)
             }
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .navigationTitle("体型照片分析")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -38,7 +38,7 @@ struct NutritionView: View {
             .padding(20)
             .padding(.bottom, 20)
         }
-        .background(Theme.background.ignoresSafeArea())
+        .background(AppBackground())
         .navigationTitle("饮食计划")
         .navigationBarTitleDisplayMode(.inline)
         .alert("美团外卖", isPresented: $showAlert) {
@@ -434,7 +434,7 @@ struct AddFoodView: View {
                 .padding(20)
                 .padding(.bottom, 20)
             }
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .navigationTitle("记录食物")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -81,7 +81,7 @@ struct CoachChatView: View {
 
                 inputBar
             }
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .navigationTitle("AI 教练")
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showPaywall) {

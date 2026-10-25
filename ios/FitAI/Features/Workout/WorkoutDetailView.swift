@@ -95,7 +95,7 @@ struct WorkoutDetailView: View {
                 .padding(20)
                 .padding(.bottom, 20)
             }
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .navigationTitle(isEditing ? "编辑训练记录" : "训练详情")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

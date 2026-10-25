@@ -36,7 +36,7 @@ struct PlanEditorView: View {
             .padding(20)
             .padding(.bottom, 20)
         }
-        .background(Theme.background.ignoresSafeArea())
+        .background(AppBackground())
         .navigationTitle("编辑训练日")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -235,7 +235,7 @@ struct ExercisePickerView: View {
                 .scrollContentBackground(.hidden)
                 .searchable(text: $query, prompt: "搜索动作")
             }
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .navigationTitle("选择动作")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

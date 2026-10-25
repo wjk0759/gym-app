@@ -72,7 +72,7 @@ struct LoginView: View {
             .frame(maxWidth: .infinity, alignment: .center)
         }
         .scrollIndicators(.hidden)
-        .background(Theme.background.ignoresSafeArea())
+        .background(AppBackground())
         .scrollDismissesKeyboard(.interactively)
         .sheet(item: $legal) { kind in
             LegalDocumentView(kind: kind)
@@ -172,14 +172,26 @@ struct LoginView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(20)
-        .background(
-            Theme.surface,
-            in: RoundedRectangle(cornerRadius: 22, style: .continuous)
-        )
+        .background {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(.ultraThinMaterial)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.055),
+                            Color.white.opacity(0.015)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        }
         .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Theme.stroke, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.white.opacity(0.10), lineWidth: 0.8)
         )
+        .shadow(color: Color.black.opacity(0.22), radius: 20, y: 12)
     }
 
     private var modeSwitch: some View {
@@ -607,7 +619,7 @@ private struct ServerSettingsView: View {
                 Spacer()
             }
             .padding(20)
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .navigationTitle("开发服务器")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -726,7 +738,7 @@ struct LegalDocumentView: View {
                 .padding(20)
                 .padding(.bottom, 24)
             }
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .navigationTitle(kind.title)
             .navigationBarTitleDisplayMode(.inline)
             .presentationDragIndicator(.visible)

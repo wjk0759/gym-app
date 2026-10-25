@@ -26,7 +26,7 @@ struct PlanHomeView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 28)
             }
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .navigationTitle("训练计划")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -339,7 +339,7 @@ struct PlanHistoryView: View {
                 .padding(20)
                 .padding(.bottom, 20)
             }
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .navigationTitle("计划历史")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

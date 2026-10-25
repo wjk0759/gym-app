@@ -43,7 +43,7 @@ struct PaywallView: View {
                 .padding(20)
                 .padding(.bottom, 20)
             }
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .safeAreaInset(edge: .bottom) {
                 purchaseBar
             }

@@ -24,7 +24,7 @@ struct ProfileEditView: View {
             .padding(.horizontal, 20)
             .padding(.top, 12)
         }
-        .background(Theme.background.ignoresSafeArea())
+        .background(AppBackground())
         .scrollDismissesKeyboard(.interactively)
         .navigationTitle("编辑资料")
         .navigationBarTitleDisplayMode(.inline)

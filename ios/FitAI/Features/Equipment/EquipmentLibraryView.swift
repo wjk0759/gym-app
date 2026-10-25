@@ -70,7 +70,7 @@ struct EquipmentLibraryView: View {
             .padding(20)
             .padding(.bottom, 24)
         }
-        .background(Theme.background.ignoresSafeArea())
+        .background(AppBackground())
         .navigationTitle("器械")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -288,7 +288,7 @@ struct EquipmentSearchView: View {
             .padding(20)
             .padding(.bottom, 20)
         }
-        .background(Theme.background.ignoresSafeArea())
+        .background(AppBackground())
         .navigationTitle("搜索器械")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
@@ -431,7 +431,7 @@ struct EquipmentItemDetailView: View {
                     .padding(20)
                 }
             }
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .navigationTitle("器械详情")
             .navigationBarTitleDisplayMode(.inline)
             .task {
@@ -586,7 +586,7 @@ struct AddEquipmentView: View {
                 .padding(20)
                 .padding(.bottom, 20)
             }
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .navigationTitle("添加器械")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

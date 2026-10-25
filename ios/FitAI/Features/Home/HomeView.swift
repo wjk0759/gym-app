@@ -36,7 +36,7 @@ struct HomeView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 28)
             }
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .navigationTitle("今日")
             .navigationBarTitleDisplayMode(.large)
             .fullScreenCover(isPresented: $showWorkout) {

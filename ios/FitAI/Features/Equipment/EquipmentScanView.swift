@@ -45,7 +45,7 @@ struct EquipmentScanView: View {
             .padding(.top, 8)
             .padding(.bottom, 28)
         }
-        .background(Theme.background.ignoresSafeArea())
+        .background(AppBackground())
         .navigationTitle("添加器械")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: photoItem?.itemIdentifier) { _, _ in
@@ -376,7 +376,7 @@ struct ExerciseDetailView: View {
                 .padding(20)
                 .padding(.bottom, 20)
             }
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .navigationTitle("动作详情")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

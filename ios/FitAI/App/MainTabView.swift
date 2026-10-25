@@ -31,7 +31,7 @@ struct MainTabView: View {
                 }
         }
         .tint(Theme.accent)
-        .toolbarBackground(Theme.background, for: .tabBar)
+        .toolbarBackground(.ultraThinMaterial, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
     }
 }

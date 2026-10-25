@@ -16,7 +16,7 @@ struct DataExportView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(16)
             }
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .navigationTitle("导出数据")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {

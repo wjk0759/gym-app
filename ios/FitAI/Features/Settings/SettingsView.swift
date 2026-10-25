@@ -47,7 +47,7 @@ struct SettingsView: View {
             .padding(.top, 8)
             .padding(.bottom, 28)
         }
-        .background(Theme.background.ignoresSafeArea())
+        .background(AppBackground())
         .navigationTitle("设置")
         .navigationBarTitleDisplayMode(.large)
         .onAppear(perform: syncReminder)

@@ -71,7 +71,7 @@ struct FoodPhotoAnalysisView: View {
                 .padding(20)
                 .padding(.bottom, 20)
             }
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .navigationTitle("拍照识别饮食")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

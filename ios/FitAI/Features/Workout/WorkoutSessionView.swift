@@ -46,7 +46,7 @@ struct WorkoutSessionView: View {
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     workoutActionBar
                 }
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .navigationTitle("训练中")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -25,7 +25,7 @@ struct OnboardingView: View {
             .padding(.horizontal, 20)
             .padding(.top, 18)
         }
-        .background(Theme.background.ignoresSafeArea())
+        .background(AppBackground())
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {

@@ -27,7 +27,7 @@ struct ProfileView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 28)
             }
-            .background(Theme.background.ignoresSafeArea())
+            .background(AppBackground())
             .navigationTitle("我的")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
