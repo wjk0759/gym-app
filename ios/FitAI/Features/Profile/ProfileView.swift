@@ -11,8 +11,9 @@ struct ProfileView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    profileCard
-                    proCard
+                    sectionLabel("账户与会员")
+                        .padding(.top, 0)
+                    accountCard
 
                     sectionLabel("身体与目标")
                     metricsCard
@@ -37,37 +38,90 @@ struct ProfileView: View {
         }
     }
 
-    // MARK: - 档案
+    // MARK: - 账户与会员
 
-    private var profileCard: some View {
-        HStack(spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(Theme.accent.opacity(0.18))
-                    .frame(width: 58, height: 58)
-                Text(String(store.profile.nickname.prefix(1)))
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(Theme.accent)
+    private var accountCard: some View {
+        VStack(spacing: 0) {
+            NavigationLink {
+                ProfileEditView()
+            } label: {
+                HStack(spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .fill(Theme.accent.opacity(0.18))
+                            .frame(width: 54, height: 54)
+                        Text(String(store.profile.nickname.prefix(1)))
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(Theme.accent)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(store.profile.nickname)
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(.white)
+                        Text("\(store.profile.goalType.label) · \(store.profile.experience.label) · 每周 \(store.profile.weeklyDays) 练")
+                            .font(.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                    }
+
+                    Spacer(minLength: 8)
+
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("编辑资料")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Theme.accent)
+                        Image(systemName: "chevron.right")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(store.profile.nickname)
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(.white)
-                Text("\(store.profile.goalType.label) · \(store.profile.experience.label) · 每周 \(store.profile.weeklyDays) 练")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
+            Divider()
+                .overlay(Theme.stroke)
+                .padding(.vertical, 13)
+
+            Button {
+                showPaywall = true
+            } label: {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(Theme.accent.opacity(0.12))
+                            .frame(width: 34, height: 34)
+                        Image(systemName: "crown.fill")
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.accent)
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("练途 Pro")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white)
+                        Text("AI 计划、教练与器械识别")
+                            .font(.caption2)
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+
+                    Spacer()
+
+                    Text("开通 / 管理")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+                .contentShape(Rectangle())
             }
-
-            Spacer()
-
-            Button("编辑") {
-                store.editProfile()
-            }
-            .font(.footnote.weight(.semibold))
-            .foregroundStyle(Theme.accent)
+            .buttonStyle(.plain)
         }
         .card()
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
     }
 
     private func sectionLabel(_ text: String) -> some View {
@@ -78,39 +132,6 @@ struct ProfileView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 8)
             .padding(.horizontal, 2)
-    }
-
-    private var proCard: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(Theme.accent.opacity(0.14))
-                    .frame(width: 44, height: 44)
-                Image(systemName: "crown.fill")
-                    .foregroundStyle(Theme.accent)
-            }
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text("练途 Pro")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                Text("解锁 AI 计划、教练对话与器械识别")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
-            }
-
-            Spacer()
-
-            Button("查看") {
-                showPaywall = true
-            }
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(Theme.accent)
-        }
-        .card()
-        .sheet(isPresented: $showPaywall) {
-            PaywallView()
-        }
     }
 
     private var metricsCard: some View {

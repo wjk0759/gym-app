@@ -251,6 +251,7 @@ function normalizeState(value) {
   next.authDevCode = "";
   next.paywallPlan = next.paywallPlan || "yearly";
   next.legalDoc = null;
+  next.profileDraft = null;
   return next;
 }
 
@@ -262,6 +263,7 @@ function initialState() {
     tab: "home",
     onboarded: false,
     profile,
+    profileDraft: null,
     plan: buildPlan(profile),
     sessions: demoSessions(),
     chats: [],
@@ -531,6 +533,23 @@ function bmiText(profile) {
   const value = h > 0 ? Number(profile.weight) / (h * h) : 0;
   const label = value < 18.5 ? "偏瘦" : value < 24 ? "正常" : value < 28 ? "偏高" : "肥胖";
   return `${value.toFixed(1)} · ${label}`;
+}
+
+function profileDraftRangeRow(key, label, unit, min, max, step) {
+  const draft = state.profileDraft;
+  if (!draft) return "";
+  const value = draft[key] ?? min;
+  const shown = step < 1 ? Number(value).toFixed(1) : String(Math.round(value));
+  return `
+    <div class="slider-row">
+      <div class="between">
+        <span class="small muted">${label}</span>
+        <span class="small strong" id="draft-val-${key}">${shown}${unit}</span>
+      </div>
+      <input type="range" min="${min}" max="${max}" step="${step}" value="${value}"
+        oninput="app.profileDraftNumber('${key}', this.value)">
+    </div>
+  `;
 }
 
 /* ---------------- Login ---------------- */
@@ -1361,25 +1380,30 @@ function profileScreen() {
         ${settingsButton()}
       </div>
 
-      <div class="card">
-        <div class="row gap12">
+      <div class="section-kicker">账户与会员</div>
+
+      <div class="card" style="padding:0">
+        <div class="list-row" style="padding:16px;cursor:pointer;align-items:center" onclick="app.openProfileEdit()">
           <div class="nutrition-icon" style="font-size:18px">${esc(p.name.slice(0, 1))}</div>
           <div class="grow">
             <div class="h3">${esc(p.name)}</div>
             <div class="tiny muted" style="margin-top:3px">${p.goal} · ${p.experience} · 每周 ${p.weeklyDays} 练</div>
           </div>
-          <button class="link" onclick="app.restartOnboarding()">编辑</button>
+          <div style="text-align:right">
+            <div class="tiny accent strong">编辑资料</div>
+            <div class="faint">›</div>
+          </div>
         </div>
-      </div>
 
-      <div class="card" onclick="app.openPaywall()" style="cursor:pointer">
-        <div class="row gap12">
+        <div style="height:1px;background:var(--stroke);margin:0 16px"></div>
+
+        <div class="list-row" style="padding:14px 16px;cursor:pointer;align-items:center" onclick="app.openPaywall()">
           <div class="nutrition-icon" style="color:var(--warning);background:rgba(250,184,77,.12)">♛</div>
           <div class="grow">
-            <div class="h3">练途 Pro</div>
-            <div class="tiny muted" style="margin-top:3px">${state.pro ? "已订阅 · 所有功能已解锁" : "解锁 AI 计划、教练对话与器械识别"}</div>
+            <div class="small strong">练途 Pro</div>
+            <div class="tiny muted" style="margin-top:2px">${state.pro ? "已订阅 · 所有功能已解锁" : "AI 计划、教练与器械识别"}</div>
           </div>
-          <div class="accent small">${state.pro ? "管理" : "查看"}</div>
+          <div class="accent small">${state.pro ? "管理会员" : "开通会员"} ›</div>
         </div>
       </div>
 
@@ -1433,6 +1457,103 @@ function profileScreen() {
         </div>
       </div>
 
+    </div>
+  `;
+}
+
+/* ---------------- Profile edit ---------------- */
+
+function profileDraftSegmented(key, options) {
+  const draft = state.profileDraft;
+  return `<div class="seg">${options.map((option) => {
+    const active = String(draft[key]) === String(option) ? "active" : "";
+    return `<button class="${active}" onclick="app.profileDraftSelect('${key}', ${JSON.stringify(option)})">${option}</button>`;
+  }).join("")}</div>`;
+}
+
+function profileEditScreen() {
+  const draft = state.profileDraft;
+  if (!draft) return profileScreen();
+
+  return `
+    <div class="stack">
+      ${headerBack("编辑资料", "app.closeProfileEdit()")}
+
+      <div class="card">
+        <div class="h3">基础信息</div>
+        <div class="tiny muted" style="margin-top:3px;margin-bottom:14px">用于计算热量与训练负荷</div>
+
+        <div class="form-label">怎么称呼你</div>
+        <input type="text" value="${esc(draft.name)}" placeholder="例如：小林" oninput="app.profileDraftInput('name', this.value)">
+
+        <div class="form-label" style="margin-top:14px">性别</div>
+        ${profileDraftSegmented("sex", ["男", "女"])}
+
+        ${profileDraftRangeRow("age", "年龄", "岁", 18, 60, 1)}
+        ${profileDraftRangeRow("height", "身高", "cm", 140, 210, 1)}
+      </div>
+
+      <div class="card">
+        <div class="h3">身体数据</div>
+        <div class="tiny muted" style="margin-top:3px;margin-bottom:12px">三围选填，用于追踪体型变化</div>
+        ${profileDraftRangeRow("weight", "体重", "kg", 40, 150, 0.5)}
+        ${profileDraftRangeRow("waist", "腰围", "cm", 50, 150, 1)}
+        ${profileDraftRangeRow("chest", "胸围", "cm", 60, 150, 1)}
+        ${profileDraftRangeRow("hip", "臀围", "cm", 60, 150, 1)}
+        <div class="row between" style="margin-top:12px">
+          <span class="small muted">BMI</span>
+          <span class="small strong" id="draft-bmi">${bmiText(draft)}</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="h3">可用器械</div>
+        <div class="tiny muted" style="margin-top:3px;margin-bottom:12px">只安排你能用上的动作</div>
+        <div class="chips">
+          ${["徒手", "哑铃", "杠铃", "固定器械", "绳索", "弹力带", "壶铃"].map((item) => `
+            <button class="chip ${draft.equipment.includes(item) ? "active" : ""}" onclick="app.profileDraftToggleEquip('${item}')">${item}</button>
+          `).join("")}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="h3">训练安排</div>
+        <div class="tiny muted" style="margin-top:3px;margin-bottom:12px">之后可以随时调整</div>
+        <div class="form-label">每周训练</div>
+        ${profileDraftSegmented("weeklyDays", [2, 3, 4, 5])}
+        <div class="form-label" style="margin-top:14px">单次时长</div>
+        ${profileDraftSegmented("minutes", [30, 45, 60, 90])}
+        <div class="form-label" style="margin-top:14px">训练经验</div>
+        ${profileDraftSegmented("experience", ["新手", "有基础", "进阶"])}
+      </div>
+
+      <div class="card">
+        <div class="h3">你的目标</div>
+        <div class="tiny muted" style="margin-top:3px;margin-bottom:12px">计划会围绕目标调整组次与负荷</div>
+        <div class="goal-grid">
+          ${[
+            ["减脂", "控制热量，保留肌肉"],
+            ["增肌", "渐进超负荷，稳定增重"],
+            ["重塑体型", "体重变化不大，改善围度"],
+            ["提升体能", "提高心肺与耐力"]
+          ].map(([goal, desc]) => `
+            <button class="goal ${draft.goal === goal ? "active" : ""}" onclick="app.profileDraftSelect('goal', '${goal}')">
+              <strong>${goal}</strong><span>${desc}</span>
+            </button>
+          `).join("")}
+        </div>
+        ${draft.goal !== "提升体能" ? `
+          ${profileDraftRangeRow("targetWeight", "目标体重", "kg", 40, 120, 0.5)}
+          ${profileDraftRangeRow("targetWaist", "目标腰围", "cm", 50, 120, 1)}
+        ` : ""}
+      </div>
+
+      <div class="card tight">
+        <div class="tiny muted" style="line-height:1.6">保存资料不会自动覆盖当前训练计划。如需让计划适配新的目标或器械，可回到「计划」页让 AI 复盘调整。</div>
+      </div>
+
+      <button class="btn btn-primary" onclick="app.saveProfileEdit()">保存资料</button>
+      <button class="btn btn-ghost" onclick="app.closeProfileEdit()">取消并返回</button>
     </div>
   `;
 }
@@ -2101,6 +2222,7 @@ function render() {
   else if (state.screen === "foodAdd") html = foodAddScreen();
   else if (state.screen === "foodPhoto") html = foodPhotoScreen();
   else if (state.screen === "paywall") html = paywallScreen();
+  else if (state.screen === "profileEdit") html = profileEditScreen();
   else if (state.screen === "settings") html = settingsScreen();
   else if (state.screen === "workout") html = workoutScreen();
   else if (state.screen === "sessionDetail") html = sessionScreen();
@@ -2167,6 +2289,85 @@ window.app = {
   field(key, value) {
     state.profile[key] = value;
     save();
+  },
+
+  profileDraftInput(key, value) {
+    if (!state.profileDraft) return;
+    state.profileDraft[key] = value;
+    save();
+  },
+
+  profileDraftNumber(key, value) {
+    if (!state.profileDraft) return;
+    const number = Number(value);
+    state.profileDraft[key] = number;
+    const units = {
+      age: "岁", height: "cm", weight: "kg", waist: "cm", chest: "cm", hip: "cm",
+      targetWeight: "kg", targetWaist: "cm"
+    };
+    const label = document.getElementById(`draft-val-${key}`);
+    if (label) {
+      const shown = key === "weight" || key === "targetWeight" ? number.toFixed(1) : String(Math.round(number));
+      label.textContent = `${shown}${units[key] || ""}`;
+    }
+    const bmi = document.getElementById("draft-bmi");
+    if (bmi) bmi.textContent = bmiText(state.profileDraft);
+    save();
+  },
+
+  profileDraftSelect(key, value) {
+    if (!state.profileDraft) return;
+    state.profileDraft[key] = Number.isNaN(Number(value)) ? value : Number(value);
+    save();
+    render();
+  },
+
+  profileDraftToggleEquip(name) {
+    if (!state.profileDraft) return;
+    const list = state.profileDraft.equipment;
+    state.profileDraft.equipment = list.includes(name)
+      ? list.filter((item) => item !== name)
+      : list.concat(name);
+    save();
+    render();
+  },
+
+  openProfileEdit() {
+    state.profileDraft = JSON.parse(JSON.stringify(state.profile));
+    state.screen = "profileEdit";
+    save();
+    render();
+  },
+
+  closeProfileEdit() {
+    state.profileDraft = null;
+    state.screen = "tabs";
+    state.tab = "profile";
+    save();
+    render();
+  },
+
+  saveProfileEdit() {
+    const draft = state.profileDraft;
+    if (!draft) return;
+    const name = String(draft.name || "").trim();
+    if (!name) {
+      toast("请填写称呼");
+      return;
+    }
+    if (Number(draft.height) > 0 && Number(draft.weight) / Math.pow(Number(draft.height) / 100, 2) < 18.5 && draft.goal === "减脂") {
+      toast("BMI 低于 18.5，不建议以减脂为目标");
+      return;
+    }
+    draft.name = name;
+    if (!draft.equipment.includes("徒手")) draft.equipment.push("徒手");
+    state.profile = { ...draft };
+    state.profileDraft = null;
+    state.screen = "tabs";
+    state.tab = "profile";
+    save();
+    render();
+    toast("资料已保存");
   },
 
   range(key, value, unit) {
@@ -3196,14 +3397,6 @@ window.app = {
     link.click();
     URL.revokeObjectURL(link.href);
     toast("已导出 JSON 数据");
-  },
-
-  restartOnboarding() {
-    state.onboarded = false;
-    state.screen = "onboarding";
-    state.workout = null;
-    save();
-    render();
   },
 
   resetAll() {

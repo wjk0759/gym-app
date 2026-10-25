@@ -153,6 +153,15 @@ final class AppStore {
         }
     }
 
+    func updateProfile(_ updated: UserProfile) {
+        var value = updated
+        value.isOnboarded = true
+        value.equipment.insert(.bodyweight)
+        profile = value
+        persist()
+        rescheduleNotifications()
+    }
+
     func generatePlan(force: Bool = true) {
         guard profile.isOnboarded else { return }
         if plan != nil && !force { return }
@@ -467,11 +476,6 @@ final class AppStore {
     }
 
     // MARK: - 档案与提醒
-
-    func editProfile() {
-        profile.isOnboarded = false
-        persist()
-    }
 
     func resetAll() {
         try? FileManager.default.removeItem(at: fileURL)
