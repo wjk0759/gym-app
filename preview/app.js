@@ -274,6 +274,8 @@ function normalizeState(value) {
   next.equipFilter = next.equipFilter || "全部";
   next.equipRecognitionCandidates = Array.isArray(next.equipRecognitionCandidates) ? next.equipRecognitionCandidates : [];
   next.equipRecognitionPhoto = !!next.equipRecognitionPhoto;
+  next.equipLibraryFromProfile = !!next.equipLibraryFromProfile;
+  next.workoutCustomDay = null;
   next.authenticated = !!next.authenticated;
   next.authMode = next.authMode || "phone";
   next.authPhone = next.authPhone || "13800138000";
@@ -334,6 +336,8 @@ function initialState() {
     equipFilter: "全部",
     equipRecognitionCandidates: [],
     equipRecognitionPhoto: false,
+    equipLibraryFromProfile: false,
+    workoutCustomDay: null,
     authenticated: false,
     authMode: "phone",
     authPhone: "13800138000",
@@ -1173,7 +1177,7 @@ function equipmentScreen() {
   const equipment = state.equipment;
   return `
     <div class="stack">
-      ${headerBack("添加器械", "app.tab('equipment')")}
+      ${headerBack("添加器械", "app.equipmentLibraryOpen()")}
       <div>
         <h1 class="h1">拍一下器械</h1>
         <div class="tiny muted" style="margin-top:4px">马上知道怎么用</div>
@@ -1391,7 +1395,7 @@ function equipmentLibraryScreen() {
   const items = state.equipmentLibrary;
   return `
     <div class="stack">
-      ${headerBack("器械库", "app.equipmentTabOpen()")}
+      ${headerBack("器械库", state.equipLibraryFromProfile ? "app.backTo('profile')" : "app.equipmentTabOpen()")}
       <div class="tiny muted">已添加的器械 · 教学视频与 AI 计划</div>
 
       <div class="card nutrition-card" onclick="app.equipmentAddOpen()">
@@ -1745,7 +1749,7 @@ function profileScreen() {
           : `<div class="tiny faint" style="margin-top:8px">照片只用于本次分析，不写入训练记录。</div>`}
       </div>
 
-      <div class="card" onclick="app.equipmentLibraryOpen()" style="cursor:pointer">
+      <div class="card" onclick="app.equipmentLibraryOpen('profile')" style="cursor:pointer">
         <div class="between">
           <div>
             <div class="h3">我的器械库</div>
@@ -2349,10 +2353,18 @@ function paywallScreen() {
 
 /* ---------------- Workout ---------------- */
 
+function workoutDay(workout) {
+  if (!workout) return null;
+  return state.plan.days.find((item) => item.id === workout.dayId)
+    || (state.workoutCustomDay && state.workoutCustomDay.id === workout.dayId
+      ? state.workoutCustomDay
+      : null);
+}
+
 function workoutScreen() {
   const workout = state.workout;
   if (!workout) return home();
-  const day = state.plan.days.find((item) => item.id === workout.dayId);
+  const day = workoutDay(workout);
   if (!day) return home();
   if (workout.index >= day.exercises.length) return workoutSummary(day);
 
@@ -3151,6 +3163,7 @@ window.app = {
   startWorkout() {
     const day = todayDay();
     const first = day.exercises[0];
+    state.workoutCustomDay = null;
     state.workout = {
       dayId: day.id,
       index: 0,
@@ -3182,7 +3195,7 @@ window.app = {
 
   completeSet() {
     const workout = state.workout;
-    const day = state.plan.days.find((item) => item.id === workout.dayId);
+    const day = workoutDay(workout);
     const exercise = day.exercises[workout.index];
     workout.logs.push({
       slug: exercise.slug,
@@ -3213,7 +3226,7 @@ window.app = {
 
   nextExercise() {
     const workout = state.workout;
-    const day = state.plan.days.find((item) => item.id === workout.dayId);
+    const day = workoutDay(workout);
     stopRestTimer();
     workout.rest = 0;
     workout.index += 1;
@@ -3242,7 +3255,7 @@ window.app = {
   finishWorkout() {
     const workout = state.workout;
     if (!workout) return;
-    const day = state.plan.days.find((item) => item.id === workout.dayId);
+    const day = workoutDay(workout);
     const volume = workout.logs.reduce((sum, log) => sum + log.weight * log.reps, 0);
     const items = day.exercises.map((exercise) => ({
       name: EX[exercise.slug].name,
@@ -3261,6 +3274,7 @@ window.app = {
       items
     });
     state.workout = null;
+    state.workoutCustomDay = null;
     stopRestTimer();
     state.screen = "tabs";
     state.tab = "home";
@@ -3273,6 +3287,7 @@ window.app = {
     if (!state.workout) return;
     if (!confirm("结束这次训练？已完成的组不会保存。")) return;
     state.workout = null;
+    state.workoutCustomDay = null;
     stopRestTimer();
     state.screen = "tabs";
     state.tab = "home";
@@ -3720,8 +3735,9 @@ window.app = {
     render();
   },
 
-  equipmentLibraryOpen() {
+  equipmentLibraryOpen(source = "equipment") {
     state.screen = "equipmentLibrary";
+    state.equipLibraryFromProfile = source === "profile";
     save();
     render();
   },
@@ -3782,7 +3798,7 @@ window.app = {
         rpe: 7.5
       }))
     };
-    state.plan.days.push(day);
+    state.workoutCustomDay = day;
     const first = day.exercises[0];
     state.workout = {
       dayId: day.id,
@@ -3804,6 +3820,8 @@ window.app = {
 
   equipmentRecognitionOpen() {
     state.screen = "equipmentRecognition";
+    state.equipRecognitionPhoto = false;
+    state.equipRecognitionCandidates = [];
     save();
     render();
   },

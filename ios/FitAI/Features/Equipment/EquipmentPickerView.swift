@@ -82,7 +82,11 @@ struct EquipmentPickerView: View {
             }
         }
         .navigationDestination(isPresented: $showScanner) {
-            EquipmentScanView()
+            EquipmentScanView { exercise in
+                if !selectedExercises.contains(where: { $0.slug == exercise.slug }) {
+                    selectedExercises.append(exercise)
+                }
+            }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             actionBar
@@ -253,15 +257,25 @@ struct EquipmentPickerView: View {
         .buttonStyle(.plain)
     }
 
+    @ViewBuilder
     private var exerciseGrid: some View {
-        LazyVGrid(columns: gridColumns, spacing: 10) {
-            ForEach(filteredExercises) { exercise in
-                Button {
-                    toggle(exercise)
-                } label: {
-                    exerciseCard(exercise)
+        if filteredExercises.isEmpty {
+            EmptyStateView(
+                icon: "line.3.horizontal.decrease.circle",
+                title: "没有匹配的动作",
+                message: "换个肌群或器械筛选，或者清空搜索关键词。"
+            )
+            .padding(.top, 8)
+        } else {
+            LazyVGrid(columns: gridColumns, spacing: 10) {
+                ForEach(filteredExercises) { exercise in
+                    Button {
+                        toggle(exercise)
+                    } label: {
+                        exerciseCard(exercise)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
     }

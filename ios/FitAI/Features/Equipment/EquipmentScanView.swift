@@ -5,6 +5,13 @@ import UIKit
 
 struct EquipmentScanView: View {
     @Environment(AppStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+
+    private let onSelect: ((Exercise) -> Void)?
+
+    init(onSelect: ((Exercise) -> Void)? = nil) {
+        self.onSelect = onSelect
+    }
 
     @State private var photoItem: PhotosPickerItem?
     @State private var selectedImage: UIImage?
@@ -306,6 +313,20 @@ struct EquipmentScanView: View {
                         }
                         .buttonStyle(.plain)
                         .disabled(isSaved(candidate))
+
+                        Spacer()
+
+                        if let onSelect {
+                            Button {
+                                onSelect(candidate.exercise)
+                                dismiss()
+                            } label: {
+                                Label("加入已选", systemImage: "checkmark.circle.fill")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(Theme.accent)
+                            }
+                            .buttonStyle(.plain)
+                        }
 
                         Spacer()
 
