@@ -848,21 +848,20 @@ function equipmentLibraryScreen() {
           <div class="h3">器械库还是空的</div>
           <div class="tiny muted" style="margin-top:5px">点上方「添加器械」搜索、拍照或从相册上传第一件器械。</div>
         </div>
-      ` : items.map((item) => `
-        <div class="card" style="cursor:pointer" onclick="app.openEquipItem('${item.id}')">
-          <div class="row gap10">
-            <div class="nutrition-icon">🏋️</div>
-            <div class="grow">
-              <div class="h3">${esc(item.name)}</div>
-              <div class="tiny muted" style="margin-top:2px">${item.muscle} · ${item.equip}</div>
-              <div class="tiny ${item.video ? "accent" : "faint"}" style="margin-top:2px">
-                ${item.video ? "已配置教学视频" : "未配置视频"}
+      ` : `
+        <div class="equipment-grid">
+          ${items.map((item) => `
+            <div class="equipment-tile" onclick="app.openEquipItem('${item.id}')">
+              <div class="equipment-tile-image">🏋️</div>
+              <div class="equipment-tile-name">${esc(item.name)}</div>
+              <div class="equipment-tile-meta">${item.muscle} · ${item.equip}</div>
+              <div class="equipment-tile-video ${item.video ? "ready" : ""}">
+                ${item.video ? "教学视频" : "暂无视频"}
               </div>
             </div>
-            <div class="faint">›</div>
-          </div>
+          `).join("")}
         </div>
-      `).join("")}
+      `}
 
       <div class="card">
         <div class="between">
@@ -928,7 +927,7 @@ function equipmentSearchScreen() {
         <div class="h3">搜索结果</div>
         <div class="tiny faint" id="equipment-search-count">${results.length} 个</div>
       </div>
-      <div id="equipment-search-results">${equipmentSearchResults(state.equipSearchQuery)}</div>
+      <div id="equipment-search-results" style="display:grid;gap:14px">${equipmentSearchResults(state.equipSearchQuery)}</div>
       <div class="tiny faint" style="line-height:1.6">找不到自定义器械？返回后可以在真实 App 里用「手动填写」补充名称、视频和备注。</div>
     </div>
   `;
@@ -977,7 +976,6 @@ function equipmentItemScreen() {
         <div style="height:150px;border-radius:14px;margin-top:10px;background:linear-gradient(135deg,#1a2028,#0d1016);display:grid;place-items:center;color:var(--faint)">视频占位</div>
       </div>
 
-      <button class="btn btn-primary" onclick="app.regenerateWithLibrary()">按器械库重新生成计划</button>
       <button class="btn btn-danger" onclick="app.deleteEquipItem('${item.id}')">从器械库删除</button>
     </div>
   `;

@@ -20,6 +20,11 @@ struct EquipmentLibraryView: View {
 
     @State private var activeSheet: EquipmentSheet?
 
+    private let gridColumns = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
+    ]
+
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
@@ -43,13 +48,15 @@ struct EquipmentLibraryView: View {
                         message: "点上方「添加器械」搜索、拍照或从相册上传第一件器械。"
                     )
                 } else {
-                    ForEach(store.equipmentLibrary) { item in
-                        Button {
-                            activeSheet = .detail(item.id)
-                        } label: {
-                            equipmentRow(item)
+                    LazyVGrid(columns: gridColumns, spacing: 12) {
+                        ForEach(store.equipmentLibrary) { item in
+                            Button {
+                                activeSheet = .detail(item.id)
+                            } label: {
+                                equipmentTile(item)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
 
@@ -144,54 +151,64 @@ struct EquipmentLibraryView: View {
         .card(padding: 14)
     }
 
-    private func equipmentRow(_ item: EquipmentItem) -> some View {
-        HStack(spacing: 12) {
-            equipmentThumbnail(item)
+    private func equipmentTile(_ item: EquipmentItem) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            equipmentTileImage(item)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(item.name)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+
                 Text("\(item.muscle?.label ?? "未分类") · \(item.equipment?.label ?? "未设置")")
                     .font(.caption2)
                     .foregroundStyle(Theme.secondaryText)
-                if item.videoURL != nil {
-                    Label("已配置教学视频", systemImage: "play.rectangle")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.accent)
-                } else {
-                    Text("未配置视频")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
-                }
+                    .lineLimit(1)
+
+                Label(
+                    item.videoURL != nil ? "教学视频" : "暂无视频",
+                    systemImage: item.videoURL != nil ? "play.rectangle.fill" : "play.rectangle"
+                )
+                .font(.caption2)
+                .foregroundStyle(item.videoURL != nil ? Theme.accent : Theme.tertiaryText)
+                .padding(.top, 1)
             }
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.tertiaryText)
+            .padding(.horizontal, 10)
+            .padding(.bottom, 12)
         }
-        .card(padding: 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            Theme.surface,
+            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Theme.stroke, lineWidth: 1)
+        )
     }
 
-    @ViewBuilder
-    private func equipmentThumbnail(_ item: EquipmentItem) -> some View {
-        if let data = item.photoData, let image = UIImage(data: data) {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 58, height: 58)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        } else {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Theme.surfaceStrong)
-                .frame(width: 58, height: 58)
-                .overlay(
-                    Image(systemName: "dumbbell")
-                        .foregroundStyle(Theme.accent)
-                )
-        }
+    private func equipmentTileImage(_ item: EquipmentItem) -> some View {
+        Color.clear
+            .aspectRatio(1, contentMode: .fit)
+            .overlay {
+                if let data = item.photoData, let image = UIImage(data: data) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    ZStack {
+                        Theme.surfaceStrong
+                        Image(systemName: "dumbbell")
+                            .font(.system(size: 30, weight: .light))
+                            .foregroundStyle(Theme.accent)
+                    }
+                }
+            }
+            .clipped()
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .padding(8)
     }
 }
 
@@ -240,8 +257,10 @@ struct EquipmentSearchView: View {
                         message: "换个关键词，或返回器械库后用右上角「+」手动填写。"
                     )
                 } else {
-                    ForEach(results) { exercise in
-                        searchRow(exercise)
+                    LazyVStack(spacing: 18) {
+                        ForEach(results) { exercise in
+                            searchRow(exercise)
+                        }
                     }
                 }
 
@@ -290,7 +309,7 @@ struct EquipmentSearchView: View {
                         .foregroundStyle(Theme.accent)
                 }
             }
-            .padding(12)
+            .padding(14)
             .background(
                 Theme.surfaceStrong,
                 in: RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -364,16 +383,6 @@ struct EquipmentItemDetailView: View {
                         .card()
 
                         videoSection(item)
-
-                        Button {
-                            store.useEquipmentLibraryForPlans = true
-                            store.persist()
-                            store.generatePlan()
-                            dismiss()
-                        } label: {
-                            Label("按器械库重新生成计划", systemImage: "wand.and.stars")
-                        }
-                        .buttonStyle(PrimaryButtonStyle())
 
                         Button(role: .destructive) {
                             showDelete = true
