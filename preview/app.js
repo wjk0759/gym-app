@@ -514,6 +514,8 @@ function home() {
   const totals = nutritionTotals();
   const weekSessions = state.sessions.filter((s) => s.thisWeek).length;
   const ratio = Math.min(100, Math.round((weekSessions / Math.max(1, state.profile.weeklyDays)) * 100));
+  const remainingKcal = Math.max(0, targets.kcal - Math.round(totals.kcal));
+  const remainingProtein = Math.max(0, targets.protein - Math.round(totals.p));
 
   return `
     <div class="stack">
@@ -569,7 +571,7 @@ function home() {
         <div class="nutrition-icon">🍽</div>
         <div class="grow">
           <div class="h3">今日饮食</div>
-          <div class="tiny muted" style="margin-top:3px">已摄入 ${nutritionTotals().kcal} / ${targets.kcal} kcal · 蛋白质 ${Math.round(totals.p)}g</div>
+          <div class="tiny muted" style="margin-top:3px">${remainingKcal > 0 ? `还可摄入 ${remainingKcal} kcal · 蛋白质还差 ${remainingProtein}g` : `已达到今日热量目标 · 蛋白质还差 ${remainingProtein}g`}</div>
         </div>
         <div class="faint">›</div>
       </div>
