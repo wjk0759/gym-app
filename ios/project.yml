@@ -33,6 +33,9 @@ targets:
         CODE_SIGN_STYLE: Automatic
         SUPPORTS_MACCATALYST: NO
         ENABLE_PREVIEWS: YES
+      configs:
+        Debug:
+          ENABLE_TESTABILITY: YES
     scheme:
       gatherCoverageData: false
       testTargets:

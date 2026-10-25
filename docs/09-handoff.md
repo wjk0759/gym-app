@@ -8,7 +8,7 @@
 | 数据库 | 完成 | PostgreSQL + pgvector 建表脚本 |
 | 后端 | 可运行 | FastAPI + SQLite/PostgreSQL，AI 默认 Mock |
 | 后端测试 | 通过 | 7 个校验器单测 + 端到端 smoke |
-| iOS 工程 | 代码完成 | 27 个 Swift 文件，语法检查通过 |
+| iOS 工程 | 代码完成 | 29 个 Swift 文件，CI 编译 + 单测通过后为准 |
 | iOS 编译 | **未验证** | Windows 无法编译，需 Mac 或 GitHub Actions |
 | 真实 AI | 远程链路已接 | 启动后端、打开「我的 → AI 服务」远程开关、填 `.env` API Key |
 | 教学视频 | 未接 | 需自制或采购授权 |

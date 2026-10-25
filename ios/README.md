@@ -17,6 +17,17 @@ open FitAI.xcodeproj
 2. 选 iPhone 模拟器或真机
 3. `Cmd + R`
 
+单元测试：
+
+```bash
+xcodebuild test \
+  -project FitAI.xcodeproj \
+  -scheme FitAI \
+  -destination 'platform=iOS Simulator,name=iPhone 16'
+```
+
+CI 会自动选第一个可用模拟器并运行 `FitAITests`。
+
 首次运行会进入建档流程。所有数据保存在 App 的 Documents 目录，不需要后端。
 
 ## 目录
@@ -24,6 +35,7 @@ open FitAI.xcodeproj
 ```
 ios/
 ├── project.yml                     # XcodeGen 配置
+├── FitAITests/                     # 计划生成 / 热量计算单测
 └── FitAI/
     ├── App/
     │   ├── FitAIApp.swift          # 入口、AppStore 注入

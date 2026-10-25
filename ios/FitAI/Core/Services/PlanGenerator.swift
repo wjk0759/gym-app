@@ -163,7 +163,13 @@ enum PlanGenerator {
                 newItem.id = UUID()
                 newItem.sets = max(2, item.sets + setsDelta)
                 if let weight = item.weightKG, weight > 0, weightMultiplier != 1.0 {
-                    newItem.weightKG = ((weight * weightMultiplier) * 2).rounded() / 2
+                    let rounded = ((weight * weightMultiplier) * 2).rounded() / 2
+                    if weightMultiplier > 1 {
+                        // 轻重量下 2.5% 可能被 0.5kg 的刻度抹平，保证至少加 0.5kg
+                        newItem.weightKG = max(rounded, weight + 0.5)
+                    } else {
+                        newItem.weightKG = max(0.5, min(rounded, weight - 0.5))
+                    }
                 }
                 return newItem
             }
