@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, timedelta, timezone
-from typing import Annotated
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
+from typing import Annotated, Literal
+from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 
 from ..config import settings
 from ..deps import DBSession
+from ..media import POSTER_DIR, VIDEO_DIR, media_url, remove_media_url
 from ..models import (
     AdminAuditLog,
     AIJob,
@@ -17,6 +20,7 @@ from ..models import (
     ChatSession,
     EquipmentScan,
     Exercise,
+    ExerciseVideo,
     Goal,
     MealPlan,
     Profile,
@@ -64,6 +68,31 @@ class ExerciseAdminPatch(BaseModel):
     video_url: str | None = None
     thumbnail_url: str | None = None
     contraindications: list[str] | None = None
+
+
+class ExerciseVideoCreate(BaseModel):
+    exercise_slug: str = Field(min_length=1, max_length=60)
+    title: str = Field(min_length=1, max_length=120)
+    description: str | None = Field(default=None, max_length=2000)
+    video_url: str = Field(min_length=1, max_length=2000)
+    poster_url: str | None = Field(default=None, max_length=2000)
+    duration_seconds: int | None = Field(default=None, ge=0, le=14400)
+    source: str | None = Field(default=None, max_length=80)
+    license_note: str | None = Field(default=None, max_length=200)
+    license_expires_at: date | None = None
+    status: Literal["draft", "published"] = "draft"
+
+
+class ExerciseVideoUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=120)
+    description: str | None = Field(default=None, max_length=2000)
+    video_url: str | None = Field(default=None, min_length=1, max_length=2000)
+    poster_url: str | None = Field(default=None, max_length=2000)
+    duration_seconds: int | None = Field(default=None, ge=0, le=14400)
+    source: str | None = Field(default=None, max_length=80)
+    license_note: str | None = Field(default=None, max_length=200)
+    license_expires_at: date | None = None
+    status: Literal["draft", "published", "archived"] | None = None
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -177,6 +206,127 @@ def _chat_detail(session: ChatSession) -> dict:
         for message in session.messages
     ]
     return data
+
+
+VIDEO_SUFFIXES = {".mp4", ".mov", ".m4v", ".webm"}
+POSTER_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp"}
+VIDEO_CONTENT_TYPES = {
+    "video/mp4": ".mp4",
+    "video/quicktime": ".mov",
+    "video/webm": ".webm",
+}
+POSTER_CONTENT_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+}
+MAX_VIDEO_BYTES = 300 * 1024 * 1024
+MAX_POSTER_BYTES = 10 * 1024 * 1024
+
+
+async def _store_video_upload(file: UploadFile, kind: str) -> tuple[str, int]:
+    if kind not in {"video", "poster"}:
+        raise HTTPException(status_code=400, detail="上传类型不正确")
+
+    suffix = Path(file.filename or "").suffix.lower()
+    content_type = (file.content_type or "").lower()
+    if kind == "video":
+        allowed_suffixes = VIDEO_SUFFIXES
+        allowed_types = VIDEO_CONTENT_TYPES
+        max_bytes = MAX_VIDEO_BYTES
+        target_dir = VIDEO_DIR
+        limit_message = "视频不能超过 300MB"
+    else:
+        allowed_suffixes = POSTER_SUFFIXES
+        allowed_types = POSTER_CONTENT_TYPES
+        max_bytes = MAX_POSTER_BYTES
+        target_dir = POSTER_DIR
+        limit_message = "封面不能超过 10MB"
+
+    if suffix not in allowed_suffixes:
+        suffix = allowed_types.get(content_type, "")
+    if suffix not in allowed_suffixes:
+        raise HTTPException(status_code=415, detail="文件格式不支持")
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target = target_dir / f"{uuid4().hex}{suffix}"
+    size = 0
+    try:
+        with target.open("wb") as handle:
+            while chunk := await file.read(1024 * 1024):
+                size += len(chunk)
+                if size > max_bytes:
+                    raise HTTPException(status_code=413, detail=limit_message)
+                handle.write(chunk)
+        if size == 0:
+            raise HTTPException(status_code=400, detail="文件为空")
+    except Exception:
+        target.unlink(missing_ok=True)
+        raise
+
+    return media_url(target), size
+
+
+def _video_dict(video: ExerciseVideo, exercise: Exercise | None) -> dict:
+    return {
+        "id": video.id,
+        "exercise_slug": video.exercise_slug,
+        "exercise_name": exercise.name_zh if exercise else None,
+        "title": video.title,
+        "description": video.description,
+        "video_url": video.video_url,
+        "poster_url": video.poster_url,
+        "duration_seconds": video.duration_seconds,
+        "source": video.source,
+        "license_note": video.license_note,
+        "license_expires_at": (
+            video.license_expires_at.isoformat() if video.license_expires_at else None
+        ),
+        "status": video.status,
+        "version": video.version,
+        "created_by": video.created_by,
+        "created_at": _iso(video.created_at),
+        "updated_at": _iso(video.updated_at),
+    }
+
+
+def _sync_exercise_video(db: DBSession, exercise_slug: str) -> None:
+    exercise = db.get(Exercise, exercise_slug)
+    if exercise is None:
+        return
+    video = (
+        db.execute(
+            select(ExerciseVideo)
+            .where(
+                ExerciseVideo.exercise_slug == exercise_slug,
+                ExerciseVideo.status == "published",
+            )
+            .order_by(ExerciseVideo.updated_at.desc())
+        )
+        .scalars()
+        .first()
+    )
+    exercise.video_url = video.video_url if video else None
+    exercise.thumbnail_url = video.poster_url if video else None
+    exercise.source = video.source if video else None
+    exercise.license = video.license_note if video else None
+
+
+def _publish_video(db: DBSession, video: ExerciseVideo) -> None:
+    others = db.execute(
+        select(ExerciseVideo).where(
+            ExerciseVideo.exercise_slug == video.exercise_slug,
+            ExerciseVideo.id != video.id,
+            ExerciseVideo.status == "published",
+        )
+    ).scalars()
+    for other in others:
+        other.status = "archived"
+        other.updated_at = utcnow()
+    video.status = "published"
+    video.updated_at = utcnow()
+    db.flush()
+    _sync_exercise_video(db, video.exercise_slug)
 
 
 @router.get("/auth/check")
@@ -986,6 +1136,209 @@ def update_exercise(
         {"fields": sorted(changes.keys())},
     )
     return {"ok": True, "slug": slug, "updated": sorted(changes.keys())}
+
+
+@router.post("/videos/upload")
+async def upload_video_file(
+    actor: AdminAuth,
+    file: UploadFile = File(...),
+    kind: str = Form(default="video"),
+):
+    url, size = await _store_video_upload(file, kind)
+    return {"url": url, "size": size, "kind": kind}
+
+
+@router.get("/videos")
+def list_videos(
+    actor: AdminAuth,
+    db: DBSession,
+    q: str = Query(default="", max_length=80),
+    status: str = Query(default="", max_length=20),
+    limit: int = Query(default=100, ge=1, le=300),
+    offset: int = Query(default=0, ge=0),
+):
+    statement = select(ExerciseVideo, Exercise).join(
+        Exercise, Exercise.slug == ExerciseVideo.exercise_slug
+    )
+    text = q.strip()
+    if text:
+        statement = statement.where(
+            or_(
+                ExerciseVideo.title.contains(text),
+                ExerciseVideo.exercise_slug.contains(text),
+                Exercise.name_zh.contains(text),
+            )
+        )
+    if status:
+        statement = statement.where(ExerciseVideo.status == status)
+    total = db.scalar(select(func.count()).select_from(statement.subquery())) or 0
+    rows = db.execute(
+        statement.order_by(ExerciseVideo.updated_at.desc())
+        .limit(limit)
+        .offset(offset)
+    ).all()
+    return {
+        "items": [_video_dict(video, exercise) for video, exercise in rows],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+@router.get("/videos/{video_id}")
+def video_detail(video_id: str, actor: AdminAuth, db: DBSession):
+    video = db.get(ExerciseVideo, video_id)
+    if video is None:
+        raise HTTPException(status_code=404, detail="教学视频不存在")
+    return _video_dict(video, db.get(Exercise, video.exercise_slug))
+
+
+@router.post("/videos")
+def create_video(
+    payload: ExerciseVideoCreate,
+    actor: AdminAuth,
+    db: DBSession,
+):
+    exercise = db.get(Exercise, payload.exercise_slug)
+    if exercise is None:
+        raise HTTPException(status_code=404, detail="动作不存在")
+    video = ExerciseVideo(
+        exercise_slug=payload.exercise_slug,
+        title=payload.title.strip(),
+        description=(payload.description or "").strip() or None,
+        video_url=payload.video_url.strip(),
+        poster_url=(payload.poster_url or "").strip() or None,
+        duration_seconds=payload.duration_seconds,
+        source=(payload.source or "").strip() or None,
+        license_note=(payload.license_note or "").strip() or None,
+        license_expires_at=payload.license_expires_at,
+        status="draft",
+        created_by=actor,
+    )
+    db.add(video)
+    db.flush()
+    if payload.status == "published":
+        _publish_video(db, video)
+    db.commit()
+    db.refresh(video)
+    _audit(
+        db,
+        actor,
+        "video.create",
+        "exercise_video",
+        video.id,
+        {"exercise_slug": video.exercise_slug, "status": video.status},
+    )
+    return _video_dict(video, exercise)
+
+
+@router.patch("/videos/{video_id}")
+def update_video(
+    video_id: str,
+    payload: ExerciseVideoUpdate,
+    actor: AdminAuth,
+    db: DBSession,
+):
+    video = db.get(ExerciseVideo, video_id)
+    if video is None:
+        raise HTTPException(status_code=404, detail="教学视频不存在")
+    old_video_url = video.video_url
+    old_poster_url = video.poster_url
+    changes = payload.model_dump(exclude_unset=True)
+    new_status = changes.pop("status", None)
+    for field, value in changes.items():
+        if isinstance(value, str):
+            value = value.strip() or None
+        setattr(video, field, value)
+    if new_status == "published":
+        _publish_video(db, video)
+    elif new_status is not None:
+        video.status = new_status
+        video.updated_at = utcnow()
+        db.flush()
+        _sync_exercise_video(db, video.exercise_slug)
+    elif video.status == "published":
+        video.updated_at = utcnow()
+        _sync_exercise_video(db, video.exercise_slug)
+    db.commit()
+    db.refresh(video)
+    if old_video_url != video.video_url:
+        remove_media_url(old_video_url)
+    if old_poster_url != video.poster_url:
+        remove_media_url(old_poster_url)
+    _audit(
+        db,
+        actor,
+        "video.update",
+        "exercise_video",
+        video.id,
+        {"fields": sorted(changes.keys()) + (["status"] if new_status else [])},
+    )
+    return _video_dict(video, db.get(Exercise, video.exercise_slug))
+
+
+@router.post("/videos/{video_id}/publish")
+def publish_video(video_id: str, actor: AdminAuth, db: DBSession):
+    video = db.get(ExerciseVideo, video_id)
+    if video is None:
+        raise HTTPException(status_code=404, detail="教学视频不存在")
+    _publish_video(db, video)
+    db.commit()
+    db.refresh(video)
+    _audit(
+        db,
+        actor,
+        "video.publish",
+        "exercise_video",
+        video.id,
+        {"exercise_slug": video.exercise_slug},
+    )
+    return _video_dict(video, db.get(Exercise, video.exercise_slug))
+
+
+@router.post("/videos/{video_id}/unpublish")
+def unpublish_video(video_id: str, actor: AdminAuth, db: DBSession):
+    video = db.get(ExerciseVideo, video_id)
+    if video is None:
+        raise HTTPException(status_code=404, detail="教学视频不存在")
+    video.status = "draft"
+    video.updated_at = utcnow()
+    db.flush()
+    _sync_exercise_video(db, video.exercise_slug)
+    db.commit()
+    db.refresh(video)
+    _audit(
+        db,
+        actor,
+        "video.unpublish",
+        "exercise_video",
+        video.id,
+        {"exercise_slug": video.exercise_slug},
+    )
+    return _video_dict(video, db.get(Exercise, video.exercise_slug))
+
+
+@router.delete("/videos/{video_id}")
+def delete_video(video_id: str, actor: AdminAuth, db: DBSession):
+    video = db.get(ExerciseVideo, video_id)
+    if video is None:
+        raise HTTPException(status_code=404, detail="教学视频不存在")
+    exercise_slug = video.exercise_slug
+    remove_media_url(video.video_url)
+    remove_media_url(video.poster_url)
+    db.delete(video)
+    db.flush()
+    _sync_exercise_video(db, exercise_slug)
+    db.commit()
+    _audit(
+        db,
+        actor,
+        "video.delete",
+        "exercise_video",
+        video_id,
+        {"exercise_slug": exercise_slug},
+    )
+    return {"ok": True}
 
 
 @router.get("/audit")

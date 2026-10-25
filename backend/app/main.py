@@ -11,8 +11,9 @@ from fastapi.staticfiles import StaticFiles
 from .config import settings
 from .db import Base, SessionLocal, engine, ensure_schema
 from .deps import DEMO_USER_ID
+from .media import MEDIA_ROOT, ensure_media_dirs
 from .models import User
-from .routers import admin, auth, body, coach, diet, equipment, plans, profile, workouts
+from .routers import admin, auth, body, coach, diet, equipment, plans, profile, videos, workouts
 from .seed import seed_exercises
 
 CODE_BY_STATUS = {
@@ -92,8 +93,15 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 API_PREFIX = "/api/v1"
-for module in (auth, profile, plans, workouts, coach, equipment, diet, body, admin):
+for module in (auth, profile, plans, workouts, coach, equipment, diet, body, videos, admin):
     app.include_router(module.router, prefix=API_PREFIX)
+
+ensure_media_dirs()
+app.mount(
+    "/media",
+    StaticFiles(directory=str(MEDIA_ROOT)),
+    name="media",
+)
 
 ADMIN_DIR = Path(__file__).resolve().parent / "admin"
 if (ADMIN_DIR / "assets").is_dir():

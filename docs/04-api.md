@@ -448,6 +448,33 @@ data: {"session_id": "uuid", "safety_flag": null}
 
 > 没有联盟资质时返回 501 `MEITUAN_NOT_CONFIGURED`，客户端隐藏入口。
 
+### 2.8 教学视频（只读）
+
+#### `GET /videos/{exercise_slug}`
+
+返回该动作当前已发布的官方教学视频。App 不提供用户上传或编辑视频的入口。
+
+```json
+{
+  "exercise_slug": "lat_pulldown",
+  "exercise_name": "高位下拉",
+  "video": {
+    "id": "…",
+    "title": "高位下拉标准动作示范",
+    "description": "先沉肩，再下拉。",
+    "video_url": "https://api.example.com/media/videos/….mp4",
+    "poster_url": "https://api.example.com/media/posters/….jpg",
+    "duration_seconds": 42,
+    "source": "练途动作库",
+    "license_note": "练途自制，已获教练授权",
+    "version": 1,
+    "updated_at": "2026-10-25T15:20:12+00:00"
+  }
+}
+```
+
+没有已发布视频时返回 `"video": null`，App 展示「教学视频准备中」。
+
 ## 3. 管理后台
 
 管理页面：`/admin`
@@ -480,7 +507,14 @@ X-Admin-Token: <ADMIN_TOKEN>
 | `GET /scans` / `GET /scans/{id}` | 器械识别记录 |
 | `DELETE /scans/{id}` | 删除识别记录 |
 | `GET /exercises` | 动作库搜索 |
-| `PATCH /exercises/{slug}` | 编辑动作说明、视频、禁忌症等 |
+| `PATCH /exercises/{slug}` | 编辑动作说明、禁忌症等 |
+| `GET /videos` | 教学视频列表，支持搜索和状态筛选 |
+| `POST /videos/upload` | multipart 上传视频或封面，返回 `/media/...` 地址 |
+| `POST /videos` | 新建视频元数据；可保存为草稿或发布 |
+| `PATCH /videos/{id}` | 编辑视频标题、说明、来源、授权和文件 |
+| `POST /videos/{id}/publish` | 发布视频，归档同动作旧版本并同步动作库 |
+| `POST /videos/{id}/unpublish` | 下架视频，并恢复动作库的视频地址 |
+| `DELETE /videos/{id}` | 删除视频记录和本地上传文件 |
 | `GET /audit` | 管理员操作审计日志 |
 
 所有写操作都会记录到 `admin_audit_logs`。

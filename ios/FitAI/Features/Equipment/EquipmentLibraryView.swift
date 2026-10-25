@@ -361,9 +361,14 @@ struct EquipmentItemDetailView: View {
     let itemID: UUID
 
     @State private var showDelete = false
+    @State private var officialVideoURL: URL?
 
     private var item: EquipmentItem? {
         store.equipmentLibrary.first { $0.id == itemID }
+    }
+
+    private var videoURL: URL? {
+        officialVideoURL ?? item?.videoURL.flatMap(URL.init(string:))
     }
 
     var body: some View {
@@ -398,7 +403,7 @@ struct EquipmentItemDetailView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .card()
 
-                        videoSection(item)
+                        videoSection(videoURL)
 
                         Button(role: .destructive) {
                             showDelete = true
@@ -429,6 +434,12 @@ struct EquipmentItemDetailView: View {
             .background(Theme.background.ignoresSafeArea())
             .navigationTitle("器械详情")
             .navigationBarTitleDisplayMode(.inline)
+            .task {
+                guard store.useRemoteAI, let slug = item?.slug else { return }
+                if let url = try? await APIClient.shared.officialVideoURL(slug: slug) {
+                    officialVideoURL = url
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("关闭") { dismiss() }
@@ -451,8 +462,8 @@ struct EquipmentItemDetailView: View {
     }
 
     @ViewBuilder
-    private func videoSection(_ item: EquipmentItem) -> some View {
-        if let text = item.videoURL, let url = URL(string: text) {
+    private func videoSection(_ url: URL?) -> some View {
+        if let url {
             VStack(alignment: .leading, spacing: 10) {
                 Label("教学视频", systemImage: "play.rectangle.fill")
                     .font(.headline)

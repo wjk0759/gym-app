@@ -41,11 +41,14 @@ users 1─n ai_jobs / ai_memories
 - 用部分唯一索引保证同一用户只有一个 active 目标。
 - 目标值可空：增肌用户可能只设体重，减脂用户可能只设腰围。
 
-### exercises
+### exercises / exercise_videos
 
 - `contraindications` 是动作禁忌标签（如 `knee_pain`、`lower_back`），与用户伤病做交集。
-- `video_url` 必须对应已授权素材；`license` 字段记录授权来源，审核和维权时要用。
-- `source` 区分 `self_produced` / `licensed` / `public_domain`。
+- `video_url` 是动作当前对外视频地址，由 `exercise_videos` 发布动作时自动同步。
+- `exercise_videos` 保存视频标题、说明、文件地址、封面、时长、来源、授权说明、授权到期日、状态和版本。
+- 同一动作只保留一个 `published` 视频；发布新视频时旧版本自动转为 `archived`。
+- 视频文件默认落在 `backend/media/videos` 和 `backend/media/posters`，生产环境应替换为 OSS/COS + CDN，并在发布前完成版权审核。
+- 用户端只读已发布视频，不提供上传或编辑入口。
 
 ### programs / program_days / plan_exercises
 

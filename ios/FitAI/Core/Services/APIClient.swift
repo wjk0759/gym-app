@@ -26,6 +26,18 @@ private struct EquipmentScanResponse: Decodable {
     let candidates: [Candidate]
 }
 
+private struct ExerciseVideoResponse: Decodable {
+    struct Video: Decodable {
+        let videoURL: String?
+
+        enum CodingKeys: String, CodingKey {
+            case videoURL = "video_url"
+        }
+    }
+
+    let video: Video?
+}
+
 private struct MeituanLinkResponse: Decodable {
     let deeplink: String?
     let h5URL: String?
@@ -203,6 +215,16 @@ struct APIClient {
             }
             return EquipmentCandidate(exercise: exercise, confidence: candidate.confidence)
         }
+    }
+
+    func officialVideoURL(slug: String) async throws -> URL? {
+        let encoded = slug.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? slug
+        let data = try await perform(path: "videos/\(encoded)", method: "GET", body: nil)
+        let response = try decoder.decode(ExerciseVideoResponse.self, from: data)
+        guard let text = response.video?.videoURL, let url = URL(string: text) else {
+            return nil
+        }
+        return url
     }
 
     // MARK: - 体型照片分析

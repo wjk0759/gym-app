@@ -191,6 +191,30 @@ class Exercise(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class ExerciseVideo(Base):
+    __tablename__ = "exercise_videos"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    exercise_slug: Mapped[str] = mapped_column(
+        String(60), ForeignKey("exercises.slug", ondelete="CASCADE"), index=True
+    )
+    title: Mapped[str] = mapped_column(String(120))
+    description: Mapped[str | None] = mapped_column(Text)
+    video_url: Mapped[str] = mapped_column(Text)
+    poster_url: Mapped[str | None] = mapped_column(Text)
+    duration_seconds: Mapped[int | None] = mapped_column(Integer)
+    source: Mapped[str | None] = mapped_column(String(80))
+    license_note: Mapped[str | None] = mapped_column(String(200))
+    license_expires_at: Mapped[date | None] = mapped_column(Date)
+    status: Mapped[str] = mapped_column(String(20), default="draft", index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_by: Mapped[str | None] = mapped_column(String(40))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
 class Program(Base):
     __tablename__ = "programs"
 

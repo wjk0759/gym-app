@@ -6,6 +6,8 @@ class Settings(BaseSettings):
 
     app_env: str = "dev"
     database_url: str = "sqlite:///./fitai.db"
+    # 后台上传的视频/封面。生产环境建议指向独立数据盘，或替换为 OSS/COS + CDN。
+    media_root: str = "media"
 
     # mock | deepseek | qwen | doubao
     llm_provider: str = "mock"

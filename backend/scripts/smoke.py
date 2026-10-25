@@ -16,6 +16,7 @@ if DB_PATH.exists():
 
 os.environ["DATABASE_URL"] = f"sqlite:///{DB_PATH}"
 os.environ["LLM_PROVIDER"] = "mock"
+os.environ["MEDIA_ROOT"] = str(ROOT / "smoke_media")
 
 sys.path.insert(0, str(ROOT))
 
@@ -306,6 +307,42 @@ def main() -> None:
         )
         assert response.status_code == 200, response.text
         print("admin exercise edit:", exercise_slug)
+
+        upload = client.post(
+            "/api/v1/admin/videos/upload",
+            headers=admin_headers,
+            data={"kind": "video"},
+            files={"file": ("smoke.mp4", b"smoke-video-bytes", "video/mp4")},
+        )
+        assert upload.status_code == 200, upload.text
+        created_video = client.post(
+            "/api/v1/admin/videos",
+            headers=admin_headers,
+            json={
+                "exercise_slug": exercise_slug,
+                "title": "冒烟测试教学视频",
+                "video_url": upload.json()["url"],
+                "source": "smoke",
+                "license_note": "内部测试",
+                "status": "draft",
+            },
+        )
+        assert created_video.status_code == 200, created_video.text
+        video = created_video.json()
+        published = client.post(
+            f"/api/v1/admin/videos/{video['id']}/publish",
+            headers=admin_headers,
+        )
+        assert published.status_code == 200, published.text
+        public_video = client.get(f"/api/v1/videos/{exercise_slug}")
+        assert public_video.status_code == 200, public_video.text
+        assert public_video.json()["video"]["title"] == "冒烟测试教学视频"
+        deleted = client.delete(
+            f"/api/v1/admin/videos/{video['id']}",
+            headers=admin_headers,
+        )
+        assert deleted.status_code == 200, deleted.text
+        print("admin video upload/publish/delete: ok")
 
         response = client.get(
             f"/api/v1/admin/users/{user_id}/export",

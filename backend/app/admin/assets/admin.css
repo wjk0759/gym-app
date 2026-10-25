@@ -409,6 +409,28 @@ select option { background: #161c25; }
 .form-row.two { grid-template-columns: 1fr 1fr; gap: 12px; }
 .form-row.two > div { display: grid; gap: 6px; }
 
+.file-note {
+  color: var(--faint);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+input[type="file"] {
+  padding: 9px 10px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.video-player {
+  width: 100%;
+  max-height: 380px;
+  margin-bottom: 16px;
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  background: #000;
+}
+
 .note {
   padding: 11px 13px;
   border: 1px solid var(--stroke);

@@ -24,6 +24,7 @@ ios/test.log
 ios/build.log
 preview/shot-*.png
 preview/ui*.png
+preview/admin-*.png
 
 # 本地素材
 *.mp4
@@ -32,6 +33,10 @@ preview/ui*.png
 *.psd
 *.sketch
 *.fig
+backend/media/
+backend/smoke_media/
+backend/uvicorn*.log*
+backend/admin_video_test.db
 
 # IDE
 .vscode/
