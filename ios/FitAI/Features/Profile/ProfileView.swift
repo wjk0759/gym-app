@@ -21,6 +21,7 @@ struct ProfileView: View {
                     reminderCard
                     planCard
                     aiCard
+                    preferenceCard
                     complianceCard
                     resetCard
                 }
@@ -342,6 +343,34 @@ struct ProfileView: View {
             }
             showMessage = true
         }
+    }
+
+    private var preferenceCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("训练偏好")
+                    .font(.headline)
+                Spacer()
+                Text("已记住 \(store.dislikedSlugs.count) 个")
+                    .font(.caption)
+                    .foregroundStyle(Theme.secondaryText)
+            }
+
+            Text("在计划里删除过的动作会被记住，下次生成时尽量避开；重新添加会解除。")
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if !store.dislikedSlugs.isEmpty {
+                Button("清除训练偏好") {
+                    store.clearPreferences()
+                    message = "已清除训练偏好，下次生成会重新考虑这些动作。"
+                    showMessage = true
+                }
+                .buttonStyle(SecondaryButtonStyle())
+            }
+        }
+        .card()
     }
 
     private var complianceCard: some View {

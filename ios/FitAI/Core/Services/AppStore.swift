@@ -8,6 +8,7 @@ final class AppStore {
     var sessions: [WorkoutSession] = []
     var chat: [ChatMessage] = []
     var foodLogs: [FoodLog] = []
+    var dislikedSlugs: Set<String> = []
     var isGenerating = false
     var isReplying = false
     var toast: String?
@@ -64,6 +65,12 @@ final class AppStore {
         }
     }
 
+    var recentAverageRPE: Double {
+        let recentSets = sessions.prefix(3).flatMap { $0.sets }.filter { $0.completed }
+        guard !recentSets.isEmpty else { return 0 }
+        return recentSets.reduce(0.0) { $0 + $1.rpe } / Double(recentSets.count)
+    }
+
     // MARK: - 建档与计划
 
     func completeOnboarding(_ draft: UserProfile) {
@@ -97,7 +104,10 @@ final class AppStore {
                     self.plan = generated
                     self.toast = "已由 AI 生成计划"
                 } catch {
-                    var fallback = PlanGenerator.generate(profile: snapshot)
+                    var fallback = PlanGenerator.generate(
+                        profile: snapshot,
+                        dislikedSlugs: self.dislikedSlugs
+                    )
                     fallback.version = (self.plan?.version ?? 0) + 1
                     self.plan = fallback
                     self.toast = "AI 服务不可用，已使用本地模板"
@@ -111,7 +121,10 @@ final class AppStore {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) { [weak self] in
             guard let self else { return }
-            var generated = PlanGenerator.generate(profile: snapshot)
+            var generated = PlanGenerator.generate(
+                profile: snapshot,
+                dislikedSlugs: self.dislikedSlugs
+            )
             generated.version = (self.plan?.version ?? 0) + 1
             self.plan = generated
             self.isGenerating = false
@@ -136,7 +149,8 @@ final class AppStore {
         let result = PlanGenerator.adjusted(
             plan: current,
             profile: profile,
-            completionRate: weeklyCompletion
+            completionRate: weeklyCompletion,
+            averageRPE: recentAverageRPE
         )
         plan = result.plan
         toast = result.message
@@ -167,6 +181,7 @@ final class AppStore {
             restSec: params?.restSec ?? 60,
             rpe: 7
         )
+        dislikedSlugs.remove(exercise.slug)
         current.days[dayIndex].exercises.append(item)
         plan = current
         persist()
@@ -178,8 +193,16 @@ final class AppStore {
               current.days[dayIndex].exercises.count > 1 else {
             return
         }
+        if let removed = current.days[dayIndex].exercises.first(where: { $0.id == exerciseID }) {
+            dislikedSlugs.insert(removed.slug)
+        }
         current.days[dayIndex].exercises.removeAll { $0.id == exerciseID }
         plan = current
+        persist()
+    }
+
+    func clearPreferences() {
+        dislikedSlugs.removeAll()
         persist()
     }
 
@@ -259,6 +282,7 @@ final class AppStore {
         sessions = []
         chat = []
         foodLogs = []
+        dislikedSlugs = []
         notificationsEnabled = false
         useRemoteAI = AppConfig.useRemoteAI
         reminderHour = 19
@@ -301,6 +325,7 @@ final class AppStore {
         var sessions: [WorkoutSession]
         var chat: [ChatMessage]
         var foodLogs: [FoodLog]?
+        var dislikedSlugs: [String]?
         var reminderHour: Int
         var reminderMinute: Int
         var notificationsEnabled: Bool
@@ -317,6 +342,7 @@ final class AppStore {
         sessions = state.sessions
         chat = state.chat
         foodLogs = state.foodLogs ?? []
+        dislikedSlugs = Set(state.dislikedSlugs ?? [])
         reminderHour = state.reminderHour
         reminderMinute = state.reminderMinute
         notificationsEnabled = state.notificationsEnabled
@@ -330,6 +356,7 @@ final class AppStore {
             sessions: sessions,
             chat: chat,
             foodLogs: foodLogs,
+            dislikedSlugs: Array(dislikedSlugs).sorted(),
             reminderHour: reminderHour,
             reminderMinute: reminderMinute,
             notificationsEnabled: notificationsEnabled,
@@ -346,7 +373,8 @@ final class AppStore {
             plan: plan,
             sessions: sessions,
             chat: chat,
-            foodLogs: foodLogs
+            foodLogs: foodLogs,
+            dislikedSlugs: Array(dislikedSlugs).sorted()
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -362,5 +390,6 @@ final class AppStore {
         let sessions: [WorkoutSession]
         let chat: [ChatMessage]
         let foodLogs: [FoodLog]
+        let dislikedSlugs: [String]
     }
 }

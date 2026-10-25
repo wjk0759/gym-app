@@ -72,8 +72,11 @@ enum PlanGenerator {
         ]
     ]
 
-    static func generate(profile: UserProfile) -> TrainingPlan {
-        let available = allowedExercises(profile)
+    static func generate(
+        profile: UserProfile,
+        dislikedSlugs: Set<String> = []
+    ) -> TrainingPlan {
+        let available = allowedExercises(profile, disliked: dislikedSlugs)
         let weeklyDays = max(1, min(7, profile.weeklyDays))
         let weekdays = defaultWeekdays[weeklyDays] ?? Array(1...weeklyDays)
         let split = splits[weeklyDays] ?? splits[3]!
@@ -126,7 +129,8 @@ enum PlanGenerator {
     static func adjusted(
         plan: TrainingPlan,
         profile: UserProfile,
-        completionRate: Double
+        completionRate: Double,
+        averageRPE: Double = 0
     ) -> (plan: TrainingPlan, message: String) {
         var newPlan = plan
         newPlan.id = UUID()
@@ -134,16 +138,32 @@ enum PlanGenerator {
         newPlan.createdAt = Date()
         newPlan.title = plan.title + " · 调整版"
 
+        let setsDelta: Int
+        let weightMultiplier: Double
+
+        if completionRate < 0.6 {
+            setsDelta = -1
+            weightMultiplier = 1.0
+        } else if averageRPE >= 9 {
+            setsDelta = 0
+            weightMultiplier = 0.95
+        } else if completionRate >= 0.8, averageRPE > 0, averageRPE <= 8 {
+            setsDelta = 0
+            weightMultiplier = 1.025
+        } else {
+            setsDelta = 0
+            weightMultiplier = 1.0
+        }
+
         newPlan.days = plan.days.map { day in
             var newDay = day
             newDay.id = UUID()
             newDay.exercises = day.exercises.map { item in
                 var newItem = item
                 newItem.id = UUID()
-                if completionRate < 0.6 {
-                    newItem.sets = max(2, item.sets - 1)
-                } else if completionRate >= 0.8, let weight = item.weightKG, weight > 0 {
-                    newItem.weightKG = ((weight * 1.025) * 2).rounded() / 2
+                newItem.sets = max(2, item.sets + setsDelta)
+                if let weight = item.weightKG, weight > 0, weightMultiplier != 1.0 {
+                    newItem.weightKG = ((weight * weightMultiplier) * 2).rounded() / 2
                 }
                 return newItem
             }
@@ -153,8 +173,10 @@ enum PlanGenerator {
         let message: String
         if completionRate < 0.6 {
             message = "最近完成率 \(Int(completionRate * 100))%，每个动作减少 1 组，先把规律建立起来。"
-        } else if completionRate >= 0.8 {
-            message = "最近完成率 \(Int(completionRate * 100))%，主项重量上调 2.5%。"
+        } else if averageRPE >= 9 {
+            message = "最近平均 RPE \(averageRPE.formatted(.number.precision(.fractionLength(1))))，负荷偏高，主项重量下调 5%。"
+        } else if completionRate >= 0.8, averageRPE > 0, averageRPE <= 8 {
+            message = "完成率 \(Int(completionRate * 100))%，平均 RPE \(averageRPE.formatted(.number.precision(.fractionLength(1))))，主项重量上调 2.5%。"
         } else {
             message = "最近完成率 \(Int(completionRate * 100))%，本周保持负荷，优先补齐训练日。"
         }
@@ -204,15 +226,20 @@ enum PlanGenerator {
         return ((base * multiplier * compoundFactor) * 2).rounded() / 2
     }
 
-    private static func allowedExercises(_ profile: UserProfile) -> [Exercise] {
+    private static func allowedExercises(
+        _ profile: UserProfile,
+        disliked: Set<String>
+    ) -> [Exercise] {
         let banned = injuryTags(profile.injuries)
         let equipment = profile.availableEquipment
-        let filtered = ExerciseLibrary.all.filter { exercise in
+        let eligible = ExerciseLibrary.all.filter { exercise in
             let equipmentOK = equipment.contains(exercise.equipment)
             let injuryOK = banned.isDisjoint(with: Set(exercise.contraindications))
             return equipmentOK && injuryOK
         }
-        return filtered.isEmpty ? ExerciseLibrary.all : filtered
+        let preferred = eligible.filter { !disliked.contains($0.slug) }
+        let result = preferred.count >= 8 ? preferred : eligible
+        return result.isEmpty ? ExerciseLibrary.all : result
     }
 
     private static func injuryTags(_ text: String) -> Set<String> {
