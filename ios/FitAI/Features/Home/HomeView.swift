@@ -75,6 +75,8 @@ struct HomeView: View {
             Text("\(timeGreeting)，\(store.profile.nickname)")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
             Text(Date().formatted(.dateTime.month().day().weekday(.wide)))
                 .font(.subheadline)
                 .foregroundStyle(Theme.secondaryText)

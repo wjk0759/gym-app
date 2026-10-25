@@ -59,14 +59,18 @@ struct ProfileView: View {
                         Text(store.profile.nickname)
                             .font(.title3.weight(.bold))
                             .foregroundStyle(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
                         Text("\(store.profile.goalType.label) · \(store.profile.experience.label) · 每周 \(store.profile.weeklyDays) 练")
                             .font(.caption)
                             .foregroundStyle(Theme.secondaryText)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
                     }
 
                     Spacer(minLength: 8)
 
-                    VStack(alignment: .trailing, spacing: 4) {
+                    HStack(spacing: 4) {
                         Text("编辑资料")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(Theme.accent)
@@ -74,6 +78,7 @@ struct ProfileView: View {
                             .font(.caption2.weight(.semibold))
                             .foregroundStyle(Theme.tertiaryText)
                     }
+                    .fixedSize()
                 }
                 .contentShape(Rectangle())
             }

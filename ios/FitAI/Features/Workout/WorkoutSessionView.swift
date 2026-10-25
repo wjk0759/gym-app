@@ -35,6 +35,7 @@ struct WorkoutSessionView: View {
                             if let exercise = currentExercise {
                                 exerciseCard(exercise)
                                 setCard(exercise)
+                                trainingTipCard(exercise)
                             } else {
                                 summaryCard
                             }
@@ -232,6 +233,32 @@ struct WorkoutSessionView: View {
             }
         }
         .card()
+    }
+
+    private func trainingTipCard(_ exercise: PlanExercise) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("训练提示")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                Spacer()
+                Text("目标 RPE \(exercise.rpe, specifier: "%.1f")")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+
+            Text("保留 1–2 次余力，组间休息 \(exercise.restSec) 秒；动作变形就降重量，不要为了完成次数牺牲动作质量。")
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let last = store.lastSet(for: exercise.slug) {
+                Text("上次：\(last.weightKG > 0 ? String(format: "%.1f kg", last.weightKG) : "自重") × \(last.reps) 次")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+        }
+        .card(padding: 14)
     }
 
     private var workoutActionBar: some View {

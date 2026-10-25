@@ -1420,9 +1420,9 @@ function profileScreen() {
             <div class="h3">${esc(p.name)}</div>
             <div class="tiny muted" style="margin-top:3px">${p.goal} · ${p.experience} · 每周 ${p.weeklyDays} 练</div>
           </div>
-          <div style="text-align:right">
-            <div class="tiny accent strong">编辑资料</div>
-            <div class="faint">›</div>
+          <div class="row gap6" style="flex-shrink:0;white-space:nowrap">
+            <span class="tiny accent strong">编辑资料</span>
+            <span class="faint">›</span>
           </div>
         </div>
 
@@ -1658,6 +1658,14 @@ function settingsScreen() {
 
 /* ---------------- Nutrition ---------------- */
 
+function suggestedMealName() {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 11) return "早餐";
+  if (hour >= 11 && hour < 15) return "午餐";
+  if (hour >= 17 && hour < 21) return "晚餐";
+  return "加餐";
+}
+
 function nutritionScreen() {
   const targets = nutritionTargets();
   const totals = nutritionTotals();
@@ -1717,7 +1725,7 @@ function nutritionScreen() {
         }).join("")}
 
         ${state.foodLogs.length === 0 ? `<div class="tiny muted" style="margin-top:10px">还没有记录。记下吃了什么，才能知道离目标还差多少。</div>` : ""}
-        <button class="btn btn-secondary" style="margin-top:12px" onclick="app.openFoodAdd('早餐')">＋ 添加食物</button>
+        <button class="btn btn-secondary" style="margin-top:12px" onclick="app.openFoodAdd('${suggestedMealName()}')">＋ 添加食物</button>
       </div>
 
       <div class="card">
@@ -1970,7 +1978,7 @@ function paywallScreen() {
       <div class="card hero center">
         <div class="crown">♛</div>
         <div class="h2">把 AI 教练带在身边</div>
-        <div class="small muted" style="margin-top:6px">解锁完整的计划生成、教练对话与器械识别。</div>
+        <div class="small muted" style="margin-top:6px">解锁 DeepSeek AI 计划、三种专业 Skill 与完整教练对话。</div>
       </div>
 
       <div class="card">
@@ -2026,9 +2034,14 @@ function workoutScreen() {
   const done = workout.logs.length;
   const total = day.exercises.reduce((sum, item) => sum + item.sets, 0);
   const ratio = Math.min(100, Math.round((done / Math.max(1, total)) * 100));
+  const setsDone = workout.setIndex >= exercise.sets;
+  const actionLabel = setsDone
+    ? (workout.index < day.exercises.length - 1 ? "下一个动作" : "查看训练总结")
+    : `完成第 ${workout.setIndex + 1} 组`;
+  const action = setsDone ? "app.nextExercise()" : "app.completeSet()";
 
   return `
-    <div class="stack">
+    <div class="stack workout-screen">
       <div class="row between" style="margin-bottom:4px">
         <button class="icon-btn" onclick="app.exitWorkout()">✕</button>
         <div class="h3">训练中</div>
@@ -2083,15 +2096,14 @@ function workoutScreen() {
           </div>
         </div>
 
-        ${workout.setIndex < exercise.sets ? `
-          <button class="btn btn-primary" style="margin-top:16px" onclick="app.completeSet()">完成第 ${workout.setIndex + 1} 组</button>
-        ` : `
-          <button class="btn btn-primary" style="margin-top:16px" onclick="app.nextExercise()">
-            ${workout.index < day.exercises.length - 1 ? "下一个动作" : "查看训练总结"}
-          </button>
-        `}
+      </div>
 
-        <button class="btn btn-ghost" style="margin-top:4px" onclick="app.nextExercise()">跳过这个动作</button>
+      <div class="card tight">
+        <div class="between">
+          <div class="small strong">训练提示</div>
+          <div class="tiny faint">目标 RPE 7.5</div>
+        </div>
+        <div class="tiny muted" style="margin-top:6px;line-height:1.6">保留 1–2 次余力；组间休息 ${exercise.rest}s，动作变形就降重量。</div>
       </div>
 
       ${workout.logs.length ? `
@@ -2105,6 +2117,14 @@ function workoutScreen() {
           `).join("")}
         </div>
       ` : ""}
+
+      <div class="workout-action-bar">
+        <div class="between">
+          <button class="link" style="color:var(--muted)" onclick="app.nextExercise()">跳过这个动作</button>
+          <span class="tiny faint">已完成 ${done}/${total} 组</span>
+        </div>
+        <button class="btn btn-primary" style="margin-top:8px" onclick="${action}">${actionLabel}</button>
+      </div>
     </div>
   `;
 }
@@ -2229,6 +2249,8 @@ function sessionScreen() {
 
 /* ---------------- render ---------------- */
 
+let lastRouteKey = "";
+
 function render() {
   if (!state.onboarded) state.screen = "onboarding";
   if (state.onboarded && state.screen === "onboarding") state.screen = "tabs";
@@ -2237,12 +2259,28 @@ function render() {
   if (!root) return;
 
   if (!state.authenticated) {
+    const loginRoute = "login";
+    const loginChanged = lastRouteKey !== loginRoute;
+    lastRouteKey = loginRoute;
     root.innerHTML = loginScreen() + legalModal();
     root.className = "app no-tabs";
     document.getElementById("tabbar").innerHTML = "";
     document.getElementById("tabbar").className = "tabbar hidden";
+    if (loginChanged) {
+      requestAnimationFrame(() => { root.scrollTop = 0; });
+    }
     return;
   }
+
+  const routeKey = [
+    state.screen,
+    state.tab,
+    state.planDayId || "",
+    state.sessionId || "",
+    state.equipmentItemId || ""
+  ].join("|");
+  const routeChanged = routeKey !== lastRouteKey;
+  lastRouteKey = routeKey;
 
   let html = "";
   if (state.screen === "onboarding") html = onboarding();
@@ -2275,6 +2313,9 @@ function render() {
     + (state.screen === "tabs" && state.tab === "coach" ? " chat-mode" : "");
   document.getElementById("tabbar").innerHTML = tabbar();
   document.getElementById("tabbar").className = "tabbar" + (state.onboarded && state.screen === "tabs" ? "" : " hidden");
+  if (routeChanged) {
+    requestAnimationFrame(() => { root.scrollTop = 0; });
+  }
 
   if (state.screen === "tabs" && state.tab === "coach") {
     setTimeout(() => {
