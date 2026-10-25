@@ -88,6 +88,9 @@ struct CoachChatView: View {
                             .foregroundStyle(Theme.secondaryText)
                     }
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    SettingsToolbarButton()
+                }
             }
         }
     }

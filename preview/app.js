@@ -54,7 +54,8 @@ const ICONS = {
   plan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>',
   coach: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-5 4v-4H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>',
   equipment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3M17 8h3M7 6v4M17 6v4M7 8h10"/><circle cx="12" cy="16" r="4"/></svg>',
-  user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.6-3.6 3.1-5.5 7-5.5s6.4 1.9 7 5.5"/></svg>'
+  user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.6-3.6 3.1-5.5 7-5.5s6.4 1.9 7 5.5"/></svg>',
+  settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>'
 };
 
 const SEC = { 3: [1, 3, 5], 4: [1, 2, 4, 5], 5: [1, 2, 3, 5, 6] };
@@ -406,6 +407,10 @@ function headerBack(title, action = "app.back()") {
   `;
 }
 
+function settingsButton() {
+  return `<button class="icon-btn" onclick="app.openSettings()" aria-label="设置">${ICONS.settings}</button>`;
+}
+
 /* ---------------- Onboarding ---------------- */
 
 function onboarding() {
@@ -629,8 +634,8 @@ const LEGAL_DOCS = {
       ["4. AI 生成内容", "AI 计划与建议基于你填写的档案、器械、训练记录和对话内容生成，可能存在不准确或不适用的情况。请根据身体反应调整，不要将 AI 输出作为医疗依据。"],
       ["5. 使用规范", "不得利用本服务发布违法信息、侵犯他人权益、干扰系统运行或绕过安全限制。因违规导致的账号限制或终止，由用户承担相应责任。"],
       ["6. 知识产权", "App 界面、文本、图形和训练内容的知识产权归练途或授权方所有。未经许可不得复制、出售或用于商业培训。你上传的照片仅用于你主动选择的对应功能。"],
-      ["7. 服务变更与终止", "我们可能因产品升级、合规要求或不可抗力调整服务，重大变更会通过 App 内提示。你可以随时停止使用，并按产品内提供的路径申请注销账号。"],
-      ["8. 协议更新与联系", "协议更新后会在登录页或 App 内公示。继续使用视为接受更新内容；如不同意，可停止使用并申请注销。对协议有疑问，可通过 App 内反馈渠道联系我们。"]
+      ["7. 服务变更与终止", "我们可能因产品升级、合规要求或不可抗力调整服务，重大变更会通过 App 内提示。你可以随时停止使用。账号注销与数据删除需由运营方按法律法规和账号安全流程处理。"],
+      ["8. 协议更新与联系", "协议更新后会在登录页或 App 内公示。继续使用视为接受更新内容；如不同意，可停止使用。对协议有疑问，可通过 App 内反馈渠道联系我们。"]
     ]
   },
   privacy: {
@@ -644,7 +649,7 @@ const LEGAL_DOCS = {
       ["4. 存储与安全", "数据存储在中华人民共和国境内。我们采用访问控制、传输保护、权限隔离和日志审计等措施，仅在实现目的所需期限内保留；注销或删除后，按法律要求处理。"],
       ["5. 共享与委托处理", "我们不会出售个人信息。为提供短信验证、云托管、AI 推理、支付与登录服务，可能委托合作方处理必要信息，并通过协议约束其用途。除法律要求或取得单独同意外，不向第三方提供。"],
       ["6. 设备权限", "相机和相册用于器械、体型与食物照片；通知用于训练提醒；HealthKit 用于读写你授权的训练与体重数据。你可以在系统设置中随时关闭这些权限。"],
-      ["7. 你的权利", "你可以访问、更正、导出和删除个人数据，撤回同意，或注销账号。部分数据删除后不可恢复。"],
+      ["7. 你的权利", "你可以访问、更正和导出个人数据，或撤回授权。账号注销与数据删除需由运营方按法律法规及账号安全流程处理。"],
       ["8. 未成年人保护", "未满 14 周岁的用户应在监护人同意和指导下使用；未满 18 周岁的用户应在监护人知情下使用订阅与训练功能。"],
       ["9. 更新与联系", "隐私政策更新会在 App 内公示。对个人信息处理有疑问，可通过 App 内反馈渠道联系我们。"]
     ]
@@ -707,9 +712,12 @@ function home() {
 
   return `
     <div class="stack">
-      <div class="greeting">
-        <div class="h1">晚上好，${esc(state.profile.name)}</div>
-        <div class="date">10月25日 · 周日</div>
+      <div class="between" style="align-items:flex-start">
+        <div class="greeting">
+          <div class="h1">晚上好，${esc(state.profile.name)}</div>
+          <div class="date">10月25日 · 周日</div>
+        </div>
+        ${settingsButton()}
       </div>
 
       <div class="card">
@@ -810,6 +818,7 @@ function planScreen() {
           <h1 class="h1">训练计划</h1>
           <div class="tiny muted" style="margin-top:4px">第 ${state.plan.version} 版 · 4 周</div>
         </div>
+        ${settingsButton()}
       </div>
 
       <div class="card">
@@ -914,9 +923,12 @@ function coachScreen() {
   const ratio = Math.min(100, Math.round((weekSessions / Math.max(1, state.profile.weeklyDays)) * 100));
   return `
     <div class="chat-screen">
-      <div class="chat-head">
-        <h1 class="h1">AI 教练</h1>
-        <div class="tiny muted" style="margin-top:4px">结合档案、计划和训练记录回答</div>
+      <div class="chat-head row between" style="align-items:flex-start">
+        <div>
+          <h1 class="h1">AI 教练</h1>
+          <div class="tiny muted" style="margin-top:4px">结合档案、计划和训练记录回答</div>
+        </div>
+        ${settingsButton()}
       </div>
 
       <div class="chat-scroll" id="chat-scroll">
@@ -1054,9 +1066,12 @@ function equipmentLibraryScreen() {
   const items = state.equipmentLibrary;
   return `
     <div class="stack">
-      <div>
-        <h1 class="h1">器械</h1>
-        <div class="tiny muted" style="margin-top:4px">已添加的器械 · 教学视频与 AI 计划</div>
+      <div class="between" style="align-items:flex-start">
+        <div>
+          <h1 class="h1">器械</h1>
+          <div class="tiny muted" style="margin-top:4px">已添加的器械 · 教学视频与 AI 计划</div>
+        </div>
+        ${settingsButton()}
       </div>
 
       <div class="card nutrition-card" onclick="app.equipmentAddOpen()">
@@ -1336,9 +1351,16 @@ function exerciseScreen() {
 
 function profileScreen() {
   const p = state.profile;
-  const targets = nutritionTargets();
   return `
     <div class="stack">
+      <div class="between" style="align-items:flex-start">
+        <div>
+          <h1 class="h1">我的</h1>
+          <div class="tiny muted" style="margin-top:4px">档案、身体数据与训练工具</div>
+        </div>
+        ${settingsButton()}
+      </div>
+
       <div class="card">
         <div class="row gap12">
           <div class="nutrition-icon" style="font-size:18px">${esc(p.name.slice(0, 1))}</div>
@@ -1347,16 +1369,6 @@ function profileScreen() {
             <div class="tiny muted" style="margin-top:3px">${p.goal} · ${p.experience} · 每周 ${p.weeklyDays} 练</div>
           </div>
           <button class="link" onclick="app.restartOnboarding()">编辑</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="between">
-          <div>
-            <div class="h3">账号与安全</div>
-            <div class="tiny muted" style="margin-top:3px">预览模拟登录 · ${esc(state.authPhone || "13800138000")}</div>
-          </div>
-          <button class="link" style="color:var(--danger)" onclick="app.previewLogout()">退出登录</button>
         </div>
       </div>
 
@@ -1395,18 +1407,7 @@ function profileScreen() {
         <div class="tiny faint" style="margin-top:8px">减重建议不超过 0.5kg/周，不追求极端速度。</div>
       </div>
 
-      <div class="section-kicker">健康与工具</div>
-
-      <div class="card">
-        <div class="between">
-          <div>
-            <div class="h3">Apple 健康</div>
-            <div class="tiny muted" style="margin-top:3px">读取体重，写入完成的训练</div>
-          </div>
-          <span class="accent">♥</span>
-        </div>
-        <button class="btn btn-secondary" style="margin-top:10px" onclick="app.mockHealth()">连接 Apple 健康</button>
-      </div>
+      <div class="section-kicker">训练工具</div>
 
       <div class="card" onclick="app.bodyAnalysisOpen()" style="cursor:pointer">
         <div class="between">
@@ -1432,13 +1433,47 @@ function profileScreen() {
         </div>
       </div>
 
+    </div>
+  `;
+}
+
+/* ---------------- Settings ---------------- */
+
+function settingsScreen() {
+  const phone = state.authPhone || "13800138000";
+  const maskedPhone = phone.length === 11 ? `${phone.slice(0, 3)}****${phone.slice(-4)}` : "已登录";
+
+  return `
+    <div class="stack">
+      ${headerBack("设置", "app.closeSettings()")}
+
+      <div class="card">
+        <div class="h3">账号与安全</div>
+        <div class="tiny muted" style="margin-top:3px">登录账号 · ${esc(maskedPhone)}</div>
+        <button class="btn btn-danger" style="margin-top:12px" onclick="app.previewLogout()">退出登录</button>
+        <div class="tiny faint" style="margin-top:9px">退出登录不会删除训练计划、训练记录或身体数据。</div>
+      </div>
+
+      <div class="section-kicker">训练设置</div>
+
       <div class="card">
         <div class="between"><div class="h3">训练提醒</div><span class="tiny faint">每周重复</span></div>
         <div class="row gap8" style="margin-top:10px">
           <input type="time" value="${state.reminder}" id="reminder-time">
-          <button class="btn btn-secondary btn-sm" onclick="app.saveReminder()">保存</button>
+          <button class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap" onclick="app.saveReminder()">保存</button>
         </div>
         <div class="tiny faint" style="margin-top:8px">iOS 静音和专注模式可能影响提醒，请在系统设置中允许通知。</div>
+      </div>
+
+      <div class="card">
+        <div class="between">
+          <div>
+            <div class="h3">Apple 健康</div>
+            <div class="tiny muted" style="margin-top:3px">读取体重，写入完成的训练</div>
+          </div>
+          <span class="accent">♥</span>
+        </div>
+        <button class="btn btn-secondary" style="margin-top:10px" onclick="app.mockHealth()">连接 Apple 健康</button>
       </div>
 
       <div class="card">
@@ -1450,21 +1485,14 @@ function profileScreen() {
         ${state.disliked.length ? `<button class="btn btn-secondary" style="margin-top:10px" onclick="app.clearPreferences()">清除训练偏好</button>` : ""}
       </div>
 
-      <div class="section-kicker">关于与数据</div>
+      <div class="section-kicker">数据与隐私</div>
 
       <div class="card">
-        <div class="h3" style="margin-bottom:8px">关于与合规</div>
         <div class="list-row" onclick="app.openLegal('privacy')"><span class="grow small">隐私政策</span><span class="faint">›</span></div>
         <div class="list-row" onclick="app.openLegal('terms')"><span class="grow small">用户协议</span><span class="faint">›</span></div>
         <div class="list-row" onclick="app.exportData()"><span class="grow small">导出我的数据</span><span class="faint">›</span></div>
         <div class="list-row" onclick="app.openLegal('ai')"><span class="grow small">生成式 AI 备案信息</span><span class="faint">›</span></div>
         <div class="tiny faint" style="margin-top:8px">本产品不提供医疗诊断。孕期、术后、心血管疾病或关节急性疼痛，请先咨询医生。</div>
-      </div>
-
-      <div class="card">
-        <div class="h3">注销与本地数据</div>
-        <div class="tiny muted" style="margin-top:6px">数据只保存在浏览器本地。清除后无法恢复。</div>
-        <button class="btn btn-danger" style="margin-top:10px" onclick="app.resetAll()">注销并删除全部数据</button>
       </div>
 
       <div class="tiny faint center" style="padding-bottom:8px">练途 Web Preview · v0.1</div>
@@ -2073,6 +2101,7 @@ function render() {
   else if (state.screen === "foodAdd") html = foodAddScreen();
   else if (state.screen === "foodPhoto") html = foodPhotoScreen();
   else if (state.screen === "paywall") html = paywallScreen();
+  else if (state.screen === "settings") html = settingsScreen();
   else if (state.screen === "workout") html = workoutScreen();
   else if (state.screen === "sessionDetail") html = sessionScreen();
   else if (state.screen === "exerciseDetail") html = exerciseScreen();
@@ -2304,6 +2333,18 @@ window.app = {
 
   go(screen) {
     state.screen = screen;
+    save();
+    render();
+  },
+
+  openSettings() {
+    state.screen = "settings";
+    save();
+    render();
+  },
+
+  closeSettings() {
+    state.screen = "tabs";
     save();
     render();
   },

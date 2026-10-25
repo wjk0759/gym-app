@@ -3,15 +3,7 @@ import SwiftUI
 
 struct ProfileView: View {
     @Environment(AppStore.self) private var store
-    @Environment(AuthStore.self) private var auth
 
-    @State private var reminderDate = Date()
-    @State private var showReset = false
-    @State private var showLogout = false
-    @State private var showMessage = false
-    @State private var message = ""
-    @State private var legalDocument: LegalDocumentKind?
-    @State private var showExport = false
     @State private var showPaywall = false
     @State private var showBodyAnalysis = false
 
@@ -20,29 +12,15 @@ struct ProfileView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     profileCard
-                    accountCard
                     proCard
 
                     sectionLabel("身体与目标")
                     metricsCard
                     goalCard
 
-                    sectionLabel("健康与工具")
-                    reminderCard
-                    healthCard
+                    sectionLabel("训练工具")
                     bodyAnalysisCard
                     equipmentLibraryCard
-
-                    sectionLabel("计划与偏好")
-                    planCard
-#if DEBUG
-                    aiCard
-#endif
-                    preferenceCard
-
-                    sectionLabel("关于与数据")
-                    complianceCard
-                    resetCard
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
@@ -51,41 +29,10 @@ struct ProfileView: View {
             .background(Theme.background.ignoresSafeArea())
             .navigationTitle("我的")
             .navigationBarTitleDisplayMode(.large)
-            .onAppear(perform: syncReminder)
-            .alert("提醒设置", isPresented: $showMessage) {
-                Button("知道了", role: .cancel) {}
-            } message: {
-                Text(message)
-            }
-            .confirmationDialog(
-                "注销并删除全部数据？",
-                isPresented: $showReset,
-                titleVisibility: .visible
-            ) {
-                Button("注销并删除", role: .destructive) {
-                    store.resetAll()
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    SettingsToolbarButton()
                 }
-                Button("取消", role: .cancel) {}
-            } message: {
-                Text("档案、计划、训练记录、饮食记录和对话都会被删除，无法恢复。")
-            }
-            .confirmationDialog(
-                "退出当前账号？",
-                isPresented: $showLogout,
-                titleVisibility: .visible
-            ) {
-                Button("退出登录", role: .destructive) {
-                    Task { await auth.logout() }
-                }
-                Button("取消", role: .cancel) {}
-            } message: {
-                Text("退出后需要重新登录。当前设备上的训练数据不会自动删除。")
-            }
-            .sheet(isPresented: $showExport) {
-                DataExportView()
-            }
-            .sheet(item: $legalDocument) { kind in
-                LegalDocumentView(kind: kind)
             }
         }
     }
@@ -131,66 +78,6 @@ struct ProfileView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 8)
             .padding(.horizontal, 2)
-    }
-
-    private var accountCard: some View {
-        VStack(alignment: .leading, spacing: 11) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("账号与安全")
-                        .font(.headline)
-                    Text("登录态已加密保存在本机 Keychain")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-                Spacer()
-                Image(systemName: "lock.shield.fill")
-                    .foregroundStyle(Theme.accent)
-            }
-
-            HStack {
-                Text("登录账号")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.secondaryText)
-                Spacer()
-                Text(maskedPhone)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.white)
-            }
-
-            HStack {
-                Text("用户 ID")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.secondaryText)
-                Spacer()
-                Text(String(auth.userID?.prefix(8) ?? ""))
-                    .font(.caption.monospaced())
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-
-            Button {
-                showLogout = true
-            } label: {
-                Text("退出登录")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.danger)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 11)
-                    .background(
-                        RoundedRectangle(cornerRadius: 11, style: .continuous)
-                            .fill(Theme.danger.opacity(0.09))
-                    )
-            }
-            .buttonStyle(.plain)
-        }
-        .card()
-    }
-
-    private var maskedPhone: String {
-        guard let phone = auth.phone, phone.count == 11 else {
-            return "已登录"
-        }
-        return "\(phone.prefix(3))****\(phone.suffix(4))"
     }
 
     private var proCard: some View {
@@ -313,134 +200,7 @@ struct ProfileView: View {
         .card()
     }
 
-    // MARK: - 提醒
-
-    private var reminderCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("训练提醒")
-                        .font(.headline)
-                    Text("按每周训练日发送本地通知")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                }
-                Spacer()
-                Image(systemName: store.notificationsEnabled ? "bell.badge.fill" : "bell.slash")
-                    .foregroundStyle(store.notificationsEnabled ? Theme.accent : Theme.tertiaryText)
-            }
-
-            DatePicker(
-                "提醒时间",
-                selection: $reminderDate,
-                displayedComponents: .hourAndMinute
-            )
-            .font(.subheadline)
-
-            HStack(spacing: 10) {
-                Button("保存提醒") {
-                    saveReminder()
-                }
-                .buttonStyle(PrimaryButtonStyle())
-
-                if store.notificationsEnabled {
-                    Button("关闭") {
-                        store.disableReminders()
-                        message = "已关闭训练提醒。"
-                        showMessage = true
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                }
-            }
-
-            Text(store.notificationsEnabled
-                 ? "已开启：共 \(store.plan?.firstWeek.count ?? 0) 个训练日。修改计划后会自动更新。"
-                 : "未开启。iOS 的静音和专注模式可能影响提醒，请在系统设置中允许通知。")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-        }
-        .card()
-    }
-
-    private func syncReminder() {
-        reminderDate = Calendar.current.date(
-            bySettingHour: store.reminderHour,
-            minute: store.reminderMinute,
-            second: 0,
-            of: Date()
-        ) ?? Date()
-    }
-
-    private func saveReminder() {
-        let components = Calendar.current.dateComponents([.hour, .minute], from: reminderDate)
-        let hour = components.hour ?? 19
-        let minute = components.minute ?? 0
-
-        Task { @MainActor in
-            let count = await store.enableReminders(hour: hour, minute: minute)
-            if count > 0 {
-                message = "已为 \(count) 个训练日设置 \(String(format: "%02d:%02d", hour, minute)) 的提醒。"
-            } else if store.notificationsEnabled {
-                message = "通知权限已开启，但当前还没有训练计划。生成计划后会自动安排提醒。"
-            } else {
-                message = "没有获得通知权限。请到「设置 → 通知 → 练途」中开启。"
-            }
-            showMessage = true
-        }
-    }
-
-    // MARK: - 计划与合规
-
-    private var healthCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Apple 健康")
-                        .font(.headline)
-                    Text(store.healthKitEnabled ? "已连接 · 体重会同步" : "未连接")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                }
-                Spacer()
-                Image(systemName: "heart.text.square.fill")
-                    .foregroundStyle(
-                        store.healthKitEnabled ? Theme.accent : Theme.tertiaryText
-                    )
-            }
-
-            Text("连接后读取最近体重，并把完成的训练写入 Apple 健康。")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
-
-            if store.healthKitEnabled {
-                Button("关闭 Apple 健康同步") {
-                    store.disableHealthKit()
-                    message = "已关闭 Apple 健康同步。"
-                    showMessage = true
-                }
-                .buttonStyle(SecondaryButtonStyle())
-            } else {
-                Button("连接 Apple 健康") {
-                    connectHealthKit()
-                }
-                .buttonStyle(SecondaryButtonStyle())
-            }
-        }
-        .card()
-    }
-
-    private func connectHealthKit() {
-        Task { @MainActor in
-            let granted = await store.enableHealthKit()
-            if granted {
-                message = "已连接 Apple 健康，体重已同步。"
-            } else {
-                message = "未获得权限，或当前设备不支持 HealthKit。请到系统「健康 → 数据访问」中检查。"
-            }
-            showMessage = true
-        }
-    }
+    // MARK: - 训练工具
 
     private var bodyAnalysisCard: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -512,217 +272,5 @@ struct ProfileView: View {
             .card()
         }
         .buttonStyle(.plain)
-    }
-
-    private var planCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("训练计划")
-                .font(.headline)
-
-            if let plan = store.plan {
-                Text(plan.title)
-                    .font(.subheadline)
-                    .foregroundStyle(.white)
-                Text("第 \(plan.version) 版 · \(plan.days.count) 个训练日")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
-
-                Button {
-                    store.generatePlan()
-                    message = "正在重新生成计划，完成后可在「计划」页查看。"
-                    showMessage = true
-                } label: {
-                    Label("重新生成", systemImage: "arrow.clockwise")
-                }
-                .buttonStyle(SecondaryButtonStyle())
-            } else {
-                Text("还没有计划。")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.secondaryText)
-                Button("生成计划") {
-                    store.generatePlan()
-                }
-                .buttonStyle(SecondaryButtonStyle())
-            }
-        }
-        .card()
-    }
-
-    private var aiCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("AI 服务")
-                        .font(.headline)
-                    Text(store.useRemoteAI ? "远程模式 · 调用后端模型" : "本地模式 · 规则模板")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                }
-                Spacer()
-                Toggle("", isOn: remoteBinding)
-                    .labelsHidden()
-                    .tint(Theme.accent)
-            }
-
-            Text(store.useRemoteAI
-                 ? "生成计划、教练对话、器械识别会请求后端；请求失败会自动回退到本地。"
-                 : "当前不联网，使用内置规则生成计划。切到远程需要先启动 backend。")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Text(AppConfig.apiBaseURL.absoluteString)
-                .font(.caption2)
-                .foregroundStyle(Theme.secondaryText)
-
-            Button("测试连接") {
-                testConnection()
-            }
-            .buttonStyle(SecondaryButtonStyle())
-        }
-        .card()
-    }
-
-    private var remoteBinding: Binding<Bool> {
-        Binding(
-            get: { store.useRemoteAI },
-            set: {
-                store.useRemoteAI = $0
-                store.persist()
-            }
-        )
-    }
-
-    private func testConnection() {
-        Task { @MainActor in
-            do {
-                let ok = try await APIClient.shared.health()
-                message = ok ? "后端连接成功。" : "能连上后端，但健康检查返回异常。"
-            } catch {
-                message = "连接失败：\(error.localizedDescription)"
-            }
-            showMessage = true
-        }
-    }
-
-    private var preferenceCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("训练偏好")
-                    .font(.headline)
-                Spacer()
-                Text("已记住 \(store.dislikedSlugs.count) 个")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
-            }
-
-            Text("在计划里删除过的动作会被记住，下次生成时尽量避开；重新添加会解除。")
-                .font(.caption)
-                .foregroundStyle(Theme.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
-
-            if !store.dislikedSlugs.isEmpty {
-                Button("清除训练偏好") {
-                    store.clearPreferences()
-                    message = "已清除训练偏好，下次生成会重新考虑这些动作。"
-                    showMessage = true
-                }
-                .buttonStyle(SecondaryButtonStyle())
-            }
-        }
-        .card()
-    }
-
-    private var complianceCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("关于与合规")
-                .font(.headline)
-
-            infoRow("隐私政策", icon: "hand.raised") {
-                legalDocument = .privacy
-            }
-            infoRow("用户协议", icon: "doc.text") {
-                legalDocument = .terms
-            }
-
-            Button {
-                showExport = true
-            } label: {
-                HStack {
-                    Image(systemName: "square.and.arrow.up")
-                        .foregroundStyle(Theme.accent)
-                        .frame(width: 22)
-                    Text("导出我的数据")
-                        .font(.subheadline)
-                        .foregroundStyle(.white)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-            }
-            .buttonStyle(.plain)
-
-            infoRow("生成式 AI 备案信息", icon: "checkmark.seal") {
-                legalDocument = .ai
-            }
-
-            Text("本产品不提供医疗诊断或治疗建议。孕期、术后、心血管疾病或关节急性疼痛，请先咨询医生。")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Text("版本 \(AppConfig.appVersion)")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-        }
-        .card()
-    }
-
-    private func infoRow(
-        _ title: String,
-        icon: String,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack {
-                Image(systemName: icon)
-                    .foregroundStyle(Theme.accent)
-                    .frame(width: 22)
-                Text(title)
-                    .font(.subheadline)
-                    .foregroundStyle(.white)
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var resetCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("注销与本地数据")
-                .font(.headline)
-            Text("当前版本没有账号体系，数据只在这台设备上。注销即删除本机全部数据，无法恢复。")
-                .font(.caption)
-                .foregroundStyle(Theme.secondaryText)
-            Button(role: .destructive) {
-                showReset = true
-            } label: {
-                Text("注销并删除全部数据")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.danger)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Theme.danger.opacity(0.10))
-                    )
-            }
-            .buttonStyle(.plain)
-        }
-        .card()
     }
 }
