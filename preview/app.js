@@ -590,19 +590,6 @@ function loginScreen() {
           <div class="field-hint">密码至少 8 位，含字母和数字</div>
         `}
 
-        <div class="consent-block">
-          <button class="consent-check ${state.authConsent ? "checked" : ""}" onclick="app.previewAuthConsent()" aria-label="同意用户协议与隐私政策" aria-pressed="${state.authConsent}">${state.authConsent ? "✓" : ""}</button>
-          <div class="grow">
-            <div class="consent-copy">我已阅读并同意以下协议，且已年满 14 周岁</div>
-            <div class="legal-links">
-              <span>查看</span>
-              <button class="link" onclick="app.openLegal('terms')">《用户协议》</button>
-              <span>和</span>
-              <button class="link" onclick="app.openLegal('privacy')">《隐私政策》</button>
-            </div>
-          </div>
-        </div>
-
         ${state.authError ? `<div class="login-error">${esc(state.authError)}</div>` : ""}
 
         <button class="btn btn-primary login-submit" onclick="app.previewLogin()">登录并继续</button>
@@ -618,6 +605,13 @@ function loginScreen() {
       <div class="social-row">
         <button class="social-login wechat" onclick="app.previewSocial('微信')"><span class="social-icon">微</span>微信登录</button>
         <button class="social-login qq" onclick="app.previewSocial('QQ')"><span class="social-icon">Q</span>QQ 登录</button>
+      </div>
+
+      <div class="login-consent">
+        <button class="consent-check ${state.authConsent ? "checked" : ""}" onclick="app.previewAuthConsent()" aria-label="同意用户协议与隐私政策" aria-pressed="${state.authConsent}">${state.authConsent ? "✓" : ""}</button>
+        <div class="login-consent-copy">
+          我已阅读并同意<button class="link" onclick="app.openLegal('terms')">《用户协议》</button>和<button class="link" onclick="app.openLegal('privacy')">《隐私政策》</button>，且已年满 14 周岁
+        </div>
       </div>
     </div>
   `;
@@ -2237,7 +2231,7 @@ window.app = {
 
   previewLogin() {
     if (!state.authConsent) {
-      state.authError = "请先阅读并同意用户协议与隐私政策";
+      state.authError = "请先勾选页面底部的用户协议与隐私政策";
       render();
       return;
     }
@@ -2274,7 +2268,7 @@ window.app = {
 
   previewSocial(provider) {
     if (!state.authConsent) {
-      state.authError = "请先阅读并同意用户协议与隐私政策";
+      state.authError = "请先勾选页面底部的用户协议与隐私政策";
       render();
       return;
     }

@@ -49,7 +49,10 @@ struct LoginView: View {
                 brand
                 intro
                 loginCard
-                socialSection
+                VStack(alignment: .leading, spacing: 14) {
+                    socialSection
+                    consentFooter
+                }
 
 #if DEBUG
                 Button {
@@ -129,8 +132,6 @@ struct LoginView: View {
             } else {
                 passwordFields
             }
-
-            consentRow
 
             if let errorText {
                 HStack(alignment: .top, spacing: 8) {
@@ -379,49 +380,46 @@ struct LoginView: View {
         }
     }
 
-    private var consentRow: some View {
-        HStack(alignment: .top, spacing: 10) {
+    private var consentFooter: some View {
+        HStack(alignment: .top, spacing: 7) {
             Button {
                 consent.toggle()
             } label: {
                 Image(systemName: consent ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 20, weight: .regular))
+                    .font(.system(size: 15, weight: .regular))
                     .foregroundStyle(consent ? Theme.accent : Theme.tertiaryText)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("同意用户协议与隐私政策")
             .accessibilityValue(consent ? "已同意" : "未同意")
 
-            VStack(alignment: .leading, spacing: 5) {
-                Text("我已阅读并同意以下协议，且已年满 14 周岁")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                HStack(spacing: 4) {
-                    Text("查看")
-                        .foregroundStyle(Theme.tertiaryText)
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 2) {
+                    Text("我已阅读并同意")
                     Button {
                         legal = .terms
                     } label: {
-                        Text("《用户协议》").underline()
+                        Text("《用户协议》").underline().foregroundStyle(Theme.accent)
                     }
                     Text("和")
-                        .foregroundStyle(Theme.tertiaryText)
                     Button {
                         legal = .privacy
                     } label: {
-                        Text("《隐私政策》").underline()
+                        Text("《隐私政策》").underline().foregroundStyle(Theme.accent)
                     }
                 }
                 .buttonStyle(.plain)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.accent)
+
+                Text("且已年满 14 周岁")
             }
+            .font(.system(size: 10.5))
+            .foregroundStyle(Theme.tertiaryText)
+            .fixedSize(horizontal: false, vertical: true)
 
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 2)
     }
 
     private var socialSection: some View {
@@ -562,7 +560,7 @@ struct LoginView: View {
 
     private func ensureConsent() -> Bool {
         if consent { return true }
-        localError = "请先阅读并同意用户协议与隐私政策"
+        localError = "请先勾选页面底部的用户协议与隐私政策"
         return false
     }
 }

@@ -997,17 +997,18 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .field-hint.warning { color: var(--warning); }
 
-.consent-block {
+.login-consent {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  margin-top: 2px;
+  gap: 7px;
+  margin-top: -8px;
+  padding: 0 3px;
 }
 
 .consent-check {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   margin-top: 1px;
   padding: 0;
   border: 1px solid var(--stroke-strong);
@@ -1015,7 +1016,7 @@ input[type="number"]::-webkit-inner-spin-button {
   background: transparent;
   color: #04120a;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 800;
   display: grid;
   place-items: center;
@@ -1027,19 +1028,20 @@ input[type="number"]::-webkit-inner-spin-button {
   background: var(--accent);
 }
 
-.consent-copy {
-  color: var(--muted);
-  font-size: 11.5px;
-  line-height: 1.5;
+.login-consent-copy {
+  color: var(--faint);
+  font-size: 10.5px;
+  line-height: 1.6;
 }
 
-.login-card .legal-links {
-  margin-top: 2px;
-  padding-left: 0;
-  font-size: 11.5px;
+.login-consent-copy .link {
+  padding: 0;
+  color: var(--accent);
+  font-size: 10.5px;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
-
-.login-card .legal-links .link { font-size: 11.5px; }
 
 .login-error {
   padding: 10px 11px;
