@@ -1126,6 +1126,30 @@ input[type="number"]::-webkit-inner-spin-button {
   -webkit-backdrop-filter: blur(26px) saturate(150%);
 }
 
+.app.equipment-scrolled .equipment-search-row {
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+.app.equipment-scrolled .equipment-scan-btn {
+  width: 32px;
+  height: 32px;
+  flex-basis: 32px;
+  border-radius: 10px;
+}
+
+.app.equipment-scrolled .equipment-library-btn {
+  width: 42px;
+  height: 42px;
+  flex-basis: 42px;
+  border-radius: 13px;
+}
+
+.app.equipment-scrolled .equipment-filter {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
 .equipment-search-scope {
   margin-top: -2px;
   padding-left: 4px;
@@ -1413,7 +1437,11 @@ body.dragging-scroll * {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 15px;
   background: rgba(255, 255, 255, 0.055);
-  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease,
+    padding 220ms ease;
 }
 
 .equipment-search-row:focus-within {
