@@ -337,3 +337,42 @@ struct ChatMessage: Codable, Identifiable, Hashable {
     var date: Date = Date()
     var isSafety: Bool = false
 }
+
+// MARK: - 饮食记录
+
+enum MealType: String, Codable, CaseIterable, Identifiable {
+    case breakfast
+    case lunch
+    case dinner
+    case snack
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .breakfast: return "早餐"
+        case .lunch: return "午餐"
+        case .dinner: return "晚餐"
+        case .snack: return "加餐"
+        }
+    }
+}
+
+struct FoodLog: Codable, Identifiable, Hashable {
+    var id: UUID = UUID()
+    var date: Date = Date()
+    var meal: MealType
+    var foodName: String
+    var grams: Double
+    var kcal: Double
+    var protein: Double
+    var carbs: Double
+    var fat: Double
+}
+
+struct NutritionTotals {
+    var kcal: Double = 0
+    var protein: Double = 0
+    var carbs: Double = 0
+    var fat: Double = 0
+}

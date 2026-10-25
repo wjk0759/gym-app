@@ -7,6 +7,7 @@ final class AppStore {
     var plan: TrainingPlan?
     var sessions: [WorkoutSession] = []
     var chat: [ChatMessage] = []
+    var foodLogs: [FoodLog] = []
     var isGenerating = false
     var isReplying = false
     var toast: String?
@@ -48,6 +49,19 @@ final class AppStore {
 
     var totalVolume: Double {
         sessions.reduce(0) { $0 + $1.volume }
+    }
+
+    var todayFoodLogs: [FoodLog] {
+        foodLogs.filter { Calendar.current.isDateInToday($0.date) }
+    }
+
+    var todayNutrition: NutritionTotals {
+        todayFoodLogs.reduce(into: NutritionTotals()) { total, log in
+            total.kcal += log.kcal
+            total.protein += log.protein
+            total.carbs += log.carbs
+            total.fat += log.fat
+        }
     }
 
     // MARK: - 建档与计划
@@ -182,6 +196,16 @@ final class AppStore {
         persist()
     }
 
+    func addFoodLog(_ log: FoodLog) {
+        foodLogs.insert(log, at: 0)
+        persist()
+    }
+
+    func removeFoodLog(_ id: UUID) {
+        foodLogs.removeAll { $0.id == id }
+        persist()
+    }
+
     func sendChat(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -234,6 +258,7 @@ final class AppStore {
         plan = nil
         sessions = []
         chat = []
+        foodLogs = []
         notificationsEnabled = false
         useRemoteAI = AppConfig.useRemoteAI
         reminderHour = 19
@@ -275,6 +300,7 @@ final class AppStore {
         var plan: TrainingPlan?
         var sessions: [WorkoutSession]
         var chat: [ChatMessage]
+        var foodLogs: [FoodLog]?
         var reminderHour: Int
         var reminderMinute: Int
         var notificationsEnabled: Bool
@@ -290,6 +316,7 @@ final class AppStore {
         plan = state.plan
         sessions = state.sessions
         chat = state.chat
+        foodLogs = state.foodLogs ?? []
         reminderHour = state.reminderHour
         reminderMinute = state.reminderMinute
         notificationsEnabled = state.notificationsEnabled
@@ -302,6 +329,7 @@ final class AppStore {
             plan: plan,
             sessions: sessions,
             chat: chat,
+            foodLogs: foodLogs,
             reminderHour: reminderHour,
             reminderMinute: reminderMinute,
             notificationsEnabled: notificationsEnabled,

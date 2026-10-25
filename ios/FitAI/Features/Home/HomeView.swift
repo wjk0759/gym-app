@@ -289,7 +289,7 @@ struct HomeView: View {
                     Text("今日饮食")
                         .font(.headline)
                         .foregroundStyle(.white)
-                    Text("\(targets.kcal) kcal · 蛋白质 \(targets.protein)g")
+                    Text("已摄入 \(Int(store.todayNutrition.kcal)) / \(targets.kcal) kcal · 蛋白质 \(Int(store.todayNutrition.protein))g")
                         .font(.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
