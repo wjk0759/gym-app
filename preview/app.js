@@ -1568,15 +1568,15 @@ function profileEditScreen() {
             ["重塑体型", "体重变化不大，改善围度"],
             ["提升体能", "提高心肺与耐力"]
           ].map(([goal, desc]) => `
-            <button class="goal ${draft.goal === goal ? "active" : ""}" onclick="app.profileDraftSelect('goal', '${goal}')">
+            <button class="goal ${draft.goal === goal ? "active" : ""}" data-draft-goal="${goal}" onclick="app.profileDraftSelect('goal', '${goal}')">
               <strong>${goal}</strong><span>${desc}</span>
             </button>
           `).join("")}
         </div>
-        ${draft.goal !== "提升体能" ? `
+        <div id="profile-target-fields" style="${draft.goal === "提升体能" ? "display:none" : ""}">
           ${profileDraftRangeRow("targetWeight", "目标体重", "kg", 40, 120, 0.5)}
           ${profileDraftRangeRow("targetWaist", "目标腰围", "cm", 50, 120, 1)}
-        ` : ""}
+        </div>
       </div>
 
       <div class="card tight">
@@ -2405,8 +2405,13 @@ window.app = {
     save();
 
     if (key === "goal") {
-      render();
-      return;
+      document.querySelectorAll("[data-draft-goal]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.draftGoal === value);
+      });
+      const targetFields = document.getElementById("profile-target-fields");
+      if (targetFields) {
+        targetFields.style.display = value === "提升体能" ? "none" : "";
+      }
     }
 
     document.querySelectorAll(`[data-draft-seg="${key}"]`).forEach((button) => {
