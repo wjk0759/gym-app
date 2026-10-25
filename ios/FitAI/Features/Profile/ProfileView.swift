@@ -10,12 +10,14 @@ struct ProfileView: View {
     @State private var message = ""
     @State private var showPlaceholder = false
     @State private var showExport = false
+    @State private var showPaywall = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
                     profileCard
+                    proCard
                     metricsCard
                     goalCard
                     reminderCard
@@ -88,6 +90,39 @@ struct ProfileView: View {
             .foregroundStyle(Theme.accent)
         }
         .card()
+    }
+
+    private var proCard: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Theme.accent.opacity(0.14))
+                    .frame(width: 44, height: 44)
+                Image(systemName: "crown.fill")
+                    .foregroundStyle(Theme.accent)
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("FitAI Pro")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                Text("解锁 AI 计划、教练对话与器械识别")
+                    .font(.caption)
+                    .foregroundStyle(Theme.secondaryText)
+            }
+
+            Spacer()
+
+            Button("查看") {
+                showPaywall = true
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Theme.accent)
+        }
+        .card()
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
     }
 
     private var metricsCard: some View {

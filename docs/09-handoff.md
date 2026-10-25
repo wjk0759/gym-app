@@ -8,12 +8,13 @@
 | 数据库 | 完成 | PostgreSQL + pgvector 建表脚本 |
 | 后端 | 可运行 | FastAPI + SQLite/PostgreSQL，AI 默认 Mock |
 | 后端测试 | 通过 | 7 个校验器单测 + 端到端 smoke |
-| iOS 工程 | 代码完成 | 30 个 Swift 文件，CI 模拟器编译通过（单测需本地 Mac） |
+| iOS 工程 | 代码完成 | 32 个 Swift 文件，CI 模拟器编译通过（单测需本地 Mac） |
 | iOS 编译 | **未验证** | Windows 无法编译，需 Mac 或 GitHub Actions |
 | 真实 AI | 远程链路已接 | 启动后端、打开「我的 → AI 服务」远程开关、填 `.env` API Key |
 | 教学视频 | 未接 | 需自制或采购授权 |
 | 支付/登录 | 未接 | P1 |
 | 饮食/外卖 | 基础版 | 热量/三餐/40 种食物记录可用；美团未配置 |
+| 订阅 | 基础版 | StoreKit 2 购买/恢复页已接，商品 ID 需在 App Store Connect 配置 |
 
 ## 2. 现在就能验证的
 
@@ -107,7 +108,7 @@ LLM_MODEL=deepseek-chat
 | P0 | 真实模型未评测 | 计划合法率、伤病禁忌未用真实输出验证 |
 | P0 | 视频版权未解决 | 不能上线教学视频 |
 | P1 | 通知未在真机验证 | AlarmKit/静音模式行为未知 |
-| P1 | 无登录与订阅 | 无法商业化 |
+| P1 | 无登录；订阅商品未配置 | 订阅页已接，需 App Store Connect 建商品 |
 | P1 | HealthKit 未真机验证 | 代码与权限文案已接，需要签名/真机测试 |
 | P2 | 美团未接 | 不影响核心闭环 |
 | P2 | 无 Apple Watch | 体验增强，非必须 |
