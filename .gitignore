@@ -25,6 +25,7 @@ ios/build.log
 preview/shot-*.png
 preview/ui*.png
 preview/admin-*.png
+preview/fix-*.png
 
 # 本地素材
 *.mp4
