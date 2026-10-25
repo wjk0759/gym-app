@@ -39,7 +39,7 @@ jobs:
 
       - name: Run tests
         working-directory: backend
-        run: pytest -q
+        run: python -m pytest -q
 
       - name: Run API smoke test
         working-directory: backend
