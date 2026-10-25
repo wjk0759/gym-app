@@ -5,6 +5,8 @@
 
 面向中国大陆的 AI 健身教练 iOS App。核心闭环：**建档 → 定目标 → AI 生成计划 → 到点提醒 → 训练记录 → AI 复盘调整**。
 
+> **Windows 上先看效果：** 双击 `preview\启动预览.cmd`，浏览器打开 <http://127.0.0.1:5173/>。这是 Web 界面预览，不是 iOS 模拟器；真实模拟器需要 Mac + Xcode。
+
 > 当前版本：`v0.1.0` 基础工程
 > 市场：中国大陆优先
 > 形态：SwiftUI 原生 iOS + FastAPI 后端 + PostgreSQL
@@ -52,6 +54,7 @@
 FitAI/
 ├── README.md
 ├── docs/                    # 产品、架构、合规、路线图
+├── preview/                 # Windows 可运行的 Web 界面预览
 ├── db/schema.sql            # PostgreSQL + pgvector 建表脚本
 ├── backend/                 # FastAPI 服务（Windows 可直接跑）
 │   ├── app/

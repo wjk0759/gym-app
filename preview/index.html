@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FitAI · Web 预览</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="stage">
+    <aside class="side">
+      <div class="brand">
+        <span class="brand-mark">F</span>
+        <span>FitAI</span>
+        <span class="tag">Web Preview</span>
+      </div>
+      <h1>先看看它长什么样</h1>
+      <p class="side-copy">
+        这是 FitAI 的界面与流程预览，不是 iOS 模拟器。真实的 iOS App 需要 macOS + Xcode 编译运行。
+      </p>
+      <div class="side-actions">
+        <button class="side-btn primary" onclick="app.skipOnboarding()">直接看首页</button>
+        <button class="side-btn" onclick="app.resetAll()">重置演示数据</button>
+      </div>
+      <div class="side-note">
+        <strong>硬限制</strong>
+        Windows 无法运行 iOS Simulator。想在电脑上看真实 App，需要 Mac 或云 Mac。
+      </div>
+      <div class="side-list">
+        <span>✓ 建档与目标</span>
+        <span>✓ AI 计划与编辑</span>
+        <span>✓ 训练记录与 RPE</span>
+        <span>✓ 教练对话 / 器械识别</span>
+        <span>✓ 饮食记录 / 订阅页</span>
+      </div>
+    </aside>
+
+    <div class="device">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="status-right">
+          <span class="signal">5G</span>
+          <span class="battery"><i></i></span>
+        </span>
+      </div>
+      <div class="island"></div>
+      <main id="app" class="app"></main>
+      <nav id="tabbar" class="tabbar"></nav>
+      <div id="toast" class="toast"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
