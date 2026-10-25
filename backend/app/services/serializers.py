@@ -1,9 +1,26 @@
 from __future__ import annotations
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from ..models import Exercise, Goal, PlanExercise, Program, ProgramDay, Profile
+
+
+def program_load_options():
+    """一次性加载计划日与动作，避免序列化时逐行触发 lazy load。"""
+    return selectinload(Program.days).selectinload(ProgramDay.exercises)
+
+
+def load_program(db: Session, program_id: str) -> Program | None:
+    return (
+        db.execute(
+            select(Program)
+            .options(program_load_options())
+            .where(Program.id == program_id)
+            .execution_options(populate_existing=True)
+        )
+        .scalar_one_or_none()
+    )
 
 
 def profile_to_dict(profile: Profile) -> dict:
@@ -155,7 +172,7 @@ def save_plan(
 
     db.add(program)
     db.commit()
-    return program
+    return load_program(db, program.id) or program
 
 
 def clone_program(
@@ -206,4 +223,4 @@ def clone_program(
 
     db.add(program)
     db.commit()
-    return program
+    return load_program(db, program.id) or program

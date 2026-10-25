@@ -9,6 +9,7 @@ from ..deps import CurrentUser, DBSession
 from ..models import ChatMessage, ChatSession, Profile, Program
 from ..schemas import ChatIn
 from ..services.coach import coach_reply
+from ..services.serializers import program_load_options
 
 router = APIRouter(prefix="/coach", tags=["coach"])
 
@@ -17,6 +18,7 @@ def _active_program(db: DBSession, user_id: str) -> Program | None:
     return (
         db.execute(
             select(Program)
+            .options(program_load_options())
             .where(Program.user_id == user_id, Program.status == "active")
             .order_by(Program.version.desc())
         )

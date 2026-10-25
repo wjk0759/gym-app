@@ -9,6 +9,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
+from sqlalchemy.orm import selectinload
 
 from ..config import settings
 from ..deps import DBSession
@@ -29,7 +30,13 @@ from ..models import (
     WorkoutSession,
     utcnow,
 )
-from ..services.serializers import goal_to_dict, profile_to_dict, serialize_program
+from ..services.serializers import (
+    goal_to_dict,
+    load_program,
+    profile_to_dict,
+    program_load_options,
+    serialize_program,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -97,6 +104,15 @@ class ExerciseVideoUpdate(BaseModel):
 
 def _iso(value: datetime | None) -> str | None:
     return value.isoformat() if value else None
+
+
+def _profiles_by_user(db: DBSession, user_ids: list[str]) -> dict[str, Profile]:
+    if not user_ids:
+        return {}
+    rows = db.execute(
+        select(Profile).where(Profile.user_id.in_(set(user_ids)))
+    ).scalars()
+    return {profile.user_id: profile for profile in rows}
 
 
 def _audit(
@@ -450,52 +466,61 @@ def stats(actor: AdminAuth, db: DBSession):
             }
         )
 
-    recent_users = []
-    for user in db.execute(
+    recent_user_rows = db.execute(
         select(User)
         .where(User.deleted_at.is_(None))
         .order_by(User.created_at.desc())
         .limit(5)
-    ).scalars():
-        profile = db.get(Profile, user.id)
-        recent_users.append(
-            {
-                "id": user.id,
-                "nickname": profile.nickname if profile else "未建档",
-                "created_at": _iso(user.created_at),
-            }
-        )
+    ).scalars().all()
+    recent_profiles = _profiles_by_user(db, [user.id for user in recent_user_rows])
+    recent_users = [
+        {
+            "id": user.id,
+            "nickname": (
+                recent_profiles[user.id].nickname
+                if user.id in recent_profiles
+                else "未建档"
+            ),
+            "created_at": _iso(user.created_at),
+        }
+        for user in recent_user_rows
+    ]
 
-    recent_workouts = []
-    for session in db.execute(
+    recent_workout_rows = db.execute(
         select(WorkoutSession)
+        .options(selectinload(WorkoutSession.sets))
         .order_by(WorkoutSession.started_at.desc())
         .limit(5)
-    ).scalars():
-        profile = db.get(Profile, session.user_id)
+    ).scalars().all()
+    recent_workout_profiles = _profiles_by_user(
+        db, [session.user_id for session in recent_workout_rows]
+    )
+    recent_workouts = []
+    for session in recent_workout_rows:
+        profile = recent_workout_profiles.get(session.user_id)
         item = _workout_summary(session)
         item["nickname"] = profile.nickname if profile else session.user_id[:8]
         recent_workouts.append(item)
 
-    recent_safety = []
-    for message in db.execute(
-        select(ChatMessage)
+    safety_rows = db.execute(
+        select(ChatMessage, ChatSession, Profile)
+        .join(ChatSession, ChatSession.id == ChatMessage.session_id)
+        .outerjoin(Profile, Profile.user_id == ChatSession.user_id)
         .where(ChatMessage.safety_flag.is_not(None))
         .order_by(ChatMessage.created_at.desc())
         .limit(5)
-    ).scalars():
-        session = db.get(ChatSession, message.session_id)
-        profile = db.get(Profile, session.user_id) if session else None
-        recent_safety.append(
-            {
-                "id": message.id,
-                "user_id": session.user_id if session else None,
-                "nickname": profile.nickname if profile else "未知用户",
-                "safety_flag": message.safety_flag,
-                "content": message.content[:160],
-                "created_at": _iso(message.created_at),
-            }
-        )
+    ).all()
+    recent_safety = [
+        {
+            "id": message.id,
+            "user_id": session.user_id,
+            "nickname": profile.nickname if profile else "未知用户",
+            "safety_flag": message.safety_flag,
+            "content": message.content[:160],
+            "created_at": _iso(message.created_at),
+        }
+        for message, session, profile in safety_rows
+    ]
 
     return {
         "users_total": users_total,
@@ -631,17 +656,20 @@ def user_detail(user_id: str, actor: AdminAuth, db: DBSession):
     ).scalars().all()
     programs = db.execute(
         select(Program)
+        .options(program_load_options())
         .where(Program.user_id == user_id)
         .order_by(Program.created_at.desc())
     ).scalars().all()
     workouts = db.execute(
         select(WorkoutSession)
+        .options(selectinload(WorkoutSession.sets))
         .where(WorkoutSession.user_id == user_id)
         .order_by(WorkoutSession.started_at.desc())
         .limit(50)
     ).scalars().all()
     chats = db.execute(
         select(ChatSession)
+        .options(selectinload(ChatSession.messages))
         .where(ChatSession.user_id == user_id)
         .order_by(ChatSession.created_at.desc())
         .limit(30)
@@ -802,15 +830,19 @@ def list_programs(
     total = db.scalar(select(func.count()).select_from(statement.subquery())) or 0
     programs = (
         db.execute(
-            statement.order_by(Program.created_at.desc()).limit(limit).offset(offset)
+            statement.options(program_load_options())
+            .order_by(Program.created_at.desc())
+            .limit(limit)
+            .offset(offset)
         )
         .scalars()
         .unique()
         .all()
     )
     items = []
+    profiles = _profiles_by_user(db, [program.user_id for program in programs])
     for program in programs:
-        profile = db.get(Profile, program.user_id)
+        profile = profiles.get(program.user_id)
         item = _program_summary(program)
         item["nickname"] = profile.nickname if profile else "未建档"
         items.append(item)
@@ -819,7 +851,7 @@ def list_programs(
 
 @router.get("/programs/{program_id}")
 def program_detail(program_id: str, actor: AdminAuth, db: DBSession):
-    program = db.get(Program, program_id)
+    program = load_program(db, program_id)
     if program is None:
         raise HTTPException(status_code=404, detail="计划不存在")
     profile = db.get(Profile, program.user_id)
@@ -879,7 +911,8 @@ def list_workouts(
     total = db.scalar(select(func.count()).select_from(statement.subquery())) or 0
     sessions = (
         db.execute(
-            statement.order_by(WorkoutSession.started_at.desc())
+            statement.options(selectinload(WorkoutSession.sets))
+            .order_by(WorkoutSession.started_at.desc())
             .limit(limit)
             .offset(offset)
         )
@@ -888,8 +921,9 @@ def list_workouts(
         .all()
     )
     items = []
+    profiles = _profiles_by_user(db, [session.user_id for session in sessions])
     for session in sessions:
-        profile = db.get(Profile, session.user_id)
+        profile = profiles.get(session.user_id)
         item = _workout_summary(session)
         item["nickname"] = profile.nickname if profile else "未建档"
         items.append(item)
@@ -898,7 +932,14 @@ def list_workouts(
 
 @router.get("/workouts/{workout_id}")
 def workout_detail(workout_id: str, actor: AdminAuth, db: DBSession):
-    session = db.get(WorkoutSession, workout_id)
+    session = (
+        db.execute(
+            select(WorkoutSession)
+            .options(selectinload(WorkoutSession.sets))
+            .where(WorkoutSession.id == workout_id)
+        )
+        .scalar_one_or_none()
+    )
     if session is None:
         raise HTTPException(status_code=404, detail="训练记录不存在")
     profile = db.get(Profile, session.user_id)
@@ -947,7 +988,8 @@ def list_chats(
     total = db.scalar(select(func.count()).select_from(statement.subquery())) or 0
     chats = (
         db.execute(
-            statement.order_by(ChatSession.created_at.desc())
+            statement.options(selectinload(ChatSession.messages))
+            .order_by(ChatSession.created_at.desc())
             .limit(limit)
             .offset(offset)
         )
@@ -956,8 +998,9 @@ def list_chats(
         .all()
     )
     items = []
+    profiles = _profiles_by_user(db, [chat.user_id for chat in chats])
     for chat in chats:
-        profile = db.get(Profile, chat.user_id)
+        profile = profiles.get(chat.user_id)
         item = _chat_summary(chat)
         item["nickname"] = profile.nickname if profile else "未建档"
         items.append(item)
@@ -966,7 +1009,7 @@ def list_chats(
 
 @router.get("/chats/{chat_id}")
 def chat_detail(chat_id: str, actor: AdminAuth, db: DBSession):
-    chat = db.get(ChatSession, chat_id)
+    chat = db.get(ChatSession, chat_id, options=[selectinload(ChatSession.messages)])
     if chat is None:
         raise HTTPException(status_code=404, detail="对话不存在")
     profile = db.get(Profile, chat.user_id)

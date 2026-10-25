@@ -4,6 +4,7 @@ struct RootView: View {
     @Environment(AppStore.self) private var store
     @Environment(AuthStore.self) private var auth
     @Environment(SubscriptionManager.self) private var subscriptions
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         ZStack {
@@ -45,6 +46,11 @@ struct RootView: View {
             store.switchUser(userID)
             if auth.isAuthenticated {
                 enableRemoteMode()
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active {
+                store.flushPersistence()
             }
         }
     }

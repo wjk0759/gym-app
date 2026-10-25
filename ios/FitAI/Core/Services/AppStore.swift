@@ -25,6 +25,11 @@ final class AppStore {
     var healthKitEnabled = false
 
     private var currentUserID: String? = AuthTokenStore.shared.userID
+    // 状态较大时 JSON 编码和原子落盘会阻塞主线程；写入串行放到 utility 队列。
+    private let persistenceQueue = DispatchQueue(
+        label: "com.fitai.appstore.persistence",
+        qos: .utility
+    )
 
     private var fileURL: URL {
         let directory = FileManager.default.urls(
@@ -175,8 +180,10 @@ final class AppStore {
         if useRemoteAI && isPro {
             Task { @MainActor in
                 do {
-                    try await APIClient.shared.syncProfile(snapshot)
-                    try? await APIClient.shared.syncGoal(snapshot)
+                    async let profileSync = APIClient.shared.syncProfile(snapshot)
+                    async let goalSync = APIClient.shared.syncGoal(snapshot)
+                    try await profileSync
+                    _ = try? await goalSync
                     var generated = try await APIClient.shared.generatePlan(
                         force: force,
                         equipmentSlugs: librarySlugs
@@ -487,6 +494,7 @@ final class AppStore {
     // MARK: - 档案与提醒
 
     func resetAll() {
+        flushPersistence()
         try? FileManager.default.removeItem(at: fileURL)
         resetInMemory()
         NotificationScheduler.shared.cancelAll()
@@ -496,6 +504,7 @@ final class AppStore {
     func switchUser(_ userID: String?) {
         guard userID != currentUserID else { return }
         persist()
+        flushPersistence()
         currentUserID = userID
         resetInMemory()
         load()
@@ -631,8 +640,16 @@ final class AppStore {
             bodyAnalyses: bodyAnalyses,
             useEquipmentLibraryForPlans: useEquipmentLibraryForPlans
         )
-        guard let data = try? JSONEncoder().encode(state) else { return }
-        try? data.write(to: fileURL, options: .atomic)
+        let url = fileURL
+        persistenceQueue.async {
+            guard let data = try? JSONEncoder().encode(state) else { return }
+            try? data.write(to: url, options: .atomic)
+        }
+    }
+
+    /// 进入后台或切换账号前调用，确保已排队的写入完成。
+    func flushPersistence() {
+        persistenceQueue.sync {}
     }
 
     func exportData() -> String {

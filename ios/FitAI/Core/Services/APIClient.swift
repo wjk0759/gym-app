@@ -105,26 +105,49 @@ struct APIClient {
     static let shared = APIClient()
 
     private let baseURL: URL
-    private let decoder: JSONDecoder
     private let userID = "00000000-0000-0000-0000-000000000001"
+
+    private static let iso8601WithFractionalSeconds: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    private static let iso8601: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
+    private static let birthDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
 
     init(baseURL: URL = AppConfig.apiBaseURL) {
         self.baseURL = baseURL
+    }
+
+    private func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let text = try container.decode(String.self)
-            let withFraction = ISO8601DateFormatter()
-            withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let date = withFraction.date(from: text) { return date }
-            let plain = ISO8601DateFormatter()
-            if let date = plain.date(from: text) { return date }
+            if let date = Self.iso8601WithFractionalSeconds.date(from: text) {
+                return date
+            }
+            if let date = Self.iso8601.date(from: text) {
+                return date
+            }
             throw DecodingError.dataCorruptedError(
                 in: container,
                 debugDescription: "无法解析日期：\(text)"
             )
         }
-        self.decoder = decoder
+        return try decoder.decode(type, from: data)
     }
 
     // MARK: - 档案
@@ -215,7 +238,7 @@ struct APIClient {
             imageData: imageData,
             filename: "photo.jpg"
         )
-        let response = try decoder.decode(EquipmentScanResponse.self, from: data)
+        let response = try decode(EquipmentScanResponse.self, from: data)
         return response.candidates.compactMap { candidate in
             guard let exercise = ExerciseLibrary.exercise(slug: candidate.slug) else {
                 return nil
@@ -227,7 +250,7 @@ struct APIClient {
     func officialVideoURL(slug: String) async throws -> URL? {
         let encoded = slug.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? slug
         let data = try await perform(path: "videos/\(encoded)", method: "GET", body: nil)
-        let response = try decoder.decode(ExerciseVideoResponse.self, from: data)
+        let response = try decode(ExerciseVideoResponse.self, from: data)
         guard let text = response.video?.videoURL, let url = URL(string: text) else {
             return nil
         }
@@ -242,7 +265,7 @@ struct APIClient {
             imageData: imageData,
             filename: "body.jpg"
         )
-        let response = try decoder.decode(BodyAnalysisResponse.self, from: data)
+        let response = try decode(BodyAnalysisResponse.self, from: data)
         return BodyAnalysis(
             summary: response.summary,
             focusAreas: response.focusAreas.compactMap { MuscleGroup(rawValue: $0) },
@@ -260,7 +283,7 @@ struct APIClient {
             imageData: imageData,
             filename: "meal.jpg"
         )
-        let response = try decoder.decode(FoodAnalysisResponse.self, from: data)
+        let response = try decode(FoodAnalysisResponse.self, from: data)
         return FoodRecognitionResult(
             items: response.items.map { item in
                 FoodRecognitionItem(
@@ -286,7 +309,7 @@ struct APIClient {
             method: "GET",
             body: nil
         )
-        let response = try decoder.decode(MeituanLinkResponse.self, from: data)
+        let response = try decode(MeituanLinkResponse.self, from: data)
         if let text = response.deeplink, let url = URL(string: text) {
             return url
         }
@@ -304,7 +327,7 @@ struct APIClient {
         body: Data?
     ) async throws -> T {
         let data = try await perform(path: path, method: method, body: body)
-        return try decoder.decode(T.self, from: data)
+        return try decode(T.self, from: data)
     }
 
     private func sendVoid(path: String, method: String, body: Data?) async throws {
@@ -423,11 +446,7 @@ struct APIClient {
 
     private func birthDateString(age: Int) -> String {
         let date = Calendar.current.date(byAdding: .year, value: -age, to: Date()) ?? Date()
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: date)
+        return Self.birthDateFormatter.string(from: date)
     }
 
     private func apiGoalType(_ type: GoalType) -> String {

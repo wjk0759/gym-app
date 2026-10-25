@@ -323,13 +323,32 @@ function loadState() {
 
 let state = normalizeState(loadState() || initialState());
 
-function save() {
+let saveTimer = null;
+
+function flushSave() {
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (error) {
     /* ignore */
   }
 }
+
+function save() {
+  if (saveTimer) return;
+  saveTimer = setTimeout(() => {
+    saveTimer = null;
+    flushSave();
+  }, 120);
+}
+
+window.addEventListener("pagehide", flushSave);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") flushSave();
+});
 
 function toast(message) {
   const el = document.getElementById("toast");

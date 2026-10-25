@@ -14,6 +14,31 @@ class LLMError(RuntimeError):
     pass
 
 
+# 复用连接池，避免每次对话/计划生成都重新做 TLS 握手。
+_client: httpx.AsyncClient | None = None
+
+
+def _get_client() -> httpx.AsyncClient:
+    global _client
+    if _client is None:
+        _client = httpx.AsyncClient(
+            timeout=httpx.Timeout(45.0, connect=10.0),
+            limits=httpx.Limits(
+                max_connections=40,
+                max_keepalive_connections=20,
+                keepalive_expiry=30.0,
+            ),
+        )
+    return _client
+
+
+async def close_client() -> None:
+    global _client
+    if _client is not None:
+        await _client.aclose()
+        _client = None
+
+
 def _headers() -> dict[str, str]:
     return {
         "Authorization": f"Bearer {settings.llm_api_key}",
@@ -51,14 +76,14 @@ async def complete_json(system: str, user: str) -> dict:
         "response_format": {"type": "json_object"},
     }
 
-    async with httpx.AsyncClient(timeout=45) as client:
+    client = _get_client()
+    response = await client.post(_endpoint(), headers=_headers(), json=payload)
+    if response.status_code >= 400:
+        # 部分兼容接口不支持 response_format，退化为普通请求
+        payload.pop("response_format", None)
         response = await client.post(_endpoint(), headers=_headers(), json=payload)
-        if response.status_code >= 400:
-            # 部分兼容接口不支持 response_format，退化为普通请求
-            payload.pop("response_format", None)
-            response = await client.post(_endpoint(), headers=_headers(), json=payload)
-        if response.status_code >= 400:
-            raise LLMError(f"LLM HTTP {response.status_code}: {response.text[:300]}")
+    if response.status_code >= 400:
+        raise LLMError(f"LLM HTTP {response.status_code}: {response.text[:300]}")
 
     data = response.json()
     try:
@@ -81,8 +106,9 @@ async def complete_text(messages: list[dict], temperature: float = 0.5) -> str:
         "messages": messages,
         "temperature": temperature,
     }
-    async with httpx.AsyncClient(timeout=45) as client:
-        response = await client.post(_endpoint(), headers=_headers(), json=payload)
+    response = await _get_client().post(
+        _endpoint(), headers=_headers(), json=payload
+    )
     if response.status_code >= 400:
         raise LLMError(f"LLM HTTP {response.status_code}: {response.text[:300]}")
     try:

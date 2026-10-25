@@ -1,6 +1,6 @@
 from collections.abc import Generator
 
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from .config import settings
@@ -24,6 +24,17 @@ SessionLocal = sessionmaker(
     expire_on_commit=False,
 )
 
+if settings.database_url.startswith("sqlite") and ":memory:" not in settings.database_url:
+    @event.listens_for(engine, "connect")
+    def _sqlite_pragmas(dbapi_connection, connection_record) -> None:
+        # WAL 让读写并发更顺畅，NORMAL 同步在开发/单机部署下减少 fsync 等待。
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.execute("PRAGMA busy_timeout=5000")
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
 
 class Base(DeclarativeBase):
     pass
@@ -42,10 +53,56 @@ _USER_AUTH_COLUMNS = {
     "last_login_at": "TIMESTAMP",
 }
 
+# 开发期 SQLite 已有库不会自动补复合索引；启动时按表检测补齐。
+# 这些索引对应列表/统计页的高频过滤与排序条件。
+_PERFORMANCE_INDEXES = (
+    (
+        "workout_sessions",
+        "CREATE INDEX IF NOT EXISTS ix_workout_sessions_user_started "
+        "ON workout_sessions(user_id, started_at)",
+    ),
+    (
+        "workout_sessions",
+        "CREATE INDEX IF NOT EXISTS ix_workout_sessions_started_at "
+        "ON workout_sessions(started_at)",
+    ),
+    (
+        "programs",
+        "CREATE INDEX IF NOT EXISTS ix_programs_user_status_version "
+        "ON programs(user_id, status, version)",
+    ),
+    (
+        "programs",
+        "CREATE INDEX IF NOT EXISTS ix_programs_created_at "
+        "ON programs(created_at)",
+    ),
+    (
+        "chat_sessions",
+        "CREATE INDEX IF NOT EXISTS ix_chat_sessions_user_created "
+        "ON chat_sessions(user_id, created_at)",
+    ),
+    (
+        "chat_sessions",
+        "CREATE INDEX IF NOT EXISTS ix_chat_sessions_created_at "
+        "ON chat_sessions(created_at)",
+    ),
+    (
+        "ai_jobs",
+        "CREATE INDEX IF NOT EXISTS ix_ai_jobs_created_at "
+        "ON ai_jobs(created_at)",
+    ),
+    (
+        "exercise_videos",
+        "CREATE INDEX IF NOT EXISTS ix_exercise_videos_slug_status "
+        "ON exercise_videos(exercise_slug, status)",
+    ),
+)
+
 
 def ensure_schema() -> None:
     inspector = inspect(engine)
-    if "users" not in inspector.get_table_names():
+    tables = set(inspector.get_table_names())
+    if "users" not in tables:
         return
     columns = {column["name"] for column in inspector.get_columns("users")}
     with engine.begin() as connection:
@@ -76,6 +133,9 @@ def ensure_schema() -> None:
                 "ON users(qq_openid) WHERE qq_openid IS NOT NULL"
             )
         )
+        for table, ddl in _PERFORMANCE_INDEXES:
+            if table in tables:
+                connection.execute(text(ddl))
 
 
 def get_db() -> Generator[Session, None, None]:

@@ -27,6 +27,7 @@
 | 12 周开发路线 | `docs/07-roadmap.md` | 完成 |
 | iOS 上手指南（Mac） | `docs/08-ios-setup.md` | 完成 |
 | 交付说明与下一步 | `docs/09-handoff.md` | 完成 |
+| 性能优化与基准 | `docs/10-performance.md` | 完成 |
 | FastAPI 后端骨架 | `backend/` | 可启动，AI 默认 Mock |
 | SwiftUI App 骨架 | `ios/` | 可运行，默认本地 Mock 数据 |
 

@@ -10,6 +10,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -193,6 +194,9 @@ class Exercise(Base):
 
 class ExerciseVideo(Base):
     __tablename__ = "exercise_videos"
+    __table_args__ = (
+        Index("ix_exercise_videos_slug_status", "exercise_slug", "status"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     exercise_slug: Mapped[str] = mapped_column(
@@ -217,6 +221,10 @@ class ExerciseVideo(Base):
 
 class Program(Base):
     __tablename__ = "programs"
+    __table_args__ = (
+        Index("ix_programs_user_status_version", "user_id", "status", "version"),
+        Index("ix_programs_created_at", "created_at"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     user_id: Mapped[str] = mapped_column(
@@ -283,6 +291,10 @@ class PlanExercise(Base):
 
 class WorkoutSession(Base):
     __tablename__ = "workout_sessions"
+    __table_args__ = (
+        Index("ix_workout_sessions_user_started", "user_id", "started_at"),
+        Index("ix_workout_sessions_started_at", "started_at"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     user_id: Mapped[str] = mapped_column(
@@ -340,6 +352,10 @@ class NotificationSchedule(Base):
 
 class ChatSession(Base):
     __tablename__ = "chat_sessions"
+    __table_args__ = (
+        Index("ix_chat_sessions_user_created", "user_id", "created_at"),
+        Index("ix_chat_sessions_created_at", "created_at"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     user_id: Mapped[str] = mapped_column(
@@ -388,6 +404,7 @@ class EquipmentScan(Base):
 
 class AIJob(Base):
     __tablename__ = "ai_jobs"
+    __table_args__ = (Index("ix_ai_jobs_created_at", "created_at"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     user_id: Mapped[str | None] = mapped_column(

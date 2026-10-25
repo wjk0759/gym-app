@@ -11,6 +11,8 @@ from ..services.plan_validator import PlanValidationError, injury_tags
 from ..services.serializers import (
     clone_program,
     goal_to_dict,
+    load_program,
+    program_load_options,
     save_plan,
     serialize_program,
 )
@@ -22,6 +24,7 @@ def _active_program(db: DBSession, user_id: str) -> Program | None:
     return (
         db.execute(
             select(Program)
+            .options(program_load_options())
             .where(Program.user_id == user_id, Program.status == "active")
             .order_by(Program.version.desc())
         )
@@ -31,7 +34,7 @@ def _active_program(db: DBSession, user_id: str) -> Program | None:
 
 
 def _owned_program(db: DBSession, user_id: str, plan_id: str) -> Program:
-    program = db.get(Program, plan_id)
+    program = load_program(db, plan_id)
     if program is None or program.user_id != user_id:
         raise HTTPException(status_code=404, detail="计划不存在")
     return program
@@ -115,9 +118,16 @@ def update_day(
     equipment = set(profile.equipment or ["bodyweight"]) if profile else {"bodyweight"}
     equipment.add("bodyweight")
     banned = injury_tags(profile.injuries if profile else [])
+    exercise_slugs = {item.slug for item in payload.exercises}
+    exercises = {
+        row.slug: row
+        for row in db.execute(
+            select(Exercise).where(Exercise.slug.in_(exercise_slugs))
+        ).scalars()
+    } if exercise_slugs else {}
 
     for index, item in enumerate(payload.exercises, start=1):
-        exercise = db.get(Exercise, item.slug)
+        exercise = exercises.get(item.slug)
         if exercise is None:
             raise HTTPException(status_code=422, detail=f"动作 {item.slug} 不存在")
         if exercise.equipment not in equipment:
@@ -145,6 +155,7 @@ def update_day(
             )
         )
     db.commit()
+    program = load_program(db, program.id) or program
     return serialize_program(program)
 
 

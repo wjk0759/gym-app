@@ -2,6 +2,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from ..deps import CurrentUser, DBSession
 from ..models import Exercise, Profile, SetLog, WorkoutSession
@@ -78,7 +79,11 @@ def list_workouts(
     date_to: date | None = Query(default=None, alias="to"),
     limit: int = Query(default=20, ge=1, le=100),
 ):
-    query = select(WorkoutSession).where(WorkoutSession.user_id == user_id)
+    query = (
+        select(WorkoutSession)
+        .options(selectinload(WorkoutSession.sets))
+        .where(WorkoutSession.user_id == user_id)
+    )
     if date_from:
         query = query.where(
             WorkoutSession.started_at
@@ -118,7 +123,9 @@ def summary(user_id: CurrentUser, db: DBSession, weeks: int = Query(default=4, g
     since = datetime.now(timezone.utc) - timedelta(weeks=weeks)
     sessions = (
         db.execute(
-            select(WorkoutSession).where(
+            select(WorkoutSession)
+            .options(selectinload(WorkoutSession.sets))
+            .where(
                 WorkoutSession.user_id == user_id,
                 WorkoutSession.started_at >= since,
             )
@@ -157,7 +164,14 @@ def summary(user_id: CurrentUser, db: DBSession, weeks: int = Query(default=4, g
 
 @router.get("/{workout_id}")
 def get_workout(workout_id: str, user_id: CurrentUser, db: DBSession):
-    session = db.get(WorkoutSession, workout_id)
+    session = (
+        db.execute(
+            select(WorkoutSession)
+            .options(selectinload(WorkoutSession.sets))
+            .where(WorkoutSession.id == workout_id)
+        )
+        .scalar_one_or_none()
+    )
     if session is None or session.user_id != user_id:
         raise HTTPException(status_code=404, detail="训练记录不存在")
     return {

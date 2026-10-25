@@ -9,28 +9,58 @@ final class AuthTokenStore {
     private let accessKey = "access_token"
     private let refreshKey = "refresh_token"
     private let userKey = "user_id"
+    private let lock = NSLock()
 
-    private init() {}
+    // Keychain 查询比内存读取慢；网络请求每次都会读取 token，因此缓存一份。
+    private var cachedAccessToken: String?
+    private var cachedRefreshToken: String?
+    private var cachedUserID: String?
 
-    var accessToken: String? { read(accessKey) }
-    var refreshToken: String? { read(refreshKey) }
-    var userID: String? { read(userKey) }
+    private init() {
+        cachedAccessToken = read(accessKey)
+        cachedRefreshToken = read(refreshKey)
+        cachedUserID = read(userKey)
+    }
+
+    var accessToken: String? { withLock { cachedAccessToken } }
+    var refreshToken: String? { withLock { cachedRefreshToken } }
+    var userID: String? { withLock { cachedUserID } }
 
     func save(accessToken: String, refreshToken: String, userID: String) {
         write(accessKey, value: accessToken)
         write(refreshKey, value: refreshToken)
         write(userKey, value: userID)
+        withLock {
+            cachedAccessToken = accessToken
+            cachedRefreshToken = refreshToken
+            cachedUserID = userID
+        }
     }
 
     func updateTokens(accessToken: String, refreshToken: String) {
         write(accessKey, value: accessToken)
         write(refreshKey, value: refreshToken)
+        withLock {
+            cachedAccessToken = accessToken
+            cachedRefreshToken = refreshToken
+        }
     }
 
     func clear() {
         delete(accessKey)
         delete(refreshKey)
         delete(userKey)
+        withLock {
+            cachedAccessToken = nil
+            cachedRefreshToken = nil
+            cachedUserID = nil
+        }
+    }
+
+    private func withLock<T>(_ body: () -> T) -> T {
+        lock.lock()
+        defer { lock.unlock() }
+        return body()
     }
 
     private func query(_ key: String) -> [String: Any] {
