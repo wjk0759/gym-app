@@ -335,7 +335,45 @@ data: {"session_id": "uuid", "safety_flag": null}
 - 客户端必须单独同意后才上传；远程模式需在隐私政策中说明
 - 真实视觉模型上线前完成敏感个人信息单独同意与内容安全评估
 
-### 2.8 饮食（P1 占位）
+### 2.8 饮食
+
+#### `POST /diet/analyze`
+
+`multipart/form-data`，字段 `file`（jpeg/png/webp/heic，≤8MB）。
+
+```json
+{
+  "items": [
+    {
+      "name": "米饭",
+      "grams": 150,
+      "kcal_per_100g": 116,
+      "protein_per_100g": 2.6,
+      "carbs_per_100g": 25.9,
+      "fat_per_100g": 0.3,
+      "kcal": 174,
+      "protein_g": 3.9,
+      "carbs_g": 38.9,
+      "fat_g": 0.5,
+      "confidence": 0.91
+    }
+  ],
+  "total_kcal": 425,
+  "total_protein_g": 44.4,
+  "total_carbs_g": 49.4,
+  "total_fat_g": 13.0,
+  "confidence": 0.84,
+  "disclaimer": "识别结果为估算……",
+  "model": "mock"
+}
+```
+
+规则：
+
+- 原图不落盘、不入库，只返回本次识别结果
+- 热量、份量和烹饪油都是估算；客户端允许用户修改克数、勾选实际吃下的食物
+- 过敏原、疾病饮食与特殊人群需求必须提示以包装/商家/医生为准
+- 当前视觉识别为 Mock；接入真实模型前需完成隐私政策、单独同意与内容安全评估
 
 #### `POST /diet/plan`
 
@@ -364,6 +402,7 @@ data: {"session_id": "uuid", "safety_flag": null}
 | `/plans/generate` | 5 次/小时/用户 |
 | `/coach/chat` | 60 次/天/用户 |
 | `/equipment/scan` | 20 次/天/用户 |
+| `/diet/analyze` | 30 次/天/用户 |
 | 其他 | 120 次/分钟/IP |
 
 超限返回 429，带 `Retry-After`。
