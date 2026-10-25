@@ -1,5 +1,8 @@
 # FitAI（中文暂定名：练途）
 
+![iOS Build](https://github.com/wjk0759/gym-app/actions/workflows/ios-build.yml/badge.svg)
+![Backend Tests](https://github.com/wjk0759/gym-app/actions/workflows/backend-tests.yml/badge.svg)
+
 面向中国大陆的 AI 健身教练 iOS App。核心闭环：**建档 → 定目标 → AI 生成计划 → 到点提醒 → 训练记录 → AI 复盘调整**。
 
 > 当前版本：`v0.1.0` 基础工程
