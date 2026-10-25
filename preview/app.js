@@ -1287,6 +1287,31 @@ function equipmentPickerScreen() {
   `;
 }
 
+function equipmentCameraScreen() {
+  return `
+    <div class="equipment-camera-screen">
+      <div class="camera-top">
+        <button class="camera-icon-btn" onclick="app.equipmentTabOpen()" aria-label="退出拍摄">×</button>
+        <div class="camera-title">拍摄器械</div>
+        <button class="camera-icon-btn" onclick="app.equipmentCapturePhoto()" aria-label="从相册选择">相册</button>
+      </div>
+
+      <div class="camera-view">
+        <div class="camera-view-icon">📷</div>
+        <div class="camera-view-title">把器械完整放进画面</div>
+        <div class="camera-view-hint">避免只拍到局部、边缘或严重遮挡</div>
+      </div>
+
+      <div class="camera-bottom">
+        <button class="camera-shutter" onclick="app.equipmentCapturePhoto()" aria-label="拍照">
+          <span></span>
+        </button>
+        <div class="camera-shutter-label">拍照</div>
+      </div>
+    </div>
+  `;
+}
+
 function equipmentRecognitionScreen() {
   const candidates = state.equipRecognitionCandidates || [];
   return `
@@ -1322,10 +1347,7 @@ function equipmentRecognitionScreen() {
         <div class="card recognition-empty">
           <div class="h3">${state.equipRecognitionPhoto ? "暂未识别到动作库中的器械" : "先拍一张器械照片"}</div>
           <div class="tiny muted" style="margin-top:8px;line-height:1.7">${state.equipRecognitionPhoto ? "请拍摄完整器械。边缘灰色物体、遮挡严重或只露出局部的照片，可能无法辨别。" : "支持常见固定器械、绳索、杠铃与哑铃。照片只用于本次识别，不保存。"}</div>
-          <div class="row gap8" style="margin-top:14px">
-            <button class="btn btn-secondary" onclick="app.equipmentRecognitionPhoto()">${state.equipRecognitionPhoto ? "重新拍照" : "模拟拍照"}</button>
-            ${state.equipRecognitionPhoto ? `<button class="btn btn-primary" onclick="app.equipmentRecognitionScan()">开始识别</button>` : ""}
-          </div>
+          <button class="btn btn-secondary" style="margin-top:14px" onclick="app.equipmentRecognitionPhoto()">${state.equipRecognitionPhoto ? "重新拍照" : "模拟拍照"}</button>
         </div>
       `}
     </div>
@@ -2553,6 +2575,7 @@ function render() {
   else if (state.screen === "history") html = historyScreen();
   else if (state.screen === "exerciseDetail") html = exerciseScreen();
   else if (state.screen === "equipmentLibrary") html = equipmentLibraryScreen();
+  else if (state.screen === "equipmentCamera") html = equipmentCameraScreen();
   else if (state.screen === "equipmentRecognition") html = equipmentRecognitionScreen();
   else if (state.screen === "equipmentItem") html = equipmentItemScreen();
   else if (state.screen === "bodyAnalysis") html = bodyAnalysisScreen();
@@ -2562,6 +2585,7 @@ function render() {
   root.className = "app"
     + (state.screen === "tabs" ? "" : " no-tabs")
     + (state.screen === "tabs" && state.tab === "coach" ? " chat-mode" : "")
+    + (state.screen === "equipmentCamera" ? " camera-mode" : "")
     + (routeChanged ? " route-changed" : "");
   document.getElementById("tabbar").innerHTML = tabbar();
   document.getElementById("tabbar").className = "tabbar" + (state.onboarded && state.screen === "tabs" ? "" : " hidden");
@@ -2908,7 +2932,7 @@ window.app = {
     else if (state.screen === "sessionDetail") { state.screen = "tabs"; state.tab = "home"; }
     else if (state.screen === "exerciseDetail") { state.screen = "tabs"; state.tab = "equipment"; }
     else if (state.screen === "equipmentItem") { state.screen = "equipmentLibrary"; }
-    else if (state.screen === "equipmentLibrary" || state.screen === "equipmentRecognition") { state.screen = "tabs"; state.tab = "equipment"; }
+    else if (state.screen === "equipmentLibrary" || state.screen === "equipmentRecognition" || state.screen === "equipmentCamera") { state.screen = "tabs"; state.tab = "equipment"; }
     else if (state.screen === "bodyAnalysis") { state.screen = "tabs"; state.tab = "profile"; }
     else { state.screen = "tabs"; state.tab = "home"; }
     save();
@@ -3649,15 +3673,24 @@ window.app = {
   },
 
   equipmentRecognitionOpen() {
-    state.screen = "equipmentRecognition";
+    state.screen = "equipmentCamera";
     state.equipRecognitionPhoto = false;
     state.equipRecognitionCandidates = [];
     save();
     render();
   },
 
-  equipmentRecognitionPhoto() {
+  equipmentCapturePhoto() {
     state.equipRecognitionPhoto = true;
+    state.equipRecognitionCandidates = [];
+    state.screen = "equipmentRecognition";
+    save();
+    render();
+  },
+
+  equipmentRecognitionPhoto() {
+    state.screen = "equipmentCamera";
+    state.equipRecognitionPhoto = false;
     state.equipRecognitionCandidates = [];
     save();
     render();

@@ -19,29 +19,13 @@ struct EquipmentRecognitionView: View {
     @State private var selectedExercise: Exercise?
     @State private var isScanning = false
     @State private var showCamera = false
+    @State private var didAutoStartCamera = false
     @State private var savedSlugs: Set<String> = []
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
                 scanHeaderCard
-                quickActions
-
-                Button {
-                    scan()
-                } label: {
-                    if isScanning {
-                        HStack(spacing: 8) {
-                            ProgressView().tint(.black)
-                            Text("识别中…")
-                        }
-                    } else {
-                        Text("识别器械")
-                    }
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(imageData == nil || isScanning)
-
                 matchesSection
             }
             .padding(.horizontal, 20)
@@ -51,17 +35,44 @@ struct EquipmentRecognitionView: View {
         .background(AppBackground())
         .navigationTitle("器械识别")
         .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: photoItem?.itemIdentifier) { _, _ in
-            guard let item = photoItem else { return }
-            Task { @MainActor in
-                await load(item)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                }
+                .accessibilityLabel("关闭器械识别")
             }
         }
-        .fullScreenCover(isPresented: $showCamera) {
-            CameraPicker { image in
-                apply(image)
+        .onChange(of: photoItem?.itemIdentifier) { _, _ in
+            guard let photoItem else { return }
+            Task { @MainActor in
+                await load(photoItem)
             }
-            .ignoresSafeArea()
+        }
+        .task {
+            guard !didAutoStartCamera, selectedImage == nil else { return }
+            didAutoStartCamera = true
+            showCamera = true
+        }
+        .fullScreenCover(isPresented: $showCamera, onDismiss: {
+            // 用户退出拍摄且没有照片时，不进入空的结果页。
+            if selectedImage == nil {
+                dismiss()
+            }
+        }) {
+            EquipmentCameraView(
+                onImage: { image in
+                    apply(image)
+                    showCamera = false
+                    scan()
+                },
+                onCancel: {
+                    showCamera = false
+                }
+            )
         }
         .sheet(item: $selectedExercise) { exercise in
             ExerciseDetailView(exercise: exercise)
@@ -160,45 +171,6 @@ struct EquipmentRecognitionView: View {
             }
         }
         .card()
-    }
-
-    private var quickActions: some View {
-        HStack(spacing: 8) {
-            NavigationLink {
-                EquipmentSearchView()
-            } label: {
-                quickActionTile("magnifyingglass", "搜索")
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                showCamera = true
-            } label: {
-                quickActionTile("camera", "拍照")
-            }
-            .buttonStyle(.plain)
-
-            PhotosPicker(selection: $photoItem, matching: .images) {
-                quickActionTile("photo", "相册")
-            }
-        }
-    }
-
-    private func quickActionTile(_ icon: String, _ title: String) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.title3.weight(.medium))
-                .foregroundStyle(Theme.accent)
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.white)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(
-            Theme.surfaceStrong,
-            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-        )
     }
 
     private var resultSection: some View {
@@ -320,6 +292,7 @@ struct EquipmentRecognitionView: View {
         imageData = data
         selectedImage = image
         candidates = []
+        scan()
     }
 
     private func apply(_ image: UIImage) {
