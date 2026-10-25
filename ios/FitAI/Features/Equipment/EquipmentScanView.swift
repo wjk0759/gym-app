@@ -1,4 +1,5 @@
 import PhotosUI
+import AVKit
 import SwiftUI
 import UIKit
 
@@ -290,6 +291,28 @@ struct ExerciseDetailView: View {
 
     let exercise: Exercise
 
+    @ViewBuilder
+    private var videoSection: some View {
+        if let videoURL = exercise.videoURL {
+            VideoPlayer(player: AVPlayer(url: videoURL))
+                .frame(height: 210)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        } else {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Image(systemName: "play.rectangle")
+                        .foregroundStyle(Theme.accent)
+                    Text("教学视频")
+                        .font(.headline)
+                }
+                Text("还没有配置视频。把授权素材上传后，在 videos.json 里填上动作 slug 与播放地址即可。")
+                    .font(.caption)
+                    .foregroundStyle(Theme.secondaryText)
+            }
+            .card()
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -313,19 +336,7 @@ struct ExerciseDetailView: View {
                     }
                     .card()
 
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Image(systemName: "play.rectangle")
-                                .foregroundStyle(Theme.accent)
-                            Text("教学视频")
-                                .font(.headline)
-                        }
-                        Text("视频接入后在这里播放。当前版本先用文字要领，避免使用未授权素材。")
-                            .font(.caption)
-                            .foregroundStyle(Theme.secondaryText)
-                    }
-                    .card()
-
+                    videoSection
                     Button {
                         store.sendChat("\(exercise.nameZH)怎么用？需要注意什么？")
                         dismiss()

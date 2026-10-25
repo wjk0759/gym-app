@@ -109,6 +109,22 @@ static let apiBaseURL = URL(string: "http://192.168.1.20:8000/api/v1")!
 - 任何请求失败都会回退到本地规则，不会卡住核心流程
 - Info.plist 已允许本地 HTTP；上架前必须换成 HTTPS
 
+## 教学视频
+
+动作详情页会读取 `Resources/videos.json`：
+
+```json
+{
+  "pushup": "https://your-cdn.com/video/pushup.m3u8",
+  "goblet_squat": "https://your-cdn.com/video/goblet_squat.mp4"
+}
+```
+
+- key 是动作 slug，value 是 HLS（`.m3u8`）或 MP4 地址
+- 没有配置的动作会显示文字要领占位
+- 素材必须自制或购买授权，不要直接抓取平台视频
+- 生产环境建议 HLS + 签名 URL + 防盗链
+
 ## 下一步改哪里
 
 - **想改计划逻辑**：`Core/Services/PlanGenerator.swift`（本地兜底）或后端 `app/services/plan_generator.py`

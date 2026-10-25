@@ -292,7 +292,10 @@ struct Exercise: Identifiable, Hashable {
     let isCompound: Bool
     let instructions: String
     let contraindications: [String]
-    let videoURL: URL?
+
+    var videoURL: URL? {
+        VideoCatalog.url(for: slug)
+    }
 
     init(
         slug: String,
@@ -302,8 +305,7 @@ struct Exercise: Identifiable, Hashable {
         equipment: Equipment,
         isCompound: Bool,
         instructions: String,
-        contraindications: [String] = [],
-        videoURL: URL? = nil
+        contraindications: [String] = []
     ) {
         self.slug = slug
         self.nameZH = nameZH
@@ -313,7 +315,6 @@ struct Exercise: Identifiable, Hashable {
         self.isCompound = isCompound
         self.instructions = instructions
         self.contraindications = contraindications
-        self.videoURL = videoURL
     }
 }
 
