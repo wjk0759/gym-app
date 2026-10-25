@@ -157,6 +157,22 @@ def main() -> None:
         print("body analysis:", body["summary"][:30], body["focus_areas"])
 
         response = client.post(
+            "/api/v1/diet/analyze",
+            files={"file": ("meal.png", PNG, "image/png")},
+            headers=headers,
+        )
+        assert response.status_code == 200, response.text
+        meal = response.json()
+        assert meal["items"], meal
+        print(
+            "food analysis:",
+            len(meal["items"]),
+            "items",
+            meal["total_kcal"],
+            "kcal",
+        )
+
+        response = client.post(
             "/api/v1/plans/generate",
             json={
                 "force": True,

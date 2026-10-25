@@ -315,6 +315,12 @@ final class AppStore {
         persist()
     }
 
+    func addFoodLogs(_ logs: [FoodLog]) {
+        guard !logs.isEmpty else { return }
+        foodLogs.insert(contentsOf: logs, at: 0)
+        persist()
+    }
+
     func removeFoodLog(_ id: UUID) {
         foodLogs.removeAll { $0.id == id }
         persist()

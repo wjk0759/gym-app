@@ -1,14 +1,18 @@
 from datetime import date
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from sqlalchemy import select
 
 from ..deps import CurrentUser, DBSession
 from ..models import Goal, MealPlan, Profile
 from ..schemas import DietPlanIn
 from ..services.diet import build_plan, calculate_targets, meituan_link
+from ..services.food_vision import analyze as analyze_food_photo
 
 router = APIRouter(prefix="/diet", tags=["diet"])
+
+MAX_IMAGE_BYTES = 8 * 1024 * 1024
+ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic"}
 
 
 def _goal_type(db: DBSession, user_id: str) -> str:
@@ -16,6 +20,25 @@ def _goal_type(db: DBSession, user_id: str) -> str:
         select(Goal).where(Goal.user_id == user_id, Goal.status == "active")
     ).scalar_one_or_none()
     return goal.type if goal else "recomp"
+
+
+@router.post("/analyze")
+async def analyze_meal(
+    user_id: CurrentUser,
+    db: DBSession,
+    file: UploadFile = File(...),
+):
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(status_code=415, detail="仅支持 jpeg/png/webp/heic 图片")
+
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="图片为空")
+    if len(data) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail="图片不能超过 8MB")
+
+    # 原图不落盘、不入库；只返回本次识别结果
+    return await analyze_food_photo(data, file.filename or "meal.jpg")
 
 
 @router.get("/targets")

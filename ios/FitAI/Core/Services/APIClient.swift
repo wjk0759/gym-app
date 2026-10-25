@@ -52,6 +52,33 @@ private struct BodyAnalysisResponse: Decodable {
     }
 }
 
+private struct FoodAnalysisResponse: Decodable {
+    struct Item: Decodable {
+        let name: String
+        let grams: Double
+        let kcalPer100g: Double
+        let proteinPer100g: Double
+        let carbsPer100g: Double
+        let fatPer100g: Double
+        let confidence: Double
+
+        enum CodingKeys: String, CodingKey {
+            case name
+            case grams
+            case kcalPer100g = "kcal_per_100g"
+            case proteinPer100g = "protein_per_100g"
+            case carbsPer100g = "carbs_per_100g"
+            case fatPer100g = "fat_per_100g"
+            case confidence
+        }
+    }
+
+    let items: [Item]
+    let confidence: Double
+    let disclaimer: String
+    let model: String?
+}
+
 struct APIClient {
     static let shared = APIClient()
 
@@ -187,6 +214,31 @@ struct APIClient {
     }
 
     // MARK: - 饮食 / 外卖
+
+    func analyzeFood(imageData: Data) async throws -> FoodRecognitionResult {
+        let data = try await upload(
+            path: "diet/analyze",
+            imageData: imageData,
+            filename: "meal.jpg"
+        )
+        let response = try decoder.decode(FoodAnalysisResponse.self, from: data)
+        return FoodRecognitionResult(
+            items: response.items.map { item in
+                FoodRecognitionItem(
+                    name: item.name,
+                    grams: item.grams,
+                    kcalPer100g: item.kcalPer100g,
+                    proteinPer100g: item.proteinPer100g,
+                    carbsPer100g: item.carbsPer100g,
+                    fatPer100g: item.fatPer100g,
+                    confidence: item.confidence
+                )
+            },
+            confidence: response.confidence,
+            disclaimer: response.disclaimer,
+            model: response.model ?? "remote"
+        )
+    }
 
     func meituanLink(keyword: String) async throws -> URL? {
         let encoded = keyword.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? keyword

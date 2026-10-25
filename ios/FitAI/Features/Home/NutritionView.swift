@@ -8,6 +8,7 @@ struct NutritionView: View {
     @State private var message = ""
     @State private var isOpening = false
     @State private var showAddFood = false
+    @State private var showFoodPhoto = false
     @State private var selectedMeal: MealType = .breakfast
 
     private var targets: NutritionTargets {
@@ -22,6 +23,7 @@ struct NutritionView: View {
         ScrollView {
             VStack(spacing: 16) {
                 header
+                photoFoodCard
                 todayLogCard
                 macroCard
                 suggestionHeader
@@ -47,6 +49,47 @@ struct NutritionView: View {
         .sheet(isPresented: $showAddFood) {
             AddFoodView(initialMeal: selectedMeal)
         }
+        .sheet(isPresented: $showFoodPhoto) {
+            FoodPhotoAnalysisView()
+        }
+    }
+
+    private var photoFoodCard: some View {
+        Button {
+            showFoodPhoto = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "camera.viewfinder")
+                    .font(.title2)
+                    .foregroundStyle(Theme.accent)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("拍照识别饮食")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Text("拍一餐，估算热量与三大营养素")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                Theme.surface,
+                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Theme.stroke, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     private var header: some View {

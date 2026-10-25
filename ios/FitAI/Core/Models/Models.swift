@@ -378,6 +378,31 @@ struct NutritionTotals {
     var fat: Double = 0
 }
 
+/// 饮食照片识别出的单个食物。营养值按每 100g 保存，修改克数后可实时重算。
+struct FoodRecognitionItem: Identifiable, Hashable {
+    var id: UUID = UUID()
+    var name: String
+    var grams: Double
+    var kcalPer100g: Double
+    var proteinPer100g: Double
+    var carbsPer100g: Double
+    var fatPer100g: Double
+    var confidence: Double
+    var selected: Bool = true
+
+    var kcal: Double { kcalPer100g * grams / 100 }
+    var protein: Double { proteinPer100g * grams / 100 }
+    var carbs: Double { carbsPer100g * grams / 100 }
+    var fat: Double { fatPer100g * grams / 100 }
+}
+
+struct FoodRecognitionResult: Hashable {
+    var items: [FoodRecognitionItem]
+    var confidence: Double
+    var disclaimer: String
+    var model: String
+}
+
 // MARK: - 器械库与体型分析
 
 struct EquipmentItem: Codable, Identifiable, Hashable {
