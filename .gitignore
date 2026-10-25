@@ -23,6 +23,8 @@ FitAI.xcodeproj/
 ios/test.log
 ios/build.log
 preview/shot-*.png
+preview/ui-*.png
+preview/ui2-*.png
 
 # 本地素材
 *.mp4
