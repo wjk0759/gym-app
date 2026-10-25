@@ -345,11 +345,13 @@ struct LoginView: View {
                 )
             }
 
+#if DEBUG
             Text("微信/QQ 未配置开放平台密钥时，开发环境会打开模拟授权页，用于验证完整链路。")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
+#endif
         }
     }
 
