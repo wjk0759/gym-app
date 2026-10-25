@@ -1110,7 +1110,7 @@ function equipmentLibraryScreen() {
               <div class="equipment-tile-name">${esc(item.name)}</div>
               <div class="equipment-tile-meta">${item.muscle} · ${item.equip}</div>
               <div class="equipment-tile-video ${item.video ? "ready" : ""}">
-                ${item.video ? "教学视频" : "暂无视频"}
+                ${item.video ? "教学视频" : "视频准备中"}
               </div>
             </div>
           `).join("")}
@@ -1227,12 +1227,9 @@ function equipmentItemScreen() {
       <div class="card">
         <div class="row gap8" style="margin-bottom:8px"><span class="accent">▶</span><span class="h3">教学视频</span></div>
         ${item.video
-          ? `<div class="tiny muted">已配置视频地址，真实 App 会直接播放。</div>
+          ? `<div class="tiny muted">已由练途动作库配置，真实 App 会直接播放。</div>
              <div style="height:150px;border-radius:14px;margin-top:10px;background:linear-gradient(135deg,#1a2028,#0d1016);display:grid;place-items:center;color:var(--faint)">视频占位</div>`
-          : `<div class="tiny muted" style="line-height:1.6">还没有教学视频。添加一个视频地址，下次训练前可以直接看动作示范。</div>`}
-        <button class="btn btn-secondary" style="margin-top:12px" onclick="app.editEquipVideo('${item.id}')">
-          ${item.video ? "编辑视频与备注" : "添加教学视频"}
-        </button>
+          : `<div class="tiny muted" style="line-height:1.6">教学视频准备中。这件器械的示范视频尚未上线，可先向 AI 教练询问动作要点。</div>`}
       </div>
 
       <button class="btn btn-danger" onclick="app.deleteEquipItem('${item.id}')">从器械库删除</button>
@@ -3258,19 +3255,6 @@ window.app = {
     save();
     render();
     toast(`已保存 ${ex.name} 到器械库`);
-  },
-
-  editEquipVideo(id) {
-    const item = state.equipmentLibrary.find((entry) => entry.id === id);
-    if (!item) return;
-    const url = prompt("教学视频地址（留空表示移除）", item.video ? "https://" : "");
-    if (url === null) return;
-    const notes = prompt("备注（例如：座位高度 3 档）", item.notes || "");
-    item.video = Boolean(url.trim());
-    if (notes !== null) item.notes = notes.trim();
-    save();
-    render();
-    toast(item.video ? "教学视频已保存" : "已移除教学视频");
   },
 
   deleteEquipItem(id) {

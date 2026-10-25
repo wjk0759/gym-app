@@ -168,7 +168,7 @@ struct EquipmentLibraryView: View {
                     .lineLimit(1)
 
                 Label(
-                    item.videoURL != nil ? "教学视频" : "暂无视频",
+                    item.videoURL != nil ? "教学视频" : "视频准备中",
                     systemImage: item.videoURL != nil ? "play.rectangle.fill" : "play.rectangle"
                 )
                 .font(.caption2)
@@ -361,7 +361,6 @@ struct EquipmentItemDetailView: View {
     let itemID: UUID
 
     @State private var showDelete = false
-    @State private var showEdit = false
 
     private var item: EquipmentItem? {
         store.equipmentLibrary.first { $0.id == itemID }
@@ -434,12 +433,6 @@ struct EquipmentItemDetailView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("关闭") { dismiss() }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("编辑") { showEdit = true }
-                }
-            }
-            .sheet(isPresented: $showEdit) {
-                EquipmentEditView(itemID: itemID)
             }
             .confirmationDialog(
                 "从器械库删除？",
@@ -466,119 +459,32 @@ struct EquipmentItemDetailView: View {
                 VideoPlayer(player: AVPlayer(url: url))
                     .frame(height: 210)
                     .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                Button {
-                    showEdit = true
-                } label: {
-                    Label("编辑视频与备注", systemImage: "pencil")
-                }
-                .buttonStyle(SecondaryButtonStyle())
-                Text("视频素材需自制或已授权；上线前请确认授权链。")
+                Text("教学视频由练途动作库提供。")
                     .font(.caption2)
                     .foregroundStyle(Theme.tertiaryText)
             }
             .card()
         } else {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 12) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Theme.accent.opacity(0.10))
-                            .frame(width: 46, height: 46)
-                        Image(systemName: "play.rectangle")
-                            .foregroundStyle(Theme.accent)
-                    }
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("还没有教学视频")
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                        Text("添加一个视频地址，下次训练前可以直接看动作示范。")
-                            .font(.caption)
-                            .foregroundStyle(Theme.secondaryText)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Theme.accent.opacity(0.10))
+                        .frame(width: 46, height: 46)
+                    Image(systemName: "play.rectangle")
+                        .foregroundStyle(Theme.accent)
                 }
-
-                Button {
-                    showEdit = true
-                } label: {
-                    Label("添加教学视频", systemImage: "plus")
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("教学视频准备中")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Text("这件器械的示范视频尚未上线，可先向 AI 教练询问动作要点。")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .buttonStyle(SecondaryButtonStyle())
             }
             .card()
         }
-    }
-}
-
-struct EquipmentEditView: View {
-    @Environment(AppStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
-
-    let itemID: UUID
-
-    @State private var videoURL = ""
-    @State private var notes = ""
-
-    private var item: EquipmentItem? {
-        store.equipmentLibrary.first { $0.id == itemID }
-    }
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    TextField("教学视频 HLS/MP4 链接", text: $videoURL)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .padding(12)
-                        .background(
-                            Theme.surfaceStrong,
-                            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        )
-                        .card()
-
-                    TextField("备注，例如：调节座位高度在 3 档", text: $notes, axis: .vertical)
-                        .lineLimit(3...5)
-                        .padding(12)
-                        .background(
-                            Theme.surfaceStrong,
-                            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        )
-                        .card()
-
-                    Button("保存") {
-                        save()
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
-                }
-                .padding(20)
-            }
-            .background(Theme.background.ignoresSafeArea())
-            .navigationTitle("编辑器械")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
-                }
-            }
-            .onAppear {
-                videoURL = item?.videoURL ?? ""
-                notes = item?.notes ?? ""
-            }
-        }
-    }
-
-    private func save() {
-        guard var current = item else {
-            dismiss()
-            return
-        }
-        let trimmedVideo = videoURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        current.videoURL = trimmedVideo.isEmpty ? nil : trimmedVideo
-        current.notes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
-        store.updateEquipment(current)
-        dismiss()
     }
 }
 
@@ -588,7 +494,6 @@ struct AddEquipmentView: View {
 
     @State private var name = ""
     @State private var selectedExercise: Exercise?
-    @State private var videoURL = ""
     @State private var notes = ""
     @State private var photoData: Data?
     @State private var photoItem: PhotosPickerItem?
@@ -647,22 +552,6 @@ struct AddEquipmentView: View {
                     .card()
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("教学视频地址（选填）")
-                            .font(.caption)
-                            .foregroundStyle(Theme.secondaryText)
-                        TextField("https://...m3u8 或 .mp4", text: $videoURL)
-                            .keyboardType(.URL)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .padding(12)
-                            .background(
-                                Theme.surfaceStrong,
-                                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            )
-                    }
-                    .card()
-
-                    VStack(alignment: .leading, spacing: 8) {
                         Text("备注（选填）")
                             .font(.caption)
                             .foregroundStyle(Theme.secondaryText)
@@ -699,9 +588,6 @@ struct AddEquipmentView: View {
                     selectedExercise = exercise
                     if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         name = exercise.nameZH
-                    }
-                    if videoURL.isEmpty, let url = exercise.videoURL?.absoluteString {
-                        videoURL = url
                     }
                 }
             }
@@ -774,9 +660,7 @@ struct AddEquipmentView: View {
             slug: exercise?.slug,
             muscle: exercise?.muscle,
             equipment: exercise?.equipment,
-            videoURL: videoURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                ? nil
-                : videoURL.trimmingCharacters(in: .whitespacesAndNewlines),
+            videoURL: exercise?.videoURL?.absoluteString,
             notes: notes.trimmingCharacters(in: .whitespacesAndNewlines),
             photoData: photoData
         )
