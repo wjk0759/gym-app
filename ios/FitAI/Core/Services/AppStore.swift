@@ -16,6 +16,7 @@ final class AppStore {
     var reminderMinute = 0
     var notificationsEnabled = false
     var useRemoteAI = AppConfig.useRemoteAI
+    var healthKitEnabled = false
 
     private let fileURL: URL = {
         let directory = FileManager.default.urls(
@@ -217,6 +218,17 @@ final class AppStore {
         )
         sessions.insert(session, at: 0)
         persist()
+
+        if healthKitEnabled {
+            let end = Date()
+            let start = end.addingTimeInterval(-Double(durationMinutes * 60))
+            Task {
+                try? await HealthKitService.shared.saveStrengthWorkout(
+                    start: start,
+                    end: end
+                )
+            }
+        }
     }
 
     func addFoodLog(_ log: FoodLog) {
@@ -285,6 +297,7 @@ final class AppStore {
         dislikedSlugs = []
         notificationsEnabled = false
         useRemoteAI = AppConfig.useRemoteAI
+        healthKitEnabled = false
         reminderHour = 19
         reminderMinute = 0
         try? FileManager.default.removeItem(at: fileURL)
@@ -317,6 +330,31 @@ final class AppStore {
         persist()
     }
 
+    // MARK: - Apple 健康
+
+    @discardableResult
+    func enableHealthKit() async -> Bool {
+        guard HealthKitService.shared.isAvailable else { return false }
+        do {
+            let granted = try await HealthKitService.shared.requestAuthorization()
+            healthKitEnabled = granted
+            if granted, let weight = try? await HealthKitService.shared.latestBodyMassKG() {
+                profile.weightKG = weight
+            }
+            persist()
+            return granted
+        } catch {
+            healthKitEnabled = false
+            persist()
+            return false
+        }
+    }
+
+    func disableHealthKit() {
+        healthKitEnabled = false
+        persist()
+    }
+
     // MARK: - 持久化
 
     private struct PersistedState: Codable {
@@ -330,6 +368,7 @@ final class AppStore {
         var reminderMinute: Int
         var notificationsEnabled: Bool
         var useRemoteAI: Bool?
+        var healthKitEnabled: Bool?
     }
 
     private func load() {
@@ -347,6 +386,7 @@ final class AppStore {
         reminderMinute = state.reminderMinute
         notificationsEnabled = state.notificationsEnabled
         useRemoteAI = state.useRemoteAI ?? AppConfig.useRemoteAI
+        healthKitEnabled = state.healthKitEnabled ?? false
     }
 
     func persist() {
@@ -360,7 +400,8 @@ final class AppStore {
             reminderHour: reminderHour,
             reminderMinute: reminderMinute,
             notificationsEnabled: notificationsEnabled,
-            useRemoteAI: useRemoteAI
+            useRemoteAI: useRemoteAI,
+            healthKitEnabled: healthKitEnabled
         )
         guard let data = try? JSONEncoder().encode(state) else { return }
         try? data.write(to: fileURL, options: .atomic)
@@ -374,7 +415,8 @@ final class AppStore {
             sessions: sessions,
             chat: chat,
             foodLogs: foodLogs,
-            dislikedSlugs: Array(dislikedSlugs).sorted()
+            dislikedSlugs: Array(dislikedSlugs).sorted(),
+            healthKitEnabled: healthKitEnabled
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -391,5 +433,6 @@ final class AppStore {
         let chat: [ChatMessage]
         let foodLogs: [FoodLog]
         let dislikedSlugs: [String]
+        let healthKitEnabled: Bool
     }
 }

@@ -19,6 +19,7 @@ struct ProfileView: View {
                     metricsCard
                     goalCard
                     reminderCard
+                    healthCard
                     planCard
                     aiCard
                     preferenceCard
@@ -253,6 +254,57 @@ struct ProfileView: View {
     }
 
     // MARK: - 计划与合规
+
+    private var healthCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Apple 健康")
+                        .font(.headline)
+                    Text(store.healthKitEnabled ? "已连接 · 体重会同步" : "未连接")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+                Spacer()
+                Image(systemName: "heart.text.square.fill")
+                    .foregroundStyle(
+                        store.healthKitEnabled ? Theme.accent : Theme.tertiaryText
+                    )
+            }
+
+            Text("连接后读取最近体重，并把完成的训练写入 Apple 健康。")
+                .font(.caption2)
+                .foregroundStyle(Theme.tertiaryText)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if store.healthKitEnabled {
+                Button("关闭 Apple 健康同步") {
+                    store.disableHealthKit()
+                    message = "已关闭 Apple 健康同步。"
+                    showMessage = true
+                }
+                .buttonStyle(SecondaryButtonStyle())
+            } else {
+                Button("连接 Apple 健康") {
+                    connectHealthKit()
+                }
+                .buttonStyle(SecondaryButtonStyle())
+            }
+        }
+        .card()
+    }
+
+    private func connectHealthKit() {
+        Task { @MainActor in
+            let granted = await store.enableHealthKit()
+            if granted {
+                message = "已连接 Apple 健康，体重已同步。"
+            } else {
+                message = "未获得权限，或当前设备不支持 HealthKit。请到系统「健康 → 数据访问」中检查。"
+            }
+            showMessage = true
+        }
+    }
 
     private var planCard: some View {
         VStack(alignment: .leading, spacing: 10) {

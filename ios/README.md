@@ -116,7 +116,7 @@ static let apiBaseURL = URL(string: "http://192.168.1.20:8000/api/v1")!
 - **想换模型**：改 `backend/.env` 的 `LLM_PROVIDER / LLM_MODEL`；iOS 端不用改
 - **远程链路**：`AppStore.generatePlan() / sendChat()` 已接 `APIClient`，失败会回退本地
 - **想加通知闹钟样式**：新增 `AlarmKitScheduler.swift`，用 `@available(iOS 26, *)` 包裹，失败回退现有调度器
-- **想加 HealthKit**：先加 entitlement 和 Info.plist 用途文案，再做授权与写入
+- **Apple 健康**：`HealthKitService` 已接；需要 Xcode 里开启 HealthKit capability 并做真机授权
 
 ## 注意
 
