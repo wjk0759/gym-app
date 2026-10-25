@@ -33,7 +33,17 @@ final class HealthKitService {
 
     func requestAuthorization() async throws -> Bool {
         guard isAvailable else { return false }
-        return try await store.requestAuthorization(toShare: shareTypes, read: readTypes)
+        return try await withCheckedThrowingContinuation {
+            (continuation: CheckedContinuation<Bool, Error>) in
+            store.requestAuthorization(toShare: shareTypes, read: readTypes) {
+                success, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: success)
+                }
+            }
+        }
     }
 
     func latestBodyMassKG() async throws -> Double? {
