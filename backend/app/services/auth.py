@@ -473,12 +473,13 @@ def provider_configured(provider: str) -> bool:
     return False
 
 
-def oauth_state(provider: str, app_redirect: str) -> str:
+def oauth_state(provider: str, app_redirect: str, callback_url: str = "") -> str:
     now = datetime.now(timezone.utc)
     payload = {
         "type": "oauth_state",
         "provider": provider,
         "redirect": app_redirect,
+        "callback": callback_url,
         "nonce": secrets.token_urlsafe(16),
         "exp": int((now + timedelta(minutes=10)).timestamp()),
     }
@@ -573,7 +574,11 @@ small{{display:block;margin-top:14px;color:#5b6778;font-size:11px}}
 </div></body></html>"""
 
 
-async def exchange_code(provider: str, code: str) -> dict:
+async def exchange_code(
+    provider: str,
+    code: str,
+    redirect_uri: str | None = None,
+) -> dict:
     if settings.app_env == "dev" and code.startswith("mock-"):
         suffix = code.split("-")[-1][:12]
         return {
@@ -620,7 +625,7 @@ async def exchange_code(provider: str, code: str) -> dict:
                         "client_id": settings.qq_app_id,
                         "client_secret": settings.qq_app_secret,
                         "code": code,
-                        "redirect_uri": f"{settings.oauth_callback_base}/api/v1/auth/oauth/qq/callback",
+                        "redirect_uri": redirect_uri or f"{settings.oauth_callback_base}/api/v1/auth/oauth/qq/callback",
                         "fmt": "json",
                     },
                 )

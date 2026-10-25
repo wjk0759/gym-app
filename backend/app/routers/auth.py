@@ -198,11 +198,11 @@ def oauth_start(provider: str, request: Request):
     if provider not in {"wechat", "qq"}:
         raise HTTPException(status_code=400, detail="不支持的登录方式")
     app_redirect = f"{settings.app_callback_scheme}://auth/callback"
-    state = auth_service.oauth_state(provider, app_redirect)
     public_base = settings.oauth_callback_base.rstrip("/") or str(request.base_url).rstrip("/")
     callback_url = (
         f"{public_base}/api/v1/auth/oauth/{provider}/callback"
     )
+    state = auth_service.oauth_state(provider, app_redirect, callback_url)
     url, mode = auth_service.authorize_url(provider, state, callback_url, public_base)
     return {
         "authorize_url": url,
@@ -231,7 +231,11 @@ async def oauth_callback(
     state_data = auth_service.decode_oauth_state(state)
     if state_data.get("provider") != provider:
         raise HTTPException(status_code=400, detail="授权状态不匹配")
-    profile_data = await auth_service.exchange_code(provider, code)
+    profile_data = await auth_service.exchange_code(
+        provider,
+        code,
+        state_data.get("callback"),
+    )
     user, is_new = auth_service.find_or_create_social_user(db, provider, profile_data)
     ticket = auth_service.create_oauth_ticket(db, user, provider, is_new)
     redirect = (
