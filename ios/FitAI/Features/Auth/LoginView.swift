@@ -305,15 +305,13 @@ struct LoginView: View {
                 }
             }
 
-            if let devCode {
-                HStack(spacing: 6) {
-                    Image(systemName: "hammer.fill")
-                    Text("开发环境验证码 \(devCode)，已自动填入")
-                }
+            Text(devCode.map { "开发验证码 \($0)，已自动填入" } ?? "验证码仅用于本次登录，请勿转发")
                 .font(.caption2)
-                .foregroundStyle(Theme.warning)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
+                .foregroundStyle(devCode == nil ? Theme.tertiaryText : Theme.warning)
+                .lineLimit(1)
+                .minimumScaleFactor(0.9)
+                .frame(maxWidth: .infinity, minHeight: 16, alignment: .leading)
+                .padding(.leading, 2)
         }
     }
 
@@ -371,9 +369,12 @@ struct LoginView: View {
                 }
             }
 
-            Text("密码需至少 8 位，并同时包含字母和数字。")
+            Text("密码至少 8 位，含字母和数字")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.9)
+                .frame(maxWidth: .infinity, minHeight: 16, alignment: .leading)
                 .padding(.leading, 2)
         }
     }

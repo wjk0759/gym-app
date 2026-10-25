@@ -573,7 +573,7 @@ function loginScreen() {
               <button class="code-btn" onclick="app.previewSendCode()">获取验证码</button>
             </div>
           </div>
-          ${state.authDevCode ? `<div class="dev-code">开发验证码 ${state.authDevCode}，已自动填入</div>` : ""}
+          <div class="field-hint ${state.authDevCode ? "warning" : ""}">${state.authDevCode ? `开发验证码 ${state.authDevCode}，已自动填入` : "验证码仅用于本次登录，请勿转发"}</div>
         ` : `
           <div class="login-field">
             <div class="login-field-label">手机号或用户名</div>
@@ -587,7 +587,7 @@ function loginScreen() {
               <input id="login-password" type="password" autocomplete="current-password" placeholder="请输入密码" value="${esc(state.authPassword)}" oninput="app.previewAuthField('authPassword', this.value)">
             </div>
           </div>
-          <div class="field-hint">密码至少 8 位，并同时包含字母和数字。</div>
+          <div class="field-hint">密码至少 8 位，含字母和数字</div>
         `}
 
         <div class="consent-block">

@@ -985,17 +985,17 @@ input[type="number"]::-webkit-inner-spin-button {
 .code-btn:disabled { opacity: 0.5; }
 
 .field-hint {
+  min-height: 17px;
   margin: -4px 0 0 2px;
   color: var(--faint);
   font-size: 11px;
   line-height: 1.55;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.dev-code {
-  margin-top: -4px;
-  color: var(--warning);
-  font-size: 11px;
-}
+.field-hint.warning { color: var(--warning); }
 
 .consent-block {
   display: flex;
