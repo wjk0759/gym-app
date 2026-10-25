@@ -385,6 +385,21 @@ body {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
 }
 
+.training-switch {
+  position: sticky;
+  top: -1px;
+  z-index: 8;
+  margin: -4px -20px 4px;
+  padding: 4px 20px 8px;
+  background: linear-gradient(180deg, rgba(8, 10, 9, 0.97), rgba(8, 10, 9, 0.84));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.training-seg {
+  width: 100%;
+}
+
 .btn {
   appearance: none;
   border: 0;
