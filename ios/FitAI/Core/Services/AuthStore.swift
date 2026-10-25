@@ -97,6 +97,9 @@ final class AuthStore {
             ]
         )
         apply(response)
+        if account.count == 11, account.hasPrefix("1") {
+            phone = account
+        }
     }
 
     // MARK: - 微信 / QQ

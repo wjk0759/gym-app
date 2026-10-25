@@ -146,7 +146,8 @@ WECHAT_APP_ID=
 WECHAT_APP_SECRET=
 QQ_APP_ID=
 QQ_APP_SECRET=
-OAUTH_CALLBACK_BASE=http://127.0.0.1:8000
+# 留空时自动使用当前请求域名；生产建议配置公开 HTTPS 域名
+OAUTH_CALLBACK_BASE=
 ```
 
 未配置微信/QQ 密钥时，开发环境会打开模拟授权页验证完整 OAuth 链路；生产环境不会伪造第三方登录。真实一键登录还需要在开放平台配置 AppID、Universal Links/回调，并在 iOS 侧接官方 SDK。
