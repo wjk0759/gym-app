@@ -21,6 +21,7 @@ xcuserdata/
 *.moved-aside
 FitAI.xcodeproj/
 ios/test.log
+ios/build.log
 
 # 本地素材
 *.mp4

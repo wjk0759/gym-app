@@ -30,6 +30,7 @@ jobs:
       - name: Build for simulator
         working-directory: ios
         run: |
+          set -o pipefail
           xcodebuild \
             -project FitAI.xcodeproj \
             -scheme FitAI \
@@ -37,4 +38,13 @@ jobs:
             -destination "generic/platform=iOS Simulator" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            build
+            build 2>&1 | tee build.log
+
+      - name: Annotate build errors
+        if: failure()
+        run: |
+          if [ -f ios/build.log ]; then
+            grep -E "error: " ios/build.log | head -30 | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+          fi
