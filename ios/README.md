@@ -134,6 +134,13 @@ static let apiBaseURL = URL(string: "http://192.168.1.20:8000/api/v1")!
 - **想加通知闹钟样式**：新增 `AlarmKitScheduler.swift`，用 `@available(iOS 26, *)` 包裹，失败回退现有调度器
 - **Apple 健康**：`HealthKitService` 已接；需要 Xcode 里开启 HealthKit capability 并做真机授权
 
+## 隐私与订阅
+
+- `Resources/PrivacyInfo.xcprivacy` 已声明健康/健身/用户 ID/照片，不追踪
+- HealthKit 权限文案在 `Info.plist`，entitlement 在 `Resources/FitAI.entitlements`
+- StoreKit 商品 ID 在 `Core/Services/SubscriptionManager.swift`，需在 App Store Connect 创建月付/年付商品
+- 数字内容订阅必须走 IAP，不要引导用户去外部支付
+
 ## 注意
 
 - 相机在模拟器不可用，会回退到相册。
