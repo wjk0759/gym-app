@@ -3,6 +3,7 @@ import SwiftUI
 struct RootView: View {
     @Environment(AppStore.self) private var store
     @Environment(AuthStore.self) private var auth
+    @Environment(SubscriptionManager.self) private var subscriptions
 
     var body: some View {
         ZStack {
@@ -24,11 +25,15 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.25), value: auth.isAuthenticated)
         .animation(.easeInOut(duration: 0.25), value: store.profile.isOnboarded)
         .task {
+            store.isPro = subscriptions.isPro
             await auth.restoreIfNeeded()
             store.switchUser(auth.userID)
             if auth.isAuthenticated {
                 enableRemoteMode()
             }
+        }
+        .onChange(of: subscriptions.isPro) { _, isPro in
+            store.isPro = isPro
         }
         .onChange(of: auth.isAuthenticated) { _, isAuthenticated in
             store.switchUser(auth.userID)

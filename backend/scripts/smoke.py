@@ -129,6 +129,14 @@ def main() -> None:
 
         response = client.post(
             "/api/v1/coach/chat",
+            json={"message": "减脂怎么安排三餐？", "skill": "nutrition"},
+            headers=headers,
+        )
+        assert response.status_code == 200, response.text
+        print("coach nutrition skill:", response.json()["reply"][:60])
+
+        response = client.post(
+            "/api/v1/coach/chat",
             json={"message": "我训练时胸痛、喘不上气"},
             headers=headers,
         )
@@ -281,6 +289,13 @@ def main() -> None:
         admin_stats = response.json()
         assert admin_stats["users_total"] >= 1, admin_stats
         print("admin stats:", admin_stats["users_total"], "users,", admin_stats["sessions_total"], "sessions")
+
+        ai_overview = client.get("/api/v1/admin/ai/overview?days=30", headers=admin_headers)
+        assert ai_overview.status_code == 200, ai_overview.text
+        assert len(ai_overview.json()["skills"]) == 3
+        ai_jobs = client.get("/api/v1/admin/ai/jobs", headers=admin_headers)
+        assert ai_jobs.status_code == 200, ai_jobs.text
+        print("admin ai usage:", ai_overview.json()["total"], "calls")
 
         response = client.get("/api/v1/admin/users", headers=admin_headers)
         assert response.status_code == 200, response.text

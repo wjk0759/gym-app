@@ -4,6 +4,8 @@ struct CoachChatView: View {
     @Environment(AppStore.self) private var store
 
     @State private var input = ""
+    @State private var selectedSkill: CoachSkill = .trainer
+    @State private var showPaywall = false
     @FocusState private var focused: Bool
 
     private let suggestions = [
@@ -30,6 +32,8 @@ struct CoachChatView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                skillPicker
+
                 ScrollViewReader { proxy in
                     ScrollView {
                         if store.chat.isEmpty {
@@ -80,6 +84,9 @@ struct CoachChatView: View {
             .background(Theme.background.ignoresSafeArea())
             .navigationTitle("AI 教练")
             .navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $showPaywall) {
+                PaywallView()
+            }
             .toolbar {
                 if !store.chat.isEmpty {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -89,6 +96,68 @@ struct CoachChatView: View {
                     }
                 }
             }
+        }
+    }
+
+    private var skillPicker: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(CoachSkill.allCases) { skill in
+                    Button {
+                        withAnimation(.easeOut(duration: 0.15)) {
+                            selectedSkill = skill
+                        }
+                    } label: {
+                        Label(skill.label, systemImage: skill.icon)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(
+                                selectedSkill == skill ? Theme.accent : Theme.secondaryText
+                            )
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(
+                                selectedSkill == skill
+                                    ? Theme.accent.opacity(0.12)
+                                    : Theme.surfaceStrong,
+                                in: Capsule()
+                            )
+                            .overlay(
+                                Capsule()
+                                    .stroke(
+                                        selectedSkill == skill
+                                            ? Theme.accent.opacity(0.5)
+                                            : Color.clear,
+                                        lineWidth: 1
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+        }
+        .background(Theme.background)
+    }
+
+    private var currentStarters: [StarterPrompt] {
+        switch selectedSkill {
+        case .trainer:
+            return starters
+        case .rehab:
+            return [
+                StarterPrompt(text: "膝盖不舒服还能练吗？", icon: "cross.case"),
+                StarterPrompt(text: "训练后腰痛怎么恢复？", icon: "figure.walk"),
+                StarterPrompt(text: "扭伤后多久能训练？", icon: "clock"),
+                StarterPrompt(text: "恢复期能做什么动作？", icon: "figure.cooldown")
+            ]
+        case .nutrition:
+            return [
+                StarterPrompt(text: "每天吃多少蛋白质？", icon: "leaf"),
+                StarterPrompt(text: "减脂怎么安排三餐？", icon: "fork.knife"),
+                StarterPrompt(text: "训练后吃什么？", icon: "takeoutbag.and.cup.and.straw"),
+                StarterPrompt(text: "外卖怎么选更健康？", icon: "cart")
+            ]
         }
     }
 
@@ -105,10 +174,10 @@ struct CoachChatView: View {
                             .foregroundStyle(Theme.accent)
                     }
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("训练有问题，直接问")
+                        Text("\(selectedSkill.label)在线")
                             .font(.headline)
                             .foregroundStyle(.white)
-                        Text("结合档案、计划和训练记录回答")
+                        Text(selectedSkill.detail)
                             .font(.caption2)
                             .foregroundStyle(Theme.tertiaryText)
                     }
@@ -122,6 +191,32 @@ struct CoachChatView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .card()
 
+            if !store.isPro {
+                Button {
+                    showPaywall = true
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "sparkles")
+                            .foregroundStyle(Theme.accent)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("解锁 DeepSeek AI \(selectedSkill.label)")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.white)
+                            Text("当前使用本地规则建议；Pro 会员可使用完整 AI Skill。")
+                                .font(.caption2)
+                                .foregroundStyle(Theme.secondaryText)
+                        }
+                        Spacer(minLength: 4)
+                        Image(systemName: "chevron.right")
+                            .font(.caption2)
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .card(padding: 14)
+                }
+                .buttonStyle(.plain)
+            }
+
             VStack(alignment: .leading, spacing: 10) {
                 Text("快速开始")
                     .font(.headline)
@@ -131,7 +226,7 @@ struct CoachChatView: View {
                     columns: [GridItem(.flexible()), GridItem(.flexible())],
                     spacing: 10
                 ) {
-                    ForEach(starters) { item in
+                    ForEach(currentStarters) { item in
                         Button {
                             send(item.text)
                         } label: {
@@ -256,7 +351,7 @@ struct CoachChatView: View {
 
     private var inputBar: some View {
         HStack(spacing: 10) {
-            TextField("问问动作、计划或饮食…", text: $input, axis: .vertical)
+            TextField(selectedSkill.placeholder, text: $input, axis: .vertical)
                 .lineLimit(1...4)
                 .focused($focused)
                 .padding(.horizontal, 14)
@@ -292,7 +387,7 @@ struct CoachChatView: View {
     private func send(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !store.isReplying else { return }
-        store.sendChat(trimmed)
+        store.sendChat(trimmed, skill: selectedSkill)
         input = ""
         focused = false
     }

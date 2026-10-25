@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     media_root: str = "media"
 
     # mock | deepseek | qwen | doubao
-    llm_provider: str = "mock"
+    # 默认接入 DeepSeek；未配置 LLM_API_KEY 时自动回退到本地 Mock/规则。
+    llm_provider: str = "deepseek"
     llm_api_key: str = ""
     llm_base_url: str = "https://api.deepseek.com/v1"
     llm_model: str = "deepseek-chat"

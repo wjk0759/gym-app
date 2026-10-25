@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
+from typing import Literal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -11,7 +13,13 @@ from ..config import settings
 from ..models import ChatMessage, Exercise, Profile, Program
 from . import llm
 
-PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "coach_system.md"
+PROMPT_DIR = Path(__file__).resolve().parent.parent / "prompts"
+PROMPT_FILES = {
+    "trainer": PROMPT_DIR / "coach_system.md",
+    "rehab": PROMPT_DIR / "coach_rehab.md",
+    "nutrition": PROMPT_DIR / "coach_nutrition.md",
+}
+CoachSkill = Literal["trainer", "rehab", "nutrition"]
 
 SAFETY_RULES: list[tuple[tuple[str, ...], str, str]] = [
     (
@@ -53,9 +61,10 @@ def detect_safety(message: str) -> tuple[str | None, str | None]:
     return None, None
 
 
-def _system_prompt() -> str:
-    if PROMPT_PATH.exists():
-        return PROMPT_PATH.read_text(encoding="utf-8")
+def _system_prompt(skill: CoachSkill = "trainer") -> str:
+    path = PROMPT_FILES.get(skill, PROMPT_FILES["trainer"])
+    if path.exists():
+        return path.read_text(encoding="utf-8")
     return "你是严谨的健身教练，不做医疗诊断。回答简洁、可执行，涉及疼痛时建议就医。"
 
 
@@ -79,7 +88,13 @@ def _context(profile: Profile, program: Program | None) -> str:
     return "\n".join(parts)
 
 
-def _mock_reply(message: str, profile: Profile, program: Program | None, db: Session) -> tuple[str, list[dict]]:
+def _mock_reply(
+    message: str,
+    profile: Profile,
+    program: Program | None,
+    db: Session,
+    skill: CoachSkill = "trainer",
+) -> tuple[str, list[dict]]:
     text = message.strip()
     citations: list[dict] = []
 
@@ -156,6 +171,25 @@ def _mock_reply(message: str, profile: Profile, program: Program | None, db: Ses
             [],
         )
 
+    if skill == "nutrition":
+        weight = profile.weight_kg or 70
+        protein = round(weight * 1.8)
+        return (
+            "营养师模式下，我先给你一个保守区间："
+            f"每天蛋白质约 {protein}g，分 3–4 餐摄入；"
+            "每餐先安排蛋白质和蔬菜，再根据训练量调整主食。"
+            "如果有糖尿病、肾病、孕期或进食障碍，请先咨询医生或注册营养师。",
+            [],
+        )
+
+    if skill == "rehab":
+        return (
+            "康复师模式下，我不会在未评估的情况下给你诊断或加练。"
+            "请先告诉我疼痛位置、持续多久、疼痛 0–10 分，以及是否有肿胀、麻木或无力。"
+            "如果有明显肿胀、无法承重或神经症状，请先线下就医。",
+            [],
+        )
+
     if program:
         return (
             "我记住了。你可以具体问：今天练什么、某个动作怎么替代、"
@@ -171,6 +205,7 @@ async def coach_reply(
     program: Program | None,
     history: list[ChatMessage],
     message: str,
+    skill: CoachSkill = "trainer",
 ) -> dict:
     flag, safety_reply = detect_safety(message)
     if safety_reply:
@@ -179,18 +214,35 @@ async def coach_reply(
     citations: list[dict] = []
     if not settings.use_mock_llm:
         messages = [
-            {"role": "system", "content": _system_prompt()},
+            {"role": "system", "content": _system_prompt(skill)},
             {"role": "system", "content": _context(profile, program)},
         ]
         for item in history[-6:]:
             if item.role in {"user", "assistant"}:
                 messages.append({"role": item.role, "content": item.content})
         messages.append({"role": "user", "content": message})
+        started = time.perf_counter()
         try:
             reply = await llm.complete_text(messages)
+            llm.record_job(
+                db,
+                getattr(profile, "user_id", None),
+                kind=f"coach_{skill}",
+                status="ok",
+                model=settings.llm_model,
+                latency_ms=int((time.perf_counter() - started) * 1000),
+            )
             return {"reply": reply, "safety_flag": None, "citations": []}
-        except llm.LLMError:
-            pass
+        except llm.LLMError as exc:
+            llm.record_job(
+                db,
+                getattr(profile, "user_id", None),
+                kind=f"coach_{skill}",
+                status="fallback",
+                model=settings.llm_model,
+                latency_ms=int((time.perf_counter() - started) * 1000),
+                error=str(exc),
+            )
 
-    reply, citations = _mock_reply(message, profile, program, db)
+    reply, citations = _mock_reply(message, profile, program, db, skill)
     return {"reply": reply, "safety_flag": None, "citations": citations}

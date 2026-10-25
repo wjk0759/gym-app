@@ -168,8 +168,8 @@ struct BodyPhotoAnalysisView: View {
             }
             .tint(Theme.accent)
 
-            Text(store.useRemoteAI
-                 ? "当前为远程模式：照片会发送到后端做一次性分析，不保存原图。"
+            Text(store.useRemoteAI && store.isPro
+                 ? "当前为远程 AI 模式：照片会发送到后端做一次性分析，不保存原图。"
                  : "当前为本地模式：照片只在设备内存中参与分析，不联网、不保存。")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
@@ -251,7 +251,7 @@ struct BodyPhotoAnalysisView: View {
         guard let imageData, consent else { return }
         isAnalyzing = true
 
-        if store.useRemoteAI {
+        if store.useRemoteAI && store.isPro {
             Task { @MainActor in
                 do {
                     let result = try await APIClient.shared.analyzeBody(imageData: imageData)

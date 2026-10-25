@@ -359,6 +359,46 @@ struct EquipmentCandidate: Identifiable, Hashable {
 
 // MARK: - 对话
 
+enum CoachSkill: String, Codable, CaseIterable, Identifiable {
+    case trainer
+    case rehab
+    case nutrition
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .trainer: return "健身教练"
+        case .rehab: return "康复师"
+        case .nutrition: return "营养师"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .trainer: return "figure.strengthtraining.traditional"
+        case .rehab: return "cross.case"
+        case .nutrition: return "leaf"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .trainer: return "训练安排、动作替代和负荷调整"
+        case .rehab: return "疼痛分级、恢复期活动和就医提示"
+        case .nutrition: return "热量、蛋白质和膳食结构建议"
+        }
+    }
+
+    var placeholder: String {
+        switch self {
+        case .trainer: return "问问训练、动作或计划…"
+        case .rehab: return "描述疼痛位置、时间和程度…"
+        case .nutrition: return "问问热量、蛋白质或饮食安排…"
+        }
+    }
+}
+
 struct ChatMessage: Codable, Identifiable, Hashable {
     enum Role: String, Codable {
         case user

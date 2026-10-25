@@ -1341,6 +1341,179 @@ def delete_video(video_id: str, actor: AdminAuth, db: DBSession):
     return {"ok": True}
 
 
+AI_KIND_LABELS = {
+    "plan": "训练计划生成",
+    "coach_trainer": "健身教练",
+    "coach_rehab": "康复师",
+    "coach_nutrition": "营养师",
+    "food_vision": "饮食照片识别",
+    "body_vision": "体型照片分析",
+    "equipment_vision": "器械照片识别",
+}
+
+AI_SKILLS = [
+    {
+        "key": "trainer",
+        "name": "健身教练",
+        "description": "训练动作、计划调整、负荷与恢复建议",
+        "prompt_version": "v1",
+    },
+    {
+        "key": "rehab",
+        "name": "康复师",
+        "description": "疼痛分级、红旗症状识别、保守活动与转诊建议",
+        "prompt_version": "v1",
+    },
+    {
+        "key": "nutrition",
+        "name": "营养师",
+        "description": "热量、蛋白质、膳食结构与特殊人群提示",
+        "prompt_version": "v1",
+    },
+]
+
+
+def _ai_job_dict(job: AIJob, profile: Profile | None = None) -> dict:
+    return {
+        "id": job.id,
+        "user_id": job.user_id,
+        "nickname": profile.nickname if profile else None,
+        "kind": job.kind,
+        "kind_label": AI_KIND_LABELS.get(job.kind, job.kind),
+        "model": job.model,
+        "prompt_version": job.prompt_version,
+        "input_tokens": job.input_tokens,
+        "output_tokens": job.output_tokens,
+        "latency_ms": job.latency_ms,
+        "status": job.status,
+        "error": job.error,
+        "created_at": _iso(job.created_at),
+    }
+
+
+@router.get("/ai/overview")
+def ai_overview(
+    actor: AdminAuth,
+    db: DBSession,
+    days: int = Query(default=30, ge=1, le=90),
+):
+    since = utcnow() - timedelta(days=days)
+    jobs = db.execute(
+        select(AIJob).where(AIJob.created_at >= since)
+    ).scalars().all()
+    total = len(jobs)
+    ok = sum(1 for job in jobs if job.status == "ok")
+    fallback = sum(1 for job in jobs if job.status == "fallback")
+    latencies = [job.latency_ms for job in jobs if job.latency_ms is not None]
+    input_tokens = sum(job.input_tokens or 0 for job in jobs)
+    output_tokens = sum(job.output_tokens or 0 for job in jobs)
+
+    by_kind: dict[str, dict] = {}
+    for job in jobs:
+        item = by_kind.setdefault(
+            job.kind,
+            {"kind": job.kind, "label": AI_KIND_LABELS.get(job.kind, job.kind), "calls": 0, "errors": 0},
+        )
+        item["calls"] += 1
+        if job.status != "ok":
+            item["errors"] += 1
+
+    daily: dict[str, int] = {}
+    for job in jobs:
+        day = job.created_at.date().isoformat()
+        daily[day] = daily.get(day, 0) + 1
+
+    skills = []
+    for skill in AI_SKILLS:
+        kind = f"coach_{skill['key']}"
+        skills.append(
+            {
+                **skill,
+                "calls": by_kind.get(kind, {}).get("calls", 0),
+                "errors": by_kind.get(kind, {}).get("errors", 0),
+                "available": not settings.use_mock_llm,
+            }
+        )
+
+    return {
+        "window_days": days,
+        "total": total,
+        "ok": ok,
+        "fallback": fallback,
+        "errors": total - ok - fallback,
+        "success_rate": round(ok / total, 4) if total else 0,
+        "avg_latency_ms": round(sum(latencies) / len(latencies)) if latencies else None,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "by_kind": sorted(by_kind.values(), key=lambda item: -item["calls"]),
+        "daily": [
+            {"date": day, "calls": daily.get(day, 0)}
+            for day in sorted(daily)
+        ],
+        "provider": {
+            "provider": settings.llm_provider,
+            "model": settings.llm_model,
+            "base_url": settings.llm_base_url,
+            "mode": "mock" if settings.use_mock_llm else "remote",
+            "configured": bool(settings.llm_api_key),
+        },
+        "skills": skills,
+    }
+
+
+@router.get("/ai/jobs")
+def list_ai_jobs(
+    actor: AdminAuth,
+    db: DBSession,
+    q: str = Query(default="", max_length=80),
+    status: str = Query(default="", max_length=20),
+    kind: str = Query(default="", max_length=40),
+    limit: int = Query(default=100, ge=1, le=300),
+    offset: int = Query(default=0, ge=0),
+):
+    statement = select(AIJob).outerjoin(User, User.id == AIJob.user_id).outerjoin(
+        Profile, Profile.user_id == AIJob.user_id
+    )
+    text = q.strip()
+    if text:
+        statement = statement.where(
+            or_(
+                AIJob.user_id.contains(text),
+                AIJob.kind.contains(text),
+                AIJob.model.contains(text),
+                AIJob.error.contains(text),
+                Profile.nickname.contains(text),
+            )
+        )
+    if status:
+        statement = statement.where(AIJob.status == status)
+    if kind:
+        statement = statement.where(AIJob.kind == kind)
+    total = db.scalar(select(func.count()).select_from(statement.subquery())) or 0
+    jobs = (
+        db.execute(
+            statement.order_by(AIJob.created_at.desc()).limit(limit).offset(offset)
+        )
+        .scalars()
+        .unique()
+        .all()
+    )
+    profiles = {
+        profile.user_id: profile
+        for profile in db.execute(
+            select(Profile).where(
+                Profile.user_id.in_([job.user_id for job in jobs if job.user_id])
+            )
+        ).scalars()
+    } if jobs else {}
+    return {
+        "items": [_ai_job_dict(job, profiles.get(job.user_id)) for job in jobs],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
+
+
 @router.get("/audit")
 def audit_log(
     actor: AdminAuth,

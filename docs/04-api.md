@@ -310,8 +310,10 @@ AI 复盘并生成新版本：
 #### `POST /coach/chat`
 
 ```json
-{"session_id": "uuid|null", "message": "深蹲膝盖内扣怎么办？"}
+{"session_id": "uuid|null", "message": "深蹲膝盖内扣怎么办？", "skill": "trainer"}
 ```
+
+`skill` 取值：`trainer` / `rehab` / `nutrition`。分别对应健身教练、康复师、运动营养师 Skill。
 
 ```json
 {
@@ -325,6 +327,7 @@ AI 复盘并生成新版本：
 ```
 
 `safety_flag` 取值：`medical_referral` / `self_harm` / `minor` / `null`。
+只有 Pro 会员的 App 会调用远程 DeepSeek；未开通时客户端使用本地规则回复。
 
 #### `POST /coach/chat/stream`
 
@@ -515,6 +518,8 @@ X-Admin-Token: <ADMIN_TOKEN>
 | `POST /videos/{id}/publish` | 发布视频，归档同动作旧版本并同步动作库 |
 | `POST /videos/{id}/unpublish` | 下架视频，并恢复动作库的视频地址 |
 | `DELETE /videos/{id}` | 删除视频记录和本地上传文件 |
+| `GET /ai/overview` | AI 调用量、成功率、延迟、Token、Provider、Skill 使用情况 |
+| `GET /ai/jobs` | AI 调用明细，支持按场景、状态和用户搜索 |
 | `GET /audit` | 管理员操作审计日志 |
 
 所有写操作都会记录到 `admin_audit_logs`。

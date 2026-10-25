@@ -123,6 +123,7 @@ class WorkoutIn(BaseModel):
 class ChatIn(BaseModel):
     session_id: str | None = None
     message: str = Field(min_length=1, max_length=2000)
+    skill: Literal["trainer", "rehab", "nutrition"] = "trainer"
 
 
 class DietPlanIn(BaseModel):

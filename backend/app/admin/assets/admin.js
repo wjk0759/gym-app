@@ -16,6 +16,7 @@
     scans: { q: "", offset: 0 },
     exercises: { q: "", offset: 0 },
     videos: { q: "", status: "", items: [] },
+    ai: { q: "", status: "", kind: "", offset: 0 },
     auditOffset: 0
   };
 
@@ -35,6 +36,7 @@
     scans: ["器械识别", "识别结果、置信度与模型来源"],
     exercises: ["动作库", "维护动作说明、禁忌症和器材信息"],
     videos: ["教学视频", "上传、审核、发布和管理动作示范视频"],
+    ai: ["AI 使用", "DeepSeek 调用、技能使用、延迟和失败情况"],
     audit: ["操作日志", "管理员在后台执行的所有操作"]
   };
 
@@ -711,6 +713,57 @@
     catch (error) { toast(error.message, true); }
   }
 
+  async function renderAI() {
+    loading();
+    const overview = await api("/ai/overview?days=30");
+    const jobs = await api(`/ai/jobs?q=${encodeURIComponent(state.ai.q)}&status=${encodeURIComponent(state.ai.status)}&kind=${encodeURIComponent(state.ai.kind)}&limit=100&offset=${state.ai.offset}`);
+    const provider = overview.provider;
+    const providerMode = provider.mode === "remote" ? "远程 AI" : "Mock 本地";
+    const statusBadge = (status) => {
+      const map = { ok: ["成功", "accent"], fallback: ["降级", "warning"], error: ["失败", "danger"] };
+      const [label, tone] = map[status] || [status || "—", ""];
+      return badge(label, tone);
+    };
+    const kindOptions = overview.by_kind.map((item) => `<option value="${esc(item.kind)}" ${state.ai.kind === item.kind ? "selected" : ""}>${esc(item.label)}</option>`).join("");
+    viewRoot.innerHTML = `
+      <div class="stat-grid">
+        <div class="stat-card accent"><div class="label">AI 调用</div><div class="value">${num(overview.total)}</div><div class="hint">最近 30 天</div></div>
+        <div class="stat-card"><div class="label">成功率</div><div class="value">${(overview.success_rate * 100).toFixed(1)}%</div><div class="hint">${num(overview.ok)} 成功 · ${num(overview.fallback)} 降级</div></div>
+        <div class="stat-card"><div class="label">平均延迟</div><div class="value">${overview.avg_latency_ms ? num(overview.avg_latency_ms) : "—"}${overview.avg_latency_ms ? "ms" : ""}</div><div class="hint">仅统计远程调用</div></div>
+        <div class="stat-card ${overview.errors ? "danger" : ""}"><div class="label">失败</div><div class="value">${num(overview.errors)}</div><div class="hint">Token ${num(overview.input_tokens)} / ${num(overview.output_tokens)}</div></div>
+      </div>
+
+      <div class="panel-grid">
+        <div class="panel">
+          <div class="between"><h3 style="margin:0">运行配置</h3>${badge(providerMode, provider.mode === "remote" ? "accent" : "warning")}</div>
+          <div class="kv-grid" style="margin-top:14px">
+            <div class="kv"><div class="k">Provider</div><div class="v">${esc(provider.provider || "—")}</div></div>
+            <div class="kv"><div class="k">模型</div><div class="v">${esc(provider.model || "—")}</div></div>
+            <div class="kv"><div class="k">API Key</div><div class="v">${provider.configured ? "已配置" : "未配置"}</div></div>
+            <div class="kv"><div class="k">Base URL</div><div class="v mono">${esc(provider.base_url || "—")}</div></div>
+          </div>
+          <div class="note" style="margin-top:14px">会员用户使用远程 DeepSeek 教练；未开通会员或模型不可用时，App 自动回退到本地规则建议。</div>
+        </div>
+        <div class="panel">
+          <h3 style="margin:0 0 12px">AI Skills</h3>
+          ${overview.skills.map((skill) => `<div class="list-row"><div class="grow"><div class="primary">${esc(skill.name)} ${badge(skill.key, "")}</div><div class="secondary">${esc(skill.description)}</div></div><div class="side" style="text-align:right"><div class="strong">${num(skill.calls)} 次</div><div class="muted small">${skill.errors ? `${skill.errors} 异常` : skill.available ? "可用" : "Mock 模式"}</div></div></div>`).join("")}
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <input class="search" id="ai-search" placeholder="搜索用户、场景、模型或错误" value="${esc(state.ai.q)}" onkeydown="if(event.key==='Enter')admin.searchAI()">
+        <select id="ai-status" style="width:120px" onchange="admin.searchAI()"><option value="">全部状态</option><option value="ok" ${state.ai.status === "ok" ? "selected" : ""}>成功</option><option value="fallback" ${state.ai.status === "fallback" ? "selected" : ""}>降级</option></select>
+        <select id="ai-kind" style="width:150px" onchange="admin.searchAI()"><option value="">全部场景</option>${kindOptions}</select>
+        <button class="btn btn-sm" onclick="admin.reloadAI()">刷新</button>
+        <div class="spacer"></div><span class="muted small">共 ${num(jobs.total)} 条调用</span>
+      </div>
+      <div class="table-wrap"><table class="data-table"><thead><tr><th>时间</th><th>用户</th><th>场景</th><th>模型</th><th>状态</th><th>延迟</th><th>错误</th></tr></thead><tbody>
+        ${jobs.items.map((job) => `<tr><td>${dateText(job.created_at, true)}</td><td><div>${esc(job.nickname || "—")}</div><div class="mono">${esc((job.user_id || "").slice(0, 8))}</div></td><td><div class="strong">${esc(job.kind_label)}</div><div class="mono">${esc(job.kind)}</div></td><td>${esc(job.model || "—")}<br><span class="muted small">${esc(job.prompt_version || "—")}</span></td><td>${statusBadge(job.status)}</td><td>${job.latency_ms ? `${num(job.latency_ms)}ms` : "—"}</td><td class="muted small">${esc((job.error || "").slice(0, 160) || "—")}</td></tr>`).join("") || `<tr><td colspan="7" class="empty-cell">暂无 AI 调用记录。配置 DeepSeek 后，会员用户的计划和教练对话会出现在这里。</td></tr>`}
+      </tbody></table></div>
+      <div class="pager"><span>第 ${Math.floor(state.ai.offset / 100) + 1} 页</span><button class="btn btn-sm" onclick="admin.pageAI(-1)" ${state.ai.offset <= 0 ? "disabled" : ""}>上一页</button><button class="btn btn-sm" onclick="admin.pageAI(1)" ${state.ai.offset + 100 >= jobs.total ? "disabled" : ""}>下一页</button></div>
+    `;
+  }
+
   async function renderAudit() {
     loading();
     const d = await api(`/audit?limit=100&offset=${state.auditOffset}`);
@@ -738,6 +791,7 @@
       else if (view === "scans") await renderScans();
       else if (view === "exercises") await renderExercises();
       else if (view === "videos") await renderVideos();
+      else if (view === "ai") await renderAI();
       else if (view === "audit") await renderAudit();
     } catch (error) { errorView(error); }
   }
@@ -790,6 +844,9 @@
     publishVideo, unpublishVideo, deleteVideo,
     searchVideos() { state.videos.q = $("video-search")?.value || ""; state.videos.status = $("video-status")?.value || ""; renderVideos().catch(errorView); },
     reloadVideos() { renderVideos().catch(errorView); },
+    searchAI() { state.ai.q = $("ai-search")?.value || ""; state.ai.status = $("ai-status")?.value || ""; state.ai.kind = $("ai-kind")?.value || ""; state.ai.offset = 0; renderAI().catch(errorView); },
+    reloadAI() { state.ai.offset = 0; renderAI().catch(errorView); },
+    pageAI(dir) { state.ai.offset = Math.max(0, state.ai.offset + dir * 100); renderAI().catch(errorView); },
     reloadAudit() { state.auditOffset = 0; renderAudit().catch(errorView); },
     pageAudit(dir) { state.auditOffset = Math.max(0, state.auditOffset + dir * 100); renderAudit().catch(errorView); }
   };

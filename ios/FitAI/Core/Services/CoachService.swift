@@ -23,7 +23,8 @@ enum CoachService {
     static func reply(
         to message: String,
         profile: UserProfile,
-        plan: TrainingPlan?
+        plan: TrainingPlan?,
+        skill: CoachSkill = .trainer
     ) -> ChatMessage {
         for (keywords, text) in safetyRules
         where keywords.contains(where: { message.contains($0) }) {
@@ -88,6 +89,21 @@ enum CoachService {
             return ChatMessage(
                 role: .assistant,
                 text: "训练后的延迟性酸痛通常 24–72 小时缓解，可以低强度活动、拉伸、保证睡眠。如果是关节刺痛、肿胀或影响走路，先停止训练并找医生评估。"
+            )
+        }
+
+        if skill == .nutrition {
+            let protein = Int((profile.weightKG * 1.8).rounded())
+            return ChatMessage(
+                role: .assistant,
+                text: "营养师模式下，我先给一个保守区间：每天蛋白质约 \(protein)g，分 3–4 餐摄入；每餐先安排蛋白质和蔬菜，再根据训练量调整主食。如果有糖尿病、肾病、孕期或进食障碍，请先咨询医生或注册营养师。"
+            )
+        }
+
+        if skill == .rehab {
+            return ChatMessage(
+                role: .assistant,
+                text: "康复师模式下，我不会在未评估的情况下给你诊断或加练。请先告诉我疼痛位置、持续多久、疼痛 0–10 分，以及是否有肿胀、麻木或无力。如果有明显肿胀、无法承重或神经症状，请先线下就医。"
             )
         }
 

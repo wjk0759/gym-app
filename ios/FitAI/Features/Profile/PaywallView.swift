@@ -3,8 +3,8 @@ import SwiftUI
 
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(SubscriptionManager.self) private var manager
 
-    @State private var manager = SubscriptionManager()
     @State private var selectedProductID: String?
 
     private var effectiveProduct: Product? {
@@ -127,7 +127,7 @@ struct PaywallView: View {
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
 
-            Text("解锁完整的计划生成、教练对话与器械识别。")
+            Text("解锁 DeepSeek AI 计划、三种专业 Skill 与完整的教练对话。")
                 .font(.subheadline)
                 .foregroundStyle(Theme.secondaryText)
                 .multilineTextAlignment(.center)
@@ -138,10 +138,10 @@ struct PaywallView: View {
 
     private var benefits: some View {
         VStack(alignment: .leading, spacing: 12) {
-            benefit("无限次 AI 计划生成与调整", icon: "wand.and.stars")
-            benefit("教练对话、周复盘与训练偏好记忆", icon: "bubble.left.and.bubble.right")
-            benefit("器械拍照识别与动作库", icon: "camera.viewfinder")
-            benefit("饮食计划与热量记录", icon: "fork.knife")
+            benefit("DeepSeek AI 计划生成与调整", icon: "wand.and.stars")
+            benefit("健身教练、康复师、营养师 AI Skills", icon: "person.3.fill")
+            benefit("周复盘、训练偏好记忆与动作替代", icon: "bubble.left.and.bubble.right")
+            benefit("器械拍照识别与饮食记录", icon: "camera.viewfinder")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .card()

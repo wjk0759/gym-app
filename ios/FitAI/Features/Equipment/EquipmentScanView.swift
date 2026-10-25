@@ -285,7 +285,7 @@ struct EquipmentScanView: View {
         guard let data = imageData else { return }
         isScanning = true
 
-        if store.useRemoteAI {
+        if store.useRemoteAI && store.isPro {
             Task { @MainActor in
                 do {
                     let remote = try await APIClient.shared.scanEquipment(imageData: data)

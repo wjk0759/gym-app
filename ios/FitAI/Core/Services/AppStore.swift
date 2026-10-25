@@ -20,6 +20,8 @@ final class AppStore {
     var reminderMinute = 0
     var notificationsEnabled = false
     var useRemoteAI = AppConfig.useRemoteAI
+    /// StoreKit 权益通过 SubscriptionManager 同步；只有 Pro 才会请求远程 DeepSeek。
+    var isPro = false
     var healthKitEnabled = false
 
     private var currentUserID: String? = AuthTokenStore.shared.userID
@@ -170,7 +172,7 @@ final class AppStore {
         let snapshot = profile
         let librarySlugs = equipmentSlugsForPlan
 
-        if useRemoteAI {
+        if useRemoteAI && isPro {
             Task { @MainActor in
                 do {
                     try await APIClient.shared.syncProfile(snapshot)
@@ -427,18 +429,21 @@ final class AppStore {
         persist()
     }
 
-    func sendChat(_ text: String) {
+    func sendChat(_ text: String, skill: CoachSkill = .trainer) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
         chat.append(ChatMessage(role: .user, text: trimmed))
 
-        if useRemoteAI {
+        if useRemoteAI && isPro {
             isReplying = true
             persist()
             Task { @MainActor in
                 do {
-                    let response = try await APIClient.shared.sendChat(message: trimmed)
+                    let response = try await APIClient.shared.sendChat(
+                        message: trimmed,
+                        skill: skill
+                    )
                     self.chat.append(
                         ChatMessage(
                             role: .assistant,
@@ -448,7 +453,12 @@ final class AppStore {
                     )
                 } catch {
                     self.chat.append(
-                        CoachService.reply(to: trimmed, profile: self.profile, plan: self.plan)
+                        CoachService.reply(
+                            to: trimmed,
+                            profile: self.profile,
+                            plan: self.plan,
+                            skill: skill
+                        )
                     )
                 }
                 self.isReplying = false
@@ -457,7 +467,14 @@ final class AppStore {
             return
         }
 
-        chat.append(CoachService.reply(to: trimmed, profile: profile, plan: plan))
+        chat.append(
+            CoachService.reply(
+                to: trimmed,
+                profile: profile,
+                plan: plan,
+                skill: skill
+            )
+        )
         persist()
     }
 

@@ -252,6 +252,7 @@ function normalizeState(value) {
   next.paywallPlan = next.paywallPlan || "yearly";
   next.legalDoc = null;
   next.profileDraft = null;
+  next.coachSkill = next.coachSkill || "trainer";
   return next;
 }
 
@@ -267,6 +268,7 @@ function initialState() {
     plan: buildPlan(profile),
     sessions: demoSessions(),
     chats: [],
+    coachSkill: "trainer",
     foodLogs: demoLogs(),
     disliked: [],
     selectedWeek: 1,
@@ -933,14 +935,46 @@ function planDayScreen() {
 /* ---------------- Coach ---------------- */
 
 function coachScreen() {
-  const suggestions = ["今天练什么？", "没有器械怎么替代？", "深蹲膝盖不舒服", "训练后很酸正常吗？", "每天要吃多少蛋白质？"];
+  const skills = {
+    trainer: {
+      label: "健身教练",
+      icon: "◎",
+      desc: "训练安排、动作替代和负荷调整",
+      starters: ["今天练什么？", "没有器械怎么替代？", "训练后很酸正常吗？", "下次怎么加重量？"],
+      placeholder: "问问训练、动作或计划…"
+    },
+    rehab: {
+      label: "康复师",
+      icon: "✚",
+      desc: "疼痛分级、恢复期活动和就医提示",
+      starters: ["膝盖不舒服还能练吗？", "训练后腰痛怎么恢复？", "扭伤后多久能训练？", "恢复期能做什么动作？"],
+      placeholder: "描述疼痛位置、时间和程度…"
+    },
+    nutrition: {
+      label: "营养师",
+      icon: "◇",
+      desc: "热量、蛋白质和膳食结构建议",
+      starters: ["每天吃多少蛋白质？", "减脂怎么安排三餐？", "训练后吃什么？", "外卖怎么选更健康？"],
+      placeholder: "问问热量、蛋白质或饮食安排…"
+    }
+  };
+  const skill = skills[state.coachSkill] || skills.trainer;
+  const suggestions = skill.starters.slice(0, 3);
   const weekSessions = state.sessions.filter((s) => s.thisWeek).length;
   const ratio = Math.min(100, Math.round((weekSessions / Math.max(1, state.profile.weeklyDays)) * 100));
   return `
     <div class="chat-screen">
       <div class="chat-head">
         <h1 class="h1">AI 教练</h1>
-        <div class="tiny muted" style="margin-top:4px">结合档案、计划和训练记录回答</div>
+        <div class="tiny muted" style="margin-top:4px">健身教练 · 康复师 · 营养师</div>
+      </div>
+
+      <div class="coach-skill-bar">
+        ${Object.entries(skills).map(([key, item]) => `
+          <button class="coach-skill ${state.coachSkill === key ? "active" : ""}" onclick="app.setCoachSkill('${key}')">
+            <span>${item.icon}</span>${item.label}
+          </button>
+        `).join("")}
       </div>
 
       <div class="chat-scroll" id="chat-scroll">
@@ -949,21 +983,28 @@ function coachScreen() {
             <div class="row gap10" style="margin-bottom:10px">
               <div class="coach-avatar">AI</div>
               <div>
-                <div class="h3">训练有问题，直接问</div>
-                <div class="tiny faint" style="margin-top:2px">结合档案、计划和训练记录回答</div>
+                <div class="h3">${skill.label}在线</div>
+                <div class="tiny faint" style="margin-top:2px">${skill.desc}</div>
               </div>
             </div>
             <div class="small muted" style="line-height:1.65">涉及疼痛、孕期、术后等情况，会建议你就医，而不是继续加练。</div>
           </div>
 
+          ${state.pro ? "" : `
+            <div class="card tight" style="margin-top:12px;cursor:pointer" onclick="app.openPaywall()">
+              <div class="between">
+                <div>
+                  <div class="small strong">解锁 DeepSeek AI ${skill.label}</div>
+                  <div class="tiny faint" style="margin-top:3px">当前使用本地规则建议；Pro 会员可使用完整 AI Skill。</div>
+                </div>
+                <span class="accent">›</span>
+              </div>
+            </div>
+          `}
+
           <div class="h3" style="margin:16px 2px 2px">快速开始</div>
           <div class="coach-starters">
-            ${[
-              "今天练什么？",
-              "没有器械怎么替代？",
-              "深蹲膝盖不舒服",
-              "训练后很酸正常吗？"
-            ].map((text) => `<button class="suggestion-card" onclick="app.sendChat('${text}')">${text}</button>`).join("")}
+            ${skill.starters.map((text) => `<button class="suggestion-card" onclick="app.sendChat('${text}')">${text}</button>`).join("")}
           </div>
 
           <div class="card tight" style="margin-top:12px">
@@ -992,7 +1033,7 @@ function coachScreen() {
 
       <div class="composer">
         <div class="composer-row">
-          <input id="chat-input" type="text" placeholder="问问动作、计划或饮食…" onkeydown="if(event.key==='Enter'){app.sendChat()}">
+          <input id="chat-input" type="text" placeholder="${skill.placeholder}" onkeydown="if(event.key==='Enter'){app.sendChat()}">
           <button class="send-btn" onclick="app.sendChat()">↑</button>
         </div>
       </div>
@@ -1931,10 +1972,10 @@ function paywallScreen() {
 
       <div class="card">
         ${[
-          ["无限次 AI 计划生成与调整", "✦"],
-          ["教练对话、周复盘与训练偏好记忆", "💬"],
-          ["器械拍照识别与动作库", "📷"],
-          ["饮食计划与热量记录", "🍽"]
+          ["DeepSeek AI 计划生成与调整", "✦"],
+          ["健身教练、康复师、营养师 AI Skills", "◎"],
+          ["周复盘、训练偏好记忆与动作替代", "💬"],
+          ["器械拍照识别与饮食记录", "📷"]
         ].map(([text, icon]) => `
           <div class="benefit-row"><span>${icon}</span><span>${text}</span><span class="check">✓</span></div>
         `).join("")}
@@ -2250,7 +2291,7 @@ function render() {
   }
 }
 
-function coachReply(text) {
+function coachReply(text, skill = "trainer") {
   if (/胸痛|胸闷|晕|呼吸困难|喘不上气|昏倒/.test(text)) {
     return { text: "你描述的可能是需要立即处理的情况。请马上停止训练，坐下休息；如果症状持续或加重，请立即就医或拨打 120。不要继续做任何高强度动作。", safety: true };
   }
@@ -2270,6 +2311,13 @@ function coachReply(text) {
   }
   if (/酸|疼|痛/.test(text)) {
     return { text: "训练后的延迟性酸痛通常 24–72 小时缓解，可以低强度活动、拉伸、保证睡眠。如果是关节刺痛、肿胀或影响走路，先停止训练并找医生评估。" };
+  }
+  if (skill === "nutrition") {
+    const targets = nutritionTargets();
+    return { text: `营养师模式下，我先给一个保守区间：每天蛋白质约 ${targets.protein}g，分 3–4 餐摄入；每餐先安排蛋白质和蔬菜，再根据训练量调整主食。如果有糖尿病、肾病、孕期或进食障碍，请先咨询医生或注册营养师。` };
+  }
+  if (skill === "rehab") {
+    return { text: "康复师模式下，我不会在未评估的情况下给你诊断或加练。请先告诉我疼痛位置、持续多久、疼痛 0–10 分，以及是否有肿胀、麻木或无力。如果有明显肿胀、无法承重或神经症状，请先线下就医。" };
   }
   return { text: "我记住了。你可以具体问：今天练什么、某个动作怎么替代，或者把训练感受告诉我。当前计划会参考你的完成率和 RPE 做调整。" };
 }
@@ -2861,6 +2909,12 @@ window.app = {
     toast("已删除训练记录");
   },
 
+  setCoachSkill(skill) {
+    state.coachSkill = skill;
+    save();
+    render();
+  },
+
   sendChat(text) {
     let message = text;
     if (message === undefined) {
@@ -2870,7 +2924,7 @@ window.app = {
     message = String(message || "").trim();
     if (!message) return;
     state.chats.push({ role: "user", text: message });
-    const reply = coachReply(message);
+    const reply = coachReply(message, state.coachSkill || "trainer");
     state.chats.push({ role: "assistant", text: reply.text, safety: !!reply.safety });
     save();
     render();

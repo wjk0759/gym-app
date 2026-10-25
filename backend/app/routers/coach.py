@@ -51,6 +51,7 @@ async def chat(payload: ChatIn, user_id: CurrentUser, db: DBSession):
         _active_program(db, user_id),
         history,
         payload.message,
+        payload.skill,
     )
 
     session.messages.append(
@@ -99,6 +100,7 @@ async def chat_stream(payload: ChatIn, user_id: CurrentUser, db: DBSession):
         _active_program(db, user_id),
         history,
         payload.message,
+        payload.skill,
     )
 
     session.messages.append(ChatMessage(role="user", content=payload.message))

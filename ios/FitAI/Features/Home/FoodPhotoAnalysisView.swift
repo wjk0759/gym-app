@@ -331,7 +331,7 @@ struct FoodPhotoAnalysisView: View {
         analysisDisclaimer = ""
         analysisModel = ""
 
-        if store.useRemoteAI {
+        if store.useRemoteAI && store.isPro {
             Task { @MainActor in
                 do {
                     finish(try await APIClient.shared.analyzeFood(imageData: imageData))

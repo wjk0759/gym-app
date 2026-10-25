@@ -12,6 +12,21 @@
 
 **原则：** 只用已完成生成式 AI 备案的模型 API；应用侧仍需做“应用/功能登记”。
 
+## 1.1 AI Skills
+
+| Skill | Key | 职责 | 安全边界 |
+|---|---|---|---|
+| 健身教练 | `trainer` | 训练安排、动作替代、负荷与恢复 | 不做医疗诊断，急性疼痛转诊 |
+| 康复师 | `rehab` | 疼痛分级、红旗症状、恢复期活动 | 不诊断、不给医疗处方，红旗症状要求就医 |
+| 营养师 | `nutrition` | 热量、蛋白质、膳食结构 | 不做疾病饮食处方，进食障碍/孕期/肾病等转诊 |
+
+- App 通过 `POST /coach/chat` 的 `skill` 字段选择 Skill。
+- 远程 DeepSeek 只对 Pro 会员开放；未开通或模型失败时回退到本地规则。
+- `trainer` / `rehab` / `nutrition` 的 Prompt 分别位于 `backend/app/prompts/`。
+- AI 调用会写入 `ai_jobs`，后台「AI 使用」查看调用量、延迟、降级和失败。
+
+> 会员校验目前在客户端按 StoreKit 权益执行；生产环境建议增加 Apple 收据/Server Notification 校验，避免直接调用后端绕过会员。
+
 ## 2. 计划生成流水线
 
 ```
