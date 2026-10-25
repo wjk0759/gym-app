@@ -12,7 +12,7 @@ struct PlanHomeView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            AppScrollView {
                 VStack(spacing: 16) {
                     if store.isGenerating {
                         generatingCard
@@ -309,7 +309,7 @@ struct PlanHistoryView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            AppScrollView {
                 VStack(spacing: 14) {
                     if let current = store.plan {
                         currentCard(current)

@@ -31,7 +31,7 @@ struct ExerciseDetailView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            AppScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(exercise.nameZH)

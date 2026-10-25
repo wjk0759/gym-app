@@ -32,7 +32,7 @@ struct PaywallView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            AppScrollView {
                 VStack(spacing: 20) {
                     header
                     benefits

@@ -45,7 +45,7 @@ struct LoginView: View {
     }
 
     var body: some View {
-        ScrollView {
+        AppScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 brand
                 intro
@@ -706,7 +706,7 @@ struct LegalDocumentView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            AppScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
                         Text("练途 · 协议与隐私")

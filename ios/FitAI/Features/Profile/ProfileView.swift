@@ -9,7 +9,7 @@ struct ProfileView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            AppScrollView {
                 VStack(spacing: 16) {
                     sectionLabel("账户与会员")
                         .padding(.top, 0)

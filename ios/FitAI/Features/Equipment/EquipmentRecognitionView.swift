@@ -23,7 +23,7 @@ struct EquipmentRecognitionView: View {
     @State private var savedSlugs: Set<String> = []
 
     var body: some View {
-        ScrollView {
+        AppScrollView {
             VStack(spacing: 16) {
                 scanHeaderCard
                 matchesSection

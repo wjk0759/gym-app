@@ -26,7 +26,7 @@ struct EquipmentLibraryView: View {
     ]
 
     var body: some View {
-        ScrollView {
+        AppScrollView {
             VStack(spacing: 16) {
                 addEntry
 
@@ -240,7 +240,7 @@ struct EquipmentSearchView: View {
     }
 
     var body: some View {
-        ScrollView {
+        AppScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 Text("输入器械或动作名称，选中后直接加入器械库，并自动带上教学视频。")
                     .font(.caption)
@@ -373,7 +373,7 @@ struct EquipmentItemDetailView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            AppScrollView {
                 if let item {
                     VStack(spacing: 16) {
                         if let data = item.photoData, let image = UIImage(data: data) {
@@ -519,7 +519,7 @@ struct AddEquipmentView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            AppScrollView {
                 VStack(spacing: 14) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("器械名称")

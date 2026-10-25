@@ -10,7 +10,7 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            AppScrollView {
                 VStack(spacing: 16) {
                     greeting
 

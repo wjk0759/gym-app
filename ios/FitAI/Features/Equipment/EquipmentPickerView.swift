@@ -49,7 +49,7 @@ struct EquipmentPickerView: View {
     }
 
     var body: some View {
-        ScrollView {
+        AppScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 selectedSection
                 searchBar

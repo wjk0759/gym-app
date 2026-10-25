@@ -516,10 +516,12 @@ function tabbar() {
 
 function headerBack(title, action = "app.back()") {
   return `
-    <div class="row between" style="margin-bottom:14px">
-      <button class="icon-btn" onclick="${action}">‹</button>
-      <div class="h3">${title}</div>
-      <div style="width:34px"></div>
+    <div class="page-header">
+      <div class="row between">
+        <button class="icon-btn" onclick="${action}">‹</button>
+        <div class="h3">${title}</div>
+        <div style="width:34px"></div>
+      </div>
     </div>
   `;
 }
@@ -850,7 +852,7 @@ function home() {
 
   return `
     <div class="stack">
-      <div class="greeting">
+      <div class="greeting page-head page-head-home">
         <div class="h1">晚上好，${esc(state.profile.name)}</div>
         <div class="date">10月25日 · 周日</div>
       </div>
@@ -955,7 +957,7 @@ function planScreen() {
   const preview = planAdjustmentPreview();
   return `
     <div class="stack">
-      <div class="between">
+      <div class="between page-head">
         <div>
           <h1 class="h1">训练计划</h1>
           <div class="tiny muted" style="margin-top:4px">第 ${state.plan.version} 版 · 4 周</div>
@@ -1238,7 +1240,7 @@ function equipmentPickerScreen() {
 
   return `
     <div class="stack equipment-picker">
-      <div class="between">
+      <div class="between page-head">
         <div class="row gap8">
           <div class="h1">已选择动作</div>
           <span class="accent small strong">${selected.length}</span>
@@ -1560,7 +1562,7 @@ function profileScreen() {
   const p = state.profile;
   return `
     <div class="stack">
-      <div class="between" style="align-items:flex-start">
+      <div class="between page-head" style="align-items:flex-start">
         <div>
           <h1 class="h1">我的</h1>
           <div class="tiny muted" style="margin-top:4px">档案、身体数据与训练工具</div>
@@ -2267,7 +2269,7 @@ function workoutScreen() {
 
   return `
     <div class="stack workout-screen">
-      <div class="row between" style="margin-bottom:4px">
+      <div class="page-header row between" style="margin-bottom:4px">
         <button class="icon-btn" onclick="app.exitWorkout()">✕</button>
         <div class="h3">训练中</div>
         <div style="width:34px"></div>

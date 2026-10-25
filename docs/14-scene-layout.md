@@ -1,0 +1,31 @@
+# 全局场景布局与滚动规范
+
+## 目标
+
+所有页面统一为「场景头 / 内容 / 底部操作」三段，避免一滚动就把标题、返回按钮和整页内容一起推走。
+
+## 原生 iOS
+
+- `AppScrollView`：所有纵向滚动页统一使用，隐藏滚动条、支持拖拽收键盘、内容不足时不做无意义回弹。
+- `UIScrollView.appearance()`：兜底隐藏 `List`、横向筛选条、相册等系统滚动容器的滚动条。
+- 顶部：`NavigationStack` 导航栏固定，不随内容滚动。
+- 底部：`TabView` 底栏固定；训练中、器械组合等操作条继续用 `safeAreaInset` / 固定底栏。
+- 详情页的返回按钮由导航栏负责，不再在内容里重复放一个会滚走的返回头。
+
+## Web 预览
+
+- 内容滚动只发生在 `#app` 内，`overscroll-behavior-y: none`，不再带动整页。
+- 状态栏下方增加固定 `status-scrim`，内容不会在状态栏区域露出。
+- 页面标题 / 返回头使用 `.page-header` 或 `.page-head`：
+  - `position: sticky`，固定在状态栏下方；
+  - 半透明深色渐变 + 背景模糊，内容从其下方滚过；
+  - 主 Tab 的标题、详情页返回头、训练中标题都已接入。
+- 底部 TabBar 与组合训练条固定在安全区，不随内容滚动。
+- 全局隐藏滚动条：`scrollbar-width: none` + `::-webkit-scrollbar { display: none; }`，包括横向肌群/器械筛选。
+
+## 页面接入规则
+
+1. 新页面内容区必须使用 `AppScrollView`（原生）或放在 `#app` 的 `.stack` 中（Web）。
+2. 详情页顶部统一用 `headerBack(...)`；它会自动获得吸顶样式。
+3. 主 Tab 的标题块加 `.page-head`，不要再把标题放在会滚走的普通卡片里。
+4. 底部固定操作使用 `safeAreaInset(edge: .bottom)`（原生）或 `position: fixed/sticky`（Web）。

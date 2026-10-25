@@ -18,7 +18,7 @@ struct BodyPhotoAnalysisView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            AppScrollView {
                 VStack(spacing: 16) {
                     header
                     photoCard

@@ -51,7 +51,7 @@ struct ExerciseProgressView: View {
     }
 
     var body: some View {
-        ScrollView {
+        AppScrollView {
             VStack(spacing: 16) {
                 headerCard
                 bestCard

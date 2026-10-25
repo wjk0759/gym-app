@@ -11,7 +11,7 @@ struct OnboardingView: View {
     @State private var showExitConfirm = false
 
     var body: some View {
-        ScrollView {
+        AppScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 header
                 ProfileFormView(draft: $draft)

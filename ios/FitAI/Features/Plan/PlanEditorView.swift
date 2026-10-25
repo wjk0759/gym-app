@@ -12,7 +12,7 @@ struct PlanEditorView: View {
     }
 
     var body: some View {
-        ScrollView {
+        AppScrollView {
             VStack(spacing: 14) {
                 header
 
@@ -233,6 +233,7 @@ struct ExercisePickerView: View {
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
+                .scrollIndicators(.hidden)
                 .searchable(text: $query, prompt: "搜索动作")
             }
             .background(AppBackground())

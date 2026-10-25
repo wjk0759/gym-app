@@ -21,7 +21,7 @@ struct NutritionView: View {
     }
 
     var body: some View {
-        ScrollView {
+        AppScrollView {
             VStack(spacing: 16) {
                 header
                 photoFoodCard
@@ -411,7 +411,7 @@ struct AddFoodView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            AppScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     Picker("餐次", selection: $meal) {
                         ForEach(MealType.allCases) { item in
@@ -605,7 +605,7 @@ struct CustomFoodEntryView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            AppScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("按你实际吃的一份填写")

@@ -35,7 +35,7 @@ struct CoachChatView: View {
                 skillPicker
 
                 ScrollViewReader { proxy in
-                    ScrollView {
+                    AppScrollView {
                         if store.chat.isEmpty {
                             welcome
                                 .padding(20)

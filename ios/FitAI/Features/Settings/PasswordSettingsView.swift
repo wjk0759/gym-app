@@ -17,7 +17,7 @@ struct PasswordSettingsView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            AppScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("设置密码后，可以用手机号或用户名 + 密码登录。修改后，其他已登录设备需要重新验证。")
                         .font(.subheadline)

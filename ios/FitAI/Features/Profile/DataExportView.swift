@@ -8,7 +8,7 @@ struct DataExportView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            AppScrollView {
                 Text(json)
                     .font(.system(.caption2, design: .monospaced))
                     .foregroundStyle(Theme.secondaryText)

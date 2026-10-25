@@ -32,7 +32,7 @@ struct SettingsView: View {
     @State private var showPasswordSettings = false
 
     var body: some View {
-        ScrollView {
+        AppScrollView {
             VStack(spacing: 16) {
                 accountCard
 

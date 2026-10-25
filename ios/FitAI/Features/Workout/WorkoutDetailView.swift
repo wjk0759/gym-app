@@ -42,7 +42,7 @@ struct WorkoutDetailView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            AppScrollView {
                 VStack(spacing: 16) {
                     if isEditing {
                         editSummaryCard

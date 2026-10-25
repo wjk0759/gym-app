@@ -27,7 +27,7 @@ struct WorkoutSessionView: View {
             VStack(spacing: 0) {
                 progressHeader
 
-                ScrollView {
+                AppScrollView {
                         VStack(spacing: 16) {
                             if let restRemaining {
                                 restCard(restRemaining)

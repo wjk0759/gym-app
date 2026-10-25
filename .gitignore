@@ -47,3 +47,5 @@ backend/admin_video_test.db
 
 preview/camera-*.png
 preview/capture-*.png
+
+preview/scroll-*.png

@@ -10,7 +10,7 @@ struct ProfileEditView: View {
     @State private var showAlert = false
 
     var body: some View {
-        ScrollView {
+        AppScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 ProfileFormView(draft: $draft)
 
