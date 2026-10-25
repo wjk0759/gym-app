@@ -20,7 +20,8 @@ const EX = {
   romanian_deadlift: { name: "罗马尼亚硬拉", muscle: "腿", equip: "杠铃", base: 30, cues: "膝盖微屈固定，髋部后移，杠铃贴腿下放，背部全程中立。" },
   lateral_raise: { name: "侧平举", muscle: "肩", equip: "哑铃", base: 4, cues: "手肘微屈，以肩部发力把哑铃抬至与肩同高，避免耸肩和摆动。" },
   rowing: { name: "划船机", muscle: "有氧", equip: "固定器械", base: 0, fixedReps: "8-12 min", cues: "腿-核心-手臂的顺序发力，回程相反，保持背部中立。" },
-  burpee: { name: "波比跳", muscle: "有氧", equip: "徒手", base: 0, cues: "下蹲撑地，后跳成俯卧撑姿，收腿起身跳起，保持节奏。" }
+  burpee: { name: "波比跳", muscle: "有氧", equip: "徒手", base: 0, cues: "下蹲撑地，后跳成俯卧撑姿，收腿起身跳起，保持节奏。" },
+  treadmill: { name: "跑步机", muscle: "有氧", equip: "固定器械", base: 0, fixedReps: "10-20 min", cues: "坡度 3–8%，速度以能说短句为准，身体直立，不要扶把手。" }
 };
 
 const FOODS = [
@@ -189,6 +190,49 @@ function buildPlan(profile) {
   };
 }
 
+function applyEquipmentLibrary(plan) {
+  if (!state.useEquipLibrary) return plan;
+  const slugs = state.equipmentLibrary.map((item) => item.slug).filter(Boolean);
+  if (!slugs.length) return plan;
+
+  plan.days.forEach((day, index) => {
+    const slug = slugs[index % slugs.length];
+    const exercise = EX[slug];
+    if (!exercise) return;
+    if (day.exercises.some((item) => item.slug === slug)) return;
+    const last = day.exercises[day.exercises.length - 1];
+    day.exercises[day.exercises.length - 1] = {
+      slug,
+      sets: last ? last.sets : 3,
+      reps: exercise.fixedReps || "10-12",
+      weight: exercise.base || 0,
+      rest: last ? last.rest : 60,
+      rpe: 7
+    };
+  });
+  return plan;
+}
+
+function demoEquipment() {
+  return [
+    { id: "e1", name: "高位下拉", slug: "lat_pulldown", muscle: "背", equip: "固定器械", video: false, notes: "座位高度 3 档" },
+    { id: "e2", name: "腿举", slug: "leg_press", muscle: "腿", equip: "固定器械", video: false, notes: "脚距与肩同宽" },
+    { id: "e3", name: "跑步机", slug: "treadmill", muscle: "有氧", equip: "固定器械", video: false, notes: "坡度 5%" }
+  ];
+}
+
+function normalizeState(value) {
+  const next = value || initialState();
+  next.equipmentTab = next.equipmentTab || "scan";
+  next.equipmentLibrary = next.equipmentLibrary || demoEquipment();
+  next.useEquipLibrary = next.useEquipLibrary !== false;
+  next.bodyPhoto = !!next.bodyPhoto;
+  next.bodyConsent = false;
+  next.bodyAnalysis = next.bodyAnalysis || null;
+  next.equipmentItemId = next.equipmentItemId || null;
+  return next;
+}
+
 function initialState() {
   const profile = { ...DEFAULT_PROFILE };
   return {
@@ -208,6 +252,13 @@ function initialState() {
     sessionId: null,
     foodDraft: { meal: "早餐", query: "", selected: null, grams: 100 },
     equipment: { scanned: false, candidates: [], query: "" },
+    equipmentTab: "scan",
+    equipmentLibrary: demoEquipment(),
+    useEquipLibrary: true,
+    bodyPhoto: false,
+    bodyConsent: false,
+    bodyAnalysis: null,
+    equipmentItemId: null,
     workout: null,
     pro: false,
     reminder: "19:00"
@@ -225,7 +276,7 @@ function loadState() {
   }
 }
 
-let state = loadState() || initialState();
+let state = normalizeState(loadState() || initialState());
 
 function save() {
   try {
@@ -596,6 +647,9 @@ function planScreen() {
 
       <div class="card tight">
         <div class="tiny muted">点任意训练日可以换动作、改组数。删除过的动作会被记住，下次生成尽量避开。</div>
+        ${state.useEquipLibrary && state.equipmentLibrary.length
+          ? `<div class="tiny accent" style="margin-top:6px">已启用器械库：${state.equipmentLibrary.length} 件，生成计划时优先使用。</div>`
+          : ""}
       </div>
     </div>
   `;
@@ -703,6 +757,15 @@ function equipmentScreen() {
         <div class="tiny muted" style="margin-top:4px">拍一下器械，马上知道怎么用</div>
       </div>
 
+      <div class="card nutrition-card" onclick="app.equipmentLibraryOpen()">
+        <div class="nutrition-icon">🏋️</div>
+        <div class="grow">
+          <div class="h3">我的器械库</div>
+          <div class="tiny muted" style="margin-top:3px">已录入 ${state.equipmentLibrary.length} 件 · 查看教学视频</div>
+        </div>
+        <div class="faint">›</div>
+      </div>
+
       <div class="photo-area ${equipment.scanned ? "filled" : ""}">
         <div class="big">📷</div>
         <div class="small">${equipment.scanned ? "已拍摄：高位下拉器械" : "拍一张器械照片"}</div>
@@ -729,9 +792,15 @@ function equipmentScreen() {
                 </div>
                 <div class="tiny ${candidate.confidence >= 0.6 ? "accent" : "warning"}">${Math.round(candidate.confidence * 100)}%</div>
               </div>
-              <div class="confidence ${candidate.confidence < 0.6 ? "low" : ""}"><span style="width:${candidate.confidence * 100}%"></span></div>
-            </div>
-          `).join("")}
+                <div class="confidence ${candidate.confidence < 0.6 ? "low" : ""}"><span style="width:${candidate.confidence * 100}%"></span></div>
+                <div class="row between" style="margin-top:6px">
+                  <button class="link" onclick="event.stopPropagation();app.saveCandidate('${candidate.slug}')">
+                    ${state.equipmentLibrary.some((entry) => entry.slug === candidate.slug) ? "已保存" : "＋ 保存到器械库"}
+                  </button>
+                  <span class="tiny faint">查看动作 ›</span>
+                </div>
+              </div>
+            `).join("")}
         </div>
       ` : ""}
 
@@ -757,6 +826,172 @@ function equipResults(query) {
       </div>
     </div>
   `).join("");
+}
+
+function equipmentLibraryScreen() {
+  const items = state.equipmentLibrary;
+  return `
+    <div class="stack">
+      ${headerBack("我的器械库", "app.backTo('equipment')")}
+      <div class="card">
+        <div class="h3">已录入 ${items.length} 件器械</div>
+        <div class="tiny muted" style="margin-top:4px">集中查看教学视频，并让 AI 按你的器械安排计划。</div>
+      </div>
+
+      <div class="card">
+        <div class="between">
+          <span class="small">生成计划时优先使用器械库</span>
+          <button class="chip ${state.useEquipLibrary ? "active" : ""}" onclick="app.toggleEquipLibrary()">
+            ${state.useEquipLibrary ? "已启用" : "未启用"}
+          </button>
+        </div>
+        <div class="tiny faint" style="margin-top:8px">${state.useEquipLibrary
+          ? "下次生成/重新生成计划时，会优先从器械库和徒手动作里选择。"
+          : "已关闭：计划仍按档案里的器械类型生成。"}</div>
+      </div>
+
+      ${items.length === 0 ? `
+        <div class="card">
+          <div class="h3">器械库还是空的</div>
+          <div class="tiny muted" style="margin-top:5px">识别器械后保存，或手动添加。</div>
+        </div>
+      ` : items.map((item) => `
+        <div class="card" style="cursor:pointer" onclick="app.openEquipItem('${item.id}')">
+          <div class="row gap10">
+            <div class="nutrition-icon">🏋️</div>
+            <div class="grow">
+              <div class="h3">${esc(item.name)}</div>
+              <div class="tiny muted" style="margin-top:2px">${item.muscle} · ${item.equip}</div>
+              <div class="tiny ${item.video ? "accent" : "faint"}" style="margin-top:2px">
+                ${item.video ? "已配置教学视频" : "未配置视频"}
+              </div>
+            </div>
+            <div class="faint">›</div>
+          </div>
+        </div>
+      `).join("")}
+
+      <button class="btn btn-secondary" onclick="app.addDemoEquipment()">＋ 添加器械</button>
+      <div class="tiny faint" style="line-height:1.6">器械库会作为 AI 生成计划的可用器械来源。删除器械不会删除历史训练记录。</div>
+    </div>
+  `;
+}
+
+function equipmentItemScreen() {
+  const item = state.equipmentLibrary.find((entry) => entry.id === state.equipmentItemId);
+  if (!item) return equipmentLibraryScreen();
+  return `
+    <div class="stack">
+      ${headerBack("器械详情", "app.equipmentLibraryOpen()")}
+      <div class="card center">
+        <div style="font-size:40px;margin-bottom:8px">🏋️</div>
+        <div class="h2">${esc(item.name)}</div>
+        <div class="small accent" style="margin-top:4px">${item.muscle} · ${item.equip}</div>
+        ${item.notes ? `<div class="tiny muted" style="margin-top:10px">${esc(item.notes)}</div>` : ""}
+      </div>
+
+      <div class="card">
+        <div class="row gap8" style="margin-bottom:8px"><span class="accent">▶</span><span class="h3">教学视频</span></div>
+        <div class="tiny muted">${item.video ? "已配置视频地址，真实 App 会直接播放。" : "还没有视频地址。真实 App 里可在添加/编辑器械时填入 HLS/MP4 链接。"}</div>
+        <div style="height:150px;border-radius:14px;margin-top:10px;background:linear-gradient(135deg,#1a2028,#0d1016);display:grid;place-items:center;color:var(--faint)">视频占位</div>
+      </div>
+
+      <button class="btn btn-primary" onclick="app.regenerateWithLibrary()">按器械库重新生成计划</button>
+      <button class="btn btn-danger" onclick="app.deleteEquipItem('${item.id}')">从器械库删除</button>
+    </div>
+  `;
+}
+
+const BODY_VARIANTS = [
+  {
+    summary: "整体比例比较均衡，建议把训练重点放在背部与臀部，配合核心稳定，减少只练胸和手臂的倾向。",
+    focus: ["背", "臀", "核心"],
+    recommendations: [
+      "每周增加 1 次背部训练，优先高位下拉、坐姿划船",
+      "臀部训练加入臀推或臀桥，每周 2 次",
+      "核心稳定加入平板支撑，每次训练收尾 2 组"
+    ],
+    confidence: 0.82
+  },
+  {
+    summary: "下肢与核心可以承担更多训练量，建议采用上下肢分化，先把深蹲和髋伸动作做扎实。",
+    focus: ["腿", "臀", "核心"],
+    recommendations: [
+      "保留深蹲或腿举作为下肢主项",
+      "加入罗马尼亚硬拉，强化后链",
+      "每周至少 2 次核心稳定训练"
+    ],
+    confidence: 0.76
+  },
+  {
+    summary: "上肢推拉比例可以更平衡，建议增加划船类动作，同时控制卧推总量，避免肩部过度疲劳。",
+    focus: ["背", "肩", "核心"],
+    recommendations: [
+      "推拉比例调整为 1:1.5",
+      "加入面拉，改善肩胛稳定",
+      "推日最后减少 1 组卧推，改为划船"
+    ],
+    confidence: 0.71
+  }
+];
+
+function bodyAnalysisScreen() {
+  const analysis = state.bodyAnalysis;
+  return `
+    <div class="stack">
+      ${headerBack("体型照片分析", "app.backTo('profile')")}
+      <div class="card">
+        <div class="h3">拍一张全身或半身照</div>
+        <div class="tiny muted" style="margin-top:6px;line-height:1.6">分析只给训练重点，不判断体脂率、不诊断体态。照片不写入训练记录。</div>
+      </div>
+
+      <div class="photo-area ${state.bodyPhoto ? "filled" : ""}">
+        <div class="big">📷</div>
+        <div class="small">${state.bodyPhoto ? "已选择体型照片" : "拍照或选择一张照片"}</div>
+        <div class="tiny">${state.bodyPhoto ? "确认授权后即可分析" : "正面或侧面，光线充足"}</div>
+      </div>
+
+      <div class="row gap8">
+        <button class="btn btn-secondary btn-sm grow" onclick="app.bodyMockPhoto()">模拟拍照</button>
+        <button class="btn btn-secondary btn-sm grow" onclick="app.bodyMockPhoto()">从相册选择</button>
+      </div>
+
+      <div class="card">
+        <div class="between">
+          <span class="small">我同意将照片用于本次训练分析</span>
+          <button class="chip ${state.bodyConsent ? "active" : ""}" onclick="app.bodyConsentToggle()">
+            ${state.bodyConsent ? "已同意" : "未同意"}
+          </button>
+        </div>
+        <div class="tiny faint" style="margin-top:7px">预览版不上传照片；真实 App 在远程模式下会做一次性分析，不保存原图。</div>
+      </div>
+
+      <button class="btn btn-primary" onclick="app.bodyAnalyze()">分析体型并生成训练建议</button>
+
+      ${analysis ? `
+        <div class="card">
+          <div class="between">
+            <div class="h3">分析结果</div>
+            <div class="tiny accent">参考置信度 ${Math.round(analysis.confidence * 100)}%</div>
+          </div>
+          <div class="small" style="margin-top:8px;line-height:1.6">${analysis.summary}</div>
+          <div class="tiny muted" style="margin-top:10px">建议训练重点</div>
+          <div class="chips" style="margin-top:6px">
+            ${analysis.focus.map((item) => `<span class="chip active">${item}</span>`).join("")}
+          </div>
+          <div style="margin-top:12px">
+            ${analysis.recommendations.map((item) => `<div class="list-row"><span class="dot"></span><span class="small muted grow">${item}</span></div>`).join("")}
+          </div>
+          <div class="tiny faint" style="margin-top:9px">照片分析仅用于训练重点参考，不构成体脂率、体态诊断或医疗建议。</div>
+          <button class="btn btn-primary" style="margin-top:12px" onclick="app.applyBodyAnalysis()">
+            ${analysis.applied ? "已应用到当前计划" : "应用到训练计划"}
+          </button>
+        </div>
+      ` : ""}
+
+      <div class="tiny faint" style="line-height:1.6">体型照片属于敏感个人信息。请只上传你本人的照片；不要上传他人或未成年人照片。</div>
+    </div>
+  `;
 }
 
 function exerciseScreen() {
@@ -843,6 +1078,30 @@ function profileScreen() {
           <span class="accent">♥</span>
         </div>
         <button class="btn btn-secondary" style="margin-top:10px" onclick="app.mockHealth()">连接 Apple 健康</button>
+      </div>
+
+      <div class="card" onclick="app.bodyAnalysisOpen()" style="cursor:pointer">
+        <div class="between">
+          <div>
+            <div class="h3">体型照片分析</div>
+            <div class="tiny muted" style="margin-top:3px">AI 给训练重点建议</div>
+          </div>
+          <span class="accent">›</span>
+        </div>
+        ${state.bodyAnalysis
+          ? `<div class="tiny muted" style="margin-top:8px">${state.bodyAnalysis.summary}</div>
+             <div class="chips" style="margin-top:6px">${state.bodyAnalysis.focus.map((item) => `<span class="chip active">${item}</span>`).join("")}</div>`
+          : `<div class="tiny faint" style="margin-top:8px">照片只用于本次分析，不写入训练记录。</div>`}
+      </div>
+
+      <div class="card" onclick="app.equipmentLibraryOpen()" style="cursor:pointer">
+        <div class="between">
+          <div>
+            <div class="h3">我的器械库</div>
+            <div class="tiny muted" style="margin-top:3px">已录入 ${state.equipmentLibrary.length} 件 · 教学视频与计划</div>
+          </div>
+          <span class="accent">›</span>
+        </div>
       </div>
 
       <div class="card">
@@ -1258,6 +1517,9 @@ function render() {
   else if (state.screen === "workout") html = workoutScreen();
   else if (state.screen === "sessionDetail") html = sessionScreen();
   else if (state.screen === "exerciseDetail") html = exerciseScreen();
+  else if (state.screen === "equipmentLibrary") html = equipmentLibraryScreen();
+  else if (state.screen === "equipmentItem") html = equipmentItemScreen();
+  else if (state.screen === "bodyAnalysis") html = bodyAnalysisScreen();
   else html = home();
 
   root.innerHTML = html;
@@ -1341,7 +1603,7 @@ window.app = {
     }
     setTimeout(() => {
       state.profile.name = String(state.profile.name || "小林").trim() || "小林";
-      state.plan = buildPlan(state.profile);
+      state.plan = applyEquipmentLibrary(buildPlan(state.profile));
       state.onboarded = true;
       state.screen = "tabs";
       state.tab = "home";
@@ -1353,7 +1615,7 @@ window.app = {
 
   skipOnboarding() {
     state.profile = { ...DEFAULT_PROFILE };
-    state.plan = buildPlan(state.profile);
+    state.plan = applyEquipmentLibrary(buildPlan(state.profile));
     state.onboarded = true;
     state.screen = "tabs";
     state.tab = "home";
@@ -1381,6 +1643,9 @@ window.app = {
     else if (state.screen === "paywall") { state.screen = "tabs"; state.tab = "profile"; }
     else if (state.screen === "sessionDetail") { state.screen = "tabs"; state.tab = "home"; }
     else if (state.screen === "exerciseDetail") { state.screen = "tabs"; state.tab = "equipment"; }
+    else if (state.screen === "equipmentLibrary") { state.screen = "tabs"; state.tab = "equipment"; }
+    else if (state.screen === "equipmentItem") state.screen = "equipmentLibrary";
+    else if (state.screen === "bodyAnalysis") { state.screen = "tabs"; state.tab = "profile"; }
     else { state.screen = "tabs"; state.tab = "home"; }
     save();
     render();
@@ -1450,7 +1715,7 @@ window.app = {
   },
 
   regeneratePlan() {
-    state.plan = buildPlan(state.profile);
+    state.plan = applyEquipmentLibrary(buildPlan(state.profile));
     state.plan.version += 1;
     save();
     render();
@@ -1766,6 +2031,132 @@ window.app = {
     toast("已删除记录");
   },
 
+  equipmentLibraryOpen() {
+    state.screen = "equipmentLibrary";
+    save();
+    render();
+  },
+
+  openEquipItem(id) {
+    state.equipmentItemId = id;
+    state.screen = "equipmentItem";
+    save();
+    render();
+  },
+
+  addDemoEquipment() {
+    const pool = ["seated_row", "treadmill", "face_pull", "leg_press", "biceps_curl"];
+    const slug = pool.find((item) => !state.equipmentLibrary.some((entry) => entry.slug === item));
+    if (!slug) return toast("示例器械已全部添加");
+    const ex = EX[slug];
+    state.equipmentLibrary.push({
+      id: `e${Date.now()}`,
+      name: ex.name,
+      slug,
+      muscle: ex.muscle,
+      equip: ex.equip,
+      video: false,
+      notes: "手动添加"
+    });
+    save();
+    render();
+    toast(`已添加 ${ex.name}`);
+  },
+
+  toggleEquipLibrary() {
+    state.useEquipLibrary = !state.useEquipLibrary;
+    save();
+    render();
+    toast(state.useEquipLibrary ? "已启用器械库优先" : "已关闭器械库优先");
+  },
+
+  saveCandidate(slug) {
+    if (state.equipmentLibrary.some((entry) => entry.slug === slug)) {
+      return toast("这个器械已经在库里");
+    }
+    const ex = EX[slug];
+    if (!ex) return;
+    state.equipmentLibrary.push({
+      id: `e${Date.now()}`,
+      name: ex.name,
+      slug,
+      muscle: ex.muscle,
+      equip: ex.equip,
+      video: false,
+      notes: "来自拍照识别"
+    });
+    save();
+    render();
+    toast(`已保存 ${ex.name} 到器械库`);
+  },
+
+  deleteEquipItem(id) {
+    state.equipmentLibrary = state.equipmentLibrary.filter((item) => item.id !== id);
+    state.screen = "equipmentLibrary";
+    save();
+    render();
+    toast("已从器械库删除");
+  },
+
+  regenerateWithLibrary() {
+    state.useEquipLibrary = true;
+    state.plan = applyEquipmentLibrary(buildPlan(state.profile));
+    state.plan.version += 1;
+    state.screen = "tabs";
+    state.tab = "plan";
+    save();
+    render();
+    toast("已按器械库生成新计划");
+  },
+
+  bodyAnalysisOpen() {
+    state.screen = "bodyAnalysis";
+    save();
+    render();
+  },
+
+  bodyMockPhoto() {
+    state.bodyPhoto = true;
+    save();
+    render();
+    toast("已模拟选择体型照片");
+  },
+
+  bodyConsentToggle() {
+    state.bodyConsent = !state.bodyConsent;
+    render();
+  },
+
+  bodyAnalyze() {
+    if (!state.bodyPhoto) return toast("先拍一张照片");
+    if (!state.bodyConsent) return toast("请先同意用于本次分析");
+    const variant = BODY_VARIANTS[Math.floor(Math.random() * BODY_VARIANTS.length)];
+    state.bodyAnalysis = { ...variant, applied: false };
+    save();
+    render();
+    toast("分析完成，仅作训练重点参考");
+  },
+
+  applyBodyAnalysis() {
+    const analysis = state.bodyAnalysis;
+    if (!analysis) return;
+    state.plan.version += 1;
+    state.plan.days.forEach((day) => {
+      day.exercises.forEach((exercise) => {
+        const muscle = EX[exercise.slug] ? EX[exercise.slug].muscle : "";
+        if (analysis.focus.includes(muscle)) {
+          exercise.sets = Math.min(6, exercise.sets + 1);
+        }
+      });
+    });
+    analysis.applied = true;
+    state.screen = "tabs";
+    state.tab = "profile";
+    save();
+    render();
+    toast("已应用体型分析：重点部位增加训练量");
+  },
+
   mockHealth() {
     toast("预览版不接 HealthKit；真实 App 会读取体重并写入训练");
   },
@@ -1863,7 +2254,7 @@ const previewParams = new URLSearchParams(location.search);
 if (previewParams.has("tab") || previewParams.has("screen") || previewParams.get("demo") === "1") {
   if (!state.onboarded) {
     state.profile = { ...DEFAULT_PROFILE };
-    state.plan = buildPlan(state.profile);
+    state.plan = applyEquipmentLibrary(buildPlan(state.profile));
     state.onboarded = true;
   }
   state.screen = previewParams.has("screen") ? previewParams.get("screen") : "tabs";
