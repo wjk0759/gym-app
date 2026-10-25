@@ -60,14 +60,9 @@ final class AppStore {
 
         Task { @MainActor in
             let granted = await NotificationScheduler.shared.requestAuthorization()
-            guard granted else { return }
-            let count = await NotificationScheduler.shared.schedule(
-                plan: self.plan,
-                hour: self.reminderHour,
-                minute: self.reminderMinute
-            )
-            self.notificationsEnabled = count > 0
+            self.notificationsEnabled = granted
             self.persist()
+            self.rescheduleNotifications()
         }
     }
 
@@ -262,7 +257,7 @@ final class AppStore {
             hour: hour,
             minute: minute
         )
-        notificationsEnabled = count > 0
+        notificationsEnabled = granted
         persist()
         return count
     }

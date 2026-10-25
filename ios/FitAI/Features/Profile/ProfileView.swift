@@ -238,6 +238,8 @@ struct ProfileView: View {
             let count = await store.enableReminders(hour: hour, minute: minute)
             if count > 0 {
                 message = "已为 \(count) 个训练日设置 \(String(format: "%02d:%02d", hour, minute)) 的提醒。"
+            } else if store.notificationsEnabled {
+                message = "通知权限已开启，但当前还没有训练计划。生成计划后会自动安排提醒。"
             } else {
                 message = "没有获得通知权限。请到「设置 → 通知 → 练途」中开启。"
             }
