@@ -48,7 +48,7 @@ struct HomeView: View {
                 WorkoutDetailView(session: session)
             }
             .confirmationDialog(
-                "让 AI 复盘最近 7 天？",
+                "用本周训练复盘并调整？",
                 isPresented: $showAdjustConfirm,
                 titleVisibility: .visible
             ) {
@@ -58,7 +58,7 @@ struct HomeView: View {
                 }
                 Button("取消", role: .cancel) {}
             } message: {
-                Text("会参考本周完成率调整组数或重量，生成一个新版本，当前计划会被替换。")
+                Text("\(store.planAdjustmentPreview.detail)\n\n会生成一个新版本，当前计划会被替换，历史版本保留。")
             }
             .alert("计划已调整", isPresented: $showAdjustResult) {
                 Button("知道了", role: .cancel) {}
@@ -336,7 +336,11 @@ struct HomeView: View {
     }
 
     private func aiReviewCard(plan: TrainingPlan) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let preview = store.planAdjustmentPreview
+        let completed = store.currentWeekSessions.count
+        let averageRPE = store.currentWeekAverageRPE
+
+        return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("AI 复盘")
@@ -355,9 +359,19 @@ struct HomeView: View {
                     .foregroundStyle(Theme.accent)
             }
 
-            Text("完成率 \(Int(store.weeklyCompletion * 100))%。AI 会按完成率和负荷趋势调整下一版。")
+            HStack(spacing: 8) {
+                reviewMetric("本周完成", "\(completed)/\(max(1, store.profile.weeklyDays)) 次")
+                reviewMetric("平均 RPE", averageRPE > 0 ? averageRPE.formatted(.number.precision(.fractionLength(1))) : "—")
+                reviewMetric("训练容量", "\(Int(store.currentWeekVolume)) kg")
+            }
+
+            Text(completed == 0 ? "先记录一次训练，复盘才有数据。" : "这次复盘：\(preview.headline)")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white)
+            Text(completed == 0 ? "完成率、平均 RPE 与训练容量会一起参与判断。" : preview.detail)
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
 
             Button {
                 if store.currentWeekSessions.isEmpty {
@@ -379,6 +393,24 @@ struct HomeView: View {
             .buttonStyle(.plain)
         }
         .card()
+    }
+
+    private func reviewMetric(_ title: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(Theme.tertiaryText)
+            Text(value)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 7)
+        .padding(.horizontal, 8)
+        .background(
+            Theme.surfaceStrong,
+            in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+        )
     }
 
     // MARK: - 最近训练

@@ -9,6 +9,7 @@ final class AppStore {
     var sessions: [WorkoutSession] = []
     var chat: [ChatMessage] = []
     var foodLogs: [FoodLog] = []
+    var customFoods: [FoodItem] = []
     var dislikedSlugs: Set<String> = []
     var equipmentLibrary: [EquipmentItem] = []
     var bodyAnalyses: [BodyAnalysis] = []
@@ -139,6 +140,24 @@ final class AppStore {
         return recentSets.reduce(0.0) { $0 + $1.rpe } / Double(recentSets.count)
     }
 
+    /// 本周 RPE，和“本周完成率”使用同一个时间窗口，复盘时更一致。
+    var currentWeekAverageRPE: Double {
+        let sets = currentWeekSessions.prefix(3).flatMap { $0.sets }.filter { $0.completed }
+        guard !sets.isEmpty else { return 0 }
+        return sets.reduce(0.0) { $0 + $1.rpe } / Double(sets.count)
+    }
+
+    var currentWeekVolume: Double {
+        currentWeekSessions.reduce(0) { $0 + $1.volume }
+    }
+
+    var planAdjustmentPreview: PlanGenerator.Adjustment {
+        PlanGenerator.adjustment(
+            completionRate: weeklyCompletion,
+            averageRPE: currentWeekAverageRPE
+        )
+    }
+
     var equipmentSlugsForPlan: [String] {
         guard useEquipmentLibraryForPlans else { return [] }
         return equipmentLibrary.compactMap(\.slug)
@@ -243,7 +262,7 @@ final class AppStore {
             plan: current,
             profile: profile,
             completionRate: weeklyCompletion,
-            averageRPE: recentAverageRPE
+            averageRPE: currentWeekAverageRPE
         )
         archiveCurrentPlan()
         plan = result.plan
@@ -431,6 +450,12 @@ final class AppStore {
         persist()
     }
 
+    func addCustomFood(_ food: FoodItem) {
+        customFoods.removeAll { $0.name == food.name }
+        customFoods.insert(food, at: 0)
+        persist()
+    }
+
     func removeFoodLog(_ id: UUID) {
         foodLogs.removeAll { $0.id == id }
         persist()
@@ -517,6 +542,7 @@ final class AppStore {
         sessions = []
         chat = []
         foodLogs = []
+        customFoods = []
         dislikedSlugs = []
         notificationsEnabled = false
         useRemoteAI = AppConfig.useRemoteAI
@@ -588,6 +614,7 @@ final class AppStore {
         var sessions: [WorkoutSession]
         var chat: [ChatMessage]
         var foodLogs: [FoodLog]?
+        var customFoods: [FoodItem]?
         var dislikedSlugs: [String]?
         var reminderHour: Int
         var reminderMinute: Int
@@ -611,6 +638,7 @@ final class AppStore {
         sessions = state.sessions
         chat = state.chat
         foodLogs = state.foodLogs ?? []
+        customFoods = state.customFoods ?? []
         dislikedSlugs = Set(state.dislikedSlugs ?? [])
         reminderHour = state.reminderHour
         reminderMinute = state.reminderMinute
@@ -630,6 +658,7 @@ final class AppStore {
             sessions: sessions,
             chat: chat,
             foodLogs: foodLogs,
+            customFoods: customFoods,
             dislikedSlugs: Array(dislikedSlugs).sorted(),
             reminderHour: reminderHour,
             reminderMinute: reminderMinute,
@@ -661,6 +690,7 @@ final class AppStore {
             sessions: sessions,
             chat: chat,
             foodLogs: foodLogs,
+            customFoods: customFoods,
             dislikedSlugs: Array(dislikedSlugs).sorted(),
             healthKitEnabled: healthKitEnabled,
             bodyAnalyses: bodyAnalyses,
@@ -681,6 +711,7 @@ final class AppStore {
         let sessions: [WorkoutSession]
         let chat: [ChatMessage]
         let foodLogs: [FoodLog]
+        let customFoods: [FoodItem]
         let dislikedSlugs: [String]
         let healthKitEnabled: Bool
         let bodyAnalyses: [BodyAnalysis]

@@ -500,6 +500,15 @@ body {
 .metric .value { font-size: 15px; font-weight: 700; }
 .metric .label { font-size: 11px; color: var(--faint); margin-top: 2px; }
 
+.review-metric {
+  flex: 1;
+  min-width: 0;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--surface-strong);
+}
+.review-metric .small { margin-top: 2px; }
+
 .slider-row + .slider-row { margin-top: 13px; }
 .slider-row .between { margin-bottom: 2px; }
 

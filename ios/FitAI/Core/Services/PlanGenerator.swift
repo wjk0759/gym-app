@@ -1,6 +1,13 @@
 import Foundation
 
 enum PlanGenerator {
+    struct Adjustment {
+        let headline: String
+        let detail: String
+        let setsDelta: Int
+        let weightMultiplier: Double
+    }
+
     private struct GoalParams {
         let sets: Int
         let reps: String
@@ -131,6 +138,42 @@ enum PlanGenerator {
         )
     }
 
+    static func adjustment(
+        completionRate: Double,
+        averageRPE: Double
+    ) -> Adjustment {
+        if completionRate < 0.6 {
+            return Adjustment(
+                headline: "先把训练频率稳住",
+                detail: "最近完成率 \(Int(completionRate * 100))%，下版每个动作减少 1 组；先建立规律，不急着加重量。",
+                setsDelta: -1,
+                weightMultiplier: 1.0
+            )
+        }
+        if averageRPE >= 9 {
+            return Adjustment(
+                headline: "负荷偏高，先降一点",
+                detail: "最近平均 RPE \(averageRPE.formatted(.number.precision(.fractionLength(1))))，下版主项重量下调 5%，把动作质量放在前面。",
+                setsDelta: 0,
+                weightMultiplier: 0.95
+            )
+        }
+        if completionRate >= 0.8, averageRPE > 0, averageRPE <= 8 {
+            return Adjustment(
+                headline: "可以小幅加负荷",
+                detail: "完成率 \(Int(completionRate * 100))%，平均 RPE \(averageRPE.formatted(.number.precision(.fractionLength(1))))，下版主项重量上调 2.5%。",
+                setsDelta: 0,
+                weightMultiplier: 1.025
+            )
+        }
+        return Adjustment(
+            headline: "保持当前负荷",
+            detail: "最近完成率 \(Int(completionRate * 100))%，这版先不改重量，优先把训练日补齐。",
+            setsDelta: 0,
+            weightMultiplier: 1.0
+        )
+    }
+
     static func adjusted(
         plan: TrainingPlan,
         profile: UserProfile,
@@ -143,22 +186,12 @@ enum PlanGenerator {
         newPlan.updatedAt = Date()
         newPlan.title = plan.title + " · 调整版"
 
-        let setsDelta: Int
-        let weightMultiplier: Double
-
-        if completionRate < 0.6 {
-            setsDelta = -1
-            weightMultiplier = 1.0
-        } else if averageRPE >= 9 {
-            setsDelta = 0
-            weightMultiplier = 0.95
-        } else if completionRate >= 0.8, averageRPE > 0, averageRPE <= 8 {
-            setsDelta = 0
-            weightMultiplier = 1.025
-        } else {
-            setsDelta = 0
-            weightMultiplier = 1.0
-        }
+        let change = adjustment(
+            completionRate: completionRate,
+            averageRPE: averageRPE
+        )
+        let setsDelta = change.setsDelta
+        let weightMultiplier = change.weightMultiplier
 
         newPlan.days = plan.days.map { day in
             var newDay = day
@@ -181,17 +214,7 @@ enum PlanGenerator {
             return newDay
         }
 
-        let message: String
-        if completionRate < 0.6 {
-            message = "最近完成率 \(Int(completionRate * 100))%，每个动作减少 1 组，先把规律建立起来。"
-        } else if averageRPE >= 9 {
-            message = "最近平均 RPE \(averageRPE.formatted(.number.precision(.fractionLength(1))))，负荷偏高，主项重量下调 5%。"
-        } else if completionRate >= 0.8, averageRPE > 0, averageRPE <= 8 {
-            message = "完成率 \(Int(completionRate * 100))%，平均 RPE \(averageRPE.formatted(.number.precision(.fractionLength(1))))，主项重量上调 2.5%。"
-        } else {
-            message = "最近完成率 \(Int(completionRate * 100))%，本周保持负荷，优先补齐训练日。"
-        }
-        return (newPlan, message)
+        return (newPlan, change.detail)
     }
 
     // MARK: - 内部规则

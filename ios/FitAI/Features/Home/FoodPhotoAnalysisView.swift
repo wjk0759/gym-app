@@ -108,6 +108,10 @@ struct FoodPhotoAnalysisView: View {
                 .font(.subheadline)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
+            Text("螺蛳粉、火锅、奶茶也可以识别。这里只估算热量，不评价食物好坏。")
+                .font(.caption)
+                .foregroundStyle(Theme.accent)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

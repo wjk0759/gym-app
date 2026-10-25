@@ -30,6 +30,10 @@ const FOODS = [
   { name: "糙米饭", cat: "主食", kcal: 111, p: 2.6, c: 23, f: 0.9 },
   { name: "红薯", cat: "主食", kcal: 86, p: 1.6, c: 20.1, f: 0.1 },
   { name: "全麦面包", cat: "主食", kcal: 247, p: 13, c: 41, f: 3.4 },
+  { name: "包子", cat: "主食", kcal: 220, p: 8, c: 30, f: 7, serving: 100 },
+  { name: "饺子", cat: "主食", kcal: 240, p: 9, c: 30, f: 9, serving: 200 },
+  { name: "炒饭", cat: "主食", kcal: 180, p: 5, c: 28, f: 6, serving: 300 },
+  { name: "便利店饭团", cat: "主食", kcal: 180, p: 6, c: 30, f: 4, serving: 120 },
   { name: "鸡胸肉", cat: "蛋白质", kcal: 133, p: 24, c: 0, f: 5 },
   { name: "鸡蛋", cat: "蛋白质", kcal: 143, p: 13, c: 1, f: 10 },
   { name: "牛肉", cat: "蛋白质", kcal: 125, p: 20, c: 0, f: 5 },
@@ -46,8 +50,31 @@ const FOODS = [
   { name: "蓝莓", cat: "水果", kcal: 57, p: 0.7, c: 14, f: 0.3 },
   { name: "坚果", cat: "脂肪", kcal: 600, p: 20, c: 20, f: 50 },
   { name: "橄榄油", cat: "脂肪", kcal: 884, p: 0, c: 0, f: 100 },
-  { name: "拿铁", cat: "饮品", kcal: 60, p: 3, c: 5, f: 3 }
+  { name: "拿铁", cat: "饮品", kcal: 60, p: 3, c: 5, f: 3, serving: 350 },
+  { name: "可乐", cat: "饮品", kcal: 42, p: 0, c: 10.6, f: 0, serving: 500 },
+  { name: "奶茶", cat: "饮品", kcal: 70, p: 1, c: 12, f: 2.3, serving: 500 },
+  { name: "螺蛳粉", cat: "外食", kcal: 125, p: 5.5, c: 18.5, f: 3.5, serving: 600 },
+  { name: "桂林米粉", cat: "外食", kcal: 130, p: 6, c: 20, f: 3.5, serving: 500 },
+  { name: "兰州拉面", cat: "外食", kcal: 110, p: 5, c: 18, f: 2.5, serving: 550 },
+  { name: "酸辣粉", cat: "外食", kcal: 140, p: 4, c: 22, f: 4.5, serving: 500 },
+  { name: "凉皮", cat: "外食", kcal: 150, p: 4, c: 25, f: 4, serving: 350 },
+  { name: "牛肉面", cat: "外食", kcal: 110, p: 6, c: 16, f: 3, serving: 550 },
+  { name: "麻辣烫", cat: "外食", kcal: 120, p: 6, c: 10, f: 6, serving: 500 },
+  { name: "麻辣香锅", cat: "外食", kcal: 180, p: 8, c: 10, f: 12, serving: 400 },
+  { name: "火锅", cat: "外食", kcal: 160, p: 9, c: 8, f: 10, serving: 500 },
+  { name: "烧烤", cat: "外食", kcal: 250, p: 18, c: 2, f: 19, serving: 300 },
+  { name: "炸鸡", cat: "外食", kcal: 280, p: 18, c: 10, f: 18, serving: 200 },
+  { name: "汉堡", cat: "外食", kcal: 250, p: 12, c: 26, f: 11, serving: 220 },
+  { name: "薯条", cat: "外食", kcal: 312, p: 3.4, c: 41, f: 15, serving: 120 },
+  { name: "煎饼果子", cat: "外食", kcal: 220, p: 8, c: 28, f: 8, serving: 250 },
+  { name: "肉夹馍", cat: "外食", kcal: 260, p: 12, c: 27, f: 11, serving: 200 },
+  { name: "小笼包", cat: "外食", kcal: 230, p: 10, c: 25, f: 10, serving: 180 },
+  { name: "蛋糕", cat: "甜点", kcal: 350, p: 5, c: 45, f: 17, serving: 100 }
 ];
+
+function allFoods() {
+  return [...(state.customFoods || []), ...FOODS];
+}
 
 const ICONS = {
   home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg>',
@@ -238,6 +265,8 @@ function normalizeState(value) {
   next.foodPhotoItems = [];
   next.foodPhotoConfidence = 0;
   next.foodPhotoModel = "";
+  next.customFoods = Array.isArray(next.customFoods) ? next.customFoods : [];
+  next.foodCustomDraft = null;
   next.equipSearchQuery = "";
   next.equipPhotoSource = next.equipPhotoSource || "拍照";
   next.authenticated = !!next.authenticated;
@@ -270,6 +299,8 @@ function initialState() {
     chats: [],
     coachSkill: "trainer",
     foodLogs: demoLogs(),
+    customFoods: [],
+    foodCustomDraft: null,
     disliked: [],
     selectedWeek: 1,
     planDayId: null,
@@ -361,6 +392,60 @@ function toast(message) {
 
 function todayDay() {
   return state.plan.days.find((day) => day.week === 1) || state.plan.days[0];
+}
+
+function planAdjustmentPreview() {
+  const completed = state.sessions.filter((session) => session.thisWeek).length;
+  const completionRate = Math.min(1, completed / Math.max(1, state.profile.weeklyDays));
+  const targetRPEs = state.plan.days.flatMap((day) =>
+    day.exercises.map((exercise) => Number(exercise.rpe) || 0)
+  ).filter((value) => value > 0);
+  const averageRPE = targetRPEs.length
+    ? targetRPEs.reduce((sum, value) => sum + value, 0) / targetRPEs.length
+    : 0;
+
+  if (completionRate < 0.6) {
+    return {
+      completed,
+      completionRate,
+      averageRPE,
+      headline: "先把训练频率稳住",
+      detail: `最近完成率 ${Math.round(completionRate * 100)}%，下版每个动作减少 1 组；先建立规律，不急着加重量。`,
+      setsDelta: -1,
+      weightMultiplier: 1
+    };
+  }
+  if (averageRPE >= 9) {
+    return {
+      completed,
+      completionRate,
+      averageRPE,
+      headline: "负荷偏高，先降一点",
+      detail: `最近平均 RPE ${averageRPE.toFixed(1)}，下版主项重量下调 5%，把动作质量放在前面。`,
+      setsDelta: 0,
+      weightMultiplier: 0.95
+    };
+  }
+  if (completionRate >= 0.8 && averageRPE > 0 && averageRPE <= 8) {
+    return {
+      completed,
+      completionRate,
+      averageRPE,
+      headline: "可以小幅加负荷",
+      detail: `完成率 ${Math.round(completionRate * 100)}%，平均 RPE ${averageRPE.toFixed(1)}，下版主项重量上调 2.5%。`,
+      setsDelta: 0,
+      weightMultiplier: 1.025
+    };
+  }
+  return {
+    completed,
+    completionRate,
+    averageRPE,
+    headline: "保持当前负荷",
+    detail: `最近完成率 ${Math.round(completionRate * 100)}%，这版先不改重量，优先把训练日补齐。`,
+    setsDelta: 0,
+    weightMultiplier: 1
+  };
 }
 
 function estimatedMinutes(day) {
@@ -750,6 +835,7 @@ function home() {
   const totals = nutritionTotals();
   const weekSessions = state.sessions.filter((s) => s.thisWeek).length;
   const ratio = Math.min(100, Math.round((weekSessions / Math.max(1, state.profile.weeklyDays)) * 100));
+  const preview = planAdjustmentPreview();
   const remainingKcal = Math.max(0, targets.kcal - Math.round(totals.kcal));
   const remainingProtein = Math.max(0, targets.protein - Math.round(totals.p));
 
@@ -798,7 +884,13 @@ function home() {
           </div>
           <span class="accent">↗</span>
         </div>
-        <div class="tiny muted" style="margin-top:10px">完成率 ${ratio}%。AI 会按完成率和负荷趋势调整下一版。</div>
+        <div class="row gap8" style="margin-top:10px">
+          <div class="review-metric"><div class="tiny faint">本周完成</div><div class="small strong">${weekSessions}/${Math.max(1, state.profile.weeklyDays)} 次</div></div>
+          <div class="review-metric"><div class="tiny faint">平均 RPE</div><div class="small strong">${preview.averageRPE ? preview.averageRPE.toFixed(1) : "—"}</div></div>
+          <div class="review-metric"><div class="tiny faint">训练容量</div><div class="small strong">${state.sessions.filter((s) => s.thisWeek).reduce((sum, s) => sum + s.volume, 0).toLocaleString()} kg</div></div>
+        </div>
+        <div class="small strong" style="margin-top:10px">${weekSessions ? `这次复盘：${preview.headline}` : "先记录一次训练，复盘才有数据。"}</div>
+        <div class="tiny muted" style="margin-top:4px;line-height:1.6">${weekSessions ? preview.detail : "完成率、平均 RPE 与训练容量会一起参与判断。"}</div>
         <button class="link" style="margin-top:10px" onclick="app.adjustPlan()">✦ 让 AI 复盘并调整 →</button>
       </div>
 
@@ -851,6 +943,7 @@ function home() {
 
 function planScreen() {
   const days = state.plan.days.filter((day) => day.week === state.selectedWeek);
+  const preview = planAdjustmentPreview();
   return `
     <div class="stack">
       <div class="between">
@@ -866,8 +959,9 @@ function planScreen() {
           <button class="link" style="color:var(--muted)" onclick="app.regeneratePlan()">重新生成</button>
         </div>
         <div class="h2" style="margin-top:9px">${state.plan.title}</div>
-        <div class="tiny muted" style="margin-top:4px">共 ${state.plan.days.length} 个训练日 · 当前第 ${state.selectedWeek} 周</div>
-        <button class="btn btn-primary" style="margin-top:12px" onclick="app.adjustPlan()">✦ AI 复盘并调整</button>
+        <div class="tiny muted" style="margin-top:4px">共 ${state.plan.days.length} 个训练日 · 当前第 ${state.selectedWeek} 周 · 本周完成 ${preview.completed}/${Math.max(1, state.profile.weeklyDays)}</div>
+        <div class="tiny accent" style="margin-top:8px;line-height:1.6">${preview.completed ? `复盘预告：${preview.detail}` : "完成一次训练后，这里会显示具体的复盘调整。"}</div>
+        <button class="btn btn-primary" style="margin-top:12px" onclick="app.adjustPlan()">✦ 复盘并调整</button>
       </div>
 
       <div class="week-tabs">
@@ -1743,7 +1837,7 @@ function nutritionScreen() {
           `;
         }).join("")}
 
-        ${state.foodLogs.length === 0 ? `<div class="tiny muted" style="margin-top:10px">还没有记录。记下吃了什么，才能知道离目标还差多少。</div>` : ""}
+        ${state.foodLogs.length === 0 ? `<div class="tiny muted" style="margin-top:10px">还没有记录。吃了什么就记什么，奶茶、火锅、螺蛳粉都可以。</div>` : ""}
         <button class="btn btn-secondary" style="margin-top:12px" onclick="app.openFoodAdd('${suggestedMealName()}')">＋ 添加食物</button>
       </div>
 
@@ -1758,6 +1852,7 @@ function nutritionScreen() {
       </div>
 
       <div class="h3" style="padding-top:4px">建议餐单</div>
+      <div class="tiny faint" style="line-height:1.6;margin-top:-4px">只是参考，不是必须照着吃；外食也可以正常记录。</div>
       ${[
         ["早餐", "燕麦 50g · 鸡蛋 2 个 · 无糖酸奶 150g", Math.round(targets.kcal * 0.25)],
         ["午餐", "糙米饭 150g · 鸡胸肉 150g · 西兰花 200g", Math.round(targets.kcal * 0.35)],
@@ -1773,7 +1868,7 @@ function nutritionScreen() {
       <div class="card">
         <div class="h3">附近外卖</div>
         <div class="tiny muted" style="margin-top:6px">美团联盟只提供活动/搜索跳转，不提供菜品营养数据。</div>
-        <button class="btn btn-secondary" style="margin-top:10px" onclick="app.mockMeituan()">在美团找轻食 ↗</button>
+        <button class="btn btn-secondary" style="margin-top:10px" onclick="app.mockMeituan()">在美团找外卖 ↗</button>
       </div>
 
       <div class="tiny faint" style="line-height:1.6">饮食建议为估算，不构成医疗或疾病饮食处方。孕期、术后、糖尿病、肾病等请咨询医生或营养师。</div>
@@ -1786,7 +1881,10 @@ const FOOD_PHOTO_COMBOS = [
   [["燕麦（干）", 60], ["鸡蛋", 100], ["牛奶", 250], ["香蕉", 100]],
   [["糙米饭", 150], ["三文鱼", 120], ["番茄", 80]],
   [["全麦面包", 80], ["鸡蛋", 100], ["香蕉", 100]],
-  [["米饭", 180], ["豆腐", 150], ["西兰花", 180]]
+  [["米饭", 180], ["豆腐", 150], ["西兰花", 180]],
+  [["螺蛳粉", 600], ["奶茶", 500]],
+  [["炸鸡", 200], ["可乐", 500]],
+  [["麻辣香锅", 400], ["米饭", 150]]
 ];
 
 function foodPhotoMockItems() {
@@ -1831,6 +1929,9 @@ function foodPhotoScreen() {
         <div class="h2">拍一张这餐的照片</div>
         <div class="tiny muted" style="margin-top:6px;line-height:1.6">
           自动估算热量和营养。照片只用于本次识别，不保存；结果可以修改后加入今日饮食。
+        </div>
+        <div class="tiny accent" style="margin-top:6px;line-height:1.6">
+          螺蛳粉、火锅、奶茶也可以识别。这里只估算热量，不评价食物好坏。
         </div>
       </div>
 
@@ -1892,7 +1993,7 @@ function foodPhotoScreen() {
                   <span class="tiny accent" id="food-photo-kcal-${index}">${kcal} kcal</span>
                 </div>
                 <div class="row gap8" style="margin-top:8px">
-                  <input type="range" min="10" max="500" step="10" value="${item.grams}" oninput="app.foodPhotoGrams(${index}, this.value)" style="flex:1;accent-color:var(--accent)">
+                  <input type="range" min="10" max="2000" step="10" value="${item.grams}" oninput="app.foodPhotoGrams(${index}, this.value)" style="flex:1;accent-color:var(--accent)">
                   <span class="tiny" id="food-photo-grams-${index}" style="width:52px;text-align:right">${item.grams} g</span>
                 </div>
                 <div class="tiny faint" id="food-photo-macros-${index}">P ${p}g · C ${c}g · F ${f}g</div>
@@ -1928,7 +2029,10 @@ function foodPhotoScreen() {
 
 function foodAddScreen() {
   const draft = state.foodDraft;
-  const selected = draft.selected ? FOODS.find((food) => food.name === draft.selected) : null;
+  const selected = draft.selected ? allFoods().find((food) => food.name === draft.selected) : null;
+  const manualLabel = draft.query.trim()
+    ? `找不到？手动添加「${esc(draft.query.trim())}」`
+    : "找不到？手动添加食物";
   return `
     <div class="stack">
       ${headerBack("记录食物", "app.go('nutrition')")}
@@ -1938,18 +2042,15 @@ function foodAddScreen() {
         `).join("")}
       </div>
 
-      <input type="text" id="food-search" placeholder="搜索食物，例如：鸡胸肉、米饭" value="${esc(draft.query)}" oninput="app.foodQuery(this.value)">
-
-      <div id="food-results">
-        ${foodResults(draft.query)}
-      </div>
+      <input type="text" id="food-search" placeholder="搜索食物，例如：螺蛳粉、奶茶、鸡胸肉" value="${esc(draft.query)}" oninput="app.foodQuery(this.value)">
+      <div class="tiny faint" style="line-height:1.6">记录是为了了解，不是为了给食物打分。奶茶、火锅、螺蛳粉都可以记。</div>
 
       ${selected ? `
         <div class="card">
           <div class="between">
             <div>
-              <div class="h3">${selected.name}</div>
-              <div class="tiny muted">每 100g · ${selected.kcal} kcal</div>
+              <div class="h3">${esc(selected.name)}</div>
+              <div class="tiny muted">${selected.serving ? `常用份量约 ${selected.serving}g · ` : ""}每 100g · ${selected.kcal} kcal</div>
             </div>
             <button class="link" onclick="app.clearFoodSelection()">重新选择</button>
           </div>
@@ -1958,27 +2059,80 @@ function foodAddScreen() {
               <span class="small muted">份量</span>
               <span class="small strong" id="food-grams-label">${draft.grams} g</span>
             </div>
-            <input type="range" min="10" max="500" step="10" value="${draft.grams}" oninput="app.foodGrams(this.value)">
+            <input type="range" min="10" max="2000" step="10" value="${draft.grams}" oninput="app.foodGrams(this.value)">
           </div>
-          <div class="macro-grid" style="margin-top:10px">
+          <div class="macro-grid" style="margin-top:10px;grid-template-columns:repeat(4,1fr)">
             <div class="macro"><div class="label">热量</div><div class="value" id="food-kcal">${Math.round(selected.kcal * draft.grams / 100)}</div></div>
             <div class="macro"><div class="label">蛋白质</div><div class="value" id="food-p">${Math.round(selected.p * draft.grams / 100)}g</div></div>
             <div class="macro"><div class="label">碳水</div><div class="value" id="food-c">${Math.round(selected.c * draft.grams / 100)}g</div></div>
+            <div class="macro"><div class="label">脂肪</div><div class="value" id="food-f">${Math.round(selected.f * draft.grams / 100)}g</div></div>
           </div>
           <button class="btn btn-primary" style="margin-top:12px" onclick="app.addFood()">添加到${draft.meal}</button>
         </div>
-      ` : ""}
+      ` : `
+        <div id="food-results">
+          ${foodResults(draft.query)}
+        </div>
+        <button class="btn btn-secondary" onclick="app.openFoodCustom()">${manualLabel}</button>
+      `}
+    </div>
+  `;
+}
+
+function foodCustomScreen() {
+  const draft = state.foodCustomDraft;
+  if (!draft) return foodAddScreen();
+  return `
+    <div class="stack">
+      ${headerBack("手动添加食物", "app.closeFoodCustom()")}
+      <div class="card">
+        <div class="h3">按你实际吃的一份填写</div>
+        <div class="tiny muted" style="margin-top:6px;line-height:1.6">不知道蛋白质、碳水或脂肪可以留空。先记下热量也可以，之后还能补充。</div>
+      </div>
+
+      <div class="card">
+        <div class="form-label">食物名称</div>
+        <input type="text" value="${esc(draft.name)}" placeholder="例如：螺蛳粉" oninput="app.foodCustomInput('name', this.value)">
+
+        <div class="form-label" style="margin-top:14px">这一份重量（g）</div>
+        <input type="text" inputmode="decimal" value="${esc(draft.portion)}" placeholder="例如：600" oninput="app.foodCustomInput('portion', this.value)">
+        <div class="tiny faint" style="margin-top:6px">如果吃的是一整碗/一整份，填整份重量。螺蛳粉通常约 500–700g。</div>
+      </div>
+
+      <div class="card">
+        <div class="between">
+          <div class="h3">这一份的营养素</div>
+          <div class="tiny faint">可选</div>
+        </div>
+        <div class="form-label" style="margin-top:12px">热量（kcal）</div>
+        <input type="text" inputmode="decimal" value="${esc(draft.kcal)}" placeholder="例如：750" oninput="app.foodCustomInput('kcal', this.value)">
+        <div class="form-label" style="margin-top:12px">蛋白质（g）</div>
+        <input type="text" inputmode="decimal" value="${esc(draft.p)}" placeholder="可选" oninput="app.foodCustomInput('p', this.value)">
+        <div class="row gap8" style="margin-top:12px">
+          <div style="flex:1"><div class="form-label">碳水（g）</div><input type="text" inputmode="decimal" value="${esc(draft.c)}" placeholder="可选" oninput="app.foodCustomInput('c', this.value)"></div>
+          <div style="flex:1"><div class="form-label">脂肪（g）</div><input type="text" inputmode="decimal" value="${esc(draft.f)}" placeholder="可选" oninput="app.foodCustomInput('f', this.value)"></div>
+        </div>
+        <div class="tiny faint" style="margin-top:8px">会按“这一份”换算成每 100g 保存，下次搜索时可以直接复用。</div>
+      </div>
+
+      <button class="btn btn-primary" onclick="app.saveFoodCustom()">保存并选择</button>
+      <div class="tiny faint center" style="line-height:1.6">没有“好食物/坏食物”。记录只是帮你了解今天吃了什么。</div>
     </div>
   `;
 }
 
 function foodResults(query) {
-  const list = FOODS.filter((food) => !query || food.name.includes(query) || food.cat.includes(query)).slice(0, 12);
+  const list = allFoods()
+    .filter((food) => !query || food.name.includes(query) || food.cat.includes(query))
+    .slice(0, 30);
+  if (!list.length) {
+    return `<div class="tiny muted" style="padding:22px 12px;text-align:center">没有匹配的食物，直接手动添加就好。</div>`;
+  }
   return list.map((food) => `
-    <button class="food-item" onclick="app.selectFood('${food.name.replace(/'/g, "\\'")}')">
+    <button class="food-item" onclick="app.selectFood(decodeURIComponent('${encodeURIComponent(food.name)}'))">
       <div>
-        <div class="small strong">${food.name}</div>
-        <div class="tiny faint">${food.cat} · 每 100g</div>
+        <div class="small strong">${esc(food.name)}</div>
+        <div class="tiny faint">${food.cat} · ${food.serving ? `常用 ${food.serving}g · ` : ""}每 100g</div>
       </div>
       <div style="text-align:right">
         <div class="tiny accent">${food.kcal} kcal</div>
@@ -2312,6 +2466,7 @@ function render() {
   } else if (state.screen === "planDay") html = planDayScreen();
   else if (state.screen === "nutrition") html = nutritionScreen();
   else if (state.screen === "foodAdd") html = foodAddScreen();
+  else if (state.screen === "foodCustom") html = foodCustomScreen();
   else if (state.screen === "foodPhoto") html = foodPhotoScreen();
   else if (state.screen === "paywall") html = paywallScreen();
   else if (state.screen === "profileEdit") html = profileEditScreen();
@@ -2677,7 +2832,8 @@ window.app = {
   },
 
   back() {
-    if (state.screen === "foodAdd") state.screen = "nutrition";
+    if (state.screen === "foodCustom") { state.foodCustomDraft = null; state.screen = "foodAdd"; }
+    else if (state.screen === "foodAdd") state.screen = "nutrition";
     else if (state.screen === "planDay") { state.screen = "tabs"; state.tab = "plan"; }
     else if (state.screen === "paywall") { state.screen = "tabs"; state.tab = "profile"; }
     else if (state.screen === "sessionDetail") { state.screen = "tabs"; state.tab = "home"; }
@@ -2763,18 +2919,27 @@ window.app = {
   },
 
   adjustPlan() {
-    const weekSessions = state.sessions.filter((item) => item.thisWeek).length;
-    const ratio = Math.round((weekSessions / Math.max(1, state.profile.weeklyDays)) * 100);
+    const preview = planAdjustmentPreview();
+    if (!preview.completed) {
+      return toast("先完成一次训练，复盘才有数据");
+    }
     state.plan.version += 1;
     state.plan.days.forEach((day) => {
       day.exercises.forEach((exercise) => {
-        if (ratio < 60) exercise.sets = Math.max(2, exercise.sets - 1);
-        else if (ratio >= 80 && exercise.weight > 0) exercise.weight = roundHalf(exercise.weight * 1.025 + 0.5);
+        if (preview.setsDelta) {
+          exercise.sets = Math.max(2, exercise.sets + preview.setsDelta);
+        }
+        if (preview.weightMultiplier !== 1 && exercise.weight > 0) {
+          const adjusted = roundHalf(exercise.weight * preview.weightMultiplier);
+          exercise.weight = preview.weightMultiplier > 1
+            ? Math.max(adjusted, exercise.weight + 0.5)
+            : Math.max(0, Math.min(adjusted, exercise.weight - 0.5));
+        }
       });
     });
     save();
     render();
-    toast(`AI 复盘完成：完成率 ${ratio}%，已生成第 ${state.plan.version} 版`);
+    toast(`复盘完成：${preview.detail} 已生成第 ${state.plan.version} 版`);
   },
 
   startWorkout() {
@@ -3106,8 +3271,9 @@ window.app = {
   },
 
   selectFood(name) {
+    const food = allFoods().find((item) => item.name === name);
     state.foodDraft.selected = name;
-    state.foodDraft.grams = 100;
+    state.foodDraft.grams = food && food.serving ? food.serving : 100;
     save();
     render();
   },
@@ -3121,7 +3287,7 @@ window.app = {
   foodGrams(value) {
     const grams = Number(value);
     state.foodDraft.grams = grams;
-    const food = FOODS.find((item) => item.name === state.foodDraft.selected);
+    const food = allFoods().find((item) => item.name === state.foodDraft.selected);
     const label = document.getElementById("food-grams-label");
     const kcal = document.getElementById("food-kcal");
     const protein = document.getElementById("food-p");
@@ -3137,7 +3303,7 @@ window.app = {
 
   addFood() {
     const draft = state.foodDraft;
-    const food = FOODS.find((item) => item.name === draft.selected);
+    const food = allFoods().find((item) => item.name === draft.selected);
     if (!food) return toast("先选择一个食物");
     const factor = draft.grams / 100;
     state.foodLogs.push({
@@ -3162,6 +3328,65 @@ window.app = {
     save();
     render();
     toast("已删除记录");
+  },
+
+  openFoodCustom() {
+    state.foodCustomDraft = {
+      name: state.foodDraft.query.trim(),
+      portion: "100",
+      kcal: "",
+      p: "",
+      c: "",
+      f: ""
+    };
+    state.screen = "foodCustom";
+    save();
+    render();
+  },
+
+  closeFoodCustom() {
+    state.foodCustomDraft = null;
+    state.screen = "foodAdd";
+    save();
+    render();
+  },
+
+  foodCustomInput(key, value) {
+    if (!state.foodCustomDraft) return;
+    state.foodCustomDraft[key] = value;
+    save();
+  },
+
+  saveFoodCustom() {
+    const draft = state.foodCustomDraft;
+    if (!draft) return;
+    const name = (draft.name || "").trim();
+    const portion = Number(String(draft.portion).replace(",", "."));
+    const kcalText = String(draft.kcal || "").trim();
+    const kcal = Number(kcalText.replace(",", "."));
+    if (!name) return toast("先填写食物名称");
+    if (!Number.isFinite(portion) || portion <= 0) return toast("填写这一份的重量");
+    if (!kcalText || !Number.isFinite(kcal) || kcal < 0) return toast("先填写这一份的热量，估算也可以");
+
+    const factor = 100 / portion;
+    const food = {
+      name,
+      cat: "自定义",
+      kcal: kcal * factor,
+      p: (Number(draft.p) || 0) * factor,
+      c: (Number(draft.c) || 0) * factor,
+      f: (Number(draft.f) || 0) * factor,
+      serving: portion
+    };
+    state.customFoods = [food, ...(state.customFoods || []).filter((item) => item.name !== name)];
+    state.foodDraft.query = name;
+    state.foodDraft.selected = name;
+    state.foodDraft.grams = portion;
+    state.foodCustomDraft = null;
+    state.screen = "foodAdd";
+    save();
+    render();
+    toast("已保存，下次可以直接搜索这个食物");
   },
 
   openFoodPhoto() {
@@ -3508,6 +3733,7 @@ window.app = {
       plan: state.plan,
       sessions: state.sessions,
       foodLogs: state.foodLogs,
+      customFoods: state.customFoods,
       chats: state.chats
     }, null, 2);
     const blob = new Blob([data], { type: "application/json" });

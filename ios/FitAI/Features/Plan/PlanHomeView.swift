@@ -72,7 +72,7 @@ struct PlanHomeView: View {
                 Text("当前计划会被归档，历史训练记录保留。")
             }
             .confirmationDialog(
-                "根据最近训练调整？",
+                "根据本周训练调整？",
                 isPresented: $showAdjust,
                 titleVisibility: .visible
             ) {
@@ -82,7 +82,7 @@ struct PlanHomeView: View {
                 }
                 Button("取消", role: .cancel) {}
             } message: {
-                Text("会生成一个新版本，并替换当前计划。历史训练记录保留。")
+                Text("\(store.planAdjustmentPreview.detail)\n\n会生成一个新版本，并替换当前计划；历史版本和训练记录保留。")
             }
             .alert("计划已更新", isPresented: $showMessage) {
                 Button("知道了", role: .cancel) {}
@@ -154,7 +154,10 @@ struct PlanHomeView: View {
     }
 
     private func headerCard(_ plan: TrainingPlan) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let preview = store.planAdjustmentPreview
+        let completed = store.currentWeekSessions.count
+
+        return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("当前计划")
                     .font(.caption.weight(.semibold))
@@ -172,9 +175,14 @@ struct PlanHomeView: View {
                 .font(.title3.weight(.bold))
                 .foregroundStyle(.white)
 
-            Text("共 \(plan.days.count) 个训练日 · 当前第 \(store.currentPlanWeek) 周")
+            Text("共 \(plan.days.count) 个训练日 · 当前第 \(store.currentPlanWeek) 周 · 本周完成 \(completed)/\(max(1, store.profile.weeklyDays))")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
+
+            Text(completed == 0 ? "完成一次训练后，这里会显示具体的复盘调整。" : "复盘预告：\(preview.detail)")
+                .font(.caption)
+                .foregroundStyle(completed == 0 ? Theme.tertiaryText : Theme.accent)
+                .fixedSize(horizontal: false, vertical: true)
 
             Button {
                 if store.currentWeekSessions.isEmpty {
@@ -184,7 +192,7 @@ struct PlanHomeView: View {
                     showAdjust = true
                 }
             } label: {
-                Label("AI 复盘并调整", systemImage: "wand.and.stars")
+                Label("复盘并调整", systemImage: "wand.and.stars")
             }
             .buttonStyle(PrimaryButtonStyle())
         }

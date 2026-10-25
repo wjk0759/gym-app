@@ -273,7 +273,7 @@ struct NutritionView: View {
         VStack(alignment: .leading, spacing: 3) {
             Text("建议餐单")
                 .font(.headline)
-            Text("按目标热量估算，可以替换成同类食物。")
+            Text("按目标热量估算，只是参考；外食、奶茶也可以正常记录。")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
         }
@@ -339,7 +339,7 @@ struct NutritionView: View {
             Button {
                 openMeituan()
             } label: {
-                Label(isOpening ? "正在打开…" : "在美团找轻食", systemImage: "arrow.up.right.square")
+                Label(isOpening ? "正在打开…" : "在美团找外卖", systemImage: "arrow.up.right.square")
             }
             .buttonStyle(SecondaryButtonStyle())
             .disabled(isOpening || !store.useRemoteAI)
@@ -371,7 +371,7 @@ struct NutritionView: View {
         isOpening = true
         Task { @MainActor in
             do {
-                if let url = try await APIClient.shared.meituanLink(keyword: "轻食") {
+                if let url = try await APIClient.shared.meituanLink(keyword: "美食") {
                     UIApplication.shared.open(url, options: [:], completionHandler: nil)
                 } else {
                     message = "暂时没有可用的外卖链接，请稍后再试。"
@@ -394,13 +394,19 @@ struct AddFoodView: View {
     @State private var query = ""
     @State private var selected: FoodItem?
     @State private var grams: Double = 100
+    @State private var showCustomFood = false
+    @State private var customInitialName = ""
 
     init(initialMeal: MealType) {
         _meal = State(initialValue: initialMeal)
     }
 
+    private var trimmedQuery: String {
+        query.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private var results: [FoodItem] {
-        Array(FoodLibrary.search(query).prefix(20))
+        Array(FoodLibrary.search(query, custom: store.customFoods).prefix(30))
     }
 
     var body: some View {
@@ -414,12 +420,17 @@ struct AddFoodView: View {
                     }
                     .pickerStyle(.segmented)
 
-                    TextField("搜索食物，例如：鸡胸肉、米饭", text: $query)
+                    TextField("搜索食物，例如：螺蛳粉、奶茶、鸡胸肉", text: $query)
                         .padding(12)
                         .background(
                             Theme.surfaceStrong,
                             in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                         )
+
+                    Text("记录是为了了解，不是为了给食物打分。奶茶、火锅、螺蛳粉都可以记。")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                        .fixedSize(horizontal: false, vertical: true)
 
                     if let food = selected {
                         selectedCard(food)
@@ -428,7 +439,7 @@ struct AddFoodView: View {
                             ForEach(results) { food in
                                 Button {
                                     selected = food
-                                    grams = 100
+                                    grams = food.servingGrams
                                 } label: {
                                     HStack {
                                         VStack(alignment: .leading, spacing: 3) {
@@ -460,6 +471,19 @@ struct AddFoodView: View {
                                 .buttonStyle(.plain)
                             }
                         }
+
+                        Button {
+                            customInitialName = trimmedQuery
+                            showCustomFood = true
+                        } label: {
+                            Label(
+                                trimmedQuery.isEmpty
+                                    ? "找不到？手动添加食物"
+                                    : "找不到？手动添加「\(trimmedQuery)」",
+                                systemImage: "square.and.pencil"
+                            )
+                        }
+                        .buttonStyle(SecondaryButtonStyle())
                     }
                 }
                 .padding(20)
@@ -473,6 +497,12 @@ struct AddFoodView: View {
                     Button("取消") { dismiss() }
                 }
             }
+            .sheet(isPresented: $showCustomFood) {
+                CustomFoodEntryView(initialName: customInitialName) { food in
+                    selected = food
+                    grams = food.servingGrams
+                }
+            }
         }
     }
 
@@ -484,9 +514,13 @@ struct AddFoodView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(food.name)
                         .font(.headline)
-                    Text("每 100g · \(Int(food.kcal)) kcal")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
+                    Text(
+                        food.defaultGrams.map {
+                            "常用份量约 \(Int($0))g · 每 100g \(Int(food.kcal)) kcal"
+                        } ?? "每 100g · \(Int(food.kcal)) kcal"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(Theme.secondaryText)
                 }
                 Spacer()
                 Button("重新选择") {
@@ -496,7 +530,7 @@ struct AddFoodView: View {
                 .foregroundStyle(Theme.accent)
             }
 
-            Stepper(value: $grams, in: 10...500, step: 10) {
+            Stepper(value: $grams, in: 10...2000, step: 10) {
                 HStack {
                     Text("份量")
                     Spacer()
@@ -546,5 +580,164 @@ struct AddFoodView: View {
             )
         )
         dismiss()
+    }
+}
+
+/// 记录“食物库里没有的东西”。不需要用户知道每 100g 的营养值，按实际吃的一份填写即可。
+struct CustomFoodEntryView: View {
+    @Environment(AppStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var name: String
+    @State private var portion = "100"
+    @State private var kcal = ""
+    @State private var protein = ""
+    @State private var carbs = ""
+    @State private var fat = ""
+    @State private var errorMessage: String?
+
+    private let onSave: (FoodItem) -> Void
+
+    init(initialName: String, onSave: @escaping (FoodItem) -> Void) {
+        _name = State(initialValue: initialName)
+        self.onSave = onSave
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("按你实际吃的一份填写")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                        Text("不知道蛋白质、碳水或脂肪可以留空。先记下热量也可以，之后还能补充。")
+                            .font(.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .card(padding: 16)
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("食物")
+                            .font(.headline)
+                        field("名称", text: $name, placeholder: "例如：螺蛳粉")
+                    }
+                    .card(padding: 16)
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("这一份")
+                            .font(.headline)
+                        field("重量（g）", text: $portion, placeholder: "例如：600", keyboard: .decimalPad)
+                        Text("如果吃的是一整碗/一整份，填整份重量。螺蛳粉通常约 500–700g。")
+                            .font(.caption2)
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                    .card(padding: 16)
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text("这一份的营养素")
+                                .font(.headline)
+                            Spacer()
+                            Text("可选")
+                                .font(.caption2)
+                                .foregroundStyle(Theme.tertiaryText)
+                        }
+                        field("热量（kcal）", text: $kcal, placeholder: "例如：750", keyboard: .decimalPad)
+                        HStack(spacing: 8) {
+                            field("蛋白质（g）", text: $protein, placeholder: "可选", keyboard: .decimalPad)
+                            field("碳水（g）", text: $carbs, placeholder: "可选", keyboard: .decimalPad)
+                            field("脂肪（g）", text: $fat, placeholder: "可选", keyboard: .decimalPad)
+                        }
+                        Text("这些数值会按“这一份”换算成每 100g 保存，下次搜索这个食物时可以直接复用。")
+                            .font(.caption2)
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                    .card(padding: 16)
+
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(.caption)
+                            .foregroundStyle(Theme.danger)
+                    }
+
+                    Button("保存并选择") {
+                        save()
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+
+                    Text("没有“好食物/坏食物”。记录只是帮你了解今天吃了什么。")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .padding(20)
+                .padding(.bottom, 20)
+            }
+            .background(AppBackground())
+            .navigationTitle("手动添加食物")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func field(
+        _ title: String,
+        text: Binding<String>,
+        placeholder: String,
+        keyboard: UIKeyboardType = .default
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(Theme.secondaryText)
+            TextField(placeholder, text: text)
+                .keyboardType(keyboard)
+                .textInputAutocapitalization(.never)
+                .padding(11)
+                .background(
+                    Theme.surfaceStrong,
+                    in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                )
+        }
+    }
+
+    private func save() {
+        let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanName.isEmpty else {
+            errorMessage = "先填写食物名称。"
+            return
+        }
+        guard let portionValue = number(portion), portionValue > 0 else {
+            errorMessage = "这一份的重量需要大于 0。"
+            return
+        }
+        guard let energy = number(kcal), energy >= 0 else {
+            errorMessage = "先填写这一份的热量，哪怕只是估算也可以。"
+            return
+        }
+
+        let factor = 100 / portionValue
+        let item = FoodItem(
+            name: cleanName,
+            category: "自定义",
+            kcal: energy * factor,
+            protein: (number(protein) ?? 0) * factor,
+            carbs: (number(carbs) ?? 0) * factor,
+            fat: (number(fat) ?? 0) * factor,
+            defaultGrams: portionValue
+        )
+        store.addCustomFood(item)
+        onSave(item)
+        dismiss()
+    }
+
+    private func number(_ value: String) -> Double? {
+        Double(value.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces))
     }
 }
