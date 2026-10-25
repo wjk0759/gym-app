@@ -20,6 +20,7 @@ xcuserdata/
 *.xccheckout
 *.moved-aside
 FitAI.xcodeproj/
+ios/test.log
 
 # 本地素材
 *.mp4
