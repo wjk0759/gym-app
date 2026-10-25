@@ -519,22 +519,24 @@ input[type="range"] {
   background: transparent;
 }
 
-input[type="text"], input[type="time"], input[type="number"], input[type="tel"], input[type="password"] {
+input[type="text"], input[type="time"], input[type="number"], input[type="tel"], input[type="password"], textarea {
   width: 100%;
   border: 1px solid rgba(255, 255, 255, 0.08);
   outline: 0;
   border-radius: 12px;
   background: rgba(118, 118, 128, 0.16);
   color: var(--text);
+  font-family: inherit;
   padding: 11px 12px;
   font-size: 14px;
   font-family: inherit;
 }
 
-input[type="text"]::placeholder, input[type="tel"]::placeholder, input[type="password"]::placeholder { color: var(--faint); }
-input[type="text"]:focus, input[type="time"]:focus, input[type="number"]:focus, input[type="tel"]:focus, input[type="password"]:focus {
+input[type="text"]::placeholder, input[type="tel"]::placeholder, input[type="password"]::placeholder, textarea::placeholder { color: var(--faint); }
+input[type="text"]:focus, input[type="time"]:focus, input[type="number"]:focus, input[type="tel"]:focus, input[type="password"]:focus, textarea:focus {
   border-color: rgba(92, 219, 140, 0.5);
 }
+textarea { min-height: 72px; resize: vertical; padding: 11px 12px; line-height: 1.5; }
 
 input[type="number"] { -moz-appearance: textfield; }
 input[type="number"]::-webkit-outer-spin-button,

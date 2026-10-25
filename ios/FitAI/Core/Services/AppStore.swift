@@ -299,6 +299,19 @@ final class AppStore {
         return nil
     }
 
+    /// 历史最佳组：先比较重量，再比较次数；自重动作按次数比较。
+    func bestSet(for slug: String) -> SetLog? {
+        sessions
+            .flatMap(\.sets)
+            .filter { $0.slug == slug && $0.completed }
+            .max { left, right in
+                if left.weightKG != right.weightKG {
+                    return left.weightKG < right.weightKG
+                }
+                return left.reps < right.reps
+            }
+    }
+
     func updateDay(_ day: PlanDay) {
         guard var current = plan,
               let index = current.days.firstIndex(where: { $0.id == day.id }) else {
@@ -404,11 +417,19 @@ final class AppStore {
 
     // MARK: - 训练与对话
 
-    func record(day: PlanDay, sets: [SetLog], durationMinutes: Int, feeling: Int) {
+    func record(
+        day: PlanDay,
+        sets: [SetLog],
+        durationMinutes: Int,
+        feeling: Int,
+        notes: String? = nil
+    ) {
+        let cleanNotes = notes?.trimmingCharacters(in: .whitespacesAndNewlines)
         let session = WorkoutSession(
             dayTitle: day.title,
             durationMinutes: durationMinutes,
             feeling: feeling,
+            notes: (cleanNotes?.isEmpty ?? true) ? nil : cleanNotes,
             sets: sets
         )
         sessions.insert(session, at: 0)

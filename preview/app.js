@@ -919,7 +919,7 @@ function home() {
       <div class="card">
         <div class="between" style="margin-bottom:6px">
           <div class="h3">最近训练</div>
-          <div class="tiny faint">共 ${state.sessions.length} 次</div>
+          <button class="link" onclick="app.openHistory()">全部 ${state.sessions.length} 次 →</button>
         </div>
         ${state.sessions.map((session) => `
           <div class="recent-row" onclick="app.openSession('${session.id}')">
@@ -2327,6 +2327,11 @@ function workoutSummary(day) {
         </div>
       </div>
 
+      <div class="card">
+        <div class="form-label">训练心得（可选）</div>
+        <textarea rows="3" placeholder="今天状态、动作感受、下次注意什么…" oninput="app.workoutNote(this.value)">${esc(workout.notes || "")}</textarea>
+      </div>
+
       <button class="btn btn-primary" onclick="app.finishWorkout()">保存并结束</button>
       <div class="tiny faint center">记录会用于下一次计划调整。</div>
     </div>
@@ -2358,6 +2363,8 @@ function sessionScreen() {
               </button>
             `).join("")}
           </div>
+          <div class="form-label" style="margin-top:12px">训练心得</div>
+          <textarea rows="3" onchange="app.sessionField('notes', this.value)" placeholder="今天状态、动作感受…">${esc(session.notes || "")}</textarea>
         </div>
 
         ${session.items.map((item, index) => `
@@ -2406,6 +2413,7 @@ function sessionScreen() {
           <div class="metric"><div class="value">${session.items.reduce((sum, item) => sum + item.sets, 0)}</div><div class="label">组数</div></div>
           <div class="metric"><div class="value">${Math.round(volume)}</div><div class="label">容量 kg</div></div>
         </div>
+        ${session.notes ? `<div class="tiny muted" style="margin-top:12px;line-height:1.6"><span class="accent">训练心得</span><br>${esc(session.notes)}</div>` : ""}
       </div>
       <div class="card">
         ${session.items.map((item) => `
@@ -2416,6 +2424,45 @@ function sessionScreen() {
         `).join("")}
       </div>
       <button class="btn btn-danger" onclick="app.deleteSession()">删除这条记录</button>
+    </div>
+  `;
+}
+
+/* ---------------- Workout history ---------------- */
+
+function historyScreen() {
+  const sessions = state.sessions;
+  const totalVolume = sessions.reduce((sum, session) => sum + session.volume, 0);
+  const totalMinutes = sessions.reduce((sum, session) => sum + session.duration, 0);
+  return `
+    <div class="stack">
+      ${headerBack("训练记录", "app.closeHistory()")}
+      <div class="card">
+        <div class="h2">训练数据</div>
+        <div class="row gap8" style="margin-top:12px">
+          <div class="metric"><div class="value">${sessions.length}</div><div class="label">训练次数</div></div>
+          <div class="metric"><div class="value">${Math.round(totalVolume).toLocaleString()}</div><div class="label">总容量 kg</div></div>
+          <div class="metric"><div class="value">${totalMinutes}</div><div class="label">总分钟</div></div>
+        </div>
+        <div class="tiny faint" style="margin-top:10px;line-height:1.6">训练容量 = 组数 × 重量 × 次数，用来观察长期趋势，不是训练好坏评分。</div>
+      </div>
+
+      <div class="card">
+        <div class="h3" style="margin-bottom:8px">全部训练</div>
+        ${sessions.length ? sessions.map((session) => `
+          <div class="recent-row" onclick="app.openSession('${session.id}')">
+            <div class="grow">
+              <div class="small strong">${session.title}</div>
+              <div class="tiny faint">${session.date}${session.notes ? " · 有心得" : ""}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="small accent" style="font-weight:650">${session.volume} kg</div>
+              <div class="tiny faint">${session.duration} 分钟</div>
+            </div>
+            <div class="faint">›</div>
+          </div>
+        `).join("") : `<div class="tiny muted" style="padding:10px 0">还没有训练记录。</div>`}
+      </div>
     </div>
   `;
 }
@@ -2473,6 +2520,7 @@ function render() {
   else if (state.screen === "settings") html = settingsScreen();
   else if (state.screen === "workout") html = workoutScreen();
   else if (state.screen === "sessionDetail") html = sessionScreen();
+  else if (state.screen === "history") html = historyScreen();
   else if (state.screen === "exerciseDetail") html = exerciseScreen();
   else if (state.screen === "equipmentAdd") html = equipmentScreen();
   else if (state.screen === "equipmentSearch") html = equipmentSearchScreen();
@@ -2834,6 +2882,7 @@ window.app = {
   back() {
     if (state.screen === "foodCustom") { state.foodCustomDraft = null; state.screen = "foodAdd"; }
     else if (state.screen === "foodAdd") state.screen = "nutrition";
+    else if (state.screen === "history") { state.screen = "tabs"; state.tab = "home"; }
     else if (state.screen === "planDay") { state.screen = "tabs"; state.tab = "plan"; }
     else if (state.screen === "paywall") { state.screen = "tabs"; state.tab = "profile"; }
     else if (state.screen === "sessionDetail") { state.screen = "tabs"; state.tab = "home"; }
@@ -2954,7 +3003,8 @@ window.app = {
       logs: [],
       rest: 0,
       startedAt: Date.now(),
-      feeling: 4
+      feeling: 4,
+      notes: ""
     };
     state.screen = "workout";
     save();
@@ -3027,6 +3077,11 @@ window.app = {
     toast("已记录训练感受");
   },
 
+  workoutNote(value) {
+    if (state.workout) state.workout.notes = value;
+    save();
+  },
+
   finishWorkout() {
     const workout = state.workout;
     if (!workout) return;
@@ -3045,6 +3100,7 @@ window.app = {
       duration: Math.max(1, Math.round((Date.now() - workout.startedAt) / 60000)),
       volume: Math.round(volume) || 1860,
       thisWeek: true,
+      notes: String(workout.notes || "").trim(),
       items
     });
     state.workout = null;
@@ -3061,6 +3117,19 @@ window.app = {
     if (!confirm("结束这次训练？已完成的组不会保存。")) return;
     state.workout = null;
     stopRestTimer();
+    state.screen = "tabs";
+    state.tab = "home";
+    save();
+    render();
+  },
+
+  openHistory() {
+    state.screen = "history";
+    save();
+    render();
+  },
+
+  closeHistory() {
     state.screen = "tabs";
     state.tab = "home";
     save();

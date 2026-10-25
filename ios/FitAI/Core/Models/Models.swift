@@ -300,6 +300,7 @@ struct WorkoutSession: Codable, Identifiable, Hashable {
     var dayTitle: String
     var durationMinutes: Int
     var feeling: Int
+    var notes: String? = nil
     var sets: [SetLog]
 
     var volume: Double {

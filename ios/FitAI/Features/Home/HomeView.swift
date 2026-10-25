@@ -422,9 +422,17 @@ struct HomeView: View {
                     .font(.headline)
                 Spacer()
                 if !store.sessions.isEmpty {
-                    Text("共 \(store.sessions.count) 次")
+                    NavigationLink {
+                        WorkoutHistoryView()
+                    } label: {
+                        HStack(spacing: 3) {
+                            Text("全部 \(store.sessions.count) 次")
+                            Image(systemName: "chevron.right")
+                                .font(.caption2.weight(.semibold))
+                        }
                         .font(.caption)
-                        .foregroundStyle(Theme.tertiaryText)
+                        .foregroundStyle(Theme.accent)
+                    }
                 }
             }
 

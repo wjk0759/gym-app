@@ -174,6 +174,19 @@ struct WorkoutDetailView: View {
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.white)
             }
+
+            if let notes = draft.notes, !notes.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("训练心得")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                    Text(notes)
+                        .font(.subheadline)
+                        .foregroundStyle(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.top, 2)
+            }
         }
         .card()
     }
@@ -205,9 +218,17 @@ struct WorkoutDetailView: View {
                         .foregroundStyle(Theme.secondaryText)
                 }
                 Spacer()
+                NavigationLink {
+                    ExerciseProgressView(slug: group.slug)
+                } label: {
+                    Label("历史", systemImage: "chart.xyaxis.line")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                }
                 Text("\(group.sets.count) 组")
                     .font(.caption)
                     .foregroundStyle(Theme.accent)
+                    .padding(.leading, 4)
             }
 
             ForEach(group.sets) { item in
@@ -280,6 +301,19 @@ struct WorkoutDetailView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("训练心得")
+                    .font(.caption)
+                    .foregroundStyle(Theme.secondaryText)
+                TextField("今天状态、动作感受、下次注意什么…", text: notesBinding, axis: .vertical)
+                    .lineLimit(2...5)
+                    .padding(11)
+                    .background(
+                        Theme.surfaceStrong,
+                        in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    )
             }
 
             HStack(spacing: 12) {
@@ -403,6 +437,13 @@ struct WorkoutDetailView: View {
     }
 
     // MARK: - 数据操作
+
+    private var notesBinding: Binding<String> {
+        Binding(
+            get: { draft.notes ?? "" },
+            set: { draft.notes = $0.isEmpty ? nil : $0 }
+        )
+    }
 
     private func setBinding(_ setID: UUID) -> Binding<SetLog>? {
         let fallback = SetLog(

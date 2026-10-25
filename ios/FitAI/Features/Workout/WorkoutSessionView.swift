@@ -15,6 +15,7 @@ struct WorkoutSessionView: View {
     @State private var rpe: Double = 7.5
     @State private var restRemaining: Int?
     @State private var feeling = 4
+    @State private var notes = ""
     @State private var startedAt = Date()
     @State private var showExitConfirm = false
     @State private var showEmptySaveAlert = false
@@ -171,6 +172,16 @@ struct WorkoutSessionView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "clock.arrow.circlepath")
                     Text("上次 \(last.weightKG > 0 ? "\(last.weightKG.formatted()) kg × \(last.reps)" : "自重 × \(last.reps)") · RPE \(last.rpe.formatted(.number.precision(.fractionLength(1))))")
+                }
+                .font(.caption2)
+                .foregroundStyle(Theme.tertiaryText)
+            }
+
+            if let best = store.bestSet(for: exercise.slug) {
+                HStack(spacing: 6) {
+                    Image(systemName: "crown.fill")
+                        .foregroundStyle(Theme.warning)
+                    Text("历史最佳 \(best.weightKG > 0 ? "\(best.weightKG.formatted()) kg × \(best.reps)" : "自重 × \(best.reps)")")
                 }
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
@@ -369,6 +380,19 @@ struct WorkoutSessionView: View {
                 }
             }
 
+            VStack(alignment: .leading, spacing: 6) {
+                Text("训练心得（可选）")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                TextField("今天状态、动作感受、下次注意什么…", text: $notes, axis: .vertical)
+                    .lineLimit(2...5)
+                    .padding(11)
+                    .background(
+                        Theme.surfaceStrong,
+                        in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    )
+            }
+
             Text("记录会用于下一次计划调整。至少完成一组再保存，AI 才能判断负荷。")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
@@ -455,7 +479,8 @@ struct WorkoutSessionView: View {
             day: day,
             sets: logs,
             durationMinutes: durationMinutes,
-            feeling: feeling
+            feeling: feeling,
+            notes: notes
         )
         dismiss()
     }
