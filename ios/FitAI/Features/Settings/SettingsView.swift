@@ -61,7 +61,7 @@ struct SettingsView: View {
         }
         .background(AppBackground())
         .navigationTitle("设置")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: syncReminder)
         .task {
             await checkService()

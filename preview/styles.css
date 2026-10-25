@@ -334,8 +334,7 @@ body {
  * 2. 中间内容独立滚动，不再把整页顶飞；
  * 3. 底部 tabbar / 固定操作条始终留在安全区。
  */
-.page-header,
-.page-head {
+.page-header {
   position: sticky;
   top: 0;
   z-index: 16;
@@ -354,16 +353,12 @@ body {
 }
 
 .page-header .row { min-height: 34px; }
-.page-head-home { padding-bottom: 12px; }
-.page-head .h1 { font-size: 29px; }
 
-.app.no-tabs .page-header,
-.app.no-tabs .page-head {
+.app.no-tabs .page-header {
   top: 0;
 }
 
-.app.camera-mode .page-header,
-.app.camera-mode .page-head {
+.app.camera-mode .page-header {
   position: static;
   margin: 0;
   padding: 0;
@@ -1100,12 +1095,40 @@ input[type="number"]::-webkit-inner-spin-button {
 /* ---------- equipment picker ---------- */
 
 .equipment-picker { padding-bottom: 100px; }
-.equipment-picker .h1 { font-size: 24px; }
 
 .muted-link { color: var(--muted); font-size: 12px; }
 
+.equipment-sticky-tools {
+  position: sticky;
+  top: 0;
+  z-index: 14;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 -20px;
+  padding: 8px 20px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(9, 10, 14, 0.99) 0%,
+      rgba(9, 10, 14, 0.97) 76%,
+      rgba(9, 10, 14, 0.94) 100%
+    );
+  backdrop-filter: blur(20px) saturate(135%);
+  -webkit-backdrop-filter: blur(20px) saturate(135%);
+}
+
+.equipment-tools-topline {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-height: 16px;
+}
+
 .equipment-search-scope {
-  margin-top: -6px;
+  margin-top: -2px;
   padding-left: 4px;
   color: var(--faint);
   font-size: 11px;
@@ -1440,9 +1463,6 @@ body.dragging-scroll * {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  position: sticky;
-  /* 预留器械页 sticky 标题的高度，避免肌群筛选贴到标题下面 */
-  top: 52px;
 }
 
 .muscle-item {

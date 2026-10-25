@@ -28,7 +28,7 @@ struct PlanHomeView: View {
             }
             .background(AppBackground())
             .navigationTitle("训练计划")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {

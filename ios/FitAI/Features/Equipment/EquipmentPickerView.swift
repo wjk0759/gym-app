@@ -56,27 +56,20 @@ struct EquipmentPickerView: View {
     }
 
     var body: some View {
-        AppScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                searchBar
+        VStack(spacing: 0) {
+            equipmentTools
 
-                if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    searchScopeHint
-                }
-
+            AppScrollView {
                 HStack(alignment: .top, spacing: 10) {
                     muscleRail
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        equipmentFilters
-                        exerciseGrid
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    exerciseGrid
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 28)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 28)
         }
         .background(AppBackground())
         .navigationTitle("选择动作")
@@ -112,6 +105,29 @@ struct EquipmentPickerView: View {
         }
         .overlay(alignment: .top) {
             feedbackBanner
+        }
+    }
+
+    /// 搜索与器械分类固定在顶部，滚动只发生在动作列表里。
+    private var equipmentTools: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            searchBar
+
+            if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                searchScopeHint
+            }
+
+            equipmentFilters
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Theme.stroke)
+                .frame(height: 1)
         }
     }
 

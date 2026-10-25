@@ -38,7 +38,7 @@ struct HomeView: View {
             }
             .background(AppBackground())
             .navigationTitle("今日")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(isPresented: $showWorkout) {
                 if let day = store.todayDay {
                     WorkoutSessionView(day: day)
@@ -73,7 +73,7 @@ struct HomeView: View {
     private var greeting: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("\(timeGreeting)，\(store.profile.nickname)")
-                .font(.title2.weight(.bold))
+                .font(.headline.weight(.semibold))
                 .foregroundStyle(.white)
                 .lineLimit(1)
                 .minimumScaleFactor(0.82)

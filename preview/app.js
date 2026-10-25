@@ -855,8 +855,8 @@ function home() {
 
   return `
     <div class="stack">
-      <div class="greeting page-head page-head-home">
-        <div class="h1">晚上好，${esc(state.profile.name)}</div>
+      <div class="greeting">
+        <div class="h3">晚上好，${esc(state.profile.name)}</div>
         <div class="date">10月25日 · 周日</div>
       </div>
 
@@ -960,13 +960,6 @@ function planScreen() {
   const preview = planAdjustmentPreview();
   return `
     <div class="stack">
-      <div class="between page-head">
-        <div>
-          <h1 class="h1">训练计划</h1>
-          <div class="tiny muted" style="margin-top:4px">第 ${state.plan.version} 版 · 4 周</div>
-        </div>
-      </div>
-
       <div class="card">
         <div class="between">
           <div class="badge">当前计划</div>
@@ -1095,7 +1088,7 @@ function coachScreen() {
   return `
     <div class="chat-screen">
       <div class="chat-head">
-        <h1 class="h1">AI 教练</h1>
+        <div class="h3">AI 教练</div>
         <div class="tiny muted" style="margin-top:4px">健身教练 · 康复师 · 营养师</div>
       </div>
 
@@ -1248,23 +1241,24 @@ function equipmentPickerScreen() {
 
   return `
     <div class="stack equipment-picker">
-      <div class="between page-head">
-        <div class="h1">选择动作</div>
-        <button class="link muted-link" onclick="app.equipmentLibraryOpen()">器械库</button>
-      </div>
+      <div class="equipment-sticky-tools">
+        <div class="equipment-tools-topline">
+          <button class="link muted-link" onclick="app.equipmentLibraryOpen()">器械库</button>
+        </div>
 
-      <div class="equipment-search-row">
-        <span class="search-glyph">⌕</span>
-        <input id="equipment-picker-search" type="text" placeholder="输入动作名字搜索" value="${esc(state.equipSearchQuery)}" oninput="app.equipmentPickerQuery(this.value)">
-        <button class="equipment-camera-btn" onclick="app.equipmentRecognitionOpen()">◉ 识别</button>
-      </div>
+        <div class="equipment-search-row">
+          <span class="search-glyph">⌕</span>
+          <input id="equipment-picker-search" type="text" placeholder="输入动作名字搜索" value="${esc(state.equipSearchQuery)}" oninput="app.equipmentPickerQuery(this.value)">
+          <button class="equipment-camera-btn" onclick="app.equipmentRecognitionOpen()">◉ 识别</button>
+        </div>
 
-      <div id="equipment-search-scope" class="equipment-search-scope" ${searching ? "" : "hidden"}>搜索全部动作，当前分类暂不生效</div>
+        <div id="equipment-search-scope" class="equipment-search-scope" ${searching ? "" : "hidden"}>搜索全部动作，当前分类暂不生效</div>
 
-      <div class="equipment-filter-scroll">
-        ${equipment.map((label) => `
-          <button class="equipment-filter ${state.equipFilter === label ? "active" : ""}" onclick="app.equipmentPickerFilter('${label}')">${label}</button>
-        `).join("")}
+        <div class="equipment-filter-scroll">
+          ${equipment.map((label) => `
+            <button class="equipment-filter ${state.equipFilter === label ? "active" : ""}" onclick="app.equipmentPickerFilter('${label}')">${label}</button>
+          `).join("")}
+        </div>
       </div>
 
       <div class="equipment-picker-body">
@@ -1630,11 +1624,7 @@ function profileScreen() {
   const p = state.profile;
   return `
     <div class="stack">
-      <div class="between page-head" style="align-items:flex-start">
-        <div>
-          <h1 class="h1">我的</h1>
-          <div class="tiny muted" style="margin-top:4px">档案、身体数据与训练工具</div>
-        </div>
+      <div class="row" style="justify-content:flex-end">
         ${settingsButton()}
       </div>
 

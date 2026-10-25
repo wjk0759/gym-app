@@ -29,7 +29,7 @@ struct ProfileView: View {
             }
             .background(AppBackground())
             .navigationTitle("我的")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     SettingsToolbarButton()
