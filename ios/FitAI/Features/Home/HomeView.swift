@@ -6,6 +6,7 @@ struct HomeView: View {
     @State private var showWorkout = false
     @State private var showAdjustConfirm = false
     @State private var showAdjustResult = false
+    @State private var selectedSession: WorkoutSession?
 
     var body: some View {
         NavigationStack {
@@ -40,6 +41,9 @@ struct HomeView: View {
                 if let day = store.todayDay {
                     WorkoutSessionView(day: day)
                 }
+            }
+            .sheet(item: $selectedSession) { session in
+                WorkoutDetailView(session: session)
             }
             .confirmationDialog(
                 "让 AI 复盘最近 7 天？",
@@ -322,25 +326,34 @@ struct HomeView: View {
                     .padding(.vertical, 6)
             } else {
                 ForEach(store.sessions.prefix(3)) { session in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(session.dayTitle)
-                                .font(.subheadline.weight(.medium))
-                                .foregroundStyle(.white)
-                            Text(session.date.formatted(date: .abbreviated, time: .shortened))
-                                .font(.caption2)
+                    Button {
+                        selectedSession = session
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(session.dayTitle)
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundStyle(.white)
+                                Text(session.date.formatted(date: .abbreviated, time: .shortened))
+                                    .font(.caption2)
+                                    .foregroundStyle(Theme.tertiaryText)
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 3) {
+                                Text("\(Int(session.volume)) kg")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(Theme.accent)
+                                Text("\(session.durationMinutes) 分钟")
+                                    .font(.caption2)
+                                    .foregroundStyle(Theme.tertiaryText)
+                            }
+                            Image(systemName: "chevron.right")
+                                .font(.caption2.weight(.semibold))
                                 .foregroundStyle(Theme.tertiaryText)
-                        }
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 3) {
-                            Text("\(Int(session.volume)) kg")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(Theme.accent)
-                            Text("\(session.durationMinutes) 分钟")
-                                .font(.caption2)
-                                .foregroundStyle(Theme.tertiaryText)
+                                .padding(.leading, 2)
                         }
                     }
+                    .buttonStyle(.plain)
                     if session.id != store.sessions.prefix(3).last?.id {
                         Divider().overlay(Theme.stroke)
                     }

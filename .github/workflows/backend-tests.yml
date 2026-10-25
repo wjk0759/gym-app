@@ -39,3 +39,9 @@ jobs:
       - name: Run tests
         working-directory: backend
         run: pytest -q
+
+      - name: Run API smoke test
+        working-directory: backend
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python scripts/smoke.py
