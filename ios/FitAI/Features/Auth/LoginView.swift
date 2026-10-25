@@ -45,8 +45,9 @@ struct LoginView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 22) {
+            VStack(alignment: .leading, spacing: 26) {
                 brand
+                intro
                 loginCard
                 socialSection
 
@@ -60,18 +61,14 @@ struct LoginView: View {
                 }
                 .buttonStyle(.plain)
 #endif
-
-                Text("登录即代表你同意平台仅将健康数据用于生成训练、饮食与服务改进。我们不会向第三方出售你的个人信息。")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 8)
             }
             .padding(.horizontal, 22)
-            .padding(.top, 44)
-            .padding(.bottom, 36)
+            .padding(.top, 20)
+            .padding(.bottom, 32)
+            .frame(maxWidth: 520, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
+        .scrollIndicators(.hidden)
         .background(Theme.background.ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)
         .sheet(item: $legal) { kind in
@@ -87,36 +84,45 @@ struct LoginView: View {
     }
 
     private var brand: some View {
-        VStack(spacing: 14) {
+        HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
                     .fill(Theme.accent)
-                    .frame(width: 66, height: 66)
-                Image(systemName: "figure.strengthtraining.traditional")
-                    .font(.system(size: 28, weight: .bold))
+                    .frame(width: 42, height: 42)
+                Image(systemName: "dumbbell.fill")
+                    .font(.system(size: 19, weight: .bold))
                     .foregroundStyle(Color.black)
             }
-            .shadow(color: Theme.accent.opacity(0.22), radius: 24, y: 10)
+            .shadow(color: Theme.accent.opacity(0.16), radius: 14, y: 6)
 
-            VStack(spacing: 5) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text("练途")
-                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .font(.title3.weight(.bold))
                     .foregroundStyle(.white)
-                Text("会记住你练过什么的 AI 健身教练")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.secondaryText)
+                Text("AI 健身教练")
+                    .font(.caption)
+                    .foregroundStyle(Theme.tertiaryText)
             }
+
+            Spacer(minLength: 0)
         }
     }
 
+    private var intro: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text("登录练途")
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+            Text("同步训练计划、记录和 AI 复盘。")
+                .font(.subheadline)
+                .foregroundStyle(Theme.secondaryText)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private var loginCard: some View {
-        VStack(spacing: 16) {
-            Picker("登录方式", selection: $mode) {
-                ForEach(Mode.allCases) { item in
-                    Text(item.rawValue).tag(item)
-                }
-            }
-            .pickerStyle(.segmented)
+        VStack(spacing: 18) {
+            modeSwitch
 
             if mode == .phone {
                 phoneFields
@@ -148,79 +154,156 @@ struct LoginView: View {
                 if auth.isWorking {
                     HStack(spacing: 8) {
                         ProgressView().tint(.black)
-                        Text(mode == .phone ? "正在登录…" : "正在登录…")
+                        Text("正在登录…")
                     }
                 } else {
-                    Text(mode == .phone ? "登录 / 注册" : "登录 / 自动注册")
+                    Text("登录并继续")
                 }
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(auth.isWorking)
 
             Text(mode == .phone
-                 ? "未注册的手机号验证通过后会自动创建账号，并静默登录。"
-                 : "未注册的账号会按你输入的密码自动创建；手机号也是账号。")
+                 ? "未注册手机号会自动创建账号并登录"
+                 : "未注册账号会自动创建并登录")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .center)
         }
-        .card(padding: 18)
+        .padding(20)
+        .background(
+            Theme.surface,
+            in: RoundedRectangle(cornerRadius: 22, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Theme.stroke, lineWidth: 1)
+        )
+    }
+
+    private var modeSwitch: some View {
+        HStack(spacing: 4) {
+            ForEach(Mode.allCases) { item in
+                Button {
+                    withAnimation(.easeOut(duration: 0.15)) {
+                        mode = item
+                    }
+                } label: {
+                    Text(item.rawValue)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(mode == item ? .white : Theme.secondaryText)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(
+                            mode == item ? Theme.surfaceStrong : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(4)
+        .background(
+            Color.white.opacity(0.035),
+            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .stroke(Theme.stroke, lineWidth: 1)
+        )
+    }
+
+    private func fieldLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.caption.weight(.medium))
+            .foregroundStyle(Theme.secondaryText)
+            .padding(.leading, 2)
+    }
+
+    private func fieldShell<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        HStack(spacing: 10) {
+            content()
+        }
+        .padding(.horizontal, 14)
+        .frame(height: 52)
+        .background(
+            Theme.surfaceStrong,
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Theme.stroke, lineWidth: 1)
+        )
     }
 
     private var phoneFields: some View {
-        VStack(spacing: 11) {
-            HStack(spacing: 10) {
-                Text("+86")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.secondaryText)
-                    .padding(.leading, 13)
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 7) {
+                fieldLabel("手机号")
 
-                TextField("手机号", text: $phone)
-                    .keyboardType(.numberPad)
-                    .textContentType(.telephoneNumber)
-                    .onChange(of: phone) { _, newValue in
-                        phone = String(newValue.filter(\.isNumber).prefix(11))
-                        localError = nil
-                    }
-            }
-            .frame(height: 50)
-            .background(
-                Theme.surfaceStrong,
-                in: RoundedRectangle(cornerRadius: 13, style: .continuous)
-            )
+                fieldShell {
+                    Text("+86")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.secondaryText)
 
-            HStack(spacing: 10) {
-                TextField("6 位验证码", text: $code)
-                    .keyboardType(.numberPad)
-                    .textContentType(.oneTimeCode)
-                    .onChange(of: code) { _, newValue in
-                        code = String(newValue.filter(\.isNumber).prefix(6))
-                        localError = nil
-                    }
+                    Rectangle()
+                        .fill(Theme.stroke)
+                        .frame(width: 1, height: 18)
 
-                Button {
-                    sendCode()
-                } label: {
-                    if isSendingCode {
-                        ProgressView().tint(Theme.accent)
-                            .frame(width: 92)
-                    } else {
-                        Text(countdown > 0 ? "\(countdown)s 后重发" : "获取验证码")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(countdown > 0 ? Theme.tertiaryText : Theme.accent)
-                            .frame(width: 92)
-                    }
+                    TextField("请输入手机号", text: $phone)
+                        .font(.subheadline)
+                        .foregroundStyle(.white)
+                        .keyboardType(.numberPad)
+                        .textContentType(.telephoneNumber)
+                        .onChange(of: phone) { _, newValue in
+                            phone = String(newValue.filter(\.isNumber).prefix(11))
+                            localError = nil
+                        }
                 }
-                .buttonStyle(.plain)
-                .disabled(!isValidPhone || countdown > 0 || isSendingCode)
             }
-            .padding(.horizontal, 14)
-            .frame(height: 50)
-            .background(
-                Theme.surfaceStrong,
-                in: RoundedRectangle(cornerRadius: 13, style: .continuous)
-            )
+
+            VStack(alignment: .leading, spacing: 7) {
+                fieldLabel("验证码")
+
+                fieldShell {
+                    TextField("请输入 6 位验证码", text: $code)
+                        .font(.subheadline)
+                        .foregroundStyle(.white)
+                        .keyboardType(.numberPad)
+                        .textContentType(.oneTimeCode)
+                        .onChange(of: code) { _, newValue in
+                            code = String(newValue.filter(\.isNumber).prefix(6))
+                            localError = nil
+                        }
+
+                    Button {
+                        sendCode()
+                    } label: {
+                        if isSendingCode {
+                            ProgressView().tint(Theme.accent)
+                                .frame(width: 78)
+                        } else {
+                            Text(countdown > 0 ? "\(countdown)s 后重发" : "获取验证码")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(
+                                    countdown > 0 || !isValidPhone ? Theme.tertiaryText : Theme.accent
+                                )
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 7)
+                                .background(
+                                    Theme.accent.opacity(
+                                        countdown > 0 || !isValidPhone ? 0 : 0.10
+                                    ),
+                                    in: Capsule()
+                                )
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!isValidPhone || countdown > 0 || isSendingCode)
+                }
+            }
 
             if let devCode {
                 HStack(spacing: 6) {
@@ -235,103 +318,107 @@ struct LoginView: View {
     }
 
     private var passwordFields: some View {
-        VStack(spacing: 11) {
-            HStack(spacing: 10) {
-                Image(systemName: "person")
-                    .foregroundStyle(Theme.tertiaryText)
-                    .frame(width: 18)
-                TextField("手机号或用户名", text: $account)
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 7) {
+                fieldLabel("手机号或用户名")
+
+                fieldShell {
+                    Image(systemName: "person")
+                        .foregroundStyle(Theme.tertiaryText)
+                        .frame(width: 18)
+
+                    TextField("请输入手机号或用户名", text: $account)
+                        .font(.subheadline)
+                        .foregroundStyle(.white)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .textContentType(.username)
+                        .onChange(of: account) { _, _ in localError = nil }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 7) {
+                fieldLabel("密码")
+
+                fieldShell {
+                    Image(systemName: "lock")
+                        .foregroundStyle(Theme.tertiaryText)
+                        .frame(width: 18)
+
+                    Group {
+                        if showPassword {
+                            TextField("请输入密码", text: $password)
+                                .textContentType(.password)
+                        } else {
+                            SecureField("请输入密码", text: $password)
+                                .textContentType(.password)
+                        }
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(.white)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    .textContentType(.username)
-                    .onChange(of: account) { _, _ in localError = nil }
-            }
-            .padding(.horizontal, 14)
-            .frame(height: 50)
-            .background(
-                Theme.surfaceStrong,
-                in: RoundedRectangle(cornerRadius: 13, style: .continuous)
-            )
+                    .onChange(of: password) { _, _ in localError = nil }
 
-            HStack(spacing: 10) {
-                Image(systemName: "lock")
-                    .foregroundStyle(Theme.tertiaryText)
-                    .frame(width: 18)
-
-                Group {
-                    if showPassword {
-                        TextField("密码", text: $password)
-                            .textContentType(.password)
-                    } else {
-                        SecureField("密码", text: $password)
-                            .textContentType(.password)
+                    Button {
+                        showPassword.toggle()
+                    } label: {
+                        Image(systemName: showPassword ? "eye.slash" : "eye")
+                            .foregroundStyle(Theme.tertiaryText)
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(showPassword ? "隐藏密码" : "显示密码")
                 }
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .onChange(of: password) { _, _ in localError = nil }
-
-                Button {
-                    showPassword.toggle()
-                } label: {
-                    Image(systemName: showPassword ? "eye.slash" : "eye")
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(showPassword ? "隐藏密码" : "显示密码")
             }
-            .padding(.horizontal, 14)
-            .frame(height: 50)
-            .background(
-                Theme.surfaceStrong,
-                in: RoundedRectangle(cornerRadius: 13, style: .continuous)
-            )
 
             Text("密码需至少 8 位，并同时包含字母和数字。")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 2)
         }
     }
 
     private var consentRow: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        HStack(alignment: .top, spacing: 10) {
             Button {
                 consent.toggle()
             } label: {
-                HStack(alignment: .top, spacing: 9) {
-                    Image(systemName: consent ? "checkmark.square.fill" : "square")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(consent ? Theme.accent : Theme.tertiaryText)
-
-                    Text("我已阅读并同意以下协议，且已年满 14 周岁")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    Spacer(minLength: 0)
-                }
+                Image(systemName: consent ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundStyle(consent ? Theme.accent : Theme.tertiaryText)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("同意用户协议与隐私政策")
+            .accessibilityValue(consent ? "已同意" : "未同意")
 
-            HStack(spacing: 5) {
-                Text("查看")
-                Button {
-                    legal = .terms
-                } label: {
-                    Text("《用户协议》").underline()
+            VStack(alignment: .leading, spacing: 5) {
+                Text("我已阅读并同意以下协议，且已年满 14 周岁")
+                    .font(.caption)
+                    .foregroundStyle(Theme.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                HStack(spacing: 4) {
+                    Text("查看")
+                        .foregroundStyle(Theme.tertiaryText)
+                    Button {
+                        legal = .terms
+                    } label: {
+                        Text("《用户协议》").underline()
+                    }
+                    Text("和")
+                        .foregroundStyle(Theme.tertiaryText)
+                    Button {
+                        legal = .privacy
+                    } label: {
+                        Text("《隐私政策》").underline()
+                    }
                 }
-                Text("和")
-                Button {
-                    legal = .privacy
-                } label: {
-                    Text("《隐私政策》").underline()
-                }
+                .buttonStyle(.plain)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.accent)
             }
-            .buttonStyle(.plain)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(Theme.accent)
-            .padding(.leading, 26)
+
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -340,7 +427,7 @@ struct LoginView: View {
         VStack(spacing: 14) {
             HStack(spacing: 10) {
                 Rectangle().fill(Theme.stroke).frame(height: 1)
-                Text("其他方式登录")
+                Text("或使用以下方式登录")
                     .font(.caption2)
                     .foregroundStyle(Theme.tertiaryText)
                     .fixedSize()
@@ -350,14 +437,12 @@ struct LoginView: View {
             HStack(spacing: 10) {
                 socialButton(
                     title: "微信登录",
-                    subtitle: "一键授权",
                     icon: "message.fill",
                     color: Color(red: 0.20, green: 0.78, blue: 0.36),
                     provider: "wechat"
                 )
                 socialButton(
                     title: "QQ 登录",
-                    subtitle: "一键授权",
                     icon: "person.2.fill",
                     color: Color(red: 0.26, green: 0.58, blue: 0.96),
                     provider: "qq"
@@ -365,7 +450,7 @@ struct LoginView: View {
             }
 
 #if DEBUG
-            Text("微信/QQ 未配置开放平台密钥时，开发环境会打开模拟授权页，用于验证完整链路。")
+            Text("微信/QQ 未配置开放平台密钥时，开发环境会打开模拟授权页。")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
                 .multilineTextAlignment(.center)
@@ -376,7 +461,6 @@ struct LoginView: View {
 
     private func socialButton(
         title: String,
-        subtitle: String,
         icon: String,
         color: Color,
         provider: String
@@ -395,25 +479,22 @@ struct LoginView: View {
                 Image(systemName: icon)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(color)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
-                    Text(subtitle)
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
-                }
+                    .frame(width: 22)
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
                 Spacer(minLength: 0)
             }
-            .padding(13)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                color.opacity(0.08),
-                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                Theme.surface,
+                in: RoundedRectangle(cornerRadius: 15, style: .continuous)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(color.opacity(0.24), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .stroke(Theme.stroke, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)

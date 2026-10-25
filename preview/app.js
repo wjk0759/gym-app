@@ -533,65 +533,92 @@ function bmiText(profile) {
 function loginScreen() {
   const phoneMode = state.authMode === "phone";
   return `
-    <div class="stack login-stack">
-      <div style="text-align:center;padding:26px 0 4px">
-        <div class="nutrition-icon" style="width:64px;height:64px;margin:0 auto 14px;font-size:28px;border-radius:20px;color:#04120a;background:var(--accent)">F</div>
-        <div class="h1">练途</div>
-        <div class="tiny muted" style="margin-top:5px">会记住你练过什么的 AI 健身教练</div>
+    <div class="login-page">
+      <div class="login-brand">
+        <div class="login-mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10" />
+          </svg>
+        </div>
+        <div>
+          <div class="login-brand-name">练途</div>
+          <div class="login-brand-sub">AI 健身教练</div>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="seg">
+      <div class="login-intro">
+        <h1>登录练途</h1>
+        <p>同步训练计划、记录和 AI 复盘。</p>
+      </div>
+
+      <div class="login-card">
+        <div class="login-seg">
           <button class="${phoneMode ? "active" : ""}" onclick="app.previewAuthMode('phone')">手机验证码</button>
           <button class="${!phoneMode ? "active" : ""}" onclick="app.previewAuthMode('password')">账号密码</button>
         </div>
 
         ${phoneMode ? `
-          <div class="row gap8" style="margin-top:12px">
-            <span class="small muted" style="padding-left:2px">+86</span>
-            <input id="login-phone" class="grow" type="tel" inputmode="numeric" placeholder="手机号" value="${esc(state.authPhone)}" oninput="app.previewAuthField('authPhone', this.value)">
+          <div class="login-field">
+            <div class="login-field-label">手机号</div>
+            <div class="login-input">
+              <span class="login-prefix">+86</span>
+              <span class="login-input-divider"></span>
+              <input id="login-phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="请输入手机号" value="${esc(state.authPhone)}" oninput="app.previewAuthField('authPhone', this.value)">
+            </div>
           </div>
-          <div class="row gap8" style="margin-top:9px">
-            <input id="login-code" class="grow" type="tel" inputmode="numeric" placeholder="6 位验证码" value="${esc(state.authCode)}" oninput="app.previewAuthField('authCode', this.value)">
-            <button class="btn btn-secondary btn-sm" style="width:104px" onclick="app.previewSendCode()">获取验证码</button>
+          <div class="login-field">
+            <div class="login-field-label">验证码</div>
+            <div class="login-input">
+              <input id="login-code" type="tel" inputmode="numeric" autocomplete="one-time-code" placeholder="请输入 6 位验证码" value="${esc(state.authCode)}" oninput="app.previewAuthField('authCode', this.value)">
+              <button class="code-btn" onclick="app.previewSendCode()">获取验证码</button>
+            </div>
           </div>
-          ${state.authDevCode ? `<div class="tiny" style="margin-top:8px;color:var(--warning)">开发验证码 ${state.authDevCode}，已自动填入</div>` : ""}
-          <div class="tiny faint" style="margin-top:8px;line-height:1.6">未注册手机号验证通过后自动创建账号，并静默登录。</div>
+          ${state.authDevCode ? `<div class="dev-code">开发验证码 ${state.authDevCode}，已自动填入</div>` : ""}
         ` : `
-          <input id="login-account" type="text" placeholder="手机号或用户名" value="${esc(state.authAccount)}" oninput="app.previewAuthField('authAccount', this.value)" style="margin-top:12px">
-          <input id="login-password" type="password" placeholder="密码（至少 8 位，含字母和数字）" value="${esc(state.authPassword)}" oninput="app.previewAuthField('authPassword', this.value)" style="margin-top:9px">
-          <div class="tiny faint" style="margin-top:8px;line-height:1.6">未注册账号会按输入的密码自动创建，并静默登录。</div>
+          <div class="login-field">
+            <div class="login-field-label">手机号或用户名</div>
+            <div class="login-input">
+              <input id="login-account" type="text" autocomplete="username" placeholder="请输入手机号或用户名" value="${esc(state.authAccount)}" oninput="app.previewAuthField('authAccount', this.value)">
+            </div>
+          </div>
+          <div class="login-field">
+            <div class="login-field-label">密码</div>
+            <div class="login-input">
+              <input id="login-password" type="password" autocomplete="current-password" placeholder="请输入密码" value="${esc(state.authPassword)}" oninput="app.previewAuthField('authPassword', this.value)">
+            </div>
+          </div>
+          <div class="field-hint">密码至少 8 位，并同时包含字母和数字。</div>
         `}
 
-        <button class="row gap8" style="margin-top:12px;background:transparent;border:0;padding:0;color:var(--muted)" onclick="app.previewAuthConsent()">
-          <span style="width:17px;height:17px;border-radius:5px;display:grid;place-items:center;border:1px solid ${state.authConsent ? "var(--accent)" : "var(--stroke-strong)"};background:${state.authConsent ? "var(--accent)" : "transparent"};color:#04120a;font-size:12px">${state.authConsent ? "✓" : ""}</span>
-          <span class="tiny" style="text-align:left">我已阅读并同意以下协议，且已年满 14 周岁</span>
-        </button>
-
-        <div class="legal-links">
-          <span>查看</span>
-          <button class="link" onclick="app.openLegal('terms')">《用户协议》</button>
-          <span>和</span>
-          <button class="link" onclick="app.openLegal('privacy')">《隐私政策》</button>
+        <div class="consent-block">
+          <button class="consent-check ${state.authConsent ? "checked" : ""}" onclick="app.previewAuthConsent()" aria-label="同意用户协议与隐私政策" aria-pressed="${state.authConsent}">${state.authConsent ? "✓" : ""}</button>
+          <div class="grow">
+            <div class="consent-copy">我已阅读并同意以下协议，且已年满 14 周岁</div>
+            <div class="legal-links">
+              <span>查看</span>
+              <button class="link" onclick="app.openLegal('terms')">《用户协议》</button>
+              <span>和</span>
+              <button class="link" onclick="app.openLegal('privacy')">《隐私政策》</button>
+            </div>
+          </div>
         </div>
 
-        ${state.authError ? `<div class="tiny" style="margin-top:10px;color:var(--danger);line-height:1.6">${esc(state.authError)}</div>` : ""}
+        ${state.authError ? `<div class="login-error">${esc(state.authError)}</div>` : ""}
 
-        <button class="btn btn-primary" style="margin-top:12px" onclick="app.previewLogin()">${phoneMode ? "登录 / 注册" : "登录 / 自动注册"}</button>
+        <button class="btn btn-primary login-submit" onclick="app.previewLogin()">登录并继续</button>
+        <div class="login-auto">${phoneMode ? "未注册手机号会自动创建账号并登录" : "未注册账号会自动创建并登录"}</div>
       </div>
 
-      <div class="row gap10" style="align-items:center">
-        <div class="grow" style="height:1px;background:var(--stroke)"></div>
-        <div class="tiny faint">其他方式登录</div>
-        <div class="grow" style="height:1px;background:var(--stroke)"></div>
+      <div class="social-divider">
+        <div></div>
+        <span>或使用以下方式登录</span>
+        <div></div>
       </div>
 
-      <div class="row gap8">
+      <div class="social-row">
         <button class="social-login wechat" onclick="app.previewSocial('微信')"><span class="social-icon">微</span>微信登录</button>
         <button class="social-login qq" onclick="app.previewSocial('QQ')"><span class="social-icon">Q</span>QQ 登录</button>
       </div>
-
-      <div class="tiny faint center" style="line-height:1.6">Web 预览为模拟登录。iOS App 使用真实手机验证码、密码和微信/QQ OAuth。</div>
     </div>
   `;
 }
