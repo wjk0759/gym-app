@@ -281,7 +281,6 @@ struct EquipmentPickerView: View {
                         muscleChip(muscle, title: muscle.label)
                     }
                 }
-                .animation(.easeOut(duration: 0.16), value: selectedMuscle)
             }
         }
     }
@@ -333,7 +332,6 @@ struct EquipmentPickerView: View {
                     }
                 }
             }
-            .animation(.easeOut(duration: 0.16), value: selectedEquipment)
         }
     }
 
