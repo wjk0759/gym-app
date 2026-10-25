@@ -356,7 +356,19 @@ struct APIClient {
         request.httpBody = body
         request.timeoutInterval = 60
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch let error as URLError {
+            if [.cannotConnectToHost, .notConnectedToInternet, .timedOut, .networkConnectionLost]
+                .contains(error.code) {
+                throw APIError(
+                    message: "无法连接服务端：请确认后端已启动，并在 Debug 构建中填写正确的局域网 API 地址。"
+                )
+            }
+            throw APIError(message: error.localizedDescription)
+        }
         guard let http = response as? HTTPURLResponse else {
             throw APIError(message: "网络响应异常")
         }

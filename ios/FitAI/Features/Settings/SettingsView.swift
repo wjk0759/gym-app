@@ -12,9 +12,17 @@ struct SettingsToolbarButton: View {
 }
 
 struct SettingsView: View {
+    private enum ServiceState {
+        case checking
+        case online
+        case offline
+    }
+
     @Environment(AppStore.self) private var store
     @Environment(AuthStore.self) private var auth
+    @Environment(SubscriptionManager.self) private var subscriptions
 
+    @State private var serviceState: ServiceState = .checking
     @State private var reminderDate = Date()
     @State private var showLogout = false
     @State private var showMessage = false
@@ -27,6 +35,9 @@ struct SettingsView: View {
         ScrollView {
             VStack(spacing: 16) {
                 accountCard
+
+                sectionLabel("服务状态")
+                serviceCard
 
                 sectionLabel("训练设置")
                 reminderCard
@@ -52,6 +63,9 @@ struct SettingsView: View {
         .navigationTitle("设置")
         .navigationBarTitleDisplayMode(.large)
         .onAppear(perform: syncReminder)
+        .task {
+            await checkService()
+        }
         .alert("提示", isPresented: $showMessage) {
             Button("知道了", role: .cancel) {}
         } message: {
@@ -155,6 +169,96 @@ struct SettingsView: View {
             return "已登录"
         }
         return "\(phone.prefix(3))****\(phone.suffix(4))"
+    }
+
+    private var serviceCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("服务连接")
+                        .font(.headline)
+                    Text(serviceText)
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+                Spacer()
+                Circle()
+                    .fill(serviceColor)
+                    .frame(width: 9, height: 9)
+            }
+
+#if DEBUG
+            Text(AppConfig.apiBaseURLString)
+                .font(.caption2.monospaced())
+                .foregroundStyle(Theme.tertiaryText)
+#endif
+
+            HStack(spacing: 10) {
+                statusPill(
+                    "会员",
+                    subscriptions.isPro ? "Pro" : "免费",
+                    active: subscriptions.isPro
+                )
+                statusPill(
+                    "AI",
+                    store.isPro && store.useRemoteAI ? "DeepSeek" : "本地规则",
+                    active: store.isPro && store.useRemoteAI
+                )
+            }
+
+            Button("重新检查") {
+                Task { await checkService() }
+            }
+            .buttonStyle(SecondaryButtonStyle())
+
+            if serviceState == .offline {
+                Text("未连接后端时，登录同步、真实 AI、教学视频等功能会不可用；本地训练记录仍可继续使用。")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .card()
+    }
+
+    private var serviceText: String {
+        switch serviceState {
+        case .checking: return "正在检查后端连接…"
+        case .online: return "后端已连接，账号与 AI 服务可用"
+        case .offline: return "后端未连接，请检查服务地址和网络"
+        }
+    }
+
+    private var serviceColor: Color {
+        switch serviceState {
+        case .checking: return Theme.warning
+        case .online: return Theme.accent
+        case .offline: return Theme.danger
+        }
+    }
+
+    private func statusPill(_ title: String, _ value: String, active: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(Theme.tertiaryText)
+            Text(value)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(active ? Theme.accent : Theme.secondaryText)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private func checkService() async {
+        serviceState = .checking
+        do {
+            let ok = try await APIClient.shared.health()
+            serviceState = ok ? .online : .offline
+        } catch {
+            serviceState = .offline
+        }
     }
 
     // MARK: - 训练设置

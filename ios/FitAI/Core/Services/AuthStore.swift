@@ -283,7 +283,19 @@ final class AuthStore {
         }
         request.timeoutInterval = 20
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch let error as URLError {
+            if [.cannotConnectToHost, .notConnectedToInternet, .timedOut, .networkConnectionLost]
+                .contains(error.code) {
+                throw AuthError(
+                    message: "无法连接服务端。请确认后端已启动；真机调试时请在登录页「开发服务器」填写电脑的局域网地址。"
+                )
+            }
+            throw AuthError(message: error.localizedDescription)
+        }
         guard let http = response as? HTTPURLResponse else {
             throw AuthError(message: "网络响应异常")
         }
