@@ -15,6 +15,7 @@ from ..schemas import (
     OAuthCodeIn,
     OAuthExchangeIn,
     PasswordLoginIn,
+    PasswordResetIn,
     PasswordSetIn,
     PhoneLoginIn,
     RefreshIn,
@@ -102,6 +103,16 @@ def password_login(payload: PasswordLoginIn, request: Request, db: DBSession):
         payload.account,
         payload.password,
         _meta(request, payload.device_name),
+    )
+
+
+@router.post("/password/reset")
+def reset_password(payload: PasswordResetIn, db: DBSession):
+    return auth_service.reset_password_with_code(
+        db,
+        payload.phone,
+        payload.code,
+        payload.password,
     )
 
 

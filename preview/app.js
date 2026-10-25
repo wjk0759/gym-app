@@ -613,7 +613,10 @@ function loginScreen() {
               <input id="login-password" type="password" autocomplete="current-password" placeholder="请输入密码" value="${esc(state.authPassword)}" oninput="app.previewAuthField('authPassword', this.value)">
             </div>
           </div>
-          <div class="field-hint">密码至少 8 位，含字母和数字</div>
+          <div class="row between" style="margin-top:-4px">
+            <div class="field-hint" style="margin:0">密码至少 8 位，含字母和数字</div>
+            <button class="link" style="font-size:11px" onclick="app.previewForgotPassword()">忘记密码？</button>
+          </div>
         `}
 
         ${state.authError ? `<div class="login-error">${esc(state.authError)}</div>` : ""}
@@ -2555,6 +2558,10 @@ window.app = {
     toast(`已通过${provider}登录（预览模拟）`);
   },
 
+  previewForgotPassword() {
+    toast("iOS 端已支持手机验证码重置密码；Web 预览不发送真实短信。");
+  },
+
   previewLogout() {
     state.authenticated = false;
     state.authError = "";
@@ -3071,6 +3078,7 @@ window.app = {
   },
 
   deleteFood(id) {
+    if (!confirm("确认删除这条饮食记录？")) return;
     state.foodLogs = state.foodLogs.filter((item) => item.id !== id);
     save();
     render();

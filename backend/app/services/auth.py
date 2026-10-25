@@ -308,12 +308,12 @@ def send_sms_code(
     request_meta: dict | None = None,
 ) -> dict:
     phone = normalize_phone(phone)
-    if purpose not in {"login", "set_password"}:
+    if purpose not in {"login", "set_password", "reset_password"}:
         raise HTTPException(status_code=400, detail="验证码用途不正确")
     now = time.monotonic()
-    recent = _sms_rate.get(f"resend:{phone}", [])
+    recent = _sms_rate.get(f"resend:{phone}:{purpose}", [])
     recent = [value for value in recent if now - value < 60]
-    _sms_rate[f"resend:{phone}"] = recent
+    _sms_rate[f"resend:{phone}:{purpose}"] = recent
     if recent:
         raise HTTPException(status_code=429, detail="验证码 60 秒内只能发送一次")
     if not _limit(_sms_rate, f"hour:{phone}", 5, 3600):
@@ -364,18 +364,12 @@ def send_sms_code(
     return result
 
 
-def login_with_phone(
-    db: Session,
-    phone: str,
-    code: str,
-    request_meta: dict | None = None,
-) -> dict:
-    phone = normalize_phone(phone)
+def _consume_sms_code(db: Session, phone: str, purpose: str, code: str) -> None:
     record = db.execute(
         select(SmsCode)
         .where(
             SmsCode.phone == phone,
-            SmsCode.purpose == "login",
+            SmsCode.purpose == purpose,
             SmsCode.used_at.is_(None),
         )
         .order_by(SmsCode.created_at.desc())
@@ -390,11 +384,21 @@ def login_with_phone(
         raise HTTPException(status_code=400, detail="验证码已过期，请重新获取")
     if record.attempts >= 5:
         raise HTTPException(status_code=429, detail="验证码错误次数过多，请重新获取")
-    if not hmac.compare_digest(record.code_hash, _hash_sms(phone, "login", code.strip())):
+    if not hmac.compare_digest(record.code_hash, _hash_sms(phone, purpose, code.strip())):
         record.attempts += 1
         db.commit()
         raise HTTPException(status_code=400, detail="验证码不正确")
     record.used_at = now
+
+
+def login_with_phone(
+    db: Session,
+    phone: str,
+    code: str,
+    request_meta: dict | None = None,
+) -> dict:
+    phone = normalize_phone(phone)
+    _consume_sms_code(db, phone, "login", code)
 
     user = db.execute(select(User).where(User.phone == phone)).scalar_one_or_none()
     is_new = False
@@ -404,6 +408,40 @@ def login_with_phone(
         db.flush()
         is_new = True
     return _issue_session(db, user, "phone_code", request_meta, is_new, f"用户{phone[-4:]}")
+
+
+def reset_password_with_code(
+    db: Session,
+    phone: str,
+    code: str,
+    new_password: str,
+) -> dict:
+    phone = normalize_phone(phone)
+    user = db.execute(select(User).where(User.phone == phone)).scalar_one_or_none()
+    if user is None or user.deleted_at is not None:
+        raise HTTPException(status_code=404, detail="该手机号尚未注册")
+    new_hash = hash_password(new_password)
+    _consume_sms_code(db, phone, "reset_password", code)
+
+    user.password_hash = new_hash
+    now = datetime.now(timezone.utc)
+    for session in db.execute(
+        select(AuthSession).where(
+            AuthSession.user_id == user.id,
+            AuthSession.revoked_at.is_(None),
+        )
+    ).scalars():
+        session.revoked_at = now
+    db.add(
+        AuthEvent(
+            user_id=user.id,
+            event="password_reset",
+            method="password",
+            success=True,
+        )
+    )
+    db.commit()
+    return {"ok": True, "message": "密码已重置，请重新登录"}
 
 
 def refresh_session(

@@ -41,7 +41,7 @@
 {"phone": "13800138000", "purpose": "login"}
 ```
 
-开发环境 `SMS_PROVIDER=dev` 会返回 `dev_code`；生产配置 webhook 短信网关后不返回验证码。
+`purpose` 支持 `login` / `set_password` / `reset_password`。开发环境 `SMS_PROVIDER=dev` 会返回 `dev_code`；生产配置 webhook 短信网关后不返回验证码。
 
 #### `POST /auth/phone/login`
 
@@ -58,6 +58,18 @@
 ```
 
 账号可以是手机号或用户名。未注册账号会按输入密码自动创建。
+
+#### `POST /auth/password/reset`
+
+```json
+{"phone": "13800138000", "code": "123456", "password": "NewPass123"}
+```
+
+通过 `reset_password` 验证码重置密码；成功后该用户所有旧会话被撤销，需要重新登录。
+
+#### `POST /auth/password/set`
+
+需要 Bearer token。为当前已登录用户设置或修改登录密码。
 
 #### `GET /auth/me`
 

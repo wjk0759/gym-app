@@ -10,6 +10,7 @@ struct NutritionView: View {
     @State private var showAddFood = false
     @State private var showFoodPhoto = false
     @State private var selectedMeal: MealType = .breakfast
+    @State private var pendingFoodDelete: FoodLog?
 
     private var targets: NutritionTargets {
         DietPlanner.targets(profile: store.profile)
@@ -51,6 +52,35 @@ struct NutritionView: View {
         }
         .sheet(isPresented: $showFoodPhoto) {
             FoodPhotoAnalysisView()
+        }
+        .confirmationDialog(
+            "删除这条饮食记录？",
+            isPresented: Binding(
+                get: { pendingFoodDelete != nil },
+                set: { if !$0 { pendingFoodDelete = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: pendingFoodDelete
+        ) { log in
+            Button("删除", role: .destructive) {
+                store.removeFoodLog(log.id)
+                pendingFoodDelete = nil
+            }
+            Button("取消", role: .cancel) {
+                pendingFoodDelete = nil
+            }
+        } message: { log in
+            Text("\(log.foodName) · \(Int(log.kcal)) kcal")
+        }
+    }
+
+    private var suggestedMeal: MealType {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5..<11: return .breakfast
+        case 11..<15: return .lunch
+        case 17..<21: return .dinner
+        default: return .snack
         }
     }
 
@@ -166,7 +196,7 @@ struct NutritionView: View {
                     .font(.caption)
                     .foregroundStyle(Theme.secondaryText)
                 Button("记录第一餐") {
-                    selectedMeal = .breakfast
+                    selectedMeal = suggestedMeal
                     showAddFood = true
                 }
                 .buttonStyle(SecondaryButtonStyle())
@@ -176,7 +206,7 @@ struct NutritionView: View {
                 }
 
                 Button {
-                    selectedMeal = .breakfast
+                    selectedMeal = suggestedMeal
                     showAddFood = true
                 } label: {
                     Label("添加食物", systemImage: "plus")
@@ -225,13 +255,14 @@ struct NutritionView: View {
                         .font(.caption)
                         .foregroundStyle(Theme.secondaryText)
                     Button(role: .destructive) {
-                        store.removeFoodLog(log.id)
+                        pendingFoodDelete = log
                     } label: {
                         Image(systemName: "trash")
                             .font(.caption2)
                             .foregroundStyle(Theme.danger.opacity(0.8))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("删除 \(log.foodName)")
                 }
                 .padding(.vertical, 3)
             }

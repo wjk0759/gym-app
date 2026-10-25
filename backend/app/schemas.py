@@ -20,7 +20,7 @@ class DevLoginIn(BaseModel):
 
 class SmsSendIn(BaseModel):
     phone: str = Field(min_length=11, max_length=20)
-    purpose: Literal["login", "set_password"] = "login"
+    purpose: Literal["login", "set_password", "reset_password"] = "login"
 
 
 class PhoneLoginIn(BaseModel):
@@ -56,6 +56,12 @@ class OAuthCodeIn(BaseModel):
 
 
 class PasswordSetIn(BaseModel):
+    password: str = Field(min_length=8, max_length=72)
+
+
+class PasswordResetIn(BaseModel):
+    phone: str = Field(min_length=11, max_length=20)
+    code: str = Field(min_length=4, max_length=8)
     password: str = Field(min_length=8, max_length=72)
 
 

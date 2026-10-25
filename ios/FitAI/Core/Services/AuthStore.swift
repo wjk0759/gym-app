@@ -53,15 +53,43 @@ final class AuthStore {
     // MARK: - 手机验证码
 
     @discardableResult
-    func sendCode(phone: String) async throws -> String? {
+    func sendCode(phone: String, purpose: String = "login") async throws -> String? {
         isWorking = true
         defer { isWorking = false }
         errorMessage = nil
         let response: SmsSendResponse = try await request(
             "/auth/phone/send-code",
-            body: ["phone": phone, "purpose": "login"]
+            body: ["phone": phone, "purpose": purpose]
         )
         return response.devCode
+    }
+
+    func resetPassword(phone: String, code: String, newPassword: String) async throws {
+        isWorking = true
+        defer { isWorking = false }
+        errorMessage = nil
+        let _: EmptyResponse = try await request(
+            "/auth/password/reset",
+            body: [
+                "phone": phone,
+                "code": code,
+                "password": newPassword
+            ]
+        )
+    }
+
+    func setPassword(_ newPassword: String) async throws {
+        guard let token = AuthTokenStore.shared.accessToken else {
+            throw AuthError(message: "请先登录")
+        }
+        isWorking = true
+        defer { isWorking = false }
+        errorMessage = nil
+        let _: EmptyResponse = try await request(
+            "/auth/password/set",
+            body: ["password": newPassword],
+            token: token
+        )
     }
 
     func loginWithPhone(phone: String, code: String) async throws {

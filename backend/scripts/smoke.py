@@ -258,6 +258,42 @@ def main() -> None:
         assert second_password_login.json()["is_new_user"] is False
         print("auth password: auto-register + login ok")
 
+        # 忘记密码：短信校验后重置密码，旧会话失效，新密码可登录
+        client.post(
+            "/api/v1/auth/password/login",
+            json={
+                "account": "13900000002",
+                "password": "OldPass123",
+                "agreed_terms": True,
+                "device_name": "smoke-test",
+            },
+        )
+        reset_code = client.post(
+            "/api/v1/auth/phone/send-code",
+            json={"phone": "13900000002", "purpose": "reset_password"},
+        )
+        assert reset_code.status_code == 200, reset_code.text
+        reset = client.post(
+            "/api/v1/auth/password/reset",
+            json={
+                "phone": "13900000002",
+                "code": reset_code.json()["dev_code"],
+                "password": "NewPass123",
+            },
+        )
+        assert reset.status_code == 200, reset.text
+        new_login = client.post(
+            "/api/v1/auth/password/login",
+            json={
+                "account": "13900000002",
+                "password": "NewPass123",
+                "agreed_terms": True,
+                "device_name": "smoke-test",
+            },
+        )
+        assert new_login.status_code == 200, new_login.text
+        print("auth password reset: ok")
+
         # 微信模拟 OAuth：start -> callback -> one-time ticket -> exchange
         start = client.get("/api/v1/auth/oauth/wechat/start")
         assert start.status_code == 200, start.text

@@ -3,10 +3,12 @@ import SwiftUI
 
 struct OnboardingView: View {
     @Environment(AppStore.self) private var store
+    @Environment(AuthStore.self) private var auth
 
     @State private var draft = UserProfile()
     @State private var alertMessage = ""
     @State private var showAlert = false
+    @State private var showExitConfirm = false
 
     var body: some View {
         ScrollView {
@@ -50,19 +52,45 @@ struct OnboardingView: View {
         } message: {
             Text(alertMessage)
         }
+        .confirmationDialog(
+            "退出登录？",
+            isPresented: $showExitConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("退出登录", role: .destructive) {
+                Task { await auth.logout() }
+            }
+            Button("继续填写", role: .cancel) {}
+        } message: {
+            Text("当前填写的内容还没有保存，退出后需要重新填写。")
+        }
     }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "sparkles")
-                Text("AI 健身教练")
+            HStack(spacing: 10) {
+                HStack(spacing: 8) {
+                    Image(systemName: "sparkles")
+                    Text("AI 健身教练")
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.accent)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Theme.accent.opacity(0.12), in: Capsule())
+
+                Spacer()
+
+                Button {
+                    showExitConfirm = true
+                } label: {
+                    Label("退出", systemImage: "rectangle.portrait.and.arrow.right")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Theme.secondaryText)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("退出登录")
             }
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(Theme.accent)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Theme.accent.opacity(0.12), in: Capsule())
 
             Text("先花 2 分钟\n让计划适合你")
                 .font(.system(size: 32, weight: .bold, design: .rounded))

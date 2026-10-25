@@ -38,6 +38,7 @@ struct LoginView: View {
     @State private var localError: String?
     @State private var legal: LegalDocumentKind?
     @State private var showServerSettings = false
+    @State private var showPasswordReset = false
 
     private var errorText: String? {
         localError ?? auth.errorMessage
@@ -79,6 +80,9 @@ struct LoginView: View {
         }
         .sheet(isPresented: $showServerSettings) {
             ServerSettingsView()
+        }
+        .sheet(isPresented: $showPasswordReset) {
+            PasswordResetView(prefillPhone: account.count == 11 ? account : phone)
         }
         .onChange(of: mode) { _, _ in
             localError = nil
@@ -382,13 +386,24 @@ struct LoginView: View {
                 }
             }
 
-            Text("密码至少 8 位，含字母和数字")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-                .lineLimit(1)
-                .minimumScaleFactor(0.9)
-                .frame(maxWidth: .infinity, minHeight: 16, alignment: .leading)
-                .padding(.leading, 2)
+            HStack(spacing: 8) {
+                Text("密码至少 8 位，含字母和数字")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.9)
+
+                Spacer(minLength: 4)
+
+                Button("忘记密码？") {
+                    showPasswordReset = true
+                }
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(Theme.accent)
+                .buttonStyle(.plain)
+            }
+            .frame(maxWidth: .infinity, minHeight: 16, alignment: .leading)
+            .padding(.leading, 2)
         }
     }
 

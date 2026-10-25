@@ -21,6 +21,7 @@ struct SettingsView: View {
     @State private var message = ""
     @State private var legalDocument: LegalDocumentKind?
     @State private var showExport = false
+    @State private var showPasswordSettings = false
 
     var body: some View {
         ScrollView {
@@ -74,6 +75,9 @@ struct SettingsView: View {
         .sheet(item: $legalDocument) { kind in
             LegalDocumentView(kind: kind)
         }
+        .sheet(isPresented: $showPasswordSettings) {
+            PasswordSettingsView()
+        }
     }
 
     // MARK: - 账号
@@ -111,6 +115,10 @@ struct SettingsView: View {
                 Text(String(auth.userID?.prefix(8) ?? ""))
                     .font(.caption.monospaced())
                     .foregroundStyle(Theme.tertiaryText)
+            }
+
+            infoRow("设置 / 修改登录密码", icon: "key") {
+                showPasswordSettings = true
             }
         }
         .card()
