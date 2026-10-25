@@ -339,15 +339,9 @@ struct EquipmentSearchView: View {
         guard !store.equipmentLibrary.contains(where: { $0.slug == exercise.slug }) else {
             return
         }
-        store.addEquipment(
-            EquipmentItem(
-                name: exercise.nameZH,
-                slug: exercise.slug,
-                muscle: exercise.muscle,
-                equipment: exercise.equipment,
-                videoURL: exercise.videoURL?.absoluteString,
-                notes: "从动作库搜索添加"
-            )
+        store.addExercisesToEquipmentLibrary(
+            [exercise],
+            note: "从动作库搜索添加"
         )
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()

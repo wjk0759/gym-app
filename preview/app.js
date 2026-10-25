@@ -81,6 +81,7 @@ const ICONS = {
   plan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>',
   coach: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-5 4v-4H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>',
   equipment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3M17 8h3M7 6v4M17 6v4M7 8h10"/><circle cx="12" cy="16" r="4"/></svg>',
+  dumbbell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8v8M4 10v4M17.5 8v8M20 10v4M8 12h8"/></svg>',
   user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.6-3.6 3.1-5.5 7-5.5s6.4 1.9 7 5.5"/></svg>',
   settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>'
 };
@@ -270,6 +271,7 @@ function normalizeState(value) {
   next.equipSelected = Array.isArray(next.equipSelected) ? next.equipSelected : [];
   next.equipMuscle = next.equipMuscle || "全部";
   next.equipFilter = next.equipFilter || "全部";
+  next.equipSelectionOpen = !!next.equipSelectionOpen;
   next.equipRecognitionCandidates = Array.isArray(next.equipRecognitionCandidates) ? next.equipRecognitionCandidates : [];
   next.equipRecognitionPhoto = !!next.equipRecognitionPhoto;
   next.equipLibraryFromProfile = !!next.equipLibraryFromProfile;
@@ -329,6 +331,7 @@ function initialState() {
     equipSelected: [],
     equipMuscle: "全部",
     equipFilter: "全部",
+    equipSelectionOpen: false,
     equipRecognitionCandidates: [],
     equipRecognitionPhoto: false,
     equipLibraryFromProfile: false,
@@ -1196,6 +1199,10 @@ function equipmentPickerExercises() {
       || item.name.includes(query)
       || item.muscle.includes(query)
       || item.equip.includes(query);
+
+    // 搜索时跨全部动作查找，不受肌群、器械和“已添加”分类限制。
+    if (query) return searchMatch;
+
     const muscleMatch = state.equipMuscle === "全部" || item.muscle === state.equipMuscle;
     const savedMatch = state.equipFilter !== "已添加"
       || state.equipmentLibrary.some((entry) => entry.slug === slug);
@@ -1237,34 +1244,22 @@ function equipmentPickerScreen() {
   const muscles = ["全部", "胸", "背", "腿", "臀", "肩", "手臂", "核心", "有氧"];
   const equipment = ["全部", "已添加", ...new Set(Object.values(EX).map((item) => item.equip))];
   const selected = state.equipSelected.map((slug) => ({ slug, ...EX[slug] })).filter((item) => item.name);
+  const searching = String(state.equipSearchQuery || "").trim().length > 0;
 
   return `
     <div class="stack equipment-picker">
       <div class="between page-head">
-        <div class="row gap8">
-          <div class="h1">已选择动作</div>
-          <span class="accent small strong">${selected.length}</span>
-        </div>
+        <div class="h1">选择动作</div>
         <button class="link muted-link" onclick="app.equipmentLibraryOpen()">器械库</button>
       </div>
-
-      ${selected.length ? `
-        <div class="selected-exercise-scroll">
-          ${selected.map((item) => `
-            <div class="selected-exercise-chip">
-              <span>${equipGlyph({ muscle: item.muscle, equip: item.equip })}</span>
-              <span>${esc(item.name)}</span>
-              <button onclick="app.equipmentPickerToggle('${item.slug}')">×</button>
-            </div>
-          `).join("")}
-        </div>
-      ` : `<div class="tiny muted">从下面选择动作，组合成一次训练。</div>`}
 
       <div class="equipment-search-row">
         <span class="search-glyph">⌕</span>
         <input id="equipment-picker-search" type="text" placeholder="输入动作名字搜索" value="${esc(state.equipSearchQuery)}" oninput="app.equipmentPickerQuery(this.value)">
         <button class="equipment-camera-btn" onclick="app.equipmentRecognitionOpen()">◉ 识别</button>
       </div>
+
+      <div id="equipment-search-scope" class="equipment-search-scope" ${searching ? "" : "hidden"}>搜索全部动作，当前分类暂不生效</div>
 
       <div class="equipment-filter-scroll">
         ${equipment.map((label) => `
@@ -1281,11 +1276,84 @@ function equipmentPickerScreen() {
         <div class="exercise-pick-grid" id="equipment-picker-grid">${equipmentPickerGrid()}</div>
       </div>
 
-      <div class="equipment-compose-bar">
-        <button class="btn btn-secondary" onclick="app.equipmentPickerClear()" ${selected.length ? "" : "disabled"}>清空</button>
-        <button class="btn btn-primary" onclick="app.equipmentPickerCompose()" ${selected.length ? "" : "disabled"}>${selected.length ? `组合 ${selected.length} 个动作` : "组合动作"}</button>
-      </div>
+      <button class="equipment-selection-fab no-drag ${selected.length ? "has-items" : ""}" onclick="app.equipmentSelectionToggle()" aria-label="已选动作，共 ${selected.length} 个">
+        ${ICONS.dumbbell}
+        ${selected.length ? `<span class="equipment-selection-fab-count">${selected.length}</span>` : ""}
+        <span class="equipment-selection-fab-label">已选动作</span>
+        <span class="equipment-selection-fab-chevron">↑</span>
+      </button>
+
+      ${state.equipSelectionOpen ? equipmentSelectionPanel(selected) : ""}
     </div>
+  `;
+}
+
+function equipmentSelectionPanel(selected) {
+  const savedSlugs = new Set(state.equipmentLibrary.map((item) => item.slug).filter(Boolean));
+  const unsavedCount = selected.filter((item) => !savedSlugs.has(item.slug)).length;
+  const librarySubtitle = !selected.length
+    ? "先选择动作"
+    : unsavedCount === 0
+      ? "所选动作都在器械库里"
+      : `把 ${unsavedCount} 个动作存入器械库`;
+
+  return `
+    <div class="equipment-selection-backdrop no-drag" onclick="app.equipmentSelectionClose()"></div>
+    <section class="equipment-selection-popover" role="dialog" aria-label="已选动作">
+      <div class="equipment-selection-arrow"></div>
+      <div class="equipment-selection-head no-drag">
+        <div class="grow">
+          <div class="row gap6">
+            <span class="h3">已选动作</span>
+            <span class="accent small strong">${selected.length}</span>
+          </div>
+          <div class="tiny muted" style="margin-top:3px">选好后直接生成训练，或存入器械库</div>
+        </div>
+        ${selected.length ? `<button class="link muted-link" onclick="app.equipmentPickerClear()">清空</button>` : ""}
+      </div>
+
+      <div class="equipment-selection-list ${selected.length ? "" : "empty"}">
+        ${selected.length ? selected.map((item) => {
+          const saved = savedSlugs.has(item.slug);
+          return `
+            <div class="equipment-selection-row">
+              <span class="equipment-selection-glyph">${equipGlyph({ muscle: item.muscle, equip: item.equip })}</span>
+              <div class="grow">
+                <div class="small strong">${esc(item.name)}</div>
+                <div class="tiny faint">${item.muscle} · ${item.equip}${saved ? " · 已在库" : ""}</div>
+              </div>
+              <button class="equipment-selection-remove" onclick="app.equipmentPickerToggle('${item.slug}')" aria-label="移除 ${esc(item.name)}">×</button>
+            </div>
+          `;
+        }).join("") : `
+          <div class="equipment-selection-empty">
+            <div class="equipment-selection-empty-icon">${ICONS.dumbbell}</div>
+            <div class="h3">还没有选择动作</div>
+            <div class="tiny muted">在下面点选动作，再决定生成训练或存入器械库。</div>
+          </div>
+        `}
+      </div>
+
+      <div class="equipment-selection-actions no-drag">
+        <button class="selection-action primary" onclick="app.equipmentSelectionMakePlan()" ${selected.length ? "" : "disabled"}>
+          <span class="selection-action-icon">${ICONS.plan}</span>
+          <span class="selection-action-copy">
+            <span class="selection-action-title">制作训练计划</span>
+            <span class="selection-action-sub">生成一次自选训练，不改动长期计划</span>
+          </span>
+          <span class="selection-action-chevron">›</span>
+        </button>
+
+        <button class="selection-action secondary" onclick="app.equipmentSelectionAddToLibrary()" ${selected.length && unsavedCount ? "" : "disabled"}>
+          <span class="selection-action-icon">${ICONS.equipment}</span>
+          <span class="selection-action-copy">
+            <span class="selection-action-title">加入我的器械库</span>
+            <span class="selection-action-sub">${librarySubtitle}</span>
+          </span>
+          <span class="selection-action-chevron">›</span>
+        </button>
+      </div>
+    </section>
   `;
 }
 
@@ -2527,6 +2595,81 @@ function historyScreen() {
   `;
 }
 
+/* ---------------- drag to scroll (desktop preview) ---------------- */
+
+let dragClickSuppressedUntil = 0;
+
+window.addEventListener("click", (event) => {
+  if (performance.now() >= dragClickSuppressedUntil) return;
+  event.preventDefault();
+  event.stopPropagation();
+  dragClickSuppressedUntil = 0;
+}, true);
+
+function suppressPreviewClick() {
+  // 只吞掉拖拽结束后的那一次 click，避免影响下一次正常点击。
+  dragClickSuppressedUntil = performance.now() + 120;
+}
+
+function enableDragScroll(container) {
+  if (!container || container.dataset.dragScrollReady === "1") return;
+  container.dataset.dragScrollReady = "1";
+
+  container.addEventListener("pointerdown", (event) => {
+    if (event.pointerType !== "mouse" && event.pointerType !== "pen") return;
+    if (event.button !== 0) return;
+    if (event.target.closest("input, textarea, select, [contenteditable='true'], .no-drag")) return;
+    if (
+      container.scrollHeight <= container.clientHeight + 1
+      && container.scrollWidth <= container.clientWidth + 1
+    ) {
+      return;
+    }
+
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startTop = container.scrollTop;
+    const startLeft = container.scrollLeft;
+    const pointerId = event.pointerId;
+    let moved = false;
+
+    const move = (moveEvent) => {
+      if (moveEvent.pointerId !== pointerId) return;
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+      if (!moved && Math.abs(dx) + Math.abs(dy) < 4) return;
+      moved = true;
+      moveEvent.preventDefault();
+      container.scrollTop = startTop - dy;
+      container.scrollLeft = startLeft - dx;
+      document.body.classList.add("dragging-scroll");
+    };
+
+    const end = (endEvent) => {
+      if (endEvent.pointerId !== pointerId) return;
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
+      document.body.classList.remove("dragging-scroll");
+      if (moved) suppressPreviewClick();
+    };
+
+    window.addEventListener("pointermove", move, { passive: false });
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+    event.stopPropagation();
+  }, { passive: true });
+}
+
+function setupDragScroll() {
+  const root = document.getElementById("app");
+  if (!root) return;
+  enableDragScroll(root);
+  root.querySelectorAll(
+    ".chat-scroll, .equipment-selection-list, .equipment-filter-scroll, .week-tabs, .suggestions, .coach-skill-bar"
+  ).forEach(enableDragScroll);
+}
+
 /* ---------------- render ---------------- */
 
 let lastRouteKey = "";
@@ -2554,6 +2697,7 @@ function render() {
     if (loginChanged) {
       requestAnimationFrame(() => { root.scrollTop = 0; });
     }
+    setupDragScroll();
     return;
   }
 
@@ -2598,6 +2742,7 @@ function render() {
   root.className = "app"
     + (state.screen === "tabs" ? "" : " no-tabs")
     + (state.screen === "tabs" && state.tab === "coach" ? " chat-mode" : "")
+    + (state.equipSelectionOpen && state.screen === "tabs" && state.tab === "equipment" ? " selection-open" : "")
     + (state.screen === "equipmentCamera" ? " camera-mode" : "")
     + (routeChanged ? " route-changed" : "");
   document.getElementById("tabbar").innerHTML = tabbar();
@@ -2613,6 +2758,7 @@ function render() {
     }, 20);
   }
 
+  setupDragScroll();
 }
 
 function coachReply(text, skill = "trainer") {
@@ -2913,6 +3059,7 @@ window.app = {
   tab(tab) {
     state.screen = "tabs";
     state.tab = tab;
+    state.equipSelectionOpen = false;
     save();
     render();
   },
@@ -2937,6 +3084,7 @@ window.app = {
   },
 
   back() {
+    state.equipSelectionOpen = false;
     if (state.screen === "foodCustom") { state.foodCustomDraft = null; state.screen = "foodAdd"; }
     else if (state.screen === "foodAdd") state.screen = "nutrition";
     else if (state.screen === "history") { state.screen = "tabs"; state.tab = "home"; }
@@ -2955,6 +3103,7 @@ window.app = {
   backTo(tab) {
     state.screen = "tabs";
     state.tab = tab;
+    state.equipSelectionOpen = false;
     save();
     render();
   },
@@ -3598,6 +3747,7 @@ window.app = {
   equipmentTabOpen() {
     state.screen = "tabs";
     state.tab = "equipment";
+    state.equipSelectionOpen = false;
     save();
     render();
   },
@@ -3605,6 +3755,7 @@ window.app = {
   equipmentLibraryOpen(source = "equipment") {
     state.screen = "equipmentLibrary";
     state.equipLibraryFromProfile = source === "profile";
+    state.equipSelectionOpen = false;
     save();
     render();
   },
@@ -3625,6 +3776,54 @@ window.app = {
     render();
   },
 
+  equipmentSelectionToggle() {
+    state.equipSelectionOpen = !state.equipSelectionOpen;
+    save();
+    render();
+  },
+
+  equipmentSelectionClose() {
+    state.equipSelectionOpen = false;
+    save();
+    render();
+  },
+
+  equipmentSelectionMakePlan() {
+    if (!state.equipSelected.length) return;
+    state.equipSelectionOpen = false;
+    this.equipmentPickerCompose();
+  },
+
+  equipmentSelectionAddToLibrary() {
+    const selected = state.equipSelected
+      .map((slug) => ({ slug, ...EX[slug] }))
+      .filter((item) => item.name);
+    if (!selected.length) return;
+
+    const existing = new Set(state.equipmentLibrary.map((item) => item.slug).filter(Boolean));
+    let added = 0;
+    selected.forEach((item) => {
+      if (existing.has(item.slug)) return;
+      existing.add(item.slug);
+      state.equipmentLibrary.push({
+        id: `e${Date.now()}-${added}`,
+        name: item.name,
+        slug: item.slug,
+        muscle: item.muscle,
+        equip: item.equip,
+        video: false,
+        notes: "从已选动作加入"
+      });
+      added += 1;
+    });
+
+    state.equipSelected = [];
+    state.equipSelectionOpen = false;
+    save();
+    render();
+    toast(added > 0 ? `已加入器械库 ${added} 个动作` : "这些动作已经在器械库");
+  },
+
   equipmentPickerMuscle(value) {
     state.equipMuscle = value;
     save();
@@ -3641,6 +3840,8 @@ window.app = {
     state.equipSearchQuery = value;
     const grid = document.getElementById("equipment-picker-grid");
     if (grid) grid.innerHTML = equipmentPickerGrid();
+    const scope = document.getElementById("equipment-search-scope");
+    if (scope) scope.hidden = !String(value || "").trim();
     save();
   },
 
@@ -3653,7 +3854,7 @@ window.app = {
       id: `combo-${Date.now()}`,
       week: 1,
       weekday: 7,
-      title: "组合训练",
+      title: "自选训练",
       focus: [...new Set(selected.map((item) => item.muscle))],
       exercises: selected.map((item, index) => ({
         id: `combo-ex-${Date.now()}-${index}`,
@@ -3680,6 +3881,7 @@ window.app = {
       notes: ""
     };
     state.equipSelected = [];
+    state.equipSelectionOpen = false;
     state.screen = "workout";
     save();
     render();
@@ -3688,6 +3890,7 @@ window.app = {
   equipmentRecognitionOpen() {
     state.screen = "equipmentCamera";
     state.equipRecognitionPhoto = false;
+    state.equipSelectionOpen = false;
     state.equipRecognitionCandidates = [];
     save();
     render();

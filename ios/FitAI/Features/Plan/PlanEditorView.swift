@@ -177,13 +177,17 @@ struct ExercisePickerView: View {
     @State private var selectedMuscle: MuscleGroup?
 
     private var results: [Exercise] {
-        ExerciseLibrary
-            .candidates(muscle: selectedMuscle, equipment: equipment)
-            .filter { exercise in
-                query.isEmpty
-                    || exercise.nameZH.contains(query)
-                    || exercise.nameEN.localizedCaseInsensitiveContains(query)
-            }
+        let text = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else {
+            return ExerciseLibrary.candidates(muscle: selectedMuscle, equipment: equipment)
+        }
+        // 搜索时跨全量动作库查找，不再受当前肌群 / 器械筛选限制。
+        return ExerciseLibrary.all.filter { exercise in
+            exercise.nameZH.localizedCaseInsensitiveContains(text)
+                || exercise.nameEN.localizedCaseInsensitiveContains(text)
+                || exercise.muscle.label.localizedCaseInsensitiveContains(text)
+                || exercise.equipment.label.localizedCaseInsensitiveContains(text)
+        }
     }
 
     var body: some View {

@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// 器械 Tab 的动作选择器：按肌群和器械筛选，选中的动作可以组合成一次训练。
+/// 器械 Tab 的动作选择器：按肌群和器械筛选，选中的动作可以生成自选训练或加入器械库。
 struct EquipmentPickerView: View {
     @Environment(AppStore.self) private var store
 
@@ -11,6 +11,8 @@ struct EquipmentPickerView: View {
     @State private var savedOnly = false
     @State private var query = ""
     @State private var showScanner = false
+    @State private var showSelectionPanel = false
+    @State private var feedback: String?
     @State private var customDay: PlanDay?
 
     init() {}
@@ -26,17 +28,22 @@ struct EquipmentPickerView: View {
 
     private var filteredExercises: [Exercise] {
         let text = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let isSearching = !text.isEmpty
+
         return ExerciseLibrary.all
             .filter { exercise in
-                let queryMatch = text.isEmpty
-                    || exercise.nameZH.localizedCaseInsensitiveContains(text)
-                    || exercise.nameEN.localizedCaseInsensitiveContains(text)
-                    || exercise.muscle.label.contains(text)
-                    || exercise.equipment.label.contains(text)
+                // 一旦输入搜索词，就搜索全部动作，不再受当前肌群 / 器械分类限制。
+                if isSearching {
+                    return exercise.nameZH.localizedCaseInsensitiveContains(text)
+                        || exercise.nameEN.localizedCaseInsensitiveContains(text)
+                        || exercise.muscle.label.localizedCaseInsensitiveContains(text)
+                        || exercise.equipment.label.localizedCaseInsensitiveContains(text)
+                }
+
                 let muscleMatch = selectedMuscle == nil || exercise.muscle == selectedMuscle
                 let equipmentMatch = selectedEquipment == nil || exercise.equipment == selectedEquipment
                 let savedMatch = !savedOnly || store.equipmentLibrary.contains { $0.slug == exercise.slug }
-                return queryMatch && muscleMatch && equipmentMatch && savedMatch
+                return muscleMatch && equipmentMatch && savedMatch
             }
             .sorted { left, right in
                 let leftSaved = store.equipmentLibrary.contains { $0.slug == left.slug }
@@ -51,8 +58,11 @@ struct EquipmentPickerView: View {
     var body: some View {
         AppScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                selectedSection
                 searchBar
+
+                if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    searchScopeHint
+                }
 
                 HStack(alignment: .top, spacing: 10) {
                     muscleRail
@@ -66,7 +76,7 @@ struct EquipmentPickerView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
-            .padding(.bottom, 94)
+            .padding(.bottom, 28)
         }
         .background(AppBackground())
         .navigationTitle("选择动作")
@@ -81,6 +91,15 @@ struct EquipmentPickerView: View {
                 .accessibilityLabel("器械库")
             }
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            HStack {
+                selectionFloatingButton
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 6)
+            .padding(.bottom, 8)
+        }
         .navigationDestination(isPresented: $showScanner) {
             EquipmentRecognitionView { exercise in
                 if !selectedExercises.contains(where: { $0.slug == exercise.slug }) {
@@ -88,77 +107,108 @@ struct EquipmentPickerView: View {
                 }
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            actionBar
-        }
         .fullScreenCover(item: $customDay) { day in
             WorkoutSessionView(day: day)
         }
-    }
-
-    private var selectedSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("已选择动作")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                Text("\(selectedExercises.count)")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
-                Spacer()
-                if !selectedExercises.isEmpty {
-                    Button("清空") {
-                        selectedExercises.removeAll()
-                    }
-                    .font(.caption)
-                    .foregroundStyle(Theme.tertiaryText)
-                }
-            }
-
-            if selectedExercises.isEmpty {
-                Text("从下面选择动作，组合成一次训练。")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(selectedExercises) { exercise in
-                            selectedChip(exercise)
-                        }
-                    }
-                }
-            }
+        .overlay(alignment: .top) {
+            feedbackBanner
         }
     }
 
-    private func selectedChip(_ exercise: Exercise) -> some View {
-        HStack(spacing: 7) {
-            Image(systemName: exercise.equipment.symbolName)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.accent)
-                .frame(width: 26, height: 26)
-                .background(Theme.accent.opacity(0.12), in: Circle())
+    private var searchScopeHint: some View {
+        Label("搜索全部动作，当前分类暂不生效", systemImage: "magnifyingglass")
+            .font(.caption2)
+            .foregroundStyle(Theme.tertiaryText)
+            .padding(.leading, 4)
+    }
 
-            Text(exercise.nameZH)
+    private var selectionFloatingButton: some View {
+        Button {
+            UIApplication.shared.sendAction(
+                #selector(UIResponder.resignFirstResponder),
+                to: nil,
+                from: nil,
+                for: nil
+            )
+            showSelectionPanel = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: selectedExercises.isEmpty ? "dumbbell" : "dumbbell.fill")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(selectedExercises.isEmpty ? Theme.tertiaryText : Theme.accent)
+
+                if !selectedExercises.isEmpty {
+                    Text("\(selectedExercises.count)")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundStyle(.black)
+                        .frame(minWidth: 18, minHeight: 18)
+                        .background(Theme.accent, in: Capsule())
+                }
+
+                Text("已选动作")
+                    .font(.subheadline.weight(.semibold))
+
+                Image(systemName: "chevron.up")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            .foregroundStyle(selectedExercises.isEmpty ? Theme.secondaryText : Color.white)
+            .padding(.horizontal, 15)
+            .padding(.vertical, 11)
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(
+                Capsule().stroke(
+                    selectedExercises.isEmpty ? Theme.stroke : Theme.accent.opacity(0.5),
+                    lineWidth: 1
+                )
+            )
+            .shadow(color: .black.opacity(0.26), radius: 16, y: 8)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("已选动作，共 \(selectedExercises.count) 个")
+        .popover(
+            isPresented: $showSelectionPanel,
+            attachmentAnchor: .rect(.bounds),
+            arrowEdge: .bottom
+        ) {
+            EquipmentSelectionPanelView(
+                exercises: selectedExercises,
+                onRemove: { exercise in
+                    selectedExercises.removeAll { $0.slug == exercise.slug }
+                },
+                onClear: {
+                    selectedExercises.removeAll()
+                },
+                onMakePlan: makeTrainingPlanFromSelection,
+                onAddToLibrary: addSelectedToLibrary
+            )
+            .presentationCompactAdaptation(.popover)
+            .presentationBackground(Theme.background)
+        }
+    }
+
+    @ViewBuilder
+    private var feedbackBanner: some View {
+        if let feedback {
+            Text(feedback)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.white)
-                .lineLimit(1)
-
-            Button {
-                selectedExercises.removeAll { $0.slug == exercise.slug }
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.caption)
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("移除 \(exercise.nameZH)")
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay(Capsule().stroke(Theme.stroke, lineWidth: 1))
+                .shadow(color: .black.opacity(0.24), radius: 12, y: 6)
+                .padding(.top, 6)
+                .allowsHitTesting(false)
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .task(id: feedback) {
+                    try? await Task.sleep(nanoseconds: 2_200_000_000)
+                    guard !Task.isCancelled else { return }
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        self.feedback = nil
+                    }
+                }
         }
-        .padding(.leading, 8)
-        .padding(.trailing, 10)
-        .padding(.vertical, 6)
-        .background(Theme.surfaceStrong, in: Capsule())
-        .overlay(Capsule().stroke(Theme.stroke, lineWidth: 1))
     }
 
     private var searchBar: some View {
@@ -343,37 +393,6 @@ struct EquipmentPickerView: View {
         )
     }
 
-    private var actionBar: some View {
-        HStack(spacing: 10) {
-            Button {
-                selectedExercises.removeAll()
-            } label: {
-                Text("清空")
-            }
-            .buttonStyle(SecondaryButtonStyle())
-            .disabled(selectedExercises.isEmpty)
-            .opacity(selectedExercises.isEmpty ? 0.45 : 1)
-
-            Button {
-                startCombination()
-            } label: {
-                Text(selectedExercises.isEmpty ? "选择动作" : "组合 \(selectedExercises.count) 个动作")
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(selectedExercises.isEmpty)
-            .opacity(selectedExercises.isEmpty ? 0.45 : 1)
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 10)
-        .padding(.bottom, 8)
-        .background(.ultraThinMaterial)
-        .overlay(alignment: .top) {
-            Rectangle()
-                .fill(Theme.stroke)
-                .frame(height: 1)
-        }
-    }
-
     private func toggle(_ exercise: Exercise) {
         if selectedExercises.contains(where: { $0.slug == exercise.slug }) {
             selectedExercises.removeAll { $0.slug == exercise.slug }
@@ -383,9 +402,32 @@ struct EquipmentPickerView: View {
         UISelectionFeedbackGenerator().selectionChanged()
     }
 
-    private func startCombination() {
+    private func makeTrainingPlanFromSelection() {
         guard !selectedExercises.isEmpty else { return }
-        let exercises = selectedExercises.map { exercise in
+        let exercises = selectedExercises
+        selectedExercises.removeAll()
+        showSelectionPanel = false
+
+        // 等气泡收起后再打开全屏训练，避免两个 presentation 争抢。
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            startCombination(with: exercises)
+        }
+    }
+
+    private func addSelectedToLibrary() {
+        guard !selectedExercises.isEmpty else { return }
+        let added = store.addExercisesToEquipmentLibrary(selectedExercises)
+        UINotificationFeedbackGenerator().notificationOccurred(added > 0 ? .success : .warning)
+        selectedExercises.removeAll()
+        showSelectionPanel = false
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
+            feedback = added > 0 ? "已加入器械库 \(added) 个动作" : "这些动作已经在器械库"
+        }
+    }
+
+    private func startCombination(with selected: [Exercise]) {
+        guard !selected.isEmpty else { return }
+        let exercises = selected.map { exercise in
             PlanExercise(
                 slug: exercise.slug,
                 sets: 3,
@@ -395,10 +437,10 @@ struct EquipmentPickerView: View {
                 rpe: 7.5
             )
         }
-        let focus = Array(Set(selectedExercises.map(\.muscle)))
+        let focus = Array(Set(selected.map(\.muscle)))
         customDay = PlanDay(
             weekday: Weekday.today,
-            title: "组合训练",
+            title: "自选训练",
             focus: focus,
             exercises: exercises
         )
