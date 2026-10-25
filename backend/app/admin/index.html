@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>FitAI 数据后台</title>
+  <link rel="stylesheet" href="/admin/assets/admin.css">
+</head>
+<body>
+  <div id="login-screen" class="login-screen">
+    <form id="login-form" class="login-card">
+      <div class="brand-mark">F</div>
+      <div class="eyebrow">FITAI ADMIN</div>
+      <h1>数据后台</h1>
+      <p class="muted">查看用户、计划、训练、对话与识别数据。仅限内部使用。</p>
+      <label for="token-input">管理员口令</label>
+      <input id="token-input" type="password" autocomplete="current-password" placeholder="输入 ADMIN_TOKEN" required>
+      <button class="btn btn-primary" type="submit">进入后台</button>
+      <div id="login-error" class="form-error"></div>
+      <p class="login-hint">本地开发默认口令：<code>dev-admin-token</code>。生产环境必须通过环境变量修改。</p>
+    </form>
+  </div>
+
+  <div id="admin-app" class="admin-app" hidden>
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-mark small">F</div>
+        <div>
+          <strong>FitAI</strong>
+          <span>数据后台</span>
+        </div>
+      </div>
+      <nav id="nav" class="nav">
+        <button data-view="dashboard" class="nav-item active"><span>▦</span>数据概览</button>
+        <button data-view="users" class="nav-item"><span>◉</span>用户</button>
+        <button data-view="plans" class="nav-item"><span>▤</span>训练计划</button>
+        <button data-view="workouts" class="nav-item"><span>↗</span>训练记录</button>
+        <button data-view="chats" class="nav-item"><span>◌</span>AI 对话</button>
+        <button data-view="scans" class="nav-item"><span>⌁</span>器械识别</button>
+        <button data-view="exercises" class="nav-item"><span>◎</span>动作库</button>
+        <button data-view="audit" class="nav-item"><span>≡</span>操作日志</button>
+      </nav>
+      <div class="sidebar-foot">
+        <span id="env-badge" class="badge">ENV</span>
+        <button id="logout-btn" class="btn btn-ghost btn-sm">退出</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">CONTROL CENTER</div>
+          <h1 id="page-title">数据概览</h1>
+          <p id="page-subtitle" class="muted">产品运行状态与最近活动</p>
+        </div>
+        <div class="top-actions">
+          <span class="status-dot"></span>
+          <span class="muted small">后台在线</span>
+        </div>
+      </header>
+      <section id="view-root" class="view-root">
+        <div class="loading">正在加载后台数据…</div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="toast" class="toast"></div>
+
+  <script src="/admin/assets/admin.js"></script>
+</body>
+</html>

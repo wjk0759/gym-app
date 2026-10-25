@@ -120,9 +120,9 @@ struct PaywallView: View {
             .card(padding: 24)
         } else if manager.products.isEmpty {
             VStack(spacing: 12) {
-                Text("订阅商品尚未配置")
+                Text("订阅即将开放")
                     .font(.headline)
-                Text("在 App Store Connect 创建月付/年付商品，或添加 StoreKit 配置文件后即可测试。")
+                Text("FitAI Pro 正在准备中，稍后可以在 App Store 完成订阅。")
                     .font(.caption)
                     .foregroundStyle(Theme.secondaryText)
                     .multilineTextAlignment(.center)
@@ -182,7 +182,7 @@ struct PaywallView: View {
     }
 
     private var legal: some View {
-        Text("付款将通过 Apple ID 完成。订阅到期前 24 小时会自动续期，可在系统设置中关闭。当前版本为订阅功能基础实现，商品与价格以 App Store 页面为准。")
+        Text("付款将通过 Apple ID 完成。订阅到期前 24 小时会自动续期，可在系统设置中关闭。商品与价格以 App Store 页面为准。")
             .font(.caption2)
             .foregroundStyle(Theme.tertiaryText)
             .frame(maxWidth: .infinity, alignment: .leading)

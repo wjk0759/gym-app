@@ -196,6 +196,61 @@ def main() -> None:
         assert response.status_code == 501, response.text
         print("meituan: not configured (expected)")
 
+        admin_headers = {"X-Admin-Token": "dev-admin-token"}
+        assert client.get("/api/v1/admin/stats").status_code == 401
+        assert client.get(
+            "/api/v1/admin/stats", headers={"X-Admin-Token": "wrong"}
+        ).status_code == 401
+        response = client.get("/api/v1/admin/stats", headers=admin_headers)
+        assert response.status_code == 200, response.text
+        admin_stats = response.json()
+        assert admin_stats["users_total"] >= 1, admin_stats
+        print("admin stats:", admin_stats["users_total"], "users,", admin_stats["sessions_total"], "sessions")
+
+        response = client.get("/api/v1/admin/users", headers=admin_headers)
+        assert response.status_code == 200, response.text
+        assert response.json()["items"], response.text
+        print("admin users:", len(response.json()["items"]))
+
+        response = client.get(
+            f"/api/v1/admin/users/{user_id}",
+            headers=admin_headers,
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["profile"]["nickname"] == "小林"
+        print("admin user detail:", response.json()["profile"]["nickname"])
+
+        response = client.get("/api/v1/admin/exercises?q=深蹲", headers=admin_headers)
+        assert response.status_code == 200, response.text
+        exercise_items = response.json()["items"]
+        assert exercise_items, response.text
+        exercise_slug = exercise_items[0]["slug"]
+        response = client.patch(
+            f"/api/v1/admin/exercises/{exercise_slug}",
+            json={"instructions": exercise_items[0]["instructions"] or "admin smoke"},
+            headers=admin_headers,
+        )
+        assert response.status_code == 200, response.text
+        print("admin exercise edit:", exercise_slug)
+
+        response = client.get(
+            f"/api/v1/admin/users/{user_id}/export",
+            headers=admin_headers,
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["user"]["id"] == user_id
+        print("admin export: ok")
+
+        response = client.get("/api/v1/admin/audit", headers=admin_headers)
+        assert response.status_code == 200, response.text
+        assert response.json()["items"], response.text
+        print("admin audit:", len(response.json()["items"]), "entries")
+
+        response = client.get("/admin")
+        assert response.status_code == 200, response.text
+        assert "FitAI 数据后台" in response.text
+        print("admin console: ok")
+
     print("\nSMOKE OK")
 
 

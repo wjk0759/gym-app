@@ -93,7 +93,11 @@ struct NutritionView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let consumed = store.todayNutrition
+        let remainingKcal = max(0, targets.kcal - Int(consumed.kcal))
+        let remainingProtein = max(0, targets.protein - Int(consumed.protein))
+
+        return VStack(alignment: .leading, spacing: 8) {
             Text("今日热量目标")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
@@ -106,6 +110,12 @@ struct NutritionView: View {
                     .font(.subheadline)
                     .foregroundStyle(Theme.secondaryText)
             }
+
+            Text(remainingKcal > 0
+                 ? "还可摄入 \(remainingKcal) kcal · 蛋白质还差 \(remainingProtein)g"
+                 : "已达到今日热量目标 · 蛋白质还差 \(remainingProtein)g")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(remainingKcal > 0 ? Theme.accent : Theme.warning)
 
             Text("按 \(store.profile.goalType.label) 目标与每周 \(store.profile.weeklyDays) 练估算。结果是一个区间，不需要精确到个位数。")
                 .font(.caption)
@@ -301,11 +311,11 @@ struct NutritionView: View {
                 Label(isOpening ? "正在打开…" : "在美团找轻食", systemImage: "arrow.up.right.square")
             }
             .buttonStyle(SecondaryButtonStyle())
-            .disabled(isOpening)
+            .disabled(isOpening || !store.useRemoteAI)
 
             Text(store.useRemoteAI
-                 ? "当前为远程模式：需要后端配置美团联盟链接。"
-                 : "当前为本地模式：先在「我的 → AI 服务」打开远程模式，并配置联盟链接。")
+                 ? "外卖链接由美团联盟提供，价格与营养信息以商家页面为准。"
+                 : "外卖入口正在接入，上线后可用。")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
         }
@@ -322,7 +332,7 @@ struct NutritionView: View {
 
     private func openMeituan() {
         guard store.useRemoteAI else {
-            message = "美团入口依赖后端联盟链接。请先在「我的 → AI 服务」打开远程模式，并在后端 .env 里配置 MEITUAN_DEEPLINK_BASE。"
+            message = "外卖入口正在接入，上线后可用。"
             showAlert = true
             return
         }
@@ -333,11 +343,11 @@ struct NutritionView: View {
                 if let url = try await APIClient.shared.meituanLink(keyword: "轻食") {
                     UIApplication.shared.open(url, options: [:], completionHandler: nil)
                 } else {
-                    message = "后端没有返回可用的美团链接。"
+                    message = "暂时没有可用的外卖链接，请稍后再试。"
                     showAlert = true
                 }
             } catch {
-                message = "美团联盟未配置或后端不可用。上线前需要企业资质并申请 CPS 权限。"
+                message = "外卖入口暂时不可用，请稍后再试。"
                 showAlert = true
             }
             isOpening = false

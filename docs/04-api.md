@@ -395,7 +395,44 @@ data: {"session_id": "uuid", "safety_flag": null}
 
 > 没有联盟资质时返回 501 `MEITUAN_NOT_CONFIGURED`，客户端隐藏入口。
 
-## 3. 限流
+## 3. 管理后台
+
+管理页面：`/admin`
+
+接口前缀：`/api/v1/admin`，所有请求需要：
+
+```http
+X-Admin-Token: <ADMIN_TOKEN>
+```
+
+开发环境未配置 `ADMIN_TOKEN` 时使用 `dev-admin-token`；生产环境留空会关闭后台。
+
+| 接口 | 说明 |
+|---|---|
+| `GET /stats` | 用户、活跃、训练、计划、对话、安全拦截、器械识别、AI 异常 |
+| `GET /users` | 用户列表，支持搜索、分页、包含已注销 |
+| `GET /users/{id}` | 用户档案、目标、计划、训练、对话、识别、AI 任务 |
+| `GET /users/{id}/export` | 导出该用户服务端数据 JSON |
+| `DELETE /users/{id}?purge=false` | 软注销；`purge=true` 时彻底删除 |
+| `POST /users/{id}/restore` | 恢复被软注销用户 |
+| `GET /programs` | 计划列表，支持搜索和状态筛选 |
+| `GET /programs/{id}` | 计划完整训练日与动作 |
+| `POST /programs/{id}/archive` | 归档计划 |
+| `POST /programs/{id}/activate` | 设为该用户当前计划，并归档其他 active 计划 |
+| `GET /workouts` / `GET /workouts/{id}` | 训练列表与逐组详情 |
+| `DELETE /workouts/{id}` | 删除训练记录 |
+| `GET /chats` / `GET /chats/{id}` | 对话列表与消息 |
+| `GET /chats?safety_only=true` | 只看安全兜底对话 |
+| `DELETE /chats/{id}` | 删除对话 |
+| `GET /scans` / `GET /scans/{id}` | 器械识别记录 |
+| `DELETE /scans/{id}` | 删除识别记录 |
+| `GET /exercises` | 动作库搜索 |
+| `PATCH /exercises/{slug}` | 编辑动作说明、视频、禁忌症等 |
+| `GET /audit` | 管理员操作审计日志 |
+
+所有写操作都会记录到 `admin_audit_logs`。
+
+## 4. 限流
 
 | 接口 | 限制 |
 |---|---|

@@ -140,7 +140,7 @@ enum PlanGenerator {
         var newPlan = plan
         newPlan.id = UUID()
         newPlan.version = plan.version + 1
-        newPlan.createdAt = Date()
+        newPlan.updatedAt = Date()
         newPlan.title = plan.title + " · 调整版"
 
         let setsDelta: Int

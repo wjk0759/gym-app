@@ -4,9 +4,11 @@ struct PlanHomeView: View {
     @Environment(AppStore.self) private var store
 
     @State private var selectedWeek = 1
+    @State private var didSelectCurrentWeek = false
     @State private var showRegenerate = false
     @State private var showAdjust = false
     @State private var showMessage = false
+    @State private var showHistory = false
 
     var body: some View {
         NavigationStack {
@@ -27,6 +29,26 @@ struct PlanHomeView: View {
             .background(Theme.background.ignoresSafeArea())
             .navigationTitle("训练计划")
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showHistory = true
+                    } label: {
+                        Image(systemName: "clock.arrow.circlepath")
+                    }
+                    .accessibilityLabel("计划版本历史")
+                }
+            }
+            .sheet(isPresented: $showHistory) {
+                PlanHistoryView()
+            }
+            .onAppear {
+                syncWeekSelection()
+            }
+            .onChange(of: store.plan?.id) { _, _ in
+                didSelectCurrentWeek = false
+                syncWeekSelection()
+            }
             .confirmationDialog(
                 "重新生成计划？",
                 isPresented: $showRegenerate,
@@ -100,7 +122,7 @@ struct PlanHomeView: View {
             NavigationLink {
                 PlanEditorView(day: day)
             } label: {
-                dayCard(day)
+                dayCard(day, in: plan)
             }
             .buttonStyle(.plain)
         }
@@ -141,7 +163,7 @@ struct PlanHomeView: View {
                 .font(.title3.weight(.bold))
                 .foregroundStyle(.white)
 
-            Text("\(plan.weeks) 周 · \(plan.firstWeek.count) 练/周 · \(plan.days.count) 个训练日")
+            Text("\(plan.weeks) 周 · \(plan.firstWeek.count) 练/周 · 当前第 \(store.currentPlanWeek) 周")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
 
@@ -176,16 +198,22 @@ struct PlanHomeView: View {
                     Button {
                         selectedWeek = week
                     } label: {
-                        Text("第 \(week) 周")
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(selectedWeek == week ? Color.black : Theme.secondaryText)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 9)
-                            .background(
-                                Capsule().fill(
-                                    selectedWeek == week ? Theme.accent : Theme.surfaceStrong
-                                )
+                        VStack(spacing: 1) {
+                            Text("第 \(week) 周")
+                                .font(.footnote.weight(.semibold))
+                            if week == store.currentPlanWeek {
+                                Text("本周")
+                                    .font(.system(size: 9, weight: .bold))
+                            }
+                        }
+                        .foregroundStyle(selectedWeek == week ? Color.black : Theme.secondaryText)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(
+                            Capsule().fill(
+                                selectedWeek == week ? Theme.accent : Theme.surfaceStrong
                             )
+                        )
                     }
                     .buttonStyle(.plain)
                 }
@@ -194,18 +222,50 @@ struct PlanHomeView: View {
         }
     }
 
-    private func dayCard(_ day: PlanDay) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+    private func syncWeekSelection() {
+        guard !didSelectCurrentWeek else { return }
+        selectedWeek = store.currentPlanWeek
+        didSelectCurrentWeek = true
+    }
+
+    private func dayCard(_ day: PlanDay, in plan: TrainingPlan) -> some View {
+        let date = plan.date(week: day.weekIndex, weekday: day.weekday)
+        let completed = date.map { dayDate in
+            store.sessions.contains { session in
+                Calendar.current.isDate(session.date, inSameDayAs: dayDate)
+                    && session.dayTitle == day.title
+            }
+        } ?? false
+
+        return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("\(Weekday.label(day.weekday)) · \(day.title)")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                    Text(day.focusText)
+                    HStack(spacing: 6) {
+                        Text("\(Weekday.label(day.weekday)) · \(day.title)")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+
+                        if let date, Calendar.current.isDateInToday(date) {
+                            Text("今天")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(Color.black)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(Theme.accent, in: Capsule())
+                        }
+                    }
+
+                    Text(date.map {
+                        "\($0.formatted(.dateTime.month().day())) · \(day.focusText)"
+                    } ?? day.focusText)
                         .font(.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
                 Spacer()
+                if completed {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Theme.accent)
+                }
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Theme.tertiaryText)
@@ -231,6 +291,117 @@ struct PlanHomeView: View {
                 }
             }
         }
+        .card()
+    }
+}
+
+struct PlanHistoryView: View {
+    @Environment(AppStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 14) {
+                    if let current = store.plan {
+                        currentCard(current)
+                    }
+
+                    if store.planHistory.isEmpty {
+                        EmptyStateView(
+                            icon: "clock.arrow.circlepath",
+                            title: "还没有历史版本",
+                            message: "重新生成或让 AI 调整计划后，旧版本会保留在这里，方便对比和恢复。"
+                        )
+                    } else {
+                        HStack {
+                            Text("历史版本")
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                            Spacer()
+                            Text("\(store.planHistory.count) 个")
+                                .font(.caption)
+                                .foregroundStyle(Theme.secondaryText)
+                        }
+                        .padding(.top, 2)
+
+                        ForEach(store.planHistory) { plan in
+                            historyCard(plan)
+                        }
+                    }
+
+                    Text("最多保留最近 5 个版本。恢复历史版本不会删除训练记录。")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .card(padding: 12)
+                }
+                .padding(20)
+                .padding(.bottom, 20)
+            }
+            .background(Theme.background.ignoresSafeArea())
+            .navigationTitle("计划历史")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("关闭") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func currentCard(_ plan: TrainingPlan) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("当前使用")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4)
+                    .background(Theme.accent.opacity(0.12), in: Capsule())
+                Spacer()
+                Text("v\(plan.version)")
+                    .font(.caption)
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            Text(plan.title)
+                .font(.headline)
+                .foregroundStyle(.white)
+            Text("\(plan.days.count) 个训练日 · 开始于 \(plan.createdAt.formatted(date: .abbreviated, time: .omitted))")
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+    }
+
+    private func historyCard(_ plan: TrainingPlan) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("v\(plan.version)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+                Spacer()
+                Text(plan.displayDate.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            Text(plan.title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
+            Text("\(plan.days.count) 个训练日 · \(plan.weeks) 周")
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+            Button {
+                store.restorePlan(plan)
+                dismiss()
+            } label: {
+                Label("恢复此版本", systemImage: "arrow.uturn.backward")
+            }
+            .buttonStyle(SecondaryButtonStyle())
+            .padding(.top, 2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .card()
     }
 }

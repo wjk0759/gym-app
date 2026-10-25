@@ -271,6 +271,20 @@ create index ai_memories_user_idx on ai_memories (user_id, kind);
 create index ai_memories_embedding_idx
     on ai_memories using hnsw (embedding vector_cosine_ops);
 
+-- ---------- 后台管理审计 ----------
+create table admin_audit_logs (
+    id          uuid primary key default gen_random_uuid(),
+    actor       text not null default 'admin',
+    action      text not null,
+    target_type text not null,
+    target_id   text,
+    detail      jsonb not null default '{}',
+    created_at  timestamptz not null default now()
+);
+
+create index admin_audit_logs_time_idx on admin_audit_logs (created_at desc);
+create index admin_audit_logs_action_idx on admin_audit_logs (action);
+
 -- ---------- updated_at 触发器 ----------
 create or replace function touch_updated_at()
 returns trigger as $$

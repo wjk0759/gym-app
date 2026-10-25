@@ -15,6 +15,9 @@ uvicorn app.main:app --reload
 
 - API 文档：<http://127.0.0.1:8000/docs>
 - 健康检查：<http://127.0.0.1:8000/health>
+- 数据管理后台：<http://127.0.0.1:8000/admin>
+
+后台开发口令默认 `dev-admin-token`；生产环境必须设置 `.env` 的 `ADMIN_TOKEN`。管理接口统一要求 `X-Admin-Token`，写操作会记录到 `admin_audit_logs`。
 
 首次启动会自动建表，并写入 27 个基础动作。
 
@@ -56,6 +59,7 @@ app/
 ├── schemas.py           # Pydantic 入参
 ├── deps.py              # 鉴权与 DB 依赖
 ├── seed.py              # 动作库种子数据
+├── admin/               # 后台 HTML / CSS / JS
 ├── routers/             # 接口
 ├── services/            # LLM、计划生成、校验、问答、识别
 └── prompts/             # 系统提示词
@@ -65,4 +69,7 @@ app/
 
 ```powershell
 pytest -q
+python scripts\smoke.py
 ```
+
+冒烟测试覆盖用户建档、计划、训练、教练安全拦截、器械识别、饮食照片和后台管理接口。

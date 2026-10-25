@@ -5,6 +5,7 @@ import Observation
 final class AppStore {
     var profile = UserProfile()
     var plan: TrainingPlan?
+    var planHistory: [TrainingPlan] = []
     var sessions: [WorkoutSession] = []
     var chat: [ChatMessage] = []
     var foodLogs: [FoodLog] = []
@@ -35,11 +36,64 @@ final class AppStore {
 
     // MARK: - 派生状态
 
+    /// 当前计划周。按计划所在自然周（周一开始）计算，并限制在计划周数内。
+    var currentPlanWeek: Int {
+        guard let plan else { return 1 }
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: plan.createdAt)
+        let startWeekday = calendar.component(.weekday, from: start)
+        let mondayOffset = startWeekday == 1 ? -6 : 2 - startWeekday
+        guard let planMonday = calendar.date(byAdding: .day, value: mondayOffset, to: start) else {
+            return 1
+        }
+        let now = calendar.startOfDay(for: Date())
+        let days = calendar.dateComponents([.day], from: planMonday, to: now).day ?? 0
+        return min(max(1, days / 7 + 1), max(1, plan.weeks))
+    }
+
+    var currentPlanWeekInterval: DateInterval? {
+        guard let plan else { return nil }
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: plan.createdAt)
+        let startWeekday = calendar.component(.weekday, from: start)
+        let mondayOffset = startWeekday == 1 ? -6 : 2 - startWeekday
+        guard let planMonday = calendar.date(byAdding: .day, value: mondayOffset, to: start),
+              let weekStart = calendar.date(
+                byAdding: .day,
+                value: (currentPlanWeek - 1) * 7,
+                to: planMonday
+              ),
+              let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) else {
+            return nil
+        }
+        return DateInterval(start: weekStart, end: weekEnd)
+    }
+
+    var isPlanFinished: Bool {
+        guard let plan else { return false }
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: plan.createdAt)
+        let startWeekday = calendar.component(.weekday, from: start)
+        let mondayOffset = startWeekday == 1 ? -6 : 2 - startWeekday
+        guard let planMonday = calendar.date(byAdding: .day, value: mondayOffset, to: start) else {
+            return false
+        }
+        let days = calendar.dateComponents(
+            [.day],
+            from: planMonday,
+            to: calendar.startOfDay(for: Date())
+        ).day ?? 0
+        return days >= plan.weeks * 7
+    }
+
     var todayDay: PlanDay? {
-        plan?.firstWeek.first { $0.weekday == Weekday.today }
+        plan?.weekDays(in: currentPlanWeek).first { $0.weekday == Weekday.today }
     }
 
     var currentWeekSessions: [WorkoutSession] {
+        if let interval = currentPlanWeekInterval {
+            return sessions.filter { interval.contains($0.date) }
+        }
         let calendar = Calendar.current
         guard let interval = calendar.dateInterval(of: .weekOfYear, for: Date()) else {
             return sessions
@@ -114,6 +168,7 @@ final class AppStore {
                         equipmentSlugs: librarySlugs
                     )
                     generated.version = max(generated.version, (self.plan?.version ?? 0) + 1)
+                    self.archiveCurrentPlan()
                     self.plan = generated
                     self.toast = "已由 AI 生成计划"
                 } catch {
@@ -123,6 +178,7 @@ final class AppStore {
                         equipmentSlugs: librarySlugs
                     )
                     fallback.version = (self.plan?.version ?? 0) + 1
+                    self.archiveCurrentPlan()
                     self.plan = fallback
                     self.toast = "AI 服务不可用，已使用本地模板"
                 }
@@ -141,6 +197,7 @@ final class AppStore {
                 equipmentSlugs: librarySlugs
             )
             generated.version = (self.plan?.version ?? 0) + 1
+            self.archiveCurrentPlan()
             self.plan = generated
             self.isGenerating = false
             self.persist()
@@ -167,9 +224,39 @@ final class AppStore {
             completionRate: weeklyCompletion,
             averageRPE: recentAverageRPE
         )
+        archiveCurrentPlan()
         plan = result.plan
         toast = result.message
         persist()
+        rescheduleNotifications()
+    }
+
+    func restorePlan(_ archived: TrainingPlan) {
+        guard archived.id != plan?.id else { return }
+        archiveCurrentPlan()
+        planHistory.removeAll { $0.id == archived.id }
+        plan = archived
+        toast = "已恢复计划 v\(archived.version)"
+        persist()
+        rescheduleNotifications()
+    }
+
+    private func archiveCurrentPlan() {
+        guard let current = plan else { return }
+        guard planHistory.first?.id != current.id else { return }
+        planHistory.insert(current, at: 0)
+        if planHistory.count > 5 {
+            planHistory.removeLast(planHistory.count - 5)
+        }
+    }
+
+    func lastSet(for slug: String) -> SetLog? {
+        for session in sessions {
+            if let set = session.sets.last(where: { $0.slug == slug && $0.completed }) {
+                return set
+            }
+        }
+        return nil
     }
 
     func updateDay(_ day: PlanDay) {
@@ -245,6 +332,7 @@ final class AppStore {
         }
 
         current.version += 1
+        current.updatedAt = Date()
         current.days = current.days.map { day in
             var newDay = day
             newDay.id = UUID()
@@ -259,6 +347,7 @@ final class AppStore {
             }
             return newDay
         }
+        archiveCurrentPlan()
         plan = current
 
         if let index = bodyAnalyses.firstIndex(where: { $0.id == analysis.id }) {
@@ -376,6 +465,7 @@ final class AppStore {
     func resetAll() {
         profile = UserProfile()
         plan = nil
+        planHistory = []
         sessions = []
         chat = []
         foodLogs = []
@@ -448,6 +538,7 @@ final class AppStore {
     private struct PersistedState: Codable {
         var profile: UserProfile
         var plan: TrainingPlan?
+        var planHistory: [TrainingPlan]?
         var sessions: [WorkoutSession]
         var chat: [ChatMessage]
         var foodLogs: [FoodLog]?
@@ -469,6 +560,7 @@ final class AppStore {
         }
         profile = state.profile
         plan = state.plan
+        planHistory = state.planHistory ?? []
         sessions = state.sessions
         chat = state.chat
         foodLogs = state.foodLogs ?? []
@@ -487,6 +579,7 @@ final class AppStore {
         let state = PersistedState(
             profile: profile,
             plan: plan,
+            planHistory: planHistory,
             sessions: sessions,
             chat: chat,
             foodLogs: foodLogs,
@@ -509,6 +602,7 @@ final class AppStore {
             exportedAt: Date(),
             profile: profile,
             plan: plan,
+            planHistory: planHistory,
             sessions: sessions,
             chat: chat,
             foodLogs: foodLogs,
@@ -528,6 +622,7 @@ final class AppStore {
         let exportedAt: Date
         let profile: UserProfile
         let plan: TrainingPlan?
+        let planHistory: [TrainingPlan]
         let sessions: [WorkoutSession]
         let chat: [ChatMessage]
         let foodLogs: [FoodLog]

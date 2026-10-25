@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     meituan_deeplink_base: str = ""
     meituan_h5_base: str = ""
 
+    # 后台管理。生产环境必须通过 ADMIN_TOKEN 覆盖；开发环境未配置时使用 dev-admin-token。
+    admin_token: str = ""
+
     cors_origins: str = "*"
 
     @property

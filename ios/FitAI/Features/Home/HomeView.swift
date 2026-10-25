@@ -125,7 +125,9 @@ struct HomeView: View {
 
     @ViewBuilder
     private func todayCard(plan: TrainingPlan) -> some View {
-        if let day = store.todayDay {
+        if store.isPlanFinished {
+            finishedPlanCard
+        } else if let day = store.todayDay {
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
                     Text("今日训练")
@@ -135,7 +137,7 @@ struct HomeView: View {
                         .padding(.vertical, 5)
                         .background(Theme.accent.opacity(0.12), in: Capsule())
                     Spacer()
-                    Text("第 1 周")
+                    Text("第 \(store.currentPlanWeek) 周 / 共 \(plan.weeks) 周")
                         .font(.caption)
                         .foregroundStyle(Theme.tertiaryText)
                 }
@@ -190,9 +192,11 @@ struct HomeView: View {
     }
 
     private func restCard(plan: TrainingPlan) -> some View {
-        let next = plan.firstWeek
+        let currentDays = plan.weekDays(in: store.currentPlanWeek)
+        let next = currentDays
             .filter { $0.weekday > Weekday.today }
-            .min { $0.weekday < $1.weekday } ?? plan.firstWeek.first
+            .min { $0.weekday < $1.weekday }
+            ?? plan.weekDays(in: min(plan.weeks, store.currentPlanWeek + 1)).first
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
@@ -211,6 +215,28 @@ struct HomeView: View {
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(Theme.accent)
             }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+    }
+
+    private var finishedPlanCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.seal.fill")
+                    .foregroundStyle(Theme.accent)
+                Text("这一阶段完成了")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+            }
+            Text("4 周计划已结束。现在可以结合完成率、RPE 和容量，生成下一阶段计划；旧计划会保留在版本历史里。")
+                .font(.subheadline)
+                .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("生成下一阶段计划") {
+                store.generatePlan()
+            }
+            .buttonStyle(PrimaryButtonStyle())
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .card()
@@ -272,6 +298,9 @@ struct HomeView: View {
 
     private var nutritionCard: some View {
         let targets = DietPlanner.targets(profile: store.profile)
+        let consumed = store.todayNutrition
+        let remainingKcal = max(0, targets.kcal - Int(consumed.kcal))
+        let remainingProtein = max(0, targets.protein - Int(consumed.protein))
 
         return NavigationLink {
             NutritionView()
@@ -289,7 +318,9 @@ struct HomeView: View {
                     Text("今日饮食")
                         .font(.headline)
                         .foregroundStyle(.white)
-                    Text("已摄入 \(Int(store.todayNutrition.kcal)) / \(targets.kcal) kcal · 蛋白质 \(Int(store.todayNutrition.protein))g")
+                    Text(remainingKcal > 0
+                         ? "还可摄入 \(remainingKcal) kcal · 蛋白质还差 \(remainingProtein)g"
+                         : "已达到今日热量目标 · 蛋白质还差 \(remainingProtein)g")
                         .font(.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }

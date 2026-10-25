@@ -229,6 +229,7 @@ struct TrainingPlan: Codable, Identifiable, Hashable {
     var id: UUID = UUID()
     var title: String
     var createdAt: Date = Date()
+    var updatedAt: Date?
     var version: Int = 1
     var weeks: Int = 4
     var days: [PlanDay]
@@ -237,9 +238,29 @@ struct TrainingPlan: Codable, Identifiable, Hashable {
         case id
         case title
         case createdAt = "created_at"
+        case updatedAt = "updated_at"
         case version
         case weeks
         case days
+    }
+
+    var displayDate: Date { updatedAt ?? createdAt }
+
+    func date(week: Int, weekday: Int) -> Date? {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: createdAt)
+        let startWeekday = calendar.component(.weekday, from: start)
+        let mondayOffset = startWeekday == 1 ? -6 : 2 - startWeekday
+        guard let monday = calendar.date(byAdding: .day, value: mondayOffset, to: start) else {
+            return nil
+        }
+        let safeWeek = max(1, week)
+        let safeWeekday = min(max(1, weekday), 7)
+        return calendar.date(
+            byAdding: .day,
+            value: (safeWeek - 1) * 7 + safeWeekday - 1,
+            to: monday
+        )
     }
 
     var firstWeek: [PlanDay] { weekDays(in: 1) }

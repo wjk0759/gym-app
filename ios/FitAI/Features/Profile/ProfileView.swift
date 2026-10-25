@@ -26,7 +26,9 @@ struct ProfileView: View {
                     bodyAnalysisCard
                     equipmentLibraryCard
                     planCard
+#if DEBUG
                     aiCard
+#endif
                     preferenceCard
                     complianceCard
                     resetCard

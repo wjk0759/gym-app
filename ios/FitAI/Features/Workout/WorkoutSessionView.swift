@@ -17,6 +17,7 @@ struct WorkoutSessionView: View {
     @State private var feeling = 4
     @State private var startedAt = Date()
     @State private var showExitConfirm = false
+    @State private var showEmptySaveAlert = false
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -70,6 +71,12 @@ struct WorkoutSessionView: View {
                 Button("继续训练", role: .cancel) {}
             } message: {
                 Text("已完成的 \(logs.count) 组会保存到训练记录。")
+            }
+            .alert("还没有训练记录", isPresented: $showEmptySaveAlert) {
+                Button("继续训练", role: .cancel) {}
+                Button("放弃并退出", role: .destructive) { dismiss() }
+            } message: {
+                Text("至少完成一组后再保存，避免产生一条 0 组的空训练记录。")
             }
         }
     }
@@ -156,6 +163,15 @@ struct WorkoutSessionView: View {
                     .foregroundStyle(Theme.secondaryText)
             }
 
+            if let last = store.lastSet(for: exercise.slug) {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock.arrow.circlepath")
+                    Text("上次 \(last.weightKG > 0 ? "\(last.weightKG.formatted()) kg × \(last.reps)" : "自重 × \(last.reps)") · RPE \(last.rpe.formatted(.number.precision(.fractionLength(1))))")
+                }
+                .font(.caption2)
+                .foregroundStyle(Theme.tertiaryText)
+            }
+
             if !isBodyweight {
                 HStack {
                     Text("重量")
@@ -196,6 +212,9 @@ struct WorkoutSessionView: View {
                 }
                 Slider(value: $rpe, in: 6...10, step: 0.5)
                     .tint(Theme.accent)
+                Text("6 = 很轻松 · 8 = 还能做 2 次 · 10 = 力竭")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
             }
 
             if done < exercise.sets {
@@ -224,6 +243,17 @@ struct WorkoutSessionView: View {
                         .font(.caption)
                         .foregroundStyle(Theme.accent)
                 }
+            }
+
+            if done > 0,
+               let last = logs.last,
+               last.slug == exercise.slug {
+                Button("撤销上一组") {
+                    logs.removeLast()
+                    restRemaining = nil
+                }
+                .font(.caption)
+                .foregroundStyle(Theme.warning)
             }
         }
         .card()
@@ -326,6 +356,11 @@ struct WorkoutSessionView: View {
         let digits = firstComponent.filter { $0.isNumber }
         reps = Int(digits) ?? 10
         rpe = exercise.rpe
+
+        if let last = store.lastSet(for: exercise.slug) {
+            weight = last.weightKG
+            reps = last.reps
+        }
     }
 
     private func completeSet(_ exercise: PlanExercise) {
@@ -365,6 +400,10 @@ struct WorkoutSessionView: View {
     }
 
     private func finish() {
+        guard !logs.isEmpty else {
+            showEmptySaveAlert = true
+            return
+        }
         store.record(
             day: day,
             sets: logs,

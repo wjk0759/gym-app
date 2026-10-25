@@ -1,16 +1,18 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .db import Base, SessionLocal, engine
 from .deps import DEMO_USER_ID
 from .models import User
-from .routers import auth, body, coach, diet, equipment, plans, profile, workouts
+from .routers import admin, auth, body, coach, diet, equipment, plans, profile, workouts
 from .seed import seed_exercises
 
 CODE_BY_STATUS = {
@@ -88,13 +90,35 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 API_PREFIX = "/api/v1"
-for module in (auth, profile, plans, workouts, coach, equipment, diet, body):
+for module in (auth, profile, plans, workouts, coach, equipment, diet, body, admin):
     app.include_router(module.router, prefix=API_PREFIX)
+
+ADMIN_DIR = Path(__file__).resolve().parent / "admin"
+if (ADMIN_DIR / "assets").is_dir():
+    app.mount(
+        "/admin/assets",
+        StaticFiles(directory=str(ADMIN_DIR / "assets")),
+        name="admin-assets",
+    )
+
+
+@app.get("/admin", include_in_schema=False)
+def admin_console():
+    page = ADMIN_DIR / "index.html"
+    if not page.exists():
+        raise HTTPException(status_code=404, detail="admin console not found")
+    return FileResponse(page, headers={"Cache-Control": "no-store"})
 
 
 @app.get("/")
 def root():
-    return {"name": "FitAI API", "version": "0.1.0", "docs": "/docs", "api": API_PREFIX}
+    return {
+        "name": "FitAI API",
+        "version": "0.1.0",
+        "docs": "/docs",
+        "api": API_PREFIX,
+        "admin": "/admin",
+    }
 
 
 @app.get("/health")
