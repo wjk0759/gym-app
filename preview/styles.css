@@ -1185,6 +1185,11 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .app.selection-open { overflow: hidden; }
 
+body.selection-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 @media (pointer: fine) {
   .app,
   .chat-scroll,

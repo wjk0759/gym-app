@@ -2614,6 +2614,8 @@ function enableDragScroll(container) {
     if (event.pointerType !== "mouse" && event.pointerType !== "pen") return;
     if (event.button !== 0) return;
     if (event.target.closest("input, textarea, select, [contenteditable='true'], .no-drag")) return;
+    // 已选动作层打开时，底层页面不再响应拖拽，避免短列表拖拽穿透。
+    if (container.id === "app" && document.querySelector(".equipment-selection-popover")) return;
     if (
       container.scrollHeight <= container.clientHeight + 1
       && container.scrollWidth <= container.clientWidth + 1
@@ -2703,13 +2705,46 @@ function setupEquipmentScrollState() {
   syncEquipmentScrollState();
 }
 
+function containSelectionListScroll() {
+  const list = document.querySelector(".equipment-selection-list");
+  if (!list || list.dataset.scrollContained === "1") return;
+  list.dataset.scrollContained = "1";
+
+  list.addEventListener("wheel", (event) => {
+    const atTop = list.scrollTop <= 0 && event.deltaY < 0;
+    const atBottom = event.deltaY > 0
+      && list.scrollTop + list.clientHeight >= list.scrollHeight - 1;
+    const cannotScroll = list.scrollHeight <= list.clientHeight + 1;
+    if (cannotScroll || atTop || atBottom) {
+      event.preventDefault();
+    }
+  }, { passive: false });
+
+  let touchStartY = 0;
+  list.addEventListener("touchstart", (event) => {
+    touchStartY = event.touches[0]?.clientY ?? 0;
+  }, { passive: true });
+
+  list.addEventListener("touchmove", (event) => {
+    const y = event.touches[0]?.clientY ?? touchStartY;
+    const pullingDown = y > touchStartY;
+    const atTop = list.scrollTop <= 0;
+    const atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 1;
+    const cannotScroll = list.scrollHeight <= list.clientHeight + 1;
+    if (cannotScroll || (atTop && pullingDown) || (atBottom && !pullingDown)) {
+      event.preventDefault();
+    }
+  }, { passive: false });
+}
+
 function setupDragScroll() {
   const root = document.getElementById("app");
   if (!root) return;
   enableDragScroll(root);
   root.querySelectorAll(
-    ".chat-scroll, .equipment-selection-list, .equipment-filter-scroll, .equipment-muscle-scroll, .week-tabs, .suggestions, .coach-skill-bar"
+    ".chat-scroll, .equipment-selection-list, .equipment-filter-scroll, .week-tabs, .suggestions, .coach-skill-bar"
   ).forEach(enableDragScroll);
+  containSelectionListScroll();
   setupEquipmentScrollState();
   setupEquipmentLayout();
   syncEquipmentScrollState();
@@ -2729,6 +2764,13 @@ function render() {
   document.querySelector(".device")?.classList.toggle(
     "camera-mode",
     state.authenticated && state.screen === "equipmentCamera"
+  );
+  document.body.classList.toggle(
+    "selection-open",
+    state.authenticated
+      && state.screen === "tabs"
+      && state.tab === "equipment"
+      && state.equipSelectionOpen
   );
 
   if (!state.authenticated) {
