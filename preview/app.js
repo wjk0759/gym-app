@@ -1329,22 +1329,40 @@ function equipmentPickerGrid() {
   if (!list.length) {
     return `<div class="tiny muted" style="padding:24px 10px;text-align:center">没有匹配的动作，换个肌群或器械试试。</div>`;
   }
-  return list.map((slug) => {
+  const hint = planning
+    ? ""
+    : `<div class="exercise-grid-hint">点卡片看详情 · 右上角 ⊕ 多选</div>`;
+
+  return hint + list.map((slug) => {
     const item = EX[slug];
     const selected = !planning && state.equipSelected.includes(slug);
     const action = planning
       ? `app.addPlanExercise('${slug}')`
-      : `app.equipmentPickerToggle('${slug}')`;
+      : `app.openExercise('${slug}')`;
     return `
-      <button class="exercise-pick-card ${selected ? "selected" : ""}" onclick="${action}">
-        <div class="exercise-pick-art">
-          <span class="exercise-pick-glyph">${equipGlyph({ muscle: item.muscle, equip: item.equip })}</span>
-          ${item.video !== false ? `<span class="exercise-pick-badge">讲解</span>` : ""}
-          ${planning ? `<span class="exercise-pick-check">＋</span>` : selected ? `<span class="exercise-pick-check">✓</span>` : ""}
-        </div>
-        <div class="exercise-pick-name">${esc(item.name)}</div>
-        <div class="exercise-pick-meta">${item.muscle} · ${item.equip}</div>
-      </button>
+      <div class="exercise-pick-card ${selected ? "selected" : ""}">
+        <button class="exercise-pick-main" onclick="${action}" aria-label="${planning ? "添加到当前训练日" : "查看详情"}：${esc(item.name)}">
+          <div class="exercise-pick-art">
+            <span class="exercise-pick-glyph">${equipGlyph({ muscle: item.muscle, equip: item.equip })}</span>
+            ${item.video !== false ? `<span class="exercise-pick-badge">讲解</span>` : ""}
+            ${planning ? `<span class="exercise-pick-check">＋</span>` : ""}
+          </div>
+          <div class="exercise-pick-name">${esc(item.name)}</div>
+          <div class="exercise-pick-meta-row">
+            <span class="exercise-pick-meta">${item.muscle} · ${item.equip}</span>
+            ${planning ? "" : `<span class="exercise-pick-chevron" aria-hidden="true">›</span>`}
+          </div>
+        </button>
+        ${planning ? "" : `
+          <button
+            class="exercise-pick-select ${selected ? "active" : ""}"
+            type="button"
+            onclick="app.equipmentPickerToggle('${slug}')"
+            aria-label="${selected ? "取消选择" : "选择"}：${esc(item.name)}"
+            aria-pressed="${selected}"
+          >${selected ? "✓" : "+"}</button>
+        `}
+      </div>
     `;
   }).join("");
 }

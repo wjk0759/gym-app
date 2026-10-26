@@ -2536,10 +2536,11 @@ body.dragging-scroll * {
 }
 
 .exercise-pick-card {
+  position: relative;
   appearance: none;
   border: 1px solid var(--stroke);
   border-radius: 16px;
-  padding: 8px;
+  padding: 0;
   background: var(--surface);
   color: var(--text);
   text-align: left;
@@ -2547,6 +2548,70 @@ body.dragging-scroll * {
 }
 
 .exercise-pick-card.selected { border-color: rgba(92, 219, 140, 0.7); }
+
+.exercise-pick-main {
+  appearance: none;
+  display: block;
+  width: 100%;
+  border: 0;
+  padding: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.exercise-pick-select {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  z-index: 2;
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.30);
+  border-radius: 50%;
+  background: rgba(7, 13, 20, 0.58);
+  color: rgba(255, 255, 255, 0.84);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.exercise-pick-select.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #07130b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.exercise-pick-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.exercise-pick-chevron {
+  flex: 0 0 auto;
+  color: var(--faint);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.exercise-grid-hint {
+  grid-column: 1 / -1;
+  padding: 0 3px 1px;
+  color: var(--faint);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
 
 .exercise-pick-art {
   position: relative;
@@ -2596,7 +2661,9 @@ body.dragging-scroll * {
 }
 
 .exercise-pick-meta {
-  margin-top: 3px;
+  flex: 1;
+  min-width: 0;
+  margin-top: 0;
   color: var(--faint);
   font-size: 10.5px;
   white-space: nowrap;

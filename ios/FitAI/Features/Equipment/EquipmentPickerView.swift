@@ -15,6 +15,7 @@ struct EquipmentPickerView: View {
     @State private var showSelectionButton = false
     @State private var feedback: String?
     @State private var customDay: PlanDay?
+    @State private var detailExercise: Exercise?
 
     init() {}
 
@@ -107,6 +108,9 @@ struct EquipmentPickerView: View {
         }
         .fullScreenCover(item: $customDay) { day in
             WorkoutSessionView(day: day)
+        }
+        .sheet(item: $detailExercise) { exercise in
+            ExerciseDetailView(exercise: exercise)
         }
         .overlay(alignment: .top) {
             feedbackBanner
@@ -371,14 +375,35 @@ struct EquipmentPickerView: View {
             )
             .padding(.top, 8)
         } else {
-            LazyVGrid(columns: gridColumns, spacing: 10) {
-                ForEach(filteredExercises) { exercise in
-                    Button {
-                        toggle(exercise)
-                    } label: {
-                        exerciseCard(exercise)
+            VStack(alignment: .leading, spacing: 7) {
+                Text("点卡片看详情，右上角 ⊕ 多选")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .padding(.horizontal, 2)
+
+                LazyVGrid(columns: gridColumns, spacing: 10) {
+                    ForEach(filteredExercises) { exercise in
+                        ZStack(alignment: .topTrailing) {
+                            Button {
+                                detailExercise = exercise
+                            } label: {
+                                exerciseCard(exercise)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("查看\(exercise.nameZH)详情")
+
+                            Button {
+                                toggle(exercise)
+                            } label: {
+                                selectionControl(
+                                    exercise,
+                                    selected: selectedExercises.contains(where: { $0.slug == exercise.slug })
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .padding(7)
+                        }
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
@@ -413,14 +438,6 @@ struct EquipmentPickerView: View {
                         .background(Theme.accent, in: Capsule())
                         .padding(7)
                 }
-
-                if selected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(Theme.accent)
-                        .background(.black, in: Circle())
-                        .padding(7)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                }
             }
 
             Text(exercise.nameZH)
@@ -431,13 +448,19 @@ struct EquipmentPickerView: View {
                 .padding(.horizontal, 9)
                 .padding(.top, 9)
 
-            Text("\(exercise.muscle.label) · \(exercise.equipment.label)")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-                .lineLimit(1)
-                .padding(.horizontal, 9)
-                .padding(.top, 3)
-                .padding(.bottom, 10)
+            HStack(spacing: 3) {
+                Text("\(exercise.muscle.label) · \(exercise.equipment.label)")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            .padding(.horizontal, 9)
+            .padding(.top, 3)
+            .padding(.bottom, 10)
         }
         .background(Theme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -445,6 +468,21 @@ struct EquipmentPickerView: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(selected ? Theme.accent.opacity(0.7) : Theme.stroke, lineWidth: 1)
         )
+    }
+
+    private func selectionControl(_ exercise: Exercise, selected: Bool) -> some View {
+        ZStack {
+            Circle()
+                .fill(selected ? Theme.accent : Color.black.opacity(0.42))
+            Circle()
+                .stroke(selected ? Theme.accent : Color.white.opacity(0.32), lineWidth: 1)
+            Image(systemName: selected ? "checkmark" : "plus")
+                .font(.system(size: selected ? 11 : 10, weight: .bold))
+                .foregroundStyle(selected ? Color.black : Color.white.opacity(0.82))
+        }
+        .frame(width: 30, height: 30)
+        .contentShape(Circle())
+        .accessibilityLabel(selected ? "取消选择\(exercise.nameZH)" : "选择\(exercise.nameZH)")
     }
 
     private func toggle(_ exercise: Exercise) {
