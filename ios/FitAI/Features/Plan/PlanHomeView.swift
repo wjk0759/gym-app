@@ -409,12 +409,14 @@ struct PlanHomeView: View {
         for date: Date,
         hasSession: Bool,
         hasPlan: Bool,
-        hasFood: Bool
+        hasFood: Bool,
+        hasPeriod: Bool
     ) -> String {
         var parts = [date.formatted(.dateTime.month().day().weekday(.wide))]
         if hasSession { parts.append("有训练记录") }
         if hasPlan { parts.append("有训练计划") }
         if hasFood { parts.append("有饮食记录") }
+        if hasPeriod { parts.append("处于经期") }
         return parts.joined(separator: "，")
     }
 
