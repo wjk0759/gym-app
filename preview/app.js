@@ -2011,33 +2011,32 @@ function equipmentDetailLineChart(stats) {
   `;
 }
 
-function equipmentDetailMuscleSpot(muscle) {
-  return {
-    "胸": { x: 25, y: 31 },
-    "背": { x: 72, y: 35 },
-    "腿": { x: 25, y: 64 },
-    "臀": { x: 72, y: 53 },
-    "肩": { x: 25, y: 27 },
-    "手臂": { x: 18, y: 43 },
-    "核心": { x: 25, y: 42 },
-    "有氧": { x: 25, y: 38 }
-  }[muscle] || { x: 50, y: 45 };
-}
-
 function equipmentDetailMuscleMap(item) {
   const muscle = item.muscle || "全身";
-  const spot = equipmentDetailMuscleSpot(muscle);
+  const support = equipmentDetailSupport(item);
+  const key = {
+    "胸": "chest",
+    "背": "back",
+    "腿": "legs",
+    "臀": "glutes",
+    "肩": "shoulders",
+    "手臂": "arms",
+    "核心": "core",
+    "有氧": "cardio"
+  }[muscle] || "cardio";
 
   return `
-    <div class="detail-muscle-figure" style="--spot-x:${spot.x}%;--spot-y:${spot.y}%">
-      <img class="detail-muscle-anatomy" src="assets/muscles-overview.svg" alt="人体正面与背面肌肉解剖示意图" loading="lazy">
-      <span class="detail-muscle-halo"></span>
-      <span class="detail-muscle-ring"></span>
-      <span class="detail-muscle-view-label front">正面</span>
-      <span class="detail-muscle-view-label back">背面</span>
+    <div class="detail-muscle-title">人体肌肉的部位训练概况</div>
+    <div class="detail-muscle-figure">
+      <img
+        class="detail-muscle-anatomy"
+        src="assets/muscles/${key}@2x.png"
+        alt="人体正面与背面肌肉示意图，重点训练 ${esc(muscle)}，辅助 ${esc(support.join("、"))}"
+        loading="lazy"
+      >
     </div>
     <div class="detail-muscle-caption">
-      <span>解剖示意图 · 重点部位 <strong>${muscle}</strong></span>
+      <span>重点 <strong>${esc(muscle)}</strong> · 辅助 ${esc(support.join(" · "))}</span>
       <span class="detail-muscle-credit">OpenStax / Nefronus · CC BY-SA 4.0</span>
     </div>
   `;
@@ -2238,17 +2237,7 @@ function equipmentItemScreen() {
         "05",
         "训练肌群",
         `主要训练 ${muscle}，协同稳定由 ${support.join("、")} 参与。`,
-        `${equipmentDetailMuscleMap(item)}
-        <div class="detail-muscle-meta">
-          <div>
-            <div class="detail-muscle-eyebrow">主要肌群</div>
-            <div class="detail-muscle-name">${muscle}</div>
-            <div class="detail-muscle-chips">
-              ${support.map((label) => `<span>${label}</span>`).join("")}
-            </div>
-          </div>
-          <p>动作时优先感受 ${muscle} 的发力，协同区域负责稳定与传导。</p>
-        </div>`
+        `${equipmentDetailMuscleMap(item)}`
       )}
 
       ${equipmentDetailSection(

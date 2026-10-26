@@ -528,128 +528,55 @@ struct EquipmentItemDetailView: View {
 
     private func muscleContent(for item: EquipmentItem) -> some View {
         let primary = item.muscle?.label ?? "全身"
-        let spot = muscleSpot(for: item.muscle)
+        let support = supportMuscles(for: item)
 
         return VStack(alignment: .leading, spacing: 0) {
-            GeometryReader { geo in
-                ZStack {
-                    Image("MusclesOverview")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Text("人体肌肉的部位训练概况")
+                .font(.system(size: 10))
+                .foregroundStyle(Theme.secondaryText)
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 8)
 
-                    Color.black.opacity(0.38)
-                        .mask(
-                            RadialGradient(
-                                colors: [.clear, .black],
-                                center: spot,
-                                startRadius: 22,
-                                endRadius: 92
-                            )
-                        )
-
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [Theme.accent.opacity(0.40), .clear],
-                                center: .center,
-                                startRadius: 0,
-                                endRadius: 54
-                            )
-                        )
-                        .frame(width: 118, height: 118)
-                        .position(
-                            x: geo.size.width * spot.x,
-                            y: geo.size.height * spot.y
-                        )
-                        .blendMode(.screen)
-
-                    Circle()
-                        .stroke(Theme.accent.opacity(0.88), lineWidth: 1.2)
-                        .background(
-                            Circle()
-                                .stroke(Theme.accent.opacity(0.10), lineWidth: 8)
-                                .blur(radius: 2)
-                        )
-                        .frame(width: 34, height: 34)
-                        .position(
-                            x: geo.size.width * spot.x,
-                            y: geo.size.height * spot.y
-                        )
-
-                    VStack {
-                        Spacer()
-                        HStack {
-                            Text("正面")
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            Text("背面")
-                                .frame(maxWidth: .infinity, alignment: .trailing)
-                        }
-                        .font(.system(size: 8, weight: .medium))
-                        .tracking(1.4)
-                        .foregroundStyle(Color.white.opacity(0.30))
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 9)
-                    }
-                }
-            }
-            .frame(height: 280)
-            .background(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.035, green: 0.075, blue: 0.12),
-                        Color(red: 0.055, green: 0.10, blue: 0.15)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
+            Image(muscleMapAsset(for: item.muscle))
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity)
+                .background(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.035, green: 0.075, blue: 0.12),
+                            Color(red: 0.055, green: 0.10, blue: 0.15)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
                 )
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.white.opacity(0.06), lineWidth: 0.8)
-            )
-            .accessibilityLabel("人体正面和背面肌肉解剖示意图，主要训练\(primary)")
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.white.opacity(0.06), lineWidth: 0.8)
+                )
+                .accessibilityLabel("人体正面和背面肌肉示意图，重点训练\(primary)，\(support.joined(separator: "、"))")
 
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("主要肌群")
-                        .font(.system(size: 9.5, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
-
-                    Text(primary)
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.top, 2)
-
-                    HStack(spacing: 4) {
-                        ForEach(supportMuscles(for: item), id: \.self) { label in
-                            Text(label)
-                                .font(.system(size: 9.5))
-                                .foregroundStyle(Theme.secondaryText)
-                                .padding(.horizontal, 7)
-                                .padding(.vertical, 3)
-                                .background(Color.white.opacity(0.06), in: Capsule())
-                        }
-                    }
-                    .padding(.top, 7)
-                }
-
-                Spacer(minLength: 4)
-
-                Text("动作时优先感受 \(primary) 的发力，协同区域负责稳定与传导。")
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("重点 \(primary)")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
+                Text("·")
                     .font(.system(size: 10))
                     .foregroundStyle(Theme.tertiaryText)
-                    .lineSpacing(1.5)
-                    .frame(maxWidth: 150, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text("辅助 \(support.joined(separator: " · "))")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Theme.secondaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            .padding(.top, 12)
+            .padding(.top, 9)
 
             Text("解剖示意图：OpenStax / Nefronus · CC BY-SA 4.0")
                 .font(.system(size: 8))
                 .foregroundStyle(Theme.tertiaryText.opacity(0.62))
-                .padding(.top, 8)
+                .padding(.top, 7)
         }
     }
 
@@ -1171,25 +1098,25 @@ struct EquipmentItemDetailView: View {
             : String(format: "%.1f", value)
     }
 
-    private func muscleSpot(for muscle: MuscleGroup?) -> UnitPoint {
-        guard let muscle else { return UnitPoint(x: 0.50, y: 0.45) }
+    private func muscleMapAsset(for muscle: MuscleGroup?) -> String {
+        guard let muscle else { return "MuscleMapCardio" }
         switch muscle {
         case .chest:
-            return UnitPoint(x: 0.25, y: 0.31)
+            return "MuscleMapChest"
         case .back:
-            return UnitPoint(x: 0.72, y: 0.35)
+            return "MuscleMapBack"
         case .legs:
-            return UnitPoint(x: 0.25, y: 0.64)
+            return "MuscleMapLegs"
         case .glutes:
-            return UnitPoint(x: 0.72, y: 0.53)
+            return "MuscleMapGlutes"
         case .shoulders:
-            return UnitPoint(x: 0.25, y: 0.27)
+            return "MuscleMapShoulders"
         case .arms:
-            return UnitPoint(x: 0.18, y: 0.43)
+            return "MuscleMapArms"
         case .core:
-            return UnitPoint(x: 0.25, y: 0.42)
+            return "MuscleMapCore"
         case .cardio:
-            return UnitPoint(x: 0.25, y: 0.38)
+            return "MuscleMapCardio"
         }
     }
 

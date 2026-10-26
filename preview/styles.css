@@ -1680,14 +1680,21 @@ input[type="number"]::-webkit-inner-spin-button {
   line-height: 1.55;
 }
 
-.detail-muscle-figure {
-  position: relative;
+.detail-muscle-title {
   margin-top: 14px;
+  color: var(--detail-muted);
+  font-size: 10px;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+.detail-muscle-figure {
+  margin-top: 8px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 18px;
   background:
-    radial-gradient(circle at 50% 42%, rgba(120, 70, 86, 0.16), transparent 48%),
+    radial-gradient(circle at 50% 42%, rgba(120, 150, 175, 0.10), transparent 58%),
     linear-gradient(145deg, rgba(5, 12, 21, 0.92), rgba(11, 21, 34, 0.7));
 }
 
@@ -1695,72 +1702,8 @@ input[type="number"]::-webkit-inner-spin-button {
   display: block;
   width: 100%;
   height: auto;
-  filter: saturate(1.06) contrast(1.03);
+  opacity: 0.96;
 }
-
-.detail-muscle-figure::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(3, 9, 16, 0.58);
-  pointer-events: none;
-  -webkit-mask-image: radial-gradient(
-    circle at var(--spot-x) var(--spot-y),
-    transparent 0 27px,
-    rgba(0, 0, 0, 0.42) 50px,
-    #000 92px
-  );
-  mask-image: radial-gradient(
-    circle at var(--spot-x) var(--spot-y),
-    transparent 0 27px,
-    rgba(0, 0, 0, 0.42) 50px,
-    #000 92px
-  );
-}
-
-.detail-muscle-halo {
-  position: absolute;
-  left: var(--spot-x);
-  top: var(--spot-y);
-  width: 108px;
-  height: 108px;
-  z-index: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(48, 209, 88, 0.34), transparent 68%);
-  filter: blur(2px);
-  mix-blend-mode: screen;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-
-.detail-muscle-ring {
-  position: absolute;
-  left: var(--spot-x);
-  top: var(--spot-y);
-  width: 34px;
-  height: 34px;
-  z-index: 2;
-  border: 1px solid rgba(102, 236, 151, 0.88);
-  border-radius: 50%;
-  box-shadow:
-    0 0 0 5px rgba(48, 209, 88, 0.08),
-    0 0 22px rgba(48, 209, 88, 0.36);
-  transform: translate(-50%, -50%);
-  animation: detailMusclePulse 2.8s ease-in-out infinite;
-  pointer-events: none;
-}
-
-.detail-muscle-view-label {
-  position: absolute;
-  bottom: 9px;
-  z-index: 2;
-  color: rgba(226, 234, 245, 0.34);
-  font-size: 8px;
-  letter-spacing: 0.16em;
-}
-
-.detail-muscle-view-label.front { left: 22%; transform: translateX(-50%); }
-.detail-muscle-view-label.back { right: 21%; transform: translateX(50%); }
 
 .detail-muscle-caption {
   display: flex;
@@ -1774,20 +1717,6 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .detail-muscle-caption strong { color: var(--detail-muted); font-weight: 650; }
 .detail-muscle-credit { flex: 0 0 auto; font-size: 8px; opacity: 0.68; text-align: right; }
-
-.detail-muscle-meta {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 12px;
-}
-
-.detail-muscle-eyebrow { color: var(--detail-faint); font-size: 9.5px; letter-spacing: 0.04em; }
-.detail-muscle-name { margin-top: 2px; color: var(--detail-ink); font-size: 20px; font-weight: 760; }
-.detail-muscle-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
-.detail-muscle-chips span { padding: 3px 7px; border-radius: 99px; background: rgba(255, 255, 255, 0.06); color: var(--detail-muted); font-size: 9.5px; }
-.detail-muscle-meta p { max-width: 47%; margin: 1px 0 0; color: var(--detail-faint); font-size: 10px; line-height: 1.55; }
 
 .detail-stat-grid {
   display: grid;
@@ -1964,18 +1893,7 @@ input[type="number"]::-webkit-inner-spin-button {
 .detail-chart-empty strong { color: var(--detail-muted); font-size: 11px; font-weight: 650; }
 .detail-chart-empty span { max-width: 240px; font-size: 9.5px; line-height: 1.5; }
 
-@keyframes detailMusclePulse {
-  0%, 100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.58; }
-  50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.96; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .detail-muscle-ring { animation: none; }
-}
-
 @media (max-width: 360px) {
-  .detail-muscle-meta { gap: 10px; }
-  .detail-muscle-meta p { max-width: 48%; font-size: 9.5px; }
   .detail-period-tabs button,
   .detail-metric-tabs button { font-size: 9px; }
 }

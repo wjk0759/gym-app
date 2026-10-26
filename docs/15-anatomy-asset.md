@@ -2,8 +2,9 @@
 
 ## 文件
 
-- Web：`preview/assets/muscles-overview.svg`
-- iOS：`ios/FitAI/Resources/Assets.xcassets/MusclesOverview.imageset/`
+- Web：`preview/assets/muscles/{chest,back,legs,glutes,shoulders,arms,core,cardio}@2x.png`
+- iOS：`ios/FitAI/Resources/Assets.xcassets/MuscleMap*.imageset/`
+- 按主要肌群生成 8 套图；每套包含正面/背面、重点/辅助高亮、部位标签和图例。
 
 ## 来源与授权
 
@@ -15,10 +16,10 @@
 
 ## 本地修改
 
-- 将原始红色/骨色配色替换为适合深色界面的低饱和深红、灰蓝和骨灰色。
+- 将原始红色/骨色配色替换为适合深色界面的灰色线稿。
 - 保留正面与背面两个视角，移除不需要的外部背景。
-- Web 直接使用重配色 SVG；iOS 将同一 SVG 渲染为透明 PNG 的 1x / 2x / 3x 资源。
-- 详情页在图片上叠加绿色聚光圈，按主要肌群定位，不修改原图肌肉结构。
+- 按主要肌群生成 8 套图：重点肌群用青绿色、辅助肌群用蓝绿色，并增加重点标签和“重点 / 辅助”图例。
+- Web 使用 2x 透明 PNG；iOS 使用同一批图生成的 1x / 2x / 3x 透明 PNG 资源。
 - 详情页保留“OpenStax / Nefronus · CC BY-SA 4.0”署名。
 
 该修改版本作为 CC BY-SA 4.0 衍生作品使用。若后续替换为自有 AI 生图素材，应同步更新署名与附件说明。
