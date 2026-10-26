@@ -51,6 +51,7 @@ function bodyCheckInSheet(manual = false) {
   const latest = bodyCheckInLatestMetric();
   const weight = latest?.weight || state.profile.weight || "";
   const bodyFat = latest?.bodyFat || state.profile.bodyFat || "";
+  const waist = latest?.waist || state.profile.waist || "";
   const arm = latest?.arm || state.profile.arm || "";
   const thigh = latest?.thigh || state.profile.thigh || "";
   return `
@@ -73,6 +74,10 @@ function bodyCheckInSheet(manual = false) {
             <span>体脂率</span>
             <div><input id="body-checkin-fat" type="number" min="3" max="60" step="0.1" inputmode="decimal" value="${bodyFat}"><i>%</i></div>
           </label>
+          <label class="body-checkin-wide">
+            <span>腰围</span>
+            <div><input id="body-checkin-waist" type="number" min="50" max="150" step="0.1" inputmode="decimal" value="${waist}"><i>cm</i></div>
+          </label>
           <label>
             <span>臂围</span>
             <div><input id="body-checkin-arm" type="number" min="20" max="60" step="0.1" inputmode="decimal" value="${arm}"><i>cm</i></div>
@@ -85,8 +90,8 @@ function bodyCheckInSheet(manual = false) {
         ${latest?.date ? `<div class="tiny faint" style="margin-top:9px">上次记录：${dateLabel(latest.date)}</div>` : ""}
         <button class="btn btn-primary" style="margin-top:12px" onclick="app.saveBodyCheckIn()">保存身体数据</button>
         <div class="body-checkin-actions">
-          <button class="link" onclick="app.hideBodyCheckIn()">今天隐藏</button>
-          <button class="link" onclick="app.disableBodyCheckIn()">关闭自动提醒</button>
+          <button class="body-checkin-action" onclick="app.hideBodyCheckIn()">今天隐藏</button>
+          <button class="body-checkin-action warning" onclick="app.disableBodyCheckIn()">关闭自动提醒</button>
         </div>
       </section>
     </div>

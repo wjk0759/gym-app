@@ -45,6 +45,7 @@ function normalizeState(value) {
         timestamp: Number(entry.timestamp) || parseDateKey(entry.date).getTime(),
         weight: Number(entry.weight) || 0,
         bodyFat: Number(entry.bodyFat) || 0,
+        waist: Number(entry.waist) || 0,
         arm: Number(entry.arm) || 0,
         thigh: Number(entry.thigh) || 0
       }))

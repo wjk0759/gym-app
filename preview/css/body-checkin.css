@@ -61,6 +61,10 @@
   font-size: 9px;
 }
 
+.body-checkin-fields .body-checkin-wide {
+  grid-column: 1 / -1;
+}
+
 .body-checkin-fields label > div {
   display: flex;
   align-items: center;
@@ -94,15 +98,34 @@
 }
 
 .body-checkin-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin-top: 11px;
+  margin-top: 10px;
 }
 
-.body-checkin-actions .link {
+.body-checkin-action {
+  appearance: none;
+  min-height: 38px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--faint);
+  font: inherit;
   font-size: 9px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.body-checkin-action.warning {
+  border-color: rgba(255, 159, 10, 0.20);
+  background: rgba(255, 159, 10, 0.055);
+  color: rgba(255, 190, 92, 0.82);
+}
+
+.body-checkin-action:active {
+  transform: scale(0.97);
 }
 
 .goal-date-field {

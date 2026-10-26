@@ -110,6 +110,7 @@ Object.assign(window.app, {
       timestamp: Date.now(),
       weight: Number(draft.weight) || Number(state.profile.weight) || 0,
       bodyFat: Number(draft.bodyFat) || Number(state.profile.bodyFat) || 0,
+      waist: Number(draft.waist) || Number(state.profile.waist) || 0,
       arm: Number(draft.arm) || Number(state.profile.arm) || 0,
       thigh: Number(draft.thigh) || Number(state.profile.thigh) || 0
     };
