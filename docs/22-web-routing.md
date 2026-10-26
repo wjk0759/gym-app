@@ -62,6 +62,7 @@ tab/equipment (1)
 | `planSchedule` | 选择未来 4 周训练日期 | `tabs/plan` | `tabs/plan` |
 | `planReview` | 周 / 月 / 年数据复盘报告 | `tabs/plan` | `tabs/plan` |
 | `periodSchedule` | 女性经期区间与模式选择 | `tabs/plan` | `tabs/plan` |
+| `coachPhotoCamera` | 拍照问教练 | `tabs/coach` | `tabs/coach` |
 
 ## 5. 典型面包屑
 
@@ -80,6 +81,13 @@ tab/plan
 ```
 
 > 计划页的「查看报告」进入独立 `planReview`；报告支持本周 / 本月 / 今年切换。动作训练数据只从动作详情进入。
+
+### 教练 → 拍照问教练
+
+```text
+tab/coach
+  → coachPhotoCamera
+```
 
 ### 计划 → 经期安排（女性）
 
@@ -246,6 +254,7 @@ tab/coach | tab/profile
 | `planSchedule` | `tab/plan` |
 | `planReview` | `tab/plan` |
 | `periodSchedule` | `tab/plan` |
+| `coachPhotoCamera` | `tab/coach` |
 | `workout` | `tab/home` |
 
 ## 9. 验收

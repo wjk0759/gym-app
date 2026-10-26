@@ -83,7 +83,7 @@ function normalizeState(value) {
     "sessionDetail", "sessionExercisePicker", "trainingData", "history",
     "equipmentLibrary", "equipmentCamera", "foodPhotoCamera",
     "equipmentRecognition", "equipmentItem", "planExercisePicker",
-    "planSchedule", "periodSchedule", "bodyAnalysis"
+    "planSchedule", "periodSchedule", "coachPhotoCamera", "bodyAnalysis"
   ];
   next.routeStack = Array.isArray(next.routeStack)
     ? next.routeStack

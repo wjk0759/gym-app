@@ -92,8 +92,14 @@ Object.assign(window.app, {
     }
     draft.name = name;
     if (!draft.equipment.includes("徒手")) draft.equipment.push("徒手");
-    const trainingSettingsChanged = state.profile.split !== draft.split
-      || Number(state.profile.weeklyDays) !== Number(draft.weeklyDays);
+    const equipmentChanged = JSON.stringify([...state.profile.equipment].sort())
+      !== JSON.stringify([...draft.equipment].sort());
+    const planSettingsChanged = state.profile.goal !== draft.goal
+      || state.profile.split !== draft.split
+      || Number(state.profile.weeklyDays) !== Number(draft.weeklyDays)
+      || Number(state.profile.minutes) !== Number(draft.minutes)
+      || state.profile.experience !== draft.experience
+      || equipmentChanged;
     const goalChanged = state.profile.goal !== draft.goal
       || Number(state.profile.targetWeight) !== Number(draft.targetWeight)
       || Number(state.profile.targetWaist) !== Number(draft.targetWaist)
@@ -103,6 +109,12 @@ Object.assign(window.app, {
       draft.goalStartDate = todayKey();
     }
     state.profile = { ...draft };
+    if (planSettingsChanged && state.plan) {
+      const nextVersion = (Number(state.plan.version) || 1) + 1;
+      state.plan = applyEquipmentLibrary(buildPlan(state.profile));
+      state.plan.version = nextVersion;
+      state.plan.updatedAt = Date.now();
+    }
     const date = todayKey();
     const metric = {
       id: `bm-${date}`,
@@ -120,7 +132,7 @@ Object.assign(window.app, {
     popRoute();
     save();
     render();
-    toast(trainingSettingsChanged ? "资料已保存；分化/频率需重新生成计划后生效" : "资料已保存");
+    toast(planSettingsChanged ? "资料已保存，计划已按新设置更新" : "资料已保存");
   },
 
   openGoalEditor() {

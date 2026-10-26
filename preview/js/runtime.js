@@ -32,7 +32,9 @@ function render() {
   const root = document.getElementById("app");
   if (!root) return;
 
-  const cameraScreen = state.screen === "equipmentCamera" || state.screen === "foodPhotoCamera";
+  const cameraScreen = state.screen === "equipmentCamera"
+    || state.screen === "foodPhotoCamera"
+    || state.screen === "coachPhotoCamera";
   document.querySelector(".device")?.classList.toggle(
     "camera-mode",
     state.authenticated && cameraScreen
@@ -101,6 +103,7 @@ function render() {
   else if (state.screen === "equipmentLibrary") html = equipmentLibraryScreen();
   else if (state.screen === "equipmentCamera") html = equipmentCameraScreen();
   else if (state.screen === "foodPhotoCamera") html = foodPhotoCameraScreen();
+  else if (state.screen === "coachPhotoCamera") html = coachPhotoCameraScreen();
   else if (state.screen === "equipmentRecognition") html = equipmentRecognitionScreen();
   else if (state.screen === "equipmentItem") html = equipmentItemScreen();
   else if (state.screen === "planExercisePicker") html = equipmentPickerScreen();
@@ -118,7 +121,7 @@ function render() {
     + (state.screen === "periodSchedule" ? " period-mode" : "")
     + (state.screen === "tabs" && state.tab === "coach" ? " chat-mode" : "")
     + (state.equipSelectionOpen && state.screen === "tabs" && state.tab === "equipment" ? " selection-open" : "")
-    + (state.screen === "equipmentCamera" || state.screen === "foodPhotoCamera" ? " camera-mode" : "")
+    + (cameraScreen ? " camera-mode" : "")
     + (routeChanged ? " route-changed" : "");
   document.getElementById("tabbar").innerHTML = tabbar();
   document.getElementById("tabbar").className = "tabbar" + (state.onboarded && state.screen === "tabs" ? "" : " hidden");

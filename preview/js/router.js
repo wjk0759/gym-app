@@ -176,6 +176,7 @@ function fallbackRoute() {
   if (screen === "planSchedule" || screen === "planReview" || screen === "periodSchedule") {
     return { screen: "tabs", tab: "plan" };
   }
+  if (screen === "coachPhotoCamera") return { screen: "tabs", tab: "coach" };
   if (screen === "equipmentLibrary") {
     return { screen: "tabs", tab: state.equipLibraryFromProfile ? "profile" : "equipment" };
   }

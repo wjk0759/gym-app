@@ -97,6 +97,16 @@ function coachMessageMarkup(message) {
   if (message.kind === "applied" && message.applied) {
     return `<div class="coach-message coach-message-assistant">${coachAppliedCard(message.applied)}</div>`;
   }
+  if (message.kind === "photo") {
+    return `
+      <div class="coach-message coach-message-user">
+        <div class="coach-photo-message">
+          <div class="coach-photo-thumb" aria-label="已发送照片">${ICONS.camera}<span>训练照片</span></div>
+          <div class="coach-photo-caption">${esc(message.text)}</div>
+        </div>
+      </div>
+    `;
+  }
   if (message.role === "user") {
     return `<div class="coach-message coach-message-user"><div class="coach-bubble coach-bubble-user">${esc(message.text)}</div></div>`;
   }
@@ -119,6 +129,10 @@ function coachQuickReplies(adjustment, suggestions) {
   return suggestions.map((text) => `
     <button class="coach-quick-action" onclick="app.sendChat('${text.replace(/'/g, "\\'")}')">${text}</button>
   `).join("");
+}
+
+function coachPhotoCameraScreen() {
+  return photoCaptureScreen("coach");
 }
 
 function coachScreen() {
@@ -242,6 +256,7 @@ function coachScreen() {
         ` : ""}
         <div class="coach-composer">
           <input id="chat-input" type="text" maxlength="500" placeholder="${placeholder}" onkeydown="if(event.key==='Enter'){app.sendChat()}">
+          <button class="coach-photo-btn" onclick="app.openCoachCamera()" aria-label="拍照问教练">${ICONS.camera}</button>
           <button class="coach-send" onclick="app.sendChat()" aria-label="发送">↑</button>
         </div>
       </div>

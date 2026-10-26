@@ -69,7 +69,7 @@ function profileEditScreen() {
         ${profileDraftSegmented("weeklyDays", [1, 2, 3, 4, 5, 6, 7])}
         <div class="form-label" style="margin-top:14px">训练分化</div>
         ${profileDraftSegmented("split", ["1分化", "3分化", "5分化"])}
-        <div class="tiny faint" style="margin-top:6px;line-height:1.55">1分化=全身，3分化=推/拉/腿，5分化=胸/背/腿/肩/手臂。修改后重新生成计划才会应用。</div>
+        <div class="tiny faint" style="margin-top:6px;line-height:1.55">1分化=全身，3分化=推/拉/腿，5分化=胸/背/腿/肩/手臂。保存后计划会自动按新设置重排。</div>
         <div class="form-label" style="margin-top:14px">单次时长</div>
         ${profileDraftSegmented("minutes", [30, 45, 60, 90, 120])}
         <div class="form-label" style="margin-top:14px">训练经验</div>
@@ -99,7 +99,7 @@ function profileEditScreen() {
       </div>
 
       <div class="card tight">
-        <div class="tiny muted" style="line-height:1.6">保存资料不会自动覆盖当前训练计划。如需让计划适配新的目标或器械，可回到「计划」页让 AI 复盘调整。</div>
+        <div class="tiny muted" style="line-height:1.6">修改目标、训练安排、时长或器械后，保存时会自动重排计划；手动改过的训练日会被覆盖。</div>
       </div>
 
     </div>

@@ -13,6 +13,29 @@ Object.assign(window.app, {
     render();
   },
 
+  openCoachCamera() {
+    pushRoute("coachPhotoCamera");
+    save();
+    render();
+  },
+
+  coachPhotoCapture() {
+    state.chats.push({
+      role: "user",
+      kind: "photo",
+      text: "请教练看看这张照片，帮我判断动作或器械。"
+    });
+    state.chats.push({
+      role: "assistant",
+      text: "照片已收到。你想让我重点看动作姿势、器械使用，还是某个部位的不适？再补一句具体问题，我会结合你的训练计划回答。"
+    });
+    popRoute();
+    save();
+    render();
+    scrollCoachChat();
+    toast("照片已发送给教练");
+  },
+
   sendChat(text) {
     let message = text;
     if (message === undefined) {

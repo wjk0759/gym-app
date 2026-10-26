@@ -2,12 +2,21 @@
 
 function photoCaptureScreen(context) {
   const isFood = context === "food";
-  const title = isFood ? "拍摄餐食" : "拍摄器械";
-  const icon = isFood ? ICONS.utensils : ICONS.dumbbell;
-  const heading = isFood ? "把整餐放进画面" : "把器械完整放进画面";
-  const hint = isFood ? "尽量俯拍，让食物完整进入画面" : "避免只拍到局部、边缘或严重遮挡";
+  const isCoach = context === "coach";
+  const title = isFood ? "拍摄餐食" : isCoach ? "拍照问教练" : "拍摄器械";
+  const icon = isFood ? ICONS.utensils : isCoach ? ICONS.camera : ICONS.dumbbell;
+  const heading = isFood ? "把整餐放进画面" : isCoach ? "拍下动作或器械" : "把器械完整放进画面";
+  const hint = isFood
+    ? "尽量俯拍，让食物完整进入画面"
+    : isCoach
+      ? "尽量拍到完整动作或器械，避免脸和隐私部位"
+      : "避免只拍到局部、边缘或严重遮挡";
   const closeAction = "app.back()";
-  const captureAction = isFood ? "app.foodPhotoCapture()" : "app.equipmentCapturePhoto()";
+  const captureAction = isFood
+    ? "app.foodPhotoCapture()"
+    : isCoach
+      ? "app.coachPhotoCapture()"
+      : "app.equipmentCapturePhoto()";
 
   return `
     <div class="photo-capture-screen">
@@ -31,7 +40,7 @@ function photoCaptureScreen(context) {
         <button class="camera-shutter" onclick="${captureAction}" aria-label="拍照">
           <span></span>
         </button>
-        <div class="camera-shutter-label">拍照 · 照片仅用于本次识别</div>
+        <div class="camera-shutter-label">拍照 · ${isCoach ? "照片仅用于本次教练对话" : "照片仅用于本次识别"}</div>
       </div>
     </div>
   `;
