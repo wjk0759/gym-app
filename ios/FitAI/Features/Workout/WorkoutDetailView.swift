@@ -120,9 +120,11 @@ struct WorkoutDetailView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showExercisePicker) {
-                ExercisePickerView(equipment: store.profile.availableEquipment) { exercise in
-                    addExercise(exercise)
+            .fullScreenCover(isPresented: $showExercisePicker) {
+                NavigationStack {
+                    EquipmentPickerView(onSelect: { exercise in
+                        addExercise(exercise)
+                    })
                 }
             }
             .confirmationDialog(

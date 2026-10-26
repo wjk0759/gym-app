@@ -1378,6 +1378,8 @@ function equipmentPickerExercises() {
 
 function equipmentPickerGrid() {
   const planning = state.screen === "planExercisePicker";
+  const sessionPicking = state.screen === "sessionExercisePicker";
+  const addMode = planning || sessionPicking;
   const list = equipmentPickerExercises();
   if (!list.length) {
     return `
@@ -1391,25 +1393,28 @@ function equipmentPickerGrid() {
 
   return list.map((slug) => {
     const item = EX[slug];
-    const selected = !planning && state.equipSelected.includes(slug);
+    const selected = !addMode && state.equipSelected.includes(slug);
     const action = planning
       ? `app.addPlanExercise('${slug}')`
-      : `app.openExercise('${slug}')`;
+      : sessionPicking
+        ? `app.addSessionExercise('${slug}')`
+        : `app.openExercise('${slug}')`;
+    const label = planning ? "添加到当前训练日" : sessionPicking ? "添加到训练记录" : "查看详情";
     return `
       <div class="exercise-pick-card ${selected ? "selected" : ""}">
-        <button class="exercise-pick-main" onclick="${action}" aria-label="${planning ? "添加到当前训练日" : "查看详情"}：${esc(item.name)}">
+        <button class="exercise-pick-main" onclick="${action}" aria-label="${label}：${esc(item.name)}">
           <div class="exercise-pick-art">
             <span class="exercise-pick-glyph" aria-hidden="true">${exercisePickIcon(item)}</span>
             ${item.video !== false ? `<span class="exercise-pick-badge"><span class="exercise-pick-badge-icon" aria-hidden="true">${ICONS.play}</span>讲解</span>` : ""}
-            ${planning ? `<span class="exercise-pick-check">＋</span>` : ""}
+            ${addMode ? `<span class="exercise-pick-check">＋</span>` : ""}
           </div>
           <div class="exercise-pick-name">${esc(item.name)}</div>
           <div class="exercise-pick-meta-row">
             <span class="exercise-pick-meta">${item.muscle} · ${item.equip}</span>
-            ${planning ? "" : `<span class="exercise-pick-chevron" aria-hidden="true">›</span>`}
+            ${addMode ? "" : `<span class="exercise-pick-chevron" aria-hidden="true">›</span>`}
           </div>
         </button>
-        ${planning ? "" : `
+        ${addMode ? "" : `
           <button
             class="exercise-pick-select ${selected ? "active" : ""}"
             type="button"
@@ -1425,19 +1430,21 @@ function equipmentPickerGrid() {
 
 function equipmentPickerScreen() {
   const planning = state.screen === "planExercisePicker";
+  const sessionPicking = state.screen === "sessionExercisePicker";
+  const picking = planning || sessionPicking;
   const muscles = ["全部", "胸", "背", "腿", "臀", "肩", "手臂", "核心", "有氧"];
-  const equipment = planning
+  const equipment = picking
     ? ["全部", ...new Set(Object.values(EX).map((item) => item.equip))]
     : ["全部", "已添加", ...new Set(Object.values(EX).map((item) => item.equip))];
-  const selected = planning
+  const selected = picking
     ? []
     : state.equipSelected.map((slug) => ({ slug, ...EX[slug] })).filter((item) => item.name);
   const searching = String(state.equipSearchQuery || "").trim().length > 0;
   const resultCount = equipmentPickerExercises().length;
 
   return `
-    <div class="stack equipment-picker ${planning ? "plan-picker" : ""}" id="equipment-picker-root">
-      ${planning ? headerBack("添加动作", "app.closePlanExercisePicker()") : ""}
+    <div class="stack equipment-picker ${picking ? "plan-picker" : ""}" id="equipment-picker-root">
+      ${planning ? headerBack("添加动作", "app.closePlanExercisePicker()") : sessionPicking ? headerBack("添加动作", "app.closeSessionExercisePicker()") : ""}
 
       <div class="equipment-sticky-tools">
         <div class="equipment-search-line">
@@ -1445,13 +1452,13 @@ function equipmentPickerScreen() {
             <span class="equipment-search-icon">${ICONS.search}</span>
             <input id="equipment-picker-search" type="text" placeholder="搜索动作、肌群或器械" value="${esc(state.equipSearchQuery)}" oninput="app.equipmentPickerQuery(this.value)">
             <button id="equipment-search-clear" class="equipment-search-clear" type="button" onclick="app.equipmentPickerClearQuery()" aria-label="清空搜索" ${state.equipSearchQuery ? "" : "hidden"}>×</button>
-            ${planning ? "" : `
+            ${picking ? "" : `
               <button class="equipment-scan-btn" onclick="app.equipmentRecognitionOpen()" aria-label="拍照识别器械" title="拍照识别">
                 ${ICONS.camera}
               </button>
             `}
           </div>
-          ${planning ? "" : `
+          ${picking ? "" : `
             <button class="equipment-library-btn" onclick="app.equipmentLibraryOpen()" aria-label="器械库" title="器械库">
               ${ICONS.library}
             </button>
@@ -1472,7 +1479,7 @@ function equipmentPickerScreen() {
           <span>动作库</span>
           <em id="equipment-grid-count" aria-live="polite">${resultCount}</em>
         </div>
-        <div class="exercise-grid-hint">${planning ? "点卡片加入训练日" : "点卡片看详情 · ⊕ 多选"}</div>
+        <div class="exercise-grid-hint">${planning ? "点卡片加入训练日" : sessionPicking ? "点卡片添加到训练记录" : "点卡片看详情 · ⊕ 多选"}</div>
       </div>
 
       <div class="equipment-content-layout">
@@ -1486,7 +1493,7 @@ function equipmentPickerScreen() {
       </div>
     </div>
 
-    ${planning ? "" : `
+    ${picking ? "" : `
       <button class="equipment-selection-fab no-drag ${selected.length ? "has-items" : ""}" onclick="app.equipmentSelectionToggle()" aria-label="已选动作，共 ${selected.length} 个">
         ${ICONS.dumbbell}
         ${selected.length ? `<span class="equipment-selection-fab-count">${selected.length}</span>` : ""}
@@ -4215,6 +4222,7 @@ function render() {
   else if (state.screen === "workoutCompose") html = workoutComposeScreen();
   else if (state.screen === "workout") html = workoutScreen();
   else if (state.screen === "sessionDetail") html = sessionScreen();
+  else if (state.screen === "sessionExercisePicker") html = equipmentPickerScreen();
   else if (state.screen === "history") html = historyScreen();
   else if (state.screen === "equipmentLibrary") html = equipmentLibraryScreen();
   else if (state.screen === "equipmentCamera") html = equipmentCameraScreen();
@@ -4962,9 +4970,39 @@ window.app = {
 
   sessionAddItem() {
     if (!state.sessionDraft) return;
-    const name = prompt("动作名称", "自定义动作");
-    if (!name) return;
-    state.sessionDraft.items.push({ name, weight: 0, reps: 10, sets: 3 });
+    state.screen = "sessionExercisePicker";
+    state.equipSearchQuery = "";
+    state.equipMuscle = "全部";
+    state.equipFilter = "全部";
+    save();
+    render();
+  },
+
+  closeSessionExercisePicker() {
+    state.screen = "sessionDetail";
+    save();
+    render();
+  },
+
+  addSessionExercise(slug) {
+    const draft = state.sessionDraft;
+    const exercise = EX[slug];
+    if (!draft || !exercise) return;
+    const exists = draft.items.some((item) => item.slug === slug || (!item.slug && item.name === exercise.name));
+    if (!exists) {
+      draft.items.push({
+        slug,
+        name: exercise.name,
+        weight: Number(exercise.base) || 0,
+        reps: 10,
+        sets: 3
+      });
+      save();
+      toast(`已添加 ${exercise.name}`);
+    } else {
+      toast("这个动作已在训练记录里");
+    }
+    state.screen = "sessionDetail";
     render();
   },
 

@@ -4,6 +4,9 @@ import UIKit
 /// 器械 Tab 的动作选择器：按肌群和器械筛选，选中的动作可以生成自选训练或加入器械库。
 struct EquipmentPickerView: View {
     @Environment(AppStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+
+    private let onSelectExercise: ((Exercise) -> Void)?
 
     @State private var selectedExercises: [Exercise] = []
     @State private var selectedMuscle: MuscleGroup?
@@ -20,7 +23,17 @@ struct EquipmentPickerView: View {
     @State private var composeExercises: [PlanExercise] = []
     @State private var pendingComposeDay: PlanDay?
 
-    init() {}
+    init() {
+        self.onSelectExercise = nil
+    }
+
+    init(onSelect: @escaping (Exercise) -> Void) {
+        self.onSelectExercise = onSelect
+    }
+
+    private var isPickingForSession: Bool {
+        onSelectExercise != nil
+    }
 
     private let gridColumns = [
         GridItem(.flexible(), spacing: 9),
@@ -83,20 +96,26 @@ struct EquipmentPickerView: View {
             .padding(.horizontal, 16)
         }
         .background(AppBackground())
-        .navigationTitle("动作库")
+        .navigationTitle(isPickingForSession ? "添加动作" : "动作库")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink {
-                    EquipmentLibraryView()
-                } label: {
-                    Image(systemName: "square.grid.2x2")
+            if isPickingForSession {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
                 }
-                .accessibilityLabel("器械库")
+            } else {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        EquipmentLibraryView()
+                    } label: {
+                        Image(systemName: "square.grid.2x2")
+                    }
+                    .accessibilityLabel("器械库")
+                }
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if showSelectionButton {
+            if showSelectionButton && !isPickingForSession {
                 HStack {
                     selectionFloatingButton
                     Spacer(minLength: 0)
@@ -188,7 +207,7 @@ struct EquipmentPickerView: View {
 
             Spacer(minLength: 8)
 
-            Text("点卡片看详情 · ⊕ 多选")
+            Text(isPickingForSession ? "点卡片添加到训练记录" : "点卡片看详情 · ⊕ 多选")
                 .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .lineLimit(1)
@@ -312,24 +331,26 @@ struct EquipmentPickerView: View {
                 .accessibilityLabel("清空搜索")
             }
 
-            Button {
-                showScanner = true
-            } label: {
-                Image(systemName: "camera.viewfinder")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Theme.accent)
-                    .frame(width: 34, height: 34)
-                    .background(
-                        Theme.accent.opacity(0.13),
-                        in: RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 11, style: .continuous)
-                            .stroke(Theme.accent.opacity(0.12), lineWidth: 1)
-                    )
+            if !isPickingForSession {
+                Button {
+                    showScanner = true
+                } label: {
+                    Image(systemName: "camera.viewfinder")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(Theme.accent)
+                        .frame(width: 34, height: 34)
+                        .background(
+                            Theme.accent.opacity(0.13),
+                            in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                .stroke(Theme.accent.opacity(0.12), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("拍照识别器械")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("拍照识别器械")
         }
         .padding(.leading, 13)
         .padding(.trailing, 7)
@@ -481,23 +502,30 @@ struct EquipmentPickerView: View {
                 ForEach(filteredExercises) { exercise in
                     ZStack(alignment: .topTrailing) {
                         Button {
-                            detailExercise = exercise
+                            if let onSelectExercise {
+                                onSelectExercise(exercise)
+                                dismiss()
+                            } else {
+                                detailExercise = exercise
+                            }
                         } label: {
                             exerciseCard(exercise)
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("查看\(exercise.nameZH)详情")
+                        .accessibilityLabel(isPickingForSession ? "添加\(exercise.nameZH)" : "查看\(exercise.nameZH)详情")
 
-                        Button {
-                            toggle(exercise)
-                        } label: {
-                            selectionControl(
-                                exercise,
-                                selected: selectedExercises.contains(where: { $0.slug == exercise.slug })
-                            )
+                        if !isPickingForSession {
+                            Button {
+                                toggle(exercise)
+                            } label: {
+                                selectionControl(
+                                    exercise,
+                                    selected: selectedExercises.contains(where: { $0.slug == exercise.slug })
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .padding(7)
                         }
-                        .buttonStyle(.plain)
-                        .padding(7)
                     }
                 }
             }
@@ -574,9 +602,9 @@ struct EquipmentPickerView: View {
                     .foregroundStyle(Theme.tertiaryText.opacity(0.9))
                     .lineLimit(1)
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Theme.tertiaryText.opacity(0.72))
+                Image(systemName: isPickingForSession ? "plus.circle.fill" : "chevron.right")
+                    .font(.system(size: isPickingForSession ? 13 : 9, weight: .semibold))
+                    .foregroundStyle(isPickingForSession ? Theme.accent : Theme.tertiaryText.opacity(0.72))
             }
             .padding(.horizontal, 9)
             .padding(.top, 4)
