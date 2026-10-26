@@ -4,7 +4,7 @@ function profileDraftSegmented(key, options) {
   const draft = state.profileDraft;
   return `<div class="seg">${options.map((option) => {
     const active = String(draft[key]) === String(option) ? "active" : "";
-    return `<button class="${active}" data-draft-seg="${key}" data-value="${option}" onclick="app.profileDraftSelect('${key}', ${JSON.stringify(option)})">${option}</button>`;
+    return `<button class="${active}" data-draft-seg="${key}" data-value="${option}" onclick="app.profileDraftSelect('${key}', this.dataset.value)">${option}</button>`;
   }).join("")}</div>`;
 }
 
