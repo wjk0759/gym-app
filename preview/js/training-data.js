@@ -21,11 +21,11 @@ function trainingDataScreen() {
   const fallback = candidates.find((item) => item.sessions > 0)?.slug || candidates[0]?.slug || "goblet_squat";
   const selectedSlug = EX[state.trainingDataSlug] ? state.trainingDataSlug : fallback;
   const selected = candidates.find((item) => item.slug === selectedSlug) || candidates[0];
-  if (!selected) return `<div class="stack">${headerBack("动作训练数据", "app.tab('plan')")}</div>`;
+  if (!selected) return `<div class="stack">${headerBack("动作训练数据")}</div>`;
   const item = exerciseAnalyticsItem(selected.slug);
   return `
     <div class="stack training-data-screen">
-      ${headerBack("动作训练数据", "app.tab('plan')")}
+      ${headerBack("动作训练数据")}
 
       <section class="training-data-intro">
         <div class="compose-kicker">计划 · 训练数据</div>

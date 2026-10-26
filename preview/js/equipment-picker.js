@@ -127,7 +127,7 @@ function equipmentPickerScreen() {
 
   return `
     <div class="stack equipment-picker ${picking ? "plan-picker" : ""}" id="equipment-picker-root">
-      ${planning ? headerBack("添加动作", "app.closePlanExercisePicker()") : sessionPicking ? headerBack("添加动作", "app.closeSessionExercisePicker()") : ""}
+      ${planning ? headerBack("添加动作") : sessionPicking ? headerBack("添加动作") : ""}
 
       <div class="equipment-sticky-tools">
         <div class="equipment-search-line">

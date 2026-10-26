@@ -12,7 +12,7 @@ function equipmentRecognitionScreen() {
   const candidates = state.equipRecognitionCandidates || [];
   return `
     <div class="stack">
-      ${headerBack("器械识别", "app.equipmentTabOpen()")}
+      ${headerBack("器械识别")}
       <div class="card recognition-head-card">
         <div class="recognition-thumb">${ICONS.camera}</div>
         <div class="grow">

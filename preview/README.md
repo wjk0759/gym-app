@@ -58,6 +58,7 @@ preview/
     ├── app.js                 # 仅创建 window.app 动作命名空间
     ├── data.js                # 动作/食物数据、演示数据、计划生成
     ├── state.js               # 状态结构、持久化、派生数据
+    ├── router.js              # 路由栈、上一级返回、深链接 fallback
     ├── ui.js                  # tabbar、返回头等通用 UI
     ├── components/
     │   ├── camera.js          # 饮食 / 器械共用相机拍摄页

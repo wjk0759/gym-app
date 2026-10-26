@@ -1,17 +1,15 @@
 /* FitAI Web Preview actions: equipment-picker */
 Object.assign(window.app, {
   equipmentTabOpen() {
-    state.screen = "tabs";
-    state.tab = "equipment";
-    state.equipSelectionOpen = false;
+    resetToTab("equipment");
     save();
     render();
   },
 
   equipmentLibraryOpen(source = "equipment") {
-    state.screen = "equipmentLibrary";
     state.equipLibraryFromProfile = source === "profile";
     state.equipSelectionOpen = false;
+    pushRoute("equipmentLibrary", { equipLibraryFromProfile: state.equipLibraryFromProfile });
     save();
     render();
   },
@@ -89,7 +87,7 @@ Object.assign(window.app, {
       }))
     };
     state.equipSelectionOpen = false;
-    state.screen = "workoutCompose";
+    pushRoute("workoutCompose");
     save();
     render();
   },

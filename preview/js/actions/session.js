@@ -1,16 +1,13 @@
 /* FitAI Web Preview actions: session */
 Object.assign(window.app, {
   openHistory() {
-    state.screen = "history";
+    pushRoute("history");
     save();
     render();
   },
 
   closeHistory() {
-    state.screen = "tabs";
-    state.tab = "home";
-    save();
-    render();
+    app.back();
   },
 
   openSession(id, origin = "home") {
@@ -20,7 +17,7 @@ Object.assign(window.app, {
     const session = state.sessions.find((item) => item.id === id);
     state.sessionDraft = session ? JSON.parse(JSON.stringify(session)) : null;
     state.sessionEditing = false;
-    state.screen = "sessionDetail";
+    pushRoute("sessionDetail", { sessionId: id, sessionOrigin: state.sessionOrigin, sessionCreating: false });
     save();
     render();
   },
@@ -57,7 +54,7 @@ Object.assign(window.app, {
       thisWeek: startOfWeekMonday(timestamp).getTime() === startOfWeekMonday(new Date()).getTime(),
       items
     };
-    state.screen = "sessionDetail";
+    pushRoute("sessionDetail", { sessionOrigin: "plan", sessionCreating: true });
     save();
     render();
   },
@@ -76,9 +73,8 @@ Object.assign(window.app, {
       state.sessionCreating = false;
       state.sessionEditing = false;
       state.sessionDraft = null;
-      state.screen = "tabs";
-      state.tab = "plan";
       state.sessionOrigin = "home";
+      popRoute();
       save();
       render();
       return;
@@ -115,18 +111,16 @@ Object.assign(window.app, {
 
   sessionAddItem() {
     if (!state.sessionDraft) return;
-    state.screen = "sessionExercisePicker";
     state.equipSearchQuery = "";
     state.equipMuscle = "全部";
     state.equipFilter = "全部";
+    pushRoute("sessionExercisePicker");
     save();
     render();
   },
 
   closeSessionExercisePicker() {
-    state.screen = "sessionDetail";
-    save();
-    render();
+    app.back();
   },
 
   addSessionExercise(slug) {
@@ -147,7 +141,8 @@ Object.assign(window.app, {
     } else {
       toast("这个动作已在训练记录里");
     }
-    state.screen = "sessionDetail";
+    popRoute();
+    save();
     render();
   },
 
@@ -187,9 +182,8 @@ Object.assign(window.app, {
       state.sessionCreating = false;
       state.sessionEditing = false;
       state.sessionDraft = null;
-      state.screen = "tabs";
-      state.tab = "plan";
       state.sessionOrigin = "home";
+      popRoute();
       save();
       render();
       toast("训练记录已添加到日历");
@@ -209,9 +203,8 @@ Object.assign(window.app, {
     state.sessions = state.sessions.filter((item) => item.id !== state.sessionId);
     state.sessionEditing = false;
     state.sessionDraft = null;
-    state.screen = "tabs";
-    state.tab = state.sessionOrigin === "plan" ? "plan" : "home";
     state.sessionOrigin = "home";
+    popRoute();
     save();
     render();
     toast("已删除训练记录");

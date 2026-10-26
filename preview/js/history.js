@@ -6,7 +6,7 @@ function historyScreen() {
   const totalMinutes = sessions.reduce((sum, session) => sum + session.duration, 0);
   return `
     <div class="stack">
-      ${headerBack("训练记录", "app.closeHistory()")}
+      ${headerBack("训练记录")}
       <div class="card">
         <div class="h2">训练数据</div>
         <div class="row gap8" style="margin-top:12px">

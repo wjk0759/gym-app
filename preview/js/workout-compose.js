@@ -111,7 +111,7 @@ function workoutComposeScreen() {
   return `
     <div class="workout-compose">
       <header class="workout-topbar">
-        <button class="icon-btn" onclick="app.closeWorkoutCompose()" aria-label="${isPlan ? "返回首页" : isPlanEdit ? "返回计划" : "返回动作库"}">‹</button>
+        <button class="icon-btn" onclick="app.closeWorkoutCompose()" aria-label="返回上一级">‹</button>
         <div class="workout-title">${isPlanEdit ? "编辑训练日" : "安排训练"}</div>
         <span class="workout-topbar-spacer" aria-hidden="true"></span>
       </header>

@@ -36,7 +36,7 @@ function foodPhotoScreen() {
 
   return `
     <div class="stack">
-      ${headerBack("拍照识别饮食", "app.go('nutrition')")}
+      ${headerBack("拍照识别饮食")}
 
       <div class="card">
         <div class="h2">拍一张这餐的照片</div>

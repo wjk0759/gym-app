@@ -14,7 +14,7 @@ function profileEditScreen() {
 
   return `
     <div class="stack">
-      ${headerBack("编辑资料", "app.closeProfileEdit()")}
+      ${headerBack("编辑资料")}
 
       <div class="card">
         <div class="h3">基础信息</div>

@@ -3,7 +3,7 @@
 Object.assign(window.app, {
   openTrainingData(slug = state.trainingDataSlug) {
     if (EX[slug]) state.trainingDataSlug = slug;
-    state.screen = "trainingData";
+    pushRoute("trainingData", { trainingDataSlug: state.trainingDataSlug });
     save();
     render();
   },

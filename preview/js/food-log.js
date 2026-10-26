@@ -8,7 +8,7 @@ function foodAddScreen() {
     : "找不到？手动添加食物";
   return `
     <div class="stack">
-      ${headerBack("记录食物", "app.go('nutrition')")}
+      ${headerBack("记录食物")}
       <div class="seg">
         ${["早餐", "午餐", "晚餐", "加餐"].map((meal) => `
           <button class="${draft.meal === meal ? "active" : ""}" onclick="app.foodMeal('${meal}')">${meal}</button>
@@ -57,7 +57,7 @@ function foodCustomScreen() {
   if (!draft) return foodAddScreen();
   return `
     <div class="stack">
-      ${headerBack("手动添加食物", "app.closeFoodCustom()")}
+      ${headerBack("手动添加食物")}
       <div class="card">
         <div class="h3">按你实际吃的一份填写</div>
         <div class="tiny muted" style="margin-top:6px;line-height:1.6">不知道蛋白质、碳水或脂肪可以留空。先记下热量也可以，之后还能补充。</div>

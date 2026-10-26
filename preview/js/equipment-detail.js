@@ -108,10 +108,7 @@ function equipmentItemScreen() {
 
   return `
     <div class="stack equipment-detail-screen">
-      ${headerBack(
-        isPreview ? "动作详情" : "器械详情",
-        isPreview ? "app.backTo('equipment')" : "app.equipmentLibraryOpen()"
-      )}
+      ${headerBack(isPreview ? "动作详情" : "器械详情")}
 
       <div class="detail-quick-card">
         <div class="detail-quick-title">

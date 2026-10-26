@@ -3,8 +3,7 @@
 Object.assign(window.app, {
   startPlanAdjustment(source = "plan") {
     if (!state.plan) return;
-    state.screen = "tabs";
-    state.tab = "coach";
+    resetToTab("coach");
     state.coachSkill = "trainer";
     if (state.planAdjustment?.active) {
       save();
@@ -179,9 +178,8 @@ Object.assign(window.app, {
   },
 
   openAdjustedPlan() {
-    state.screen = "tabs";
-    state.tab = "plan";
     state.planAdjustment = null;
+    resetToTab("plan");
     save();
     render();
     toast("已打开更新后的计划");

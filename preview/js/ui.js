@@ -20,7 +20,7 @@ function headerBack(title, action = "app.back()") {
   return `
     <div class="page-header">
       <div class="row between">
-        <button class="icon-btn" onclick="${action}">‹</button>
+        <button class="icon-btn" onclick="${action}" aria-label="返回上一级">‹</button>
         <div class="h3">${title}</div>
         <span class="header-spacer" aria-hidden="true"></span>
       </div>

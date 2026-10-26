@@ -23,7 +23,7 @@ function nutritionScreen() {
 
   return `
     <div class="stack">
-      ${headerBack(isToday ? "今日饮食" : "饮食记录", "app.closeNutrition()")}
+      ${headerBack(isToday ? "今日饮食" : "饮食记录")}
       <div class="card">
         <div class="tiny accent">${dateLabel(key)}</div>
         <div class="tiny muted" style="margin-top:3px">${isToday ? "今日热量目标" : "当天热量目标"}</div>

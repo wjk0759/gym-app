@@ -20,7 +20,7 @@ Object.assign(window.app, {
     state.workoutCustomDay = null;
     state.workoutAdjustOpen = false;
     state.workoutAdjustDraft = null;
-    state.screen = "workoutCompose";
+    pushRoute("workoutCompose");
     save();
     render();
   },
@@ -170,8 +170,7 @@ Object.assign(window.app, {
     state.workout = null;
     state.workoutCustomDay = null;
     stopRestTimer();
-    state.screen = "tabs";
-    state.tab = "home";
+    resetToTab("home");
     save();
     render();
     toast("训练已保存");
@@ -183,9 +182,6 @@ Object.assign(window.app, {
     state.workout = null;
     state.workoutCustomDay = null;
     stopRestTimer();
-    state.screen = "tabs";
-    state.tab = "home";
-    save();
-    render();
+    app.back();
   },
 });

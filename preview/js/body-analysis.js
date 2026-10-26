@@ -4,7 +4,7 @@ function bodyAnalysisScreen() {
   const analysis = state.bodyAnalysis;
   return `
     <div class="stack">
-      ${headerBack("体型照片分析", "app.backTo('profile')")}
+      ${headerBack("体型照片分析")}
       <div class="card">
         <div class="h3">拍一张全身或半身照</div>
         <div class="tiny muted" style="margin-top:6px;line-height:1.6">分析只给训练重点，不判断体脂率、不诊断体态。照片不写入训练记录。</div>

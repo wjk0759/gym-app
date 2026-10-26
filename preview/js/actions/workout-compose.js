@@ -1,12 +1,8 @@
 /* FitAI Web Preview actions: workout-compose */
 Object.assign(window.app, {
   closeWorkoutCompose() {
-    const source = state.workoutDraft?.source;
     state.workoutDraft = null;
-    state.screen = "tabs";
-    state.tab = source === "plan" ? "home" : source === "planEdit" ? "plan" : "equipment";
-    save();
-    render();
+    app.back();
   },
 
   workoutDraftMoveTo(index, target) {
@@ -166,7 +162,7 @@ Object.assign(window.app, {
       state.equipSelected = [];
     }
     state.equipSelectionOpen = false;
-    state.screen = "workout";
+    replaceRoute("workout");
     save();
     render();
   },

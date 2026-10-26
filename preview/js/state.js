@@ -4,6 +4,21 @@ function normalizeState(value) {
   const next = value || initialState();
   next.equipmentLibrary = next.equipmentLibrary || demoEquipment();
   next.useEquipLibrary = next.useEquipLibrary !== false;
+  const validRouteScreens = [
+    "tabs", "onboarding", "nutrition", "foodAdd", "foodCustom", "foodPhoto",
+    "paywall", "profileEdit", "settings", "workoutCompose", "workout",
+    "sessionDetail", "sessionExercisePicker", "trainingData", "history",
+    "equipmentLibrary", "equipmentCamera", "foodPhotoCamera",
+    "equipmentRecognition", "equipmentItem", "planExercisePicker", "bodyAnalysis"
+  ];
+  next.routeStack = Array.isArray(next.routeStack)
+    ? next.routeStack
+      .filter((route) => route && validRouteScreens.includes(route.screen))
+      .slice(-40)
+    : [];
+  if (!next.authenticated || next.screen === "onboarding" || next.screen === "tabs") {
+    next.routeStack = [];
+  }
   next.trainingDataSlug = EX[next.trainingDataSlug] ? next.trainingDataSlug : "goblet_squat";
   if (next.planAdjustment && typeof next.planAdjustment === "object") {
     next.planAdjustment.active = next.planAdjustment.active !== false;
@@ -117,6 +132,7 @@ function initialState() {
     version: 1,
     screen: "onboarding",
     tab: "home",
+    routeStack: [],
     onboarded: false,
     profile,
     profileDraft: null,

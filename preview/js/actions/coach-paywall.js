@@ -37,9 +37,7 @@ Object.assign(window.app, {
   },
 
   openExercise(slug) {
-    state.selectedExercise = slug;
-    state.equipmentItemId = null;
-    state.screen = "equipmentItem";
+    pushRoute("equipmentItem", { selectedExercise: slug, equipmentItemId: null });
     save();
     render();
   },
@@ -48,8 +46,7 @@ Object.assign(window.app, {
     const name = EX[slug].name;
     state.chats.push({ role: "user", text: `${name}怎么用？需要注意什么？` });
     state.chats.push({ role: "assistant", text: `${EX[slug].cues}\n如果动作过程中出现关节刺痛、麻木或肿胀，请停止并咨询医生。` });
-    state.screen = "tabs";
-    state.tab = "coach";
+    resetToTab("coach");
     save();
     render();
     setTimeout(() => {
@@ -59,7 +56,7 @@ Object.assign(window.app, {
   },
 
   openPaywall() {
-    state.screen = "paywall";
+    pushRoute("paywall");
     save();
     render();
   },
@@ -85,7 +82,10 @@ Object.assign(window.app, {
   openNutritionDate(dateKey = todayKey(), origin = "plan") {
     state.nutritionDateKey = dateKey;
     state.nutritionOrigin = origin === "home" ? "home" : "plan";
-    state.screen = "nutrition";
+    pushRoute("nutrition", {
+      nutritionDateKey: state.nutritionDateKey,
+      nutritionOrigin: state.nutritionOrigin
+    });
     save();
     render();
   },

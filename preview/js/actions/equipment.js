@@ -78,10 +78,10 @@ Object.assign(window.app, {
   },
 
   equipmentRecognitionOpen() {
-    state.screen = "equipmentCamera";
     state.equipRecognitionPhoto = false;
     state.equipSelectionOpen = false;
     state.equipRecognitionCandidates = [];
+    pushRoute("equipmentCamera");
     save();
     render();
   },
@@ -89,15 +89,15 @@ Object.assign(window.app, {
   equipmentCapturePhoto() {
     state.equipRecognitionPhoto = true;
     state.equipRecognitionCandidates = [];
-    state.screen = "equipmentRecognition";
+    settleCameraRoute("equipmentRecognition");
     save();
     render();
   },
 
   equipmentRecognitionPhoto() {
-    state.screen = "equipmentCamera";
     state.equipRecognitionPhoto = false;
     state.equipRecognitionCandidates = [];
+    pushRoute("equipmentCamera");
     save();
     render();
   },
@@ -135,9 +135,7 @@ Object.assign(window.app, {
   },
 
   openEquipItem(id) {
-    state.equipmentItemId = id;
-    state.selectedExercise = null;
-    state.screen = "equipmentItem";
+    pushRoute("equipmentItem", { equipmentItemId: id, selectedExercise: null });
     save();
     render();
   },
@@ -194,7 +192,7 @@ Object.assign(window.app, {
     if (!confirm("从器械库删除这件器械？")) return;
     state.equipmentLibrary = state.equipmentLibrary.filter((item) => item.id !== id);
     state.equipmentItemId = null;
-    state.screen = "equipmentLibrary";
+    popRoute();
     save();
     render();
     toast("已从器械库删除");
@@ -204,15 +202,14 @@ Object.assign(window.app, {
     state.useEquipLibrary = true;
     state.plan = applyEquipmentLibrary(buildPlan(state.profile));
     state.plan.version += 1;
-    state.screen = "tabs";
-    state.tab = "plan";
+    resetToTab("plan");
     save();
     render();
     toast("已按器械库生成新计划");
   },
 
   bodyAnalysisOpen() {
-    state.screen = "bodyAnalysis";
+    pushRoute("bodyAnalysis");
     save();
     render();
   },
@@ -252,8 +249,7 @@ Object.assign(window.app, {
       });
     });
     analysis.applied = true;
-    state.screen = "tabs";
-    state.tab = "profile";
+    popRoute();
     save();
     render();
     toast("已应用体型分析：重点部位增加训练量");

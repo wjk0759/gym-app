@@ -1,18 +1,12 @@
 /* FitAI preview actions: nutrition */
 Object.assign(window.app, {
   closeNutrition() {
-    const origin = state.nutritionOrigin === "plan" ? "plan" : "home";
-    state.nutritionDateKey = todayKey();
-    state.nutritionOrigin = "home";
-    state.screen = "tabs";
-    state.tab = origin;
-    save();
-    render();
+    app.back();
   },
 
   openFoodAdd(meal, dateKey = state.nutritionDateKey || todayKey()) {
     state.foodDraft = { meal, dateKey, query: "", selected: null, grams: 100 };
-    state.screen = "foodAdd";
+    pushRoute("foodAdd");
     save();
     render();
   },
@@ -77,7 +71,7 @@ Object.assign(window.app, {
       c: Math.round(food.c * factor * 10) / 10,
       f: Math.round(food.f * factor * 10) / 10
     });
-    state.screen = "nutrition";
+    popRoute();
     save();
     render();
     toast("已添加饮食记录");
@@ -100,16 +94,14 @@ Object.assign(window.app, {
       c: "",
       f: ""
     };
-    state.screen = "foodCustom";
+    pushRoute("foodCustom");
     save();
     render();
   },
 
   closeFoodCustom() {
     state.foodCustomDraft = null;
-    state.screen = "foodAdd";
-    save();
-    render();
+    app.back();
   },
 
   foodCustomInput(key, value) {
@@ -144,7 +136,7 @@ Object.assign(window.app, {
     state.foodDraft.selected = name;
     state.foodDraft.grams = portion;
     state.foodCustomDraft = null;
-    state.screen = "foodAdd";
+    popRoute();
     save();
     render();
     toast("已保存，下次可以直接搜索这个食物");
@@ -157,22 +149,20 @@ Object.assign(window.app, {
     state.foodPhotoConfidence = 0;
     state.foodPhotoModel = "";
     state.foodPhotoCameraFrom = "nutrition";
-    state.screen = "foodPhotoCamera";
+    pushRoute("foodPhotoCamera", { foodPhotoCameraFrom: "nutrition" });
     save();
     render();
   },
 
   openFoodPhotoCamera(from = "foodPhoto") {
     state.foodPhotoCameraFrom = from === "nutrition" ? "nutrition" : "foodPhoto";
-    state.screen = "foodPhotoCamera";
+    pushRoute("foodPhotoCamera", { foodPhotoCameraFrom: state.foodPhotoCameraFrom });
     save();
     render();
   },
 
   closeFoodPhotoCamera() {
-    state.screen = state.foodPhotoCameraFrom === "nutrition" ? "nutrition" : "foodPhoto";
-    save();
-    render();
+    app.back();
   },
 
   foodPhotoCapture() {
@@ -180,7 +170,7 @@ Object.assign(window.app, {
     state.foodPhotoItems = [];
     state.foodPhotoConfidence = 0;
     state.foodPhotoModel = "";
-    state.screen = "foodPhoto";
+    settleCameraRoute("foodPhoto");
     save();
     render();
     toast("已选择照片（预览模拟）");
@@ -269,7 +259,7 @@ Object.assign(window.app, {
     const total = Math.round(foodPhotoTotals(selected).kcal);
     state.foodPhotoImage = false;
     state.foodPhotoItems = [];
-    state.screen = "nutrition";
+    popRoute();
     save();
     render();
     toast(`${meal}已加入 ${total} kcal`);

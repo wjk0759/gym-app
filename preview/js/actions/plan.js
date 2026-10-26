@@ -39,7 +39,7 @@ Object.assign(window.app, {
     state.equipSearchQuery = "";
     state.equipMuscle = "全部";
     state.equipFilter = "全部";
-    state.screen = "workoutCompose";
+    pushRoute("workoutCompose");
     save();
     render();
   },
@@ -68,8 +68,7 @@ Object.assign(window.app, {
     day.exercises = exercises;
     day.focus = [...new Set(exercises.map((item) => EX[item.slug].muscle))];
     state.workoutDraft = null;
-    state.screen = "tabs";
-    state.tab = "plan";
+    popRoute();
     save();
     render();
     toast("训练日已更新");
@@ -85,22 +84,20 @@ Object.assign(window.app, {
 
   openPlanExercisePicker() {
     if (!state.workoutDraft || state.workoutDraft.source !== "planEdit") return;
-    state.screen = "planExercisePicker";
     state.equipSearchQuery = "";
     state.equipMuscle = "全部";
     state.equipFilter = "全部";
     state.equipSelectionOpen = false;
+    pushRoute("planExercisePicker");
     save();
     render();
   },
 
   closePlanExercisePicker() {
-    state.screen = "workoutCompose";
     state.equipSearchQuery = "";
     state.equipMuscle = "全部";
     state.equipFilter = "全部";
-    save();
-    render();
+    app.back();
   },
 
   addPlanExercise(slug) {
@@ -109,7 +106,8 @@ Object.assign(window.app, {
     if (!draft || draft.source !== "planEdit" || !info) return;
     if (draft.exercises.some((item) => item.slug === slug)) {
       toast("这个动作已经在训练日里");
-      state.screen = "workoutCompose";
+      popRoute();
+      save();
       render();
       return;
     }
@@ -123,7 +121,7 @@ Object.assign(window.app, {
       rpe: 7.5
     });
     state.disliked = state.disliked.filter((item) => item !== slug);
-    state.screen = "workoutCompose";
+    popRoute();
     save();
     render();
     toast("已添加动作");

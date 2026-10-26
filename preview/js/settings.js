@@ -6,7 +6,7 @@ function settingsScreen() {
 
   return `
     <div class="stack">
-      ${headerBack("设置", "app.closeSettings()")}
+      ${headerBack("设置")}
 
       <div class="card">
         <div class="h3">账号与安全</div>

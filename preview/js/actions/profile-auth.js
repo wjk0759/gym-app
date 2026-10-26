@@ -66,17 +66,14 @@ Object.assign(window.app, {
 
   openProfileEdit() {
     state.profileDraft = JSON.parse(JSON.stringify(state.profile));
-    state.screen = "profileEdit";
+    pushRoute("profileEdit");
     save();
     render();
   },
 
   closeProfileEdit() {
     state.profileDraft = null;
-    state.screen = "tabs";
-    state.tab = "profile";
-    save();
-    render();
+    app.back();
   },
 
   saveProfileEdit() {
@@ -95,8 +92,7 @@ Object.assign(window.app, {
     if (!draft.equipment.includes("徒手")) draft.equipment.push("徒手");
     state.profile = { ...draft };
     state.profileDraft = null;
-    state.screen = "tabs";
-    state.tab = "profile";
+    popRoute();
     save();
     render();
     toast("资料已保存");
@@ -138,8 +134,7 @@ Object.assign(window.app, {
       state.profile.name = String(state.profile.name || "小林").trim() || "小林";
       state.plan = applyEquipmentLibrary(buildPlan(state.profile));
       state.onboarded = true;
-      state.screen = "tabs";
-      state.tab = "home";
+      resetToTab("home");
       save();
       render();
       toast("已生成 4 周计划，开始训练吧");
@@ -151,8 +146,7 @@ Object.assign(window.app, {
     state.profile = { ...DEFAULT_PROFILE };
     state.plan = applyEquipmentLibrary(buildPlan(state.profile));
     state.onboarded = true;
-    state.screen = "tabs";
-    state.tab = "home";
+    resetToTab("home");
     save();
     render();
     toast("已载入示例数据", 1400);
@@ -222,8 +216,7 @@ Object.assign(window.app, {
       state.plan = applyEquipmentLibrary(buildPlan(state.profile));
       state.onboarded = true;
     }
-    state.screen = "tabs";
-    state.tab = "home";
+    resetToTab("home");
     save();
     render();
     toast("登录成功（预览模拟）");
@@ -241,8 +234,7 @@ Object.assign(window.app, {
       state.plan = applyEquipmentLibrary(buildPlan(state.profile));
       state.onboarded = true;
     }
-    state.screen = "tabs";
-    state.tab = "home";
+    resetToTab("home");
     state.authError = "";
     save();
     render();
@@ -257,60 +249,31 @@ Object.assign(window.app, {
     state.authenticated = false;
     state.authError = "";
     state.authConsent = false;
+    state.routeStack = [];
     save();
     render();
     toast("已退出登录");
   },
 
   tab(tab) {
-    state.screen = "tabs";
-    state.tab = tab;
-    state.equipSelectionOpen = false;
+    resetToTab(tab);
     save();
     render();
   },
 
   go(screen) {
-    state.screen = screen;
+    pushRoute(screen);
     save();
     render();
   },
 
   openSettings() {
-    state.screen = "settings";
+    pushRoute("settings");
     save();
     render();
   },
 
   closeSettings() {
-    state.screen = "tabs";
-    state.tab = "profile";
-    save();
-    render();
-  },
-
-  back() {
-    state.equipSelectionOpen = false;
-    if (state.screen === "foodCustom") { state.foodCustomDraft = null; state.screen = "foodAdd"; }
-    else if (state.screen === "foodAdd") state.screen = "nutrition";
-    else if (state.screen === "history") { state.screen = "tabs"; state.tab = "home"; }
-    else if (state.screen === "trainingData") { state.screen = "tabs"; state.tab = "plan"; }
-    else if (state.screen === "paywall") { state.screen = "tabs"; state.tab = "profile"; }
-    else if (state.screen === "sessionDetail") { state.screen = "tabs"; state.tab = state.sessionOrigin === "plan" ? "plan" : "home"; state.sessionOrigin = "home"; }
-    else if (state.screen === "equipmentItem") { state.screen = "equipmentLibrary"; }
-    else if (state.screen === "foodPhotoCamera") state.screen = state.foodPhotoCameraFrom === "nutrition" ? "nutrition" : "foodPhoto";
-    else if (state.screen === "equipmentLibrary" || state.screen === "equipmentRecognition" || state.screen === "equipmentCamera") { state.screen = "tabs"; state.tab = "equipment"; }
-    else if (state.screen === "bodyAnalysis") { state.screen = "tabs"; state.tab = "profile"; }
-    else { state.screen = "tabs"; state.tab = "home"; }
-    save();
-    render();
-  },
-
-  backTo(tab) {
-    state.screen = "tabs";
-    state.tab = tab;
-    state.equipSelectionOpen = false;
-    save();
-    render();
-  },
+    app.back();
+  }
 });

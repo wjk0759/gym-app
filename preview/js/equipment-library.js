@@ -69,17 +69,10 @@ function equipmentLibraryScreen() {
   const items = state.equipmentLibrary;
   const filtered = filteredEquipmentLibraryItems();
   const query = String(state.equipLibraryQuery || "");
-  const backAction = state.equipLibraryFromProfile ? "app.backTo('profile')" : "app.equipmentTabOpen()";
 
   return `
     <div class="stack equipment-library-screen">
-      <div class="page-header">
-        <div class="row between">
-          <button class="icon-btn" onclick="${backAction}" aria-label="返回">‹</button>
-          <div class="h3">器械库</div>
-          <span class="header-spacer" aria-hidden="true"></span>
-        </div>
-      </div>
+      ${headerBack("器械库")}
 
       <section class="library-overview">
         <div class="library-overview-main">
