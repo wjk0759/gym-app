@@ -141,6 +141,9 @@ Object.assign(window.app, {
   },
 
   regeneratePlan() {
+    if (!hasPlanEquipment(state.profile.equipment)) {
+      return toast("请先在资料里选择至少一种可用器械");
+    }
     state.plan = applyEquipmentLibrary(buildPlan(state.profile));
     state.plan.version += 1;
     save();

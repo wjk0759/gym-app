@@ -91,7 +91,10 @@ Object.assign(window.app, {
       return;
     }
     draft.name = name;
-    if (!draft.equipment.includes("徒手")) draft.equipment.push("徒手");
+    if (!Array.isArray(draft.equipment)) draft.equipment = [];
+    if (!hasPlanEquipment(draft.equipment)) {
+      return toast("请至少选择一种可用器械：徒手 / 哑铃 / 杠铃 / 固定器械 / 绳索");
+    }
     const equipmentChanged = JSON.stringify([...state.profile.equipment].sort())
       !== JSON.stringify([...draft.equipment].sort());
     const planSettingsChanged = state.profile.goal !== draft.goal
@@ -189,6 +192,9 @@ Object.assign(window.app, {
   },
 
   generatePlan() {
+    if (!hasPlanEquipment(state.profile.equipment)) {
+      return toast("请至少选择一种可用器械：徒手 / 哑铃 / 杠铃 / 固定器械 / 绳索");
+    }
     const button = document.getElementById("gen-btn");
     if (button) {
       button.disabled = true;

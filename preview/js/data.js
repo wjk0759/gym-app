@@ -532,8 +532,13 @@ function planTemplatesForSplit(split) {
   ];
 }
 
+function hasPlanEquipment(equipment) {
+  const selected = new Set(Array.isArray(equipment) ? equipment : []);
+  return Object.values(EX).some((exercise) => exercise.muscle !== "有氧" && selected.has(exercise.equip));
+}
+
 function resolvePlanExerciseSlugs(slugs, equipment) {
-  const allowed = new Set(["徒手", ...(Array.isArray(equipment) ? equipment : [])]);
+  const allowed = new Set(Array.isArray(equipment) ? equipment : []);
   const used = new Set();
   const result = [];
   slugs.forEach((slug) => {
@@ -620,7 +625,7 @@ function buildPlan(profile) {
 
 function applyEquipmentLibrary(plan) {
   if (!state.useEquipLibrary) return plan;
-  const allowed = new Set(["徒手", ...(state.profile?.equipment || [])]);
+  const allowed = new Set(state.profile?.equipment || []);
   const slugs = state.equipmentLibrary
     .map((item) => item.slug)
     .filter((slug) => {
