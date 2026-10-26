@@ -183,7 +183,7 @@ struct PlanReviewView: View {
     private var recentCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("本" + String(review.period.title.dropFirst()) + "训练记录")
+                Text("\(review.period.title)训练记录")
                     .font(.headline)
                     .foregroundStyle(.white)
                 Spacer()

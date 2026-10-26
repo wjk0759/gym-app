@@ -609,7 +609,8 @@ final class AppStore {
                             to: trimmed,
                             profile: self.profile,
                             plan: self.plan,
-                            skill: skill
+                            skill: skill,
+                            period: self.todayPeriod
                         )
                     )
                 }
@@ -624,7 +625,8 @@ final class AppStore {
                 to: trimmed,
                 profile: profile,
                 plan: plan,
-                skill: skill
+                skill: skill,
+                period: todayPeriod
             )
         )
         persist()

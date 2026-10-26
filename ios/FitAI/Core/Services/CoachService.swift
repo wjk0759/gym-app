@@ -24,7 +24,8 @@ enum CoachService {
         to message: String,
         profile: UserProfile,
         plan: TrainingPlan?,
-        skill: CoachSkill = .trainer
+        skill: CoachSkill = .trainer,
+        period: PeriodDay? = nil
     ) -> ChatMessage {
         for (keywords, text) in safetyRules
         where keywords.contains(where: { message.contains($0) }) {
@@ -33,9 +34,21 @@ enum CoachService {
 
         if message.contains("今天练") || message.contains("练什么") || message.contains("计划") {
             if let day = plan?.firstWeek.first(where: { $0.weekday == Weekday.today }) {
-                var lines = ["今天建议练「\(day.title)」，共 \(day.exercises.count) 个动作："]
+                if period?.mode == .rest {
+                    return ChatMessage(
+                        role: .assistant,
+                        text: "今天是经期休息日，原计划「\(day.title)」保留但不要求力量训练。优先补铁、蛋白质和睡眠；如果腹痛明显，只做散步或舒缓拉伸。"
+                    )
+                }
+                var lines = [
+                    period == nil
+                        ? "今天建议练「\(day.title)」，共 \(day.exercises.count) 个动作："
+                        : "今天是经期第 \(period?.day ?? 1) 天，建议做轻量版「\(day.title)」："
+                ]
                 for item in day.exercises {
-                    lines.append("· \(item.displayName) \(item.sets) 组 × \(item.reps)，休息 \(item.restSec)s")
+                    let sets = period == nil ? item.sets : max(2, item.sets - 1)
+                    let weightText = period == nil ? "" : "（负重约 80%）"
+                    lines.append("· \(item.displayName) \(sets) 组 × \(item.reps)\(weightText)，休息 \(item.restSec)s")
                 }
                 lines.append("如果状态一般，把最后一组去掉，优先保证动作质量。")
                 return ChatMessage(role: .assistant, text: lines.joined(separator: "\n"))

@@ -101,11 +101,11 @@ struct LoginView: View {
                 let action = pendingConsentAction
                 pendingConsentAction = nil
                 switch action {
-                case .login:
+                case .some(.login):
                     performLogin()
-                case let .social(provider):
+                case .some(.social(let provider)):
                     performSocialLogin(provider)
-                case nil:
+                case .none:
                     break
                 }
             }
