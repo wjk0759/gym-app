@@ -1436,17 +1436,22 @@ function filteredEquipmentLibraryItems() {
 
 function equipmentLibraryRowMarkup(item) {
   return `
-    <button class="library-row" onclick="app.openEquipItem('${item.id}')">
-      <span class="library-thumb">${equipGlyph(item)}</span>
-      <span class="library-row-copy">
-        <span class="library-row-name">${esc(item.name)}</span>
-        <span class="library-row-meta">${item.muscle} · ${item.equip}</span>
-      </span>
-      <span class="library-video ${item.video ? "ready" : ""}">
-        ${item.video ? "教学视频" : "视频准备中"}
-      </span>
-      <span class="library-chevron">›</span>
-    </button>
+    <div class="library-swipe-row" data-library-id="${item.id}">
+      <div class="library-swipe-action">
+        <button onclick="app.deleteEquipItem('${item.id}')">删除</button>
+      </div>
+      <button class="library-row no-drag" onclick="app.openEquipItem('${item.id}')">
+        <span class="library-thumb">${equipGlyph(item)}</span>
+        <span class="library-row-copy">
+          <span class="library-row-name">${esc(item.name)}</span>
+          <span class="library-row-meta">${item.muscle} · ${item.equip}</span>
+        </span>
+        <span class="library-video ${item.video ? "ready" : ""}">
+          ${item.video ? "教学视频" : "视频准备中"}
+        </span>
+        <span class="library-chevron">›</span>
+      </button>
+    </div>
   `;
 }
 
@@ -1547,7 +1552,7 @@ function equipmentLibraryScreen() {
 
       <div class="library-section-head">
         <span>器械清单</span>
-        <span id="library-list-count">${filtered.length} 件</span>
+        <span><span id="library-list-count">${filtered.length} 件</span><span class="library-swipe-hint"> · 左滑删除</span></span>
       </div>
 
       <div id="library-list-root">
@@ -2794,6 +2799,118 @@ function setupEquipmentScrollState() {
   syncEquipmentScrollState();
 }
 
+function setupLibrarySwipeRows() {
+  document.querySelectorAll(".library-swipe-row").forEach((row) => {
+    if (row.dataset.swipeReady === "1") return;
+    row.dataset.swipeReady = "1";
+
+    const content = row.querySelector(".library-row");
+    if (!content) return;
+
+    let startX = 0;
+    let startY = 0;
+    let offset = 0;
+    let horizontal = false;
+    let dragging = false;
+
+    const setOffset = (value) => {
+      offset = Math.max(-84, Math.min(0, value));
+      content.style.transform = `translateX(${offset}px)`;
+    };
+
+    const settle = (open) => {
+      row.classList.toggle("is-open", open);
+      content.style.transition = "transform 200ms cubic-bezier(0.22, 0.8, 0.24, 1)";
+      setOffset(open ? -84 : 0);
+      setTimeout(() => {
+        content.style.transition = "";
+      }, 220);
+    };
+
+    content.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      startX = event.clientX;
+      startY = event.clientY;
+      offset = row.classList.contains("is-open") ? -84 : 0;
+      horizontal = false;
+      dragging = true;
+      content.style.transition = "";
+      if (event.pointerType !== "touch") {
+        content.setPointerCapture?.(event.pointerId);
+      }
+    });
+
+    content.addEventListener("pointermove", (event) => {
+      if (!dragging) return;
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+
+      if (!horizontal) {
+        if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
+        if (Math.abs(dx) <= Math.abs(dy)) {
+          dragging = false;
+          return;
+        }
+        horizontal = true;
+      }
+
+      event.preventDefault();
+      setOffset((row.classList.contains("is-open") ? -84 : 0) + dx);
+    }, { passive: false });
+
+    const finish = () => {
+      if (!dragging) return;
+      dragging = false;
+
+      if (!horizontal) {
+        // 已展开时点一下整行先收起，不直接进入详情。
+        if (row.classList.contains("is-open")) {
+          settle(false);
+          row.dataset.suppressClick = "1";
+          setTimeout(() => {
+            row.dataset.suppressClick = "0";
+          }, 220);
+        }
+        return;
+      }
+
+      const open = offset < -34;
+      if (open) {
+        document.querySelectorAll(".library-swipe-row.is-open").forEach((other) => {
+          if (other === row) return;
+          other.classList.remove("is-open");
+          const otherContent = other.querySelector(".library-row");
+          if (otherContent) {
+            otherContent.style.transition = "transform 180ms ease";
+            otherContent.style.transform = "translateX(0)";
+            setTimeout(() => {
+              otherContent.style.transition = "";
+            }, 200);
+          }
+        });
+      }
+
+      settle(open);
+      row.dataset.suppressClick = "1";
+      setTimeout(() => {
+        row.dataset.suppressClick = "0";
+      }, 220);
+    };
+
+    content.addEventListener("pointerup", finish);
+    content.addEventListener("pointercancel", finish);
+    content.addEventListener("click", (event) => {
+      if (row.dataset.suppressClick === "1" || row.classList.contains("is-open")) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (row.classList.contains("is-open") && row.dataset.suppressClick !== "1") {
+          settle(false);
+        }
+      }
+    }, true);
+  });
+}
+
 function containSelectionListScroll() {
   const list = document.querySelector(".equipment-selection-list");
   if (!list || list.dataset.scrollContained === "1") return;
@@ -2847,6 +2964,7 @@ function setupDragScroll() {
   root.querySelectorAll(
     ".chat-scroll, .equipment-selection-list, .equipment-filter-scroll, .week-tabs, .suggestions, .coach-skill-bar"
   ).forEach(enableDragScroll);
+  setupLibrarySwipeRows();
   containSelectionListScroll();
   setupEquipmentScrollState();
   setupEquipmentLayout();
@@ -3964,6 +4082,7 @@ window.app = {
     const filtered = filteredEquipmentLibraryItems();
     const root = document.getElementById("library-list-root");
     if (root) root.innerHTML = equipmentLibraryResultsMarkup(filtered);
+    setupLibrarySwipeRows();
 
     const count = document.getElementById("library-list-count");
     if (count) count.textContent = `${filtered.length} 件`;
@@ -4198,9 +4317,10 @@ window.app = {
   },
 
   deleteEquipItem(id) {
+    if (!confirm("从器械库删除这件器械？")) return;
     state.equipmentLibrary = state.equipmentLibrary.filter((item) => item.id !== id);
-    state.screen = "tabs";
-    state.tab = "equipment";
+    state.equipmentItemId = null;
+    state.screen = "equipmentLibrary";
     save();
     render();
     toast("已从器械库删除");

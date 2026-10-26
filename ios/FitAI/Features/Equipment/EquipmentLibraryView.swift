@@ -20,6 +20,8 @@ struct EquipmentLibraryView: View {
 
     @State private var activeSheet: EquipmentSheet?
     @State private var query = ""
+    @State private var openRowID: UUID?
+    @State private var pendingDelete: EquipmentItem?
 
     private var filteredItems: [EquipmentItem] {
         let text = query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -83,6 +85,27 @@ struct EquipmentLibraryView: View {
             case .detail(let id):
                 EquipmentItemDetailView(itemID: id)
             }
+        }
+        .confirmationDialog(
+            "从器械库删除？",
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("删除", role: .destructive) {
+                if let item = pendingDelete {
+                    store.removeEquipment(item.id)
+                    openRowID = nil
+                }
+                pendingDelete = nil
+            }
+            Button("取消", role: .cancel) {
+                pendingDelete = nil
+            }
+        } message: {
+            Text("删除后，下次生成计划不会再优先使用这件器械。")
         }
     }
 
@@ -212,7 +235,7 @@ struct EquipmentLibraryView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Theme.secondaryText)
             Spacer()
-            Text("\(filteredItems.count) 件")
+            Text("\(filteredItems.count) 件 · 左滑删除")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
         }
@@ -222,12 +245,29 @@ struct EquipmentLibraryView: View {
     private var libraryList: some View {
         VStack(spacing: 0) {
             ForEach(Array(filteredItems.enumerated()), id: \.element.id) { index, item in
-                Button {
-                    activeSheet = .detail(item.id)
-                } label: {
+                SwipeDeleteRow(
+                    isOpen: openRowID == item.id,
+                    onOpen: {
+                        openRowID = item.id
+                    },
+                    onClose: {
+                        if openRowID == item.id {
+                            openRowID = nil
+                        }
+                    },
+                    onTap: {
+                        if openRowID == item.id {
+                            openRowID = nil
+                        } else {
+                            activeSheet = .detail(item.id)
+                        }
+                    },
+                    onDelete: {
+                        pendingDelete = item
+                    }
+                ) {
                     libraryRow(item)
                 }
-                .buttonStyle(.plain)
 
                 if index < filteredItems.count - 1 {
                     Rectangle()
@@ -375,6 +415,100 @@ struct EquipmentLibraryView: View {
             }
         }
         return item.equipment?.symbolName ?? "dumbbell"
+    }
+}
+
+private struct SwipeDeleteRow<Content: View>: View {
+    let isOpen: Bool
+    let onOpen: () -> Void
+    let onClose: () -> Void
+    let onTap: () -> Void
+    let onDelete: () -> Void
+    let content: Content
+
+    @State private var dragOffset: CGFloat = 0
+
+    private let actionWidth: CGFloat = 84
+
+    init(
+        isOpen: Bool,
+        onOpen: @escaping () -> Void,
+        onClose: @escaping () -> Void,
+        onTap: @escaping () -> Void,
+        onDelete: @escaping () -> Void,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.isOpen = isOpen
+        self.onOpen = onOpen
+        self.onClose = onClose
+        self.onTap = onTap
+        self.onDelete = onDelete
+        self.content = content()
+    }
+
+    private var offset: CGFloat {
+        if dragOffset != 0 {
+            return dragOffset
+        }
+        return isOpen ? -actionWidth : 0
+    }
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            Button(action: onDelete) {
+                Text("删除")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.danger)
+                    .frame(width: actionWidth)
+                    .frame(maxHeight: .infinity)
+                    .background(Theme.danger.opacity(0.14))
+            }
+            .buttonStyle(.plain)
+            .opacity(isOpen ? 1 : 0)
+            .allowsHitTesting(isOpen)
+
+            content
+                .contentShape(Rectangle())
+                .offset(x: offset)
+                .onTapGesture {
+                    if isOpen {
+                        onClose()
+                    } else {
+                        onTap()
+                    }
+                }
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 12, coordinateSpace: .local)
+                        .onChanged { value in
+                            guard abs(value.translation.width) > abs(value.translation.height) else {
+                                return
+                            }
+                            let base = isOpen ? -actionWidth : 0
+                            dragOffset = min(0, max(-actionWidth, base + value.translation.width))
+                        }
+                        .onEnded { value in
+                            guard abs(value.translation.width) > abs(value.translation.height) else {
+                                dragOffset = 0
+                                return
+                            }
+                            let base = isOpen ? -actionWidth : 0
+                            let projected = base + value.predictedEndTranslation.width
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                                dragOffset = 0
+                            }
+                            if projected < -actionWidth * 0.45 {
+                                onOpen()
+                            } else {
+                                onClose()
+                            }
+                        }
+                )
+        }
+        .clipped()
+        .animation(.spring(response: 0.28, dampingFraction: 0.86), value: isOpen)
+        .accessibilityAction(named: "删除") {
+            onDelete()
+        }
     }
 }
 

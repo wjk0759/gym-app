@@ -1157,6 +1157,11 @@ input[type="number"]::-webkit-inner-spin-button {
   letter-spacing: 0.03em;
 }
 
+.library-swipe-hint {
+  color: var(--faint);
+  font-weight: 500;
+}
+
 .library-list {
   border: 1px solid var(--stroke);
   border-radius: 20px;
@@ -1166,23 +1171,55 @@ input[type="number"]::-webkit-inner-spin-button {
   -webkit-backdrop-filter: blur(20px);
 }
 
+.library-swipe-row {
+  position: relative;
+  overflow: hidden;
+  background: rgba(20, 23, 28, 0.94);
+}
+
+.library-swipe-row + .library-swipe-row { border-top: 1px solid rgba(255, 255, 255, 0.06); }
+
+.library-swipe-action {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 69, 58, 0.15);
+}
+
+.library-swipe-action button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--danger);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .library-row {
   appearance: none;
+  position: relative;
+  z-index: 1;
   width: 100%;
   display: flex;
   align-items: center;
   gap: 11px;
   padding: 11px 13px;
   border: 0;
-  background: transparent;
+  background: rgba(20, 23, 28, 0.94);
   color: var(--text);
   font: inherit;
   text-align: left;
+  touch-action: pan-y;
   transition: background-color 150ms ease;
 }
 
-.library-row + .library-row { border-top: 1px solid rgba(255, 255, 255, 0.06); }
-.library-row:active { background: rgba(255, 255, 255, 0.06); }
+.library-row:active { background: rgba(27, 31, 37, 0.98); }
 
 .library-thumb {
   width: 46px;
