@@ -25,7 +25,11 @@ Object.assign(window.app, {
       sessions: state.sessions,
       foodLogs: state.foodLogs,
       customFoods: state.customFoods,
-      chats: state.chats
+      chats: state.chats,
+      bodyMetrics: state.bodyMetrics,
+      bodyCheckInFrequency: state.bodyCheckInFrequency,
+      bodyCheckInWeekday: state.bodyCheckInWeekday,
+      bodyCheckInDay: state.bodyCheckInDay
     }, null, 2);
     const blob = new Blob([data], { type: "application/json" });
     const link = document.createElement("a");

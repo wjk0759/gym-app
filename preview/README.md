@@ -50,6 +50,7 @@ preview/
 ├── css/
 │   ├── base.css               # 令牌、外壳、通用组件、页面基础样式
 │   ├── coach.css              # AI 教练对话与计划调整
+│   ├── body-checkin.css       # 身体数据提醒 / 弹层
 │   ├── equipment.css          # 器械详情 / 相机 / 选择器
 │   ├── adaptive.css           # 全局自适应基础
 │   ├── workout.css            # 训练编排、训练中调整
@@ -72,6 +73,7 @@ preview/
     ├── plan.js
     ├── plan-review.js
     ├── plan-schedule.js
+    ├── body-checkin.js
     ├── training-data.js
     ├── coach-adjustment.js
     ├── coach.js
@@ -97,7 +99,9 @@ preview/
     ├── boot.js
     └── actions/               # 只做动作注册，按功能拆分
         ├── profile-auth.js
+        ├── body-checkin.js
         ├── plan.js
+        ├── plan-schedule.js
         ├── training-data.js
         ├── plan-adjustment.js
         ├── workout-live.js

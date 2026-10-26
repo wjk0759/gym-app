@@ -182,6 +182,7 @@ tab/coach | tab/profile
 - 器械库底部的已选动作弹层：`equipSelectionOpen`
 - 数字滚轮选择器：`numberPicker`
 - 训练中调整动作面板：`workoutAdjustOpen`
+- 今日页身体数据提醒：`modal-layer` 内的 `bodyCheckInSheet`，不改变 `screen`
 
 关闭这些弹层应使用各自的关闭 action，不能调用 `app.back()` 改变页面路由。
 

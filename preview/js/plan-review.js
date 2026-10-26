@@ -163,7 +163,7 @@ function reviewWindowData(start, end, days, fallbackBody = false) {
   };
 }
 
-function reviewTrend(current, previous, mode = "neutral", digits = 0, unit = "") {
+function reviewTrend(current, previous, mode = "neutral", digits = 0, unit = "", targetValue = null) {
   if (current == null || previous == null || !Number.isFinite(Number(current)) || !Number.isFinite(Number(previous))) {
     return { direction: "flat", tone: "muted", text: "暂无上期数据" };
   }
@@ -175,12 +175,33 @@ function reviewTrend(current, previous, mode = "neutral", digits = 0, unit = "")
   const direction = delta > 0 ? "up" : "down";
   let tone = "neutral";
   if (mode === "higher") tone = direction === "up" ? "good" : "bad";
-  if (mode === "lower") tone = direction === "down" ? "good" : "bad";
-  if (mode === "goalWeight") {
-    const goal = state.profile.goal;
-    if (goal === "增肌") tone = direction === "up" ? "good" : "bad";
-    else if (goal === "减脂" || goal === "重塑体型") tone = direction === "down" ? "good" : "bad";
-    else tone = "neutral";
+  else if (mode === "lower") tone = direction === "down" ? "good" : "bad";
+  else if (mode === "closeness") {
+    const target = Number(targetValue);
+    if (Number.isFinite(target)) {
+      const currentDistance = Math.abs(Number(current) - target);
+      const previousDistance = Math.abs(Number(previous) - target);
+      tone = currentDistance < previousDistance
+        ? "good"
+        : currentDistance > previousDistance
+          ? "bad"
+          : "flat";
+    }
+  } else if (mode === "goalWeight") {
+    const target = Number(targetValue);
+    if (Number.isFinite(target)) {
+      const currentDistance = Math.abs(Number(current) - target);
+      const previousDistance = Math.abs(Number(previous) - target);
+      tone = currentDistance < previousDistance
+        ? "good"
+        : currentDistance > previousDistance
+          ? "bad"
+          : "flat";
+    } else {
+      const goal = state.profile.goal;
+      if (goal === "增肌") tone = direction === "up" ? "good" : "bad";
+      else if (goal === "减脂" || goal === "重塑体型") tone = direction === "down" ? "good" : "bad";
+    }
   }
   const sign = delta > 0 ? "+" : "-";
   const absolute = Math.abs(delta).toFixed(digits);
@@ -233,9 +254,9 @@ function planReviewData() {
   const trends = {
     sessions: reviewTrend(current.sessions.length, previous.sessions.length, "higher", 0, " 次"),
     duration: reviewTrend(current.averageDailyMinutes, previous.averageDailyMinutes, "higher", 1, " 分钟"),
-    intake: reviewTrend(current.averageIntake, previous.averageIntake, "neutral", 0, " kcal"),
-    deficit: reviewTrend(current.calorieGap, previous.calorieGap, "neutral", 0, " kcal"),
-    weight: reviewTrend(currentWeight, previousWeight, "goalWeight", 1, " kg"),
+    intake: reviewTrend(current.averageIntake, previous.averageIntake, "closeness", 0, " kcal", current.targets.kcal),
+    deficit: reviewTrend(current.calorieGap, previous.calorieGap, "closeness", 0, " kcal", 0),
+    weight: reviewTrend(currentWeight, previousWeight, "goalWeight", 1, " kg", Number(state.profile.targetWeight)),
     bodyFat: reviewTrend(currentBodyFat, previousBodyFat, "lower", 1, "%")
   };
 
@@ -288,7 +309,7 @@ function planReviewData() {
       previousDisplay: previousWeight == null ? "—" : `${reviewFormatNumber(previousWeight, 1)} kg`,
       unit: "kg",
       trend: trends.weight,
-      note: current.body?.date ? `最近 ${reviewCompactDate(parseDateKey(current.body.date))}` : "暂无测量"
+      note: state.profile.targetWeight ? `目标 ${state.profile.targetWeight} kg` : "未设目标体重"
     },
     {
       label: "体脂",
@@ -351,6 +372,7 @@ function dataReviewPanel() {
         <span class="bad">↓ 低于上期 ${review.bad}</span>
         <span class="muted">· 数据不足 ${review.insufficient}</span>
       </div>
+      <div class="tiny faint" style="margin-top:4px;line-height:1.45">绿色 = 更接近你的目标；红色 = 远离目标；灰色 = 持平或缺少上期数据。体重按目标体重计算。</div>
 
       <div class="review-kpi-grid">
         ${review.kpis.map(reviewKpiCard).join("")}

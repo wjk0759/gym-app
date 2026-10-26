@@ -1,5 +1,12 @@
 /* FitAI Web Preview module: router render and coach demo responses. */
 
+function renderModalLayer(html = "") {
+  const layer = document.getElementById("modal-layer");
+  if (!layer) return;
+  layer.innerHTML = html;
+  layer.classList.toggle("active", !!html);
+}
+
 function setupDragScroll() {
   const root = document.getElementById("app");
   if (!root) return;
@@ -45,6 +52,7 @@ function render() {
     root.className = "app no-tabs" + (loginChanged ? " route-changed" : "");
     document.getElementById("tabbar").innerHTML = "";
     document.getElementById("tabbar").className = "tabbar hidden";
+    renderModalLayer("");
     if (loginChanged) {
       requestAnimationFrame(() => {
         root.scrollTop = 0;
@@ -124,6 +132,14 @@ function render() {
       if (chat) chat.scrollTop = chat.scrollHeight;
     }, 20);
   }
+
+  const shouldShowBodyCheckIn = state.authenticated
+    && state.onboarded
+    && state.screen === "tabs"
+    && state.tab === "home"
+    && !state.legalDoc
+    && bodyCheckInDue();
+  renderModalLayer(shouldShowBodyCheckIn ? bodyCheckInSheet() : "");
 
   setupDragScroll();
   setupComposeDrag();

@@ -27,6 +27,42 @@ function settingsScreen() {
       <div class="card">
         <div class="between">
           <div>
+            <div class="h3">身体数据提醒</div>
+            <div class="tiny muted" style="margin-top:3px">${bodyCheckInFrequencyLabel()}</div>
+          </div>
+          <span class="tiny faint">今日页弹出</span>
+        </div>
+        <div class="tiny faint" style="margin-top:7px;line-height:1.5">到日期后打开「今日」会弹出体重 / 体脂记录卡；保存或隐藏后本次消失。</div>
+        <div class="seg" style="margin-top:10px">
+          ${[
+            ["off", "关闭"],
+            ["weekly", "每周"],
+            ["biweekly", "每两周"],
+            ["monthly", "每月"]
+          ].map(([value, label]) => `
+            <button class="${state.bodyCheckInFrequency === value ? "active" : ""}" onclick="app.setBodyCheckInFrequency('${value}')">${label}</button>
+          `).join("")}
+        </div>
+        ${state.bodyCheckInFrequency === "weekly" || state.bodyCheckInFrequency === "biweekly" ? `
+          <div class="form-label" style="margin-top:12px">选择星期</div>
+          <div class="chips" style="margin-top:6px">
+            ${BODY_CHECKIN_WEEKDAYS.map((label, index) => `
+              <button class="chip ${state.bodyCheckInWeekday === index + 1 ? "active" : ""}" onclick="app.setBodyCheckInWeekday(${index + 1})">周${label}</button>
+            `).join("")}
+          </div>
+        ` : ""}
+        ${state.bodyCheckInFrequency === "monthly" ? `
+          <div class="form-label" style="margin-top:12px">每月几号</div>
+          <div class="row gap8" style="margin-top:6px">
+            <input type="number" min="1" max="28" value="${state.bodyCheckInDay}" onchange="app.setBodyCheckInDay(this.value)" style="max-width:90px">
+            <span class="tiny faint" style="align-self:center">1–28 日</span>
+          </div>
+        ` : ""}
+      </div>
+
+      <div class="card">
+        <div class="between">
+          <div>
             <div class="h3">Apple 健康</div>
             <div class="tiny muted" style="margin-top:3px">读取体重，写入完成的训练</div>
           </div>

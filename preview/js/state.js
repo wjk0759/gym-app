@@ -9,6 +9,23 @@ function normalizeState(value) {
     ? Number(next.profile.bodyFat)
     : Number(DEFAULT_PROFILE.bodyFat);
   next.reviewPeriod = ["week", "month", "year"].includes(next.reviewPeriod) ? next.reviewPeriod : "month";
+  next.bodyCheckInFrequency = ["off", "weekly", "biweekly", "monthly"].includes(next.bodyCheckInFrequency)
+    ? next.bodyCheckInFrequency
+    : "off";
+  next.bodyCheckInWeekday = Number(next.bodyCheckInWeekday);
+  if (!Number.isInteger(next.bodyCheckInWeekday) || next.bodyCheckInWeekday < 1 || next.bodyCheckInWeekday > 7) {
+    next.bodyCheckInWeekday = 1;
+  }
+  next.bodyCheckInDay = Number(next.bodyCheckInDay);
+  if (!Number.isInteger(next.bodyCheckInDay) || next.bodyCheckInDay < 1 || next.bodyCheckInDay > 28) {
+    next.bodyCheckInDay = 1;
+  }
+  next.bodyCheckInAnchor = /^\d{4}-\d{2}-\d{2}$/.test(next.bodyCheckInAnchor || "")
+    ? next.bodyCheckInAnchor
+    : todayKey();
+  next.bodyCheckInDismissedDate = /^\d{4}-\d{2}-\d{2}$/.test(next.bodyCheckInDismissedDate || "")
+    ? next.bodyCheckInDismissedDate
+    : null;
   next.bodyMetrics = Array.isArray(next.bodyMetrics)
     ? next.bodyMetrics
       .filter((entry) => entry && /^\d{4}-\d{2}-\d{2}$/.test(entry.date || ""))
@@ -192,6 +209,11 @@ function initialState() {
     profile,
     profileDraft: null,
     bodyMetrics: demoBodyMetrics(profile),
+    bodyCheckInFrequency: "off",
+    bodyCheckInWeekday: 1,
+    bodyCheckInDay: 1,
+    bodyCheckInAnchor: todayKey(),
+    bodyCheckInDismissedDate: null,
     plan: buildPlan(profile),
     sessions: demoSessions(),
     chats: [],
