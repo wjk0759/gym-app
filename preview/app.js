@@ -82,6 +82,21 @@ const ICONS = {
   coach: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-5 4v-4H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>',
   equipment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3M17 8h3M7 6v4M17 6v4M7 8h10"/><circle cx="12" cy="16" r="4"/></svg>',
   dumbbell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8v8M4 10v4M17.5 8v8M20 10v4M8 12h8"/></svg>',
+  barbell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg>',
+  machine: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="12" cy="12" r="3.2"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/></svg>',
+  cable: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5h4v5H6zM16 5h2v9h-2zM10 7.5h6M6 15c0 2.8 2 4.5 4.5 4.5H14"/><circle cx="16" cy="17.5" r="2"/></svg>',
+  bodyweight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4.5" r="2"/><path d="m12.5 8 2 3-1.5 3 2.5 4M12.5 8 9 10.5M13 14l-2.5 6M9 10.5l-3.5 1.5"/></svg>',
+  kettlebell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.2 9.6C6.7 10.6 5 13 5 15.5 5 18.6 7.4 21 10.5 21h3c3.1 0 5.5-2.4 5.5-5.5 0-2.5-1.7-4.9-4.2-5.9"/><path d="M9.2 9.6c0-2.7 1.1-4.6 2.8-4.6s2.8 1.9 2.8 4.6"/></svg>',
+  band: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.2c3.8-2.8 7.2 2.7 11 0 2-1.4 3.8-1.4 5.2-.8M3.5 15.8c3.8-2.8 7.2 2.7 11 0 2-1.4 3.8-1.4 5.2-.8"/></svg>',
+  cardio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="15.5" cy="4.5" r="2"/><path d="m13.5 8.5 2.5 3-1.5 3 2.5 3.5M13.5 8.5 9.5 10M15 14.5 12 20M9.5 10 6 12.5"/></svg>',
+  muscleChest: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v4.8c0 4.6-2.7 7.6-6 9.2-3.3-1.6-6-4.6-6-9.2z"/><path d="M12 5v6.5M8 8.2c1.5 1.1 2.6 1.2 4 .2M16 8.2c-1.5 1.1-2.6 1.2-4 .2"/></svg>',
+  muscleBack: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v4.8c0 4.6-2.7 7.6-6 9.2-3.3-1.6-6-4.6-6-9.2z"/><path d="M12 5v11M8.5 8h7M8.5 12h7"/></svg>',
+  muscleLegs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h3v6l-1.5 4L8 20H6l1.5-6L9 10V4"/><path d="M16 4h-3v6l1.5 4L16 20h2l-1.5-6L15 10V4"/></svg>',
+  muscleGlutes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6c3 0 4 2 4 4.5V15c0 2.5-1 4.5-3 5.5M19 6c-3 0-4 2-4 4.5V15c0 2.5 1 4.5 3 5.5M8 10h8M12 10v10"/></svg>',
+  muscleShoulder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12c1.5-4 4.5-6 8-6s6.5 2 8 6"/><path d="M7 10v9M17 10v9M7 15h10"/></svg>',
+  muscleArms: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18c0-4 2-6 5-6h1l2-4 3 1.5-2 5.5c-1 2.5-3 4-5.5 4H6z"/><path d="M11 12V8"/></svg>',
+  muscleCore: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5.5c0 4.5-2.2 8.2-5 9.5-2.8-1.3-5-5-5-9.5z"/><path d="M9 9h6M9 12h6M12 7v7"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 6.4v11.2l8.5-5.6z"/></svg>',
   search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.6"/><path d="m20 20-3.7-3.7"/></svg>',
   camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.6-2h6.8L17 8h3v10H4z"/><circle cx="12" cy="13" r="3"/></svg>',
   library: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.7"/><rect x="13" y="4" width="7" height="7" rx="1.7"/><rect x="4" y="13" width="7" height="7" rx="1.7"/><rect x="13" y="13" width="7" height="7" rx="1.7"/></svg>',
@@ -1286,6 +1301,28 @@ function equipGlyph(item) {
   return map[item.equip] || "🏋️";
 }
 
+function exercisePickIcon(item) {
+  const muscle = item.muscle || "";
+  if (muscle.includes("有氧")) return ICONS.cardio;
+  if (muscle.includes("手臂")) return ICONS.muscleArms;
+  if (muscle.includes("核心")) return ICONS.muscleCore;
+  if (muscle.includes("肩")) return ICONS.muscleShoulder;
+  if (muscle.includes("胸")) return ICONS.muscleChest;
+  if (muscle.includes("背")) return ICONS.muscleBack;
+  if (muscle.includes("臀")) return ICONS.muscleGlutes;
+  if (muscle.includes("腿")) return ICONS.muscleLegs;
+  const map = {
+    "固定器械": ICONS.machine,
+    "哑铃": ICONS.dumbbell,
+    "杠铃": ICONS.barbell,
+    "绳索": ICONS.cable,
+    "徒手": ICONS.bodyweight,
+    "壶铃": ICONS.kettlebell,
+    "弹力带": ICONS.band
+  };
+  return map[item.equip] || ICONS.dumbbell;
+}
+
 function equipmentPickerExercises() {
   const query = String(state.equipSearchQuery || "").trim();
   const planning = state.screen === "planExercisePicker";
@@ -1327,13 +1364,16 @@ function equipmentPickerGrid() {
   const planning = state.screen === "planExercisePicker";
   const list = equipmentPickerExercises();
   if (!list.length) {
-    return `<div class="tiny muted" style="padding:24px 10px;text-align:center">没有匹配的动作，换个肌群或器械试试。</div>`;
+    return `
+      <div class="exercise-grid-empty">
+        <span class="exercise-grid-empty-icon">${ICONS.search}</span>
+        <strong>没有匹配的动作</strong>
+        <span>换个肌群或器械试试</span>
+      </div>
+    `;
   }
-  const hint = planning
-    ? ""
-    : `<div class="exercise-grid-hint">点卡片看详情 · 右上角 ⊕ 多选</div>`;
 
-  return hint + list.map((slug) => {
+  return list.map((slug) => {
     const item = EX[slug];
     const selected = !planning && state.equipSelected.includes(slug);
     const action = planning
@@ -1343,8 +1383,8 @@ function equipmentPickerGrid() {
       <div class="exercise-pick-card ${selected ? "selected" : ""}">
         <button class="exercise-pick-main" onclick="${action}" aria-label="${planning ? "添加到当前训练日" : "查看详情"}：${esc(item.name)}">
           <div class="exercise-pick-art">
-            <span class="exercise-pick-glyph">${equipGlyph({ muscle: item.muscle, equip: item.equip })}</span>
-            ${item.video !== false ? `<span class="exercise-pick-badge">讲解</span>` : ""}
+            <span class="exercise-pick-glyph" aria-hidden="true">${exercisePickIcon(item)}</span>
+            ${item.video !== false ? `<span class="exercise-pick-badge"><span class="exercise-pick-badge-icon" aria-hidden="true">${ICONS.play}</span>讲解</span>` : ""}
             ${planning ? `<span class="exercise-pick-check">＋</span>` : ""}
           </div>
           <div class="exercise-pick-name">${esc(item.name)}</div>
@@ -1377,16 +1417,18 @@ function equipmentPickerScreen() {
     ? []
     : state.equipSelected.map((slug) => ({ slug, ...EX[slug] })).filter((item) => item.name);
   const searching = String(state.equipSearchQuery || "").trim().length > 0;
+  const resultCount = equipmentPickerExercises().length;
 
   return `
-    <div class="stack equipment-picker ${planning ? "plan-picker" : ""}">
+    <div class="stack equipment-picker ${planning ? "plan-picker" : ""}" id="equipment-picker-root">
       ${planning ? headerBack("添加动作", "app.closePlanExercisePicker()") : ""}
 
       <div class="equipment-sticky-tools">
         <div class="equipment-search-line">
           <div class="equipment-search-row">
             <span class="equipment-search-icon">${ICONS.search}</span>
-            <input id="equipment-picker-search" type="text" placeholder="搜索动作名称" value="${esc(state.equipSearchQuery)}" oninput="app.equipmentPickerQuery(this.value)">
+            <input id="equipment-picker-search" type="text" placeholder="搜索动作、肌群或器械" value="${esc(state.equipSearchQuery)}" oninput="app.equipmentPickerQuery(this.value)">
+            <button id="equipment-search-clear" class="equipment-search-clear" type="button" onclick="app.equipmentPickerClearQuery()" aria-label="清空搜索" ${state.equipSearchQuery ? "" : "hidden"}>×</button>
             ${planning ? "" : `
               <button class="equipment-scan-btn" onclick="app.equipmentRecognitionOpen()" aria-label="拍照识别器械" title="拍照识别">
                 ${ICONS.camera}
@@ -1400,19 +1442,27 @@ function equipmentPickerScreen() {
           `}
         </div>
 
-        <div id="equipment-search-scope" class="equipment-search-scope" ${searching ? "" : "hidden"}>搜索全部动作，当前分类暂不生效</div>
+        <div id="equipment-search-scope" class="equipment-search-scope" ${searching ? "" : "hidden"}>全库搜索中 · 点分类可退出搜索</div>
 
         <div class="equipment-filter-scroll">
           ${equipment.map((label) => `
-            <button class="equipment-filter ${state.equipFilter === label ? "active" : ""}" onclick="app.equipmentPickerFilter('${label}')">${label}</button>
+            <button class="equipment-filter ${state.equipFilter === label && !searching ? "active" : ""}" aria-pressed="${state.equipFilter === label && !searching}" onclick="app.equipmentPickerFilter('${label}')">${label}</button>
           `).join("")}
         </div>
+      </div>
+
+      <div class="equipment-content-head">
+        <div class="equipment-content-title">
+          <span>动作库</span>
+          <em id="equipment-grid-count" aria-live="polite">${resultCount}</em>
+        </div>
+        <div class="exercise-grid-hint">${planning ? "点卡片加入训练日" : "点卡片看详情 · ⊕ 多选"}</div>
       </div>
 
       <div class="equipment-content-layout">
         <aside class="muscle-sidebar" aria-label="肌群筛选">
           ${muscles.map((label) => `
-            <button class="muscle-side-item ${state.equipMuscle === label ? "active" : ""}" onclick="app.equipmentPickerMuscle('${label}')">${label}</button>
+            <button class="muscle-side-item ${state.equipMuscle === label && !searching ? "active" : ""}" aria-pressed="${state.equipMuscle === label && !searching}" onclick="app.equipmentPickerMuscle('${label}')">${label}</button>
           `).join("")}
         </aside>
 
@@ -4895,24 +4945,49 @@ window.app = {
 
   equipmentPickerMuscle(value) {
     state.equipMuscle = value;
+    state.equipSearchQuery = "";
     save();
     render();
   },
 
   equipmentPickerFilter(value) {
     state.equipFilter = value;
+    state.equipSearchQuery = "";
     save();
     render();
   },
 
   equipmentPickerQuery(value) {
     state.equipSearchQuery = value;
+    const searching = !!String(value || "").trim();
     const grid = document.getElementById("equipment-picker-grid");
     if (grid) grid.innerHTML = equipmentPickerGrid();
+    const count = document.getElementById("equipment-grid-count");
+    if (count) count.textContent = equipmentPickerExercises().length;
     const scope = document.getElementById("equipment-search-scope");
-    if (scope) scope.hidden = !String(value || "").trim();
+    if (scope) scope.hidden = !searching;
+    const clear = document.getElementById("equipment-search-clear");
+    if (clear) clear.hidden = !searching;
+    document.getElementById("equipment-picker-root")?.classList.toggle("searching", searching);
+    document.querySelectorAll(".muscle-side-item").forEach((button) => {
+      const active = !searching && button.textContent.trim() === state.equipMuscle;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+    document.querySelectorAll(".equipment-filter").forEach((button) => {
+      const active = !searching && button.textContent.trim() === state.equipFilter;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
     requestAnimationFrame(syncEquipmentLayout);
     save();
+  },
+
+  equipmentPickerClearQuery() {
+    state.equipSearchQuery = "";
+    save();
+    render();
+    requestAnimationFrame(() => document.getElementById("equipment-picker-search")?.focus());
   },
 
   equipmentPickerCompose() {

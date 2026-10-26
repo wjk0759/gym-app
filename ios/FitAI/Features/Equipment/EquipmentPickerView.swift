@@ -20,13 +20,17 @@ struct EquipmentPickerView: View {
     init() {}
 
     private let gridColumns = [
-        GridItem(.flexible(), spacing: 10),
-        GridItem(.flexible(), spacing: 10)
+        GridItem(.flexible(), spacing: 9),
+        GridItem(.flexible(), spacing: 9)
     ]
 
     private let muscleOrder: [MuscleGroup] = [
         .chest, .back, .legs, .glutes, .shoulders, .arms, .core, .cardio
     ]
+
+    private var isSearching: Bool {
+        !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     private var filteredExercises: [Exercise] {
         let text = query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -61,21 +65,22 @@ struct EquipmentPickerView: View {
         VStack(spacing: 0) {
             equipmentTools
 
-            HStack(alignment: .top, spacing: 8) {
+            libraryHeader
+
+            HStack(alignment: .top, spacing: 9) {
                 muscleSidebar
 
                 AppScrollView {
                     exerciseGrid
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 12)
+                        .padding(.top, 1)
                         .padding(.bottom, 28)
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.top, 12)
         }
         .background(AppBackground())
-        .navigationTitle("选择动作")
+        .navigationTitle("动作库")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -127,18 +132,18 @@ struct EquipmentPickerView: View {
 
     /// 搜索与器械分类固定在顶部，滚动只发生在动作列表里。
     private var equipmentTools: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 9) {
             searchBar
 
-            if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if isSearching {
                 searchScopeHint
             }
 
             equipmentFilters
         }
         .padding(.horizontal, 16)
-        .padding(.top, 8)
-        .padding(.bottom, 11)
+        .padding(.top, 9)
+        .padding(.bottom, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             .ultraThinMaterial,
@@ -153,9 +158,38 @@ struct EquipmentPickerView: View {
         .shadow(color: .black.opacity(0.18), radius: 14, y: 8)
     }
 
+    private var libraryHeader: some View {
+        HStack(spacing: 6) {
+            Text("动作库")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(.white)
+
+            Text("\(filteredExercises.count)")
+                .font(.system(size: 9, weight: .bold, design: .rounded))
+                .foregroundStyle(Theme.accent)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Theme.accent.opacity(0.08), in: Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(Theme.accent.opacity(0.14), lineWidth: 1)
+                )
+
+            Spacer(minLength: 8)
+
+            Text("点卡片看详情 · ⊕ 多选")
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(Theme.tertiaryText)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
+    }
+
     private var searchScopeHint: some View {
-        Label("搜索全部动作，当前分类暂不生效", systemImage: "magnifyingglass")
-            .font(.caption2)
+        Label("全库搜索中，点分类可退出搜索", systemImage: "magnifyingglass")
+            .font(.system(size: 10.5))
             .foregroundStyle(Theme.tertiaryText)
             .padding(.leading, 4)
     }
@@ -243,15 +277,29 @@ struct EquipmentPickerView: View {
     }
 
     private var searchBar: some View {
-        HStack(spacing: 9) {
+        HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(Theme.tertiaryText)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(Theme.tertiaryText.opacity(0.82))
 
-            TextField("搜索动作名称", text: $query)
+            TextField("搜索动作、肌群或器械", text: $query)
+                .font(.system(size: 14))
                 .textInputAutocapitalization(.never)
                 .foregroundStyle(.white)
                 .submitLabel(.search)
+
+            if !query.isEmpty {
+                Button {
+                    query = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Theme.tertiaryText)
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("清空搜索")
+            }
 
             Button {
                 showScanner = true
@@ -259,80 +307,122 @@ struct EquipmentPickerView: View {
                 Image(systemName: "camera.viewfinder")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(Theme.accent)
-                    .frame(width: 32, height: 32)
-                    .background(Theme.accent.opacity(0.12), in: Circle())
+                    .frame(width: 34, height: 34)
+                    .background(
+                        Theme.accent.opacity(0.13),
+                        in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            .stroke(Theme.accent.opacity(0.12), lineWidth: 1)
+                    )
             }
             .buttonStyle(.plain)
             .accessibilityLabel("拍照识别器械")
         }
         .padding(.leading, 13)
         .padding(.trailing, 7)
-        .padding(.vertical, 7)
+        .padding(.vertical, 6)
+        .frame(minHeight: 48)
         .background(
-            Theme.surfaceStrong,
-            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+            LinearGradient(
+                colors: [Color.white.opacity(0.065), Color.white.opacity(0.032)],
+                startPoint: .top,
+                endPoint: .bottom
+            ),
+            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
+        )
+        .background(
+            Theme.surfaceStrong.opacity(0.72),
+            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Theme.stroke, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .stroke(Color.white.opacity(0.09), lineWidth: 1)
         )
     }
 
     private var muscleSidebar: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(spacing: 1) {
             muscleSideButton(nil, title: "全部")
             ForEach(muscleOrder) { muscle in
                 muscleSideButton(muscle, title: muscle.label)
             }
         }
-        .padding(.horizontal, 5)
-        .padding(.vertical, 6)
-        .frame(width: 60, alignment: .leading)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(.horizontal, 4)
+        .padding(.vertical, 5)
+        .frame(width: 56)
+        .background(
+            LinearGradient(
+                colors: [Color.white.opacity(0.028), Color.white.opacity(0.012)],
+                startPoint: .top,
+                endPoint: .bottom
+            ),
+            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
+        )
+        .background(
+            Theme.surface.opacity(0.86),
+            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
+        )
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Theme.stroke, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .stroke(Color.white.opacity(0.06), lineWidth: 1)
         )
     }
 
     private func muscleSideButton(_ muscle: MuscleGroup?, title: String) -> some View {
-        let active = selectedMuscle == muscle
+        let active = selectedMuscle == muscle && !isSearching
 
         return Button {
             selectedMuscle = muscle
+            if isSearching {
+                query = ""
+            }
         } label: {
             Text(title)
-                .font(.caption.weight(active ? .bold : .medium))
-                .foregroundStyle(active ? Theme.accent : Theme.secondaryText)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 7)
-                .padding(.vertical, 7)
+                .font(.system(size: 11.5, weight: active ? .bold : .medium))
+                .foregroundStyle(active ? Theme.accent : Theme.secondaryText.opacity(0.86))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6.5)
                 .background(
                     active ? Theme.accent.opacity(0.14) : Color.clear,
-                    in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(
+                            active ? Theme.accent.opacity(0.12) : Color.clear,
+                            lineWidth: 1
+                        )
                 )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(title)肌群")
+        .accessibilityAddTraits(active ? .isSelected : [])
     }
 
     private var equipmentFilters: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
-                filterChip("全部", selected: selectedEquipment == nil && !savedOnly) {
+                filterChip("全部", selected: selectedEquipment == nil && !savedOnly && !isSearching) {
                     selectedEquipment = nil
                     savedOnly = false
+                    query = ""
                 }
-                filterChip("已添加", selected: savedOnly && selectedEquipment == nil) {
+                filterChip("已添加", selected: savedOnly && selectedEquipment == nil && !isSearching) {
                     savedOnly = true
                     selectedEquipment = nil
+                    query = ""
                 }
                 ForEach(Equipment.allCases) { equipment in
                     filterChip(
                         equipment.label,
-                        selected: selectedEquipment == equipment && !savedOnly
+                        selected: selectedEquipment == equipment && !savedOnly && !isSearching
                     ) {
                         selectedEquipment = equipment
                         savedOnly = false
+                        query = ""
                     }
                 }
             }
@@ -346,23 +436,24 @@ struct EquipmentPickerView: View {
     ) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(selected ? Theme.accent : Theme.secondaryText)
-                .padding(.horizontal, 11)
-                .padding(.vertical, 7)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(selected ? Theme.accent : Theme.secondaryText.opacity(0.86))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
                 .background(
-                    selected ? Theme.accent.opacity(0.14) : Color.white.opacity(0.035),
-                    in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    selected ? Theme.accent.opacity(0.14) : Color.white.opacity(0.03),
+                    in: RoundedRectangle(cornerRadius: 9, style: .continuous)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
                         .stroke(
-                            selected ? Theme.accent.opacity(0.38) : Theme.stroke,
+                            selected ? Theme.accent.opacity(0.36) : Theme.stroke,
                             lineWidth: 1
                         )
                 )
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     @ViewBuilder
@@ -375,34 +466,27 @@ struct EquipmentPickerView: View {
             )
             .padding(.top, 8)
         } else {
-            VStack(alignment: .leading, spacing: 7) {
-                Text("点卡片看详情，右上角 ⊕ 多选")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
-                    .padding(.horizontal, 2)
-
-                LazyVGrid(columns: gridColumns, spacing: 10) {
-                    ForEach(filteredExercises) { exercise in
-                        ZStack(alignment: .topTrailing) {
-                            Button {
-                                detailExercise = exercise
-                            } label: {
-                                exerciseCard(exercise)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("查看\(exercise.nameZH)详情")
-
-                            Button {
-                                toggle(exercise)
-                            } label: {
-                                selectionControl(
-                                    exercise,
-                                    selected: selectedExercises.contains(where: { $0.slug == exercise.slug })
-                                )
-                            }
-                            .buttonStyle(.plain)
-                            .padding(7)
+            LazyVGrid(columns: gridColumns, spacing: 9) {
+                ForEach(filteredExercises) { exercise in
+                    ZStack(alignment: .topTrailing) {
+                        Button {
+                            detailExercise = exercise
+                        } label: {
+                            exerciseCard(exercise)
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("查看\(exercise.nameZH)详情")
+
+                        Button {
+                            toggle(exercise)
+                        } label: {
+                            selectionControl(
+                                exercise,
+                                selected: selectedExercises.contains(where: { $0.slug == exercise.slug })
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .padding(7)
                     }
                 }
             }
@@ -413,35 +497,60 @@ struct EquipmentPickerView: View {
         let selected = selectedExercises.contains(where: { $0.slug == exercise.slug })
 
         return VStack(alignment: .leading, spacing: 0) {
-            ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+            ZStack {
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
                     .fill(
                         LinearGradient(
-                            colors: [Theme.surfaceStrong, Theme.surface],
+                            colors: [Color(red: 0.17, green: 0.20, blue: 0.19), Theme.surface],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(height: 112)
+                    .overlay(
+                        RadialGradient(
+                            colors: [Theme.accent.opacity(0.10), .clear],
+                            center: .top,
+                            startRadius: 2,
+                            endRadius: 72
+                        )
+                    )
+                    .frame(height: 102)
 
-                Image(systemName: exercise.equipment.symbolName)
-                    .font(.system(size: 38, weight: .light))
-                    .foregroundStyle(Theme.accent.opacity(0.85))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-
+                Circle()
+                    .fill(Theme.accent.opacity(0.06))
+                    .overlay(
+                        Circle()
+                            .stroke(Theme.accent.opacity(0.12), lineWidth: 1)
+                    )
+                    .frame(width: 54, height: 54)
+                    .overlay(
+                        Image(systemName: muscleSymbol(exercise.muscle))
+                            .font(.system(size: 29, weight: .light))
+                            .foregroundStyle(Theme.accent.opacity(0.9))
+                    )
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .overlay(alignment: .topLeading) {
                 if exercise.videoURL != nil {
-                    Text("讲解")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(.black)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 4)
-                        .background(Theme.accent, in: Capsule())
-                        .padding(7)
+                    HStack(spacing: 3) {
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 6, weight: .bold))
+                        Text("讲解")
+                            .font(.system(size: 8.5, weight: .semibold))
+                    }
+                    .foregroundStyle(Color.white.opacity(0.72))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Color.black.opacity(0.42), in: Capsule())
+                    .overlay(
+                        Capsule().stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    )
+                    .padding(7)
                 }
             }
 
             Text(exercise.nameZH)
-                .font(.subheadline.weight(.semibold))
+                .font(.system(size: 13.5, weight: .semibold))
                 .foregroundStyle(.white)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
@@ -450,24 +559,53 @@ struct EquipmentPickerView: View {
 
             HStack(spacing: 3) {
                 Text("\(exercise.muscle.label) · \(exercise.equipment.label)")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
+                    .font(.system(size: 10))
+                    .foregroundStyle(Theme.tertiaryText.opacity(0.9))
                     .lineLimit(1)
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(Theme.tertiaryText)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(Theme.tertiaryText.opacity(0.72))
             }
             .padding(.horizontal, 9)
-            .padding(.top, 3)
+            .padding(.top, 4)
             .padding(.bottom, 10)
         }
-        .background(Theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(selected ? Theme.accent.opacity(0.7) : Theme.stroke, lineWidth: 1)
+        .background(selected ? Theme.accent.opacity(0.055) : Color.clear)
+        .background(
+            LinearGradient(
+                colors: [Color.white.opacity(0.05), Color.white.opacity(0.018)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
         )
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                .stroke(
+                    selected ? Theme.accent.opacity(0.62) : Color.white.opacity(0.075),
+                    lineWidth: 1
+                )
+        )
+        .shadow(
+            color: selected ? Theme.accent.opacity(0.12) : .black.opacity(0.12),
+            radius: 10,
+            y: 6
+        )
+    }
+
+    private func muscleSymbol(_ muscle: MuscleGroup) -> String {
+        switch muscle {
+        case .chest: return "figure.strengthtraining.traditional"
+        case .back: return "figure.rower"
+        case .legs: return "figure.step.training"
+        case .glutes: return "figure.strengthtraining.functional"
+        case .shoulders: return "figure.arms.open"
+        case .arms: return "dumbbell.fill"
+        case .core: return "figure.core.training"
+        case .cardio: return "figure.run"
+        }
     }
 
     private func selectionControl(_ exercise: Exercise, selected: Bool) -> some View {
