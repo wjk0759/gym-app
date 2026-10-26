@@ -48,4 +48,5 @@
 - 旧本地 JSON 状态通过 `decodeIfPresent` 兼容新增字段；旧计划没有 `date` 时继续按 `createdAt + week/weekday` 计算。
 - 远程 FastAPI 计划生成接口目前不携带 `split`，iOS 本地规则已支持分化；远程模式仍以服务端返回结构为准。
 - 图片消息目前本地模拟教练回复；接入真实视觉接口时替换 `CoachPhotoStore`。
+- 未勾选协议直接登录时弹出确认；确认后自动勾选协议并继续当前登录/社交授权。
 - iOS 构建通过 GitHub Actions 的 `iOS Build` 工作流验证；本机 Windows 不能直接跑 Xcode。

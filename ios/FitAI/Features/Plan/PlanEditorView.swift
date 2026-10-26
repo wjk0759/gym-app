@@ -23,11 +23,14 @@ struct ExercisePickerView: View {
 
     private var results: [Exercise] {
         let text = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let candidates = ExerciseLibrary.candidates(
+            muscle: selectedMuscle,
+            equipment: equipment
+        )
         guard !text.isEmpty else {
-            return ExerciseLibrary.candidates(muscle: selectedMuscle, equipment: equipment)
+            return candidates
         }
-        // 搜索时跨全量动作库查找，不再受当前肌群 / 器械筛选限制。
-        return ExerciseLibrary.all.filter { exercise in
+        return candidates.filter { exercise in
             exercise.nameZH.localizedCaseInsensitiveContains(text)
                 || exercise.nameEN.localizedCaseInsensitiveContains(text)
                 || exercise.muscle.label.localizedCaseInsensitiveContains(text)

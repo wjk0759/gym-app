@@ -33,7 +33,7 @@ enum CoachService {
         }
 
         if message.contains("今天练") || message.contains("练什么") || message.contains("计划") {
-            if let day = plan?.firstWeek.first(where: { $0.weekday == Weekday.today }) {
+            if let day = plan?.day(on: Date()) {
                 if period?.mode == .rest {
                     return ChatMessage(
                         role: .assistant,
