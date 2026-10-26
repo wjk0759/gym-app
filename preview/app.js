@@ -151,10 +151,68 @@ function demoLogs() {
   ];
 }
 
+function relativeSessionDate(daysAgo, hour, minute) {
+  const date = new Date();
+  date.setDate(date.getDate() - daysAgo);
+  date.setHours(hour, minute, 0, 0);
+  return {
+    date: `${date.getMonth() + 1}月${date.getDate()}日 ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
+    timestamp: date.getTime()
+  };
+}
+
+function localDateInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function demoHistorySessions() {
+  return [
+    {
+      id: "s4", title: "全身 A", ...relativeSessionDate(12, 19, 20), duration: 45,
+      volume: 1880, thisWeek: false,
+      items: [
+        { name: "高位下拉", weight: 30, reps: 8, sets: 4 },
+        { name: "高脚杯深蹲", weight: 14, reps: 10, sets: 4 },
+        { name: "哑铃卧推", weight: 12, reps: 10, sets: 3 }
+      ]
+    },
+    {
+      id: "s5", title: "全身 B", ...relativeSessionDate(25, 18, 55), duration: 44,
+      volume: 2310, thisWeek: false,
+      items: [
+        { name: "高位下拉", weight: 30, reps: 9, sets: 4 },
+        { name: "坐姿划船", weight: 30, reps: 10, sets: 4 },
+        { name: "面拉", weight: 12, reps: 15, sets: 3 }
+      ]
+    },
+    {
+      id: "s6", title: "全身 C", ...relativeSessionDate(43, 19, 30), duration: 47,
+      volume: 2060, thisWeek: false,
+      items: [
+        { name: "高位下拉", weight: 32.5, reps: 8, sets: 4 },
+        { name: "杠铃臀推", weight: 35, reps: 10, sets: 4 },
+        { name: "绳索下压", weight: 12, reps: 12, sets: 3 }
+      ]
+    },
+    {
+      id: "s7", title: "全身 A", ...relativeSessionDate(61, 18, 30), duration: 42,
+      volume: 1840, thisWeek: false,
+      items: [
+        { name: "高位下拉", weight: 32.5, reps: 7, sets: 4 },
+        { name: "高脚杯深蹲", weight: 14, reps: 10, sets: 3 },
+        { name: "俯卧撑", weight: 0, reps: 12, sets: 3 }
+      ]
+    }
+  ];
+}
+
 function demoSessions() {
   return [
     {
-      id: "s1", title: "全身 A", date: "10月24日 19:10", duration: 46,
+      id: "s1", title: "全身 A", ...relativeSessionDate(2, 19, 10), duration: 46,
       volume: 1840, thisWeek: true,
       items: [
         { name: "高脚杯深蹲", weight: 12, reps: 10, sets: 4 },
@@ -164,7 +222,7 @@ function demoSessions() {
       ]
     },
     {
-      id: "s2", title: "全身 B", date: "10月22日 18:40", duration: 43,
+      id: "s2", title: "全身 B", ...relativeSessionDate(4, 18, 40), duration: 43,
       volume: 1620, thisWeek: true,
       items: [
         { name: "箭步蹲", weight: 0, reps: 12, sets: 3 },
@@ -173,14 +231,15 @@ function demoSessions() {
       ]
     },
     {
-      id: "s3", title: "全身 C", date: "10月20日 19:05", duration: 48,
+      id: "s3", title: "全身 C", ...relativeSessionDate(6, 19, 5), duration: 48,
       volume: 1750, thisWeek: false,
       items: [
         { name: "杠铃臀推", weight: 30, reps: 10, sets: 4 },
         { name: "哑铃卧推", weight: 10, reps: 10, sets: 4 },
         { name: "绳索下压", weight: 10, reps: 12, sets: 3 }
       ]
-    }
+    },
+    ...demoHistorySessions()
   ];
 }
 
@@ -263,6 +322,27 @@ function normalizeState(value) {
   next.useEquipLibrary = next.useEquipLibrary !== false;
   next.equipLibraryQuery = typeof next.equipLibraryQuery === "string" ? next.equipLibraryQuery : "";
   next.pinnedEquipIds = Array.isArray(next.pinnedEquipIds) ? next.pinnedEquipIds : [];
+  next.equipmentStatsPeriod = ["7", "30", "90", "all", "custom"].includes(next.equipmentStatsPeriod)
+    ? next.equipmentStatsPeriod
+    : "90";
+  next.equipmentStatsMetric = ["volume", "sets", "maxWeight", "oneRepMax"].includes(next.equipmentStatsMetric)
+    ? next.equipmentStatsMetric
+    : "volume";
+  next.equipmentStatsCustomStart = /^\d{4}-\d{2}-\d{2}$/.test(next.equipmentStatsCustomStart || "")
+    ? next.equipmentStatsCustomStart
+    : localDateInputValue(new Date(Date.now() - 30 * 86400000));
+  next.equipmentStatsCustomEnd = /^\d{4}-\d{2}-\d{2}$/.test(next.equipmentStatsCustomEnd || "")
+    ? next.equipmentStatsCustomEnd
+    : localDateInputValue(new Date());
+
+  if (
+    Array.isArray(next.sessions)
+    && next.sessions.length === 3
+    && next.sessions.every((session) => ["s1", "s2", "s3"].includes(session.id))
+  ) {
+    next.sessions = [...next.sessions, ...demoHistorySessions()];
+  }
+
   next.bodyPhoto = !!next.bodyPhoto;
   next.bodyConsent = false;
   next.bodyAnalysis = next.bodyAnalysis || null;
@@ -327,6 +407,10 @@ function initialState() {
     useEquipLibrary: true,
     equipLibraryQuery: "",
     pinnedEquipIds: [],
+    equipmentStatsPeriod: "90",
+    equipmentStatsMetric: "volume",
+    equipmentStatsCustomStart: localDateInputValue(new Date(Date.now() - 30 * 86400000)),
+    equipmentStatsCustomEnd: localDateInputValue(new Date()),
     bodyPhoto: false,
     bodyConsent: false,
     bodyAnalysis: null,
@@ -1614,61 +1698,314 @@ function equipmentDetailSupport(item) {
   return map[item.muscle] || ["核心", "稳定"];
 }
 
-function equipmentDetailStats(item) {
-  const related = [];
+function equipmentSessionTimestamp(session) {
+  if (Number.isFinite(Number(session.timestamp)) && Number(session.timestamp) > 0) {
+    return Number(session.timestamp);
+  }
+  const raw = String(session.date || "").trim();
+  if (!raw) return Number.NaN;
+  if (raw.includes("刚刚")) return Date.now();
+  const match = raw.match(/(\d{1,2})月(\d{1,2})日(?:\s*(\d{1,2}):(\d{2}))?/);
+  if (!match) return Number.NaN;
+  const now = new Date();
+  const date = new Date(
+    now.getFullYear(),
+    Number(match[1]) - 1,
+    Number(match[2]),
+    Number(match[3] || 12),
+    Number(match[4] || 0),
+    0,
+    0
+  );
+  if (date.getTime() > now.getTime() + 86400000) {
+    date.setFullYear(now.getFullYear() - 1);
+  }
+  return date.getTime();
+}
+
+function equipmentParseDateInput(value, endOfDay = false) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const date = new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    endOfDay ? 23 : 0,
+    endOfDay ? 59 : 0,
+    endOfDay ? 59 : 0,
+    endOfDay ? 999 : 0
+  );
+  return Number.isNaN(date.getTime()) ? null : date.getTime();
+}
+
+function equipmentDetailAllPoints(item) {
+  const names = new Set([item.name, item.slug ? EX[item.slug]?.name : null].filter(Boolean));
+  const points = [];
+
   state.sessions.forEach((session) => {
-    const matching = (session.items || []).filter((entry) => entry.name === item.name);
+    const matching = (session.items || []).filter((entry) => names.has(entry.name));
     if (!matching.length) return;
-    const volume = matching.reduce((sum, entry) => sum + entry.weight * entry.reps * entry.sets, 0);
-    const sets = matching.reduce((sum, entry) => sum + entry.sets, 0);
-    related.push({ date: session.date, volume, sets });
+
+    const timestamp = equipmentSessionTimestamp(session);
+    if (!Number.isFinite(timestamp)) return;
+
+    const volume = matching.reduce((sum, entry) => {
+      return sum + (Number(entry.weight) || 0) * (Number(entry.reps) || 0) * (Number(entry.sets) || 0);
+    }, 0);
+    const sets = matching.reduce((sum, entry) => sum + (Number(entry.sets) || 0), 0);
+    const maxWeight = matching.reduce((max, entry) => {
+      return Math.max(max, Number(entry.weight) || 0);
+    }, 0);
+    const estimated1RM = matching.reduce((max, entry) => {
+      const weight = Number(entry.weight) || 0;
+      const reps = Number(entry.reps) || 0;
+      const estimate = weight > 0 && reps > 0 ? weight * (1 + reps / 30) : 0;
+      return Math.max(max, estimate);
+    }, 0);
+
+    points.push({
+      timestamp,
+      date: session.date,
+      volume,
+      sets,
+      maxWeight,
+      estimated1RM
+    });
   });
 
+  return points.sort((a, b) => a.timestamp - b.timestamp);
+}
+
+function equipmentDetailPeriodWindow() {
+  const period = state.equipmentStatsPeriod || "90";
+  const now = Date.now();
+
+  if (period === "all") {
+    return { start: null, end: null, label: "全部" };
+  }
+
+  if (period === "custom") {
+    const start = equipmentParseDateInput(state.equipmentStatsCustomStart, false);
+    const end = equipmentParseDateInput(state.equipmentStatsCustomEnd, true);
+    return {
+      start,
+      end,
+      label: "自定义",
+      invalid: start == null || end == null || start > end
+    };
+  }
+
+  const days = Number(period) || 90;
   return {
-    sessions: related.length,
-    sets: related.reduce((sum, entry) => sum + entry.sets, 0),
-    volume: related.reduce((sum, entry) => sum + entry.volume, 0),
-    last: related[0]?.date || null,
-    chart: related.slice(0, 6).reverse()
+    start: now - days * 86400000,
+    end: now + 1,
+    label: `${days} 天`
   };
 }
 
-function equipmentDetailMuscleMap(item) {
-  const key = {
-    "胸": "chest",
-    "背": "back",
-    "腿": "legs",
-    "臀": "glutes",
-    "肩": "shoulders",
-    "手臂": "arms",
-    "核心": "core",
-    "有氧": "cardio"
-  }[item.muscle] || "full";
+function equipmentDetailStats(item) {
+  const all = equipmentDetailAllPoints(item);
+  const window = equipmentDetailPeriodWindow();
+  const points = window.invalid
+    ? []
+    : all.filter((point) => {
+        if (window.start != null && point.timestamp < window.start) return false;
+        if (window.end != null && point.timestamp > window.end) return false;
+        return true;
+      });
 
-  const highlights = {
-    chest: '<ellipse cx="77" cy="84" rx="15" ry="9"/><ellipse cx="103" cy="84" rx="15" ry="9"/>',
-    back: '<path d="M64 68 Q90 57 116 68 L112 112 Q90 122 68 112 Z"/>',
-    shoulders: '<circle cx="58" cy="76" r="11"/><circle cx="122" cy="76" r="11"/>',
-    arms: '<path d="M54 78 L41 126 L51 131 L63 92 Z"/><path d="M126 78 L139 126 L129 131 L117 92 Z"/>',
-    core: '<rect x="76" y="100" width="28" height="29" rx="8"/>',
-    legs: '<path d="M68 128 L62 176 L56 222 L70 224 L78 180 L86 150 L90 166 L94 150 L102 180 L110 224 L124 222 L118 176 L112 128 Z"/>',
-    glutes: '<ellipse cx="77" cy="132" rx="16" ry="10"/><ellipse cx="103" cy="132" rx="16" ry="10"/>',
-    cardio: '<path d="M90 103 C75 91 62 108 74 123 L90 141 L106 123 C118 108 105 91 90 103 Z"/>',
-    full: '<path d="M62 64 Q90 54 118 64 L126 102 Q118 116 114 128 L66 128 Q62 116 54 102 Z"/><path d="M68 128 L63 176 L56 222 L70 224 L78 180 L86 150 L90 166 L94 150 L102 180 L110 224 L124 222 L117 176 L112 128 Z"/>'
+  return {
+    all,
+    points,
+    window,
+    sessions: points.length,
+    sets: points.reduce((sum, point) => sum + point.sets, 0),
+    volume: points.reduce((sum, point) => sum + point.volume, 0),
+    maxWeight: points.reduce((max, point) => Math.max(max, point.maxWeight), 0),
+    best1RM: points.reduce((max, point) => Math.max(max, point.estimated1RM), 0),
+    last: points[points.length - 1]?.date || null
+  };
+}
+
+function equipmentDetailMetricMeta(metric) {
+  return {
+    volume: { label: "容量", unit: "kg" },
+    sets: { label: "组数", unit: "组" },
+    maxWeight: { label: "最大重量", unit: "kg" },
+    oneRepMax: { label: "1RM 预测", unit: "kg" }
+  }[metric] || { label: "容量", unit: "kg" };
+}
+
+function equipmentDetailMetricValue(point, metric) {
+  if (metric === "sets") return point.sets;
+  if (metric === "maxWeight") return point.maxWeight;
+  if (metric === "oneRepMax") return point.estimated1RM;
+  return point.volume;
+}
+
+function equipmentFormatWeight(value) {
+  const number = Number(value) || 0;
+  if (number === 0) return "—";
+  return Number.isInteger(number) ? number.toLocaleString() : number.toFixed(1);
+}
+
+function equipmentFormatAxis(value, metric) {
+  const number = Number(value) || 0;
+  if (number >= 1000) return `${(number / 1000).toFixed(number >= 10000 ? 0 : 1)}k`;
+  return String(Math.round(number));
+}
+
+function equipmentChartDate(timestamp, includeYear = false) {
+  const date = new Date(timestamp);
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return includeYear
+    ? `${date.getFullYear()}/${month}/${day}`
+    : `${month}/${day}`;
+}
+
+function equipmentDetailLineChart(stats) {
+  if (!stats.points.length) {
+    return `
+      <div class="detail-chart-empty">
+        <span class="detail-chart-empty-icon">${ICONS.chart}</span>
+        <strong>这个周期还没有训练记录</strong>
+        <span>换一个周期，或完成一次 ${esc(state.equipmentLibrary.find((entry) => entry.id === state.equipmentItemId)?.name || "这个动作")} 训练。</span>
+      </div>
+    `;
+  }
+
+  const metric = state.equipmentStatsMetric || "volume";
+  const meta = equipmentDetailMetricMeta(metric);
+  const width = 320;
+  const height = 190;
+  const padding = { top: 18, right: 12, bottom: 30, left: 37 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+
+  let domainStart = stats.window.start;
+  let domainEnd = stats.window.end;
+  if (domainStart == null) domainStart = stats.points[0].timestamp;
+  if (domainEnd == null) domainEnd = stats.points[stats.points.length - 1].timestamp;
+  if (domainEnd <= domainStart) {
+    domainStart -= 86400000;
+    domainEnd += 86400000;
+  }
+
+  const values = stats.points.map((point) => equipmentDetailMetricValue(point, metric));
+  const maxValue = Math.max(0, ...values);
+  const yMax = maxValue > 0 ? maxValue * 1.12 : 1;
+
+  const xFor = (timestamp) => {
+    return padding.left + Math.max(0, Math.min(1, (timestamp - domainStart) / (domainEnd - domainStart))) * plotWidth;
+  };
+  const yFor = (value) => {
+    return padding.top + plotHeight - Math.max(0, Math.min(1, value / yMax)) * plotHeight;
   };
 
+  const points = stats.points.map((point, index) => {
+    const value = equipmentDetailMetricValue(point, metric);
+    return {
+      ...point,
+      index,
+      value,
+      x: xFor(point.timestamp),
+      y: yFor(value)
+    };
+  });
+
+  const linePath = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  const first = points[0];
+  const last = points[points.length - 1];
+  const areaPath = `M ${first.x.toFixed(1)} ${(padding.top + plotHeight).toFixed(1)} ${linePath.replace(/^M /, "L ")} L ${last.x.toFixed(1)} ${(padding.top + plotHeight).toFixed(1)} Z`;
+
+  const gridMarkup = [0, 0.5, 1].map((ratio) => {
+    const y = padding.top + plotHeight - ratio * plotHeight;
+    return `
+      <line class="detail-line-grid" x1="${padding.left}" y1="${y.toFixed(1)}" x2="${width - padding.right}" y2="${y.toFixed(1)}" />
+      <text class="detail-line-y-label" x="${padding.left - 7}" y="${(y + 3).toFixed(1)}" text-anchor="end">${equipmentFormatAxis(yMax * ratio, metric)}</text>
+    `;
+  }).join("");
+
+  const spanDays = (domainEnd - domainStart) / 86400000;
+  const includeYear = spanDays > 300;
+  const labelPoints = points.length <= 3
+    ? points
+    : [points[0], points[Math.floor((points.length - 1) / 2)], points[points.length - 1]];
+  const xLabels = labelPoints.map((point, index) => {
+    const anchor = index === 0
+      ? "start"
+      : index === labelPoints.length - 1
+        ? "end"
+        : "middle";
+    return `<text class="detail-line-x-label" x="${point.x.toFixed(1)}" y="${height - 8}" text-anchor="${anchor}">${equipmentChartDate(point.timestamp, includeYear)}</text>`;
+  }).join("");
+
+  const dots = points.map((point) => `
+    <g class="detail-line-point-group">
+      <circle class="detail-line-point-halo" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="7" />
+      <circle class="detail-line-point" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="3.2">
+        <title>${esc(point.date)} · ${meta.label} ${equipmentFormatWeight(point.value)} ${meta.unit}</title>
+      </circle>
+    </g>
+  `).join("");
+
   return `
-    <svg class="muscle-map" viewBox="0 0 180 245" aria-hidden="true">
-      <g class="muscle-body">
-        <circle cx="90" cy="28" r="18"/>
-        <rect x="78" y="44" width="24" height="14" rx="6"/>
-        <path d="M62 64 Q90 54 118 64 L126 102 Q118 116 114 128 L66 128 Q62 116 54 102 Z"/>
-        <path d="M54 70 L42 90 L36 128 L46 132 L56 102 L62 92 Z"/>
-        <path d="M126 70 L138 90 L144 128 L134 132 L124 102 L118 92 Z"/>
-        <path d="M68 128 L63 176 L56 222 L70 224 L78 180 L86 150 L90 166 L94 150 L102 180 L110 224 L124 222 L117 176 L112 128 Z"/>
-      </g>
-      <g class="muscle-highlight">${highlights[key]}</g>
-    </svg>
+    <div class="detail-line-chart-wrap">
+      <svg class="detail-line-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${meta.label}趋势折线图">
+        <defs>
+          <linearGradient id="detailLineGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#30d158" stop-opacity="0.34" />
+            <stop offset="100%" stop-color="#30d158" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+        ${gridMarkup}
+        ${xLabels}
+        <path class="detail-line-area" d="${areaPath}" fill="url(#detailLineGradient)" />
+        <path class="detail-line-stroke" d="${linePath}" />
+        ${dots}
+      </svg>
+      <div class="detail-line-chart-last">
+        <strong>${equipmentFormatWeight(last.value)}</strong>
+        <span>${meta.unit}</span>
+      </div>
+    </div>
+    <div class="detail-line-chart-caption">
+      <span>${meta.label}趋势</span>
+      <span>${stats.points.length} 次记录 · 每个点代表一次训练</span>
+    </div>
+  `;
+}
+
+function equipmentDetailMuscleSpot(muscle) {
+  return {
+    "胸": { x: 25, y: 31 },
+    "背": { x: 72, y: 35 },
+    "腿": { x: 25, y: 64 },
+    "臀": { x: 72, y: 53 },
+    "肩": { x: 25, y: 27 },
+    "手臂": { x: 18, y: 43 },
+    "核心": { x: 25, y: 42 },
+    "有氧": { x: 25, y: 38 }
+  }[muscle] || { x: 50, y: 45 };
+}
+
+function equipmentDetailMuscleMap(item) {
+  const muscle = item.muscle || "全身";
+  const spot = equipmentDetailMuscleSpot(muscle);
+
+  return `
+    <div class="detail-muscle-figure" style="--spot-x:${spot.x}%;--spot-y:${spot.y}%">
+      <img class="detail-muscle-anatomy" src="assets/muscles-overview.svg" alt="人体正面与背面肌肉解剖示意图" loading="lazy">
+      <span class="detail-muscle-halo"></span>
+      <span class="detail-muscle-ring"></span>
+      <span class="detail-muscle-view-label front">正面</span>
+      <span class="detail-muscle-view-label back">背面</span>
+    </div>
+    <div class="detail-muscle-caption">
+      <span>解剖示意图 · 重点部位 <strong>${muscle}</strong></span>
+      <span class="detail-muscle-credit">OpenStax / Nefronus · CC BY-SA 4.0</span>
+    </div>
   `;
 }
 
@@ -1696,7 +2033,11 @@ function equipmentItemScreen() {
   const description = exercise?.cues
     || item.notes
     || "先用稳定、可控的轨迹完成动作，再逐步增加重量和训练量。";
-  const maxVolume = Math.max(1, ...stats.chart.map((entry) => entry.volume));
+  const period = state.equipmentStatsPeriod || "90";
+  const metric = state.equipmentStatsMetric || "volume";
+  const metricMeta = equipmentDetailMetricMeta(metric);
+  const todayValue = localDateInputValue(new Date());
+  const periodLabel = stats.window.label;
 
   const pointsMarkup = points.map((point, index) => `
     <div class="detail-point">
@@ -1705,18 +2046,67 @@ function equipmentItemScreen() {
     </div>
   `).join("");
 
-  const chartMarkup = stats.chart.length
-    ? `
-      <div class="detail-chart">
-        <div class="detail-chart-bars">
-          ${stats.chart.map((entry) => `
-            <span title="${entry.date} · ${Math.round(entry.volume)} kg" style="height:${Math.max(10, Math.round(entry.volume / maxVolume * 56))}px"></span>
-          `).join("")}
-        </div>
-        <div class="detail-chart-caption">近 ${stats.chart.length} 次训练容量趋势</div>
+  const periodOptions = [
+    { key: "7", label: "7天" },
+    { key: "30", label: "30天" },
+    { key: "90", label: "90天" },
+    { key: "all", label: "全部" },
+    { key: "custom", label: "自定义" }
+  ];
+
+  const metricOptions = [
+    { key: "volume", label: "容量" },
+    { key: "sets", label: "组数" },
+    { key: "maxWeight", label: "最大重量" },
+    { key: "oneRepMax", label: "1RM 预测" }
+  ];
+
+  const periodControls = `
+    <div class="detail-period-label">统计周期</div>
+    <div class="detail-period-tabs">
+      ${periodOptions.map((option) => `
+        <button class="${period === option.key ? "active" : ""}" onclick="app.equipmentDetailPeriod('${option.key}')">${option.label}</button>
+      `).join("")}
+    </div>
+    ${period === "custom" ? `
+      <div class="detail-custom-range">
+        <label>开始<input type="date" value="${state.equipmentStatsCustomStart}" max="${todayValue}" onchange="app.equipmentDetailCustomStart(this.value)"></label>
+        <span>—</span>
+        <label>结束<input type="date" value="${state.equipmentStatsCustomEnd}" max="${todayValue}" onchange="app.equipmentDetailCustomEnd(this.value)"></label>
       </div>
-    `
-    : "";
+      ${stats.window.invalid ? `<div class="detail-period-error">开始日期不能晚于结束日期。</div>` : ""}
+    ` : ""}
+  `;
+
+  const metricControls = `
+    <div class="detail-metric-tabs">
+      ${metricOptions.map((option) => `
+        <button class="${metric === option.key ? "active" : ""}" onclick="app.equipmentDetailMetric('${option.key}')">${option.label}</button>
+      `).join("")}
+    </div>
+  `;
+
+  const chartMarkup = equipmentDetailLineChart(stats);
+
+  const summaryMarkup = `
+    <div class="detail-stat-grid detail-stat-records">
+      <div>
+        <span>容量记录</span>
+        <strong>${stats.sessions ? stats.volume.toLocaleString() : "—"}</strong>
+        <small>kg · 累计</small>
+      </div>
+      <div>
+        <span>重量记录</span>
+        <strong>${stats.sessions ? (stats.maxWeight > 0 ? equipmentFormatWeight(stats.maxWeight) : "自重") : "—"}</strong>
+        <small>kg · 单组最重</small>
+      </div>
+      <div>
+        <span>1RM 预测</span>
+        <strong>${stats.sessions && stats.best1RM > 0 ? equipmentFormatWeight(stats.best1RM) : "—"}</strong>
+        <small>kg · Epley</small>
+      </div>
+    </div>
+  `;
 
   return `
     <div class="stack equipment-detail-screen">
@@ -1814,32 +2204,39 @@ function equipmentItemScreen() {
         "05",
         "训练肌群",
         `主要训练 ${muscle}，协同稳定由 ${support.join("、")} 参与。`,
-        `<div class="detail-muscle-card">
-          <div class="detail-muscle-map">${equipmentDetailMuscleMap(item)}</div>
-          <div class="detail-muscle-copy">
+        `${equipmentDetailMuscleMap(item)}
+        <div class="detail-muscle-meta">
+          <div>
             <div class="detail-muscle-eyebrow">主要肌群</div>
             <div class="detail-muscle-name">${muscle}</div>
             <div class="detail-muscle-chips">
               ${support.map((label) => `<span>${label}</span>`).join("")}
             </div>
-            <p>动作时优先感受 ${muscle} 的发力，协同区域负责稳定与传导。</p>
           </div>
+          <p>动作时优先感受 ${muscle} 的发力，协同区域负责稳定与传导。</p>
         </div>`
       )}
 
       ${equipmentDetailSection(
         "06",
         "训练数据",
-        stats.sessions
-          ? `已完成 ${stats.sessions} 次相关训练${stats.last ? `，最近一次 ${stats.last}` : ""}。`
-          : "完成一次包含这个动作的训练后，这里会生成专属数据。",
-        `<div class="detail-stat-grid">
-          <div><strong>${stats.sessions}</strong><span>完成次数</span></div>
-          <div><strong>${stats.volume.toLocaleString()}</strong><span>累计容量 kg</span></div>
-          <div><strong>${stats.sets}</strong><span>完成组数</span></div>
+        stats.window.invalid
+          ? "开始日期不能晚于结束日期。"
+          : stats.sessions
+            ? `${periodLabel} · ${stats.sessions} 次训练 / ${stats.sets} 组${stats.last ? `，最近一次 ${stats.last}` : ""}。`
+            : "所选周期还没有这个动作的训练记录。",
+        `${summaryMarkup}
+        <div class="detail-chart-heading">
+          <div>
+            <span>记录趋势</span>
+            <strong>${metricMeta.label}</strong>
+          </div>
+          <span class="detail-chart-current">${stats.points.length ? equipmentFormatWeight(equipmentDetailMetricValue(stats.points[stats.points.length - 1], metric)) : "—"} ${metricMeta.unit}</span>
         </div>
+        ${periodControls}
+        ${metricControls}
         ${chartMarkup}
-        ${stats.sessions ? "" : `<div class="detail-stat-empty">完成训练后自动生成容量与频率趋势。</div>`}`,
+        <div class="detail-chart-note">每个点代表一次有该动作的训练记录。1RM 为 Epley 公式估算，仅用于趋势对比，不等于实测极限。</div>`,
         "detail-stats"
       )}
 
@@ -3886,6 +4283,7 @@ window.app = {
       id: `s${Date.now()}`,
       title: day.title,
       date: "刚刚",
+      timestamp: Date.now(),
       duration: Math.max(1, Math.round((Date.now() - workout.startedAt) / 60000)),
       volume: Math.round(volume) || 1860,
       thisWeek: true,
@@ -4576,6 +4974,34 @@ window.app = {
       toast("已置顶这件器械");
     }
     state.pinnedEquipIds = [...pinned];
+    save();
+    render();
+  },
+
+  equipmentDetailPeriod(period) {
+    if (["7", "30", "90", "all", "custom"].includes(period)) {
+      state.equipmentStatsPeriod = period;
+      save();
+      render();
+    }
+  },
+
+  equipmentDetailMetric(metric) {
+    if (["volume", "sets", "maxWeight", "oneRepMax"].includes(metric)) {
+      state.equipmentStatsMetric = metric;
+      save();
+      render();
+    }
+  },
+
+  equipmentDetailCustomStart(value) {
+    state.equipmentStatsCustomStart = value;
+    save();
+    render();
+  },
+
+  equipmentDetailCustomEnd(value) {
+    state.equipmentStatsCustomEnd = value;
     save();
     render();
   },

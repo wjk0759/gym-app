@@ -1680,34 +1680,114 @@ input[type="number"]::-webkit-inner-spin-button {
   line-height: 1.55;
 }
 
-.detail-muscle-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+.detail-muscle-figure {
+  position: relative;
   margin-top: 14px;
-  padding: 12px;
+  overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 16px;
-  background: rgba(3, 10, 18, 0.34);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(120, 70, 86, 0.16), transparent 48%),
+    linear-gradient(145deg, rgba(5, 12, 21, 0.92), rgba(11, 21, 34, 0.7));
 }
 
-.detail-muscle-map {
-  width: 112px;
-  flex: 0 0 112px;
-  display: grid;
-  place-items: center;
+.detail-muscle-anatomy {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: saturate(1.06) contrast(1.03);
 }
 
-.muscle-map { width: 108px; height: 150px; overflow: visible; }
-.muscle-body { fill: rgba(255, 255, 255, 0.075); stroke: rgba(255, 255, 255, 0.16); stroke-width: 1.2; }
-.muscle-highlight { fill: var(--accent); opacity: 0.76; filter: drop-shadow(0 0 9px rgba(48, 209, 88, 0.36)); }
+.detail-muscle-figure::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(3, 9, 16, 0.58);
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(
+    circle at var(--spot-x) var(--spot-y),
+    transparent 0 27px,
+    rgba(0, 0, 0, 0.42) 50px,
+    #000 92px
+  );
+  mask-image: radial-gradient(
+    circle at var(--spot-x) var(--spot-y),
+    transparent 0 27px,
+    rgba(0, 0, 0, 0.42) 50px,
+    #000 92px
+  );
+}
 
-.detail-muscle-copy { min-width: 0; }
+.detail-muscle-halo {
+  position: absolute;
+  left: var(--spot-x);
+  top: var(--spot-y);
+  width: 108px;
+  height: 108px;
+  z-index: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(48, 209, 88, 0.34), transparent 68%);
+  filter: blur(2px);
+  mix-blend-mode: screen;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.detail-muscle-ring {
+  position: absolute;
+  left: var(--spot-x);
+  top: var(--spot-y);
+  width: 34px;
+  height: 34px;
+  z-index: 2;
+  border: 1px solid rgba(102, 236, 151, 0.88);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 5px rgba(48, 209, 88, 0.08),
+    0 0 22px rgba(48, 209, 88, 0.36);
+  transform: translate(-50%, -50%);
+  animation: detailMusclePulse 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.detail-muscle-view-label {
+  position: absolute;
+  bottom: 9px;
+  z-index: 2;
+  color: rgba(226, 234, 245, 0.34);
+  font-size: 8px;
+  letter-spacing: 0.16em;
+}
+
+.detail-muscle-view-label.front { left: 22%; transform: translateX(-50%); }
+.detail-muscle-view-label.back { right: 21%; transform: translateX(50%); }
+
+.detail-muscle-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  color: var(--detail-faint);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.detail-muscle-caption strong { color: var(--detail-muted); font-weight: 650; }
+.detail-muscle-credit { flex: 0 0 auto; font-size: 8px; opacity: 0.68; text-align: right; }
+
+.detail-muscle-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+}
+
 .detail-muscle-eyebrow { color: var(--detail-faint); font-size: 9.5px; letter-spacing: 0.04em; }
 .detail-muscle-name { margin-top: 2px; color: var(--detail-ink); font-size: 20px; font-weight: 760; }
 .detail-muscle-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
 .detail-muscle-chips span { padding: 3px 7px; border-radius: 99px; background: rgba(255, 255, 255, 0.06); color: var(--detail-muted); font-size: 9.5px; }
-.detail-muscle-copy p { margin: 8px 0 0; color: var(--detail-faint); font-size: 10px; line-height: 1.55; }
+.detail-muscle-meta p { max-width: 47%; margin: 1px 0 0; color: var(--detail-faint); font-size: 10px; line-height: 1.55; }
 
 .detail-stat-grid {
   display: grid;
@@ -1720,20 +1800,185 @@ input[type="number"]::-webkit-inner-spin-button {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
   padding: 10px 8px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.035);
 }
 
-.detail-stat-grid strong { color: var(--detail-ink); font-size: 18px; font-weight: 750; }
 .detail-stat-grid span { color: var(--detail-faint); font-size: 9px; }
+.detail-stat-grid strong { color: var(--detail-ink); font-size: 18px; font-weight: 750; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; }
+.detail-stat-grid small { color: var(--detail-faint); font-size: 8px; white-space: nowrap; }
 
-.detail-chart { margin-top: 14px; }
-.detail-chart-bars { height: 64px; display: flex; align-items: flex-end; justify-content: center; gap: 5px; padding: 0 2px; }
-.detail-chart-bars span { flex: 1 1 0; max-width: 48px; min-height: 8px; border-radius: 4px 4px 2px 2px; background: linear-gradient(180deg, var(--accent), rgba(48, 209, 88, 0.16)); }
-.detail-chart-caption { margin-top: 6px; color: var(--detail-faint); font-size: 9px; text-align: right; }
-.detail-stat-empty { margin-top: 12px; color: var(--detail-faint); font-size: 10px; line-height: 1.55; }
+.detail-chart-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.detail-chart-heading > div > span { display: block; color: var(--detail-faint); font-size: 9.5px; }
+.detail-chart-heading > div > strong { display: block; margin-top: 2px; color: var(--detail-ink); font-size: 18px; font-weight: 720; }
+.detail-chart-current { color: var(--accent); font-size: 11px; font-weight: 700; white-space: nowrap; }
+
+.detail-period-label { margin-top: 16px; color: var(--detail-faint); font-size: 9.5px; }
+
+.detail-period-tabs,
+.detail-metric-tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.detail-period-tabs button,
+.detail-metric-tabs button {
+  appearance: none;
+  flex: 1 1 0;
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 9px;
+  padding: 7px 3px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--detail-muted);
+  font: inherit;
+  font-size: 9.5px;
+  white-space: nowrap;
+  transition: 150ms ease;
+}
+
+.detail-period-tabs button.active,
+.detail-metric-tabs button.active {
+  border-color: rgba(92, 219, 140, 0.28);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.detail-custom-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.detail-custom-range label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--detail-faint);
+  font-size: 9px;
+}
+
+.detail-custom-range input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px 5px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--detail-muted);
+  font: inherit;
+  font-size: 9px;
+  color-scheme: dark;
+}
+
+.detail-custom-range > span { color: var(--detail-faint); font-size: 9px; }
+.detail-period-error { margin-top: 6px; color: var(--danger); font-size: 9.5px; }
+
+.detail-metric-tabs { margin-top: 10px; }
+.detail-metric-tabs button { padding: 7px 4px; }
+
+.detail-line-chart-wrap {
+  position: relative;
+  margin-top: 10px;
+  padding: 6px 7px 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  border-radius: 14px;
+  background: rgba(3, 9, 16, 0.28);
+}
+
+.detail-line-chart { display: block; width: 100%; height: auto; overflow: visible; }
+.detail-line-grid { stroke: rgba(255, 255, 255, 0.07); stroke-width: 1; stroke-dasharray: 3 4; }
+.detail-line-y-label,
+.detail-line-x-label { fill: rgba(226, 234, 245, 0.38); font-size: 8px; font-family: inherit; }
+.detail-line-area { pointer-events: none; }
+.detail-line-stroke { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.detail-line-point-halo { fill: rgba(48, 209, 88, 0.13); }
+.detail-line-point { fill: var(--accent); stroke: #0a121b; stroke-width: 1.3; }
+
+.detail-line-chart-last {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  padding: 3px 6px;
+  border: 1px solid rgba(92, 219, 140, 0.16);
+  border-radius: 7px;
+  background: rgba(4, 12, 18, 0.72);
+  color: var(--accent);
+  line-height: 1;
+}
+
+.detail-line-chart-last strong { font-size: 12px; font-weight: 750; }
+.detail-line-chart-last span { font-size: 8px; }
+
+.detail-line-chart-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 7px;
+  color: var(--detail-faint);
+  font-size: 8.5px;
+}
+
+.detail-chart-note {
+  margin-top: 9px;
+  color: var(--detail-faint);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.detail-chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  margin-top: 12px;
+  padding: 25px 18px;
+  border: 1px dashed rgba(255, 255, 255, 0.11);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.022);
+  color: var(--detail-faint);
+  text-align: center;
+}
+
+.detail-chart-empty-icon { display: grid; place-items: center; width: 30px; height: 30px; margin-bottom: 2px; border-radius: 10px; background: rgba(255, 255, 255, 0.05); color: var(--detail-muted); }
+.detail-chart-empty-icon svg { width: 17px; height: 17px; }
+.detail-chart-empty strong { color: var(--detail-muted); font-size: 11px; font-weight: 650; }
+.detail-chart-empty span { max-width: 240px; font-size: 9.5px; line-height: 1.5; }
+
+@keyframes detailMusclePulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.58; }
+  50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.96; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detail-muscle-ring { animation: none; }
+}
+
+@media (max-width: 360px) {
+  .detail-muscle-meta { gap: 10px; }
+  .detail-muscle-meta p { max-width: 48%; font-size: 9.5px; }
+  .detail-period-tabs button,
+  .detail-metric-tabs button { font-size: 9px; }
+}
 
 .detail-coach-card {
   display: flex;

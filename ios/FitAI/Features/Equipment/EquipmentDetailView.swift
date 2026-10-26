@@ -1,4 +1,5 @@
 import AVKit
+import Charts
 import Foundation
 import SwiftUI
 import UIKit
@@ -13,6 +14,10 @@ struct EquipmentItemDetailView: View {
     @State private var showDelete = false
     @State private var showCoach = false
     @State private var officialVideoURL: URL?
+    @State private var statsPeriod: EquipmentStatsPeriod = .ninetyDays
+    @State private var statsMetric: EquipmentStatsMetric = .volume
+    @State private var customStart = Calendar.current.date(byAdding: .month, value: -3, to: Date()) ?? Date()
+    @State private var customEnd = Date()
 
     private var item: EquipmentItem? {
         store.equipmentLibrary.first { $0.id == itemID }
@@ -24,6 +29,10 @@ struct EquipmentItemDetailView: View {
 
     private var pinnedIDs: Set<String> {
         Set(pinnedEquipmentIDsRaw.split(separator: ",").map(String.init))
+    }
+
+    private var customRangeInvalid: Bool {
+        statsPeriod == .custom && customStart > customEnd
     }
 
     var body: some View {
@@ -518,110 +527,335 @@ struct EquipmentItemDetailView: View {
     }
 
     private func muscleContent(for item: EquipmentItem) -> some View {
-        HStack(spacing: 14) {
-            EquipmentBodyMap(muscle: item.muscle)
-                .frame(width: 112, height: 172)
+        let primary = item.muscle?.label ?? "全身"
+        let spot = muscleSpot(for: item.muscle)
 
-            VStack(alignment: .leading, spacing: 0) {
-                Text("主要肌群")
-                    .font(.system(size: 9.5, weight: .medium))
-                    .foregroundStyle(Theme.tertiaryText)
+        return VStack(alignment: .leading, spacing: 0) {
+            GeometryReader { geo in
+                ZStack {
+                    Image("MusclesOverview")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                Text(item.muscle?.label ?? "全身")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(.top, 2)
+                    Color.black.opacity(0.38)
+                        .mask(
+                            RadialGradient(
+                                colors: [.clear, .black],
+                                center: spot,
+                                startRadius: 22,
+                                endRadius: 92
+                            )
+                        )
 
-                HStack(spacing: 4) {
-                    ForEach(supportMuscles(for: item), id: \.self) { label in
-                        Text(label)
-                            .font(.system(size: 9.5))
-                            .foregroundStyle(Theme.secondaryText)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 3)
-                            .background(Color.white.opacity(0.06), in: Capsule())
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [Theme.accent.opacity(0.40), .clear],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 54
+                            )
+                        )
+                        .frame(width: 118, height: 118)
+                        .position(
+                            x: geo.size.width * spot.x,
+                            y: geo.size.height * spot.y
+                        )
+                        .blendMode(.screen)
+
+                    Circle()
+                        .stroke(Theme.accent.opacity(0.88), lineWidth: 1.2)
+                        .background(
+                            Circle()
+                                .stroke(Theme.accent.opacity(0.10), lineWidth: 8)
+                                .blur(radius: 2)
+                        )
+                        .frame(width: 34, height: 34)
+                        .position(
+                            x: geo.size.width * spot.x,
+                            y: geo.size.height * spot.y
+                        )
+
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Text("正面")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Text("背面")
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                        }
+                        .font(.system(size: 8, weight: .medium))
+                        .tracking(1.4)
+                        .foregroundStyle(Color.white.opacity(0.30))
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 9)
                     }
                 }
-                .padding(.top, 7)
+            }
+            .frame(height: 280)
+            .background(
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.035, green: 0.075, blue: 0.12),
+                        Color(red: 0.055, green: 0.10, blue: 0.15)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.white.opacity(0.06), lineWidth: 0.8)
+            )
+            .accessibilityLabel("人体正面和背面肌肉解剖示意图，主要训练\(primary)")
 
-                Text("动作时优先感受 \(item.muscle?.label ?? "全身") 的发力，协同区域负责稳定与传导。")
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("主要肌群")
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(Theme.tertiaryText)
+
+                    Text(primary)
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.top, 2)
+
+                    HStack(spacing: 4) {
+                        ForEach(supportMuscles(for: item), id: \.self) { label in
+                            Text(label)
+                                .font(.system(size: 9.5))
+                                .foregroundStyle(Theme.secondaryText)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background(Color.white.opacity(0.06), in: Capsule())
+                        }
+                    }
+                    .padding(.top, 7)
+                }
+
+                Spacer(minLength: 4)
+
+                Text("动作时优先感受 \(primary) 的发力，协同区域负责稳定与传导。")
                     .font(.system(size: 10))
                     .foregroundStyle(Theme.tertiaryText)
                     .lineSpacing(1.5)
+                    .frame(maxWidth: 150, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 8)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 12)
+
+            Text("解剖示意图：OpenStax / Nefronus · CC BY-SA 4.0")
+                .font(.system(size: 8))
+                .foregroundStyle(Theme.tertiaryText.opacity(0.62))
+                .padding(.top, 8)
         }
-        .padding(12)
-        .background(
-            Color.black.opacity(0.18),
-            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.06), lineWidth: 0.8)
-        )
     }
 
     private func statsContent(for item: EquipmentItem) -> some View {
         let stats = detailStats(for: item)
+        let lastValue = stats.points.last.map {
+            formattedMetricValue(metricValue($0, metric: statsMetric), metric: statsMetric)
+        } ?? "—"
+        let volumeValue = stats.sessions > 0 ? Int(stats.volume).formatted() : "—"
+        let weightValue = stats.sessions > 0
+            ? (stats.maxWeight > 0 ? formattedMetricValue(stats.maxWeight, metric: .maxWeight) : "自重")
+            : "—"
+        let oneRepMaxValue = stats.sessions > 0 && stats.best1RM > 0
+            ? formattedMetricValue(stats.best1RM, metric: .oneRepMax)
+            : "—"
+        let chartValues = stats.points.map { metricValue($0, metric: statsMetric) }
+        let chartCeiling = max(chartValues.max() ?? 0, 1) * 1.12
 
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
-                statMetric("\(stats.sessions)", label: "完成次数")
-                statMetric(Int(stats.volume).formatted(), label: "累计容量 kg")
-                statMetric("\(stats.sets)", label: "完成组数")
+                statMetric(volumeValue, label: "容量记录", note: "kg · 累计")
+                statMetric(weightValue, label: "重量记录", note: "kg · 单组最重")
+                statMetric(oneRepMaxValue, label: "1RM 预测", note: "kg · Epley")
             }
 
-            if stats.bars.isEmpty {
-                Text("完成训练后自动生成容量与频率趋势。")
-                    .font(.system(size: 10))
-                    .foregroundStyle(Theme.tertiaryText)
-                    .lineSpacing(1.5)
-                    .padding(.top, 12)
-            } else {
-                let maxValue = max(stats.bars.max() ?? 1, 1)
-                HStack(alignment: .bottom, spacing: 6) {
-                    Spacer(minLength: 0)
-                    ForEach(Array(stats.bars.enumerated()), id: \.offset) { _, value in
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: [Theme.accent, Theme.accent.opacity(0.16)],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-                            .frame(
-                                width: 34,
-                                height: max(8, CGFloat(value / maxValue) * 58)
-                            )
-                    }
-                    Spacer(minLength: 0)
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("记录趋势")
+                        .font(.system(size: 9.5))
+                        .foregroundStyle(Theme.tertiaryText)
+                    Text(statsMetric.rawValue)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.white)
                 }
-                .frame(height: 64, alignment: .bottom)
-                .padding(.top, 12)
 
-                Text("近 \(stats.bars.count) 次训练容量趋势")
-                    .font(.system(size: 9))
-                    .foregroundStyle(Theme.tertiaryText)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .padding(.top, 6)
+                Spacer(minLength: 8)
+
+                Text("\(lastValue) \(statsMetric.unit)")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Theme.accent)
             }
+            .padding(.top, 18)
+
+            Text("统计周期")
+                .font(.system(size: 9.5))
+                .foregroundStyle(Theme.tertiaryText)
+                .padding(.top, 16)
+
+            HStack(spacing: 4) {
+                ForEach(EquipmentStatsPeriod.allCases) { period in
+                    statsOption(period.rawValue, active: statsPeriod == period) {
+                        statsPeriod = period
+                    }
+                }
+            }
+            .padding(.top, 6)
+
+            if statsPeriod == .custom {
+                HStack(spacing: 6) {
+                    customDateControl("开始", selection: $customStart)
+                    Text("—")
+                        .font(.system(size: 9))
+                        .foregroundStyle(Theme.tertiaryText)
+                    customDateControl("结束", selection: $customEnd)
+                }
+                .padding(.top, 8)
+
+                if customRangeInvalid {
+                    Text("开始日期不能晚于结束日期。")
+                        .font(.system(size: 9.5))
+                        .foregroundStyle(Theme.danger)
+                        .padding(.top, 6)
+                }
+            }
+
+            HStack(spacing: 4) {
+                ForEach(EquipmentStatsMetric.allCases) { metric in
+                    statsOption(metric.rawValue, active: statsMetric == metric) {
+                        statsMetric = metric
+                    }
+                }
+            }
+            .padding(.top, 10)
+
+            if stats.points.isEmpty {
+                VStack(spacing: 5) {
+                    Image(systemName: "chart.bar")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(Theme.secondaryText)
+                        .frame(width: 30, height: 30)
+                        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    Text("这个周期还没有训练记录")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Theme.secondaryText)
+                    Text("换一个周期，或完成一次这个动作的训练。")
+                        .font(.system(size: 9.5))
+                        .foregroundStyle(Theme.tertiaryText)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+                .padding(.horizontal, 16)
+                .background(
+                    Color.white.opacity(0.025),
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.white.opacity(0.08), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                )
+                .padding(.top, 10)
+            } else {
+                Chart(stats.points) { point in
+                    AreaMark(
+                        x: .value("日期", point.date),
+                        y: .value(statsMetric.rawValue, metricValue(point, metric: statsMetric))
+                    )
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Theme.accent.opacity(0.26), .clear],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .interpolationMethod(.catmullRom)
+
+                    LineMark(
+                        x: .value("日期", point.date),
+                        y: .value(statsMetric.rawValue, metricValue(point, metric: statsMetric))
+                    )
+                    .foregroundStyle(Theme.accent)
+                    .lineStyle(
+                        StrokeStyle(
+                            lineWidth: 2.3,
+                            lineCap: .round,
+                            lineJoin: .round
+                        )
+                    )
+                    .interpolationMethod(.catmullRom)
+
+                    PointMark(
+                        x: .value("日期", point.date),
+                        y: .value(statsMetric.rawValue, metricValue(point, metric: statsMetric))
+                    )
+                    .foregroundStyle(Theme.accent)
+                    .symbolSize(24)
+                }
+                .chartYScale(domain: 0.0...chartCeiling)
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 4)) { value in
+                        AxisGridLine()
+                            .foregroundStyle(Color.white.opacity(0.05))
+                        AxisValueLabel {
+                            if let date = value.as(Date.self) {
+                                Text(date.formatted(.dateTime.month().day()))
+                                    .font(.system(size: 8.5))
+                                    .foregroundStyle(Theme.tertiaryText)
+                            }
+                        }
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading) { value in
+                        AxisGridLine()
+                            .foregroundStyle(Color.white.opacity(0.05))
+                        AxisValueLabel {
+                            if let number = value.as(Double.self) {
+                                Text("\(Int(number.rounded()))")
+                                    .font(.system(size: 8.5))
+                                    .foregroundStyle(Theme.tertiaryText)
+                            }
+                        }
+                    }
+                }
+                .chartLegend(.hidden)
+                .chartPlotStyle { plotArea in
+                    plotArea
+                        .background(Color.white.opacity(0.012))
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+                .frame(height: 180)
+                .padding(.top, 10)
+            }
+
+            Text("每个点代表一次有该动作的训练记录。1RM 为 Epley 公式估算，仅用于趋势对比，不等于实测极限。")
+                .font(.system(size: 9))
+                .foregroundStyle(Theme.tertiaryText)
+                .lineSpacing(2)
+                .padding(.top, 9)
         }
     }
 
-    private func statMetric(_ value: String, label: String) -> some View {
+    private func statMetric(_ value: String, label: String, note: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.system(size: 9))
+                .foregroundStyle(Theme.tertiaryText)
             Text(value)
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(.white)
                 .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Text(label)
-                .font(.system(size: 9))
+                .minimumScaleFactor(0.65)
+            Text(note)
+                .font(.system(size: 8))
                 .foregroundStyle(Theme.tertiaryText)
+                .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 8)
@@ -633,6 +867,52 @@ struct EquipmentItemDetailView: View {
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(Color.white.opacity(0.06), lineWidth: 0.8)
+        )
+    }
+
+    private func statsOption(_ title: String, active: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 9.5, weight: .semibold))
+                .foregroundStyle(active ? Theme.accent : Theme.secondaryText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 7)
+                .background(
+                    active ? Theme.accent.opacity(0.12) : Color.white.opacity(0.035),
+                    in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .stroke(
+                            active ? Theme.accent.opacity(0.28) : Color.white.opacity(0.07),
+                            lineWidth: 0.8
+                        )
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func customDateControl(_ title: String, selection: Binding<Date>) -> some View {
+        HStack(spacing: 4) {
+            Text(title)
+                .font(.system(size: 9))
+                .foregroundStyle(Theme.tertiaryText)
+            DatePicker("", selection: selection, displayedComponents: .date)
+                .labelsHidden()
+                .datePickerStyle(.compact)
+                .tint(Theme.accent)
+        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 5)
+        .background(
+            Color.white.opacity(0.035),
+            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color.white.opacity(0.07), lineWidth: 0.8)
         )
     }
 
@@ -777,10 +1057,10 @@ struct EquipmentItemDetailView: View {
         }
     }
 
-    private func detailStats(for item: EquipmentItem) -> EquipmentDetailStats {
-        guard let slug = item.slug else { return EquipmentDetailStats() }
+    private func allChartPoints(for item: EquipmentItem) -> [EquipmentChartPoint] {
+        guard let slug = item.slug else { return [] }
 
-        var entries: [(date: Date, volume: Double, sets: Int)] = []
+        var points: [EquipmentChartPoint] = []
         for session in store.sessions {
             let matching = session.sets.filter { $0.slug == slug && $0.completed }
             guard !matching.isEmpty else { continue }
@@ -788,27 +1068,129 @@ struct EquipmentItemDetailView: View {
             let volume = matching.reduce(0.0) { partial, log in
                 partial + log.weightKG * Double(log.reps)
             }
-            entries.append((session.date, volume, matching.count))
+            let maxWeight = matching.map(\.weightKG).max() ?? 0
+            let estimated1RM = matching.reduce(0.0) { partial, log in
+                guard log.weightKG > 0 else { return partial }
+                let estimate = log.weightKG * (1 + Double(log.reps) / 30)
+                return max(partial, estimate)
+            }
+
+            points.append(
+                EquipmentChartPoint(
+                    date: session.date,
+                    volume: volume,
+                    sets: matching.count,
+                    maxWeight: maxWeight,
+                    estimated1RM: estimated1RM
+                )
+            )
         }
 
-        entries.sort { $0.date < $1.date }
+        return points.sorted { $0.date < $1.date }
+    }
+
+    private func detailStats(for item: EquipmentItem) -> EquipmentDetailStats {
+        let all = allChartPoints(for: item)
+        let now = Date()
+        let calendar = Calendar.current
+        let start: Date?
+        let end: Date?
+
+        switch statsPeriod {
+        case .week:
+            start = calendar.date(byAdding: .day, value: -7, to: now)
+            end = now
+        case .month:
+            start = calendar.date(byAdding: .day, value: -30, to: now)
+            end = now
+        case .ninetyDays:
+            start = calendar.date(byAdding: .day, value: -90, to: now)
+            end = now
+        case .all:
+            start = nil
+            end = nil
+        case .custom:
+            if customRangeInvalid { return EquipmentDetailStats() }
+            start = calendar.startOfDay(for: customStart)
+            end = calendar.date(
+                byAdding: .day,
+                value: 1,
+                to: calendar.startOfDay(for: customEnd)
+            )
+        }
+
+        let points = all.filter { point in
+            if let start, point.date < start { return false }
+            if let end, point.date >= end { return false }
+            return true
+        }
 
         return EquipmentDetailStats(
-            sessions: entries.count,
-            sets: entries.reduce(0) { $0 + $1.sets },
-            volume: entries.reduce(0) { $0 + $1.volume },
-            last: entries.last?.date,
-            bars: entries.suffix(6).map { $0.volume }
+            points: points,
+            sessions: points.count,
+            sets: points.reduce(0) { $0 + $1.sets },
+            volume: points.reduce(0) { $0 + $1.volume },
+            maxWeight: points.reduce(0) { max($0, $1.maxWeight) },
+            best1RM: points.reduce(0) { max($0, $1.estimated1RM) },
+            last: points.last?.date
         )
     }
 
     private func statsLead(for item: EquipmentItem) -> String {
+        if customRangeInvalid {
+            return "开始日期不能晚于结束日期。"
+        }
         let stats = detailStats(for: item)
         guard stats.sessions > 0 else {
-            return "完成一次包含这个动作的训练后，这里会生成专属数据。"
+            return "所选周期还没有这个动作的训练记录。"
         }
         let last = stats.last?.formatted(.dateTime.month().day().hour().minute()) ?? ""
-        return "已完成 \(stats.sessions) 次相关训练\(last.isEmpty ? "" : "，最近一次 \(last)")。"
+        return "\(statsPeriod.rawValue) · \(stats.sessions) 次训练 / \(stats.sets) 组\(last.isEmpty ? "" : "，最近一次 \(last)")。"
+    }
+
+    private func metricValue(_ point: EquipmentChartPoint, metric: EquipmentStatsMetric) -> Double {
+        switch metric {
+        case .volume:
+            return point.volume
+        case .sets:
+            return Double(point.sets)
+        case .maxWeight:
+            return point.maxWeight
+        case .oneRepMax:
+            return point.estimated1RM
+        }
+    }
+
+    private func formattedMetricValue(_ value: Double, metric: EquipmentStatsMetric) -> String {
+        if metric == .sets {
+            return "\(Int(value.rounded()))"
+        }
+        guard value > 0 else { return "—" }
+        return value.rounded() == value
+            ? Int(value).formatted()
+            : String(format: "%.1f", value)
+    }
+
+    private func muscleSpot(for muscle: MuscleGroup?) -> UnitPoint {
+        guard let muscle else { return UnitPoint(x: 0.50, y: 0.45) }
+        switch muscle {
+        case .chest:
+            return UnitPoint(x: 0.25, y: 0.31)
+        case .back:
+            return UnitPoint(x: 0.72, y: 0.35)
+        case .legs:
+            return UnitPoint(x: 0.25, y: 0.64)
+        case .glutes:
+            return UnitPoint(x: 0.72, y: 0.53)
+        case .shoulders:
+            return UnitPoint(x: 0.25, y: 0.27)
+        case .arms:
+            return UnitPoint(x: 0.18, y: 0.43)
+        case .core:
+            return UnitPoint(x: 0.25, y: 0.42)
+        case .cardio:
+            return UnitPoint(x: 0.25, y: 0.38)
+        }
     }
 
     private func equipmentSymbol(_ item: EquipmentItem) -> String {
@@ -840,157 +1222,58 @@ struct EquipmentItemDetailView: View {
     }
 }
 
+private enum EquipmentStatsPeriod: String, CaseIterable, Identifiable, Equatable {
+    case week = "7?"
+    case month = "30?"
+    case ninetyDays = "90?"
+    case all = "??"
+    case custom = "???"
+
+    var id: String { rawValue }
+}
+
+private enum EquipmentStatsMetric: String, CaseIterable, Identifiable, Equatable {
+    case volume = "??"
+    case sets = "??"
+    case maxWeight = "????"
+    case oneRepMax = "1RM ??"
+
+    var id: String { rawValue }
+
+    var unit: String {
+        switch self {
+        case .sets:
+            return "?"
+        default:
+            return "kg"
+        }
+    }
+}
+
+private struct EquipmentChartPoint: Identifiable {
+    let id: UUID
+    let date: Date
+    let volume: Double
+    let sets: Int
+    let maxWeight: Double
+    let estimated1RM: Double
+
+    init(date: Date, volume: Double, sets: Int, maxWeight: Double, estimated1RM: Double) {
+        self.id = UUID()
+        self.date = date
+        self.volume = volume
+        self.sets = sets
+        self.maxWeight = maxWeight
+        self.estimated1RM = estimated1RM
+    }
+}
+
 private struct EquipmentDetailStats {
+    var points: [EquipmentChartPoint] = []
     var sessions: Int = 0
     var sets: Int = 0
     var volume: Double = 0
+    var maxWeight: Double = 0
+    var best1RM: Double = 0
     var last: Date?
-    var bars: [Double] = []
-}
-
-private struct EquipmentBodyMap: View {
-    let muscle: MuscleGroup?
-
-    private let base = Color.white.opacity(0.09)
-    private let accent = Theme.accent.opacity(0.76)
-    private let accentShadow = Theme.accent.opacity(0.34)
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(Theme.accent.opacity(0.07))
-                .frame(width: 118, height: 118)
-                .blur(radius: 18)
-
-            bodyBase
-            highlight
-        }
-        .frame(width: 112, height: 172)
-    }
-
-    private var bodyBase: some View {
-        ZStack {
-            Circle()
-                .fill(base)
-                .frame(width: 27, height: 27)
-                .offset(y: -64)
-
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(base)
-                .frame(width: 60, height: 84)
-                .offset(y: -8)
-
-            Capsule()
-                .fill(base)
-                .frame(width: 14, height: 70)
-                .rotationEffect(.degrees(-7))
-                .offset(x: -39, y: -8)
-
-            Capsule()
-                .fill(base)
-                .frame(width: 14, height: 70)
-                .rotationEffect(.degrees(7))
-                .offset(x: 39, y: -8)
-
-            Capsule()
-                .fill(base)
-                .frame(width: 19, height: 82)
-                .offset(x: -14, y: 56)
-
-            Capsule()
-                .fill(base)
-                .frame(width: 19, height: 82)
-                .offset(x: 14, y: 56)
-        }
-    }
-
-    @ViewBuilder
-    private var highlight: some View {
-        if let muscle {
-            switch muscle {
-            case .chest:
-                HStack(spacing: 5) {
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(accent)
-                        .frame(width: 22, height: 18)
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(accent)
-                        .frame(width: 22, height: 18)
-                }
-                .offset(y: -24)
-                .shadow(color: accentShadow, radius: 8)
-
-            case .back:
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(accent)
-                    .frame(width: 52, height: 48)
-                    .offset(y: -14)
-                    .shadow(color: accentShadow, radius: 8)
-
-            case .core:
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(accent)
-                    .frame(width: 34, height: 32)
-                    .offset(y: 0)
-                    .shadow(color: accentShadow, radius: 8)
-
-            case .shoulders:
-                HStack(spacing: 41) {
-                    Circle()
-                        .fill(accent)
-                        .frame(width: 18, height: 18)
-                    Circle()
-                        .fill(accent)
-                        .frame(width: 18, height: 18)
-                }
-                .offset(y: -35)
-                .shadow(color: accentShadow, radius: 8)
-
-            case .arms:
-                HStack(spacing: 51) {
-                    Capsule()
-                        .fill(accent)
-                        .frame(width: 13, height: 54)
-                        .rotationEffect(.degrees(-7))
-                    Capsule()
-                        .fill(accent)
-                        .frame(width: 13, height: 54)
-                        .rotationEffect(.degrees(7))
-                }
-                .offset(y: -6)
-                .shadow(color: accentShadow, radius: 8)
-
-            case .legs:
-                HStack(spacing: 9) {
-                    Capsule()
-                        .fill(accent)
-                        .frame(width: 17, height: 66)
-                    Capsule()
-                        .fill(accent)
-                        .frame(width: 17, height: 66)
-                }
-                .offset(y: 42)
-                .shadow(color: accentShadow, radius: 8)
-
-            case .glutes:
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(accent)
-                        .frame(width: 24, height: 24)
-                    Circle()
-                        .fill(accent)
-                        .frame(width: 24, height: 24)
-                }
-                .offset(y: 22)
-                .shadow(color: accentShadow, radius: 8)
-
-            case .cardio:
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 40, weight: .medium))
-                    .foregroundStyle(accent)
-                    .offset(y: -16)
-                    .shadow(color: accentShadow, radius: 8)
-            }
-        }
-    }
 }
