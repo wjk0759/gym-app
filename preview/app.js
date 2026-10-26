@@ -379,6 +379,16 @@ function normalizeState(value) {
   next.equipRecognitionCandidates = Array.isArray(next.equipRecognitionCandidates) ? next.equipRecognitionCandidates : [];
   next.equipRecognitionPhoto = !!next.equipRecognitionPhoto;
   next.equipLibraryFromProfile = !!next.equipLibraryFromProfile;
+  next.workoutDraft = next.workoutDraft && Array.isArray(next.workoutDraft.exercises)
+    ? next.workoutDraft
+    : null;
+  next.workoutAdjustOpen = false;
+  next.workoutAdjustDraft = null;
+  if (next.workout && typeof next.workout === "object") {
+    next.workout.adjustments = next.workout.adjustments && typeof next.workout.adjustments === "object"
+      ? next.workout.adjustments
+      : {};
+  }
   next.workoutCustomDay = null;
   next.authenticated = !!next.authenticated;
   next.authMode = next.authMode || "phone";
@@ -445,6 +455,9 @@ function initialState() {
     equipRecognitionCandidates: [],
     equipRecognitionPhoto: false,
     equipLibraryFromProfile: false,
+    workoutDraft: null,
+    workoutAdjustOpen: false,
+    workoutAdjustDraft: null,
     workoutCustomDay: null,
     authenticated: false,
     authMode: "phone",
@@ -997,6 +1010,7 @@ function home() {
         </div>
 
         <button class="btn btn-primary" style="margin-top:14px" onclick="app.startWorkout()">开始训练</button>
+        <div class="tiny faint center" style="margin-top:7px">下一步可调整顺序和负荷</div>
       </div>
 
       <div class="card">
@@ -1500,7 +1514,7 @@ function equipmentSelectionPanel(selected) {
             <span class="h3">已选动作</span>
             <span class="accent small strong">${selected.length}</span>
           </div>
-          <div class="tiny muted" style="margin-top:3px">选好后直接生成训练，或存入器械库</div>
+          <div class="tiny muted" style="margin-top:3px">选好后先安排顺序和负荷</div>
         </div>
         ${selected.length ? `<button class="link muted-link" onclick="app.equipmentPickerClear()">清空</button>` : ""}
       </div>
@@ -1532,7 +1546,7 @@ function equipmentSelectionPanel(selected) {
           <span class="selection-action-icon">${ICONS.plan}</span>
           <span class="selection-action-copy">
             <span class="selection-action-title">制作训练计划</span>
-            <span class="selection-action-sub">生成一次自选训练，不改动长期计划</span>
+            <span class="selection-action-sub">先排顺序和负荷，再开始训练</span>
           </span>
           <span class="selection-action-chevron">›</span>
         </button>
@@ -3141,6 +3155,190 @@ function paywallScreen() {
   `;
 }
 
+/* ---------------- Custom workout compose ---------------- */
+
+function renderKeepingComposeScroll() {
+  const scrollTop = document.querySelector(".compose-scroll")?.scrollTop || 0;
+  render();
+  requestAnimationFrame(() => {
+    const scroller = document.querySelector(".compose-scroll");
+    if (scroller) scroller.scrollTop = scrollTop;
+  });
+}
+
+function workoutComposeTotals(draft) {
+  const exercises = Array.isArray(draft?.exercises) ? draft.exercises : [];
+  const sets = exercises.reduce((sum, item) => sum + (Number(item.sets) || 0), 0);
+  const restMinutes = exercises.reduce(
+    (sum, item) => sum + (Number(item.sets) || 0) * (Number(item.rest) || 0) / 60,
+    0
+  );
+  return {
+    exercises: exercises.length,
+    sets,
+    minutes: Math.max(15, Math.round(restMinutes + exercises.length * 3))
+  };
+}
+
+function updateComposeSummary() {
+  const totals = workoutComposeTotals(state.workoutDraft);
+  const sets = document.getElementById("compose-total-sets");
+  const minutes = document.getElementById("compose-total-minutes");
+  const footer = document.getElementById("compose-footer-summary");
+  if (sets) sets.textContent = String(totals.sets);
+  if (minutes) minutes.textContent = String(totals.minutes);
+  if (footer) footer.textContent = `${totals.sets} 组 · 约 ${totals.minutes} 分钟`;
+}
+
+function workoutComposeScreen() {
+  const draft = state.workoutDraft;
+  if (!draft || !Array.isArray(draft.exercises)) return equipmentPickerScreen();
+  const totals = workoutComposeTotals(draft);
+  const isPlan = draft.source === "plan";
+
+  return `
+    <div class="workout-compose">
+      <header class="workout-topbar">
+        <button class="icon-btn" onclick="app.closeWorkoutCompose()" aria-label="${isPlan ? "返回首页" : "返回动作库"}">‹</button>
+        <div class="workout-title">安排训练</div>
+        <span class="workout-topbar-spacer" aria-hidden="true"></span>
+      </header>
+
+      <div class="compose-scroll">
+      <section class="compose-hero">
+        <div class="compose-kicker">${isPlan ? "今日训练" : "自选训练"}</div>
+        <div class="h2">${isPlan ? esc(draft.title || "今日训练") : "先排顺序，再开始"}</div>
+        <p class="small muted compose-copy">${isPlan ? "今天的动作顺序、组数和重量都可以先调整；开始后仍可随时修改本次目标。" : "动作顺序、组数、次数、重量都可以先改；开始后仍可在训练页临时调整。"}</p>
+        <div class="compose-stats">
+          <span><strong>${totals.exercises}</strong> 个动作</span>
+          <span><strong id="compose-total-sets">${totals.sets}</strong> 组</span>
+          <span>约 <strong id="compose-total-minutes">${totals.minutes}</strong> 分钟</span>
+        </div>
+      </section>
+
+      <div class="compose-eyebrow">
+        <span>训练顺序</span>
+        <span class="tiny faint">用 ↑ ↓ 调整</span>
+      </div>
+
+      <div class="compose-list">
+        ${draft.exercises.length ? draft.exercises.map((item, index) => {
+          const info = EX[item.slug] || { name: item.slug, muscle: "", equip: "" };
+          return `
+            <article class="compose-exercise">
+              <div class="compose-exercise-head">
+                <span class="compose-order">${String(index + 1).padStart(2, "0")}</span>
+                <div class="grow compose-exercise-name">
+                  <strong>${esc(info.name)}</strong>
+                  <span>${info.muscle || "动作"}${info.equip ? ` · ${info.equip}` : ""}</span>
+                </div>
+                <div class="compose-move-group">
+                  <button class="compose-icon-btn" onclick="app.workoutDraftMove(${index}, -1)" ${index === 0 ? "disabled" : ""} aria-label="上移 ${esc(info.name)}">↑</button>
+                  <button class="compose-icon-btn" onclick="app.workoutDraftMove(${index}, 1)" ${index === draft.exercises.length - 1 ? "disabled" : ""} aria-label="下移 ${esc(info.name)}">↓</button>
+                  <button class="compose-icon-btn danger" onclick="app.workoutDraftRemove(${index})" aria-label="移除 ${esc(info.name)}">×</button>
+                </div>
+              </div>
+
+              <div class="compose-fields">
+                <label class="compose-field">
+                  <span>组数</span>
+                  <input type="number" inputmode="numeric" min="1" max="10" step="1" value="${Number(item.sets) || 1}" onchange="app.workoutDraftField(${index}, 'sets', this.value)">
+                </label>
+                <label class="compose-field">
+                  <span>每组次数</span>
+                  <input type="text" inputmode="text" value="${esc(item.reps || "10-12")}" onchange="app.workoutDraftField(${index}, 'reps', this.value)">
+                </label>
+                <label class="compose-field">
+                  <span>目标重量 <em>kg</em></span>
+                  <input type="number" inputmode="decimal" min="0" step="0.5" value="${Number(item.weight) || 0}" onchange="app.workoutDraftField(${index}, 'weight', this.value)">
+                </label>
+                <label class="compose-field">
+                  <span>组间休息 <em>秒</em></span>
+                  <input type="number" inputmode="numeric" min="0" max="300" step="15" value="${Number(item.rest) || 0}" onchange="app.workoutDraftField(${index}, 'rest', this.value)">
+                </label>
+              </div>
+            </article>
+          `;
+        }).join("") : `
+          <div class="compose-empty">
+            <div class="compose-empty-icon">${ICONS.dumbbell}</div>
+            <strong>还没有动作</strong>
+            <span>返回动作库重新选择。</span>
+          </div>
+        `}
+      </div>
+      </div>
+
+      <div class="compose-footer">
+        <div class="compose-footer-copy">
+          <strong id="compose-footer-summary">${totals.sets} 组 · 约 ${totals.minutes} 分钟</strong>
+          <span>重量可以留空或填 0，表示自重。</span>
+        </div>
+        <button class="btn btn-primary" onclick="app.startWorkoutDraft()" ${draft.exercises.length ? "" : "disabled"}>开始本次训练</button>
+      </div>
+    </div>
+  `;
+}
+
+function adjustedWorkoutExercises(workout, day) {
+  if (!day || !Array.isArray(day.exercises)) return [];
+  const adjustments = workout?.adjustments && typeof workout.adjustments === "object"
+    ? workout.adjustments
+    : {};
+  return day.exercises.map((exercise) => ({
+    ...exercise,
+    ...(adjustments[exercise.id] || {})
+  }));
+}
+
+function workoutAdjustSheet() {
+  const workout = state.workout;
+  const day = workoutDay(workout);
+  const draft = state.workoutAdjustDraft;
+  if (!workout || !day || !draft) return "";
+  const base = day.exercises[workout.index];
+  const info = base ? EX[base.slug] : null;
+  const done = (Array.isArray(workout.logs) ? workout.logs : [])
+    .filter((log) => base && log.slug === base.slug).length;
+
+  return `
+    <div class="workout-adjust-backdrop no-drag" onclick="app.closeWorkoutAdjust()">
+      <section class="workout-adjust-sheet no-drag" role="dialog" aria-modal="true" aria-label="调整本次训练" onclick="event.stopPropagation()">
+        <div class="sheet-grabber" aria-hidden="true"></div>
+        <div class="between">
+          <div>
+            <div class="compose-kicker">本次训练</div>
+            <div class="h3">${info ? esc(info.name) : "调整当前动作"}</div>
+          </div>
+          <button class="compose-icon-btn" onclick="app.closeWorkoutAdjust()" aria-label="关闭调整">×</button>
+        </div>
+        <p class="small muted workout-adjust-copy">只调整这次训练的目标，不会改动长期计划。已完成 ${done} 组，降低目标组数会自动进入下一个动作。</p>
+
+        <div class="compose-fields workout-adjust-fields">
+          <label class="compose-field">
+            <span>目标组数</span>
+            <input type="number" inputmode="numeric" min="1" max="10" step="1" value="${draft.sets}" onchange="app.workoutAdjustField('sets', this.value)">
+          </label>
+          <label class="compose-field">
+            <span>每组次数</span>
+            <input type="text" inputmode="text" value="${esc(draft.reps)}" onchange="app.workoutAdjustField('reps', this.value)">
+          </label>
+          <label class="compose-field">
+            <span>目标重量 <em>kg</em></span>
+            <input type="number" inputmode="decimal" min="0" step="0.5" value="${draft.weight}" onchange="app.workoutAdjustField('weight', this.value)">
+          </label>
+          <label class="compose-field">
+            <span>组间休息 <em>秒</em></span>
+            <input type="number" inputmode="numeric" min="0" max="300" step="15" value="${draft.rest}" onchange="app.workoutAdjustField('rest', this.value)">
+          </label>
+        </div>
+
+        <button class="btn btn-primary" style="margin-top:16px" onclick="app.saveWorkoutAdjust()">保存调整</button>
+      </section>
+    </div>
+  `;
+}
+
 /* ---------------- Workout ---------------- */
 
 function workoutDay(workout) {
@@ -3162,9 +3360,10 @@ function workoutScreen() {
   if (!Array.isArray(workout.logs)) workout.logs = [];
   if (!Number.isInteger(workout.index) || workout.index < 0) workout.index = 0;
   if (!Number.isInteger(workout.setIndex) || workout.setIndex < 0) workout.setIndex = 0;
-  if (workout.index >= day.exercises.length) return workoutSummary(day);
+  const exercises = adjustedWorkoutExercises(workout, day);
+  if (workout.index >= exercises.length) return workoutSummary(day);
 
-  const exercise = day.exercises[workout.index];
+  const exercise = exercises[workout.index];
   if (!exercise) return workoutSummary(day);
   const info = EX[exercise.slug] || {
     name: exercise.slug || "当前动作",
@@ -3173,7 +3372,7 @@ function workoutScreen() {
   };
   const logs = Array.isArray(workout.logs) ? workout.logs : [];
   const done = logs.length;
-  const total = day.exercises.reduce((sum, item) => sum + item.sets, 0);
+  const total = exercises.reduce((sum, item) => sum + item.sets, 0);
   const ratio = Math.min(100, Math.round((done / Math.max(1, total)) * 100));
   const setsDone = workout.setIndex >= exercise.sets;
   const actionLabel = setsDone
@@ -3202,7 +3401,7 @@ function workoutScreen() {
           <div class="tiny faint">${info.equip}</div>
         </div>
         <div class="h2" style="margin-top:9px">${info.name}</div>
-        <div class="small accent" style="margin-top:4px">${exercise.sets} 组 × ${exercise.reps}</div>
+        <div class="small accent" style="margin-top:4px">${exercise.sets} 组 × ${exercise.reps}${exercise.weight > 0 ? ` · ${exercise.weight} kg` : " · 自重"}</div>
         <div class="small muted workout-copy" style="margin-top:10px;line-height:1.65">${info.cues}</div>
       </div>
 
@@ -3216,7 +3415,10 @@ function workoutScreen() {
       <div class="card">
         <div class="between">
           <div class="h3">第 ${Math.min(workout.setIndex + 1, exercise.sets)} 组 / 共 ${exercise.sets} 组</div>
-          <div class="tiny muted">RPE 7.5</div>
+          <div class="row gap8">
+            <span class="tiny muted">RPE ${Number(exercise.rpe || 7.5).toFixed(1)}</span>
+            <button class="link" onclick="app.openWorkoutAdjust()">调整</button>
+          </div>
         </div>
 
         ${exercise.weight > 0 ? `
@@ -3812,6 +4014,7 @@ function render() {
   else if (state.screen === "paywall") html = paywallScreen();
   else if (state.screen === "profileEdit") html = profileEditScreen();
   else if (state.screen === "settings") html = settingsScreen();
+  else if (state.screen === "workoutCompose") html = workoutComposeScreen();
   else if (state.screen === "workout") html = workoutScreen();
   else if (state.screen === "sessionDetail") html = sessionScreen();
   else if (state.screen === "history") html = historyScreen();
@@ -3823,10 +4026,12 @@ function render() {
   else if (state.screen === "bodyAnalysis") html = bodyAnalysisScreen();
   else html = home();
 
-  root.innerHTML = html + legalModal();
+  root.innerHTML = html + legalModal()
+    + (state.workoutAdjustOpen && state.screen === "workout" ? workoutAdjustSheet() : "");
   root.className = "app"
     + (state.screen === "tabs" ? "" : " no-tabs")
     + (state.screen === "workout" ? " workout-mode" : "")
+    + (state.screen === "workoutCompose" ? " compose-mode" : "")
     + (state.screen === "tabs" && state.tab === "coach" ? " chat-mode" : "")
     + (state.equipSelectionOpen && state.screen === "tabs" && state.tab === "equipment" ? " selection-open" : "")
     + (state.screen === "equipmentCamera" ? " camera-mode" : "")
@@ -4309,21 +4514,25 @@ window.app = {
 
   startWorkout() {
     const day = todayDay();
-    const first = day.exercises[0];
-    state.workoutCustomDay = null;
-    state.workout = {
-      dayId: day.id,
-      index: 0,
-      setIndex: 0,
-      weight: first.weight,
-      reps: parseReps(first.reps),
-      logs: [],
-      rest: 0,
-      startedAt: Date.now(),
-      feeling: 4,
-      notes: ""
+    if (!day || !Array.isArray(day.exercises) || !day.exercises.length) return;
+    state.workoutDraft = {
+      source: "plan",
+      title: day.title || "今日训练",
+      createdAt: Date.now(),
+      exercises: day.exercises.map((exercise, index) => ({
+        ...exercise,
+        id: exercise.id || `plan-ex-${Date.now()}-${index}`,
+        sets: Number(exercise.sets) || 3,
+        reps: String(exercise.reps || "10-12"),
+        weight: Math.max(0, Number(exercise.weight) || 0),
+        rest: Math.max(0, Number(exercise.rest) || 0),
+        rpe: Number(exercise.rpe) || 7.5
+      }))
     };
-    state.screen = "workout";
+    state.workoutCustomDay = null;
+    state.workoutAdjustOpen = false;
+    state.workoutAdjustDraft = null;
+    state.screen = "workoutCompose";
     save();
     render();
   },
@@ -4343,7 +4552,8 @@ window.app = {
   completeSet() {
     const workout = state.workout;
     const day = workoutDay(workout);
-    const exercise = day.exercises[workout.index];
+    const exercise = adjustedWorkoutExercises(workout, day)[workout.index];
+    if (!exercise) return;
     workout.logs.push({
       slug: exercise.slug,
       set: workout.setIndex + 1,
@@ -4378,13 +4588,74 @@ window.app = {
     workout.rest = 0;
     workout.index += 1;
     workout.setIndex = 0;
-    if (workout.index < day.exercises.length) {
-      const next = day.exercises[workout.index];
+    const exercises = adjustedWorkoutExercises(workout, day);
+    if (workout.index < exercises.length) {
+      const next = exercises[workout.index];
       workout.weight = next.weight;
       workout.reps = parseReps(next.reps);
     }
     save();
     render();
+  },
+
+  openWorkoutAdjust() {
+    const workout = state.workout;
+    const day = workoutDay(workout);
+    const exercise = adjustedWorkoutExercises(workout, day)[workout.index];
+    if (!exercise) return;
+    state.workoutAdjustDraft = {
+      id: exercise.id,
+      sets: Math.max(1, Number(exercise.sets) || 1),
+      reps: String(exercise.reps || "10-12"),
+      weight: Math.max(0, Number(exercise.weight) || 0),
+      rest: Math.max(0, Number(exercise.rest) || 0)
+    };
+    state.workoutAdjustOpen = true;
+    save();
+    render();
+  },
+
+  closeWorkoutAdjust() {
+    state.workoutAdjustOpen = false;
+    state.workoutAdjustDraft = null;
+    save();
+    render();
+  },
+
+  workoutAdjustField(key, value) {
+    if (!state.workoutAdjustDraft) return;
+    if (key === "sets") {
+      state.workoutAdjustDraft.sets = Math.max(1, Math.min(10, Math.round(Number(value) || 1)));
+    } else if (key === "reps") {
+      state.workoutAdjustDraft.reps = String(value || "").trim() || "10-12";
+    } else if (key === "weight") {
+      state.workoutAdjustDraft.weight = Math.max(0, roundHalf(Number(value) || 0));
+    } else if (key === "rest") {
+      state.workoutAdjustDraft.rest = Math.max(0, Math.min(300, Math.round(Number(value) || 0)));
+    }
+    save();
+  },
+
+  saveWorkoutAdjust() {
+    const workout = state.workout;
+    const day = workoutDay(workout);
+    const draft = state.workoutAdjustDraft;
+    const base = day?.exercises?.[workout?.index];
+    if (!workout || !day || !draft || !base) return;
+    workout.adjustments = workout.adjustments || {};
+    workout.adjustments[base.id] = {
+      sets: Math.max(1, Math.min(10, Number(draft.sets) || base.sets)),
+      reps: String(draft.reps || base.reps || "10-12"),
+      weight: Math.max(0, Number(draft.weight) || 0),
+      rest: Math.max(0, Math.min(300, Number(draft.rest) || 0))
+    };
+    workout.weight = workout.adjustments[base.id].weight;
+    workout.reps = parseReps(workout.adjustments[base.id].reps);
+    state.workoutAdjustOpen = false;
+    state.workoutAdjustDraft = null;
+    save();
+    render();
+    toast("已保存本次训练目标");
   },
 
   feeling(value) {
@@ -4404,8 +4675,9 @@ window.app = {
     if (!workout) return;
     const day = workoutDay(workout);
     const volume = workout.logs.reduce((sum, log) => sum + log.weight * log.reps, 0);
-    const items = day.exercises.map((exercise) => ({
-      name: EX[exercise.slug].name,
+    const exercises = adjustedWorkoutExercises(workout, day);
+    const items = exercises.map((exercise) => ({
+      name: EX[exercise.slug]?.name || exercise.slug,
       weight: exercise.weight,
       reps: parseReps(exercise.reps),
       sets: workout.logs.filter((log) => log.slug === exercise.slug).length || exercise.sets
@@ -4926,8 +5198,129 @@ window.app = {
 
   equipmentSelectionMakePlan() {
     if (!state.equipSelected.length) return;
+    const selected = state.equipSelected
+      .map((slug) => ({ slug, ...EX[slug] }))
+      .filter((item) => item.name);
+    if (!selected.length) return;
+
+    state.workoutDraft = {
+      source: "custom",
+      title: "自选训练",
+      createdAt: Date.now(),
+      exercises: selected.map((item, index) => ({
+        id: `draft-ex-${Date.now()}-${index}`,
+        slug: item.slug,
+        sets: 3,
+        reps: "10-12",
+        weight: Number(item.base) || 0,
+        rest: 60,
+        rpe: 7.5
+      }))
+    };
     state.equipSelectionOpen = false;
-    this.equipmentPickerCompose();
+    state.screen = "workoutCompose";
+    save();
+    render();
+  },
+
+  closeWorkoutCompose() {
+    const source = state.workoutDraft?.source;
+    state.workoutDraft = null;
+    state.screen = "tabs";
+    state.tab = source === "plan" ? "home" : "equipment";
+    save();
+    render();
+  },
+
+  workoutDraftMove(index, delta) {
+    const draft = state.workoutDraft;
+    if (!draft || !Array.isArray(draft.exercises)) return;
+    const target = index + delta;
+    if (target < 0 || target >= draft.exercises.length) return;
+    const next = [...draft.exercises];
+    [next[index], next[target]] = [next[target], next[index]];
+    draft.exercises = next;
+    save();
+    renderKeepingComposeScroll();
+  },
+
+  workoutDraftRemove(index) {
+    const draft = state.workoutDraft;
+    if (!draft || !Array.isArray(draft.exercises) || !draft.exercises[index]) return;
+    const [removed] = draft.exercises.splice(index, 1);
+    state.equipSelected = state.equipSelected.filter((slug) => slug !== removed.slug);
+    save();
+    renderKeepingComposeScroll();
+  },
+
+  workoutDraftField(index, key, value) {
+    const item = state.workoutDraft?.exercises?.[index];
+    if (!item) return;
+    if (key === "sets") {
+      item.sets = Math.max(1, Math.min(10, Math.round(Number(value) || 1)));
+    } else if (key === "reps") {
+      item.reps = String(value || "").trim() || "10-12";
+    } else if (key === "weight") {
+      item.weight = Math.max(0, roundHalf(Number(value) || 0));
+    } else if (key === "rest") {
+      item.rest = Math.max(0, Math.min(300, Math.round(Number(value) || 0)));
+    }
+    save();
+    updateComposeSummary();
+  },
+
+  startWorkoutDraft() {
+    const draft = state.workoutDraft;
+    if (!draft || !Array.isArray(draft.exercises) || !draft.exercises.length) return;
+    const exercises = draft.exercises
+      .map((item, index) => {
+        const info = EX[item.slug];
+        if (!info) return null;
+        return {
+          id: item.id || `combo-ex-${Date.now()}-${index}`,
+          slug: item.slug,
+          sets: Math.max(1, Math.min(10, Number(item.sets) || 3)),
+          reps: String(item.reps || "10-12"),
+          weight: Math.max(0, Number(item.weight) || 0),
+          rest: Math.max(0, Math.min(300, Number(item.rest) || 0)),
+          rpe: Number(item.rpe) || 7.5
+        };
+      })
+      .filter(Boolean);
+    if (!exercises.length) return toast("至少保留一个动作");
+
+    const source = draft.source || "custom";
+    const day = {
+      id: `session-${Date.now()}`,
+      week: 1,
+      weekday: 7,
+      title: draft.title || (source === "plan" ? "今日训练" : "自选训练"),
+      focus: [...new Set(exercises.map((item) => EX[item.slug].muscle))],
+      exercises
+    };
+    state.workoutCustomDay = day;
+    const first = day.exercises[0];
+    state.workout = {
+      dayId: day.id,
+      index: 0,
+      setIndex: 0,
+      weight: first.weight,
+      reps: parseReps(first.reps),
+      logs: [],
+      adjustments: {},
+      rest: 0,
+      startedAt: Date.now(),
+      feeling: 4,
+      notes: ""
+    };
+    state.workoutDraft = null;
+    if (source !== "plan") {
+      state.equipSelected = [];
+    }
+    state.equipSelectionOpen = false;
+    state.screen = "workout";
+    save();
+    render();
   },
 
   equipmentSelectionAddToLibrary() {
@@ -5005,48 +5398,6 @@ window.app = {
     save();
     render();
     requestAnimationFrame(() => document.getElementById("equipment-picker-search")?.focus());
-  },
-
-  equipmentPickerCompose() {
-    const selected = state.equipSelected
-      .map((slug) => ({ slug, ...EX[slug] }))
-      .filter((item) => item.name);
-    if (!selected.length) return toast("先选择动作");
-    const day = {
-      id: `combo-${Date.now()}`,
-      week: 1,
-      weekday: 7,
-      title: "自选训练",
-      focus: [...new Set(selected.map((item) => item.muscle))],
-      exercises: selected.map((item, index) => ({
-        id: `combo-ex-${Date.now()}-${index}`,
-        slug: item.slug,
-        sets: 3,
-        reps: "10-12",
-        weight: item.base || 0,
-        rest: 60,
-        rpe: 7.5
-      }))
-    };
-    state.workoutCustomDay = day;
-    const first = day.exercises[0];
-    state.workout = {
-      dayId: day.id,
-      index: 0,
-      setIndex: 0,
-      weight: first.weight,
-      reps: parseReps(first.reps),
-      logs: [],
-      rest: 0,
-      startedAt: Date.now(),
-      feeling: 4,
-      notes: ""
-    };
-    state.equipSelected = [];
-    state.equipSelectionOpen = false;
-    state.screen = "workout";
-    save();
-    render();
   },
 
   equipmentRecognitionOpen() {

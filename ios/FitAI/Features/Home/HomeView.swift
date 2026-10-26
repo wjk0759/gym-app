@@ -3,7 +3,9 @@ import SwiftUI
 struct HomeView: View {
     @Environment(AppStore.self) private var store
 
-    @State private var showWorkout = false
+    @State private var showCompose = false
+    @State private var pendingWorkoutDay: PlanDay?
+    @State private var workoutDay: PlanDay?
     @State private var showAdjustConfirm = false
     @State private var showAdjustResult = false
     @State private var selectedSession: WorkoutSession?
@@ -39,10 +41,22 @@ struct HomeView: View {
             .background(AppBackground())
             .navigationTitle("今日")
             .navigationBarTitleDisplayMode(.inline)
-            .fullScreenCover(isPresented: $showWorkout) {
+            .fullScreenCover(
+                isPresented: $showCompose,
+                onDismiss: presentPendingWorkout
+            ) {
                 if let day = store.todayDay {
-                    WorkoutSessionView(day: day)
+                    CustomWorkoutBuilderView(
+                        title: day.title,
+                        mode: .plan,
+                        initialExercises: day.exercises
+                    ) { plannedDay in
+                        pendingWorkoutDay = plannedDay
+                    }
                 }
+            }
+            .fullScreenCover(item: $workoutDay) { day in
+                WorkoutSessionView(day: day)
             }
             .sheet(item: $selectedSession) { session in
                 WorkoutDetailView(session: session)
@@ -183,13 +197,26 @@ struct HomeView: View {
                 }
 
                 Button("开始训练") {
-                    showWorkout = true
+                    showCompose = true
                 }
                 .buttonStyle(PrimaryButtonStyle())
+
+                Text("下一步可调整动作顺序、组数和重量")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
             .card()
         } else {
             restCard(plan: plan)
+        }
+    }
+
+    private func presentPendingWorkout() {
+        guard let day = pendingWorkoutDay else { return }
+        pendingWorkoutDay = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            workoutDay = day
         }
     }
 

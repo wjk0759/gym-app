@@ -49,7 +49,7 @@ struct EquipmentSelectionPanelView: View {
                         .font(.caption.weight(.bold))
                         .foregroundStyle(Theme.accent)
                 }
-                Text(exercises.isEmpty ? "还没有选择动作" : "选好后可以直接生成训练或存入器械库")
+                Text(exercises.isEmpty ? "还没有选择动作" : "选好后先安排顺序和负荷，再存入器械库")
                     .font(.caption)
                     .foregroundStyle(Theme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
@@ -163,7 +163,7 @@ struct EquipmentSelectionPanelView: View {
         VStack(spacing: 9) {
             actionButton(
                 title: "制作训练计划",
-                subtitle: "生成一次自选训练，不改动长期计划",
+                subtitle: "先排顺序和负荷，再开始训练",
                 icon: "bolt.fill",
                 primary: true,
                 disabled: exercises.isEmpty,

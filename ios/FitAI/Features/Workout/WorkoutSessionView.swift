@@ -19,6 +19,13 @@ struct WorkoutSessionView: View {
     @State private var startedAt = Date()
     @State private var showExitConfirm = false
     @State private var showEmptySaveAlert = false
+    @State private var adjustedExercises: [UUID: PlanExercise] = [:]
+    @State private var showAdjustSheet = false
+    @State private var adjustExerciseID: UUID?
+    @State private var adjustSets = 3
+    @State private var adjustReps = "10-12"
+    @State private var adjustWeight = 0.0
+    @State private var adjustRest = 60
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -62,7 +69,7 @@ struct WorkoutSessionView: View {
             .onAppear {
                 UIApplication.shared.isIdleTimerDisabled = true
                 startedAt = Date()
-                prepare(day.exercises.first)
+                prepare(currentExercise)
             }
             .onDisappear {
                 UIApplication.shared.isIdleTimerDisabled = false
@@ -86,13 +93,18 @@ struct WorkoutSessionView: View {
             } message: {
                 Text("至少完成一组后再保存，避免产生一条 0 组的空训练记录。")
             }
+            .sheet(isPresented: $showAdjustSheet) {
+                adjustSheet
+            }
         }
     }
 
     // MARK: - 顶部进度
 
     private var progressHeader: some View {
-        let totalSets = day.exercises.reduce(0) { $0 + $1.sets }
+        let totalSets = day.exercises.reduce(0) { partial, exercise in
+            partial + effectiveExercise(exercise).sets
+        }
         let progress = Double(logs.count) / Double(max(1, totalSets))
 
         return VStack(spacing: 8) {
@@ -118,7 +130,11 @@ struct WorkoutSessionView: View {
 
     private var currentExercise: PlanExercise? {
         guard day.exercises.indices.contains(index) else { return nil }
-        return day.exercises[index]
+        return effectiveExercise(day.exercises[index])
+    }
+
+    private func effectiveExercise(_ exercise: PlanExercise) -> PlanExercise {
+        adjustedExercises[exercise.id] ?? exercise
     }
 
     private func completedSets(for exercise: PlanExercise) -> Int {
@@ -163,13 +179,18 @@ struct WorkoutSessionView: View {
         let isBodyweight = exercise.exercise?.equipment == .bodyweight
 
         return VStack(alignment: .leading, spacing: 16) {
-            HStack {
+            HStack(spacing: 8) {
                 Text("第 \(min(done + 1, exercise.sets)) 组 / 共 \(exercise.sets) 组")
                     .font(.headline)
-                Spacer()
+                Spacer(minLength: 4)
                 Text("目标 RPE \(exercise.rpe, specifier: "%.1f")")
                     .font(.caption)
                     .foregroundStyle(Theme.secondaryText)
+                Button("调整") {
+                    openAdjustSheet(exercise)
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.accent)
             }
 
             if let last = store.lastSet(for: exercise.slug) {
@@ -466,7 +487,7 @@ struct WorkoutSessionView: View {
         restRemaining = nil
         if index < day.exercises.count - 1 {
             index += 1
-            prepare(day.exercises[index])
+            prepare(currentExercise)
         } else {
             index = day.exercises.count
         }
@@ -487,14 +508,137 @@ struct WorkoutSessionView: View {
             showEmptySaveAlert = true
             return
         }
+        var sessionDay = day
+        sessionDay.exercises = day.exercises.map(effectiveExercise)
         store.record(
-            day: day,
+            day: sessionDay,
             sets: logs,
             durationMinutes: durationMinutes,
             feeling: feeling,
             notes: notes
         )
         dismiss()
+    }
+
+    private func openAdjustSheet(_ exercise: PlanExercise) {
+        adjustExerciseID = exercise.id
+        adjustSets = exercise.sets
+        adjustReps = exercise.reps
+        adjustWeight = exercise.weightKG ?? 0
+        adjustRest = exercise.restSec
+        showAdjustSheet = true
+    }
+
+    private func saveAdjustedExercise() {
+        guard
+            let id = adjustExerciseID,
+            let base = day.exercises.first(where: { $0.id == id })
+        else {
+            showAdjustSheet = false
+            return
+        }
+
+        var updated = base
+        updated.sets = min(max(adjustSets, 1), 10)
+        let normalizedReps = adjustReps.trimmingCharacters(in: .whitespacesAndNewlines)
+        updated.reps = normalizedReps.isEmpty ? base.reps : normalizedReps
+        updated.weightKG = adjustWeight > 0 ? adjustWeight : nil
+        updated.restSec = min(max(adjustRest, 0), 300)
+        adjustedExercises[id] = updated
+
+        if currentExercise?.id == id {
+            weight = updated.weightKG ?? 0
+            if let parsed = Int(updated.reps.filter(\.isNumber)) {
+                reps = parsed
+            }
+        }
+
+        showAdjustSheet = false
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+    }
+
+    private var adjustSheet: some View {
+        let doneCount = currentExercise.map { completedSets(for: $0) } ?? 0
+
+        return NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 15) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("本次训练")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Theme.accent)
+                        Text(currentExercise?.displayName ?? "调整当前动作")
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(.white)
+                        Text("只调整这次训练的目标，不会改动长期计划。降低目标组数后会直接进入下一个动作。")
+                            .font(.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    LazyVGrid(columns: [
+                        GridItem(.flexible(), spacing: 8),
+                        GridItem(.flexible(), spacing: 8)
+                    ], spacing: 9) {
+                        adjustField("目标组数", text: Binding(
+                            get: { "\(adjustSets)" },
+                            set: { adjustSets = min(max(Int($0) ?? adjustSets, 1), 10) }
+                        ), keyboard: .numberPad)
+                        adjustField("每组次数", text: $adjustReps, keyboard: .numbersAndPunctuation)
+                        adjustField("目标重量 kg", text: Binding(
+                            get: { adjustWeight.formatted(.number.precision(.fractionLength(0...1))) },
+                            set: { adjustWeight = max(0, Double($0.replacingOccurrences(of: ",", with: ".")) ?? adjustWeight) }
+                        ), keyboard: .decimalPad)
+                        adjustField("组间休息 秒", text: Binding(
+                            get: { "\(adjustRest)" },
+                            set: { adjustRest = min(max(Int($0) ?? adjustRest, 0), 300) }
+                        ), keyboard: .numberPad)
+                    }
+
+                    Text("填 0 表示自重；已完成 \(doneCount) 组。")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+
+                    Button("保存调整") {
+                        saveAdjustedExercise()
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                    .padding(.top, 3)
+                }
+                .appPagePadding()
+                .padding(.vertical, 18)
+                .appReadableContent()
+            }
+            .background(AppBackground())
+            .navigationTitle("调整本次训练")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { showAdjustSheet = false }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+
+    private func adjustField(_ title: String, text: Binding<String>, keyboard: UIKeyboardType) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.system(size: 9.5))
+                .foregroundStyle(Theme.tertiaryText)
+            TextField("", text: text)
+                .keyboardType(keyboard)
+                .multilineTextAlignment(.center)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(height: 36)
+                .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(Color.white.opacity(0.075), lineWidth: 1)
+                )
+        }
     }
 
     private func feelingEmoji(_ value: Int) -> String {

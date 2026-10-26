@@ -16,6 +16,9 @@ struct EquipmentPickerView: View {
     @State private var feedback: String?
     @State private var customDay: PlanDay?
     @State private var detailExercise: Exercise?
+    @State private var showCompose = false
+    @State private var composeExercises: [PlanExercise] = []
+    @State private var pendingComposeDay: PlanDay?
 
     init() {}
 
@@ -109,6 +112,14 @@ struct EquipmentPickerView: View {
                 if !selectedExercises.contains(where: { $0.slug == exercise.slug }) {
                     selectedExercises.append(exercise)
                 }
+            }
+        }
+        .fullScreenCover(
+            isPresented: $showCompose,
+            onDismiss: presentPendingComposeDay
+        ) {
+            CustomWorkoutBuilderView(initialExercises: composeExercises) { day in
+                pendingComposeDay = day
             }
         }
         .fullScreenCover(item: $customDay) { day in
@@ -634,13 +645,32 @@ struct EquipmentPickerView: View {
 
     private func makeTrainingPlanFromSelection() {
         guard !selectedExercises.isEmpty else { return }
-        let exercises = selectedExercises
-        selectedExercises.removeAll()
+        let exercises = selectedExercises.map { exercise in
+            PlanExercise(
+                slug: exercise.slug,
+                sets: 3,
+                reps: "10-12",
+                weightKG: nil,
+                restSec: 60,
+                rpe: 7.5
+            )
+        }
         showSelectionPanel = false
+        pendingComposeDay = nil
 
-        // 等气泡收起后再打开全屏训练，避免两个 presentation 争抢。
+        // 等气泡收起后再打开编排页，避免两个 presentation 争抢。
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-            startCombination(with: exercises)
+            composeExercises = exercises
+            showCompose = true
+        }
+    }
+
+    private func presentPendingComposeDay() {
+        guard let day = pendingComposeDay else { return }
+        pendingComposeDay = nil
+        selectedExercises.removeAll()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            customDay = day
         }
     }
 
@@ -655,24 +685,4 @@ struct EquipmentPickerView: View {
         }
     }
 
-    private func startCombination(with selected: [Exercise]) {
-        guard !selected.isEmpty else { return }
-        let exercises = selected.map { exercise in
-            PlanExercise(
-                slug: exercise.slug,
-                sets: 3,
-                reps: "10-12",
-                weightKG: nil,
-                restSec: 60,
-                rpe: 7.5
-            )
-        }
-        let focus = Array(Set(selected.map(\.muscle)))
-        customDay = PlanDay(
-            weekday: Weekday.today,
-            title: "自选训练",
-            focus: focus,
-            exercises: exercises
-        )
-    }
 }
