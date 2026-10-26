@@ -11,13 +11,9 @@ Object.assign(window.app, {
     const weightInput = document.getElementById("body-checkin-weight");
     const fatInput = document.getElementById("body-checkin-fat");
     const waistInput = document.getElementById("body-checkin-waist");
-    const armInput = document.getElementById("body-checkin-arm");
-    const thighInput = document.getElementById("body-checkin-thigh");
     const weight = Number(String(weightInput?.value || "").replace(",", "."));
     const bodyFat = Number(String(fatInput?.value || "").replace(",", "."));
     const waist = Number(String(waistInput?.value || "").replace(",", "."));
-    const arm = Number(String(armInput?.value || "").replace(",", "."));
-    const thigh = Number(String(thighInput?.value || "").replace(",", "."));
     if (!Number.isFinite(weight) || weight < 30 || weight > 300) {
       return toast("体重填写 30–300 kg");
     }
@@ -27,12 +23,6 @@ Object.assign(window.app, {
     if (!Number.isFinite(waist) || waist < 50 || waist > 150) {
       return toast("腰围填写 50–150 cm");
     }
-    if (!Number.isFinite(arm) || arm < 20 || arm > 60) {
-      return toast("臂围填写 20–60 cm");
-    }
-    if (!Number.isFinite(thigh) || thigh < 35 || thigh > 90) {
-      return toast("大腿围填写 35–90 cm");
-    }
     const date = todayKey();
     const metric = {
       id: `bm-${date}`,
@@ -40,15 +30,11 @@ Object.assign(window.app, {
       timestamp: Date.now(),
       weight: Math.round(weight * 10) / 10,
       bodyFat: Math.round(bodyFat * 10) / 10,
-      waist: Math.round(waist * 10) / 10,
-      arm: Math.round(arm * 10) / 10,
-      thigh: Math.round(thigh * 10) / 10
+      waist: Math.round(waist * 10) / 10
     };
     state.profile.weight = metric.weight;
     state.profile.bodyFat = metric.bodyFat;
     state.profile.waist = metric.waist;
-    state.profile.arm = metric.arm;
-    state.profile.thigh = metric.thigh;
     state.bodyMetrics = [metric, ...(state.bodyMetrics || []).filter((entry) => entry.date !== date)]
       .sort((left, right) => Number(right.timestamp) - Number(left.timestamp));
     state.bodyCheckInDismissedDate = date;

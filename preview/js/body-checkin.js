@@ -52,8 +52,6 @@ function bodyCheckInSheet(manual = false) {
   const weight = latest?.weight || state.profile.weight || "";
   const bodyFat = latest?.bodyFat || state.profile.bodyFat || "";
   const waist = latest?.waist || state.profile.waist || "";
-  const arm = latest?.arm || state.profile.arm || "";
-  const thigh = latest?.thigh || state.profile.thigh || "";
   return `
     <div class="body-checkin-backdrop" onclick="app.hideBodyCheckIn()">
       <section class="body-checkin-sheet no-drag" role="dialog" aria-modal="true" aria-label="更新身体数据" onclick="event.stopPropagation()">
@@ -77,14 +75,6 @@ function bodyCheckInSheet(manual = false) {
           <label class="body-checkin-wide">
             <span>腰围</span>
             <div><input id="body-checkin-waist" type="number" min="50" max="150" step="0.1" inputmode="decimal" value="${waist}"><i>cm</i></div>
-          </label>
-          <label>
-            <span>臂围</span>
-            <div><input id="body-checkin-arm" type="number" min="20" max="60" step="0.1" inputmode="decimal" value="${arm}"><i>cm</i></div>
-          </label>
-          <label>
-            <span>大腿围</span>
-            <div><input id="body-checkin-thigh" type="number" min="35" max="90" step="0.1" inputmode="decimal" value="${thigh}"><i>cm</i></div>
           </label>
         </div>
         ${latest?.date ? `<div class="tiny faint" style="margin-top:9px">上次记录：${dateLabel(latest.date)}</div>` : ""}
