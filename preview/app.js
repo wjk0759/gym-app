@@ -257,6 +257,7 @@ function normalizeState(value) {
   const next = value || initialState();
   next.equipmentLibrary = next.equipmentLibrary || demoEquipment();
   next.useEquipLibrary = next.useEquipLibrary !== false;
+  next.equipLibraryQuery = typeof next.equipLibraryQuery === "string" ? next.equipLibraryQuery : "";
   next.bodyPhoto = !!next.bodyPhoto;
   next.bodyConsent = false;
   next.bodyAnalysis = next.bodyAnalysis || null;
@@ -319,6 +320,7 @@ function initialState() {
     foodDraft: { meal: "早餐", query: "", selected: null, grams: 100 },
     equipmentLibrary: demoEquipment(),
     useEquipLibrary: true,
+    equipLibraryQuery: "",
     bodyPhoto: false,
     bodyConsent: false,
     bodyAnalysis: null,
@@ -1423,60 +1425,136 @@ function equipmentRecognitionScreen() {
   `;
 }
 
+function filteredEquipmentLibraryItems() {
+  const query = String(state.equipLibraryQuery || "").trim().toLowerCase();
+  if (!query) return state.equipmentLibrary;
+  return state.equipmentLibrary.filter((item) => {
+    return [item.name, item.muscle, item.equip]
+      .some((value) => String(value || "").toLowerCase().includes(query));
+  });
+}
+
+function equipmentLibraryRowMarkup(item) {
+  return `
+    <button class="library-row" onclick="app.openEquipItem('${item.id}')">
+      <span class="library-thumb">${equipGlyph(item)}</span>
+      <span class="library-row-copy">
+        <span class="library-row-name">${esc(item.name)}</span>
+        <span class="library-row-meta">${item.muscle} · ${item.equip}</span>
+      </span>
+      <span class="library-video ${item.video ? "ready" : ""}">
+        ${item.video ? "教学视频" : "视频准备中"}
+      </span>
+      <span class="library-chevron">›</span>
+    </button>
+  `;
+}
+
+function equipmentLibraryResultsMarkup(items) {
+  if (!state.equipmentLibrary.length) {
+    return `
+      <div class="library-empty">
+        <div class="library-empty-icon">${ICONS.dumbbell}</div>
+        <div class="library-empty-title">器械库还是空的</div>
+        <div class="library-empty-copy">拍照或从相册识别第一件器械，AI 生成计划时会优先使用它。</div>
+        <button class="btn btn-primary" style="margin-top:14px" onclick="app.equipmentRecognitionOpen()">添加第一件器械</button>
+      </div>
+    `;
+  }
+
+  if (!items.length) {
+    return `
+      <div class="library-empty">
+        <div class="library-empty-icon">${ICONS.search}</div>
+        <div class="library-empty-title">没有匹配的器械</div>
+        <div class="library-empty-copy">换个名称、肌群或器械类型试试。</div>
+        <button class="btn btn-secondary" style="margin-top:14px" onclick="app.equipmentLibraryClearQuery()">清空搜索</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="library-list">
+      ${items.map(equipmentLibraryRowMarkup).join("")}
+    </div>
+  `;
+}
+
 function equipmentLibraryScreen() {
   const items = state.equipmentLibrary;
+  const filtered = filteredEquipmentLibraryItems();
+  const query = String(state.equipLibraryQuery || "");
+  const backAction = state.equipLibraryFromProfile ? "app.backTo('profile')" : "app.equipmentTabOpen()";
+
   return `
-    <div class="stack">
-      ${headerBack("器械库", state.equipLibraryFromProfile ? "app.backTo('profile')" : "app.equipmentTabOpen()")}
-      <div class="tiny muted">已添加的器械 · 教学视频与 AI 计划</div>
-
-      <div class="card nutrition-card" onclick="app.equipmentRecognitionOpen()">
-        <div class="nutrition-icon">＋</div>
-        <div class="grow">
-          <div class="h3">添加器械</div>
-          <div class="tiny muted" style="margin-top:3px">搜索、拍照或相册录入</div>
+    <div class="stack equipment-library-screen">
+      <div class="page-header">
+        <div class="row between">
+          <button class="icon-btn" onclick="${backAction}" aria-label="返回">‹</button>
+          <div class="h3">器械库</div>
+          <div style="width:34px"></div>
         </div>
-        <div class="faint">›</div>
       </div>
 
-      <div class="between" style="padding:2px 2px 0">
-        <div class="h3">已添加的器械</div>
-        <div class="tiny faint">${items.length} 件</div>
-      </div>
-
-      ${items.length === 0 ? `
-        <div class="card">
-          <div class="h3">器械库还是空的</div>
-          <div class="tiny muted" style="margin-top:5px">点上方「添加器械」搜索、拍照或从相册上传第一件器械。</div>
+      <section class="library-overview">
+        <div class="library-overview-main">
+          <div class="library-overview-icon">${ICONS.dumbbell}</div>
+          <div class="grow">
+            <div class="library-overview-label">我的器械</div>
+            <div class="library-overview-value"><span>${items.length}</span><span>件</span></div>
+            <div class="library-overview-note">教学视频与 AI 计划会优先读取这里</div>
+          </div>
         </div>
-      ` : `
-        <div class="equipment-grid">
-          ${items.map((item) => `
-            <div class="equipment-tile" onclick="app.openEquipItem('${item.id}')">
-              <div class="equipment-tile-image">${equipGlyph(item)}</div>
-              <div class="equipment-tile-name">${esc(item.name)}</div>
-              <div class="equipment-tile-meta">${item.muscle} · ${item.equip}</div>
-              <div class="equipment-tile-video ${item.video ? "ready" : ""}">
-                ${item.video ? "教学视频" : "视频准备中"}
-              </div>
-            </div>
-          `).join("")}
-        </div>
-      `}
 
-      <div class="card">
-        <div class="between">
-          <span class="small">生成计划时优先使用器械库</span>
-          <button class="chip ${state.useEquipLibrary ? "active" : ""}" onclick="app.toggleEquipLibrary()">
-            ${state.useEquipLibrary ? "已启用" : "未启用"}
+        <div class="library-plan-row">
+          <div class="grow">
+            <div class="library-plan-title">计划优先使用</div>
+            <div class="library-plan-note">${state.useEquipLibrary ? "生成计划时优先匹配我的器械" : "已关闭，按档案器械生成"}</div>
+          </div>
+          <button
+            class="library-switch ${state.useEquipLibrary ? "active" : ""}"
+            role="switch"
+            aria-checked="${state.useEquipLibrary}"
+            onclick="app.toggleEquipLibrary()"
+          >
+            <span></span>
           </button>
         </div>
-        <div class="tiny faint" style="margin-top:8px">${state.useEquipLibrary
-          ? "下次生成/重新生成计划时，会优先从器械库和徒手动作里选择。"
-          : "已关闭：计划仍按档案里的器械类型生成。"}</div>
+      </section>
+
+      <div class="library-tools">
+        <div class="library-search">
+          <span class="library-search-icon">${ICONS.search}</span>
+          <input
+            id="library-search"
+            type="text"
+            placeholder="搜索我的器械"
+            value="${esc(query)}"
+            oninput="app.equipmentLibraryQuery(this.value)"
+          >
+          <button
+            id="library-search-clear"
+            class="library-search-clear"
+            onclick="app.equipmentLibraryClearQuery()"
+            aria-label="清空搜索"
+            ${query.trim() ? "" : "hidden"}
+          >×</button>
+        </div>
+        <button class="library-add-btn" onclick="app.equipmentRecognitionOpen()" aria-label="添加器械">
+          ${ICONS.camera}
+        </button>
       </div>
 
-      <div class="tiny faint" style="line-height:1.6">器械库会作为 AI 生成计划的可用器械来源。删除器械不会删除历史训练记录。</div>
+      <div class="library-section-head">
+        <span>器械清单</span>
+        <span id="library-list-count">${filtered.length} 件</span>
+      </div>
+
+      <div id="library-list-root">
+        ${equipmentLibraryResultsMarkup(filtered)}
+      </div>
+
+      <div class="library-note">器械库会作为 AI 生成计划的可用来源。删除器械不会影响历史训练记录。</div>
     </div>
   `;
 }
@@ -3877,6 +3955,28 @@ window.app = {
     state.equipSelectionOpen = false;
     save();
     render();
+  },
+
+  equipmentLibraryQuery(value) {
+    state.equipLibraryQuery = value;
+    save();
+
+    const filtered = filteredEquipmentLibraryItems();
+    const root = document.getElementById("library-list-root");
+    if (root) root.innerHTML = equipmentLibraryResultsMarkup(filtered);
+
+    const count = document.getElementById("library-list-count");
+    if (count) count.textContent = `${filtered.length} 件`;
+
+    const clear = document.getElementById("library-search-clear");
+    if (clear) clear.hidden = !String(value || "").trim();
+  },
+
+  equipmentLibraryClearQuery() {
+    const input = document.getElementById("library-search");
+    if (input) input.value = "";
+    this.equipmentLibraryQuery("");
+    input?.focus();
   },
 
   equipmentPickerToggle(slug) {

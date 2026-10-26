@@ -19,59 +19,52 @@ struct EquipmentLibraryView: View {
     }
 
     @State private var activeSheet: EquipmentSheet?
+    @State private var query = ""
 
-    private let gridColumns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
+    private var filteredItems: [EquipmentItem] {
+        let text = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return store.equipmentLibrary }
+        return store.equipmentLibrary.filter { item in
+            item.name.localizedCaseInsensitiveContains(text)
+                || (item.muscle?.label.localizedCaseInsensitiveContains(text) ?? false)
+                || (item.equipment?.label.localizedCaseInsensitiveContains(text) ?? false)
+        }
+    }
+
+    private var useLibraryBinding: Binding<Bool> {
+        Binding(
+            get: { store.useEquipmentLibraryForPlans },
+            set: {
+                store.useEquipmentLibraryForPlans = $0
+                store.persist()
+            }
+        )
+    }
 
     var body: some View {
         AppScrollView {
             VStack(spacing: 16) {
-                addEntry
+                overviewCard
+                libraryTools
+                librarySectionHeader
 
-                HStack {
-                    Text("已添加的器械")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                    Spacer()
-                    Text("\(store.equipmentLibrary.count) 件")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                }
-                .padding(.top, 2)
-
-                if store.equipmentLibrary.isEmpty {
-                    EmptyStateView(
-                        icon: "dumbbell",
-                        title: "器械库还是空的",
-                        message: "点上方「添加器械」搜索、拍照或从相册上传第一件器械。"
-                    )
+                if filteredItems.isEmpty {
+                    emptyCard
                 } else {
-                    LazyVGrid(columns: gridColumns, spacing: 12) {
-                        ForEach(store.equipmentLibrary) { item in
-                            Button {
-                                activeSheet = .detail(item.id)
-                            } label: {
-                                equipmentTile(item)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
+                    libraryList
                 }
 
-                toggleCard
-
-                Text("器械库会作为 AI 生成计划的可用器械来源。删除器械不会删除历史训练记录。")
+                Text("器械库会作为 AI 生成计划的可用来源。删除器械不会影响历史训练记录。")
                     .font(.caption2)
                     .foregroundStyle(Theme.tertiaryText)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .lineSpacing(2)
+                    .padding(.horizontal, 4)
             }
             .padding(20)
             .padding(.bottom, 24)
         }
         .background(AppBackground())
-        .navigationTitle("器械")
+        .navigationTitle("器械库")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -80,6 +73,7 @@ struct EquipmentLibraryView: View {
                 } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel("手动添加器械")
             }
         }
         .sheet(item: $activeSheet) { sheet in
@@ -92,123 +86,279 @@ struct EquipmentLibraryView: View {
         }
     }
 
-    private var addEntry: some View {
-        NavigationLink {
-            EquipmentRecognitionView()
-        } label: {
-            HStack(spacing: 12) {
+    private var overviewCard: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 14) {
                 ZStack {
-                    Circle()
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .fill(Theme.accent.opacity(0.12))
-                        .frame(width: 46, height: 46)
-                    Image(systemName: "plus")
-                        .font(.headline.weight(.bold))
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Theme.accent.opacity(0.24), lineWidth: 1)
+                    Image(systemName: "dumbbell.fill")
+                        .font(.system(size: 21, weight: .semibold))
                         .foregroundStyle(Theme.accent)
                 }
+                .frame(width: 50, height: 50)
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("添加器械")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                    Text("搜索动作库，或拍照/相册录入")
-                        .font(.caption)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("我的器械")
+                        .font(.caption.weight(.semibold))
                         .foregroundStyle(Theme.secondaryText)
+
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text("\(store.equipmentLibrary.count)")
+                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                        Text("件")
+                            .font(.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                    }
+
+                    Text("教学视频与 AI 计划会优先读取这里")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
                 }
 
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.tertiaryText)
+                Spacer(minLength: 0)
             }
-            .card()
+
+            Rectangle()
+                .fill(Theme.stroke)
+                .frame(height: 1)
+                .padding(.vertical, 14)
+
+            Toggle(isOn: useLibraryBinding) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("计划优先使用")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                    Text(store.useEquipmentLibraryForPlans
+                         ? "生成计划时优先匹配我的器械"
+                         : "已关闭，按档案器械生成")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+            }
+            .tint(Theme.accent)
         }
-        .buttonStyle(.plain)
+        .card(padding: 18)
     }
 
-    private var toggleCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Toggle(
-                "生成计划时优先使用器械库",
-                isOn: Binding(
-                    get: { store.useEquipmentLibraryForPlans },
-                    set: {
-                        store.useEquipmentLibraryForPlans = $0
-                        store.persist()
-                    }
-                )
-            )
-            .font(.subheadline)
-            .tint(Theme.accent)
+    private var libraryTools: some View {
+        HStack(spacing: 8) {
+            HStack(spacing: 9) {
+                Image(systemName: "magnifyingglass")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(Theme.tertiaryText)
 
-            Text(store.useEquipmentLibraryForPlans
-                 ? "下次生成/重新生成计划时，会优先从器械库和徒手动作里选择。"
-                 : "已关闭：计划仍按档案里的器械类型生成。")
+                TextField("搜索我的器械", text: $query)
+                    .textInputAutocapitalization(.never)
+                    .foregroundStyle(.white)
+                    .submitLabel(.search)
+
+                if !query.isEmpty {
+                    Button {
+                        query = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("清空搜索")
+                }
+            }
+            .padding(.leading, 13)
+            .padding(.trailing, 10)
+            .padding(.vertical, 11)
+            .background(
+                Theme.surfaceStrong,
+                in: RoundedRectangle(cornerRadius: 15, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .stroke(Theme.stroke, lineWidth: 1)
+            )
+
+            NavigationLink {
+                EquipmentRecognitionView()
+            } label: {
+                Image(systemName: "camera.viewfinder")
+                    .font(.system(size: 19, weight: .semibold))
+                    .foregroundStyle(.black.opacity(0.86))
+                    .frame(width: 46, height: 46)
+                    .background(
+                        LinearGradient(
+                            colors: [Theme.accent, Theme.accentDeep],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color.white.opacity(0.18), lineWidth: 0.8)
+                    )
+                    .shadow(color: Theme.accent.opacity(0.16), radius: 12, y: 6)
+            }
+            .accessibilityLabel("拍照或相册添加器械")
+        }
+    }
+
+    private var librarySectionHeader: some View {
+        HStack {
+            Text("器械清单")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.secondaryText)
+            Spacer()
+            Text("\(filteredItems.count) 件")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
         }
-        .card(padding: 14)
+        .padding(.horizontal, 3)
     }
 
-    private func equipmentTile(_ item: EquipmentItem) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            equipmentTileImage(item)
+    private var libraryList: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(filteredItems.enumerated()), id: \.element.id) { index, item in
+                Button {
+                    activeSheet = .detail(item.id)
+                } label: {
+                    libraryRow(item)
+                }
+                .buttonStyle(.plain)
+
+                if index < filteredItems.count - 1 {
+                    Rectangle()
+                        .fill(Theme.stroke.opacity(0.75))
+                        .frame(height: 1)
+                        .padding(.leading, 71)
+                }
+            }
+        }
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Theme.stroke, lineWidth: 1)
+        )
+    }
+
+    private func libraryRow(_ item: EquipmentItem) -> some View {
+        HStack(spacing: 12) {
+            libraryThumbnail(item)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.name)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.white)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-
+                    .lineLimit(1)
                 Text("\(item.muscle?.label ?? "未分类") · \(item.equipment?.label ?? "未设置")")
                     .font(.caption2)
                     .foregroundStyle(Theme.secondaryText)
                     .lineLimit(1)
-
-                Label(
-                    item.videoURL != nil ? "教学视频" : "视频准备中",
-                    systemImage: item.videoURL != nil ? "play.rectangle.fill" : "play.rectangle"
-                )
-                .font(.caption2)
-                .foregroundStyle(item.videoURL != nil ? Theme.accent : Theme.tertiaryText)
-                .padding(.top, 1)
             }
-            .padding(.horizontal, 10)
-            .padding(.bottom, 12)
+
+            Spacer(minLength: 5)
+
+            Text(item.videoURL != nil ? "视频" : "准备中")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(item.videoURL != nil ? Theme.accent : Theme.tertiaryText)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(
+                    item.videoURL != nil ? Theme.accent.opacity(0.10) : Color.white.opacity(0.04),
+                    in: Capsule()
+                )
+
+            Image(systemName: "chevron.right")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(Theme.tertiaryText)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            Theme.surface,
-            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-        )
+        .padding(.horizontal, 13)
+        .padding(.vertical, 11)
+        .contentShape(Rectangle())
+    }
+
+    @ViewBuilder
+    private func libraryThumbnail(_ item: EquipmentItem) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Theme.accent.opacity(0.16), Color.white.opacity(0.035)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            if let data = item.photoData, let image = UIImage(data: data) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Image(systemName: equipmentSymbol(item))
+                    .font(.system(size: 22, weight: .light))
+                    .foregroundStyle(Theme.accent)
+            }
+        }
+        .frame(width: 46, height: 46)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(Theme.stroke, lineWidth: 1)
         )
     }
 
-    private func equipmentTileImage(_ item: EquipmentItem) -> some View {
-        Color.clear
-            .aspectRatio(1, contentMode: .fit)
-            .overlay {
-                if let data = item.photoData, let image = UIImage(data: data) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    ZStack {
-                        Theme.surfaceStrong
-                        Image(systemName: equipmentSymbol(item))
-                            .font(.system(size: 30, weight: .light))
-                            .foregroundStyle(Theme.accent)
-                    }
+    private var emptyCard: some View {
+        VStack(spacing: 10) {
+            Image(systemName: store.equipmentLibrary.isEmpty ? "dumbbell" : "magnifyingglass")
+                .font(.system(size: 28, weight: .light))
+                .foregroundStyle(Theme.accent)
+                .frame(width: 50, height: 50)
+                .background(Theme.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+            Text(store.equipmentLibrary.isEmpty ? "器械库还是空的" : "没有匹配的器械")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
+
+            Text(store.equipmentLibrary.isEmpty
+                 ? "拍照或从相册识别第一件器械，生成计划时会优先使用它。"
+                 : "换个名称、肌群或器械类型试试。")
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if store.equipmentLibrary.isEmpty {
+                NavigationLink {
+                    EquipmentRecognitionView()
+                } label: {
+                    Text("添加第一件器械")
                 }
+                .buttonStyle(PrimaryButtonStyle())
+                .padding(.top, 4)
+            } else {
+                Button("清空搜索") {
+                    query = ""
+                }
+                .buttonStyle(SecondaryButtonStyle())
+                .padding(.top, 4)
             }
-            .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .padding(8)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 28)
+        .background(
+            Color.white.opacity(0.025),
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(
+                    Theme.stroke,
+                    style: StrokeStyle(lineWidth: 1, dash: [5, 5])
+                )
+        )
     }
 
     private func equipmentSymbol(_ item: EquipmentItem) -> String {
