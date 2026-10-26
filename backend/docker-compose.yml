@@ -1,16 +1,27 @@
 services:
   db:
-    image: pgvector/pgvector:pg16
+    image: mysql:8.4
     container_name: fitai-db
     environment:
-      POSTGRES_USER: fitai
-      POSTGRES_PASSWORD: fitai
-      POSTGRES_DB: fitai
+      MYSQL_DATABASE: fitai
+      MYSQL_USER: fitai
+      MYSQL_PASSWORD: fitai
+      MYSQL_ROOT_PASSWORD: change-me-root
+      TZ: UTC
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+00:00
     ports:
-      - "5432:5432"
+      - "3306:3306"
     volumes:
-      - fitai-pg:/var/lib/postgresql/data
-      - ../db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - fitai-mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h127.0.0.1 -ufitai -pfitai --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
 
   redis:
     image: redis:7-alpine
@@ -19,4 +30,4 @@ services:
       - "6379:6379"
 
 volumes:
-  fitai-pg:
+  fitai-mysql:

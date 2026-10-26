@@ -1,0 +1,32 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+  flyway:
+    baseline-on-migrate: false
+
+fitai:
+  admin:
+    jwt:
+      secret: ${FITAI_JWT_SECRET}
+      cookie-secure: true
+    bootstrap:
+      enabled: false
+    cors:
+      allowed-origins: ${FITAI_CORS_ORIGINS}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+
+logging:
+  level:
+    com.fitai.admin: INFO

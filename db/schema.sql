@@ -1,3 +1,8 @@
+-- [2026-10] Legacy PostgreSQL schema retained for historical reference.
+-- MySQL is now the shared database; the authoritative MySQL schema is:
+--   admin-server/src/main/resources/db/migration/V1__fitai_app_schema.sql
+--   admin-server/src/main/resources/db/migration/V2__admin_console.sql
+
 -- ============================================================
 -- FitAI / 练途 · PostgreSQL 16 建表脚本
 -- 说明：

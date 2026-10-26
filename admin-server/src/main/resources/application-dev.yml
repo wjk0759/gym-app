@@ -1,0 +1,20 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+  devtools:
+    restart:
+      enabled: false
+
+fitai:
+  admin:
+    jwt:
+      secret: ${FITAI_JWT_SECRET:dev-only-fitai-admin-jwt-secret-change-before-production-2026-0123456789}
+    bootstrap:
+      enabled: true
+    media:
+      root: ${FITAI_MEDIA_ROOT:../backend/media}
+
+springdoc:
+  api-docs:
+    enabled: true

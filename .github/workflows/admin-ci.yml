@@ -1,0 +1,63 @@
+name: Admin CI
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "admin-server/**"
+      - "admin-web/**"
+      - "deploy/admin/**"
+      - "tools/db/**"
+      - ".github/workflows/admin-ci.yml"
+  pull_request:
+    paths:
+      - "admin-server/**"
+      - "admin-web/**"
+      - "deploy/admin/**"
+      - "tools/db/**"
+      - ".github/workflows/admin-ci.yml"
+
+concurrency:
+  group: admin-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Spring Boot verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: admin-server/pom.xml
+      - name: Verify
+        working-directory: admin-server
+        run: mvn -B -ntp verify
+
+  frontend:
+    name: Vue3 typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: admin-web/package-lock.json
+      - name: Install
+        working-directory: admin-web
+        run: npm ci
+      - name: Typecheck
+        working-directory: admin-web
+        run: npm run typecheck
+      - name: Unit tests
+        working-directory: admin-web
+        run: npm test
+      - name: Production build
+        working-directory: admin-web
+        run: npm run build

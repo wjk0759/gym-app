@@ -12,6 +12,9 @@ venv/
 # Node（预留）
 node_modules/
 dist/
+admin-server/target/
+admin-web/coverage/
+deploy/admin/.env
 
 # Xcode
 .DS_Store

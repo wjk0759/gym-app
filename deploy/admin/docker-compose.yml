@@ -1,0 +1,75 @@
+name: fitai-admin
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-fitai}
+      MYSQL_USER: ${MYSQL_USER:-fitai}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      TZ: UTC
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+00:00
+    ports:
+      - "127.0.0.1:3307:3306"
+    volumes:
+      - fitai-admin-mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h127.0.0.1 -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  admin-server:
+    build:
+      context: ../../admin-server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      FITAI_DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-fitai}?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      FITAI_DB_USERNAME: ${MYSQL_USER:-fitai}
+      FITAI_DB_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
+      FITAI_JWT_SECRET: ${FITAI_JWT_SECRET:?set FITAI_JWT_SECRET in .env}
+      FITAI_COOKIE_SECURE: ${FITAI_COOKIE_SECURE:-false}
+      FITAI_COOKIE_SAME_SITE: ${FITAI_COOKIE_SAME_SITE:-Strict}
+      FITAI_CORS_ORIGINS: ${FITAI_CORS_ORIGINS:-http://localhost:8088}
+      FITAI_BOOTSTRAP_ENABLED: ${FITAI_BOOTSTRAP_ENABLED:-true}
+      FITAI_BOOTSTRAP_USERNAME: ${FITAI_BOOTSTRAP_USERNAME:-admin}
+      FITAI_BOOTSTRAP_PASSWORD: ${FITAI_BOOTSTRAP_PASSWORD:?set FITAI_BOOTSTRAP_PASSWORD in .env}
+      FITAI_BOOTSTRAP_DISPLAY_NAME: ${FITAI_BOOTSTRAP_DISPLAY_NAME:-系统管理员}
+      FITAI_MEDIA_ROOT: /data/media
+      FITAI_MAX_VIDEO_MB: ${FITAI_MAX_VIDEO_MB:-100}
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - fitai-admin-media:/data/media
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health/readiness >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+
+  admin-web:
+    build:
+      context: ../../admin-web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      admin-server:
+        condition: service_healthy
+    ports:
+      - "${ADMIN_WEB_PORT:-8088}:80"
+
+volumes:
+  fitai-admin-mysql:
+  fitai-admin-media:

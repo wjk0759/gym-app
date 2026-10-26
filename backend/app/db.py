@@ -14,6 +14,7 @@ engine = create_engine(
     echo=False,
     future=True,
     pool_pre_ping=True,
+    pool_recycle=1800,
     connect_args=connect_args,
 )
 
@@ -100,6 +101,11 @@ _PERFORMANCE_INDEXES = (
 
 
 def ensure_schema() -> None:
+    # MySQL schema is owned by the admin service's Flyway migrations.
+    # Skipping this SQLite/Postgres compatibility layer avoids database-specific
+    # ALTER/partial-index syntax on MySQL.
+    if engine.dialect.name == "mysql":
+        return
     inspector = inspect(engine)
     tables = set(inspector.get_table_names())
     if "users" not in tables:

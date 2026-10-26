@@ -1,0 +1,106 @@
+spring:
+  application:
+    name: fitai-admin-server
+  profiles:
+    default: dev
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${FITAI_DB_URL:jdbc:mysql://127.0.0.1:3306/fitai?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${FITAI_DB_USERNAME:fitai}
+    password: ${FITAI_DB_PASSWORD:fitai}
+    hikari:
+      pool-name: fitai-admin-pool
+      maximum-pool-size: ${FITAI_DB_POOL_SIZE:20}
+      minimum-idle: 5
+      connection-timeout: 5000
+      validation-timeout: 3000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: true
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 110MB
+  jackson:
+    time-zone: UTC
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: non_null
+
+server:
+  port: ${FITAI_ADMIN_PORT:8080}
+  shutdown: graceful
+  forward-headers-strategy: framework
+  compression:
+    enabled: true
+    mime-types: application/json,text/html,text/css,application/javascript
+    min-response-size: 1024
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{requestId:-}] %logger{36} - %msg%n"
+  level:
+    root: INFO
+    com.fitai.admin: INFO
+    org.springframework.jdbc.core: WARN
+
+fitai:
+  admin:
+    jwt:
+      issuer: fitai-admin
+      access-ttl: ${FITAI_ACCESS_TTL:15m}
+      refresh-ttl: ${FITAI_REFRESH_TTL:7d}
+      cookie-name: ${FITAI_REFRESH_COOKIE:fitai_admin_refresh}
+      cookie-secure: ${FITAI_COOKIE_SECURE:false}
+      cookie-same-site: ${FITAI_COOKIE_SAME_SITE:Strict}
+    cors:
+      allowed-origins: ${FITAI_CORS_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+    media:
+      root: ${FITAI_MEDIA_ROOT:../backend/media}
+      max-video-mb: ${FITAI_MAX_VIDEO_MB:100}
+    bootstrap:
+      enabled: ${FITAI_BOOTSTRAP_ENABLED:true}
+      username: ${FITAI_BOOTSTRAP_USERNAME:admin}
+      password: ${FITAI_BOOTSTRAP_PASSWORD:Admin@123456}
+      display-name: ${FITAI_BOOTSTRAP_DISPLAY_NAME:系统管理员}
+    security:
+      refresh-cookie-path: /api/admin/v1/auth
+      login-rate-limit-per-minute: ${FITAI_LOGIN_RATE_LIMIT:20}
+
+info:
+  app:
+    name: FitAI Admin
+    version: 1.0.0
+    description: FitAI 企业级后台管理控制面

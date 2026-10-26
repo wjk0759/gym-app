@@ -1,5 +1,7 @@
 # FitAI（中文暂定名：练途）
 
+> **2026-10 架构更新：** 管理后台已独立为 `admin-web/`（Vue3 + TypeScript + Element Plus）与 `admin-server/`（Spring Boot 3 + JWT/RBAC + Flyway），共享 MySQL 8。详见 [企业级管理后台架构](docs/20-admin-enterprise-architecture.md)。FastAPI 继续负责 iOS/Web App API；旧 `/admin` 仅作为过渡入口保留。
+
 ![iOS Build](https://github.com/wjk0759/gym-app/actions/workflows/ios-build.yml/badge.svg)
 ![Backend Tests](https://github.com/wjk0759/gym-app/actions/workflows/backend-tests.yml/badge.svg)
 
@@ -161,14 +163,16 @@ OAUTH_CALLBACK_BASE=
 
 未配置微信/QQ 密钥时，开发环境会打开模拟授权页验证完整 OAuth 链路；生产环境不会伪造第三方登录。真实一键登录还需要在开放平台配置 AppID、Universal Links/回调，并在 iOS 侧接官方 SDK。
 
-默认使用 SQLite，零依赖启动。要切换到 PostgreSQL：
+共享 MySQL 8 是当前后台与 App API 的默认数据库：
 
 ```powershell
-docker compose up -d db
-# 修改 .env：DATABASE_URL=postgresql+psycopg://fitai:fitai@localhost:5432/fitai
+cd deploy/admin
+Copy-Item .env.example .env
+docker compose up -d mysql
+# backend/.env：DATABASE_URL=mysql+pymysql://fitai:fitai@127.0.0.1:3307/fitai?charset=utf8mb4
 ```
 
-> 首次启动会自动建表并写入动作库。`db/schema.sql` 是生产环境的规范建表脚本。
+> MySQL schema 由 `admin-server` 的 Flyway 创建；首次启动请先启动 admin-server 或执行 Flyway，再启动 FastAPI。纯 App 本地开发仍可使用 SQLite。
 
 ---
 
@@ -231,3 +235,42 @@ App 默认使用本地 Mock 数据，不依赖后端。启动后端后，在 App
 - 本项目是工程骨架，不是可直接上架的成品。AI 生成的代码需要在 Mac 上编译验证。
 - 所有健康建议必须经过规则校验与免责声明，不能替代医生诊断。
 - 美团外卖的菜单与营养数据没有公开接口，CPS 只能提供活动/跳转链接，详见 `docs/05-ai-design.md` 与 PRD 的“不做清单”。
+
+---
+
+## 企业级管理后台（Vue3 + Spring Boot + MySQL）
+
+原 FastAPI 内置后台 `/admin` 保留为过渡入口；新的独立后台位于：
+
+- `admin-web/`：Vue3 + TypeScript + Element Plus + Pinia + Vue Router
+- `admin-server/`：Spring Boot 3 + Spring Security/JWT + RBAC + Flyway + JdbcClient
+- `deploy/admin/`：MySQL 8 + admin-server + Nginx 的 Docker Compose
+- `docs/20-admin-enterprise-architecture.md`：架构、权限、数据边界、迁移与发布说明
+
+本机开发：
+
+```powershell
+cd admin-server
+mvn spring-boot:run
+
+cd ..\admin-web
+npm install
+npm run dev
+```
+
+开发地址：<http://127.0.0.1:5173/admin/>。默认初始管理员由环境变量
+`FITAI_BOOTSTRAP_USERNAME` / `FITAI_BOOTSTRAP_PASSWORD` 注入；创建后请关闭
+`FITAI_BOOTSTRAP_ENABLED`。
+
+Docker 部署：
+
+```powershell
+cd deploy/admin
+Copy-Item .env.example .env
+# 修改 JWT_SECRET、数据库密码和初始管理员密码
+docker compose up -d --build
+# 打开 http://localhost:8088/admin/
+```
+
+App API 继续由 FastAPI 提供；FastAPI 通过 `DATABASE_URL=mysql+pymysql://...`
+连接同一个 MySQL。旧 SQLite 数据用 `tools/db/migrate_sqlite_to_mysql.py` 导入。

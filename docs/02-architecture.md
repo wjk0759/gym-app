@@ -122,3 +122,10 @@
 | 识别置信度低 | 结果不可靠 | 不自动选定，转手动搜索 |
 | 通知权限被拒 | 提醒不触发 | 站内红点 + 引导去设置 |
 | 离线 | 无法同步 | 本地队列，联网后重放 |
+
+## 9. 2026-10 管理后台重构（增量）
+
+- 后台管理不再使用 FastAPI 内置页面；新增 `admin-web/`（Vue3 + TypeScript + Element Plus）和 `admin-server/`（Spring Boot 3 + Spring Security + RBAC + Flyway）。
+- 数据库从 SQLite/PostgreSQL 迁移到 MySQL 8；App API 仍由 FastAPI 提供，但通过 `DATABASE_URL` 连接同一个 MySQL。
+- MySQL schema 当前由 admin-server Flyway 管理；FastAPI 在 MySQL 模式下不再执行 `create_all`，避免双写 schema。过渡方案和后续迁移边界见 `docs/20-admin-enterprise-architecture.md`。
+- 旧 `/admin` 保留为只读过渡入口；新后台地址为 `http://localhost:8088/admin/`（Docker）或 `http://127.0.0.1:5173/admin/`（本地开发）。

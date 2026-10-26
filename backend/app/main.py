@@ -36,7 +36,10 @@ CODE_BY_STATUS = {
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     ensure_schema()
-    Base.metadata.create_all(bind=engine)
+    # MySQL schema is owned by admin-server Flyway. Only local SQLite/Postgres
+    # development uses SQLAlchemy create_all to avoid two schema creators.
+    if engine.dialect.name != "mysql":
+        Base.metadata.create_all(bind=engine)
     ensure_schema()
     with SessionLocal() as db:
         seed_exercises(db)
