@@ -34,11 +34,12 @@ function foodAddScreen() {
             </div>
             <input type="range" min="10" max="2000" step="10" value="${draft.grams}" oninput="app.foodGrams(this.value)">
           </div>
-          <div class="macro-grid" style="margin-top:10px;grid-template-columns:repeat(4,1fr)">
+          <div class="macro-grid food-detail-macros" style="margin-top:10px">
             <div class="macro"><div class="label">热量</div><div class="value" id="food-kcal">${Math.round(selected.kcal * draft.grams / 100)}</div></div>
             <div class="macro"><div class="label">蛋白质</div><div class="value" id="food-p">${Math.round(selected.p * draft.grams / 100)}g</div></div>
             <div class="macro"><div class="label">碳水</div><div class="value" id="food-c">${Math.round(selected.c * draft.grams / 100)}g</div></div>
             <div class="macro"><div class="label">脂肪</div><div class="value" id="food-f">${Math.round(selected.f * draft.grams / 100)}g</div></div>
+            <div class="macro"><div class="label">膳食纤维</div><div class="value" id="food-fiber">${Math.round((selected.fiber || 0) * draft.grams / 100 * 10) / 10}g</div></div>
           </div>
           <button class="btn btn-primary" style="margin-top:12px" onclick="app.addFood()">添加到${draft.meal}</button>
         </div>
@@ -60,7 +61,7 @@ function foodCustomScreen() {
       ${headerBack("手动添加食物")}
       <div class="card">
         <div class="h3">按你实际吃的一份填写</div>
-        <div class="tiny muted" style="margin-top:6px;line-height:1.6">不知道蛋白质、碳水或脂肪可以留空。先记下热量也可以，之后还能补充。</div>
+        <div class="tiny muted" style="margin-top:6px;line-height:1.6">不知道蛋白质、碳水、脂肪或膳食纤维可以留空。先记下热量也可以，之后还能补充。</div>
       </div>
 
       <div class="card">
@@ -85,6 +86,8 @@ function foodCustomScreen() {
           <div style="flex:1"><div class="form-label">碳水（g）</div><input type="text" inputmode="decimal" maxlength="10" value="${esc(draft.c)}" placeholder="可选" oninput="app.foodCustomInput('c', this.value)"></div>
           <div style="flex:1"><div class="form-label">脂肪（g）</div><input type="text" inputmode="decimal" maxlength="10" value="${esc(draft.f)}" placeholder="可选" oninput="app.foodCustomInput('f', this.value)"></div>
         </div>
+        <div class="form-label" style="margin-top:12px">膳食纤维（g）</div>
+        <input type="text" inputmode="decimal" maxlength="10" value="${esc(draft.fiber || "")}" placeholder="可选" oninput="app.foodCustomInput('fiber', this.value)">
         <div class="tiny faint" style="margin-top:8px">会按“这一份”换算成每 100g 保存，下次搜索时可以直接复用。</div>
       </div>
 

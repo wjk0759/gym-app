@@ -91,7 +91,10 @@ function calendarDayPanel(key) {
               <div class="small strong">${esc(day.title)}</div>
               <div class="tiny faint">${day.focus.join(" · ")} · ${day.exercises.length} 个动作</div>
             </div>
-            <button class="link" onclick="app.editPlanDay('${day.id}')">编辑训练日 ›</button>
+            <div class="calendar-plan-actions">
+              <button class="link" onclick="app.openPlanSchedule()">调整周几</button>
+              <button class="link" onclick="app.editPlanDay('${day.id}')">编辑内容 ›</button>
+            </div>
           </div>
           <div class="calendar-exercise-dots">
             ${day.exercises.slice(0, 4).map((item) => `<span>${esc(EX[item.slug]?.name || item.slug)}</span>`).join("")}
@@ -125,83 +128,11 @@ function calendarDayPanel(key) {
   `;
 }
 
-function trainingOverview() {
-  const end = new Date();
-  end.setHours(23, 59, 59, 999);
-  const start = addDays(end, -29);
-  const sessions = state.sessions.filter((session) => {
-    const date = new Date(Number(session.timestamp) || end.getTime());
-    return date >= start && date <= end;
-  });
-  const volume = sessions.reduce((sum, session) => sum + Number(session.volume || 0), 0);
-  const minutes = sessions.reduce((sum, session) => sum + Number(session.duration || 0), 0);
-  const sets = sessions.reduce((sum, session) => {
-    return sum + (session.items || []).reduce((partial, item) => partial + Number(item.sets || 0), 0);
-  }, 0);
-
-  const weekStarts = [3, 2, 1, 0].map((offset) => startOfWeekMonday(addDays(end, -7 * offset)));
-  const weekBars = weekStarts.map((weekStart, index) => {
-    const weekEnd = addDays(weekStart, 7);
-    const weekSessions = state.sessions.filter((session) => {
-      const date = new Date(Number(session.timestamp) || 0);
-      return date >= weekStart && date < weekEnd;
-    });
-    return {
-      label: index === 3 ? "本周" : `-${3 - index}周`,
-      value: weekSessions.reduce((sum, session) => sum + Number(session.volume || 0), 0)
-    };
-  });
-  const maxBar = Math.max(1, ...weekBars.map((bar) => bar.value));
-  return { sessions, volume, minutes, sets, weekBars, maxBar };
-}
-
-function trainingDataPanel() {
-  const { sessions, volume, minutes, sets, weekBars, maxBar } = trainingOverview();
-
-  return `
-    <section class="training-data-summary">
-      <div class="between training-data-head">
-        <div>
-          <div class="compose-kicker">训练数据</div>
-          <div class="h2">最近 30 天</div>
-        </div>
-        <div class="plan-data-head-actions">
-          <button class="link" onclick="app.openTrainingData()">动作数据 ›</button>
-          <button class="link" onclick="app.openHistory()">全部记录 ›</button>
-        </div>
-      </div>
-
-      <div class="training-metric-grid">
-        <div class="training-metric"><strong>${sessions.length}</strong><span>完成训练</span></div>
-        <div class="training-metric"><strong>${Math.round(volume).toLocaleString()}</strong><span>总容量 kg</span></div>
-        <div class="training-metric"><strong>${sets}</strong><span>总组数</span></div>
-        <div class="training-metric"><strong>${sessions.length ? Math.round(minutes / sessions.length) : 0}</strong><span>平均分钟</span></div>
-      </div>
-      <div class="training-bars">
-        ${weekBars.map((bar) => `
-          <div class="training-bar-column">
-            <div class="training-bar-track"><span style="height:${Math.max(4, Math.round(bar.value / maxBar * 100))}%"></span></div>
-            <small>${bar.label}</small>
-          </div>
-        `).join("")}
-      </div>
-      <div class="tiny faint" style="margin-top:8px">按实际训练日期统计，容量只计算有记录的组数。</div>
-
-      <div class="training-recent-list">
-        <div class="calendar-section-label">最近训练</div>
-        ${state.sessions.length
-          ? sortedSessionsNewest().slice(0, 3).map((session) => sessionListRow(session, "plan")).join("")
-          : `<div class="calendar-empty-line">还没有训练记录。</div>`}
-      </div>
-    </section>
-  `;
-}
-
 function planScreen() {
   const month = state.calendarMonth || monthKey(new Date());
   const selected = state.calendarDateKey || todayKey();
   const preview = planAdjustmentPreview();
-  const training = trainingOverview();
+  const review = planReviewData();
 
   return `
     <div class="stack plan-calendar-screen">
@@ -213,27 +144,30 @@ function planScreen() {
         <button class="link" onclick="app.goTodayInCalendar()">回到今天</button>
       </div>
 
-      <button class="plan-data-strip" onclick="app.openTrainingData()">
+      <button class="plan-data-strip" onclick="app.scrollToPlanReview()">
         <span class="plan-data-strip-icon" aria-hidden="true">▥</span>
         <span class="grow">
-          <strong>训练数据 · 最近 30 天</strong>
-          <small>${training.sessions.length ? `${training.sessions.length} 次训练 · ${Math.round(training.volume).toLocaleString()} kg 容量` : "还没有训练记录"}</small>
+          <strong>数据复盘 · ${review.monthLabel}</strong>
+          <small>${review.sessions.length} 次训练 · ${review.loggedDays} 天饮食记录</small>
         </span>
-        <span class="plan-data-strip-link">按动作看数据 ›</span>
+        <span class="plan-data-strip-link">查看报告 ›</span>
       </button>
 
       ${calendarOverview(month)}
       ${calendarDayPanel(selected)}
-      ${trainingDataPanel()}
+      ${dataReviewPanel()}
 
       <section class="plan-summary-card">
-        <div class="between">
+        <div class="between plan-summary-head">
           <div>
             <div class="tiny accent">当前计划</div>
             <div class="h3" style="margin-top:3px">${esc(state.plan.title)}</div>
             <div class="tiny faint" style="margin-top:3px">第 ${state.plan.version} 版 · ${state.plan.days.length} 个训练日 · 本周完成 ${preview.completed}/${Math.max(1, state.profile.weeklyDays)}</div>
           </div>
-          <button class="link" onclick="app.regeneratePlan()">重新生成</button>
+          <div class="plan-summary-head-actions">
+            <button class="link" onclick="app.openPlanSchedule()">调整训练日</button>
+            <button class="link" onclick="app.regeneratePlan()">重新生成</button>
+          </div>
         </div>
         <div class="tiny muted" style="margin-top:8px;line-height:1.6">调整计划前，教练会先问清最近训练中的时间、恢复、疼痛或负荷问题，再按你的诉求生成方案。</div>
         <button class="btn btn-secondary" style="margin-top:10px" onclick="app.startPlanAdjustment('plan')">✦ 和教练聊聊，再调整计划</button>

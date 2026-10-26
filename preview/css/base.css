@@ -872,6 +872,16 @@ input[type="number"]::-webkit-inner-spin-button {
 .kcal-hero .unit { font-size: 12px; color: var(--muted); }
 
 .macro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.nutrition-macro-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.food-detail-macros { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.food-detail-macros .macro { padding: 8px 6px; }
+.food-detail-macros .label { font-size: 9.5px; }
+.food-detail-macros .value { font-size: 12px; }
+
+@media (max-width: 360px) {
+  .nutrition-macro-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .food-detail-macros { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 .macro { padding: 10px; border-radius: 12px; background: var(--surface-strong); }
 .macro .label { font-size: 11px; color: var(--muted); }
 .macro .value { font-size: 14px; font-weight: 700; margin-top: 2px; }

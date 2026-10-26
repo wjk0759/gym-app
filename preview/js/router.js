@@ -55,6 +55,7 @@ function cleanupRouteOnBack(screen) {
     state.sessionDraft = null;
   }
   if (screen === "profileEdit") state.profileDraft = null;
+  if (screen === "planSchedule") state.planScheduleDraft = null;
   if (screen === "foodCustom") state.foodCustomDraft = null;
   if (screen === "foodAdd") state.foodDraft = null;
   if (screen === "foodPhoto") {
@@ -164,9 +165,10 @@ function fallbackRoute() {
   if (screen === "workout") return { screen: "tabs", tab: "home" };
   if (screen === "trainingData") {
     if (state.equipmentItemId || state.selectedExercise) return { screen: "equipmentItem" };
-    return { screen: "tabs", tab: "plan" };
+    return { screen: "tabs", tab: "equipment" };
   }
   if (screen === "history") return { screen: "tabs", tab: "plan" };
+  if (screen === "planSchedule") return { screen: "tabs", tab: "plan" };
   if (screen === "equipmentLibrary") {
     return { screen: "tabs", tab: state.equipLibraryFromProfile ? "profile" : "equipment" };
   }

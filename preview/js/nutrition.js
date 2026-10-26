@@ -77,11 +77,12 @@ function nutritionScreen() {
       </div>
 
       <div class="card">
-        <div class="h3" style="margin-bottom:10px">宏量营养素</div>
-        <div class="macro-grid">
+        <div class="h3" style="margin-bottom:10px">营养结构</div>
+        <div class="macro-grid nutrition-macro-grid">
           <div class="macro"><div class="label">蛋白质</div><div class="value">${Math.round(totals.p)} / ${targets.protein}g</div></div>
           <div class="macro"><div class="label">碳水</div><div class="value">${Math.round(totals.c)} / ${targets.carbs}g</div></div>
           <div class="macro"><div class="label">脂肪</div><div class="value">${Math.round(totals.f)} / ${targets.fat}g</div></div>
+          <div class="macro"><div class="label">膳食纤维</div><div class="value">${Math.round(totals.fiber)} / ${targets.fiber}g</div></div>
         </div>
         <div class="tiny faint" style="margin-top:9px">BMR ${targets.bmr} kcal · 维持热量约 ${targets.tdee} kcal</div>
       </div>

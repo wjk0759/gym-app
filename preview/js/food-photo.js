@@ -12,6 +12,7 @@ function foodPhotoMockItems() {
       pPer100g: food.p,
       cPer100g: food.c,
       fPer100g: food.f,
+      fiberPer100g: food.fiber || 0,
       confidence: Math.max(0.55, 0.91 - index * 0.07),
       selected: true
     };
@@ -25,8 +26,9 @@ function foodPhotoTotals(items = state.foodPhotoItems) {
     total.p += item.pPer100g * factor;
     total.c += item.cPer100g * factor;
     total.f += item.fPer100g * factor;
+    total.fiber += (item.fiberPer100g || 0) * factor;
     return total;
-  }, { kcal: 0, p: 0, c: 0, f: 0 });
+  }, { kcal: 0, p: 0, c: 0, f: 0, fiber: 0 });
 }
 
 function foodPhotoScreen() {
@@ -96,6 +98,7 @@ function foodPhotoScreen() {
             const p = Math.round(item.grams * item.pPer100g / 100);
             const c = Math.round(item.grams * item.cPer100g / 100);
             const f = Math.round(item.grams * item.fPer100g / 100);
+            const fiber = Math.round((item.fiberPer100g || 0) * item.grams / 100 * 10) / 10;
             return `
               <div class="card tight" style="margin-top:10px;opacity:${item.selected ? 1 : 0.45}">
                 <div class="between">
@@ -109,7 +112,7 @@ function foodPhotoScreen() {
                   <input type="range" min="10" max="2000" step="10" value="${item.grams}" oninput="app.foodPhotoGrams(${index}, this.value)" style="flex:1;accent-color:var(--accent)">
                   <span class="tiny" id="food-photo-grams-${index}" style="width:52px;text-align:right">${item.grams} g</span>
                 </div>
-                <div class="tiny faint" id="food-photo-macros-${index}">P ${p}g · C ${c}g · F ${f}g</div>
+                <div class="tiny faint" id="food-photo-macros-${index}">P ${p}g · C ${c}g · F ${f}g · 纤维 ${fiber}g</div>
               </div>
             `;
           }).join("")}
@@ -123,6 +126,7 @@ function foodPhotoScreen() {
               <span class="tiny muted">蛋白质 <span id="food-photo-p">${Math.round(totals.p)}</span>g</span>
               <span class="tiny muted">碳水 <span id="food-photo-c">${Math.round(totals.c)}</span>g</span>
               <span class="tiny muted">脂肪 <span id="food-photo-f">${Math.round(totals.f)}</span>g</span>
+              <span class="tiny muted">膳食纤维 <span id="food-photo-fiber">${Math.round(totals.fiber)}</span>g</span>
             </div>
           </div>
 

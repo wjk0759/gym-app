@@ -74,6 +74,24 @@ const FOODS = [
   { name: "蛋糕", cat: "甜点", kcal: 350, p: 5, c: 45, f: 17, serving: 100 }
 ];
 
+const FOOD_FIBER = {
+  "燕麦（干）": 10.6, "米饭": 0.3, "糙米饭": 1.8, "红薯": 3.0, "全麦面包": 6.0,
+  "包子": 1.5, "饺子": 1.8, "炒饭": 1.2, "便利店饭团": 1.2,
+  "鸡胸肉": 0, "鸡蛋": 0, "牛肉": 0, "三文鱼": 0, "豆腐": 2.3, "牛奶": 0,
+  "无糖酸奶": 0, "乳清蛋白粉": 0, "西兰花": 2.6, "菠菜": 2.2, "番茄": 1.2,
+  "苹果": 2.4, "香蕉": 2.6, "蓝莓": 2.4, "坚果": 7.0, "橄榄油": 0,
+  "拿铁": 0, "可乐": 0, "奶茶": 0.5, "螺蛳粉": 2.0, "桂林米粉": 1.2,
+  "兰州拉面": 1.5, "酸辣粉": 1.2, "凉皮": 1.0, "牛肉面": 1.5, "麻辣烫": 2.5,
+  "麻辣香锅": 2.2, "火锅": 2.0, "烧烤": 1.2, "炸鸡": 0.8, "汉堡": 1.8,
+  "薯条": 3.0, "煎饼果子": 2.0, "肉夹馍": 1.5, "小笼包": 1.2, "蛋糕": 0.8
+};
+
+FOODS.forEach((food) => {
+  food.fiber = Number.isFinite(Number(FOOD_FIBER[food.name]))
+    ? Number(FOOD_FIBER[food.name])
+    : Math.round(Math.max(0, Number(food.c) || 0) * 0.05 * 10) / 10;
+});
+
 function allFoods() {
   return [...(state.customFoods || []), ...FOODS];
 }
@@ -162,7 +180,8 @@ function demoLogs() {
       kcal: Math.round(food.kcal * factor),
       p: Math.round(food.p * factor * 10) / 10,
       c: Math.round(food.c * factor * 10) / 10,
-      f: Math.round(food.f * factor * 10) / 10
+      f: Math.round(food.f * factor * 10) / 10,
+      fiber: Math.round((food.fiber || 0) * factor * 10) / 10
     };
   };
   return [
@@ -406,11 +425,12 @@ function buildPlan(profile) {
   const rest = profile.goal === "增肌" ? 90 : profile.goal === "减脂" ? 45 : 60;
   const days = [];
   for (let week = 1; week <= 4; week += 1) {
-    templates.forEach((template) => {
+    templates.forEach((template, slot) => {
       days.push({
         id: `w${week}d${template.weekday}`,
         week,
         weekday: template.weekday,
+        slot,
         title: template.title,
         focus: template.focus,
         exercises: template.slugs.map((slug) => {

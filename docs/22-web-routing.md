@@ -16,12 +16,9 @@
 
 ## 2. 路由层级
 
-层级不是按页面名固定写死，而是按实际访问路径计算。例如同一个 `trainingData`：
+层级不是按页面名固定写死，而是按实际访问路径计算。例如 `trainingData` 只从动作详情进入：
 
 ```text
-tab/plan (1)
-  → trainingData (2)
-
 tab/equipment (1)
   → equipmentLibrary (2)
     → equipmentItem (3)
@@ -56,21 +53,24 @@ tab/equipment (1)
 | `sessionDetail` | 训练记录详情 / 编辑 / 新建 | `tabs/plan`、`history` | 上一级页面 |
 | `sessionExercisePicker` | 训练记录添加动作 | `sessionDetail` | `sessionDetail` |
 | `history` | 训练记录列表 | `tabs/plan` | `tabs/plan` |
-| `trainingData` | 动作训练数据 | `tabs/plan`、`equipmentItem` | 上一级页面 |
+| `trainingData` | 动作训练数据 | 仅 `equipmentItem` | `equipmentItem` |
 | `equipmentLibrary` | 器械库 | `tabs/equipment`、`tabs/profile` | 原 Tab |
 | `equipmentItem` | 器械 / 动作详情 | `equipmentLibrary`、`tabs/equipment` | 上一级页面 |
 | `equipmentCamera` | 器械拍照 | `tabs/equipment`、`equipmentRecognition` | 拍照来源 |
 | `equipmentRecognition` | 器械识别 | 拍照完成后替换 `equipmentCamera` | `tabs/equipment` |
 | `planExercisePicker` | 计划训练日添加动作 | `workoutCompose` | `workoutCompose` |
+| `planSchedule` | 调整每周训练日 | `tabs/plan` | `tabs/plan` |
 
 ## 5. 典型面包屑
 
-### 计划 → 动作数据
+### 计划 → 调整训练日
 
 ```text
 tab/plan
-  → trainingData
+  → planSchedule
 ```
+
+> 计划页的「数据复盘」是页面内的训练 + 饮食报表，不是单独路由；动作训练数据只从动作详情进入。
 
 ### 计划 → 训练记录 → 添加动作
 
@@ -216,7 +216,7 @@ tab/coach | tab/profile
 | `foodAdd` / `foodCustom` / `foodPhoto` / `foodPhotoCamera` | `nutrition` |
 | `sessionExercisePicker` | `sessionDetail` |
 | `planExercisePicker` | `workoutCompose` |
-| `trainingData` | 有器械上下文 → `equipmentItem`；否则 `tab/plan` |
+| `trainingData` | 有器械上下文 → `equipmentItem`；否则 `tab/equipment` |
 | `history` | `tab/plan` |
 | `equipmentLibrary` | 来源为我的 → `tab/profile`；否则 `tab/equipment` |
 | `equipmentItem` | 有器械 id → `equipmentLibrary`；否则 `tab/equipment` |
@@ -226,13 +226,15 @@ tab/coach | tab/profile
 | `nutrition` | 按 `nutritionOrigin` 回今日 / 计划 |
 | `sessionDetail` | 按 `sessionOrigin` 回今日 / 计划 |
 | `workoutCompose` | 按草稿来源回首页 / 计划 / 器械 |
+| `planSchedule` | `tab/plan` |
 | `workout` | `tab/home` |
 
 ## 9. 验收
 
 - 器械 Tab → 器械库 → 详情 → 动作数据，连续返回能回到器械 Tab。
 - 我的 → 器械库 → 详情，返回回到我的，而不是器械 Tab。
-- 计划 → 动作数据，返回回计划，而不是器械库。
+- 计划页不再出现「动作数据」入口；动作数据从动作详情返回时回到动作详情。
+- 计划 → 调整训练日 → 保存/返回，回到计划。
 - 计划 → 历史 → 训练详情，返回回历史。
 - 首页 / 计划进入饮食，返回回原 Tab。
 - 饮食 → 添加食物 → 手动添加，返回逐级回饮食。

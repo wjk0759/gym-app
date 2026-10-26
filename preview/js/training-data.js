@@ -28,7 +28,7 @@ function trainingDataScreen() {
       ${headerBack("动作训练数据")}
 
       <section class="training-data-intro">
-        <div class="compose-kicker">计划 · 训练数据</div>
+        <div class="compose-kicker">动作详情 · 训练数据</div>
         <div class="h2">按动作看趋势</div>
         <p>基于实际训练记录，集中查看容量、单组最重和 1RM 预测。</p>
       </section>

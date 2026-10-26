@@ -86,6 +86,7 @@ function render() {
   else if (state.screen === "sessionDetail") html = sessionScreen();
   else if (state.screen === "sessionExercisePicker") html = equipmentPickerScreen();
   else if (state.screen === "trainingData") html = trainingDataScreen();
+  else if (state.screen === "planSchedule") html = planScheduleScreen();
   else if (state.screen === "history") html = historyScreen();
   else if (state.screen === "equipmentLibrary") html = equipmentLibraryScreen();
   else if (state.screen === "equipmentCamera") html = equipmentCameraScreen();

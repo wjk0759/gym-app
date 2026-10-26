@@ -591,3 +591,286 @@
     min-height: 44px;
   }
 }
+
+/* ---------- overall data review ---------- */
+
+.plan-summary-head {
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.plan-summary-head-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.plan-summary-head-actions .link {
+  white-space: nowrap;
+}
+
+.calendar-plan-actions {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.data-review-panel {
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 100% 0, rgba(94, 139, 255, 0.09), transparent 42%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.016)),
+    var(--surface);
+}
+
+.data-review-head {
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.data-review-head .h2 {
+  margin-top: 3px;
+}
+
+.data-review-head .tiny {
+  margin-top: 4px;
+}
+
+.data-review-block {
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.data-review-block .training-bars {
+  grid-template-columns: repeat(auto-fit, minmax(38px, 1fr));
+}
+
+.data-review-block-head {
+  margin-bottom: 9px;
+}
+
+.review-macro-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.review-macro {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 8px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.review-macro span {
+  overflow: hidden;
+  color: var(--faint);
+  font-size: 8.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.review-macro strong {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 720;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.review-macro strong i {
+  margin-left: 1px;
+  color: var(--faint);
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.review-macro small {
+  overflow: hidden;
+  color: var(--faint);
+  font-size: 7.5px;
+  line-height: 1.3;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.data-review-food-cta {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 9px;
+  font-size: 10.5px;
+}
+
+.data-review-insight {
+  margin-top: 14px;
+  padding: 11px 12px;
+  border: 1px solid rgba(92, 219, 140, 0.16);
+  border-radius: 12px;
+  background: rgba(48, 209, 88, 0.055);
+}
+
+.data-review-recent {
+  margin-top: 14px;
+}
+
+/* ---------- weekly schedule editor ---------- */
+
+.plan-schedule-screen {
+  padding-bottom: calc(18px + var(--safe-bottom));
+}
+
+.plan-schedule-intro {
+  padding: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 100% 0, rgba(48, 209, 88, 0.10), transparent 46%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.018)),
+    var(--surface);
+}
+
+.plan-schedule-intro .h1 {
+  margin-top: 3px;
+  font-size: clamp(25px, 7vw, 32px);
+}
+
+.plan-schedule-intro p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.6;
+}
+
+.plan-schedule-card {
+  padding: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015)),
+    var(--surface);
+}
+
+.plan-schedule-card .h2 {
+  margin-top: 2px;
+}
+
+.plan-schedule-focus {
+  margin-top: 4px;
+}
+
+.plan-schedule-current {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  border: 1px solid rgba(92, 219, 140, 0.22);
+  border-radius: 8px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.weekday-picker {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.weekday-choice {
+  appearance: none;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  padding: 7px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.028);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.weekday-choice span {
+  color: var(--muted);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.weekday-choice small {
+  min-height: 9px;
+  color: var(--faint);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.weekday-choice.active {
+  border-color: rgba(92, 219, 140, 0.40);
+  background: var(--accent-dim);
+}
+
+.weekday-choice.active span {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.weekday-choice.occupied {
+  border-color: rgba(250, 184, 77, 0.28);
+  background: rgba(250, 184, 77, 0.055);
+}
+
+.weekday-choice.occupied small {
+  color: var(--warning);
+}
+
+.plan-schedule-note {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--faint);
+  font-size: 9.5px;
+  line-height: 1.5;
+}
+
+.plan-schedule-note strong {
+  color: var(--text);
+  font-size: 10.5px;
+  font-weight: 650;
+}
+
+@media (max-width: 360px) {
+  .review-macro-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .review-macro:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .weekday-choice {
+    padding: 6px;
+  }
+
+  .weekday-choice span {
+    font-size: 10px;
+  }
+}

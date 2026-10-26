@@ -9,7 +9,8 @@ function normalizeState(value) {
     "paywall", "profileEdit", "settings", "workoutCompose", "workout",
     "sessionDetail", "sessionExercisePicker", "trainingData", "history",
     "equipmentLibrary", "equipmentCamera", "foodPhotoCamera",
-    "equipmentRecognition", "equipmentItem", "planExercisePicker", "bodyAnalysis"
+    "equipmentRecognition", "equipmentItem", "planExercisePicker",
+    "planSchedule", "bodyAnalysis"
   ];
   next.routeStack = Array.isArray(next.routeStack)
     ? next.routeStack
@@ -28,6 +29,17 @@ function normalizeState(value) {
   } else {
     next.planAdjustment = null;
   }
+  next.planScheduleDraft = Array.isArray(next.planScheduleDraft)
+    ? next.planScheduleDraft
+      .filter((entry) => entry && Number(entry.slot) >= 0 && Number(entry.weekday) >= 1 && Number(entry.weekday) <= 7)
+      .map((entry) => ({
+        slot: Number(entry.slot),
+        title: String(entry.title || ""),
+        focus: Array.isArray(entry.focus) ? entry.focus : [],
+        weekday: Number(entry.weekday),
+        originalWeekday: Number(entry.originalWeekday) || Number(entry.weekday)
+      }))
+    : null;
   if (next.plan) {
     next.plan.createdAt = Number(next.plan.createdAt) || Date.now();
     if (Array.isArray(next.plan.days)) {
@@ -35,6 +47,14 @@ function normalizeState(value) {
         (day.exercises || []).forEach((exercise) => {
           exercise.reps = String(parseReps(exercise.reps));
         });
+      });
+      [...new Set(next.plan.days.map((day) => day.week))].forEach((week) => {
+        next.plan.days
+          .filter((day) => day.week === week)
+          .sort((left, right) => left.weekday - right.weekday)
+          .forEach((day, slot) => {
+            day.slot = slot;
+          });
       });
     }
   }
@@ -86,7 +106,19 @@ function normalizeState(value) {
   next.foodPhotoConfidence = 0;
   next.foodPhotoModel = "";
   next.foodLogs = Array.isArray(next.foodLogs)
-    ? next.foodLogs.map((log) => ({ ...log, date: log.date || localDateInputValue(new Date()) }))
+    ? next.foodLogs.map((log) => {
+        const known = FOODS.find((food) => food.name === log.name);
+        const fiber = Number(log.fiber);
+        return {
+          ...log,
+          date: log.date || localDateInputValue(new Date()),
+          fiber: Number.isFinite(fiber) && fiber >= 0
+            ? fiber
+            : known
+              ? Math.round((known.fiber || 0) * (Number(log.grams) || 0) / 100 * 10) / 10
+              : 0
+        };
+      })
     : [];
   next.customFoods = Array.isArray(next.customFoods) ? next.customFoods : [];
   next.foodCustomDraft = null;
@@ -182,6 +214,7 @@ function initialState() {
     equipRecognitionPhoto: false,
     equipLibraryFromProfile: false,
     planAdjustment: null,
+    planScheduleDraft: null,
     trainingDataSlug: "goblet_squat",
     workoutDraft: null,
     workoutAdjustOpen: false,
@@ -342,7 +375,8 @@ function nutritionTargets() {
     kcal,
     protein,
     carbs,
-    fat
+    fat,
+    fiber: Math.max(25, Math.round((kcal / 1000) * 14))
   };
 }
 
@@ -352,7 +386,8 @@ function nutritionTotals(dateKey = todayKey()) {
     total.p += item.p;
     total.c += item.c;
     total.f += item.f;
+    total.fiber += Number(item.fiber) || 0;
     return total;
-  }, { kcal: 0, p: 0, c: 0, f: 0 });
+  }, { kcal: 0, p: 0, c: 0, f: 0, fiber: 0 });
 }
 

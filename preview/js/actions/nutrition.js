@@ -47,11 +47,13 @@ Object.assign(window.app, {
     const protein = document.getElementById("food-p");
     const carbs = document.getElementById("food-c");
     const fat = document.getElementById("food-f");
+    const fiber = document.getElementById("food-fiber");
     if (label) label.textContent = `${grams} g`;
     if (food && kcal) kcal.textContent = Math.round(food.kcal * grams / 100);
     if (food && protein) protein.textContent = `${Math.round(food.p * grams / 100)}g`;
     if (food && carbs) carbs.textContent = `${Math.round(food.c * grams / 100)}g`;
     if (food && fat) fat.textContent = `${Math.round(food.f * grams / 100)}g`;
+    if (food && fiber) fiber.textContent = `${Math.round((food.fiber || 0) * grams / 100 * 10) / 10}g`;
     save();
   },
 
@@ -69,7 +71,8 @@ Object.assign(window.app, {
       kcal: Math.round(food.kcal * factor),
       p: Math.round(food.p * factor * 10) / 10,
       c: Math.round(food.c * factor * 10) / 10,
-      f: Math.round(food.f * factor * 10) / 10
+      f: Math.round(food.f * factor * 10) / 10,
+      fiber: Math.round((food.fiber || 0) * factor * 10) / 10
     });
     popRoute();
     save();
@@ -92,7 +95,8 @@ Object.assign(window.app, {
       kcal: "",
       p: "",
       c: "",
-      f: ""
+      f: "",
+      fiber: ""
     };
     pushRoute("foodCustom");
     save();
@@ -129,6 +133,7 @@ Object.assign(window.app, {
       p: (Number(draft.p) || 0) * factor,
       c: (Number(draft.c) || 0) * factor,
       f: (Number(draft.f) || 0) * factor,
+      fiber: (Number(draft.fiber) || 0) * factor,
       serving: portion
     };
     state.customFoods = [food, ...(state.customFoods || []).filter((item) => item.name !== name)];
@@ -222,7 +227,7 @@ Object.assign(window.app, {
     const macroLabel = document.getElementById(`food-photo-macros-${index}`);
     if (gramsLabel) gramsLabel.textContent = `${item.grams} g`;
     if (kcalLabel) kcalLabel.textContent = `${kcal} kcal`;
-    if (macroLabel) macroLabel.textContent = `P ${p}g · C ${c}g · F ${f}g`;
+    if (macroLabel) macroLabel.textContent = `P ${p}g · C ${c}g · F ${f}g · 纤维 ${Math.round((item.fiberPer100g || 0) * item.grams / 100 * 10) / 10}g`;
 
     const totals = foodPhotoTotals();
     const totalLabel = document.getElementById("food-photo-total");
@@ -230,11 +235,13 @@ Object.assign(window.app, {
     const proteinLabel = document.getElementById("food-photo-p");
     const carbLabel = document.getElementById("food-photo-c");
     const fatLabel = document.getElementById("food-photo-f");
+    const fiberLabel = document.getElementById("food-photo-fiber");
     if (totalLabel) totalLabel.textContent = `${Math.round(totals.kcal)} kcal`;
     if (addLabel) addLabel.textContent = Math.round(totals.kcal);
     if (proteinLabel) proteinLabel.textContent = Math.round(totals.p);
     if (carbLabel) carbLabel.textContent = Math.round(totals.c);
     if (fatLabel) fatLabel.textContent = Math.round(totals.f);
+    if (fiberLabel) fiberLabel.textContent = Math.round(totals.fiber);
     save();
   },
 
@@ -253,7 +260,8 @@ Object.assign(window.app, {
         kcal: Math.round(item.kcalPer100g * factor),
         p: Math.round(item.pPer100g * factor * 10) / 10,
         c: Math.round(item.cPer100g * factor * 10) / 10,
-        f: Math.round(item.fPer100g * factor * 10) / 10
+        f: Math.round(item.fPer100g * factor * 10) / 10,
+        fiber: Math.round((item.fiberPer100g || 0) * factor * 10) / 10
       });
     });
     const total = Math.round(foodPhotoTotals(selected).kcal);
