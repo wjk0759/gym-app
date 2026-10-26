@@ -9,6 +9,8 @@ struct PlanHomeView: View {
     ) ?? Date()
     @State private var showRegenerate = false
     @State private var showHistory = false
+    @State private var showSchedule = false
+    @State private var showPeriod = false
     @State private var sessionSheet: SessionSheet?
     @State private var editingDay: PlanDay?
 
@@ -27,10 +29,12 @@ struct PlanHomeView: View {
                     if store.isGenerating {
                         generatingCard
                     } else {
-                        trainingSnapshotCard
+                        if store.profile.sex == .female || store.plan != nil {
+                            planToolBar
+                        }
+                        reviewStrip
                         calendarCard(plan: store.plan)
                         selectedDayCard(plan: store.plan)
-                        trainingDataCard
 
                         if let plan = store.plan {
                             planSummaryCard(plan)
@@ -60,6 +64,18 @@ struct PlanHomeView: View {
                         } label: {
                             Label("计划版本历史", systemImage: "clock.arrow.circlepath")
                         }
+                        Button {
+                            showSchedule = true
+                        } label: {
+                            Label("训练日期", systemImage: "calendar.badge.clock")
+                        }
+                        if store.profile.sex == .female {
+                            Button {
+                                showPeriod = true
+                            } label: {
+                                Label("经期安排", systemImage: "drop")
+                            }
+                        }
                         Button(role: .destructive) {
                             showRegenerate = true
                         } label: {
@@ -76,6 +92,12 @@ struct PlanHomeView: View {
             }
             .sheet(item: $sessionSheet) { item in
                 WorkoutDetailView(session: item.session, isNew: item.isNew)
+            }
+            .sheet(isPresented: $showSchedule) {
+                PlanScheduleView()
+            }
+            .sheet(isPresented: $showPeriod) {
+                PeriodScheduleView()
             }
             .fullScreenCover(item: $editingDay) { day in
                 PlanEditorView(day: day)
@@ -145,6 +167,79 @@ struct PlanHomeView: View {
         }
         .buttonStyle(.plain)
         .card(padding: 12)
+    }
+
+    // MARK: - 计划工具与复盘入口
+
+    private var planToolBar: some View {
+        HStack(spacing: 8) {
+            Button {
+                showSchedule = true
+            } label: {
+                Label("训练日期", systemImage: "calendar.badge.clock")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(Theme.accent.opacity(0.10), in: Capsule())
+            }
+            .buttonStyle(.plain)
+
+            if store.profile.sex == .female {
+                Button {
+                    showPeriod = true
+                } label: {
+                    Label("经期", systemImage: "drop.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.danger)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(Theme.danger.opacity(0.10), in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+
+            Spacer()
+
+            Button("回到今天") {
+                goToToday()
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Theme.secondaryText)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var reviewStrip: some View {
+        let review = PlanReviewEngine.make(store: store, period: .month)
+        return NavigationLink {
+            PlanReviewView()
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "chart.bar.doc.horizontal")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
+                    .frame(width: 32, height: 32)
+                    .background(Theme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("数据复盘 · \(review.period.title)")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Text("\(review.current.sessions.count) 次训练 · \(review.current.loggedFoodDays) 天饮食记录")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+
+                Spacer(minLength: 4)
+                Text("查看报告 ›")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .card(padding: 12)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - 日历
@@ -242,6 +337,7 @@ struct PlanHomeView: View {
         let hasSession = !sessions(on: date).isEmpty
         let hasPlan = planDay(on: date, plan: plan) != nil
         let hasFood = !foodLogs(on: date).isEmpty
+        let hasPeriod = store.isPeriodDate(date)
 
         return Button {
             selectedDate = calendar.startOfDay(for: date)
@@ -271,7 +367,10 @@ struct PlanHomeView: View {
                     if hasFood {
                         Circle().fill(Theme.warning).frame(width: 4, height: 4)
                     }
-                    if !hasSession && !hasPlan && !hasFood {
+                    if hasPeriod {
+                        Circle().fill(Theme.danger).frame(width: 4, height: 4)
+                    }
+                    if !hasSession && !hasPlan && !hasFood && !hasPeriod {
                         Color.clear.frame(width: 4, height: 4)
                     }
                 }
@@ -300,7 +399,8 @@ struct PlanHomeView: View {
                 for: date,
                 hasSession: hasSession,
                 hasPlan: hasPlan,
-                hasFood: hasFood
+                hasFood: hasFood,
+                hasPeriod: hasPeriod
             )
         )
     }
@@ -347,6 +447,20 @@ struct PlanHomeView: View {
                         .foregroundStyle(Theme.accent)
                 }
                 .buttonStyle(.plain)
+            }
+
+            if let period = store.periodDay(for: selectedDate) {
+                HStack(spacing: 7) {
+                    Image(systemName: "drop.fill")
+                        .foregroundStyle(Theme.danger)
+                    Text("经期第 \(period.day) 天 · \(period.mode.title)")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white)
+                    Spacer()
+                }
+                .padding(9)
+                .background(Theme.danger.opacity(0.09), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .padding(.top, 9)
             }
 
             sectionTitle("训练")
@@ -446,7 +560,13 @@ struct PlanHomeView: View {
                 .padding(.top, 7)
             }
 
-            if selectedDate <= calendar.startOfDay(for: Date()) {
+            if store.periodDay(for: selectedDate)?.mode == .rest {
+                Text("经期休息日：训练计划保留，但今天不要求力量训练。散步、拉伸和补铁优先。")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.danger)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 9)
+            } else if selectedDate <= calendar.startOfDay(for: Date()) {
                 Button {
                     beginCalendarTraining(plan: plan)
                 } label: {
@@ -811,17 +931,12 @@ struct PlanHomeView: View {
     }
 
     private func planDay(on date: Date, plan: TrainingPlan?) -> PlanDay? {
-        guard let plan else { return nil }
-        return plan.days.first { day in
-            guard let dayDate = plan.date(week: day.weekIndex, weekday: day.weekday) else {
-                return false
-            }
-            return calendar.isDate(dayDate, inSameDayAs: date)
-        }
+        plan?.day(on: date)
     }
 
     private func beginCalendarTraining(plan: TrainingPlan?) {
         let plannedDay = planDay(on: selectedDate, plan: plan)
+        let isLight = store.periodDay(for: selectedDate)?.mode == .light
         let time = calendar.date(
             bySettingHour: 19,
             minute: 0,
@@ -830,8 +945,12 @@ struct PlanHomeView: View {
         ) ?? selectedDate
         let sets = (plannedDay?.exercises ?? []).flatMap { item in
             let reps = Int(WorkoutPickerOptions.normalizedReps(item.reps)) ?? 10
-            let weight = max(0, item.weightKG ?? 0)
-            return (0..<max(1, item.sets)).map { index in
+            let baseWeight = max(0, item.weightKG ?? 0)
+            let weight = isLight && baseWeight > 0
+                ? ((baseWeight * 0.8) * 2).rounded() / 2
+                : baseWeight
+            let setCount = isLight ? max(2, item.sets - 1) : item.sets
+            return (0..<max(1, setCount)).map { index in
                 SetLog(
                     slug: item.slug,
                     setIndex: index + 1,

@@ -30,6 +30,7 @@ struct SettingsView: View {
     @State private var legalDocument: LegalDocumentKind?
     @State private var showExport = false
     @State private var showPasswordSettings = false
+    @State private var showBodyCheckIn = false
 
     var body: some View {
         AppScrollView {
@@ -41,6 +42,7 @@ struct SettingsView: View {
 
                 sectionLabel("训练设置")
                 reminderCard
+                bodyCheckInCard
                 healthCard
                 preferenceCard
 
@@ -91,6 +93,10 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showPasswordSettings) {
             PasswordSettingsView()
+        }
+        .sheet(isPresented: $showBodyCheckIn) {
+            BodyCheckInSheet(manual: true)
+                .presentationDetents([.medium, .large])
         }
     }
 
@@ -335,6 +341,97 @@ struct SettingsView: View {
             }
             showMessage = true
         }
+    }
+
+    private var bodyCheckInCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("身体数据提醒")
+                        .font(.headline)
+                    Text(store.bodyCheckInFrequencyLabel)
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+                Spacer()
+                Image(systemName: store.bodyCheckInFrequency == .off ? "bell.slash" : "bell.badge")
+                    .foregroundStyle(store.bodyCheckInFrequency == .off ? Theme.tertiaryText : Theme.accent)
+            }
+
+            Text("到日期后打开「今日」会弹出体重 / 体脂 / 腰围记录卡；保存或隐藏后本次消失。")
+                .font(.caption2)
+                .foregroundStyle(Theme.tertiaryText)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 7) {
+                ForEach(BodyCheckInFrequency.allCases) { frequency in
+                    Button {
+                        store.setBodyCheckInFrequency(frequency)
+                    } label: {
+                        Text(frequency.title)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(store.bodyCheckInFrequency == frequency ? Color.black : Theme.secondaryText)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(
+                                Capsule().fill(store.bodyCheckInFrequency == frequency ? Theme.accent : Theme.surfaceStrong)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            if store.bodyCheckInFrequency == .weekly || store.bodyCheckInFrequency == .biweekly {
+                VStack(alignment: .leading, spacing: 7) {
+                    Text("选择星期")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                    HStack(spacing: 5) {
+                        ForEach(1...7, id: \.self) { weekday in
+                            Button {
+                                store.setBodyCheckInWeekday(weekday)
+                            } label: {
+                                Text(Weekday.shortNames[weekday - 1])
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(store.bodyCheckInWeekday == weekday ? Color.black : Theme.secondaryText)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 7)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .fill(store.bodyCheckInWeekday == weekday ? Theme.accent : Theme.surfaceStrong)
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+
+            if store.bodyCheckInFrequency == .monthly {
+                HStack {
+                    Text("每月几号")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                    Spacer()
+                    Picker("每月几号", selection: Binding(
+                        get: { store.bodyCheckInDay },
+                        set: { store.setBodyCheckInDay($0) }
+                    )) {
+                        ForEach(1...28, id: \.self) { day in
+                            Text("\(day) 日").tag(day)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .tint(Theme.accent)
+                }
+            }
+
+            Button("记录今日身体数据") {
+                showBodyCheckIn = true
+            }
+            .buttonStyle(SecondaryButtonStyle())
+        }
+        .card()
     }
 
     private var healthCard: some View {

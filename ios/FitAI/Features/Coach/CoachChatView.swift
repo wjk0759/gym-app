@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import UIKit
 
 struct CoachChatView: View {
     @Environment(AppStore.self) private var store
@@ -7,6 +8,7 @@ struct CoachChatView: View {
     @State private var input = ""
     @State private var selectedSkill: CoachSkill = .trainer
     @State private var showPaywall = false
+    @State private var showCamera = false
     @FocusState private var focused: Bool
 
     private let suggestions = [
@@ -107,6 +109,19 @@ struct CoachChatView: View {
             }
             .sheet(isPresented: $showPaywall) {
                 PaywallView()
+            }
+            .fullScreenCover(isPresented: $showCamera) {
+                PhotoCaptureView(
+                    title: "拍照问教练",
+                    hint: "尽量拍到完整动作或器械，避免脸和隐私部位。照片只用于本次对话。",
+                    onImage: { image in
+                        store.sendCoachPhoto(image)
+                        showCamera = false
+                    },
+                    onCancel: {
+                        showCamera = false
+                    }
+                )
             }
             .toolbar {
                 if !store.chat.isEmpty {
@@ -457,6 +472,16 @@ struct CoachChatView: View {
                         .foregroundStyle(Theme.warning)
                 }
 
+                if let data = message.imageData, let image = UIImage(data: data) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: 240)
+                        .frame(height: 160)
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+
                 Text(message.text)
                     .font(.subheadline)
                     .foregroundStyle(message.role == .user ? Color.black : Color.white)
@@ -508,7 +533,19 @@ struct CoachChatView: View {
     }
 
     private var inputBar: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
+            Button {
+                showCamera = true
+            } label: {
+                Image(systemName: "camera.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+                    .frame(width: 40, height: 42)
+                    .background(Theme.surfaceStrong, in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("拍照问教练")
+
             TextField(inputPlaceholder, text: $input, axis: .vertical)
                 .lineLimit(1...4)
                 .focused($focused)

@@ -23,13 +23,13 @@ enum PlanGenerator {
     ]
 
     private static let defaultWeekdays: [Int: [Int]] = [
-        1: [3],
-        2: [2, 5],
-        3: [1, 3, 5],
-        4: [1, 2, 4, 5],
-        5: [1, 2, 3, 5, 6],
-        6: [1, 2, 3, 4, 5, 6],
-        7: [1, 2, 3, 4, 5, 6, 7]
+        1: [0],
+        2: [0, 3],
+        3: [0, 2, 4],
+        4: [0, 1, 3, 5],
+        5: [0, 1, 2, 4, 5],
+        6: [0, 1, 2, 3, 4, 5],
+        7: [0, 1, 2, 3, 4, 5, 6]
     ]
 
     private static let fullBody: [MuscleGroup] = [.legs, .chest, .back, .shoulders, .core]
@@ -39,45 +39,26 @@ enum PlanGenerator {
     private static let pull: [MuscleGroup] = [.back, .back, .back, .arms, .core]
     private static let legDay: [MuscleGroup] = [.legs, .legs, .glutes, .legs, .core]
 
-    private static let splits: [Int: [(String, [MuscleGroup])]] = [
-        1: [("全身训练", fullBody)],
-        2: [("全身 A", fullBody), ("全身 B", [.legs, .back, .chest, .core])],
-        3: [
-            ("全身 A", [.legs, .chest, .back, .core]),
-            ("全身 B", [.legs, .shoulders, .back, .core]),
-            ("全身 C", [.glutes, .chest, .arms, .core])
-        ],
-        4: [
-            ("上肢 A", upper),
-            ("下肢 A", lower),
-            ("上肢 B", [.back, .chest, .shoulders, .arms, .arms]),
-            ("下肢 B", [.glutes, .legs, .legs, .core, .core])
-        ],
-        5: [
-            ("推 · 胸肩三头", push),
-            ("拉 · 背二头", pull),
-            ("腿 · 下肢", legDay),
-            ("上肢综合", upper),
-            ("下肢综合", lower)
-        ],
-        6: [
-            ("推 A", push),
-            ("拉 A", pull),
-            ("腿 A", legDay),
-            ("推 B", [.shoulders, .chest, .chest, .arms, .arms]),
-            ("拉 B", [.back, .back, .arms, .arms, .core]),
-            ("腿 B", [.glutes, .legs, .legs, .core, .core])
-        ],
-        7: [
-            ("推", push),
-            ("拉", pull),
-            ("腿", legDay),
-            ("上肢", upper),
-            ("下肢", lower),
-            ("全身", fullBody),
-            ("恢复与核心", [.core, .cardio, .core, .glutes])
-        ]
-    ]
+    private static func templatePool(for split: SplitType) -> [(String, [MuscleGroup])] {
+        switch split {
+        case .one:
+            return [
+                ("全身 A", fullBody),
+                ("全身 B", [.legs, .back, .chest, .core]),
+                ("全身 C", [.glutes, .chest, .arms, .core])
+            ]
+        case .three:
+            return [("推", push), ("拉", pull), ("腿", legDay)]
+        case .five:
+            return [
+                ("胸", [.chest, .chest, .arms, .core]),
+                ("背", [.back, .back, .arms, .core]),
+                ("腿", legDay),
+                ("肩", [.shoulders, .shoulders, .core]),
+                ("手臂", [.arms, .arms, .shoulders])
+            ]
+        }
+    }
 
     static func generate(
         profile: UserProfile,
@@ -91,17 +72,20 @@ enum PlanGenerator {
         )
         let weeklyDays = max(1, min(7, profile.weeklyDays))
         let weekdays = defaultWeekdays[weeklyDays] ?? Array(1...weeklyDays)
-        let split = splits[weeklyDays] ?? splits[3]!
+        let templates = templatePool(for: profile.split)
         let count = exerciseCount(minutes: profile.sessionMinutes)
         let params = goalParams[profile.goalType] ?? goalParams[.recomp]!
         let weeks = 4
+        let today = FitnessDate.startOfDay(Date())
 
         var days: [PlanDay] = []
         for week in 1...weeks {
-            for (index, weekday) in weekdays.enumerated() {
-                let (title, focus) = split[index % split.count]
+            for (index, offset) in weekdays.enumerated() {
+                let (title, focus) = templates[index % templates.count]
                 let picks = pickExercises(focus: focus, from: available, count: count)
                 guard !picks.isEmpty else { continue }
+                let firstDate = FitnessDate.addingDays(offset, to: today)
+                let date = FitnessDate.addingDays((week - 1) * 7, to: firstDate)
 
                 let exercises = picks.enumerated().map { offset, exercise -> PlanExercise in
                     var weight = suggestedWeight(exercise, experience: profile.experience)
@@ -121,7 +105,8 @@ enum PlanGenerator {
                 days.append(
                     PlanDay(
                         weekIndex: week,
-                        weekday: weekday,
+                        weekday: FitnessDate.weekdayNumber(date),
+                        date: date,
                         title: title,
                         focus: focus,
                         exercises: exercises
@@ -132,8 +117,10 @@ enum PlanGenerator {
 
         let goalLabel = profile.goalType.label
         return TrainingPlan(
-            title: "4 周\(goalLabel)计划 · 每周 \(weeklyDays) 练",
+            title: "4 周\(goalLabel)计划 · \(profile.split.title) · 每周 \(weeklyDays) 练",
             weeks: weeks,
+            split: profile.split,
+            weeklyDays: weeklyDays,
             days: days
         )
     }
@@ -266,27 +253,24 @@ enum PlanGenerator {
         equipmentSlugs: [String]
     ) -> [Exercise] {
         let banned = injuryTags(profile.injuries)
-        let equipment = profile.availableEquipment
+        let equipment = profile.equipment
         let eligible = ExerciseLibrary.all.filter { exercise in
             let equipmentOK = equipment.contains(exercise.equipment)
             let injuryOK = banned.isDisjoint(with: Set(exercise.contraindications))
-            return equipmentOK && injuryOK
+            return equipmentOK && injuryOK && exercise.muscle != .cardio
         }
 
         var libraryNarrowed = eligible
         if !equipmentSlugs.isEmpty {
             let preferred = Set(equipmentSlugs)
-            let narrowed = eligible.filter {
-                preferred.contains($0.slug) || $0.equipment == .bodyweight
-            }
+            let narrowed = eligible.filter { preferred.contains($0.slug) }
             if narrowed.count >= 8 {
                 libraryNarrowed = narrowed
             }
         }
 
         let preferred = libraryNarrowed.filter { !disliked.contains($0.slug) }
-        let result = preferred.count >= 8 ? preferred : libraryNarrowed
-        return result.isEmpty ? ExerciseLibrary.all : result
+        return preferred.count >= 8 ? preferred : libraryNarrowed
     }
 
     private static func injuryTags(_ text: String) -> Set<String> {

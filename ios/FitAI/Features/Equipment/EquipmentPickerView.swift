@@ -7,6 +7,7 @@ struct EquipmentPickerView: View {
     @Environment(\.dismiss) private var dismiss
 
     private let onSelectExercise: ((Exercise) -> Void)?
+    private let allowedEquipment: Set<Equipment>?
 
     @State private var selectedExercises: [Exercise] = []
     @State private var selectedMuscle: MuscleGroup?
@@ -25,10 +26,12 @@ struct EquipmentPickerView: View {
 
     init() {
         self.onSelectExercise = nil
+        self.allowedEquipment = nil
     }
 
-    init(onSelect: @escaping (Exercise) -> Void) {
+    init(onSelect: @escaping (Exercise) -> Void, allowedEquipment: Set<Equipment>? = nil) {
         self.onSelectExercise = onSelect
+        self.allowedEquipment = allowedEquipment
     }
 
     private var isPickingForSession: Bool {
@@ -54,6 +57,9 @@ struct EquipmentPickerView: View {
 
         return ExerciseLibrary.all
             .filter { exercise in
+                if let allowedEquipment, !allowedEquipment.contains(exercise.equipment) {
+                    return false
+                }
                 // 一旦输入搜索词，就搜索全部动作，不再受当前肌群 / 器械分类限制。
                 if isSearching {
                     return exercise.nameZH.localizedCaseInsensitiveContains(text)

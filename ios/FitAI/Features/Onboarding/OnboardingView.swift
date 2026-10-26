@@ -129,8 +129,15 @@ struct OnboardingView: View {
             return
         }
 
+        guard draft.equipment.contains(where: { equipment in
+            ExerciseLibrary.all.contains { $0.equipment == equipment && $0.muscle != .cardio }
+        }) else {
+            alertMessage = "请至少选择一种可用器械：徒手 / 哑铃 / 杠铃 / 固定器械 / 绳索 / 弹力带 / 壶铃。"
+            showAlert = true
+            return
+        }
+
         draft.nickname = name
-        draft.equipment.insert(.bodyweight)
         store.completeOnboarding(draft)
     }
 }

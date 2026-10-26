@@ -65,7 +65,7 @@ struct ProfileFormView: View {
 
     private var bodyCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            SectionTitle(title: "身体数据", subtitle: "三围选填，用于追踪体型变化")
+            SectionTitle(title: "身体数据", subtitle: "用于追踪体重、体脂与围度变化")
 
             MetricSlider(
                 title: "体重",
@@ -73,6 +73,14 @@ struct ProfileFormView: View {
                 range: 35...160,
                 step: 0.5,
                 unit: "kg"
+            )
+
+            MetricSlider(
+                title: "体脂率",
+                value: $draft.bodyFatPCT,
+                range: 3...60,
+                step: 0.5,
+                unit: "%"
             )
 
             HStack {
@@ -91,6 +99,20 @@ struct ProfileFormView: View {
                 value: $draft.waistCM,
                 range: 50...150,
                 step: 1,
+                unit: "cm"
+            )
+            MetricSlider(
+                title: "臂围",
+                value: $draft.armCM,
+                range: 20...60,
+                step: 0.5,
+                unit: "cm"
+            )
+            MetricSlider(
+                title: "大腿围",
+                value: $draft.thighCM,
+                range: 35...90,
+                step: 0.5,
                 unit: "cm"
             )
             MetricSlider(
@@ -149,13 +171,34 @@ struct ProfileFormView: View {
                 }
             }
 
-            Stepper(value: $draft.sessionMinutes, in: 15...120, step: 15) {
-                HStack {
-                    Text("单次时长")
-                    Spacer()
-                    Text("\(draft.sessionMinutes) 分钟")
-                        .foregroundStyle(Theme.secondaryText)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("训练分化")
+                    .font(.caption)
+                    .foregroundStyle(Theme.secondaryText)
+                Picker("训练分化", selection: $draft.split) {
+                    ForEach(SplitType.allCases) { item in
+                        Text(item.title).tag(item)
+                    }
                 }
+                .pickerStyle(.segmented)
+                Text(draft.split.detail)
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            HStack {
+                Text("单次时长")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.secondaryText)
+                Spacer()
+                Picker("单次时长", selection: $draft.sessionMinutes) {
+                    ForEach(Array(Set([30, 45, 60, 90, 120, draft.sessionMinutes])).sorted(), id: \.self) { minutes in
+                        Text("\(minutes) 分钟").tag(minutes)
+                    }
+                }
+                .pickerStyle(.menu)
+                .tint(Theme.accent)
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -239,6 +282,13 @@ struct ProfileFormView: View {
                     step: 1,
                     unit: "cm"
                 )
+                MetricSlider(
+                    title: "目标体脂率",
+                    value: targetBodyFatBinding,
+                    range: 3...60,
+                    step: 0.5,
+                    unit: "%"
+                )
             }
 
             DatePicker(
@@ -265,15 +315,19 @@ struct ProfileFormView: View {
         )
     }
 
+    private var targetBodyFatBinding: Binding<Double> {
+        Binding(
+            get: { draft.targetBodyFatPCT ?? draft.bodyFatPCT },
+            set: { draft.targetBodyFatPCT = $0 }
+        )
+    }
+
     private func toggle(_ item: Equipment) {
         if draft.equipment.contains(item) {
-            if item != .bodyweight {
-                draft.equipment.remove(item)
-            }
+            draft.equipment.remove(item)
         } else {
             draft.equipment.insert(item)
         }
-        draft.equipment.insert(.bodyweight)
     }
 }
 

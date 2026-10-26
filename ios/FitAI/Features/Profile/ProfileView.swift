@@ -6,6 +6,7 @@ struct ProfileView: View {
 
     @State private var showPaywall = false
     @State private var showBodyAnalysis = false
+    @State private var showBodyCheckIn = false
 
     var body: some View {
         NavigationStack {
@@ -34,6 +35,10 @@ struct ProfileView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     SettingsToolbarButton()
                 }
+            }
+            .sheet(isPresented: $showBodyCheckIn) {
+                BodyCheckInSheet(manual: true)
+                    .presentationDetents([.medium, .large])
             }
         }
     }
@@ -146,12 +151,26 @@ struct ProfileView: View {
                 metric("BMI", String(format: "%.1f", store.profile.bmi) + " · " + store.profile.bmiLabel)
             }
             HStack(spacing: 12) {
+                metric("体脂", String(format: "%.1f%%", store.profile.bodyFatPCT))
                 metric("腰围", String(format: "%.0f cm", store.profile.waistCM))
-                metric("身高", String(format: "%.0f cm", store.profile.heightCM))
+            }
+            HStack(spacing: 12) {
+                metric("臂围", String(format: "%.1f cm", store.profile.armCM))
+                metric("大腿围", String(format: "%.1f cm", store.profile.thighCM))
             }
             HStack(spacing: 12) {
                 metric("累计训练", "\(store.sessions.count) 次")
                 metric("总容量", "\(Int(store.totalVolume)) kg")
+            }
+            Button("记录今日身体数据") {
+                showBodyCheckIn = true
+            }
+            .buttonStyle(SecondaryButtonStyle())
+            if let latest = store.latestBodyMetric {
+                Text("最近记录 \(latest.date.formatted(date: .abbreviated, time: .omitted))")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .card()
@@ -204,6 +223,18 @@ struct ProfileView: View {
                         .foregroundStyle(Theme.secondaryText)
                     Spacer()
                     Text(String(format: "%.0f cm", targetWaist))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                }
+            }
+
+            if let targetBodyFat = store.profile.targetBodyFatPCT {
+                HStack {
+                    Text("目标体脂")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.secondaryText)
+                    Spacer()
+                    Text(String(format: "%.1f%%", targetBodyFat))
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.white)
                 }

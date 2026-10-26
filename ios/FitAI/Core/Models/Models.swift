@@ -148,8 +148,89 @@ struct UserProfile: Codable, Equatable {
     var goalType: GoalType = .buildMuscle
     var targetWeightKG: Double = 75
     var targetWaistCM: Double? = nil
+    var targetBodyFatPCT: Double? = nil
     var targetDate: Date = Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
+    var bodyFatPCT: Double = 21
+    var armCM: Double = 34
+    var thighCM: Double = 56
+    var split: SplitType = .one
+    var goalStartWeight: Double? = nil
+    var goalStartDate: Date? = nil
+    var periodRangeStart: String? = nil
+    var periodRangeEnd: String? = nil
+    var periodDates: [String] = []
+    var periodTrainingMode: PeriodTrainingMode = .light
     var isOnboarded: Bool = false
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        nickname = try container.decodeIfPresent(String.self, forKey: .nickname) ?? ""
+        sex = try container.decodeIfPresent(Sex.self, forKey: .sex) ?? .male
+        age = try container.decodeIfPresent(Int.self, forKey: .age) ?? 30
+        heightCM = try container.decodeIfPresent(Double.self, forKey: .heightCM) ?? 175
+        weightKG = try container.decodeIfPresent(Double.self, forKey: .weightKG) ?? 72
+        bodyFatPCT = try container.decodeIfPresent(Double.self, forKey: .bodyFatPCT) ?? 21
+        waistCM = try container.decodeIfPresent(Double.self, forKey: .waistCM) ?? 80
+        armCM = try container.decodeIfPresent(Double.self, forKey: .armCM) ?? 34
+        thighCM = try container.decodeIfPresent(Double.self, forKey: .thighCM) ?? 56
+        chestCM = try container.decodeIfPresent(Double.self, forKey: .chestCM) ?? 95
+        hipCM = try container.decodeIfPresent(Double.self, forKey: .hipCM) ?? 95
+        experience = try container.decodeIfPresent(Experience.self, forKey: .experience) ?? .beginner
+        equipment = try container.decodeIfPresent(Set<Equipment>.self, forKey: .equipment)
+            ?? [.bodyweight, .dumbbell]
+        injuries = try container.decodeIfPresent(String.self, forKey: .injuries) ?? ""
+        weeklyDays = try container.decodeIfPresent(Int.self, forKey: .weeklyDays) ?? 3
+        sessionMinutes = try container.decodeIfPresent(Int.self, forKey: .sessionMinutes) ?? 45
+        split = try container.decodeIfPresent(SplitType.self, forKey: .split) ?? .one
+        goalType = try container.decodeIfPresent(GoalType.self, forKey: .goalType) ?? .buildMuscle
+        targetWeightKG = try container.decodeIfPresent(Double.self, forKey: .targetWeightKG) ?? 75
+        targetWaistCM = try container.decodeIfPresent(Double.self, forKey: .targetWaistCM)
+        targetBodyFatPCT = try container.decodeIfPresent(Double.self, forKey: .targetBodyFatPCT)
+        targetDate = try container.decodeIfPresent(Date.self, forKey: .targetDate)
+            ?? Calendar.current.date(byAdding: .month, value: 3, to: Date())
+            ?? Date()
+        goalStartWeight = try container.decodeIfPresent(Double.self, forKey: .goalStartWeight)
+        goalStartDate = try container.decodeIfPresent(Date.self, forKey: .goalStartDate)
+        periodRangeStart = try container.decodeIfPresent(String.self, forKey: .periodRangeStart)
+        periodRangeEnd = try container.decodeIfPresent(String.self, forKey: .periodRangeEnd)
+        periodDates = try container.decodeIfPresent([String].self, forKey: .periodDates) ?? []
+        periodTrainingMode = try container.decodeIfPresent(PeriodTrainingMode.self, forKey: .periodTrainingMode) ?? .light
+        isOnboarded = try container.decodeIfPresent(Bool.self, forKey: .isOnboarded) ?? false
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case nickname
+        case sex
+        case age
+        case heightCM
+        case weightKG
+        case bodyFatPCT
+        case waistCM
+        case armCM
+        case thighCM
+        case chestCM
+        case hipCM
+        case experience
+        case equipment
+        case injuries
+        case weeklyDays
+        case sessionMinutes
+        case split
+        case goalType
+        case targetWeightKG
+        case targetWaistCM
+        case targetBodyFatPCT
+        case targetDate
+        case goalStartWeight
+        case goalStartDate
+        case periodRangeStart
+        case periodRangeEnd
+        case periodDates
+        case periodTrainingMode
+        case isOnboarded
+    }
 
     var bmi: Double {
         guard heightCM > 0 else { return 0 }
@@ -167,7 +248,7 @@ struct UserProfile: Codable, Equatable {
     }
 
     var availableEquipment: Set<Equipment> {
-        equipment.union([.bodyweight])
+        equipment
     }
 }
 
@@ -218,6 +299,7 @@ struct PlanDay: Codable, Identifiable, Hashable {
     var id: UUID = UUID()
     var weekIndex: Int = 1
     var weekday: Int
+    var date: Date? = nil
     var title: String
     var focus: [MuscleGroup]
     var exercises: [PlanExercise]
@@ -226,6 +308,7 @@ struct PlanDay: Codable, Identifiable, Hashable {
         case id
         case weekIndex = "week_index"
         case weekday
+        case date
         case title
         case focus
         case exercises
@@ -250,6 +333,8 @@ struct TrainingPlan: Codable, Identifiable, Hashable {
     var updatedAt: Date?
     var version: Int = 1
     var weeks: Int = 4
+    var split: SplitType? = nil
+    var weeklyDays: Int? = nil
     var days: [PlanDay]
 
     enum CodingKeys: String, CodingKey {
@@ -259,6 +344,8 @@ struct TrainingPlan: Codable, Identifiable, Hashable {
         case updatedAt = "updated_at"
         case version
         case weeks
+        case split
+        case weeklyDays
         case days
     }
 
@@ -281,10 +368,25 @@ struct TrainingPlan: Codable, Identifiable, Hashable {
         )
     }
 
+    func scheduledDate(for day: PlanDay) -> Date? {
+        day.date ?? date(week: day.weekIndex, weekday: day.weekday)
+    }
+
+    func day(on date: Date) -> PlanDay? {
+        days.first { day in
+            guard let value = scheduledDate(for: day) else { return false }
+            return Calendar.current.isDate(value, inSameDayAs: date)
+        }
+    }
+
     var firstWeek: [PlanDay] { weekDays(in: 1) }
 
     func weekDays(in week: Int) -> [PlanDay] {
-        days.filter { $0.weekIndex == week }.sorted { $0.weekday < $1.weekday }
+        days.filter { $0.weekIndex == week }.sorted {
+            let left = scheduledDate(for: $0) ?? .distantFuture
+            let right = scheduledDate(for: $1) ?? .distantFuture
+            return left == right ? $0.weekday < $1.weekday : left < right
+        }
     }
 }
 
@@ -417,6 +519,7 @@ struct ChatMessage: Codable, Identifiable, Hashable {
     var text: String
     var date: Date = Date()
     var isSafety: Bool = false
+    var imageData: Data? = nil
 }
 
 // MARK: - 饮食记录

@@ -45,7 +45,7 @@ enum ExerciseLibrary {
     ) -> [Exercise] {
         all.filter { item in
             let muscleMatch = muscle == nil || item.muscle == muscle
-            let equipmentMatch = equipment.contains(item.equipment) || item.equipment == .bodyweight
+            let equipmentMatch = equipment.contains(item.equipment)
             return muscleMatch && equipmentMatch
         }
     }

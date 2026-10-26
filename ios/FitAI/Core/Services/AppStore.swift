@@ -20,6 +20,12 @@ final class AppStore {
     var dislikedSlugs: Set<String> = []
     var equipmentLibrary: [EquipmentItem] = []
     var bodyAnalyses: [BodyAnalysis] = []
+    var bodyMetrics: [BodyMetric] = []
+    var bodyCheckInFrequency: BodyCheckInFrequency = .off
+    var bodyCheckInWeekday = 1
+    var bodyCheckInDay = 1
+    var bodyCheckInAnchor = Date()
+    var bodyCheckInDismissedDate: String? = nil
     var useEquipmentLibraryForPlans = true
     var isGenerating = false
     var isReplying = false
@@ -50,6 +56,7 @@ final class AppStore {
 
     init() {
         load()
+        seedBodyMetricsIfNeeded()
     }
 
     // MARK: - 派生状态
@@ -105,7 +112,14 @@ final class AppStore {
     }
 
     var todayDay: PlanDay? {
-        plan?.weekDays(in: currentPlanWeek).first { $0.weekday == Weekday.today }
+        guard let plan else { return nil }
+        if let scheduled = plan.day(on: Date()) {
+            return scheduled
+        }
+        if plan.days.contains(where: { $0.date != nil }) {
+            return nil
+        }
+        return plan.weekDays(in: currentPlanWeek).first { $0.weekday == Weekday.today }
     }
 
     var currentWeekSessions: [WorkoutSession] {
@@ -167,14 +181,29 @@ final class AppStore {
 
     var equipmentSlugsForPlan: [String] {
         guard useEquipmentLibraryForPlans else { return [] }
-        return equipmentLibrary.compactMap(\.slug)
+        return equipmentLibrary.compactMap(\.slug).filter { slug in
+            guard let exercise = ExerciseLibrary.exercise(slug: slug) else { return false }
+            return profile.equipment.contains(exercise.equipment)
+        }
     }
 
     // MARK: - 建档与计划
 
     func completeOnboarding(_ draft: UserProfile) {
-        profile = draft
-        profile.isOnboarded = true
+        var value = draft
+        value.isOnboarded = true
+        normalizeGoalStart(&value)
+        profile = value
+        appendBodyMetric(
+            BodyMetric(
+                date: Date(),
+                weightKG: value.weightKG,
+                bodyFatPCT: value.bodyFatPCT,
+                waistCM: value.waistCM,
+                armCM: value.armCM,
+                thighCM: value.thighCM
+            )
+        )
         persist()
         generatePlan()
 
@@ -187,16 +216,49 @@ final class AppStore {
     }
 
     func updateProfile(_ updated: UserProfile) {
+        let old = profile
         var value = updated
         value.isOnboarded = true
-        value.equipment.insert(.bodyweight)
+        let goalChanged = old.goalType != value.goalType
+            || old.targetWeightKG != value.targetWeightKG
+            || old.targetWaistCM != value.targetWaistCM
+            || old.targetBodyFatPCT != value.targetBodyFatPCT
+        if goalChanged {
+            value.goalStartWeight = value.weightKG
+            value.goalStartDate = Date()
+        }
+        normalizeGoalStart(&value)
+        let planSettingsChanged = old.goalType != value.goalType
+            || old.split != value.split
+            || old.weeklyDays != value.weeklyDays
+            || old.sessionMinutes != value.sessionMinutes
+            || old.experience != value.experience
+            || old.equipment != value.equipment
         profile = value
+        appendBodyMetric(
+            BodyMetric(
+                date: Date(),
+                weightKG: value.weightKG,
+                bodyFatPCT: value.bodyFatPCT,
+                waistCM: value.waistCM,
+                armCM: value.armCM,
+                thighCM: value.thighCM
+            )
+        )
         persist()
-        rescheduleNotifications()
+        if planSettingsChanged, hasPlanEquipment {
+            generatePlan(force: true)
+        } else {
+            rescheduleNotifications()
+        }
     }
 
     func generatePlan(force: Bool = true) {
         guard profile.isOnboarded else { return }
+        guard hasPlanEquipment else {
+            toast = "请至少选择一种可用器械：徒手 / 哑铃 / 杠铃 / 固定器械 / 绳索"
+            return
+        }
         if plan != nil && !force { return }
 
         isGenerating = true
@@ -252,7 +314,7 @@ final class AppStore {
         }
     }
 
-    private func rescheduleNotifications() {
+    func rescheduleNotifications() {
         guard notificationsEnabled else { return }
         Task { @MainActor in
             _ = await NotificationScheduler.shared.schedule(
@@ -594,6 +656,7 @@ final class AppStore {
         currentUserID = userID
         resetInMemory()
         load()
+        seedBodyMetricsIfNeeded()
     }
 
     private func resetInMemory() {
@@ -610,6 +673,12 @@ final class AppStore {
         healthKitEnabled = false
         equipmentLibrary = []
         bodyAnalyses = []
+        bodyMetrics = []
+        bodyCheckInFrequency = .off
+        bodyCheckInWeekday = 1
+        bodyCheckInDay = 1
+        bodyCheckInAnchor = Date()
+        bodyCheckInDismissedDate = nil
         useEquipmentLibraryForPlans = true
         reminderHour = 19
         reminderMinute = 0
@@ -685,6 +754,12 @@ final class AppStore {
         var equipmentLibrary: [EquipmentItem]?
         var bodyAnalyses: [BodyAnalysis]?
         var useEquipmentLibraryForPlans: Bool?
+        var bodyMetrics: [BodyMetric]?
+        var bodyCheckInFrequency: BodyCheckInFrequency?
+        var bodyCheckInWeekday: Int?
+        var bodyCheckInDay: Int?
+        var bodyCheckInAnchor: Date?
+        var bodyCheckInDismissedDate: String?
     }
 
     private func load() {
@@ -708,6 +783,12 @@ final class AppStore {
         healthKitEnabled = state.healthKitEnabled ?? false
         equipmentLibrary = state.equipmentLibrary ?? []
         bodyAnalyses = state.bodyAnalyses ?? []
+        bodyMetrics = state.bodyMetrics ?? []
+        bodyCheckInFrequency = state.bodyCheckInFrequency ?? .off
+        bodyCheckInWeekday = state.bodyCheckInWeekday ?? 1
+        bodyCheckInDay = state.bodyCheckInDay ?? 1
+        bodyCheckInAnchor = state.bodyCheckInAnchor ?? Date()
+        bodyCheckInDismissedDate = state.bodyCheckInDismissedDate
         useEquipmentLibraryForPlans = state.useEquipmentLibraryForPlans ?? true
     }
 
@@ -728,7 +809,13 @@ final class AppStore {
             healthKitEnabled: healthKitEnabled,
             equipmentLibrary: equipmentLibrary,
             bodyAnalyses: bodyAnalyses,
-            useEquipmentLibraryForPlans: useEquipmentLibraryForPlans
+            useEquipmentLibraryForPlans: useEquipmentLibraryForPlans,
+            bodyMetrics: bodyMetrics,
+            bodyCheckInFrequency: bodyCheckInFrequency,
+            bodyCheckInWeekday: bodyCheckInWeekday,
+            bodyCheckInDay: bodyCheckInDay,
+            bodyCheckInAnchor: bodyCheckInAnchor,
+            bodyCheckInDismissedDate: bodyCheckInDismissedDate
         )
         let url = fileURL
         persistenceQueue.async {
@@ -755,7 +842,9 @@ final class AppStore {
             dislikedSlugs: Array(dislikedSlugs).sorted(),
             healthKitEnabled: healthKitEnabled,
             bodyAnalyses: bodyAnalyses,
-            equipmentLibrary: equipmentLibrary
+            equipmentLibrary: equipmentLibrary,
+            bodyMetrics: bodyMetrics,
+            bodyCheckInFrequency: bodyCheckInFrequency
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -777,5 +866,7 @@ final class AppStore {
         let healthKitEnabled: Bool
         let bodyAnalyses: [BodyAnalysis]
         let equipmentLibrary: [EquipmentItem]
+        let bodyMetrics: [BodyMetric]
+        let bodyCheckInFrequency: BodyCheckInFrequency
     }
 }

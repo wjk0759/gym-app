@@ -11,6 +11,7 @@ enum CustomWorkoutMode: Equatable {
 /// 训练编排页。今日计划、自选训练和计划训练日共用同一套排序、组数、次数和重量编辑。
 struct CustomWorkoutBuilderView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppStore.self) private var store
 
     let initialExercises: [PlanExercise]
     let onStart: (PlanDay) -> Void
@@ -125,9 +126,12 @@ struct CustomWorkoutBuilderView: View {
             }
             .sheet(isPresented: $showActionPicker) {
                 NavigationStack {
-                    EquipmentPickerView { exercise in
-                        addExercise(exercise)
-                    }
+                    EquipmentPickerView(
+                        onSelect: { exercise in
+                            addExercise(exercise)
+                        },
+                        allowedEquipment: store.profile.availableEquipment
+                    )
                 }
             }
         }
@@ -406,6 +410,7 @@ struct CustomWorkoutBuilderView: View {
         onStart(
             PlanDay(
                 weekday: Weekday.today,
+                date: Date(),
                 title: title,
                 focus: focus,
                 exercises: normalized
@@ -423,6 +428,7 @@ struct CustomWorkoutBuilderView: View {
                 id: templateDay?.id ?? UUID(),
                 weekIndex: templateDay?.weekIndex ?? 1,
                 weekday: templateDay?.weekday ?? Weekday.today,
+                date: templateDay?.date,
                 title: templateDay?.title ?? title,
                 focus: focus,
                 exercises: normalized

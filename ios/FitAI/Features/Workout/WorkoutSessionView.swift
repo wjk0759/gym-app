@@ -7,6 +7,12 @@ struct WorkoutSessionView: View {
     @Environment(\.dismiss) private var dismiss
 
     let day: PlanDay
+    let periodMode: PeriodTrainingMode?
+
+    init(day: PlanDay, periodMode: PeriodTrainingMode? = nil) {
+        self.day = day
+        self.periodMode = periodMode
+    }
 
     @State private var index = 0
     @State private var logs: [SetLog] = []
@@ -134,7 +140,14 @@ struct WorkoutSessionView: View {
     }
 
     private func effectiveExercise(_ exercise: PlanExercise) -> PlanExercise {
-        adjustedExercises[exercise.id] ?? exercise
+        var value = adjustedExercises[exercise.id] ?? exercise
+        if periodMode == .light {
+            value.sets = max(2, value.sets - 1)
+            if let weight = value.weightKG, weight > 0 {
+                value.weightKG = ((weight * 0.8) * 2).rounded() / 2
+            }
+        }
+        return value
     }
 
     private func completedSets(for exercise: PlanExercise) -> Int {
@@ -162,6 +175,13 @@ struct WorkoutSessionView: View {
             Text(exercise.targetText)
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(Theme.accent)
+
+            if periodMode == .light {
+                Text("经期轻量版：自动少 1 组、负重约 80%。腹痛明显时请改为散步或休息。")
+                    .font(.caption)
+                    .foregroundStyle(Theme.warning)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             if let instructions = exercise.exercise?.instructions {
                 Text(instructions)

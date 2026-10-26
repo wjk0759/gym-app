@@ -14,7 +14,7 @@ struct ProfileEditView: View {
             VStack(alignment: .leading, spacing: 18) {
                 ProfileFormView(draft: $draft)
 
-                Text("保存资料不会自动覆盖当前训练计划；如需让计划适配新的目标或器械，可回到「计划」页让 AI 复盘调整。")
+                Text("修改目标、训练安排、时长或器械后，保存会自动按新设置重排计划；手动改过的训练日会被覆盖。")
                     .font(.caption2)
                     .foregroundStyle(Theme.tertiaryText)
                     .fixedSize(horizontal: false, vertical: true)
@@ -28,18 +28,12 @@ struct ProfileEditView: View {
         .scrollDismissesKeyboard(.interactively)
         .navigationTitle("编辑资料")
         .navigationBarTitleDisplayMode(.inline)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            VStack(spacing: 0) {
-                Divider().overlay(Theme.stroke)
-                Button(action: save) {
-                    Text("保存资料")
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
-                .padding(.bottom, 8)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("保存", action: save)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
             }
-            .background(.ultraThinMaterial)
         }
         .onAppear {
             draft = store.profile
@@ -65,8 +59,15 @@ struct ProfileEditView: View {
             return
         }
 
+        guard draft.equipment.contains(where: { equipment in
+            ExerciseLibrary.all.contains { $0.equipment == equipment && $0.muscle != .cardio }
+        }) else {
+            alertMessage = "请至少选择一种可用器械：徒手 / 哑铃 / 杠铃 / 固定器械 / 绳索 / 弹力带 / 壶铃。"
+            showAlert = true
+            return
+        }
+
         draft.nickname = name
-        draft.equipment.insert(.bodyweight)
         store.updateProfile(draft)
         dismiss()
     }

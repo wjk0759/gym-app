@@ -159,6 +159,7 @@ struct APIClient {
             "birth_date": birthDateString(age: profile.age),
             "height_cm": profile.heightCM,
             "weight_kg": profile.weightKG,
+            "body_fat_pct": profile.bodyFatPCT,
             "waist_cm": profile.waistCM,
             "chest_cm": profile.chestCM,
             "hip_cm": profile.hipCM,
@@ -181,6 +182,10 @@ struct APIClient {
         if let targetWaist = profile.targetWaistCM {
             payload["target_waist_cm"] = targetWaist
         }
+        if let targetBodyFat = profile.targetBodyFatPCT {
+            payload["target_body_fat_pct"] = targetBodyFat
+        }
+        payload["target_date"] = Self.birthDateFormatter.string(from: profile.targetDate)
         let body = try JSONSerialization.data(withJSONObject: payload)
         try await sendVoid(path: "me/goal", method: "PUT", body: body)
     }
