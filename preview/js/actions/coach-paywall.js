@@ -6,6 +6,13 @@ Object.assign(window.app, {
     render();
   },
 
+  clearCoachChat() {
+    state.chats = [];
+    state.planAdjustment = null;
+    save();
+    render();
+  },
+
   sendChat(text) {
     let message = text;
     if (message === undefined) {
@@ -15,14 +22,18 @@ Object.assign(window.app, {
     message = String(message || "").trim().slice(0, 500);
     if (!message) return;
     state.chats.push({ role: "user", text: message });
+    if (state.planAdjustment?.active) {
+      this.continuePlanAdjustment(message);
+      save();
+      render();
+      scrollCoachChat();
+      return;
+    }
     const reply = coachReply(message, state.coachSkill || "trainer");
     state.chats.push({ role: "assistant", text: reply.text, safety: !!reply.safety });
     save();
     render();
-    setTimeout(() => {
-      const chat = document.getElementById("chat-scroll");
-      if (chat) chat.scrollTop = chat.scrollHeight;
-    }, 20);
+    scrollCoachChat();
   },
 
   openExercise(slug) {

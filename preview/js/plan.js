@@ -183,6 +183,15 @@ function trainingDataPanel() {
       </div>
       <div class="tiny faint" style="margin-top:8px">按实际训练日期统计，容量只计算有记录的组数。</div>
 
+      <button class="training-analytics-entry" onclick="app.openTrainingData()">
+        <span class="training-analytics-entry-icon">${ICONS.chart}</span>
+        <span class="grow">
+          <strong>按动作查看训练数据</strong>
+          <small>容量 · 单组最重 · 1RM 趋势</small>
+        </span>
+        <span class="training-analytics-entry-link">打开 ›</span>
+      </button>
+
       <div class="training-recent-list">
         <div class="calendar-section-label">最近训练</div>
         ${state.sessions.length
@@ -231,8 +240,8 @@ function planScreen() {
           </div>
           <button class="link" onclick="app.regeneratePlan()">重新生成</button>
         </div>
-        <div class="tiny muted" style="margin-top:8px;line-height:1.6">${preview.completed ? `复盘预告：${preview.detail}` : "完成一次训练后，这里会显示具体的复盘调整。"}</div>
-        <button class="btn btn-secondary" style="margin-top:10px" onclick="app.adjustPlan()">✦ 复盘并调整计划</button>
+        <div class="tiny muted" style="margin-top:8px;line-height:1.6">调整计划前，教练会先问清最近训练中的时间、恢复、疼痛或负荷问题，再按你的诉求生成方案。</div>
+        <button class="btn btn-secondary" style="margin-top:10px" onclick="app.startPlanAdjustment('plan')">✦ 和教练聊聊，再调整计划</button>
       </section>
     </div>
   `;

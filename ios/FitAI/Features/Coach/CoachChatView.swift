@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 struct CoachChatView: View {
@@ -32,7 +33,11 @@ struct CoachChatView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                skillPicker
+                if store.planAdjustmentStage > 0 {
+                    adjustmentBanner
+                } else {
+                    skillPicker
+                }
 
                 ScrollViewReader { proxy in
                     AppScrollView {
@@ -75,15 +80,31 @@ struct CoachChatView: View {
                     }
                 }
 
-                if !store.chat.isEmpty {
+                if store.planAdjustmentStage > 0 {
+                    if store.planAdjustmentStage == 3, let proposal = store.planAdjustmentProposal {
+                        proposalCard(proposal)
+                    } else {
+                        adjustmentQuickBar
+                    }
+                } else if !store.chat.isEmpty {
                     suggestionBar
                 }
 
                 inputBar
             }
             .background(AppBackground())
-            .navigationTitle("AI 教练")
+            .navigationTitle(store.planAdjustmentStage > 0 ? "调整计划" : "AI 教练")
             .navigationBarTitleDisplayMode(.inline)
+            .onChange(of: store.planAdjustmentRequested) { _, requested in
+                if requested {
+                    store.beginPlanAdjustment()
+                }
+            }
+            .onAppear {
+                if store.planAdjustmentRequested {
+                    store.beginPlanAdjustment()
+                }
+            }
             .sheet(isPresented: $showPaywall) {
                 PaywallView()
             }
@@ -97,6 +118,143 @@ struct CoachChatView: View {
                 }
             }
         }
+    }
+
+    private var adjustmentBanner: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack {
+                Text("计划调整 · \(String(format: "%02d", store.planAdjustmentStage))")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(Theme.accent)
+                Spacer()
+                Button("结束调整") {
+                    store.cancelPlanAdjustment()
+                }
+                .font(.caption2)
+                .foregroundStyle(Theme.tertiaryText)
+            }
+            Text(
+                store.planAdjustmentStage == 1
+                    ? "说明问题"
+                    : store.planAdjustmentStage == 2
+                        ? "补充细节"
+                        : "确认方案"
+            )
+            .font(.headline)
+            .foregroundStyle(.white)
+            HStack(spacing: 6) {
+                ForEach(["说明问题", "补充细节", "确认方案"], id: \.self) { label in
+                    Text(label)
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(
+                            label == (
+                                store.planAdjustmentStage == 1
+                                    ? "说明问题"
+                                    : store.planAdjustmentStage == 2
+                                        ? "补充细节"
+                                        : "确认方案"
+                            ) ? Theme.accent : Theme.tertiaryText
+                        )
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+        .padding(14)
+        .background(
+            Theme.accent.opacity(0.06),
+            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Theme.accent.opacity(0.18), lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 8)
+        .background(Theme.background)
+    }
+
+    private var adjustmentQuickBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(store.planAdjustmentQuickReplies, id: \.self) { text in
+                    Button {
+                        store.sendPlanAdjustmentMessage(text)
+                    } label: {
+                        Text(text)
+                            .font(.caption)
+                            .foregroundStyle(Theme.accent)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Theme.accent.opacity(0.10), in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+        }
+    }
+
+    private func proposalCard(_ proposal: PlanAdjustmentProposal) -> some View {
+        VStack(alignment: .leading, spacing: 9) {
+            Text("调整方案 · 根据你的反馈")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(Theme.accent)
+            Text(proposal.headline)
+                .font(.headline)
+                .foregroundStyle(.white)
+            Text(proposal.summary)
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+            ForEach(Array(proposal.changes.prefix(4).enumerated()), id: \.offset) { index, change in
+                HStack(alignment: .top, spacing: 8) {
+                    Text(String(format: "%02d", index + 1))
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(Theme.accent)
+                        .frame(width: 22, alignment: .leading)
+                    Text(change)
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            HStack(spacing: 8) {
+                Button("应用调整") {
+                    store.applyPlanAdjustment()
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                Button("再改一点") {
+                    store.revisePlanAdjustment()
+                }
+                .buttonStyle(SecondaryButtonStyle())
+            }
+        }
+        .padding(14)
+        .background(
+            Theme.surface,
+            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.10), lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+
+    private var inputPlaceholder: String {
+        if store.planAdjustmentStage == 1 {
+            return "说说最近训练最困扰你的地方…"
+        }
+        if store.planAdjustmentStage == 2 {
+            return "补充具体情况，越具体越好…"
+        }
+        if store.planAdjustmentStage == 3 {
+            return "需要再改可以继续说…"
+        }
+        return selectedSkill.placeholder
     }
 
     private var skillPicker: some View {
@@ -351,7 +509,7 @@ struct CoachChatView: View {
 
     private var inputBar: some View {
         HStack(spacing: 10) {
-            TextField(selectedSkill.placeholder, text: $input, axis: .vertical)
+            TextField(inputPlaceholder, text: $input, axis: .vertical)
                 .lineLimit(1...4)
                 .focused($focused)
                 .onChange(of: input) { _, value in
@@ -392,7 +550,11 @@ struct CoachChatView: View {
     private func send(_ text: String) {
         let trimmed = String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(500))
         guard !trimmed.isEmpty, !store.isReplying else { return }
-        store.sendChat(trimmed, skill: selectedSkill)
+        if store.planAdjustmentStage > 0 {
+            store.sendPlanAdjustmentMessage(trimmed)
+        } else {
+            store.sendChat(trimmed, skill: selectedSkill)
+        }
         input = ""
         focused = false
     }

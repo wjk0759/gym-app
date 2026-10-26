@@ -793,6 +793,20 @@ input[type="number"]::-webkit-inner-spin-button {
 .chat-scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; }
 .chat-scroll::-webkit-scrollbar { display: none; }
 
+/* ---------- profile header ---------- */
+
+.profile-page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 2px 0;
+}
+
+.profile-page-head .h1 {
+  font-size: clamp(28px, 8vw, 36px);
+}
+
 /* ---------- equipment ---------- */
 
 .photo-area {

@@ -6,8 +6,6 @@ struct HomeView: View {
     @State private var showCompose = false
     @State private var pendingWorkoutDay: PlanDay?
     @State private var workoutDay: PlanDay?
-    @State private var showAdjustConfirm = false
-    @State private var showAdjustResult = false
 
     var body: some View {
         NavigationStack {
@@ -54,24 +52,6 @@ struct HomeView: View {
             }
             .fullScreenCover(item: $workoutDay) { day in
                 WorkoutSessionView(day: day)
-            }
-            .confirmationDialog(
-                "用本周训练复盘并调整？",
-                isPresented: $showAdjustConfirm,
-                titleVisibility: .visible
-            ) {
-                Button("生成调整版") {
-                    store.adjustPlan()
-                    showAdjustResult = true
-                }
-                Button("取消", role: .cancel) {}
-            } message: {
-                Text("\(store.planAdjustmentPreview.detail)\n\n会生成一个新版本，当前计划会被替换，历史版本保留。")
-            }
-            .alert("计划已调整", isPresented: $showAdjustResult) {
-                Button("知道了", role: .cancel) {}
-            } message: {
-                Text(store.toast ?? "")
             }
         }
     }
@@ -357,7 +337,6 @@ struct HomeView: View {
     }
 
     private func aiReviewCard(plan: TrainingPlan) -> some View {
-        let preview = store.planAdjustmentPreview
         let completed = store.currentWeekSessions.count
         let averageRPE = store.currentWeekAverageRPE
 
@@ -386,24 +365,19 @@ struct HomeView: View {
                 reviewMetric("训练容量", "\(Int(store.currentWeekVolume)) kg")
             }
 
-            Text(completed == 0 ? "先记录一次训练，复盘才有数据。" : "这次复盘：\(preview.headline)")
+            Text(completed == 0 ? "先和教练说说最近训练的情况。" : "想调整计划？先和教练说说最近遇到的问题。")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.white)
-            Text(completed == 0 ? "完成率、平均 RPE 与训练容量会一起参与判断。" : preview.detail)
+            Text(completed == 0 ? "教练会先问清时间、恢复、疼痛或瓶颈，再给出可执行方案。" : "教练会先听你描述问题，再生成方案；不会直接改计划。")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
             Button {
-                if store.currentWeekSessions.isEmpty {
-                    store.toast = "最近 7 天还没有训练记录。先完成一次训练，AI 才有数据可复盘。"
-                    showAdjustResult = true
-                } else {
-                    showAdjustConfirm = true
-                }
+                store.requestPlanAdjustment()
             } label: {
                 HStack {
-                    Label("让 AI 复盘并调整", systemImage: "wand.and.stars")
+                    Label("和 AI 教练聊聊，再调整计划", systemImage: "bubble.left.and.bubble.right")
                     Spacer()
                     Image(systemName: "chevron.right")
                 }

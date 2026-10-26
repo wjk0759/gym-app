@@ -142,26 +142,6 @@ Object.assign(window.app, {
   },
 
   adjustPlan() {
-    const preview = planAdjustmentPreview();
-    if (!preview.completed) {
-      return toast("先完成一次训练，复盘才有数据");
-    }
-    state.plan.version += 1;
-    state.plan.days.forEach((day) => {
-      day.exercises.forEach((exercise) => {
-        if (preview.setsDelta) {
-          exercise.sets = Math.max(2, exercise.sets + preview.setsDelta);
-        }
-        if (preview.weightMultiplier !== 1 && exercise.weight > 0) {
-          const adjusted = roundHalf(exercise.weight * preview.weightMultiplier);
-          exercise.weight = preview.weightMultiplier > 1
-            ? Math.max(adjusted, exercise.weight + 0.5)
-            : Math.max(0, Math.min(adjusted, exercise.weight - 0.5));
-        }
-      });
-    });
-    save();
-    render();
-    toast(`复盘完成：${preview.detail} 已生成第 ${state.plan.version} 版`);
+    this.startPlanAdjustment("plan");
   },
 });

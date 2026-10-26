@@ -8,8 +8,6 @@ struct PlanHomeView: View {
         from: Calendar.current.dateComponents([.year, .month], from: Date())
     ) ?? Date()
     @State private var showRegenerate = false
-    @State private var showAdjust = false
-    @State private var showMessage = false
     @State private var showHistory = false
     @State private var sessionSheet: SessionSheet?
     @State private var editingDay: PlanDay?
@@ -93,24 +91,6 @@ struct PlanHomeView: View {
                 Button("取消", role: .cancel) {}
             } message: {
                 Text("当前计划会被归档，历史训练记录保留。")
-            }
-            .confirmationDialog(
-                "根据本周训练调整？",
-                isPresented: $showAdjust,
-                titleVisibility: .visible
-            ) {
-                Button("生成调整版") {
-                    store.adjustPlan()
-                    showMessage = true
-                }
-                Button("取消", role: .cancel) {}
-            } message: {
-                Text("\(store.planAdjustmentPreview.detail)\n\n会生成一个新版本，并替换当前计划；历史版本和训练记录保留。")
-            }
-            .alert("计划已更新", isPresented: $showMessage) {
-                Button("知道了", role: .cancel) {}
-            } message: {
-                Text(store.toast ?? "")
             }
         }
     }
@@ -708,7 +688,6 @@ struct PlanHomeView: View {
     // MARK: - 计划摘要
 
     private func planSummaryCard(_ plan: TrainingPlan) -> some View {
-        let preview = store.planAdjustmentPreview
         let completed = store.currentWeekSessions.count
 
         return VStack(alignment: .leading, spacing: 8) {
@@ -735,22 +714,15 @@ struct PlanHomeView: View {
                 .buttonStyle(.plain)
             }
 
-            Text(completed == 0
-                 ? "完成一次训练后，这里会显示具体的复盘调整。"
-                 : "复盘预告：\(preview.detail)")
+            Text("调整计划前，教练会先听你说最近训练中的时间、恢复、疼痛或负荷问题，再给出方案。")
                 .font(.caption)
-                .foregroundStyle(completed == 0 ? Theme.tertiaryText : Theme.accent)
+                .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
             Button {
-                if store.currentWeekSessions.isEmpty {
-                    store.toast = "还没有训练记录，先完成一次训练再让 AI 调整。"
-                    showMessage = true
-                } else {
-                    showAdjust = true
-                }
+                store.requestPlanAdjustment()
             } label: {
-                Label("复盘并调整计划", systemImage: "wand.and.stars")
+                Label("和 AI 教练聊聊，再调整计划", systemImage: "bubble.left.and.bubble.right")
             }
             .buttonStyle(SecondaryButtonStyle())
         }

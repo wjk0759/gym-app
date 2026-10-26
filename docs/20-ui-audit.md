@@ -37,7 +37,7 @@
 
 ### 相机与媒体
 
-- Web：`js/components/camera.js` 统一饮食和器械拍摄页。
+- Web：`js/components/camera.js` 统一饮食和器械拍摄页；`js/components/exercise-analytics.js` 统一动作训练数据。
 - iOS：`Core/Media/PhotoCaptureView.swift` 统一饮食、器械、体型照片和器械库添加照片。
 - 删除旧 `CameraPicker`，只保留一套相机权限、失败回退和相册入口。
 
@@ -54,14 +54,17 @@
 ```text
 index.html              加载顺序 / 缓存版本
 css/base.css            令牌、外壳、通用组件、页面基础
+css/coach.css           AI 教练对话与调整方案
 css/equipment.css       器械详情 / 相机 / 选择器
 css/adaptive.css        自适应基础
 css/workout.css         编排与训练中调整
-css/plan.css            计划日历
+css/plan.css            计划日历 / 动作训练数据
 js/data.js              静态数据、演示数据、计划生成
 js/state.js             状态、持久化、派生数据
 js/ui.js                通用外壳
-js/components/*.js      共用相机、数字选择器、拖拽滚动
+js/components/*.js      共用相机、数字选择器、拖拽滚动、动作训练数据
+js/coach-adjustment.js  教练主导的计划调整逻辑
+js/training-data.js     计划页动作训练数据页
 js/<page>.js            页面渲染
 js/actions/<feature>.js 页面动作，按功能注册到 window.app
 js/runtime.js           路由 render
@@ -85,6 +88,8 @@ scripts/check-preview.js 模块检查
 - 训练记录：`WorkoutDetailView` 同时负责查看、编辑和从日历新建；新建通过 `isNew` 参数复用同一套字段和动作库。
 - 器械选择：`EquipmentPickerView(onSelect:)` 同时服务训练记录编辑和计划训练日编辑。
 - 相机：饮食、器械、体型、器械库添加照片共用 `PhotoCaptureView`，旧的 `CameraPicker` 已删除。
+- 计划调整：`PlanAdjustmentCoach` 扩展 + `CoachChatView` 阶段 UI；首页 / 计划页先跳教练，不直接改计划。
+- Tab 切换：`MainTabView` 绑定 `AppStore.selectedTab`，调整请求可以从首页 / 计划定向到教练。
 
 ## 验收清单
 
@@ -92,7 +97,9 @@ scripts/check-preview.js 模块检查
 - 训练心得超 300 字被限制；旧超长记录在详情页最多 6 行。
 - 首页不再出现「最近训练」卡片。
 - 计划 Tab 有训练数据、最近训练和日历补录入口。
+- 动作详情不再有 06 训练数据；数据集中到计划页「动作训练数据」。
 - 饮食 / 器械 / 体型照片使用同一套拍摄页。
+- 调整计划先进入 AI 教练对话，方案确认后才修改计划。
 - 计划次数显示单个数字。
 - 首页日期、问候、周次、容量随数据变化。
 - Web 预览由多个 JS / CSS 模块组成，旧 `app.js` / `styles.css` 单文件已删除。

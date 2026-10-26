@@ -4,6 +4,15 @@ function normalizeState(value) {
   const next = value || initialState();
   next.equipmentLibrary = next.equipmentLibrary || demoEquipment();
   next.useEquipLibrary = next.useEquipLibrary !== false;
+  next.trainingDataSlug = EX[next.trainingDataSlug] ? next.trainingDataSlug : "goblet_squat";
+  if (next.planAdjustment && typeof next.planAdjustment === "object") {
+    next.planAdjustment.active = next.planAdjustment.active !== false;
+    next.planAdjustment.step = ["issue", "detail", "proposal", "applied"].includes(next.planAdjustment.step)
+      ? next.planAdjustment.step
+      : "issue";
+  } else {
+    next.planAdjustment = null;
+  }
   if (next.plan) {
     next.plan.createdAt = Number(next.plan.createdAt) || Date.now();
     if (Array.isArray(next.plan.days)) {
@@ -156,6 +165,8 @@ function initialState() {
     equipRecognitionCandidates: [],
     equipRecognitionPhoto: false,
     equipLibraryFromProfile: false,
+    planAdjustment: null,
+    trainingDataSlug: "goblet_squat",
     workoutDraft: null,
     workoutAdjustOpen: false,
     workoutAdjustDraft: null,
@@ -228,7 +239,10 @@ function toast(message) {
 }
 
 function todayDay() {
-  return state.plan.days.find((day) => day.week === 1) || state.plan.days[0];
+  if (!state.plan?.days?.length) return null;
+  const week = currentPlanWeekNumber();
+  const weekday = new Date().getDay() || 7;
+  return state.plan.days.find((day) => day.week === week && day.weekday === weekday) || null;
 }
 
 function planAdjustmentPreview() {

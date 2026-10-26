@@ -164,34 +164,6 @@ Object.assign(window.app, {
     render();
   },
 
-  equipmentDetailPeriod(period) {
-    if (["7", "30", "90", "all", "custom"].includes(period)) {
-      state.equipmentStatsPeriod = period;
-      save();
-      render();
-    }
-  },
-
-  equipmentDetailMetric(metric) {
-    if (["volume", "sets", "maxWeight", "oneRepMax"].includes(metric)) {
-      state.equipmentStatsMetric = metric;
-      save();
-      render();
-    }
-  },
-
-  equipmentDetailCustomStart(value) {
-    state.equipmentStatsCustomStart = value;
-    save();
-    render();
-  },
-
-  equipmentDetailCustomEnd(value) {
-    state.equipmentStatsCustomEnd = value;
-    save();
-    render();
-  },
-
   addDemoEquipment() {
     const pool = ["seated_row", "treadmill", "face_pull", "leg_press", "biceps_curl"];
     const slug = pool.find((item) => !state.equipmentLibrary.some((entry) => entry.slug === item));

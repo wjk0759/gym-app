@@ -19,8 +19,8 @@ powershell -ExecutionPolicy Bypass -File .\serve.ps1
 
 - 建档：身高、体重、三围、器械、目标
 - 首页：今日训练、本周完成、饮食入口、AI 复盘
-- 计划：月历、选中日期训练/饮食、训练数据、最近训练、训练日编辑、补录训练
-- 教练：对话、快捷问题、疼痛 / 孕期安全兜底
+- 计划：月历、选中日期训练/饮食、训练数据、动作训练数据、最近训练、训练日编辑、补录训练
+- 教练：对话、快捷问题、疼痛 / 孕期安全兜底、教练主导的计划调整
 - 器械：动作库、拍照识别、动作详情、器械库、教学视频入口
 - 我的：Pro 订阅页、Apple 健康、体型照片分析、器械库、提醒、训练偏好、数据导出、注销
 - 饮食：按日期查看和记录、热量目标、食物库、拍照识别
@@ -49,6 +49,7 @@ preview/
 ├── index.html                 # 只负责加载顺序和缓存版本
 ├── css/
 │   ├── base.css               # 令牌、外壳、通用组件、页面基础样式
+│   ├── coach.css              # AI 教练对话与计划调整
 │   ├── equipment.css          # 器械详情 / 相机 / 选择器
 │   ├── adaptive.css           # 全局自适应基础
 │   ├── workout.css            # 训练编排、训练中调整
@@ -60,12 +61,15 @@ preview/
     ├── ui.js                  # tabbar、返回头等通用 UI
     ├── components/
     │   ├── camera.js          # 饮食 / 器械共用相机拍摄页
+    │   ├── exercise-analytics.js # 动作容量 / 重量 / 1RM 趋势
     │   ├── number-picker.js   # 滚轮数字选择器与字段按钮
     │   └── drag-scroll.js     # 桌面预览拖拽滚动
     ├── onboarding.js
     ├── auth.js
     ├── home.js
     ├── plan.js
+    ├── training-data.js
+    ├── coach-adjustment.js
     ├── coach.js
     ├── equipment-picker.js
     ├── equipment-recognition.js
@@ -90,6 +94,8 @@ preview/
     └── actions/               # 只做动作注册，按功能拆分
         ├── profile-auth.js
         ├── plan.js
+        ├── training-data.js
+        ├── plan-adjustment.js
         ├── workout-live.js
         ├── session.js
         ├── workout-compose.js

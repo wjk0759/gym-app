@@ -6,11 +6,13 @@ function profileScreen() {
   const p = state.profile;
   return `
     <div class="stack">
-      <div class="row" style="justify-content:flex-end">
+      <div class="profile-page-head">
+        <div>
+          <div class="section-kicker" style="margin-bottom:4px">账户与会员</div>
+          <div class="h1">我的</div>
+        </div>
         ${settingsButton()}
       </div>
-
-      <div class="section-kicker">账户与会员</div>
 
       <div class="card" style="padding:0">
         <div class="list-row" style="padding:16px;cursor:pointer;align-items:center" onclick="app.openProfileEdit()">

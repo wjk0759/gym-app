@@ -8,6 +8,13 @@ final class AppStore {
     var planHistory: [TrainingPlan] = []
     var sessions: [WorkoutSession] = []
     var chat: [ChatMessage] = []
+    var selectedTab = 0
+    var planAdjustmentRequested = false
+    var planAdjustmentStage = 0
+    var planAdjustmentIssue = ""
+    var planAdjustmentDetail = ""
+    var planAdjustmentCategory = ""
+    var planAdjustmentProposal: PlanAdjustmentProposal?
     var foodLogs: [FoodLog] = []
     var customFoods: [FoodItem] = []
     var dislikedSlugs: Set<String> = []
@@ -563,6 +570,9 @@ final class AppStore {
 
     func clearChat() {
         chat.removeAll()
+        planAdjustmentStage = 0
+        planAdjustmentProposal = nil
+        planAdjustmentRequested = false
         isReplying = false
         persist()
     }

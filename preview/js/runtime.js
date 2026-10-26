@@ -85,6 +85,7 @@ function render() {
   else if (state.screen === "workout") html = workoutScreen();
   else if (state.screen === "sessionDetail") html = sessionScreen();
   else if (state.screen === "sessionExercisePicker") html = equipmentPickerScreen();
+  else if (state.screen === "trainingData") html = trainingDataScreen();
   else if (state.screen === "history") html = historyScreen();
   else if (state.screen === "equipmentLibrary") html = equipmentLibraryScreen();
   else if (state.screen === "equipmentCamera") html = equipmentCameraScreen();
@@ -137,6 +138,9 @@ function coachReply(text, skill = "trainer") {
   }
   if (/今天|练什么|计划/.test(text)) {
     const day = todayDay();
+    if (!day) {
+      return { text: "今天没有安排训练，恢复也是计划的一部分。可以散步、拉伸，或者和教练聊聊最近恢复和计划调整。" };
+    }
     return { text: `今天建议练「${day.title}」，共 ${day.exercises.length} 个动作：\n${day.exercises.map((item) => `· ${EX[item.slug].name} ${item.sets} 组 × ${item.reps}`).join("\n")}\n如果状态一般，把最后一组去掉，优先保证动作质量。` };
   }
   if (/替代|没有器械|换动作/.test(text)) {

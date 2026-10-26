@@ -294,6 +294,7 @@ Object.assign(window.app, {
     if (state.screen === "foodCustom") { state.foodCustomDraft = null; state.screen = "foodAdd"; }
     else if (state.screen === "foodAdd") state.screen = "nutrition";
     else if (state.screen === "history") { state.screen = "tabs"; state.tab = "home"; }
+    else if (state.screen === "trainingData") { state.screen = "tabs"; state.tab = "plan"; }
     else if (state.screen === "paywall") { state.screen = "tabs"; state.tab = "profile"; }
     else if (state.screen === "sessionDetail") { state.screen = "tabs"; state.tab = state.sessionOrigin === "plan" ? "plan" : "home"; state.sessionOrigin = "home"; }
     else if (state.screen === "equipmentItem") { state.screen = "equipmentLibrary"; }
