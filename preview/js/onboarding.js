@@ -25,9 +25,12 @@ function onboarding() {
 
       <div class="card">
         <div class="h3" style="margin-bottom:3px">身体数据</div>
-        <div class="tiny muted" style="margin-bottom:14px">三围选填，用于追踪体型变化</div>
+        <div class="tiny muted" style="margin-bottom:14px">围度选填，用于追踪体型变化</div>
         ${rangeRow("weight", "体重", "kg", 40, 150, 0.5)}
+        ${rangeRow("bodyFat", "体脂率", "%", 5, 50, 0.5)}
         ${rangeRow("waist", "腰围", "cm", 50, 150, 1)}
+        ${rangeRow("arm", "臂围", "cm", 20, 60, 0.5)}
+        ${rangeRow("thigh", "大腿围", "cm", 35, 90, 0.5)}
         ${rangeRow("chest", "胸围", "cm", 60, 150, 1)}
         ${rangeRow("hip", "臀围", "cm", 60, 150, 1)}
         <div class="row between" style="margin-top:12px">
@@ -50,12 +53,12 @@ function onboarding() {
         <div class="h3" style="margin-bottom:3px">训练安排</div>
         <div class="tiny muted" style="margin-bottom:12px">之后可以随时调整</div>
         <div class="form-label">每周训练</div>
-        ${segmented("weeklyDays", [1, 2, 3, 4, 5], String(p.weeklyDays), true)}
+        ${segmented("weeklyDays", [1, 2, 3, 4, 5, 6, 7], String(p.weeklyDays), true)}
         <div class="form-label" style="margin-top:14px">训练分化</div>
-        ${segmented("split", ["1分化", "2分化", "3分化", "4分化"], p.split)}
-        <div class="tiny faint" style="margin-top:6px;line-height:1.55">1分化=全身，2分化=上下肢，3分化=推/拉/腿，4分化=胸肩/背/腿/手臂。AI 生成计划会按这个分化编排。</div>
+        ${segmented("split", ["1分化", "3分化", "5分化"], p.split)}
+        <div class="tiny faint" style="margin-top:6px;line-height:1.55">1分化=全身，3分化=推/拉/腿，5分化=胸/背/腿/肩/手臂。AI 生成计划会按这个分化编排。</div>
         <div class="form-label" style="margin-top:14px">单次时长</div>
-        ${segmented("minutes", [30, 45, 60, 90], String(p.minutes), true)}
+        ${segmented("minutes", [30, 45, 60, 90, 120], String(p.minutes), true)}
         <div class="form-label" style="margin-top:14px">训练经验</div>
         ${segmented("experience", ["新手", "有基础", "进阶"], p.experience)}
       </div>
@@ -78,6 +81,7 @@ function onboarding() {
         ${p.goal !== "提升体能" ? `
           ${rangeRow("targetWeight", "目标体重", "kg", 40, 120, 0.5)}
           ${rangeRow("targetWaist", "目标腰围", "cm", 50, 120, 1)}
+          ${rangeRow("targetBodyFat", "目标体脂率", "%", 5, 50, 0.5)}
         ` : ""}
       </div>
 

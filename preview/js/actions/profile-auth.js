@@ -16,12 +16,14 @@ Object.assign(window.app, {
     const number = Number(value);
     state.profileDraft[key] = number;
     const units = {
-      age: "岁", height: "cm", weight: "kg", waist: "cm", chest: "cm", hip: "cm",
-      targetWeight: "kg", targetWaist: "cm"
+      age: "岁", height: "cm", weight: "kg", bodyFat: "%", waist: "cm",
+      arm: "cm", thigh: "cm", chest: "cm", hip: "cm",
+      targetWeight: "kg", targetWaist: "cm", targetBodyFat: "%"
     };
+    const decimalKeys = ["weight", "bodyFat", "arm", "thigh", "targetWeight", "targetBodyFat"];
     const label = document.getElementById(`draft-val-${key}`);
     if (label) {
-      const shown = key === "weight" || key === "targetWeight" ? number.toFixed(1) : String(Math.round(number));
+      const shown = decimalKeys.includes(key) ? number.toFixed(1) : String(Math.round(number));
       label.textContent = `${shown}${units[key] || ""}`;
     }
     const bmi = document.getElementById("draft-bmi");
@@ -92,6 +94,14 @@ Object.assign(window.app, {
     if (!draft.equipment.includes("徒手")) draft.equipment.push("徒手");
     const trainingSettingsChanged = state.profile.split !== draft.split
       || Number(state.profile.weeklyDays) !== Number(draft.weeklyDays);
+    const goalChanged = state.profile.goal !== draft.goal
+      || Number(state.profile.targetWeight) !== Number(draft.targetWeight)
+      || Number(state.profile.targetWaist) !== Number(draft.targetWaist)
+      || Number(state.profile.targetBodyFat) !== Number(draft.targetBodyFat);
+    if (goalChanged) {
+      draft.goalStartWeight = Number(draft.weight) || Number(state.profile.weight) || 0;
+      draft.goalStartDate = todayKey();
+    }
     state.profile = { ...draft };
     const date = todayKey();
     const metric = {
@@ -99,7 +109,9 @@ Object.assign(window.app, {
       date,
       timestamp: Date.now(),
       weight: Number(draft.weight) || Number(state.profile.weight) || 0,
-      bodyFat: Number(draft.bodyFat) || Number(state.profile.bodyFat) || 0
+      bodyFat: Number(draft.bodyFat) || Number(state.profile.bodyFat) || 0,
+      arm: Number(draft.arm) || Number(state.profile.arm) || 0,
+      thigh: Number(draft.thigh) || Number(state.profile.thigh) || 0
     };
     state.bodyMetrics = [metric, ...(state.bodyMetrics || []).filter((entry) => entry.date !== date)]
       .sort((left, right) => right.timestamp - left.timestamp);
@@ -108,6 +120,33 @@ Object.assign(window.app, {
     save();
     render();
     toast(trainingSettingsChanged ? "资料已保存；分化/频率需重新生成计划后生效" : "资料已保存");
+  },
+
+  openGoalEditor() {
+    state.goalEditorOpen = true;
+    state.bodyCheckInOpen = false;
+    render();
+  },
+
+  closeGoalEditor() {
+    state.goalEditorOpen = false;
+    render();
+  },
+
+  saveGoalDate() {
+    const input = document.getElementById("goal-target-date");
+    const value = String(input?.value || "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return toast("请选择目标日期");
+    }
+    if (value < todayKey()) {
+      return toast("目标日期不能早于今天");
+    }
+    state.profile.goalTargetDate = value;
+    state.goalEditorOpen = false;
+    save();
+    render();
+    toast("目标日期已更新");
   },
 
   range(key, value, unit) {
@@ -144,6 +183,7 @@ Object.assign(window.app, {
     }
     setTimeout(() => {
       state.profile.name = String(state.profile.name || "小林").trim() || "小林";
+      applyGoalProfileDefaults(state.profile, state.bodyMetrics);
       state.plan = applyEquipmentLibrary(buildPlan(state.profile));
       state.onboarded = true;
       resetToTab("home");
@@ -155,7 +195,7 @@ Object.assign(window.app, {
 
   skipOnboarding() {
     state.authenticated = true;
-    state.profile = { ...DEFAULT_PROFILE };
+    state.profile = applyGoalProfileDefaults({ ...DEFAULT_PROFILE }, state.bodyMetrics);
     state.plan = applyEquipmentLibrary(buildPlan(state.profile));
     state.onboarded = true;
     resetToTab("home");
@@ -224,7 +264,7 @@ Object.assign(window.app, {
     state.authenticated = true;
     state.authError = "";
     if (!state.onboarded) {
-      state.profile = { ...DEFAULT_PROFILE };
+      state.profile = applyGoalProfileDefaults({ ...DEFAULT_PROFILE }, state.bodyMetrics);
       state.plan = applyEquipmentLibrary(buildPlan(state.profile));
       state.onboarded = true;
     }
@@ -242,7 +282,7 @@ Object.assign(window.app, {
     }
     state.authenticated = true;
     if (!state.onboarded) {
-      state.profile = { ...DEFAULT_PROFILE };
+      state.profile = applyGoalProfileDefaults({ ...DEFAULT_PROFILE }, state.bodyMetrics);
       state.plan = applyEquipmentLibrary(buildPlan(state.profile));
       state.onboarded = true;
     }

@@ -59,6 +59,13 @@
 }
 
 .plan-head-action.accent span { color: var(--accent); }
+
+.plan-head-action.period {
+  border-color: rgba(255, 107, 157, 0.30);
+  background: rgba(255, 107, 157, 0.10);
+  color: #ff9fbd;
+}
+
 .plan-head-action:active { transform: scale(0.96); }
 
 .plan-data-strip {
@@ -1634,5 +1641,128 @@
 @media (max-height: 700px) {
   .review-screen {
     overflow-y: auto;
+  }
+}
+
+/* ---------- menstrual cycle planning ---------- */
+
+.calendar-dot.period {
+  background: #ff6b9d;
+}
+
+.period-screen {
+  padding-bottom: calc(18px + var(--safe-bottom));
+}
+
+.period-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 13px;
+  border: 1px solid rgba(255, 107, 157, 0.18);
+  border-radius: 14px;
+  background:
+    linear-gradient(90deg, rgba(255, 107, 157, 0.075), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.018);
+}
+
+.period-summary > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.period-summary strong {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 680;
+}
+
+.period-summary span {
+  color: var(--faint);
+  font-size: 8.5px;
+}
+
+.period-summary .period-count {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 107, 157, 0.24);
+  border-radius: 8px;
+  background: rgba(255, 107, 157, 0.10);
+  color: #ff9fbd;
+  font-size: 9px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.period-calendar .calendar-day.period-selected {
+  border-color: rgba(255, 107, 157, 0.72);
+  background: linear-gradient(145deg, #ff7da8, #d94778);
+  color: #220711;
+  box-shadow: 0 5px 14px rgba(255, 107, 157, 0.16);
+}
+
+.period-calendar .calendar-day.period-selected .calendar-day-number {
+  color: #220711;
+}
+
+.period-calendar .calendar-day.today:not(.period-selected) {
+  border-color: rgba(255, 107, 157, 0.42);
+}
+
+.period-tip {
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 107, 157, 0.16);
+  border-radius: 12px;
+  background: rgba(255, 107, 157, 0.055);
+  color: rgba(255, 220, 232, 0.80);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.period-calendar-note,
+.period-training-note,
+.period-compose-note {
+  border: 1px solid rgba(255, 107, 157, 0.20);
+  border-radius: 11px;
+  background: rgba(255, 107, 157, 0.065);
+  color: #ffb7ce;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.period-calendar-note {
+  margin-bottom: 8px;
+  padding: 8px 9px;
+}
+
+.period-calendar-note strong {
+  color: #ff9fbd;
+  font-weight: 700;
+}
+
+.period-training-note {
+  margin-top: 10px;
+  padding: 8px 9px;
+}
+
+.period-compose-note {
+  margin-top: 10px;
+  padding: 8px 9px;
+}
+
+@media (max-width: 360px) {
+  .period-summary {
+    padding: 10px;
+  }
+
+  .period-summary strong {
+    font-size: 11px;
+  }
+
+  .period-summary span {
+    font-size: 8px;
   }
 }

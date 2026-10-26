@@ -3,19 +3,25 @@ Object.assign(window.app, {
   startWorkout() {
     const day = todayDay();
     if (!day || !Array.isArray(day.exercises) || !day.exercises.length) return;
+    const period = periodForDate(todayKey());
     state.workoutDraft = {
       source: "plan",
-      title: day.title || "今日训练",
+      title: period ? `${day.title || "今日训练"} · 经期轻量` : day.title || "今日训练",
+      periodAdjusted: !!period,
       createdAt: Date.now(),
-      exercises: day.exercises.map((exercise, index) => ({
-        ...exercise,
-        id: exercise.id || `plan-ex-${Date.now()}-${index}`,
-        sets: Number(exercise.sets) || 3,
-        reps: String(parseReps(exercise.reps)),
-        weight: Math.max(0, Number(exercise.weight) || 0),
-        rest: Math.max(0, Number(exercise.rest) || 0),
-        rpe: Number(exercise.rpe) || 7.5
-      }))
+      exercises: day.exercises.map((exercise, index) => {
+        const baseSets = Number(exercise.sets) || 3;
+        const baseWeight = Math.max(0, Number(exercise.weight) || 0);
+        return {
+          ...exercise,
+          id: exercise.id || `plan-ex-${Date.now()}-${index}`,
+          sets: period ? Math.max(2, baseSets - 1) : baseSets,
+          reps: String(parseReps(exercise.reps)),
+          weight: period && baseWeight > 0 ? roundHalf(baseWeight * 0.8) : baseWeight,
+          rest: Math.max(0, Number(exercise.rest) || 0),
+          rpe: period ? Math.min(6.5, Number(exercise.rpe) || 7.5) : Number(exercise.rpe) || 7.5
+        };
+      })
     };
     state.workoutCustomDay = null;
     state.workoutAdjustOpen = false;

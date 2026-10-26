@@ -731,6 +731,323 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .nutrition-icon svg { width: 20px; height: 20px; }
 
+.home-nutrition-plan {
+  border-color: rgba(92, 219, 140, 0.13);
+  background:
+    radial-gradient(circle at 100% 0, rgba(48, 209, 88, 0.075), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.025)),
+    rgba(30, 32, 38, 0.36);
+}
+
+.home-nutrition-head {
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.home-nutrition-balance {
+  flex: 0 0 auto;
+  min-width: 70px;
+  text-align: right;
+}
+
+.home-nutrition-balance strong {
+  display: block;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 760;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.home-nutrition-balance span {
+  display: block;
+  margin-top: 4px;
+  color: var(--faint);
+  font-size: 8.5px;
+  white-space: nowrap;
+}
+
+.home-calorie-bar {
+  height: 7px;
+  margin-top: 12px;
+}
+
+.home-calorie-meta {
+  margin-top: 6px;
+}
+
+.home-macro-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 11px;
+}
+
+.home-macro {
+  min-width: 0;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--surface-strong);
+}
+
+.home-macro span {
+  display: block;
+  color: var(--faint);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.home-macro strong {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-macro strong i {
+  color: var(--faint);
+  font-size: 7.5px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.home-meal-note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  margin-top: 9px;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.home-meal-note > span {
+  color: var(--accent);
+  font-size: 8.5px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.home-meal-note strong {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-meal-note small {
+  color: var(--faint);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.home-nutrition-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.home-nutrition-actions .btn {
+  min-height: 42px;
+  padding: 10px;
+  font-size: 11px;
+}
+
+.home-goal-card {
+  border-color: rgba(92, 219, 140, 0.15);
+  background:
+    radial-gradient(circle at 100% 0, rgba(48, 209, 88, 0.085), transparent 44%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.025)),
+    rgba(30, 32, 38, 0.36);
+}
+
+.home-goal-head {
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.home-goal-distance {
+  margin-top: 8px;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 720;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.home-goal-date {
+  appearance: none;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 0 7px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--faint);
+  font: inherit;
+  font-size: 8.5px;
+  white-space: nowrap;
+}
+
+.home-goal-date span {
+  color: var(--accent);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.home-goal-percent {
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+.home-goal-percent strong {
+  display: block;
+  color: var(--accent);
+  font-size: 26px;
+  font-weight: 780;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.home-goal-percent span {
+  display: block;
+  margin-top: 3px;
+  color: var(--faint);
+  font-size: 8.5px;
+}
+
+.home-goal-bar {
+  height: 7px;
+  margin-top: 9px;
+}
+
+.home-goal-scale {
+  gap: 6px;
+  margin-top: 5px;
+  color: var(--faint);
+  font-size: 8px;
+  line-height: 1.25;
+}
+
+.home-goal-scale span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-goal-scale span:last-child {
+  color: var(--muted);
+}
+
+.home-goal-waist {
+  margin-top: 5px;
+  color: var(--faint);
+  font-size: 8px;
+}
+
+.home-goal-foot {
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.home-goal-checkin {
+  min-width: 0;
+  color: var(--faint);
+  font-size: 8.5px;
+  line-height: 1.35;
+}
+
+.home-goal-checkin.done {
+  color: var(--accent);
+}
+
+.home-goal-checkin-btn {
+  width: auto;
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 7px 10px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.home-rest-tips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.home-rest-tips span {
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--faint);
+  font-size: 8.5px;
+}
+
+@media (max-width: 360px) {
+  .home-macro-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-nutrition-balance strong {
+    font-size: 22px;
+  }
+
+  .home-meal-note {
+    grid-template-columns: 1fr auto;
+  }
+
+  .home-meal-note > span {
+    grid-column: 1;
+  }
+
+  .home-meal-note strong {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .home-meal-note small {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .home-goal-distance {
+    font-size: 18px;
+  }
+
+  .home-goal-percent strong {
+    font-size: 23px;
+  }
+
+  .home-goal-foot {
+    flex-wrap: wrap;
+  }
+
+  .home-goal-checkin-btn {
+    width: 100%;
+  }
+}
+
 .recent-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; cursor: pointer; }
 .recent-row + .recent-row { border-top: 1px solid rgba(255,255,255,.05); }
 

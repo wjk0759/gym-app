@@ -100,6 +100,7 @@ function workoutComposeScreen() {
   const totals = workoutComposeTotals(draft);
   const isPlan = draft.source === "plan";
   const isPlanEdit = draft.source === "planEdit";
+  const periodAdjusted = !!draft.periodAdjusted;
   const kicker = isPlan ? "今日训练" : isPlanEdit ? "训练日" : "自选训练";
   const heading = isPlan || isPlanEdit ? esc(draft.title || "训练日") : "先排顺序，再开始";
   const copy = isPlanEdit
@@ -121,6 +122,7 @@ function workoutComposeScreen() {
         <div class="compose-kicker">${kicker}</div>
         <div class="h2">${heading}</div>
         <p class="small muted compose-copy">${copy}</p>
+        ${periodAdjusted ? `<div class="period-compose-note">经期轻量版：已自动少 1 组、负重约 80%；如果腹痛明显，可以改为散步或休息。</div>` : ""}
         <div class="compose-stats">
           <span><strong>${totals.exercises}</strong> 个动作</span>
           <span><strong id="compose-total-sets">${totals.sets}</strong> 组</span>

@@ -47,21 +47,23 @@ function bodyCheckInFrequencyLabel() {
   return "已关闭";
 }
 
-function bodyCheckInSheet() {
+function bodyCheckInSheet(manual = false) {
   const latest = bodyCheckInLatestMetric();
   const weight = latest?.weight || state.profile.weight || "";
   const bodyFat = latest?.bodyFat || state.profile.bodyFat || "";
+  const arm = latest?.arm || state.profile.arm || "";
+  const thigh = latest?.thigh || state.profile.thigh || "";
   return `
     <div class="body-checkin-backdrop" onclick="app.hideBodyCheckIn()">
       <section class="body-checkin-sheet no-drag" role="dialog" aria-modal="true" aria-label="更新身体数据" onclick="event.stopPropagation()">
         <div class="between">
           <div>
-            <div class="compose-kicker">身体数据 · ${bodyCheckInFrequencyLabel()}</div>
+            <div class="compose-kicker">${manual ? "今日打卡" : `身体数据 · ${bodyCheckInFrequencyLabel()}`}</div>
             <div class="h2">更新一下身体数据</div>
           </div>
           <button class="icon-btn" onclick="app.hideBodyCheckIn()" aria-label="隐藏本次提醒">×</button>
         </div>
-        <p class="body-checkin-copy">建议早上空腹、同一时间测量。数据用于体重和体脂趋势，不会自动改变训练计划。</p>
+        <p class="body-checkin-copy">建议早上空腹、同一时间测量。数据用于体重、体脂和围度趋势，不会自动改变训练计划。</p>
         <div class="body-checkin-fields">
           <label>
             <span>体重</span>
@@ -70,6 +72,14 @@ function bodyCheckInSheet() {
           <label>
             <span>体脂率</span>
             <div><input id="body-checkin-fat" type="number" min="3" max="60" step="0.1" inputmode="decimal" value="${bodyFat}"><i>%</i></div>
+          </label>
+          <label>
+            <span>臂围</span>
+            <div><input id="body-checkin-arm" type="number" min="20" max="60" step="0.1" inputmode="decimal" value="${arm}"><i>cm</i></div>
+          </label>
+          <label>
+            <span>大腿围</span>
+            <div><input id="body-checkin-thigh" type="number" min="35" max="90" step="0.1" inputmode="decimal" value="${thigh}"><i>cm</i></div>
           </label>
         </div>
         ${latest?.date ? `<div class="tiny faint" style="margin-top:9px">上次记录：${dateLabel(latest.date)}</div>` : ""}

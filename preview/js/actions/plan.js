@@ -148,6 +148,47 @@ Object.assign(window.app, {
     toast("已重新生成计划");
   },
 
+  openPeriodSchedule() {
+    if (state.profile.sex !== "女") return toast("经期安排仅适用于女性用户");
+    state.periodDraft = (state.periodDates || []).slice();
+    state.periodMonth = monthKey(new Date());
+    pushRoute("periodSchedule");
+    save();
+    render();
+  },
+
+  periodMonthMove(delta) {
+    const current = parseDateKey(`${state.periodMonth || monthKey(new Date())}-01`);
+    const next = new Date(current.getFullYear(), current.getMonth() + Number(delta || 0), 1);
+    state.periodMonth = monthKey(next);
+    save();
+    render();
+  },
+
+  togglePeriodDate(dateKey) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey || "") || !Array.isArray(state.periodDraft)) return;
+    state.periodDraft = state.periodDraft.includes(dateKey)
+      ? state.periodDraft.filter((key) => key !== dateKey)
+      : [...state.periodDraft, dateKey].sort();
+    save();
+    render();
+  },
+
+  savePeriodSchedule() {
+    if (!Array.isArray(state.periodDraft)) return;
+    state.periodDates = [...new Set(state.periodDraft.filter((key) => /^\d{4}-\d{2}-\d{2}$/.test(key)))].sort();
+    state.periodDraft = null;
+    popRoute();
+    save();
+    render();
+    toast("经期安排已更新，训练会自动轻量化");
+  },
+
+  closePeriodSchedule() {
+    state.periodDraft = null;
+    app.back();
+  },
+
   adjustPlan() {
     this.startPlanAdjustment("plan");
   },

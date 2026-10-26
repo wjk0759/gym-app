@@ -105,6 +105,34 @@
   font-size: 9px;
 }
 
+.goal-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+  color: var(--faint);
+  font-size: 9px;
+}
+
+.goal-date-field input {
+  width: 100%;
+  height: 48px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text);
+  color-scheme: dark;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.goal-date-field input:focus {
+  outline: none;
+  border-color: rgba(92, 219, 140, 0.45);
+}
+
 @keyframes body-checkin-fade {
   from { opacity: 0; }
   to { opacity: 1; }

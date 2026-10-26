@@ -132,6 +132,8 @@
     "body_fat_pct": 19.5,
     "chest_cm": 96,
     "waist_cm": 82,
+    "arm_cm": 34,
+    "thigh_cm": 56,
     "hip_cm": 95,
     "experience": "beginner",
     "injuries": [],
@@ -143,6 +145,7 @@
     "type": "build_muscle",
     "target_weight_kg": 76,
     "target_waist_cm": 80,
+    "target_body_fat_pct": 18,
     "target_date": "2027-02-01",
     "status": "active"
   }
@@ -157,7 +160,7 @@
 
 - `age` 由 `birth_date` 计算，14–70
 - BMI < 18.5 且目标为 `lose_fat` → 400 `UNSAFE_GOAL`
-- `weekly_days` 3–5（P0 只支持 3/4/5）
+- `weekly_days` 1–7；`session_minutes` 最高 120；训练分化为 1 / 3 / 5
 
 #### `PUT /me/goal`
 
@@ -165,6 +168,7 @@
 {
   "type": "lose_fat",
   "target_weight_kg": 66,
+  "target_body_fat_pct": 18,
   "target_date": "2027-01-01"
 }
 ```

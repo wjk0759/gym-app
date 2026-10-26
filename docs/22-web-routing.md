@@ -61,6 +61,7 @@ tab/equipment (1)
 | `planExercisePicker` | 计划训练日添加动作 | `workoutCompose` | `workoutCompose` |
 | `planSchedule` | 选择未来 4 周训练日期 | `tabs/plan` | `tabs/plan` |
 | `planReview` | 周 / 月 / 年数据复盘报告 | `tabs/plan` | `tabs/plan` |
+| `periodSchedule` | 女性经期日期选择 | `tabs/plan` | `tabs/plan` |
 
 ## 5. 典型面包屑
 
@@ -79,6 +80,13 @@ tab/plan
 ```
 
 > 计划页的「查看报告」进入独立 `planReview`；报告支持本周 / 本月 / 今年切换。动作训练数据只从动作详情进入。
+
+### 计划 → 经期安排（女性）
+
+```text
+tab/plan
+  → periodSchedule
+```
 
 ### 计划 → 训练记录 → 添加动作
 
@@ -237,6 +245,7 @@ tab/coach | tab/profile
 | `workoutCompose` | 按草稿来源回首页 / 计划 / 器械 |
 | `planSchedule` | `tab/plan` |
 | `planReview` | `tab/plan` |
+| `periodSchedule` | `tab/plan` |
 | `workout` | `tab/home` |
 
 ## 9. 验收

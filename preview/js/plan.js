@@ -31,14 +31,16 @@ function calendarOverview(month) {
           const sessions = sessionsForDateKey(key);
           const planDay = planDayForDateKey(key);
           const foodLogs = foodLogsForDateKey(key);
+          const period = periodForDate(key);
           const selected = state.calendarDateKey === key;
           const isToday = key === todayKey();
           return `
-            <button class="calendar-day ${inMonth ? "" : "outside"} ${selected ? "selected" : ""} ${isToday ? "today" : ""}" onclick="app.openCalendarDate('${key}')" aria-label="${dateLabel(key)}${sessions.length ? `，${sessions.length} 次训练` : ""}${planDay ? "，有训练计划" : ""}${foodLogs.length ? "，有饮食记录" : ""}">
+            <button class="calendar-day ${inMonth ? "" : "outside"} ${selected ? "selected" : ""} ${isToday ? "today" : ""}" onclick="app.openCalendarDate('${key}')" aria-label="${dateLabel(key)}${sessions.length ? `，${sessions.length} 次训练` : ""}${planDay ? "，有训练计划" : ""}${period ? "，经期" : ""}${foodLogs.length ? "，有饮食记录" : ""}">
               <span class="calendar-day-number">${date.getDate()}</span>
               <span class="calendar-day-dots" aria-hidden="true">
                 ${sessions.length ? `<i class="calendar-dot workout"></i>` : ""}
                 ${planDay ? `<i class="calendar-dot plan"></i>` : ""}
+                ${period ? `<i class="calendar-dot period"></i>` : ""}
                 ${foodLogs.length ? `<i class="calendar-dot food"></i>` : ""}
               </span>
             </button>
@@ -49,6 +51,7 @@ function calendarOverview(month) {
       <div class="calendar-legend">
         <span><i class="calendar-dot workout"></i>完成训练</span>
         <span><i class="calendar-dot plan"></i>训练计划</span>
+        ${state.profile.sex === "女" ? `<span><i class="calendar-dot period"></i>经期</span>` : ""}
         <span><i class="calendar-dot food"></i>饮食记录</span>
       </div>
     </section>
@@ -60,6 +63,7 @@ function calendarDayPanel(key) {
   const sessions = sessionsForDateKey(key);
   const logs = foodLogsForDateKey(key);
   const foodTotals = nutritionTotals(key);
+  const period = periodForDate(key);
 
   return `
     <section class="calendar-day-panel">
@@ -73,6 +77,7 @@ function calendarDayPanel(key) {
 
       <div class="calendar-day-section">
         <div class="calendar-section-label">训练</div>
+        ${period ? `<div class="period-calendar-note"><strong>经期第 ${period.day} 天</strong> · AI 建议轻量训练或恢复，避免硬撑强度。</div>` : ""}
         ${sessions.length ? sessions.map((session) => `
           <button class="calendar-session-row" onclick="app.openSession('${session.id}', 'plan')">
             <span class="calendar-session-check">✓</span>
@@ -142,6 +147,7 @@ function planScreen() {
           <div class="h1">日历</div>
         </div>
         <div class="plan-calendar-head-actions">
+          ${state.profile.sex === "女" ? `<button class="plan-head-action period" onclick="app.openPeriodSchedule()">经期</button>` : ""}
           <button class="plan-head-action accent" onclick="app.openPlanSchedule()">训练日期 <span aria-hidden="true">›</span></button>
           <button class="plan-head-action" onclick="app.goTodayInCalendar()">回到今天</button>
         </div>

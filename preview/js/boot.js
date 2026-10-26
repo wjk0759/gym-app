@@ -3,7 +3,7 @@
 const previewParams = new URLSearchParams(location.search);
 if (previewParams.has("tab") || previewParams.has("screen") || previewParams.get("demo") === "1") {
   if (!state.onboarded) {
-    state.profile = { ...DEFAULT_PROFILE };
+    state.profile = applyGoalProfileDefaults({ ...DEFAULT_PROFILE }, state.bodyMetrics);
     state.plan = applyEquipmentLibrary(buildPlan(state.profile));
     state.onboarded = true;
   }

@@ -96,6 +96,7 @@ function render() {
   else if (state.screen === "trainingData") html = trainingDataScreen();
   else if (state.screen === "planSchedule") html = planScheduleScreen();
   else if (state.screen === "planReview") html = planReviewScreen();
+  else if (state.screen === "periodSchedule") html = periodScreen();
   else if (state.screen === "history") html = historyScreen();
   else if (state.screen === "equipmentLibrary") html = equipmentLibraryScreen();
   else if (state.screen === "equipmentCamera") html = equipmentCameraScreen();
@@ -114,6 +115,7 @@ function render() {
     + (state.screen === "workout" ? " workout-mode" : "")
     + (state.screen === "workoutCompose" ? " compose-mode" : "")
     + (state.screen === "planReview" ? " review-mode" : "")
+    + (state.screen === "periodSchedule" ? " period-mode" : "")
     + (state.screen === "tabs" && state.tab === "coach" ? " chat-mode" : "")
     + (state.equipSelectionOpen && state.screen === "tabs" && state.tab === "equipment" ? " selection-open" : "")
     + (state.screen === "equipmentCamera" || state.screen === "foodPhotoCamera" ? " camera-mode" : "")
@@ -136,13 +138,23 @@ function render() {
     }, 20);
   }
 
+  const shouldShowGoalEditor = state.authenticated
+    && state.onboarded
+    && state.screen === "tabs"
+    && state.tab === "home"
+    && !state.legalDoc
+    && state.goalEditorOpen;
   const shouldShowBodyCheckIn = state.authenticated
     && state.onboarded
     && state.screen === "tabs"
     && state.tab === "home"
     && !state.legalDoc
-    && bodyCheckInDue();
-  renderModalLayer(shouldShowBodyCheckIn ? bodyCheckInSheet() : "");
+    && (state.bodyCheckInOpen || bodyCheckInDue());
+  renderModalLayer(shouldShowGoalEditor
+    ? goalDateSheet()
+    : shouldShowBodyCheckIn
+      ? bodyCheckInSheet(!!state.bodyCheckInOpen)
+      : "");
 
   setupDragScroll();
   setupComposeDrag();
@@ -157,6 +169,10 @@ function coachReply(text, skill = "trainer") {
     return { text: "孕期、产后恢复期和术后训练需要专业评估。建议先咨询产科医生或康复师，再决定训练内容。我可以记录状态，但不提供这类训练处方。", safety: true };
   }
   if (/今天|练什么|计划/.test(text)) {
+    const period = periodForDate(todayKey());
+    if (period) {
+      return { text: `今天是经期第 ${period.day} 天，优先恢复。散步、拉伸或低强度训练都可以；如果按计划练，组数减 1 组、负重降到约 80%。腹痛明显、量大或头晕时直接休息。` };
+    }
     const day = todayDay();
     if (!day) {
       return { text: "今天没有安排训练，恢复也是计划的一部分。可以散步、拉伸，或者和教练聊聊最近恢复和计划调整。" };

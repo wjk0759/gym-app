@@ -51,6 +51,10 @@ function profileScreen() {
           <div class="metric"><div class="value">${p.height} cm</div><div class="label">身高</div></div>
         </div>
         <div class="row gap8" style="margin-top:8px">
+          <div class="metric"><div class="value">${p.arm} cm</div><div class="label">臂围</div></div>
+          <div class="metric"><div class="value">${p.thigh} cm</div><div class="label">大腿围</div></div>
+        </div>
+        <div class="row gap8" style="margin-top:8px">
           <div class="metric"><div class="value">${state.sessions.length} 次</div><div class="label">累计训练</div></div>
           <div class="metric"><div class="value">${Math.round(state.sessions.reduce((sum, session) => sum + Number(session.volume || 0), 0)).toLocaleString()} kg</div><div class="label">总容量</div></div>
         </div>
@@ -58,13 +62,6 @@ function profileScreen() {
           <div class="tiny muted">体脂 ${p.bodyFat}%${state.bodyMetrics?.[0]?.date ? ` · 最近 ${state.bodyMetrics[0].date.slice(5).replace("-", "/")}` : ""}</div>
           <button class="link" onclick="app.openProfileEdit()">记录体重 / 体脂 ›</button>
         </div>
-      </div>
-
-      <div class="card">
-        <div class="between"><div class="h3">当前目标</div><span class="badge">${p.goal}</span></div>
-        <div class="between" style="margin-top:10px"><span class="small muted">目标体重</span><span class="small strong">${p.targetWeight} kg</span></div>
-        <div class="between" style="margin-top:7px"><span class="small muted">目标腰围</span><span class="small strong">${p.targetWaist} cm</span></div>
-        <div class="tiny faint" style="margin-top:8px">减重建议不超过 0.5kg/周，不追求极端速度。</div>
       </div>
 
       <div class="section-kicker">训练工具</div>

@@ -5,11 +5,18 @@ function normalizeState(value) {
   next.equipmentLibrary = next.equipmentLibrary || demoEquipment();
   next.useEquipLibrary = next.useEquipLibrary !== false;
   next.profile = next.profile || { ...DEFAULT_PROFILE };
-  next.profile.bodyFat = Number.isFinite(Number(next.profile.bodyFat))
-    ? Number(next.profile.bodyFat)
-    : Number(DEFAULT_PROFILE.bodyFat);
-  next.profile.split = SPLIT_OPTIONS.some((option) => option.key === next.profile.split)
-    ? next.profile.split
+  [
+    "weight", "bodyFat", "waist", "arm", "thigh", "chest", "hip",
+    "targetWeight", "targetWaist", "targetBodyFat"
+  ].forEach((key) => {
+    next.profile[key] = Number.isFinite(Number(next.profile[key]))
+      ? Number(next.profile[key])
+      : Number(DEFAULT_PROFILE[key]);
+  });
+  const splitAliases = { "2分化": "3分化", "4分化": "5分化" };
+  const splitKey = splitAliases[next.profile.split] || next.profile.split;
+  next.profile.split = SPLIT_OPTIONS.some((option) => option.key === splitKey)
+    ? splitKey
     : DEFAULT_PROFILE.split;
   next.reviewPeriod = ["week", "month", "year"].includes(next.reviewPeriod) ? next.reviewPeriod : "month";
   next.bodyCheckInFrequency = ["off", "weekly", "biweekly", "monthly"].includes(next.bodyCheckInFrequency)
@@ -37,17 +44,32 @@ function normalizeState(value) {
         date: entry.date,
         timestamp: Number(entry.timestamp) || parseDateKey(entry.date).getTime(),
         weight: Number(entry.weight) || 0,
-        bodyFat: Number(entry.bodyFat) || 0
+        bodyFat: Number(entry.bodyFat) || 0,
+        arm: Number(entry.arm) || 0,
+        thigh: Number(entry.thigh) || 0
       }))
     : demoBodyMetrics(next.profile);
   if (!next.bodyMetrics.length) next.bodyMetrics = demoBodyMetrics(next.profile);
+  applyGoalProfileDefaults(next.profile, next.bodyMetrics);
+  next.goalEditorOpen = false;
+  next.bodyCheckInOpen = false;
+  const validPeriodDate = (key) => /^\d{4}-\d{2}-\d{2}$/.test(String(key || ""));
+  next.periodDates = Array.isArray(next.periodDates)
+    ? [...new Set(next.periodDates.filter(validPeriodDate))].sort()
+    : [];
+  next.periodDraft = Array.isArray(next.periodDraft)
+    ? [...new Set(next.periodDraft.filter(validPeriodDate))].sort()
+    : null;
+  next.periodMonth = /^\d{4}-\d{2}$/.test(next.periodMonth || "")
+    ? next.periodMonth
+    : monthKey(new Date());
   const validRouteScreens = [
     "tabs", "onboarding", "nutrition", "foodAdd", "foodCustom", "foodPhoto",
     "paywall", "profileEdit", "settings", "workoutCompose", "workout",
     "sessionDetail", "sessionExercisePicker", "trainingData", "history",
     "equipmentLibrary", "equipmentCamera", "foodPhotoCamera",
     "equipmentRecognition", "equipmentItem", "planExercisePicker",
-    "planSchedule", "bodyAnalysis"
+    "planSchedule", "periodSchedule", "bodyAnalysis"
   ];
   next.routeStack = Array.isArray(next.routeStack)
     ? next.routeStack
@@ -338,11 +360,31 @@ function toast(message, duration = 2600) {
   window.__toastTimer = setTimeout(() => el.classList.remove("show"), duration);
 }
 
+function periodForDate(dateKey) {
+  if (state.profile?.sex !== "女" || !dateKey) return null;
+  const dates = Array.isArray(state.periodDates) ? state.periodDates : [];
+  if (!dates.includes(dateKey)) return null;
+  let day = 1;
+  let cursor = addDays(parseDateKey(dateKey), -1);
+  while (day < 60 && dates.includes(localDateInputValue(cursor))) {
+    day += 1;
+    cursor = addDays(cursor, -1);
+  }
+  return { day, dateKey };
+}
+
+function isPeriodDate(dateKey) {
+  return !!periodForDate(dateKey);
+}
+
 function todayDay() {
   if (!state.plan?.days?.length) return null;
   const today = todayKey();
   const byDate = state.plan.days.find((day) => planDayDateKey(day) === today);
   if (byDate) return byDate;
+  // 新计划每天都有实际 dateKey；没有今天的日期就是休息日，不能用旧周几回退。
+  const hasScheduledDates = state.plan.days.some((day) => /^\d{4}-\d{2}-\d{2}$/.test(day.dateKey || ""));
+  if (hasScheduledDates) return null;
   const week = currentPlanWeekNumber();
   const weekday = new Date().getDay() || 7;
   return state.plan.days.find((day) => day.week === week && day.weekday === weekday) || null;

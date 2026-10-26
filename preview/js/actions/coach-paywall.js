@@ -79,6 +79,27 @@ Object.assign(window.app, {
     toast("预览版不连接 StoreKit；真实 App 会恢复 Apple ID 的订阅");
   },
 
+  startNutritionCoach() {
+    const targets = nutritionTargets();
+    const totals = nutritionTotals();
+    const remainingKcal = Math.max(0, targets.kcal - Math.round(totals.kcal));
+    const remainingProtein = Math.max(0, targets.protein - Math.round(totals.p));
+    const rest = !todayDay();
+    resetToTab("coach");
+    state.coachSkill = "nutrition";
+    state.planAdjustment = null;
+    const calorieText = remainingKcal > 0 ? `还可以摄入 ${remainingKcal} kcal` : "热量已经达标";
+    const proteinText = remainingProtein > 0 ? `蛋白质还差 ${remainingProtein}g` : "蛋白质已经达标";
+    const context = rest
+      ? `今天是休息日，饮食是今天的重点。${calorieText}，${proteinText}。想先调整热量目标、蛋白质分配，还是下一餐安排？`
+      : `今天训练后，饮食要帮恢复。${calorieText}，${proteinText}。想先调整热量目标、蛋白质分配，还是下一餐安排？`;
+    state.chats = (state.chats || []).filter((message) => message.kind !== "nutrition-context");
+    state.chats.push({ role: "assistant", kind: "nutrition-context", text: context });
+    save();
+    render();
+    scrollCoachChat();
+  },
+
   openNutritionDate(dateKey = todayKey(), origin = "plan") {
     state.nutritionDateKey = dateKey;
     state.nutritionOrigin = origin === "home" ? "home" : "plan";

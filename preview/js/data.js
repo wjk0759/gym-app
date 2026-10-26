@@ -143,6 +143,8 @@ const DEFAULT_PROFILE = {
   weight: 72.5,
   bodyFat: 21,
   waist: 82,
+  arm: 34,
+  thigh: 56,
   chest: 96,
   hip: 95,
   experience: "新手",
@@ -152,8 +154,30 @@ const DEFAULT_PROFILE = {
   minutes: 45,
   goal: "增肌",
   targetWeight: 76,
-  targetWaist: 78
+  targetWaist: 78,
+  targetBodyFat: 18,
+  goalStartWeight: null,
+  goalStartDate: null,
+  goalTargetDate: null
 };
+
+function applyGoalProfileDefaults(profile, metrics = []) {
+  if (!profile) return profile;
+  const validDate = (key) => /^\d{4}-\d{2}-\d{2}$/.test(String(key || ""));
+  const sorted = (Array.isArray(metrics) ? metrics : [])
+    .filter((entry) => Number(entry.weight) > 0)
+    .sort((left, right) => Number(left.timestamp) - Number(right.timestamp));
+  if (!Number.isFinite(Number(profile.goalStartWeight)) || Number(profile.goalStartWeight) <= 0) {
+    profile.goalStartWeight = Number(sorted[0]?.weight) || Number(profile.weight) || 0;
+  }
+  if (!validDate(profile.goalStartDate)) {
+    profile.goalStartDate = sorted[0]?.date || todayKey();
+  }
+  if (!validDate(profile.goalTargetDate)) {
+    profile.goalTargetDate = localDateInputValue(addDays(new Date(), 84));
+  }
+  return profile;
+}
 
 function esc(value) {
   return String(value).replace(/[&<>"']/g, (ch) => ({
@@ -480,20 +504,11 @@ function demoSessions() {
 
 const SPLIT_OPTIONS = [
   { key: "1分化", label: "1分化 · 全身", desc: "每次练全身，适合 2–3 练" },
-  { key: "2分化", label: "2分化 · 上下肢", desc: "上肢 / 下肢交替，适合 2–4 练" },
   { key: "3分化", label: "3分化 · 推/拉/腿", desc: "推、拉、腿循环，适合 3–5 练" },
-  { key: "4分化", label: "4分化 · 胸肩/背/腿/臂", desc: "部位拆分更细，适合 4–5 练" }
+  { key: "5分化", label: "5分化 · 胸/背/腿/肩/手臂", desc: "五个部位分开练，适合 4–7 练" }
 ];
 
 function planTemplatesForSplit(split) {
-  if (split === "2分化") {
-    return [
-      { title: "上肢 A", focus: ["背", "胸", "肩"], slugs: ["lat_pulldown", "seated_row", "dumbbell_press", "shoulder_press", "face_pull"] },
-      { title: "下肢 A", focus: ["腿", "臀", "核心"], slugs: ["goblet_squat", "romanian_deadlift", "lunge", "leg_press", "plank"] },
-      { title: "上肢 B", focus: ["胸", "背", "肩"], slugs: ["pushup", "seated_row", "shoulder_press", "lateral_raise", "biceps_curl"] },
-      { title: "下肢 B", focus: ["臀", "腿", "核心"], slugs: ["hip_thrust", "leg_press", "lunge", "romanian_deadlift", "crunch"] }
-    ];
-  }
   if (split === "3分化") {
     return [
       { title: "推", focus: ["胸", "肩", "手臂"], slugs: ["dumbbell_press", "shoulder_press", "pushup", "lateral_raise", "triceps_pushdown"] },
@@ -501,11 +516,12 @@ function planTemplatesForSplit(split) {
       { title: "腿", focus: ["腿", "臀", "核心"], slugs: ["goblet_squat", "romanian_deadlift", "lunge", "leg_press", "hip_thrust"] }
     ];
   }
-  if (split === "4分化") {
+  if (split === "5分化") {
     return [
-      { title: "胸肩", focus: ["胸", "肩"], slugs: ["dumbbell_press", "pushup", "shoulder_press", "lateral_raise", "face_pull"] },
-      { title: "背", focus: ["背", "核心"], slugs: ["lat_pulldown", "seated_row", "face_pull", "biceps_curl", "plank"] },
+      { title: "胸", focus: ["胸", "手臂"], slugs: ["dumbbell_press", "pushup", "triceps_pushdown", "plank", "face_pull"] },
+      { title: "背", focus: ["背", "手臂"], slugs: ["lat_pulldown", "seated_row", "face_pull", "biceps_curl", "plank"] },
       { title: "腿", focus: ["腿", "臀", "核心"], slugs: ["goblet_squat", "romanian_deadlift", "lunge", "leg_press", "hip_thrust"] },
+      { title: "肩", focus: ["肩", "核心"], slugs: ["shoulder_press", "lateral_raise", "face_pull", "pushup", "plank"] },
       { title: "手臂", focus: ["手臂", "肩"], slugs: ["biceps_curl", "triceps_pushdown", "pushup", "lateral_raise", "face_pull"] }
     ];
   }
@@ -519,13 +535,15 @@ function planTemplatesForSplit(split) {
 function buildPlan(profile) {
   const split = SPLIT_OPTIONS.some((option) => option.key === profile.split) ? profile.split : "1分化";
   const templatePool = planTemplatesForSplit(split);
-  const weeklyDays = Math.max(1, Math.min(5, Number(profile.weeklyDays) || 3));
+  const weeklyDays = Math.max(1, Math.min(7, Number(profile.weeklyDays) || 3));
   const defaultOffsets = {
     1: [0],
     2: [0, 3],
     3: [0, 2, 4],
     4: [0, 1, 3, 5],
-    5: [0, 1, 2, 4, 5]
+    5: [0, 1, 2, 4, 5],
+    6: [0, 1, 2, 3, 4, 5],
+    7: [0, 1, 2, 3, 4, 5, 6]
   }[weeklyDays] || [0, 2, 4];
   const templates = Array.from({ length: weeklyDays }, (_, slot) => templatePool[slot % templatePool.length]);
   const reps = profile.goal === "增肌" ? "8" : profile.goal === "减脂" ? "12" : profile.goal === "提升体能" ? "15" : "10";

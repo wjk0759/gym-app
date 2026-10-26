@@ -27,6 +27,7 @@ Object.assign(window.app, {
       customFoods: state.customFoods,
       chats: state.chats,
       bodyMetrics: state.bodyMetrics,
+      periodDates: state.periodDates,
       bodyCheckInFrequency: state.bodyCheckInFrequency,
       bodyCheckInWeekday: state.bodyCheckInWeekday,
       bodyCheckInDay: state.bodyCheckInDay
