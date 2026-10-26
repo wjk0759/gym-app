@@ -92,7 +92,7 @@ function calendarDayPanel(key) {
               <div class="tiny faint">${day.focus.join(" · ")} · ${day.exercises.length} 个动作</div>
             </div>
             <div class="calendar-plan-actions">
-              <button class="link" onclick="app.openPlanSchedule()">调整周几</button>
+              <button class="link" onclick="app.openPlanSchedule()">调整日期</button>
               <button class="link" onclick="app.editPlanDay('${day.id}')">编辑内容 ›</button>
             </div>
           </div>
@@ -133,6 +133,7 @@ function planScreen() {
   const selected = state.calendarDateKey || todayKey();
   const preview = planAdjustmentPreview();
   const review = planReviewData();
+  const planWeeklyDays = Math.max(1, Math.round(state.plan.days.length / Math.max(1, state.plan.weeks || 4)));
 
   return `
     <div class="stack plan-calendar-screen">
@@ -141,7 +142,10 @@ function planScreen() {
           <div class="compose-kicker">训练与饮食</div>
           <div class="h1">日历</div>
         </div>
-        <button class="link" onclick="app.goTodayInCalendar()">回到今天</button>
+        <div class="plan-calendar-head-actions">
+          <button class="link" onclick="app.openPlanSchedule()">训练日期</button>
+          <button class="link" onclick="app.goTodayInCalendar()">回到今天</button>
+        </div>
       </div>
 
       <button class="plan-data-strip" onclick="app.scrollToPlanReview()">
@@ -162,10 +166,10 @@ function planScreen() {
           <div>
             <div class="tiny accent">当前计划</div>
             <div class="h3" style="margin-top:3px">${esc(state.plan.title)}</div>
-            <div class="tiny faint" style="margin-top:3px">第 ${state.plan.version} 版 · ${state.plan.days.length} 个训练日 · 本周完成 ${preview.completed}/${Math.max(1, state.profile.weeklyDays)}</div>
+            <div class="tiny faint" style="margin-top:3px">第 ${state.plan.version} 版 · ${state.plan.days.length} 个训练日 · 本周完成 ${preview.completed}/${planWeeklyDays}</div>
           </div>
           <div class="plan-summary-head-actions">
-            <button class="link" onclick="app.openPlanSchedule()">调整训练日</button>
+            <button class="link" onclick="app.openPlanSchedule()">调整训练日期</button>
             <button class="link" onclick="app.regeneratePlan()">重新生成</button>
           </div>
         </div>

@@ -1,58 +1,119 @@
-/* FitAI Web Preview actions: weekly training day schedule. */
+/* FitAI Web Preview actions: select actual training dates for the next four weeks. */
+
+const PLAN_SCHEDULE_OFFSETS = {
+  1: [0],
+  2: [0, 3],
+  3: [0, 2, 4],
+  4: [0, 1, 3, 5],
+  5: [0, 1, 2, 4, 5],
+  6: [0, 1, 2, 3, 4, 5],
+  7: [0, 1, 2, 3, 4, 5, 6]
+};
+
+function planScheduleDateKeyInBlock(dateKey, startKey, blockIndex) {
+  const date = parseDateKey(dateKey);
+  const start = parseDateKey(startKey);
+  const diff = Math.round((date.getTime() - start.getTime()) / 86400000);
+  return Math.floor(diff / 7) === blockIndex;
+}
 
 Object.assign(window.app, {
   openPlanSchedule() {
     const days = Array.isArray(state.plan?.days) ? state.plan.days : [];
     if (!days.length) return toast("当前计划没有训练日");
-    const firstWeek = Math.min(...days.map((day) => Number(day.week) || 1));
-    const weekDays = days
-      .filter((day) => Number(day.week) === firstWeek)
-      .sort((left, right) => left.weekday - right.weekday);
-    state.planScheduleDraft = weekDays.map((day, index) => ({
-      slot: Number.isFinite(Number(day.slot)) ? Number(day.slot) : index,
-      title: day.title || "训练日",
-      focus: Array.isArray(day.focus) ? [...day.focus] : [],
-      weekday: Number(day.weekday) || 1,
-      originalWeekday: Number(day.weekday) || 1
-    }));
+    const weeks = Math.max(1, Number(state.plan?.weeks) || 4);
+    const daysPerWeek = Math.max(1, Math.min(7, Math.round(days.length / weeks)));
+    const startKey = todayKey();
+    const selectedDates = [];
+    const existingByBlock = Array.from({ length: weeks }, () => []);
+    days.forEach((day) => {
+      const dateKey = planDayDateKey(day);
+      const block = Math.floor(
+        (parseDateKey(dateKey).getTime() - parseDateKey(startKey).getTime()) / 604800000
+      );
+      if (block >= 0 && block < weeks && !existingByBlock[block].includes(dateKey)) {
+        existingByBlock[block].push(dateKey);
+      }
+    });
+    const offsets = PLAN_SCHEDULE_OFFSETS[daysPerWeek] || PLAN_SCHEDULE_OFFSETS[3];
+    for (let block = 0; block < weeks; block += 1) {
+      const chosen = existingByBlock[block].sort().slice(0, daysPerWeek);
+      offsets.forEach((offset) => {
+        if (chosen.length >= daysPerWeek) return;
+        const dateKey = localDateInputValue(addDays(parseDateKey(startKey), block * 7 + offset));
+        if (!chosen.includes(dateKey)) chosen.push(dateKey);
+      });
+      chosen.sort().forEach((dateKey) => selectedDates.push(dateKey));
+    }
+    state.planScheduleDraft = {
+      startKey,
+      daysPerWeek,
+      selectedDates
+    };
     pushRoute("planSchedule");
     save();
     render();
   },
 
-  planScheduleSelect(index, weekday) {
+  planScheduleToggleDate(dateKey) {
     const draft = state.planScheduleDraft;
-    const entry = draft?.[index];
-    const target = Number(weekday);
-    if (!entry || target < 1 || target > 7 || entry.weekday === target) return;
-    const occupant = draft.find((item, itemIndex) => itemIndex !== index && item.weekday === target);
-    if (occupant) occupant.weekday = entry.weekday;
-    entry.weekday = target;
+    if (!draft) return;
+    if (!planScheduleDateKeyInBlock(dateKey, draft.startKey, 0)
+      && !planScheduleDateKeyInBlock(dateKey, draft.startKey, 1)
+      && !planScheduleDateKeyInBlock(dateKey, draft.startKey, 2)
+      && !planScheduleDateKeyInBlock(dateKey, draft.startKey, 3)) return;
+    const selected = new Set(draft.selectedDates);
+    if (selected.has(dateKey)) {
+      selected.delete(dateKey);
+    } else {
+      const block = [0, 1, 2, 3].find((index) => planScheduleDateKeyInBlock(dateKey, draft.startKey, index));
+      const count = draft.selectedDates.filter((key) => planScheduleDateKeyInBlock(key, draft.startKey, block)).length;
+      if (count >= draft.daysPerWeek) {
+        return toast(`这周已选满 ${draft.daysPerWeek} 天，先取消一个日期`);
+      }
+      selected.add(dateKey);
+    }
+    draft.selectedDates = [...selected].sort();
     save();
     render();
   },
 
   savePlanSchedule() {
     const draft = state.planScheduleDraft;
-    if (!Array.isArray(draft) || !draft.length) return;
-    const changed = draft.some((entry) => entry.weekday !== entry.originalWeekday);
-    state.plan.days.forEach((day) => {
-      const entry = draft.find((item) => Number(item.slot) === Number(day.slot));
-      if (entry) day.weekday = entry.weekday;
+    if (!draft) return;
+    const blocks = [0, 1, 2, 3];
+    const counts = blocks.map((index) => draft.selectedDates.filter((key) => planScheduleDateKeyInBlock(key, draft.startKey, index)).length);
+    if (counts.some((count) => count !== draft.daysPerWeek)) {
+      return toast(`每周需要选 ${draft.daysPerWeek} 天`);
+    }
+    const planWeeks = Math.max(1, Number(state.plan?.weeks) || 4);
+    blocks.forEach((blockIndex) => {
+      if (blockIndex >= planWeeks) return;
+      const weekDays = state.plan.days
+        .filter((day) => Number(day.week) === blockIndex + 1)
+        .sort((left, right) => Number(left.slot) - Number(right.slot));
+      const dates = draft.selectedDates
+        .filter((key) => planScheduleDateKeyInBlock(key, draft.startKey, blockIndex))
+        .sort();
+      weekDays.forEach((day, index) => {
+        const dateKey = dates[index];
+        if (!dateKey) return;
+        const date = parseDateKey(dateKey);
+        day.dateKey = dateKey;
+        day.weekday = date.getDay() || 7;
+      });
     });
     state.plan.days.sort((left, right) => {
       if (left.week !== right.week) return left.week - right.week;
-      return left.weekday - right.weekday;
+      return Number(left.slot) - Number(right.slot);
     });
-    if (changed) {
-      state.plan.version += 1;
-      state.plan.updatedAt = Date.now();
-    }
+    state.plan.version += 1;
+    state.plan.updatedAt = Date.now();
     state.planScheduleDraft = null;
     popRoute();
     save();
     render();
-    toast(changed ? "训练日已更新" : "训练安排未改变");
+    toast("训练日期已更新");
   },
 
   closePlanSchedule() {

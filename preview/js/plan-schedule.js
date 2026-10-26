@@ -1,52 +1,75 @@
-/* FitAI Web Preview page module: weekly plan schedule editor. */
+/* FitAI Web Preview page module: select actual training dates for the next four weeks. */
 
 const PLAN_WEEKDAY_LABELS = ["一", "二", "三", "四", "五", "六", "日"];
+
+function planScheduleBlocks(draft) {
+  const start = parseDateKey(draft.startKey || todayKey());
+  return Array.from({ length: 4 }, (_, index) => {
+    const blockStart = addDays(start, index * 7);
+    const dates = Array.from({ length: 7 }, (_, offset) => {
+      const date = addDays(blockStart, offset);
+      return {
+        key: localDateInputValue(date),
+        date,
+        weekday: date.getDay() || 7
+      };
+    });
+    return {
+      index,
+      start: blockStart,
+      end: addDays(blockStart, 6),
+      dates
+    };
+  });
+}
 
 function planScheduleScreen() {
   const draft = state.planScheduleDraft;
   if (!draft) {
     return `
       <div class="stack">
-        ${headerBack("调整训练日")}
-        <div class="calendar-empty-line">当前计划没有可调整的训练日。</div>
+        ${headerBack("调整训练日期")}
+        <div class="calendar-empty-line">当前计划没有可调整的训练日期。</div>
       </div>
     `;
   }
-  const changed = draft.filter((entry) => entry.weekday !== entry.originalWeekday).length;
+  const blocks = planScheduleBlocks(draft);
+  const selected = new Set(draft.selectedDates);
+  const counts = blocks.map((block) => block.dates.filter((date) => selected.has(date.key)).length);
+  const complete = counts.every((count) => count === draft.daysPerWeek);
+  const remaining = counts.reduce((sum, count) => sum + Math.max(0, draft.daysPerWeek - count), 0);
   return `
     <div class="stack plan-schedule-screen">
-      ${headerBack("调整训练日")}
+      ${headerBack("调整训练日期")}
 
       <section class="plan-schedule-intro">
-        <div class="compose-kicker">计划 · 每周安排</div>
-        <div class="h1">调整训练日</div>
-        <p>训练内容不变，只调整每周练哪几天。点新的星期几会移动；如果目标日已有训练，会交换两个训练日。</p>
+        <div class="compose-kicker">未来 4 周 · 每周 ${draft.daysPerWeek} 练 · ${state.plan.split || state.profile.split}</div>
+        <div class="h1">选训练日期</div>
+        <p>从今天起选择未来 4 周的具体训练日期。每周需要选 ${draft.daysPerWeek} 天，训练内容会按日期顺序自动排入。</p>
       </section>
 
-      ${draft.map((entry, index) => {
-        const current = PLAN_WEEKDAY_LABELS[entry.weekday - 1] || "一";
+      ${blocks.map((block, index) => {
+        const count = counts[index];
         return `
-          <section class="plan-schedule-card">
-            <div class="between">
+          <section class="schedule-week-card">
+            <div class="between schedule-week-head">
               <div>
-                <div class="compose-kicker">训练日 ${String(index + 1).padStart(2, "0")}</div>
-                <div class="h2">${esc(entry.title || "训练日")}</div>
-                <div class="tiny muted plan-schedule-focus">${entry.focus.length ? entry.focus.join(" · ") : "训练内容"}</div>
+                <div class="compose-kicker">第 ${index + 1} 周</div>
+                <div class="small strong">${reviewCompactDate(block.start)}–${reviewCompactDate(block.end)}</div>
               </div>
-              <span class="plan-schedule-current">周${current}</span>
+              <span class="${count === draft.daysPerWeek ? "schedule-count done" : "schedule-count"}">${count}/${draft.daysPerWeek} 天</span>
             </div>
-            <div class="weekday-picker">
-              ${PLAN_WEEKDAY_LABELS.map((label, dayIndex) => {
-                const weekday = dayIndex + 1;
-                const occupant = draft.find((item, itemIndex) => itemIndex !== index && item.weekday === weekday);
-                const active = entry.weekday === weekday;
+            <div class="schedule-date-grid">
+              ${block.dates.map((date) => {
+                const active = selected.has(date.key);
+                const today = date.key === todayKey();
                 return `
-                  <button class="weekday-choice ${active ? "active" : ""} ${occupant ? "occupied" : ""}"
-                    onclick="app.planScheduleSelect(${index}, ${weekday})"
+                  <button class="schedule-date ${active ? "active" : ""} ${today ? "today" : ""}"
+                    onclick="app.planScheduleToggleDate('${date.key}')"
                     aria-pressed="${active}"
-                    aria-label="周${label}${occupant ? `，已有${esc(occupant.title || "训练")}，点击交换` : ""}">
-                    <span>周${label}</span>
-                    ${occupant ? `<small>${esc(occupant.title || "训练").replace("全身 ", "")}</small>` : "<small></small>"}
+                    aria-label="${date.key} 周${PLAN_WEEKDAY_LABELS[date.weekday - 1]}">
+                    <span>${PLAN_WEEKDAY_LABELS[date.weekday - 1]}</span>
+                    <strong>${date.date.getDate()}</strong>
                   </button>
                 `;
               }).join("")}
@@ -56,11 +79,11 @@ function planScheduleScreen() {
       }).join("")}
 
       <div class="plan-schedule-note">
-        <strong>${changed ? `已调整 ${changed} 个训练日` : "当前安排未改变"}</strong>
-        <span>会同步重排 ${Number(state.plan?.weeks) || 4} 周计划；历史训练记录和已记录饮食不会被修改。</span>
+        <strong>${complete ? `已选满 ${draft.daysPerWeek * 4} 个训练日` : `还差 ${remaining} 个训练日`}</strong>
+        <span>只调整训练日期，不改变动作、组数、次数和负重；历史训练记录不会修改。每周次数和分化在「我的 → 编辑资料」修改，重新生成后应用。</span>
       </div>
 
-      <button class="btn btn-primary" onclick="app.savePlanSchedule()">保存训练日</button>
+      <button class="btn btn-primary" onclick="app.savePlanSchedule()" ${complete ? "" : "disabled"}>保存训练日期</button>
       <button class="btn btn-ghost" onclick="app.closePlanSchedule()">取消并返回</button>
     </div>
   `;

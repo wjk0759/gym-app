@@ -8,6 +8,9 @@ function normalizeState(value) {
   next.profile.bodyFat = Number.isFinite(Number(next.profile.bodyFat))
     ? Number(next.profile.bodyFat)
     : Number(DEFAULT_PROFILE.bodyFat);
+  next.profile.split = SPLIT_OPTIONS.some((option) => option.key === next.profile.split)
+    ? next.profile.split
+    : DEFAULT_PROFILE.split;
   next.reviewPeriod = ["week", "month", "year"].includes(next.reviewPeriod) ? next.reviewPeriod : "month";
   next.bodyCheckInFrequency = ["off", "weekly", "biweekly", "monthly"].includes(next.bodyCheckInFrequency)
     ? next.bodyCheckInFrequency
@@ -63,16 +66,17 @@ function normalizeState(value) {
   } else {
     next.planAdjustment = null;
   }
-  next.planScheduleDraft = Array.isArray(next.planScheduleDraft)
-    ? next.planScheduleDraft
-      .filter((entry) => entry && Number(entry.slot) >= 0 && Number(entry.weekday) >= 1 && Number(entry.weekday) <= 7)
-      .map((entry) => ({
-        slot: Number(entry.slot),
-        title: String(entry.title || ""),
-        focus: Array.isArray(entry.focus) ? entry.focus : [],
-        weekday: Number(entry.weekday),
-        originalWeekday: Number(entry.originalWeekday) || Number(entry.weekday)
-      }))
+  const scheduleDraft = next.planScheduleDraft;
+  const validScheduleDate = (key) => /^\d{4}-\d{2}-\d{2}$/.test(String(key || ""));
+  next.planScheduleDraft = scheduleDraft
+    && typeof scheduleDraft === "object"
+    && validScheduleDate(scheduleDraft.startKey)
+    && Array.isArray(scheduleDraft.selectedDates)
+    ? {
+        startKey: scheduleDraft.startKey,
+        daysPerWeek: Math.max(1, Math.min(7, Number(scheduleDraft.daysPerWeek) || 3)),
+        selectedDates: scheduleDraft.selectedDates.filter(validScheduleDate)
+      }
     : null;
   if (next.plan) {
     next.plan.createdAt = Number(next.plan.createdAt) || Date.now();
@@ -336,6 +340,9 @@ function toast(message, duration = 2600) {
 
 function todayDay() {
   if (!state.plan?.days?.length) return null;
+  const today = todayKey();
+  const byDate = state.plan.days.find((day) => planDayDateKey(day) === today);
+  if (byDate) return byDate;
   const week = currentPlanWeekNumber();
   const weekday = new Date().getDay() || 7;
   return state.plan.days.find((day) => day.week === week && day.weekday === weekday) || null;

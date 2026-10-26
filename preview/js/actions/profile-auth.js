@@ -90,6 +90,8 @@ Object.assign(window.app, {
     }
     draft.name = name;
     if (!draft.equipment.includes("徒手")) draft.equipment.push("徒手");
+    const trainingSettingsChanged = state.profile.split !== draft.split
+      || Number(state.profile.weeklyDays) !== Number(draft.weeklyDays);
     state.profile = { ...draft };
     const date = todayKey();
     const metric = {
@@ -105,7 +107,7 @@ Object.assign(window.app, {
     popRoute();
     save();
     render();
-    toast("资料已保存");
+    toast(trainingSettingsChanged ? "资料已保存；分化/频率需重新生成计划后生效" : "资料已保存");
   },
 
   range(key, value, unit) {

@@ -51,6 +51,9 @@ function onboarding() {
         <div class="tiny muted" style="margin-bottom:12px">之后可以随时调整</div>
         <div class="form-label">每周训练</div>
         ${segmented("weeklyDays", [1, 2, 3, 4, 5], String(p.weeklyDays), true)}
+        <div class="form-label" style="margin-top:14px">训练分化</div>
+        ${segmented("split", ["1分化", "2分化", "3分化", "4分化"], p.split)}
+        <div class="tiny faint" style="margin-top:6px;line-height:1.55">1分化=全身，2分化=上下肢，3分化=推/拉/腿，4分化=胸肩/背/腿/手臂。AI 生成计划会按这个分化编排。</div>
         <div class="form-label" style="margin-top:14px">单次时长</div>
         ${segmented("minutes", [30, 45, 60, 90], String(p.minutes), true)}
         <div class="form-label" style="margin-top:14px">训练经验</div>

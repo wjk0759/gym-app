@@ -20,6 +20,13 @@
   font-size: clamp(28px, 8vw, 36px);
 }
 
+.plan-calendar-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .plan-data-strip {
   appearance: none;
   width: 100%;
@@ -867,7 +874,7 @@
   margin-top: 14px;
 }
 
-/* ---------- weekly schedule editor ---------- */
+/* ---------- training date picker ---------- */
 
 .plan-schedule-screen {
   padding-bottom: calc(18px + var(--safe-bottom));
@@ -895,8 +902,8 @@
   line-height: 1.6;
 }
 
-.plan-schedule-card {
-  padding: 15px;
+.schedule-week-card {
+  padding: 13px;
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: var(--radius-lg);
   background:
@@ -904,80 +911,102 @@
     var(--surface);
 }
 
-.plan-schedule-card .h2 {
-  margin-top: 2px;
+.schedule-week-head {
+  align-items: flex-start;
 }
 
-.plan-schedule-focus {
-  margin-top: 4px;
-}
-
-.plan-schedule-current {
+.schedule-count {
   flex: 0 0 auto;
-  padding: 6px 9px;
-  border: 1px solid rgba(92, 219, 140, 0.22);
-  border-radius: 8px;
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 7px;
+  color: var(--faint);
+  font-size: 8.5px;
+  font-weight: 650;
+}
+
+.schedule-count.done {
+  border-color: rgba(92, 219, 140, 0.24);
   background: var(--accent-dim);
   color: var(--accent);
-  font-size: 10px;
-  font-weight: 700;
-  white-space: nowrap;
 }
 
-.weekday-picker {
+.schedule-date-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-  margin-top: 12px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+  margin-top: 10px;
 }
 
-.weekday-choice {
+.schedule-date {
   appearance: none;
-  min-height: 48px;
+  min-width: 0;
+  min-height: 47px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   gap: 2px;
-  padding: 7px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.075);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.028);
-  color: inherit;
-  font: inherit;
-  text-align: left;
-}
-
-.weekday-choice span {
+  padding: 5px 1px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.025);
   color: var(--muted);
-  font-size: 10.5px;
-  white-space: nowrap;
+  font: inherit;
 }
 
-.weekday-choice small {
-  min-height: 9px;
+.schedule-date span {
   color: var(--faint);
   font-size: 8px;
-  white-space: nowrap;
+  line-height: 1;
 }
 
-.weekday-choice.active {
-  border-color: rgba(92, 219, 140, 0.40);
-  background: var(--accent-dim);
+.schedule-date strong {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
 }
 
-.weekday-choice.active span {
+.schedule-date.today {
+  border-color: rgba(92, 219, 140, 0.30);
+}
+
+.schedule-date.active {
+  border-color: rgba(92, 219, 140, 0.56);
+  background: linear-gradient(160deg, rgba(48, 209, 88, 0.20), rgba(48, 209, 88, 0.08));
+}
+
+.schedule-date.active span,
+.schedule-date.active strong {
   color: var(--accent);
-  font-weight: 700;
 }
 
-.weekday-choice.occupied {
-  border-color: rgba(250, 184, 77, 0.28);
-  background: rgba(250, 184, 77, 0.055);
+.schedule-date:active {
+  transform: scale(0.96);
 }
 
-.weekday-choice.occupied small {
-  color: var(--warning);
+@media (max-width: 360px) {
+  .schedule-week-card {
+    padding: 10px 8px;
+  }
+
+  .schedule-date-grid {
+    gap: 2px;
+  }
+
+  .schedule-date {
+    min-height: 43px;
+  }
+
+  .schedule-date strong {
+    font-size: 12px;
+  }
+
+  .schedule-date span {
+    font-size: 7px;
+  }
 }
 
 .plan-schedule-note {
@@ -1006,13 +1035,5 @@
 
   .review-macro:last-child {
     grid-column: 1 / -1;
-  }
-
-  .weekday-choice {
-    padding: 6px;
-  }
-
-  .weekday-choice span {
-    font-size: 10px;
   }
 }

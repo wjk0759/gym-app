@@ -19,7 +19,7 @@ function profileScreen() {
           <div class="nutrition-icon" style="font-size:18px">${esc(p.name.slice(0, 1))}</div>
           <div class="grow">
             <div class="h3">${esc(p.name)}</div>
-            <div class="tiny muted" style="margin-top:3px">${p.goal} · ${p.experience} · 每周 ${p.weeklyDays} 练</div>
+            <div class="tiny muted" style="margin-top:3px">${p.goal} · ${p.experience} · ${p.split} · 每周 ${p.weeklyDays} 练</div>
           </div>
           <div class="row gap6" style="flex-shrink:0;white-space:nowrap">
             <span class="tiny accent strong">编辑资料</span>

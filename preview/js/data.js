@@ -148,6 +148,7 @@ const DEFAULT_PROFILE = {
   experience: "新手",
   equipment: ["徒手", "哑铃", "固定器械"],
   weeklyDays: 3,
+  split: "1分化",
   minutes: 45,
   goal: "增肌",
   targetWeight: 76,
@@ -323,6 +324,7 @@ function currentPlanWeekNumber() {
 }
 
 function planDayDateKey(day) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(day?.dateKey || "")) return day.dateKey;
   const base = planStartMonday();
   return localDateInputValue(addDays(base, (Number(day.week) - 1) * 7 + Number(day.weekday) - 1));
 }
@@ -476,43 +478,95 @@ function demoSessions() {
   ];
 }
 
-function buildPlan(profile) {
-  const templates = [
-    { title: "全身 A", weekday: 1, focus: ["腿", "胸", "背"], slugs: ["goblet_squat", "pushup", "lat_pulldown", "shoulder_press", "plank"] },
-    { title: "全身 B", weekday: 3, focus: ["腿", "背", "肩", "核心"], slugs: ["lunge", "seated_row", "dumbbell_press", "face_pull", "crunch"] },
-    { title: "全身 C", weekday: 5, focus: ["臀", "胸", "手臂"], slugs: ["hip_thrust", "dumbbell_press", "triceps_pushdown", "biceps_curl", "plank"] }
+const SPLIT_OPTIONS = [
+  { key: "1分化", label: "1分化 · 全身", desc: "每次练全身，适合 2–3 练" },
+  { key: "2分化", label: "2分化 · 上下肢", desc: "上肢 / 下肢交替，适合 2–4 练" },
+  { key: "3分化", label: "3分化 · 推/拉/腿", desc: "推、拉、腿循环，适合 3–5 练" },
+  { key: "4分化", label: "4分化 · 胸肩/背/腿/臂", desc: "部位拆分更细，适合 4–5 练" }
+];
+
+function planTemplatesForSplit(split) {
+  if (split === "2分化") {
+    return [
+      { title: "上肢 A", focus: ["背", "胸", "肩"], slugs: ["lat_pulldown", "seated_row", "dumbbell_press", "shoulder_press", "face_pull"] },
+      { title: "下肢 A", focus: ["腿", "臀", "核心"], slugs: ["goblet_squat", "romanian_deadlift", "lunge", "leg_press", "plank"] },
+      { title: "上肢 B", focus: ["胸", "背", "肩"], slugs: ["pushup", "seated_row", "shoulder_press", "lateral_raise", "biceps_curl"] },
+      { title: "下肢 B", focus: ["臀", "腿", "核心"], slugs: ["hip_thrust", "leg_press", "lunge", "romanian_deadlift", "crunch"] }
+    ];
+  }
+  if (split === "3分化") {
+    return [
+      { title: "推", focus: ["胸", "肩", "手臂"], slugs: ["dumbbell_press", "shoulder_press", "pushup", "lateral_raise", "triceps_pushdown"] },
+      { title: "拉", focus: ["背", "肩", "手臂"], slugs: ["lat_pulldown", "seated_row", "face_pull", "biceps_curl", "plank"] },
+      { title: "腿", focus: ["腿", "臀", "核心"], slugs: ["goblet_squat", "romanian_deadlift", "lunge", "leg_press", "hip_thrust"] }
+    ];
+  }
+  if (split === "4分化") {
+    return [
+      { title: "胸肩", focus: ["胸", "肩"], slugs: ["dumbbell_press", "pushup", "shoulder_press", "lateral_raise", "face_pull"] },
+      { title: "背", focus: ["背", "核心"], slugs: ["lat_pulldown", "seated_row", "face_pull", "biceps_curl", "plank"] },
+      { title: "腿", focus: ["腿", "臀", "核心"], slugs: ["goblet_squat", "romanian_deadlift", "lunge", "leg_press", "hip_thrust"] },
+      { title: "手臂", focus: ["手臂", "肩"], slugs: ["biceps_curl", "triceps_pushdown", "pushup", "lateral_raise", "face_pull"] }
+    ];
+  }
+  return [
+    { title: "全身 A", focus: ["腿", "胸", "背"], slugs: ["goblet_squat", "pushup", "lat_pulldown", "shoulder_press", "plank"] },
+    { title: "全身 B", focus: ["腿", "背", "肩", "核心"], slugs: ["lunge", "seated_row", "dumbbell_press", "face_pull", "crunch"] },
+    { title: "全身 C", focus: ["臀", "胸", "手臂"], slugs: ["hip_thrust", "dumbbell_press", "triceps_pushdown", "biceps_curl", "plank"] }
   ];
+}
+
+function buildPlan(profile) {
+  const split = SPLIT_OPTIONS.some((option) => option.key === profile.split) ? profile.split : "1分化";
+  const templatePool = planTemplatesForSplit(split);
+  const weeklyDays = Math.max(1, Math.min(5, Number(profile.weeklyDays) || 3));
+  const defaultOffsets = {
+    1: [0],
+    2: [0, 3],
+    3: [0, 2, 4],
+    4: [0, 1, 3, 5],
+    5: [0, 1, 2, 4, 5]
+  }[weeklyDays] || [0, 2, 4];
+  const templates = Array.from({ length: weeklyDays }, (_, slot) => templatePool[slot % templatePool.length]);
   const reps = profile.goal === "增肌" ? "8" : profile.goal === "减脂" ? "12" : profile.goal === "提升体能" ? "15" : "10";
   const sets = profile.goal === "增肌" ? 4 : 3;
   const rest = profile.goal === "增肌" ? 90 : profile.goal === "减脂" ? 45 : 60;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const days = [];
-  for (let week = 1; week <= 4; week += 1) {
-    templates.forEach((template, slot) => {
+  templates.forEach((template, slot) => {
+    const firstDate = addDays(today, defaultOffsets[slot]);
+    const weekday = firstDate.getDay() || 7;
+    for (let week = 1; week <= 4; week += 1) {
+      const date = addDays(firstDate, (week - 1) * 7);
       days.push({
-        id: `w${week}d${template.weekday}`,
+        id: `w${week}d${weekday}`,
         week,
-        weekday: template.weekday,
+        weekday,
         slot,
+        dateKey: localDateInputValue(date),
         title: template.title,
         focus: template.focus,
         exercises: template.slugs.map((slug) => {
           const ex = EX[slug];
-          const weight = ex.base ? roundHalf(ex.base * (1 + 0.025 * (week - 1))) : 0;
+          const baseWeight = ex.base ? roundHalf(ex.base * (1 + 0.025 * (week - 1))) : 0;
           return {
             slug,
             sets,
             reps: String(parseReps(ex.fixedReps || reps)),
-            weight,
+            weight: baseWeight,
             rest,
             rpe: 7.5
           };
         })
       });
-    });
-  }
+    }
+  });
   return {
     id: "plan-1",
-    title: `4 周${profile.goal}计划 · 每周 ${profile.weeklyDays} 练`,
+    title: `4 周${profile.goal}计划 · ${split} · 每周 ${weeklyDays} 练`,
+    split,
+    weeklyDays,
     version: 1,
     weeks: 4,
     createdAt: Date.now(),
