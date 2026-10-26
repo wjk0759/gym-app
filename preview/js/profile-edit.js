@@ -14,7 +14,13 @@ function profileEditScreen() {
 
   return `
     <div class="stack">
-      ${headerBack("编辑资料")}
+      <div class="page-header profile-edit-header">
+        <div class="row profile-edit-header-row">
+          <button class="icon-btn" onclick="app.closeProfileEdit()" aria-label="返回上一级">‹</button>
+          <div class="h3">编辑资料</div>
+          <button class="profile-save-action" onclick="app.saveProfileEdit()">保存</button>
+        </div>
+      </div>
 
       <div class="card">
         <div class="h3">基础信息</div>
@@ -96,8 +102,6 @@ function profileEditScreen() {
         <div class="tiny muted" style="line-height:1.6">保存资料不会自动覆盖当前训练计划。如需让计划适配新的目标或器械，可回到「计划」页让 AI 复盘调整。</div>
       </div>
 
-      <button class="btn btn-primary" onclick="app.saveProfileEdit()">保存资料</button>
-      <button class="btn btn-ghost" onclick="app.closeProfileEdit()">取消并返回</button>
     </div>
   `;
 }
