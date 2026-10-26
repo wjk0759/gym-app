@@ -155,7 +155,7 @@ Object.assign(window.app, {
     state.tab = "home";
     save();
     render();
-    toast("已载入示例数据");
+    toast("已载入示例数据", 1400);
   },
 
   previewAuthMode(mode) {

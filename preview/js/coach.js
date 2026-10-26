@@ -3,7 +3,17 @@
 function scrollCoachChat() {
   setTimeout(() => {
     const chat = document.getElementById("chat-scroll");
-    if (chat) chat.scrollTop = chat.scrollHeight;
+    if (!chat) return;
+    const cards = chat.querySelectorAll(".coach-proposal, .coach-applied");
+    const latestCard = cards[cards.length - 1];
+    if (latestCard) {
+      const top = latestCard.getBoundingClientRect().top
+        - chat.getBoundingClientRect().top
+        + chat.scrollTop;
+      chat.scrollTop = Math.max(0, top - 6);
+      return;
+    }
+    chat.scrollTop = chat.scrollHeight;
   }, 30);
 }
 
@@ -219,7 +229,7 @@ function coachScreen() {
             <div class="coach-status"><i></i>${activeAdjustment ? "正在听你说" : "在线 · 结合你的训练数据"}</div>
           </div>
         </div>
-        ${state.chats.length ? `<button class="coach-clear" onclick="app.clearCoachChat()">清空</button>` : ""}
+        ${state.chats.length && !activeAdjustment ? `<button class="coach-clear" onclick="app.clearCoachChat()">清空</button>` : ""}
       </header>
 
       ${activeAdjustment ? coachAdjustmentBanner(adjustment) : `

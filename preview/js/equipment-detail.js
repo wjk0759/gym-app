@@ -115,7 +115,7 @@ function equipmentItemScreen() {
 
       <div class="detail-quick-card">
         <div class="detail-quick-title">
-          <span class="detail-quick-glyph">${equipGlyph(item)}</span>
+          <span class="detail-quick-glyph">${exercisePickIcon(item)}</span>
           <span>${esc(item.name)}</span>
         </div>
         <div class="detail-quick-actions">
@@ -149,7 +149,7 @@ function equipmentItemScreen() {
         "视频讲解",
         "先看动作讲解，再看后面要点，会更容易抓住发力顺序。",
         `<div class="detail-video-card ${item.video ? "ready" : ""}">
-          <div class="detail-video-glyph">${equipGlyph(item)}</div>
+          <div class="detail-video-glyph">${exercisePickIcon(item)}</div>
           <div class="detail-video-play">▶</div>
           <div class="detail-video-copy">
             <strong>${item.video ? "点一下播放动作讲解" : "教学视频准备中"}</strong>
@@ -167,7 +167,7 @@ function equipmentItemScreen() {
           <span class="detail-motion-line line-one"></span>
           <span class="detail-motion-line line-two"></span>
           <span class="detail-motion-line line-three"></span>
-          <div class="detail-motion-glyph">${equipGlyph(item)}</div>
+          <div class="detail-motion-glyph">${exercisePickIcon(item)}</div>
           <div class="detail-motion-copy">
             <strong>保持轨迹稳定</strong>
             <span>起始位置、发力方向和还原速度，比盲目加重量更重要。</span>
@@ -183,7 +183,7 @@ function equipmentItemScreen() {
         `<div class="detail-angle-grid">
           ${["正面", "侧面", "发力", "细节"].map((label, index) => `
             <div class="detail-angle ${index > 1 ? "locked" : ""}">
-              <div class="detail-angle-art">${index > 1 ? "◌" : equipGlyph(item)}</div>
+              <div class="detail-angle-art">${index > 1 ? "◌" : exercisePickIcon(item)}</div>
               <span>${label}</span>
             </div>
           `).join("")}

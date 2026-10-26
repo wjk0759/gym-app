@@ -229,13 +229,13 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") flushSave();
 });
 
-function toast(message) {
+function toast(message, duration = 2600) {
   const el = document.getElementById("toast");
   if (!el) return;
   el.textContent = message;
   el.classList.add("show");
   clearTimeout(window.__toastTimer);
-  window.__toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+  window.__toastTimer = setTimeout(() => el.classList.remove("show"), duration);
 }
 
 function todayDay() {

@@ -417,38 +417,16 @@
   white-space: nowrap;
 }
 
-.training-analytics-entry {
-  appearance: none;
-  width: 100%;
+.plan-data-head-actions {
   display: flex;
   align-items: center;
-  gap: 9px;
-  margin-top: 12px;
-  padding: 10px;
-  border: 1px solid rgba(92, 219, 140, 0.16);
-  border-radius: 13px;
-  background: rgba(48, 209, 88, 0.055);
-  color: inherit;
-  font: inherit;
-  text-align: left;
+  gap: 10px;
+  flex: 0 0 auto;
 }
 
-.training-analytics-entry-icon {
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  background: rgba(48, 209, 88, 0.12);
-  color: var(--accent);
+.plan-data-head-actions .link {
+  white-space: nowrap;
 }
-
-.training-analytics-entry-icon svg { width: 14px; height: 14px; }
-.training-analytics-entry .grow { display: flex; flex-direction: column; gap: 1px; }
-.training-analytics-entry strong { color: #fff; font-size: 10.5px; font-weight: 700; }
-.training-analytics-entry small { color: var(--faint); font-size: 8.5px; }
-.training-analytics-entry-link { color: var(--accent); font-size: 9px; font-weight: 700; white-space: nowrap; }
 
 .training-data-screen { padding-bottom: calc(18px + var(--safe-bottom)); }
 
@@ -471,6 +449,8 @@
   overflow-x: auto;
   padding: 1px 1px 3px;
   scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 22px), transparent 100%);
+  mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 22px), transparent 100%);
 }
 
 .training-action-rail::-webkit-scrollbar { display: none; }
@@ -579,9 +559,16 @@
   .calendar-day-number { font-size: 11px; }
   .calendar-toolbar { grid-template-columns: 36px minmax(0, 1fr) 36px; }
   .calendar-toolbar .icon-btn { width: 36px; height: 36px; }
+  .training-data-head { flex-wrap: wrap; align-items: flex-start; row-gap: 6px; }
+  .training-data-head-actions { width: 100%; justify-content: flex-start; }
+  .training-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .training-metric { padding: 8px 6px; }
-  .training-metric strong { font-size: 14px; }
+  .training-metric strong { font-size: 15px; }
   .training-metric span { font-size: 8px; }
+  .exercise-analytics-panel .detail-stat-records { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .exercise-analytics-panel .detail-stat-records > div:last-child { grid-column: 1 / -1; }
+  .plan-summary-card .between { flex-wrap: wrap; gap: 6px; }
+  .plan-summary-card .link { white-space: nowrap; }
 }
 
 @media (max-height: 620px) {

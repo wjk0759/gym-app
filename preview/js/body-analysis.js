@@ -11,7 +11,7 @@ function bodyAnalysisScreen() {
       </div>
 
       <div class="photo-area ${state.bodyPhoto ? "filled" : ""}">
-        <div class="big">📷</div>
+        <div class="big">${ICONS.camera}</div>
         <div class="small">${state.bodyPhoto ? "已选择体型照片" : "拍照或选择一张照片"}</div>
         <div class="tiny">${state.bodyPhoto ? "确认授权后即可分析" : "正面或侧面，光线充足"}</div>
       </div>

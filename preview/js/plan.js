@@ -160,13 +160,17 @@ function trainingDataPanel() {
 
   return `
     <section class="training-data-summary">
-      <div class="between">
+      <div class="between training-data-head">
         <div>
           <div class="compose-kicker">训练数据</div>
           <div class="h2">最近 30 天</div>
         </div>
-        <button class="link" onclick="app.openHistory()">全部记录 ›</button>
+        <div class="plan-data-head-actions">
+          <button class="link" onclick="app.openTrainingData()">动作数据 ›</button>
+          <button class="link" onclick="app.openHistory()">全部记录 ›</button>
+        </div>
       </div>
+
       <div class="training-metric-grid">
         <div class="training-metric"><strong>${sessions.length}</strong><span>完成训练</span></div>
         <div class="training-metric"><strong>${Math.round(volume).toLocaleString()}</strong><span>总容量 kg</span></div>
@@ -182,15 +186,6 @@ function trainingDataPanel() {
         `).join("")}
       </div>
       <div class="tiny faint" style="margin-top:8px">按实际训练日期统计，容量只计算有记录的组数。</div>
-
-      <button class="training-analytics-entry" onclick="app.openTrainingData()">
-        <span class="training-analytics-entry-icon">${ICONS.chart}</span>
-        <span class="grow">
-          <strong>按动作查看训练数据</strong>
-          <small>容量 · 单组最重 · 1RM 趋势</small>
-        </span>
-        <span class="training-analytics-entry-link">打开 ›</span>
-      </button>
 
       <div class="training-recent-list">
         <div class="calendar-section-label">最近训练</div>
@@ -218,13 +213,13 @@ function planScreen() {
         <button class="link" onclick="app.goTodayInCalendar()">回到今天</button>
       </div>
 
-      <button class="plan-data-strip" onclick="app.scrollToTrainingData()">
+      <button class="plan-data-strip" onclick="app.openTrainingData()">
         <span class="plan-data-strip-icon" aria-hidden="true">▥</span>
         <span class="grow">
           <strong>训练数据 · 最近 30 天</strong>
           <small>${training.sessions.length ? `${training.sessions.length} 次训练 · ${Math.round(training.volume).toLocaleString()} kg 容量` : "还没有训练记录"}</small>
         </span>
-        <span class="plan-data-strip-link">查看趋势 ›</span>
+        <span class="plan-data-strip-link">按动作看数据 ›</span>
       </button>
 
       ${calendarOverview(month)}

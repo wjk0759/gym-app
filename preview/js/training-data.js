@@ -30,7 +30,7 @@ function trainingDataScreen() {
       <section class="training-data-intro">
         <div class="compose-kicker">计划 · 训练数据</div>
         <div class="h2">按动作看趋势</div>
-        <p>容量、单组最重和 1RM 预测都集中在这里。数据来自真实训练记录，不再放在动作详情页里。</p>
+        <p>基于实际训练记录，集中查看容量、单组最重和 1RM 预测。</p>
       </section>
 
       <div class="training-action-rail" aria-label="选择动作">

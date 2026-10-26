@@ -20,7 +20,7 @@ function equipmentLibraryRowMarkup(item) {
         <button onclick="app.deleteEquipItem('${item.id}')">删除</button>
       </div>
       <button class="library-row no-drag" onclick="app.openEquipItem('${item.id}')">
-        <span class="library-thumb">${equipGlyph(item)}</span>
+        <span class="library-thumb">${exercisePickIcon(item)}</span>
         <span class="library-row-copy">
           <span class="library-row-name">${esc(item.name)}</span>
           <span class="library-row-meta">${item.muscle} · ${item.equip}</span>

@@ -39,7 +39,7 @@ function sessionScreen() {
           <div class="card">
             <div class="between">
               <div class="h3">${esc(item.name)}</div>
-              <button class="trash-btn" onclick="app.sessionDeleteItem(${index})">🗑</button>
+              <button class="trash-btn" onclick="app.sessionDeleteItem(${index})" aria-label="删除动作">${ICONS.trash}</button>
             </div>
             <div class="row gap8" style="margin-top:10px">
               <div class="grow">

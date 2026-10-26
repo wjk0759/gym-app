@@ -126,7 +126,7 @@ function workoutScreen() {
 
       <div class="workout-action-bar">
         <div class="between">
-          <button class="link" style="color:var(--muted)" onclick="app.nextExercise()">跳过这个动作</button>
+          <button class="workout-skip" onclick="app.nextExercise()">跳过动作 <span>›</span></button>
           <span class="tiny faint">已完成 ${done}/${total} 组</span>
         </div>
         <button class="btn btn-primary" style="margin-top:8px" onclick="${action}">${actionLabel}</button>

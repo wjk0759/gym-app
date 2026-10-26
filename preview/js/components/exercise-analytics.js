@@ -329,7 +329,7 @@ function exerciseAnalyticsPanel(item, options = {}) {
       ${showHeader ? `
         <div class="exercise-analytics-heading">
           <div>
-            <div class="compose-kicker">动作训练数据</div>
+            <div class="compose-kicker">当前动作</div>
             <h2>${esc(item.name)}</h2>
             <p>${lead}</p>
           </div>

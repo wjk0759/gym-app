@@ -51,21 +51,21 @@ function foodPhotoScreen() {
       ${state.foodPhotoImage ? `
         <div class="card" style="padding:0;overflow:hidden">
           <div style="height:220px;background:linear-gradient(145deg,#5b4632 0%,#2d392e 55%,#151b16 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
-            <div style="font-size:64px;filter:drop-shadow(0 8px 16px rgba(0,0,0,.35))">🍱</div>
+            <div class="photo-sim-icon">${ICONS.utensils}</div>
             <div class="tiny muted">已选择照片（预览模拟）</div>
           </div>
         </div>
       ` : `
         <div style="height:220px;border:1px dashed var(--stroke);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:var(--surface)">
-          <div style="font-size:34px">🍽</div>
+          <div class="photo-empty-icon">${ICONS.utensils}</div>
           <div class="small strong">拍照或选择一张餐食照片</div>
           <div class="tiny faint">尽量俯拍，让食物完整进入画面</div>
         </div>
       `}
 
       <div class="row gap8">
-        <button class="btn btn-secondary grow" onclick="app.openFoodPhotoCamera('foodPhoto')">📷 重拍</button>
-        <button class="btn btn-secondary grow" onclick="app.openFoodPhotoCamera('foodPhoto')">🖼 相册</button>
+        <button class="btn btn-secondary grow" onclick="app.openFoodPhotoCamera('foodPhoto')"><span class="btn-icon">${ICONS.camera}</span>重拍</button>
+        <button class="btn btn-secondary grow" onclick="app.openFoodPhotoCamera('foodPhoto')"><span class="btn-icon">${ICONS.image}</span>相册</button>
       </div>
 
       <div class="card">

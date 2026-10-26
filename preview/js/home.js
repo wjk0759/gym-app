@@ -56,11 +56,12 @@ function home() {
   const totals = nutritionTotals();
   const currentWeek = currentWeekSessions();
   const weekSessions = currentWeek.length;
-  const ratio = Math.min(100, Math.round((weekSessions / Math.max(1, state.profile.weeklyDays)) * 100));
+  const weeklyTarget = Math.max(1, state.profile.weeklyDays);
+  const remainingSessions = Math.max(0, weeklyTarget - weekSessions);
+  const ratio = Math.min(100, Math.round((weekSessions / weeklyTarget) * 100));
   const preview = planAdjustmentPreview();
   const remainingKcal = Math.max(0, targets.kcal - Math.round(totals.kcal));
   const remainingProtein = Math.max(0, targets.protein - Math.round(totals.p));
-  const totalVolume = state.sessions.reduce((sum, session) => sum + Number(session.volume || 0), 0);
 
   return `
     <div class="stack">
@@ -71,40 +72,30 @@ function home() {
 
       ${homeTodayCard(day)}
 
-      <div class="card">
+      <div class="card home-ai-card">
         <div class="between">
           <div>
-            <div class="tiny accent strong">AI 教练</div>
-            <div class="h3" style="margin-top:3px">${state.plan.title}</div>
-            <div class="tiny muted" style="margin-top:3px">第 ${state.plan.version} 版 · ${state.plan.days.length} 个训练日</div>
+            <div class="tiny accent strong">AI 教练 · 本周进度</div>
+            <div class="h3" style="margin-top:4px">${weekSessions ? (remainingSessions ? `本周还差 ${remainingSessions} 次训练` : "本周目标已完成") : "先完成本周第一次训练"}</div>
+            <div class="tiny muted" style="margin-top:3px">${state.plan.title} · 第 ${state.plan.version} 版</div>
           </div>
-          <span class="accent">↗</span>
         </div>
         <div class="row gap8" style="margin-top:10px">
-          <div class="review-metric"><div class="tiny faint">本周完成</div><div class="small strong">${weekSessions}/${Math.max(1, state.profile.weeklyDays)} 次</div></div>
-          <div class="review-metric"><div class="tiny faint">平均 RPE</div><div class="small strong">${preview.averageRPE ? preview.averageRPE.toFixed(1) : "—"}</div></div>
+          <div class="review-metric"><div class="tiny faint">本周完成</div><div class="small strong">${weekSessions}/${weeklyTarget} 次</div></div>
+          <div class="review-metric"><div class="tiny faint">近期 RPE</div><div class="small strong">${preview.averageRPE ? preview.averageRPE.toFixed(1) : "—"}</div></div>
           <div class="review-metric"><div class="tiny faint">训练容量</div><div class="small strong">${currentWeek.reduce((sum, s) => sum + s.volume, 0).toLocaleString()} kg</div></div>
         </div>
-        <div class="small strong" style="margin-top:10px">${weekSessions ? "想调整计划？先和教练说说最近遇到的问题。" : "先记录一次训练，教练才能更准确地判断。"}</div>
-        <div class="tiny muted" style="margin-top:4px;line-height:1.6">${weekSessions ? "教练会先问清时间、恢复、疼痛或瓶颈，再生成可执行的调整方案，不会直接改计划。" : "本周完成、RPE 和容量只作为参考，不会自动替你改计划。"}</div>
-        <button class="link" style="margin-top:10px" onclick="app.startPlanAdjustment('home')">✦ 和教练聊聊，再调整计划 →</button>
-      </div>
-
-      <div class="card">
-        <div class="between" style="margin-bottom:10px">
-          <div class="h3">本周完成</div>
-          <div class="small muted">${weekSessions}/${state.profile.weeklyDays} 次</div>
+        <div class="home-ai-progress">
+          <div class="between tiny"><span>本周目标</span><span>${ratio}%</span></div>
+          <div class="bar"><span style="width:${ratio}%"></span></div>
         </div>
-        <div class="bar"><span style="width:${ratio}%"></span></div>
-        <div class="row gap12" style="margin-top:12px">
-          <div class="grow"><div class="h3">${state.sessions.length}</div><div class="tiny faint">累计训练</div></div>
-          <div class="grow"><div class="h3">${Math.round(totalVolume).toLocaleString()}</div><div class="tiny faint">总容量 kg</div></div>
-          <div class="grow"><div class="h3">${weekSessions}</div><div class="tiny faint">本周</div></div>
-        </div>
+        <button class="btn btn-secondary home-ai-cta" onclick="app.startPlanAdjustment('home')">
+          <span>✦ 和教练聊聊，再调整计划</span><span>→</span>
+        </button>
       </div>
 
       <div class="card nutrition-card" onclick="app.openNutritionDate(todayKey(), 'home')">
-        <div class="nutrition-icon">🍽</div>
+        <div class="nutrition-icon">${ICONS.utensils}</div>
         <div class="grow">
           <div class="h3">今日饮食</div>
           <div class="tiny muted" style="margin-top:3px">${remainingKcal > 0 ? `还可摄入 ${remainingKcal} kcal · 蛋白质还差 ${remainingProtein}g` : `已达到今日热量目标 · 蛋白质还差 ${remainingProtein}g`}</div>

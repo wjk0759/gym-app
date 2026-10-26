@@ -14,7 +14,7 @@ function equipmentRecognitionScreen() {
     <div class="stack">
       ${headerBack("器械识别", "app.equipmentTabOpen()")}
       <div class="card recognition-head-card">
-        <div class="recognition-thumb">${state.equipRecognitionPhoto ? "🏋" : "📷"}</div>
+        <div class="recognition-thumb">${ICONS.camera}</div>
         <div class="grow">
           <div class="tiny faint">照片识别</div>
           <div class="h2">识别你的器械</div>

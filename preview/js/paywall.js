@@ -5,7 +5,7 @@ function paywallScreen() {
     <div class="stack">
       ${headerBack("练途 Pro")}
       <div class="card hero center">
-        <div class="crown">♛</div>
+        <div class="crown">${ICONS.crown}</div>
         <div class="h2">把 AI 教练带在身边</div>
         <div class="small muted" style="margin-top:6px">解锁 DeepSeek AI 计划、三种专业 Skill 与完整教练对话。</div>
       </div>
@@ -14,8 +14,8 @@ function paywallScreen() {
         ${[
           ["DeepSeek AI 计划生成与调整", "✦"],
           ["健身教练、康复师、营养师 AI Skills", "◎"],
-          ["周复盘、训练偏好记忆与动作替代", "💬"],
-          ["器械拍照识别与饮食记录", "📷"]
+          ["周复盘、训练偏好记忆与动作替代", ICONS.coach],
+          ["器械拍照识别与饮食记录", ICONS.camera]
         ].map(([text, icon]) => `
           <div class="benefit-row"><span>${icon}</span><span>${text}</span><span class="check">✓</span></div>
         `).join("")}

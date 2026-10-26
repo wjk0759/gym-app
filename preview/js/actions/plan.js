@@ -83,10 +83,6 @@ Object.assign(window.app, {
     render();
   },
 
-  scrollToTrainingData() {
-    document.querySelector(".training-data-summary")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  },
-
   openPlanExercisePicker() {
     if (!state.workoutDraft || state.workoutDraft.source !== "planEdit") return;
     state.screen = "planExercisePicker";

@@ -2,24 +2,6 @@
 
 /* ---------------- Equipment ---------------- */
 
-function equipGlyph(item) {
-  const muscle = item.muscle || "";
-  if (muscle.includes("有氧")) return "🏃";
-  if (muscle.includes("腿") || muscle.includes("臀")) return "🦵";
-  if (muscle.includes("背")) return "🏋️";
-  if (muscle.includes("肩") || muscle.includes("手臂")) return "💪";
-  if (muscle.includes("核心")) return "🧘";
-  const map = {
-    "固定器械": "⚙️",
-    "哑铃": "💪",
-    "杠铃": "🏋️",
-    "有氧": "🏃",
-    "绳索": "🪢",
-    "徒手": "🤸"
-  };
-  return map[item.equip] || "🏋️";
-}
-
 function exercisePickIcon(item) {
   const muscle = item.muscle || "";
   if (muscle.includes("有氧")) return ICONS.cardio;
@@ -234,7 +216,7 @@ function equipmentSelectionPanel(selected) {
           const saved = savedSlugs.has(item.slug);
           return `
             <div class="equipment-selection-row">
-              <span class="equipment-selection-glyph">${equipGlyph({ muscle: item.muscle, equip: item.equip })}</span>
+              <span class="equipment-selection-glyph">${exercisePickIcon({ muscle: item.muscle, equip: item.equip })}</span>
               <div class="grow">
                 <div class="small strong">${esc(item.name)}</div>
                 <div class="tiny faint">${item.muscle} · ${item.equip}${saved ? " · 已在库" : ""}</div>

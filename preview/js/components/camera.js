@@ -3,7 +3,7 @@
 function photoCaptureScreen(context) {
   const isFood = context === "food";
   const title = isFood ? "拍摄餐食" : "拍摄器械";
-  const icon = isFood ? "🍽" : "🏋";
+  const icon = isFood ? ICONS.utensils : ICONS.dumbbell;
   const heading = isFood ? "把整餐放进画面" : "把器械完整放进画面";
   const hint = isFood ? "尽量俯拍，让食物完整进入画面" : "避免只拍到局部、边缘或严重遮挡";
   const closeAction = isFood ? "app.closeFoodPhotoCamera()" : "app.equipmentTabOpen()";

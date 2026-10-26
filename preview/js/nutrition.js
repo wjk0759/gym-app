@@ -33,10 +33,10 @@ function nutritionScreen() {
       </div>
 
       <div class="card nutrition-card" onclick="app.openFoodPhoto('${key}')">
-        <div class="nutrition-icon">📷</div>
+        <div class="nutrition-icon">${ICONS.camera}</div>
         <div class="grow">
           <div class="small strong">拍照识别饮食</div>
-          <div class="tiny muted" style="margin-top:3px">拍一餐，估算热量与三大营养素</div>
+          <div class="tiny muted" style="margin-top:3px">拍一餐，估算热量与营养</div>
         </div>
         <div class="tiny accent">›</div>
       </div>
@@ -66,7 +66,7 @@ function nutritionScreen() {
                   <div class="tiny faint">${log.grams} g</div>
                 </div>
                 <div class="tiny muted">${log.kcal} kcal</div>
-                <button class="trash-btn" onclick="app.deleteFood('${log.id}')">🗑</button>
+                <button class="trash-btn" onclick="app.deleteFood('${log.id}')" aria-label="删除${log.name}">${ICONS.trash}</button>
               </div>
             `).join("")}
           `;
