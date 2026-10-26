@@ -532,6 +532,30 @@ function planTemplatesForSplit(split) {
   ];
 }
 
+function resolvePlanExerciseSlugs(slugs, equipment) {
+  const allowed = new Set(["徒手", ...(Array.isArray(equipment) ? equipment : [])]);
+  const used = new Set();
+  const result = [];
+  slugs.forEach((slug) => {
+    const info = EX[slug];
+    if (info && allowed.has(info.equip) && !used.has(slug)) {
+      result.push(slug);
+      used.add(slug);
+    }
+  });
+  if (result.length >= 5) return result;
+  const focusMuscles = [...new Set(slugs.map((slug) => EX[slug]?.muscle).filter(Boolean))];
+  const candidates = Object.entries(EX)
+    .filter(([slug, info]) => allowed.has(info.equip) && info.muscle !== "有氧" && !used.has(slug));
+  const preferred = candidates.filter(([, info]) => focusMuscles.includes(info.muscle));
+  [...preferred, ...candidates].forEach(([slug]) => {
+    if (result.length >= 5 || used.has(slug)) return;
+    result.push(slug);
+    used.add(slug);
+  });
+  return result;
+}
+
 function buildPlan(profile) {
   const split = SPLIT_OPTIONS.some((option) => option.key === profile.split) ? profile.split : "1分化";
   const templatePool = planTemplatesForSplit(split);
@@ -555,6 +579,8 @@ function buildPlan(profile) {
   templates.forEach((template, slot) => {
     const firstDate = addDays(today, defaultOffsets[slot]);
     const weekday = firstDate.getDay() || 7;
+    const resolvedSlugs = resolvePlanExerciseSlugs(template.slugs, profile.equipment);
+    const resolvedFocus = [...new Set(resolvedSlugs.map((slug) => EX[slug]?.muscle).filter(Boolean))];
     for (let week = 1; week <= 4; week += 1) {
       const date = addDays(firstDate, (week - 1) * 7);
       days.push({
@@ -564,8 +590,8 @@ function buildPlan(profile) {
         slot,
         dateKey: localDateInputValue(date),
         title: template.title,
-        focus: template.focus,
-        exercises: template.slugs.map((slug) => {
+        focus: resolvedFocus,
+        exercises: resolvedSlugs.map((slug) => {
           const ex = EX[slug];
           const baseWeight = ex.base ? roundHalf(ex.base * (1 + 0.025 * (week - 1))) : 0;
           return {
@@ -594,7 +620,13 @@ function buildPlan(profile) {
 
 function applyEquipmentLibrary(plan) {
   if (!state.useEquipLibrary) return plan;
-  const slugs = state.equipmentLibrary.map((item) => item.slug).filter(Boolean);
+  const allowed = new Set(["徒手", ...(state.profile?.equipment || [])]);
+  const slugs = state.equipmentLibrary
+    .map((item) => item.slug)
+    .filter((slug) => {
+      const info = EX[slug];
+      return info && info.muscle !== "有氧" && allowed.has(info.equip);
+    });
   if (!slugs.length) return plan;
 
   plan.days.forEach((day, index) => {
