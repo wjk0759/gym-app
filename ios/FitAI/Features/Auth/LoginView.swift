@@ -39,6 +39,13 @@ struct LoginView: View {
     @State private var legal: LegalDocumentKind?
     @State private var showServerSettings = false
     @State private var showPasswordReset = false
+    @State private var showConsentPrompt = false
+    @State private var pendingConsentAction: PendingConsentAction?
+
+    private enum PendingConsentAction {
+        case login
+        case social(String)
+    }
 
     private var errorText: String? {
         localError ?? auth.errorMessage
@@ -83,6 +90,30 @@ struct LoginView: View {
         }
         .sheet(isPresented: $showPasswordReset) {
             PasswordResetView(prefillPhone: account.count == 11 ? account : phone)
+        }
+        .confirmationDialog(
+            "登录前确认",
+            isPresented: $showConsentPrompt,
+            titleVisibility: .visible
+        ) {
+            Button("同意并继续") {
+                consent = true
+                let action = pendingConsentAction
+                pendingConsentAction = nil
+                switch action {
+                case .login:
+                    performLogin()
+                case let .social(provider):
+                    performSocialLogin(provider)
+                case nil:
+                    break
+                }
+            }
+            Button("取消", role: .cancel) {
+                pendingConsentAction = nil
+            }
+        } message: {
+            Text("登录需要使用你的账号标识，并可能同步训练资料。请确认已阅读并同意《用户协议》和《隐私政策》。")
         }
         .onChange(of: mode) { _, _ in
             localError = nil
@@ -492,14 +523,12 @@ struct LoginView: View {
         provider: String
     ) -> some View {
         Button {
-            guard ensureConsent() else { return }
-            Task {
-                do {
-                    try await auth.loginWithSocial(provider: provider)
-                } catch {
-                    localError = error.localizedDescription
-                }
+            guard consent else {
+                pendingConsentAction = .social(provider)
+                showConsentPrompt = true
+                return
             }
+            performSocialLogin(provider)
         } label: {
             HStack(spacing: 9) {
                 Image(systemName: icon)
@@ -565,7 +594,15 @@ struct LoginView: View {
     }
 
     private func submit() {
-        guard ensureConsent() else { return }
+        guard consent else {
+            pendingConsentAction = .login
+            showConsentPrompt = true
+            return
+        }
+        performLogin()
+    }
+
+    private func performLogin() {
         localError = nil
         auth.clearError()
         Task {
@@ -585,10 +622,16 @@ struct LoginView: View {
         }
     }
 
-    private func ensureConsent() -> Bool {
-        if consent { return true }
-        localError = "请先勾选页面底部的用户协议与隐私政策"
-        return false
+    private func performSocialLogin(_ provider: String) {
+        localError = nil
+        auth.clearError()
+        Task {
+            do {
+                try await auth.loginWithSocial(provider: provider)
+            } catch {
+                localError = error.localizedDescription
+            }
+        }
     }
 }
 

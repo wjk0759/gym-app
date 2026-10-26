@@ -77,6 +77,12 @@ struct HomeView: View {
                     showBodyCheckIn = true
                 }
             }
+            .onChange(of: store.bodyCheckInFrequency) { _, _ in
+                if store.bodyCheckInDue {
+                    bodyCheckInManual = false
+                    showBodyCheckIn = true
+                }
+            }
         }
     }
 
