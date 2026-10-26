@@ -633,7 +633,7 @@ function headerBack(title, action = "app.back()") {
       <div class="row between">
         <button class="icon-btn" onclick="${action}">‹</button>
         <div class="h3">${title}</div>
-        <div style="width:34px"></div>
+        <span class="header-spacer" aria-hidden="true"></span>
       </div>
     </div>
   `;
@@ -1694,7 +1694,7 @@ function equipmentLibraryScreen() {
         <div class="row between">
           <button class="icon-btn" onclick="${backAction}" aria-label="返回">‹</button>
           <div class="h3">器械库</div>
-          <div style="width:34px"></div>
+          <span class="header-spacer" aria-hidden="true"></span>
         </div>
       </div>
 
@@ -3155,12 +3155,24 @@ function workoutScreen() {
   const workout = state.workout;
   if (!workout) return home();
   const day = workoutDay(workout);
-  if (!day) return home();
+  if (!day || !Array.isArray(day.exercises) || day.exercises.length === 0) return home();
+
+  // 旧版本 localStorage / 中断恢复可能留下不完整状态。先修复索引和日志，
+  // 避免渲染时抛错后只剩头部和底部操作条。
+  if (!Array.isArray(workout.logs)) workout.logs = [];
+  if (!Number.isInteger(workout.index) || workout.index < 0) workout.index = 0;
+  if (!Number.isInteger(workout.setIndex) || workout.setIndex < 0) workout.setIndex = 0;
   if (workout.index >= day.exercises.length) return workoutSummary(day);
 
   const exercise = day.exercises[workout.index];
-  const info = EX[exercise.slug];
-  const done = workout.logs.length;
+  if (!exercise) return workoutSummary(day);
+  const info = EX[exercise.slug] || {
+    name: exercise.slug || "当前动作",
+    equip: "",
+    cues: "动作资料暂时无法加载，可以继续记录本组训练。"
+  };
+  const logs = Array.isArray(workout.logs) ? workout.logs : [];
+  const done = logs.length;
   const total = day.exercises.reduce((sum, item) => sum + item.sets, 0);
   const ratio = Math.min(100, Math.round((done / Math.max(1, total)) * 100));
   const setsDone = workout.setIndex >= exercise.sets;
@@ -3170,18 +3182,20 @@ function workoutScreen() {
   const action = setsDone ? "app.nextExercise()" : "app.completeSet()";
 
   return `
-    <div class="stack workout-screen">
-      <div class="page-header row between" style="margin-bottom:4px">
-        <button class="icon-btn" onclick="app.exitWorkout()">✕</button>
-        <div class="h3">训练中</div>
-        <div style="width:34px"></div>
-      </div>
+    <div class="workout-screen">
+      <header class="workout-topbar">
+        <button class="icon-btn" onclick="app.exitWorkout()" aria-label="结束训练">✕</button>
+        <div class="workout-title">训练中</div>
+        <span class="workout-topbar-spacer" aria-hidden="true"></span>
+      </header>
 
-      <div>
+      <div class="workout-progress-strip">
         <div class="workout-progress"><span>${done}/${total} 组</span><span>${workout.index + 1}/${day.exercises.length} 动作</span></div>
         <div class="bar"><span style="width:${ratio}%"></span></div>
       </div>
 
+      <div class="workout-scroll">
+        <div class="workout-content">
       <div class="card">
         <div class="between">
           <div class="badge">动作 ${workout.index + 1}/${day.exercises.length}</div>
@@ -3189,7 +3203,7 @@ function workoutScreen() {
         </div>
         <div class="h2" style="margin-top:9px">${info.name}</div>
         <div class="small accent" style="margin-top:4px">${exercise.sets} 组 × ${exercise.reps}</div>
-        <div class="small muted" style="margin-top:10px;line-height:1.65">${info.cues}</div>
+        <div class="small muted workout-copy" style="margin-top:10px;line-height:1.65">${info.cues}</div>
       </div>
 
       ${workout.rest > 0 ? `
@@ -3235,17 +3249,19 @@ function workoutScreen() {
         <div class="tiny muted" style="margin-top:6px;line-height:1.6">保留 1–2 次余力；组间休息 ${exercise.rest}s，动作变形就降重量。</div>
       </div>
 
-      ${workout.logs.length ? `
+      ${logs.length ? `
         <div class="card">
           <div class="h3" style="margin-bottom:6px">本次已完成</div>
-          ${workout.logs.map((log) => `
+          ${logs.map((log) => `
             <div class="set-line">
-              <span class="small muted">${EX[log.slug].name} · 第 ${log.set} 组</span>
+              <span class="small muted">${EX[log.slug]?.name || log.slug} · 第 ${log.set} 组</span>
               <span class="small">${log.weight > 0 ? log.weight + "kg × " : "自重 × "}${log.reps}</span>
             </div>
           `).join("")}
         </div>
       ` : ""}
+        </div>
+      </div>
 
       <div class="workout-action-bar">
         <div class="between">
@@ -3267,7 +3283,7 @@ function workoutSummary(day) {
       <div class="page-header row between">
         <button class="icon-btn" onclick="app.exitWorkout()">✕</button>
         <div class="h3">训练总结</div>
-        <div style="width:34px"></div>
+        <span class="header-spacer" aria-hidden="true"></span>
       </div>
 
       <div class="card">
@@ -3810,6 +3826,7 @@ function render() {
   root.innerHTML = html + legalModal();
   root.className = "app"
     + (state.screen === "tabs" ? "" : " no-tabs")
+    + (state.screen === "workout" ? " workout-mode" : "")
     + (state.screen === "tabs" && state.tab === "coach" ? " chat-mode" : "")
     + (state.equipSelectionOpen && state.screen === "tabs" && state.tab === "equipment" ? " selection-open" : "")
     + (state.screen === "equipmentCamera" ? " camera-mode" : "")

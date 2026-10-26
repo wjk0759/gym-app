@@ -28,26 +28,29 @@ struct WorkoutSessionView: View {
                 progressHeader
 
                 AppScrollView {
-                        VStack(spacing: 16) {
-                            if let restRemaining {
-                                restCard(restRemaining)
-                            }
-
-                            if let exercise = currentExercise {
-                                exerciseCard(exercise)
-                                setCard(exercise)
-                                trainingTipCard(exercise)
-                            } else {
-                                summaryCard
-                            }
+                    VStack(spacing: AppLayout.sectionSpacing) {
+                        if let restRemaining {
+                            restCard(restRemaining)
                         }
-                        .padding(20)
-                        .padding(.bottom, 24)
+
+                        if let exercise = currentExercise {
+                            exerciseCard(exercise)
+                            setCard(exercise)
+                            trainingTipCard(exercise)
+                        } else {
+                            summaryCard
+                        }
                     }
+                    .appPagePadding()
+                    .padding(.vertical, 16)
+                    .padding(.bottom, 24)
+                    .appReadableContent()
                 }
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    workoutActionBar
-                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                workoutActionBar
+            }
             .background(AppBackground())
             .navigationTitle("训练中")
             .navigationBarTitleDisplayMode(.inline)
@@ -105,8 +108,9 @@ struct WorkoutSessionView: View {
             ProgressView(value: min(1, progress))
                 .tint(Theme.accent)
         }
-        .padding(.horizontal, 20)
+        .appPagePadding()
         .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.background)
     }
 
@@ -311,8 +315,8 @@ struct WorkoutSessionView: View {
                 .buttonStyle(PrimaryButtonStyle())
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 10)
+        .appPagePadding()
+        .padding(.top, AppLayout.actionBarSpacing)
         .padding(.bottom, 8)
         .background(.ultraThinMaterial)
         .overlay(alignment: .top) {
@@ -351,10 +355,18 @@ struct WorkoutSessionView: View {
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
 
-            HStack(spacing: 12) {
-                summaryMetric("\(logs.count)", "完成组数")
-                summaryMetric("\(Int(logs.reduce(0.0) { $0 + $1.weightKG * Double($1.reps) }))", "总容量 kg")
-                summaryMetric("\(durationMinutes)", "分钟")
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) {
+                    summaryMetric("\(logs.count)", "完成组数")
+                    summaryMetric("\(Int(logs.reduce(0.0) { $0 + $1.weightKG * Double($1.reps) }))", "总容量 kg")
+                    summaryMetric("\(durationMinutes)", "分钟")
+                }
+
+                VStack(spacing: 8) {
+                    summaryMetric("\(logs.count)", "完成组数")
+                    summaryMetric("\(Int(logs.reduce(0.0) { $0 + $1.weightKG * Double($1.reps) }))", "总容量 kg")
+                    summaryMetric("\(durationMinutes)", "分钟")
+                }
             }
 
             VStack(alignment: .leading, spacing: 8) {

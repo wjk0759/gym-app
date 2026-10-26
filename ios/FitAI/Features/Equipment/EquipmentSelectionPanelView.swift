@@ -3,6 +3,7 @@ import SwiftUI
 /// 器械页已选动作气泡：集中展示本次挑好的动作，并提供两条明确出口。
 struct EquipmentSelectionPanelView: View {
     @Environment(AppStore.self) private var store
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     let exercises: [Exercise]
     let onRemove: (Exercise) -> Void
@@ -32,7 +33,7 @@ struct EquipmentSelectionPanelView: View {
             separator
             actionSection
         }
-        .frame(width: 330)
+        .frame(minWidth: 260, idealWidth: 330, maxWidth: 380)
         .background(Theme.background)
         .preferredColorScheme(.dark)
     }
@@ -98,7 +99,7 @@ struct EquipmentSelectionPanelView: View {
                 }
             }
         }
-        .frame(maxHeight: 286)
+        .frame(maxHeight: verticalSizeClass == .compact ? 150 : 286)
     }
 
     private func exerciseRow(_ exercise: Exercise) -> some View {
