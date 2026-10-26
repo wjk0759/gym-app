@@ -238,9 +238,28 @@ Object.assign(window.app, {
     toast("开发验证码 123456 已填入");
   },
 
+  confirmAuthConsent() {
+    const provider = state.authConsentProvider;
+    state.authConsent = true;
+    state.authConsentPrompt = false;
+    state.authConsentProvider = null;
+    state.authError = "";
+    if (provider) this.previewSocial(provider);
+    else this.previewLogin();
+  },
+
+  cancelAuthConsent() {
+    state.authConsentPrompt = false;
+    state.authConsentProvider = null;
+    state.authError = "";
+    render();
+  },
+
   previewLogin() {
     if (!state.authConsent) {
-      state.authError = "请先勾选页面底部的用户协议与隐私政策";
+      state.authConsentPrompt = true;
+      state.authConsentProvider = null;
+      state.authError = "";
       render();
       return;
     }
@@ -276,7 +295,9 @@ Object.assign(window.app, {
 
   previewSocial(provider) {
     if (!state.authConsent) {
-      state.authError = "请先勾选页面底部的用户协议与隐私政策";
+      state.authConsentPrompt = true;
+      state.authConsentProvider = provider;
+      state.authError = "";
       render();
       return;
     }
@@ -301,6 +322,8 @@ Object.assign(window.app, {
     state.authenticated = false;
     state.authError = "";
     state.authConsent = false;
+    state.authConsentPrompt = false;
+    state.authConsentProvider = null;
     state.routeStack = [];
     save();
     render();

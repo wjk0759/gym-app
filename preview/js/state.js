@@ -53,6 +53,8 @@ function normalizeState(value) {
   applyGoalProfileDefaults(next.profile, next.bodyMetrics);
   next.goalEditorOpen = false;
   next.bodyCheckInOpen = false;
+  next.authConsentPrompt = false;
+  next.authConsentProvider = null;
   const validPeriodDate = (key) => /^\d{4}-\d{2}-\d{2}$/.test(String(key || ""));
   next.periodDates = Array.isArray(next.periodDates)
     ? [...new Set(next.periodDates.filter(validPeriodDate))].sort()

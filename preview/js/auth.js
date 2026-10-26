@@ -137,6 +137,27 @@ const LEGAL_DOCS = {
   }
 };
 
+function authConsentDialog() {
+  if (!state.authConsentPrompt) return "";
+  const provider = state.authConsentProvider;
+  return `
+    <div class="modal-backdrop auth-consent-backdrop" onclick="if(event.target===this)app.cancelAuthConsent()">
+      <section class="auth-consent-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-consent-title">
+        <div class="auth-consent-icon" aria-hidden="true">✓</div>
+        <div class="h2" id="auth-consent-title">同意协议并登录</div>
+        <p class="auth-consent-copy">登录前请确认：你已阅读并同意《用户协议》和《隐私政策》，且已年满 14 周岁。</p>
+        <div class="auth-consent-links">
+          <button class="link" onclick="app.openLegal('terms')">查看《用户协议》</button>
+          <button class="link" onclick="app.openLegal('privacy')">查看《隐私政策》</button>
+        </div>
+        <button class="btn btn-primary" onclick="app.confirmAuthConsent()">同意并登录</button>
+        <button class="btn btn-ghost" onclick="app.cancelAuthConsent()">暂不同意</button>
+        ${provider ? `<div class="auth-consent-provider">授权方式：${esc(provider)}登录</div>` : ""}
+      </section>
+    </div>
+  `;
+}
+
 function legalModal() {
   const doc = LEGAL_DOCS[state.legalDoc];
   if (!doc) return "";

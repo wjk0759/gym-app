@@ -48,7 +48,7 @@ function render() {
     const loginRoute = "login";
     const loginChanged = lastRouteKey !== loginRoute;
     lastRouteKey = loginRoute;
-    root.innerHTML = loginScreen() + legalModal();
+    root.innerHTML = loginScreen() + authConsentDialog() + legalModal();
     root.className = "app no-tabs" + (loginChanged ? " route-changed" : "");
     document.getElementById("tabbar").innerHTML = "";
     document.getElementById("tabbar").className = "tabbar hidden";
