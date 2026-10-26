@@ -523,7 +523,7 @@ struct WorkoutSessionView: View {
     private func openAdjustSheet(_ exercise: PlanExercise) {
         adjustExerciseID = exercise.id
         adjustSets = exercise.sets
-        adjustReps = exercise.reps
+        adjustReps = WorkoutPickerOptions.normalizedReps(exercise.reps)
         adjustWeight = exercise.weightKG ?? 0
         adjustRest = exercise.restSec
         showAdjustSheet = true
@@ -540,8 +540,7 @@ struct WorkoutSessionView: View {
 
         var updated = base
         updated.sets = min(max(adjustSets, 1), 10)
-        let normalizedReps = adjustReps.trimmingCharacters(in: .whitespacesAndNewlines)
-        updated.reps = normalizedReps.isEmpty ? base.reps : normalizedReps
+        updated.reps = WorkoutPickerOptions.normalizedReps(adjustReps)
         updated.weightKG = adjustWeight > 0 ? adjustWeight : nil
         updated.restSec = min(max(adjustRest, 0), 300)
         adjustedExercises[id] = updated
@@ -580,22 +579,31 @@ struct WorkoutSessionView: View {
                         GridItem(.flexible(), spacing: 8),
                         GridItem(.flexible(), spacing: 8)
                     ], spacing: 9) {
-                        adjustField("目标组数", text: Binding(
-                            get: { "\(adjustSets)" },
-                            set: { adjustSets = min(max(Int($0) ?? adjustSets, 1), 10) }
-                        ), keyboard: .numberPad)
-                        adjustField("每组次数", text: $adjustReps, keyboard: .numbersAndPunctuation)
-                        adjustField("目标重量 kg", text: Binding(
-                            get: { adjustWeight.formatted(.number.precision(.fractionLength(0...1))) },
-                            set: { adjustWeight = max(0, Double($0.replacingOccurrences(of: ",", with: ".")) ?? adjustWeight) }
-                        ), keyboard: .decimalPad)
-                        adjustField("组间休息 秒", text: Binding(
-                            get: { "\(adjustRest)" },
-                            set: { adjustRest = min(max(Int($0) ?? adjustRest, 0), 300) }
-                        ), keyboard: .numberPad)
+                        WheelPickerField(
+                            title: "目标组数 · 组",
+                            selection: $adjustSets,
+                            options: WorkoutPickerOptions.sets,
+                            display: { "\($0)" }
+                        )
+                        WheelPickerField(
+                            title: "每组次数 · 次",
+                            selection: $adjustReps,
+                            options: WorkoutPickerOptions.reps,
+                            display: { $0 }
+                        )
+                        WeightInputField(
+                            title: "目标重量",
+                            weight: $adjustWeight
+                        )
+                        WheelPickerField(
+                            title: "组间休息 · 秒",
+                            selection: $adjustRest,
+                            options: WorkoutPickerOptions.rests(including: adjustRest),
+                            display: { "\($0)" }
+                        )
                     }
 
-                    Text("填 0 表示自重；已完成 \(doneCount) 组。")
+                    Text("重量为 0 表示自重；已完成 \(doneCount) 组。")
                         .font(.caption2)
                         .foregroundStyle(Theme.tertiaryText)
 
@@ -622,24 +630,7 @@ struct WorkoutSessionView: View {
         .presentationDragIndicator(.visible)
     }
 
-    private func adjustField(_ title: String, text: Binding<String>, keyboard: UIKeyboardType) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.system(size: 9.5))
-                .foregroundStyle(Theme.tertiaryText)
-            TextField("", text: text)
-                .keyboardType(keyboard)
-                .multilineTextAlignment(.center)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(height: 36)
-                .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color.white.opacity(0.075), lineWidth: 1)
-                )
-        }
-    }
+
 
     private func feelingEmoji(_ value: Int) -> String {
         switch value {

@@ -384,6 +384,7 @@ function normalizeState(value) {
     : null;
   next.workoutAdjustOpen = false;
   next.workoutAdjustDraft = null;
+  next.numberPicker = null;
   if (next.workout && typeof next.workout === "object") {
     next.workout.adjustments = next.workout.adjustments && typeof next.workout.adjustments === "object"
       ? next.workout.adjustments
@@ -458,6 +459,7 @@ function initialState() {
     workoutDraft: null,
     workoutAdjustOpen: false,
     workoutAdjustDraft: null,
+    numberPicker: null,
     workoutCustomDay: null,
     authenticated: false,
     authMode: "phone",
@@ -3157,6 +3159,177 @@ function paywallScreen() {
 
 /* ---------------- Custom workout compose ---------------- */
 
+function workoutRepOptions(current) {
+  const options = Array.from({ length: 30 }, (_, index) => String(index + 1));
+  const normalized = String(parseReps(current));
+  return options.includes(normalized) ? options : [normalized, ...options];
+}
+
+function workoutRestOptions(current) {
+  const options = [0, 30, 45, 60, 75, 90, 120, 150, 180];
+  const normalized = Number(current) || 0;
+  return options.includes(normalized) ? options : [...options, normalized].sort((a, b) => a - b);
+}
+
+function workoutPickerOptions(key, current) {
+  if (key === "sets") {
+    return Array.from({ length: 10 }, (_, index) => ({
+      value: String(index + 1),
+      label: String(index + 1)
+    }));
+  }
+  if (key === "reps") {
+    return workoutRepOptions(current).map((value) => ({ value, label: value }));
+  }
+  return workoutRestOptions(current).map((value) => ({
+    value: String(value),
+    label: String(value)
+  }));
+}
+
+function workoutPickerTitle(key) {
+  return {
+    sets: "组数 · 组",
+    reps: "每组次数 · 次",
+    rest: "组间休息 · 秒"
+  }[key] || "选择数值";
+}
+
+function pickerFieldButton({ value, onclick, label }) {
+  return `
+    <button class="picker-field" type="button" onclick="${onclick}" aria-label="${label}">
+      <span>${value}</span>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+        <path d="m5 6 3-3 3 3M5 10l3 3 3-3"/>
+      </svg>
+    </button>
+  `;
+}
+
+function numberPickerSheet() {
+  const picker = state.numberPicker;
+  if (!picker) return "";
+  const selectedIndex = Math.max(0, picker.options.findIndex((option) => String(option.value) === String(picker.value)));
+  const selected = picker.options[selectedIndex] || picker.options[0];
+
+  return `
+    <div class="number-picker-backdrop no-drag" onclick="app.closeNumberPicker()">
+      <section class="number-picker-sheet no-drag" role="dialog" aria-modal="true" aria-label="${picker.title}" onclick="event.stopPropagation()">
+        <header class="number-picker-head">
+          <button class="number-picker-cancel" onclick="app.closeNumberPicker()">取消</button>
+          <div class="number-picker-heading">
+            <span>${picker.title}</span>
+            <strong id="number-picker-current">${selected?.label || ""}</strong>
+          </div>
+          <button class="number-picker-confirm" onclick="app.confirmNumberPicker()">确认</button>
+        </header>
+        <div class="number-picker-wheel-wrap">
+          <div class="number-picker-center" aria-hidden="true"></div>
+          <div class="number-picker-wheel" id="number-picker-wheel">
+            <div class="number-picker-spacer" aria-hidden="true"></div>
+            ${picker.options.map((option, index) => `
+              <button class="number-picker-option ${index === selectedIndex ? "selected" : ""}" data-index="${index}" data-value="${option.value}" onclick="app.scrollNumberPicker(${index})">${option.label}</button>
+            `).join("")}
+            <div class="number-picker-spacer" aria-hidden="true"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function setupNumberPicker() {
+  const picker = state.numberPicker;
+  const wheel = document.getElementById("number-picker-wheel");
+  if (!picker || !wheel) return;
+
+  const itemHeight = 46;
+  const options = picker.options;
+  const currentIndex = Math.max(0, options.findIndex((option) => String(option.value) === String(picker.value)));
+  let selectedIndex = currentIndex;
+
+  const updateSelection = (index) => {
+    const bounded = Math.max(0, Math.min(options.length - 1, index));
+    selectedIndex = bounded;
+    state.numberPicker.value = options[bounded].value;
+    wheel.querySelectorAll(".number-picker-option").forEach((option, optionIndex) => {
+      option.classList.toggle("selected", optionIndex === bounded);
+    });
+    const current = document.getElementById("number-picker-current");
+    if (current) current.textContent = options[bounded].label;
+  };
+
+  wheel.scrollTop = currentIndex * itemHeight;
+  wheel.addEventListener("scroll", () => {
+    updateSelection(Math.round(wheel.scrollTop / itemHeight));
+  }, { passive: true });
+
+  // Let the browser lay out the sheet before positioning the wheel.
+  requestAnimationFrame(() => {
+    wheel.scrollTop = currentIndex * itemHeight;
+    updateSelection(currentIndex);
+  });
+}
+
+function setupComposeDrag() {
+  const list = document.querySelector(".compose-list");
+  if (!list || list.dataset.dragReady === "1") return;
+  list.dataset.dragReady = "1";
+  let drag = null;
+
+  const clearTarget = () => {
+    list.querySelectorAll(".compose-exercise.drop-target").forEach((card) => {
+      card.classList.remove("drop-target");
+    });
+  };
+
+  list.addEventListener("pointerdown", (event) => {
+    const handle = event.target.closest("[data-compose-drag]");
+    if (!handle) return;
+    const card = handle.closest(".compose-exercise");
+    if (!card) return;
+    event.preventDefault();
+    drag = {
+      pointerId: event.pointerId,
+      source: Number(card.dataset.composeIndex),
+      target: Number(card.dataset.composeIndex),
+      card
+    };
+    card.classList.add("dragging");
+    handle.setPointerCapture?.(event.pointerId);
+  });
+
+  list.addEventListener("pointermove", (event) => {
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    const scroller = list.closest(".compose-scroll");
+    const bounds = scroller?.getBoundingClientRect();
+    if (scroller && bounds) {
+      if (event.clientY < bounds.top + 56) scroller.scrollTop -= 12;
+      else if (event.clientY > bounds.bottom - 56) scroller.scrollTop += 12;
+    }
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest(".compose-exercise");
+    clearTarget();
+    if (!target) return;
+    const targetIndex = Number(target.dataset.composeIndex);
+    if (Number.isInteger(targetIndex)) {
+      drag.target = targetIndex;
+      if (targetIndex !== drag.source) target.classList.add("drop-target");
+    }
+  });
+
+  const finish = (event) => {
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    const { source, target, card } = drag;
+    drag = null;
+    clearTarget();
+    card.classList.remove("dragging");
+    if (source !== target) app.workoutDraftMoveTo(source, target);
+  };
+
+  list.addEventListener("pointerup", finish);
+  list.addEventListener("pointercancel", finish);
+}
+
 function renderKeepingComposeScroll() {
   const scrollTop = document.querySelector(".compose-scroll")?.scrollTop || 0;
   render();
@@ -3218,44 +3391,57 @@ function workoutComposeScreen() {
 
       <div class="compose-eyebrow">
         <span>训练顺序</span>
-        <span class="tiny faint">用 ↑ ↓ 调整</span>
+        <span class="tiny faint">按住左侧手柄拖动排序</span>
       </div>
 
       <div class="compose-list">
         ${draft.exercises.length ? draft.exercises.map((item, index) => {
           const info = EX[item.slug] || { name: item.slug, muscle: "", equip: "" };
           return `
-            <article class="compose-exercise">
+            <article class="compose-exercise" data-compose-index="${index}">
               <div class="compose-exercise-head">
+                <span class="compose-drag-handle" data-compose-drag role="button" tabindex="0" aria-label="拖动排序" title="拖动排序">
+                  <svg viewBox="0 0 12 20" fill="currentColor" aria-hidden="true"><circle cx="3" cy="4" r="1.2"/><circle cx="9" cy="4" r="1.2"/><circle cx="3" cy="10" r="1.2"/><circle cx="9" cy="10" r="1.2"/><circle cx="3" cy="16" r="1.2"/><circle cx="9" cy="16" r="1.2"/></svg>
+                </span>
                 <span class="compose-order">${String(index + 1).padStart(2, "0")}</span>
                 <div class="grow compose-exercise-name">
                   <strong>${esc(info.name)}</strong>
                   <span>${info.muscle || "动作"}${info.equip ? ` · ${info.equip}` : ""}</span>
                 </div>
                 <div class="compose-move-group">
-                  <button class="compose-icon-btn" onclick="app.workoutDraftMove(${index}, -1)" ${index === 0 ? "disabled" : ""} aria-label="上移 ${esc(info.name)}">↑</button>
-                  <button class="compose-icon-btn" onclick="app.workoutDraftMove(${index}, 1)" ${index === draft.exercises.length - 1 ? "disabled" : ""} aria-label="下移 ${esc(info.name)}">↓</button>
                   <button class="compose-icon-btn danger" onclick="app.workoutDraftRemove(${index})" aria-label="移除 ${esc(info.name)}">×</button>
                 </div>
               </div>
 
               <div class="compose-fields">
-                <label class="compose-field">
-                  <span>组数</span>
-                  <input type="number" inputmode="numeric" min="1" max="10" step="1" value="${Number(item.sets) || 1}" onchange="app.workoutDraftField(${index}, 'sets', this.value)">
-                </label>
-                <label class="compose-field">
-                  <span>每组次数</span>
-                  <input type="text" inputmode="text" value="${esc(item.reps || "10-12")}" onchange="app.workoutDraftField(${index}, 'reps', this.value)">
-                </label>
-                <label class="compose-field">
+                <div class="compose-field">
+                  <span>组数 <em>组</em></span>
+                  ${pickerFieldButton({
+                    value: String(Number(item.sets) || 1),
+                    onclick: `app.openDraftPicker(${index}, 'sets')`,
+                    label: "选择组数"
+                  })}
+                </div>
+                <div class="compose-field">
+                  <span>每组次数 <em>次</em></span>
+                  ${pickerFieldButton({
+                    value: String(parseReps(item.reps)),
+                    onclick: `app.openDraftPicker(${index}, 'reps')`,
+                    label: "选择每组次数"
+                  })}
+                </div>
+                <div class="compose-field">
                   <span>目标重量 <em>kg</em></span>
-                  <input type="number" inputmode="decimal" min="0" step="0.5" value="${Number(item.weight) || 0}" onchange="app.workoutDraftField(${index}, 'weight', this.value)">
-                </label>
-                <label class="compose-field">
+                  <input class="weight-input" type="number" inputmode="decimal" min="0" step="0.5" value="${Number(item.weight) || 0}" onchange="app.workoutDraftWeight(${index}, this.value)" aria-label="目标重量 kg">
+                </div>
+                <div class="compose-field">
                   <span>组间休息 <em>秒</em></span>
-                  <input type="number" inputmode="numeric" min="0" max="300" step="15" value="${Number(item.rest) || 0}" onchange="app.workoutDraftField(${index}, 'rest', this.value)">
-                </label>
+                  ${pickerFieldButton({
+                    value: String(Number(item.rest) || 0),
+                    onclick: `app.openDraftPicker(${index}, 'rest')`,
+                    label: "选择组间休息"
+                  })}
+                </div>
               </div>
             </article>
           `;
@@ -3272,7 +3458,7 @@ function workoutComposeScreen() {
       <div class="compose-footer">
         <div class="compose-footer-copy">
           <strong id="compose-footer-summary">${totals.sets} 组 · 约 ${totals.minutes} 分钟</strong>
-          <span>重量可以留空或填 0，表示自重。</span>
+          <span>重量为 0 表示自重；开始后仍可继续调整。</span>
         </div>
         <button class="btn btn-primary" onclick="app.startWorkoutDraft()" ${draft.exercises.length ? "" : "disabled"}>开始本次训练</button>
       </div>
@@ -3315,22 +3501,34 @@ function workoutAdjustSheet() {
         <p class="small muted workout-adjust-copy">只调整这次训练的目标，不会改动长期计划。已完成 ${done} 组，降低目标组数会自动进入下一个动作。</p>
 
         <div class="compose-fields workout-adjust-fields">
-          <label class="compose-field">
-            <span>目标组数</span>
-            <input type="number" inputmode="numeric" min="1" max="10" step="1" value="${draft.sets}" onchange="app.workoutAdjustField('sets', this.value)">
-          </label>
-          <label class="compose-field">
-            <span>每组次数</span>
-            <input type="text" inputmode="text" value="${esc(draft.reps)}" onchange="app.workoutAdjustField('reps', this.value)">
-          </label>
-          <label class="compose-field">
+          <div class="compose-field">
+            <span>目标组数 <em>组</em></span>
+            ${pickerFieldButton({
+              value: String(draft.sets),
+              onclick: "app.openAdjustPicker('sets')",
+              label: "选择目标组数"
+            })}
+          </div>
+          <div class="compose-field">
+            <span>每组次数 <em>次</em></span>
+            ${pickerFieldButton({
+              value: String(parseReps(draft.reps)),
+              onclick: "app.openAdjustPicker('reps')",
+              label: "选择每组次数"
+            })}
+          </div>
+          <div class="compose-field">
             <span>目标重量 <em>kg</em></span>
-            <input type="number" inputmode="decimal" min="0" step="0.5" value="${draft.weight}" onchange="app.workoutAdjustField('weight', this.value)">
-          </label>
-          <label class="compose-field">
+            <input class="weight-input" type="number" inputmode="decimal" min="0" step="0.5" value="${Number(draft.weight) || 0}" onchange="app.workoutAdjustWeight(this.value)" aria-label="目标重量 kg">
+          </div>
+          <div class="compose-field">
             <span>组间休息 <em>秒</em></span>
-            <input type="number" inputmode="numeric" min="0" max="300" step="15" value="${draft.rest}" onchange="app.workoutAdjustField('rest', this.value)">
-          </label>
+            ${pickerFieldButton({
+              value: String(draft.rest),
+              onclick: "app.openAdjustPicker('rest')",
+              label: "选择组间休息"
+            })}
+          </div>
         </div>
 
         <button class="btn btn-primary" style="margin-top:16px" onclick="app.saveWorkoutAdjust()">保存调整</button>
@@ -3401,7 +3599,7 @@ function workoutScreen() {
           <div class="tiny faint">${info.equip}</div>
         </div>
         <div class="h2" style="margin-top:9px">${info.name}</div>
-        <div class="small accent" style="margin-top:4px">${exercise.sets} 组 × ${exercise.reps}${exercise.weight > 0 ? ` · ${exercise.weight} kg` : " · 自重"}</div>
+        <div class="small accent" style="margin-top:4px">${exercise.sets} 组 × ${exercise.reps} 次${exercise.weight > 0 ? ` · ${exercise.weight} kg` : " · 自重"}</div>
         <div class="small muted workout-copy" style="margin-top:10px;line-height:1.65">${info.cues}</div>
       </div>
 
@@ -4027,7 +4225,8 @@ function render() {
   else html = home();
 
   root.innerHTML = html + legalModal()
-    + (state.workoutAdjustOpen && state.screen === "workout" ? workoutAdjustSheet() : "");
+    + (state.workoutAdjustOpen && state.screen === "workout" ? workoutAdjustSheet() : "")
+    + (state.numberPicker ? numberPickerSheet() : "");
   root.className = "app"
     + (state.screen === "tabs" ? "" : " no-tabs")
     + (state.screen === "workout" ? " workout-mode" : "")
@@ -4054,6 +4253,8 @@ function render() {
   }
 
   setupDragScroll();
+  setupComposeDrag();
+  setupNumberPicker();
 }
 
 function coachReply(text, skill = "trainer") {
@@ -4523,7 +4724,7 @@ window.app = {
         ...exercise,
         id: exercise.id || `plan-ex-${Date.now()}-${index}`,
         sets: Number(exercise.sets) || 3,
-        reps: String(exercise.reps || "10-12"),
+        reps: String(parseReps(exercise.reps)),
         weight: Math.max(0, Number(exercise.weight) || 0),
         rest: Math.max(0, Number(exercise.rest) || 0),
         rpe: Number(exercise.rpe) || 7.5
@@ -4606,7 +4807,7 @@ window.app = {
     state.workoutAdjustDraft = {
       id: exercise.id,
       sets: Math.max(1, Number(exercise.sets) || 1),
-      reps: String(exercise.reps || "10-12"),
+      reps: String(parseReps(exercise.reps)),
       weight: Math.max(0, Number(exercise.weight) || 0),
       rest: Math.max(0, Number(exercise.rest) || 0)
     };
@@ -4622,20 +4823,6 @@ window.app = {
     render();
   },
 
-  workoutAdjustField(key, value) {
-    if (!state.workoutAdjustDraft) return;
-    if (key === "sets") {
-      state.workoutAdjustDraft.sets = Math.max(1, Math.min(10, Math.round(Number(value) || 1)));
-    } else if (key === "reps") {
-      state.workoutAdjustDraft.reps = String(value || "").trim() || "10-12";
-    } else if (key === "weight") {
-      state.workoutAdjustDraft.weight = Math.max(0, roundHalf(Number(value) || 0));
-    } else if (key === "rest") {
-      state.workoutAdjustDraft.rest = Math.max(0, Math.min(300, Math.round(Number(value) || 0)));
-    }
-    save();
-  },
-
   saveWorkoutAdjust() {
     const workout = state.workout;
     const day = workoutDay(workout);
@@ -4645,7 +4832,7 @@ window.app = {
     workout.adjustments = workout.adjustments || {};
     workout.adjustments[base.id] = {
       sets: Math.max(1, Math.min(10, Number(draft.sets) || base.sets)),
-      reps: String(draft.reps || base.reps || "10-12"),
+      reps: String(Math.max(1, Math.min(30, Number(draft.reps) || parseReps(base.reps)))),
       weight: Math.max(0, Number(draft.weight) || 0),
       rest: Math.max(0, Math.min(300, Number(draft.rest) || 0))
     };
@@ -5211,7 +5398,7 @@ window.app = {
         id: `draft-ex-${Date.now()}-${index}`,
         slug: item.slug,
         sets: 3,
-        reps: "10-12",
+        reps: "10",
         weight: Number(item.base) || 0,
         rest: 60,
         rpe: 7.5
@@ -5232,13 +5419,13 @@ window.app = {
     render();
   },
 
-  workoutDraftMove(index, delta) {
+  workoutDraftMoveTo(index, target) {
     const draft = state.workoutDraft;
     if (!draft || !Array.isArray(draft.exercises)) return;
-    const target = index + delta;
-    if (target < 0 || target >= draft.exercises.length) return;
+    if (index === target || index < 0 || target < 0 || index >= draft.exercises.length || target >= draft.exercises.length) return;
     const next = [...draft.exercises];
-    [next[index], next[target]] = [next[target], next[index]];
+    const [moved] = next.splice(index, 1);
+    next.splice(target, 0, moved);
     draft.exercises = next;
     save();
     renderKeepingComposeScroll();
@@ -5253,20 +5440,91 @@ window.app = {
     renderKeepingComposeScroll();
   },
 
-  workoutDraftField(index, key, value) {
+  openDraftPicker(index, key) {
     const item = state.workoutDraft?.exercises?.[index];
     if (!item) return;
-    if (key === "sets") {
-      item.sets = Math.max(1, Math.min(10, Math.round(Number(value) || 1)));
-    } else if (key === "reps") {
-      item.reps = String(value || "").trim() || "10-12";
-    } else if (key === "weight") {
-      item.weight = Math.max(0, roundHalf(Number(value) || 0));
-    } else if (key === "rest") {
-      item.rest = Math.max(0, Math.min(300, Math.round(Number(value) || 0)));
-    }
+    const current = key === "reps" ? parseReps(item.reps) : item[key];
+    state.numberPicker = {
+      context: "draft",
+      index,
+      key,
+      title: workoutPickerTitle(key),
+      options: workoutPickerOptions(key, current),
+      value: String(current ?? "")
+    };
     save();
-    updateComposeSummary();
+    render();
+  },
+
+  openAdjustPicker(key) {
+    const draft = state.workoutAdjustDraft;
+    if (!draft) return;
+    const current = key === "reps" ? parseReps(draft.reps) : draft[key];
+    state.numberPicker = {
+      context: "adjust",
+      key,
+      title: workoutPickerTitle(key),
+      options: workoutPickerOptions(key, current),
+      value: String(current ?? "")
+    };
+    save();
+    render();
+  },
+
+  closeNumberPicker() {
+    state.numberPicker = null;
+    save();
+    render();
+  },
+
+  scrollNumberPicker(index) {
+    const wheel = document.getElementById("number-picker-wheel");
+    if (!wheel) return;
+    wheel.scrollTo({ top: index * 46, behavior: "smooth" });
+  },
+
+  confirmNumberPicker() {
+    const picker = state.numberPicker;
+    if (!picker) return;
+    const value = picker.value;
+    const numeric = picker.key === "sets" || picker.key === "rest";
+    const parsed = numeric ? Number(value) || 0 : String(value || "").trim();
+
+    if (picker.context === "draft") {
+      const item = state.workoutDraft?.exercises?.[picker.index];
+      if (item) {
+        if (picker.key === "sets") item.sets = Math.max(1, Math.min(10, Math.round(parsed)));
+        else if (picker.key === "reps") item.reps = String(Math.max(1, Math.min(30, Number(parsed) || 10)));
+        else if (picker.key === "rest") item.rest = Math.max(0, Math.min(300, Math.round(parsed)));
+      }
+      state.numberPicker = null;
+      save();
+      updateComposeSummary();
+      renderKeepingComposeScroll();
+      return;
+    }
+
+    if (picker.context === "adjust" && state.workoutAdjustDraft) {
+      if (picker.key === "sets") state.workoutAdjustDraft.sets = Math.max(1, Math.min(10, Math.round(parsed)));
+      else if (picker.key === "reps") state.workoutAdjustDraft.reps = String(Math.max(1, Math.min(30, Number(parsed) || 10)));
+      else if (picker.key === "rest") state.workoutAdjustDraft.rest = Math.max(0, Math.min(300, Math.round(parsed)));
+    }
+    state.numberPicker = null;
+    save();
+    render();
+  },
+
+  workoutDraftWeight(index, value) {
+    const item = state.workoutDraft?.exercises?.[index];
+    if (!item) return;
+    item.weight = Math.max(0, roundHalf(Number(value) || 0));
+    save();
+  },
+
+  workoutAdjustWeight(value) {
+    if (!state.workoutAdjustDraft) return;
+    state.workoutAdjustDraft.weight = Math.max(0, roundHalf(Number(value) || 0));
+    save();
   },
 
   startWorkoutDraft() {
@@ -5280,7 +5538,7 @@ window.app = {
           id: item.id || `combo-ex-${Date.now()}-${index}`,
           slug: item.slug,
           sets: Math.max(1, Math.min(10, Number(item.sets) || 3)),
-          reps: String(item.reps || "10-12"),
+          reps: String(parseReps(item.reps)),
           weight: Math.max(0, Number(item.weight) || 0),
           rest: Math.max(0, Math.min(300, Number(item.rest) || 0)),
           rpe: Number(item.rpe) || 7.5

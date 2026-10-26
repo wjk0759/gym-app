@@ -28,7 +28,11 @@ struct CustomWorkoutBuilderView: View {
         self.onStart = onStart
         self.mode = mode
         self.title = title ?? (mode == .plan ? "今日训练" : "自选训练")
-        _exercises = State(initialValue: initialExercises)
+        _exercises = State(initialValue: initialExercises.map { item in
+            var item = item
+            item.reps = WorkoutPickerOptions.normalizedReps(item.reps)
+            return item
+        })
     }
 
     private var totalSets: Int {
@@ -54,7 +58,7 @@ struct CustomWorkoutBuilderView: View {
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundStyle(.white)
                             Spacer(minLength: 8)
-                            Text("↑ ↓ 调整")
+                            Text("按住左侧手柄拖动排序")
                                 .font(.system(size: 9.5))
                                 .foregroundStyle(Theme.tertiaryText)
                         }
@@ -158,6 +162,14 @@ struct CustomWorkoutBuilderView: View {
 
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 9) {
+                Image(systemName: "line.3.horizontal")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.tertiaryText)
+                    .frame(width: 24, height: 36)
+                    .contentShape(Rectangle())
+                    .draggable(item.id.uuidString)
+                    .accessibilityLabel("拖动排序")
+
                 Text(String(format: "%02d", index + 1))
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundStyle(Theme.accent)
@@ -182,12 +194,6 @@ struct CustomWorkoutBuilderView: View {
                 Spacer(minLength: 4)
 
                 HStack(spacing: 4) {
-                    iconButton("arrow.up", label: "上移", disabled: index == 0) {
-                        move(index, by: -1)
-                    }
-                    iconButton("arrow.down", label: "下移", disabled: index == exercises.count - 1) {
-                        move(index, by: 1)
-                    }
                     iconButton("trash", label: "移除", destructive: true) {
                         remove(index)
                     }
@@ -198,10 +204,28 @@ struct CustomWorkoutBuilderView: View {
                 GridItem(.flexible(), spacing: 7),
                 GridItem(.flexible(), spacing: 7)
             ], spacing: 8) {
-                fieldTile("组数", text: intBinding(index, \.sets, fallback: 3, range: 1...10), keyboard: .numberPad)
-                fieldTile("每组次数", text: $exercises[index].reps, keyboard: .numbersAndPunctuation)
-                fieldTile("目标重量 kg", text: weightBinding(index), keyboard: .decimalPad)
-                fieldTile("组间休息 秒", text: intBinding(index, \.restSec, fallback: 60, range: 0...300), keyboard: .numberPad)
+                WheelPickerField(
+                    title: "组数 · 组",
+                    selection: $exercises[index].sets,
+                    options: WorkoutPickerOptions.sets,
+                    display: { "\($0)" }
+                )
+                WheelPickerField(
+                    title: "每组次数 · 次",
+                    selection: $exercises[index].reps,
+                    options: WorkoutPickerOptions.reps,
+                    display: { $0 }
+                )
+                WeightInputField(
+                    title: "目标重量",
+                    weight: weightBinding(index)
+                )
+                WheelPickerField(
+                    title: "组间休息 · 秒",
+                    selection: $exercises[index].restSec,
+                    options: WorkoutPickerOptions.rests(including: exercises[index].restSec),
+                    display: { "\($0)" }
+                )
             }
         }
         .padding(11)
@@ -218,6 +242,21 @@ struct CustomWorkoutBuilderView: View {
             RoundedRectangle(cornerRadius: 17, style: .continuous)
                 .stroke(Color.white.opacity(0.075), lineWidth: 1)
         )
+        .dropDestination(for: String.self) { items, _ in
+            guard
+                let raw = items.first,
+                let id = UUID(uuidString: raw),
+                let source = exercises.firstIndex(where: { $0.id == id }),
+                source != index
+            else { return false }
+
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
+                let moved = exercises.remove(at: source)
+                exercises.insert(moved, at: min(index, exercises.count))
+            }
+            UISelectionFeedbackGenerator().selectionChanged()
+            return true
+        }
     }
 
     private func iconButton(
@@ -244,50 +283,10 @@ struct CustomWorkoutBuilderView: View {
         .accessibilityLabel(label)
     }
 
-    private func fieldTile(_ title: String, text: Binding<String>, keyboard: UIKeyboardType) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.system(size: 9.5))
-                .foregroundStyle(Theme.tertiaryText)
-                .lineLimit(1)
-            TextField("", text: text)
-                .keyboardType(keyboard)
-                .multilineTextAlignment(.center)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(height: 36)
-                .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color.white.opacity(0.075), lineWidth: 1)
-                )
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func intBinding(
-        _ index: Int,
-        _ keyPath: WritableKeyPath<PlanExercise, Int>,
-        fallback: Int,
-        range: ClosedRange<Int>
-    ) -> Binding<String> {
+    private func weightBinding(_ index: Int) -> Binding<Double> {
         Binding(
-            get: { "\(exercises[index][keyPath: keyPath])" },
-            set: { value in
-                let parsed = Int(value.filter(\.isNumber)) ?? fallback
-                exercises[index][keyPath: keyPath] = min(max(parsed, range.lowerBound), range.upperBound)
-            }
-        )
-    }
-
-    private func weightBinding(_ index: Int) -> Binding<String> {
-        Binding(
-            get: {
-                guard let weight = exercises[index].weightKG, weight > 0 else { return "0" }
-                return weight.formatted(.number.precision(.fractionLength(0...1)))
-            },
-            set: { value in
-                let weight = Double(value.replacingOccurrences(of: ",", with: ".")) ?? 0
+            get: { exercises[index].weightKG ?? 0 },
+            set: { weight in
                 exercises[index].weightKG = weight > 0 ? weight : nil
             }
         )
@@ -323,15 +322,6 @@ struct CustomWorkoutBuilderView: View {
         }
     }
 
-    private func move(_ index: Int, by offset: Int) {
-        let target = index + offset
-        guard exercises.indices.contains(target) else { return }
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
-            exercises.swapAt(index, target)
-        }
-        UISelectionFeedbackGenerator().selectionChanged()
-    }
-
     private func remove(_ index: Int) {
         guard exercises.indices.contains(index) else { return }
         withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
@@ -345,10 +335,9 @@ struct CustomWorkoutBuilderView: View {
         let normalized = exercises.map { item in
             var item = item
             item.sets = min(max(item.sets, 1), 10)
-            item.reps = item.reps.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                ? "10-12"
-                : item.reps
+            item.reps = WorkoutPickerOptions.normalizedReps(item.reps)
             item.restSec = min(max(item.restSec, 0), 300)
+            item.weightKG = (item.weightKG ?? 0) > 0 ? item.weightKG : nil
             return item
         }
         let focus = Array(Set(normalized.compactMap { $0.exercise?.muscle }))
