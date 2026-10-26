@@ -11,19 +11,22 @@ function homeNextMeal() {
 
 function homeTodayCard(day, targets) {
   const period = periodForDate(todayKey());
-  if (!day) {
+  if (!day || period?.mode === "rest") {
+    const restFocus = day && period?.mode === "rest"
+      ? `原计划 ${day.title} · 已安排休息`
+      : "今天没有安排训练";
     return `
       <div class="card home-rest-card">
         <div class="today-head">
           <div>
             <div class="badge">${period ? `经期 · 第 ${period.day} 天` : "今日休息"}</div>
             <h2 class="today-title" style="margin-top:9px">恢复日</h2>
-            <div class="today-focus">今天没有安排训练</div>
+            <div class="today-focus">${restFocus}</div>
           </div>
           <div class="tiny faint">第 ${currentPlanWeekNumber()} 周</div>
         </div>
-        <div class="small muted" style="margin-top:10px;line-height:1.6">今天把恢复和饮食做好。蛋白质吃够，下一次训练状态会更好。</div>
-        ${period ? `<div class="period-training-note">经期第 ${period.day} 天 · 优先休息、补铁和蛋白质，不硬撑训练。</div>` : ""}
+        <div class="small muted" style="margin-top:10px;line-height:1.6">${period?.mode === "rest" ? "经期已设为直接休息，今天不做力量训练。补铁、蛋白质和睡眠优先。" : "今天把恢复和饮食做好。蛋白质吃够，下一次训练状态会更好。"}</div>
+        ${period ? `<div class="period-training-note">经期第 ${period.day} 天 · ${period.mode === "rest" ? "已安排休息，训练计划不强制执行。" : "优先休息、补铁和蛋白质，不硬撑训练。"}</div>` : ""}
         <div class="home-rest-tips">
           <span>睡眠 7–9h</span>
           <span>散步 / 拉伸</span>

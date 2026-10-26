@@ -61,7 +61,7 @@ tab/equipment (1)
 | `planExercisePicker` | 计划训练日添加动作 | `workoutCompose` | `workoutCompose` |
 | `planSchedule` | 选择未来 4 周训练日期 | `tabs/plan` | `tabs/plan` |
 | `planReview` | 周 / 月 / 年数据复盘报告 | `tabs/plan` | `tabs/plan` |
-| `periodSchedule` | 女性经期日期选择 | `tabs/plan` | `tabs/plan` |
+| `periodSchedule` | 女性经期区间与模式选择 | `tabs/plan` | `tabs/plan` |
 
 ## 5. 典型面包屑
 

@@ -4,6 +4,10 @@ Object.assign(window.app, {
     const day = todayDay();
     if (!day || !Array.isArray(day.exercises) || !day.exercises.length) return;
     const period = periodForDate(todayKey());
+    if (period?.mode === "rest") {
+      toast("经期已设为直接休息，今天不安排训练");
+      return;
+    }
     state.workoutDraft = {
       source: "plan",
       title: period ? `${day.title || "今日训练"} · 经期轻量` : day.title || "今日训练",

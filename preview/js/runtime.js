@@ -171,6 +171,9 @@ function coachReply(text, skill = "trainer") {
   if (/今天|练什么|计划/.test(text)) {
     const period = periodForDate(todayKey());
     if (period) {
+      if (period.mode === "rest") {
+        return { text: `今天是经期第 ${period.day} 天，你已经把经期安排设为直接休息。今天不安排力量训练，散步、拉伸、补铁和蛋白质优先；如果症状明显，就完整休息。` };
+      }
       return { text: `今天是经期第 ${period.day} 天，优先恢复。散步、拉伸或低强度训练都可以；如果按计划练，组数减 1 组、负重降到约 80%。腹痛明显、量大或头晕时直接休息。` };
     }
     const day = todayDay();

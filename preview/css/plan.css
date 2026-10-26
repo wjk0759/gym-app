@@ -1697,11 +1697,80 @@
   font-variant-numeric: tabular-nums;
 }
 
+.period-range-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 3px;
+  color: var(--faint);
+  font-size: 9px;
+}
+
+.period-range-line .link {
+  flex: 0 0 auto;
+  font-size: 9px;
+}
+
+.period-mode-block {
+  padding: 11px 12px;
+  border: 1px solid rgba(255, 107, 157, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 107, 157, 0.035);
+}
+
+.period-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 7px;
+}
+
+.period-mode-option {
+  appearance: none;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+  font: inherit;
+  text-align: left;
+}
+
+.period-mode-option strong {
+  display: block;
+  color: var(--text);
+  font-size: 10.5px;
+  font-weight: 680;
+}
+
+.period-mode-option span {
+  display: block;
+  margin-top: 3px;
+  color: var(--faint);
+  font-size: 8px;
+  line-height: 1.4;
+}
+
+.period-mode-option.active {
+  border-color: rgba(255, 107, 157, 0.45);
+  background: rgba(255, 107, 157, 0.10);
+}
+
+.period-mode-option.active strong {
+  color: #ff9fbd;
+}
+
 .period-calendar .calendar-day.period-selected {
   border-color: rgba(255, 107, 157, 0.72);
   background: linear-gradient(145deg, #ff7da8, #d94778);
   color: #220711;
   box-shadow: 0 5px 14px rgba(255, 107, 157, 0.16);
+}
+
+.period-calendar .calendar-day.period-boundary {
+  box-shadow: inset 0 0 0 1px rgba(255, 224, 235, 0.55), 0 5px 14px rgba(255, 107, 157, 0.16);
 }
 
 .period-calendar .calendar-day.period-selected .calendar-day-number {

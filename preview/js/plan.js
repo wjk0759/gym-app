@@ -77,7 +77,7 @@ function calendarDayPanel(key) {
 
       <div class="calendar-day-section">
         <div class="calendar-section-label">训练</div>
-        ${period ? `<div class="period-calendar-note"><strong>经期第 ${period.day} 天</strong> · AI 建议轻量训练或恢复，避免硬撑强度。</div>` : ""}
+        ${period ? `<div class="period-calendar-note"><strong>经期第 ${period.day} 天</strong> · ${period.mode === "rest" ? "已设置为直接休息，训练计划不强制执行。" : "AI 建议轻量训练或恢复，避免硬撑强度。"}</div>` : ""}
         ${sessions.length ? sessions.map((session) => `
           <button class="calendar-session-row" onclick="app.openSession('${session.id}', 'plan')">
             <span class="calendar-session-check">✓</span>

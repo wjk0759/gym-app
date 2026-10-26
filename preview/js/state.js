@@ -60,9 +60,20 @@ function normalizeState(value) {
   next.periodDates = Array.isArray(next.periodDates)
     ? [...new Set(next.periodDates.filter(validPeriodDate))].sort()
     : [];
-  next.periodDraft = Array.isArray(next.periodDraft)
-    ? [...new Set(next.periodDraft.filter(validPeriodDate))].sort()
-    : null;
+  if (!validPeriodDate(next.periodRangeStart)) {
+    next.periodRangeStart = next.periodDates[0] || null;
+  }
+  if (!validPeriodDate(next.periodRangeEnd)) {
+    next.periodRangeEnd = next.periodDates[next.periodDates.length - 1] || next.periodRangeStart;
+  }
+  if (next.periodRangeStart && !next.periodRangeEnd) next.periodRangeEnd = next.periodRangeStart;
+  next.periodTrainingMode = ["light", "rest"].includes(next.periodTrainingMode)
+    ? next.periodTrainingMode
+    : "light";
+  next.periodDraft = null;
+  next.periodDraftStart = null;
+  next.periodDraftEnd = null;
+  next.periodDraftMode = null;
   next.periodMonth = /^\d{4}-\d{2}$/.test(next.periodMonth || "")
     ? next.periodMonth
     : monthKey(new Date());
@@ -373,7 +384,7 @@ function periodForDate(dateKey) {
     day += 1;
     cursor = addDays(cursor, -1);
   }
-  return { day, dateKey };
+  return { day, dateKey, mode: state.periodTrainingMode === "rest" ? "rest" : "light" };
 }
 
 function isPeriodDate(dateKey) {

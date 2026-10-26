@@ -56,7 +56,11 @@ function cleanupRouteOnBack(screen) {
   }
   if (screen === "profileEdit") state.profileDraft = null;
   if (screen === "planSchedule") state.planScheduleDraft = null;
-  if (screen === "periodSchedule") state.periodDraft = null;
+  if (screen === "periodSchedule") {
+    state.periodDraftStart = null;
+    state.periodDraftEnd = null;
+    state.periodDraftMode = null;
+  }
   if (screen === "foodCustom") state.foodCustomDraft = null;
   if (screen === "foodAdd") state.foodDraft = null;
   if (screen === "foodPhoto") {

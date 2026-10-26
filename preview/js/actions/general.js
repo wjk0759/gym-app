@@ -28,6 +28,9 @@ Object.assign(window.app, {
       chats: state.chats,
       bodyMetrics: state.bodyMetrics,
       periodDates: state.periodDates,
+      periodRangeStart: state.periodRangeStart,
+      periodRangeEnd: state.periodRangeEnd,
+      periodTrainingMode: state.periodTrainingMode,
       bodyCheckInFrequency: state.bodyCheckInFrequency,
       bodyCheckInWeekday: state.bodyCheckInWeekday,
       bodyCheckInDay: state.bodyCheckInDay

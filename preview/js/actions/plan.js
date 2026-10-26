@@ -150,8 +150,12 @@ Object.assign(window.app, {
 
   openPeriodSchedule() {
     if (state.profile.sex !== "女") return toast("经期安排仅适用于女性用户");
-    state.periodDraft = (state.periodDates || []).slice();
-    state.periodMonth = monthKey(new Date());
+    state.periodDraftStart = state.periodRangeStart || null;
+    state.periodDraftEnd = state.periodRangeEnd || state.periodRangeStart || null;
+    state.periodDraftMode = state.periodTrainingMode || "light";
+    state.periodMonth = state.periodDraftStart
+      ? state.periodDraftStart.slice(0, 7)
+      : monthKey(new Date());
     pushRoute("periodSchedule");
     save();
     render();
@@ -165,27 +169,67 @@ Object.assign(window.app, {
     render();
   },
 
-  togglePeriodDate(dateKey) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey || "") || !Array.isArray(state.periodDraft)) return;
-    state.periodDraft = state.periodDraft.includes(dateKey)
-      ? state.periodDraft.filter((key) => key !== dateKey)
-      : [...state.periodDraft, dateKey].sort();
+  selectPeriodRangeDate(dateKey) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey || "")) return;
+    if (!state.periodDraftStart || (state.periodDraftStart && state.periodDraftEnd)) {
+      state.periodDraftStart = dateKey;
+      state.periodDraftEnd = null;
+    } else if (dateKey < state.periodDraftStart) {
+      state.periodDraftEnd = state.periodDraftStart;
+      state.periodDraftStart = dateKey;
+    } else {
+      state.periodDraftEnd = dateKey;
+    }
     save();
+    render();
+  },
+
+  setPeriodTrainingMode(mode) {
+    if (!["light", "rest"].includes(mode)) return;
+    state.periodDraftMode = mode;
+    save();
+    render();
+  },
+
+  clearPeriodDraft() {
+    state.periodDraftStart = null;
+    state.periodDraftEnd = null;
     render();
   },
 
   savePeriodSchedule() {
-    if (!Array.isArray(state.periodDraft)) return;
-    state.periodDates = [...new Set(state.periodDraft.filter((key) => /^\d{4}-\d{2}-\d{2}$/.test(key)))].sort();
-    state.periodDraft = null;
+    const start = state.periodDraftStart;
+    if (!start) return toast("请选择经期开始日期");
+    const end = state.periodDraftEnd || start;
+    const rangeStart = start <= end ? start : end;
+    const rangeEnd = start <= end ? end : start;
+    const dates = [];
+    let cursor = parseDateKey(rangeStart);
+    const last = parseDateKey(rangeEnd);
+    let guard = 0;
+    while (cursor <= last && guard < 90) {
+      dates.push(localDateInputValue(cursor));
+      cursor = addDays(cursor, 1);
+      guard += 1;
+    }
+    if (guard >= 90) return toast("经期区间过长，请重新选择");
+    state.periodDates = dates;
+    state.periodRangeStart = rangeStart;
+    state.periodRangeEnd = rangeEnd;
+    state.periodTrainingMode = state.periodDraftMode === "rest" ? "rest" : "light";
+    state.periodDraftStart = null;
+    state.periodDraftEnd = null;
+    state.periodDraftMode = null;
     popRoute();
     save();
     render();
-    toast("经期安排已更新，训练会自动轻量化");
+    toast("经期区间已保存");
   },
 
   closePeriodSchedule() {
-    state.periodDraft = null;
+    state.periodDraftStart = null;
+    state.periodDraftEnd = null;
+    state.periodDraftMode = null;
     app.back();
   },
 
