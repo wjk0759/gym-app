@@ -9,7 +9,8 @@ struct EquipmentItemDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("pinnedEquipmentIDs") private var pinnedEquipmentIDsRaw = ""
 
-    let itemID: UUID
+    private let itemID: UUID?
+    private let previewExercise: Exercise?
 
     @State private var showDelete = false
     @State private var showCoach = false
@@ -19,8 +20,33 @@ struct EquipmentItemDetailView: View {
     @State private var customStart = Calendar.current.date(byAdding: .month, value: -3, to: Date()) ?? Date()
     @State private var customEnd = Date()
 
+    init(itemID: UUID) {
+        self.itemID = itemID
+        self.previewExercise = nil
+    }
+
+    init(exercise: Exercise) {
+        self.itemID = nil
+        self.previewExercise = exercise
+    }
+
     private var item: EquipmentItem? {
-        store.equipmentLibrary.first { $0.id == itemID }
+        if let previewExercise {
+            return EquipmentItem(
+                name: previewExercise.nameZH,
+                slug: previewExercise.slug,
+                muscle: previewExercise.muscle,
+                equipment: previewExercise.equipment,
+                videoURL: previewExercise.videoURL?.absoluteString,
+                notes: ""
+            )
+        }
+        guard let itemID else { return nil }
+        return store.equipmentLibrary.first { $0.id == itemID }
+    }
+
+    private var isPreview: Bool {
+        previewExercise != nil
     }
 
     private var videoURL: URL? {
@@ -52,7 +78,7 @@ struct EquipmentItemDetailView: View {
                 }
             }
             .background(AppBackground())
-            .navigationTitle("器械详情")
+            .navigationTitle(isPreview ? "动作详情" : "器械详情")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -71,7 +97,9 @@ struct EquipmentItemDetailView: View {
                 titleVisibility: .visible
             ) {
                 Button("删除", role: .destructive) {
-                    store.removeEquipment(itemID)
+                    if let itemID {
+                        store.removeEquipment(itemID)
+                    }
                     dismiss()
                 }
                 Button("取消", role: .cancel) {}
@@ -140,24 +168,26 @@ struct EquipmentItemDetailView: View {
 
             coachCard(for: item)
 
-            Button(role: .destructive) {
-                showDelete = true
-            } label: {
-                Text("从器械库删除")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.danger)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(
-                        Theme.danger.opacity(0.07),
-                        in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(Theme.danger.opacity(0.18), lineWidth: 1)
-                    )
+            if !isPreview {
+                Button(role: .destructive) {
+                    showDelete = true
+                } label: {
+                    Text("从器械库删除")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.danger)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            Theme.danger.opacity(0.07),
+                            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(Theme.danger.opacity(0.18), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
 
             Text("出现关节刺痛、麻木或肿胀时请停止动作并咨询专业人士。教学视频和示范素材由官方动作库提供。")
                 .font(.system(size: 9.5))
@@ -210,8 +240,10 @@ struct EquipmentItemDetailView: View {
                     }
                 }
 
-                quickActionButton("置顶", icon: pinned ? "pin.fill" : "pin", active: pinned) {
-                    togglePin(for: item)
+                if !isPreview {
+                    quickActionButton("置顶", icon: pinned ? "pin.fill" : "pin", active: pinned) {
+                        togglePin(for: item)
+                    }
                 }
             }
         }
@@ -377,7 +409,7 @@ struct EquipmentItemDetailView: View {
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(.white)
 
-                    Text("这件器械的官方示范视频还在准备中。")
+                    Text(isPreview ? "这个动作的官方示范视频还在准备中。" : "这件器械的官方示范视频还在准备中。")
                         .font(.system(size: 10.5))
                         .foregroundStyle(Theme.secondaryText)
                 }

@@ -75,7 +75,7 @@ struct EquipmentRecognitionView: View {
             )
         }
         .sheet(item: $selectedExercise) { exercise in
-            ExerciseDetailView(exercise: exercise)
+            EquipmentItemDetailView(exercise: exercise)
         }
     }
 

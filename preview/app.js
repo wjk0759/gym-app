@@ -2071,15 +2071,34 @@ function equipmentDetailSection(index, title, lead, body, id = "") {
   `;
 }
 
+function exerciseEquipmentItem(slug) {
+  const exercise = EX[slug];
+  if (!exercise) return null;
+  return {
+    id: `preview-${slug}`,
+    name: exercise.name,
+    slug,
+    muscle: exercise.muscle,
+    equip: exercise.equip,
+    video: false,
+    notes: ""
+  };
+}
+
 function equipmentItemScreen() {
-  const item = state.equipmentLibrary.find((entry) => entry.id === state.equipmentItemId);
+  const libraryItem = state.equipmentLibrary.find((entry) => entry.id === state.equipmentItemId);
+  const previewItem = !libraryItem && state.selectedExercise
+    ? exerciseEquipmentItem(state.selectedExercise)
+    : null;
+  const item = libraryItem || previewItem;
   if (!item) return equipmentLibraryScreen();
+  const isPreview = !!previewItem;
 
   const exercise = equipmentDetailExercise(item);
   const points = equipmentDetailPoints(item);
   const support = equipmentDetailSupport(item);
   const stats = equipmentDetailStats(item);
-  const pinned = (state.pinnedEquipIds || []).includes(item.id);
+  const pinned = !isPreview && (state.pinnedEquipIds || []).includes(item.id);
   const muscle = item.muscle || "全身";
   const description = exercise?.cues
     || item.notes
@@ -2161,7 +2180,10 @@ function equipmentItemScreen() {
 
   return `
     <div class="stack equipment-detail-screen">
-      ${headerBack("器械详情", "app.equipmentLibraryOpen()")}
+      ${headerBack(
+        isPreview ? "动作详情" : "器械详情",
+        isPreview ? "app.backTo('equipment')" : "app.equipmentLibraryOpen()"
+      )}
 
       <div class="detail-quick-card">
         <div class="detail-quick-title">
@@ -2178,9 +2200,11 @@ function equipmentItemScreen() {
           <button onclick="app.equipmentDetailScroll('detail-stats')" aria-label="训练图表">
             ${ICONS.chart}<span>图表</span>
           </button>
-          <button id="detail-pin" class="${pinned ? "active" : ""}" onclick="app.equipmentDetailPin('${item.id}')" aria-label="${pinned ? "取消置顶" : "置顶器械"}">
-            ${ICONS.pin}<span>置顶</span>
-          </button>
+          ${isPreview ? "" : `
+            <button id="detail-pin" class="${pinned ? "active" : ""}" onclick="app.equipmentDetailPin('${item.id}')" aria-label="${pinned ? "取消置顶" : "置顶器械"}">
+              ${ICONS.pin}<span>置顶</span>
+            </button>
+          `}
         </div>
       </div>
 
@@ -2204,7 +2228,7 @@ function equipmentItemScreen() {
           <div class="detail-video-play">▶</div>
           <div class="detail-video-copy">
             <strong>${item.video ? "点一下播放动作讲解" : "教学视频准备中"}</strong>
-            <span>${item.video ? "先看讲解，再开始今天的训练。" : "这件器械的官方示范视频还在准备中。"}</span>
+            <span>${item.video ? "先看讲解，再开始今天的训练。" : (isPreview ? "这个动作的官方示范视频还在准备中。" : "这件器械的官方示范视频还在准备中。")}</span>
           </div>
           <span class="detail-video-badge">${item.video ? "官方教学视频" : "视频待上线"}</span>
         </div>`
@@ -2290,7 +2314,7 @@ function equipmentItemScreen() {
         <button class="detail-coach-action" onclick="${item.slug ? `app.askCoach('${item.slug}')` : "app.tab('coach')"}">问教练</button>
       </div>
 
-      <button class="detail-delete" onclick="app.deleteEquipItem('${item.id}')">从器械库删除</button>
+      ${isPreview ? "" : `<button class="detail-delete" onclick="app.deleteEquipItem('${item.id}')">从器械库删除</button>`}
       <div class="detail-disclaimer">出现关节刺痛、麻木或肿胀时请停止动作并咨询专业人士。教学视频和示范素材由官方动作库提供。</div>
     </div>
   `;
@@ -2384,30 +2408,6 @@ function bodyAnalysisScreen() {
       ` : ""}
 
       <div class="tiny faint" style="line-height:1.6">体型照片属于敏感个人信息。请只上传你本人的照片；不要上传他人或未成年人照片。</div>
-    </div>
-  `;
-}
-
-function exerciseScreen() {
-  const exercise = EX[state.selectedExercise];
-  if (!exercise) return equipmentPickerScreen();
-  return `
-    <div class="stack">
-      ${headerBack("动作详情", "app.backTo('equipment')")}
-      <div class="card">
-        <div class="h2">${exercise.name}</div>
-        <div class="small accent" style="margin-top:4px">${exercise.muscle} · ${exercise.equip}</div>
-        <div class="small muted" style="margin-top:12px;line-height:1.7">${exercise.cues}</div>
-      </div>
-
-      <div class="card">
-        <div class="row gap8" style="margin-bottom:8px"><span class="accent">▶</span><span class="h3">教学视频</span></div>
-        <div class="tiny muted">预览版没有配置视频。真实 App 会读取 videos.json，配置素材后在这里播放 HLS/MP4。</div>
-        <div style="height:160px;border-radius:14px;margin-top:10px;background:linear-gradient(135deg,#1a2028,#0d1016);display:grid;place-items:center;color:var(--faint)">视频占位</div>
-      </div>
-
-      <button class="btn btn-secondary" onclick="app.askCoach('${state.selectedExercise}')">问教练这个动作</button>
-      <div class="tiny faint center">关节刺痛、麻木或肿胀时请停止训练并咨询医生。</div>
     </div>
   `;
 }
@@ -3724,7 +3724,8 @@ function render() {
     state.tab,
     state.planDayId || "",
     state.sessionId || "",
-    state.equipmentItemId || ""
+    state.equipmentItemId || "",
+    state.selectedExercise || ""
   ].join("|");
   const routeChanged = routeKey !== lastRouteKey;
   lastRouteKey = routeKey;
@@ -3748,7 +3749,6 @@ function render() {
   else if (state.screen === "workout") html = workoutScreen();
   else if (state.screen === "sessionDetail") html = sessionScreen();
   else if (state.screen === "history") html = historyScreen();
-  else if (state.screen === "exerciseDetail") html = exerciseScreen();
   else if (state.screen === "equipmentLibrary") html = equipmentLibraryScreen();
   else if (state.screen === "equipmentCamera") html = equipmentCameraScreen();
   else if (state.screen === "equipmentRecognition") html = equipmentRecognitionScreen();
@@ -4114,7 +4114,6 @@ window.app = {
     else if (state.screen === "planDay") { state.screen = "tabs"; state.tab = "plan"; }
     else if (state.screen === "paywall") { state.screen = "tabs"; state.tab = "profile"; }
     else if (state.screen === "sessionDetail") { state.screen = "tabs"; state.tab = "home"; }
-    else if (state.screen === "exerciseDetail") { state.screen = "tabs"; state.tab = "equipment"; }
     else if (state.screen === "equipmentItem") { state.screen = "equipmentLibrary"; }
     else if (state.screen === "equipmentLibrary" || state.screen === "equipmentRecognition" || state.screen === "equipmentCamera") { state.screen = "tabs"; state.tab = "equipment"; }
     else if (state.screen === "bodyAnalysis") { state.screen = "tabs"; state.tab = "profile"; }
@@ -4510,7 +4509,8 @@ window.app = {
 
   openExercise(slug) {
     state.selectedExercise = slug;
-    state.screen = "exerciseDetail";
+    state.equipmentItemId = null;
+    state.screen = "equipmentItem";
     save();
     render();
   },
@@ -5016,6 +5016,7 @@ window.app = {
 
   openEquipItem(id) {
     state.equipmentItemId = id;
+    state.selectedExercise = null;
     state.screen = "equipmentItem";
     save();
     render();

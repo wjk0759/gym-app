@@ -110,7 +110,7 @@ struct EquipmentPickerView: View {
             WorkoutSessionView(day: day)
         }
         .sheet(item: $detailExercise) { exercise in
-            ExerciseDetailView(exercise: exercise)
+            EquipmentItemDetailView(exercise: exercise)
         }
         .overlay(alignment: .top) {
             feedbackBanner
