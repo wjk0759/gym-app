@@ -506,7 +506,7 @@ private struct SwipeDeleteRow<Content: View>: View {
         }
         .clipped()
         .animation(.spring(response: 0.28, dampingFraction: 0.86), value: isOpen)
-        .accessibilityAction(named: "删除") {
+        .accessibilityAction(named: Text("删除")) {
             onDelete()
         }
     }
