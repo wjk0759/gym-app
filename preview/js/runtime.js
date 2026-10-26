@@ -5,7 +5,7 @@ function setupDragScroll() {
   if (!root) return;
   enableDragScroll(root);
   root.querySelectorAll(
-    ".chat-scroll, .equipment-selection-list, .equipment-filter-scroll, .week-tabs, .suggestions, .coach-skill-bar"
+    ".chat-scroll, .equipment-selection-list, .equipment-filter-scroll, .week-tabs, .suggestions, .coach-skill-bar, .coach-quick-replies, .training-action-rail"
   ).forEach(enableDragScroll);
   setupLibrarySwipeRows();
   containSelectionListScroll();
