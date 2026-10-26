@@ -85,6 +85,10 @@ const ICONS = {
   search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.6"/><path d="m20 20-3.7-3.7"/></svg>',
   camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.6-2h6.8L17 8h3v10H4z"/><circle cx="12" cy="13" r="3"/></svg>',
   library: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.7"/><rect x="13" y="4" width="7" height="7" rx="1.7"/><rect x="4" y="13" width="7" height="7" rx="1.7"/><rect x="13" y="13" width="7" height="7" rx="1.7"/></svg>',
+  checklist: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="3"/><path d="m8.2 9 1.8 1.8 3.2-3.4M8.2 15.2h7.2"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.2 2"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-6"/><path d="M3 20h18"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l-1 6 4 4H6l4-4z"/><path d="M12 13v8"/></svg>',
   user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.6-3.6 3.1-5.5 7-5.5s6.4 1.9 7 5.5"/></svg>',
   settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>'
 };
@@ -258,6 +262,7 @@ function normalizeState(value) {
   next.equipmentLibrary = next.equipmentLibrary || demoEquipment();
   next.useEquipLibrary = next.useEquipLibrary !== false;
   next.equipLibraryQuery = typeof next.equipLibraryQuery === "string" ? next.equipLibraryQuery : "";
+  next.pinnedEquipIds = Array.isArray(next.pinnedEquipIds) ? next.pinnedEquipIds : [];
   next.bodyPhoto = !!next.bodyPhoto;
   next.bodyConsent = false;
   next.bodyAnalysis = next.bodyAnalysis || null;
@@ -321,6 +326,7 @@ function initialState() {
     equipmentLibrary: demoEquipment(),
     useEquipLibrary: true,
     equipLibraryQuery: "",
+    pinnedEquipIds: [],
     bodyPhoto: false,
     bodyConsent: false,
     bodyAnalysis: null,
@@ -1427,14 +1433,18 @@ function equipmentRecognitionScreen() {
 
 function filteredEquipmentLibraryItems() {
   const query = String(state.equipLibraryQuery || "").trim().toLowerCase();
-  if (!query) return state.equipmentLibrary;
-  return state.equipmentLibrary.filter((item) => {
-    return [item.name, item.muscle, item.equip]
-      .some((value) => String(value || "").toLowerCase().includes(query));
-  });
+  const items = !query
+    ? state.equipmentLibrary
+    : state.equipmentLibrary.filter((item) => {
+        return [item.name, item.muscle, item.equip]
+          .some((value) => String(value || "").toLowerCase().includes(query));
+      });
+  const pinned = new Set(state.pinnedEquipIds || []);
+  return [...items].sort((a, b) => Number(pinned.has(b.id)) - Number(pinned.has(a.id)));
 }
 
 function equipmentLibraryRowMarkup(item) {
+  const pinned = (state.pinnedEquipIds || []).includes(item.id);
   return `
     <div class="library-swipe-row" data-library-id="${item.id}">
       <div class="library-swipe-action">
@@ -1446,6 +1456,7 @@ function equipmentLibraryRowMarkup(item) {
           <span class="library-row-name">${esc(item.name)}</span>
           <span class="library-row-meta">${item.muscle} · ${item.equip}</span>
         </span>
+        ${pinned ? `<span class="library-pin" title="已置顶">${ICONS.pin}</span>` : ""}
         <span class="library-video ${item.video ? "ready" : ""}">
           ${item.video ? "教学视频" : "视频准备中"}
         </span>
@@ -1564,28 +1575,285 @@ function equipmentLibraryScreen() {
   `;
 }
 
+function equipmentDetailExercise(item) {
+  return item.slug ? EX[item.slug] : null;
+}
+
+function equipmentDetailPoints(item) {
+  const exercise = equipmentDetailExercise(item);
+  const fromLibrary = exercise?.cues || "";
+  const points = fromLibrary
+    .split(/[。；;]/)
+    .map((point) => point.trim())
+    .filter(Boolean);
+
+  const general = [
+    "先调整座位、靠垫或把手高度，确认起始位置稳定，再开始发力。",
+    "全程保持核心收紧、呼吸自然；最后几次也不要靠惯性甩动。",
+    "如果出现关节刺痛、麻木或明显代偿，降低重量或停止动作。"
+  ];
+
+  general.forEach((point) => {
+    if (points.length < 3 && !points.includes(point)) points.push(point);
+  });
+
+  return points.slice(0, 5);
+}
+
+function equipmentDetailSupport(item) {
+  const map = {
+    "胸": ["肩", "手臂"],
+    "背": ["手臂", "核心"],
+    "腿": ["臀", "核心"],
+    "臀": ["腿", "核心"],
+    "肩": ["手臂", "核心"],
+    "手臂": ["肩", "核心"],
+    "核心": ["背", "臀"],
+    "有氧": ["腿", "核心"]
+  };
+  return map[item.muscle] || ["核心", "稳定"];
+}
+
+function equipmentDetailStats(item) {
+  const related = [];
+  state.sessions.forEach((session) => {
+    const matching = (session.items || []).filter((entry) => entry.name === item.name);
+    if (!matching.length) return;
+    const volume = matching.reduce((sum, entry) => sum + entry.weight * entry.reps * entry.sets, 0);
+    const sets = matching.reduce((sum, entry) => sum + entry.sets, 0);
+    related.push({ date: session.date, volume, sets });
+  });
+
+  return {
+    sessions: related.length,
+    sets: related.reduce((sum, entry) => sum + entry.sets, 0),
+    volume: related.reduce((sum, entry) => sum + entry.volume, 0),
+    last: related[0]?.date || null,
+    chart: related.slice(0, 6).reverse()
+  };
+}
+
+function equipmentDetailMuscleMap(item) {
+  const key = {
+    "胸": "chest",
+    "背": "back",
+    "腿": "legs",
+    "臀": "glutes",
+    "肩": "shoulders",
+    "手臂": "arms",
+    "核心": "core",
+    "有氧": "cardio"
+  }[item.muscle] || "full";
+
+  const highlights = {
+    chest: '<ellipse cx="77" cy="84" rx="15" ry="9"/><ellipse cx="103" cy="84" rx="15" ry="9"/>',
+    back: '<path d="M64 68 Q90 57 116 68 L112 112 Q90 122 68 112 Z"/>',
+    shoulders: '<circle cx="58" cy="76" r="11"/><circle cx="122" cy="76" r="11"/>',
+    arms: '<path d="M54 78 L41 126 L51 131 L63 92 Z"/><path d="M126 78 L139 126 L129 131 L117 92 Z"/>',
+    core: '<rect x="76" y="100" width="28" height="29" rx="8"/>',
+    legs: '<path d="M68 128 L62 176 L56 222 L70 224 L78 180 L86 150 L90 166 L94 150 L102 180 L110 224 L124 222 L118 176 L112 128 Z"/>',
+    glutes: '<ellipse cx="77" cy="132" rx="16" ry="10"/><ellipse cx="103" cy="132" rx="16" ry="10"/>',
+    cardio: '<path d="M90 103 C75 91 62 108 74 123 L90 141 L106 123 C118 108 105 91 90 103 Z"/>',
+    full: '<path d="M62 64 Q90 54 118 64 L126 102 Q118 116 114 128 L66 128 Q62 116 54 102 Z"/><path d="M68 128 L63 176 L56 222 L70 224 L78 180 L86 150 L90 166 L94 150 L102 180 L110 224 L124 222 L117 176 L112 128 Z"/>'
+  };
+
+  return `
+    <svg class="muscle-map" viewBox="0 0 180 245" aria-hidden="true">
+      <g class="muscle-body">
+        <circle cx="90" cy="28" r="18"/>
+        <rect x="78" y="44" width="24" height="14" rx="6"/>
+        <path d="M62 64 Q90 54 118 64 L126 102 Q118 116 114 128 L66 128 Q62 116 54 102 Z"/>
+        <path d="M54 70 L42 90 L36 128 L46 132 L56 102 L62 92 Z"/>
+        <path d="M126 70 L138 90 L144 128 L134 132 L124 102 L118 92 Z"/>
+        <path d="M68 128 L63 176 L56 222 L70 224 L78 180 L86 150 L90 166 L94 150 L102 180 L110 224 L124 222 L117 176 L112 128 Z"/>
+      </g>
+      <g class="muscle-highlight">${highlights[key]}</g>
+    </svg>
+  `;
+}
+
+function equipmentDetailSection(index, title, lead, body, id = "") {
+  return `
+    <section class="detail-section" ${id ? `id="${id}"` : ""}>
+      <div class="detail-section-index">${index}</div>
+      <h2>${title}</h2>
+      <p class="detail-section-lead">${lead}</p>
+      ${body}
+    </section>
+  `;
+}
+
 function equipmentItemScreen() {
   const item = state.equipmentLibrary.find((entry) => entry.id === state.equipmentItemId);
   if (!item) return equipmentLibraryScreen();
+
+  const exercise = equipmentDetailExercise(item);
+  const points = equipmentDetailPoints(item);
+  const support = equipmentDetailSupport(item);
+  const stats = equipmentDetailStats(item);
+  const pinned = (state.pinnedEquipIds || []).includes(item.id);
+  const muscle = item.muscle || "全身";
+  const description = exercise?.cues
+    || item.notes
+    || "先用稳定、可控的轨迹完成动作，再逐步增加重量和训练量。";
+  const maxVolume = Math.max(1, ...stats.chart.map((entry) => entry.volume));
+
+  const pointsMarkup = points.map((point, index) => `
+    <div class="detail-point">
+      <span class="detail-point-index">${index + 1}</span>
+      <p>${esc(point)}</p>
+    </div>
+  `).join("");
+
+  const chartMarkup = stats.chart.length
+    ? `
+      <div class="detail-chart">
+        <div class="detail-chart-bars">
+          ${stats.chart.map((entry) => `
+            <span title="${entry.date} · ${Math.round(entry.volume)} kg" style="height:${Math.max(10, Math.round(entry.volume / maxVolume * 56))}px"></span>
+          `).join("")}
+        </div>
+        <div class="detail-chart-caption">近 ${stats.chart.length} 次训练容量趋势</div>
+      </div>
+    `
+    : "";
+
   return `
-    <div class="stack">
+    <div class="stack equipment-detail-screen">
       ${headerBack("器械详情", "app.equipmentLibraryOpen()")}
-      <div class="card center">
-        <div style="font-size:40px;margin-bottom:8px">${equipGlyph(item)}</div>
-        <div class="h2">${esc(item.name)}</div>
-        <div class="small accent" style="margin-top:4px">${item.muscle} · ${item.equip}</div>
-        ${item.notes ? `<div class="tiny muted" style="margin-top:10px">${esc(item.notes)}</div>` : ""}
+
+      <div class="detail-quick-card">
+        <div class="detail-quick-title">
+          <span class="detail-quick-glyph">${equipGlyph(item)}</span>
+          <span>${esc(item.name)}</span>
+        </div>
+        <div class="detail-quick-actions">
+          <button onclick="app.equipmentDetailScroll('detail-points')" aria-label="动作要点">
+            ${ICONS.checklist}<span>要点</span>
+          </button>
+          <button onclick="app.equipmentDetailScroll('detail-stats')" aria-label="训练历史">
+            ${ICONS.clock}<span>历史</span>
+          </button>
+          <button onclick="app.equipmentDetailScroll('detail-stats')" aria-label="训练图表">
+            ${ICONS.chart}<span>图表</span>
+          </button>
+          <button id="detail-pin" class="${pinned ? "active" : ""}" onclick="app.equipmentDetailPin('${item.id}')" aria-label="${pinned ? "取消置顶" : "置顶器械"}">
+            ${ICONS.pin}<span>置顶</span>
+          </button>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="row gap8" style="margin-bottom:8px"><span class="accent">▶</span><span class="h3">教学视频</span></div>
-        ${item.video
-          ? `<div class="tiny muted">已由练途动作库配置，真实 App 会直接播放。</div>
-             <div style="height:150px;border-radius:14px;margin-top:10px;background:linear-gradient(135deg,#1a2028,#0d1016);display:grid;place-items:center;color:var(--faint)">视频占位</div>`
-          : `<div class="tiny muted" style="line-height:1.6">教学视频准备中。这件器械的示范视频尚未上线，可先向 AI 教练询问动作要点。</div>`}
+      <div class="detail-hero">
+        <div class="detail-eyebrow">动作学习预览</div>
+        <h1 class="detail-title">${esc(item.name)}</h1>
+        <p class="detail-description">${esc(description)}</p>
+        <div class="detail-tags">
+          <span>${muscle}</span>
+          <span>${item.equip}</span>
+          ${item.video ? "<span class=\"ready\">教学视频</span>" : "<span>视频准备中</span>"}
+        </div>
       </div>
 
-      <button class="btn btn-danger" onclick="app.deleteEquipItem('${item.id}')">从器械库删除</button>
+      ${equipmentDetailSection(
+        "01",
+        "视频讲解",
+        "先看动作讲解，再看后面要点，会更容易抓住发力顺序。",
+        `<div class="detail-video-card ${item.video ? "ready" : ""}">
+          <div class="detail-video-glyph">${equipGlyph(item)}</div>
+          <div class="detail-video-play">▶</div>
+          <div class="detail-video-copy">
+            <strong>${item.video ? "点一下播放动作讲解" : "教学视频准备中"}</strong>
+            <span>${item.video ? "先看讲解，再开始今天的训练。" : "这件器械的官方示范视频还在准备中。"}</span>
+          </div>
+          <span class="detail-video-badge">${item.video ? "官方教学视频" : "视频待上线"}</span>
+        </div>`
+      )}
+
+      ${equipmentDetailSection(
+        "02",
+        "动作轨迹",
+        "先用轨迹示意建立动作路径，再在训练中把速度放慢。",
+        `<div class="detail-motion-board">
+          <span class="detail-motion-line line-one"></span>
+          <span class="detail-motion-line line-two"></span>
+          <span class="detail-motion-line line-three"></span>
+          <div class="detail-motion-glyph">${equipGlyph(item)}</div>
+          <div class="detail-motion-copy">
+            <strong>保持轨迹稳定</strong>
+            <span>起始位置、发力方向和还原速度，比盲目加重量更重要。</span>
+          </div>
+          <span class="detail-motion-expand">↗</span>
+        </div>`
+      )}
+
+      ${equipmentDetailSection(
+        "03",
+        "多角度示范",
+        "示范素材准备中。先用要点确认起始位置和身体角度。",
+        `<div class="detail-angle-grid">
+          ${["正面", "侧面", "发力", "细节"].map((label, index) => `
+            <div class="detail-angle ${index > 1 ? "locked" : ""}">
+              <div class="detail-angle-art">${index > 1 ? "◌" : equipGlyph(item)}</div>
+              <span>${label}</span>
+            </div>
+          `).join("")}
+        </div>
+        <div class="detail-mini-note">示范素材准备中；先用下面的动作要点确认起始位置和发力顺序。</div>`
+      )}
+
+      ${equipmentDetailSection(
+        "04",
+        "动作要点",
+        "下面的要点来自动作库和你的器械备注。",
+        `<div class="detail-point-list">${pointsMarkup}</div>
+         <div class="detail-tip">${item.notes ? `器械备注：${esc(item.notes)}` : "先用轻重量确认动作路线，再逐步接近目标负荷。"}</div>`,
+        "detail-points"
+      )}
+
+      ${equipmentDetailSection(
+        "05",
+        "训练肌群",
+        `主要训练 ${muscle}，协同稳定由 ${support.join("、")} 参与。`,
+        `<div class="detail-muscle-card">
+          <div class="detail-muscle-map">${equipmentDetailMuscleMap(item)}</div>
+          <div class="detail-muscle-copy">
+            <div class="detail-muscle-eyebrow">主要肌群</div>
+            <div class="detail-muscle-name">${muscle}</div>
+            <div class="detail-muscle-chips">
+              ${support.map((label) => `<span>${label}</span>`).join("")}
+            </div>
+            <p>动作时优先感受 ${muscle} 的发力，协同区域负责稳定与传导。</p>
+          </div>
+        </div>`
+      )}
+
+      ${equipmentDetailSection(
+        "06",
+        "训练数据",
+        stats.sessions
+          ? `已完成 ${stats.sessions} 次相关训练${stats.last ? `，最近一次 ${stats.last}` : ""}。`
+          : "完成一次包含这个动作的训练后，这里会生成专属数据。",
+        `<div class="detail-stat-grid">
+          <div><strong>${stats.sessions}</strong><span>完成次数</span></div>
+          <div><strong>${stats.volume.toLocaleString()}</strong><span>累计容量 kg</span></div>
+          <div><strong>${stats.sets}</strong><span>完成组数</span></div>
+        </div>
+        ${chartMarkup}
+        ${stats.sessions ? "" : `<div class="detail-stat-empty">完成训练后自动生成容量与频率趋势。</div>`}`,
+        "detail-stats"
+      )}
+
+      <div class="detail-coach-card">
+        <div class="detail-coach-avatar">AI</div>
+        <div class="grow">
+          <div class="detail-coach-title">动作细节还不确定？</div>
+          <div class="detail-coach-copy">让教练结合你的计划，解释起始位置、发力顺序和替代动作。</div>
+        </div>
+        <button class="detail-coach-action" onclick="${item.slug ? `app.askCoach('${item.slug}')` : "app.tab('coach')"}">问教练</button>
+      </div>
+
+      <button class="detail-delete" onclick="app.deleteEquipItem('${item.id}')">从器械库删除</button>
+      <div class="detail-disclaimer">出现关节刺痛、麻木或肿胀时请停止动作并咨询专业人士。教学视频和示范素材由官方动作库提供。</div>
     </div>
   `;
 }
@@ -4286,6 +4554,28 @@ window.app = {
   openEquipItem(id) {
     state.equipmentItemId = id;
     state.screen = "equipmentItem";
+    save();
+    render();
+  },
+
+  equipmentDetailScroll(id) {
+    const app = document.getElementById("app");
+    const target = document.getElementById(id);
+    if (!app || !target) return;
+    const top = app.scrollTop + target.getBoundingClientRect().top - app.getBoundingClientRect().top - 120;
+    app.scrollTo({ top, behavior: "smooth" });
+  },
+
+  equipmentDetailPin(id) {
+    const pinned = new Set(state.pinnedEquipIds || []);
+    if (pinned.has(id)) {
+      pinned.delete(id);
+      toast("已取消置顶");
+    } else {
+      pinned.add(id);
+      toast("已置顶这件器械");
+    }
+    state.pinnedEquipIds = [...pinned];
     save();
     render();
   },

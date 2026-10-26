@@ -1,10 +1,10 @@
-import AVKit
 import PhotosUI
 import SwiftUI
 import UIKit
 
 struct EquipmentLibraryView: View {
     @Environment(AppStore.self) private var store
+    @AppStorage("pinnedEquipmentIDs") private var pinnedEquipmentIDsRaw = ""
 
     private enum EquipmentSheet: Identifiable {
         case manual
@@ -23,14 +23,26 @@ struct EquipmentLibraryView: View {
     @State private var openRowID: UUID?
     @State private var pendingDelete: EquipmentItem?
 
+    private var pinnedIDs: Set<String> {
+        Set(pinnedEquipmentIDsRaw.split(separator: ",").map(String.init))
+    }
+
     private var filteredItems: [EquipmentItem] {
         let text = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return store.equipmentLibrary }
-        return store.equipmentLibrary.filter { item in
-            item.name.localizedCaseInsensitiveContains(text)
-                || (item.muscle?.label.localizedCaseInsensitiveContains(text) ?? false)
-                || (item.equipment?.label.localizedCaseInsensitiveContains(text) ?? false)
-        }
+        let items = text.isEmpty
+            ? store.equipmentLibrary
+            : store.equipmentLibrary.filter { item in
+                item.name.localizedCaseInsensitiveContains(text)
+                    || (item.muscle?.label.localizedCaseInsensitiveContains(text) ?? false)
+                    || (item.equipment?.label.localizedCaseInsensitiveContains(text) ?? false)
+            }
+
+        return items.enumerated().sorted { lhs, rhs in
+            let lhsPinned = pinnedIDs.contains(lhs.element.id.uuidString)
+            let rhsPinned = pinnedIDs.contains(rhs.element.id.uuidString)
+            if lhsPinned != rhsPinned { return lhsPinned }
+            return lhs.offset < rhs.offset
+        }.map(\.element)
     }
 
     private var useLibraryBinding: Binding<Bool> {
@@ -300,6 +312,13 @@ struct EquipmentLibraryView: View {
             }
 
             Spacer(minLength: 5)
+
+            if pinnedIDs.contains(item.id.uuidString) {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
+                    .accessibilityLabel("已置顶")
+            }
 
             Text(item.videoURL != nil ? "视频" : "准备中")
                 .font(.system(size: 9, weight: .semibold))
@@ -629,151 +648,6 @@ struct EquipmentSearchView: View {
         )
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()
-    }
-}
-
-struct EquipmentItemDetailView: View {
-    @Environment(AppStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
-
-    let itemID: UUID
-
-    @State private var showDelete = false
-    @State private var officialVideoURL: URL?
-
-    private var item: EquipmentItem? {
-        store.equipmentLibrary.first { $0.id == itemID }
-    }
-
-    private var videoURL: URL? {
-        officialVideoURL ?? item?.videoURL.flatMap(URL.init(string:))
-    }
-
-    var body: some View {
-        NavigationStack {
-            AppScrollView {
-                if let item {
-                    VStack(spacing: 16) {
-                        if let data = item.photoData, let image = UIImage(data: data) {
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(height: 230)
-                                .frame(maxWidth: .infinity)
-                                .clipped()
-                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                        }
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(item.name)
-                                .font(.title2.weight(.bold))
-                                .foregroundStyle(.white)
-                            Text("\(item.muscle?.label ?? "未分类") · \(item.equipment?.label ?? "未设置")")
-                                .font(.subheadline)
-                                .foregroundStyle(Theme.accent)
-                            if !item.notes.isEmpty {
-                                Text(item.notes)
-                                    .font(.subheadline)
-                                    .foregroundStyle(Theme.secondaryText)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .card()
-
-                        videoSection(videoURL)
-
-                        Button(role: .destructive) {
-                            showDelete = true
-                        } label: {
-                            Text("从器械库删除")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(Theme.danger)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .fill(Theme.danger.opacity(0.10))
-                                )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(20)
-                    .padding(.bottom, 20)
-                } else {
-                    EmptyStateView(
-                        icon: "dumbbell",
-                        title: "器械不存在",
-                        message: "它可能已经被删除。"
-                    )
-                    .padding(20)
-                }
-            }
-            .background(AppBackground())
-            .navigationTitle("器械详情")
-            .navigationBarTitleDisplayMode(.inline)
-            .task {
-                guard store.useRemoteAI, let slug = item?.slug else { return }
-                if let url = try? await APIClient.shared.officialVideoURL(slug: slug) {
-                    officialVideoURL = url
-                }
-            }
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭") { dismiss() }
-                }
-            }
-            .confirmationDialog(
-                "从器械库删除？",
-                isPresented: $showDelete,
-                titleVisibility: .visible
-            ) {
-                Button("删除", role: .destructive) {
-                    store.removeEquipment(itemID)
-                    dismiss()
-                }
-                Button("取消", role: .cancel) {}
-            } message: {
-                Text("删除后，下次生成计划不会再优先使用这件器械。")
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func videoSection(_ url: URL?) -> some View {
-        if let url {
-            VStack(alignment: .leading, spacing: 10) {
-                Label("教学视频", systemImage: "play.rectangle.fill")
-                    .font(.headline)
-                VideoPlayer(player: AVPlayer(url: url))
-                    .frame(height: 210)
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                Text("教学视频由练途动作库提供。")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-            .card()
-        } else {
-            HStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Theme.accent.opacity(0.10))
-                        .frame(width: 46, height: 46)
-                    Image(systemName: "play.rectangle")
-                        .foregroundStyle(Theme.accent)
-                }
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("教学视频准备中")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                    Text("这件器械的示范视频尚未上线，可先向 AI 教练询问动作要点。")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .card()
-        }
     }
 }
 
