@@ -1242,7 +1242,8 @@ body.dragging-scroll * {
   z-index: 35;
   width: 330px;
   max-width: calc(100vw - 40px);
-  max-height: calc(100dvh - 260px);
+  /* 固定预览设备内的最大高度；内容多时只滚列表，不再顶出屏幕。 */
+  max-height: min(600px, calc(100dvh - 180px));
   display: flex;
   flex-direction: column;
   border: 1px solid rgba(255, 255, 255, 0.14);
