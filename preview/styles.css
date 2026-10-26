@@ -2130,6 +2130,16 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .equipment-picker { padding-bottom: 100px; }
 
+.equipment-picker.plan-picker { padding-bottom: 40px; }
+
+.equipment-picker.plan-picker .equipment-sticky-tools {
+  top: 53px;
+}
+
+.equipment-picker.plan-picker .muscle-sidebar {
+  top: calc(var(--equipment-tools-height, 113px) + 66px);
+}
+
 .muted-link { color: var(--muted); font-size: 12px; }
 
 .equipment-sticky-tools {

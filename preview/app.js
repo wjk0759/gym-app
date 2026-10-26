@@ -1138,7 +1138,14 @@ function planDayScreen() {
       `).join("")}
 
       <div class="card">
-        <div class="tiny muted" style="margin-bottom:8px">添加动作</div>
+        <div class="between" style="margin-bottom:8px">
+          <div>
+            <div class="small strong">添加动作</div>
+            <div class="tiny faint" style="margin-top:2px">还有更多动作，可从完整动作库选择</div>
+          </div>
+          <button class="link" onclick="app.openPlanExercisePicker()">完整动作库 ›</button>
+        </div>
+        <div class="tiny faint" style="margin-bottom:6px">推荐</div>
         <div class="chips">
           ${available.map((slug) => `<button class="chip" onclick="app.addPlanExercise('${slug}')">+ ${EX[slug].name}</button>`).join("")}
         </div>
@@ -1281,8 +1288,18 @@ function equipGlyph(item) {
 
 function equipmentPickerExercises() {
   const query = String(state.equipSearchQuery || "").trim();
+  const planning = state.screen === "planExercisePicker";
+  const day = planning
+    ? state.plan.days.find((item) => item.id === state.planDayId)
+    : null;
+
   return Object.keys(EX).filter((slug) => {
     const item = EX[slug];
+
+    if (planning && day?.exercises.some((exercise) => exercise.slug === slug)) {
+      return false;
+    }
+
     const searchMatch = !query
       || item.name.includes(query)
       || item.muscle.includes(query)
@@ -1307,19 +1324,23 @@ function equipmentPickerExercises() {
 }
 
 function equipmentPickerGrid() {
+  const planning = state.screen === "planExercisePicker";
   const list = equipmentPickerExercises();
   if (!list.length) {
     return `<div class="tiny muted" style="padding:24px 10px;text-align:center">没有匹配的动作，换个肌群或器械试试。</div>`;
   }
   return list.map((slug) => {
     const item = EX[slug];
-    const selected = state.equipSelected.includes(slug);
+    const selected = !planning && state.equipSelected.includes(slug);
+    const action = planning
+      ? `app.addPlanExercise('${slug}')`
+      : `app.equipmentPickerToggle('${slug}')`;
     return `
-      <button class="exercise-pick-card ${selected ? "selected" : ""}" onclick="app.equipmentPickerToggle('${slug}')">
+      <button class="exercise-pick-card ${selected ? "selected" : ""}" onclick="${action}">
         <div class="exercise-pick-art">
           <span class="exercise-pick-glyph">${equipGlyph({ muscle: item.muscle, equip: item.equip })}</span>
           ${item.video !== false ? `<span class="exercise-pick-badge">讲解</span>` : ""}
-          ${selected ? `<span class="exercise-pick-check">✓</span>` : ""}
+          ${planning ? `<span class="exercise-pick-check">＋</span>` : selected ? `<span class="exercise-pick-check">✓</span>` : ""}
         </div>
         <div class="exercise-pick-name">${esc(item.name)}</div>
         <div class="exercise-pick-meta">${item.muscle} · ${item.equip}</div>
@@ -1329,25 +1350,36 @@ function equipmentPickerGrid() {
 }
 
 function equipmentPickerScreen() {
+  const planning = state.screen === "planExercisePicker";
   const muscles = ["全部", "胸", "背", "腿", "臀", "肩", "手臂", "核心", "有氧"];
-  const equipment = ["全部", "已添加", ...new Set(Object.values(EX).map((item) => item.equip))];
-  const selected = state.equipSelected.map((slug) => ({ slug, ...EX[slug] })).filter((item) => item.name);
+  const equipment = planning
+    ? ["全部", ...new Set(Object.values(EX).map((item) => item.equip))]
+    : ["全部", "已添加", ...new Set(Object.values(EX).map((item) => item.equip))];
+  const selected = planning
+    ? []
+    : state.equipSelected.map((slug) => ({ slug, ...EX[slug] })).filter((item) => item.name);
   const searching = String(state.equipSearchQuery || "").trim().length > 0;
 
   return `
-    <div class="stack equipment-picker">
+    <div class="stack equipment-picker ${planning ? "plan-picker" : ""}">
+      ${planning ? headerBack("添加动作", "app.closePlanExercisePicker()") : ""}
+
       <div class="equipment-sticky-tools">
         <div class="equipment-search-line">
           <div class="equipment-search-row">
             <span class="equipment-search-icon">${ICONS.search}</span>
             <input id="equipment-picker-search" type="text" placeholder="搜索动作名称" value="${esc(state.equipSearchQuery)}" oninput="app.equipmentPickerQuery(this.value)">
-            <button class="equipment-scan-btn" onclick="app.equipmentRecognitionOpen()" aria-label="拍照识别器械" title="拍照识别">
-              ${ICONS.camera}
-            </button>
+            ${planning ? "" : `
+              <button class="equipment-scan-btn" onclick="app.equipmentRecognitionOpen()" aria-label="拍照识别器械" title="拍照识别">
+                ${ICONS.camera}
+              </button>
+            `}
           </div>
-          <button class="equipment-library-btn" onclick="app.equipmentLibraryOpen()" aria-label="器械库" title="器械库">
-            ${ICONS.library}
-          </button>
+          ${planning ? "" : `
+            <button class="equipment-library-btn" onclick="app.equipmentLibraryOpen()" aria-label="器械库" title="器械库">
+              ${ICONS.library}
+            </button>
+          `}
         </div>
 
         <div id="equipment-search-scope" class="equipment-search-scope" ${searching ? "" : "hidden"}>搜索全部动作，当前分类暂不生效</div>
@@ -1370,12 +1402,14 @@ function equipmentPickerScreen() {
       </div>
     </div>
 
-    <button class="equipment-selection-fab no-drag ${selected.length ? "has-items" : ""}" onclick="app.equipmentSelectionToggle()" aria-label="已选动作，共 ${selected.length} 个">
-      ${ICONS.dumbbell}
-      ${selected.length ? `<span class="equipment-selection-fab-count">${selected.length}</span>` : ""}
-    </button>
+    ${planning ? "" : `
+      <button class="equipment-selection-fab no-drag ${selected.length ? "has-items" : ""}" onclick="app.equipmentSelectionToggle()" aria-label="已选动作，共 ${selected.length} 个">
+        ${ICONS.dumbbell}
+        ${selected.length ? `<span class="equipment-selection-fab-count">${selected.length}</span>` : ""}
+      </button>
 
-    ${state.equipSelectionOpen ? equipmentSelectionPanel(selected) : ""}
+      ${state.equipSelectionOpen ? equipmentSelectionPanel(selected) : ""}
+    `}
   `;
 }
 
@@ -3434,7 +3468,8 @@ function setupEquipmentLayout() {
 function syncEquipmentScrollState() {
   const root = document.getElementById("app");
   if (!root) return;
-  const onEquipment = state.screen === "tabs" && state.tab === "equipment";
+  const onEquipment = (state.screen === "tabs" && state.tab === "equipment")
+    || state.screen === "planExercisePicker";
   const selectionOpen = onEquipment && state.equipSelectionOpen;
 
   // 锁定底层滚动位置：即使浏览器/触摸事件漏到底层，也不会带着页面移动。
@@ -3711,6 +3746,7 @@ function render() {
   else if (state.screen === "equipmentCamera") html = equipmentCameraScreen();
   else if (state.screen === "equipmentRecognition") html = equipmentRecognitionScreen();
   else if (state.screen === "equipmentItem") html = equipmentItemScreen();
+  else if (state.screen === "planExercisePicker") html = equipmentPickerScreen();
   else if (state.screen === "bodyAnalysis") html = bodyAnalysisScreen();
   else html = home();
 
@@ -4091,6 +4127,28 @@ window.app = {
   openPlanDay(id) {
     state.planDayId = id;
     state.screen = "planDay";
+    state.equipSearchQuery = "";
+    state.equipMuscle = "全部";
+    state.equipFilter = "全部";
+    save();
+    render();
+  },
+
+  openPlanExercisePicker() {
+    state.screen = "planExercisePicker";
+    state.equipSearchQuery = "";
+    state.equipMuscle = "全部";
+    state.equipFilter = "全部";
+    state.equipSelectionOpen = false;
+    save();
+    render();
+  },
+
+  closePlanExercisePicker() {
+    state.screen = "planDay";
+    state.equipSearchQuery = "";
+    state.equipMuscle = "全部";
+    state.equipFilter = "全部";
     save();
     render();
   },
