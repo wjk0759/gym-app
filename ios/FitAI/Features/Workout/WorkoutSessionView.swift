@@ -414,9 +414,15 @@ struct WorkoutSessionView: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("训练心得（可选）")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                HStack {
+                    Text("训练心得（可选）")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                    Spacer()
+                    Text("\(notes.count)/300")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
                 TextField("今天状态、动作感受、下次注意什么…", text: $notes, axis: .vertical)
                     .lineLimit(2...5)
                     .padding(11)
@@ -424,6 +430,11 @@ struct WorkoutSessionView: View {
                         Theme.surfaceStrong,
                         in: RoundedRectangle(cornerRadius: 11, style: .continuous)
                     )
+                    .onChange(of: notes) { _, value in
+                        if value.count > 300 {
+                            notes = String(value.prefix(300))
+                        }
+                    }
             }
 
             Text("记录会用于下一次计划调整。至少完成一组再保存，AI 才能判断负荷。")
@@ -515,7 +526,7 @@ struct WorkoutSessionView: View {
             sets: logs,
             durationMinutes: durationMinutes,
             feeling: feeling,
-            notes: notes
+            notes: String(notes.prefix(300))
         )
         dismiss()
     }

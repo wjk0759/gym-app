@@ -16,10 +16,10 @@ enum PlanGenerator {
     }
 
     private static let goalParams: [GoalType: GoalParams] = [
-        .loseFat: GoalParams(sets: 3, reps: "12-15", rest: 45, rpe: 7.0),
-        .buildMuscle: GoalParams(sets: 4, reps: "8-10", rest: 90, rpe: 7.5),
-        .recomp: GoalParams(sets: 3, reps: "10-12", rest: 60, rpe: 7.0),
-        .endurance: GoalParams(sets: 3, reps: "15-20", rest: 30, rpe: 6.5)
+        .loseFat: GoalParams(sets: 3, reps: "12", rest: 45, rpe: 7.0),
+        .buildMuscle: GoalParams(sets: 4, reps: "8", rest: 90, rpe: 7.5),
+        .recomp: GoalParams(sets: 3, reps: "10", rest: 60, rpe: 7.0),
+        .endurance: GoalParams(sets: 3, reps: "15", rest: 30, rpe: 6.5)
     ]
 
     private static let defaultWeekdays: [Int: [Int]] = [
@@ -232,7 +232,7 @@ enum PlanGenerator {
         if exercise.slug == "rowing_machine" || exercise.slug == "treadmill_walk" {
             return "8-12 min"
         }
-        return goalParams[goal]?.reps ?? "10-12"
+        return goalParams[goal]?.reps ?? "10"
     }
 
     private static func suggestedWeight(

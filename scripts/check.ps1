@@ -22,4 +22,10 @@ Write-Host "Running smoke test..."
 $env:PYTHONIOENCODING = "utf-8"
 .\.venv\Scripts\python.exe scripts\smoke.py
 
+Write-Host "Checking web preview modules..."
+Push-Location $root
+node scripts\check-preview.js
+if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Web preview check failed" }
+Pop-Location
+
 Write-Host "All checks passed."

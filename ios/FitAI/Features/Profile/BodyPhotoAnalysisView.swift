@@ -63,10 +63,17 @@ struct BodyPhotoAnalysisView: View {
                 }
             }
             .fullScreenCover(isPresented: $showCamera) {
-                CameraPicker { picked in
-                    apply(picked)
-                }
-                .ignoresSafeArea()
+                PhotoCaptureView(
+                    title: "拍摄体型照片",
+                    hint: "保持自然站姿，让全身完整进入画面。",
+                    onImage: { picked in
+                        apply(picked)
+                        showCamera = false
+                    },
+                    onCancel: {
+                        showCamera = false
+                    }
+                )
             }
             .alert("提示", isPresented: $showAlert) {
                 Button("知道了", role: .cancel) {}

@@ -4,6 +4,8 @@ import UIKit
 struct NutritionView: View {
     @Environment(AppStore.self) private var store
 
+    let date: Date
+
     @State private var showAlert = false
     @State private var message = ""
     @State private var isOpening = false
@@ -12,8 +14,31 @@ struct NutritionView: View {
     @State private var selectedMeal: MealType = .breakfast
     @State private var pendingFoodDelete: FoodLog?
 
+    init(date: Date = Date()) {
+        self.date = Calendar.current.startOfDay(for: date)
+    }
+
     private var targets: NutritionTargets {
         DietPlanner.targets(profile: store.profile)
+    }
+
+    private var isToday: Bool {
+        Calendar.current.isDateInToday(date)
+    }
+
+    private var dayLogs: [FoodLog] {
+        store.foodLogs.filter {
+            Calendar.current.isDate($0.date, inSameDayAs: date)
+        }
+    }
+
+    private var dayNutrition: NutritionTotals {
+        dayLogs.reduce(into: NutritionTotals()) { total, log in
+            total.kcal += log.kcal
+            total.protein += log.protein
+            total.carbs += log.carbs
+            total.fat += log.fat
+        }
     }
 
     private var meals: [MealSuggestion] {
@@ -36,11 +61,12 @@ struct NutritionView: View {
                 meituanCard
                 disclaimer
             }
-            .padding(20)
+            .appPagePadding()
+            .appReadableContent()
             .padding(.bottom, 20)
         }
         .background(AppBackground())
-        .navigationTitle("饮食计划")
+        .navigationTitle(isToday ? "今日饮食" : "饮食记录")
         .navigationBarTitleDisplayMode(.inline)
         .alert("美团外卖", isPresented: $showAlert) {
             Button("知道了", role: .cancel) {}
@@ -48,10 +74,10 @@ struct NutritionView: View {
             Text(message)
         }
         .sheet(isPresented: $showAddFood) {
-            AddFoodView(initialMeal: selectedMeal)
+            AddFoodView(initialMeal: selectedMeal, date: date)
         }
         .sheet(isPresented: $showFoodPhoto) {
-            FoodPhotoAnalysisView()
+            FoodPhotoAnalysisView(date: date)
         }
         .confirmationDialog(
             "删除这条饮食记录？",
@@ -123,12 +149,16 @@ struct NutritionView: View {
     }
 
     private var header: some View {
-        let consumed = store.todayNutrition
+        let consumed = dayNutrition
         let remainingKcal = max(0, targets.kcal - Int(consumed.kcal))
         let remainingProtein = max(0, targets.protein - Int(consumed.protein))
+        let goalLabel = isToday ? "今日" : "当天"
 
         return VStack(alignment: .leading, spacing: 8) {
-            Text("今日热量目标")
+            Text(date.formatted(.dateTime.month().day().weekday(.wide)))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.accent)
+            Text(isToday ? "今日热量目标" : "当天热量目标")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
 
@@ -143,7 +173,7 @@ struct NutritionView: View {
 
             Text(remainingKcal > 0
                  ? "还可摄入 \(remainingKcal) kcal · 蛋白质还差 \(remainingProtein)g"
-                 : "已达到今日热量目标 · 蛋白质还差 \(remainingProtein)g")
+                 : "已达到\(goalLabel)热量目标 · 蛋白质还差 \(remainingProtein)g")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(remainingKcal > 0 ? Theme.accent : Theme.warning)
 
@@ -162,9 +192,9 @@ struct NutritionView: View {
                 .font(.headline)
 
             HStack(spacing: 10) {
-                macro("蛋白质", "\(Int(store.todayNutrition.protein)) / \(targets.protein)g", color: Theme.accent)
-                macro("碳水", "\(Int(store.todayNutrition.carbs)) / \(targets.carbs)g", color: Theme.warning)
-                macro("脂肪", "\(Int(store.todayNutrition.fat)) / \(targets.fat)g", color: Color(red: 0.55, green: 0.70, blue: 0.98))
+                macro("蛋白质", "\(Int(dayNutrition.protein)) / \(targets.protein)g", color: Theme.accent)
+                macro("碳水", "\(Int(dayNutrition.carbs)) / \(targets.carbs)g", color: Theme.warning)
+                macro("脂肪", "\(Int(dayNutrition.fat)) / \(targets.fat)g", color: Color(red: 0.55, green: 0.70, blue: 0.98))
             }
 
             Text("BMR \(targets.bmr) kcal · 维持热量约 \(targets.tdee) kcal")
@@ -175,12 +205,12 @@ struct NutritionView: View {
     }
 
     private var todayLogCard: some View {
-        let totals = store.todayNutrition
+        let totals = dayNutrition
         let ratio = min(1.0, totals.kcal / Double(max(1, targets.kcal)))
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("今日记录")
+                Text(isToday ? "今日记录" : "当天记录")
                     .font(.headline)
                 Spacer()
                 Text("\(Int(totals.kcal)) / \(targets.kcal) kcal")
@@ -191,7 +221,7 @@ struct NutritionView: View {
             ProgressView(value: ratio)
                 .tint(Theme.accent)
 
-            if store.todayFoodLogs.isEmpty {
+            if dayLogs.isEmpty {
                 Text("还没有记录。记下吃了什么，才能知道离目标还差多少。")
                     .font(.caption)
                     .foregroundStyle(Theme.secondaryText)
@@ -219,7 +249,7 @@ struct NutritionView: View {
 
     @ViewBuilder
     private func mealLogSection(_ meal: MealType) -> some View {
-        let logs = store.todayFoodLogs.filter { $0.meal == meal }
+        let logs = dayLogs.filter { $0.meal == meal }
         if !logs.isEmpty {
             HStack {
                 Text(meal.label)
@@ -390,6 +420,8 @@ struct AddFoodView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 
+    let date: Date
+
     @State private var meal: MealType
     @State private var query = ""
     @State private var selected: FoodItem?
@@ -397,7 +429,8 @@ struct AddFoodView: View {
     @State private var showCustomFood = false
     @State private var customInitialName = ""
 
-    init(initialMeal: MealType) {
+    init(initialMeal: MealType, date: Date = Date()) {
+        self.date = Calendar.current.startOfDay(for: date)
         _meal = State(initialValue: initialMeal)
     }
 
@@ -421,6 +454,11 @@ struct AddFoodView: View {
                     .pickerStyle(.segmented)
 
                     TextField("搜索食物，例如：螺蛳粉、奶茶、鸡胸肉", text: $query)
+                        .onChange(of: query) { _, value in
+                            if value.count > 60 {
+                                query = String(value.prefix(60))
+                            }
+                        }
                         .padding(12)
                         .background(
                             Theme.surfaceStrong,
@@ -570,6 +608,7 @@ struct AddFoodView: View {
         let factor = grams / 100
         store.addFoodLog(
             FoodLog(
+                date: date,
                 meal: meal,
                 foodName: food.name,
                 grams: grams,

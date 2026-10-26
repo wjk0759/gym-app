@@ -5,18 +5,22 @@ import UIKit
 enum CustomWorkoutMode: Equatable {
     case plan
     case custom
+    case editPlan
 }
 
-/// 训练编排页。今日计划和已选动作共用同一套排序、组数、次数和重量编辑。
+/// 训练编排页。今日计划、自选训练和计划训练日共用同一套排序、组数、次数和重量编辑。
 struct CustomWorkoutBuilderView: View {
     @Environment(\.dismiss) private var dismiss
 
     let initialExercises: [PlanExercise]
     let onStart: (PlanDay) -> Void
+    let onSave: ((PlanDay) -> Void)?
+    let templateDay: PlanDay?
     let mode: CustomWorkoutMode
     let title: String
 
     @State private var exercises: [PlanExercise]
+    @State private var showActionPicker = false
 
     init(
         title: String? = nil,
@@ -26,9 +30,25 @@ struct CustomWorkoutBuilderView: View {
     ) {
         self.initialExercises = initialExercises
         self.onStart = onStart
+        self.onSave = nil
+        self.templateDay = nil
         self.mode = mode
         self.title = title ?? (mode == .plan ? "今日训练" : "自选训练")
         _exercises = State(initialValue: initialExercises.map { item in
+            var item = item
+            item.reps = WorkoutPickerOptions.normalizedReps(item.reps)
+            return item
+        })
+    }
+
+    init(editing day: PlanDay, onSave: @escaping (PlanDay) -> Void) {
+        self.initialExercises = day.exercises
+        self.onStart = { _ in }
+        self.onSave = onSave
+        self.templateDay = day
+        self.mode = .editPlan
+        self.title = day.title
+        _exercises = State(initialValue: day.exercises.map { item in
             var item = item
             item.reps = WorkoutPickerOptions.normalizedReps(item.reps)
             return item
@@ -75,6 +95,15 @@ struct CustomWorkoutBuilderView: View {
                                 exerciseEditor(index: index)
                             }
                         }
+
+                        if mode == .editPlan {
+                            Button {
+                                showActionPicker = true
+                            } label: {
+                                Label("从动作库添加动作", systemImage: "plus")
+                            }
+                            .buttonStyle(SecondaryButtonStyle())
+                        }
                     }
                     .appPagePadding()
                     .padding(.vertical, 16)
@@ -87,11 +116,18 @@ struct CustomWorkoutBuilderView: View {
                 footer
             }
             .background(AppBackground())
-            .navigationTitle("安排训练")
+            .navigationTitle(mode == .editPlan ? "编辑训练日" : "安排训练")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }
+                }
+            }
+            .sheet(isPresented: $showActionPicker) {
+                NavigationStack {
+                    EquipmentPickerView { exercise in
+                        addExercise(exercise)
+                    }
                 }
             }
         }
@@ -99,13 +135,15 @@ struct CustomWorkoutBuilderView: View {
 
     private var summaryCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(mode == .plan ? "今日训练" : "自选训练")
+            Text(mode == .plan ? "今日训练" : mode == .editPlan ? "训练日" : "自选训练")
                 .font(.system(size: 10, weight: .bold))
                 .foregroundStyle(Theme.accent)
-            Text(mode == .plan ? title : "先排顺序，再开始")
+            Text(mode == .plan || mode == .editPlan ? title : "先排顺序，再开始")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
-            Text(mode == .plan
+            Text(mode == .editPlan
+                 ? "调整动作顺序、组数和负荷；保存后直接写回训练计划。"
+                 : mode == .plan
                  ? "今天的动作顺序、组数和重量都可以先调整；开始后仍可随时修改本次目标。"
                  : "动作顺序、组数、次数、重量都可以先改；开始后仍可在训练页临时调整。")
                 .font(.caption)
@@ -299,13 +337,17 @@ struct CustomWorkoutBuilderView: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.white)
                 Spacer(minLength: 8)
-                Text("开始后仍可调整")
+                Text(mode == .editPlan ? "保存后立即更新计划" : "开始后仍可调整")
                     .font(.system(size: 9.5))
                     .foregroundStyle(Theme.tertiaryText)
             }
 
-            Button("开始本次训练") {
-                start()
+            Button(mode == .editPlan ? "保存训练日" : "开始本次训练") {
+                if mode == .editPlan {
+                    save()
+                } else {
+                    start()
+                }
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(exercises.isEmpty)
@@ -330,9 +372,8 @@ struct CustomWorkoutBuilderView: View {
         UISelectionFeedbackGenerator().selectionChanged()
     }
 
-    private func start() {
-        guard !exercises.isEmpty else { return }
-        let normalized = exercises.map { item in
+    private var normalizedExercises: [PlanExercise] {
+        exercises.map { item in
             var item = item
             item.sets = min(max(item.sets, 1), 10)
             item.reps = WorkoutPickerOptions.normalizedReps(item.reps)
@@ -340,11 +381,49 @@ struct CustomWorkoutBuilderView: View {
             item.weightKG = (item.weightKG ?? 0) > 0 ? item.weightKG : nil
             return item
         }
+    }
+
+    private func addExercise(_ exercise: Exercise) {
+        guard !exercises.contains(where: { $0.slug == exercise.slug }) else { return }
+        let previous = exercises.last
+        let item = PlanExercise(
+            slug: exercise.slug,
+            sets: previous?.sets ?? 3,
+            reps: previous?.reps ?? "10",
+            weightKG: nil,
+            restSec: previous?.restSec ?? 60,
+            rpe: previous?.rpe ?? 7.5
+        )
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
+            exercises.append(item)
+        }
+    }
+
+    private func start() {
+        guard !exercises.isEmpty else { return }
+        let normalized = normalizedExercises
         let focus = Array(Set(normalized.compactMap { $0.exercise?.muscle }))
         onStart(
             PlanDay(
                 weekday: Weekday.today,
                 title: title,
+                focus: focus,
+                exercises: normalized
+            )
+        )
+        dismiss()
+    }
+
+    private func save() {
+        guard !exercises.isEmpty, let onSave else { return }
+        let normalized = normalizedExercises
+        let focus = Array(Set(normalized.compactMap { $0.exercise?.muscle }))
+        onSave(
+            PlanDay(
+                id: templateDay?.id ?? UUID(),
+                weekIndex: templateDay?.weekIndex ?? 1,
+                weekday: templateDay?.weekday ?? Weekday.today,
+                title: templateDay?.title ?? title,
                 focus: focus,
                 exercises: normalized
             )

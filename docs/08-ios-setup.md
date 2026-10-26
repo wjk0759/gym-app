@@ -81,7 +81,7 @@ App 启动
             ├─ 首页 → 今日计划
             ├─ 计划 → PlanGenerator（本地规则）
             ├─ 教练 → Mock 回复 + 安全拦截
-            ├─ 器械 → PhotosPicker / CameraPicker → Mock 识别
+            ├─ 器械 → PhotosPicker / PhotoCaptureView → Mock 识别
             └─ 我的 → 提醒设置 → UNUserNotificationCenter
 ```
 

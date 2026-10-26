@@ -200,11 +200,17 @@ struct PlanExercise: Codable, Identifiable, Hashable {
         exercise?.nameZH ?? slug
     }
 
+    var displayReps: String {
+        let first = reps.components(separatedBy: "-").first ?? reps
+        let digits = first.filter(\.isNumber)
+        return digits.isEmpty ? "10" : String(digits.prefix(2))
+    }
+
     var targetText: String {
         if let weight = weightKG, weight > 0 {
-            return "\(sets) 组 × \(reps) · \(weight.formatted())kg"
+            return "\(sets) 组 × \(displayReps) · \(weight.formatted())kg"
         }
-        return "\(sets) 组 × \(reps)"
+        return "\(sets) 组 × \(displayReps)"
     }
 }
 

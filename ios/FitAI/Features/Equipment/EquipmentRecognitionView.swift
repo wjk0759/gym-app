@@ -63,7 +63,9 @@ struct EquipmentRecognitionView: View {
                 dismiss()
             }
         }) {
-            EquipmentCameraView(
+            PhotoCaptureView(
+                title: "拍摄器械",
+                hint: "让器械完整进入画面，避免只拍到局部或边缘。",
                 onImage: { image in
                     apply(image)
                     showCamera = false

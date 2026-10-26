@@ -317,6 +317,11 @@ struct EquipmentPickerView: View {
                 .textInputAutocapitalization(.never)
                 .foregroundStyle(.white)
                 .submitLabel(.search)
+                .onChange(of: query) { _, value in
+                    if value.count > 60 {
+                        query = String(value.prefix(60))
+                    }
+                }
 
             if !query.isEmpty {
                 Button {

@@ -6,6 +6,12 @@ struct FoodPhotoAnalysisView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 
+    let date: Date
+
+    init(date: Date = Date()) {
+        self.date = Calendar.current.startOfDay(for: date)
+    }
+
     @State private var photoItem: PhotosPickerItem?
     @State private var image: UIImage?
     @State private var imageData: Data?
@@ -16,6 +22,7 @@ struct FoodPhotoAnalysisView: View {
     @State private var analysisModel = ""
     @State private var isAnalyzing = false
     @State private var showCamera = false
+    @State private var didAutoStartCamera = false
     @State private var message = ""
     @State private var showAlert = false
 
@@ -85,11 +92,30 @@ struct FoodPhotoAnalysisView: View {
                     await load(item)
                 }
             }
-            .fullScreenCover(isPresented: $showCamera) {
-                CameraPicker { picked in
-                    apply(picked)
+            .fullScreenCover(
+                isPresented: $showCamera,
+                onDismiss: {
+                    if imageData == nil {
+                        dismiss()
+                    }
                 }
-                .ignoresSafeArea()
+            ) {
+                PhotoCaptureView(
+                    title: "拍摄餐食",
+                    hint: "尽量俯拍，让整餐完整进入画面。",
+                    onImage: { picked in
+                        apply(picked)
+                        showCamera = false
+                    },
+                    onCancel: {
+                        showCamera = false
+                    }
+                )
+            }
+            .task {
+                guard !didAutoStartCamera, imageData == nil else { return }
+                didAutoStartCamera = true
+                showCamera = true
             }
             .alert("已加入今日饮食", isPresented: $showAlert) {
                 Button("完成") { dismiss() }
@@ -362,7 +388,7 @@ struct FoodPhotoAnalysisView: View {
     private func addToToday() {
         let logs = selectedItems.map { item in
             FoodLog(
-                date: Date(),
+                date: date,
                 meal: meal,
                 foodName: item.name,
                 grams: item.grams,
@@ -373,7 +399,7 @@ struct FoodPhotoAnalysisView: View {
             )
         }
         store.addFoodLogs(logs)
-        message = "已加入\(meal.label)，共 \(Int(totalKcal)) kcal。你可以在今日记录里继续修改或删除。"
+        message = "已加入\(meal.label)，共 \(Int(totalKcal)) kcal。你可以在饮食记录里继续修改或删除。"
         showAlert = true
     }
 

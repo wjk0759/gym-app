@@ -8,7 +8,6 @@ struct HomeView: View {
     @State private var workoutDay: PlanDay?
     @State private var showAdjustConfirm = false
     @State private var showAdjustResult = false
-    @State private var selectedSession: WorkoutSession?
 
     var body: some View {
         NavigationStack {
@@ -31,8 +30,6 @@ struct HomeView: View {
                     weekCard
 
                     nutritionCard
-
-                    recentCard
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
@@ -57,9 +54,6 @@ struct HomeView: View {
             }
             .fullScreenCover(item: $workoutDay) { day in
                 WorkoutSessionView(day: day)
-            }
-            .sheet(item: $selectedSession) { session in
-                WorkoutDetailView(session: session)
             }
             .confirmationDialog(
                 "用本周训练复盘并调整？",
@@ -440,70 +434,4 @@ struct HomeView: View {
         )
     }
 
-    // MARK: - 最近训练
-
-    private var recentCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("最近训练")
-                    .font(.headline)
-                Spacer()
-                if !store.sessions.isEmpty {
-                    NavigationLink {
-                        WorkoutHistoryView()
-                    } label: {
-                        HStack(spacing: 3) {
-                            Text("全部 \(store.sessions.count) 次")
-                            Image(systemName: "chevron.right")
-                                .font(.caption2.weight(.semibold))
-                        }
-                        .font(.caption)
-                        .foregroundStyle(Theme.accent)
-                    }
-                }
-            }
-
-            if store.sessions.isEmpty {
-                Text("完成第一次训练后，这里会显示记录和容量趋势。")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.secondaryText)
-                    .padding(.vertical, 6)
-            } else {
-                ForEach(store.sessions.prefix(3)) { session in
-                    Button {
-                        selectedSession = session
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(session.dayTitle)
-                                    .font(.subheadline.weight(.medium))
-                                    .foregroundStyle(.white)
-                                Text(session.date.formatted(date: .abbreviated, time: .shortened))
-                                    .font(.caption2)
-                                    .foregroundStyle(Theme.tertiaryText)
-                            }
-                            Spacer()
-                            VStack(alignment: .trailing, spacing: 3) {
-                                Text("\(Int(session.volume)) kg")
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(Theme.accent)
-                                Text("\(session.durationMinutes) 分钟")
-                                    .font(.caption2)
-                                    .foregroundStyle(Theme.tertiaryText)
-                            }
-                            Image(systemName: "chevron.right")
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(Theme.tertiaryText)
-                                .padding(.leading, 2)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    if session.id != store.sessions.prefix(3).last?.id {
-                        Divider().overlay(Theme.stroke)
-                    }
-                }
-            }
-        }
-        .card()
-    }
 }

@@ -5,17 +5,20 @@ struct WorkoutDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     let session: WorkoutSession
+    let isNew: Bool
 
     @State private var draft: WorkoutSession
-    @State private var isEditing = false
+    @State private var isEditing: Bool
     @State private var showDelete = false
     @State private var showExercisePicker = false
     @State private var message = ""
     @State private var showMessage = false
 
-    init(session: WorkoutSession) {
+    init(session: WorkoutSession, isNew: Bool = false) {
         self.session = session
+        self.isNew = isNew
         _draft = State(initialValue: session)
+        _isEditing = State(initialValue: isNew)
     }
 
     private struct ExerciseGroup: Identifiable {
@@ -76,10 +79,11 @@ struct WorkoutDetailView: View {
                         }
                         .buttonStyle(SecondaryButtonStyle())
 
-                        Button(role: .destructive) {
-                            showDelete = true
-                        } label: {
-                            Text("删除这条训练记录")
+                        if !isNew {
+                            Button(role: .destructive) {
+                                showDelete = true
+                            } label: {
+                                Text("删除这条训练记录")
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(Theme.danger)
                                 .frame(maxWidth: .infinity)
@@ -88,22 +92,31 @@ struct WorkoutDetailView: View {
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                                         .fill(Theme.danger.opacity(0.10))
                                 )
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
                 .padding(20)
                 .padding(.bottom, 20)
             }
             .background(AppBackground())
-            .navigationTitle(isEditing ? "编辑训练记录" : "训练详情")
+            .navigationTitle(
+                isEditing
+                    ? (isNew ? "记录训练" : "编辑训练记录")
+                    : "训练详情"
+            )
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     if isEditing {
                         Button("取消") {
-                            draft = session
-                            isEditing = false
+                            if isNew {
+                                dismiss()
+                            } else {
+                                draft = session
+                                isEditing = false
+                            }
                         }
                     } else {
                         Button("关闭") { dismiss() }
@@ -152,7 +165,8 @@ struct WorkoutDetailView: View {
 
     private var summaryCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(draft.dayTitle)
+            Text(String(draft.dayTitle.prefix(40)))
+                .lineLimit(2)
                 .font(.title3.weight(.bold))
                 .foregroundStyle(.white)
 
@@ -182,10 +196,11 @@ struct WorkoutDetailView: View {
                     Text("训练心得")
                         .font(.caption)
                         .foregroundStyle(Theme.secondaryText)
-                    Text(notes)
+                    Text(String(notes.prefix(300)))
                         .font(.subheadline)
                         .foregroundStyle(.white)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(6)
+                        .multilineTextAlignment(.leading)
                 }
                 .padding(.top, 2)
             }
@@ -263,10 +278,16 @@ struct WorkoutDetailView: View {
     private var editSummaryCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("训练名称")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
-                TextField("例如：全身 A", text: $draft.dayTitle)
+                HStack {
+                    Text("训练名称")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                    Spacer()
+                    Text("\(min(40, draft.dayTitle.count))/40")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+                TextField("例如：全身 A", text: titleBinding)
                     .padding(11)
                     .background(
                         Theme.surfaceStrong,
@@ -306,9 +327,15 @@ struct WorkoutDetailView: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("训练心得")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
+                HStack {
+                    Text("训练心得")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                    Spacer()
+                    Text("\(min(300, (draft.notes ?? "").count))/300")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
                 TextField("今天状态、动作感受、下次注意什么…", text: notesBinding, axis: .vertical)
                     .lineLimit(2...5)
                     .padding(11)
@@ -440,10 +467,20 @@ struct WorkoutDetailView: View {
 
     // MARK: - 数据操作
 
+    private var titleBinding: Binding<String> {
+        Binding(
+            get: { draft.dayTitle },
+            set: { draft.dayTitle = String($0.prefix(40)) }
+        )
+    }
+
     private var notesBinding: Binding<String> {
         Binding(
-            get: { draft.notes ?? "" },
-            set: { draft.notes = $0.isEmpty ? nil : $0 }
+            get: { String((draft.notes ?? "").prefix(300)) },
+            set: {
+                let value = String($0.prefix(300))
+                draft.notes = value.isEmpty ? nil : value
+            }
         )
     }
 
@@ -518,8 +555,14 @@ struct WorkoutDetailView: View {
 
     private func save() {
         let title = draft.dayTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        draft.dayTitle = title.isEmpty ? "训练记录" : title
+        draft.dayTitle = String((title.isEmpty ? "训练记录" : title).prefix(40))
+        draft.notes = draft.notes.map { String($0.prefix(300)) }
         reindex()
+        if isNew {
+            store.addSession(draft)
+            dismiss()
+            return
+        }
         store.updateSession(draft)
         isEditing = false
         message = "训练记录已保存，首页和 AI 复盘数据会同步更新。"

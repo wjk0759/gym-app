@@ -3,22 +3,36 @@ import PhotosUI
 import SwiftUI
 import UIKit
 
-/// 器械识别的拍摄入口：相机优先，同时保留相册和退出按钮。
-/// 拍完/选完照片后立即交给识别页，不在这里展示识别结果。
-struct EquipmentCameraView: View {
+/// 通用拍摄入口：相机优先，同时保留相册和退出按钮。
+/// 器械识别、饮食识别共用同一套取景、权限失败和相册回退体验。
+struct PhotoCaptureView: View {
+    let title: String
+    let hint: String
     let onImage: (UIImage) -> Void
     let onCancel: () -> Void
 
-    @StateObject private var camera = EquipmentCameraController()
+    @StateObject private var camera = PhotoCaptureController()
     @State private var photoItem: PhotosPickerItem?
     @State private var isLoadingPhoto = false
+
+    init(
+        title: String = "拍摄器械",
+        hint: String = "让器械完整进入画面，避免只拍到局部或边缘。",
+        onImage: @escaping (UIImage) -> Void,
+        onCancel: @escaping () -> Void
+    ) {
+        self.title = title
+        self.hint = hint
+        self.onImage = onImage
+        self.onCancel = onCancel
+    }
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
             if camera.isReady {
-                EquipmentCameraPreview(session: camera.session)
+                PhotoCapturePreview(session: camera.session)
                     .ignoresSafeArea()
             } else {
                 VStack(spacing: 12) {
@@ -46,7 +60,7 @@ struct EquipmentCameraView: View {
 
                     Spacer()
 
-                    Text("拍摄器械")
+                    Text(title)
                         .font(.headline)
                         .foregroundStyle(.white)
 
@@ -67,10 +81,11 @@ struct EquipmentCameraView: View {
                 Spacer()
 
                 VStack(spacing: 12) {
-                    Text("让器械完整进入画面，避免只拍到局部或边缘。")
+                    Text(hint)
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.72))
                         .multilineTextAlignment(.center)
+                        .padding(.horizontal, 30)
 
                     Button {
                         camera.capture { image in
@@ -127,14 +142,14 @@ struct EquipmentCameraView: View {
     }
 }
 
-private final class EquipmentCameraController: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
+private final class PhotoCaptureController: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
     let session = AVCaptureSession()
 
     @Published private(set) var isReady = false
     @Published private(set) var errorMessage: String?
 
     private let output = AVCapturePhotoOutput()
-    private let sessionQueue = DispatchQueue(label: "com.fitai.equipment.camera")
+    private let sessionQueue = DispatchQueue(label: "com.fitai.photo.capture")
     private var configured = false
     private var captureCompletion: ((UIImage) -> Void)?
 
@@ -148,12 +163,12 @@ private final class EquipmentCameraController: NSObject, ObservableObject, AVCap
                     self?.configure()
                 } else {
                     DispatchQueue.main.async {
-                        self?.errorMessage = "相机权限未开启，请从相册选择器械照片。"
+                        self?.errorMessage = "相机权限未开启，请从相册选择照片。"
                     }
                 }
             }
         default:
-            errorMessage = "相机权限未开启，请从相册选择器械照片。"
+            errorMessage = "相机权限未开启，请从相册选择照片。"
         }
     }
 
@@ -185,7 +200,7 @@ private final class EquipmentCameraController: NSObject, ObservableObject, AVCap
                 self.session.canAddInput(input),
                 self.session.canAddOutput(self.output) else {
                 DispatchQueue.main.async {
-                    self.errorMessage = "当前设备没有可用相机，请从相册选择器械照片。"
+                    self.errorMessage = "当前设备没有可用相机，请从相册选择照片。"
                 }
                 return
             }
@@ -221,7 +236,7 @@ private final class EquipmentCameraController: NSObject, ObservableObject, AVCap
     }
 }
 
-private struct EquipmentCameraPreview: UIViewRepresentable {
+private struct PhotoCapturePreview: UIViewRepresentable {
     let session: AVCaptureSession
 
     func makeUIView(context: Context) -> PreviewView {

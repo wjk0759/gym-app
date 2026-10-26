@@ -191,6 +191,11 @@ struct EquipmentLibraryView: View {
                     .textInputAutocapitalization(.never)
                     .foregroundStyle(.white)
                     .submitLabel(.search)
+                    .onChange(of: query) { _, value in
+                        if value.count > 60 {
+                            query = String(value.prefix(60))
+                        }
+                    }
 
                 if !query.isEmpty {
                     Button {
@@ -553,6 +558,11 @@ struct EquipmentSearchView: View {
                 TextField("例如：高位下拉、腿举", text: $query)
                     .focused($searchFocused)
                     .submitLabel(.search)
+                    .onChange(of: query) { _, value in
+                        if value.count > 60 {
+                            query = String(value.prefix(60))
+                        }
+                    }
                     .padding(12)
                     .background(
                         Theme.surfaceStrong,
@@ -678,6 +688,11 @@ struct AddEquipmentView: View {
                             .font(.caption)
                             .foregroundStyle(Theme.secondaryText)
                         TextField("例如：高位下拉", text: $name)
+                            .onChange(of: name) { _, value in
+                                if value.count > 30 {
+                                    name = String(value.prefix(30))
+                                }
+                            }
                             .padding(12)
                             .background(
                                 Theme.surfaceStrong,
@@ -720,6 +735,11 @@ struct AddEquipmentView: View {
                             .foregroundStyle(Theme.secondaryText)
                         TextField("例如：调节座位高度在 3 档", text: $notes, axis: .vertical)
                             .lineLimit(2...4)
+                            .onChange(of: notes) { _, value in
+                                if value.count > 120 {
+                                    notes = String(value.prefix(120))
+                                }
+                            }
                             .padding(12)
                             .background(
                                 Theme.surfaceStrong,
@@ -761,10 +781,17 @@ struct AddEquipmentView: View {
                 }
             }
             .fullScreenCover(isPresented: $showCamera) {
-                CameraPicker { picked in
-                    photoData = picked.jpegData(compressionQuality: 0.7)
-                }
-                .ignoresSafeArea()
+                PhotoCaptureView(
+                    title: "拍摄器械",
+                    hint: "让器械完整进入画面，避免只拍到局部或边缘。",
+                    onImage: { picked in
+                        photoData = picked.jpegData(compressionQuality: 0.7)
+                        showCamera = false
+                    },
+                    onCancel: {
+                        showCamera = false
+                    }
+                )
             }
             .alert("提示", isPresented: $showAlert) {
                 Button("知道了", role: .cancel) {}

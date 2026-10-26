@@ -24,6 +24,11 @@ struct ProfileFormView: View {
                     .foregroundStyle(Theme.secondaryText)
                 TextField("例如：小林", text: $draft.nickname)
                     .textInputAutocapitalization(.never)
+                    .onChange(of: draft.nickname) { _, value in
+                        if value.count > 30 {
+                            draft.nickname = String(value.prefix(30))
+                        }
+                    }
                     .padding(12)
                     .background(
                         Theme.surfaceStrong,
@@ -171,6 +176,11 @@ struct ProfileFormView: View {
                     .foregroundStyle(Theme.secondaryText)
                 TextField("例如：右膝半月板旧伤、腰容易酸", text: $draft.injuries, axis: .vertical)
                     .lineLimit(2...4)
+                    .onChange(of: draft.injuries) { _, value in
+                        if value.count > 200 {
+                            draft.injuries = String(value.prefix(200))
+                        }
+                    }
                     .padding(12)
                     .background(
                         Theme.surfaceStrong,

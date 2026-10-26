@@ -5,7 +5,8 @@
 ```text
 今日页「开始训练」 ───────────────┐
                                     ├→ 安排训练（复用同一个编排组件）
-器械页选择动作 → 制作训练计划 ─────┘   → 开始本次训练
+器械页选择动作 → 制作训练计划 ─────┤   → 开始本次训练
+计划日历 → 编辑训练日 ─────────────┘   → 保存训练日（写回计划）
                                       → 训练中可随时「调整」当前动作的目标
 ```
 
@@ -22,6 +23,8 @@
 - 开始按钮固定在底部安全区上方，长列表只滚动中间内容。
 - 取消编排不会清空已选动作；开始训练后才清空已选动作。
 - 自选训练只生成一次训练，不改长期计划。
+- 计划 Tab 的「编辑训练日」同样进入本编排页（`planEdit` / `.editPlan`）；底部按钮改为「保存训练日」，保存后写回长期计划。
+- 计划日添加动作复用同一个动作库选择器（Web `planExercisePicker`，iOS `EquipmentPickerView(onSelect:)`），不维护第二套选择器。
 
 ### 训练中调整
 
@@ -35,10 +38,14 @@
 ## 原生实现
 
 - `CustomWorkoutBuilderView`
-  - 今日计划和已选动作共用的编排页
+  - 今日计划、自选训练和计划训练日共用的编排页
   - 使用 SwiftUI `draggable` / `dropDestination` 做原生拖拽排序
   - 支持删除、组数 / 次数 / 重量 / 休息编辑
-  - 底部安全区固定开始按钮
+  - `.editPlan` 模式保存训练日；`.plan` / `.custom` 模式开始训练
+  - 底部安全区固定开始 / 保存按钮
+- `PlanEditorView`
+  - 计划 Tab 的唯一训练日编辑器，内部包装 `CustomWorkoutBuilderView(editing:onSave:)`
+  - 动作库添加复用 `EquipmentPickerView(onSelect:)`
 - `MetricControls`
   - `WheelPickerField`：字段按钮 + 取消/确认滚轮 sheet
   - `WeightInputField`：只有目标重量使用数字键盘
@@ -57,6 +64,8 @@
 ## Web 实现
 
 - 新增 `workoutComposeScreen()`
+- `workoutDraft.source === "planEdit"` 时复用同一编排页保存计划训练日
+- 计划训练日添加动作复用 `equipmentPickerScreen()` 的 `planExercisePicker` 模式
 - 新增 `workoutAdjustSheet()`
 - `numberPickerSheet()`：统一的取消 / 确认滚轮数字选择器
 - `pickerFieldButton()`：统一的字段触发按钮
@@ -67,6 +76,7 @@
 
 ## 验收
 
+- 点击计划日历中的任意训练日，进入同一个编排组件；保存后只改该训练日。
 - 点击「制作训练计划」不会直接进入训练。
 - 今日页点击「开始训练」同样先进入编排页，并复用同一套动作编辑组件。
 - 编排页可以拖拽排序；桌面 / 手机预览都能完成拖动，不再显示上下排序按钮。

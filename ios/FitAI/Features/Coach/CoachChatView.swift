@@ -354,6 +354,11 @@ struct CoachChatView: View {
             TextField(selectedSkill.placeholder, text: $input, axis: .vertical)
                 .lineLimit(1...4)
                 .focused($focused)
+                .onChange(of: input) { _, value in
+                    if value.count > 500 {
+                        input = String(value.prefix(500))
+                    }
+                }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 11)
                 .background(
@@ -385,7 +390,7 @@ struct CoachChatView: View {
     }
 
     private func send(_ text: String) {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(500))
         guard !trimmed.isEmpty, !store.isReplying else { return }
         store.sendChat(trimmed, skill: selectedSkill)
         input = ""

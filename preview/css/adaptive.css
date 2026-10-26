@@ -1,0 +1,265 @@
+/* FitAI Web Preview styles: adaptive */
+
+/* --------------------------------------------------------------------------
+   Adaptive layout foundation
+   所有页面共用同一组流体间距、字号和安全区规则。组件内部允许有图标尺寸，
+   但页面骨架、卡片、操作条不允许再用固定宽度把内容推出屏幕。
+   -------------------------------------------------------------------------- */
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+.app {
+  width: 100%;
+  max-width: 100%;
+  padding: var(--app-top) var(--app-gutter) calc(104px + var(--safe-bottom));
+  overflow-x: clip;
+}
+
+.app.no-tabs {
+  padding-bottom: calc(34px + var(--safe-bottom));
+}
+
+.app.workout-mode,
+.app.compose-mode {
+  padding: 0;
+  overflow: hidden;
+}
+
+.stack,
+.card,
+.row,
+.between,
+.grow,
+.workout-scroll,
+.workout-content,
+.equipment-content-layout,
+.exercise-pick-grid,
+.list-row {
+  min-width: 0;
+}
+
+.card {
+  max-width: 100%;
+  padding: clamp(14px, 4.5vw, 20px);
+  border-radius: var(--radius-lg);
+}
+
+.card.tight {
+  padding: clamp(12px, 3.6vw, 15px);
+  border-radius: var(--radius-md);
+}
+
+.card.hero {
+  padding: clamp(18px, 5.2vw, 26px);
+}
+
+.h1 { font-size: var(--type-h1); }
+.h2 { font-size: var(--type-h2); }
+.h3 { font-size: var(--type-h3); }
+
+.btn {
+  min-height: 48px;
+  padding: clamp(13px, 3.5vw, 16px) clamp(14px, 4vw, 18px);
+  border-radius: var(--radius-sm);
+  font-size: clamp(14px, 3.8vw, 16px);
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+input,
+textarea,
+select {
+  max-width: 100%;
+}
+
+.workout-copy,
+.tiny,
+.small {
+  overflow-wrap: break-word;
+}
+
+.exercise-pick-art {
+  height: clamp(92px, 26.5vw, 112px);
+}
+
+.exercise-pick-glyph {
+  width: clamp(48px, 13vw, 56px);
+  height: clamp(48px, 13vw, 56px);
+}
+
+.exercise-pick-glyph svg {
+  width: clamp(26px, 7.4vw, 30px);
+  height: clamp(26px, 7.4vw, 30px);
+}
+
+.page-header {
+  margin-left: var(--app-gutter-negative);
+  margin-right: var(--app-gutter-negative);
+  padding-left: var(--app-gutter);
+  padding-right: var(--app-gutter);
+}
+
+.header-spacer {
+  width: clamp(40px, 10.5vw, 44px);
+  height: 1px;
+  flex: 0 0 auto;
+}
+
+.icon-btn {
+  width: clamp(40px, 10.5vw, 44px);
+  height: clamp(40px, 10.5vw, 44px);
+  border-radius: clamp(12px, 3.2vw, 14px);
+}
+
+.tabbar {
+  height: clamp(64px, 17vw, 72px);
+}
+
+.tab svg {
+  width: clamp(20px, 5.3vw, 22px);
+  height: clamp(20px, 5.3vw, 22px);
+}
+
+.equipment-sticky-tools {
+  margin-left: var(--app-gutter-negative);
+  margin-right: var(--app-gutter-negative);
+  padding-left: var(--app-gutter);
+  padding-right: var(--app-gutter);
+}
+
+.equipment-selection-fab {
+  left: var(--app-gutter);
+  bottom: calc(90px + var(--safe-bottom));
+}
+
+.equipment-selection-popover {
+  left: var(--app-gutter);
+  width: min(330px, calc(100vw - var(--app-gutter) - var(--app-gutter)));
+  max-width: none;
+  bottom: calc(150px + var(--safe-bottom));
+  max-height: min(600px, calc(100dvh - 230px - var(--safe-bottom)));
+}
+
+.tabbar {
+  bottom: calc(10px + var(--safe-bottom));
+}
+
+.toast {
+  bottom: calc(92px + var(--safe-bottom));
+  max-width: min(320px, calc(100vw - var(--app-gutter) - var(--app-gutter)));
+}
+
+/* 训练页使用独立的应用壳：头部和主操作条固定，只有中间内容滚动。
+   这样短屏、横屏或键盘弹出时，主按钮不会再滑出屏幕。 */
+.workout-screen {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--app-top) var(--app-gutter) 0;
+}
+
+.workout-topbar {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: clamp(40px, 10.5vw, 44px) 1fr clamp(40px, 10.5vw, 44px);
+  align-items: center;
+  padding: var(--space-2) 0 var(--space-3);
+}
+
+.workout-topbar .icon-btn {
+  width: clamp(40px, 10.5vw, 44px);
+  height: clamp(40px, 10.5vw, 44px);
+  border-radius: 14px;
+}
+
+.workout-title {
+  min-width: 0;
+  text-align: center;
+  color: var(--text);
+  font-size: var(--type-h3);
+  font-weight: 650;
+  letter-spacing: -0.012em;
+}
+
+.workout-topbar-spacer {
+  width: 100%;
+}
+
+.workout-progress-strip {
+  flex: 0 0 auto;
+  padding-bottom: var(--space-2);
+}
+
+.workout-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 1px var(--space-3);
+}
+
+.workout-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.workout-progress {
+  margin-bottom: var(--space-2);
+}
+
+.workout-action-bar {
+  flex: 0 0 auto;
+  position: relative;
+  inset: auto;
+  margin: 0 0 calc(8px + var(--safe-bottom));
+  padding: clamp(10px, 3vw, 14px);
+  border-radius: var(--radius-md);
+}
+
+.workout-action-bar .btn {
+  margin-top: var(--space-2);
+}
+
+@media (min-width: 700px) {
+  .app > .stack,
+  .app > .login-page,
+  .app > .workout-screen,
+  .app > .workout-compose {
+    width: min(100%, 760px);
+    margin-inline: auto;
+  }
+
+  .workout-screen,
+  .workout-compose {
+    max-width: 760px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .workout-action-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(200px, 44%);
+    align-items: center;
+    gap: 12px;
+  }
+
+  .workout-action-bar .btn {
+    margin-top: 0;
+  }
+}
+

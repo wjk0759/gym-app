@@ -3,33 +3,58 @@ import SwiftUI
 struct PlanHomeView: View {
     @Environment(AppStore.self) private var store
 
-    @State private var selectedWeek = 1
-    @State private var didSelectCurrentWeek = false
+    @State private var selectedDate = Date()
+    @State private var visibleMonth = Calendar.current.date(
+        from: Calendar.current.dateComponents([.year, .month], from: Date())
+    ) ?? Date()
     @State private var showRegenerate = false
     @State private var showAdjust = false
     @State private var showMessage = false
     @State private var showHistory = false
+    @State private var sessionSheet: SessionSheet?
+    @State private var editingDay: PlanDay?
+
+    private struct SessionSheet: Identifiable {
+        let id = UUID()
+        let session: WorkoutSession
+        let isNew: Bool
+    }
+
+    private var calendar: Calendar { Calendar.current }
 
     var body: some View {
         NavigationStack {
             AppScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: AppLayout.sectionSpacing) {
                     if store.isGenerating {
                         generatingCard
-                    } else if let plan = store.plan {
-                        planContent(plan)
                     } else {
-                        emptyCard
+                        trainingSnapshotCard
+                        calendarCard(plan: store.plan)
+                        selectedDayCard(plan: store.plan)
+                        trainingDataCard
+
+                        if let plan = store.plan {
+                            planSummaryCard(plan)
+                        } else {
+                            emptyCard
+                        }
                     }
                 }
-                .padding(.horizontal, 20)
+                .appPagePadding()
+                .appReadableContent()
                 .padding(.top, 8)
                 .padding(.bottom, 28)
             }
             .background(AppBackground())
-            .navigationTitle("训练计划")
+            .navigationTitle("训练日历")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("今天") {
+                        goToToday()
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Button {
@@ -51,12 +76,11 @@ struct PlanHomeView: View {
             .sheet(isPresented: $showHistory) {
                 PlanHistoryView()
             }
-            .onAppear {
-                syncWeekSelection()
+            .sheet(item: $sessionSheet) { item in
+                WorkoutDetailView(session: item.session, isNew: item.isNew)
             }
-            .onChange(of: store.plan?.id) { _, _ in
-                didSelectCurrentWeek = false
-                syncWeekSelection()
+            .fullScreenCover(item: $editingDay) { day in
+                PlanEditorView(day: day)
             }
             .confirmationDialog(
                 "重新生成计划？",
@@ -64,7 +88,6 @@ struct PlanHomeView: View {
                 titleVisibility: .visible
             ) {
                 Button("重新生成", role: .destructive) {
-                    selectedWeek = 1
                     store.generatePlan()
                 }
                 Button("取消", role: .cancel) {}
@@ -92,7 +115,649 @@ struct PlanHomeView: View {
         }
     }
 
-    // MARK: - 内容
+    // MARK: - 训练数据快照
+
+    private var recentTrainingSessions: [WorkoutSession] {
+        let end = Date()
+        let start = calendar.date(
+            byAdding: .day,
+            value: -29,
+            to: calendar.startOfDay(for: end)
+        ) ?? end
+        return store.sessions.filter { $0.date >= start && $0.date <= end }
+    }
+
+    private var trainingSnapshotCard: some View {
+        let recent = recentTrainingSessions
+        let volume = recent.reduce(0) { $0 + $1.volume }
+
+        return NavigationLink {
+            WorkoutHistoryView()
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "chart.bar.xaxis")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
+                    .frame(width: 30, height: 30)
+                    .background(
+                        Theme.accent.opacity(0.12),
+                        in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("训练数据 · 最近 30 天")
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Text(recent.isEmpty
+                         ? "还没有训练记录"
+                         : "\(recent.count) 次训练 · \(Int(volume).formatted()) kg 容量")
+                        .font(.system(size: 9.5))
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+
+                Spacer(minLength: 6)
+
+                Text("查看趋势 ›")
+                    .font(.system(size: 9.5, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .card(padding: 12)
+    }
+
+    // MARK: - 日历
+
+    private func calendarCard(plan: TrainingPlan?) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                monthButton(systemName: "chevron.left") {
+                    shiftMonth(-1)
+                }
+
+                Spacer(minLength: 4)
+
+                Button {
+                    goToToday()
+                } label: {
+                    VStack(spacing: 2) {
+                        Text(monthTitle)
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(.white)
+                        Text("训练 · 饮食 · 计划")
+                            .font(.system(size: 9.5))
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("回到今天")
+
+                Spacer(minLength: 4)
+
+                monthButton(systemName: "chevron.right") {
+                    shiftMonth(1)
+                }
+            }
+
+            HStack(spacing: 4) {
+                ForEach(["一", "二", "三", "四", "五", "六", "日"], id: \.self) { label in
+                    Text(label)
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(Theme.tertiaryText)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.top, 4)
+
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7),
+                spacing: 4
+            ) {
+                ForEach(calendarDays, id: \.self) { date in
+                    calendarCell(date, plan: plan)
+                }
+            }
+
+            HStack(spacing: 13) {
+                legendDot(color: Theme.accent, label: "完成训练", filled: true)
+                legendDot(color: Theme.accent.opacity(0.7), label: "训练计划", filled: false)
+                legendDot(color: Theme.warning, label: "饮食记录", filled: true)
+            }
+            .padding(.top, 2)
+        }
+        .card()
+    }
+
+    private func monthButton(systemName: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(Theme.secondaryText)
+                .frame(width: 40, height: 40)
+                .background(
+                    Theme.surfaceStrong,
+                    in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func legendDot(color: Color, label: String, filled: Bool) -> some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(filled ? color : Color.clear)
+                .overlay(Circle().stroke(color, lineWidth: filled ? 0 : 1))
+                .frame(width: 5, height: 5)
+            Text(label)
+                .font(.system(size: 9))
+                .foregroundStyle(Theme.tertiaryText)
+        }
+    }
+
+    private func calendarCell(_ date: Date, plan: TrainingPlan?) -> some View {
+        let inMonth = calendar.isDate(date, equalTo: visibleMonth, toGranularity: .month)
+        let isSelected = calendar.isDate(date, inSameDayAs: selectedDate)
+        let isToday = calendar.isDateInToday(date)
+        let hasSession = !sessions(on: date).isEmpty
+        let hasPlan = planDay(on: date, plan: plan) != nil
+        let hasFood = !foodLogs(on: date).isEmpty
+
+        return Button {
+            selectedDate = calendar.startOfDay(for: date)
+            if !inMonth {
+                visibleMonth = startOfMonth(date)
+            }
+        } label: {
+            VStack(spacing: 4) {
+                Text("\(calendar.component(.day, from: date))")
+                    .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                    .foregroundStyle(
+                        isSelected
+                            ? Color.white
+                            : (isToday ? Theme.accent : Theme.secondaryText)
+                    )
+                    .frame(maxWidth: .infinity)
+
+                HStack(spacing: 2.5) {
+                    if hasSession {
+                        Circle().fill(Theme.accent).frame(width: 4, height: 4)
+                    }
+                    if hasPlan {
+                        Circle()
+                            .stroke(Theme.accent.opacity(0.75), lineWidth: 1)
+                            .frame(width: 4, height: 4)
+                    }
+                    if hasFood {
+                        Circle().fill(Theme.warning).frame(width: 4, height: 4)
+                    }
+                    if !hasSession && !hasPlan && !hasFood {
+                        Color.clear.frame(width: 4, height: 4)
+                    }
+                }
+                .frame(height: 5)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background(
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .fill(isSelected ? Theme.accent.opacity(0.16) : Color.white.opacity(0.025))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .stroke(
+                        isSelected
+                            ? Theme.accent.opacity(0.7)
+                            : (isToday ? Theme.accent.opacity(0.32) : Color.clear),
+                        lineWidth: 1
+                    )
+            )
+            .opacity(inMonth ? 1 : 0.32)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(
+            accessibilityLabel(
+                for: date,
+                hasSession: hasSession,
+                hasPlan: hasPlan,
+                hasFood: hasFood
+            )
+        )
+    }
+
+    private func accessibilityLabel(
+        for date: Date,
+        hasSession: Bool,
+        hasPlan: Bool,
+        hasFood: Bool
+    ) -> String {
+        var parts = [date.formatted(.dateTime.month().day().weekday(.wide))]
+        if hasSession { parts.append("有训练记录") }
+        if hasPlan { parts.append("有训练计划") }
+        if hasFood { parts.append("有饮食记录") }
+        return parts.joined(separator: "，")
+    }
+
+    // MARK: - 选中日期
+
+    private func selectedDayCard(plan: TrainingPlan?) -> some View {
+        let daySessions = sessions(on: selectedDate)
+        let plannedDay = planDay(on: selectedDate, plan: plan)
+        let logs = foodLogs(on: selectedDate)
+        let totals = nutritionTotals(logs)
+
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(selectedDate.formatted(.dateTime.month().day().weekday(.wide)))
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
+                    Text(daySessions.isEmpty
+                         ? (plannedDay == nil ? "休息日" : "计划训练日")
+                         : "完成 \(daySessions.count) 次训练")
+                        .font(.caption)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+                Spacer()
+                NavigationLink {
+                    NutritionView(date: selectedDate)
+                } label: {
+                    Text("饮食 ›")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                }
+                .buttonStyle(.plain)
+            }
+
+            sectionTitle("训练")
+
+            if daySessions.isEmpty && plannedDay == nil {
+                Text("这天没有训练安排，可以休息或调整计划。")
+                    .font(.caption)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .padding(.top, 7)
+            }
+
+            ForEach(daySessions) { session in
+                Button {
+                    sessionSheet = SessionSheet(session: session, isNew: false)
+                } label: {
+                    HStack(spacing: 9) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Theme.accent)
+                            .frame(width: 24, height: 24)
+                            .background(Theme.accent.opacity(0.12), in: Circle())
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(String(session.dayTitle.prefix(40)))
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                            Text("\(session.exerciseCount) 个动作 · \(session.durationMinutes) 分钟 · \(Int(session.volume)) kg")
+                                .font(.system(size: 9.5))
+                                .foregroundStyle(Theme.tertiaryText)
+                        }
+                        Spacer(minLength: 4)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                    .padding(9)
+                    .background(
+                        Color.white.opacity(0.03),
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    )
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 7)
+            }
+
+            if let plannedDay {
+                HStack(alignment: .top, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("计划 · 第 \(plannedDay.weekIndex) 周")
+                            .font(.system(size: 9.5, weight: .bold))
+                            .foregroundStyle(Theme.accent)
+                        Text(plannedDay.title)
+                            .font(.system(size: 12.5, weight: .semibold))
+                            .foregroundStyle(.white)
+                        Text("\(plannedDay.focusText) · \(plannedDay.exercises.count) 个动作")
+                            .font(.system(size: 9.5))
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                    Spacer(minLength: 4)
+                    Button {
+                        editingDay = plannedDay
+                    } label: {
+                        Text("编辑训练日 ›")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Theme.accent)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(10)
+                .background(
+                    Theme.accent.opacity(0.055),
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Theme.accent.opacity(0.13), lineWidth: 1)
+                )
+                .padding(.top, 8)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 5) {
+                        ForEach(plannedDay.exercises.prefix(5)) { item in
+                            Text(item.displayName)
+                                .font(.system(size: 9))
+                                .foregroundStyle(Theme.tertiaryText)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 4)
+                                .background(Color.white.opacity(0.035), in: Capsule())
+                        }
+                        if plannedDay.exercises.count > 5 {
+                            Text("+\(plannedDay.exercises.count - 5)")
+                                .font(.system(size: 9))
+                                .foregroundStyle(Theme.tertiaryText)
+                        }
+                    }
+                }
+                .padding(.top, 7)
+            }
+
+            if selectedDate <= calendar.startOfDay(for: Date()) {
+                Button {
+                    beginCalendarTraining(plan: plan)
+                } label: {
+                    Label(
+                        daySessions.isEmpty ? "记录这天的训练" : "补记一次训练",
+                        systemImage: "plus"
+                    )
+                    .font(.system(size: 11, weight: .semibold))
+                }
+                .buttonStyle(SecondaryButtonStyle())
+                .padding(.top, 9)
+            } else {
+                Text("未来日期：可先编辑计划，训练当天再记录。")
+                    .font(.system(size: 9.5))
+                    .foregroundStyle(Theme.tertiaryText)
+                    .padding(.top, 8)
+            }
+
+            Rectangle()
+                .fill(Theme.stroke)
+                .frame(height: 1)
+                .padding(.vertical, 13)
+
+            HStack {
+                sectionTitle("饮食", topPadding: 0)
+                Spacer()
+                Text("\(Int(totals.kcal)) kcal · 蛋白 \(Int(totals.protein))g")
+                    .font(.system(size: 9.5))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+
+            if logs.isEmpty {
+                Text("还没有饮食记录。")
+                    .font(.caption)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .padding(.top, 8)
+            } else {
+                ForEach(logs.prefix(3)) { log in
+                    HStack {
+                        Text(log.foodName)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.white)
+                        Text("\(log.meal.label) · \(Int(log.grams))g")
+                            .font(.system(size: 9))
+                            .foregroundStyle(Theme.tertiaryText)
+                        Spacer()
+                        Text("\(Int(log.kcal)) kcal")
+                            .font(.system(size: 9.5))
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                    .padding(.top, 6)
+                }
+            }
+
+            NavigationLink {
+                NutritionView(date: selectedDate)
+            } label: {
+                Text(logs.isEmpty ? "记录这天的饮食" : "查看 / 修改饮食")
+                    .font(.system(size: 11, weight: .semibold))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(SecondaryButtonStyle())
+            .padding(.top, 10)
+        }
+        .card()
+    }
+
+    private func sectionTitle(_ title: String, topPadding: CGFloat = 12) -> some View {
+        Text(title)
+            .font(.system(size: 9.5, weight: .bold))
+            .foregroundStyle(Theme.accent)
+            .padding(.top, topPadding)
+    }
+
+    // MARK: - 训练数据
+
+    private var trainingDataCard: some View {
+        let recent = recentTrainingSessions
+        let volume = recent.reduce(0) { $0 + $1.volume }
+        let sets = recent.reduce(0) { $0 + $1.sets.filter(\.completed).count }
+        let minutes = recent.reduce(0) { $0 + $1.durationMinutes }
+        let bars = trainingWeekBars
+        let recentSessions = store.sessions.sorted { $0.date > $1.date }
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("训练数据")
+                        .font(.system(size: 9.5, weight: .bold))
+                        .foregroundStyle(Theme.accent)
+                    Text("最近 30 天")
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(.white)
+                }
+                Spacer()
+                NavigationLink {
+                    WorkoutHistoryView()
+                } label: {
+                    Text("全部记录 ›")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                }
+                .buttonStyle(.plain)
+            }
+
+            HStack(spacing: 6) {
+                trainingMetric("\(recent.count)", "完成训练")
+                trainingMetric("\(Int(volume))", "总容量 kg")
+                trainingMetric("\(sets)", "总组数")
+                trainingMetric(recent.isEmpty ? "0" : "\(minutes / recent.count)", "平均分钟")
+            }
+
+            HStack(alignment: .bottom, spacing: 8) {
+                ForEach(Array(bars.enumerated()), id: \.offset) { _, bar in
+                    VStack(spacing: 5) {
+                        Spacer(minLength: 0)
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Theme.accent.opacity(0.95),
+                                        Theme.accent.opacity(0.34)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .frame(
+                                height: CGFloat(
+                                    max(
+                                        4,
+                                        68 * bar.value / max(bars.map { $0.value }.max() ?? 1, 1)
+                                    )
+                                )
+                            )
+                        Text(bar.label)
+                            .font(.system(size: 8.5))
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .frame(height: 92)
+            .padding(.top, 4)
+
+            Text("按实际训练日期统计，容量只计算有记录的组数。")
+                .font(.system(size: 9))
+                .foregroundStyle(Theme.tertiaryText)
+
+            if !recentSessions.isEmpty {
+                Rectangle()
+                    .fill(Theme.stroke)
+                    .frame(height: 1)
+                    .padding(.top, 2)
+
+                HStack {
+                    Text("最近训练")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Spacer()
+                }
+                .padding(.top, 2)
+
+                ForEach(recentSessions.prefix(3)) { session in
+                    Button {
+                        sessionSheet = SessionSheet(session: session, isNew: false)
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(String(session.dayTitle.prefix(40)))
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                                Text(session.date.formatted(date: .abbreviated, time: .shortened))
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(Theme.tertiaryText)
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 3) {
+                                Text("\(Int(session.volume)) kg")
+                                    .font(.system(size: 11.5, weight: .semibold))
+                                    .foregroundStyle(Theme.accent)
+                                Text("\(session.durationMinutes) 分钟")
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(Theme.tertiaryText)
+                            }
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(Theme.tertiaryText)
+                                .padding(.leading, 2)
+                        }
+                        .padding(.top, 8)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .card()
+    }
+
+    private func trainingMetric(_ value: String, _ label: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Text(label)
+                .font(.system(size: 8.5))
+                .foregroundStyle(Theme.tertiaryText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(8)
+        .background(
+            Color.white.opacity(0.035),
+            in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+        )
+    }
+
+    private var trainingWeekBars: [(label: String, value: Double)] {
+        let monday = mondayOfWeek(Date())
+        let labels = ["-3周", "-2周", "上周", "本周"]
+        return (0..<4).map { index -> (label: String, value: Double) in
+            let weekStart = calendar.date(
+                byAdding: .day,
+                value: -7 * (3 - index),
+                to: monday
+            ) ?? monday
+            let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) ?? weekStart
+            let value = store.sessions
+                .filter { $0.date >= weekStart && $0.date < weekEnd }
+                .reduce(0) { $0 + $1.volume }
+            return (label: labels[index], value: value)
+        }
+    }
+
+    // MARK: - 计划摘要
+
+    private func planSummaryCard(_ plan: TrainingPlan) -> some View {
+        let preview = store.planAdjustmentPreview
+        let completed = store.currentWeekSessions.count
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("当前计划")
+                        .font(.system(size: 9.5, weight: .bold))
+                        .foregroundStyle(Theme.accent)
+                    Text(plan.title)
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Text("v\(plan.version) · \(plan.days.count) 个训练日 · 本周完成 \(completed)/\(max(1, store.profile.weeklyDays))")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+                Spacer(minLength: 8)
+                Button {
+                    showRegenerate = true
+                } label: {
+                    Text("重新生成")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+                .buttonStyle(.plain)
+            }
+
+            Text(completed == 0
+                 ? "完成一次训练后，这里会显示具体的复盘调整。"
+                 : "复盘预告：\(preview.detail)")
+                .font(.caption)
+                .foregroundStyle(completed == 0 ? Theme.tertiaryText : Theme.accent)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                if store.currentWeekSessions.isEmpty {
+                    store.toast = "还没有训练记录，先完成一次训练再让 AI 调整。"
+                    showMessage = true
+                } else {
+                    showAdjust = true
+                }
+            } label: {
+                Label("复盘并调整计划", systemImage: "wand.and.stars")
+            }
+            .buttonStyle(SecondaryButtonStyle())
+        }
+        .card()
+    }
+
+    // MARK: - 空状态与生成中
 
     private var generatingCard: some View {
         VStack(spacing: 14) {
@@ -121,185 +786,119 @@ struct PlanHomeView: View {
         }
     }
 
-    @ViewBuilder
-    private func planContent(_ plan: TrainingPlan) -> some View {
-        headerCard(plan)
+    // MARK: - 日期与数据
 
-        weekSelector(plan)
-
-        ForEach(plan.weekDays(in: selectedWeek)) { day in
-            NavigationLink {
-                PlanEditorView(day: day)
-            } label: {
-                dayCard(day, in: plan)
-            }
-            .buttonStyle(.plain)
-        }
-
-        VStack(alignment: .leading, spacing: 8) {
-            Label("计划可编辑", systemImage: "hand.tap")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.accent)
-            Text("点任意训练日可以换动作、改组数。AI 会记住你的修改，下一次复盘时参考。")
-                .font(.caption)
-                .foregroundStyle(Theme.secondaryText)
-            if store.useEquipmentLibraryForPlans && !store.equipmentLibrary.isEmpty {
-                Text("已启用器械库：\(store.equipmentLibrary.count) 件，生成计划时优先使用。")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .card(padding: 14)
+    private var monthTitle: String {
+        let components = calendar.dateComponents([.year, .month], from: visibleMonth)
+        return "\(components.year ?? 0)年\(components.month ?? 0)月"
     }
 
-    private func headerCard(_ plan: TrainingPlan) -> some View {
-        let preview = store.planAdjustmentPreview
-        let completed = store.currentWeekSessions.count
-
-        return VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("当前计划")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(Theme.accent.opacity(0.12), in: Capsule())
-                Spacer()
-                Text("v\(plan.version)")
-                    .font(.caption)
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-
-            Text(plan.title)
-                .font(.title3.weight(.bold))
-                .foregroundStyle(.white)
-
-            Text("共 \(plan.days.count) 个训练日 · 当前第 \(store.currentPlanWeek) 周 · 本周完成 \(completed)/\(max(1, store.profile.weeklyDays))")
-                .font(.caption)
-                .foregroundStyle(Theme.secondaryText)
-
-            Text(completed == 0 ? "完成一次训练后，这里会显示具体的复盘调整。" : "复盘预告：\(preview.detail)")
-                .font(.caption)
-                .foregroundStyle(completed == 0 ? Theme.tertiaryText : Theme.accent)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Button {
-                if store.currentWeekSessions.isEmpty {
-                    store.toast = "还没有训练记录，先完成一次训练再让 AI 调整。"
-                    showMessage = true
-                } else {
-                    showAdjust = true
-                }
-            } label: {
-                Label("复盘并调整", systemImage: "wand.and.stars")
-            }
-            .buttonStyle(PrimaryButtonStyle())
+    private var calendarDays: [Date] {
+        let monthStart = startOfMonth(visibleMonth)
+        let weekday = calendar.component(.weekday, from: monthStart)
+        let mondayOffset = (weekday + 5) % 7
+        guard let gridStart = calendar.date(
+            byAdding: .day,
+            value: -mondayOffset,
+            to: monthStart
+        ) else {
+            return []
         }
-        .card()
-    }
-
-    private func weekSelector(_ plan: TrainingPlan) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(1...max(1, plan.weeks), id: \.self) { week in
-                    Button {
-                        selectedWeek = week
-                    } label: {
-                        VStack(spacing: 1) {
-                            Text("第 \(week) 周")
-                                .font(.footnote.weight(.semibold))
-                            if week == store.currentPlanWeek {
-                                Text("本周")
-                                    .font(.system(size: 9, weight: .bold))
-                            }
-                        }
-                        .foregroundStyle(selectedWeek == week ? Color.black : Theme.secondaryText)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 7)
-                        .background(
-                            Capsule().fill(
-                                selectedWeek == week ? Theme.accent : Theme.surfaceStrong
-                            )
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.vertical, 2)
+        return (0..<42).compactMap {
+            calendar.date(byAdding: .day, value: $0, to: gridStart)
         }
     }
 
-    private func syncWeekSelection() {
-        guard !didSelectCurrentWeek else { return }
-        selectedWeek = store.currentPlanWeek
-        didSelectCurrentWeek = true
+    private func startOfMonth(_ date: Date) -> Date {
+        calendar.date(from: calendar.dateComponents([.year, .month], from: date)) ?? date
     }
 
-    private func dayCard(_ day: PlanDay, in plan: TrainingPlan) -> some View {
-        let date = plan.date(week: day.weekIndex, weekday: day.weekday)
-        let completed = date.map { dayDate in
-            store.sessions.contains { session in
-                Calendar.current.isDate(session.date, inSameDayAs: dayDate)
-                    && session.dayTitle == day.title
+    private func mondayOfWeek(_ date: Date) -> Date {
+        let start = calendar.startOfDay(for: date)
+        let weekday = calendar.component(.weekday, from: start)
+        let offset = (weekday + 5) % 7
+        return calendar.date(byAdding: .day, value: -offset, to: start) ?? start
+    }
+
+    private func shiftMonth(_ amount: Int) {
+        guard let next = calendar.date(
+            byAdding: .month,
+            value: amount,
+            to: startOfMonth(visibleMonth)
+        ) else {
+            return
+        }
+        visibleMonth = next
+        selectedDate = next
+    }
+
+    private func goToToday() {
+        let today = calendar.startOfDay(for: Date())
+        selectedDate = today
+        visibleMonth = startOfMonth(today)
+    }
+
+    private func planDay(on date: Date, plan: TrainingPlan?) -> PlanDay? {
+        guard let plan else { return nil }
+        return plan.days.first { day in
+            guard let dayDate = plan.date(week: day.weekIndex, weekday: day.weekday) else {
+                return false
             }
-        } ?? false
+            return calendar.isDate(dayDate, inSameDayAs: date)
+        }
+    }
 
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 6) {
-                        Text("\(Weekday.label(day.weekday)) · \(day.title)")
-                            .font(.headline)
-                            .foregroundStyle(.white)
-
-                        if let date, Calendar.current.isDateInToday(date) {
-                            Text("今天")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(Color.black)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 3)
-                                .background(Theme.accent, in: Capsule())
-                        }
-                    }
-
-                    Text(date.map {
-                        "\($0.formatted(.dateTime.month().day())) · \(day.focusText)"
-                    } ?? day.focusText)
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                }
-                Spacer()
-                if completed {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(Theme.accent)
-                }
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-
-            VStack(spacing: 7) {
-                ForEach(day.exercises.prefix(4)) { item in
-                    HStack {
-                        Text(item.displayName)
-                            .font(.subheadline)
-                            .foregroundStyle(.white)
-                        Spacer()
-                        Text(item.targetText)
-                            .font(.caption)
-                            .foregroundStyle(Theme.secondaryText)
-                    }
-                }
-                if day.exercises.count > 4 {
-                    Text("还有 \(day.exercises.count - 4) 个动作")
-                        .font(.caption)
-                        .foregroundStyle(Theme.tertiaryText)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
+    private func beginCalendarTraining(plan: TrainingPlan?) {
+        let plannedDay = planDay(on: selectedDate, plan: plan)
+        let time = calendar.date(
+            bySettingHour: 19,
+            minute: 0,
+            second: 0,
+            of: selectedDate
+        ) ?? selectedDate
+        let sets = (plannedDay?.exercises ?? []).flatMap { item in
+            let reps = Int(WorkoutPickerOptions.normalizedReps(item.reps)) ?? 10
+            let weight = max(0, item.weightKG ?? 0)
+            return (0..<max(1, item.sets)).map { index in
+                SetLog(
+                    slug: item.slug,
+                    setIndex: index + 1,
+                    weightKG: weight,
+                    reps: reps,
+                    rpe: item.rpe
+                )
             }
         }
-        .card()
+        sessionSheet = SessionSheet(
+            session: WorkoutSession(
+                date: time,
+                dayTitle: plannedDay?.title ?? "训练记录",
+                durationMinutes: plannedDay?.estimatedMinutes ?? 45,
+                feeling: 3,
+                notes: nil,
+                sets: sets
+            ),
+            isNew: true
+        )
+    }
+
+    private func sessions(on date: Date) -> [WorkoutSession] {
+        store.sessions
+            .filter { calendar.isDate($0.date, inSameDayAs: date) }
+            .sorted { $0.date > $1.date }
+    }
+
+    private func foodLogs(on date: Date) -> [FoodLog] {
+        store.foodLogs.filter { calendar.isDate($0.date, inSameDayAs: date) }
+    }
+
+    private func nutritionTotals(_ logs: [FoodLog]) -> NutritionTotals {
+        logs.reduce(into: NutritionTotals()) { total, log in
+            total.kcal += log.kcal
+            total.protein += log.protein
+            total.carbs += log.carbs
+            total.fat += log.fat
+        }
     }
 }
 

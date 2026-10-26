@@ -472,6 +472,11 @@ final class AppStore {
         }
     }
 
+    func addSession(_ session: WorkoutSession) {
+        sessions.insert(session, at: 0)
+        persist()
+    }
+
     func updateSession(_ session: WorkoutSession) {
         guard let index = sessions.firstIndex(where: { $0.id == session.id }) else {
             return
