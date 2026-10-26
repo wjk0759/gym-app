@@ -54,6 +54,10 @@ function profileScreen() {
           <div class="metric"><div class="value">${state.sessions.length} 次</div><div class="label">累计训练</div></div>
           <div class="metric"><div class="value">${Math.round(state.sessions.reduce((sum, session) => sum + Number(session.volume || 0), 0)).toLocaleString()} kg</div><div class="label">总容量</div></div>
         </div>
+        <div class="between" style="margin-top:11px;padding-top:10px;border-top:1px solid var(--stroke)">
+          <div class="tiny muted">体脂 ${p.bodyFat}%${state.bodyMetrics?.[0]?.date ? ` · 最近 ${state.bodyMetrics[0].date.slice(5).replace("-", "/")}` : ""}</div>
+          <button class="link" onclick="app.openProfileEdit()">记录体重 / 体脂 ›</button>
+        </div>
       </div>
 
       <div class="card">

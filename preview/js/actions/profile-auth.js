@@ -91,6 +91,16 @@ Object.assign(window.app, {
     draft.name = name;
     if (!draft.equipment.includes("徒手")) draft.equipment.push("徒手");
     state.profile = { ...draft };
+    const date = todayKey();
+    const metric = {
+      id: `bm-${date}`,
+      date,
+      timestamp: Date.now(),
+      weight: Number(draft.weight) || Number(state.profile.weight) || 0,
+      bodyFat: Number(draft.bodyFat) || Number(state.profile.bodyFat) || 0
+    };
+    state.bodyMetrics = [metric, ...(state.bodyMetrics || []).filter((entry) => entry.date !== date)]
+      .sort((left, right) => right.timestamp - left.timestamp);
     state.profileDraft = null;
     popRoute();
     save();

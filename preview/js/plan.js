@@ -147,8 +147,8 @@ function planScreen() {
       <button class="plan-data-strip" onclick="app.scrollToPlanReview()">
         <span class="plan-data-strip-icon" aria-hidden="true">▥</span>
         <span class="grow">
-          <strong>数据复盘 · ${review.monthLabel}</strong>
-          <small>${review.sessions.length} 次训练 · ${review.loggedDays} 天饮食记录</small>
+          <strong>数据复盘 · ${review.label}</strong>
+          <small>${review.current.sessions.length} 次训练 · ${review.current.loggedDays} 天饮食记录</small>
         </span>
         <span class="plan-data-strip-link">查看报告 ›</span>
       </button>

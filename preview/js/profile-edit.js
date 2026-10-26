@@ -34,6 +34,7 @@ function profileEditScreen() {
         <div class="h3">身体数据</div>
         <div class="tiny muted" style="margin-top:3px;margin-bottom:12px">三围选填，用于追踪体型变化</div>
         ${profileDraftRangeRow("weight", "体重", "kg", 40, 150, 0.5)}
+        ${profileDraftRangeRow("bodyFat", "体脂率", "%", 5, 50, 0.5)}
         ${profileDraftRangeRow("waist", "腰围", "cm", 50, 150, 1)}
         ${profileDraftRangeRow("chest", "胸围", "cm", 60, 150, 1)}
         ${profileDraftRangeRow("hip", "臀围", "cm", 60, 150, 1)}

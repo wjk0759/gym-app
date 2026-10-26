@@ -86,6 +86,13 @@ Object.assign(window.app, {
     document.getElementById("plan-data-review")?.scrollIntoView({ behavior: "smooth", block: "start" });
   },
 
+  setReviewPeriod(period) {
+    if (!["week", "month", "year"].includes(period)) return;
+    state.reviewPeriod = period;
+    save();
+    render();
+  },
+
   openPlanExercisePicker() {
     if (!state.workoutDraft || state.workoutDraft.source !== "planEdit") return;
     state.equipSearchQuery = "";

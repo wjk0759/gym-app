@@ -141,6 +141,7 @@ const DEFAULT_PROFILE = {
   age: 28,
   height: 175,
   weight: 72.5,
+  bodyFat: 21,
   waist: 82,
   chest: 96,
   hip: 95,
@@ -168,6 +169,55 @@ function parseReps(reps) {
   return match ? Number(match[0]) : 10;
 }
 
+function demoBodyMetrics(profile = DEFAULT_PROFILE) {
+  const now = new Date();
+  const direction = profile.goal === "减脂" ? 1 : profile.goal === "增肌" ? -1 : -0.2;
+  return [2, 9, 16, 23, 30, 44, 58, 72, 90, 120, 150, 180, 210, 240, 270, 300, 330, 365, 400, 460, 520, 580, 640, 700]
+    .map((daysAgo, index) => {
+      const date = addDays(now, -daysAgo);
+      date.setHours(8, 0, 0, 0);
+      const weight = roundHalf(Number(profile.weight || 72.5) + daysAgo * 0.012 * direction + ((index % 3) - 1) * 0.15);
+      const bodyFat = Math.round((Number(profile.bodyFat || 21) + daysAgo * 0.008 + ((index % 4) - 1.5) * 0.08) * 10) / 10;
+      return {
+        id: `bm-${daysAgo}`,
+        date: localDateInputValue(date),
+        timestamp: date.getTime(),
+        weight,
+        bodyFat
+      };
+    })
+    .sort((left, right) => right.timestamp - left.timestamp);
+}
+
+function demoLongTermSessions() {
+  return [
+    [380, "全身 A", 44, 1890],
+    [410, "全身 B", 46, 2040],
+    [440, "全身 C", 48, 2110],
+    [470, "全身 A", 43, 1860],
+    [500, "全身 B", 45, 1980],
+    [530, "全身 C", 47, 2070],
+    [560, "全身 A", 42, 1810],
+    [590, "全身 B", 44, 1950],
+    [620, "全身 C", 46, 2030],
+    [650, "全身 A", 41, 1780],
+    [680, "全身 B", 43, 1920],
+    [710, "全身 C", 45, 2000]
+  ].map(([daysAgo, title, duration, volume], index) => ({
+    id: `lt${index + 1}`,
+    title,
+    ...relativeSessionDate(daysAgo, 19, 10),
+    duration,
+    volume,
+    thisWeek: false,
+    items: [
+      { name: "高位下拉", weight: 27.5, reps: 9, sets: 4 },
+      { name: "高脚杯深蹲", weight: 12, reps: 10, sets: 4 },
+      { name: "俯卧撑", weight: 0, reps: 12, sets: 3 }
+    ]
+  }));
+}
+
 function demoLogs() {
   const add = (meal, name, grams, id) => {
     const food = FOODS.find((f) => f.name === name);
@@ -185,10 +235,21 @@ function demoLogs() {
     };
   };
   return [
-    add("早餐", "燕麦（干）", 50, "f1"),
+    add("早餐", "燕麦（干）", 70, "f1"),
     add("早餐", "鸡蛋", 100, "f2"),
-    add("午餐", "米饭", 150, "f3"),
-    add("午餐", "鸡胸肉", 150, "f4")
+    add("早餐", "牛奶", 250, "f3"),
+    add("早餐", "香蕉", 150, "f4"),
+    add("午餐", "米饭", 250, "f5"),
+    add("午餐", "鸡胸肉", 180, "f6"),
+    add("午餐", "西兰花", 150, "f7"),
+    add("午餐", "橄榄油", 12, "f8"),
+    add("午餐", "坚果", 20, "f9"),
+    add("晚餐", "红薯", 300, "f10"),
+    add("晚餐", "三文鱼", 150, "f11"),
+    add("晚餐", "菠菜", 150, "f12"),
+    add("晚餐", "全麦面包", 60, "f13"),
+    add("晚餐", "无糖酸奶", 150, "f14"),
+    add("加餐", "苹果", 150, "f15")
   ];
 }
 
@@ -410,7 +471,8 @@ function demoSessions() {
         { name: "绳索下压", weight: 10, reps: 12, sets: 3 }
       ]
     },
-    ...demoHistorySessions()
+    ...demoHistorySessions(),
+    ...demoLongTermSessions()
   ];
 }
 

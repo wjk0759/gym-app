@@ -4,6 +4,23 @@ function normalizeState(value) {
   const next = value || initialState();
   next.equipmentLibrary = next.equipmentLibrary || demoEquipment();
   next.useEquipLibrary = next.useEquipLibrary !== false;
+  next.profile = next.profile || { ...DEFAULT_PROFILE };
+  next.profile.bodyFat = Number.isFinite(Number(next.profile.bodyFat))
+    ? Number(next.profile.bodyFat)
+    : Number(DEFAULT_PROFILE.bodyFat);
+  next.reviewPeriod = ["week", "month", "year"].includes(next.reviewPeriod) ? next.reviewPeriod : "month";
+  next.bodyMetrics = Array.isArray(next.bodyMetrics)
+    ? next.bodyMetrics
+      .filter((entry) => entry && /^\d{4}-\d{2}-\d{2}$/.test(entry.date || ""))
+      .map((entry) => ({
+        id: entry.id || `bm-${entry.date}`,
+        date: entry.date,
+        timestamp: Number(entry.timestamp) || parseDateKey(entry.date).getTime(),
+        weight: Number(entry.weight) || 0,
+        bodyFat: Number(entry.bodyFat) || 0
+      }))
+    : demoBodyMetrics(next.profile);
+  if (!next.bodyMetrics.length) next.bodyMetrics = demoBodyMetrics(next.profile);
   const validRouteScreens = [
     "tabs", "onboarding", "nutrition", "foodAdd", "foodCustom", "foodPhoto",
     "paywall", "profileEdit", "settings", "workoutCompose", "workout",
@@ -120,6 +137,12 @@ function normalizeState(value) {
         };
       })
     : [];
+  if (next.foodLogs.length > 0 && next.foodLogs.length <= 4 && next.foodLogs.every((log) => ["f1", "f2", "f3", "f4"].includes(log.id))) {
+    next.foodLogs = [...next.foodLogs, ...demoFoodHistory()];
+  }
+  if (Array.isArray(next.sessions) && !next.sessions.some((session) => String(session.id || "").startsWith("lt"))) {
+    next.sessions = [...next.sessions, ...demoLongTermSessions()];
+  }
   next.customFoods = Array.isArray(next.customFoods) ? next.customFoods : [];
   next.foodCustomDraft = null;
   next.equipSearchQuery = "";
@@ -168,11 +191,13 @@ function initialState() {
     onboarded: false,
     profile,
     profileDraft: null,
+    bodyMetrics: demoBodyMetrics(profile),
     plan: buildPlan(profile),
     sessions: demoSessions(),
     chats: [],
     coachSkill: "trainer",
-    foodLogs: demoLogs(),
+    reviewPeriod: "month",
+    foodLogs: [...demoLogs(), ...demoFoodHistory()],
     customFoods: [],
     foodCustomDraft: null,
     disliked: [],
