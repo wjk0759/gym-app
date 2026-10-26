@@ -92,7 +92,6 @@ function calendarDayPanel(key) {
               <div class="tiny faint">${day.focus.join(" · ")} · ${day.exercises.length} 个动作</div>
             </div>
             <div class="calendar-plan-actions">
-              <button class="link" onclick="app.openPlanSchedule()">调整日期</button>
               <button class="link" onclick="app.editPlanDay('${day.id}')">编辑内容 ›</button>
             </div>
           </div>
@@ -143,12 +142,12 @@ function planScreen() {
           <div class="h1">日历</div>
         </div>
         <div class="plan-calendar-head-actions">
-          <button class="link" onclick="app.openPlanSchedule()">训练日期</button>
-          <button class="link" onclick="app.goTodayInCalendar()">回到今天</button>
+          <button class="plan-head-action accent" onclick="app.openPlanSchedule()">训练日期 <span aria-hidden="true">›</span></button>
+          <button class="plan-head-action" onclick="app.goTodayInCalendar()">回到今天</button>
         </div>
       </div>
 
-      <button class="plan-data-strip" onclick="app.scrollToPlanReview()">
+      <button class="plan-data-strip" onclick="app.openPlanReview()">
         <span class="plan-data-strip-icon" aria-hidden="true">▥</span>
         <span class="grow">
           <strong>数据复盘 · ${review.label}</strong>
@@ -159,7 +158,6 @@ function planScreen() {
 
       ${calendarOverview(month)}
       ${calendarDayPanel(selected)}
-      ${dataReviewPanel()}
 
       <section class="plan-summary-card">
         <div class="between plan-summary-head">

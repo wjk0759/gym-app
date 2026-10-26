@@ -95,6 +95,7 @@ function render() {
   else if (state.screen === "sessionExercisePicker") html = equipmentPickerScreen();
   else if (state.screen === "trainingData") html = trainingDataScreen();
   else if (state.screen === "planSchedule") html = planScheduleScreen();
+  else if (state.screen === "planReview") html = planReviewScreen();
   else if (state.screen === "history") html = historyScreen();
   else if (state.screen === "equipmentLibrary") html = equipmentLibraryScreen();
   else if (state.screen === "equipmentCamera") html = equipmentCameraScreen();
@@ -112,12 +113,14 @@ function render() {
     + (state.screen === "tabs" ? "" : " no-tabs")
     + (state.screen === "workout" ? " workout-mode" : "")
     + (state.screen === "workoutCompose" ? " compose-mode" : "")
+    + (state.screen === "planReview" ? " review-mode" : "")
     + (state.screen === "tabs" && state.tab === "coach" ? " chat-mode" : "")
     + (state.equipSelectionOpen && state.screen === "tabs" && state.tab === "equipment" ? " selection-open" : "")
     + (state.screen === "equipmentCamera" || state.screen === "foodPhotoCamera" ? " camera-mode" : "")
     + (routeChanged ? " route-changed" : "");
   document.getElementById("tabbar").innerHTML = tabbar();
   document.getElementById("tabbar").className = "tabbar" + (state.onboarded && state.screen === "tabs" ? "" : " hidden");
+  settleTabIndicator();
   if (routeChanged) {
     requestAnimationFrame(() => {
       root.scrollTop = 0;

@@ -98,24 +98,10 @@ function coachMessageMarkup(message) {
     return `<div class="coach-message coach-message-assistant">${coachAppliedCard(message.applied)}</div>`;
   }
   if (message.role === "user") {
-    return `
-      <div class="coach-message coach-message-user">
-        <div class="coach-bubble coach-bubble-user">${esc(message.text)}</div>
-      </div>
-    `;
+    return `<div class="coach-message coach-message-user"><div class="coach-bubble coach-bubble-user">${esc(message.text)}</div></div>`;
   }
-  return `
-    <div class="coach-message coach-message-assistant">
-      <div class="coach-message-avatar">AI</div>
-      <div class="coach-message-body">
-        <div class="coach-message-meta">AI 教练</div>
-        <div class="coach-bubble coach-bubble-assistant ${message.safety ? "safety" : ""}">
-          ${message.safety ? '<span class="coach-safety-label">需要专业评估</span>' : ""}
-          ${esc(message.text)}
-        </div>
-      </div>
-    </div>
-  `;
+  const safetyLabel = message.safety ? '<span class="coach-safety-label">需要专业评估</span>' : "";
+  return `<div class="coach-message coach-message-assistant"><div class="coach-message-avatar">AI</div><div class="coach-message-body"><div class="coach-message-meta">AI 教练</div><div class="coach-bubble coach-bubble-assistant ${message.safety ? "safety" : ""}">${safetyLabel}${esc(message.text)}</div></div></div>`;
 }
 
 function coachQuickReplies(adjustment, suggestions) {
@@ -258,7 +244,6 @@ function coachScreen() {
           <input id="chat-input" type="text" maxlength="500" placeholder="${placeholder}" onkeydown="if(event.key==='Enter'){app.sendChat()}">
           <button class="coach-send" onclick="app.sendChat()" aria-label="发送">↑</button>
         </div>
-        <div class="coach-composer-meta">${activeAdjustment ? "AI 会先确认你的诉求，再给出可执行的调整方案" : "涉及疼痛、孕期、术后等情况，会建议你就医评估"}</div>
       </div>
     </div>
   `;

@@ -25,6 +25,7 @@
   - `position: sticky`，固定在状态栏下方；
   - 半透明深色渐变 + 背景模糊，内容从其下方滚过。
 - 底部 TabBar 与「已选动作」浮动入口固定在安全区，不随内容滚动。
+- TabBar 选中背景使用独立滑块，切换 Tab 时用 iOS 风格缓动从旧位置滑到新位置，文字颜色同步过渡。
 - 全局隐藏滚动条：`scrollbar-width: none` + `::-webkit-scrollbar { display: none; }`，包括横向肌群/器械筛选。
 
 ## 页面接入规则

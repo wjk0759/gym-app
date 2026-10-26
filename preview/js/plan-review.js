@@ -425,3 +425,101 @@ function dataReviewPanel() {
     </section>
   `;
 }
+
+function reviewSessionRow(session) {
+  const date = new Date(Number(session.timestamp) || Date.now());
+  const dateText = `${date.getMonth() + 1}/${date.getDate()}`;
+  const title = esc(String(session.title || "训练").slice(0, 40));
+  return `
+    <button class="review-session-row" onclick="app.openSession('${session.id}', 'plan')">
+      <span class="review-session-date">${dateText}</span>
+      <span class="review-session-main">
+        <strong>${title}</strong>
+        <small>${Number(session.duration) || 0} 分钟</small>
+      </span>
+      <span class="review-session-volume">${Math.round(Number(session.volume) || 0).toLocaleString()}<i>kg</i></span>
+      <span class="review-session-arrow">›</span>
+    </button>
+  `;
+}
+
+function planReviewScreen() {
+  const review = planReviewData();
+  const { current } = review;
+  const hasNutrition = current.loggedDays > 0;
+  const recent = current.sessions.slice(0, 3);
+  return `
+    <div class="review-screen">
+      <header class="review-head">
+        <button class="icon-btn" onclick="app.back()" aria-label="返回计划">‹</button>
+        <div class="grow">
+          <div class="review-title">${review.label}报告</div>
+        </div>
+        <button class="review-head-action" onclick="app.openHistory()">全部训练</button>
+      </header>
+
+      <div class="review-controls">
+        <div class="review-period-tabs" role="tablist" aria-label="数据复盘周期">
+          ${["week", "month", "year"].map((period) => `
+            <button class="${review.period === period ? "active" : ""}" onclick="app.setReviewPeriod('${period}')" role="tab" aria-selected="${review.period === period}">
+              ${REVIEW_PERIODS[period].label}
+            </button>
+          `).join("")}
+        </div>
+        <div class="review-range">
+          <span>${review.rangeLabel}</span>
+          <span>对比${review.previousLabel}</span>
+        </div>
+      </div>
+
+      <div class="review-trend-inline">
+        <span class="good">↑ ${review.good} 项优于上期</span>
+        <span class="bad">↓ ${review.bad} 项需关注</span>
+        <span class="muted">${review.insufficient} 项缺上期</span>
+      </div>
+
+      <div class="review-kpi-grid">
+        ${review.kpis.map(reviewKpiCard).join("")}
+      </div>
+
+      <div class="review-detail-grid">
+        <section class="review-detail-card">
+          <div class="review-card-head">
+            <span>训练</span>
+            <small>${current.trainingDays} 个训练日</small>
+          </div>
+          <div class="review-metric-grid">
+            <div class="review-metric"><strong>${Math.round(current.volume).toLocaleString()}</strong><span>容量 kg</span></div>
+            <div class="review-metric"><strong>${current.sets}</strong><span>总组数</span></div>
+            <div class="review-metric"><strong>${reviewFormatNumber(current.averageSessionMinutes)}</strong><span>单次分钟</span></div>
+            <div class="review-metric"><strong>${current.sessions.length}</strong><span>完成训练</span></div>
+          </div>
+        </section>
+
+        <section class="review-detail-card">
+          <div class="review-card-head">
+            <span>饮食</span>
+            <small>${hasNutrition ? `${current.loggedDays}/${review.periodDays} 天记录` : "本期未记录"}</small>
+          </div>
+          <div class="review-macro-rows">
+            <div class="review-macro-row"><span>热量</span><strong>${hasNutrition ? reviewFormatNumber(current.averages.kcal) : "—"}</strong><i>kcal</i></div>
+            <div class="review-macro-row"><span>蛋白质</span><strong>${hasNutrition ? reviewFormatNumber(current.averages.p) : "—"}</strong><i>g</i></div>
+            <div class="review-macro-row"><span>碳水</span><strong>${hasNutrition ? reviewFormatNumber(current.averages.c) : "—"}</strong><i>g</i></div>
+            <div class="review-macro-row"><span>脂肪</span><strong>${hasNutrition ? reviewFormatNumber(current.averages.f) : "—"}</strong><i>g</i></div>
+            <div class="review-macro-row"><span>纤维</span><strong>${hasNutrition ? reviewFormatNumber(current.averages.fiber) : "—"}</strong><i>g</i></div>
+          </div>
+        </section>
+      </div>
+
+      <section class="review-recent-card">
+        <div class="review-card-head">
+          <span>最近训练</span>
+          ${recent.length ? `<small>${recent.length} 条</small>` : `<small>暂无记录</small>`}
+        </div>
+        ${recent.length
+          ? recent.map(reviewSessionRow).join("")
+          : `<div class="review-empty">本${REVIEW_PERIODS[review.period].short}还没有训练记录</div>`}
+      </section>
+    </div>
+  `;
+}

@@ -168,7 +168,7 @@ function fallbackRoute() {
     return { screen: "tabs", tab: "equipment" };
   }
   if (screen === "history") return { screen: "tabs", tab: "plan" };
-  if (screen === "planSchedule") return { screen: "tabs", tab: "plan" };
+  if (screen === "planSchedule" || screen === "planReview") return { screen: "tabs", tab: "plan" };
   if (screen === "equipmentLibrary") {
     return { screen: "tabs", tab: state.equipLibraryFromProfile ? "profile" : "equipment" };
   }

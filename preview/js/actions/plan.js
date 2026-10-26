@@ -82,8 +82,10 @@ Object.assign(window.app, {
     render();
   },
 
-  scrollToPlanReview() {
-    document.getElementById("plan-data-review")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  openPlanReview() {
+    pushRoute("planReview");
+    save();
+    render();
   },
 
   setReviewPeriod(period) {

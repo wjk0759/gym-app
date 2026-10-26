@@ -60,6 +60,7 @@ tab/equipment (1)
 | `equipmentRecognition` | 器械识别 | 拍照完成后替换 `equipmentCamera` | `tabs/equipment` |
 | `planExercisePicker` | 计划训练日添加动作 | `workoutCompose` | `workoutCompose` |
 | `planSchedule` | 选择未来 4 周训练日期 | `tabs/plan` | `tabs/plan` |
+| `planReview` | 周 / 月 / 年数据复盘报告 | `tabs/plan` | `tabs/plan` |
 
 ## 5. 典型面包屑
 
@@ -70,7 +71,14 @@ tab/plan
   → planSchedule
 ```
 
-> 计划页的「数据复盘」是页面内的训练 + 饮食报表，不是单独路由；动作训练数据只从动作详情进入。
+### 计划 → 数据复盘报告
+
+```text
+tab/plan
+  → planReview
+```
+
+> 计划页的「查看报告」进入独立 `planReview`；报告支持本周 / 本月 / 今年切换。动作训练数据只从动作详情进入。
 
 ### 计划 → 训练记录 → 添加动作
 
@@ -228,6 +236,7 @@ tab/coach | tab/profile
 | `sessionDetail` | 按 `sessionOrigin` 回今日 / 计划 |
 | `workoutCompose` | 按草稿来源回首页 / 计划 / 器械 |
 | `planSchedule` | `tab/plan` |
+| `planReview` | `tab/plan` |
 | `workout` | `tab/home` |
 
 ## 9. 验收
@@ -236,6 +245,7 @@ tab/coach | tab/profile
 - 我的 → 器械库 → 详情，返回回到我的，而不是器械 Tab。
 - 计划页不再出现「动作数据」入口；动作数据从动作详情返回时回到动作详情。
 - 计划 → 调整训练日期 → 选择未来 4 周日期并保存，回到计划。
+- 计划 → 查看报告 → 切换本周 / 本月 / 今年，返回计划。
 - 计划 → 历史 → 训练详情，返回回历史。
 - 首页 / 计划进入饮食，返回回原 Tab。
 - 饮食 → 添加食物 → 手动添加，返回逐级回饮食。
