@@ -51,6 +51,10 @@ struct PlanScheduleView: View {
 
     private var targetCount: Int { daysPerWeek * weeks }
 
+    private var remainingCount: Int {
+        counts.reduce(0) { $0 + max(0, daysPerWeek - $1) }
+    }
+
     var body: some View {
         NavigationStack {
             AppScrollView {
@@ -64,7 +68,7 @@ struct PlanScheduleView: View {
                     }
                     Text(complete
                          ? "已选满 \(targetCount) 个训练日"
-                         : "还差 \(counts.reduce(0) { $0 + max(0, daysPerWeek - $1) }) 个训练日")
+                         : "还差 \(remainingCount) 个训练日")
                         .font(.caption)
                         .foregroundStyle(complete ? Theme.accent : Theme.tertiaryText)
 
