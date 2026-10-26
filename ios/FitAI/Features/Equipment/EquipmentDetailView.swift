@@ -1182,27 +1182,27 @@ struct EquipmentItemDetailView: View {
 }
 
 private enum EquipmentStatsPeriod: String, CaseIterable, Identifiable, Equatable {
-    case week = "7?"
-    case month = "30?"
-    case ninetyDays = "90?"
-    case all = "??"
-    case custom = "???"
+    case week = "7天"
+    case month = "30天"
+    case ninetyDays = "90天"
+    case all = "全部"
+    case custom = "自定义"
 
     var id: String { rawValue }
 }
 
 private enum EquipmentStatsMetric: String, CaseIterable, Identifiable, Equatable {
-    case volume = "??"
-    case sets = "??"
-    case maxWeight = "????"
-    case oneRepMax = "1RM ??"
+    case volume = "容量"
+    case sets = "组数"
+    case maxWeight = "最大重量"
+    case oneRepMax = "1RM 估算"
 
     var id: String { rawValue }
 
     var unit: String {
         switch self {
         case .sets:
-            return "?"
+            return "组"
         default:
             return "kg"
         }
