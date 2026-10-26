@@ -2660,6 +2660,7 @@ function enableDragScroll(container) {
 
 let equipmentScrollFrame = 0;
 let equipmentToolsObserver = null;
+let equipmentScrollLock = null;
 
 function syncEquipmentLayout() {
   const root = document.getElementById("app");
@@ -2686,6 +2687,16 @@ function syncEquipmentScrollState() {
   const root = document.getElementById("app");
   if (!root) return;
   const onEquipment = state.screen === "tabs" && state.tab === "equipment";
+  const selectionOpen = onEquipment && state.equipSelectionOpen;
+
+  // 锁定底层滚动位置：即使浏览器/触摸事件漏到底层，也不会带着页面移动。
+  if (selectionOpen) {
+    if (equipmentScrollLock === null) equipmentScrollLock = root.scrollTop;
+    if (root.scrollTop !== equipmentScrollLock) root.scrollTop = equipmentScrollLock;
+  } else {
+    equipmentScrollLock = null;
+  }
+
   const wasScrolled = root.classList.contains("equipment-scrolled");
   const shouldBeScrolled = onEquipment && (wasScrolled ? root.scrollTop > 2 : root.scrollTop > 18);
   root.classList.toggle("equipment-scrolled", shouldBeScrolled);
@@ -2737,6 +2748,20 @@ function containSelectionListScroll() {
   }, { passive: false });
 }
 
+document.addEventListener("wheel", (event) => {
+  if (!document.querySelector(".equipment-selection-popover")) return;
+  if (!event.target.closest(".equipment-selection-list")) {
+    event.preventDefault();
+  }
+}, { passive: false });
+
+document.addEventListener("touchmove", (event) => {
+  if (!document.querySelector(".equipment-selection-popover")) return;
+  if (!event.target.closest(".equipment-selection-list")) {
+    event.preventDefault();
+  }
+}, { passive: false });
+
 function setupDragScroll() {
   const root = document.getElementById("app");
   if (!root) return;
@@ -2765,13 +2790,12 @@ function render() {
     "camera-mode",
     state.authenticated && state.screen === "equipmentCamera"
   );
-  document.body.classList.toggle(
-    "selection-open",
-    state.authenticated
-      && state.screen === "tabs"
-      && state.tab === "equipment"
-      && state.equipSelectionOpen
-  );
+  const selectionOpen = state.authenticated
+    && state.screen === "tabs"
+    && state.tab === "equipment"
+    && state.equipSelectionOpen;
+  document.body.classList.toggle("selection-open", selectionOpen);
+  document.documentElement.classList.toggle("selection-open", selectionOpen);
 
   if (!state.authenticated) {
     const loginRoute = "login";

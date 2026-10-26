@@ -1185,9 +1185,16 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .app.selection-open { overflow: hidden; }
 
+html.selection-open,
 body.selection-open {
+  height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
+}
+
+.equipment-selection-popover,
+.equipment-selection-list {
+  overscroll-behavior: contain;
 }
 
 @media (pointer: fine) {
