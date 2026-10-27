@@ -182,6 +182,33 @@ enum StressHarness {
             NSLog("STRESS exercise_new_count %d", filtered.count)
         }
 
+        let currentMonth = calendar.dateInterval(of: .month, for: now)
+        let previousMonthDate = calendar.date(byAdding: .month, value: -1, to: now) ?? now
+        let previousMonth = calendar.dateInterval(of: .month, for: previousMonthDate)
+
+        benchmark("review_scan_old") {
+            var count = 0
+            for interval in [currentMonth, previousMonth].compactMap({ $0 }) {
+                count += sessions.lazy.filter { interval.contains($0.date) }.count
+                count += foodLogs.lazy.filter { interval.contains($0.date) }.count
+                count += bodyMetrics.lazy.filter { interval.contains($0.date) }.count
+            }
+            NSLog("STRESS review_scan_old_count %d", count)
+        }
+
+        benchmark("review_scan_new") {
+            var count = 0
+            if let currentMonth {
+                count += sessions.lazy.filter { currentMonth.contains($0.date) }.count
+                count += Set(
+                    foodLogs.lazy
+                        .filter { currentMonth.contains($0.date) }
+                        .map { FitnessDate.key($0.date) }
+                ).count
+            }
+            NSLog("STRESS review_scan_new_count %d", count)
+        }
+
         let tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("fitai-stress-state.json")
         benchmark("persist_burst_old", iterations: 1) {

@@ -29,10 +29,7 @@ struct PlanHomeView: View {
                     if store.isGenerating {
                         generatingCard
                     } else {
-                        if store.profile.sex == .female || store.plan != nil {
-                            planToolBar
-                        }
-                        reviewStrip
+                        planQuickActions
                         calendarCard(plan: store.plan)
                         selectedDayCard(plan: store.plan)
 
@@ -107,73 +104,114 @@ struct PlanHomeView: View {
         }
     }
 
-    // MARK: - 计划工具与复盘入口
+    // MARK: - 计划快捷入口
 
-    private var planToolBar: some View {
-        HStack(spacing: 8) {
-            Button {
-                Haptics.tap()
-                showSchedule = true
-            } label: {
-                Label("训练日期", systemImage: "calendar.badge.clock")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-                    .background(Theme.accent.opacity(0.10), in: Capsule())
-            }
-            .buttonStyle(SubtlePressStyle(scale: 0.96))
-
-            if store.profile.sex == .female {
-                Button {
-                    Haptics.tap()
-                    showPeriod = true
-                } label: {
-                    Label("经期", systemImage: "drop.fill")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Theme.danger)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 7)
-                        .background(Theme.danger.opacity(0.10), in: Capsule())
-                }
-                .buttonStyle(SubtlePressStyle(scale: 0.96))
-            }
-
-            Spacer()
+    /// 只做月度计数，避免每次刷新都跑完整的复盘引擎（当前 + 上期 + KPI 趋势）。
+    private var monthSummary: (sessions: Int, foodDays: Int) {
+        guard let interval = calendar.dateInterval(of: .month, for: Date()) else {
+            return (0, 0)
         }
-        .frame(maxWidth: .infinity)
+        let sessions = store.sessions.lazy.filter { interval.contains($0.date) }.count
+        let foodDays = Set(
+            store.foodLogs.lazy
+                .filter { interval.contains($0.date) }
+                .map { FitnessDate.key($0.date) }
+        ).count
+        return (sessions, foodDays)
     }
 
-    private var reviewStrip: some View {
-        let review = PlanReviewEngine.make(store: store, period: .month)
-        return NavigationLink {
-            PlanReviewView()
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "chart.bar.doc.horizontal")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Theme.accent)
-                    .frame(width: 32, height: 32)
-                    .background(Theme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    private var planQuickActions: some View {
+        let summary = monthSummary
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("数据复盘 · \(review.period.title)")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Text("\(review.current.sessions.count) 次训练 · \(review.current.loggedFoodDays) 天饮食记录")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-
-                Spacer(minLength: 4)
-                Text("查看报告 ›")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(Theme.accent)
+        return HStack(spacing: 10) {
+            planActionTile(
+                title: "训练日期",
+                subtitle: "调整每周训练",
+                icon: "calendar.badge.clock",
+                tint: Theme.accent
+            ) {
+                showSchedule = true
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .card(padding: 12)
+
+            if store.profile.sex == .female {
+                planActionTile(
+                    title: "经期",
+                    subtitle: "轻量训练安排",
+                    icon: "drop.fill",
+                    tint: Theme.danger
+                ) {
+                    showPeriod = true
+                }
+            }
+
+            NavigationLink {
+                PlanReviewView()
+            } label: {
+                planActionTileLabel(
+                    title: "数据复盘",
+                    subtitle: "\(summary.sessions) 练 · \(summary.foodDays) 天饮食",
+                    icon: "chart.bar.doc.horizontal",
+                    tint: Theme.accent
+                )
+            }
+            .buttonStyle(CardPressStyle(scale: 0.98))
         }
-        .buttonStyle(.plain)
+    }
+
+    private func planActionTile(
+        title: String,
+        subtitle: String,
+        icon: String,
+        tint: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button {
+            Haptics.tap()
+            action()
+        } label: {
+            planActionTileLabel(title: title, subtitle: subtitle, icon: icon, tint: tint)
+        }
+        .buttonStyle(SubtlePressStyle(scale: 0.98))
+    }
+
+    private func planActionTileLabel(
+        title: String,
+        subtitle: String,
+        icon: String,
+        tint: Color
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(tint)
+                    .frame(width: 30, height: 30)
+                    .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text(subtitle)
+                    .font(.system(size: 9.5))
+                    .foregroundStyle(Theme.tertiaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.cardSurface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.07), lineWidth: 0.8)
+        )
+        .shadow(color: .black.opacity(0.14), radius: 10, y: 6)
     }
 
     // MARK: - 日历
