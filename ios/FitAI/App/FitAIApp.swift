@@ -24,6 +24,9 @@ struct FitAIApp: App {
                 .preferredColorScheme(.dark)
                 .task {
                     await subscriptions.load()
+#if DEBUG
+                    StressHarness.runIfRequested()
+#endif
                 }
         }
     }

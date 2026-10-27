@@ -22,36 +22,28 @@ struct WorkoutHistoryView: View {
     }
 
     private var monthSessions: [WorkoutSession] {
-        store.sessions.filter {
-            calendar.isDate($0.date, equalTo: monthStart, toGranularity: .month)
+        guard let interval = calendar.dateInterval(of: .month, for: monthStart) else {
+            return []
         }
+        return store.sessions.filter { interval.contains($0.date) }
     }
 
-    private var visibleSessions: [WorkoutSession] {
-        let list: [WorkoutSession]
-        if let selectedDate {
-            list = monthSessions.filter { calendar.isDate($0.date, inSameDayAs: selectedDate) }
-        } else {
-            list = monthSessions
-        }
+    private func visibleSessions(in sessions: [WorkoutSession]) -> [WorkoutSession] {
+        let list = selectedDate.map { date in
+            sessions.filter { calendar.isDate($0.date, inSameDayAs: date) }
+        } ?? sessions
         return list.sorted { $0.date > $1.date }
     }
 
-    private var monthVolume: Double {
-        monthSessions.reduce(0) { $0 + $1.volume }
-    }
-
-    private var monthMinutes: Int {
-        monthSessions.reduce(0) { $0 + $1.durationMinutes }
-    }
-
     var body: some View {
+        let sessions = monthSessions
+
         AppScrollView {
             VStack(spacing: 16) {
-                statsCard
+                statsCard(sessions)
                 monthCard
-                calendarCard
-                sessionsCard
+                calendarCard(sessions)
+                sessionsCard(sessions)
             }
             .padding(20)
             .padding(.bottom, 20)
@@ -64,14 +56,18 @@ struct WorkoutHistoryView: View {
         }
     }
 
-    private var statsCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+    private func statsCard(_ sessions: [WorkoutSession]) -> some View {
+        let volume = sessions.reduce(0) { $0 + $1.volume }
+        let minutes = sessions.reduce(0) { $0 + $1.durationMinutes }
+        let exerciseCount = Set(sessions.flatMap(\.sets).map(\.slug)).count
+
+        return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("本月训练")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(Theme.accent)
-                    Text(monthSessions.isEmpty ? "还没有记录" : "\(monthSessions.count) 次训练")
+                    Text(sessions.isEmpty ? "还没有记录" : "\(sessions.count) 次训练")
                         .font(.headline)
                         .foregroundStyle(.white)
                 }
@@ -81,9 +77,9 @@ struct WorkoutHistoryView: View {
             }
 
             HStack(spacing: 8) {
-                metric("\(Int(monthVolume))", "容量 kg")
-                metric("\(monthMinutes)", "总分钟")
-                metric("\(Set(monthSessions.flatMap(\.sets).map(\.slug)).count)", "动作数")
+                metric("\(Int(volume))", "容量 kg")
+                metric("\(minutes)", "总分钟")
+                metric("\(exerciseCount)", "动作数")
             }
         }
         .card()
@@ -136,8 +132,12 @@ struct WorkoutHistoryView: View {
         .card(padding: 12)
     }
 
-    private var calendarCard: some View {
-        VStack(spacing: 10) {
+    private func calendarCard(_ sessions: [WorkoutSession]) -> some View {
+        let sessionsByDay = Dictionary(grouping: sessions) {
+            calendar.startOfDay(for: $0.date)
+        }
+
+        return VStack(spacing: 10) {
             HStack(spacing: 0) {
                 ForEach(["一", "二", "三", "四", "五", "六", "日"], id: \.self) { weekday in
                     Text(weekday)
@@ -156,15 +156,17 @@ struct WorkoutHistoryView: View {
                 }
 
                 ForEach(1...daysInMonth, id: \.self) { day in
-                    dayCell(day)
+                    dayCell(day, sessionsByDay: sessionsByDay)
                 }
             }
         }
         .card()
     }
 
-    private var sessionsCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
+    private func sessionsCard(_ sessions: [WorkoutSession]) -> some View {
+        let visible = visibleSessions(in: sessions)
+
+        return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(selectedDate.map { $0.formatted(.dateTime.month().day()) } ?? "本月记录")
@@ -187,13 +189,13 @@ struct WorkoutHistoryView: View {
                 }
             }
 
-            if visibleSessions.isEmpty {
+            if visible.isEmpty {
                 Text("这一天没有训练记录。")
                     .font(.caption)
                     .foregroundStyle(Theme.secondaryText)
                     .padding(.vertical, 8)
             } else {
-                ForEach(visibleSessions) { session in
+                ForEach(visible) { session in
                     Button {
                         Haptics.tap()
                         selectedSession = session
@@ -223,7 +225,7 @@ struct WorkoutHistoryView: View {
                         .padding(.vertical, 6)
                     }
                     .buttonStyle(SubtlePressStyle(scale: 0.985))
-                    if session.id != visibleSessions.last?.id {
+                    if session.id != visible.last?.id {
                         Divider().overlay(Theme.stroke)
                     }
                 }
@@ -232,9 +234,9 @@ struct WorkoutHistoryView: View {
         .card()
     }
 
-    private func dayCell(_ day: Int) -> some View {
+    private func dayCell(_ day: Int, sessionsByDay: [Date: [WorkoutSession]]) -> some View {
         let date = calendar.date(byAdding: .day, value: day - 1, to: monthStart) ?? monthStart
-        let sessions = monthSessions.filter { calendar.isDate($0.date, inSameDayAs: date) }
+        let sessions = sessionsByDay[calendar.startOfDay(for: date)] ?? []
         let volume = sessions.reduce(0) { $0 + $1.volume }
         let isSelected = selectedDate.map { calendar.isDate($0, inSameDayAs: date) } ?? false
         let isToday = calendar.isDateInToday(date)

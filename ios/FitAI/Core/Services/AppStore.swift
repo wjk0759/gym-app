@@ -93,6 +93,10 @@ final class AppStore {
         label: "com.fitai.appstore.persistence",
         qos: .utility
     )
+    private let persistenceLock = NSLock()
+    private var pendingPersistedState: PersistedState?
+    private var pendingPersistedURL: URL?
+    private var persistenceDrainScheduled = false
 
     private var fileURL: URL {
         let directory = FileManager.default.urls(
@@ -1824,11 +1828,21 @@ final class AppStore {
     }
 
     private func load() {
+        let started = CFAbsoluteTimeGetCurrent()
         guard let data = try? Data(contentsOf: fileURL),
               let state = try? JSONDecoder().decode(PersistedState.self, from: data) else {
             resetInMemory()
             return
         }
+#if DEBUG
+        if data.count > 200_000 {
+            NSLog(
+                "STRESS load %.1fms %.2fMB",
+                (CFAbsoluteTimeGetCurrent() - started) * 1000,
+                Double(data.count) / 1_048_576
+            )
+        }
+#endif
         var persistAfterMigration = false
         profile = state.profile
         plan = state.plan
@@ -1896,15 +1910,73 @@ final class AppStore {
             weeklyReview: weeklyReview
         )
         let url = fileURL
-        persistenceQueue.async {
-            guard let data = try? JSONEncoder().encode(state) else { return }
+
+        // 连续交互（滑杆、滚轮、打卡）会高频调用 persist。
+        // 只保留最新快照，后台队列合并成一次编码 + 一次落盘。
+        persistenceLock.lock()
+        pendingPersistedState = state
+        pendingPersistedURL = url
+        let shouldSchedule = !persistenceDrainScheduled
+        if shouldSchedule {
+            persistenceDrainScheduled = true
+        }
+        persistenceLock.unlock()
+
+        guard shouldSchedule else { return }
+        persistenceQueue.async { [weak self] in
+            self?.drainPersistence()
+        }
+    }
+
+    private func drainPersistence() {
+        while true {
+            persistenceLock.lock()
+            guard let state = pendingPersistedState,
+                  let url = pendingPersistedURL else {
+                persistenceDrainScheduled = false
+                persistenceLock.unlock()
+                return
+            }
+            pendingPersistedState = nil
+            pendingPersistedURL = nil
+            persistenceLock.unlock()
+
+            let started = CFAbsoluteTimeGetCurrent()
+            guard let data = try? JSONEncoder().encode(state) else { continue }
+            let encodedAt = CFAbsoluteTimeGetCurrent()
             try? data.write(to: url, options: .atomic)
+            let finishedAt = CFAbsoluteTimeGetCurrent()
+
+#if DEBUG
+            if ProcessInfo.processInfo.environment["FITAI_QA_STRESS"] == "1", data.count > 200_000 {
+                NSLog(
+                    "STRESS persist encode=%.1fms write=%.1fms total=%.1fms size=%.2fMB",
+                    (encodedAt - started) * 1000,
+                    (finishedAt - encodedAt) * 1000,
+                    (finishedAt - started) * 1000,
+                    Double(data.count) / 1_048_576
+                )
+            }
+#endif
         }
     }
 
     /// 进入后台或切换账号前调用，确保已排队的写入完成。
     func flushPersistence() {
-        persistenceQueue.sync {}
+        persistenceQueue.sync {
+            persistenceLock.lock()
+            let state = pendingPersistedState
+            let url = pendingPersistedURL
+            pendingPersistedState = nil
+            pendingPersistedURL = nil
+            persistenceDrainScheduled = false
+            persistenceLock.unlock()
+
+            if let state, let url,
+               let data = try? JSONEncoder().encode(state) {
+                try? data.write(to: url, options: .atomic)
+            }
+        }
     }
 
     func exportData() -> String {

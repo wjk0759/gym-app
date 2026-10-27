@@ -95,8 +95,10 @@ struct WorkoutSessionView: View {
             .navigationTitle("训练中")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("结束") { showExitConfirm = true }
+                if currentExercise != nil {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("结束") { showExitConfirm = true }
+                    }
                 }
             }
             .onAppear {

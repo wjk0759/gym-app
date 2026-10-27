@@ -64,22 +64,12 @@ struct PlanHomeView: View {
                         } label: {
                             Label("计划版本历史", systemImage: "clock.arrow.circlepath")
                         }
-                        Button {
-                            showSchedule = true
-                        } label: {
-                            Label("训练日期", systemImage: "calendar.badge.clock")
-                        }
-                        if store.profile.sex == .female {
-                            Button {
-                                showPeriod = true
+                        if store.plan != nil {
+                            Button(role: .destructive) {
+                                showRegenerate = true
                             } label: {
-                                Label("经期安排", systemImage: "drop")
+                                Label("重新生成计划", systemImage: "arrow.clockwise")
                             }
-                        }
-                        Button(role: .destructive) {
-                            showRegenerate = true
-                        } label: {
-                            Label("重新生成计划", systemImage: "arrow.clockwise")
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -117,63 +107,12 @@ struct PlanHomeView: View {
         }
     }
 
-    // MARK: - 训练数据快照
-
-    private var recentTrainingSessions: [WorkoutSession] {
-        let end = Date()
-        let start = calendar.date(
-            byAdding: .day,
-            value: -29,
-            to: calendar.startOfDay(for: end)
-        ) ?? end
-        return store.sessions.filter { $0.date >= start && $0.date <= end }
-    }
-
-    private var trainingSnapshotCard: some View {
-        let recent = recentTrainingSessions
-        let volume = recent.reduce(0) { $0 + $1.volume }
-
-        return NavigationLink {
-            WorkoutHistoryView()
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "chart.bar.xaxis")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Theme.accent)
-                    .frame(width: 30, height: 30)
-                    .background(
-                        Theme.accent.opacity(0.12),
-                        in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    )
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("训练数据 · 最近 30 天")
-                        .font(.system(size: 11.5, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Text(recent.isEmpty
-                         ? "还没有训练记录"
-                         : "\(recent.count) 次训练 · \(Int(volume).formatted()) kg 容量")
-                        .font(.system(size: 9.5))
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-
-                Spacer(minLength: 6)
-
-                Text("查看趋势 ›")
-                    .font(.system(size: 9.5, weight: .semibold))
-                    .foregroundStyle(Theme.accent)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .buttonStyle(.plain)
-        .card(padding: 12)
-    }
-
     // MARK: - 计划工具与复盘入口
 
     private var planToolBar: some View {
         HStack(spacing: 8) {
             Button {
+                Haptics.tap()
                 showSchedule = true
             } label: {
                 Label("训练日期", systemImage: "calendar.badge.clock")
@@ -183,10 +122,11 @@ struct PlanHomeView: View {
                     .padding(.vertical, 7)
                     .background(Theme.accent.opacity(0.10), in: Capsule())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SubtlePressStyle(scale: 0.96))
 
             if store.profile.sex == .female {
                 Button {
+                    Haptics.tap()
                     showPeriod = true
                 } label: {
                     Label("经期", systemImage: "drop.fill")
@@ -196,16 +136,10 @@ struct PlanHomeView: View {
                         .padding(.vertical, 7)
                         .background(Theme.danger.opacity(0.10), in: Capsule())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SubtlePressStyle(scale: 0.96))
             }
 
             Spacer()
-
-            Button("回到今天") {
-                goToToday()
-            }
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(Theme.secondaryText)
         }
         .frame(maxWidth: .infinity)
     }
@@ -267,23 +201,14 @@ struct PlanHomeView: View {
 
                 Spacer(minLength: 4)
 
-                Button {
-                    Haptics.select()
-                    withAnimation(Motion.quick) {
-                        goToToday()
-                    }
-                } label: {
-                    VStack(spacing: 2) {
-                        Text(monthTitle)
-                            .font(.headline.weight(.bold))
-                            .foregroundStyle(.white)
-                        Text("训练 · 饮食 · 计划")
-                            .font(.system(size: 9.5))
-                            .foregroundStyle(Theme.tertiaryText)
-                    }
+                VStack(spacing: 2) {
+                    Text(monthTitle)
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
+                    Text("训练 · 饮食 · 计划")
+                        .font(.system(size: 9.5))
+                        .foregroundStyle(Theme.tertiaryText)
                 }
-                .buttonStyle(SubtlePressStyle(scale: 0.97))
-                .accessibilityLabel("回到今天")
 
                 Spacer(minLength: 4)
 
@@ -686,6 +611,16 @@ struct PlanHomeView: View {
 
     // MARK: - 训练数据
 
+    private var recentTrainingSessions: [WorkoutSession] {
+        let end = Date()
+        let start = calendar.date(
+            byAdding: .day,
+            value: -29,
+            to: calendar.startOfDay(for: end)
+        ) ?? end
+        return store.sessions.filter { $0.date >= start && $0.date <= end }
+    }
+
     private var trainingDataCard: some View {
         let recent = recentTrainingSessions
         let volume = recent.reduce(0) { $0 + $1.volume }
@@ -867,14 +802,6 @@ struct PlanHomeView: View {
                         .foregroundStyle(Theme.secondaryText)
                 }
                 Spacer(minLength: 8)
-                Button {
-                    showRegenerate = true
-                } label: {
-                    Text("重新生成")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-                .buttonStyle(.plain)
             }
 
             Text("调整计划前，教练会先听你说最近训练中的时间、恢复、疼痛或负荷问题，再给出方案。")

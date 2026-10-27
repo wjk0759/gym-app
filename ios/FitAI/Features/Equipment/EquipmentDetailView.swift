@@ -223,19 +223,13 @@ struct EquipmentItemDetailView: View {
 
             HStack(spacing: 1) {
                 quickActionButton("要点", icon: "checklist") {
-                    withAnimation(.easeInOut(duration: 0.28)) {
+                    withAnimation(Motion.smooth) {
                         proxy.scrollTo("04", anchor: .top)
                     }
                 }
 
-                quickActionButton("历史", icon: "clock") {
-                    withAnimation(.easeInOut(duration: 0.28)) {
-                        proxy.scrollTo("06", anchor: .top)
-                    }
-                }
-
-                quickActionButton("图表", icon: "chart.bar") {
-                    withAnimation(.easeInOut(duration: 0.28)) {
+                quickActionButton("数据", icon: "chart.bar") {
+                    withAnimation(Motion.smooth) {
                         proxy.scrollTo("06", anchor: .top)
                     }
                 }
@@ -249,7 +243,7 @@ struct EquipmentItemDetailView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(Theme.cardSurface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color.white.opacity(0.10), lineWidth: 0.8)
@@ -262,7 +256,10 @@ struct EquipmentItemDetailView: View {
         active: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: action) {
+        Button {
+            Haptics.tap()
+            action()
+        } label: {
             VStack(spacing: 3) {
                 Image(systemName: icon)
                     .font(.system(size: 16, weight: .semibold))
@@ -277,7 +274,7 @@ struct EquipmentItemDetailView: View {
                 in: RoundedRectangle(cornerRadius: 10, style: .continuous)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SubtlePressStyle(scale: 0.94))
         .accessibilityLabel(title)
     }
 
