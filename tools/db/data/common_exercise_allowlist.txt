@@ -40,3 +40,25 @@ lever seated crunch
 kettlebell swing
 kettlebell two arm military press
 kettlebell hang clean
+
+# Fixed-path / selectorized machines: more coverage for commercial gyms.
+lever incline chest press
+cable standing fly
+smith bench press
+lever front pulldown
+lever high row
+lever back extension
+smith bent over row
+lever military press
+lever lateral raise
+lever seated reverse fly
+cable lateral raise
+cable upright row
+lever bicep curl
+cable curl
+lever seated calf raise
+lever hip extension v. 2
+lever reverse hyperextension
+smith hack squat
+cable pull through (with rope)
+lever seated leg raise crunch

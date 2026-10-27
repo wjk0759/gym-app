@@ -63,6 +63,7 @@ LICENSE = "MIT; Gym visual media excluded"
 COMMON_MUSCLE_OVERRIDES = {
     "barbell deadlift": "back",
     "barbell front squat": "legs",
+    "smith hack squat": "legs",
     "lever seated hip abduction": "glutes",
     "lever seated hip adduction": "legs",
     "kettlebell hang clean": "legs",
