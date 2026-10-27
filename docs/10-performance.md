@@ -118,6 +118,7 @@ cd E:\Projects\FitAI\backend
 - LLM 连接池和并发信号量可配置：`LLM_MAX_CONCURRENCY`、`LLM_TIMEOUT_SECONDS`，防止单进程把上游限流打满。
 - Agent 的记忆提炼改为后台任务，不再把第二轮 LLM 调用算进用户回复延迟；后台任务使用独立 session。
 - Docker 默认使用 `WEB_CONCURRENCY=4` 的 uvicorn worker；实际连接数应按 `worker 数 × DB_POOL_SIZE` 控制在 MySQL `max_connections` 内。
+- FastAPI 管理接口支持校验 Spring Boot 管理端签发的短期 JWT（`ADMIN_JWT_SECRET` / `ADMIN_JWT_ISSUER`），按路径映射 `user/plan/workout/chat/scan/exercise/video/ai/audit` 权限；生产配置 JWT 后不再接受静态 `ADMIN_TOKEN`。
 
 ### 7.3 数据闭环与幂等
 

@@ -14,11 +14,11 @@
       <div class="eyebrow">FITAI ADMIN</div>
       <h1>数据后台</h1>
       <p class="muted">查看用户、计划、训练、对话与识别数据。仅限内部使用。</p>
-      <label for="token-input">管理员口令</label>
-      <input id="token-input" type="password" autocomplete="current-password" placeholder="输入 ADMIN_TOKEN" required>
+      <label for="token-input">管理员凭证</label>
+      <input id="token-input" type="password" autocomplete="current-password" placeholder="输入 Spring 管理端 JWT 或 ADMIN_TOKEN" required>
       <button class="btn btn-primary" type="submit">进入后台</button>
       <div id="login-error" class="form-error"></div>
-      <p class="login-hint">本地开发默认口令：<code>dev-admin-token</code>。生产环境必须通过环境变量修改。</p>
+      <p class="login-hint">开发环境默认口令：<code>dev-admin-token</code>。生产环境请粘贴 Spring 管理端登录后的短期 JWT。</p>
     </form>
   </div>
 

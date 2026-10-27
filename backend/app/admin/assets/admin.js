@@ -72,17 +72,22 @@
 
   async function api(path, options = {}) {
     const isForm = options.body instanceof FormData;
+    const authHeaders = state.token
+      ? (state.token.includes(".")
+          ? { Authorization: `Bearer ${state.token}` }
+          : { "X-Admin-Token": state.token })
+      : {};
     const response = await fetch(API + path, {
       ...options,
       headers: {
         ...(!isForm ? { "Content-Type": "application/json" } : {}),
-        ...(state.token ? { "X-Admin-Token": state.token } : {}),
+        ...authHeaders,
         ...(options.headers || {})
       }
     });
     if (response.status === 401) {
       logout();
-      throw new Error("管理员口令已失效，请重新登录");
+      throw new Error("管理员凭证已失效，请重新登录");
     }
     const body = await response.json().catch(() => null);
     if (!response.ok) {

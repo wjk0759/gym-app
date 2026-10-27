@@ -38,6 +38,9 @@ class Settings(BaseSettings):
 
     # 后台管理。生产环境必须通过 ADMIN_TOKEN 覆盖；开发环境未配置时使用 dev-admin-token。
     admin_token: str = ""
+    # Spring Boot 管理端签发的短期 JWT；与 admin-server 的 FITAI_JWT_SECRET 保持一致。
+    admin_jwt_secret: str = ""
+    admin_jwt_issuer: str = "fitai-admin"
 
     # 认证。生产环境必须配置 JWT_SECRET；开发环境未配置时使用固定开发密钥。
     jwt_secret: str = ""

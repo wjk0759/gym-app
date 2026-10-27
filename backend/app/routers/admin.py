@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Annotated, Literal
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
+import jwt
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.orm import selectinload
@@ -50,17 +51,85 @@ GOAL_LABELS = {
 }
 
 
+def _admin_permission(method: str, path: str) -> str | None:
+    prefix = "/api/v1/admin"
+    relative = path[len(prefix):] if path.startswith(prefix) else path
+    if relative.startswith("/auth/"):
+        return None
+    if relative.startswith("/stats"):
+        return "dashboard:read"
+    if relative.startswith("/ai"):
+        return "ai:read"
+    if relative.startswith("/audit"):
+        return "audit:read"
+    groups = {
+        "/users": "user",
+        "/programs": "plan",
+        "/workouts": "workout",
+        "/chats": "chat",
+        "/scans": "scan",
+        "/exercises": "exercise",
+        "/videos": "video",
+        "/settings": "settings",
+    }
+    for path_prefix, resource in groups.items():
+        if relative.startswith(path_prefix):
+            if resource == "settings":
+                return "settings:manage"
+            return f"{resource}:{'read' if method.upper() == 'GET' else 'write'}"
+    return None
+
+
+def _dev_admin_token_valid(token: str | None) -> bool:
+    expected = settings.admin_token or (
+        "dev-admin-token" if settings.app_env == "dev" else ""
+    )
+    if not expected or not token:
+        return False
+    return secrets.compare_digest(token, expected)
+
+
 def require_admin(
+    request: Request,
     x_admin_token: Annotated[str | None, Header(alias="X-Admin-Token")] = None,
+    authorization: Annotated[str | None, Header()] = None,
 ) -> str:
+    permission = _admin_permission(request.method, request.url.path)
+    if settings.admin_jwt_secret and authorization:
+        if not authorization.lower().startswith("bearer "):
+            raise HTTPException(status_code=401, detail="管理员凭证格式不正确")
+        token = authorization.split(" ", 1)[1].strip()
+        try:
+            claims = jwt.decode(
+                token,
+                settings.admin_jwt_secret,
+                algorithms=["HS256"],
+                issuer=settings.admin_jwt_issuer,
+            )
+        except jwt.PyJWTError as exc:
+            raise HTTPException(status_code=401, detail="管理员登录已失效") from exc
+        if claims.get("typ") != "access":
+            raise HTTPException(status_code=401, detail="管理员凭证类型不正确")
+        permissions = set(claims.get("perms") or [])
+        if permission and "*" not in permissions and permission not in permissions:
+            raise HTTPException(status_code=403, detail="没有该后台操作权限")
+        return (
+            str(claims.get("username") or claims.get("name") or claims.get("sub") or "admin")
+        )
+
+    # Development/smoke compatibility. In production with RBAC configured, a
+    # shared static token is not accepted.
+    if (not settings.admin_jwt_secret or settings.app_env == "dev") and _dev_admin_token_valid(x_admin_token):
+        return "dev-admin"
+
+    if settings.admin_jwt_secret:
+        raise HTTPException(status_code=401, detail="请先登录管理后台")
     expected = settings.admin_token or (
         "dev-admin-token" if settings.app_env == "dev" else ""
     )
     if not expected:
-        raise HTTPException(status_code=503, detail="后台尚未配置 ADMIN_TOKEN")
-    if not x_admin_token or not secrets.compare_digest(x_admin_token, expected):
-        raise HTTPException(status_code=401, detail="管理员口令不正确")
-    return "admin"
+        raise HTTPException(status_code=503, detail="后台尚未配置 ADMIN_TOKEN 或 ADMIN_JWT_SECRET")
+    raise HTTPException(status_code=401, detail="管理员凭证不正确")
 
 
 AdminAuth = Annotated[str, Depends(require_admin)]
