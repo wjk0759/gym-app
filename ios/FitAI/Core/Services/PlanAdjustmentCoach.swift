@@ -504,6 +504,22 @@ extension AppStore {
             changes = ["每个训练日最多 4 个动作", "每个动作减少 1 组，负重下调 5%", "两周后根据完成率再决定"]
         }
 
+        if regeneratePlan {
+            headline = "按你的真实时间重新生成计划"
+            analysis = "这次会直接按你提供的训练日、频率和时长重排 4 周计划，而不是只在旧计划上改动作。"
+            changes = []
+            if let weekdays, !weekdays.isEmpty {
+                let labels = weekdays.map { Weekday.shortNames[max(0, min(6, $0 - 1))] }.joined(separator: "、")
+                changes.append("每周\(labels)训练")
+            } else if let weeklyDays {
+                changes.append("每周安排 \(weeklyDays) 个训练日")
+            }
+            if let sessionMinutes {
+                changes.append("每次控制在 \(sessionMinutes) 分钟")
+            }
+            changes.append("重新生成 4 周训练日与动作安排")
+        }
+
         return PlanAdjustmentProposal(
             headline: headline,
             summary: "\(evidence)你提到“\(quote)”。\(analysis)",

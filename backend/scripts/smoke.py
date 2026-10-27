@@ -239,7 +239,7 @@ def main() -> None:
         assert client.get("/api/v1/auth/me", headers=bearer).status_code == 401
         print("auth phone:", auth_phone, "refresh/logout ok")
 
-        # 账号密码：首次登录自动注册
+        # 账号密码：未注册不能自动创建，必须先验证手机号完成注册
         password_payload = {
             "account": "smoke_user_01",
             "password": "Smoke12345",
@@ -249,25 +249,47 @@ def main() -> None:
         first_password_login = client.post(
             "/api/v1/auth/password/login", json=password_payload
         )
-        assert first_password_login.status_code == 200, first_password_login.text
-        assert first_password_login.json()["is_new_user"] is True
+        assert first_password_login.status_code == 409, first_password_login.text
+        assert first_password_login.json()["error"]["code"] == "REGISTRATION_REQUIRED"
+        register_phone = "13900000001"
+        register_code = client.post(
+            "/api/v1/auth/phone/send-code",
+            json={"phone": register_phone, "purpose": "login"},
+        )
+        assert register_code.status_code == 200, register_code.text
+        registration = client.post(
+            "/api/v1/auth/password/register",
+            json={
+                **password_payload,
+                "phone": register_phone,
+                "code": register_code.json()["dev_code"],
+            },
+        )
+        assert registration.status_code == 200, registration.text
+        assert registration.json()["is_new_user"] is True
         second_password_login = client.post(
             "/api/v1/auth/password/login", json=password_payload
         )
         assert second_password_login.status_code == 200, second_password_login.text
         assert second_password_login.json()["is_new_user"] is False
-        print("auth password: auto-register + login ok")
+        print("auth password: SMS registration + login ok")
 
-        # 忘记密码：短信校验后重置密码，旧会话失效，新密码可登录
-        client.post(
-            "/api/v1/auth/password/login",
+        # 忘记密码：先用手机验证码建立账号，再重置密码
+        login_code = client.post(
+            "/api/v1/auth/phone/send-code",
+            json={"phone": "13900000002", "purpose": "login"},
+        )
+        assert login_code.status_code == 200, login_code.text
+        phone_login = client.post(
+            "/api/v1/auth/phone/login",
             json={
-                "account": "13900000002",
-                "password": "OldPass123",
+                "phone": "13900000002",
+                "code": login_code.json()["dev_code"],
                 "agreed_terms": True,
                 "device_name": "smoke-test",
             },
         )
+        assert phone_login.status_code == 200, phone_login.text
         reset_code = client.post(
             "/api/v1/auth/phone/send-code",
             json={"phone": "13900000002", "purpose": "reset_password"},
