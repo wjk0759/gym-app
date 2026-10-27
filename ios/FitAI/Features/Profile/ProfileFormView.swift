@@ -135,88 +135,171 @@ struct ProfileFormView: View {
 
     private var equipmentCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            SectionTitle(title: "可用器械", subtitle: "只安排你能用上的动作")
+            HStack(alignment: .top, spacing: 10) {
+                SectionTitle(title: "可用器械", subtitle: "只安排你能用上的动作")
+                Spacer(minLength: 0)
+                equipmentCountBadge
+            }
 
             LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 88), spacing: 8)],
-                alignment: .leading,
-                spacing: 8
+                columns: [
+                    GridItem(.flexible(), spacing: 10),
+                    GridItem(.flexible(), spacing: 10)
+                ],
+                spacing: 10
             ) {
                 ForEach(Equipment.allCases) { item in
-                    Button {
-                        toggle(item)
-                    } label: {
-                        TagChip(
-                            text: item.label,
-                            selected: draft.equipment.contains(item)
-                        )
-                    }
-                    .buttonStyle(.plain)
+                    equipmentTile(item)
                 }
             }
+
+            HStack(spacing: 10) {
+                Button {
+                    Haptics.tap()
+                    withAnimation(Motion.quick) {
+                        if allEquipmentSelected {
+                            draft.equipment.removeAll()
+                        } else {
+                            draft.equipment = Set(Equipment.allCases)
+                        }
+                    }
+                } label: {
+                    Label(
+                        allEquipmentSelected ? "全部取消" : "全选",
+                        systemImage: allEquipmentSelected ? "xmark.circle" : "checkmark.circle"
+                    )
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+                }
+                .buttonStyle(SubtlePressStyle(scale: 0.96))
+
+                Spacer(minLength: 0)
+
+                Text("至少选择一种")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            .padding(.horizontal, 2)
         }
         .card()
     }
 
-    private var trainingCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            SectionTitle(title: "训练安排", subtitle: "之后可以随时调整")
+    private var equipmentCountBadge: some View {
+        HStack(spacing: 2) {
+            Text("\(draft.equipment.count)")
+                .font(.subheadline.weight(.bold).monospacedDigit())
+                .foregroundStyle(Theme.accent)
+                .contentTransition(.numericText())
+            Text("/ \(Equipment.allCases.count)")
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(Theme.tertiaryText)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Theme.accent.opacity(0.10), in: Capsule())
+        .overlay(
+            Capsule()
+                .stroke(Theme.accent.opacity(0.20), lineWidth: 0.8)
+        )
+        .motionAnimation(Motion.quick, value: draft.equipment.count)
+    }
 
-            Stepper(value: $draft.weeklyDays, in: 1...7) {
-                HStack {
-                    Text("每周训练")
-                    Spacer()
-                    Text("\(draft.weeklyDays) 天")
-                        .foregroundStyle(Theme.secondaryText)
+    private var allEquipmentSelected: Bool {
+        draft.equipment.count == Equipment.allCases.count
+    }
+
+    private func equipmentTile(_ item: Equipment) -> some View {
+        let selected = draft.equipment.contains(item)
+
+        return Button {
+            Haptics.select()
+            withAnimation(Motion.quick) {
+                toggle(item)
+            }
+        } label: {
+            HStack(spacing: 9) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(selected ? Theme.accent.opacity(0.18) : Color.white.opacity(0.05))
+                        .frame(width: 34, height: 34)
+                    Image(systemName: item.symbolName)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(selected ? Theme.accent : Theme.secondaryText)
                 }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.label)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                    Text(selected ? "已启用" : "未选择")
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(selected ? Theme.accent.opacity(0.9) : Theme.tertiaryText)
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(selected ? Theme.accent : Theme.tertiaryText.opacity(0.35))
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .padding(.horizontal, 10)
+            .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .fill(selected ? Theme.accent.opacity(0.10) : Theme.surfaceStrong.opacity(0.75))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .stroke(
+                        selected ? Theme.accent.opacity(0.42) : Color.white.opacity(0.05),
+                        lineWidth: 1
+                    )
+            )
+            .shadow(color: selected ? Theme.accent.opacity(0.14) : Color.clear, radius: 7, y: 3)
+        }
+        .buttonStyle(CardPressStyle(scale: 0.97))
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    private var trainingCard: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            SectionTitle(
+                title: "训练安排",
+                subtitle: "每周 \(draft.weeklyDays) 练 · 每次 \(draft.sessionMinutes) 分钟 · \(draft.split.title)"
+            )
+
+            VStack(alignment: .leading, spacing: 8) {
+                fieldHeader("每周训练", systemImage: "calendar")
+                AnimatedSegmentedControl(items: Array(1...7), selection: $draft.weeklyDays) { "\($0)" }
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("训练分化")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
-                Picker("训练分化", selection: $draft.split) {
-                    ForEach(SplitType.allCases) { item in
-                        Text(item.title).tag(item)
-                    }
-                }
-                .pickerStyle(.segmented)
+                fieldHeader("训练分化", systemImage: "square.grid.2x2")
+                AnimatedSegmentedControl(items: SplitType.allCases, selection: $draft.split) { $0.title }
                 Text(draft.split.detail)
                     .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
+                    .foregroundStyle(Theme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
+                    .id(draft.split)
+                    .transition(.opacity.combined(with: .offset(y: 4)))
             }
+            .motionAnimation(Motion.quick, value: draft.split)
 
-            HStack {
-                Text("单次时长")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.secondaryText)
-                Spacer()
-                Picker("单次时长", selection: $draft.sessionMinutes) {
-                    ForEach(Array(Set([30, 45, 60, 90, 120, draft.sessionMinutes])).sorted(), id: \.self) { minutes in
-                        Text("\(minutes) 分钟").tag(minutes)
-                    }
-                }
-                .pickerStyle(.menu)
-                .tint(Theme.accent)
+            VStack(alignment: .leading, spacing: 8) {
+                fieldHeader("单次时长", systemImage: "clock")
+                AnimatedSegmentedControl(items: sessionMinuteOptions, selection: $draft.sessionMinutes) { "\($0) 分" }
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("训练经验")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
-                Picker("训练经验", selection: $draft.experience) {
-                    ForEach(Experience.allCases) { item in
-                        Text(item.label).tag(item)
-                    }
-                }
-                .pickerStyle(.segmented)
+                fieldHeader("训练经验", systemImage: "chart.bar.fill")
+                AnimatedSegmentedControl(items: Experience.allCases, selection: $draft.experience) { $0.label }
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("伤病或疼痛（选填）")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
+                fieldHeader("伤病或疼痛（选填）", systemImage: "bandage")
                 TextField("例如：右膝半月板旧伤、腰容易酸", text: $draft.injuries, axis: .vertical)
                     .lineLimit(2...4)
                     .onChange(of: draft.injuries) { _, value in
@@ -232,6 +315,16 @@ struct ProfileFormView: View {
             }
         }
         .card()
+    }
+
+    private var sessionMinuteOptions: [Int] {
+        Array(Set([30, 45, 60, 90, draft.sessionMinutes])).sorted()
+    }
+
+    private func fieldHeader(_ title: String, systemImage: String) -> some View {
+        Label(title, systemImage: systemImage)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Theme.secondaryText)
     }
 
     private var goalCard: some View {

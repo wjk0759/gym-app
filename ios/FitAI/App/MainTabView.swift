@@ -39,8 +39,6 @@ struct MainTabView: View {
                 }
         }
         .tint(Theme.accent)
-        .toolbarBackground(.bar, for: .tabBar)
-        .toolbarBackground(.visible, for: .tabBar)
         .sensoryFeedback(.selection, trigger: store.selectedTab)
     }
 }
