@@ -310,6 +310,7 @@ def _user_prompt(
         }
         for item in available[:80]
     ]
+    split_templates = SPLIT_TEMPLATES.get(split or "", [])
     payload = {
         "user": {
             "sex": profile.sex,
@@ -333,6 +334,15 @@ def _user_prompt(
             "exercises_per_day": [4, 6],
             "must_use_candidate_slugs_only": True,
             "weekday_range": [1, 7],
+            "follow_split": bool(split_templates),
+            "required_split_titles": [item[0] for item in split_templates],
+            "required_split_focus": [item[1] for item in split_templates],
+            "split_instruction": (
+                f"必须严格使用 {split} 的模板，按顺序循环训练日标题和 focus，"
+                "不要改成全身训练或其他分化。"
+                if split_templates
+                else "按每周训练天数自动选择合理分化。"
+            ),
         },
     }
     return json.dumps(payload, ensure_ascii=False)
