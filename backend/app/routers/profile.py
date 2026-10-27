@@ -15,6 +15,7 @@ from ..models import (
     FoodLog,
     Goal,
     MealPlan,
+    PlanDayState,
     Profile,
     Program,
     User,
@@ -251,6 +252,15 @@ def export_me(user_id: CurrentUser, db: DBSession):
         .scalars()
         .all()
     )
+    schedule_states = (
+        db.execute(
+            select(PlanDayState)
+            .where(PlanDayState.user_id == user_id)
+            .order_by(PlanDayState.plan_id, PlanDayState.day_id)
+        )
+        .scalars()
+        .all()
+    )
 
     return {
         "user_id": user_id,
@@ -372,6 +382,22 @@ def export_me(user_id: CurrentUser, db: DBSession):
                 ],
             }
             for item in chats
+        ],
+        "schedule_states": [
+            {
+                "plan_id": item.plan_id,
+                "day_id": item.day_id,
+                "plan_version": item.plan_version,
+                "assigned_date": item.assigned_date.isoformat()
+                if item.assigned_date
+                else None,
+                "skipped_at": item.skipped_at.isoformat() if item.skipped_at else None,
+                "client_updated_at": item.client_updated_at.isoformat()
+                if item.client_updated_at
+                else None,
+                "updated_at": item.updated_at.isoformat() if item.updated_at else None,
+            }
+            for item in schedule_states
         ],
         "exported_at": utcnow().isoformat(),
     }

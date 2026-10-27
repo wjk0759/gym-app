@@ -340,6 +340,7 @@ def main() -> None:
         assert response.status_code == 200, response.text
         export_data = response.json()
         assert export_data["body_metrics"], export_data
+        assert export_data["schedule_states"], export_data
         assert export_data["profile"]["nickname"] == "小林", export_data
         print("user export: ok")
 
