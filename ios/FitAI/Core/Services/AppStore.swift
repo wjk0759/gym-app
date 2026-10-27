@@ -550,7 +550,7 @@ final class AppStore {
             feeling: feeling,
             notes: (cleanNotes?.isEmpty ?? true) ? nil : cleanNotes,
             sets: sets,
-            programDayID: day.id
+            programDayID: day.id.uuidString
         )
         sessions.insert(session, at: 0)
         persist()
@@ -693,7 +693,9 @@ final class AppStore {
         let deleting = Set(pendingWorkoutDeletionIDs)
         var changed = false
         for item in remote where !deleting.contains(item.id) {
-            let planTitle = plan?.days.first(where: { $0.id == item.programDayID })?.title
+            let planTitle = item.programDayID.flatMap { dayID in
+                plan?.days.first(where: { $0.id.uuidString == dayID })?.title
+            }
             if let index = sessions.firstIndex(where: { $0.remoteID == item.id }) {
                 guard sessions[index].pendingRemoteUpdate != true else { continue }
                 let localID = sessions[index].id
