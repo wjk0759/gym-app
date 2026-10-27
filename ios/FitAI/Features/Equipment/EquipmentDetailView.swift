@@ -360,7 +360,7 @@ struct EquipmentItemDetailView: View {
     @ViewBuilder
     private func videoContent(for item: EquipmentItem) -> some View {
         if let url = videoURL {
-            VideoPlayer(player: AVPlayer(url: url))
+            LoopingVideoPlayer(url: url)
                 .frame(height: 200)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .overlay(alignment: .topTrailing) {

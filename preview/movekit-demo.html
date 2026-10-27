@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FitAI · MoveKit 动作演示预览</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; min-height: 100vh; background: #0b1018; color: #e8eef8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    main { width: min(980px, calc(100% - 32px)); margin: 0 auto; padding: 40px 0 56px; }
+    h1 { margin: 0; font-size: 26px; letter-spacing: -0.03em; }
+    p { color: #8d9bb0; line-height: 1.7; font-size: 14px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 28px; }
+    .card { overflow: hidden; border: 1px solid rgba(148,163,184,.16); border-radius: 18px; background: #111925; }
+    video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #1a2432; object-fit: cover; }
+    .meta { padding: 14px 16px 16px; }
+    .meta strong { display: block; font-size: 15px; }
+    .meta span { display: block; margin-top: 5px; color: #7f8da2; font-size: 12px; }
+    code { padding: 2px 5px; border-radius: 5px; background: #1b2737; color: #b9c9e5; font-size: 11px; }
+    .note { margin-top: 24px; padding: 14px 16px; border: 1px solid rgba(248,196,92,.25); border-radius: 12px; background: rgba(248,196,92,.06); color: #c8b27d; font-size: 12px; }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } main { padding-top: 24px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>MoveKit 免费示例 · 动作演示</h1>
+    <p>这是本地评估用的 3D 人体循环演示，素材来自 MoveKit free sample，未提交到仓库。需要 FastAPI 在 <code>:8000</code> 运行。</p>
+    <div class="grid">
+      <article class="card">
+        <video autoplay muted loop playsinline controls poster="media/exercises/movekit/pull-ups.png" data-slug="pull-ups"></video>
+        <div class="meta"><strong>引体向上</strong><span>Pull Ups · Back · 7.47s</span></div>
+      </article>
+      <article class="card">
+        <video autoplay muted loop playsinline controls poster="media/exercises/movekit/dumbbell-chest-fly.png" data-slug="dumbbell-chest-fly"></video>
+        <div class="meta"><strong>哑铃飞鸟</strong><span>Dumbbell Chest Fly · Chest · 9.87s</span></div>
+      </article>
+    </div>
+    <div class="note">如果页面通过 Vite 打开，视频会自动指向当前主机的 8000 端口；如果直接双击 HTML，则指向 127.0.0.1:8000。</div>
+  </main>
+  <script>
+    const host = location.hostname || '127.0.0.1';
+    const base = `${location.protocol === 'file:' ? 'http:' : location.protocol}//${host}:8000`;
+    document.querySelectorAll('video[data-slug]').forEach((video) => {
+      const slug = video.dataset.slug;
+      video.src = `${base}/media/exercises/movekit/${slug}.mp4`;
+      video.poster = `${base}/media/exercises/movekit/${slug}.png`;
+    });
+  </script>
+</body>
+</html>
