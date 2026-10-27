@@ -120,6 +120,7 @@ public class ExerciseRepository {
 
     private String where(String query, String muscleGroup, String equipment) {
         List<String> clauses = new ArrayList<>();
+        clauses.add("is_active = TRUE");
         if (query != null && !query.isBlank()) {
             clauses.add("(LOWER(name_zh) LIKE :q OR LOWER(COALESCE(name_en, '')) LIKE :q OR slug LIKE :q)");
         }

@@ -51,7 +51,7 @@ ios/
     ├── Core/
     │   ├── Design/Theme.swift      # 颜色、卡片、按钮、标签
     │   ├── Models/Models.swift     # 领域模型
-    │   ├── Data/ExerciseLibrary.swift  # 27 个动作
+    │   ├── Data/ExerciseLibrary.swift  # 从 JSON 加载训记 1,213 条当前动作 + 80 条历史档案
     │   └── Services/
     │       ├── AppStore.swift      # 单一状态源 + 本地持久化
     │       ├── PlanGenerator.swift # 规则计划生成 + 调整
@@ -70,6 +70,9 @@ ios/
     │   └── Profile/                # 档案、提醒、合规、清除数据
     └── Resources/
         ├── Info.plist
+        ├── videos.json
+        ├── xunji_movements.json       # 当前 1,213 条动作
+        ├── legacy_exercises.json      # 旧 80 条历史动作，仅用于旧计划/记录
         └── Assets.xcassets
 ```
 
@@ -124,6 +127,7 @@ static let apiBaseURL = URL(string: "http://192.168.1.20:8000/api/v1")!
 - 没有配置的动作会显示文字要领占位
 - 素材必须自制或购买授权，不要直接抓取平台视频
 - 生产环境建议 HLS + 签名 URL + 防盗链
+- 「动作轨迹」目前对 `器械推胸` / `腿举` 使用 RepDB Free 的 start/peak 双帧，由 `FrameMotionBoard` 在客户端交替显示；不是 GIF，也不分发 RepDB 数据集。免费版需保留 `Exercise data by RepDB (repdb.co)` 署名。
 
 ## 下一步改哪里
 

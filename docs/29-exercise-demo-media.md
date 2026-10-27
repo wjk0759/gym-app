@@ -1,5 +1,7 @@
 # 29 · 动作演示素材接入（MoveKit 免费示例）
 
+> 2026-10-28：动作库已切换为训记 1,213 条，旧的 `pullup` / `dumbbell_fly` 行仅作为历史档案保留。本文的 MoveKit 示例仍可用于本地播放器评估，但不会出现在新的动作库搜索和计划生成中。
+
 ## 1. 当前状态
 
 已接入 MoveKit 免费示例的 2 个动作，用于本地评估：
@@ -68,7 +70,7 @@ backend\.venv\Scripts\python.exe tools\media\install_movekit_sample.py --remove
 ## 5. 购买前建议
 
 先用免费 sample 在 Mac/iPhone 上实际看一次「引体向上」和「哑铃飞鸟」。
-如果风格和播放体验可以接受，再购买 Gym Pack；如果只想覆盖当前 80 个动作，
+如果风格和播放体验可以接受，再购买 Gym Pack；如果只想覆盖少量重点动作，
 也可以按单个动作购买，但通常 Gym Pack/Complete Pack 更划算。
 
 后续正式接入建议：

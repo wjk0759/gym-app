@@ -137,7 +137,10 @@ def _mock_reply(
         rows = (
             db.execute(
                 select(Exercise)
-                .where(Exercise.muscle_group == muscle)
+                .where(
+                    Exercise.muscle_group == muscle,
+                    Exercise.is_active.is_(True),
+                )
                 .limit(4)
             )
             .scalars()

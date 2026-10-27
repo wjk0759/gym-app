@@ -54,7 +54,7 @@ def search_exercises(
     equipment: str | None = Query(default=None),
     limit: int = Query(default=20, ge=1, le=50),
 ):
-    query = select(Exercise)
+    query = select(Exercise).where(Exercise.is_active.is_(True))
     if q:
         query = query.where(Exercise.name_zh.contains(q))
     if muscle:
@@ -68,10 +68,14 @@ def search_exercises(
             {
                 "slug": item.slug,
                 "name_zh": item.name_zh,
+                "name_en": item.name_en,
                 "muscle_group": item.muscle_group,
                 "equipment": item.equipment,
+                "is_compound": item.is_compound,
                 "instructions": item.instructions,
                 "video_url": item.video_url,
+                "motion_start_url": item.motion_start_url,
+                "motion_end_url": item.motion_end_url,
             }
             for item in rows
         ]

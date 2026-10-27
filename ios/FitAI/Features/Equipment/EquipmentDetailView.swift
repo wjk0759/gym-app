@@ -420,7 +420,18 @@ struct EquipmentItemDetailView: View {
         }
     }
 
+    @ViewBuilder
     private func motionBoard(for item: EquipmentItem) -> some View {
+        if let exercise = item.exercise,
+           let startURL = exercise.motionStartURL,
+           let endURL = exercise.motionEndURL {
+            FrameMotionBoard(startURL: startURL, endURL: endURL, title: item.name)
+        } else {
+            placeholderMotionBoard(for: item)
+        }
+    }
+
+    private func placeholderMotionBoard(for item: EquipmentItem) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(

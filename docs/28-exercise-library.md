@@ -2,77 +2,119 @@
 
 ## 1. 当前数据规模
 
-动作库已从 27 个手工种子扩展为 **80 个常用健身房/铁馆动作，且以固定器械为主**：
+当前 App 的动作库已切换为用户提供的训记动作清单：
 
-| 来源 | 数量 | 说明 |
+| 项目 | 数量 | 说明 |
 |---|---:|---|
-| FitAI 手工种子 | 27 | 保留原有中文动作、中文说明与精选字段 |
-| `hasaneyldrm/exercises-dataset` | 53 | 按核心动作白名单导入，不保留宽握/窄握、上斜/下斜、单臂/交替等变式 |
-| 合计 | **80** | 覆盖胸、背、腿、臀、肩、手臂、核心和有氧 |
+| 训记动作清单 | **1,213** | `tools/db/data/xunji_movements_1213.json` |
+| 原 FitAI 动作 | 80 | 保留在数据库中并标记为 `is_active = FALSE`，只用于历史计划/训练记录解析 |
+| 当前可新建/可搜索 | **1,213** | iOS 资源 `ios/FitAI/Resources/xunji_movements.json`；API 只返回 `is_active = TRUE` |
 
-导入后分类分布：
+训记文件只有三个字段：
 
-- 肌群：背 14、腿 14、肩 13、胸 12、手臂 11、臀 7、核心 6、有氧 3
-- 器械：固定器械 33、杠铃 14、绳索 12、哑铃 10、自重 8、壶铃 3
+- `序号`：稳定的 1–1213 序号，用来生成 `xj_0001` 这样的 slug；
+- `动作名称`：中文动作名；
+- `分区`：胸、背、腿、臀、肩、手臂、核心、有氧等原始分区。
 
-固定轨迹器械（固定器械 + 绳索）共 **45 个**，已超过自由重量和自重动作；后续可以继续沿白名单增加固定器械动作。
+该文件由用户本地提供，未附带公开再分发许可；当前按自用项目使用。若要公开仓库或对外分发这份动作清单，需要先确认权利来源。
 
-## 2. 数据来源与许可证
+因此当前动作库**没有原始英文名、器械、动作说明和禁忌症**。导入脚本会：
 
-选择的是当前公开可用的、规模较大且带中文说明的数据集：
+- 将 `分区` 映射到 App 的 8 个肌群；
+- 根据动作名称中的器械关键词推断 `equipment`；没有明确器械时默认 `bodyweight`，不把它伪装成器械动作；
+- 按动作名称推断 `is_compound`；
+- 不编造动作说明和禁忌症，保持空值，App 使用通用提示文案；
+- 把旧的 80 个动作保留为历史档案，不删除，避免计划/训练记录外键失效。
 
-- 仓库：<https://github.com/hasaneyldrm/exercises-dataset>
-- 固定版本：`7455efae41b330c265e7cd4b78dfa848e7ce5ebd`
-- 文件：`data/exercises.json`
-- 文本/元数据/多语言说明：**MIT License**（完整声明见 `tools/db/data/EXERCISE_DATASET_NOTICE.md`）
-- 仓库中的图片和 GIF：© Gym visual，需单独遵守其条款；本项目**不导入这些媒体**，只保存文字和元数据
-- 英文名称到中文名称的翻译缓存：`tools/db/data/exercise_name_zh.json`，可人工校对
+当前器械推断分布（仅用于筛选和计划生成，后续应根据真实器械数据校正）：
 
-> 说明：公开数据只作为动作知识库；医疗、康复、孕期和术后场景仍按现有安全规则处理，不把导入数据当作诊断建议。
+| 器械 | 数量 |
+|---|---:|
+| 自重 | 509 |
+| 固定器械 | 221 |
+| 哑铃 | 160 |
+| 弹力带 | 121 |
+| 杠铃 | 107 |
+| 绳索 | 79 |
+| 壶铃 | 16 |
 
-## 3. 字段映射
+> 训记清单包含大量变式和拉伸动作，和之前“80 个常用固定器械”的白名单策略不同。当前以用户指定的 1,213 条为准。
 
-- `name_zh`：翻译缓存；缺失时保留英文名
-- `name_en`：原始英文名
-- `muscle_group`：映射到 App 支持的 8 个肌群；少数核心动作按训练习惯修正
-- `equipment`：映射到 App 支持的 7 类器械
-- `difficulty`：按器械复杂度和名称推断为 1–3
-- `is_compound`：按次级肌群和动作名称推断
-- `instructions`：优先使用数据集中文说明
-- `contraindications`：导入数据不臆造禁忌症，保持空数组；人工维护的 27 个动作保留原值
-- `video_url` / `thumbnail_url`：不导入媒体，保持空值；教学视频仍从后台发布
-- `source`：`hasaneyldrm/exercises-dataset`
-- `license`：`MIT; Gym visual media excluded`
-- 核心动作白名单：`tools/db/data/common_exercise_allowlist.txt`
+## 2. 与旧动作库的关系
 
-## 4. 重新导入
+- 旧动作行**不删除**，只把 `is_active` 设为 `FALSE`。
+- `plan_exercises`、训练历史、用户器械库仍可引用旧 slug。
+- iOS 的 `ExerciseLibrary.exercise(slug:)` 会同时索引当前动作和历史动作；搜索、候选动作、计划生成只使用当前的 1,213 条。
+- Spring 管理后台的动作列表默认只显示 `is_active = TRUE` 的当前动作。
 
-先确保 MySQL 已由 admin-server Flyway 建好，然后从仓库根目录执行：
+## 3. 数据库变更
 
-```powershell
-# 查看按核心动作白名单将新增/清理多少条
-backend\.venv\Scripts\python.exe tools\db\import_exercises.py --dry-run
+Flyway `V10__exercise_library_switch.sql` 增加：
 
-# 实际导入（默认只导入核心动作白名单；下载固定版本并校验 SHA-256）
-backend\.venv\Scripts\python.exe tools\db\import_exercises.py
-
-# 清理此前已导入、但不在核心白名单中的动作
-backend\.venv\Scripts\python.exe tools\db\import_exercises.py --prune
-
-# 如果需要所有健身房器械动作（不做核心白名单筛选）
-backend\.venv\Scripts\python.exe tools\db\import_exercises.py --all-gym-equipment
-
-# 离线使用已下载的 JSON
-backend\.venv\Scripts\python.exe tools\db\import_exercises.py `
-  --source C:\path\to\exercises.json
+```sql
+motion_start_url TEXT NULL
+motion_end_url   TEXT NULL
+is_active        BOOLEAN NOT NULL DEFAULT TRUE
 ```
 
-脚本是幂等的：已有英文名会跳过，重复执行不会重复插入。`--prune` 只有当行不在当前白名单/筛选范围内时才会删除导入行；被计划或训练引用的动作会被保护并报告。手工种子、计划、训练记录和用户数据不会被删除。
+`motion_start_url` / `motion_end_url` 只用于 RepDB Free 的双帧示意，不是视频字段，也不代表已经购买动画素材。
 
-## 5. 后续可选增强
+## 4. 导入/更新命令
 
-1. 给高频动作补充教学视频和封面；
-2. 人工校对翻译缓存中的长尾动作名称；
-3. 增加动作别名（英文缩写、俗称），提升搜索召回；
-4. 为动作维护康复/禁忌标签时，必须由专业教练或康复师审核；
-5. 若要使用 Gym visual 的图片/GIF，需单独取得媒体授权并保留 `© Gym visual — https://gymvisual.com/` 标识。
+先让 admin-server 启动并完成 Flyway，然后从仓库根目录执行：
+
+```powershell
+# 只生成 iOS 资源，不碰数据库
+backend\.venv\Scripts\python.exe tools\db\import_xunji_movements.py --ios-only
+
+# 预览将插入/更新多少条，不提交数据库
+backend\.venv\Scripts\python.exe tools\db\import_xunji_movements.py --dry-run
+
+# 实际切换：旧行归档为 inactive，训记 1,213 条设为 active
+backend\.venv\Scripts\python.exe tools\db\import_xunji_movements.py
+```
+
+脚本是幂等的：按 `xj_序号` upsert，重复执行会更新当前动作并重新归档旧行。
+
+## 5. RepDB Free 双帧示例
+
+当前只为两个动作配置了 RepDB Free 的 `start` / `peak` 图片，用于评估：
+
+| 当前动作 | RepDB 动作 | 状态 |
+|---|---|---|
+| `xj_0011` / 器械推胸 | `chest-press-machine` | 双帧示例 |
+| `xj_0320` / 腿举 | `leg-press` | 双帧示例 |
+
+iOS 端在「动作详情 → 动作轨迹」中使用 `FrameMotionBoard`，每 900ms 在两张静态图之间淡入淡出。**没有生成 GIF、没有把两张图合成新的媒体文件、也没有复制 RepDB 数据集到公开仓库。**
+
+RepDB Free 许可要求可见署名：
+
+```text
+Exercise data by RepDB (repdb.co)
+```
+
+当前已在设置页和双帧卡片上显示该署名。若后续全量接入，需要继续保留署名，并且只把图片用于 App 内展示，不重新分发原始数据集。
+
+浏览器预览：
+
+```text
+http://127.0.0.1:8765/xunji-repdb-demo.html
+```
+
+## 6. 旧数据集导入脚本
+
+`tools/db/import_exercises.py` 仍保留，作为历史/备选数据源工具：
+
+- 来源：<https://github.com/hasaneyldrm/exercises-dataset>
+- 固定版本：`7455efae41b330c265e7cd4b78dfa848e7ce5ebd`
+- 文本/元数据：MIT；图片/GIF 未导入
+- 旧白名单：`tools/db/data/common_exercise_allowlist.txt`
+
+除非需要恢复旧数据，不要在新的训记动作库上运行 `import_exercises.py`；两边都写同一张 `exercises` 表。
+
+## 7. 后续
+
+1. 根据真实器械清单校正 1,213 条动作的 `equipment`，尤其是无器械关键词的变式；
+2. 为常用固定器械动作补动作说明、禁忌症和教学视频；
+3. 若要全量使用 RepDB Free，先按当前动作名建立映射表，再批量配置双帧 URL；
+4. 若必须使用真正的 GIF/视频，需要单独取得 RepDB Standard 或其他商业授权，不能把免费静态图导出成 GIF 再分发。

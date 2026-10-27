@@ -29,6 +29,7 @@ powershell -ExecutionPolicy Bypass -File .\serve.ps1
 - 我的：Pro 订阅页、Apple 健康、体型照片分析、器械库、提醒、训练偏好、数据导出、注销
 - 饮食：按日期查看和记录、热量目标、食物库、拍照识别
 - 训练：训练前编排、训练中调整、完成组、休息计时、训练记录编辑
+- 动作轨迹视觉对比：`preview/xunji-repdb-demo.html`，展示器械推胸 / 腿举的 RepDB Free 双帧效果
 
 ## 直接打开某个页面
 
@@ -42,6 +43,7 @@ http://127.0.0.1:5173/?screen=nutrition
 http://127.0.0.1:5173/?screen=paywall
 http://127.0.0.1:5173/?screen=bodyAnalysis
 http://127.0.0.1:5173/?screen=equipmentLibrary
+http://127.0.0.1:8765/xunji-repdb-demo.html
 ```
 
 ## 前端模块结构

@@ -79,6 +79,12 @@ _AI_MEMORY_COLUMNS = {
     "last_used_at": "TIMESTAMP",
 }
 
+_EXERCISE_COLUMNS = {
+    "motion_start_url": "TEXT",
+    "motion_end_url": "TEXT",
+    "is_active": "BOOLEAN DEFAULT 1",
+}
+
 # 开发期 SQLite 已有库不会自动补复合索引；启动时按表检测补齐。
 # 这些索引对应列表/统计页的高频过滤与排序条件。
 _PERFORMANCE_INDEXES = (
@@ -283,6 +289,21 @@ def ensure_schema() -> None:
                     "CREATE UNIQUE INDEX IF NOT EXISTS "
                     "uq_meal_plans_user_date "
                     "ON meal_plans(user_id, plan_date)"
+                )
+            )
+        if "exercises" in tables:
+            exercise_columns = {
+                column["name"] for column in inspector.get_columns("exercises")
+            }
+            for name, ddl in _EXERCISE_COLUMNS.items():
+                if name not in exercise_columns:
+                    connection.execute(
+                        text(f"ALTER TABLE exercises ADD COLUMN {name} {ddl}")
+                    )
+            connection.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_exercises_is_active "
+                    "ON exercises(is_active)"
                 )
             )
         for table, ddl in _PERFORMANCE_INDEXES:

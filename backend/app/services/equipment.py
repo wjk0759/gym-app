@@ -17,13 +17,20 @@ SUPPORTED_EQUIPMENT = ("machine", "cable", "barbell", "dumbbell", "kettlebell")
 async def recognize(db: Session, image_bytes: bytes, filename: str) -> dict:
     rows = (
         db.execute(
-            select(Exercise).where(Exercise.equipment.in_(SUPPORTED_EQUIPMENT))
+            select(Exercise).where(
+                Exercise.is_active.is_(True),
+                Exercise.equipment.in_(SUPPORTED_EQUIPMENT),
+            )
         )
         .scalars()
         .all()
     )
     if not rows:
-        rows = db.execute(select(Exercise)).scalars().all()
+        rows = (
+            db.execute(select(Exercise).where(Exercise.is_active.is_(True)))
+            .scalars()
+            .all()
+        )
 
     # 用图片内容做确定性偏移，保证同一张图结果稳定，便于测试
     digest = hashlib.sha256(image_bytes).digest()

@@ -127,7 +127,11 @@ def _allowed_exercises(
     allowed_equipment.add("bodyweight")
     banned = injury_tags(injuries)
 
-    rows = db.execute(select(Exercise)).scalars().all()
+    rows = (
+        db.execute(select(Exercise).where(Exercise.is_active.is_(True)))
+        .scalars()
+        .all()
+    )
     result: list[Exercise] = []
     for exercise in rows:
         if exercise.equipment not in allowed_equipment:
@@ -416,7 +420,11 @@ async def generate_plan(
         db, profile.equipment, profile.injuries, equipment_slugs
     )
     if not available:
-        available = db.execute(select(Exercise)).scalars().all()
+        available = (
+            db.execute(select(Exercise).where(Exercise.is_active.is_(True)))
+            .scalars()
+            .all()
+        )
 
     by_slug = {item.slug: item for item in available}
     started = time.perf_counter()

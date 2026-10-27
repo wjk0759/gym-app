@@ -11,11 +11,14 @@
 - 付费版：Stills $299（701 张静态图）；Standard $499（含 544 个循环动画、肌肉高亮；一次性付款）
 - 适合 FitAI 的地方：固定器械动作覆盖明显比 Workout Guide 更全，画风更像普通健身 App
 - 限制：免费版不是动画，需要自己用两张图做轻微切换；中文名称和说明要自己补
+- 已核对仓库 `LICENSE-DATA.md`：免费商用、需署名、不是试用版、无水印；免费版不包含动画
+- 许可没有明确写“可把 start/peak 合成为 GIF”，所以当前采用 **App 内双帧切换**，不生成 GIF 文件
 
 本地预览：
 
 ```text
 preview/repdb-demo.html
+preview/xunji-repdb-demo.html   # 器械推胸 + 腿举，接入训记动作库后的双帧效果
 ```
 
 ## 2. `@bryllim/workout-guide`
@@ -73,13 +76,13 @@ preview/threejs-demo.html
 | [wger](https://github.com/wger-project/wger) | 939 个动作、约 374 张图片、约 78 个视频 | CC BY-SA；自托管 | 数据开放，但媒体覆盖稀疏，整理成本高 |
 | ExerciseDB / Gym visual | 1,500+ GIF / 视频 | 商业授权；免费层/样例限制多 | 视觉成熟，但完整商用要付费，不能当作免费来源 |
 | [Desk Break](https://github.com/shlomorsh/desk-break) | 435 个 GLB 拉伸/瑜伽/低冲击动画 | MIT | 适合做 3D 技术验证，不适合健身房器械动作 |
-| Pexels / Pixabay / StockSnap | 通用健身视频和照片 | 免费授权 | 不是按动作整理的，难以稳定对应 80 个动作 |
+| Pexels / Pixabay / StockSnap | 通用健身视频和照片 | 免费授权 | 不是按动作整理的，难以稳定对应当前 1,213 个动作 |
 
 ## 5. 结论
 
-对 FitAI 当前以固定器械为主的 80 个动作：
+对 FitAI 当前训记 1,213 个动作（其中大量为变式和拉伸动作）：
 
-1. **低成本首选 RepDB Free**：701 个动作、固定器械覆盖好、免费商用；需要署名，接受平面插画风格即可。
+1. **低成本首选 RepDB Free**：701 个动作、固定器械覆盖好、免费商用；需要署名，接受平面插画风格即可；但 1,213 条不可能全部一一对应，需要先做名称映射。
 2. **备选 Workout Guide**：302 个动作、3 帧线稿，风格更“说明书”，适合缩略图或轻量动画。
 3. **要真正的 3D 动画，MoveKit 仍最省事**：免费 sample 已验证，正式 Gym Pack 约 ¥879、Complete Pack 约 ¥1099，一次性购买。
 4. **不建议现在自建 Three.js/RealityKit 动作库**：渲染不难，难的是 80–400 个准确、统一、授权的动作动画；成本远高于购买现成素材。

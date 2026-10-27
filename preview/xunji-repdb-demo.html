@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FitAI · 动作轨迹双帧预览</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: #080d14; color: #e8eef8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    main { width: min(980px, calc(100% - 28px)); margin: 0 auto; padding: 34px 0 52px; }
+    h1 { margin: 0; font-size: 25px; letter-spacing: -0.03em; }
+    .lead { margin: 9px 0 0; color: #8d9bb0; font-size: 13px; line-height: 1.75; }
+    .badge { display: inline-block; margin-top: 13px; padding: 5px 9px; border: 1px solid rgba(61,220,151,.28); border-radius: 999px; color: #67e6ad; font-size: 10.5px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 22px; }
+    .card { overflow: hidden; border: 1px solid rgba(148,163,184,.16); border-radius: 20px; background: #111925; box-shadow: 0 18px 45px rgba(0,0,0,.25); }
+    .stage { position: relative; aspect-ratio: 1 / 0.92; overflow: hidden; background: linear-gradient(135deg, #dbeaf5, #b5ccde); }
+    .stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 9% 11% 13%; transition: opacity .18s ease; }
+    .stage img.peak { opacity: 0; }
+    .card.flip .stage img.start { opacity: 0; }
+    .card.flip .stage img.peak { opacity: 1; }
+    .topline { position: absolute; z-index: 2; inset: 11px 11px auto; display: flex; justify-content: space-between; align-items: center; }
+    .pill { padding: 5px 9px; border-radius: 999px; font-size: 9.5px; font-weight: 700; }
+    .source { background: rgba(61,220,151,.92); color: #04140b; }
+    .phase { background: rgba(255,255,255,.72); color: #102c3f; }
+    .meta { padding: 14px 16px 15px; }
+    .meta strong { display: block; font-size: 14px; }
+    .meta span { display: block; margin-top: 4px; color: #8291a6; font-size: 11px; }
+    .note { margin-top: 18px; padding: 13px 15px; border: 1px solid rgba(91,140,255,.20); border-radius: 13px; color: #9fb0c8; font-size: 11.5px; line-height: 1.7; background: rgba(91,140,255,.05); }
+    a { color: #8db4ff; }
+    @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } main { padding-top: 22px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>动作轨迹 · RepDB Free 双帧预览</h1>
+    <p class="lead">先接入 2 个固定器械动作：器械推胸、腿举。页面每 900ms 在 start / peak 两张图之间切换，模拟 App 内的双帧动画；不生成 GIF 文件。</p>
+    <span class="badge">免费商用 · 需署名 · App 内双帧</span>
+    <section class="grid">
+      <article class="card" data-id="chest-press-machine">
+        <div class="stage">
+          <div class="topline"><span class="pill source">RepDB Free · 双帧</span><span class="pill phase">起始</span></div>
+          <img class="start" src="https://cdn.jsdelivr.net/gh/RepDB/exercise-dataset@main/images/flat/chest-press-machine-start.webp" alt="器械推胸起始">
+          <img class="peak" src="https://cdn.jsdelivr.net/gh/RepDB/exercise-dataset@main/images/flat/chest-press-machine-peak.webp" alt="器械推胸发力">
+        </div>
+        <div class="meta"><strong>器械推胸</strong><span>胸 · 固定器械 · Machine Chest Press</span></div>
+      </article>
+      <article class="card" data-id="leg-press">
+        <div class="stage">
+          <div class="topline"><span class="pill source">RepDB Free · 双帧</span><span class="pill phase">起始</span></div>
+          <img class="start" src="https://cdn.jsdelivr.net/gh/RepDB/exercise-dataset@main/images/flat/leg-press-start.webp" alt="腿举起始">
+          <img class="peak" src="https://cdn.jsdelivr.net/gh/RepDB/exercise-dataset@main/images/flat/leg-press-peak.webp" alt="腿举发力">
+        </div>
+        <div class="meta"><strong>腿举</strong><span>腿 · 固定器械 · Leg Press</span></div>
+      </article>
+    </section>
+    <div class="note">
+      图片来源：<a href="https://repdb.co/" target="_blank" rel="noreferrer">Exercise data by RepDB (repdb.co)</a>；
+      <a href="https://github.com/RepDB/exercise-dataset" target="_blank" rel="noreferrer">免费版许可</a>。
+      本页只做方案评估，图片从 RepDB 官方 CDN 远程加载，未复制完整数据集。
+    </div>
+  </main>
+  <script>
+    setInterval(() => {
+      document.querySelectorAll('.card').forEach((card) => {
+        card.classList.toggle('flip');
+        card.querySelector('.phase').textContent = card.classList.contains('flip') ? '发力' : '起始';
+      });
+    }, 900);
+  </script>
+</body>
+</html>

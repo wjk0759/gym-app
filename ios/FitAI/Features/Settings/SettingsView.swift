@@ -671,6 +671,21 @@ struct SettingsView: View {
                 legalDocument = .ai
             }
 
+            Link(destination: URL(string: "https://repdb.co/")!) {
+                HStack {
+                    Image(systemName: "figure.strengthtraining.traditional")
+                        .foregroundStyle(Theme.accent)
+                        .frame(width: 22)
+                    Text("动作图：Exercise data by RepDB (repdb.co)")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.secondaryText)
+                    Spacer()
+                    Image(systemName: "arrow.up.right")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+            }
+
             Text("本产品不提供医疗诊断或治疗建议。孕期、术后、心血管疾病或关节急性疼痛，请先咨询医生。")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)

@@ -1,0 +1,1022 @@
+[
+  {
+    "slug": "barbell_close_grip_bench_press",
+    "name_zh": "杠铃窄握卧推",
+    "name_en": "barbell close-grip bench press",
+    "muscle_group": "arms",
+    "equipment": "barbell",
+    "is_compound": true,
+    "instructions": "平躺在长凳上，双脚平放在地上，背部紧贴长凳。 紧紧握住杠铃，握距略窄于肩宽。 松开杠铃并将其缓慢降低至胸部，保持肘部靠近身体。 当杠铃触及胸部时暂停片刻。 将杠铃推回到起始位置，完全伸展双臂。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "barbell_curl",
+    "name_zh": "杠铃弯举",
+    "name_en": "barbell curl",
+    "muscle_group": "arms",
+    "equipment": "barbell",
+    "is_compound": false,
+    "instructions": "站直，双脚分开与肩同宽，反手握住杠铃，手掌朝前。 保持肘部靠近躯干，在弯举哑铃时呼气，同时收缩二头肌。 继续抬高杠铃，直到二头肌完全收缩并且杠铃与肩部齐平。 挤压二头肌时，保持收缩位置短暂停顿。 吸气，慢慢开始将杠铃放回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "barbell_deadlift",
+    "name_zh": "杠铃硬拉",
+    "name_en": "barbell deadlift",
+    "muscle_group": "back",
+    "equipment": "barbell",
+    "is_compound": true,
+    "instructions": "双脚分开与肩同宽站立，杠铃放在你面前的地面上。 弯曲膝盖并以臀部为铰链，降低躯干，正手握住杠铃，双手分开略宽于肩宽。 当你通过脚后跟将杠铃抬离地面时，保持背部挺直，胸部抬起，伸展臀部和膝盖。 当你站直时，挤压你的臀部并保持你的核心参与。 弯曲臀部和膝盖，将杠铃放回地面，保持背部挺直。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "barbell_front_squat",
+    "name_zh": "杠铃前蹲",
+    "name_en": "barbell front squat",
+    "muscle_group": "legs",
+    "equipment": "barbell",
+    "is_compound": true,
+    "instructions": "首先站立，双脚分开与肩同宽，脚趾稍微向外。 将杠铃放在肩膀前面，将其放在锁骨和肩膀上。 当你将身体降低到蹲姿时，收紧核心并保持挺胸，将臀部向后推并弯曲膝盖。 降低直到大腿与地面平行，或者尽可能降低到您能舒服的高度。 在底部停顿片刻，然后推动脚后跟回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "barbell_good_morning",
+    "name_zh": "杠铃早安式",
+    "name_en": "barbell good morning",
+    "muscle_group": "legs",
+    "equipment": "barbell",
+    "is_compound": false,
+    "instructions": "首先站立，双脚分开与肩同宽，将杠铃放在上背部。 保持背部挺直，核心肌群参与，臀部向前转动，将臀部向后推，就好像你试图用臀部触碰身后的墙壁一样。 降低躯干直到与地面平行，感觉腿筋被拉伸。 暂停片刻，然后通过挤压臀部并将臀部向前推回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "barbell_incline_bench_press",
+    "name_zh": "杠铃上斜卧推",
+    "name_en": "barbell incline bench press",
+    "muscle_group": "chest",
+    "equipment": "barbell",
+    "is_compound": true,
+    "instructions": "设置一个 45 度角的上斜凳。 躺在长凳上，双脚平放在地上。 正手握住杠铃，握距略宽于肩宽。 松开杠铃并将其缓慢降低至胸部，保持肘部呈 45 度角。 在底部停顿片刻，然后将杠铃推回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "barbell_lying_triceps_extension_skull_crusher",
+    "name_zh": "杠铃仰卧臂屈伸（碎颅者）",
+    "name_en": "barbell lying triceps extension skull crusher",
+    "muscle_group": "arms",
+    "equipment": "barbell",
+    "is_compound": false,
+    "instructions": "平躺在长凳上，双脚平放在地上，头放在长凳的末端。 正手握住杠铃，双手与肩同宽，将手臂伸直至胸部上方。 保持上臂静止，弯曲肘部，慢慢将杠铃降低到前额。 当杠铃位于前额上方时暂停片刻，然后将手臂向后伸展至起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "barbell_row",
+    "name_zh": "杠铃划船",
+    "name_en": "Barbell Row",
+    "muscle_group": "back",
+    "equipment": "barbell",
+    "is_compound": true,
+    "instructions": "髋部后移，背部保持中立，把杠铃拉向下腹，避免耸肩和腰部代偿。",
+    "contraindications": [
+      "lower_back"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "barbell_seated_overhead_press",
+    "name_zh": "杠铃坐姿过头推举",
+    "name_en": "barbell seated overhead press",
+    "muscle_group": "shoulders",
+    "equipment": "barbell",
+    "is_compound": true,
+    "instructions": "坐在长凳上，背部挺直，双脚平放在地上。 正手握住杠铃，杠铃间距略宽于肩宽。 将杠铃从架子上提起，并将其置于与肩同高的位置，肘部弯曲，手掌朝前。 充分伸展双臂，将杠铃压过头顶。 在顶部停顿片刻，然后慢慢将杠铃放回肩部水平。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "barbell_shrug",
+    "name_zh": "杠铃耸肩",
+    "name_en": "barbell shrug",
+    "muscle_group": "back",
+    "equipment": "barbell",
+    "is_compound": false,
+    "instructions": "双脚分开与肩同宽站立，正手握住杠铃。 在整个练习过程中保持手臂伸直和背部挺直。 将肩膀尽可能高地抬向耳朵，挤压斜方肌顶部。 保持一会儿，然后慢慢将肩膀放回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "bench_press",
+    "name_zh": "杠铃卧推",
+    "name_en": "Barbell Bench Press",
+    "muscle_group": "chest",
+    "equipment": "barbell",
+    "is_compound": true,
+    "instructions": "肩胛后缩下沉，双脚踩实。杠铃下放至胸骨中下段，前臂保持垂直，推起时不锁死肘关节。",
+    "contraindications": [
+      "shoulder_pain"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "biceps_curl",
+    "name_zh": "哑铃弯举",
+    "name_en": "Dumbbell Curl",
+    "muscle_group": "arms",
+    "equipment": "dumbbell",
+    "is_compound": false,
+    "instructions": "肘部固定在身体两侧，弯举时避免借力，下放时控制 2 秒。",
+    "contraindications": [
+      "elbow_pain"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "burpee",
+    "name_zh": "波比跳",
+    "name_en": "Burpee",
+    "muscle_group": "cardio",
+    "equipment": "bodyweight",
+    "is_compound": true,
+    "instructions": "下蹲撑地，后跳成俯卧撑姿，收腿起身跳起，保持节奏。",
+    "contraindications": [
+      "knee_pain",
+      "lower_back",
+      "wrist_pain"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "cable_curl",
+    "name_zh": "绳索弯举",
+    "name_en": "cable curl",
+    "muscle_group": "arms",
+    "equipment": "cable",
+    "is_compound": false,
+    "instructions": "面对电缆机站立，双脚与肩同宽。 用手握住电缆附件，手掌朝上。 保持肘部靠近身体两侧，上臂保持静止。 呼气并将电缆附件卷向肩膀，收缩二头肌。 在动作的最高点暂停片刻，挤压你的二头肌。 吸气并缓慢地将电缆附件放回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "cable_fly",
+    "name_zh": "绳索夹胸",
+    "name_en": "Cable Fly",
+    "muscle_group": "chest",
+    "equipment": "cable",
+    "is_compound": false,
+    "instructions": "身体前倾，手肘微屈固定，以胸肌发力把把手合拢，顶峰收缩 1 秒后缓慢还原。",
+    "contraindications": [
+      "shoulder_pain"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "cable_kneeling_crunch",
+    "name_zh": "绳索跪姿卷腹",
+    "name_en": "cable kneeling crunch",
+    "muscle_group": "core",
+    "equipment": "cable",
+    "is_compound": false,
+    "instructions": "将绳索手柄连接到高滑轮上，然后面向远离机器的方向跪下。 双手握住绳柄，将其放在脑后，肘部向两侧伸出。 保持臀部不动，弯曲腰部并将躯干向大腿方向挤压。 在底部停顿片刻，然后慢慢回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "cable_lateral_raise",
+    "name_zh": "绳索侧平举",
+    "name_en": "cable lateral raise",
+    "muscle_group": "shoulders",
+    "equipment": "cable",
+    "is_compound": true,
+    "instructions": "双脚分开与肩同宽站立，并用正手握住电缆手柄。 保持双臂伸直，核心肌群参与。 将手臂向两侧举起，直到与地板平行。 在顶部暂停片刻，然后慢慢将手臂放回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "cable_overhead_triceps_extension_rope_attachment",
+    "name_zh": "绳索过顶三头伸展（绳把）",
+    "name_en": "cable overhead triceps extension (rope attachment)",
+    "muscle_group": "arms",
+    "equipment": "cable",
+    "is_compound": false,
+    "instructions": "将绳索连接到高处的缆绳机上。 背对机器站立，双脚与肩同宽。 双手抓住绳子，掌心相对，将双手举过头顶。 保持上臂靠近头部，肘部向前。 弯曲肘部，慢慢将绳子降低到头后。 暂停片刻，然后将手臂伸回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "cable_pull_through_with_rope",
+    "name_zh": "绳索胯下拉（绳把）",
+    "name_en": "cable pull through (with rope)",
+    "muscle_group": "glutes",
+    "equipment": "cable",
+    "is_compound": true,
+    "instructions": "背对缆绳机站立，双脚与肩同宽。 双手抓住绳索附件并向前迈一步，在绳索中产生张力。 弯曲臀部并降低上身直至与地面平行，保持背部挺直。 启动臀肌和腿筋，将身体拉回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "cable_seated_chest_press",
+    "name_zh": "绳索坐姿推胸",
+    "name_en": "cable seated chest press",
+    "muscle_group": "chest",
+    "equipment": "cable",
+    "is_compound": true,
+    "instructions": "将座椅高度和电缆手柄调整至舒适的位置。 坐在长凳上，背部挺直，双脚平放在地板上。 正手握住电缆手柄，与肩同高。 向前推动手柄并使其远离身体，充分伸展双臂。 暂停片刻，然后慢慢将手柄放回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "cable_standing_fly",
+    "name_zh": "绳索站姿飞鸟",
+    "name_en": "cable standing fly",
+    "muscle_group": "chest",
+    "equipment": "cable",
+    "is_compound": true,
+    "instructions": "将手柄连接到胸部高度的电缆上。 双脚分开与肩同宽站立，背对缆绳机。 正手握住手柄，手掌朝前。 稍微向前一步以在缆绳中产生张力。 在整个练习过程中保持核心参与并保持背部挺直。 肘部稍微弯曲，慢慢地将双臂向前并拢在胸前。 在运动的最高点挤压胸部肌肉。 慢慢扭转动作，将手臂恢复到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "cable_straight_arm_pulldown",
+    "name_zh": "绳索直臂下压",
+    "name_en": "cable straight arm pulldown",
+    "muscle_group": "back",
+    "equipment": "cable",
+    "is_compound": true,
+    "instructions": "将直杆连接到缆绳机的高滑轮上。 面向机器站立，双脚分开与肩同宽。 正手握住杠铃，保持手臂伸直，手掌朝下。 收紧背阔肌并将杠铃向下拉向大腿，在整个运动过程中保持手臂伸直。 在底部暂停片刻，然后慢慢地将杠铃返回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "cable_upright_row",
+    "name_zh": "绳索直立划船",
+    "name_en": "cable upright row",
+    "muscle_group": "shoulders",
+    "equipment": "cable",
+    "is_compound": true,
+    "instructions": "双脚分开与肩同宽站立，膝盖稍微弯曲，并用正手握住电缆附件。 在整个练习过程中保持背部挺直，核心肌群参与其中。 用肘部引导，将电缆附件笔直向上拉向下巴。 在顶部暂停片刻，将肩胛骨挤压在一起。 缓慢地将电缆附件放回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "crunch",
+    "name_zh": "卷腹",
+    "name_en": "Crunch",
+    "muscle_group": "core",
+    "equipment": "bodyweight",
+    "is_compound": false,
+    "instructions": "仰卧屈膝，用腹部力量把肩胛骨卷离地面，下背贴地，不要用手拉头。",
+    "contraindications": [
+      "lower_back"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "dumbbell_fly",
+    "name_zh": "哑铃飞鸟",
+    "name_en": "dumbbell fly",
+    "muscle_group": "chest",
+    "equipment": "dumbbell",
+    "is_compound": false,
+    "instructions": "平躺在长凳上，双手各握一个哑铃，手掌相对。 将手臂伸直越过胸部，肘部稍微弯曲。 保持肘部轻微弯曲，将手臂以宽弧线向两侧放低，直到感觉到胸部有拉伸感。 暂停片刻，然后反转动作，将哑铃拉回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "dumbbell_front_raise",
+    "name_zh": "哑铃前平举",
+    "name_en": "dumbbell front raise",
+    "muscle_group": "shoulders",
+    "equipment": "dumbbell",
+    "is_compound": true,
+    "instructions": "双脚分开与肩同宽站立，双手各握一个哑铃，手掌朝向大腿。 保持双臂伸直，呼气并将哑铃举至身前，直至与肩齐平。 在顶部停顿片刻，然后吸气，慢慢将哑铃放回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "dumbbell_hammer_curl",
+    "name_zh": "哑铃锤式弯举",
+    "name_en": "dumbbell hammer curl",
+    "muscle_group": "arms",
+    "equipment": "dumbbell",
+    "is_compound": false,
+    "instructions": "站直，双手各持一个哑铃，手掌朝向躯干。 保持肘部靠近躯干，并旋转手掌，直到手掌朝前。 这将是您的起始位置。 现在，保持上臂静止，呼气并卷曲哑铃，同时收缩二头肌。 继续举重，直到二头肌完全收缩并且哑铃与肩部齐平。 挤压二头肌时，保持收缩位置短暂停顿。 然后，吸气并慢慢开始将哑铃放回起始位置。 重复建议的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "dumbbell_press",
+    "name_zh": "哑铃卧推",
+    "name_en": "Dumbbell Bench Press",
+    "muscle_group": "chest",
+    "equipment": "dumbbell",
+    "is_compound": true,
+    "instructions": "哑铃下放至胸部两侧，肘部约 45 度，推起时想象把哑铃推向天花板。",
+    "contraindications": [
+      "shoulder_pain"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "dumbbell_rear_fly",
+    "name_zh": "哑铃俯身飞鸟",
+    "name_en": "dumbbell rear fly",
+    "muscle_group": "shoulders",
+    "equipment": "dumbbell",
+    "is_compound": true,
+    "instructions": "双脚分开与肩同宽站立，每只手各握一个哑铃。 稍微弯曲膝盖，髋部向前转动，保持背部挺直。 将双臂笔直向下伸向地面，手掌相对。 保持肘部轻微弯曲，将手臂向两侧抬起，并将肩胛骨挤压在一起。 在顶部暂停片刻，然后慢慢将手臂放回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "dumbbell_row",
+    "name_zh": "单臂哑铃划船",
+    "name_en": "One-arm Dumbbell Row",
+    "muscle_group": "back",
+    "equipment": "dumbbell",
+    "is_compound": true,
+    "instructions": "一手撑凳，背部平直，把哑铃拉向髋部，肘部贴近身体。",
+    "contraindications": [
+      "lower_back"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "face_pull",
+    "name_zh": "面拉",
+    "name_en": "Face Pull",
+    "muscle_group": "shoulders",
+    "equipment": "cable",
+    "is_compound": false,
+    "instructions": "绳索调至面部高度，向面部方向拉，肘部打开，肩胛骨后缩。",
+    "contraindications": [
+      "shoulder_pain"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "glute_bridge",
+    "name_zh": "臀桥",
+    "name_en": "Glute Bridge",
+    "muscle_group": "glutes",
+    "equipment": "bodyweight",
+    "is_compound": false,
+    "instructions": "仰卧屈膝，脚跟靠近臀部，收紧臀部把髋抬起，避免用腰部代偿。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "goblet_squat",
+    "name_zh": "高脚杯深蹲",
+    "name_en": "Goblet Squat",
+    "muscle_group": "legs",
+    "equipment": "dumbbell",
+    "is_compound": true,
+    "instructions": "双手托哑铃于胸前，保持躯干直立下蹲，肘部在膝盖内侧，脚跟踩实。",
+    "contraindications": [
+      "knee_pain"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "hanging_leg_raise",
+    "name_zh": "悬垂举腿",
+    "name_en": "Hanging Leg Raise",
+    "muscle_group": "core",
+    "equipment": "bodyweight",
+    "is_compound": false,
+    "instructions": "悬垂稳定身体，用腹部力量把腿抬起，避免摆动借力。",
+    "contraindications": [
+      "shoulder_pain",
+      "lower_back"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "hip_thrust",
+    "name_zh": "杠铃臀推",
+    "name_en": "Barbell Hip Thrust",
+    "muscle_group": "glutes",
+    "equipment": "barbell",
+    "is_compound": true,
+    "instructions": "上背靠凳，杠铃置于髋部，收紧核心把髋推到躯干与大腿成一直线，顶峰夹紧臀部。",
+    "contraindications": [
+      "lower_back"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "kettlebell_hang_clean",
+    "name_zh": "壶铃悬垂翻",
+    "name_en": "kettlebell hang clean",
+    "muscle_group": "legs",
+    "equipment": "kettlebell",
+    "is_compound": true,
+    "instructions": "双脚分开与肩同宽站立，将壶铃放在大腿前面。 稍微弯曲膝盖，髋部向前转动，保持背部挺直。 将壶铃放低至地面，使其在双腿之间摆动。 快速伸展臀部和膝盖，利用动量将壶铃摆动到肩膀高度。 当壶铃达到肩膀高度时，旋转手腕，将壶铃置于架子位置，肘部内收，壶铃靠在前臂上。 将壶铃放回双腿之间的起始位置，然后重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "kettlebell_swing",
+    "name_zh": "壶铃摇摆",
+    "name_en": "kettlebell swing",
+    "muscle_group": "glutes",
+    "equipment": "kettlebell",
+    "is_compound": true,
+    "instructions": "双脚分开与肩同宽站立，脚趾稍微向外。 双手握住壶铃放在身体前方，双臂伸展。 稍微弯曲膝盖并铰接臀部，将臀部向后推。 将壶铃在两腿之间向后摆动，保持手臂伸直并保持背部平坦。 利用臀部产生的动量，向前推动臀部并将壶铃摆动到肩膀高度。 让壶铃在双腿之间向下摆动，然后重复该动作达到所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "kettlebell_two_arm_military_press",
+    "name_zh": "壶铃双臂军事推举",
+    "name_en": "kettlebell two arm military press",
+    "muscle_group": "shoulders",
+    "equipment": "kettlebell",
+    "is_compound": true,
+    "instructions": "双脚分开与肩同宽站立，双手各握一个壶铃，与肩同高，手掌朝前。 启动你的核心并将壶铃压过头顶，充分伸展你的手臂。 在顶部暂停片刻，然后慢慢将壶铃放回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lat_pulldown",
+    "name_zh": "高位下拉",
+    "name_en": "Lat Pulldown",
+    "muscle_group": "back",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "坐稳，胸口抬起，把横杆拉向上胸，肘部向下向后，不要用身体后仰借力。",
+    "contraindications": [
+      "shoulder_pain"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lateral_raise",
+    "name_zh": "侧平举",
+    "name_en": "Lateral Raise",
+    "muscle_group": "shoulders",
+    "equipment": "dumbbell",
+    "is_compound": false,
+    "instructions": "手肘微屈，以肩部发力把哑铃抬至与肩同高，避免耸肩和摆动。",
+    "contraindications": [
+      "shoulder_pain"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "leg_press",
+    "name_zh": "腿举",
+    "name_en": "Leg Press",
+    "muscle_group": "legs",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "腰背贴紧靠垫，双脚与肩同宽，下放至膝盖约 90 度，不要锁死膝关节。",
+    "contraindications": [
+      "knee_pain",
+      "lower_back"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_back_extension",
+    "name_zh": "器械背伸展",
+    "name_en": "lever back extension",
+    "muscle_group": "back",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "调整机器以适合您的身体尺寸和运动范围。 坐在机器上，背部靠在垫子上，双脚固定。 将手放在手柄或握杆上。 启动你的核心并慢慢向前倾斜，让你的背部稍微弯曲。 在底部位置暂停片刻，感觉下背部有拉伸感。 使用背部肌肉，慢慢将躯干抬回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_bicep_curl",
+    "name_zh": "器械二头弯举",
+    "name_en": "lever bicep curl",
+    "muscle_group": "arms",
+    "equipment": "machine",
+    "is_compound": false,
+    "instructions": "调整座椅高度并将自己放在机器上，背部靠在垫子上。 反手握住手柄，手掌朝上，肘部靠近身体两侧。 呼气并向上弯曲手柄，收缩二头肌。 在动作的最高点暂停片刻，挤压你的二头肌。 吸气，慢慢将手柄放回起始位置，充分伸展双臂。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_chest_press",
+    "name_zh": "器械推胸",
+    "name_en": "lever chest press",
+    "muscle_group": "chest",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "调整座椅高度，将自己放在机器上，背部平放在垫子上。 正手握住手柄，肘部呈 90 度角。 向前推动手柄，直到手臂完全伸展，运动过程中呼气。 动作结束时短暂暂停，然后慢慢回到起始位置，同时吸气。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_front_pulldown",
+    "name_zh": "器械前下拉",
+    "name_en": "lever front pulldown",
+    "muscle_group": "back",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "调整座椅高度，将自己放在机器上，膝盖位于垫子下方，双脚平放在地面上。 正手握住手柄，握距略宽于肩宽。 坐直，胸部抬起，肩膀向后，保持下背部轻微的拱形。 收紧背阔肌，将手柄向下拉向胸部，将肩胛骨挤压在一起。 在动作底部暂停片刻，然后慢慢松开手柄回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_high_row",
+    "name_zh": "器械高位划船",
+    "name_en": "lever high row",
+    "muscle_group": "back",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "将座椅高度和脚踏板调整至舒适的位置。 坐在机器上，胸部靠在垫子上，双脚平放在脚踏平台上。 正手握住手柄，握距略宽于肩宽。 保持背部挺直并启动核心肌群。 将手柄拉向身体，将肩胛骨挤压在一起。 在动作的最高点暂停片刻，然后慢慢松开手柄回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_hip_extension_v_2",
+    "name_zh": "器械髋伸展 v. 2",
+    "name_en": "lever hip extension v. 2",
+    "muscle_group": "glutes",
+    "equipment": "machine",
+    "is_compound": false,
+    "instructions": "调整机器以适合您的身体，然后坐在机器上，背部靠在靠背上。 将脚放在脚踏板上并握住手柄以保持稳定。 启动臀肌和腿筋，然后推动脚踏板以伸展臀部并向后抬起双腿。 在顶部暂停片刻，然后慢慢将双腿放回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_incline_chest_press",
+    "name_zh": "器械上斜推胸",
+    "name_en": "lever incline chest press",
+    "muscle_group": "chest",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "将杠杆机的座椅和靠背调整到舒适的位置。 坐在机器上，背部靠在靠背上，双脚平放在地板上。 正手握住手柄，双手之间的距离略大于肩宽。 向前推动手柄并使其远离身体，直到双臂完全伸展。 暂停片刻，然后慢慢弯曲肘部，将手柄放回到胸部。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_lateral_raise",
+    "name_zh": "器械侧平举",
+    "name_en": "lever lateral raise",
+    "muscle_group": "shoulders",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "调整座椅高度并将自己放在机器上，背部靠在垫子上。 正手握住手柄并保持手臂伸直。 呼气并将手臂向两侧抬起，直到与地板平行。 在顶部停顿片刻，然后吸气，慢慢将手臂放回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_leg_extension",
+    "name_zh": "器械腿屈伸",
+    "name_en": "lever leg extension",
+    "muscle_group": "legs",
+    "equipment": "machine",
+    "is_compound": false,
+    "instructions": "调整机器的座椅高度和靠背以适合您的身体。 坐在机器上，背部靠在靠背上，双脚放在脚垫上。 抓住手柄或侧杆以保持稳定性。 伸直膝盖，举起重物，向前伸展双腿。 在顶部暂停片刻，然后慢慢将重量放回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_lying_leg_curl",
+    "name_zh": "器械俯卧腿弯举",
+    "name_en": "lever lying leg curl",
+    "muscle_group": "legs",
+    "equipment": "machine",
+    "is_compound": false,
+    "instructions": "调整机器以适合您的身体并选择所需的重量。 面朝下躺在机器上，双腿伸直，脚跟靠在带衬垫的杠杆上。 抓住机器的手柄或侧面以保持稳定性。 保持上半身静止，呼气并尽可能向上弯曲双腿，但不要将臀部抬离垫子。 挤压腿筋时，保持收缩位置短暂停顿。 吸气并缓慢地将控制杆降低回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_military_press",
+    "name_zh": "器械肩推",
+    "name_en": "lever military press",
+    "muscle_group": "shoulders",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "调整座椅高度并将自己放在机器上，背部靠在靠背上。 正手握住手柄，双手之间的距离略大于肩宽。 向上推动手柄，直到手臂完全伸展，但不要锁住肘部。 在顶部暂停片刻，然后慢慢将手柄放回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_preacher_curl",
+    "name_zh": "器械牧师凳弯举",
+    "name_en": "lever preacher curl",
+    "muscle_group": "arms",
+    "equipment": "machine",
+    "is_compound": false,
+    "instructions": "调整座椅高度并将自己放在杠杆机上。 将上臂放在垫子上，并用反手握住手柄。 保持背部挺直，并将肘部放在垫子上。 呼气并将前臂向上臂弯曲，收缩二头肌。 在动作的最高点暂停片刻，挤压你的二头肌。 吸气并慢慢将手柄放回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_reverse_hyperextension",
+    "name_zh": "器械反向挺身",
+    "name_en": "lever reverse hyperextension",
+    "muscle_group": "glutes",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "调整杠杆机以适合您的身体并将双脚固定在脚垫中。 面朝下躺在机器上，上半身悬在机器边缘，臀部放在垫子上。 双臂交叉放在胸前或放在脑后。 用臀部和腿筋将双腿向上抬起，直到它们与地面平行。 在顶部暂停片刻，然后慢慢将双腿放回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_seated_calf_raise",
+    "name_zh": "器械坐姿提踵",
+    "name_en": "lever seated calf raise",
+    "muscle_group": "legs",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "调整座椅高度，使膝盖稍微弯曲，双脚平放在踏板上。 将脚趾放在踏板上，脚跟悬在踏板边缘。 抓住把手或座椅侧面以保持稳定性。 推动脚掌，将脚后跟尽可能抬高。 在顶部停顿片刻，然后慢慢降低脚后跟回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_seated_crunch",
+    "name_zh": "器械坐姿卷腹",
+    "name_en": "lever seated crunch",
+    "muscle_group": "core",
+    "equipment": "machine",
+    "is_compound": false,
+    "instructions": "坐在杠杆机上，背部靠在垫子上，双脚平放在地板上。 抓住手柄或将手放在侧垫上以获得支撑。 收紧腹肌并慢慢向后倾斜，让垫子随着您一起移动。 一旦你的上半身呈 45 度角，收缩腹肌并向前卷腹，使胸部靠近膝盖。 在顶部停顿片刻，然后慢慢松开并返回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_seated_fly",
+    "name_zh": "器械坐姿夹胸",
+    "name_en": "lever seated fly",
+    "muscle_group": "chest",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "调整座椅高度并将自己放在机器上，背部靠在垫子上。 旋前抓住手柄，并保持肘部稍微弯曲。 呼气并将手柄向前推，将它们放在胸前。 暂停片刻，挤压胸部肌肉。 吸气并慢慢回到起始位置，让胸部肌肉伸展。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_seated_hip_abduction",
+    "name_zh": "器械坐姿髋外展",
+    "name_en": "lever seated hip abduction",
+    "muscle_group": "glutes",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "调整座椅高度，使膝盖成 90 度角。 坐在机器上，背部靠在靠背上，双脚放在脚踏板上。 将手放在侧手柄上以保持稳定性。 启动外展肌并慢慢将双腿分开，远离身体中线。 动作结束时暂停片刻，然后慢慢将双腿放回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_seated_hip_adduction",
+    "name_zh": "器械坐姿髋内收",
+    "name_en": "lever seated hip adduction",
+    "muscle_group": "legs",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "调整座椅高度并将自己放在机器上，背部靠在靠背上。 将脚放在脚踏板上并抓住手柄以保持稳定。 收紧内收肌，慢慢将双腿并拢，挤压大腿内侧。 在收缩高峰时暂停片刻，然后慢慢回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_seated_leg_raise_crunch",
+    "name_zh": "器械坐姿举腿卷腹",
+    "name_en": "lever seated leg raise crunch",
+    "muscle_group": "core",
+    "equipment": "machine",
+    "is_compound": false,
+    "instructions": "坐在杠杆机上，背部靠在靠背上，双脚放在脚踏板上。 抓住手柄或侧杆以保持稳定性。 收紧腹肌，慢慢地将双腿抬向胸部，同时向前卷曲躯干。 在顶部停顿片刻，然后慢慢降低双腿和躯干回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_seated_reverse_fly",
+    "name_zh": "器械坐姿反向飞鸟",
+    "name_en": "lever seated reverse fly",
+    "muscle_group": "shoulders",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "调整座椅高度，将自己放在机器上，胸部靠在垫子上，双脚平放在地板上。 正手握住手柄，并保持手臂稍微弯曲。 呼气并将肩胛骨挤压在一起，同时向后和向外拉动手柄，使其远离身体。 在收缩峰值时停顿片刻，然后吸气，慢慢回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_seated_row",
+    "name_zh": "器械坐姿划船",
+    "name_en": "lever seated row",
+    "muscle_group": "back",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "将座椅高度和脚踏板调整到舒适的位置。 坐在机器上，胸部靠在垫子上，双脚放在脚踏板上。 正手握住手柄，距离与肩同宽。 保持背部挺直，核心肌群参与。 将手柄拉向身体，将肩胛骨挤压在一起。 在动作的最高点停顿片刻。 慢慢松开手柄并返回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_shoulder_press",
+    "name_zh": "器械推肩",
+    "name_en": "lever shoulder press",
+    "muscle_group": "shoulders",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "调整座椅高度并将自己放在机器上，背部靠在靠背上。 正手握住手柄，并将双手置于肩部水平。 向上推动手柄，直到手臂完全伸展，但不要锁住肘部。 在顶部暂停片刻，然后慢慢将手柄放回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_standing_calf_raise",
+    "name_zh": "器械站姿提踵",
+    "name_en": "lever standing calf raise",
+    "muscle_group": "legs",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "将机器调整到您的高度，双脚分开与肩同宽站立。 将肩膀放在护垫下方，并握住手柄以保持稳定。 伸展脚踝，将脚后跟尽可能抬高。 在顶部停顿片刻，然后慢慢降低脚后跟回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_t_bar_row",
+    "name_zh": "器械T杠划船",
+    "name_en": "lever t bar row",
+    "muscle_group": "back",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "调整座椅高度和踏板位置以确保正确对齐。 坐在机器上，胸部靠在垫子上，双脚平放在踏板上。 正手握住手柄，握距略宽于肩宽。 保持背部挺直并启动核心肌群。 将手柄拉向躯干，将肩胛骨挤压在一起。 在收缩峰值时暂停片刻，然后慢慢松开手柄回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lever_triceps_extension",
+    "name_zh": "器械三头肌臂屈伸",
+    "name_en": "lever triceps extension",
+    "muscle_group": "arms",
+    "equipment": "machine",
+    "is_compound": false,
+    "instructions": "调整座椅高度并将自己放在机器上，背部靠在垫子上。 正手握住手柄，并将手臂完全伸展到身前。 保持上臂不动，弯曲肘部，慢慢将手柄向前额降低。 在底部暂停片刻，然后伸展双臂将手柄推回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "lunge",
+    "name_zh": "箭步蹲",
+    "name_en": "Walking Lunge",
+    "muscle_group": "legs",
+    "equipment": "bodyweight",
+    "is_compound": true,
+    "instructions": "向前迈步，下蹲至前后膝约 90 度，前膝不超过脚尖过多，保持躯干直立。",
+    "contraindications": [
+      "knee_pain"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "plank",
+    "name_zh": "平板支撑",
+    "name_en": "Plank",
+    "muscle_group": "core",
+    "equipment": "bodyweight",
+    "is_compound": false,
+    "instructions": "肘部在肩正下方，身体成直线，收紧核心与臀部，避免塌腰。",
+    "contraindications": [
+      "lower_back",
+      "shoulder_pain"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "pullup",
+    "name_zh": "引体向上",
+    "name_en": "Pull-up",
+    "muscle_group": "back",
+    "equipment": "bodyweight",
+    "is_compound": true,
+    "instructions": "正握略宽于肩，先沉肩再拉，胸口靠近横杠。控制下放，避免摆动借力。",
+    "contraindications": [
+      "shoulder_pain",
+      "elbow_pain"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "pushup",
+    "name_zh": "俯卧撑",
+    "name_en": "Push-up",
+    "muscle_group": "chest",
+    "equipment": "bodyweight",
+    "is_compound": true,
+    "instructions": "双手略宽于肩，身体成一条直线。屈肘下沉至胸部接近地面，推起时呼气，全程收紧核心。",
+    "contraindications": [
+      "shoulder_pain",
+      "wrist_pain"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "romanian_deadlift",
+    "name_zh": "罗马尼亚硬拉",
+    "name_en": "Romanian Deadlift",
+    "muscle_group": "legs",
+    "equipment": "barbell",
+    "is_compound": true,
+    "instructions": "膝盖微屈固定，髋部后移，杠铃贴腿下放至腘绳肌有拉伸感，背部全程中立。",
+    "contraindications": [
+      "lower_back"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "rowing_machine",
+    "name_zh": "划船机",
+    "name_en": "Rowing Machine",
+    "muscle_group": "cardio",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "腿-核心-手臂的顺序发力，回程相反。保持背部中立，不要只用手臂拉。",
+    "contraindications": [
+      "lower_back"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "seated_row",
+    "name_zh": "坐姿划船",
+    "name_en": "Seated Cable Row",
+    "muscle_group": "back",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "挺胸收腹，把手拉向腹部，肩胛骨向后夹紧，还原时保持背部中立。",
+    "contraindications": [
+      "lower_back"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "shoulder_press",
+    "name_zh": "哑铃推举",
+    "name_en": "Dumbbell Shoulder Press",
+    "muscle_group": "shoulders",
+    "equipment": "dumbbell",
+    "is_compound": true,
+    "instructions": "坐姿或站姿，核心收紧，把哑铃从肩部推至头顶，肘部不要完全锁死。",
+    "contraindications": [
+      "shoulder_pain"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "smith_bench_press",
+    "name_zh": "史密斯卧推",
+    "name_en": "smith bench press",
+    "muscle_group": "chest",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "将史密斯机杆的高度调整至胸部水平。 平躺在长凳上，双脚牢牢踩在地上。 正手握住杠铃，握距略宽于肩宽。 松开杠铃并将其向胸部降低，保持肘部内收。 当杠铃接触到你的胸部时暂停片刻。 将杠铃推回到起始位置，完全伸展双臂。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "smith_bent_over_row",
+    "name_zh": "史密斯俯身划船",
+    "name_en": "smith bent over row",
+    "muscle_group": "back",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "将史密斯机设置为与臀部高度相同的杠铃。 面向杠铃站立，双脚分开与肩同宽。 稍微弯曲膝盖，髋部向前转动，保持背部挺直。 正手握住杠铃，双手距离略宽于肩宽。 将杠铃拉向下胸部，将肩胛骨挤压在一起。 在顶部暂停片刻，然后慢慢将杠铃放回起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "smith_hack_squat",
+    "name_zh": "史密斯哈克深蹲",
+    "name_en": "smith hack squat",
+    "muscle_group": "legs",
+    "equipment": "machine",
+    "is_compound": true,
+    "instructions": "将史密斯机上的杠铃调整到适合您身体的高度。 双脚分开与肩同宽站立，脚趾稍微向外。 将自己置于杠铃下方，将其放在斜方肌上部和肩膀上。 正手握住杠铃，握距略宽于肩宽。 当你打开杠铃时，启动你的核心并保持挺胸。 后退一步，双脚分开的距离略大于肩宽。 弯曲膝盖，降低身体，保持挺胸、背部挺直。 继续下降，直到大腿与地面平行或略低于地面。 在底部停顿片刻，然后推动脚后跟回到起始位置。 重复所需的重复次数。",
+    "contraindications": [],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "squat",
+    "name_zh": "杠铃深蹲",
+    "name_en": "Barbell Back Squat",
+    "muscle_group": "legs",
+    "equipment": "barbell",
+    "is_compound": true,
+    "instructions": "双脚与肩同宽，脚尖略外展。髋膝同时屈曲下蹲至大腿平行，膝盖与脚尖方向一致。",
+    "contraindications": [
+      "knee_pain",
+      "lower_back"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "treadmill_walk",
+    "name_zh": "跑步机快走",
+    "name_en": "Treadmill Walk",
+    "muscle_group": "cardio",
+    "equipment": "machine",
+    "is_compound": false,
+    "instructions": "坡度 3–8%，速度以能说短句为准，身体直立，不要扶把手。",
+    "contraindications": [
+      "knee_pain"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  },
+  {
+    "slug": "triceps_pushdown",
+    "name_zh": "绳索下压",
+    "name_en": "Triceps Pushdown",
+    "muscle_group": "arms",
+    "equipment": "cable",
+    "is_compound": false,
+    "instructions": "肘部固定，向下压至手臂伸直，顶峰收紧三头，缓慢还原。",
+    "contraindications": [
+      "elbow_pain"
+    ],
+    "motion_start_url": null,
+    "motion_end_url": null
+  }
+]
