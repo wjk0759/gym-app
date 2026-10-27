@@ -121,6 +121,10 @@ struct CoachChatView: View {
                     }
                 }
 
+                if store.lastAgentRetryText != nil {
+                    agentRetryCard
+                }
+
                 inputBar
             }
             .background(AppBackground())
@@ -288,6 +292,35 @@ struct CoachChatView: View {
         .padding(.vertical, 8)
     }
 
+    private var agentRetryCard: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "arrow.clockwise.circle.fill")
+                .foregroundStyle(Theme.warning)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("这次远程请求没有完成")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white)
+                Text("你的输入已保留，可以重试；不会重复生成计划。")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            Spacer(minLength: 6)
+            Button("重试") {
+                store.retryAgentChat()
+            }
+            .font(.caption.weight(.bold))
+            .foregroundStyle(Theme.accent)
+            .disabled(store.isReplying)
+            .buttonStyle(SubtlePressStyle())
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(Theme.surfaceStrong)
+        .overlay(alignment: .top) {
+            Rectangle().fill(Theme.stroke).frame(height: 1)
+        }
+    }
+
     private var agentActionsCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -365,6 +398,7 @@ struct CoachChatView: View {
         case "start_training": return "play.circle"
         case "open_screen": return "rectangle.portrait.and.arrow.right"
         case "update_goal": return "target"
+        case "log_body_metric": return "scalemass"
         default: return "bolt"
         }
     }

@@ -32,15 +32,21 @@ async def agent_chat(
         db.commit()
 
     history = list(session.messages)
-    result = await run_agent(
-        db,
-        user_id,
-        payload.message,
-        session_id=session.id,
-        history=history,
-        skill=payload.skill,
-        app_context=payload.app_context,
-    )
+    try:
+        result = await run_agent(
+            db,
+            user_id,
+            payload.message,
+            session_id=session.id,
+            history=history,
+            skill=payload.skill,
+            app_context=payload.app_context,
+        )
+    except Exception as exc:  # safety net: never turn an Agent crash into a 500
+        raise HTTPException(
+            status_code=503,
+            detail="教练 Agent 暂时不可用，请重试",
+        ) from exc
 
     session.messages.append(ChatMessage(role="user", content=payload.message))
     session.messages.append(ChatMessage(role="assistant", content=result["reply"]))

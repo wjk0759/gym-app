@@ -221,6 +221,9 @@ struct AgentActionPayload: Codable, Hashable {
     let targetWeightKG: Double?
     let weeklyDays: Int?
     let sessionMinutes: Int?
+    let weightKG: Double?
+    let bodyFatPCT: Double?
+    let waistCM: Double?
 
     enum CodingKeys: String, CodingKey {
         case dayID = "day_id"
@@ -231,6 +234,9 @@ struct AgentActionPayload: Codable, Hashable {
         case targetWeightKG = "target_weight_kg"
         case weeklyDays = "weekly_days"
         case sessionMinutes = "session_minutes"
+        case weightKG = "weight_kg"
+        case bodyFatPCT = "body_fat_pct"
+        case waistCM = "waist_cm"
     }
 }
 

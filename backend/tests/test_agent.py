@@ -63,3 +63,20 @@ def test_app_action_rejects_unknown_day_or_screen():
             ],
             context,
         )
+
+
+def test_body_metric_action_requires_valid_weight():
+    actions = _normalize_app_actions(
+        [
+            {
+                "type": "log_body_metric",
+                "title": "记录体重",
+                "payload": {"weight_kg": 70},
+            }
+        ]
+    )
+    assert actions[0]["payload"]["weight_kg"] == 70
+    with pytest.raises(ValueError):
+        _normalize_app_actions(
+            [{"type": "log_body_metric", "payload": {"weight_kg": "heavy"}}]
+        )

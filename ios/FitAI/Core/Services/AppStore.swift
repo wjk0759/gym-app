@@ -41,6 +41,8 @@ final class AppStore {
     var isExecutingAgentActions = false
     var workoutLaunchDayID: UUID?
     var pendingRoute: AppRoute?
+    var lastAgentRetryText: String?
+    var lastAgentRetrySkill: CoachSkill = .trainer
     var weeklyReview: AgentWeeklyReview?
     var isReviewingWeekly = false
     private var reviewRefreshQueued = false
@@ -1014,6 +1016,8 @@ final class AppStore {
         agentActions = []
         isExecutingAgentActions = false
         workoutLaunchDayID = nil
+        lastAgentRetryText = nil
+        lastAgentRetrySkill = .trainer
         isReplying = false
         persist()
     }
@@ -1069,13 +1073,20 @@ final class AppStore {
                 == calendar.component(.yearForWeekOfYear, from: rhs)
     }
 
-    func sendAgentChat(_ text: String, skill: CoachSkill = .trainer) {
+    func sendAgentChat(
+        _ text: String,
+        skill: CoachSkill = .trainer,
+        appendUserMessage: Bool = true
+    ) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        chat.append(ChatMessage(role: .user, text: trimmed))
+        if appendUserMessage {
+            chat.append(ChatMessage(role: .user, text: trimmed))
+        }
         isReplying = true
         agentProposal = nil
         agentActions = []
+        lastAgentRetryText = nil
         persist()
 
         Task { @MainActor in
@@ -1105,6 +1116,17 @@ final class AppStore {
                     )
                 }
                 self.agentSessionID = response.sessionID
+                if response.status == "failed" {
+                    self.lastAgentRetryText = trimmed
+                    self.lastAgentRetrySkill = skill
+                    self.chat.append(
+                        ChatMessage(
+                            role: .assistant,
+                            text: "这次请求没有完成，可能是模型服务短暂异常。已保留这次输入，点下方重试。"
+                        )
+                    )
+                    return
+                }
                 self.agentProposal = response.proposal
                 self.agentActions = response.actions ?? []
                 self.chat.append(
@@ -1115,6 +1137,8 @@ final class AppStore {
                     )
                 )
             } catch {
+                self.lastAgentRetryText = trimmed
+                self.lastAgentRetrySkill = skill
                 let local = CoachService.reply(
                     to: trimmed,
                     profile: self.profile,
@@ -1132,6 +1156,13 @@ final class AppStore {
                 )
             }
         }
+    }
+
+    func retryAgentChat() {
+        guard let text = lastAgentRetryText, !isReplying else { return }
+        let skill = lastAgentRetrySkill
+        lastAgentRetryText = nil
+        sendAgentChat(text, skill: skill, appendUserMessage: false)
     }
 
     // MARK: - App Action 执行层
@@ -1302,6 +1333,17 @@ final class AppStore {
             updateProfile(updated)
             return "已更新训练目标"
 
+        case "log_body_metric":
+            guard let payload = action.payload, let weight = payload.weightKG else {
+                return "没有提供体重"
+            }
+            saveBodyCheckIn(
+                weightKG: weight,
+                bodyFatPCT: payload.bodyFatPCT ?? profile.bodyFatPCT,
+                waistCM: payload.waistCM ?? profile.waistCM
+            )
+            return "已记录体重 \(weight.formatted(.number.precision(.fractionLength(1)))) kg"
+
         default:
             return "暂不支持操作：\(action.type)"
         }
@@ -1425,6 +1467,8 @@ final class AppStore {
         isExecutingAgentActions = false
         workoutLaunchDayID = nil
         pendingRoute = nil
+        lastAgentRetryText = nil
+        lastAgentRetrySkill = .trainer
     }
 
     @discardableResult
