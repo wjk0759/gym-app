@@ -11,9 +11,15 @@ exercise set. Existing curated exercises are preserved by English name.
 Usage (from the repository root):
     backend/.venv/Scripts/python.exe tools/db/import_exercises.py --dry-run
     backend/.venv/Scripts/python.exe tools/db/import_exercises.py
+    backend/.venv/Scripts/python.exe tools/db/import_exercises.py --prune
     backend/.venv/Scripts/python.exe tools/db/import_exercises.py --source C:\path\to\exercises.json
 
+By default only free-weight, cable, selectorized/smith machine and kettlebell
+movements are imported. Use --include-other-equipment to import bodyweight,
+bands, balls, cardio machines and other non-gym equipment as well.
+
 The script is idempotent for its own source: existing source rows are skipped.
+Use --prune to remove previously imported rows outside the gym filter.
 """
 
 from __future__ import annotations
@@ -127,6 +133,28 @@ EQUIPMENT_MAP = {
     "hammer": "bodyweight",
 }
 
+GYM_SOURCE_EQUIPMENT = {
+    "barbell",
+    "dumbbell",
+    "cable",
+    "kettlebell",
+    "leverage machine",
+    "smith machine",
+    "ez barbell",
+    "trap bar",
+    "olympic barbell",
+}
+CARDIO_MACHINE_TOKENS = (
+    "cycle cross trainer",
+    "stationary bike",
+    "treadmill",
+    "elliptical",
+    "stepmill",
+    "skierg",
+    "ergometer",
+)
+BALL_TOKENS = ("ball",)
+
 COMPOUND_TOKENS = (
     "press",
     "squat",
@@ -167,6 +195,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--name-cache", default=str(DEFAULT_CACHE), help="English-to-Chinese name cache")
     parser.add_argument("--limit", type=int, default=0, help="Import only the first N new rows (for testing)")
     parser.add_argument("--dry-run", action="store_true", help="Report changes without writing")
+    parser.add_argument(
+        "--include-other-equipment",
+        action="store_true",
+        help="Import bodyweight, bands, balls, cardio machines and other non-gym equipment too",
+    )
+    parser.add_argument(
+        "--prune",
+        action="store_true",
+        help="Delete previously imported rows that are outside the gym-equipment filter",
+    )
     return parser.parse_args()
 
 
@@ -223,6 +261,16 @@ def equipment(row: dict[str, Any]) -> str:
     return EQUIPMENT_MAP.get(normalize(row.get("equipment")), "bodyweight")
 
 
+def is_gym_exercise(row: dict[str, Any]) -> bool:
+    source_equipment = normalize(row.get("equipment"))
+    if source_equipment not in GYM_SOURCE_EQUIPMENT:
+        return False
+    name = normalize(row.get("name"))
+    if any(token in name for token in BALL_TOKENS):
+        return False
+    return not any(token in name for token in CARDIO_MACHINE_TOKENS)
+
+
 def difficulty(name: str, equipment_name: str) -> int:
     lower = name.lower()
     if any(token in lower for token in ("advanced", "expert")):
@@ -262,7 +310,32 @@ def main() -> int:
 
     engine = create_engine(args.target, future=True, pool_pre_ping=True)
     with Session(engine) as session:
+        allowed_names = {
+            normalize(row.get("name"))
+            for row in data
+            if args.include_other_equipment or is_gym_exercise(row)
+        }
         existing = session.execute(select(Exercise)).scalars().all()
+
+        prune_candidates = [
+            row
+            for row in existing
+            if row.source == SOURCE and normalize(row.name_en or row.name_zh) not in allowed_names
+        ]
+        pruned = 0
+        if prune_candidates:
+            print(f"gym filter would prune: {len(prune_candidates)}")
+            if args.prune and not args.dry_run:
+                try:
+                    for row in prune_candidates:
+                        session.delete(row)
+                    session.commit()
+                    pruned = len(prune_candidates)
+                    existing = session.execute(select(Exercise)).scalars().all()
+                except Exception as exc:  # noqa: BLE001 - report the protected row instead of corrupting data
+                    session.rollback()
+                    print(f"prune failed (rows may be referenced by plans or workouts): {exc}")
+
         existing_slugs = {row.slug for row in existing}
         existing_names = {normalize(row.name_en or row.name_zh) for row in existing}
 
@@ -270,9 +343,13 @@ def main() -> int:
         seen_dataset_names = set()
         skipped_existing = 0
         skipped_dataset_duplicate = 0
+        skipped_non_gym = 0
         for row in data:
             name = str(row.get("name") or "").strip()
             if not name:
+                continue
+            if not args.include_other_equipment and not is_gym_exercise(row):
+                skipped_non_gym += 1
                 continue
             key = normalize(name)
             if key in existing_names:
@@ -313,6 +390,8 @@ def main() -> int:
 
         print(f"source rows: {len(data)}")
         print(f"existing exercises: {len(existing)}")
+        print(f"pruned non-gym rows: {pruned}")
+        print(f"skipped non-gym source rows: {skipped_non_gym}")
         print(f"skipped existing names: {skipped_existing}")
         print(f"skipped duplicate dataset names: {skipped_dataset_duplicate}")
         print(f"new exercises: {len(candidates)}")
