@@ -30,6 +30,7 @@ final class AppStore {
     var isGenerating = false
     var isReplying = false
     var isSyncingWorkouts = false
+    var isSyncingUserData = false
     var isAgentWorking = false
     var agentSessionID: UUID?
     var agentProposal: AgentPlanProposal?
@@ -216,6 +217,7 @@ final class AppStore {
             )
         )
         persist()
+        syncPendingUserData()
         generatePlan()
 
         Task { @MainActor in
@@ -257,6 +259,7 @@ final class AppStore {
             )
         )
         persist()
+        syncPendingUserData()
         if planSettingsChanged, hasPlanEquipment {
             generatePlan(force: true)
         } else {
@@ -449,6 +452,7 @@ final class AppStore {
     func addEquipment(_ item: EquipmentItem) {
         equipmentLibrary.insert(item, at: 0)
         persist()
+        syncPendingUserData()
     }
 
     /// 批量把动作加入器械库，自动跳过已存在的动作，返回真正新增的数量。
@@ -473,12 +477,16 @@ final class AppStore {
         guard !items.isEmpty else { return 0 }
         equipmentLibrary.insert(contentsOf: items, at: 0)
         persist()
+        syncPendingUserData()
         return items.count
     }
 
     func removeEquipment(_ id: UUID) {
         equipmentLibrary.removeAll { $0.id == id }
         persist()
+        Task {
+            try? await APIClient.shared.deleteEquipmentItem(id: id)
+        }
     }
 
     func addBodyAnalysis(_ analysis: BodyAnalysis) {
@@ -602,12 +610,14 @@ final class AppStore {
     func addFoodLog(_ log: FoodLog) {
         foodLogs.insert(log, at: 0)
         persist()
+        syncPendingUserData()
     }
 
     func addFoodLogs(_ logs: [FoodLog]) {
         guard !logs.isEmpty else { return }
         foodLogs.insert(contentsOf: logs, at: 0)
         persist()
+        syncPendingUserData()
     }
 
     func addCustomFood(_ food: FoodItem) {
@@ -619,6 +629,147 @@ final class AppStore {
     func removeFoodLog(_ id: UUID) {
         foodLogs.removeAll { $0.id == id }
         persist()
+        Task {
+            try? await APIClient.shared.deleteFoodLog(id: id)
+        }
+    }
+
+    // MARK: - Cross-device data sync
+
+    func syncPendingUserData() {
+        guard !isSyncingUserData,
+              AuthTokenStore.shared.accessToken != nil else { return }
+        isSyncingUserData = true
+        Task { @MainActor in
+            defer {
+                self.isSyncingUserData = false
+                self.persist()
+            }
+            await self.pushPendingFoodLogs()
+            await self.pushPendingBodyMetrics()
+            await self.pushPendingEquipment()
+            await self.pullCloudUserData()
+        }
+    }
+
+    private func pushPendingFoodLogs() async {
+        for log in foodLogs where log.syncedAt == nil {
+            do {
+                try await APIClient.shared.syncFoodLog(log)
+                if let index = foodLogs.firstIndex(where: { $0.id == log.id }) {
+                    foodLogs[index].syncedAt = Date()
+                }
+            } catch {
+                // Keep pending for the next foreground/login retry.
+            }
+        }
+        foodLogs.sort { $0.date > $1.date }
+    }
+
+    private func pushPendingBodyMetrics() async {
+        for metric in bodyMetrics where metric.syncedAt == nil {
+            do {
+                try await APIClient.shared.syncBodyMetric(metric)
+                if let index = bodyMetrics.firstIndex(where: { $0.id == metric.id }) {
+                    bodyMetrics[index].syncedAt = Date()
+                }
+            } catch {
+                // Keep pending.
+            }
+        }
+        bodyMetrics.sort { $0.date > $1.date }
+    }
+
+    private func pushPendingEquipment() async {
+        for item in equipmentLibrary where item.syncedAt == nil {
+            do {
+                try await APIClient.shared.syncEquipmentItem(item)
+                if let index = equipmentLibrary.firstIndex(where: { $0.id == item.id }) {
+                    equipmentLibrary[index].syncedAt = Date()
+                }
+            } catch {
+                // Keep pending.
+            }
+        }
+    }
+
+    private func pullCloudUserData() async {
+        if let remote = try? await APIClient.shared.fetchFoodLogs() {
+            let localIDs = Set(foodLogs.map(\.id))
+            for item in remote {
+                guard let id = UUID(uuidString: item.clientID),
+                      let meal = MealType(rawValue: item.meal) else { continue }
+                let value = FoodLog(
+                    id: id,
+                    date: item.loggedAt,
+                    meal: meal,
+                    foodName: item.foodName,
+                    grams: item.grams,
+                    kcal: item.kcal,
+                    protein: item.protein,
+                    carbs: item.carbs,
+                    fat: item.fat,
+                    fiber: item.fiber,
+                    syncedAt: Date()
+                )
+                if let index = foodLogs.firstIndex(where: { $0.id == id }) {
+                    foodLogs[index] = value
+                } else if !localIDs.contains(id) {
+                    foodLogs.append(value)
+                }
+            }
+            foodLogs.sort { $0.date > $1.date }
+        }
+        if let remote = try? await APIClient.shared.fetchBodyMetrics() {
+            for item in remote {
+                guard let id = UUID(uuidString: item.clientID) else { continue }
+                let value = BodyMetric(
+                    id: id,
+                    date: item.measuredAt,
+                    weightKG: item.weightKG,
+                    bodyFatPCT: item.bodyFatPCT,
+                    waistCM: item.waistCM,
+                    armCM: item.armCM,
+                    thighCM: item.thighCM,
+                    syncedAt: Date()
+                )
+                if let index = bodyMetrics.firstIndex(where: { $0.id == id }) {
+                    bodyMetrics[index] = value
+                } else {
+                    bodyMetrics.append(value)
+                }
+            }
+            bodyMetrics.sort { $0.date > $1.date }
+            if let latest = bodyMetrics.first {
+                profile.weightKG = latest.weightKG
+                profile.bodyFatPCT = latest.bodyFatPCT
+                profile.waistCM = latest.waistCM
+                if let arm = latest.armCM, arm > 0 { profile.armCM = arm }
+                if let thigh = latest.thighCM, thigh > 0 { profile.thighCM = thigh }
+            }
+        }
+        if let remote = try? await APIClient.shared.fetchEquipmentItems() {
+            for item in remote {
+                guard let id = UUID(uuidString: item.clientID) else { continue }
+                let value = EquipmentItem(
+                    id: id,
+                    name: item.name,
+                    slug: item.slug,
+                    muscle: item.muscle.flatMap { MuscleGroup(rawValue: $0) },
+                    equipment: item.equipment.flatMap { Equipment(rawValue: $0) },
+                    videoURL: nil,
+                    notes: item.notes,
+                    photoData: nil,
+                    createdAt: item.createdAt,
+                    syncedAt: Date()
+                )
+                if let index = equipmentLibrary.firstIndex(where: { $0.id == id }) {
+                    equipmentLibrary[index] = value
+                } else {
+                    equipmentLibrary.append(value)
+                }
+            }
+        }
     }
 
     func sendChat(_ text: String, skill: CoachSkill = .trainer) {

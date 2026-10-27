@@ -59,6 +59,7 @@ struct BodyMetric: Codable, Identifiable, Hashable {
     var waistCM: Double
     var armCM: Double? = nil
     var thighCM: Double? = nil
+    var syncedAt: Date? = nil
 
     var dateKey: String { FitnessDate.key(date) }
 }

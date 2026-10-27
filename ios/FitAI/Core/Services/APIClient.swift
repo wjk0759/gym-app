@@ -186,6 +186,84 @@ struct AgentMemory: Codable, Identifiable, Hashable {
 struct AgentMemoryResponse: Decodable {
     let items: [AgentMemory]
 }
+
+struct RemoteFoodLog: Decodable {
+    let clientID: String
+    let loggedAt: Date
+    let meal: String
+    let foodName: String
+    let grams: Double
+    let kcal: Double
+    let protein: Double
+    let carbs: Double
+    let fat: Double
+    let fiber: Double
+
+    enum CodingKeys: String, CodingKey {
+        case clientID = "client_id"
+        case loggedAt = "logged_at"
+        case meal
+        case foodName = "food_name"
+        case grams
+        case kcal
+        case protein
+        case carbs
+        case fat
+        case fiber
+    }
+}
+
+struct RemoteFoodLogResponse: Decodable {
+    let items: [RemoteFoodLog]
+}
+
+struct RemoteBodyMetric: Decodable {
+    let clientID: String
+    let measuredAt: Date
+    let weightKG: Double
+    let bodyFatPCT: Double
+    let waistCM: Double
+    let armCM: Double?
+    let thighCM: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case clientID = "client_id"
+        case measuredAt = "measured_at"
+        case weightKG = "weight_kg"
+        case bodyFatPCT = "body_fat_pct"
+        case waistCM = "waist_cm"
+        case armCM = "arm_cm"
+        case thighCM = "thigh_cm"
+    }
+}
+
+struct RemoteBodyMetricResponse: Decodable {
+    let items: [RemoteBodyMetric]
+}
+
+struct RemoteEquipmentItem: Decodable {
+    let clientID: String
+    let name: String
+    let slug: String?
+    let muscle: String?
+    let equipment: String?
+    let notes: String
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case clientID = "client_id"
+        case name
+        case slug
+        case muscle
+        case equipment
+        case notes
+        case createdAt = "created_at"
+    }
+}
+
+struct RemoteEquipmentItemResponse: Decodable {
+    let items: [RemoteEquipmentItem]
+}
 private struct TokenRefreshResponse: Decodable {
     let accessToken: String
     let refreshToken: String
@@ -420,6 +498,103 @@ struct APIClient {
             method: "DELETE",
             body: nil
         )
+    }
+
+    // MARK: - Cross-device data
+
+    func syncFoodLog(_ log: FoodLog) async throws {
+        let payload: [String: Any] = [
+            "client_id": log.id.uuidString,
+            "logged_at": Self.iso8601WithFractionalSeconds.string(from: log.date),
+            "meal": log.meal.rawValue,
+            "food_name": log.foodName,
+            "grams": log.grams,
+            "kcal": log.kcal,
+            "protein": log.protein,
+            "carbs": log.carbs,
+            "fat": log.fat,
+            "fiber": log.fiber ?? 0
+        ]
+        let body = try JSONSerialization.data(withJSONObject: payload)
+        try await sendVoid(path: "diet/logs", method: "POST", body: body)
+    }
+
+    func deleteFoodLog(id: UUID) async throws {
+        try await sendVoid(
+            path: "diet/logs/\(id.uuidString)",
+            method: "DELETE",
+            body: nil
+        )
+    }
+
+    func fetchFoodLogs() async throws -> [RemoteFoodLog] {
+        let response: RemoteFoodLogResponse = try await send(
+            path: "diet/logs",
+            method: "GET",
+            body: nil
+        )
+        return response.items
+    }
+
+    func syncBodyMetric(_ metric: BodyMetric) async throws {
+        var payload: [String: Any] = [
+            "client_id": metric.id.uuidString,
+            "measured_at": Self.iso8601WithFractionalSeconds.string(from: metric.date),
+            "weight_kg": metric.weightKG,
+            "body_fat_pct": metric.bodyFatPCT,
+            "waist_cm": metric.waistCM
+        ]
+        if let arm = metric.armCM { payload["arm_cm"] = arm }
+        if let thigh = metric.thighCM { payload["thigh_cm"] = thigh }
+        let body = try JSONSerialization.data(withJSONObject: payload)
+        try await sendVoid(path: "body/metrics", method: "POST", body: body)
+    }
+
+    func deleteBodyMetric(id: UUID) async throws {
+        try await sendVoid(
+            path: "body/metrics/\(id.uuidString)",
+            method: "DELETE",
+            body: nil
+        )
+    }
+
+    func fetchBodyMetrics() async throws -> [RemoteBodyMetric] {
+        let response: RemoteBodyMetricResponse = try await send(
+            path: "body/metrics",
+            method: "GET",
+            body: nil
+        )
+        return response.items
+    }
+
+    func syncEquipmentItem(_ item: EquipmentItem) async throws {
+        var payload: [String: Any] = [
+            "client_id": item.id.uuidString,
+            "name": item.name,
+            "notes": item.notes
+        ]
+        if let slug = item.slug { payload["slug"] = slug }
+        if let muscle = item.muscle { payload["muscle"] = muscle.rawValue }
+        if let equipment = item.equipment { payload["equipment"] = equipment.rawValue }
+        let body = try JSONSerialization.data(withJSONObject: payload)
+        try await sendVoid(path: "equipment/items", method: "POST", body: body)
+    }
+
+    func deleteEquipmentItem(id: UUID) async throws {
+        try await sendVoid(
+            path: "equipment/items/\(id.uuidString)",
+            method: "DELETE",
+            body: nil
+        )
+    }
+
+    func fetchEquipmentItems() async throws -> [RemoteEquipmentItem] {
+        let response: RemoteEquipmentItemResponse = try await send(
+            path: "equipment/items",
+            method: "GET",
+            body: nil
+        )
+        return response.items
     }
 
     // MARK: - 器械识别

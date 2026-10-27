@@ -2,7 +2,8 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from sqlalchemy import select
 
 from ..deps import CurrentUser, DBSession
-from ..models import EquipmentScan, Exercise
+from ..models import EquipmentLibraryItem, EquipmentScan, Exercise
+from ..schemas import EquipmentLibraryIn
 from ..services.equipment import recognize
 
 router = APIRouter(tags=["equipment"])
@@ -74,3 +75,77 @@ def search_exercises(
             for item in rows
         ]
     }
+
+
+def _equipment_item_dict(item: EquipmentLibraryItem) -> dict:
+    return {
+        "client_id": item.client_id,
+        "name": item.name,
+        "slug": item.slug,
+        "muscle": item.muscle,
+        "equipment": item.equipment,
+        "notes": item.notes,
+        "created_at": item.created_at.isoformat(),
+    }
+
+
+@router.post("/equipment/items", status_code=201)
+def upsert_equipment_item(
+    payload: EquipmentLibraryIn,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    item = db.execute(
+        select(EquipmentLibraryItem).where(
+            EquipmentLibraryItem.user_id == user_id,
+            EquipmentLibraryItem.client_id == payload.client_id,
+        )
+    ).scalar_one_or_none()
+    if item is None:
+        item = EquipmentLibraryItem(user_id=user_id, client_id=payload.client_id)
+        db.add(item)
+    item.name = payload.name
+    item.slug = payload.slug
+    item.muscle = payload.muscle
+    item.equipment = payload.equipment
+    item.notes = payload.notes
+    db.commit()
+    return _equipment_item_dict(item)
+
+
+@router.get("/equipment/items")
+def list_equipment_items(
+    user_id: CurrentUser,
+    db: DBSession,
+    limit: int = Query(default=500, ge=1, le=1000),
+):
+    rows = (
+        db.execute(
+            select(EquipmentLibraryItem)
+            .where(EquipmentLibraryItem.user_id == user_id)
+            .order_by(EquipmentLibraryItem.created_at.desc())
+            .limit(limit)
+        )
+        .scalars()
+        .all()
+    )
+    return {"items": [_equipment_item_dict(item) for item in rows]}
+
+
+@router.delete("/equipment/items/{client_id}")
+def delete_equipment_item(
+    client_id: str,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    item = db.execute(
+        select(EquipmentLibraryItem).where(
+            EquipmentLibraryItem.user_id == user_id,
+            EquipmentLibraryItem.client_id == client_id,
+        )
+    ).scalar_one_or_none()
+    if item is None:
+        raise HTTPException(status_code=404, detail="?????")
+    db.delete(item)
+    db.commit()
+    return {"status": "deleted", "client_id": client_id}

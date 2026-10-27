@@ -1,11 +1,11 @@
-from datetime import date
+from datetime import date, datetime, time, timezone
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from sqlalchemy import select
 
 from ..deps import CurrentUser, DBSession
-from ..models import Goal, MealPlan, Profile
-from ..schemas import DietPlanIn
+from ..models import FoodLog, Goal, MealPlan, Profile
+from ..schemas import DietPlanIn, FoodLogIn
 from ..services.diet import build_plan, calculate_targets, meituan_link
 from ..services.food_vision import analyze as analyze_food_photo
 
@@ -39,6 +39,89 @@ async def analyze_meal(
 
     # 原图不落盘、不入库；只返回本次识别结果
     return await analyze_food_photo(data, file.filename or "meal.jpg")
+
+
+def _food_log_dict(item: FoodLog) -> dict:
+    return {
+        "client_id": item.client_id,
+        "logged_at": item.logged_at.isoformat(),
+        "meal": item.meal,
+        "food_name": item.food_name,
+        "grams": item.grams,
+        "kcal": item.kcal,
+        "protein": item.protein,
+        "carbs": item.carbs,
+        "fat": item.fat,
+        "fiber": item.fiber,
+    }
+
+
+@router.post("/logs", status_code=201)
+def upsert_food_log(payload: FoodLogIn, user_id: CurrentUser, db: DBSession):
+    item = db.execute(
+        select(FoodLog).where(
+            FoodLog.user_id == user_id,
+            FoodLog.client_id == payload.client_id,
+        )
+    ).scalar_one_or_none()
+    if item is None:
+        item = FoodLog(user_id=user_id, client_id=payload.client_id)
+        db.add(item)
+    item.logged_at = payload.logged_at
+    item.meal = payload.meal
+    item.food_name = payload.food_name
+    item.grams = payload.grams
+    item.kcal = payload.kcal
+    item.protein = payload.protein
+    item.carbs = payload.carbs
+    item.fat = payload.fat
+    item.fiber = payload.fiber
+    db.commit()
+    return _food_log_dict(item)
+
+
+@router.get("/logs")
+def list_food_logs(
+    user_id: CurrentUser,
+    db: DBSession,
+    date_from: date | None = Query(default=None, alias="from"),
+    date_to: date | None = Query(default=None, alias="to"),
+    limit: int = Query(default=500, ge=1, le=1000),
+):
+    query = select(FoodLog).where(FoodLog.user_id == user_id)
+    if date_from:
+        query = query.where(
+            FoodLog.logged_at
+            >= datetime.combine(date_from, time.min, tzinfo=timezone.utc)
+        )
+    if date_to:
+        query = query.where(
+            FoodLog.logged_at
+            < datetime.combine(date_to, time.max, tzinfo=timezone.utc)
+        )
+    rows = (
+        db.execute(
+            query.order_by(FoodLog.logged_at.desc()).limit(limit)
+        )
+        .scalars()
+        .all()
+    )
+    return {"items": [_food_log_dict(item) for item in rows]}
+
+
+@router.delete("/logs/{client_id}")
+def delete_food_log(client_id: str, user_id: CurrentUser, db: DBSession):
+    item = db.execute(
+        select(FoodLog).where(
+            FoodLog.user_id == user_id,
+            FoodLog.client_id == client_id,
+        )
+    ).scalar_one_or_none()
+    if item is None:
+        raise HTTPException(status_code=404, detail="饮食记录不存在")
+    db.delete(item)
+    db.commit()
+    return {"status": "deleted", "client_id": client_id}
 
 
 @router.get("/targets")

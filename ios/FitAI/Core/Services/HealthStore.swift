@@ -70,6 +70,7 @@ extension AppStore {
         )
         appendBodyMetric(metric)
         persist()
+        syncPendingUserData()
     }
 
     func dismissBodyCheckIn() {

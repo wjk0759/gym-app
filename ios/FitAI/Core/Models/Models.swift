@@ -557,6 +557,7 @@ struct FoodLog: Codable, Identifiable, Hashable {
     var fat: Double
     /// 旧数据没有该字段；0 表示未记录，不阻塞解码。
     var fiber: Double? = nil
+    var syncedAt: Date? = nil
 }
 
 struct NutritionTotals {
@@ -606,6 +607,7 @@ struct EquipmentItem: Codable, Identifiable, Hashable {
     var notes: String = ""
     var photoData: Data?
     var createdAt: Date = Date()
+    var syncedAt: Date? = nil
 
     var exercise: Exercise? {
         slug.flatMap { ExerciseLibrary.exercise(slug: $0) }

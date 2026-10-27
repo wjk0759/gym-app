@@ -532,6 +532,77 @@ class AIMemory(Base):
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class FoodLog(Base):
+    __tablename__ = "food_logs"
+    __table_args__ = (
+        UniqueConstraint("user_id", "client_id", name="uq_food_logs_user_client"),
+        Index("ix_food_logs_user_logged", "user_id", "logged_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    client_id: Mapped[str] = mapped_column(String(36))
+    logged_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    meal: Mapped[str] = mapped_column(String(20))
+    food_name: Mapped[str] = mapped_column(String(120))
+    grams: Mapped[float] = mapped_column(Float, default=0)
+    kcal: Mapped[float] = mapped_column(Float, default=0)
+    protein: Mapped[float] = mapped_column(Float, default=0)
+    carbs: Mapped[float] = mapped_column(Float, default=0)
+    fat: Mapped[float] = mapped_column(Float, default=0)
+    fiber: Mapped[float] = mapped_column(Float, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
+class BodyMetric(Base):
+    __tablename__ = "body_metrics"
+    __table_args__ = (
+        UniqueConstraint("user_id", "client_id", name="uq_body_metrics_user_client"),
+        Index("ix_body_metrics_user_measured", "user_id", "measured_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    client_id: Mapped[str] = mapped_column(String(36))
+    measured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    weight_kg: Mapped[float] = mapped_column(Float)
+    body_fat_pct: Mapped[float] = mapped_column(Float)
+    waist_cm: Mapped[float] = mapped_column(Float)
+    arm_cm: Mapped[float | None] = mapped_column(Float)
+    thigh_cm: Mapped[float | None] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class EquipmentLibraryItem(Base):
+    __tablename__ = "equipment_library"
+    __table_args__ = (
+        UniqueConstraint("user_id", "client_id", name="uq_equipment_library_user_client"),
+        Index("ix_equipment_library_user_created", "user_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    client_id: Mapped[str] = mapped_column(String(36))
+    name: Mapped[str] = mapped_column(String(120))
+    slug: Mapped[str | None] = mapped_column(String(80))
+    muscle: Mapped[str | None] = mapped_column(String(30))
+    equipment: Mapped[str | None] = mapped_column(String(30))
+    notes: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
 class MealPlan(Base):
     __tablename__ = "meal_plans"
 

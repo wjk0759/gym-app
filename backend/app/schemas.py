@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from datetime import date as dt_date
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -156,3 +157,35 @@ class AgentChatIn(BaseModel):
 
 class DietPlanIn(BaseModel):
     date: dt_date | None = None
+
+
+class FoodLogIn(BaseModel):
+    client_id: str = Field(min_length=1, max_length=36)
+    logged_at: datetime
+    meal: Literal["breakfast", "lunch", "dinner", "snack"]
+    food_name: str = Field(min_length=1, max_length=120)
+    grams: float = Field(default=0, ge=0, le=5000)
+    kcal: float = Field(default=0, ge=0, le=10000)
+    protein: float = Field(default=0, ge=0, le=1000)
+    carbs: float = Field(default=0, ge=0, le=1000)
+    fat: float = Field(default=0, ge=0, le=1000)
+    fiber: float = Field(default=0, ge=0, le=1000)
+
+
+class BodyMetricIn(BaseModel):
+    client_id: str = Field(min_length=1, max_length=36)
+    measured_at: datetime
+    weight_kg: float = Field(ge=30, le=300)
+    body_fat_pct: float = Field(ge=3, le=60)
+    waist_cm: float = Field(ge=30, le=200)
+    arm_cm: float | None = Field(default=None, ge=10, le=100)
+    thigh_cm: float | None = Field(default=None, ge=20, le=120)
+
+
+class EquipmentLibraryIn(BaseModel):
+    client_id: str = Field(min_length=1, max_length=36)
+    name: str = Field(min_length=1, max_length=120)
+    slug: str | None = Field(default=None, max_length=80)
+    muscle: str | None = Field(default=None, max_length=30)
+    equipment: str | None = Field(default=None, max_length=30)
+    notes: str = Field(default="", max_length=1000)

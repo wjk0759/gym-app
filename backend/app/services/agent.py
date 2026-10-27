@@ -21,7 +21,10 @@ from ..models import (
     AgentPlanProposal,
     AgentRun,
     AgentStep,
+    BodyMetric,
     ChatMessage,
+    EquipmentLibraryItem,
+    FoodLog,
     Goal,
     Profile,
     Program,
@@ -139,6 +142,75 @@ def _active_goal(db: Session, user_id: str) -> Goal | None:
     )
 
 
+def _body_context(db: Session, user_id: str) -> list[dict]:
+    rows = (
+        db.execute(
+            select(BodyMetric)
+            .where(BodyMetric.user_id == user_id)
+            .order_by(BodyMetric.measured_at.desc())
+            .limit(5)
+        )
+        .scalars()
+        .all()
+    )
+    return [
+        {
+            "date": item.measured_at.date().isoformat(),
+            "weight_kg": item.weight_kg,
+            "body_fat_pct": item.body_fat_pct,
+            "waist_cm": item.waist_cm,
+        }
+        for item in rows
+    ]
+
+
+def _nutrition_context(db: Session, user_id: str, days: int = 7) -> dict:
+    since = utcnow() - timedelta(days=max(1, min(30, days)))
+    rows = (
+        db.execute(
+            select(FoodLog).where(
+                FoodLog.user_id == user_id,
+                FoodLog.logged_at >= since,
+            )
+        )
+        .scalars()
+        .all()
+    )
+    dates = {item.logged_at.date().isoformat() for item in rows}
+    return {
+        "days": days,
+        "logged_days": len(dates),
+        "kcal": round(sum(item.kcal for item in rows), 1),
+        "protein_g": round(sum(item.protein for item in rows), 1),
+        "carbs_g": round(sum(item.carbs for item in rows), 1),
+        "fat_g": round(sum(item.fat for item in rows), 1),
+        "fiber_g": round(sum(item.fiber for item in rows), 1),
+    }
+
+
+def _equipment_context(db: Session, user_id: str) -> list[dict]:
+    rows = (
+        db.execute(
+            select(EquipmentLibraryItem)
+            .where(EquipmentLibraryItem.user_id == user_id)
+            .order_by(EquipmentLibraryItem.created_at.desc())
+            .limit(20)
+        )
+        .scalars()
+        .all()
+    )
+    return [
+        {
+            "name": item.name,
+            "slug": item.slug,
+            "muscle": item.muscle,
+            "equipment": item.equipment,
+            "notes": item.notes,
+        }
+        for item in rows
+    ]
+
+
 def _context(db: Session, user_id: str) -> dict:
     profile = db.get(Profile, user_id)
     program = _active_program(db, user_id) if profile is not None else None
@@ -153,6 +225,9 @@ def _context(db: Session, user_id: str) -> dict:
         "profile": profile_to_dict(profile),
         "goal": goal_to_dict(_active_goal(db, user_id)),
         "current_plan": _program_summary(program),
+        "body_metrics": _body_context(db, user_id),
+        "nutrition_7d": _nutrition_context(db, user_id, 7),
+        "equipment_library": _equipment_context(db, user_id),
         "memories": memory_payload,
     }
 
