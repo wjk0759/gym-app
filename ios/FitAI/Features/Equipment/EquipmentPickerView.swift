@@ -20,9 +20,13 @@ struct EquipmentPickerView: View {
     @State private var feedback: String?
     @State private var customDay: PlanDay?
     @State private var detailExercise: Exercise?
-    @State private var showCompose = false
-    @State private var composeExercises: [PlanExercise] = []
+    @State private var composePayload: ComposePayload?
     @State private var pendingComposeDay: PlanDay?
+
+    private struct ComposePayload: Identifiable {
+        let id = UUID()
+        let exercises: [PlanExercise]
+    }
 
     init() {
         self.onSelectExercise = nil
@@ -140,10 +144,10 @@ struct EquipmentPickerView: View {
             }
         }
         .fullScreenCover(
-            isPresented: $showCompose,
+            item: $composePayload,
             onDismiss: presentPendingComposeDay
-        ) {
-            CustomWorkoutBuilderView(initialExercises: composeExercises) { day in
+        ) { payload in
+            CustomWorkoutBuilderView(initialExercises: payload.exercises) { day in
                 pendingComposeDay = day
             }
         }
@@ -696,11 +700,11 @@ struct EquipmentPickerView: View {
         }
         showSelectionPanel = false
         pendingComposeDay = nil
+        let payload = ComposePayload(exercises: exercises)
 
         // 等气泡收起后再打开编排页，避免两个 presentation 争抢。
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-            composeExercises = exercises
-            showCompose = true
+            composePayload = payload
         }
     }
 

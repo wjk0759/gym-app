@@ -117,6 +117,15 @@ struct CustomWorkoutBuilderView: View {
                 footer
             }
             .background(AppBackground())
+            .onAppear {
+                // @State 首次初始化偶发早于 presentation 的新数据；此时用入参兜底，避免空白页。
+                guard exercises.isEmpty, !initialExercises.isEmpty else { return }
+                exercises = initialExercises.map { item in
+                    var item = item
+                    item.reps = WorkoutPickerOptions.normalizedReps(item.reps)
+                    return item
+                }
+            }
             .navigationTitle(mode == .editPlan ? "编辑训练日" : "安排训练")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
