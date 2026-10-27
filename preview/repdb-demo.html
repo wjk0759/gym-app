@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FitAI · RepDB 免费动作图预览</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: #0b1018; color: #e8eef8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    main { width: min(1100px, calc(100% - 32px)); margin: 0 auto; padding: 38px 0 56px; }
+    h1 { margin: 0; font-size: 26px; letter-spacing: -0.03em; }
+    .lead { margin: 10px 0 0; color: #8d9bb0; font-size: 14px; line-height: 1.7; }
+    .badge { display: inline-block; margin-top: 14px; padding: 5px 9px; border: 1px solid rgba(61,220,151,.3); border-radius: 999px; color: #67e6ad; font-size: 11px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }
+    .card { overflow: hidden; border: 1px solid rgba(148,163,184,.16); border-radius: 18px; background: #111925; }
+    .stage { display: grid; place-items: center; aspect-ratio: 1 / 1; background: #dfeef8; }
+    .stage img { width: 100%; height: 100%; object-fit: contain; }
+    .meta { padding: 13px 15px 15px; }
+    .meta strong { display: block; font-size: 14px; }
+    .meta span { display: block; margin-top: 4px; color: #7f8da2; font-size: 11px; }
+    .pair { display: flex; gap: 6px; padding: 0 15px 15px; }
+    .pair img { width: 50%; border-radius: 8px; background: #dfeef8; }
+    .note { margin-top: 22px; padding: 14px 16px; border: 1px solid rgba(91,140,255,.22); border-radius: 12px; color: #9fb0c8; font-size: 12px; line-height: 1.65; background: rgba(91,140,255,.05); }
+    a { color: #8db4ff; }
+    @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } main { padding-top: 24px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>RepDB Free · 免费动作图</h1>
+    <p class="lead">701 个动作，512px WebP 平面插画，每个动作有 start / peak 两个姿势；免费商用，但需要显式署名。</p>
+    <span class="badge">免费商用 · 需署名 · 不是 3D</span>
+    <section class="grid" id="grid"></section>
+    <div class="note">
+      <a href="https://repdb.co/" target="_blank" rel="noreferrer">Exercise data by RepDB (repdb.co)</a> ·
+      <a href="https://github.com/RepDB/exercise-dataset" target="_blank" rel="noreferrer">free dataset / license</a>。
+      本页只做评估预览，图片从 RepDB 官方 CDN 远程加载，未复制进仓库。
+    </div>
+  </main>
+  <script>
+    const base = 'https://cdn.jsdelivr.net/gh/RepDB/exercise-dataset@main/';
+    const exercises = [
+      { id: 'chest-press-machine', name: 'Machine Chest Press', meta: 'Chest · Machine' },
+      { id: 'lat-pulldown', name: 'Lat Pulldown', meta: 'Lats · Cable' },
+      { id: 'leg-press', name: 'Leg Press', meta: 'Quads · Machine' },
+      { id: 'pec-deck', name: 'Pec Deck', meta: 'Chest · Machine' }
+    ];
+    const grid = document.querySelector('#grid');
+    grid.innerHTML = exercises.map((e) => `
+      <article class="card">
+        <div class="stage"><img id="img-${e.id}" src="${base}images/flat/${e.id}-start.webp" alt="${e.name}"></div>
+        <div class="meta"><strong>${e.name}</strong><span>${e.meta} · start / peak</span></div>
+        <div class="pair">
+          <img src="${base}images/flat/${e.id}-start.webp" alt="">
+          <img src="${base}images/flat/${e.id}-peak.webp" alt="">
+        </div>
+      </article>
+    `).join('');
+    let peak = false;
+    setInterval(() => {
+      peak = !peak;
+      exercises.forEach((e) => {
+        document.querySelector(`#img-${e.id}`).src = `${base}images/flat/${e.id}-${peak ? 'peak' : 'start'}.webp`;
+      });
+    }, 900);
+  </script>
+</body>
+</html>
