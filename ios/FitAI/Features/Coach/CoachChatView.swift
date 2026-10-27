@@ -792,10 +792,11 @@ struct CoachChatView: View {
         let trimmed = String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(500))
         guard !trimmed.isEmpty, !store.isReplying else { return }
         Haptics.impact(.light)
-        if store.planAdjustmentStage > 0 {
+        if store.canUseRemoteAI {
+            // 所有 Skill、所有自然语言都先交给 Agent 理解；不再由本地关键词决定意图。
+            store.sendAgentChat(trimmed, skill: selectedSkill)
+        } else if store.planAdjustmentStage > 0 {
             store.sendPlanAdjustmentMessage(trimmed)
-        } else if store.canUseRemoteAI && selectedSkill == .trainer {
-            store.sendAgentChat(trimmed)
         } else if store.isPlanScheduleRequest(trimmed) {
             store.beginPlanAdjustment()
             store.sendPlanAdjustmentMessage(trimmed)

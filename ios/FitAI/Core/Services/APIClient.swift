@@ -701,9 +701,13 @@ struct APIClient {
     func agentChat(
         message: String,
         sessionID: UUID? = nil,
+        skill: CoachSkill = .trainer,
         appContext: [String: Any]? = nil
     ) async throws -> AgentChatResponse {
-        var payload: [String: Any] = ["message": message]
+        var payload: [String: Any] = [
+            "message": message,
+            "skill": skill.rawValue
+        ]
         if let sessionID { payload["session_id"] = sessionID.uuidString }
         if let appContext { payload["app_context"] = appContext }
         let body = try JSONSerialization.data(withJSONObject: payload)

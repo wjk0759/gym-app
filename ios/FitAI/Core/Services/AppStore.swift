@@ -1069,7 +1069,7 @@ final class AppStore {
                 == calendar.component(.yearForWeekOfYear, from: rhs)
     }
 
-    func sendAgentChat(_ text: String) {
+    func sendAgentChat(_ text: String, skill: CoachSkill = .trainer) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         chat.append(ChatMessage(role: .user, text: trimmed))
@@ -1090,6 +1090,7 @@ final class AppStore {
                     response = try await APIClient.shared.agentChat(
                         message: trimmed,
                         sessionID: self.agentSessionID,
+                        skill: skill,
                         appContext: context
                     )
                 } catch let error as APIError where error.statusCode == 404 {
@@ -1099,6 +1100,7 @@ final class AppStore {
                     response = try await APIClient.shared.agentChat(
                         message: trimmed,
                         sessionID: nil,
+                        skill: skill,
                         appContext: context
                     )
                 }
@@ -1117,7 +1119,7 @@ final class AppStore {
                     to: trimmed,
                     profile: self.profile,
                     plan: self.plan,
-                    skill: .trainer,
+                    skill: skill,
                     period: self.todayPeriod
                 )
                 self.toast = "远程 AI 暂时不可用，已使用本地建议"

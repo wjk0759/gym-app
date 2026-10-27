@@ -24,6 +24,21 @@ struct PlanAdjustmentProposal: Identifiable, Equatable {
 extension AppStore {
     func requestPlanAdjustment() {
         selectedTab = 2
+        if canUseRemoteAI {
+            planAdjustmentRequested = false
+            planAdjustmentStage = 0
+            planAdjustmentProposal = nil
+            if chat.isEmpty {
+                chat.append(
+                    ChatMessage(
+                        role: .assistant,
+                        text: "直接告诉我你想怎么调整：训练日、频率、时长、动作、伤病或最近执行情况都可以。我会先理解你的意思，再给出可确认的方案。"
+                    )
+                )
+            }
+            persist()
+            return
+        }
         planAdjustmentRequested = true
     }
 

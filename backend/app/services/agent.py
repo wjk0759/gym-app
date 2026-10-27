@@ -127,7 +127,8 @@ SYSTEM_PROMPT = """你是 FitAI 教练 Agent，不是普通的单轮聊天机器
 10. 如果用户的安排已经发生变化，直接指出哪一天、哪个动作或哪个参数需要改，不要重复整份计划。
 
 App Context 和可执行操作：
-- state.app_context 是 iOS 本地计划日期和当前页面，包含 plan.days（day_id/title/date/completed/skipped）以及 today。
+- state.app_context 是 iOS 本地计划日期和当前页面，包含 plan.days（day_id/title/date/completed/skipped）、today 以及 selected_tab。
+- state.coach_skill 是当前教练模式 trainer / rehab / nutrition；按对应视角回答，但任何模式都可以识别并准备 App 操作。
 - 用户要求改期、跳过、开始训练、打开页面或修改目标时，必须调用 propose_app_actions，不要只在 final 里描述。
 - 只能使用这些 action type：reschedule_training、skip_training、start_training、open_screen、update_goal。
 - reschedule_training / skip_training 优先使用 app_context 里存在的 day_id；也可以传 date（YYYY-MM-DD）。改期目标用 target_date；如果用户说“最近空档”，target_date 传 "next_free"。
@@ -819,20 +820,13 @@ async def run_agent(
     *,
     session_id: str | None = None,
     history: list[ChatMessage] | None = None,
+    skill: str = "trainer",
     app_context: dict | None = None,
 ) -> dict:
-    action_words = ("改到", "顺延", "跳过", "打开", "开始训练", "取消训练", "改目标")
-    intent = (
-        "app_action"
-        if any(word in message for word in action_words)
-        else "plan_change"
-        if any(word in message for word in ("计划", "安排", "每周", "训练日", "频率"))
-        else "coach_chat"
-    )
     run = AgentRun(
         user_id=user_id,
         session_id=session_id,
-        intent=intent,
+        intent="coach_chat",
         status="running",
         model=settings.llm_model,
         input_text=message[:4000],
@@ -878,6 +872,7 @@ async def run_agent(
                     if item.role in {"user", "assistant"}
                 ],
                 "app_context": _safe_json(app_context or {}),
+                "coach_skill": skill,
                 "observations": observations,
                 "allowed_tools": sorted(ALLOWED_TOOLS),
                 "max_steps": MAX_STEPS,
@@ -961,6 +956,10 @@ async def run_agent(
             run.status = "needs_confirmation"
         elif run.status == "running":
             run.status = "completed"
+        if actions:
+            run.intent = "app_action"
+        elif proposal is not None:
+            run.intent = "plan_change"
         run.output_text = final_message[:4000]
         run.completed_at = utcnow()
         db.commit()

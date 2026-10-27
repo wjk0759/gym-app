@@ -38,6 +38,7 @@ async def agent_chat(
         payload.message,
         session_id=session.id,
         history=history,
+        skill=payload.skill,
         app_context=payload.app_context,
     )
 
