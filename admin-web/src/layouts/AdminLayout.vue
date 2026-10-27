@@ -165,6 +165,7 @@ const allMenuItems: MenuItem[] = [
   { path: '/exercises', label: '动作库', icon: Reading, permission: 'exercise:read' },
   { path: '/videos', label: '教学视频', icon: VideoCamera, permission: 'video:read' },
   { path: '/ai', label: 'AI 运营', icon: Cpu, permission: 'ai:read' },
+  { path: '/agent-runs', label: 'Agent 运行', icon: Cpu, permission: 'ai:read' },
   { path: '/audit', label: '审计日志', icon: Document, permission: 'audit:read' },
   { path: '/settings', label: '系统设置', icon: Setting, permission: 'settings:manage' },
 ]

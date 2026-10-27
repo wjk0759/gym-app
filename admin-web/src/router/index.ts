@@ -76,6 +76,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'AI 运营', permission: 'ai:read' },
       },
       {
+        path: 'agent-runs',
+        name: 'agent-runs',
+        component: () => import('@/views/AgentRunsView.vue'),
+        meta: { title: 'Agent 运行', permission: 'ai:read' },
+      },
+      {
         path: 'audit',
         name: 'audit',
         component: () => import('@/views/AuditView.vue'),

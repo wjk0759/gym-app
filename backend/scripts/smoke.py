@@ -107,7 +107,45 @@ def main() -> None:
         }
         response = client.post("/api/v1/workouts", json=workout, headers=headers)
         assert response.status_code == 201, response.text
+        workout_id = response.json()["id"]
         print("workout:", response.json())
+
+        workout_update = {
+            **workout,
+            "feeling": 5,
+            "notes": "冒烟测试-已编辑",
+            "sets": [
+                {
+                    "slug": day["exercises"][0]["slug"],
+                    "set_index": 1,
+                    "weight_kg": 15,
+                    "reps": 8,
+                    "rpe": 8,
+                    "completed": True,
+                }
+            ],
+        }
+        response = client.patch(
+            f"/api/v1/workouts/{workout_id}",
+            json=workout_update,
+            headers=headers,
+        )
+        assert response.status_code == 200, response.text
+        response = client.get(f"/api/v1/workouts/{workout_id}", headers=headers)
+        assert response.status_code == 200, response.text
+        updated = response.json()
+        assert updated["feeling"] == 5, updated
+        assert updated["notes"] == "冒烟测试-已编辑", updated
+        assert updated["sets"][0]["weight_kg"] == 15, updated
+        print("workout update:", updated["notes"])
+
+        response = client.get(
+            "/api/v1/workouts?limit=5&include_sets=true",
+            headers=headers,
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["items"][0]["sets"], response.text
+        print("workout sync list: ok")
 
         response = client.get("/api/v1/workouts/summary?weeks=4", headers=headers)
         assert response.status_code == 200, response.text
@@ -144,6 +182,12 @@ def main() -> None:
         body = response.json()
         assert body["safety_flag"] == "medical_referral", body
         print("safety:", body["safety_flag"])
+
+        response = client.delete(f"/api/v1/workouts/{workout_id}", headers=headers)
+        assert response.status_code == 200, response.text
+        response = client.get(f"/api/v1/workouts/{workout_id}", headers=headers)
+        assert response.status_code == 404, response.text
+        print("workout delete: ok")
 
         response = client.post(
             "/api/v1/equipment/scan",

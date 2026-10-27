@@ -30,7 +30,10 @@ final class AppStore {
     var isGenerating = false
     var isReplying = false
     var isSyncingWorkouts = false
+    var isSyncingRemoteWorkouts = false
     var isSyncingUserData = false
+    /// 已从本地删除、但服务端 DELETE 尚未成功的训练记录 ID。
+    var pendingWorkoutDeletionIDs: [String] = []
     var isAgentWorking = false
     var agentSessionID: UUID?
     var agentProposal: AgentPlanProposal?
@@ -546,7 +549,8 @@ final class AppStore {
             durationMinutes: durationMinutes,
             feeling: feeling,
             notes: (cleanNotes?.isEmpty ?? true) ? nil : cleanNotes,
-            sets: sets
+            sets: sets,
+            programDayID: day.id
         )
         sessions.insert(session, at: 0)
         persist()
@@ -574,28 +578,79 @@ final class AppStore {
         guard let index = sessions.firstIndex(where: { $0.id == session.id }) else {
             return
         }
-        sessions[index] = session
+        var updated = session
+        if updated.remoteID != nil {
+            updated.pendingRemoteUpdate = true
+        }
+        sessions[index] = updated
         persist()
+        syncPendingWorkouts()
     }
 
     /// 将本地训练记录补传到 FastAPI；失败时保持 pending，下次登录或完成训练再试。
+    /// 创建、修改、删除共用一个串行通道，避免离线恢复时互相覆盖。
     func syncPendingWorkouts() {
         guard !isSyncingWorkouts,
               AuthTokenStore.shared.accessToken != nil else { return }
-        let pending = sessions.filter { $0.syncedAt == nil }
-        guard !pending.isEmpty else { return }
+        let pendingCreates = sessions.filter { $0.syncedAt == nil }
+        let pendingUpdates = sessions.filter {
+            $0.remoteID != nil && $0.syncedAt != nil && $0.pendingRemoteUpdate == true
+        }
+        let pendingDeletes = pendingWorkoutDeletionIDs
+        guard !pendingCreates.isEmpty || !pendingUpdates.isEmpty || !pendingDeletes.isEmpty else {
+            return
+        }
+        let accountID = currentUserID
         isSyncingWorkouts = true
         Task { @MainActor in
             defer { self.isSyncingWorkouts = false }
-            for session in pending {
+
+            for remoteID in pendingDeletes {
+                do {
+                    try await APIClient.shared.deleteWorkout(id: remoteID)
+                    guard self.currentUserID == accountID else { return }
+                    self.pendingWorkoutDeletionIDs.removeAll { $0 == remoteID }
+                    self.persist()
+                } catch let error as APIError where error.statusCode == 404 {
+                    // 服务端已经不存在该记录，删除墓碑视为完成。
+                    guard self.currentUserID == accountID else { return }
+                    self.pendingWorkoutDeletionIDs.removeAll { $0 == remoteID }
+                    self.persist()
+                } catch {
+                    // 保留墓碑，下一次前台刷新继续删除，避免离线删除被服务端数据复活。
+                }
+            }
+
+            for session in pendingCreates {
                 do {
                     let remoteID = try await APIClient.shared.createWorkout(session)
+                    guard self.currentUserID == accountID else { return }
                     if let index = self.sessions.firstIndex(where: { $0.id == session.id }) {
                         self.sessions[index].remoteID = remoteID
                         self.sessions[index].syncedAt = Date()
+                        self.sessions[index].pendingRemoteUpdate = nil
                     }
                 } catch {
                     // 网络或服务端暂时不可用时保留待同步状态，不阻塞本地训练闭环。
+                }
+            }
+
+            for session in pendingUpdates {
+                guard let remoteID = session.remoteID else { continue }
+                do {
+                    try await APIClient.shared.updateWorkout(id: remoteID, session: session)
+                    guard self.currentUserID == accountID else { return }
+                    if let index = self.sessions.firstIndex(where: { $0.id == session.id }) {
+                        var latest = self.sessions[index]
+                        var sent = session
+                        latest.pendingRemoteUpdate = nil
+                        sent.pendingRemoteUpdate = nil
+                        if latest == sent {
+                            self.sessions[index].pendingRemoteUpdate = nil
+                        }
+                    }
+                } catch {
+                    // 保留 pendingRemoteUpdate，下一次前台刷新重试 PATCH。
                 }
             }
             self.persist()
@@ -603,8 +658,102 @@ final class AppStore {
     }
 
     func deleteSession(_ id: UUID) {
+        guard let remoteID = sessions.first(where: { $0.id == id })?.remoteID else {
+            sessions.removeAll { $0.id == id }
+            persist()
+            return
+        }
         sessions.removeAll { $0.id == id }
+        if !pendingWorkoutDeletionIDs.contains(remoteID) {
+            pendingWorkoutDeletionIDs.append(remoteID)
+        }
         persist()
+        syncPendingWorkouts()
+    }
+
+    /// 拉取服务端近 90 天训练历史，按 remoteID 合并；本地未上传的修改优先。
+    func syncRemoteWorkouts() {
+        guard !isSyncingRemoteWorkouts,
+              AuthTokenStore.shared.accessToken != nil else { return }
+        let accountID = currentUserID
+        isSyncingRemoteWorkouts = true
+        Task { @MainActor in
+            defer { self.isSyncingRemoteWorkouts = false }
+            do {
+                let remote = try await APIClient.shared.fetchRecentWorkouts()
+                guard self.currentUserID == accountID else { return }
+                self.mergeRemoteWorkouts(remote)
+            } catch {
+                // 离线或服务端暂不可用时保留本地历史，下一次前台刷新再试。
+            }
+        }
+    }
+
+    private func mergeRemoteWorkouts(_ remote: [RemoteWorkout]) {
+        let deleting = Set(pendingWorkoutDeletionIDs)
+        var changed = false
+        for item in remote where !deleting.contains(item.id) {
+            let planTitle = plan?.days.first(where: { $0.id == item.programDayID })?.title
+            if let index = sessions.firstIndex(where: { $0.remoteID == item.id }) {
+                guard sessions[index].pendingRemoteUpdate != true else { continue }
+                let localID = sessions[index].id
+                let localTitle = sessions[index].dayTitle
+                let merged = makeWorkoutSession(
+                    from: item,
+                    dayTitle: planTitle ?? localTitle,
+                    localID: localID
+                )
+                if merged != sessions[index] {
+                    sessions[index] = merged
+                    changed = true
+                }
+            } else {
+                sessions.append(
+                    makeWorkoutSession(
+                        from: item,
+                        dayTitle: planTitle ?? "训练记录"
+                    )
+                )
+                changed = true
+            }
+        }
+        if changed {
+            sessions.sort { $0.date > $1.date }
+            persist()
+        }
+    }
+
+    private func makeWorkoutSession(
+        from item: RemoteWorkout,
+        dayTitle: String,
+        localID: UUID = UUID()
+    ) -> WorkoutSession {
+        let finishedAt = item.finishedAt ?? item.startedAt
+        let duration = item.durationMin ?? max(
+            0,
+            Int(finishedAt.timeIntervalSince(item.startedAt) / 60)
+        )
+        return WorkoutSession(
+            id: localID,
+            date: finishedAt,
+            dayTitle: dayTitle,
+            durationMinutes: duration,
+            feeling: min(5, max(1, item.feeling ?? 3)),
+            notes: item.notes,
+            sets: item.sets.map { set in
+                SetLog(
+                    slug: set.slug,
+                    setIndex: set.setIndex,
+                    weightKG: set.weightKG ?? 0,
+                    reps: set.reps ?? 0,
+                    rpe: set.rpe ?? 7,
+                    completed: set.completed
+                )
+            },
+            programDayID: item.programDayID,
+            remoteID: item.id,
+            syncedAt: Date()
+        )
     }
 
     func addFoodLog(_ log: FoodLog) {
@@ -962,6 +1111,8 @@ final class AppStore {
         bodyCheckInDay = 1
         bodyCheckInAnchor = Date()
         bodyCheckInDismissedDate = nil
+        pendingWorkoutDeletionIDs = []
+        isSyncingRemoteWorkouts = false
         useEquipmentLibraryForPlans = true
         reminderHour = 19
         reminderMinute = 0
@@ -1046,6 +1197,7 @@ final class AppStore {
         var bodyCheckInDay: Int?
         var bodyCheckInAnchor: Date?
         var bodyCheckInDismissedDate: String?
+        var pendingWorkoutDeletionIDs: [String]?
     }
 
     private func load() {
@@ -1075,6 +1227,7 @@ final class AppStore {
         bodyCheckInDay = state.bodyCheckInDay ?? 1
         bodyCheckInAnchor = state.bodyCheckInAnchor ?? Date()
         bodyCheckInDismissedDate = state.bodyCheckInDismissedDate
+        pendingWorkoutDeletionIDs = state.pendingWorkoutDeletionIDs ?? []
         useEquipmentLibraryForPlans = state.useEquipmentLibraryForPlans ?? true
     }
 
@@ -1101,7 +1254,8 @@ final class AppStore {
             bodyCheckInWeekday: bodyCheckInWeekday,
             bodyCheckInDay: bodyCheckInDay,
             bodyCheckInAnchor: bodyCheckInAnchor,
-            bodyCheckInDismissedDate: bodyCheckInDismissedDate
+            bodyCheckInDismissedDate: bodyCheckInDismissedDate,
+            pendingWorkoutDeletionIDs: pendingWorkoutDeletionIDs
         )
         let url = fileURL
         persistenceQueue.async {

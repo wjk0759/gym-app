@@ -32,8 +32,16 @@
 - Apple Watch / HIIT / 社区：依赖真实设备和后续版本，不在本轮堆功能。
 - 没有改 Tab、没有合并今日/计划、没有增加新的底部入口。
 
+## 跨设备同步（2026-10）
+
+- 完成训练后，本地记录通过 `POST /api/v1/workouts` 上报；未联网时保留 `syncedAt == nil` 的创建队列。
+- 训练详情编辑通过 `PATCH /api/v1/workouts/{id}` 同步，失败时保留 `pendingRemoteUpdate`，下次前台刷新自动重试。
+- 删除已同步记录时先落地 `remoteID` 墓碑，再调用 `DELETE /api/v1/workouts/{id}`；离线删除不会被下一次拉取复活。
+- iOS 前台/登录后通过 `GET /api/v1/workouts?from=...&include_sets=true` 拉取近 90 天记录，按 `remoteID` 合并；本机未上传的修改优先。
+- `program_day_id` 会随创建/更新上报，并在拉取时用于恢复训练日标题；旧记录没有关联时显示「训练记录」。
+
 ## 验收
 
 - iOS Build #42 通过
 - 网页预览走通了训练记录列表、训练心得、回到今日
-- 训练历史与动作历史使用本地数据，不依赖后端
+- 训练历史与动作历史读取本地数据；登录且远端可达时再与服务端合并

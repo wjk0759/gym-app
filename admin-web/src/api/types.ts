@@ -394,3 +394,53 @@ export interface UpdateAdminAccountPayload {
   status?: string
   roleCodes?: string[]
 }
+
+
+export interface AgentRunItem {
+  id: string
+  userId: string
+  userLabel: string
+  sessionId: string | null
+  intent: string
+  status: string
+  model: string | null
+  stepCount: number
+  inputText: string
+  outputText: string | null
+  error: string | null
+  createdAt: string
+  completedAt: string | null
+  proposalId: string | null
+  proposalStatus: string | null
+}
+
+export interface AgentStepItem {
+  id: string
+  stepIndex: number
+  stepType: string
+  toolName: string | null
+  status: string
+  latencyMs: number | null
+  input: unknown
+  output: unknown
+  error: string | null
+  createdAt: string
+}
+
+export interface AgentProposalItem {
+  id: string
+  title: string
+  status: string
+  baseVersion: number | null
+  diff: unknown
+  validation: unknown
+  createdAt: string
+  expiresAt: string
+  appliedAt: string | null
+}
+
+export interface AgentRunDetail {
+  run: AgentRunItem
+  steps: AgentStepItem[]
+  proposals: AgentProposalItem[]
+}

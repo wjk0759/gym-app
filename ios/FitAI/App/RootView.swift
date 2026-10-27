@@ -32,6 +32,7 @@ struct RootView: View {
             if auth.isAuthenticated {
                 enableRemoteMode()
                 store.syncPendingWorkouts()
+                store.syncRemoteWorkouts()
                 store.syncPendingUserData()
             }
         }
@@ -43,6 +44,7 @@ struct RootView: View {
             if isAuthenticated {
                 enableRemoteMode()
                 store.syncPendingWorkouts()
+                store.syncRemoteWorkouts()
                 store.syncPendingUserData()
             }
         }
@@ -51,6 +53,7 @@ struct RootView: View {
             if auth.isAuthenticated {
                 enableRemoteMode()
                 store.syncPendingWorkouts()
+                store.syncRemoteWorkouts()
                 store.syncPendingUserData()
             }
         }
@@ -59,6 +62,7 @@ struct RootView: View {
                 store.flushPersistence()
             } else if auth.isAuthenticated {
                 store.syncPendingWorkouts()
+                store.syncRemoteWorkouts()
                 store.syncPendingUserData()
             }
         }

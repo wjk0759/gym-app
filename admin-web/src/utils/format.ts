@@ -15,6 +15,13 @@ const STATUS_LABELS: Record<string, string> = {
   error: '失败',
   success: '成功',
   failed: '失败',
+  running: '运行中',
+  completed: '已完成',
+  needs_confirmation: '待确认',
+  applied: '已应用',
+  superseded: '已替代',
+  expired: '已过期',
+  rejected: '已拒绝',
   male: '男',
   female: '女',
 }
@@ -113,10 +120,10 @@ export function actionLabel(action: string): string {
 
 export function statusTagType(status: string | null | undefined):
   'success' | 'warning' | 'danger' | 'info' | 'primary' {
-  if (status === 'active' || status === 'published' || status === 'ok' || status === 'success') return 'success'
-  if (status === 'suspended' || status === 'pending' || status === 'processing' || status === 'fallback') return 'warning'
-  if (status === 'deleted' || status === 'disabled' || status === 'error' || status === 'failed') return 'danger'
-  if (status === 'draft') return 'info'
+  if (status === 'active' || status === 'published' || status === 'ok' || status === 'success' || status === 'completed' || status === 'applied') return 'success'
+  if (status === 'suspended' || status === 'pending' || status === 'processing' || status === 'fallback' || status === 'running' || status === 'needs_confirmation') return 'warning'
+  if (status === 'deleted' || status === 'disabled' || status === 'error' || status === 'failed' || status === 'rejected') return 'danger'
+  if (status === 'draft' || status === 'superseded' || status === 'expired') return 'info'
   return 'info'
 }
 

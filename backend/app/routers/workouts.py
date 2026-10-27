@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from ..deps import CurrentUser, DBSession
-from ..models import Exercise, Profile, SetLog, WorkoutSession
+from ..models import Exercise, Program, ProgramDay, Profile, SetLog, WorkoutSession
 from ..schemas import WorkoutIn
 
 router = APIRouter(prefix="/workouts", tags=["workouts"])
@@ -20,26 +20,48 @@ def _parse_dt(value: str | None) -> datetime | None:
         raise HTTPException(status_code=400, detail="时间格式需为 ISO 8601") from exc
 
 
+def _validate_slugs(db: DBSession, sets: list) -> None:
+    if not sets:
+        return
+    slugs = {item.slug for item in sets}
+    existing = {
+        row[0]
+        for row in db.execute(
+            select(Exercise.slug).where(Exercise.slug.in_(slugs))
+        ).all()
+    }
+    missing = slugs - existing
+    if missing:
+        raise HTTPException(
+            status_code=422, detail=f"动作不存在：{', '.join(sorted(missing))}"
+        )
+
+
+def _validate_program_day(
+    db: DBSession, user_id: str, program_day_id: str | None
+) -> None:
+    if not program_day_id:
+        return
+    owned = db.execute(
+        select(ProgramDay.id)
+        .join(Program, Program.id == ProgramDay.program_id)
+        .where(
+            ProgramDay.id == program_day_id,
+            Program.user_id == user_id,
+        )
+    ).scalar_one_or_none()
+    if owned is None:
+        raise HTTPException(status_code=422, detail="训练日不存在或不属于当前用户")
+
+
 @router.post("", status_code=201)
 def create_workout(payload: WorkoutIn, user_id: CurrentUser, db: DBSession):
     started_at = _parse_dt(payload.started_at)
     if started_at is None:
         raise HTTPException(status_code=400, detail="started_at 必填")
     finished_at = _parse_dt(payload.finished_at)
-
-    if payload.sets:
-        slugs = {item.slug for item in payload.sets}
-        existing = {
-            row[0]
-            for row in db.execute(
-                select(Exercise.slug).where(Exercise.slug.in_(slugs))
-            ).all()
-        }
-        missing = slugs - existing
-        if missing:
-            raise HTTPException(
-                status_code=422, detail=f"动作不存在：{', '.join(sorted(missing))}"
-            )
+    _validate_slugs(db, payload.sets)
+    _validate_program_day(db, user_id, payload.program_day_id)
 
     duration = None
     if finished_at:
@@ -78,6 +100,7 @@ def list_workouts(
     date_from: date | None = Query(default=None, alias="from"),
     date_to: date | None = Query(default=None, alias="to"),
     limit: int = Query(default=20, ge=1, le=100),
+    include_sets: bool = Query(default=False),
 ):
     query = (
         select(WorkoutSession)
@@ -101,21 +124,32 @@ def list_workouts(
         .scalars()
         .all()
     )
-    return {
-        "items": [
-            {
-                "id": item.id,
-                "program_day_id": item.program_day_id,
-                "started_at": item.started_at.isoformat(),
-                "finished_at": item.finished_at.isoformat() if item.finished_at else None,
-                "duration_min": item.duration_min,
-                "feeling": item.feeling,
-                "notes": item.notes,
-                "set_count": len(item.sets),
-            }
-            for item in rows
-        ]
-    }
+    items = []
+    for item in rows:
+        payload = {
+            "id": item.id,
+            "program_day_id": item.program_day_id,
+            "started_at": item.started_at.isoformat(),
+            "finished_at": item.finished_at.isoformat() if item.finished_at else None,
+            "duration_min": item.duration_min,
+            "feeling": item.feeling,
+            "notes": item.notes,
+            "set_count": len(item.sets),
+        }
+        if include_sets:
+            payload["sets"] = [
+                {
+                    "slug": log.exercise_slug,
+                    "set_index": log.set_index,
+                    "weight_kg": log.weight_kg,
+                    "reps": log.reps,
+                    "rpe": log.rpe,
+                    "completed": log.completed,
+                }
+                for log in item.sets
+            ]
+        items.append(payload)
+    return {"items": items}
 
 
 @router.get("/summary")
@@ -168,11 +202,14 @@ def get_workout(workout_id: str, user_id: CurrentUser, db: DBSession):
         db.execute(
             select(WorkoutSession)
             .options(selectinload(WorkoutSession.sets))
-            .where(WorkoutSession.id == workout_id)
+            .where(
+                WorkoutSession.id == workout_id,
+                WorkoutSession.user_id == user_id,
+            )
         )
         .scalar_one_or_none()
     )
-    if session is None or session.user_id != user_id:
+    if session is None:
         raise HTTPException(status_code=404, detail="训练记录不存在")
     return {
         "id": session.id,
@@ -194,3 +231,73 @@ def get_workout(workout_id: str, user_id: CurrentUser, db: DBSession):
             for item in session.sets
         ],
     }
+
+
+@router.patch("/{workout_id}")
+def update_workout(
+    workout_id: str,
+    payload: WorkoutIn,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    session = (
+        db.execute(
+            select(WorkoutSession)
+            .options(selectinload(WorkoutSession.sets))
+            .where(
+                WorkoutSession.id == workout_id,
+                WorkoutSession.user_id == user_id,
+            )
+        )
+        .scalar_one_or_none()
+    )
+    if session is None:
+        raise HTTPException(status_code=404, detail="训练记录不存在")
+
+    started_at = _parse_dt(payload.started_at)
+    if started_at is None:
+        raise HTTPException(status_code=400, detail="started_at 必填")
+    finished_at = _parse_dt(payload.finished_at)
+    _validate_slugs(db, payload.sets)
+    _validate_program_day(db, user_id, payload.program_day_id)
+    duration = (
+        max(0, int((finished_at - started_at).total_seconds() / 60))
+        if finished_at
+        else None
+    )
+    session.started_at = started_at
+    session.finished_at = finished_at
+    session.duration_min = duration
+    if payload.program_day_id is not None:
+        session.program_day_id = payload.program_day_id
+    session.feeling = payload.feeling
+    session.notes = payload.notes
+    session.sets.clear()
+    for item in payload.sets:
+        session.sets.append(
+            SetLog(
+                exercise_slug=item.slug,
+                set_index=item.set_index,
+                weight_kg=item.weight_kg,
+                reps=item.reps,
+                rpe=item.rpe,
+                completed=item.completed,
+            )
+        )
+    db.commit()
+    return {"id": session.id, "duration_min": duration}
+
+
+@router.delete("/{workout_id}")
+def delete_workout(workout_id: str, user_id: CurrentUser, db: DBSession):
+    session = db.execute(
+        select(WorkoutSession).where(
+            WorkoutSession.id == workout_id,
+            WorkoutSession.user_id == user_id,
+        )
+    ).scalar_one_or_none()
+    if session is None:
+        raise HTTPException(status_code=404, detail="训练记录不存在")
+    db.delete(session)
+    db.commit()
+    return {"status": "deleted", "id": workout_id}

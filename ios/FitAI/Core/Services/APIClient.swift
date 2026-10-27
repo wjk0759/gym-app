@@ -2,7 +2,70 @@ import Foundation
 
 struct APIError: LocalizedError {
     let message: String
+    let statusCode: Int?
+
+    init(message: String, statusCode: Int? = nil) {
+        self.message = message
+        self.statusCode = statusCode
+    }
+
     var errorDescription: String? { message }
+}
+
+struct RemoteWorkoutSet: Decodable {
+    let slug: String
+    let setIndex: Int
+    let weightKG: Double?
+    let reps: Int?
+    let rpe: Double?
+    let completed: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case slug
+        case setIndex = "set_index"
+        case weightKG = "weight_kg"
+        case reps
+        case rpe
+        case completed
+    }
+}
+
+struct RemoteWorkout: Decodable {
+    let id: String
+    let programDayID: String?
+    let startedAt: Date
+    let finishedAt: Date?
+    let durationMin: Int?
+    let feeling: Int?
+    let notes: String?
+    let sets: [RemoteWorkoutSet]
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case programDayID = "program_day_id"
+        case startedAt = "started_at"
+        case finishedAt = "finished_at"
+        case durationMin = "duration_min"
+        case feeling
+        case notes
+        case sets
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        programDayID = try container.decodeIfPresent(String.self, forKey: .programDayID)
+        startedAt = try container.decode(Date.self, forKey: .startedAt)
+        finishedAt = try container.decodeIfPresent(Date.self, forKey: .finishedAt)
+        durationMin = try container.decodeIfPresent(Int.self, forKey: .durationMin)
+        feeling = try container.decodeIfPresent(Int.self, forKey: .feeling)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        sets = try container.decodeIfPresent([RemoteWorkoutSet].self, forKey: .sets) ?? []
+    }
+}
+
+struct RemoteWorkoutList: Decodable {
+    let items: [RemoteWorkout]
 }
 
 struct ChatResponse: Decodable {
@@ -304,6 +367,15 @@ struct APIClient {
         return formatter
     }()
 
+    private static let utcDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+
     private static let naiveDateFormatters: [DateFormatter] = {
         ["yyyy-MM-dd'T'HH:mm:ss.SSSSSS", "yyyy-MM-dd'T'HH:mm:ss.SSS", "yyyy-MM-dd'T'HH:mm:ss"].map { format in
             let formatter = DateFormatter()
@@ -406,6 +478,9 @@ struct APIClient {
         if let notes = session.notes, !notes.isEmpty {
             payload["notes"] = notes
         }
+        if let day = session.programDayID {
+            payload["program_day_id"] = day
+        }
         let body = try JSONSerialization.data(withJSONObject: payload)
         let response: WorkoutCreateResponse = try await send(
             path: "workouts",
@@ -413,6 +488,60 @@ struct APIClient {
             body: body
         )
         return response.id
+    }
+
+    func updateWorkout(id: String, session: WorkoutSession) async throws {
+        let finishedAt = session.date
+        let startedAt = finishedAt.addingTimeInterval(-Double(max(0, session.durationMinutes) * 60))
+        var payload: [String: Any] = [
+            "started_at": Self.iso8601WithFractionalSeconds.string(from: startedAt),
+            "finished_at": Self.iso8601WithFractionalSeconds.string(from: finishedAt),
+            "feeling": min(5, max(1, session.feeling)),
+            "sets": session.sets.map { log in
+                var value: [String: Any] = [
+                    "slug": log.slug,
+                    "set_index": log.setIndex,
+                    "weight_kg": log.weightKG,
+                    "reps": log.reps,
+                    "rpe": log.rpe,
+                    "completed": log.completed
+                ]
+                if log.weightKG <= 0 { value.removeValue(forKey: "weight_kg") }
+                return value
+            }
+        ]
+        if let notes = session.notes, !notes.isEmpty {
+            payload["notes"] = notes
+        }
+        if let day = session.programDayID {
+            payload["program_day_id"] = day
+        }
+        let body = try JSONSerialization.data(withJSONObject: payload)
+        try await sendVoid(
+            path: "workouts/\(id)",
+            method: "PATCH",
+            body: body
+        )
+    }
+
+    func deleteWorkout(id: String) async throws {
+        try await sendVoid(path: "workouts/\(id)", method: "DELETE", body: nil)
+    }
+
+    /// 拉取近 90 天训练记录，用于跨设备恢复历史和补齐服务端产生的修改。
+    func fetchRecentWorkouts(days: Int = 90) async throws -> [RemoteWorkout] {
+        let from = Calendar(identifier: .gregorian).date(
+            byAdding: .day,
+            value: -max(1, days),
+            to: Date()
+        ) ?? Date()
+        let text = Self.utcDateFormatter.string(from: from)
+        let data = try await perform(
+            path: "workouts?from=\(text)&limit=100&include_sets=true",
+            method: "GET",
+            body: nil
+        )
+        return try decode(RemoteWorkoutList.self, from: data).items
     }
 
     // MARK: - 健康检查
@@ -778,7 +907,7 @@ struct APIClient {
         }
         guard (200..<300).contains(http.statusCode) else {
             let text = String(data: data, encoding: .utf8) ?? ""
-            throw APIError(message: "服务返回 \(http.statusCode)：\(text.prefix(200))")
+            throw APIError(message: "服务返回 \(http.statusCode)：\(text.prefix(200))", statusCode: http.statusCode)
         }
         return data
     }

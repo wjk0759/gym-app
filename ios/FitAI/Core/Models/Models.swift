@@ -410,9 +410,13 @@ struct WorkoutSession: Codable, Identifiable, Hashable {
     var feeling: Int
     var notes: String? = nil
     var sets: [SetLog]
+    /// 关联的计划训练日，用于跨设备恢复训练日标题与 Agent 上下文。
+    var programDayID: String? = nil
     /// 已同步到服务端的远端记录 ID；旧本地记录为空。
     var remoteID: String? = nil
     var syncedAt: Date? = nil
+    /// 已同步记录的本地修改尚未成功 PATCH 时置为 true，供前台重试。
+    var pendingRemoteUpdate: Bool? = nil
 
     var volume: Double {
         sets.filter(\.completed).reduce(0) { partial, item in
