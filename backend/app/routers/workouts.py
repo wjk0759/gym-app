@@ -37,11 +37,17 @@ def _validate_slugs(db: DBSession, sets: list) -> None:
         )
 
 
-def _validate_program_day(
+def _owned_program_day_id(
     db: DBSession, user_id: str, program_day_id: str | None
-) -> None:
+) -> str | None:
+    """Only link a workout to a plan day owned by the current user.
+
+    The iOS app can have a locally generated plan whose day ids do not exist on
+    the server yet. Syncing the workout itself must not fail because of that;
+    the association is simply left empty until the plan is synced.
+    """
     if not program_day_id:
-        return
+        return None
     owned = db.execute(
         select(ProgramDay.id)
         .join(Program, Program.id == ProgramDay.program_id)
@@ -50,8 +56,7 @@ def _validate_program_day(
             Program.user_id == user_id,
         )
     ).scalar_one_or_none()
-    if owned is None:
-        raise HTTPException(status_code=422, detail="训练日不存在或不属于当前用户")
+    return owned
 
 
 @router.post("", status_code=201)
@@ -61,7 +66,7 @@ def create_workout(payload: WorkoutIn, user_id: CurrentUser, db: DBSession):
         raise HTTPException(status_code=400, detail="started_at 必填")
     finished_at = _parse_dt(payload.finished_at)
     _validate_slugs(db, payload.sets)
-    _validate_program_day(db, user_id, payload.program_day_id)
+    program_day_id = _owned_program_day_id(db, user_id, payload.program_day_id)
 
     duration = None
     if finished_at:
@@ -69,7 +74,7 @@ def create_workout(payload: WorkoutIn, user_id: CurrentUser, db: DBSession):
 
     session = WorkoutSession(
         user_id=user_id,
-        program_day_id=payload.program_day_id,
+        program_day_id=program_day_id,
         started_at=started_at,
         finished_at=finished_at,
         duration_min=duration,
@@ -259,7 +264,7 @@ def update_workout(
         raise HTTPException(status_code=400, detail="started_at 必填")
     finished_at = _parse_dt(payload.finished_at)
     _validate_slugs(db, payload.sets)
-    _validate_program_day(db, user_id, payload.program_day_id)
+    program_day_id = _owned_program_day_id(db, user_id, payload.program_day_id)
     duration = (
         max(0, int((finished_at - started_at).total_seconds() / 60))
         if finished_at
@@ -268,8 +273,8 @@ def update_workout(
     session.started_at = started_at
     session.finished_at = finished_at
     session.duration_min = duration
-    if payload.program_day_id is not None:
-        session.program_day_id = payload.program_day_id
+    if program_day_id is not None:
+        session.program_day_id = program_day_id
     session.feeling = payload.feeling
     session.notes = payload.notes
     session.sets.clear()

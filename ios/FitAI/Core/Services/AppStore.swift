@@ -1076,10 +1076,21 @@ final class AppStore {
                 self.persist()
             }
             do {
-                let response = try await APIClient.shared.agentChat(
-                    message: trimmed,
-                    sessionID: self.agentSessionID
-                )
+                let response: AgentChatResponse
+                do {
+                    response = try await APIClient.shared.agentChat(
+                        message: trimmed,
+                        sessionID: self.agentSessionID
+                    )
+                } catch let error as APIError where error.statusCode == 404 {
+                    // 后端数据库可能已经清理/切换账号，旧 session 会让请求 404；
+                    // 清空 session 后重试一次，避免误报“远程 AI 不可用”。
+                    self.agentSessionID = nil
+                    response = try await APIClient.shared.agentChat(
+                        message: trimmed,
+                        sessionID: nil
+                    )
+                }
                 self.agentSessionID = response.sessionID
                 self.agentProposal = response.proposal
                 self.chat.append(
