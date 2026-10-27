@@ -367,7 +367,6 @@ def _tool_result(
             select(AgentPlanProposal).where(
                 AgentPlanProposal.user_id == user_id,
                 AgentPlanProposal.status == "draft",
-                AgentPlanProposal.run_id == run.id,
             )
         ).scalars():
             old.status = "superseded"
