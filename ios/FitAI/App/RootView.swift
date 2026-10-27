@@ -5,26 +5,35 @@ struct RootView: View {
     @Environment(AuthStore.self) private var auth
     @Environment(SubscriptionManager.self) private var subscriptions
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var splashPulse = false
 
     var body: some View {
         ZStack {
             AppBackground()
 
-            if auth.isRestoring {
-                splash
-            } else if !auth.isAuthenticated {
-                LoginView()
-                    .transition(.opacity)
-            } else if store.profile.isOnboarded {
-                MainTabView()
-                    .transition(.opacity)
-            } else {
-                OnboardingView()
-                    .transition(.opacity)
+            Group {
+                if auth.isRestoring {
+                    splash
+                        .transition(.opacity)
+                } else if !auth.isAuthenticated {
+                    LoginView()
+                        .transition(screenTransition)
+                } else if store.profile.isOnboarded {
+                    MainTabView()
+                        .transition(screenTransition)
+                } else {
+                    OnboardingView()
+                        .transition(screenTransition)
+                }
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: auth.isAuthenticated)
-        .animation(.easeInOut(duration: 0.25), value: store.profile.isOnboarded)
+        .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: auth.isRestoring)
+        .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: auth.isAuthenticated)
+        .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: store.profile.isOnboarded)
+        .sensoryFeedback(.success, trigger: auth.isAuthenticated) { _, isAuthenticated in
+            isAuthenticated
+        }
         .task {
             store.isPro = subscriptions.isPro
             await auth.restoreIfNeeded()
@@ -72,16 +81,34 @@ struct RootView: View {
         }
     }
 
+    private var screenTransition: AnyTransition {
+        guard !reduceMotion else { return .opacity }
+        return .asymmetric(
+            insertion: .opacity.combined(with: .scale(scale: 0.985)),
+            removal: .opacity
+        )
+    }
+
     private var splash: some View {
         VStack(spacing: 18) {
             ZStack {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .fill(Theme.accent)
                     .frame(width: 72, height: 72)
+                    .shadow(color: Theme.accent.opacity(0.45), radius: 24, y: 8)
                 Image(systemName: "figure.strengthtraining.traditional")
                     .font(.system(size: 31, weight: .bold))
                     .foregroundStyle(Color.black)
             }
+            .scaleEffect(splashPulse ? 1.05 : 1)
+            .animation(
+                reduceMotion
+                    ? nil
+                    : .easeInOut(duration: 1.6).repeatForever(autoreverses: true),
+                value: splashPulse
+            )
+            .onAppear { splashPulse = true }
+
             Text("练途")
                 .font(.system(size: 28, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
@@ -91,6 +118,7 @@ struct RootView: View {
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
         }
+        .transition(.opacity)
     }
 
     private func enableRemoteMode() {

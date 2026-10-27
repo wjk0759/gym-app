@@ -61,8 +61,8 @@ struct CardModifier: ViewModifier {
                     .stroke(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.16),
-                                Color.white.opacity(0.035)
+                                Color.white.opacity(0.18),
+                                Color.white.opacity(0.03)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -70,7 +70,20 @@ struct CardModifier: ViewModifier {
                         lineWidth: 0.8
                     )
             )
-            .shadow(color: Color.black.opacity(0.22), radius: 18, y: 10)
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(Color.white.opacity(0.05), lineWidth: 0.6)
+                    .blendMode(.plusLighter)
+                    .mask(
+                        LinearGradient(
+                            colors: [.white, .clear],
+                            startPoint: .top,
+                            endPoint: .center
+                        )
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.26), radius: 22, y: 12)
+            .shadow(color: Color.black.opacity(0.10), radius: 4, y: 1)
     }
 }
 
@@ -99,15 +112,23 @@ struct PrimaryButtonStyle: ButtonStyle {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.white.opacity(0.24), lineWidth: 0.7)
+                    .stroke(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.38), Color.white.opacity(0.08)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: 0.8
+                    )
             )
-            .shadow(color: Theme.accent.opacity(0.20), radius: 16, y: 8)
-            .opacity(configuration.isPressed ? 0.84 : 1)
-            .scaleEffect(configuration.isPressed ? 0.975 : 1)
-            .animation(
-                .spring(response: 0.28, dampingFraction: 0.82),
-                value: configuration.isPressed
-            )
+            .shadow(color: Theme.accent.opacity(configuration.isPressed ? 0.10 : 0.22), radius: 18, y: 9)
+            .brightness(configuration.isPressed ? -0.05 : 0)
+            .opacity(configuration.isPressed ? 0.90 : 1)
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(Motion.press, value: configuration.isPressed)
+            .onChange(of: configuration.isPressed) { _, pressed in
+                if pressed { Haptics.impact(.light) }
+            }
     }
 }
 
@@ -126,12 +147,16 @@ struct SecondaryButtonStyle: ButtonStyle {
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
                     .stroke(Theme.stroke, lineWidth: 0.8)
             )
-            .opacity(configuration.isPressed ? 0.78 : 1)
-            .scaleEffect(configuration.isPressed ? 0.985 : 1)
-            .animation(
-                .spring(response: 0.28, dampingFraction: 0.86),
-                value: configuration.isPressed
+            .opacity(configuration.isPressed ? 0.82 : 1)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .overlay(
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .fill(Color.white.opacity(configuration.isPressed ? 0.05 : 0))
             )
+            .animation(Motion.press, value: configuration.isPressed)
+            .onChange(of: configuration.isPressed) { _, pressed in
+                if pressed { Haptics.tap() }
+            }
     }
 }
 
@@ -148,6 +173,11 @@ struct TagChip: View {
             .background(
                 Capsule().fill(selected ? Theme.accent : Theme.surfaceStrong)
             )
+            .overlay(
+                Capsule()
+                    .stroke(selected ? Theme.accent.opacity(0.6) : Color.white.opacity(0.06), lineWidth: 0.8)
+            )
+            .animation(Motion.quick, value: selected)
     }
 }
 

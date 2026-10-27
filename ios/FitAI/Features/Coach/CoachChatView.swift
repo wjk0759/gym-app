@@ -10,6 +10,11 @@ struct CoachChatView: View {
     @State private var showPaywall = false
     @State private var showCamera = false
     @FocusState private var focused: Bool
+    @Namespace private var skillNamespace
+
+    private var canSend: Bool {
+        !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !store.isReplying
+    }
 
     private let suggestions = [
         "今天练什么？",
@@ -51,32 +56,48 @@ struct CoachChatView: View {
                                 ForEach(store.chat) { message in
                                     bubble(message)
                                         .id(message.id)
+                                        .transition(
+                                            .asymmetric(
+                                                insertion: .opacity
+                                                    .combined(with: .move(edge: message.role == .user ? .trailing : .leading))
+                                                    .combined(with: .scale(scale: 0.98)),
+                                                removal: .opacity
+                                            )
+                                        )
                                 }
 
                                 if store.isReplying {
-                                    HStack(spacing: 8) {
-                                        ProgressView()
-                                            .tint(Theme.accent)
+                                    HStack(spacing: 9) {
+                                        TypingDots()
                                         Text("教练正在输入…")
                                             .font(.caption)
                                             .foregroundStyle(Theme.secondaryText)
                                         Spacer()
                                     }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 10)
+                                    .background(
+                                        Theme.surface,
+                                        in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    )
                                     .padding(.horizontal, 4)
+                                    .transition(.opacity.combined(with: .offset(y: 8)))
                                 }
                             }
                             .padding(20)
+                            .motionAnimation(Motion.smooth, value: store.chat.count)
+                            .motionAnimation(Motion.quick, value: store.isReplying)
                         }
                     }
                     .onChange(of: store.chat.count) { _, _ in
                         guard let last = store.chat.last else { return }
-                        withAnimation(.easeOut(duration: 0.2)) {
+                        withAnimation(Motion.smooth) {
                             proxy.scrollTo(last.id, anchor: .bottom)
                         }
                     }
                     .onChange(of: store.isReplying) { _, _ in
                         guard let last = store.chat.last else { return }
-                        withAnimation(.easeOut(duration: 0.2)) {
+                        withAnimation(Motion.smooth) {
                             proxy.scrollTo(last.id, anchor: .bottom)
                         }
                     }
@@ -205,7 +226,7 @@ struct CoachChatView: View {
                             .padding(.vertical, 8)
                             .background(Theme.accent.opacity(0.10), in: Capsule())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(SubtlePressStyle(scale: 0.95))
                 }
             }
             .padding(.horizontal, 16)
@@ -353,7 +374,9 @@ struct CoachChatView: View {
             HStack(spacing: 8) {
                 ForEach(CoachSkill.allCases) { skill in
                     Button {
-                        withAnimation(.easeOut(duration: 0.15)) {
+                        guard selectedSkill != skill else { return }
+                        Haptics.select()
+                        withAnimation(Motion.quick) {
                             selectedSkill = skill
                         }
                     } label: {
@@ -364,12 +387,17 @@ struct CoachChatView: View {
                             )
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(
-                                selectedSkill == skill
-                                    ? Theme.accent.opacity(0.12)
-                                    : Theme.surfaceStrong,
-                                in: Capsule()
-                            )
+                            .background {
+                                ZStack {
+                                    Capsule()
+                                        .fill(selectedSkill == skill ? Color.clear : Theme.surfaceStrong)
+                                    if selectedSkill == skill {
+                                        Capsule()
+                                            .fill(Theme.accent.opacity(0.12))
+                                            .matchedGeometryEffect(id: "skillPill", in: skillNamespace)
+                                    }
+                                }
+                            }
                             .overlay(
                                 Capsule()
                                     .stroke(
@@ -378,9 +406,10 @@ struct CoachChatView: View {
                                             : Color.clear,
                                         lineWidth: 1
                                     )
+                                    .animation(Motion.quick, value: selectedSkill)
                             )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(SubtlePressStyle(scale: 0.96))
                 }
             }
             .padding(.horizontal, 16)
@@ -439,6 +468,7 @@ struct CoachChatView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .card()
+            .staggerIn(0)
 
             if !store.canUseRemoteAI {
                 Button {
@@ -463,7 +493,8 @@ struct CoachChatView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .card(padding: 14)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(CardPressStyle(scale: 0.985))
+                .staggerIn(1)
             }
 
             VStack(alignment: .leading, spacing: 10) {
@@ -496,13 +527,15 @@ struct CoachChatView: View {
                                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
                             )
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(CardPressStyle(scale: 0.98))
                     }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .staggerIn(2)
 
             weeklyRecap
+                .staggerIn(3)
         }
     }
 
@@ -600,7 +633,7 @@ struct CoachChatView: View {
                             .padding(.vertical, 8)
                             .background(Theme.surfaceStrong, in: Capsule())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(SubtlePressStyle(scale: 0.95))
                 }
             }
             .padding(.horizontal, 16)
@@ -611,6 +644,7 @@ struct CoachChatView: View {
     private var inputBar: some View {
         HStack(spacing: 8) {
             Button {
+                Haptics.tap()
                 showCamera = true
             } label: {
                 Image(systemName: "camera.fill")
@@ -619,7 +653,7 @@ struct CoachChatView: View {
                     .frame(width: 40, height: 42)
                     .background(Theme.surfaceStrong, in: Circle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SubtlePressStyle())
             .accessibilityLabel("拍照问教练")
 
             TextField(inputPlaceholder, text: $input, axis: .vertical)
@@ -645,24 +679,29 @@ struct CoachChatView: View {
                     .foregroundStyle(Color.black)
                     .frame(width: 42, height: 42)
                     .background(
-                        Circle().fill(
-                            input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || store.isReplying
-                                ? Theme.secondaryText.opacity(0.4)
-                                : Theme.accent
-                        )
+                        Circle().fill(canSend ? Theme.accent : Theme.secondaryText.opacity(0.35))
                     )
+                    .scaleEffect(canSend ? 1 : 0.94)
+                    .animation(Motion.quick, value: canSend)
             }
-            .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || store.isReplying)
+            .buttonStyle(SubtlePressStyle())
+            .disabled(!canSend)
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
         .padding(.bottom, 10)
-        .background(Theme.background)
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(Theme.stroke)
+                .frame(height: 1)
+        }
     }
 
     private func send(_ text: String) {
         let trimmed = String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(500))
         guard !trimmed.isEmpty, !store.isReplying else { return }
+        Haptics.impact(.light)
         if store.planAdjustmentStage > 0 {
             store.sendPlanAdjustmentMessage(trimmed)
         } else if store.canUseRemoteAI && selectedSkill == .trainer {

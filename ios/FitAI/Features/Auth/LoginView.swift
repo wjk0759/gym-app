@@ -45,6 +45,7 @@ struct LoginView: View {
     @State private var registrationPassword = ""
     @State private var showConsentPrompt = false
     @State private var pendingConsentAction: PendingConsentAction?
+    @Namespace private var modeNamespace
 
     private enum PendingConsentAction {
         case login
@@ -59,22 +60,28 @@ struct LoginView: View {
         AppScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 brand
+                    .staggerIn(0)
                 intro
+                    .staggerIn(1)
                 loginCard
+                    .staggerIn(2)
                 VStack(alignment: .leading, spacing: 14) {
                     socialSection
                     consentFooter
                 }
+                .staggerIn(3)
 
 #if DEBUG
                 Button {
+                    Haptics.tap()
                     showServerSettings = true
                 } label: {
                     Label("开发服务器：\(AppConfig.apiBaseURLString)", systemImage: "server.rack")
                         .font(.caption2)
                         .foregroundStyle(Theme.tertiaryText)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SubtlePressStyle(scale: 0.98))
+                .staggerIn(4)
 #endif
             }
             .padding(.horizontal, 22)
@@ -172,11 +179,14 @@ struct LoginView: View {
         VStack(spacing: 18) {
             modeSwitch
 
-            if mode == .phone {
-                phoneFields
-            } else {
-                passwordFields
+            Group {
+                if mode == .phone {
+                    phoneFields
+                } else {
+                    passwordFields
+                }
             }
+            .transition(.opacity.combined(with: .offset(y: 6)))
 
             if let errorText {
                 HStack(alignment: .top, spacing: 8) {
@@ -192,6 +202,7 @@ struct LoginView: View {
                     Theme.danger.opacity(0.09),
                     in: RoundedRectangle(cornerRadius: 11, style: .continuous)
                 )
+                .transition(.opacity.combined(with: .offset(y: -6)))
             }
 
             Button {
@@ -237,13 +248,17 @@ struct LoginView: View {
                 .stroke(Color.white.opacity(0.10), lineWidth: 0.8)
         )
         .shadow(color: Color.black.opacity(0.22), radius: 20, y: 12)
+        .motionAnimation(Motion.quick, value: mode)
+        .motionAnimation(Motion.quick, value: errorText)
     }
 
     private var modeSwitch: some View {
         HStack(spacing: 4) {
             ForEach(Mode.allCases) { item in
                 Button {
-                    withAnimation(.easeOut(duration: 0.15)) {
+                    guard mode != item else { return }
+                    Haptics.select()
+                    withAnimation(Motion.quick) {
                         mode = item
                     }
                 } label: {
@@ -252,12 +267,19 @@ struct LoginView: View {
                         .foregroundStyle(mode == item ? .white : Theme.secondaryText)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .background(
-                            mode == item ? Theme.surfaceStrong : Color.clear,
-                            in: RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        )
+                        .background {
+                            if mode == item {
+                                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                    .fill(Theme.surfaceStrong)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                            .stroke(Color.white.opacity(0.08), lineWidth: 0.8)
+                                    )
+                                    .matchedGeometryEffect(id: "modePill", in: modeNamespace)
+                            }
+                        }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SubtlePressStyle(scale: 0.97))
             }
         }
         .padding(4)

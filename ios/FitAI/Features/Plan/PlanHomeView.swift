@@ -254,7 +254,10 @@ struct PlanHomeView: View {
                 Spacer(minLength: 4)
 
                 Button {
-                    goToToday()
+                    Haptics.select()
+                    withAnimation(Motion.quick) {
+                        goToToday()
+                    }
                 } label: {
                     VStack(spacing: 2) {
                         Text(monthTitle)
@@ -265,7 +268,7 @@ struct PlanHomeView: View {
                             .foregroundStyle(Theme.tertiaryText)
                     }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SubtlePressStyle(scale: 0.97))
                 .accessibilityLabel("回到今天")
 
                 Spacer(minLength: 4)
@@ -293,6 +296,7 @@ struct PlanHomeView: View {
                     calendarCell(date, plan: plan)
                 }
             }
+            .motionAnimation(Motion.smooth, value: visibleMonth)
 
             HStack(spacing: 13) {
                 legendDot(color: Theme.accent, label: "完成训练", filled: true)
@@ -305,7 +309,12 @@ struct PlanHomeView: View {
     }
 
     private func monthButton(systemName: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button {
+            Haptics.tap()
+            withAnimation(Motion.smooth) {
+                action()
+            }
+        } label: {
             Image(systemName: systemName)
                 .font(.system(size: 12, weight: .bold))
                 .foregroundStyle(Theme.secondaryText)
@@ -315,7 +324,7 @@ struct PlanHomeView: View {
                     in: RoundedRectangle(cornerRadius: 11, style: .continuous)
                 )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SubtlePressStyle())
     }
 
     private func legendDot(color: Color, label: String, filled: Bool) -> some View {
@@ -340,9 +349,12 @@ struct PlanHomeView: View {
         let hasPeriod = store.isPeriodDate(date)
 
         return Button {
-            selectedDate = calendar.startOfDay(for: date)
-            if !inMonth {
-                visibleMonth = startOfMonth(date)
+            Haptics.select()
+            withAnimation(Motion.quick) {
+                selectedDate = calendar.startOfDay(for: date)
+                if !inMonth {
+                    visibleMonth = startOfMonth(date)
+                }
             }
         } label: {
             VStack(spacing: 4) {
@@ -392,8 +404,10 @@ struct PlanHomeView: View {
                     )
             )
             .opacity(inMonth ? 1 : 0.32)
+            .scaleEffect(isSelected ? 1.04 : 1)
+            .animation(Motion.quick, value: isSelected)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SubtlePressStyle(scale: 0.95))
         .accessibilityLabel(
             accessibilityLabel(
                 for: date,

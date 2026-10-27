@@ -20,6 +20,7 @@ struct WorkoutSessionView: View {
     @State private var reps: Int = 10
     @State private var rpe: Double = 7.5
     @State private var restRemaining: Int?
+    @State private var restTotal: Double = 1
     @State private var feeling = 4
     @State private var notes = ""
     @State private var startedAt = Date()
@@ -44,20 +45,32 @@ struct WorkoutSessionView: View {
                     VStack(spacing: AppLayout.sectionSpacing) {
                         if let restRemaining {
                             restCard(restRemaining)
+                                .transition(.move(edge: .top).combined(with: .opacity))
                         }
 
-                        if let exercise = currentExercise {
-                            exerciseCard(exercise)
-                            setCard(exercise)
-                            trainingTipCard(exercise)
-                        } else {
-                            summaryCard
+                        Group {
+                            if let exercise = currentExercise {
+                                exerciseCard(exercise)
+                                setCard(exercise)
+                                trainingTipCard(exercise)
+                            } else {
+                                summaryCard
+                            }
                         }
+                        .id(index)
+                        .transition(
+                            .asymmetric(
+                                insertion: .opacity.combined(with: .offset(x: 22)),
+                                removal: .opacity.combined(with: .offset(x: -18))
+                            )
+                        )
                     }
                     .appPagePadding()
                     .padding(.vertical, 16)
                     .padding(.bottom, 24)
                     .appReadableContent()
+                    .motionAnimation(Motion.smooth, value: index)
+                    .motionAnimation(Motion.quick, value: restRemaining != nil)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -116,16 +129,22 @@ struct WorkoutSessionView: View {
         return VStack(spacing: 8) {
             HStack {
                 Text("\(logs.count)/\(totalSets) 组")
-                    .font(.caption)
+                    .font(.caption.monospacedDigit())
                     .foregroundStyle(Theme.secondaryText)
+                    .contentTransition(.numericText())
                 Spacer()
                 Text("\(min(index + 1, day.exercises.count))/\(day.exercises.count) 动作")
-                    .font(.caption)
+                    .font(.caption.monospacedDigit())
                     .foregroundStyle(Theme.tertiaryText)
+                    .contentTransition(.numericText())
             }
             ProgressView(value: min(1, progress))
                 .tint(Theme.accent)
+                .scaleEffect(x: 1, y: 1.5, anchor: .center)
+                .motionAnimation(Motion.smooth, value: progress)
         }
+        .motionAnimation(Motion.quick, value: logs.count)
+        .motionAnimation(Motion.quick, value: index)
         .appPagePadding()
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -233,32 +252,26 @@ struct WorkoutSessionView: View {
             }
 
             if !isBodyweight {
-                HStack {
-                    Text("重量")
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.secondaryText)
-                    Spacer()
-                    Stepper(value: $weight, in: 0...300, step: 2.5) {
-                        Text("\(weight, specifier: "%.1f") kg")
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                            .frame(minWidth: 96, alignment: .trailing)
-                    }
-                }
+                ValueStepperControl(
+                    title: "重量",
+                    value: String(format: "%.1f", weight),
+                    unit: "kg",
+                    canDecrease: weight > 0,
+                    canIncrease: weight < 300,
+                    onDecrease: { weight = max(0, weight - 2.5) },
+                    onIncrease: { weight = min(300, weight + 2.5) }
+                )
             }
 
-            HStack {
-                Text("次数")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.secondaryText)
-                Spacer()
-                Stepper(value: $reps, in: 1...60) {
-                    Text("\(reps) 次")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                        .frame(minWidth: 80, alignment: .trailing)
-                }
-            }
+            ValueStepperControl(
+                title: "次数",
+                value: "\(reps)",
+                unit: "次",
+                canDecrease: reps > 1,
+                canIncrease: reps < 60,
+                onDecrease: { reps = max(1, reps - 1) },
+                onIncrease: { reps = min(60, reps + 1) }
+            )
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
@@ -267,11 +280,14 @@ struct WorkoutSessionView: View {
                         .foregroundStyle(Theme.secondaryText)
                     Spacer()
                     Text(rpe.formatted(.number.precision(.fractionLength(1))))
-                        .font(.subheadline.weight(.semibold))
+                        .font(.subheadline.weight(.semibold).monospacedDigit())
                         .foregroundStyle(Theme.accent)
+                        .contentTransition(.numericText())
                 }
+                .motionAnimation(Motion.quick, value: rpe)
                 Slider(value: $rpe, in: 6...10, step: 0.5)
                     .tint(Theme.accent)
+                    .sensoryFeedback(.selection, trigger: Int(rpe * 2))
                 Text("6 = 很轻松 · 8 = 还能做 2 次 · 10 = 力竭")
                     .font(.caption2)
                     .foregroundStyle(Theme.tertiaryText)
@@ -372,18 +388,48 @@ struct WorkoutSessionView: View {
     }
 
     private func restCard(_ remaining: Int) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: "timer")
-                .foregroundStyle(Theme.accent)
-            Text("休息 \(remaining)s")
-                .font(.headline)
-                .foregroundStyle(.white)
-            Spacer()
+        let total = max(1, restTotal)
+        let progress = CGFloat(min(1, max(0, Double(remaining) / total)))
+        let urgent = remaining <= 5
+
+        return HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .stroke(Theme.stroke, lineWidth: 5)
+                Circle()
+                    .trim(from: 0, to: progress)
+                    .stroke(
+                        urgent ? Theme.warning : Theme.accent,
+                        style: StrokeStyle(lineWidth: 5, lineCap: .round)
+                    )
+                    .rotationEffect(.degrees(-90))
+                    .animation(.linear(duration: 1), value: remaining)
+                Text("\(remaining)")
+                    .font(.system(size: 15, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(.white)
+                    .contentTransition(.numericText())
+            }
+            .frame(width: 52, height: 52)
+            .animation(Motion.quick, value: urgent)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("组间休息")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                Text(urgent ? "马上开始下一组" : "呼吸放松，保持动作质量")
+                    .font(.caption2)
+                    .foregroundStyle(urgent ? Theme.warning : Theme.secondaryText)
+            }
+
+            Spacer(minLength: 4)
+
             Button("跳过") {
+                Haptics.tap()
                 restRemaining = nil
             }
             .font(.footnote.weight(.semibold))
             .foregroundStyle(Theme.accent)
+            .buttonStyle(SubtlePressStyle())
         }
         .card(padding: 14)
     }
@@ -417,7 +463,10 @@ struct WorkoutSessionView: View {
                 HStack(spacing: 8) {
                     ForEach(1...5, id: \.self) { value in
                         Button {
-                            feeling = value
+                            Haptics.select()
+                            withAnimation(Motion.bouncy) {
+                                feeling = value
+                            }
                         } label: {
                             Text(feelingEmoji(value))
                                 .font(.title2)
@@ -427,8 +476,17 @@ struct WorkoutSessionView: View {
                                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                                         .fill(feeling == value ? Theme.accent.opacity(0.18) : Theme.surfaceStrong)
                                 )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .stroke(
+                                            feeling == value ? Theme.accent.opacity(0.55) : Color.clear,
+                                            lineWidth: 1
+                                        )
+                                )
+                                .scaleEffect(feeling == value ? 1.05 : 1)
+                                .animation(Motion.quick, value: feeling)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(SubtlePressStyle(scale: 0.94))
                     }
                 }
             }
@@ -467,8 +525,9 @@ struct WorkoutSessionView: View {
     private func summaryMetric(_ value: String, _ title: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(value)
-                .font(.title3.weight(.bold))
+                .font(.title3.weight(.bold).monospacedDigit())
                 .foregroundStyle(Theme.accent)
+                .contentTransition(.numericText())
             Text(title)
                 .font(.caption2)
                 .foregroundStyle(Theme.secondaryText)
@@ -476,6 +535,7 @@ struct WorkoutSessionView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
         .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .motionAnimation(Motion.quick, value: value)
     }
 
     private var durationMinutes: Int {
@@ -510,8 +570,10 @@ struct WorkoutSessionView: View {
                 rpe: rpe
             )
         )
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
-        restRemaining = exercise.restSec > 0 ? exercise.restSec : nil
+        Haptics.success()
+        let rest = exercise.restSec
+        restTotal = Double(max(1, rest))
+        restRemaining = rest > 0 ? rest : nil
     }
 
     private func advance() {
@@ -528,7 +590,7 @@ struct WorkoutSessionView: View {
         guard let remaining = restRemaining else { return }
         if remaining <= 1 {
             restRemaining = nil
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            Haptics.warning()
         } else {
             restRemaining = remaining - 1
         }
@@ -584,7 +646,7 @@ struct WorkoutSessionView: View {
         }
 
         showAdjustSheet = false
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        Haptics.success()
     }
 
     private var adjustSheet: some View {

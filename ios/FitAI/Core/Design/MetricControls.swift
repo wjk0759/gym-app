@@ -52,6 +52,7 @@ struct WheelPickerField<Value: Hashable>: View {
                 .lineLimit(1)
 
             Button {
+                Haptics.tap()
                 draft = selection
                 showPicker = true
             } label: {
@@ -74,7 +75,7 @@ struct WheelPickerField<Value: Hashable>: View {
                         .stroke(Color.white.opacity(0.075), lineWidth: 1)
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SubtlePressStyle(scale: 0.98))
             .accessibilityLabel("选择\(title)")
             .sheet(isPresented: $showPicker) {
                 WheelPickerSheet(

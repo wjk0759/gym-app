@@ -15,35 +15,62 @@ struct HomeView: View {
             AppScrollView {
                 VStack(spacing: 16) {
                     greeting
+                        .staggerIn(0)
 
                     GoalCardView {
                         bodyCheckInManual = true
                         showBodyCheckIn = true
                     }
+                    .staggerIn(1)
 
-                    if store.isGenerating {
-                        generatingCard
-                    } else if let plan = store.plan {
-                        if store.todayPeriod?.mode == .rest {
-                            nutritionCard
-                            restCard(plan: plan, period: store.todayPeriod)
-                        } else if let day = store.todayDay {
-                            trainingCard(plan: plan, day: day, period: store.todayPeriod)
-                            nutritionCard
+                    Group {
+                        if store.isGenerating {
+                            generatingCard
+                                .staggerIn(2)
+                                .softContentTransition()
+                        } else if let plan = store.plan {
+                            if store.todayPeriod?.mode == .rest {
+                                nutritionCard
+                                    .staggerIn(2)
+                                    .softContentTransition()
+                                restCard(plan: plan, period: store.todayPeriod)
+                                    .staggerIn(3)
+                                    .softContentTransition()
+                            } else if let day = store.todayDay {
+                                trainingCard(plan: plan, day: day, period: store.todayPeriod)
+                                    .staggerIn(2)
+                                    .softContentTransition()
+                                nutritionCard
+                                    .staggerIn(3)
+                                    .softContentTransition()
+                            } else {
+                                nutritionCard
+                                    .staggerIn(2)
+                                    .softContentTransition()
+                                restCard(plan: plan, period: store.todayPeriod)
+                                    .staggerIn(3)
+                                    .softContentTransition()
+                            }
+
+                            weekCard
+                                .staggerIn(4)
+                                .softContentTransition()
+
+                            if store.todayPeriod?.mode != .rest {
+                                aiReviewCard(plan: plan)
+                                    .staggerIn(5)
+                                    .softContentTransition()
+                            }
                         } else {
-                            nutritionCard
-                            restCard(plan: plan, period: store.todayPeriod)
+                            noPlanCard
+                                .staggerIn(2)
+                                .softContentTransition()
                         }
-
-                        weekCard
-
-                        if store.todayPeriod?.mode != .rest {
-                            aiReviewCard(plan: plan)
-                        }
-                    } else {
-                        noPlanCard
                     }
                 }
+                .motionAnimation(Motion.smooth, value: store.isGenerating)
+                .motionAnimation(Motion.smooth, value: store.plan?.version)
+                .motionAnimation(Motion.smooth, value: store.todayDay?.id)
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
                 .padding(.bottom, 28)
@@ -119,14 +146,24 @@ struct HomeView: View {
 
     private var generatingCard: some View {
         VStack(spacing: 14) {
-            ProgressView()
-                .tint(Theme.accent)
-                .scaleEffect(1.2)
+            ZStack {
+                Circle()
+                    .fill(Theme.accent.opacity(0.12))
+                    .frame(width: 54, height: 54)
+                Image(systemName: "wand.and.stars")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+                    .symbolEffect(.pulse, options: .repeating)
+            }
             Text("正在为你编排 4 周计划…")
                 .font(.headline)
             Text("根据目标、分化、器械和每周 \(store.profile.weeklyDays) 天的时间安排")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
+                .multilineTextAlignment(.center)
+            ProgressView()
+                .tint(Theme.accent)
+                .frame(maxWidth: 140)
         }
         .frame(maxWidth: .infinity)
         .card(padding: 30)
@@ -300,6 +337,7 @@ struct HomeView: View {
                         Text("\(remainingKcal)")
                             .font(.title3.weight(.bold))
                             .foregroundStyle(Theme.accent)
+                            .contentTransition(.numericText())
                         Text("kcal 剩余")
                             .font(.caption2)
                             .foregroundStyle(Theme.tertiaryText)
@@ -308,6 +346,7 @@ struct HomeView: View {
 
                 ProgressView(value: ratio)
                     .tint(Theme.warning)
+                    .motionAnimation(Motion.smooth, value: ratio)
 
                 HStack {
                     Text("\(Int(consumed.kcal)) / \(targets.kcal) kcal")
@@ -335,8 +374,9 @@ struct HomeView: View {
                 }
             }
             .card()
+            .motionAnimation(Motion.quick, value: consumed.kcal)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardPressStyle(scale: 0.985))
     }
 
     private func nutritionMetric(_ title: String, _ value: Double, _ target: Int) -> some View {
@@ -371,6 +411,7 @@ struct HomeView: View {
             ProgressView(value: store.weeklyCompletion)
                 .tint(Theme.accent)
                 .scaleEffect(x: 1, y: 1.6, anchor: .center)
+                .motionAnimation(Motion.smooth, value: store.weeklyCompletion)
 
             HStack(spacing: 16) {
                 stat(value: "\(store.sessions.count)", title: "累计训练")
@@ -384,13 +425,15 @@ struct HomeView: View {
     private func stat(value: String, title: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value)
-                .font(.title3.weight(.bold))
+                .font(.title3.weight(.bold).monospacedDigit())
                 .foregroundStyle(.white)
+                .contentTransition(.numericText())
             Text(title)
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .motionAnimation(Motion.quick, value: value)
     }
 
     private func aiReviewCard(plan: TrainingPlan) -> some View {
@@ -451,12 +494,23 @@ struct HomeView: View {
 
             HStack {
                 Button {
+                    Haptics.tap()
                     store.refreshWeeklyReview(force: true)
                 } label: {
-                    Label(store.weeklyReview == nil ? "生成 AI 复盘" : "刷新复盘", systemImage: "arrow.clockwise")
-                        .font(.caption.weight(.semibold))
+                    HStack(spacing: 5) {
+                        Image(systemName: "arrow.clockwise")
+                            .rotationEffect(.degrees(store.isReviewingWeekly ? 360 : 0))
+                            .animation(
+                                store.isReviewingWeekly
+                                    ? .linear(duration: 0.9).repeatForever(autoreverses: false)
+                                    : Motion.quick,
+                                value: store.isReviewingWeekly
+                            )
+                        Text(store.weeklyReview == nil ? "生成 AI 复盘" : "刷新复盘")
+                    }
+                    .font(.caption.weight(.semibold))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SubtlePressStyle())
                 .foregroundStyle(Theme.accent)
                 .disabled(store.isReviewingWeekly)
                 Spacer()
@@ -468,6 +522,7 @@ struct HomeView: View {
             }
 
             Button {
+                Haptics.tap()
                 store.requestPlanAdjustment()
             } label: {
                 HStack {
@@ -479,7 +534,7 @@ struct HomeView: View {
                 .foregroundStyle(Theme.accent)
                 .padding(.top, 2)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SubtlePressStyle())
         }
         .card()
     }
@@ -490,13 +545,15 @@ struct HomeView: View {
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
             Text(value)
-                .font(.caption.weight(.semibold))
+                .font(.caption.weight(.semibold).monospacedDigit())
                 .foregroundStyle(.white)
+                .contentTransition(.numericText())
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 7)
         .padding(.horizontal, 8)
         .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .motionAnimation(Motion.quick, value: value)
     }
 
     private func inlineMetric(title: String, value: String) -> some View {
