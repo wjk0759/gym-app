@@ -302,6 +302,8 @@ struct PlanDay: Codable, Identifiable, Hashable {
     var date: Date? = nil
     /// 用户明确跳过这次训练；跳过的训练不再出现在今日卡、错期提醒和通知里。
     var skippedAt: Date? = nil
+    /// 本地排期变更时间；用于跨设备最后写入优先。
+    var scheduleUpdatedAt: Date? = nil
     var title: String
     var focus: [MuscleGroup]
     var exercises: [PlanExercise]
@@ -312,6 +314,7 @@ struct PlanDay: Codable, Identifiable, Hashable {
         case weekday
         case date
         case skippedAt = "skipped_at"
+        case scheduleUpdatedAt = "schedule_updated_at"
         case title
         case focus
         case exercises

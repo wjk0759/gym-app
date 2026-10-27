@@ -504,6 +504,40 @@ class AgentActionEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class PlanDayState(Base):
+    """Cross-device state for a local or server plan day.
+
+    ``plan_id`` and ``day_id`` are deliberately not foreign keys: iOS can
+    generate a plan locally before the server owns it, while a server-generated
+    plan uses the same UUIDs on every device. The user_id boundary is enforced.
+    """
+
+    __tablename__ = "plan_day_states"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "plan_id", "day_id", name="uq_plan_day_states_user_plan_day"
+        ),
+        Index("ix_plan_day_states_user_plan", "user_id", "plan_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    plan_id: Mapped[str] = mapped_column(String(36))
+    day_id: Mapped[str] = mapped_column(String(36))
+    plan_version: Mapped[int | None] = mapped_column(Integer)
+    assigned_date: Mapped[date | None] = mapped_column(Date)
+    skipped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Client-authored timestamp used for last-write-wins conflict resolution.
+    client_updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    # Server-authored timestamp used for observability and incremental reads.
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class EquipmentScan(Base):
     __tablename__ = "equipment_scans"
 

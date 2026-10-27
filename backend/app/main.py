@@ -29,6 +29,7 @@ from .routers import (
     equipment,
     plans,
     profile,
+    schedule,
     videos,
     workouts,
 )
@@ -157,7 +158,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 
 API_PREFIX = "/api/v1"
-for module in (auth, profile, plans, workouts, coach, agent, equipment, diet, body, videos, admin):
+for module in (auth, profile, plans, workouts, coach, agent, equipment, diet, body, videos, schedule, admin):
     app.include_router(module.router, prefix=API_PREFIX)
 
 ensure_media_dirs()

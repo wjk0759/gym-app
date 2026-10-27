@@ -59,7 +59,8 @@ extension AppStore {
         bodyCheckInDismissedDate = key
     }
 
-    func saveBodyCheckIn(weightKG: Double, bodyFatPCT: Double, waistCM: Double) {
+    @discardableResult
+    func saveBodyCheckIn(weightKG: Double, bodyFatPCT: Double, waistCM: Double) -> BodyMetric {
         let metric = BodyMetric(
             date: Date(),
             weightKG: (weightKG * 10).rounded() / 10,
@@ -70,6 +71,24 @@ extension AppStore {
         )
         appendBodyMetric(metric)
         persist()
+        syncPendingUserData()
+        return metric
+    }
+
+    func removeBodyMetric(id: UUID) {
+        guard let index = bodyMetrics.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+        bodyMetrics.remove(at: index)
+        if let latest = bodyMetrics.sorted(by: { $0.date > $1.date }).first {
+            profile.weightKG = latest.weightKG
+            profile.bodyFatPCT = latest.bodyFatPCT
+            profile.waistCM = latest.waistCM
+        }
+        persist()
+        Task {
+            try? await APIClient.shared.deleteBodyMetric(id: id)
+        }
         syncPendingUserData()
     }
 
@@ -230,6 +249,7 @@ extension AppStore {
 
     func applyPlanSchedule(_ selection: [Int: [Date]]) -> Bool {
         guard var current = plan else { return false }
+        let now = Date()
         let target = max(1, min(7, profile.weeklyDays))
         for week in 1...current.weeks {
             guard let dates = selection[week],
@@ -253,9 +273,11 @@ extension AppStore {
                     current.days[index].date = FitnessDate.startOfDay(dates[slot])
                     current.days[index].weekday = FitnessDate.weekdayNumber(dates[slot])
                     current.days[index].skippedAt = nil
+                    current.days[index].scheduleUpdatedAt = now
                 } else if current.days[index].skippedAt == nil {
                     // 用户主动少选的天数标记为跳过，不进入今日卡和通知。
-                    current.days[index].skippedAt = Date()
+                    current.days[index].skippedAt = now
+                    current.days[index].scheduleUpdatedAt = now
                 }
             }
         }
@@ -266,11 +288,12 @@ extension AppStore {
             return left == right ? $0.weekday < $1.weekday : left < right
         }
         current.version += 1
-        current.updatedAt = Date()
+        current.updatedAt = now
         plan = current
         toast = "训练日期已更新"
         persist()
         rescheduleNotifications()
+        syncPendingUserData()
         return true
     }
 
@@ -353,13 +376,16 @@ extension AppStore {
               let index = current.days.firstIndex(where: { $0.id == day.id }) else {
             return false
         }
-        current.days[index].skippedAt = Date()
+        let now = Date()
+        current.days[index].skippedAt = now
+        current.days[index].scheduleUpdatedAt = now
         current.version += 1
-        current.updatedAt = Date()
+        current.updatedAt = now
         plan = current
         toast = "已跳过这次训练，不会算作未完成"
         persist()
         rescheduleNotifications()
+        syncPendingUserData()
         return true
     }
 
@@ -373,6 +399,7 @@ extension AppStore {
               let index = current.days.firstIndex(where: { $0.id == dayID }) else {
             return false
         }
+        let now = Date()
         let target = FitnessDate.startOfDay(date)
         let occupied = current.days.contains { item in
             item.id != dayID
@@ -391,13 +418,15 @@ extension AppStore {
         current.days[index].weekday = FitnessDate.weekdayNumber(target)
         current.days[index].weekIndex = targetWeek
         current.days[index].skippedAt = nil
+        current.days[index].scheduleUpdatedAt = now
         current.weeks = max(current.weeks, targetWeek)
         current.version += 1
-        current.updatedAt = Date()
+        current.updatedAt = now
         plan = current
         toast = "已改到 \(FitnessDate.short(target))"
         persist()
         rescheduleNotifications()
+        syncPendingUserData()
         return true
     }
 

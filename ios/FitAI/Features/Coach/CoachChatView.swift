@@ -124,6 +124,9 @@ struct CoachChatView: View {
                 if store.lastAgentRetryText != nil {
                     agentRetryCard
                 }
+                if store.pendingUndo != nil {
+                    agentUndoCard
+                }
 
                 inputBar
             }
@@ -318,6 +321,37 @@ struct CoachChatView: View {
         .background(Theme.surfaceStrong)
         .overlay(alignment: .top) {
             Rectangle().fill(Theme.stroke).frame(height: 1)
+        }
+    }
+
+    @ViewBuilder
+    private var agentUndoCard: some View {
+        if let undo = store.pendingUndo {
+            HStack(spacing: 10) {
+                Image(systemName: "arrow.uturn.backward.circle.fill")
+                    .foregroundStyle(Theme.accent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("已执行：\(undo.title)")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white)
+                    Text("5 分钟内可以撤销这次操作")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+                Spacer(minLength: 6)
+                Button("撤销") {
+                    store.undoLastAgentAction()
+                }
+                .font(.caption.weight(.bold))
+                .foregroundStyle(Theme.accent)
+                .buttonStyle(SubtlePressStyle())
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Theme.surfaceStrong)
+            .overlay(alignment: .top) {
+                Rectangle().fill(Theme.stroke).frame(height: 1)
+            }
         }
     }
 

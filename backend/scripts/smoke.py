@@ -93,6 +93,46 @@ def main() -> None:
         day = plan["days"][0]
         print("day 1:", day["weekday"], day["title"], len(day["exercises"]))
 
+        schedule_payload = {
+            "plan_id": plan["id"],
+            "plan_version": plan["version"],
+            "days": [
+                {
+                    "day_id": day["id"],
+                    "assigned_date": "2026-10-27",
+                    "skipped_at": None,
+                    "client_updated_at": "2026-10-27T10:00:00Z",
+                }
+            ],
+        }
+        response = client.put("/api/v1/schedule", json=schedule_payload, headers=headers)
+        assert response.status_code == 200, response.text
+        assert response.json()["accepted"] == [day["id"]], response.text
+        response = client.get(
+            f"/api/v1/schedule?plan_id={plan['id']}", headers=headers
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["days"][0]["assigned_date"] == "2026-10-27"
+
+        older = {
+            **schedule_payload,
+            "days": [
+                {
+                    **schedule_payload["days"][0],
+                    "assigned_date": "2026-10-28",
+                    "client_updated_at": "2026-10-27T09:00:00Z",
+                }
+            ],
+        }
+        response = client.put("/api/v1/schedule", json=older, headers=headers)
+        assert response.status_code == 200, response.text
+        assert response.json()["ignored"] == [day["id"]], response.text
+        response = client.get(
+            f"/api/v1/schedule?plan_id={plan['id']}", headers=headers
+        )
+        assert response.json()["days"][0]["assigned_date"] == "2026-10-27"
+        print("schedule last-write-wins: ok")
+
         workout_started = (datetime.now(timezone.utc) - timedelta(days=1)).replace(
             hour=10, minute=0, second=0, microsecond=0
         )
@@ -191,6 +231,18 @@ def main() -> None:
         actions = client.get("/api/v1/agent/actions", headers=headers)
         assert actions.status_code == 200, actions.text
         assert actions.json()["items"][0]["action_id"] == "smoke-action", actions.text
+        response = client.post(
+            "/api/v1/agent/actions/smoke-action/result",
+            json={
+                "run_id": weekly_review["run_id"],
+                "action_type": "open_screen",
+                "status": "undone",
+                "message": "smoke undo",
+            },
+            headers=headers,
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["status"] == "undone", response.text
         print("agent action audit: ok")
 
         response = client.get("/api/v1/workouts/summary?weeks=4", headers=headers)

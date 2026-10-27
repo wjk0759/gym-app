@@ -323,6 +323,29 @@ AI 复盘并生成新版本：
 }
 ```
 
+#### `GET /schedule?plan_id=uuid`
+
+返回该计划的跨设备排期状态：`day_id`、`assigned_date`、`skipped_at`、客户端/服务端更新时间。
+
+#### `PUT /schedule`
+
+```json
+{
+  "plan_id": "uuid",
+  "plan_version": 3,
+  "days": [
+    {
+      "day_id": "uuid",
+      "assigned_date": "2026-10-29",
+      "skipped_at": null,
+      "client_updated_at": "2026-10-27T13:00:00Z"
+    }
+  ]
+}
+```
+
+采用最后写入优先；更旧的客户端时间不会覆盖新状态。跳过状态不计入 missed。
+
 ### 2.5 AI 教练
 
 #### `POST /coach/chat`

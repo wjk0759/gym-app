@@ -71,6 +71,46 @@ struct RemoteWorkoutList: Decodable {
     let items: [RemoteWorkout]
 }
 
+struct RemoteScheduleDay: Decodable {
+    let dayID: String
+    let assignedDate: String?
+    let skippedAt: Date?
+    let clientUpdatedAt: Date?
+    let serverUpdatedAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case dayID = "day_id"
+        case assignedDate = "assigned_date"
+        case skippedAt = "skipped_at"
+        case clientUpdatedAt = "client_updated_at"
+        case serverUpdatedAt = "server_updated_at"
+    }
+}
+
+struct RemoteScheduleState: Decodable {
+    let planID: String
+    let days: [RemoteScheduleDay]
+
+    enum CodingKeys: String, CodingKey {
+        case planID = "plan_id"
+        case days
+    }
+}
+
+struct PlanScheduleUploadDay: Encodable {
+    let dayID: String
+    let assignedDate: String?
+    let skippedAt: Date?
+    let clientUpdatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case dayID = "day_id"
+        case assignedDate = "assigned_date"
+        case skippedAt = "skipped_at"
+        case clientUpdatedAt = "client_updated_at"
+    }
+}
+
 struct HealthStatus: Decodable {
     let status: String?
     let env: String?
@@ -688,6 +728,46 @@ struct APIClient {
             "split": split.rawValue
         ])
         return try await send(path: "plans/generate", method: "POST", body: body)
+    }
+
+    func fetchSchedule(planID: String) async throws -> RemoteScheduleState {
+        let encoded = planID.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? planID
+        return try await send(
+            path: "schedule?plan_id=\(encoded)",
+            method: "GET",
+            body: nil
+        )
+    }
+
+    func syncSchedule(
+        planID: String,
+        planVersion: Int?,
+        days: [PlanScheduleUploadDay]
+    ) async throws -> RemoteScheduleState {
+        struct Payload: Encodable {
+            let planID: String
+            let planVersion: Int?
+            let days: [PlanScheduleUploadDay]
+
+            enum CodingKeys: String, CodingKey {
+                case planID = "plan_id"
+                case planVersion = "plan_version"
+                case days
+            }
+        }
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .custom { date, encoder in
+            var container = encoder.singleValueContainer()
+            try container.encode(Self.iso8601WithFractionalSeconds.string(from: date))
+        }
+        let body = try encoder.encode(
+            Payload(planID: planID, planVersion: planVersion, days: days)
+        )
+        return try await send(
+            path: "schedule",
+            method: "PUT",
+            body: body
+        )
     }
 
     // MARK: - 对话

@@ -1,6 +1,32 @@
 import Foundation
 import Observation
 
+struct AgentUndoAction: Identifiable {
+    let id: String
+    let title: String
+    let actionType: String
+    let expiresAt: Date
+    let runID: String?
+    let state: AgentUndoState
+}
+
+enum AgentUndoState {
+    case schedule(
+        planID: UUID,
+        dayID: UUID,
+        previousDate: Date?,
+        previousWeekday: Int,
+        previousWeekIndex: Int,
+        previousSkippedAt: Date?
+    )
+    case bodyMetric(
+        metricID: UUID,
+        previousMetric: BodyMetric?,
+        previousProfile: UserProfile
+    )
+    case profile(UserProfile)
+}
+
 @Observable
 final class AppStore {
     var profile = UserProfile()
@@ -32,6 +58,7 @@ final class AppStore {
     var isSyncingWorkouts = false
     var isSyncingRemoteWorkouts = false
     var isSyncingUserData = false
+    private var scheduleSyncRequested = false
     /// 已从本地删除、但服务端 DELETE 尚未成功的训练记录 ID。
     var pendingWorkoutDeletionIDs: [String] = []
     var isAgentWorking = false
@@ -44,6 +71,7 @@ final class AppStore {
     var pendingRoute: AppRoute?
     var lastAgentRetryText: String?
     var lastAgentRetrySkill: CoachSkill = .trainer
+    var pendingUndo: AgentUndoAction?
     var weeklyReview: AgentWeeklyReview?
     var isReviewingWeekly = false
     private var reviewRefreshQueued = false
@@ -330,6 +358,7 @@ final class AppStore {
                 self.isGenerating = false
                 self.persist()
                 self.rescheduleNotifications()
+                self.syncPendingUserData()
             }
             return
         }
@@ -348,6 +377,7 @@ final class AppStore {
             self.isGenerating = false
             self.persist()
             self.rescheduleNotifications()
+            self.syncPendingUserData()
         }
     }
 
@@ -385,6 +415,7 @@ final class AppStore {
         toast = "已恢复计划 v\(archived.version)"
         persist()
         rescheduleNotifications()
+        syncPendingUserData()
     }
 
     private func archiveCurrentPlan() {
@@ -832,19 +863,84 @@ final class AppStore {
     // MARK: - Cross-device data sync
 
     func syncPendingUserData() {
-        guard !isSyncingUserData,
-              AuthTokenStore.shared.accessToken != nil else { return }
+        guard AuthTokenStore.shared.accessToken != nil else { return }
+        if isSyncingUserData {
+            scheduleSyncRequested = true
+            return
+        }
         isSyncingUserData = true
         Task { @MainActor in
             defer {
                 self.isSyncingUserData = false
                 self.persist()
+                if self.scheduleSyncRequested {
+                    self.scheduleSyncRequested = false
+                    self.syncPendingUserData()
+                }
             }
             await self.pushPendingFoodLogs()
             await self.pushPendingBodyMetrics()
             await self.pushPendingEquipment()
+            await self.pushPlanSchedule()
             await self.pullCloudUserData()
         }
+    }
+
+    private func pushPlanSchedule() async {
+        guard let plan else { return }
+        let uploads = plan.days.map { day in
+            PlanScheduleUploadDay(
+                dayID: day.id.uuidString,
+                assignedDate: plan.scheduledDate(for: day).map { FitnessDate.key($0) },
+                skippedAt: day.skippedAt,
+                clientUpdatedAt: day.scheduleUpdatedAt
+                    ?? plan.updatedAt
+                    ?? plan.createdAt
+            )
+        }
+        guard let remote = try? await APIClient.shared.syncSchedule(
+            planID: plan.id.uuidString,
+            planVersion: plan.version,
+            days: uploads
+        ) else { return }
+        applyRemoteSchedule(remote)
+    }
+
+    private func applyRemoteSchedule(_ remote: RemoteScheduleState) {
+        guard var current = plan,
+              current.id.uuidString == remote.planID,
+              !remote.days.isEmpty else { return }
+        var changed = false
+        for item in remote.days {
+            guard let id = UUID(uuidString: item.dayID),
+                  let index = current.days.firstIndex(where: { $0.id == id }) else {
+                continue
+            }
+            if let localAt = current.days[index].scheduleUpdatedAt,
+               let remoteAt = item.clientUpdatedAt,
+               remoteAt < localAt {
+                continue
+            }
+            let remoteDate = item.assignedDate.flatMap { FitnessDate.date(from: $0) }
+            if current.days[index].date != remoteDate {
+                current.days[index].date = remoteDate
+                changed = true
+            }
+            if current.days[index].skippedAt != item.skippedAt {
+                current.days[index].skippedAt = item.skippedAt
+                changed = true
+            }
+            let remoteUpdated = item.clientUpdatedAt ?? item.serverUpdatedAt ?? Date()
+            if current.days[index].scheduleUpdatedAt != remoteUpdated {
+                current.days[index].scheduleUpdatedAt = remoteUpdated
+                changed = true
+            }
+        }
+        guard changed else { return }
+        current.updatedAt = Date()
+        plan = current
+        persist()
+        rescheduleNotifications()
     }
 
     private func pushPendingFoodLogs() async {
@@ -1037,6 +1133,7 @@ final class AppStore {
         workoutLaunchDayID = nil
         lastAgentRetryText = nil
         lastAgentRetrySkill = .trainer
+        pendingUndo = nil
         isReplying = false
         persist()
     }
@@ -1107,6 +1204,7 @@ final class AppStore {
         agentActions = []
         agentRunID = nil
         lastAgentRetryText = nil
+        pendingUndo = nil
         persist()
 
         Task { @MainActor in
@@ -1227,6 +1325,7 @@ final class AppStore {
         let actions = agentActions
         let runID = agentRunID
         agentActions = []
+        pendingUndo = nil
         isExecutingAgentActions = true
         persist()
         Task { @MainActor in
@@ -1236,9 +1335,20 @@ final class AppStore {
             }
             var results: [String] = []
             for action in actions {
-                let message = self.executeAgentAction(action)
+                var undoState: AgentUndoState?
+                let message = self.executeAgentAction(action, undo: &undoState)
                 results.append(message)
                 let status = self.agentActionStatus(for: message)
+                if status != "failed", let undoState {
+                    self.pendingUndo = AgentUndoAction(
+                        id: action.id,
+                        title: action.title,
+                        actionType: action.type,
+                        expiresAt: Date().addingTimeInterval(300),
+                        runID: runID,
+                        state: undoState
+                    )
+                }
                 Task {
                     try? await APIClient.shared.reportAgentAction(
                         id: action.id,
@@ -1288,7 +1398,10 @@ final class AppStore {
         return "executed"
     }
 
-    private func executeAgentAction(_ action: AgentAction) -> String {
+    private func executeAgentAction(
+        _ action: AgentAction,
+        undo: inout AgentUndoState?
+    ) -> String {
         switch action.type {
         case "open_screen":
             guard let screen = action.payload?.screen else {
@@ -1345,14 +1458,19 @@ final class AppStore {
             guard let day = resolveActionPlanDay(action.payload) else {
                 return "没有找到要改期的训练"
             }
+            let before = scheduleUndoState(for: day)
             if let targetText = action.payload?.targetDate,
                targetText != "next_free",
                let target = FitnessDate.date(from: targetText) {
-                return reschedulePlanDay(day, to: target)
+                let moved = reschedulePlanDay(day, to: target)
+                if moved, let before { undo = before }
+                return moved
                     ? "已将「\(day.title)」改到 \(FitnessDate.short(target))"
                     : "改期失败，目标日期可能已有训练"
             }
-            return deferPlanDay(day)
+            let moved = deferPlanDay(day)
+            if moved, let before { undo = before }
+            return moved
                 ? "已将「\(day.title)」顺延到最近空档"
                 : "顺延失败，没有可用空档"
 
@@ -1360,12 +1478,16 @@ final class AppStore {
             guard let day = resolveActionPlanDay(action.payload) else {
                 return "没有找到要跳过的训练"
             }
-            return skipPlanDay(day)
+            let before = scheduleUndoState(for: day)
+            let skipped = skipPlanDay(day)
+            if skipped, let before { undo = before }
+            return skipped
                 ? "已跳过「\(day.title)」"
                 : "跳过失败"
 
         case "update_goal":
             guard let payload = action.payload else { return "目标参数为空" }
+            let previousProfile = profile
             var updated = profile
             switch payload.goalType {
             case "lose_fat": updated.goalType = .loseFat
@@ -1388,21 +1510,110 @@ final class AppStore {
                 updated.targetDate = date
             }
             updateProfile(updated)
+            undo = .profile(previousProfile)
             return "已更新训练目标"
 
         case "log_body_metric":
             guard let payload = action.payload, let weight = payload.weightKG else {
                 return "没有提供体重"
             }
-            saveBodyCheckIn(
+            let previousProfile = profile
+            let todayKey = FitnessDate.key(Date())
+            let previousMetric = bodyMetrics.first { $0.dateKey == todayKey }
+            let metric = saveBodyCheckIn(
                 weightKG: weight,
                 bodyFatPCT: payload.bodyFatPCT ?? profile.bodyFatPCT,
                 waistCM: payload.waistCM ?? profile.waistCM
+            )
+            undo = .bodyMetric(
+                metricID: metric.id,
+                previousMetric: previousMetric,
+                previousProfile: previousProfile
             )
             return "已记录体重 \(weight.formatted(.number.precision(.fractionLength(1)))) kg"
 
         default:
             return "暂不支持操作：\(action.type)"
+        }
+    }
+
+    private func scheduleUndoState(for day: PlanDay) -> AgentUndoState? {
+        guard let plan,
+              let current = plan.days.first(where: { $0.id == day.id }) else {
+            return nil
+        }
+        return .schedule(
+            planID: plan.id,
+            dayID: current.id,
+            previousDate: current.date,
+            previousWeekday: current.weekday,
+            previousWeekIndex: current.weekIndex,
+            previousSkippedAt: current.skippedAt
+        )
+    }
+
+    func undoLastAgentAction() {
+        guard let pending = pendingUndo else { return }
+        pendingUndo = nil
+        guard Date() < pending.expiresAt else {
+            toast = "撤销窗口已结束"
+            return
+        }
+        let now = Date()
+        switch pending.state {
+        case let .schedule(
+            planID,
+            dayID,
+            previousDate,
+            previousWeekday,
+            previousWeekIndex,
+            previousSkippedAt
+        ):
+            guard var current = plan,
+                  current.id == planID,
+                  let index = current.days.firstIndex(where: { $0.id == dayID }) else {
+                toast = "当前计划已变化，无法撤销"
+                return
+            }
+            current.days[index].date = previousDate
+            current.days[index].weekday = previousWeekday
+            current.days[index].weekIndex = previousWeekIndex
+            current.days[index].skippedAt = previousSkippedAt
+            current.days[index].scheduleUpdatedAt = now
+            current.version += 1
+            current.updatedAt = now
+            plan = current
+            persist()
+            rescheduleNotifications()
+            syncPendingUserData()
+            toast = "已撤销排期修改"
+
+        case let .bodyMetric(metricID, previousMetric, previousProfile):
+            removeBodyMetric(id: metricID)
+            profile = previousProfile
+            if let previousMetric {
+                appendBodyMetric(previousMetric)
+            }
+            persist()
+            syncPendingUserData()
+            Task {
+                try? await APIClient.shared.syncProfile(previousProfile)
+                try? await APIClient.shared.syncGoal(previousProfile)
+            }
+            toast = "已撤销身体数据"
+
+        case let .profile(previousProfile):
+            updateProfile(previousProfile)
+            toast = "已撤销目标修改"
+        }
+        Task {
+            try? await APIClient.shared.reportAgentAction(
+                id: pending.id,
+                runID: pending.runID,
+                type: pending.actionType,
+                status: "undone",
+                message: "用户撤销"
+            )
         }
     }
 
@@ -1452,6 +1663,7 @@ final class AppStore {
                 )
                 self.toast = "已应用 Agent 计划"
                 self.rescheduleNotifications()
+                self.syncPendingUserData()
             } catch {
                 self.chat.append(
                     ChatMessage(
@@ -1510,6 +1722,7 @@ final class AppStore {
         bodyCheckInDismissedDate = nil
         pendingWorkoutDeletionIDs = []
         isSyncingRemoteWorkouts = false
+        scheduleSyncRequested = false
         weeklyReview = nil
         isReviewingWeekly = false
         reviewRefreshQueued = false
@@ -1527,6 +1740,7 @@ final class AppStore {
         pendingRoute = nil
         lastAgentRetryText = nil
         lastAgentRetrySkill = .trainer
+        pendingUndo = nil
     }
 
     @discardableResult

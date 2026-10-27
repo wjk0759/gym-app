@@ -164,9 +164,22 @@ class AgentChatIn(BaseModel):
 class AgentActionResultIn(BaseModel):
     run_id: str | None = Field(default=None, max_length=36)
     action_type: str = Field(min_length=1, max_length=40)
-    status: Literal["executed", "rejected", "failed"]
+    status: Literal["executed", "rejected", "failed", "undone"]
     message: str | None = Field(default=None, max_length=500)
     detail: dict[str, Any] | None = None
+
+
+class PlanDayStateIn(BaseModel):
+    day_id: str = Field(min_length=1, max_length=36)
+    assigned_date: date | None = None
+    skipped_at: datetime | None = None
+    client_updated_at: datetime | None = None
+
+
+class ScheduleSyncIn(BaseModel):
+    plan_id: str = Field(min_length=1, max_length=36)
+    plan_version: int | None = Field(default=None, ge=1, le=100000)
+    days: list[PlanDayStateIn] = Field(default_factory=list, max_length=200)
 
 
 class DietPlanIn(BaseModel):

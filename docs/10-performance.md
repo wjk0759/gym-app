@@ -153,5 +153,5 @@ cd E:\Projects\FitAI\backend
 - iOS 图片上传前按 1600px 左右下采样，减少视觉模型上传时间。
 - 真机上用 Instruments（Time Profiler / Allocations / Network）验证 SwiftUI 滚动与启动耗时。
 - 配置真实 DeepSeek Key 后，单独统计首 token 延迟和完整回复延迟；当前流式接口已存在，iOS 端尚未消费流式回复。
-- App Action 执行结果已回写 `agent_action_events`；动作撤销、跨设备排期同步仍未完成，属于下一阶段闭环。
+- App Action 执行结果已回写 `agent_action_events`；训练排期已支持跨设备同步，5 分钟本地撤销已实现。跨设备撤销和更完整的审计历史页面仍未完成。
 - 多实例部署时把登录/短信限流从进程内字典迁移到 Redis，并增加 AI 接口的用户级配额。
