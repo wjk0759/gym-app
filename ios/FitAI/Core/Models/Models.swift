@@ -300,6 +300,8 @@ struct PlanDay: Codable, Identifiable, Hashable {
     var weekIndex: Int = 1
     var weekday: Int
     var date: Date? = nil
+    /// 用户明确跳过这次训练；跳过的训练不再出现在今日卡、错期提醒和通知里。
+    var skippedAt: Date? = nil
     var title: String
     var focus: [MuscleGroup]
     var exercises: [PlanExercise]
@@ -309,6 +311,7 @@ struct PlanDay: Codable, Identifiable, Hashable {
         case weekIndex = "week_index"
         case weekday
         case date
+        case skippedAt = "skipped_at"
         case title
         case focus
         case exercises
@@ -374,7 +377,8 @@ struct TrainingPlan: Codable, Identifiable, Hashable {
 
     func day(on date: Date) -> PlanDay? {
         days.first { day in
-            guard let value = scheduledDate(for: day) else { return false }
+            guard day.skippedAt == nil,
+                  let value = scheduledDate(for: day) else { return false }
             return Calendar.current.isDate(value, inSameDayAs: date)
         }
     }
@@ -382,7 +386,7 @@ struct TrainingPlan: Codable, Identifiable, Hashable {
     var firstWeek: [PlanDay] { weekDays(in: 1) }
 
     func weekDays(in week: Int) -> [PlanDay] {
-        days.filter { $0.weekIndex == week }.sorted {
+        days.filter { $0.weekIndex == week && $0.skippedAt == nil }.sorted {
             let left = scheduledDate(for: $0) ?? .distantFuture
             let right = scheduledDate(for: $1) ?? .distantFuture
             return left == right ? $0.weekday < $1.weekday : left < right

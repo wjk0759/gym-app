@@ -262,4 +262,136 @@ extension AppStore {
         rescheduleNotifications()
         return true
     }
+
+    // MARK: - Flexible rescheduling
+
+    func isPlanDayCompleted(_ day: PlanDay) -> Bool {
+        guard let plan else { return false }
+        if sessions.contains(where: { $0.programDayID == day.id.uuidString }) {
+            return true
+        }
+        guard let scheduled = plan.scheduledDate(for: day) else { return false }
+        // 旧版本训练记录没有 programDayID，用标题 + 日期兜底。
+        return sessions.contains { session in
+            session.dayTitle == day.title
+                && FitnessDate.calendar.isDate(session.date, inSameDayAs: scheduled)
+        }
+    }
+
+    /// 已经过期、没有完成、也没有明确跳过的训练。只回溯 14 天，避免一次显示太多陈年欠账。
+    var missedPlanDays: [PlanDay] {
+        guard let plan else { return [] }
+        let today = FitnessDate.startOfDay(Date())
+        let cutoff = FitnessDate.addingDays(-28, to: today)
+        return plan.days
+            .filter { day in
+                guard day.skippedAt == nil,
+                      !isPlanDayCompleted(day),
+                      let date = plan.scheduledDate(for: day) else { return false }
+                let dayStart = FitnessDate.startOfDay(date)
+                return dayStart < today && dayStart >= cutoff
+            }
+            .sorted {
+                (plan.scheduledDate(for: $0) ?? .distantFuture)
+                    < (plan.scheduledDate(for: $1) ?? .distantFuture)
+            }
+    }
+
+    /// 从指定日期之后寻找第一个没有安排训练的空档；已跳过的日期视为空档。
+    func nextFreePlanDate(after date: Date, excluding dayID: UUID? = nil) -> Date? {
+        guard let plan else { return nil }
+        var cursor = FitnessDate.addingDays(
+            1,
+            to: FitnessDate.startOfDay(date)
+        )
+        let occupied = Set(
+            plan.days
+                .filter { $0.id != dayID && $0.skippedAt == nil }
+                .compactMap { plan.scheduledDate(for: $0) }
+                .map { FitnessDate.key($0) }
+        )
+        for _ in 0..<90 {
+            if !occupied.contains(FitnessDate.key(cursor)) {
+                return cursor
+            }
+            cursor = FitnessDate.addingDays(1, to: cursor)
+        }
+        return nil
+    }
+
+    @discardableResult
+    func deferPlanDay(_ day: PlanDay) -> Bool {
+        guard !isPlanDayCompleted(day) else {
+            toast = "这次训练已经完成，不需要顺延"
+            return false
+        }
+        guard let target = nextFreePlanDate(after: Date(), excluding: day.id) else {
+            toast = "未来 90 天没有可用空档，可以选择跳过这次"
+            return false
+        }
+        return movePlanDay(day.id, to: target)
+    }
+
+    @discardableResult
+    func skipPlanDay(_ day: PlanDay) -> Bool {
+        guard !isPlanDayCompleted(day) else {
+            toast = "这次训练已经完成，不能跳过"
+            return false
+        }
+        guard var current = plan,
+              let index = current.days.firstIndex(where: { $0.id == day.id }) else {
+            return false
+        }
+        current.days[index].skippedAt = Date()
+        current.version += 1
+        current.updatedAt = Date()
+        plan = current
+        toast = "已跳过这次训练，不会算作未完成"
+        persist()
+        rescheduleNotifications()
+        return true
+    }
+
+    private func movePlanDay(_ dayID: UUID, to date: Date) -> Bool {
+        guard var current = plan,
+              let index = current.days.firstIndex(where: { $0.id == dayID }) else {
+            return false
+        }
+        let target = FitnessDate.startOfDay(date)
+        let occupied = current.days.contains { item in
+            item.id != dayID
+                && item.skippedAt == nil
+                && current.scheduledDate(for: item).map {
+                    FitnessDate.calendar.isDate($0, inSameDayAs: target)
+                } == true
+        }
+        guard !occupied else {
+            toast = "那天已经有训练，请选择其他空档"
+            return false
+        }
+
+        let targetWeek = weekIndex(for: target, in: current)
+        current.days[index].date = target
+        current.days[index].weekday = FitnessDate.weekdayNumber(target)
+        current.days[index].weekIndex = targetWeek
+        current.days[index].skippedAt = nil
+        current.weeks = max(current.weeks, targetWeek)
+        current.version += 1
+        current.updatedAt = Date()
+        plan = current
+        toast = "已改到 \(FitnessDate.short(target))"
+        persist()
+        rescheduleNotifications()
+        return true
+    }
+
+    private func weekIndex(for date: Date, in plan: TrainingPlan) -> Int {
+        guard let start = plan.date(week: 1, weekday: 1) else { return 1 }
+        let diff = FitnessDate.calendar.dateComponents(
+            [.day],
+            from: start,
+            to: FitnessDate.startOfDay(date)
+        ).day ?? 0
+        return max(1, diff / 7 + 1)
+    }
 }

@@ -9,6 +9,8 @@ struct HomeView: View {
     @State private var showBodyCheckIn = false
     @State private var bodyCheckInManual = false
     @State private var didAutoPrompt = false
+    @State private var showTodayUnavailable = false
+    @State private var showSchedule = false
 
     var body: some View {
         NavigationStack {
@@ -52,13 +54,19 @@ struct HomeView: View {
                                     .softContentTransition()
                             }
 
+                            if !store.missedPlanDays.isEmpty {
+                                missedPlanCard
+                                    .staggerIn(4)
+                                    .softContentTransition()
+                            }
+
                             weekCard
-                                .staggerIn(4)
+                                .staggerIn(store.missedPlanDays.isEmpty ? 4 : 5)
                                 .softContentTransition()
 
                             if store.todayPeriod?.mode != .rest {
                                 aiReviewCard(plan: plan)
-                                    .staggerIn(5)
+                                    .staggerIn(store.missedPlanDays.isEmpty ? 5 : 6)
                                     .softContentTransition()
                             }
                         } else {
@@ -95,6 +103,33 @@ struct HomeView: View {
             .sheet(isPresented: $showBodyCheckIn) {
                 BodyCheckInSheet(manual: bodyCheckInManual)
                     .presentationDetents([.medium, .large])
+            }
+            .sheet(isPresented: $showSchedule) {
+                PlanScheduleView()
+            }
+            .confirmationDialog(
+                "今天没空？",
+                isPresented: $showTodayUnavailable,
+                titleVisibility: .visible
+            ) {
+                if let day = store.todayDay {
+                    if let target = store.nextFreePlanDate(after: Date(), excluding: day.id) {
+                        Button("顺延到 \(FitnessDate.short(target))") {
+                            store.deferPlanDay(day)
+                        }
+                    }
+                    Button("这周少练一次") {
+                        store.skipPlanDay(day)
+                    }
+                }
+                Button("调整完整训练日期") {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        showSchedule = true
+                    }
+                }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("顺延会保留这次训练内容；少练一次不会算作未完成。")
             }
             .task {
                 store.refreshWeeklyReview()
@@ -255,6 +290,14 @@ struct HomeView: View {
             }
             .buttonStyle(PrimaryButtonStyle())
 
+            Button("今天没空 / 改天") {
+                showTodayUnavailable = true
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Theme.tertiaryText)
+            .frame(maxWidth: .infinity)
+            .buttonStyle(SubtlePressStyle())
+
             Text("下一步可调整动作顺序、组数和重量")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
@@ -310,6 +353,54 @@ struct HomeView: View {
         .card()
     }
 
+    private var missedPlanCard: some View {
+        let missed = store.missedPlanDays
+        return Group {
+            if let plan = store.plan,
+               let first = missed.first,
+               let date = plan.scheduledDate(for: first) {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "clock.badge.exclamationmark")
+                            .foregroundStyle(Theme.warning)
+                        Text("有 \(missed.count) 次训练没完成")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                        Spacer()
+                    }
+
+                    Text("最近一次：\(FitnessDate.short(date)) · \(first.title)")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+
+                    Text("计划不会因为忙碌作废。可以顺延到最近空档，或者明确跳过这次。")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    HStack(spacing: 14) {
+                        Button("顺延这次") {
+                            store.deferPlanDay(first)
+                        }
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                        .buttonStyle(SubtlePressStyle())
+
+                        Button("跳过这次") {
+                            store.skipPlanDay(first)
+                        }
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.tertiaryText)
+                        .buttonStyle(SubtlePressStyle())
+
+                        Spacer()
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .card()
+            }
+        }
+    }
     // MARK: - 饮食
 
     private var nutritionCard: some View {

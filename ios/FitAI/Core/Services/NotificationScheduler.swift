@@ -16,31 +16,47 @@ final class NotificationScheduler {
         }
     }
 
-    /// 每个训练日一条每周重复通知，最多 7 条，避免触发 iOS 的 64 条限制。
+    /// 按实际训练日期生成一次性提醒，最多 60 条，支持顺延、跳过和临时改期。
     @discardableResult
     func schedule(plan: TrainingPlan?, hour: Int, minute: Int) async -> Int {
         center.removeAllPendingNotificationRequests()
         guard let plan else { return 0 }
 
+        let calendar = FitnessDate.calendar
+        let now = Date()
+        let today = calendar.startOfDay(for: now)
         var scheduled = 0
-        for day in plan.firstWeek {
+
+        for day in plan.days
+            .filter({ $0.skippedAt == nil })
+            .sorted(by: {
+                (plan.scheduledDate(for: $0) ?? .distantFuture)
+                    < (plan.scheduledDate(for: $1) ?? .distantFuture)
+            }) {
+            guard scheduled < 60,
+                  let date = plan.scheduledDate(for: day) else { continue }
+            let dayStart = calendar.startOfDay(for: date)
+            guard dayStart >= today else { continue }
+
+            var components = calendar.dateComponents([.year, .month, .day], from: dayStart)
+            components.hour = hour
+            components.minute = minute
+            guard let fireDate = calendar.date(from: components), fireDate > now else {
+                continue
+            }
+
             let content = UNMutableNotificationContent()
             content.title = "该训练了"
             content.body = "今天练\(day.title)，约 \(day.estimatedMinutes) 分钟"
             content.sound = .default
             content.userInfo = ["weekday": day.weekday, "day_id": day.id.uuidString]
 
-            var components = DateComponents()
-            components.weekday = day.weekday == 7 ? 1 : day.weekday + 1
-            components.hour = hour
-            components.minute = minute
-
             let trigger = UNCalendarNotificationTrigger(
                 dateMatching: components,
-                repeats: true
+                repeats: false
             )
             let request = UNNotificationRequest(
-                identifier: "workout-\(day.weekday)",
+                identifier: "workout-\(day.id.uuidString)",
                 content: content,
                 trigger: trigger
             )

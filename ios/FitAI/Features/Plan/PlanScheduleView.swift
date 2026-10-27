@@ -78,6 +78,11 @@ struct PlanScheduleView: View {
                     .buttonStyle(PrimaryButtonStyle())
                     .disabled(!complete)
                     .opacity(complete ? 1 : 0.45)
+
+                    Text("临时没空时，请在今日页点「今天没空」顺延单次训练；这里用于重新安排完整 4 周日期。")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .appPagePadding()
                 .padding(.top, 8)
