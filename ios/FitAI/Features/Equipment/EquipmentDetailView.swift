@@ -86,7 +86,7 @@ struct EquipmentItemDetailView: View {
                 }
             }
             .task {
-                guard store.useRemoteAI, let slug = item?.slug else { return }
+                guard let slug = item?.slug else { return }
                 if let url = try? await APIClient.shared.officialVideoURL(slug: slug) {
                     officialVideoURL = url
                 }
