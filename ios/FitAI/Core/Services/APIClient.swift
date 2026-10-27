@@ -68,6 +68,14 @@ struct RemoteWorkoutList: Decodable {
     let items: [RemoteWorkout]
 }
 
+struct HealthStatus: Decodable {
+    let status: String?
+    let env: String?
+    let llm: String?
+    let vision: String?
+    let meituan: String?
+}
+
 struct ChatResponse: Decodable {
     let sessionID: UUID?
     let reply: String
@@ -596,18 +604,23 @@ struct APIClient {
 
     // MARK: - 健康检查
 
-    func health() async throws -> Bool {
+    func healthStatus() async throws -> HealthStatus {
         let root = baseURL
             .deletingLastPathComponent()
             .deletingLastPathComponent()
         var request = URLRequest(url: root.appendingPathComponent("health"))
-        request.timeoutInterval = 8
+        request.timeoutInterval = 12
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse,
               (200..<300).contains(http.statusCode) else {
-            return false
+            throw APIError(message: "健康检查失败")
         }
-        return String(data: data, encoding: .utf8)?.contains("\"status\":\"ok\"") == true
+        return try decode(HealthStatus.self, from: data)
+    }
+
+    func health() async throws -> Bool {
+        let status = try await healthStatus()
+        return status.status == "ok"
     }
 
     // MARK: - 计划
@@ -932,7 +945,7 @@ struct APIClient {
             request.setValue(userID, forHTTPHeaderField: "X-User-Id")
         }
         request.httpBody = body
-        request.timeoutInterval = 60
+        request.timeoutInterval = 90
 
         let data: Data
         let response: URLResponse

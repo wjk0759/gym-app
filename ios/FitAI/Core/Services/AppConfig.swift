@@ -27,6 +27,23 @@ enum AppConfig {
         }
     }
 
-    static let useRemoteAI = false
+    /// Debug 构建默认打开远程 AI，方便 Mac/模拟器直接体验 DeepSeek；
+    /// Release 仍由 Pro 权益控制，不会绕过付费门槛。
+    static var useRemoteAI: Bool {
+#if DEBUG
+        true
+#else
+        false
+#endif
+    }
+
+    static var debugForceRemoteAI: Bool {
+#if DEBUG
+        true
+#else
+        false
+#endif
+    }
+
     static let appVersion = "0.1.0"
 }

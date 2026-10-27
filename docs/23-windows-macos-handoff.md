@@ -35,6 +35,14 @@
 
 ## 二、Mac / Apple 后台才能完成
 
+### 本机预览 AI 教练
+
+- 用 Xcode 的 `Debug` scheme 运行；Debug 默认打开远程 AI 和「跳过 Pro 限制」，用于预览 DeepSeek。
+- 登录页「开发服务器」填 `http://192.168.1.4:8000/api/v1`；Mac 模拟器的 `127.0.0.1` 指向 Mac 自己，连不到 Windows 后端。
+- 设置页「服务状态」应显示 `后端已连接 · deepseek-flash`；如果显示离线，先检查 Windows 防火墙和 API 地址。
+- 当前教练/Agent 使用 `deepseek-flash`（DeepSeek-V4.1-Flash-1017），并开启 `high` 思考；需要更强推理时可把 `LLM_MODEL` 切到 `deepseek-v4-pro`，但对话延迟会明显增加。
+- 远程调用失败时，聊天会明确标注「远程 AI 暂时不可用，先用本地规则回答」，不再静默伪装成 AI。
+
 ### Apple 登录
 
 - [ ] 在 Apple Developer 为 `com.fitai.app` 开启 Sign in with Apple
@@ -64,7 +72,7 @@
 
 ## 三、外部服务与内容
 
-- [x] DeepSeek `LLM_API_KEY`：已写入 `backend/.env`，健康检查显示 `llm: deepseek-chat`
+- [x] DeepSeek `LLM_API_KEY`：已写入 `backend/.env`，健康检查显示 `llm: deepseek-flash`（DeepSeek-V4.1-Flash-1017）
 - [ ] 真实视觉模型 Key 与供应商（器械/体型/饮食）
 - [ ] 真实短信网关
 - [ ] 微信开放平台 AppID/Secret

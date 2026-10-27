@@ -458,6 +458,9 @@ struct CoachChatView: View {
                         Text(selectedSkill.detail)
                             .font(.caption2)
                             .foregroundStyle(Theme.tertiaryText)
+                        Text(store.canUseRemoteAI ? "DeepSeek 远程 AI · 读取训练上下文" : "本地规则建议 · 未调用模型")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(store.canUseRemoteAI ? Theme.accent : Theme.tertiaryText)
                     }
                 }
 

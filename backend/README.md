@@ -29,7 +29,8 @@ uvicorn app.main:app --reload
 LLM_PROVIDER=deepseek
 LLM_API_KEY=sk-...
 LLM_BASE_URL=https://api.deepseek.com/v1
-LLM_MODEL=deepseek-chat
+LLM_MODEL=deepseek-flash
+LLM_REASONING_EFFORT=high
 ```
 
 任何 OpenAI 兼容接口都可以（通义、豆包、DeepSeek）。没有 Key 时自动使用规则模板，不影响调试。

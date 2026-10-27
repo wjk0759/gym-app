@@ -23,6 +23,7 @@ struct SettingsView: View {
     @Environment(SubscriptionManager.self) private var subscriptions
 
     @State private var serviceState: ServiceState = .checking
+    @State private var serviceModel = ""
     @State private var reminderDate = Date()
     @State private var showLogout = false
     @State private var showMessage = false
@@ -268,7 +269,7 @@ struct SettingsView: View {
     private var serviceText: String {
         switch serviceState {
         case .checking: return "正在检查后端连接…"
-        case .online: return "后端已连接，账号与 AI 服务可用"
+        case .online: return serviceModel.isEmpty ? "后端已连接，账号与 AI 服务可用" : "后端已连接 · \(serviceModel)"
         case .offline: return "后端未连接，请检查服务地址和网络"
         }
     }
@@ -298,10 +299,12 @@ struct SettingsView: View {
     private func checkService() async {
         serviceState = .checking
         do {
-            let ok = try await APIClient.shared.health()
-            serviceState = ok ? .online : .offline
+            let status = try await APIClient.shared.healthStatus()
+            serviceState = status.status == "ok" ? .online : .offline
+            serviceModel = status.llm ?? ""
         } catch {
             serviceState = .offline
+            serviceModel = ""
         }
     }
 
@@ -617,8 +620,11 @@ struct SettingsView: View {
     private func testConnection() {
         Task { @MainActor in
             do {
-                let ok = try await APIClient.shared.health()
-                message = ok ? "后端连接成功。" : "能连上后端，但健康检查返回异常。"
+                let status = try await APIClient.shared.healthStatus()
+                serviceModel = status.llm ?? ""
+                message = status.status == "ok"
+                    ? "后端连接成功 · \(status.llm ?? "模型未配置")"
+                    : "能连上后端，但健康检查返回异常。"
             } catch {
                 message = "连接失败：\(error.localizedDescription)"
             }

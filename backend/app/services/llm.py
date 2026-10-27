@@ -22,7 +22,7 @@ def _get_client() -> httpx.AsyncClient:
     global _client
     if _client is None:
         _client = httpx.AsyncClient(
-            timeout=httpx.Timeout(45.0, connect=10.0),
+            timeout=httpx.Timeout(90.0, connect=10.0),
             limits=httpx.Limits(
                 max_connections=40,
                 max_keepalive_connections=20,
@@ -73,6 +73,7 @@ async def complete_json(system: str, user: str) -> dict:
             {"role": "user", "content": user},
         ],
         "temperature": 0.3,
+        "reasoning_effort": settings.llm_reasoning_effort,
         "response_format": {"type": "json_object"},
     }
 
@@ -105,6 +106,7 @@ async def complete_text(messages: list[dict], temperature: float = 0.5) -> str:
         "model": settings.llm_model,
         "messages": messages,
         "temperature": temperature,
+        "reasoning_effort": settings.llm_reasoning_effort,
     }
     response = await _get_client().post(
         _endpoint(), headers=_headers(), json=payload

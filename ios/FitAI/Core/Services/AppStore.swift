@@ -49,7 +49,7 @@ final class AppStore {
     /// StoreKit 权益通过 SubscriptionManager 同步；只有 Pro 才会请求远程 DeepSeek。
     var isPro = false
     /// 仅用于 Debug 预览 DeepSeek；正式包不会暴露出开关。
-    var debugForceRemoteAI = false
+    var debugForceRemoteAI = AppConfig.debugForceRemoteAI
     var healthKitEnabled = false
 
     private var currentUserID: String? = AuthTokenStore.shared.userID
@@ -960,13 +960,19 @@ final class AppStore {
                         )
                     )
                 } catch {
+                    let local = CoachService.reply(
+                        to: trimmed,
+                        profile: self.profile,
+                        plan: self.plan,
+                        skill: skill,
+                        period: self.todayPeriod
+                    )
+                    self.toast = "远程 AI 暂时不可用，已使用本地建议"
                     self.chat.append(
-                        CoachService.reply(
-                            to: trimmed,
-                            profile: self.profile,
-                            plan: self.plan,
-                            skill: skill,
-                            period: self.todayPeriod
+                        ChatMessage(
+                            role: .assistant,
+                            text: "远程 AI 暂时不可用，先用本地规则回答：\n\n" + local.text,
+                            isSafety: local.isSafety
                         )
                     )
                 }
@@ -1078,13 +1084,19 @@ final class AppStore {
                     )
                 )
             } catch {
+                let local = CoachService.reply(
+                    to: trimmed,
+                    profile: self.profile,
+                    plan: self.plan,
+                    skill: .trainer,
+                    period: self.todayPeriod
+                )
+                self.toast = "远程 AI 暂时不可用，已使用本地建议"
                 self.chat.append(
-                    CoachService.reply(
-                        to: trimmed,
-                        profile: self.profile,
-                        plan: self.plan,
-                        skill: .trainer,
-                        period: self.todayPeriod
+                    ChatMessage(
+                        role: .assistant,
+                        text: "远程 AI 暂时不可用，先用本地规则回答：\n\n" + local.text,
+                        isSafety: local.isSafety
                     )
                 )
             }
@@ -1288,6 +1300,14 @@ final class AppStore {
         reminderMinute = state.reminderMinute
         notificationsEnabled = state.notificationsEnabled
         useRemoteAI = state.useRemoteAI ?? AppConfig.useRemoteAI
+#if DEBUG
+        let debugRemoteMigration = "fitai_debug_remote_default_v2"
+        if !UserDefaults.standard.bool(forKey: debugRemoteMigration) {
+            useRemoteAI = true
+            debugForceRemoteAI = true
+            UserDefaults.standard.set(true, forKey: debugRemoteMigration)
+        }
+#endif
         healthKitEnabled = state.healthKitEnabled ?? false
         equipmentLibrary = state.equipmentLibrary ?? []
         bodyAnalyses = state.bodyAnalyses ?? []

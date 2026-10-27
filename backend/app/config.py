@@ -14,7 +14,11 @@ class Settings(BaseSettings):
     llm_provider: str = "deepseek"
     llm_api_key: str = ""
     llm_base_url: str = "https://api.deepseek.com/v1"
-    llm_model: str = "deepseek-chat"
+    # DeepSeek-V4.1-Flash-1017：当前最新 API Flash，支持文本与视觉；
+    # 复杂计划如后续需要更高质量，可切换为 deepseek-v4-pro。
+    llm_model: str = "deepseek-flash"
+    # low | high | max；教练 Agent 默认使用 high，兼顾质量和延迟。
+    llm_reasoning_effort: str = "high"
 
     vision_model: str = ""
     vision_base_url: str = ""

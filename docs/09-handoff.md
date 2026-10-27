@@ -74,7 +74,8 @@ open FitAI.xcodeproj
 LLM_PROVIDER=deepseek
 LLM_API_KEY=sk-...
 LLM_BASE_URL=https://api.deepseek.com/v1
-LLM_MODEL=deepseek-chat
+LLM_MODEL=deepseek-flash
+LLM_REASONING_EFFORT=high
 ```
 
 > 需要“深度思考/推理”时，把 `LLM_MODEL` 改成 `deepseek-reasoner`。注意：reasoner 更慢、更贵，且对 JSON 输出稳定性要求更高，建议先用 chat 跑通评测集。
