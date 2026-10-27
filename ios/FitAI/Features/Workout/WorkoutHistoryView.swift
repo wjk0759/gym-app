@@ -92,13 +92,14 @@ struct WorkoutHistoryView: View {
     private var monthCard: some View {
         HStack(spacing: 14) {
             Button {
+                Haptics.tap()
                 changeMonth(-1)
             } label: {
                 Image(systemName: "chevron.left")
                     .frame(width: 34, height: 34)
                     .background(Theme.surfaceStrong, in: Circle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SubtlePressStyle(scale: 0.92))
             .foregroundStyle(Theme.secondaryText)
 
             Spacer()
@@ -108,23 +109,26 @@ struct WorkoutHistoryView: View {
                     .font(.headline)
                     .foregroundStyle(.white)
                 Button("回到本月") {
+                    Haptics.tap()
                     month = Date()
                     selectedDate = nil
                 }
                 .font(.caption2)
                 .foregroundStyle(Theme.accent)
+                .buttonStyle(SubtlePressStyle(scale: 0.96))
             }
 
             Spacer()
 
             Button {
+                Haptics.tap()
                 changeMonth(1)
             } label: {
                 Image(systemName: "chevron.right")
                     .frame(width: 34, height: 34)
                     .background(Theme.surfaceStrong, in: Circle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SubtlePressStyle(scale: 0.92))
             .foregroundStyle(Theme.secondaryText)
             .disabled(calendar.isDate(monthStart, equalTo: Date(), toGranularity: .month))
             .opacity(calendar.isDate(monthStart, equalTo: Date(), toGranularity: .month) ? 0.35 : 1)
@@ -172,10 +176,14 @@ struct WorkoutHistoryView: View {
                 Spacer()
                 if selectedDate != nil {
                     Button("看全月") {
-                        selectedDate = nil
+                        Haptics.tap()
+                        withAnimation(Motion.quick) {
+                            selectedDate = nil
+                        }
                     }
                     .font(.caption)
                     .foregroundStyle(Theme.accent)
+                    .buttonStyle(SubtlePressStyle(scale: 0.95))
                 }
             }
 
@@ -187,6 +195,7 @@ struct WorkoutHistoryView: View {
             } else {
                 ForEach(visibleSessions) { session in
                     Button {
+                        Haptics.tap()
                         selectedSession = session
                     } label: {
                         HStack(spacing: 10) {
@@ -213,7 +222,7 @@ struct WorkoutHistoryView: View {
                         }
                         .padding(.vertical, 6)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(SubtlePressStyle(scale: 0.985))
                     if session.id != visibleSessions.last?.id {
                         Divider().overlay(Theme.stroke)
                     }
@@ -231,7 +240,10 @@ struct WorkoutHistoryView: View {
         let isToday = calendar.isDateInToday(date)
 
         return Button {
-            selectedDate = date
+            Haptics.select()
+            withAnimation(Motion.quick) {
+                selectedDate = date
+            }
         } label: {
             VStack(spacing: 2) {
                 Text("\(day)")
@@ -255,8 +267,10 @@ struct WorkoutHistoryView: View {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
                     .stroke(isSelected ? Theme.accent.opacity(0.6) : Color.clear, lineWidth: 1)
             )
+            .scaleEffect(isSelected ? 1.03 : 1)
+            .animation(Motion.quick, value: isSelected)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SubtlePressStyle(scale: 0.94))
     }
 
     private var leadingBlankCount: Int {

@@ -55,9 +55,15 @@ struct EquipmentPickerView: View {
         !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    /// 每次筛选只构建一次 Set，避免在 filter/sort 里反复线性查库。
+    private var savedSlugs: Set<String> {
+        Set(store.equipmentLibrary.compactMap(\.slug))
+    }
+
     private var filteredExercises: [Exercise] {
         let text = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let isSearching = !text.isEmpty
+        let saved = savedSlugs
 
         return ExerciseLibrary.all
             .filter { exercise in
@@ -74,12 +80,12 @@ struct EquipmentPickerView: View {
 
                 let muscleMatch = selectedMuscle == nil || exercise.muscle == selectedMuscle
                 let equipmentMatch = selectedEquipment == nil || exercise.equipment == selectedEquipment
-                let savedMatch = !savedOnly || store.equipmentLibrary.contains { $0.slug == exercise.slug }
+                let savedMatch = !savedOnly || saved.contains(exercise.slug)
                 return muscleMatch && equipmentMatch && savedMatch
             }
             .sorted { left, right in
-                let leftSaved = store.equipmentLibrary.contains { $0.slug == left.slug }
-                let rightSaved = store.equipmentLibrary.contains { $0.slug == right.slug }
+                let leftSaved = saved.contains(left.slug)
+                let rightSaved = saved.contains(right.slug)
                 if leftSaved != rightSaved {
                     return leftSaved
                 }
@@ -186,7 +192,7 @@ struct EquipmentPickerView: View {
         .padding(.bottom, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            .ultraThinMaterial,
+            Theme.chrome,
             in: UnevenRoundedRectangle(
                 topLeadingRadius: 0,
                 bottomLeadingRadius: 20,
@@ -195,7 +201,12 @@ struct EquipmentPickerView: View {
                 style: .continuous
             )
         )
-        .shadow(color: .black.opacity(0.18), radius: 14, y: 8)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Theme.stroke)
+                .frame(height: 1)
+                .padding(.horizontal, 16)
+        }
     }
 
     private var libraryHeader: some View {
@@ -236,6 +247,7 @@ struct EquipmentPickerView: View {
 
     private var selectionFloatingButton: some View {
         Button {
+            Haptics.tap()
             UIApplication.shared.sendAction(
                 #selector(UIResponder.resignFirstResponder),
                 to: nil,
@@ -249,14 +261,14 @@ struct EquipmentPickerView: View {
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(selectedExercises.isEmpty ? Theme.tertiaryText : Theme.accent)
                     .frame(width: 50, height: 50)
-                    .background(.ultraThinMaterial, in: Circle())
+                    .background(Theme.chrome, in: Circle())
                     .overlay(
                         Circle().stroke(
                             selectedExercises.isEmpty ? Theme.stroke : Theme.accent.opacity(0.5),
                             lineWidth: 1
                         )
                     )
-                    .shadow(color: .black.opacity(0.26), radius: 16, y: 8)
+                    .shadow(color: .black.opacity(0.22), radius: 14, y: 7)
 
                 if !selectedExercises.isEmpty {
                     Text("\(selectedExercises.count)")
@@ -265,11 +277,13 @@ struct EquipmentPickerView: View {
                         .frame(minWidth: 18, minHeight: 18)
                         .background(Theme.accent, in: Capsule())
                         .offset(x: 3, y: -3)
+                        .contentTransition(.numericText())
                 }
             }
             .frame(width: 54, height: 54)
+            .motionAnimation(Motion.quick, value: selectedExercises.count)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SubtlePressStyle(scale: 0.94))
         .accessibilityLabel("已选动作，共 \(selectedExercises.count) 个")
         .popover(
             isPresented: $showSelectionPanel,
@@ -300,9 +314,9 @@ struct EquipmentPickerView: View {
                 .foregroundStyle(.white)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 9)
-                .background(.ultraThinMaterial, in: Capsule())
+                .background(Theme.chrome, in: Capsule())
                 .overlay(Capsule().stroke(Theme.stroke, lineWidth: 1))
-                .shadow(color: .black.opacity(0.24), radius: 12, y: 6)
+                .shadow(color: .black.opacity(0.20), radius: 10, y: 5)
                 .padding(.top, 6)
                 .allowsHitTesting(false)
                 .transition(.move(edge: .top).combined(with: .opacity))
@@ -335,6 +349,7 @@ struct EquipmentPickerView: View {
 
             if !query.isEmpty {
                 Button {
+                    Haptics.tap()
                     query = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -342,12 +357,13 @@ struct EquipmentPickerView: View {
                         .foregroundStyle(Theme.tertiaryText)
                         .frame(width: 24, height: 24)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SubtlePressStyle(scale: 0.9))
                 .accessibilityLabel("清空搜索")
             }
 
             if !isPickingForSession {
                 Button {
+                    Haptics.tap()
                     showScanner = true
                 } label: {
                     Image(systemName: "camera.viewfinder")
@@ -363,7 +379,7 @@ struct EquipmentPickerView: View {
                                 .stroke(Theme.accent.opacity(0.12), lineWidth: 1)
                         )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SubtlePressStyle(scale: 0.94))
                 .accessibilityLabel("拍照识别器械")
             }
         }
@@ -421,9 +437,12 @@ struct EquipmentPickerView: View {
         let active = selectedMuscle == muscle && !isSearching
 
         return Button {
-            selectedMuscle = muscle
-            if isSearching {
-                query = ""
+            Haptics.select()
+            withAnimation(Motion.quick) {
+                selectedMuscle = muscle
+                if isSearching {
+                    query = ""
+                }
             }
         } label: {
             Text(title)
@@ -443,8 +462,9 @@ struct EquipmentPickerView: View {
                             lineWidth: 1
                         )
                 )
+                .animation(Motion.quick, value: active)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SubtlePressStyle(scale: 0.95))
         .accessibilityLabel("\(title)肌群")
         .accessibilityAddTraits(active ? .isSelected : [])
     }
@@ -481,7 +501,12 @@ struct EquipmentPickerView: View {
         selected: Bool,
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: action) {
+        Button {
+            Haptics.select()
+            withAnimation(Motion.quick) {
+                action()
+            }
+        } label: {
             Text(title)
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(selected ? Theme.accent : Theme.secondaryText.opacity(0.86))
@@ -498,8 +523,9 @@ struct EquipmentPickerView: View {
                             lineWidth: 1
                         )
                 )
+                .animation(Motion.quick, value: selected)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SubtlePressStyle(scale: 0.95))
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
@@ -526,7 +552,7 @@ struct EquipmentPickerView: View {
                         } label: {
                             exerciseCard(exercise)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(CardPressStyle(scale: 0.985))
                         .accessibilityLabel(isPickingForSession ? "添加\(exercise.nameZH)" : "查看\(exercise.nameZH)详情")
 
                         if !isPickingForSession {
@@ -558,14 +584,6 @@ struct EquipmentPickerView: View {
                             colors: [Color(red: 0.17, green: 0.20, blue: 0.19), Theme.surface],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
-                        )
-                    )
-                    .overlay(
-                        RadialGradient(
-                            colors: [Theme.accent.opacity(0.10), .clear],
-                            center: .top,
-                            startRadius: 2,
-                            endRadius: 72
                         )
                     )
                     .frame(height: 102)
@@ -625,15 +643,8 @@ struct EquipmentPickerView: View {
             .padding(.top, 4)
             .padding(.bottom, 10)
         }
-        .background(selected ? Theme.accent.opacity(0.055) : Color.clear)
-        .background(
-            LinearGradient(
-                colors: [Color.white.opacity(0.05), Color.white.opacity(0.018)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
-        .background(Theme.surface)
+        .background(Theme.cardSurface)
+        .background(selected ? Theme.accent.opacity(0.06) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 17, style: .continuous)
@@ -643,10 +654,11 @@ struct EquipmentPickerView: View {
                 )
         )
         .shadow(
-            color: selected ? Theme.accent.opacity(0.12) : .black.opacity(0.12),
+            color: selected ? Theme.accent.opacity(0.12) : .clear,
             radius: 10,
             y: 6
         )
+        .animation(Motion.quick, value: selected)
     }
 
     private func muscleSymbol(_ muscle: MuscleGroup) -> String {
@@ -673,21 +685,26 @@ struct EquipmentPickerView: View {
                 .foregroundStyle(selected ? Color.black : Color.white.opacity(0.82))
         }
         .frame(width: 30, height: 30)
+        .scaleEffect(selected ? 1.06 : 1)
+        .animation(Motion.quick, value: selected)
         .contentShape(Circle())
         .accessibilityLabel(selected ? "取消选择\(exercise.nameZH)" : "选择\(exercise.nameZH)")
     }
 
     private func toggle(_ exercise: Exercise) {
-        if selectedExercises.contains(where: { $0.slug == exercise.slug }) {
-            selectedExercises.removeAll { $0.slug == exercise.slug }
-        } else {
-            selectedExercises.append(exercise)
+        Haptics.select()
+        withAnimation(Motion.quick) {
+            if selectedExercises.contains(where: { $0.slug == exercise.slug }) {
+                selectedExercises.removeAll { $0.slug == exercise.slug }
+            } else {
+                selectedExercises.append(exercise)
+            }
         }
-        UISelectionFeedbackGenerator().selectionChanged()
     }
 
     private func makeTrainingPlanFromSelection() {
         guard !selectedExercises.isEmpty else { return }
+        Haptics.tap()
         let exercises = selectedExercises.map { exercise in
             PlanExercise(
                 slug: exercise.slug,
@@ -720,7 +737,11 @@ struct EquipmentPickerView: View {
     private func addSelectedToLibrary() {
         guard !selectedExercises.isEmpty else { return }
         let added = store.addExercisesToEquipmentLibrary(selectedExercises)
-        UINotificationFeedbackGenerator().notificationOccurred(added > 0 ? .success : .warning)
+        if added > 0 {
+            Haptics.success()
+        } else {
+            Haptics.warning()
+        }
         selectedExercises.removeAll()
         showSelectionPanel = false
         withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {

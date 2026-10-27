@@ -70,6 +70,7 @@ struct CustomWorkoutBuilderView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                ScrollViewReader { proxy in
                 AppScrollView {
                     VStack(spacing: AppLayout.sectionSpacing) {
                         summaryCard
@@ -94,6 +95,7 @@ struct CustomWorkoutBuilderView: View {
                         } else {
                             ForEach(Array(exercises.enumerated()), id: \.element.id) { index, _ in
                                 exerciseEditor(index: index)
+                                    .id(exercises[index].id)
                             }
                         }
 
@@ -110,6 +112,13 @@ struct CustomWorkoutBuilderView: View {
                     .padding(.vertical, 16)
                     .padding(.bottom, 24)
                     .appReadableContent()
+                }
+                .onChange(of: exercises.count) { oldCount, newCount in
+                    guard newCount > oldCount, let last = exercises.last else { return }
+                    withAnimation(Motion.smooth) {
+                        proxy.scrollTo(last.id, anchor: .center)
+                    }
+                }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -199,12 +208,14 @@ struct CustomWorkoutBuilderView: View {
     private func stat(_ value: String, _ label: String) -> some View {
         HStack(spacing: 4) {
             Text(value)
-                .font(.system(size: 12, weight: .bold))
+                .font(.system(size: 12, weight: .bold).monospacedDigit())
                 .foregroundStyle(.white)
+                .contentTransition(.numericText())
             Text(label)
                 .font(.system(size: 9.5))
                 .foregroundStyle(Theme.tertiaryText)
         }
+        .motionAnimation(Motion.quick, value: value)
     }
 
     private func exerciseEditor(index: Int) -> some View {
@@ -305,7 +316,7 @@ struct CustomWorkoutBuilderView: View {
                 let moved = exercises.remove(at: source)
                 exercises.insert(moved, at: min(index, exercises.count))
             }
-            UISelectionFeedbackGenerator().selectionChanged()
+            Haptics.select()
             return true
         }
     }
@@ -328,7 +339,7 @@ struct CustomWorkoutBuilderView: View {
                         .stroke(Color.white.opacity(0.075), lineWidth: 1)
                 )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SubtlePressStyle(scale: 0.94))
         .disabled(disabled)
         .opacity(disabled ? 0.26 : 1)
         .accessibilityLabel(label)
@@ -369,7 +380,7 @@ struct CustomWorkoutBuilderView: View {
         .appPagePadding()
         .padding(.top, 10)
         .padding(.bottom, 8)
-        .background(.ultraThinMaterial)
+        .background(Theme.chrome)
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(Theme.stroke)
@@ -379,10 +390,10 @@ struct CustomWorkoutBuilderView: View {
 
     private func remove(_ index: Int) {
         guard exercises.indices.contains(index) else { return }
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
+        withAnimation(Motion.quick) {
             exercises.remove(at: index)
         }
-        UISelectionFeedbackGenerator().selectionChanged()
+        Haptics.select()
     }
 
     private var normalizedExercises: [PlanExercise] {
@@ -407,7 +418,8 @@ struct CustomWorkoutBuilderView: View {
             restSec: previous?.restSec ?? 60,
             rpe: previous?.rpe ?? 7.5
         )
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
+        Haptics.select()
+        withAnimation(Motion.quick) {
             exercises.append(item)
         }
     }

@@ -103,7 +103,7 @@ struct PaywallView: View {
             .padding(.horizontal, 20)
             .padding(.top, 10)
             .padding(.bottom, 8)
-            .background(.ultraThinMaterial)
+            .background(Theme.chrome)
             .overlay(alignment: .top) {
                 Rectangle()
                     .fill(Theme.stroke)

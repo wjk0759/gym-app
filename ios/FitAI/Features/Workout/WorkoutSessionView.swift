@@ -41,36 +41,50 @@ struct WorkoutSessionView: View {
             VStack(spacing: 0) {
                 progressHeader
 
-                AppScrollView {
-                    VStack(spacing: AppLayout.sectionSpacing) {
-                        if let restRemaining {
-                            restCard(restRemaining)
-                                .transition(.move(edge: .top).combined(with: .opacity))
-                        }
-
-                        Group {
-                            if let exercise = currentExercise {
-                                exerciseCard(exercise)
-                                setCard(exercise)
-                                trainingTipCard(exercise)
-                            } else {
-                                summaryCard
+                ScrollViewReader { proxy in
+                    AppScrollView {
+                        VStack(spacing: AppLayout.sectionSpacing) {
+                            if let restRemaining {
+                                restCard(restRemaining)
+                                    .transition(.move(edge: .top).combined(with: .opacity))
                             }
-                        }
-                        .id(index)
-                        .transition(
-                            .asymmetric(
-                                insertion: .opacity.combined(with: .offset(x: 22)),
-                                removal: .opacity.combined(with: .offset(x: -18))
+
+                            Group {
+                                if let exercise = currentExercise {
+                                    exerciseCard(exercise)
+                                    setCard(exercise)
+                                    trainingTipCard(exercise)
+                                } else {
+                                    summaryCard
+                                }
+                            }
+                            .id(index)
+                            .transition(
+                                .asymmetric(
+                                    insertion: .opacity.combined(with: .offset(x: 22)),
+                                    removal: .opacity.combined(with: .offset(x: -18))
+                                )
                             )
-                        )
+                        }
+                        .appPagePadding()
+                        .padding(.vertical, 16)
+                        .padding(.bottom, 24)
+                        .appReadableContent()
+                        .id("session-top")
+                        .motionAnimation(Motion.smooth, value: index)
+                        .motionAnimation(Motion.quick, value: restRemaining != nil)
                     }
-                    .appPagePadding()
-                    .padding(.vertical, 16)
-                    .padding(.bottom, 24)
-                    .appReadableContent()
-                    .motionAnimation(Motion.smooth, value: index)
-                    .motionAnimation(Motion.quick, value: restRemaining != nil)
+                    .onChange(of: index) { _, _ in
+                        withAnimation(Motion.smooth) {
+                            proxy.scrollTo("session-top", anchor: .top)
+                        }
+                    }
+                    .onChange(of: restRemaining != nil) { _, isResting in
+                        guard isResting else { return }
+                        withAnimation(Motion.smooth) {
+                            proxy.scrollTo("session-top", anchor: .top)
+                        }
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -375,7 +389,7 @@ struct WorkoutSessionView: View {
         .appPagePadding()
         .padding(.top, AppLayout.actionBarSpacing)
         .padding(.bottom, 8)
-        .background(.ultraThinMaterial)
+        .background(Theme.chrome)
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(Theme.stroke)

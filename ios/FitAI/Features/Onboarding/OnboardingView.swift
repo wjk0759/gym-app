@@ -40,7 +40,7 @@ struct OnboardingView: View {
                 .padding(.top, 10)
                 .padding(.bottom, 8)
             }
-            .background(.ultraThinMaterial)
+            .background(Theme.chrome)
         }
         .onAppear {
             if !store.profile.nickname.isEmpty {
