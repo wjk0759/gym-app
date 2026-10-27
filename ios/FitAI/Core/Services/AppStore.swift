@@ -40,6 +40,7 @@ final class AppStore {
     var agentActions: [AgentAction] = []
     var isExecutingAgentActions = false
     var workoutLaunchDayID: UUID?
+    var pendingRoute: AppRoute?
     var weeklyReview: AgentWeeklyReview?
     var isReviewingWeekly = false
     private var reviewRefreshQueued = false
@@ -1111,11 +1112,6 @@ final class AppStore {
                         isSafety: false
                     )
                 )
-                if !self.agentActions.isEmpty,
-                   self.agentActions.allSatisfy({ !$0.requiresConfirmation }) {
-                    // 打开页面等低风险操作直接执行；所有写操作仍保留确认卡。
-                    self.executeAgentActions()
-                }
             } catch {
                 let local = CoachService.reply(
                     to: trimmed,
@@ -1214,9 +1210,31 @@ final class AppStore {
             case "coach": selectedTab = 2
             case "equipment": selectedTab = 3
             case "profile": selectedTab = 4
-            default: return "暂不支持打开 \(screen)"
+            case "training_schedule":
+                selectedTab = 1
+                pendingRoute = .trainingSchedule
+            case "nutrition":
+                selectedTab = 0
+                pendingRoute = .nutrition
+            case "body_checkin":
+                selectedTab = 0
+                pendingRoute = .bodyCheckIn
+            case "profile_edit":
+                selectedTab = 4
+                pendingRoute = .profileEdit
+            case "workout_history":
+                selectedTab = 1
+                pendingRoute = .workoutHistory
+            case "agent_memory":
+                selectedTab = 4
+                pendingRoute = .agentMemory
+            case "period_schedule":
+                selectedTab = 1
+                pendingRoute = .periodSchedule
+            default:
+                return "暂不支持打开 \(screen)"
             }
-            return "已打开\(action.title)"
+            return "正在打开\(action.title)"
 
         case "start_training":
             let day = resolveActionPlanDay(action.payload)
@@ -1404,6 +1422,7 @@ final class AppStore {
         agentActions = []
         isExecutingAgentActions = false
         workoutLaunchDayID = nil
+        pendingRoute = nil
     }
 
     @discardableResult

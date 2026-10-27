@@ -37,7 +37,7 @@ def test_app_action_normalization():
     )
     assert len(actions) == 2
     assert actions[0]["requires_confirmation"] is True
-    assert actions[1]["requires_confirmation"] is False
+    assert actions[1]["requires_confirmation"] is True
     assert actions[0]["id"] != actions[1]["id"]
 
 

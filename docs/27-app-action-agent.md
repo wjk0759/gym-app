@@ -33,7 +33,7 @@ Agent 需要判断这是**操作**，不是知识问答，并生成结构化动�
 | `reschedule_training` | 把某次训练改到指定日期或最近空档 | 是 |
 | `skip_training` | 明确跳过某次训练 | 是 |
 | `start_training` | 打开今日/指定训练，开始记录 | 是 |
-| `open_screen` | 打开今日、计划、教练、器械或我的页面 | 否 |
+| `open_screen` | 打开今日、计划、教练、器械、我的或训练日期、饮食、身体打卡、档案、历史、记忆、经期页面 | 是 |
 | `update_goal` | 修改目标体重、日期、每周天数、单次时长 | 是 |
 
 Action 结构：
@@ -84,9 +84,8 @@ Agent 只能用 `app_context.plan.days` 中存在的 `day_id`，不能编造日�
 ## 5. 安全边界
 
 - 模型不能直接写 App 状态；只能生成 action。
-- 写操作一律 `requires_confirmation=true`。
-- `open_screen` 是唯一可直接执行的低风险动作。
-- 训练日、目标、计划变更均有明确预览。
+- 所有 action 一律 `requires_confirmation=true`，包括页面跳转；用户先看到操作卡，点击后 iOS 才执行。
+- 训练日、目标、计划变更和页面跳转均有明确预览。
 - 当前不支持跨 App、支付、删除账号、修改密码。
 - 服务端仍记录 Agent run 和工具步骤，后台可审计。
 
@@ -100,8 +99,8 @@ Agent 只能用 `app_context.plan.days` 中存在的 `day_id`，不能编造日�
 ## 7. 后续扩展
 
 1. `log_food` / `log_body_metric`：结构化记录，带用户确认。
-2. `update_profile`：器械、伤病、经验、分化。
-3. `open_screen` 深链到训练日期、饮食记录、身体打卡子页面。
+2. `open_screen` 深链到训练日期、饮食记录、身体打卡子页面。
+3. `update_profile`：器械、伤病、经验、分化。
 4. 动作执行结果回传服务端，形成完整审计。
 5. 统一 Plan Proposal 和 App Action 为同一个 `AgentProposal` 模型。
 6. 端到端评测：意图识别、动作选择、参数正确率、用户执行率、撤销率。

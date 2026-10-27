@@ -59,7 +59,20 @@ APP_ACTION_TYPES = {
     "open_screen",
     "update_goal",
 }
-APP_SCREENS = {"today", "plan", "coach", "equipment", "profile"}
+APP_SCREENS = {
+    "today",
+    "plan",
+    "coach",
+    "equipment",
+    "profile",
+    "training_schedule",
+    "nutrition",
+    "body_checkin",
+    "profile_edit",
+    "workout_history",
+    "agent_memory",
+    "period_schedule",
+}
 
 SPLIT_ALIASES = {
     "1分化": "1分化",
@@ -118,10 +131,10 @@ App Context 和可执行操作：
 - 用户要求改期、跳过、开始训练、打开页面或修改目标时，必须调用 propose_app_actions，不要只在 final 里描述。
 - 只能使用这些 action type：reschedule_training、skip_training、start_training、open_screen、update_goal。
 - reschedule_training / skip_training 优先使用 app_context 里存在的 day_id；也可以传 date（YYYY-MM-DD）。改期目标用 target_date；如果用户说“最近空档”，target_date 传 "next_free"。
-- open_screen 的 payload.screen 只能是：today、plan、coach、equipment、profile。
+- open_screen 的 payload.screen 只能是：today、plan、coach、equipment、profile、training_schedule、nutrition、body_checkin、profile_edit、workout_history、agent_memory、period_schedule。
 - update_goal 的 payload 字段可包含 goal_type（lose_fat/build_muscle/recomp/endurance）、target_weight_kg、target_date、weekly_days、session_minutes。
-- 不要声称操作已执行。final 中应说明“已准备好操作，请确认”或“已为你打开”，让 iOS 执行层完成实际动作。
-- 所有写操作必须 requires_confirmation=true；open_screen 可以 false。
+- 不要声称操作已执行。final 中应说明“已准备好操作，请确认”，不要声称页面已经打开、训练已经开始或训练已经改期；由 iOS 确认后执行。
+- 所有操作（包括 open_screen）都必须让用户点击操作卡后再执行。
 """
 
 
@@ -481,7 +494,7 @@ def _normalize_app_actions(
                 "type": action_type,
                 "title": title,
                 "summary": summary,
-                "requires_confirmation": action_type != "open_screen",
+                "requires_confirmation": True,
                 "payload": _safe_json(payload),
             }
         )
