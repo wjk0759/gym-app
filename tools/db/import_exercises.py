@@ -12,14 +12,16 @@ Usage (from the repository root):
     backend/.venv/Scripts/python.exe tools/db/import_exercises.py --dry-run
     backend/.venv/Scripts/python.exe tools/db/import_exercises.py
     backend/.venv/Scripts/python.exe tools/db/import_exercises.py --prune
+    backend/.venv/Scripts/python.exe tools/db/import_exercises.py --all-gym-equipment
     backend/.venv/Scripts/python.exe tools/db/import_exercises.py --source C:\path\to\exercises.json
 
-By default only free-weight, cable, selectorized/smith machine and kettlebell
-movements are imported. Use --include-other-equipment to import bodyweight,
-bands, balls, cardio machines and other non-gym equipment as well.
+By default only the common allowlist in tools/db/data/common_exercise_allowlist.txt
+is imported. Use --all-gym-equipment to import every free-weight, cable,
+selectorized/smith machine and kettlebell movement, or --include-other-equipment
+to import bodyweight, bands, balls, cardio machines and other non-gym equipment.
 
 The script is idempotent for its own source: existing source rows are skipped.
-Use --prune to remove previously imported rows outside the gym filter.
+Use --prune to remove previously imported rows outside the selected allowlist.
 """
 
 from __future__ import annotations
@@ -54,8 +56,17 @@ DATASET_URL = (
 )
 DATASET_SHA256 = "656634224b8977b99a6d765470ee123260d4979715eaa4e7c0b7c8bb0d79f93d"
 DEFAULT_CACHE = ROOT / "tools" / "db" / "data" / "exercise_name_zh.json"
+DEFAULT_ALLOWLIST = ROOT / "tools" / "db" / "data" / "common_exercise_allowlist.txt"
 SOURCE = "hasaneyldrm/exercises-dataset"
 LICENSE = "MIT; Gym visual media excluded"
+
+COMMON_MUSCLE_OVERRIDES = {
+    "barbell deadlift": "back",
+    "barbell front squat": "legs",
+    "lever seated hip abduction": "glutes",
+    "lever seated hip adduction": "legs",
+    "kettlebell hang clean": "legs",
+}
 
 MUSCLE_MAP = {
     "abs": "core",
@@ -193,8 +204,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--target", default=settings.database_url, help="SQLAlchemy database URL")
     parser.add_argument("--name-cache", default=str(DEFAULT_CACHE), help="English-to-Chinese name cache")
+    parser.add_argument("--allowlist", default=str(DEFAULT_ALLOWLIST), help="Common exercise allowlist")
     parser.add_argument("--limit", type=int, default=0, help="Import only the first N new rows (for testing)")
     parser.add_argument("--dry-run", action="store_true", help="Report changes without writing")
+    parser.add_argument(
+        "--all-gym-equipment",
+        action="store_true",
+        help="Import all gym-equipment movements instead of only the common allowlist",
+    )
     parser.add_argument(
         "--include-other-equipment",
         action="store_true",
@@ -203,7 +220,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--prune",
         action="store_true",
-        help="Delete previously imported rows that are outside the gym-equipment filter",
+        help="Delete previously imported rows that are outside the selected allowlist/filter",
     )
     return parser.parse_args()
 
@@ -310,11 +327,32 @@ def main() -> int:
 
     engine = create_engine(args.target, future=True, pool_pre_ping=True)
     with Session(engine) as session:
-        allowed_names = {
-            normalize(row.get("name"))
-            for row in data
-            if args.include_other_equipment or is_gym_exercise(row)
-        }
+        allowlist_mode = not args.include_other_equipment and not args.all_gym_equipment
+        allowlist_names: set[str] = set()
+        if allowlist_mode:
+            allowlist_path = Path(args.allowlist)
+            if not allowlist_path.exists():
+                raise SystemExit(f"common allowlist not found: {allowlist_path}")
+            allowlist_names = {
+                normalize(line)
+                for line in allowlist_path.read_text(encoding="utf-8").splitlines()
+                if line.strip() and not line.lstrip().startswith("#")
+            }
+            source_names = {normalize(row.get("name")) for row in data}
+            missing = sorted(allowlist_names - source_names)
+            if missing:
+                raise SystemExit("allowlist names not found in dataset: " + ", ".join(missing))
+
+        if allowlist_mode:
+            allowed_names = allowlist_names
+        elif args.include_other_equipment:
+            allowed_names = {normalize(row.get("name")) for row in data}
+        else:
+            allowed_names = {
+                normalize(row.get("name"))
+                for row in data
+                if is_gym_exercise(row)
+            }
         existing = session.execute(select(Exercise)).scalars().all()
 
         prune_candidates = [
@@ -324,7 +362,7 @@ def main() -> int:
         ]
         pruned = 0
         if prune_candidates:
-            print(f"gym filter would prune: {len(prune_candidates)}")
+            print(f"selected filter would prune: {len(prune_candidates)}")
             if args.prune and not args.dry_run:
                 try:
                     for row in prune_candidates:
@@ -339,17 +377,33 @@ def main() -> int:
         existing_slugs = {row.slug for row in existing}
         existing_names = {normalize(row.name_en or row.name_zh) for row in existing}
 
+        updated = 0
+        for row in existing:
+            if row.source != SOURCE:
+                continue
+            override = COMMON_MUSCLE_OVERRIDES.get(normalize(row.name_en))
+            if override and row.muscle_group != override:
+                row.muscle_group = override
+                updated += 1
+        if updated and not args.dry_run:
+            session.commit()
+            existing = session.execute(select(Exercise)).scalars().all()
+            print(f"updated muscle groups: {updated}")
+
         candidates: list[dict[str, Any]] = []
         seen_dataset_names = set()
         skipped_existing = 0
         skipped_dataset_duplicate = 0
-        skipped_non_gym = 0
+        skipped_filtered = 0
         for row in data:
             name = str(row.get("name") or "").strip()
             if not name:
                 continue
-            if not args.include_other_equipment and not is_gym_exercise(row):
-                skipped_non_gym += 1
+            if allowlist_mode and normalize(name) not in allowlist_names:
+                skipped_filtered += 1
+                continue
+            if not allowlist_mode and not args.include_other_equipment and not is_gym_exercise(row):
+                skipped_filtered += 1
                 continue
             key = normalize(name)
             if key in existing_names:
@@ -373,7 +427,9 @@ def main() -> int:
                     "slug": slug,
                     "name_zh": translations.get(name) or name,
                     "name_en": name[:120],
-                    "muscle_group": muscle_group(row),
+                    "muscle_group": COMMON_MUSCLE_OVERRIDES.get(
+                        normalize(name), muscle_group(row)
+                    ),
                     "equipment": equipment_name,
                     "is_compound": is_compound(row),
                     "difficulty": difficulty(name, equipment_name),
@@ -388,10 +444,14 @@ def main() -> int:
         if args.limit:
             candidates = candidates[: args.limit]
 
+        mode = "common allowlist" if allowlist_mode else (
+            "all equipment" if args.include_other_equipment else "all gym equipment"
+        )
         print(f"source rows: {len(data)}")
+        print(f"mode: {mode}")
         print(f"existing exercises: {len(existing)}")
-        print(f"pruned non-gym rows: {pruned}")
-        print(f"skipped non-gym source rows: {skipped_non_gym}")
+        print(f"pruned rows: {pruned}")
+        print(f"skipped filtered source rows: {skipped_filtered}")
         print(f"skipped existing names: {skipped_existing}")
         print(f"skipped duplicate dataset names: {skipped_dataset_duplicate}")
         print(f"new exercises: {len(candidates)}")

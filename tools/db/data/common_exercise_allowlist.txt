@@ -1,0 +1,42 @@
+# Common commercial-gym / iron-gym movements.
+# One primary movement per pattern; broad variants are intentionally omitted.
+# Existing FitAI manual seed exercises are always preserved separately.
+barbell incline bench press
+dumbbell fly
+lever chest press
+cable seated chest press
+lever seated fly
+
+barbell deadlift
+lever seated row
+cable straight arm pulldown
+lever t bar row
+
+barbell seated overhead press
+dumbbell rear fly
+lever shoulder press
+dumbbell front raise
+barbell shrug
+
+barbell curl
+dumbbell hammer curl
+barbell lying triceps extension skull crusher
+cable overhead triceps extension (rope attachment)
+barbell close-grip bench press
+lever preacher curl
+lever triceps extension
+
+barbell front squat
+lever leg extension
+lever lying leg curl
+lever standing calf raise
+barbell good morning
+
+lever seated hip abduction
+lever seated hip adduction
+cable kneeling crunch
+lever seated crunch
+
+kettlebell swing
+kettlebell two arm military press
+kettlebell hang clean
