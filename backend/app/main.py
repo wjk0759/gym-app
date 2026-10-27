@@ -14,7 +14,19 @@ from .db import Base, SessionLocal, engine, ensure_schema
 from .deps import DEMO_USER_ID
 from .media import MEDIA_ROOT, ensure_media_dirs
 from .models import User
-from .routers import admin, auth, body, coach, diet, equipment, plans, profile, videos, workouts
+from .routers import (
+    admin,
+    agent,
+    auth,
+    body,
+    coach,
+    diet,
+    equipment,
+    plans,
+    profile,
+    videos,
+    workouts,
+)
 from .seed import seed_exercises
 from .services import llm
 
@@ -103,7 +115,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 API_PREFIX = "/api/v1"
-for module in (auth, profile, plans, workouts, coach, equipment, diet, body, videos, admin):
+for module in (auth, profile, plans, workouts, coach, agent, equipment, diet, body, videos, admin):
     app.include_router(module.router, prefix=API_PREFIX)
 
 ensure_media_dirs()

@@ -88,6 +88,8 @@ struct CoachChatView: View {
                     } else {
                         adjustmentQuickBar
                     }
+                } else if let proposal = store.agentProposal {
+                    agentProposalCard(proposal)
                 } else if !store.chat.isEmpty {
                     suggestionBar
                 }
@@ -254,6 +256,80 @@ struct CoachChatView: View {
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color.white.opacity(0.10), lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+
+    private func agentProposalCard(_ proposal: AgentPlanProposal) -> some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack {
+                Text("AGENT 计划草案")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(Theme.accent)
+                Spacer()
+                Text("待确认")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(Theme.warning)
+            }
+            Text(proposal.title)
+                .font(.headline)
+                .foregroundStyle(.white)
+                .fixedSize(horizontal: false, vertical: true)
+            if !proposal.changes.isEmpty {
+                ForEach(proposal.changes, id: \.self) { change in
+                    HStack(alignment: .top, spacing: 7) {
+                        Circle()
+                            .fill(Theme.accent)
+                            .frame(width: 5, height: 5)
+                            .padding(.top, 5)
+                        Text(change)
+                            .font(.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            if let proposed = proposal.proposed {
+                HStack(spacing: 12) {
+                    if let weeklyDays = proposed.weeklyDays {
+                        Text("每周 \(weeklyDays) 练")
+                    }
+                    if let minutes = proposed.sessionMinutes {
+                        Text("\(minutes) 分钟/次")
+                    }
+                    if let weeks = proposed.weeks {
+                        Text("\(weeks) 周")
+                    }
+                }
+                .font(.caption2)
+                .foregroundStyle(Theme.tertiaryText)
+            }
+            HStack(spacing: 8) {
+                Button {
+                    store.applyAgentProposal()
+                } label: {
+                    if store.isAgentWorking {
+                        ProgressView().tint(.black)
+                    } else {
+                        Text("应用到正式计划")
+                    }
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(store.isAgentWorking)
+
+                Button("忽略") {
+                    store.dismissAgentProposal()
+                }
+                .buttonStyle(SecondaryButtonStyle())
+                .disabled(store.isAgentWorking)
+            }
+        }
+        .padding(14)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Theme.accent.opacity(0.25), lineWidth: 1)
         )
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
@@ -589,6 +665,8 @@ struct CoachChatView: View {
         guard !trimmed.isEmpty, !store.isReplying else { return }
         if store.planAdjustmentStage > 0 {
             store.sendPlanAdjustmentMessage(trimmed)
+        } else if store.canUseRemoteAI && selectedSkill == .trainer {
+            store.sendAgentChat(trimmed)
         } else if store.isPlanScheduleRequest(trimmed) {
             store.beginPlanAdjustment()
             store.sendPlanAdjustmentMessage(trimmed)

@@ -251,15 +251,24 @@ def fallback_plan(
     available: list[Exercise],
     weeks: int = 4,
     split: str | None = None,
+    weekly_days: int | None = None,
+    session_minutes: int | None = None,
+    weekdays: list[int] | None = None,
 ) -> dict:
-    weekly_days = max(1, min(7, int(profile.weekly_days or 3)))
-    weekdays = DEFAULT_WEEKDAYS[weekly_days]
+    normalized_weekdays = sorted({int(item) for item in (weekdays or []) if 1 <= int(item) <= 7})
+    if normalized_weekdays:
+        weekly_days = len(normalized_weekdays)
+        weekday_values = normalized_weekdays
+    else:
+        weekly_days = max(1, min(7, int(weekly_days or profile.weekly_days or 3)))
+        weekday_values = DEFAULT_WEEKDAYS[weekly_days]
     templates = SPLIT_TEMPLATES.get(split or "", SPLITS[weekly_days])
-    count = min(_session_exercise_count(profile.session_minutes or 45), 6)
+    minutes = max(15, min(180, int(session_minutes or profile.session_minutes or 45)))
+    count = min(_session_exercise_count(minutes), 6)
 
     days = []
     for week_index in range(1, weeks + 1):
-        for index, weekday in enumerate(weekdays):
+        for index, weekday in enumerate(weekday_values):
             title, focus = templates[index % len(templates)]
             picks = _pick_for_day(available, focus, count)
             if not picks:
@@ -289,6 +298,52 @@ def _system_prompt() -> str:
     if PROMPT_PATH.exists():
         return PROMPT_PATH.read_text(encoding="utf-8")
     return "你是严谨的体能教练。只输出 JSON，禁止发明动作。"
+
+
+def build_template_plan(
+    db: Session,
+    profile: Profile,
+    goal_type: str,
+    *,
+    weeks: int = 4,
+    split: str | None = None,
+    weekly_days: int | None = None,
+    session_minutes: int | None = None,
+    weekdays: list[int] | None = None,
+) -> dict:
+    """Build a deterministic, validated plan for the agent proposal tool."""
+    weeks = max(1, min(8, int(weeks)))
+    available = _allowed_exercises(db, profile.equipment, profile.injuries, None)
+    if not available:
+        raise ValueError("当前器械或伤病条件下没有可用动作")
+    raw = fallback_plan(
+        profile,
+        goal_type,
+        available,
+        weeks=weeks,
+        split=split,
+        weekly_days=weekly_days,
+        session_minutes=session_minutes,
+        weekdays=weekdays,
+    )
+    by_slug = {item.slug: item for item in available}
+    effective_days = len(sorted({int(item) for item in (weekdays or []) if 1 <= int(item) <= 7})) or max(
+        1, min(7, int(weekly_days or profile.weekly_days or 3))
+    )
+    cleaned, warnings = validate_plan(
+        raw,
+        exercises=by_slug,
+        equipment=profile.equipment,
+        injuries=profile.injuries,
+        weekly_days=effective_days,
+        weeks=weeks,
+    )
+    return {
+        "plan": cleaned,
+        "warnings": warnings,
+        "generated_by": "template",
+        "model": None,
+    }
 
 
 def _user_prompt(

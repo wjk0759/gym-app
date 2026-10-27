@@ -93,6 +93,75 @@ private struct FoodAnalysisResponse: Decodable {
     let model: String?
 }
 
+struct AgentProposalDiff: Codable, Hashable {
+    struct Proposed: Codable, Hashable {
+        let title: String?
+        let weeklyDays: Int?
+        let weekdays: [Int]?
+        let sessionMinutes: Int?
+        let weeks: Int?
+        let dayCount: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case title
+            case weeklyDays = "weekly_days"
+            case weekdays
+            case sessionMinutes = "session_minutes"
+            case weeks
+            case dayCount = "day_count"
+        }
+    }
+
+    let changes: [String]
+    let proposed: Proposed?
+
+    enum CodingKeys: String, CodingKey {
+        case changes
+        case proposed
+    }
+}
+
+struct AgentPlanProposal: Codable, Identifiable, Hashable {
+    let id: String
+    let title: String
+    let status: String
+    let changes: [String]
+    let diff: AgentProposalDiff?
+    let expiresAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case status
+        case changes
+        case diff
+        case expiresAt = "expires_at"
+    }
+
+    var proposed: AgentProposalDiff.Proposed? { diff?.proposed }
+}
+
+struct AgentChatResponse: Decodable {
+    let sessionID: UUID?
+    let runID: String
+    let status: String
+    let reply: String
+    let proposal: AgentPlanProposal?
+    let elapsedMS: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case sessionID = "session_id"
+        case runID = "run_id"
+        case status
+        case reply
+        case proposal
+        case elapsedMS = "elapsed_ms"
+    }
+}
+
+struct AgentApplyResponse: Decodable {
+    let program: TrainingPlan
+}
 private struct TokenRefreshResponse: Decodable {
     let accessToken: String
     let refreshToken: String
@@ -133,6 +202,17 @@ struct APIClient {
         return formatter
     }()
 
+    private static let naiveDateFormatters: [DateFormatter] = {
+        ["yyyy-MM-dd'T'HH:mm:ss.SSSSSS", "yyyy-MM-dd'T'HH:mm:ss.SSS", "yyyy-MM-dd'T'HH:mm:ss"].map { format in
+            let formatter = DateFormatter()
+            formatter.calendar = Calendar(identifier: .gregorian)
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+            formatter.dateFormat = format
+            return formatter
+        }
+    }()
+
     init() {}
 
     private func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
@@ -145,6 +225,11 @@ struct APIClient {
             }
             if let date = Self.iso8601.date(from: text) {
                 return date
+            }
+            for formatter in Self.naiveDateFormatters {
+                if let date = formatter.date(from: text) {
+                    return date
+                }
             }
             throw DecodingError.dataCorruptedError(
                 in: container,
@@ -273,6 +358,27 @@ struct APIClient {
         if let sessionID { payload["session_id"] = sessionID.uuidString }
         let body = try JSONSerialization.data(withJSONObject: payload)
         return try await send(path: "coach/chat", method: "POST", body: body)
+    }
+
+    // MARK: - Agent
+
+    func agentChat(
+        message: String,
+        sessionID: UUID? = nil
+    ) async throws -> AgentChatResponse {
+        var payload: [String: Any] = ["message": message]
+        if let sessionID { payload["session_id"] = sessionID.uuidString }
+        let body = try JSONSerialization.data(withJSONObject: payload)
+        return try await send(path: "agent/chat", method: "POST", body: body)
+    }
+
+    func applyAgentProposal(id: String) async throws -> TrainingPlan {
+        let response: AgentApplyResponse = try await send(
+            path: "agent/proposals/\(id)/apply",
+            method: "POST",
+            body: nil
+        )
+        return response.program
     }
 
     // MARK: - 器械识别

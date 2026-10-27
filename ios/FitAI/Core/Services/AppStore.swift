@@ -30,6 +30,9 @@ final class AppStore {
     var isGenerating = false
     var isReplying = false
     var isSyncingWorkouts = false
+    var isAgentWorking = false
+    var agentSessionID: UUID?
+    var agentProposal: AgentPlanProposal?
     var toast: String?
     var reminderHour = 19
     var reminderMinute = 0
@@ -674,7 +677,97 @@ final class AppStore {
         planAdjustmentStage = 0
         planAdjustmentProposal = nil
         planAdjustmentRequested = false
+        agentSessionID = nil
+        agentProposal = nil
         isReplying = false
+        persist()
+    }
+
+    // MARK: - Coach Agent
+
+    func sendAgentChat(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        chat.append(ChatMessage(role: .user, text: trimmed))
+        isReplying = true
+        agentProposal = nil
+        persist()
+
+        Task { @MainActor in
+            defer {
+                self.isReplying = false
+                self.persist()
+            }
+            do {
+                let response = try await APIClient.shared.agentChat(
+                    message: trimmed,
+                    sessionID: self.agentSessionID
+                )
+                self.agentSessionID = response.sessionID
+                self.agentProposal = response.proposal
+                self.chat.append(
+                    ChatMessage(
+                        role: .assistant,
+                        text: response.reply,
+                        isSafety: false
+                    )
+                )
+            } catch {
+                self.chat.append(
+                    CoachService.reply(
+                        to: trimmed,
+                        profile: self.profile,
+                        plan: self.plan,
+                        skill: .trainer,
+                        period: self.todayPeriod
+                    )
+                )
+            }
+        }
+    }
+
+    func applyAgentProposal() {
+        guard let proposal = agentProposal, !isAgentWorking else { return }
+        isAgentWorking = true
+        Task { @MainActor in
+            defer {
+                self.isAgentWorking = false
+                self.persist()
+            }
+            do {
+                let updated = try await APIClient.shared.applyAgentProposal(id: proposal.id)
+                self.archiveCurrentPlan()
+                self.plan = updated
+                if let proposed = proposal.proposed {
+                    if let days = proposed.weeklyDays {
+                        self.profile.weeklyDays = max(1, min(7, days))
+                    }
+                    if let minutes = proposed.sessionMinutes {
+                        self.profile.sessionMinutes = max(15, min(180, minutes))
+                    }
+                }
+                self.agentProposal = nil
+                self.chat.append(
+                    ChatMessage(
+                        role: .assistant,
+                        text: "计划已应用到你的正式计划。后续训练日、时长和动作会按新版本执行。"
+                    )
+                )
+                self.toast = "已应用 Agent 计划"
+                self.rescheduleNotifications()
+            } catch {
+                self.chat.append(
+                    ChatMessage(
+                        role: .assistant,
+                        text: "计划草案应用失败：\(error.localizedDescription)"
+                    )
+                )
+            }
+        }
+    }
+
+    func dismissAgentProposal() {
+        agentProposal = nil
         persist()
     }
 
@@ -721,6 +814,9 @@ final class AppStore {
         useEquipmentLibraryForPlans = true
         reminderHour = 19
         reminderMinute = 0
+        isAgentWorking = false
+        agentSessionID = nil
+        agentProposal = nil
     }
 
     @discardableResult

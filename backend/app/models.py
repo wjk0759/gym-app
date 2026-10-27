@@ -14,6 +14,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -386,6 +387,96 @@ class ChatMessage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     session: Mapped[ChatSession] = relationship(back_populates="messages")
+
+
+class AgentRun(Base):
+    __tablename__ = "agent_runs"
+    __table_args__ = (
+        Index("ix_agent_runs_user_created", "user_id", "created_at"),
+        Index("ix_agent_runs_status_created", "status", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    session_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("chat_sessions.id", ondelete="SET NULL"), index=True
+    )
+    intent: Mapped[str] = mapped_column(String(40), default="coach_chat")
+    status: Mapped[str] = mapped_column(String(30), default="running", index=True)
+    model: Mapped[str | None] = mapped_column(String(80))
+    input_text: Mapped[str] = mapped_column(Text)
+    output_text: Mapped[str | None] = mapped_column(Text)
+    step_count: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    steps: Mapped[list[AgentStep]] = relationship(
+        back_populates="run",
+        cascade="all, delete-orphan",
+        order_by="AgentStep.step_index",
+    )
+    proposals: Mapped[list[AgentPlanProposal]] = relationship(
+        back_populates="run",
+        cascade="all, delete-orphan",
+        order_by="AgentPlanProposal.created_at",
+    )
+
+
+class AgentStep(Base):
+    __tablename__ = "agent_steps"
+    __table_args__ = (
+        UniqueConstraint("run_id", "step_index", name="uq_agent_steps_run_step"),
+        Index("ix_agent_steps_run", "run_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    run_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("agent_runs.id", ondelete="CASCADE"), index=True
+    )
+    step_index: Mapped[int] = mapped_column(Integer)
+    step_type: Mapped[str] = mapped_column(String(30))
+    tool_name: Mapped[str | None] = mapped_column(String(40))
+    input_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    output_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(20), default="ok")
+    error: Mapped[str | None] = mapped_column(Text)
+    latency_ms: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    run: Mapped[AgentRun] = relationship(back_populates="steps")
+
+
+class AgentPlanProposal(Base):
+    __tablename__ = "agent_plan_proposals"
+    __table_args__ = (
+        Index("ix_agent_plan_proposals_user_status", "user_id", "status", "created_at"),
+        Index("ix_agent_plan_proposals_run", "run_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    run_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("agent_runs.id", ondelete="CASCADE"), index=True
+    )
+    base_program_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("programs.id", ondelete="SET NULL")
+    )
+    base_version: Mapped[int | None] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(20), default="draft", index=True)
+    title: Mapped[str] = mapped_column(String(120))
+    plan_data: Mapped[dict] = mapped_column(JSON, default=dict)
+    diff_data: Mapped[dict] = mapped_column(JSON, default=dict)
+    validation_data: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    run: Mapped[AgentRun] = relationship(back_populates="proposals")
 
 
 class EquipmentScan(Base):
