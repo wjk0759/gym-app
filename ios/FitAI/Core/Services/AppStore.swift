@@ -37,6 +37,10 @@ final class AppStore {
     var isAgentWorking = false
     var agentSessionID: UUID?
     var agentProposal: AgentPlanProposal?
+    var weeklyReview: AgentWeeklyReview?
+    var isReviewingWeekly = false
+    private var reviewRefreshQueued = false
+    private var reviewNotifyQueued = false
     var toast: String?
     var reminderHour = 19
     var reminderMinute = 0
@@ -604,6 +608,8 @@ final class AppStore {
         isSyncingWorkouts = true
         Task { @MainActor in
             defer { self.isSyncingWorkouts = false }
+            var createdAny = false
+            var changedAny = false
 
             for remoteID in pendingDeletes {
                 do {
@@ -611,11 +617,13 @@ final class AppStore {
                     guard self.currentUserID == accountID else { return }
                     self.pendingWorkoutDeletionIDs.removeAll { $0 == remoteID }
                     self.persist()
+                    changedAny = true
                 } catch let error as APIError where error.statusCode == 404 {
                     // 服务端已经不存在该记录，删除墓碑视为完成。
                     guard self.currentUserID == accountID else { return }
                     self.pendingWorkoutDeletionIDs.removeAll { $0 == remoteID }
                     self.persist()
+                    changedAny = true
                 } catch {
                     // 保留墓碑，下一次前台刷新继续删除，避免离线删除被服务端数据复活。
                 }
@@ -630,6 +638,8 @@ final class AppStore {
                         self.sessions[index].syncedAt = Date()
                         self.sessions[index].pendingRemoteUpdate = nil
                     }
+                    createdAny = true
+                    changedAny = true
                 } catch {
                     // 网络或服务端暂时不可用时保留待同步状态，不阻塞本地训练闭环。
                 }
@@ -649,11 +659,15 @@ final class AppStore {
                             self.sessions[index].pendingRemoteUpdate = nil
                         }
                     }
+                    changedAny = true
                 } catch {
                     // 保留 pendingRemoteUpdate，下一次前台刷新重试 PATCH。
                 }
             }
             self.persist()
+            if changedAny {
+                self.refreshWeeklyReview(force: true, notifyWhenReady: createdAny)
+            }
         }
     }
 
@@ -987,6 +1001,55 @@ final class AppStore {
 
     // MARK: - Coach Agent
 
+    /// 后台生成的周复盘会落到 AgentRun，前台只读取结果；同一周默认复用缓存。
+    func refreshWeeklyReview(force: Bool = false, notifyWhenReady: Bool = false) {
+        guard AuthTokenStore.shared.accessToken != nil else { return }
+        if isReviewingWeekly {
+            if force {
+                reviewRefreshQueued = true
+                reviewNotifyQueued = reviewNotifyQueued || notifyWhenReady
+            }
+            return
+        }
+        if !force,
+           let weeklyReview,
+           Self.isSameWeek(weeklyReview.generatedAt, Date()) {
+            return
+        }
+        let accountID = currentUserID
+        isReviewingWeekly = true
+        Task { @MainActor in
+            defer {
+                self.isReviewingWeekly = false
+                if self.reviewRefreshQueued {
+                    self.reviewRefreshQueued = false
+                    let queuedNotify = self.reviewNotifyQueued
+                    self.reviewNotifyQueued = false
+                    self.refreshWeeklyReview(force: true, notifyWhenReady: queuedNotify)
+                }
+            }
+            do {
+                let review = try await APIClient.shared.agentWeeklyReview()
+                guard self.currentUserID == accountID else { return }
+                self.weeklyReview = review
+                self.persist()
+                if notifyWhenReady, self.notificationsEnabled {
+                    NotificationScheduler.shared.notifyReviewReady()
+                }
+            } catch {
+                // 离线时保留上周复盘；下一次前台刷新或训练完成后重试。
+            }
+        }
+    }
+
+    private static func isSameWeek(_ lhs: Date, _ rhs: Date) -> Bool {
+        let calendar = Calendar.current
+        return calendar.component(.weekOfYear, from: lhs)
+                == calendar.component(.weekOfYear, from: rhs)
+            && calendar.component(.yearForWeekOfYear, from: lhs)
+                == calendar.component(.yearForWeekOfYear, from: rhs)
+    }
+
     func sendAgentChat(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -1115,6 +1178,10 @@ final class AppStore {
         bodyCheckInDismissedDate = nil
         pendingWorkoutDeletionIDs = []
         isSyncingRemoteWorkouts = false
+        weeklyReview = nil
+        isReviewingWeekly = false
+        reviewRefreshQueued = false
+        reviewNotifyQueued = false
         useEquipmentLibraryForPlans = true
         reminderHour = 19
         reminderMinute = 0
@@ -1200,6 +1267,7 @@ final class AppStore {
         var bodyCheckInAnchor: Date?
         var bodyCheckInDismissedDate: String?
         var pendingWorkoutDeletionIDs: [String]?
+        var weeklyReview: AgentWeeklyReview?
     }
 
     private func load() {
@@ -1230,6 +1298,7 @@ final class AppStore {
         bodyCheckInAnchor = state.bodyCheckInAnchor ?? Date()
         bodyCheckInDismissedDate = state.bodyCheckInDismissedDate
         pendingWorkoutDeletionIDs = state.pendingWorkoutDeletionIDs ?? []
+        weeklyReview = state.weeklyReview
         useEquipmentLibraryForPlans = state.useEquipmentLibraryForPlans ?? true
     }
 
@@ -1257,7 +1326,8 @@ final class AppStore {
             bodyCheckInDay: bodyCheckInDay,
             bodyCheckInAnchor: bodyCheckInAnchor,
             bodyCheckInDismissedDate: bodyCheckInDismissedDate,
-            pendingWorkoutDeletionIDs: pendingWorkoutDeletionIDs
+            pendingWorkoutDeletionIDs: pendingWorkoutDeletionIDs,
+            weeklyReview: weeklyReview
         )
         let url = fileURL
         persistenceQueue.async {

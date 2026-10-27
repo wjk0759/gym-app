@@ -131,6 +131,7 @@ POST /api/v1/agent/chat
 
 POST /api/v1/agent/proposals/{proposal_id}/apply
 GET  /api/v1/agent/proposals/{proposal_id}
+POST /api/v1/agent/reviews/weekly
 GET  /api/v1/agent/memories
 DELETE /api/v1/agent/memories/{memory_id}
 ```
@@ -150,9 +151,23 @@ GET /api/admin/v1/agent/runs/{run_id}
 
 列表展示用户、意图、运行状态、模型、步骤数、最近草案状态和时间；详情展示输入/最终回复、每一步工具参数与结果、错误、延迟，以及关联的计划草案和校验结果。后台不能直接应用草案，用户仍需在 iOS 端确认。
 
-## 8. 后续演进
+## 8. 主动周复盘
 
-1. 训练后的主动复盘 Agent（定时任务 + 通知）
+`POST /api/v1/agent/reviews/weekly` 会读取本周（周一至周日）和上周的训练、训练容量、RPE、饮食记录、当前计划与长期记忆，生成：
+
+- 本周完成次数 / 计划次数、完成率
+- 训练容量与平均 RPE 的风险提示
+- 1–3 条做得好的地方、需要关注的地方和下周行动建议
+
+复盘由确定性的 `weekly_review_rules_v1` 生成，不依赖模型 Key，因此训练完成后可以低成本自动刷新；每次复盘仍会落一条 `agent_runs`（`intent=review_week`、`model=review-rules-v1`）和工具步骤，后台可审计。iOS 会在训练创建/编辑/删除成功后强制刷新，并在同一周内缓存；训练上传成功且通知已开启时，会用本地通知提醒“AI 复盘已更新”。
+
+**边界：** 目前是客户端前台触发的主动复盘，本地通知不需要 APNs；真正的服务端定时任务 + APNs 远程推送仍需 Apple 推送证书、设备 token 注册和定时调度，属于 Mac/Apple 外部配置。
+
+记忆上下文被读取时同步更新 `last_used_at`；历史重复的 generic `preference` 可用 `backend/scripts/dedupe_memories.py --dry-run` 检查，再去掉 `--dry-run` 清理。
+
+## 9. 后续演进
+
+1. 服务端定时任务 + APNs 主动复盘
 2. 训练中动态调整（根据 RPE 和剩余时间）
 3. 饮食/身体数据全量同步后接入营养 Agent
 4. 真实视觉模型接入器械和体型识别

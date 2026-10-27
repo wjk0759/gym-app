@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException
 from ..deps import CurrentUser, DBSession
 from ..models import AgentPlanProposal, ChatMessage, ChatSession
 from ..schemas import AgentChatIn
-from ..services.agent import apply_proposal, run_agent
+from ..services.agent import apply_proposal, generate_weekly_review, run_agent
 from ..services.memory import list_memories
 from ..services.serializers import serialize_program
 
@@ -75,9 +75,16 @@ def get_proposal(
     }
 
 
+@router.post("/reviews/weekly")
+def weekly_review(user_id: CurrentUser, db: DBSession):
+    try:
+        return generate_weekly_review(db, user_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @router.get("/memories")
-def get_memories(user_id: CurrentUser, db: DBSession):
-    return {
+def get_memories(user_id: CurrentUser, db: DBSession):    return {
         "items": [
             {
                 "id": item.id,

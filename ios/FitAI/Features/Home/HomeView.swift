@@ -69,6 +69,9 @@ struct HomeView: View {
                 BodyCheckInSheet(manual: bodyCheckInManual)
                     .presentationDetents([.medium, .large])
             }
+            .task {
+                store.refreshWeeklyReview()
+            }
             .onAppear {
                 guard !didAutoPrompt else { return }
                 didAutoPrompt = true
@@ -417,6 +420,51 @@ struct HomeView: View {
                 reviewMetric("本周完成", "\(completed)/\(max(1, store.profile.weeklyDays)) 次")
                 reviewMetric("平均 RPE", averageRPE > 0 ? averageRPE.formatted(.number.precision(.fractionLength(1))) : "—")
                 reviewMetric("训练容量", "\(Int(store.currentWeekVolume)) kg")
+            }
+
+            if let review = store.weeklyReview {
+                VStack(alignment: .leading, spacing: 7) {
+                    Text(review.summary)
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let action = review.actions.first {
+                        Label(action, systemImage: "target")
+                            .font(.caption)
+                            .foregroundStyle(Theme.accent)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.top, 2)
+            } else if store.isReviewingWeekly {
+                HStack(spacing: 8) {
+                    ProgressView().tint(Theme.accent)
+                    Text("AI 教练正在读本周训练…")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+            } else {
+                Text("完成一次训练后，AI 教练会自动生成周复盘。")
+                    .font(.caption)
+                    .foregroundStyle(Theme.secondaryText)
+            }
+
+            HStack {
+                Button {
+                    store.refreshWeeklyReview(force: true)
+                } label: {
+                    Label(store.weeklyReview == nil ? "生成 AI 复盘" : "刷新复盘", systemImage: "arrow.clockwise")
+                        .font(.caption.weight(.semibold))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Theme.accent)
+                .disabled(store.isReviewingWeekly)
+                Spacer()
+                if store.weeklyReview != nil {
+                    Text("已由 Agent 记录")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
             }
 
             Button {

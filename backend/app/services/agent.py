@@ -215,6 +215,11 @@ def _context(db: Session, user_id: str) -> dict:
     profile = db.get(Profile, user_id)
     program = _active_program(db, user_id) if profile is not None else None
     memories = list_memories(db, user_id, 20)
+    if memories:
+        used_at = utcnow()
+        for item in memories:
+            item.last_used_at = used_at
+        db.flush()
     memory_payload = [
         {"kind": item.kind, "key": item.memory_key, "content": item.content}
         for item in memories
@@ -463,6 +468,193 @@ def _tool_result(
         db.commit()
         return {"ok": True, "proposal": _serialize_proposal(proposal)}
     return {"ok": False, "error": f"unknown tool: {tool}"}
+
+
+def _week_start(now: datetime) -> datetime:
+    start = (now - timedelta(days=now.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    return start
+
+
+def _review_snapshot(
+    db: Session, user_id: str, start: datetime, end: datetime
+) -> dict:
+    sessions = (
+        db.execute(
+            select(WorkoutSession)
+            .options(selectinload(WorkoutSession.sets))
+            .where(
+                WorkoutSession.user_id == user_id,
+                WorkoutSession.started_at >= start,
+                WorkoutSession.started_at < end,
+            )
+            .order_by(WorkoutSession.started_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+    completed_sets = 0
+    volume = 0.0
+    rpe_total = 0.0
+    for session in sessions:
+        for item in session.sets:
+            if not item.completed:
+                continue
+            completed_sets += 1
+            volume += (item.weight_kg or 0) * (item.reps or 0)
+            rpe_total += item.rpe or 0
+    durations = [item.duration_min for item in sessions if item.duration_min]
+    return {
+        "sessions": len(sessions),
+        "completed_sets": completed_sets,
+        "volume_kg": round(volume, 1),
+        "average_rpe": round(rpe_total / completed_sets, 1)
+        if completed_sets
+        else None,
+        "average_duration_min": round(sum(durations) / len(durations))
+        if durations
+        else 0,
+        "last_session_at": sessions[0].started_at.isoformat()
+        if sessions
+        else None,
+    }
+
+
+def generate_weekly_review(db: Session, user_id: str) -> dict:
+    """Create an auditable, rule-based weekly review without an LLM call.
+
+    The review is intentionally deterministic: users can request it after every
+    workout without spending model tokens, while the run and its tool outputs
+    remain visible in the admin Agent audit page.
+    """
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        raise ValueError("请先完成个人档案，再生成周复盘")
+
+    now = utcnow()
+    week_start = _week_start(now)
+    previous_start = week_start - timedelta(days=7)
+    current = _review_snapshot(db, user_id, week_start, week_start + timedelta(days=7))
+    previous = _review_snapshot(db, user_id, previous_start, week_start)
+    context = _context(db, user_id)
+    nutrition = context.get("nutrition_7d") or {}
+    target = max(1, int(profile.weekly_days or 3))
+    completion = min(1.5, current["sessions"] / target)
+    minutes = profile.session_minutes or 45
+
+    wins: list[str] = []
+    watchouts: list[str] = []
+    actions: list[str] = []
+
+    if current["sessions"] == 0:
+        summary = (
+            f"本周还没有训练记录。先按计划完成一次 {minutes} 分钟的训练，"
+            "不要一上来追求强度，先把节奏找回来。"
+        )
+        watchouts.append("本周训练频率不足")
+        actions.append(f"从今天或明天安排一次 {minutes} 分钟的全身训练")
+    elif current["sessions"] >= target:
+        summary = (
+            f"本周完成 {current['sessions']}/{target} 次训练，达到计划目标，"
+            f"总容量 {current['volume_kg']:.0f} kg。"
+        )
+        wins.append("训练频率达标")
+        actions.append("下周保持频率，主力动作在动作稳定时加 2.5% 重量或 +1 次")
+    else:
+        summary = (
+            f"本周完成 {current['sessions']}/{target} 次训练，完成率 "
+            f"{completion:.0%}，还差 {max(0, target - current['sessions'])} 次。"
+        )
+        wins.append("已经完成部分训练")
+        actions.append(f"剩余时间优先补 1 次 {minutes} 分钟训练，不必追求练到力竭")
+
+    if current["average_rpe"] is not None:
+        if current["average_rpe"] >= 8.5:
+            watchouts.append("平均 RPE 偏高，恢复压力较大")
+            actions.append("下一次同动作降 1 组或降 5% 重量，把 RPE 控制在 7–8")
+        elif current["average_rpe"] <= 5.5:
+            actions.append("下一次在动作稳定时加 2.5% 重量或 +1 次，逐步增加刺激")
+
+    if previous["volume_kg"] > 0 and current["volume_kg"] > previous["volume_kg"] * 1.1:
+        wins.append("训练容量较上周提升")
+    elif previous["volume_kg"] > 0 and current["volume_kg"] < previous["volume_kg"] * 0.8:
+        watchouts.append("训练容量较上周下降")
+
+    logged_days = int(nutrition.get("logged_days") or 0)
+    if logged_days < 3:
+        actions.append(
+            f"本周只有 {logged_days} 天有饮食记录，先做到每天至少记录一餐，便于判断热量"
+        )
+    if not wins:
+        wins.append("建立了本周训练基线")
+    if not actions:
+        actions.append("下一次训练后记录 RPE 和训练感受，帮助教练继续调整")
+
+    review = {
+        "period": "week",
+        "week_start": week_start.date().isoformat(),
+        "stats": {
+            "sessions": current["sessions"],
+            "planned": target,
+            "completion_rate": round(completion, 2),
+            "volume_kg": current["volume_kg"],
+            "average_rpe": current["average_rpe"],
+            "average_duration_min": current["average_duration_min"],
+            "previous_volume_kg": previous["volume_kg"],
+            "nutrition_logged_days": logged_days,
+            "plan_title": (context.get("current_plan") or {}).get("title"),
+        },
+        "summary": summary,
+        "wins": wins[:3],
+        "watchouts": watchouts[:3],
+        "actions": actions[:3],
+        "generated_at": now.isoformat(),
+    }
+
+    run = AgentRun(
+        user_id=user_id,
+        intent="review_week",
+        status="running",
+        model="review-rules-v1",
+        input_text="auto:weekly_review",
+    )
+    db.add(run)
+    db.flush()
+    _record_step(
+        db,
+        run,
+        "tool",
+        tool_name="get_context",
+        input_data={"scope": "weekly_review"},
+        output_data={
+            "profile": context.get("profile"),
+            "current_plan": context.get("current_plan"),
+            "nutrition_7d": nutrition,
+            "memories": context.get("memories"),
+        },
+    )
+    _record_step(
+        db,
+        run,
+        "tool",
+        tool_name="get_recent_training",
+        input_data={"days": 7},
+        output_data={"current": current, "previous": previous},
+    )
+    _record_step(
+        db,
+        run,
+        "decision",
+        input_data={"policy": "weekly_review_rules_v1"},
+        output_data=review,
+    )
+    run.status = "completed"
+    run.output_text = summary[:4000]
+    run.completed_at = utcnow()
+    db.commit()
+    review["run_id"] = run.id
+    return review
 
 
 def _mock_agent_response(db: Session, user_id: str) -> str:

@@ -250,6 +250,56 @@ struct AgentMemoryResponse: Decodable {
     let items: [AgentMemory]
 }
 
+struct AgentReviewStats: Codable, Hashable {
+    let sessions: Int
+    let planned: Int
+    let completionRate: Double
+    let volumeKG: Double
+    let averageRPE: Double?
+    let averageDurationMin: Int
+    let previousVolumeKG: Double
+    let nutritionLoggedDays: Int
+    let planTitle: String?
+
+    enum CodingKeys: String, CodingKey {
+        case sessions
+        case planned
+        case completionRate = "completion_rate"
+        case volumeKG = "volume_kg"
+        case averageRPE = "average_rpe"
+        case averageDurationMin = "average_duration_min"
+        case previousVolumeKG = "previous_volume_kg"
+        case nutritionLoggedDays = "nutrition_logged_days"
+        case planTitle = "plan_title"
+    }
+}
+
+struct AgentWeeklyReview: Codable, Hashable, Identifiable {
+    let runID: String
+    let period: String
+    let weekStart: String
+    let stats: AgentReviewStats
+    let summary: String
+    let wins: [String]
+    let watchouts: [String]
+    let actions: [String]
+    let generatedAt: Date
+
+    var id: String { runID }
+
+    enum CodingKeys: String, CodingKey {
+        case runID = "run_id"
+        case period
+        case weekStart = "week_start"
+        case stats
+        case summary
+        case wins
+        case watchouts
+        case actions
+        case generatedAt = "generated_at"
+    }
+}
+
 struct RemoteFoodLog: Decodable {
     let clientID: String
     let loggedAt: Date
@@ -601,6 +651,14 @@ struct APIClient {
         if let sessionID { payload["session_id"] = sessionID.uuidString }
         let body = try JSONSerialization.data(withJSONObject: payload)
         return try await send(path: "agent/chat", method: "POST", body: body)
+    }
+
+    func agentWeeklyReview() async throws -> AgentWeeklyReview {
+        try await send(
+            path: "agent/reviews/weekly",
+            method: "POST",
+            body: try JSONSerialization.data(withJSONObject: [:])
+        )
     }
 
     func applyAgentProposal(id: String) async throws -> TrainingPlan {

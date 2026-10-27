@@ -33,6 +33,7 @@ struct RootView: View {
                 enableRemoteMode()
                 store.syncPendingWorkouts()
                 store.syncRemoteWorkouts()
+                store.refreshWeeklyReview()
                 store.syncPendingUserData()
             }
         }
@@ -45,6 +46,7 @@ struct RootView: View {
                 enableRemoteMode()
                 store.syncPendingWorkouts()
                 store.syncRemoteWorkouts()
+                store.refreshWeeklyReview()
                 store.syncPendingUserData()
             }
         }
@@ -54,6 +56,7 @@ struct RootView: View {
                 enableRemoteMode()
                 store.syncPendingWorkouts()
                 store.syncRemoteWorkouts()
+                store.refreshWeeklyReview()
                 store.syncPendingUserData()
             }
         }
@@ -63,6 +66,7 @@ struct RootView: View {
             } else if auth.isAuthenticated {
                 store.syncPendingWorkouts()
                 store.syncRemoteWorkouts()
+                store.refreshWeeklyReview()
                 store.syncPendingUserData()
             }
         }

@@ -57,4 +57,21 @@ final class NotificationScheduler {
     func cancelAll() {
         center.removeAllPendingNotificationRequests()
     }
+
+    /// 训练上传成功后立即提醒查看服务端生成的复盘；本地通知不依赖 APNs。
+    func notifyReviewReady() {
+        let content = UNMutableNotificationContent()
+        content.title = "AI 复盘已更新"
+        content.body = "本周训练已完成，查看完成率、强度与下周建议。"
+        content.sound = .default
+        let request = UNNotificationRequest(
+            identifier: "weekly-review-\(Int(Date().timeIntervalSince1970))",
+            content: content,
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: 2, repeats: false)
+        )
+        Task { [weak self] in
+            guard let self else { return }
+            try? await self.center.add(request)
+        }
+    }
 }

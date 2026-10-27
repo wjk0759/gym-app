@@ -7,6 +7,7 @@
 import base64
 import os
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -88,10 +89,14 @@ def main() -> None:
         day = plan["days"][0]
         print("day 1:", day["weekday"], day["title"], len(day["exercises"]))
 
+        workout_started = (datetime.now(timezone.utc) - timedelta(days=1)).replace(
+            hour=10, minute=0, second=0, microsecond=0
+        )
+        workout_finished = workout_started + timedelta(minutes=45)
         workout = {
             "program_day_id": day["id"],
-            "started_at": "2026-10-25T10:00:00Z",
-            "finished_at": "2026-10-25T10:45:00Z",
+            "started_at": workout_started.isoformat().replace("+00:00", "Z"),
+            "finished_at": workout_finished.isoformat().replace("+00:00", "Z"),
             "feeling": 4,
             "notes": "冒烟测试",
             "sets": [
@@ -146,6 +151,20 @@ def main() -> None:
         assert response.status_code == 200, response.text
         assert response.json()["items"][0]["sets"], response.text
         print("workout sync list: ok")
+
+        response = client.post("/api/v1/agent/reviews/weekly", headers=headers)
+        assert response.status_code == 200, response.text
+        weekly_review = response.json()
+        assert weekly_review["run_id"], weekly_review
+        assert weekly_review["summary"], weekly_review
+        assert weekly_review["actions"], weekly_review
+        assert weekly_review["stats"]["sessions"] >= 1, weekly_review
+        print(
+            "weekly review:",
+            weekly_review["stats"]["sessions"],
+            "sessions,",
+            weekly_review["summary"][:40],
+        )
 
         response = client.get("/api/v1/workouts/summary?weeks=4", headers=headers)
         assert response.status_code == 200, response.text
