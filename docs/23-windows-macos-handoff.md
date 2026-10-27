@@ -62,7 +62,7 @@
 
 ## 三、外部服务与内容
 
-- [ ] DeepSeek `LLM_API_KEY`（可在 Windows 填入，填入后重启后端）
+- [x] DeepSeek `LLM_API_KEY`：已写入 `backend/.env`，健康检查显示 `llm: deepseek-chat`
 - [ ] 真实视觉模型 Key 与供应商（器械/体型/饮食）
 - [ ] 真实短信网关
 - [ ] 微信开放平台 AppID/Secret
