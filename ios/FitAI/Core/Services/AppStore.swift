@@ -1288,6 +1288,7 @@ final class AppStore {
             resetInMemory()
             return
         }
+        var persistAfterMigration = false
         profile = state.profile
         plan = state.plan
         planHistory = state.planHistory ?? []
@@ -1306,6 +1307,7 @@ final class AppStore {
             useRemoteAI = true
             debugForceRemoteAI = true
             UserDefaults.standard.set(true, forKey: debugRemoteMigration)
+            persistAfterMigration = true
         }
 #endif
         healthKitEnabled = state.healthKitEnabled ?? false
@@ -1320,6 +1322,9 @@ final class AppStore {
         pendingWorkoutDeletionIDs = state.pendingWorkoutDeletionIDs ?? []
         weeklyReview = state.weeklyReview
         useEquipmentLibraryForPlans = state.useEquipmentLibraryForPlans ?? true
+        if persistAfterMigration {
+            persist()
+        }
     }
 
     func persist() {
