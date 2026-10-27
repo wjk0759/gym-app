@@ -425,6 +425,9 @@ async def generate_plan(
 
     if not settings.use_mock_llm:
         try:
+            # Exercise selection is complete; release the read transaction
+            # while the model generates the plan.
+            db.commit()
             raw = await llm.complete_json(
                 _system_prompt(),
                 _user_prompt(

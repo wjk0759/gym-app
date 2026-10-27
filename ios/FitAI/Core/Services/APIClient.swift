@@ -32,6 +32,7 @@ struct RemoteWorkoutSet: Decodable {
 
 struct RemoteWorkout: Decodable {
     let id: String
+    let clientID: String?
     let programDayID: String?
     let startedAt: Date
     let finishedAt: Date?
@@ -42,6 +43,7 @@ struct RemoteWorkout: Decodable {
 
     enum CodingKeys: String, CodingKey {
         case id
+        case clientID = "client_id"
         case programDayID = "program_day_id"
         case startedAt = "started_at"
         case finishedAt = "finished_at"
@@ -54,6 +56,7 @@ struct RemoteWorkout: Decodable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
+        clientID = try container.decodeIfPresent(String.self, forKey: .clientID)
         programDayID = try container.decodeIfPresent(String.self, forKey: .programDayID)
         startedAt = try container.decode(Date.self, forKey: .startedAt)
         finishedAt = try container.decodeIfPresent(Date.self, forKey: .finishedAt)
@@ -565,6 +568,7 @@ struct APIClient {
         let finishedAt = session.date
         let startedAt = finishedAt.addingTimeInterval(-Double(max(0, session.durationMinutes) * 60))
         var payload: [String: Any] = [
+            "client_id": session.id.uuidString,
             "started_at": Self.iso8601WithFractionalSeconds.string(from: startedAt),
             "finished_at": Self.iso8601WithFractionalSeconds.string(from: finishedAt),
             "feeling": min(5, max(1, session.feeling)),
@@ -751,6 +755,28 @@ struct APIClient {
             path: "agent/memories/\(id)",
             method: "DELETE",
             body: nil
+        )
+    }
+
+    func reportAgentAction(
+        id: String,
+        runID: String?,
+        type: String,
+        status: String,
+        message: String?
+    ) async throws {
+        var payload: [String: Any] = [
+            "action_type": type,
+            "status": status,
+        ]
+        if let runID { payload["run_id"] = runID }
+        if let message, !message.isEmpty { payload["message"] = message }
+        let encoded = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+        let body = try JSONSerialization.data(withJSONObject: payload)
+        try await sendVoid(
+            path: "agent/actions/\(encoded)/result",
+            method: "POST",
+            body: body
         )
     }
 

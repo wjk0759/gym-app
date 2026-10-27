@@ -1,7 +1,8 @@
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from ..deps import CurrentUser, DBSession
@@ -61,6 +62,21 @@ def _owned_program_day_id(
 
 @router.post("", status_code=201)
 def create_workout(payload: WorkoutIn, user_id: CurrentUser, db: DBSession):
+    if payload.client_id:
+        existing = db.execute(
+            select(WorkoutSession).where(
+                WorkoutSession.user_id == user_id,
+                WorkoutSession.client_id == payload.client_id,
+            )
+        ).scalar_one_or_none()
+        if existing is not None:
+            return {
+                "id": existing.id,
+                "client_id": existing.client_id,
+                "duration_min": existing.duration_min,
+                "duplicate": True,
+            }
+
     started_at = _parse_dt(payload.started_at)
     if started_at is None:
         raise HTTPException(status_code=400, detail="started_at 必填")
@@ -74,6 +90,7 @@ def create_workout(payload: WorkoutIn, user_id: CurrentUser, db: DBSession):
 
     session = WorkoutSession(
         user_id=user_id,
+        client_id=payload.client_id,
         program_day_id=program_day_id,
         started_at=started_at,
         finished_at=finished_at,
@@ -94,8 +111,35 @@ def create_workout(payload: WorkoutIn, user_id: CurrentUser, db: DBSession):
         )
 
     db.add(session)
-    db.commit()
-    return {"id": session.id, "duration_min": duration}
+    try:
+        db.commit()
+    except IntegrityError:
+        # A concurrent retry won the unique(user_id, client_id) race.
+        db.rollback()
+        existing = (
+            db.execute(
+                select(WorkoutSession).where(
+                    WorkoutSession.user_id == user_id,
+                    WorkoutSession.client_id == payload.client_id,
+                )
+            ).scalar_one_or_none()
+            if payload.client_id
+            else None
+        )
+        if existing is not None:
+            return {
+                "id": existing.id,
+                "client_id": existing.client_id,
+                "duration_min": existing.duration_min,
+                "duplicate": True,
+            }
+        raise
+    return {
+        "id": session.id,
+        "client_id": session.client_id,
+        "duration_min": duration,
+        "duplicate": False,
+    }
 
 
 @router.get("")
@@ -105,13 +149,12 @@ def list_workouts(
     date_from: date | None = Query(default=None, alias="from"),
     date_to: date | None = Query(default=None, alias="to"),
     limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     include_sets: bool = Query(default=False),
 ):
-    query = (
-        select(WorkoutSession)
-        .options(selectinload(WorkoutSession.sets))
-        .where(WorkoutSession.user_id == user_id)
-    )
+    query = select(WorkoutSession).where(WorkoutSession.user_id == user_id)
+    if include_sets:
+        query = query.options(selectinload(WorkoutSession.sets))
     if date_from:
         query = query.where(
             WorkoutSession.started_at
@@ -124,22 +167,43 @@ def list_workouts(
                 date_to + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc
             )
         )
-    rows = (
-        db.execute(query.order_by(WorkoutSession.started_at.desc()).limit(limit))
+    rows_all = (
+        db.execute(
+            query.order_by(
+                WorkoutSession.started_at.desc(), WorkoutSession.id.desc()
+            )
+            .offset(offset)
+            .limit(limit + 1)
+        )
         .scalars()
         .all()
     )
+    has_more = len(rows_all) > limit
+    rows = rows_all[:limit]
+    set_counts: dict[str, int] = {}
+    if rows and not include_sets:
+        ids = [item.id for item in rows]
+        set_counts = dict(
+            db.execute(
+                select(SetLog.session_id, func.count(SetLog.id))
+                .where(SetLog.session_id.in_(ids))
+                .group_by(SetLog.session_id)
+            ).all()
+        )
     items = []
     for item in rows:
         payload = {
             "id": item.id,
+            "client_id": item.client_id,
             "program_day_id": item.program_day_id,
             "started_at": item.started_at.isoformat(),
             "finished_at": item.finished_at.isoformat() if item.finished_at else None,
             "duration_min": item.duration_min,
             "feeling": item.feeling,
             "notes": item.notes,
-            "set_count": len(item.sets),
+            "set_count": (
+                len(item.sets) if include_sets else int(set_counts.get(item.id, 0))
+            ),
         }
         if include_sets:
             payload["sets"] = [
@@ -154,47 +218,66 @@ def list_workouts(
                 for log in item.sets
             ]
         items.append(payload)
-    return {"items": items}
+    return {
+        "items": items,
+        "limit": limit,
+        "offset": offset,
+        "has_more": has_more,
+    }
 
 
 @router.get("/summary")
 def summary(user_id: CurrentUser, db: DBSession, weeks: int = Query(default=4, ge=1, le=26)):
     since = datetime.now(timezone.utc) - timedelta(weeks=weeks)
-    sessions = (
-        db.execute(
-            select(WorkoutSession)
-            .options(selectinload(WorkoutSession.sets))
-            .where(
-                WorkoutSession.user_id == user_id,
-                WorkoutSession.started_at >= since,
-            )
-        )
-        .scalars()
-        .all()
+    volume_expr = func.coalesce(
+        func.sum(SetLog.weight_kg * SetLog.reps), 0.0
     )
+    rows = db.execute(
+        select(
+            WorkoutSession.id,
+            WorkoutSession.started_at,
+            WorkoutSession.duration_min,
+            volume_expr.label("volume"),
+        )
+        .select_from(WorkoutSession)
+        .outerjoin(
+            SetLog,
+            (SetLog.session_id == WorkoutSession.id) & SetLog.completed.is_(True),
+        )
+        .where(
+            WorkoutSession.user_id == user_id,
+            WorkoutSession.started_at >= since,
+        )
+        .group_by(
+            WorkoutSession.id,
+            WorkoutSession.started_at,
+            WorkoutSession.duration_min,
+        )
+    ).all()
 
     total_volume = 0.0
     by_week: dict[str, dict] = {}
-    for session in sessions:
-        volume = sum(
-            (log.weight_kg or 0) * (log.reps or 0)
-            for log in session.sets
-            if log.completed
-        )
+    for session_id, started_at, duration_min, volume in rows:
+        volume = float(volume or 0)
         total_volume += volume
-        year, week, _ = session.started_at.isocalendar()
+        year, week, _ = started_at.isocalendar()
         key = f"{year}-W{week:02d}"
-        bucket = by_week.setdefault(key, {"week": key, "sessions": 0, "volume_kg": 0.0})
+        bucket = by_week.setdefault(
+            key, {"week": key, "sessions": 0, "volume_kg": 0.0}
+        )
         bucket["sessions"] += 1
         bucket["volume_kg"] += volume
 
-    durations = [item.duration_min for item in sessions if item.duration_min]
+    sessions_count = len(rows)
+    durations = [row[2] for row in rows if row[2]]
     profile = db.get(Profile, user_id)
     planned = (profile.weekly_days or 3) * weeks if profile else weeks * 3
 
     return {
-        "sessions": len(sessions),
-        "completion_rate": round(min(1.0, len(sessions) / planned), 2) if planned else 0,
+        "sessions": sessions_count,
+        "completion_rate": round(min(1.0, sessions_count / planned), 2)
+        if planned
+        else 0,
         "total_volume_kg": round(total_volume, 1),
         "avg_duration_min": round(sum(durations) / len(durations)) if durations else 0,
         "by_week": [by_week[key] for key in sorted(by_week)],
@@ -218,6 +301,7 @@ def get_workout(workout_id: str, user_id: CurrentUser, db: DBSession):
         raise HTTPException(status_code=404, detail="训练记录不存在")
     return {
         "id": session.id,
+        "client_id": session.client_id,
         "program_day_id": session.program_day_id,
         "started_at": session.started_at.isoformat(),
         "finished_at": session.finished_at.isoformat() if session.finished_at else None,

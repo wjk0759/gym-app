@@ -4,15 +4,16 @@ from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 
 from ..deps import CurrentUser, DBSession
-from ..models import Exercise, Goal, PlanExercise, Profile, Program, ProgramDay, WorkoutSession
+from ..models import Exercise, Goal, PlanExercise, Profile, Program, WorkoutSession
 from ..schemas import PlanDayPatch, PlanGenerateIn
 from ..services.plan_generator import generate_plan
 from ..services.plan_validator import PlanValidationError, injury_tags
+from ..services.locking import lock_user
+from ..services.queries import active_program, owned_program, owned_program_day
 from ..services.serializers import (
     clone_program,
     goal_to_dict,
     load_program,
-    program_load_options,
     save_plan,
     serialize_program,
 )
@@ -21,21 +22,12 @@ router = APIRouter(prefix="/plans", tags=["plans"])
 
 
 def _active_program(db: DBSession, user_id: str) -> Program | None:
-    return (
-        db.execute(
-            select(Program)
-            .options(program_load_options())
-            .where(Program.user_id == user_id, Program.status == "active")
-            .order_by(Program.version.desc())
-        )
-        .scalars()
-        .first()
-    )
+    return active_program(db, user_id)
 
 
 def _owned_program(db: DBSession, user_id: str, plan_id: str) -> Program:
-    program = load_program(db, plan_id)
-    if program is None or program.user_id != user_id:
+    program = owned_program(db, user_id, plan_id)
+    if program is None:
         raise HTTPException(status_code=404, detail="计划不存在")
     return program
 
@@ -56,6 +48,11 @@ async def generate(
         select(Goal).where(Goal.user_id == user_id, Goal.status == "active")
     ).scalar_one_or_none()
     goal_type = goal.type if goal else "recomp"
+
+    # Release the read connection while the model runs. Otherwise every LLM
+    # request keeps a DB connection checked out for the whole (possibly 30s)
+    # generation window.
+    db.commit()
 
     try:
         result = await generate_plan(
@@ -111,7 +108,8 @@ def update_day(
     db: DBSession,
 ):
     program = _owned_program(db, user_id, plan_id)
-    day = db.get(ProgramDay, day_id)
+    lock_user(db, user_id)
+    day = owned_program_day(db, user_id, day_id)
     if day is None or day.program_id != program.id:
         raise HTTPException(status_code=404, detail="训练日不存在")
 

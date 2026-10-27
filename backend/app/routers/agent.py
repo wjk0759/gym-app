@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from ..deps import CurrentUser, DBSession
-from ..models import AgentPlanProposal, ChatMessage, ChatSession
-from ..schemas import AgentChatIn
+from ..models import AgentActionEvent, AgentPlanProposal, AgentRun, ChatMessage, ChatSession
+from ..schemas import AgentActionResultIn, AgentChatIn
 from ..services.agent import apply_proposal, generate_weekly_review, run_agent
 from ..services.memory import list_memories
 from ..services.serializers import serialize_program
@@ -60,6 +62,84 @@ async def agent_chat(
         "proposal": result["proposal"],
         "actions": result.get("actions", []),
         "elapsed_ms": result["elapsed_ms"],
+    }
+
+
+@router.post("/actions/{action_id}/result")
+def report_action_result(
+    action_id: str,
+    payload: AgentActionResultIn,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    action_id = action_id.strip()
+    if not 1 <= len(action_id) <= 64:
+        raise HTTPException(status_code=400, detail="action_id 不合法")
+    run = None
+    if payload.run_id:
+        run = db.get(AgentRun, payload.run_id)
+        if run is None or run.user_id != user_id:
+            raise HTTPException(status_code=400, detail="run_id 不合法")
+    event = db.execute(
+        select(AgentActionEvent).where(
+            AgentActionEvent.user_id == user_id,
+            AgentActionEvent.action_id == action_id,
+        )
+    ).scalar_one_or_none()
+    if event is None:
+        event = AgentActionEvent(
+            user_id=user_id,
+            action_id=action_id,
+            action_type=payload.action_type,
+            status=payload.status,
+        )
+        db.add(event)
+    event.run_id = payload.run_id or (run.id if run else event.run_id)
+    event.action_type = payload.action_type
+    event.status = payload.status
+    event.message = (payload.message or "")[:500] or None
+    event.detail = payload.detail or {}
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        event = db.execute(
+            select(AgentActionEvent).where(
+                AgentActionEvent.user_id == user_id,
+                AgentActionEvent.action_id == action_id,
+            )
+        ).scalar_one()
+        event.run_id = payload.run_id or (run.id if run else event.run_id)
+        event.action_type = payload.action_type
+        event.status = payload.status
+        event.message = (payload.message or "")[:500] or None
+        event.detail = payload.detail or {}
+        db.commit()
+    return {"ok": True, "action_id": event.action_id, "status": event.status}
+
+
+@router.get("/actions")
+def list_action_events(user_id: CurrentUser, db: DBSession, limit: int = 20):
+    limit = max(1, min(100, limit))
+    rows = db.execute(
+        select(AgentActionEvent)
+        .where(AgentActionEvent.user_id == user_id)
+        .order_by(AgentActionEvent.created_at.desc())
+        .limit(limit)
+    ).scalars().all()
+    return {
+        "items": [
+            {
+                "action_id": item.action_id,
+                "run_id": item.run_id,
+                "action_type": item.action_type,
+                "status": item.status,
+                "message": item.message,
+                "detail": item.detail or {},
+                "created_at": item.created_at.isoformat() if item.created_at else None,
+            }
+            for item in rows
+        ]
     }
 
 

@@ -1,18 +1,23 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
+import logging
 
+import anyio.to_thread
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from starlette.middleware.gzip import GZipMiddleware
 
 from .config import settings
 from .db import Base, SessionLocal, engine, ensure_schema
 from .deps import DEMO_USER_ID
 from .media import MEDIA_ROOT, ensure_media_dirs
+from .middleware import RequestContextMiddleware
 from .models import User
 from .routers import (
     admin,
@@ -29,6 +34,8 @@ from .routers import (
 )
 from .seed import seed_exercises
 from .services import llm
+
+logger = logging.getLogger(__name__)
 
 CODE_BY_STATUS = {
     400: "VALIDATION_ERROR",
@@ -47,6 +54,15 @@ CODE_BY_STATUS = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # FastAPI runs synchronous routes in AnyIO's worker pool. Size it to the
+    # database pool so bursts of CRUD requests do not queue behind 40 threads.
+    try:
+        anyio.to_thread.current_default_thread_limiter().total_tokens = max(
+            16, settings.thread_pool_size
+        )
+    except Exception:  # pragma: no cover - older AnyIO fallback
+        logger.warning("could not resize AnyIO thread limiter")
+    logging.getLogger("fitai.access").setLevel(logging.INFO)
     ensure_schema()
     # MySQL schema is owned by admin-server Flyway. Only local SQLite/Postgres
     # development uses SQLAlchemy create_all to avoid two schema creators.
@@ -57,7 +73,11 @@ async def lifespan(app: FastAPI):
         seed_exercises(db)
         if db.get(User, DEMO_USER_ID) is None:
             db.add(User(id=DEMO_USER_ID))
-            db.commit()
+            try:
+                db.commit()
+            except IntegrityError:
+                # Multiple workers may race on the demo user during startup.
+                db.rollback()
     try:
         yield
     finally:
@@ -78,9 +98,15 @@ app.add_middleware(
     allow_credentials=allowed_origins != ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Request-ID", "Server-Timing"],
 )
-# 计划/后台列表 JSON 较大；压缩能明显减少移动网络传输时间。
+# GZip 先加；RequestContext 最后加，保证 X-Request-ID/Server-Timing 覆盖所有响应。
 app.add_middleware(GZipMiddleware, minimum_size=1024)
+app.add_middleware(RequestContextMiddleware)
+
+
+def _request_id(request: Request) -> str | None:
+    return getattr(request.state, "request_id", None)
 
 
 @app.exception_handler(HTTPException)
@@ -97,21 +123,37 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             "code": CODE_BY_STATUS.get(exc.status_code, "ERROR"),
             "message": str(detail),
         }
+    request_id = _request_id(request)
+    if request_id:
+        error["request_id"] = request_id
     return JSONResponse(status_code=exc.status_code, content={"error": error})
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    return JSONResponse(
-        status_code=422,
-        content={
-            "error": {
-                "code": "VALIDATION_ERROR",
-                "message": "请求参数不合法",
-                "details": jsonable_encoder(exc.errors()),
-            }
-        },
+    error = {
+        "code": "VALIDATION_ERROR",
+        "message": "请求参数不合法",
+        "details": jsonable_encoder(exc.errors()),
+    }
+    request_id = _request_id(request)
+    if request_id:
+        error["request_id"] = request_id
+    return JSONResponse(status_code=422, content={"error": error})
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception(
+        "Unhandled exception path=%s request_id=%s",
+        request.url.path,
+        _request_id(request),
     )
+    error = {"code": "INTERNAL_ERROR", "message": "服务暂时不可用，请稍后重试"}
+    request_id = _request_id(request)
+    if request_id:
+        error["request_id"] = request_id
+    return JSONResponse(status_code=500, content={"error": error})
 
 
 API_PREFIX = "/api/v1"
@@ -162,3 +204,14 @@ def health():
         "vision": "mock" if settings.use_mock_vision else settings.vision_model,
         "meituan": "configured" if settings.meituan_deeplink_base else "not_configured",
     }
+
+
+@app.get("/health/ready")
+def readiness():
+    """Readiness probe: verifies the DB pool can serve a trivial query."""
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except Exception as exc:  # noqa: BLE001 - readiness must be a clean 503
+        raise HTTPException(status_code=503, detail="database unavailable") from exc
+    return {"status": "ready"}

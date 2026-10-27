@@ -1,6 +1,7 @@
 """动作库种子数据。与 iOS 端 ExerciseLibrary 保持一致。"""
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .models import Exercise
@@ -312,4 +313,8 @@ def seed_exercises(db: Session) -> None:
         if item["slug"] in existing:
             continue
         db.add(Exercise(source="self_produced", license="FitAI internal", **item))
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Multiple uvicorn workers can seed concurrently on first boot.
+        db.rollback()

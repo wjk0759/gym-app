@@ -295,14 +295,17 @@ class WorkoutSession(Base):
     __table_args__ = (
         Index("ix_workout_sessions_user_started", "user_id", "started_at"),
         Index("ix_workout_sessions_started_at", "started_at"),
+        UniqueConstraint("user_id", "client_id", name="uq_workout_sessions_user_client"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     user_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
+    # iOS 本地训练记录 ID；用于网络重试时幂等写入，历史数据可为空。
+    client_id: Mapped[str | None] = mapped_column(String(36))
     program_day_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("program_days.id", ondelete="SET NULL")
+        String(36), ForeignKey("program_days.id", ondelete="SET NULL"), index=True
     )
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -479,6 +482,28 @@ class AgentPlanProposal(Base):
     run: Mapped[AgentRun] = relationship(back_populates="proposals")
 
 
+class AgentActionEvent(Base):
+    __tablename__ = "agent_action_events"
+    __table_args__ = (
+        UniqueConstraint("user_id", "action_id", name="uq_agent_action_events_user_action"),
+        Index("ix_agent_action_events_user_created", "user_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    run_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("agent_runs.id", ondelete="SET NULL"), index=True
+    )
+    action_id: Mapped[str] = mapped_column(String(64))
+    action_type: Mapped[str] = mapped_column(String(40))
+    status: Mapped[str] = mapped_column(String(20), default="executed")
+    message: Mapped[str | None] = mapped_column(Text)
+    detail: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class EquipmentScan(Base):
     __tablename__ = "equipment_scans"
 
@@ -605,6 +630,10 @@ class EquipmentLibraryItem(Base):
 
 class MealPlan(Base):
     __tablename__ = "meal_plans"
+    __table_args__ = (
+        UniqueConstraint("user_id", "plan_date", name="uq_meal_plans_user_date"),
+        Index("ix_meal_plans_user_date", "user_id", "plan_date"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     user_id: Mapped[str] = mapped_column(

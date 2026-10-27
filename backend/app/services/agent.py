@@ -15,8 +15,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy import and_, func, select
+from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..models import (
@@ -27,19 +27,23 @@ from ..models import (
     ChatMessage,
     EquipmentLibraryItem,
     FoodLog,
-    Goal,
     Profile,
     Program,
+    SetLog,
     WorkoutSession,
     utcnow,
 )
 from . import llm
 from .coach import detect_safety
-from .memory import extract_and_store, list_memories, remember_facts
+from .memory import (
+    list_memories,
+    remember_facts,
+    schedule_memory_extraction,
+)
 from .plan_generator import build_template_plan
+from .queries import active_goal, active_program
 from .serializers import (
     goal_to_dict,
-    program_load_options,
     profile_to_dict,
     save_plan,
 )
@@ -169,29 +173,6 @@ def _program_summary(program: Program | None) -> dict | None:
     }
 
 
-def _active_program(db: Session, user_id: str) -> Program | None:
-    return (
-        db.execute(
-            select(Program)
-            .options(program_load_options())
-            .where(Program.user_id == user_id, Program.status == "active")
-            .order_by(Program.version.desc())
-        )
-        .scalars()
-        .first()
-    )
-
-
-def _active_goal(db: Session, user_id: str) -> Goal | None:
-    return (
-        db.execute(
-            select(Goal).where(Goal.user_id == user_id, Goal.status == "active")
-        )
-        .scalars()
-        .first()
-    )
-
-
 def _body_context(db: Session, user_id: str) -> list[dict]:
     rows = (
         db.execute(
@@ -215,26 +196,29 @@ def _body_context(db: Session, user_id: str) -> list[dict]:
 
 
 def _nutrition_context(db: Session, user_id: str, days: int = 7) -> dict:
-    since = utcnow() - timedelta(days=max(1, min(30, days)))
-    rows = (
-        db.execute(
-            select(FoodLog).where(
-                FoodLog.user_id == user_id,
-                FoodLog.logged_at >= since,
-            )
+    days = max(1, min(30, days))
+    since = utcnow() - timedelta(days=days)
+    row = db.execute(
+        select(
+            func.count(func.distinct(func.date(FoodLog.logged_at))),
+            func.coalesce(func.sum(FoodLog.kcal), 0.0),
+            func.coalesce(func.sum(FoodLog.protein), 0.0),
+            func.coalesce(func.sum(FoodLog.carbs), 0.0),
+            func.coalesce(func.sum(FoodLog.fat), 0.0),
+            func.coalesce(func.sum(FoodLog.fiber), 0.0),
+        ).where(
+            FoodLog.user_id == user_id,
+            FoodLog.logged_at >= since,
         )
-        .scalars()
-        .all()
-    )
-    dates = {item.logged_at.date().isoformat() for item in rows}
+    ).one()
     return {
         "days": days,
-        "logged_days": len(dates),
-        "kcal": round(sum(item.kcal for item in rows), 1),
-        "protein_g": round(sum(item.protein for item in rows), 1),
-        "carbs_g": round(sum(item.carbs for item in rows), 1),
-        "fat_g": round(sum(item.fat for item in rows), 1),
-        "fiber_g": round(sum(item.fiber for item in rows), 1),
+        "logged_days": int(row[0] or 0),
+        "kcal": round(float(row[1] or 0), 1),
+        "protein_g": round(float(row[2] or 0), 1),
+        "carbs_g": round(float(row[3] or 0), 1),
+        "fat_g": round(float(row[4] or 0), 1),
+        "fiber_g": round(float(row[5] or 0), 1),
     }
 
 
@@ -263,7 +247,7 @@ def _equipment_context(db: Session, user_id: str) -> list[dict]:
 
 def _context(db: Session, user_id: str) -> dict:
     profile = db.get(Profile, user_id)
-    program = _active_program(db, user_id) if profile is not None else None
+    program = active_program(db, user_id) if profile is not None else None
     memories = list_memories(db, user_id, 20)
     if memories:
         used_at = utcnow()
@@ -278,7 +262,7 @@ def _context(db: Session, user_id: str) -> dict:
         return {"needs_profile": True, "memories": memory_payload}
     return {
         "profile": profile_to_dict(profile),
-        "goal": goal_to_dict(_active_goal(db, user_id)),
+        "goal": goal_to_dict(active_goal(db, user_id)),
         "current_plan": _program_summary(program),
         "body_metrics": _body_context(db, user_id),
         "nutrition_7d": _nutrition_context(db, user_id, 7),
@@ -290,43 +274,68 @@ def _context(db: Session, user_id: str) -> dict:
 def _recent_training(db: Session, user_id: str, days: int = 30) -> dict:
     days = max(1, min(90, int(days)))
     since = utcnow() - timedelta(days=days)
+    where = (
+        WorkoutSession.user_id == user_id,
+        WorkoutSession.started_at >= since,
+    )
+    aggregate = db.execute(
+        select(
+            func.count(func.distinct(WorkoutSession.id)),
+            func.count(SetLog.id),
+            func.coalesce(func.sum(SetLog.weight_kg * SetLog.reps), 0.0),
+            func.coalesce(func.sum(SetLog.rpe), 0.0),
+        )
+        .select_from(WorkoutSession)
+        .outerjoin(
+            SetLog,
+            and_(
+                SetLog.session_id == WorkoutSession.id,
+                SetLog.completed.is_(True),
+            ),
+        )
+        .where(*where)
+    ).one()
+
     sessions = (
         db.execute(
             select(WorkoutSession)
-            .options(selectinload(WorkoutSession.sets))
-            .where(
-                WorkoutSession.user_id == user_id,
-                WorkoutSession.started_at >= since,
-            )
+            .where(*where)
             .order_by(WorkoutSession.started_at.desc())
-            .limit(30)
+            .limit(10)
         )
         .scalars()
         .all()
     )
-    total_volume = 0.0
-    total_rpe = 0.0
-    completed_sets = 0
-    for session in sessions:
-        for item in session.sets:
-            if item.completed:
-                completed_sets += 1
-                total_volume += (item.weight_kg or 0) * (item.reps or 0)
-                total_rpe += item.rpe or 0
+    ids = [item.id for item in sessions]
+    set_counts = (
+        dict(
+            db.execute(
+                select(SetLog.session_id, func.count(SetLog.id))
+                .where(SetLog.session_id.in_(ids))
+                .group_by(SetLog.session_id)
+            ).all()
+        )
+        if ids
+        else {}
+    )
+    completed_sets = int(aggregate[1] or 0)
+    total_rpe = float(aggregate[3] or 0)
     return {
         "days": days,
-        "session_count": len(sessions),
+        "session_count": int(aggregate[0] or 0),
         "completed_sets": completed_sets,
-        "total_volume_kg": round(total_volume, 1),
-        "average_rpe": round(total_rpe / completed_sets, 2) if completed_sets else None,
+        "total_volume_kg": round(float(aggregate[2] or 0), 1),
+        "average_rpe": round(total_rpe / completed_sets, 2)
+        if completed_sets
+        else None,
         "recent_sessions": [
             {
                 "date": item.started_at.date().isoformat(),
                 "duration_min": item.duration_min,
                 "feeling": item.feeling,
-                "set_count": len(item.sets),
+                "set_count": int(set_counts.get(item.id, 0)),
             }
-            for item in sessions[:10]
+            for item in sessions
         ],
     }
 
@@ -561,11 +570,12 @@ def _tool_result(
             session_minutes = max(15, min(180, int(session_minutes)))
         split = _normalize_split(arguments.get("split"))
         weeks = max(1, min(8, int(arguments.get("weeks") or 4)))
+        goal = active_goal(db, user_id)
         try:
             built = build_template_plan(
                 db,
                 profile,
-                _active_goal(db, user_id).type if _active_goal(db, user_id) else "recomp",
+                goal.type if goal else "recomp",
                 weeks=weeks,
                 split=split,
                 weekly_days=weekly_days,
@@ -576,7 +586,7 @@ def _tool_result(
             return {"ok": False, "error": str(exc)[:500]}
 
         plan = built["plan"]
-        old_program = _active_program(db, user_id)
+        old_program = active_program(db, user_id)
         changes = _make_changes(
             old_program,
             profile,
@@ -643,44 +653,49 @@ def _week_start(now: datetime) -> datetime:
 def _review_snapshot(
     db: Session, user_id: str, start: datetime, end: datetime
 ) -> dict:
-    sessions = (
-        db.execute(
-            select(WorkoutSession)
-            .options(selectinload(WorkoutSession.sets))
-            .where(
-                WorkoutSession.user_id == user_id,
-                WorkoutSession.started_at >= start,
-                WorkoutSession.started_at < end,
-            )
-            .order_by(WorkoutSession.started_at.desc())
-        )
-        .scalars()
-        .all()
+    where = (
+        WorkoutSession.user_id == user_id,
+        WorkoutSession.started_at >= start,
+        WorkoutSession.started_at < end,
     )
-    completed_sets = 0
-    volume = 0.0
-    rpe_total = 0.0
-    for session in sessions:
-        for item in session.sets:
-            if not item.completed:
-                continue
-            completed_sets += 1
-            volume += (item.weight_kg or 0) * (item.reps or 0)
-            rpe_total += item.rpe or 0
-    durations = [item.duration_min for item in sessions if item.duration_min]
+    aggregate = db.execute(
+        select(
+            func.count(func.distinct(WorkoutSession.id)),
+            func.count(SetLog.id),
+            func.coalesce(func.sum(SetLog.weight_kg * SetLog.reps), 0.0),
+            func.coalesce(func.sum(SetLog.rpe), 0.0),
+        )
+        .select_from(WorkoutSession)
+        .outerjoin(
+            SetLog,
+            and_(
+                SetLog.session_id == WorkoutSession.id,
+                SetLog.completed.is_(True),
+            ),
+        )
+        .where(*where)
+    ).one()
+    durations = list(
+        db.execute(
+            select(WorkoutSession.duration_min).where(
+                *where, WorkoutSession.duration_min.is_not(None)
+            )
+        ).scalars()
+    )
+    last_session_at = db.scalar(select(func.max(WorkoutSession.started_at)).where(*where))
+    completed_sets = int(aggregate[1] or 0)
+    rpe_total = float(aggregate[3] or 0)
     return {
-        "sessions": len(sessions),
+        "sessions": int(aggregate[0] or 0),
         "completed_sets": completed_sets,
-        "volume_kg": round(volume, 1),
+        "volume_kg": round(float(aggregate[2] or 0), 1),
         "average_rpe": round(rpe_total / completed_sets, 1)
         if completed_sets
         else None,
         "average_duration_min": round(sum(durations) / len(durations))
         if durations
         else 0,
-        "last_session_at": sessions[0].started_at.isoformat()
-        if sessions
-        else None,
+        "last_session_at": last_session_at.isoformat() if last_session_at else None,
     }
 
 
@@ -893,6 +908,10 @@ async def run_agent(
             }
             for _ in range(MAX_STEPS):
                 step_started = time.perf_counter()
+                # Persist audit steps and release the read connection while
+                # waiting on the model. A 30–90s LLM call must not pin a DB
+                # connection from the pool.
+                db.commit()
                 raw = await llm.complete_json(
                     SYSTEM_PROMPT,
                     json.dumps(state, ensure_ascii=False),
@@ -977,9 +996,8 @@ async def run_agent(
         run.output_text = final_message[:4000]
         run.completed_at = utcnow()
         db.commit()
-        if not settings.use_mock_llm and run.status != "failed" and db.get(Profile, user_id):
-            await extract_and_store(
-                db,
+        if not settings.use_mock_llm and run.status != "failed":
+            schedule_memory_extraction(
                 user_id,
                 message,
                 final_message,
@@ -1022,7 +1040,11 @@ async def run_agent(
 
 
 def apply_proposal(db: Session, user_id: str, proposal_id: str) -> tuple[Program, AgentPlanProposal]:
-    proposal = db.get(AgentPlanProposal, proposal_id)
+    proposal = db.execute(
+        select(AgentPlanProposal)
+        .where(AgentPlanProposal.id == proposal_id)
+        .with_for_update()
+    ).scalar_one_or_none()
     if proposal is None or proposal.user_id != user_id:
         raise LookupError("计划草案不存在")
     if proposal.status != "draft":
@@ -1034,7 +1056,7 @@ def apply_proposal(db: Session, user_id: str, proposal_id: str) -> tuple[Program
         proposal.status = "expired"
         db.commit()
         raise ValueError("计划草案已过期，请重新生成")
-    current = _active_program(db, user_id)
+    current = active_program(db, user_id)
     if proposal.base_program_id and (
         current is None
         or current.id != proposal.base_program_id
@@ -1042,13 +1064,12 @@ def apply_proposal(db: Session, user_id: str, proposal_id: str) -> tuple[Program
     ):
         raise RuntimeError("当前计划已经变化，请重新生成草案")
 
+    goal = active_goal(db, user_id)
     program = save_plan(
         db,
         user_id,
         proposal.plan_data,
-        goal_type=(
-            _active_goal(db, user_id).type if _active_goal(db, user_id) else "recomp"
-        ),
+        goal_type=goal.type if goal else "recomp",
         generated_by="agent",
         model_name=settings.llm_model if not settings.use_mock_llm else "template",
     )

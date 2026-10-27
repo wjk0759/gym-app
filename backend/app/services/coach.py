@@ -223,6 +223,9 @@ async def coach_reply(
         messages.append({"role": "user", "content": message})
         started = time.perf_counter()
         try:
+            # The route has finished reading profile/program/history. Do not
+            # keep a DB connection (and transaction) open for the LLM call.
+            db.commit()
             reply = await llm.complete_text(messages)
             llm.record_job(
                 db,

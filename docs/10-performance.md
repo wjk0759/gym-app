@@ -82,13 +82,76 @@ SQL 次数比单次耗时更稳定。该表用于回归检查，不代表生产�
 ```powershell
 cd E:\Projects\FitAI\backend
 .\.venv\Scripts\python.exe scripts\perf_probe.py
+.\.venv\Scripts\python.exe scripts\bench_api.py --user-id <uuid> --requests 100 --concurrency 10
 .\.venv\Scripts\python.exe -m pytest -q
 .\.venv\Scripts\python.exe scripts\smoke.py
 ```
 
-## 7. 后续可继续做的优化
+## 7. 2026-10 后端审计加固
+
+这轮不只优化查询，还处理了并发写入、LLM 等待期间占用数据库连接、客户端重试重复写入和联动数据回归。
+
+### 7.1 查询与响应
+
+- 新增 `services/queries.py`、`services/locking.py`，计划/目标/用户行锁统一复用，避免各路由重复实现和 N+1。
+- 训练列表不带 `include_sets` 时不再加载全部组记录，只按当前页做一次 `GROUP BY` 查 `set_count`；默认增加 `offset` / `has_more`。
+- 训练汇总改为 SQL 聚合（按 session 汇总容量），不再把全部 `set_logs` 读进 Python。
+- 用户导出一次性预加载计划日/动作和训练组，消除 `programs × days × exercises` 与 `sessions × set_logs` 的重复扫描。
+- 周复盘、Agent 的饮食/训练上下文改为 SQL 聚合，避免把整周/整月明细全部加载。
+- 后台 AI 概览改为聚合 SQL；后台统计的 14 个单表 count 合并为一条多 scalar subquery 查询。
+- 新增聊天/训练/目标/器械扫描的复合索引；MySQL 迁移为 `V7__backend_performance.sql`。
+
+`perf_probe.py` 复测的代表性 SQL 次数：
+
+| 接口 | 优化后 SQL 次数 |
+|---|---:|
+| `GET /api/v1/workouts` | 2 |
+| `GET /api/v1/workouts/summary` | 2 |
+| `GET /api/v1/plans/current` | 3 |
+| `GET /api/v1/admin/stats` | 13 |
+| `GET /api/v1/admin/users/{id}` | 15 |
+
+### 7.2 并发与连接池
+
+- 数据库连接池可配置：`DB_POOL_SIZE`、`DB_MAX_OVERFLOW`、`DB_POOL_TIMEOUT`、`DB_POOL_RECYCLE`；同步路由线程池由 `THREAD_POOL_SIZE` 控制。
+- Agent、教练、计划生成在 `await` 模型前释放数据库连接/事务，避免一次 30–90 秒的 LLM 调用占住连接池。
+- LLM 连接池和并发信号量可配置：`LLM_MAX_CONCURRENCY`、`LLM_TIMEOUT_SECONDS`，防止单进程把上游限流打满。
+- Agent 的记忆提炼改为后台任务，不再把第二轮 LLM 调用算进用户回复延迟；后台任务使用独立 session。
+- Docker 默认使用 `WEB_CONCURRENCY=4` 的 uvicorn worker；实际连接数应按 `worker 数 × DB_POOL_SIZE` 控制在 MySQL `max_connections` 内。
+
+### 7.3 数据闭环与幂等
+
+- 训练记录新增 `client_id`（客户端本地 UUID）和 `UNIQUE(user_id, client_id)`：离线同步重试不会再创建重复训练。
+- 身体数据按测量时间维护 profile 聚合值：旧数据晚到不会覆盖新体重；删除最新记录会回退到上一条最新记录。
+- 饮食计划增加 `(user_id, plan_date)` 唯一约束和并发冲突重试。
+- 目标、计划、草案应用、refresh token 轮换增加行锁/唯一约束保护，减少并发重复 active 计划和重复应用草案。
+- 饮食/身体/器械的 `client_id` 同步在唯一冲突时会重新读取并更新，而不是返回 500。
+- 修复了身体/器械删除接口的错误提示乱码，以及 `date_to` 边界少一天的过滤问题。
+
+### 7.4 可观测性
+
+- 所有响应增加 `X-Request-ID` 和 `Server-Timing`；请求日志包含 method/path/status/耗时/request_id。
+- 未捕获异常统一返回 `{"error":{"code":"INTERNAL_ERROR",...}}`，不再暴露堆栈；`/health/ready` 检查数据库可用性。
+
+### 7.5 本地基准说明
+
+同一台 Windows 开发机、SQLite、单 uvicorn 进程，单请求 p50（预热后 40 次）：
+
+| 接口 | 优化前 | 优化后 |
+|---|---:|---:|
+| `GET /api/v1/me` | 7.4 ms | 4.4 ms |
+| `GET /api/v1/workouts` | 8.5 ms | 5.3 ms |
+| `GET /api/v1/workouts/summary` | 8.8 ms | 6.1 ms |
+| `GET /api/v1/body/metrics` | 7.8 ms | 6.5 ms |
+| `GET /api/v1/admin/stats` | 13.8 ms | 13.4 ms |
+
+并发压测（200 请求 / 20 并发）中，后台统计 p50 从约 1564 ms 降到 1296 ms，吞吐从约 69.5 RPS 提升到 84.9 RPS；其余读接口主要受单进程 GIL 和测试机负载影响，数字波动较大。Windows 单进程 SQLite 的并发数字不能直接当作生产容量。生产验收应在 MySQL + 4 worker 下重跑 `bench_api.py`，并观察连接池等待、MySQL slow query、LLM 429 率。
+
+## 8. 后续可继续做的优化
 
 - 后台对话/训练列表用 SQL 聚合替代加载完整消息和训练组，进一步降低大数据量下的内存占用。
 - iOS 图片上传前按 1600px 左右下采样，减少视觉模型上传时间。
 - 真机上用 Instruments（Time Profiler / Allocations / Network）验证 SwiftUI 滚动与启动耗时。
 - 配置真实 DeepSeek Key 后，单独统计首 token 延迟和完整回复延迟；当前流式接口已存在，iOS 端尚未消费流式回复。
+- App Action 执行结果已回写 `agent_action_events`；动作撤销、跨设备排期同步仍未完成，属于下一阶段闭环。
+- 多实例部署时把登录/短信限流从进程内字典迁移到 Redis，并增加 AI 接口的用户级配额。

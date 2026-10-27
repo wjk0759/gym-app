@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from ..config import settings
 from ..deps import DBSession, DEMO_USER_ID, CurrentUser
-from ..models import AuthEvent, AuthSession, Goal, Profile, User
+from ..models import AuthEvent, AuthSession, Profile, User
 from ..schemas import (
     AppleLoginIn,
     DevLoginIn,
@@ -24,6 +24,7 @@ from ..schemas import (
     SmsSendIn,
 )
 from ..services import auth as auth_service
+from ..services.queries import active_goal
 from ..services.serializers import goal_to_dict, profile_to_dict
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -53,9 +54,7 @@ def _auth_me(db: DBSession, user_id: str) -> dict:
     if user is None or user.deleted_at is not None or user.status != "active":
         raise HTTPException(status_code=403, detail="账号已被停用")
     profile = db.get(Profile, user_id)
-    goal = db.execute(
-        select(Goal).where(Goal.user_id == user_id, Goal.status == "active")
-    ).scalar_one_or_none()
+    goal = active_goal(db, user_id)
     return {
         "user_id": user.id,
         "phone": user.phone,
@@ -339,9 +338,7 @@ def dev_login(payload: DevLoginIn, request: Request, db: DBSession):
         db.add(profile)
         db.commit()
 
-    goal = db.execute(
-        select(Goal).where(Goal.user_id == DEMO_USER_ID, Goal.status == "active")
-    ).scalar_one_or_none()
+    goal = active_goal(db, DEMO_USER_ID)
 
     return {
         "user_id": user.id,

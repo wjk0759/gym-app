@@ -6,7 +6,9 @@ request into compact rows that are loaded into future coach contexts.
 
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 from datetime import datetime, timezone
 from typing import Any
 
@@ -35,6 +37,8 @@ REPLACE_KEYS = {
     "goal",
 }
 MAX_MEMORIES = 80
+
+logger = logging.getLogger(__name__)
 
 MEMORY_PROMPT = """你是 FitAI 的记忆整理器。
 从用户和教练的一轮对话中提取“未来会影响训练安排或教练回答”的稳定事实。
@@ -90,7 +94,7 @@ def list_memories(db: Session, user_id: str, limit: int = 20) -> list[AIMemory]:
             select(AIMemory)
             .where(AIMemory.user_id == user_id, AIMemory.active.is_(True))
             .order_by(
-                AIMemory.updated_at.desc().nullslast(),
+                AIMemory.updated_at.desc(),
                 AIMemory.created_at.desc(),
             )
             .limit(limit)
@@ -208,6 +212,8 @@ async def extract_and_store(
     if settings.use_mock_llm:
         return []
     try:
+        # Memory extraction must not pin a DB transaction during its LLM call.
+        db.commit()
         raw = await llm.complete_json(
             MEMORY_PROMPT,
             json.dumps(
@@ -230,3 +236,61 @@ async def extract_and_store(
         )
     except Exception:  # memory extraction must never break the coach reply
         return []
+
+
+async def extract_and_store_background(
+    user_id: str,
+    user_message: str,
+    assistant_reply: str,
+    *,
+    source: str = "agent",
+) -> None:
+    """Run optional memory extraction after the user-facing reply.
+
+    A fresh session is required because the request-scoped session is closed
+    when the response returns. Failures are logged and deliberately ignored.
+    """
+    from ..db import SessionLocal
+
+    with SessionLocal() as db:
+        try:
+            await extract_and_store(
+                db,
+                user_id,
+                user_message,
+                assistant_reply,
+                source=source,
+            )
+        except Exception:  # pragma: no cover - conservative background failure
+            logger.exception("Agent memory extraction failed")
+            db.rollback()
+
+
+def schedule_memory_extraction(
+    user_id: str,
+    user_message: str,
+    assistant_reply: str,
+    *,
+    source: str = "agent",
+) -> None:
+    try:
+        task = asyncio.create_task(
+            extract_and_store_background(
+                user_id,
+                user_message,
+                assistant_reply,
+                source=source,
+            )
+        )
+        task.add_done_callback(_log_background_failure)
+    except RuntimeError:
+        # No running loop (e.g. unit tests invoking the service directly).
+        return
+
+
+def _log_background_failure(task: asyncio.Task) -> None:
+    if task.cancelled():
+        return
+    exc = task.exception()
+    if exc is not None:
+        logger.warning("Agent memory task failed: %s", exc)

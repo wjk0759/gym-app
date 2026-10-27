@@ -1,5 +1,6 @@
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from ..deps import CurrentUser, DBSession
 from ..models import EquipmentLibraryItem, EquipmentScan, Exercise
@@ -89,6 +90,14 @@ def _equipment_item_dict(item: EquipmentLibraryItem) -> dict:
     }
 
 
+def _apply_equipment_item(item: EquipmentLibraryItem, payload: EquipmentLibraryIn) -> None:
+    item.name = payload.name
+    item.slug = payload.slug
+    item.muscle = payload.muscle
+    item.equipment = payload.equipment
+    item.notes = payload.notes
+
+
 @router.post("/equipment/items", status_code=201)
 def upsert_equipment_item(
     payload: EquipmentLibraryIn,
@@ -104,12 +113,19 @@ def upsert_equipment_item(
     if item is None:
         item = EquipmentLibraryItem(user_id=user_id, client_id=payload.client_id)
         db.add(item)
-    item.name = payload.name
-    item.slug = payload.slug
-    item.muscle = payload.muscle
-    item.equipment = payload.equipment
-    item.notes = payload.notes
-    db.commit()
+    _apply_equipment_item(item, payload)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        item = db.execute(
+            select(EquipmentLibraryItem).where(
+                EquipmentLibraryItem.user_id == user_id,
+                EquipmentLibraryItem.client_id == payload.client_id,
+            )
+        ).scalar_one()
+        _apply_equipment_item(item, payload)
+        db.commit()
     return _equipment_item_dict(item)
 
 
@@ -145,7 +161,7 @@ def delete_equipment_item(
         )
     ).scalar_one_or_none()
     if item is None:
-        raise HTTPException(status_code=404, detail="?????")
+        raise HTTPException(status_code=404, detail="器械不存在")
     db.delete(item)
     db.commit()
     return {"status": "deleted", "client_id": client_id}

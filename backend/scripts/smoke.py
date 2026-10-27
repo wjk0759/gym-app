@@ -34,6 +34,10 @@ def main() -> None:
     with TestClient(app) as client:
         health = client.get("/health")
         assert health.status_code == 200, health.text
+        assert health.headers.get("X-Request-ID"), health.headers
+        assert health.headers.get("Server-Timing"), health.headers
+        ready = client.get("/health/ready")
+        assert ready.status_code == 200, ready.text
         print("health:", health.json())
 
         login = client.post("/api/v1/auth/dev-login", json={"nickname": "小林"})
@@ -94,6 +98,7 @@ def main() -> None:
         )
         workout_finished = workout_started + timedelta(minutes=45)
         workout = {
+            "client_id": "smoke-workout-01",
             "program_day_id": day["id"],
             "started_at": workout_started.isoformat().replace("+00:00", "Z"),
             "finished_at": workout_finished.isoformat().replace("+00:00", "Z"),
@@ -114,6 +119,12 @@ def main() -> None:
         assert response.status_code == 201, response.text
         workout_id = response.json()["id"]
         print("workout:", response.json())
+
+        duplicate = client.post("/api/v1/workouts", json=workout, headers=headers)
+        assert duplicate.status_code == 201, duplicate.text
+        assert duplicate.json()["duplicate"] is True, duplicate.json()
+        assert duplicate.json()["id"] == workout_id, duplicate.json()
+        print("workout idempotency: ok")
 
         workout_update = {
             **workout,
@@ -165,6 +176,22 @@ def main() -> None:
             "sessions,",
             weekly_review["summary"][:40],
         )
+
+        response = client.post(
+            "/api/v1/agent/actions/smoke-action/result",
+            json={
+                "run_id": weekly_review["run_id"],
+                "action_type": "open_screen",
+                "status": "executed",
+                "message": "smoke action",
+            },
+            headers=headers,
+        )
+        assert response.status_code == 200, response.text
+        actions = client.get("/api/v1/agent/actions", headers=headers)
+        assert actions.status_code == 200, actions.text
+        assert actions.json()["items"][0]["action_id"] == "smoke-action", actions.text
+        print("agent action audit: ok")
 
         response = client.get("/api/v1/workouts/summary?weeks=4", headers=headers)
         assert response.status_code == 200, response.text
@@ -228,6 +255,42 @@ def main() -> None:
         assert body["focus_areas"], body
         print("body analysis:", body["summary"][:30], body["focus_areas"])
 
+        now = datetime.now(timezone.utc)
+        for client_id, days_ago, weight in (
+            ("smoke-body-old", 3, 77.0),
+            ("smoke-body-new", 1, 82.0),
+            ("smoke-body-late-old", 2, 79.0),
+        ):
+            response = client.post(
+                "/api/v1/body/metrics",
+                json={
+                    "client_id": client_id,
+                    "measured_at": (now - timedelta(days=days_ago)).isoformat(),
+                    "weight_kg": weight,
+                    "body_fat_pct": 20,
+                    "waist_cm": 80,
+                },
+                headers=headers,
+            )
+            assert response.status_code == 201, response.text
+        me = client.get("/api/v1/me", headers=headers)
+        assert me.status_code == 200, me.text
+        assert me.json()["profile"]["weight_kg"] == 82.0, me.json()
+        response = client.delete(
+            "/api/v1/body/metrics/smoke-body-new", headers=headers
+        )
+        assert response.status_code == 200, response.text
+        me = client.get("/api/v1/me", headers=headers)
+        assert me.json()["profile"]["weight_kg"] == 79.0, me.json()
+        print("body metric ordering: ok")
+
+        response = client.get("/api/v1/me/export", headers=headers)
+        assert response.status_code == 200, response.text
+        export_data = response.json()
+        assert export_data["body_metrics"], export_data
+        assert export_data["profile"]["nickname"] == "小林", export_data
+        print("user export: ok")
+
         response = client.post(
             "/api/v1/diet/analyze",
             files={"file": ("meal.png", PNG, "image/png")},
@@ -263,6 +326,10 @@ def main() -> None:
         assert response.status_code == 200, response.text
         diet = response.json()
         print("diet:", diet["targets"]["target_kcal"], "kcal")
+
+        response = client.post("/api/v1/diet/plan", json={}, headers=headers)
+        assert response.status_code == 200, response.text
+        print("diet idempotent day: ok")
 
         response = client.get("/api/v1/diet/meituan-link")
         assert response.status_code == 501, response.text
@@ -409,6 +476,7 @@ def main() -> None:
         assert response.status_code == 200, response.text
         admin_stats = response.json()
         assert admin_stats["users_total"] >= 1, admin_stats
+        assert admin_stats["meals_total"] >= 1, admin_stats
         print("admin stats:", admin_stats["users_total"], "users,", admin_stats["sessions_total"], "sessions")
 
         ai_overview = client.get("/api/v1/admin/ai/overview?days=30", headers=admin_headers)

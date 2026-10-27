@@ -36,6 +36,7 @@ final class AppStore {
     var pendingWorkoutDeletionIDs: [String] = []
     var isAgentWorking = false
     var agentSessionID: UUID?
+    var agentRunID: String?
     var agentProposal: AgentPlanProposal?
     var agentActions: [AgentAction] = []
     var isExecutingAgentActions = false
@@ -735,11 +736,28 @@ final class AppStore {
                     sessions[index] = merged
                     changed = true
                 }
+            } else if let clientID = item.clientID,
+                      let localID = UUID(uuidString: clientID),
+                      let index = sessions.firstIndex(where: { $0.id == localID }) {
+                // The create response was lost after the server committed.
+                // Match the local client UUID instead of appending a duplicate.
+                guard sessions[index].pendingRemoteUpdate != true else { continue }
+                let localTitle = sessions[index].dayTitle
+                let merged = makeWorkoutSession(
+                    from: item,
+                    dayTitle: planTitle ?? localTitle,
+                    localID: localID
+                )
+                if merged != sessions[index] {
+                    sessions[index] = merged
+                    changed = true
+                }
             } else {
                 sessions.append(
                     makeWorkoutSession(
                         from: item,
-                        dayTitle: planTitle ?? "训练记录"
+                        dayTitle: planTitle ?? "训练记录",
+                        localID: item.clientID.flatMap { UUID(uuidString: $0) } ?? UUID()
                     )
                 )
                 changed = true
@@ -1012,6 +1030,7 @@ final class AppStore {
         planAdjustmentProposal = nil
         planAdjustmentRequested = false
         agentSessionID = nil
+        agentRunID = nil
         agentProposal = nil
         agentActions = []
         isExecutingAgentActions = false
@@ -1086,6 +1105,7 @@ final class AppStore {
         isReplying = true
         agentProposal = nil
         agentActions = []
+        agentRunID = nil
         lastAgentRetryText = nil
         persist()
 
@@ -1116,6 +1136,7 @@ final class AppStore {
                     )
                 }
                 self.agentSessionID = response.sessionID
+                self.agentRunID = response.runID
                 if response.status == "failed" {
                     self.lastAgentRetryText = trimmed
                     self.lastAgentRetrySkill = skill
@@ -1204,6 +1225,7 @@ final class AppStore {
     func executeAgentActions() {
         guard !agentActions.isEmpty, !isExecutingAgentActions else { return }
         let actions = agentActions
+        let runID = agentRunID
         agentActions = []
         isExecutingAgentActions = true
         persist()
@@ -1214,7 +1236,18 @@ final class AppStore {
             }
             var results: [String] = []
             for action in actions {
-                results.append(self.executeAgentAction(action))
+                let message = self.executeAgentAction(action)
+                results.append(message)
+                let status = self.agentActionStatus(for: message)
+                Task {
+                    try? await APIClient.shared.reportAgentAction(
+                        id: action.id,
+                        runID: runID,
+                        type: action.type,
+                        status: status,
+                        message: message
+                    )
+                }
             }
             self.chat.append(
                 ChatMessage(
@@ -1227,8 +1260,32 @@ final class AppStore {
     }
 
     func dismissAgentActions() {
+        let actions = agentActions
+        let runID = agentRunID
         agentActions = []
+        for action in actions {
+            Task {
+                try? await APIClient.shared.reportAgentAction(
+                    id: action.id,
+                    runID: runID,
+                    type: action.type,
+                    status: "rejected",
+                    message: "用户取消"
+                )
+            }
+        }
         persist()
+    }
+
+    private func agentActionStatus(for message: String) -> String {
+        if message.hasPrefix("没有")
+            || message.hasPrefix("暂不支持")
+            || message.contains("失败")
+            || message.contains("为空")
+        {
+            return "failed"
+        }
+        return "executed"
     }
 
     private func executeAgentAction(_ action: AgentAction) -> String {
@@ -1462,6 +1519,7 @@ final class AppStore {
         reminderMinute = 0
         isAgentWorking = false
         agentSessionID = nil
+        agentRunID = nil
         agentProposal = nil
         agentActions = []
         isExecutingAgentActions = false

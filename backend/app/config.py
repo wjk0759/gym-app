@@ -6,6 +6,12 @@ class Settings(BaseSettings):
 
     app_env: str = "dev"
     database_url: str = "sqlite:///./fitai.db"
+    # 连接池/线程池。生产 MySQL 建议按机器规格调大，并在部署层开多个 worker。
+    db_pool_size: int = 20
+    db_max_overflow: int = 20
+    db_pool_timeout: int = 30
+    db_pool_recycle: int = 1800
+    thread_pool_size: int = 64
     # 后台上传的视频/封面。生产环境建议指向独立数据盘，或替换为 OSS/COS + CDN。
     media_root: str = "media"
 
@@ -19,6 +25,9 @@ class Settings(BaseSettings):
     llm_model: str = "deepseek-flash"
     # low | high | max；教练 Agent 默认使用 high，兼顾质量和延迟。
     llm_reasoning_effort: str = "high"
+    # 限制单进程同时打到模型服务的请求数，避免把连接池和上游限流打满。
+    llm_max_concurrency: int = 8
+    llm_timeout_seconds: float = 90.0
 
     vision_model: str = ""
     vision_base_url: str = ""

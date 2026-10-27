@@ -21,27 +21,43 @@ class LLMError(RuntimeError):
 
 # 复用连接池，避免每次对话/计划生成都重新做 TLS 握手。
 _client: httpx.AsyncClient | None = None
+_semaphore: asyncio.Semaphore | None = None
+
+
+def _get_semaphore() -> asyncio.Semaphore:
+    global _semaphore
+    if _semaphore is None:
+        _semaphore = asyncio.Semaphore(max(1, settings.llm_max_concurrency))
+    return _semaphore
 
 
 def _get_client() -> httpx.AsyncClient:
     global _client
     if _client is None:
         _client = httpx.AsyncClient(
-            timeout=httpx.Timeout(90.0, connect=10.0),
+            timeout=httpx.Timeout(settings.llm_timeout_seconds, connect=10.0),
             limits=httpx.Limits(
-                max_connections=40,
-                max_keepalive_connections=20,
+                max_connections=max(20, settings.llm_max_concurrency * 2),
+                max_keepalive_connections=max(10, settings.llm_max_concurrency),
                 keepalive_expiry=30.0,
             ),
         )
     return _client
 
 
+async def _post(payload: dict) -> httpx.Response:
+    async with _get_semaphore():
+        return await _get_client().post(
+            _endpoint(), headers=_headers(), json=payload
+        )
+
+
 async def close_client() -> None:
-    global _client
+    global _client, _semaphore
     if _client is not None:
         await _client.aclose()
         _client = None
+    _semaphore = None
 
 
 def _headers() -> dict[str, str]:
@@ -127,9 +143,7 @@ async def complete_json(system: str, user: str) -> dict:
             "response_format": {"type": "json_object"},
         }
         try:
-            response = await _get_client().post(
-                _endpoint(), headers=_headers(), json=payload
-            )
+            response = await _post(payload)
         except httpx.TransportError as exc:
             last_error = exc
             if attempt == 0:
@@ -142,9 +156,7 @@ async def complete_json(system: str, user: str) -> dict:
             if response.status_code == 400 and "response_format" in payload:
                 payload.pop("response_format", None)
                 try:
-                    response = await _get_client().post(
-                        _endpoint(), headers=_headers(), json=payload
-                    )
+                    response = await _post(payload)
                 except httpx.TransportError as exc:
                     last_error = exc
                     if attempt == 0:
@@ -205,9 +217,7 @@ async def complete_text(messages: list[dict], temperature: float = 0.5) -> str:
     last_error: Exception | None = None
     for attempt in range(2):
         try:
-            response = await _get_client().post(
-                _endpoint(), headers=_headers(), json=payload
-            )
+            response = await _post(payload)
         except httpx.TransportError as exc:
             last_error = exc
             if attempt == 0:

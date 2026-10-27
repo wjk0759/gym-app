@@ -3,28 +3,18 @@ import json
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
 
 from ..deps import CurrentUser, DBSession
 from ..models import ChatMessage, ChatSession, Profile, Program
 from ..schemas import ChatIn
 from ..services.coach import coach_reply
-from ..services.serializers import program_load_options
+from ..services.queries import active_program
 
 router = APIRouter(prefix="/coach", tags=["coach"])
 
 
 def _active_program(db: DBSession, user_id: str) -> Program | None:
-    return (
-        db.execute(
-            select(Program)
-            .options(program_load_options())
-            .where(Program.user_id == user_id, Program.status == "active")
-            .order_by(Program.version.desc())
-        )
-        .scalars()
-        .first()
-    )
+    return active_program(db, user_id)
 
 
 @router.post("/chat")

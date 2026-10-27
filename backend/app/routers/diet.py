@@ -1,7 +1,8 @@
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from ..deps import CurrentUser, DBSession
 from ..models import FoodLog, Goal, MealPlan, Profile
@@ -56,6 +57,18 @@ def _food_log_dict(item: FoodLog) -> dict:
     }
 
 
+def _apply_food_log(item: FoodLog, payload: FoodLogIn) -> None:
+    item.logged_at = payload.logged_at
+    item.meal = payload.meal
+    item.food_name = payload.food_name
+    item.grams = payload.grams
+    item.kcal = payload.kcal
+    item.protein = payload.protein
+    item.carbs = payload.carbs
+    item.fat = payload.fat
+    item.fiber = payload.fiber
+
+
 @router.post("/logs", status_code=201)
 def upsert_food_log(payload: FoodLogIn, user_id: CurrentUser, db: DBSession):
     item = db.execute(
@@ -67,16 +80,19 @@ def upsert_food_log(payload: FoodLogIn, user_id: CurrentUser, db: DBSession):
     if item is None:
         item = FoodLog(user_id=user_id, client_id=payload.client_id)
         db.add(item)
-    item.logged_at = payload.logged_at
-    item.meal = payload.meal
-    item.food_name = payload.food_name
-    item.grams = payload.grams
-    item.kcal = payload.kcal
-    item.protein = payload.protein
-    item.carbs = payload.carbs
-    item.fat = payload.fat
-    item.fiber = payload.fiber
-    db.commit()
+    _apply_food_log(item, payload)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        item = db.execute(
+            select(FoodLog).where(
+                FoodLog.user_id == user_id,
+                FoodLog.client_id == payload.client_id,
+            )
+        ).scalar_one()
+        _apply_food_log(item, payload)
+        db.commit()
     return _food_log_dict(item)
 
 
@@ -97,7 +113,9 @@ def list_food_logs(
     if date_to:
         query = query.where(
             FoodLog.logged_at
-            < datetime.combine(date_to, time.max, tzinfo=timezone.utc)
+            < datetime.combine(
+                date_to + timedelta(days=1), time.min, tzinfo=timezone.utc
+            )
         )
     rows = (
         db.execute(
@@ -155,7 +173,22 @@ def plan(payload: DietPlanIn, user_id: CurrentUser, db: DBSession):
     record.target_carb_g = result["targets"]["carb_g"]
     record.target_fat_g = result["targets"]["fat_g"]
     record.plan = result
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Another device inserted the same user/day concurrently.
+        db.rollback()
+        record = db.execute(
+            select(MealPlan).where(
+                MealPlan.user_id == user_id, MealPlan.plan_date == plan_date
+            )
+        ).scalar_one()
+        record.target_kcal = result["targets"]["target_kcal"]
+        record.target_protein_g = result["targets"]["protein_g"]
+        record.target_carb_g = result["targets"]["carb_g"]
+        record.target_fat_g = result["targets"]["fat_g"]
+        record.plan = result
+        db.commit()
 
     return result
 

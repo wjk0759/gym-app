@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.orm import selectinload
 
 from ..config import settings
@@ -26,10 +26,12 @@ from ..models import (
     MealPlan,
     Profile,
     Program,
+    SetLog,
     User,
     WorkoutSession,
     utcnow,
 )
+from ..services.locking import lock_user
 from ..services.serializers import (
     goal_to_dict,
     load_program,
@@ -162,7 +164,9 @@ def _workout_summary(session: WorkoutSession) -> dict:
     )
     return {
         "id": session.id,
+        "client_id": session.client_id,
         "user_id": session.user_id,
+        "program_day_id": session.program_day_id,
         "started_at": _iso(session.started_at),
         "finished_at": _iso(session.finished_at),
         "duration_min": session.duration_min,
@@ -357,72 +361,81 @@ def stats(actor: AdminAuth, db: DBSession):
     since_30d = now - timedelta(days=30)
     since_14d = now - timedelta(days=14)
 
-    users_total = db.scalar(select(func.count(User.id)).where(User.deleted_at.is_(None))) or 0
-    users_new_7d = (
+    def count_of(model, *conditions):
+        return select(func.count()).select_from(model).where(*conditions).scalar_subquery()
+
+    totals = db.execute(
+        select(
+            count_of(User, User.deleted_at.is_(None)).label("users_total"),
+            count_of(
+                User,
+                User.deleted_at.is_(None),
+                User.created_at >= since_7d,
+            ).label("users_new_7d"),
+            count_of(Profile, Profile.onboarded_at.is_not(None)).label("onboarded"),
+            count_of(WorkoutSession).label("sessions_total"),
+            count_of(
+                WorkoutSession, WorkoutSession.started_at >= since_7d
+            ).label("sessions_7d"),
+            count_of(Program, Program.status == "active").label("programs_active"),
+            count_of(Program).label("programs_total"),
+            count_of(ChatSession).label("chats_total"),
+            count_of(ChatMessage).label("messages_total"),
+            count_of(
+                ChatMessage, ChatMessage.safety_flag.is_not(None)
+            ).label("safety_total"),
+            count_of(EquipmentScan).label("scans_total"),
+            count_of(Exercise).label("exercises_total"),
+            count_of(MealPlan).label("meals_total"),
+            count_of(AIJob, AIJob.status != "ok").label("ai_errors"),
+        )
+    ).one()
+    users_total = int(totals.users_total or 0)
+    users_new_7d = int(totals.users_new_7d or 0)
+    onboarded = int(totals.onboarded or 0)
+    sessions_total = int(totals.sessions_total or 0)
+    sessions_7d = int(totals.sessions_7d or 0)
+    programs_active = int(totals.programs_active or 0)
+    programs_total = int(totals.programs_total or 0)
+    chats_total = int(totals.chats_total or 0)
+    messages_total = int(totals.messages_total or 0)
+    safety_total = int(totals.safety_total or 0)
+    scans_total = int(totals.scans_total or 0)
+    exercises_total = int(totals.exercises_total or 0)
+    meals_total = int(totals.meals_total or 0)
+    ai_errors = int(totals.ai_errors or 0)
+
+    active_7d = (
         db.scalar(
-            select(func.count(User.id)).where(
-                User.deleted_at.is_(None), User.created_at >= since_7d
+            select(func.count()).select_from(
+                select(WorkoutSession.user_id)
+                .where(WorkoutSession.started_at >= since_7d)
+                .union(
+                    select(ChatSession.user_id).where(
+                        ChatSession.created_at >= since_7d
+                    )
+                )
+                .subquery()
             )
         )
         or 0
     )
-    onboarded = (
+
+    active_30d = (
         db.scalar(
-            select(func.count(Profile.user_id)).where(Profile.onboarded_at.is_not(None))
-        )
-        or 0
-    )
-    sessions_total = db.scalar(select(func.count(WorkoutSession.id))) or 0
-    sessions_7d = (
-        db.scalar(
-            select(func.count(WorkoutSession.id)).where(
-                WorkoutSession.started_at >= since_7d
+            select(func.count()).select_from(
+                select(WorkoutSession.user_id)
+                .where(WorkoutSession.started_at >= since_30d)
+                .union(
+                    select(ChatSession.user_id).where(
+                        ChatSession.created_at >= since_30d
+                    )
+                )
+                .subquery()
             )
         )
         or 0
     )
-    programs_active = (
-        db.scalar(select(func.count(Program.id)).where(Program.status == "active")) or 0
-    )
-    programs_total = db.scalar(select(func.count(Program.id))) or 0
-    chats_total = db.scalar(select(func.count(ChatSession.id))) or 0
-    messages_total = db.scalar(select(func.count(ChatMessage.id))) or 0
-    safety_total = (
-        db.scalar(
-            select(func.count(ChatMessage.id)).where(ChatMessage.safety_flag.is_not(None))
-        )
-        or 0
-    )
-    scans_total = db.scalar(select(func.count(EquipmentScan.id))) or 0
-    exercises_total = db.scalar(select(func.count(Exercise.slug))) or 0
-    meals_total = db.scalar(select(func.count(MealPlan.id))) or 0
-    ai_errors = (
-        db.scalar(select(func.count(AIJob.id)).where(AIJob.status != "ok")) or 0
-    )
-
-    workout_users_7d = set(
-        db.execute(
-            select(WorkoutSession.user_id).where(WorkoutSession.started_at >= since_7d)
-        ).scalars()
-    )
-    chat_users_7d = set(
-        db.execute(
-            select(ChatSession.user_id).where(ChatSession.created_at >= since_7d)
-        ).scalars()
-    )
-    active_7d = len(workout_users_7d | chat_users_7d)
-
-    workout_users_30d = set(
-        db.execute(
-            select(WorkoutSession.user_id).where(WorkoutSession.started_at >= since_30d)
-        ).scalars()
-    )
-    chat_users_30d = set(
-        db.execute(
-            select(ChatSession.user_id).where(ChatSession.created_at >= since_30d)
-        ).scalars()
-    )
-    active_30d = len(workout_users_30d | chat_users_30d)
 
     goal_rows = db.execute(
         select(Goal.type, func.count(Goal.id))
@@ -435,8 +448,8 @@ def stats(actor: AdminAuth, db: DBSession):
     ]
 
     equipment_counts: dict[str, int] = {}
-    for profile in db.execute(select(Profile)).scalars():
-        for item in profile.equipment or []:
+    for equipment in db.execute(select(Profile.equipment)).scalars():
+        for item in equipment or []:
             equipment_counts[item] = equipment_counts.get(item, 0) + 1
 
     user_days: dict[str, int] = {}
@@ -693,13 +706,43 @@ def user_detail(user_id: str, actor: AdminAuth, db: DBSession):
         .limit(20)
     ).scalars().all()
 
-    total_volume = sum(
-        sum(
-            (item.weight_kg or 0) * (item.reps or 0)
-            for item in session.sets
-            if item.completed
+    totals = db.execute(
+        select(
+            func.count(func.distinct(WorkoutSession.id)),
+            func.coalesce(func.sum(SetLog.weight_kg * SetLog.reps), 0.0),
         )
-        for session in workouts
+        .select_from(WorkoutSession)
+        .outerjoin(
+            SetLog,
+            and_(
+                SetLog.session_id == WorkoutSession.id,
+                SetLog.completed.is_(True),
+            ),
+        )
+        .where(WorkoutSession.user_id == user_id)
+    ).one()
+    counts = db.execute(
+        select(
+            select(func.count())
+            .select_from(Program)
+            .where(Program.user_id == user_id)
+            .scalar_subquery(),
+            select(func.count())
+            .select_from(ChatSession)
+            .where(ChatSession.user_id == user_id)
+            .scalar_subquery(),
+            select(func.count())
+            .select_from(EquipmentScan)
+            .where(EquipmentScan.user_id == user_id)
+            .scalar_subquery(),
+            select(func.count())
+            .select_from(MealPlan)
+            .where(MealPlan.user_id == user_id)
+            .scalar_subquery(),
+        )
+    ).one()
+    programs_total, chats_total, scans_total, meals_total = (
+        int(value or 0) for value in counts
     )
 
     return {
@@ -721,11 +764,12 @@ def user_detail(user_id: str, actor: AdminAuth, db: DBSession):
         },
         "profile": profile_to_dict(profile) if profile else None,
         "metrics": {
-            "workouts": len(workouts),
-            "volume_kg": round(total_volume, 1),
-            "programs": len(programs),
-            "chats": len(chats),
-            "scans": len(scans),
+            "workouts": int(totals[0] or 0),
+            "volume_kg": round(float(totals[1] or 0), 1),
+            "programs": int(programs_total),
+            "chats": int(chats_total),
+            "scans": int(scans_total),
+            "meals": int(meals_total),
         },
         "goals": [goal_to_dict(goal) for goal in goals],
         "programs": [_program_summary(program) for program in programs],
@@ -876,6 +920,7 @@ def activate_program(program_id: str, actor: AdminAuth, db: DBSession):
     program = db.get(Program, program_id)
     if program is None:
         raise HTTPException(status_code=404, detail="计划不存在")
+    lock_user(db, program.user_id)
     active = db.execute(
         select(Program).where(
             Program.user_id == program.user_id, Program.status == "active"
@@ -1441,30 +1486,52 @@ def ai_overview(
     days: int = Query(default=30, ge=1, le=90),
 ):
     since = utcnow() - timedelta(days=days)
-    jobs = db.execute(
-        select(AIJob).where(AIJob.created_at >= since)
-    ).scalars().all()
-    total = len(jobs)
-    ok = sum(1 for job in jobs if job.status == "ok")
-    fallback = sum(1 for job in jobs if job.status == "fallback")
-    latencies = [job.latency_ms for job in jobs if job.latency_ms is not None]
-    input_tokens = sum(job.input_tokens or 0 for job in jobs)
-    output_tokens = sum(job.output_tokens or 0 for job in jobs)
+    where = (AIJob.created_at >= since,)
+    aggregate = db.execute(
+        select(
+            func.count(AIJob.id),
+            func.coalesce(func.sum(case((AIJob.status == "ok", 1), else_=0)), 0),
+            func.coalesce(func.sum(case((AIJob.status == "fallback", 1), else_=0)), 0),
+            func.coalesce(func.avg(AIJob.latency_ms), 0),
+            func.coalesce(func.sum(AIJob.input_tokens), 0),
+            func.coalesce(func.sum(AIJob.output_tokens), 0),
+        ).where(*where)
+    ).one()
+    total = int(aggregate[0] or 0)
+    ok = int(aggregate[1] or 0)
+    fallback = int(aggregate[2] or 0)
+    latencies_avg = float(aggregate[3] or 0)
+    input_tokens = int(aggregate[4] or 0)
+    output_tokens = int(aggregate[5] or 0)
 
     by_kind: dict[str, dict] = {}
-    for job in jobs:
-        item = by_kind.setdefault(
-            job.kind,
-            {"kind": job.kind, "label": AI_KIND_LABELS.get(job.kind, job.kind), "calls": 0, "errors": 0},
+    for kind, calls, errors in db.execute(
+        select(
+            AIJob.kind,
+            func.count(AIJob.id),
+            func.coalesce(
+                func.sum(case((AIJob.status != "ok", 1), else_=0)), 0
+            ),
         )
-        item["calls"] += 1
-        if job.status != "ok":
-            item["errors"] += 1
+        .where(*where)
+        .group_by(AIJob.kind)
+    ).all():
+        by_kind[kind] = {
+            "kind": kind,
+            "label": AI_KIND_LABELS.get(kind, kind),
+            "calls": int(calls or 0),
+            "errors": int(errors or 0),
+        }
 
-    daily: dict[str, int] = {}
-    for job in jobs:
-        day = job.created_at.date().isoformat()
-        daily[day] = daily.get(day, 0) + 1
+    daily = {
+        (day.isoformat() if hasattr(day, "isoformat") else str(day)): int(calls)
+        for day, calls in db.execute(
+            select(func.date(AIJob.created_at), func.count(AIJob.id))
+            .where(*where)
+            .group_by(func.date(AIJob.created_at))
+            .order_by(func.date(AIJob.created_at))
+        ).all()
+    }
 
     skills = []
     for skill in AI_SKILLS:
@@ -1485,7 +1552,7 @@ def ai_overview(
         "fallback": fallback,
         "errors": total - ok - fallback,
         "success_rate": round(ok / total, 4) if total else 0,
-        "avg_latency_ms": round(sum(latencies) / len(latencies)) if latencies else None,
+        "avg_latency_ms": round(latencies_avg) if total else None,
         "input_tokens": input_tokens,
         "output_tokens": output_tokens,
         "by_kind": sorted(by_kind.values(), key=lambda item: -item["calls"]),

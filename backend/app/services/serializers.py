@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from ..models import Exercise, Goal, PlanExercise, Program, ProgramDay, Profile
+from .locking import lock_user
 
 
 def program_load_options():
@@ -138,6 +139,7 @@ def save_plan(
     generated_by: str,
     model_name: str | None = None,
 ) -> Program:
+    lock_user(db, user_id)
     _archive_active(db, user_id)
     program = Program(
         user_id=user_id,
@@ -184,6 +186,7 @@ def clone_program(
     title_suffix: str = "",
     generated_by: str = "ai",
 ) -> Program:
+    lock_user(db, user_id)
     _archive_active(db, user_id)
     version = _next_version(db, user_id)
     program = Program(

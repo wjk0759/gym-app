@@ -2,13 +2,32 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from ..deps import CurrentUser, DBSession
-from ..models import AuthSession, Goal, Profile, Program, SetLog, User, WorkoutSession, utcnow
+from ..models import (
+    AgentActionEvent,
+    AIMemory,
+    AuthSession,
+    BodyMetric,
+    ChatSession,
+    EquipmentLibraryItem,
+    FoodLog,
+    Goal,
+    MealPlan,
+    Profile,
+    Program,
+    User,
+    WorkoutSession,
+    utcnow,
+)
 from ..schemas import GoalIn, ProfileIn
+from ..services.locking import lock_user
+from ..services.queries import active_goal
 from ..services.serializers import (
     goal_to_dict,
     profile_to_dict,
+    program_load_options,
     serialize_program,
 )
 
@@ -17,9 +36,7 @@ router = APIRouter(prefix="/me", tags=["profile"])
 
 
 def _active_goal(db: DBSession, user_id: str) -> Goal | None:
-    return db.execute(
-        select(Goal).where(Goal.user_id == user_id, Goal.status == "active")
-    ).scalar_one_or_none()
+    return active_goal(db, user_id)
 
 
 @router.get("")
@@ -35,6 +52,7 @@ def get_me(user_id: CurrentUser, db: DBSession):
 
 @router.put("/profile")
 def upsert_profile(payload: ProfileIn, user_id: CurrentUser, db: DBSession):
+    lock_user(db, user_id)
     profile = db.get(Profile, user_id)
     if profile is None:
         profile = Profile(user_id=user_id)
@@ -119,7 +137,19 @@ def upsert_goal(payload: GoalIn, user_id: CurrentUser, db: DBSession):
                 },
             )
 
-    goal = _active_goal(db, user_id)
+    lock_user(db, user_id)
+    active_goals = (
+        db.execute(
+            select(Goal)
+            .where(Goal.user_id == user_id, Goal.status == "active")
+            .order_by(Goal.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+    goal = active_goals[0] if active_goals else None
+    for stale in active_goals[1:]:
+        stale.status = "replaced"
     if goal is None:
         goal = Goal(user_id=user_id, status="active")
         db.add(goal)
@@ -138,22 +168,85 @@ def export_me(user_id: CurrentUser, db: DBSession):
     goal = _active_goal(db, user_id)
 
     programs = (
-        db.execute(select(Program).where(Program.user_id == user_id))
+        db.execute(
+            select(Program)
+            .options(program_load_options())
+            .where(Program.user_id == user_id)
+            .order_by(Program.created_at.desc())
+        )
         .scalars()
         .all()
     )
     sessions = (
         db.execute(
-            select(WorkoutSession).where(WorkoutSession.user_id == user_id)
+            select(WorkoutSession)
+            .options(selectinload(WorkoutSession.sets))
+            .where(WorkoutSession.user_id == user_id)
+            .order_by(WorkoutSession.started_at.desc())
         )
         .scalars()
         .all()
     )
-    set_logs = (
+    body_metrics = (
         db.execute(
-            select(SetLog).where(
-                SetLog.session_id.in_([item.id for item in sessions] or [""])
-            )
+            select(BodyMetric)
+            .where(BodyMetric.user_id == user_id)
+            .order_by(BodyMetric.measured_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+    food_logs = (
+        db.execute(
+            select(FoodLog)
+            .where(FoodLog.user_id == user_id)
+            .order_by(FoodLog.logged_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+    equipment = (
+        db.execute(
+            select(EquipmentLibraryItem)
+            .where(EquipmentLibraryItem.user_id == user_id)
+            .order_by(EquipmentLibraryItem.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+    meal_plans = (
+        db.execute(
+            select(MealPlan)
+            .where(MealPlan.user_id == user_id)
+            .order_by(MealPlan.plan_date.desc())
+        )
+        .scalars()
+        .all()
+    )
+    memories = (
+        db.execute(
+            select(AIMemory)
+            .where(AIMemory.user_id == user_id)
+            .order_by(AIMemory.updated_at.desc(), AIMemory.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+    actions = (
+        db.execute(
+            select(AgentActionEvent)
+            .where(AgentActionEvent.user_id == user_id)
+            .order_by(AgentActionEvent.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+    chats = (
+        db.execute(
+            select(ChatSession)
+            .options(selectinload(ChatSession.messages))
+            .where(ChatSession.user_id == user_id)
+            .order_by(ChatSession.created_at.desc())
         )
         .scalars()
         .all()
@@ -167,6 +260,7 @@ def export_me(user_id: CurrentUser, db: DBSession):
         "workouts": [
             {
                 "id": item.id,
+                "client_id": item.client_id,
                 "started_at": item.started_at.isoformat(),
                 "finished_at": item.finished_at.isoformat() if item.finished_at else None,
                 "duration_min": item.duration_min,
@@ -181,12 +275,105 @@ def export_me(user_id: CurrentUser, db: DBSession):
                         "rpe": log.rpe,
                         "completed": log.completed,
                     }
-                    for log in set_logs
-                    if log.session_id == item.id
+                    for log in item.sets
                 ],
             }
             for item in sessions
         ],
+        "body_metrics": [
+            {
+                "client_id": item.client_id,
+                "measured_at": item.measured_at.isoformat(),
+                "weight_kg": item.weight_kg,
+                "body_fat_pct": item.body_fat_pct,
+                "waist_cm": item.waist_cm,
+                "arm_cm": item.arm_cm,
+                "thigh_cm": item.thigh_cm,
+            }
+            for item in body_metrics
+        ],
+        "food_logs": [
+            {
+                "client_id": item.client_id,
+                "logged_at": item.logged_at.isoformat(),
+                "meal": item.meal,
+                "food_name": item.food_name,
+                "grams": item.grams,
+                "kcal": item.kcal,
+                "protein": item.protein,
+                "carbs": item.carbs,
+                "fat": item.fat,
+                "fiber": item.fiber,
+            }
+            for item in food_logs
+        ],
+        "equipment_library": [
+            {
+                "client_id": item.client_id,
+                "name": item.name,
+                "slug": item.slug,
+                "muscle": item.muscle,
+                "equipment": item.equipment,
+                "notes": item.notes,
+                "created_at": item.created_at.isoformat(),
+            }
+            for item in equipment
+        ],
+        "meal_plans": [
+            {
+                "plan_date": item.plan_date.isoformat(),
+                "target_kcal": item.target_kcal,
+                "target_protein_g": item.target_protein_g,
+                "target_carb_g": item.target_carb_g,
+                "target_fat_g": item.target_fat_g,
+                "plan": item.plan,
+            }
+            for item in meal_plans
+        ],
+        "agent_memories": [
+            {
+                "kind": item.kind,
+                "key": item.memory_key,
+                "content": item.content,
+                "source": item.source,
+                "confidence": item.confidence,
+                "active": item.active,
+                "created_at": item.created_at.isoformat() if item.created_at else None,
+                "updated_at": item.updated_at.isoformat() if item.updated_at else None,
+            }
+            for item in memories
+        ],
+        "agent_actions": [
+            {
+                "action_id": item.action_id,
+                "run_id": item.run_id,
+                "action_type": item.action_type,
+                "status": item.status,
+                "message": item.message,
+                "detail": item.detail or {},
+                "created_at": item.created_at.isoformat() if item.created_at else None,
+            }
+            for item in actions
+        ],
+        "chat_sessions": [
+            {
+                "id": item.id,
+                "title": item.title,
+                "created_at": item.created_at.isoformat(),
+                "messages": [
+                    {
+                        "role": message.role,
+                        "content": message.content,
+                        "citations": message.citations or [],
+                        "safety_flag": message.safety_flag,
+                        "created_at": message.created_at.isoformat(),
+                    }
+                    for message in item.messages
+                ],
+            }
+            for item in chats
+        ],
+        "exported_at": utcnow().isoformat(),
     }
 
 

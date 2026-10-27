@@ -5,6 +5,7 @@ import hashlib
 import hmac
 import html
 import secrets
+import threading
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -20,19 +21,20 @@ from ..config import settings
 from ..models import (
     AuthEvent,
     AuthSession,
-    Goal,
     OAuthTicket,
     Profile,
     SmsCode,
     User,
     utcnow,
 )
+from .queries import active_goal
 from .serializers import goal_to_dict, profile_to_dict
 
 PASSWORD_ALGORITHM = "scrypt"
 PHONE_LENGTH = 11
 _access_rate: dict[str, list[float]] = {}
 _sms_rate: dict[str, list[float]] = {}
+_rate_lock = threading.Lock()
 _apple_jwk_client: jwt.PyJWKClient | None = None
 
 
@@ -117,13 +119,22 @@ def verify_password(password: str, encoded: str | None) -> bool:
 
 def _limit(bucket: dict[str, list[float]], key: str, limit: int, window: int) -> bool:
     now = time.monotonic()
-    values = [value for value in bucket.get(key, []) if now - value < window]
-    if len(values) >= limit:
+    with _rate_lock:
+        values = [value for value in bucket.get(key, []) if now - value < window]
+        if len(values) >= limit:
+            bucket[key] = values
+            return False
+        values.append(now)
         bucket[key] = values
-        return False
-    values.append(now)
-    bucket[key] = values
-    return True
+        if len(bucket) > 10_000:
+            cutoff = now - window
+            for stale_key in [
+                item
+                for item, stamps in bucket.items()
+                if not stamps or stamps[-1] < cutoff
+            ]:
+                bucket.pop(stale_key, None)
+        return True
 
 
 def check_login_limit(identifier: str) -> None:
@@ -233,12 +244,7 @@ def _issue_session(
     _event(db, user.id, "login", method, request_meta=request_meta, detail={"new": is_new_user})
     db.commit()
 
-    goal = db.execute(
-        select(Goal).where(
-            Goal.user_id == user.id,
-            Goal.status == "active",
-        )
-    ).scalar_one_or_none()
+    goal = active_goal(db, user.id)
     return {
         "user_id": user.id,
         "access_token": access_token,
@@ -354,15 +360,10 @@ def send_sms_code(
     phone = normalize_phone(phone)
     if purpose not in {"login", "set_password", "reset_password"}:
         raise HTTPException(status_code=400, detail="验证码用途不正确")
-    now = time.monotonic()
-    recent = _sms_rate.get(f"resend:{phone}:{purpose}", [])
-    recent = [value for value in recent if now - value < 60]
-    _sms_rate[f"resend:{phone}:{purpose}"] = recent
-    if recent:
+    if not _limit(_sms_rate, f"resend:{phone}:{purpose}", 1, 60):
         raise HTTPException(status_code=429, detail="验证码 60 秒内只能发送一次")
     if not _limit(_sms_rate, f"hour:{phone}", 5, 3600):
         raise HTTPException(status_code=429, detail="该手机号验证码发送过于频繁，请稍后再试")
-    recent.append(now)
 
     code = f"{secrets.randbelow(1_000_000):06d}"
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
@@ -417,6 +418,7 @@ def _consume_sms_code(db: Session, phone: str, purpose: str, code: str) -> None:
             SmsCode.used_at.is_(None),
         )
         .order_by(SmsCode.created_at.desc())
+        .with_for_update()
     ).scalars().first()
     if record is None:
         raise HTTPException(status_code=400, detail="请先获取验证码")
@@ -551,7 +553,9 @@ def refresh_session(
     request_meta: dict | None = None,
 ) -> dict:
     row = db.execute(
-        select(AuthSession).where(AuthSession.refresh_token_hash == _refresh_hash(refresh_token))
+        select(AuthSession)
+        .where(AuthSession.refresh_token_hash == _refresh_hash(refresh_token))
+        .with_for_update()
     ).scalar_one_or_none()
     if row is None:
         raise HTTPException(status_code=401, detail="登录已失效，请重新登录")
@@ -593,13 +597,20 @@ def check_access_session(db: Session, payload: dict) -> str:
     user_id = payload.get("sub")
     if not session_id or not user_id:
         raise HTTPException(status_code=401, detail="登录凭证无效")
-    row = db.get(AuthSession, session_id)
-    if row is None or row.revoked_at is not None or row.user_id != user_id:
+    active_user_id = db.execute(
+        select(User.id)
+        .join(AuthSession, AuthSession.user_id == User.id)
+        .where(
+            AuthSession.id == session_id,
+            AuthSession.user_id == user_id,
+            AuthSession.revoked_at.is_(None),
+            User.deleted_at.is_(None),
+            User.status == "active",
+        )
+    ).scalar_one_or_none()
+    if active_user_id is None:
         raise HTTPException(status_code=401, detail="登录已失效，请重新登录")
-    user = db.get(User, user_id)
-    if user is None or user.deleted_at is not None or user.status != "active":
-        raise HTTPException(status_code=403, detail="账号已被停用")
-    return user_id
+    return active_user_id
 
 
 # ---------- OAuth ----------
@@ -872,7 +883,11 @@ def exchange_oauth_ticket(
     ticket_id: str,
     request_meta: dict | None = None,
 ) -> dict:
-    ticket = db.get(OAuthTicket, ticket_id)
+    ticket = db.execute(
+        select(OAuthTicket)
+        .where(OAuthTicket.id == ticket_id)
+        .with_for_update()
+    ).scalar_one_or_none()
     if ticket is None or ticket.used_at is not None:
         raise HTTPException(status_code=400, detail="授权凭证无效或已使用")
     expires = ticket.expires_at

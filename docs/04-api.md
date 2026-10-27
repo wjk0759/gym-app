@@ -288,6 +288,7 @@ AI 复盘并生成新版本：
 
 ```json
 {
+  "client_id": "客户端生成的 UUID，用于重试幂等",
   "program_day_id": "uuid",
   "started_at": "2026-10-25T10:00:00Z",
   "finished_at": "2026-10-25T10:47:00Z",
@@ -299,11 +300,12 @@ AI 复盘并生成新版本：
 }
 ```
 
-返回 201 `{"id": "uuid"}`。客户端离线时先入本地队列，恢复网络后重放；用 `Idempotency-Key` 防重复。
+返回 201 `{"id": "uuid", "client_id": "...", "duration_min": 47, "duplicate": false}`。
+`client_id` 在 `(user_id, client_id)` 上唯一；同一 ID 重放返回原记录并带 `duplicate: true`，不会重复创建。
 
-#### `GET /workouts?from=2026-10-01&to=2026-10-31`
+#### `GET /workouts?from=2026-10-01&to=2026-10-31&limit=20&offset=0`
 
-返回列表（不含每组明细）。
+返回列表（默认不含每组明细，带 `set_count`、`has_more`）。需要每组明细时传 `include_sets=true`。
 
 #### `GET /workouts/{id}`
 
