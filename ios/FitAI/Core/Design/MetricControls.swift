@@ -146,6 +146,59 @@ private struct WheelPickerSheet<Value: Hashable>: View {
     }
 }
 
+/// 统一的滑动分段选择器：选中块用 matchedGeometry 滑动，带触感反馈。
+struct AnimatedSegmentedControl<Item: Hashable>: View {
+    let items: [Item]
+    @Binding var selection: Item
+    let label: (Item) -> String
+
+    @Namespace private var namespace
+
+    var body: some View {
+        HStack(spacing: 3) {
+            ForEach(items, id: \.self) { item in
+                Button {
+                    guard selection != item else { return }
+                    Haptics.select()
+                    withAnimation(Motion.quick) {
+                        selection = item
+                    }
+                } label: {
+                    Text(label(item))
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(selection == item ? Theme.accent : Theme.secondaryText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                        .background {
+                            if selection == item {
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(Theme.accent.opacity(0.16))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                            .stroke(Theme.accent.opacity(0.38), lineWidth: 0.8)
+                                    )
+                                    .matchedGeometryEffect(id: "segment", in: namespace)
+                            }
+                        }
+                }
+                .buttonStyle(SubtlePressStyle(scale: 0.96))
+                .accessibilityAddTraits(selection == item ? .isSelected : [])
+            }
+        }
+        .padding(3)
+        .background(
+            Color.white.opacity(0.035),
+            in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .stroke(Theme.stroke, lineWidth: 0.8)
+        )
+    }
+}
+
 /// Weight remains directly editable because users need arbitrary loads.
 struct WeightInputField: View {
     let title: String

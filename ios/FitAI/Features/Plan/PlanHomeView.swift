@@ -245,7 +245,21 @@ struct PlanHomeView: View {
     // MARK: - 日历
 
     private func calendarCard(plan: TrainingPlan?) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let days = calendarDays
+        let key: (Date) -> Date = { calendar.startOfDay(for: $0) }
+        let sessionsByDay = Dictionary(grouping: store.sessions) { key($0.date) }
+        let foodByDay = Dictionary(grouping: store.foodLogs) { key($0.date) }
+        var planByDay: [Date: PlanDay] = [:]
+        if let plan {
+            for day in plan.days {
+                if let scheduled = plan.scheduledDate(for: day) {
+                    planByDay[key(scheduled)] = day
+                }
+            }
+        }
+        let periodDays = Set(days.filter { store.isPeriodDate($0) }.map(key))
+
+        return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
                 monthButton(systemName: "chevron.left") {
                     shiftMonth(-1)
@@ -292,8 +306,14 @@ struct PlanHomeView: View {
                 columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7),
                 spacing: 4
             ) {
-                ForEach(calendarDays, id: \.self) { date in
-                    calendarCell(date, plan: plan)
+                ForEach(days, id: \.self) { date in
+                    calendarCell(
+                        date,
+                        sessionsByDay: sessionsByDay,
+                        foodByDay: foodByDay,
+                        planByDay: planByDay,
+                        periodDays: periodDays
+                    )
                 }
             }
             .motionAnimation(Motion.smooth, value: visibleMonth)
@@ -339,14 +359,21 @@ struct PlanHomeView: View {
         }
     }
 
-    private func calendarCell(_ date: Date, plan: TrainingPlan?) -> some View {
+    private func calendarCell(
+        _ date: Date,
+        sessionsByDay: [Date: [WorkoutSession]],
+        foodByDay: [Date: [FoodLog]],
+        planByDay: [Date: PlanDay],
+        periodDays: Set<Date>
+    ) -> some View {
+        let key = calendar.startOfDay(for: date)
         let inMonth = calendar.isDate(date, equalTo: visibleMonth, toGranularity: .month)
         let isSelected = calendar.isDate(date, inSameDayAs: selectedDate)
         let isToday = calendar.isDateInToday(date)
-        let hasSession = !sessions(on: date).isEmpty
-        let hasPlan = planDay(on: date, plan: plan) != nil
-        let hasFood = !foodLogs(on: date).isEmpty
-        let hasPeriod = store.isPeriodDate(date)
+        let hasSession = !(sessionsByDay[key]?.isEmpty ?? true)
+        let hasPlan = planByDay[key] != nil
+        let hasFood = !(foodByDay[key]?.isEmpty ?? true)
+        let hasPeriod = periodDays.contains(key)
 
         return Button {
             Haptics.select()

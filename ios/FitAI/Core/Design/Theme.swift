@@ -2,6 +2,10 @@ import SwiftUI
 
 enum Theme {
     static let background = Color(red: 0.035, green: 0.038, blue: 0.047)
+    /// 卡片底色用实色替代实时毛玻璃：观感几乎一致，但省掉每张卡的 backdrop blur。
+    static let cardSurface = Color(red: 0.082, green: 0.086, blue: 0.096)
+    /// 输入栏、悬浮工具条等底部 chrome。
+    static let chrome = Color(red: 0.050, green: 0.054, blue: 0.063)
     static let surface = Color.white.opacity(0.055)
     static let surfaceStrong = Color.white.opacity(0.10)
     static let stroke = Color.white.opacity(0.09)
@@ -43,7 +47,7 @@ struct CardModifier: ViewModifier {
             .padding(padding)
             .background {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(.ultraThinMaterial)
+                    .fill(Theme.cardSurface)
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .fill(
                         LinearGradient(

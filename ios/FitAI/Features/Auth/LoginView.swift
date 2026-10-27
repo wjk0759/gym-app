@@ -52,47 +52,67 @@ struct LoginView: View {
         case social(String)
     }
 
+    private enum Field: Hashable {
+        case phone
+        case code
+        case account
+        case password
+    }
+
+    @FocusState private var focusedField: Field?
+
+    private var isEditing: Bool { focusedField != nil }
+
     private var errorText: String? {
         localError ?? auth.errorMessage
     }
 
     var body: some View {
-        AppScrollView {
-            VStack(alignment: .leading, spacing: 26) {
-                brand
-                    .staggerIn(0)
-                intro
-                    .staggerIn(1)
-                loginCard
-                    .staggerIn(2)
-                VStack(alignment: .leading, spacing: 14) {
-                    socialSection
-                    consentFooter
-                }
-                .staggerIn(3)
+        GeometryReader { proxy in
+            let compact = proxy.size.height < 760
 
-#if DEBUG
-                Button {
-                    Haptics.tap()
-                    showServerSettings = true
-                } label: {
-                    Label("开发服务器：\(AppConfig.apiBaseURLString)", systemImage: "server.rack")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
+            ZStack {
+                AppBackground()
+                authGlow
+                    .allowsHitTesting(false)
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture { focusedField = nil }
+
+                VStack(spacing: 0) {
+                    Spacer(minLength: 8)
+
+                    if !isEditing {
+                        header(compact: compact)
+                            .transition(.opacity.combined(with: .offset(y: -8)))
+                        Spacer(minLength: compact ? 10 : 16)
+                        headline(compact: compact)
+                            .transition(.opacity.combined(with: .offset(y: -8)))
+                        Spacer(minLength: compact ? 10 : 16)
+                    }
+
+                    loginCard(compact: compact)
+
+                    if !isEditing {
+                        Spacer(minLength: compact ? 10 : 14)
+                        socialSection(compact: compact)
+                            .transition(.opacity.combined(with: .offset(y: 8)))
+                        Spacer(minLength: compact ? 8 : 12)
+                        consentFooter
+                            .transition(.opacity.combined(with: .offset(y: 8)))
+                        devServerLink
+                            .padding(.top, 6)
+                    }
+
+                    Spacer(minLength: 8)
                 }
-                .buttonStyle(SubtlePressStyle(scale: 0.98))
-                .staggerIn(4)
-#endif
+                .padding(.horizontal, compact ? 18 : 22)
+                .padding(.bottom, 6)
+                .frame(maxWidth: 480)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .animation(Motion.smooth, value: isEditing)
             }
-            .padding(.horizontal, 22)
-            .padding(.top, 20)
-            .padding(.bottom, 32)
-            .frame(maxWidth: 520, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .center)
         }
-        .scrollIndicators(.hidden)
-        .background(AppBackground())
-        .scrollDismissesKeyboard(.interactively)
         .sheet(item: $legal) { kind in
             LegalDocumentView(kind: kind)
         }
@@ -133,50 +153,80 @@ struct LoginView: View {
             Text("登录需要使用你的账号标识，并可能同步训练资料。请确认已阅读并同意《用户协议》和《隐私政策》。")
         }
         .onChange(of: mode) { _, _ in
+            focusedField = nil
             localError = nil
             auth.clearError()
         }
     }
 
-    private var brand: some View {
+    private var authGlow: some View {
+        RadialGradient(
+            colors: [Theme.accent.opacity(0.14), .clear],
+            center: .top,
+            startRadius: 0,
+            endRadius: 360
+        )
+        .ignoresSafeArea()
+    }
+
+    private func header(compact: Bool) -> some View {
         HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .fill(Theme.accent)
-                    .frame(width: 42, height: 42)
-                Image(systemName: "dumbbell.fill")
-                    .font(.system(size: 19, weight: .bold))
+                RoundedRectangle(cornerRadius: compact ? 13 : 15, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [Theme.accent, Theme.accentDeep],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: compact ? 42 : 48, height: compact ? 42 : 48)
+                    .shadow(color: Theme.accent.opacity(0.40), radius: 18, y: 8)
+                Image(systemName: "figure.strengthtraining.traditional")
+                    .font(.system(size: compact ? 19 : 22, weight: .bold))
                     .foregroundStyle(Color.black)
             }
-            .shadow(color: Theme.accent.opacity(0.16), radius: 14, y: 6)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("练途")
                     .font(.title3.weight(.bold))
                     .foregroundStyle(.white)
                 Text("AI 健身教练")
-                    .font(.caption)
+                    .font(.caption2.weight(.medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
 
             Spacer(minLength: 0)
+
+            if !compact {
+                Text("训练 · 饮食 · 复盘")
+                    .font(.system(size: 9.5, weight: .semibold))
+                    .foregroundStyle(Theme.accent.opacity(0.9))
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5)
+                    .background(Theme.accent.opacity(0.09), in: Capsule())
+                    .overlay(
+                        Capsule()
+                            .stroke(Theme.accent.opacity(0.16), lineWidth: 0.8)
+                    )
+            }
         }
     }
 
-    private var intro: some View {
-        VStack(alignment: .leading, spacing: 7) {
+    private func headline(compact: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
             Text("登录练途")
-                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .font(.system(size: compact ? 27 : 34, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
-            Text("同步训练计划、记录和 AI 复盘。")
-                .font(.subheadline)
+            Text("同步训练计划、记录和 AI 复盘")
+                .font(compact ? .caption : .subheadline)
                 .foregroundStyle(Theme.secondaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var loginCard: some View {
-        VStack(spacing: 18) {
+    private func loginCard(compact: Bool) -> some View {
+        VStack(spacing: compact ? 12 : 14) {
             modeSwitch
 
             Group {
@@ -206,37 +256,40 @@ struct LoginView: View {
             }
 
             Button {
+                focusedField = nil
                 submit()
             } label: {
-                if auth.isWorking {
-                    HStack(spacing: 8) {
+                HStack(spacing: 8) {
+                    if auth.isWorking {
                         ProgressView().tint(.black)
                         Text("正在登录…")
+                    } else {
+                        Text("登录并继续")
+                        Image(systemName: "arrow.right")
+                            .font(.subheadline.weight(.bold))
                     }
-                } else {
-                    Text("登录并继续")
                 }
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(auth.isWorking)
 
             Text(mode == .phone
-                 ? "未注册手机号会自动创建账号并登录"
-                 : "未注册账号会引导你用手机号验证码完成注册")
+                 ? "未注册手机号将自动创建账号"
+                 : "未注册账号会引导完成注册")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
                 .frame(maxWidth: .infinity, alignment: .center)
         }
-        .padding(20)
+        .padding(compact ? 16 : 18)
         .background {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.ultraThinMaterial)
+                .fill(Theme.cardSurface)
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.055),
-                            Color.white.opacity(0.015)
+                            Color.white.opacity(0.05),
+                            Color.white.opacity(0.012)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -245,9 +298,19 @@ struct LoginView: View {
         }
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white.opacity(0.10), lineWidth: 0.8)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.16),
+                            Color.white.opacity(0.03)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.9
+                )
         )
-        .shadow(color: Color.black.opacity(0.22), radius: 20, y: 12)
+        .shadow(color: Color.black.opacity(0.28), radius: 24, y: 14)
         .motionAnimation(Motion.quick, value: mode)
         .motionAnimation(Motion.quick, value: errorText)
     }
@@ -264,16 +327,16 @@ struct LoginView: View {
                 } label: {
                     Text(item.rawValue)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(mode == item ? .white : Theme.secondaryText)
+                        .foregroundStyle(mode == item ? Theme.accent : Theme.secondaryText)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                         .background {
                             if mode == item {
                                 RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                    .fill(Theme.surfaceStrong)
+                                    .fill(Theme.accent.opacity(0.16))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                            .stroke(Color.white.opacity(0.08), lineWidth: 0.8)
+                                            .stroke(Theme.accent.opacity(0.38), lineWidth: 0.8)
                                     )
                                     .matchedGeometryEffect(id: "modePill", in: modeNamespace)
                             }
@@ -301,6 +364,7 @@ struct LoginView: View {
     }
 
     private func fieldShell<Content: View>(
+        focused: Bool,
         @ViewBuilder content: () -> Content
     ) -> some View {
         HStack(spacing: 10) {
@@ -309,13 +373,17 @@ struct LoginView: View {
         .padding(.horizontal, 14)
         .frame(height: 52)
         .background(
-            Theme.surfaceStrong,
+            focused ? Theme.accent.opacity(0.06) : Theme.surfaceStrong,
             in: RoundedRectangle(cornerRadius: 14, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Theme.stroke, lineWidth: 1)
+                .stroke(
+                    focused ? Theme.accent.opacity(0.55) : Theme.stroke,
+                    lineWidth: focused ? 1.2 : 1
+                )
         )
+        .animation(Motion.quick, value: focused)
     }
 
     private var phoneFields: some View {
@@ -323,7 +391,12 @@ struct LoginView: View {
             VStack(alignment: .leading, spacing: 7) {
                 fieldLabel("手机号")
 
-                fieldShell {
+                fieldShell(focused: focusedField == .phone) {
+                    Image(systemName: "iphone")
+                        .font(.subheadline)
+                        .foregroundStyle(focusedField == .phone ? Theme.accent : Theme.tertiaryText)
+                        .frame(width: 18)
+
                     Text("+86")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Theme.secondaryText)
@@ -337,6 +410,7 @@ struct LoginView: View {
                         .foregroundStyle(.white)
                         .keyboardType(.numberPad)
                         .textContentType(.telephoneNumber)
+                        .focused($focusedField, equals: .phone)
                         .onChange(of: phone) { _, newValue in
                             phone = String(newValue.filter(\.isNumber).prefix(11))
                             localError = nil
@@ -347,12 +421,18 @@ struct LoginView: View {
             VStack(alignment: .leading, spacing: 7) {
                 fieldLabel("验证码")
 
-                fieldShell {
+                fieldShell(focused: focusedField == .code) {
+                    Image(systemName: "number")
+                        .font(.subheadline)
+                        .foregroundStyle(focusedField == .code ? Theme.accent : Theme.tertiaryText)
+                        .frame(width: 18)
+
                     TextField("请输入 6 位验证码", text: $code)
                         .font(.subheadline)
                         .foregroundStyle(.white)
                         .keyboardType(.numberPad)
                         .textContentType(.oneTimeCode)
+                        .focused($focusedField, equals: .code)
                         .onChange(of: code) { _, newValue in
                             code = String(newValue.filter(\.isNumber).prefix(6))
                             localError = nil
@@ -400,9 +480,9 @@ struct LoginView: View {
             VStack(alignment: .leading, spacing: 7) {
                 fieldLabel("手机号或用户名")
 
-                fieldShell {
+                fieldShell(focused: focusedField == .account) {
                     Image(systemName: "person")
-                        .foregroundStyle(Theme.tertiaryText)
+                        .foregroundStyle(focusedField == .account ? Theme.accent : Theme.tertiaryText)
                         .frame(width: 18)
 
                     TextField("请输入手机号或用户名", text: $account)
@@ -411,6 +491,7 @@ struct LoginView: View {
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .textContentType(.username)
+                        .focused($focusedField, equals: .account)
                         .onChange(of: account) { _, _ in localError = nil }
                 }
             }
@@ -418,18 +499,20 @@ struct LoginView: View {
             VStack(alignment: .leading, spacing: 7) {
                 fieldLabel("密码")
 
-                fieldShell {
+                fieldShell(focused: focusedField == .password) {
                     Image(systemName: "lock")
-                        .foregroundStyle(Theme.tertiaryText)
+                        .foregroundStyle(focusedField == .password ? Theme.accent : Theme.tertiaryText)
                         .frame(width: 18)
 
                     Group {
                         if showPassword {
                             TextField("请输入密码", text: $password)
                                 .textContentType(.password)
+                                .focused($focusedField, equals: .password)
                         } else {
                             SecureField("请输入密码", text: $password)
                                 .textContentType(.password)
+                                .focused($focusedField, equals: .password)
                         }
                     }
                     .font(.subheadline)
@@ -473,13 +556,31 @@ struct LoginView: View {
     private var consentFooter: some View {
         HStack(alignment: .top, spacing: 7) {
             Button {
-                consent.toggle()
+                Haptics.select()
+                withAnimation(Motion.quick) {
+                    consent.toggle()
+                }
             } label: {
-                Image(systemName: consent ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 15, weight: .regular))
-                    .foregroundStyle(consent ? Theme.accent : Theme.tertiaryText)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .fill(consent ? Theme.accent : Color.clear)
+                        .frame(width: 18, height: 18)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                                .stroke(
+                                    consent ? Theme.accent : Theme.tertiaryText.opacity(0.55),
+                                    lineWidth: 1.2
+                                )
+                        )
+                    if consent {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Color.black)
+                    }
+                }
+                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SubtlePressStyle(scale: 0.9))
             .accessibilityLabel("同意用户协议与隐私政策")
             .accessibilityValue(consent ? "已同意" : "未同意")
 
@@ -512,18 +613,18 @@ struct LoginView: View {
         .padding(.horizontal, 2)
     }
 
-    private var socialSection: some View {
-        VStack(spacing: 14) {
+    private func socialSection(compact: Bool) -> some View {
+        VStack(spacing: compact ? 8 : 10) {
             HStack(spacing: 10) {
                 Rectangle().fill(Theme.stroke).frame(height: 1)
-                Text("或使用以下方式登录")
-                    .font(.caption2)
+                Text("或使用第三方账号")
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
                     .fixedSize()
                 Rectangle().fill(Theme.stroke).frame(height: 1)
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 socialButton(
                     title: "微信登录",
                     icon: "message.fill",
@@ -571,26 +672,34 @@ struct LoginView: View {
                 }
             }
             .signInWithAppleButtonStyle(.white)
-            .frame(height: 50)
+            .frame(height: compact ? 44 : 48)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .disabled(!consent || auth.isWorking)
-            .opacity(consent ? 1 : 0.55)
-
-            if !consent {
-                Text("勾选下方用户协议与隐私政策后可使用 Apple 登录")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
-                    .multilineTextAlignment(.center)
-            }
-
-#if DEBUG
-            Text("微信/QQ 未配置开放平台密钥时，开发环境会打开模拟授权页。")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-#endif
+            .opacity(consent ? 1 : 0.5)
         }
+    }
+
+    private var devServerLink: some View {
+#if DEBUG
+        Button {
+            Haptics.tap()
+            showServerSettings = true
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "server.rack")
+                Text("开发服务器")
+                Text(AppConfig.apiBaseURLString)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            .font(.system(size: 9.5))
+            .foregroundStyle(Theme.tertiaryText.opacity(0.85))
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(SubtlePressStyle(scale: 0.98))
+#else
+        EmptyView()
+#endif
     }
 
     private func socialButton(
@@ -600,6 +709,7 @@ struct LoginView: View {
         provider: String
     ) -> some View {
         Button {
+            Haptics.tap()
             guard consent else {
                 pendingConsentAction = .social(provider)
                 showConsentPrompt = true
@@ -607,29 +717,29 @@ struct LoginView: View {
             }
             performSocialLogin(provider)
         } label: {
-            HStack(spacing: 9) {
+            HStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(color)
-                    .frame(width: 22)
+                    .frame(width: 20)
                 Text(title)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.white)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                Theme.surface,
-                in: RoundedRectangle(cornerRadius: 15, style: .continuous)
+                color.opacity(0.10),
+                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .stroke(Theme.stroke, lineWidth: 1)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(color.opacity(0.24), lineWidth: 0.8)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SubtlePressStyle(scale: 0.97))
         .disabled(auth.isWorking)
     }
 
