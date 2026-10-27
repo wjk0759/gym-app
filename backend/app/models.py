@@ -520,8 +520,16 @@ class AIMemory(Base):
         String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     kind: Mapped[str] = mapped_column(String(30))
+    memory_key: Mapped[str] = mapped_column(String(80), default="general", index=True)
     content: Mapped[str] = mapped_column(Text)
+    source: Mapped[str] = mapped_column(String(40), default="agent")
+    confidence: Mapped[float] = mapped_column(Float, default=1.0)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class MealPlan(Base):

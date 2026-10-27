@@ -55,6 +55,15 @@ _USER_AUTH_COLUMNS = {
     "last_login_at": "TIMESTAMP",
 }
 
+_AI_MEMORY_COLUMNS = {
+    "memory_key": "VARCHAR(80) DEFAULT 'general'",
+    "source": "VARCHAR(40) DEFAULT 'agent'",
+    "confidence": "FLOAT DEFAULT 1.0",
+    "active": "BOOLEAN DEFAULT 1",
+    "updated_at": "TIMESTAMP",
+    "last_used_at": "TIMESTAMP",
+}
+
 # 开发期 SQLite 已有库不会自动补复合索引；启动时按表检测补齐。
 # 这些索引对应列表/统计页的高频过滤与排序条件。
 _PERFORMANCE_INDEXES = (
@@ -146,6 +155,27 @@ def ensure_schema() -> None:
                 "ON users(qq_openid) WHERE qq_openid IS NOT NULL"
             )
         )
+        if "ai_memories" in tables:
+            memory_columns = {
+                column["name"] for column in inspector.get_columns("ai_memories")
+            }
+            for name, ddl in _AI_MEMORY_COLUMNS.items():
+                if name not in memory_columns:
+                    connection.execute(
+                        text(f"ALTER TABLE ai_memories ADD COLUMN {name} {ddl}")
+                    )
+            connection.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_ai_memories_user_active_updated "
+                    "ON ai_memories(user_id, active, updated_at)"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_ai_memories_memory_key "
+                    "ON ai_memories(memory_key)"
+                )
+            )
         for table, ddl in _PERFORMANCE_INDEXES:
             if table in tables:
                 connection.execute(text(ddl))

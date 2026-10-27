@@ -32,6 +32,7 @@ struct SettingsView: View {
     @State private var showPasswordSettings = false
     @State private var showBodyCheckIn = false
     @State private var showDeleteAccount = false
+    @State private var showAgentMemory = false
 
     var body: some View {
         AppScrollView {
@@ -118,6 +119,9 @@ struct SettingsView: View {
         .sheet(isPresented: $showBodyCheckIn) {
             BodyCheckInSheet(manual: true)
                 .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $showAgentMemory) {
+            AgentMemoryView()
         }
     }
 
@@ -634,6 +638,9 @@ struct SettingsView: View {
             }
             infoRow("用户协议", icon: "doc.text") {
                 legalDocument = .terms
+            }
+            infoRow("AI 记忆", icon: "brain.head.profile") {
+                showAgentMemory = true
             }
 
             Button {

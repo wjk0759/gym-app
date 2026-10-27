@@ -162,6 +162,30 @@ struct AgentChatResponse: Decodable {
 struct AgentApplyResponse: Decodable {
     let program: TrainingPlan
 }
+
+struct AgentMemory: Codable, Identifiable, Hashable {
+    let id: String
+    let kind: String
+    let key: String
+    let content: String
+    let source: String
+    let confidence: Double
+    let updatedAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case kind
+        case key
+        case content
+        case source
+        case confidence
+        case updatedAt = "updated_at"
+    }
+}
+
+struct AgentMemoryResponse: Decodable {
+    let items: [AgentMemory]
+}
 private struct TokenRefreshResponse: Decodable {
     let accessToken: String
     let refreshToken: String
@@ -379,6 +403,23 @@ struct APIClient {
             body: nil
         )
         return response.program
+    }
+
+    func agentMemories() async throws -> [AgentMemory] {
+        let response: AgentMemoryResponse = try await send(
+            path: "agent/memories",
+            method: "GET",
+            body: nil
+        )
+        return response.items
+    }
+
+    func deleteAgentMemory(id: String) async throws {
+        try await sendVoid(
+            path: "agent/memories/\(id)",
+            method: "DELETE",
+            body: nil
+        )
     }
 
     // MARK: - 器械识别

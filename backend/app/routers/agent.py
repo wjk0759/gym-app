@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
+
 from ..deps import CurrentUser, DBSession
 from ..models import AgentPlanProposal, ChatMessage, ChatSession
 from ..schemas import AgentChatIn
 from ..services.agent import apply_proposal, run_agent
+from ..services.memory import list_memories
 from ..services.serializers import serialize_program
 
 router = APIRouter(prefix="/agent", tags=["agent"])
@@ -71,6 +73,36 @@ def get_proposal(
         "expires_at": proposal.expires_at.isoformat() if proposal.expires_at else None,
         "created_at": proposal.created_at.isoformat() if proposal.created_at else None,
     }
+
+
+@router.get("/memories")
+def get_memories(user_id: CurrentUser, db: DBSession):
+    return {
+        "items": [
+            {
+                "id": item.id,
+                "kind": item.kind,
+                "key": item.memory_key,
+                "content": item.content,
+                "source": item.source,
+                "confidence": item.confidence,
+                "updated_at": item.updated_at.isoformat() if item.updated_at else None,
+            }
+            for item in list_memories(db, user_id, 50)
+        ]
+    }
+
+
+@router.delete("/memories/{memory_id}")
+def delete_memory(memory_id: str, user_id: CurrentUser, db: DBSession):
+    from ..models import AIMemory
+
+    item = db.get(AIMemory, memory_id)
+    if item is None or item.user_id != user_id:
+        raise HTTPException(status_code=404, detail="记忆不存在")
+    item.active = False
+    db.commit()
+    return {"status": "deleted", "id": item.id}
 
 
 @router.post("/proposals/{proposal_id}/apply")

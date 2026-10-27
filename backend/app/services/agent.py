@@ -18,7 +18,6 @@ from sqlalchemy.orm import Session, selectinload
 
 from ..config import settings
 from ..models import (
-    AIMemory,
     AgentPlanProposal,
     AgentRun,
     AgentStep,
@@ -31,6 +30,7 @@ from ..models import (
 )
 from . import llm
 from .coach import detect_safety
+from .memory import extract_and_store, list_memories, remember_facts
 from .plan_generator import build_template_plan
 from .serializers import (
     goal_to_dict,
@@ -141,27 +141,19 @@ def _active_goal(db: Session, user_id: str) -> Goal | None:
 
 def _context(db: Session, user_id: str) -> dict:
     profile = db.get(Profile, user_id)
+    program = _active_program(db, user_id) if profile is not None else None
+    memories = list_memories(db, user_id, 20)
+    memory_payload = [
+        {"kind": item.kind, "key": item.memory_key, "content": item.content}
+        for item in memories
+    ]
     if profile is None:
-        return {"needs_profile": True}
-    program = _active_program(db, user_id)
-    memories = (
-        db.execute(
-            select(AIMemory)
-            .where(AIMemory.user_id == user_id)
-            .order_by(AIMemory.created_at.desc())
-            .limit(10)
-        )
-        .scalars()
-        .all()
-    )
+        return {"needs_profile": True, "memories": memory_payload}
     return {
         "profile": profile_to_dict(profile),
         "goal": goal_to_dict(_active_goal(db, user_id)),
         "current_plan": _program_summary(program),
-        "memories": [
-            {"kind": item.kind, "content": item.content}
-            for item in memories
-        ],
+        "memories": memory_payload,
     }
 
 
@@ -310,9 +302,19 @@ def _tool_result(
         content = str(arguments.get("content", "")).strip()[:1000]
         if not content:
             return {"ok": False, "error": "memory content is empty"}
-        db.add(AIMemory(user_id=user_id, kind=kind, content=content))
-        db.commit()
-        return {"ok": True, "remembered": {"kind": kind, "content": content}}
+        saved = remember_facts(
+            db,
+            user_id,
+            [{"kind": kind, "content": content, "confidence": 1.0}],
+            source="agent",
+        )
+        return {
+            "ok": True,
+            "remembered": [
+                {"kind": item.kind, "key": item.memory_key, "content": item.content}
+                for item in saved
+            ],
+        }
     if tool == "propose_plan":
         profile = db.get(Profile, user_id)
         if profile is None:
@@ -446,7 +448,7 @@ async def run_agent(
                 "current_date": datetime.now(timezone.utc).date().isoformat(),
                 "history": [
                     {"role": item.role, "content": item.content[:1000]}
-                    for item in (history or [])[-6:]
+                    for item in (history or [])[-10:]
                     if item.role in {"user", "assistant"}
                 ],
                 "observations": observations,
@@ -529,6 +531,14 @@ async def run_agent(
         run.output_text = final_message[:4000]
         run.completed_at = utcnow()
         db.commit()
+        if not settings.use_mock_llm and run.status != "failed" and db.get(Profile, user_id):
+            await extract_and_store(
+                db,
+                user_id,
+                message,
+                final_message,
+                source="agent",
+            )
     except Exception as exc:  # noqa: BLE001 - agent failures must be visible in the run
         db.rollback()
         run = db.get(AgentRun, run.id)

@@ -83,13 +83,22 @@ Agent 的每一步，用于审计和回放。
 
 ### `ai_memories`
 
-复用已有长期记忆表：
+长期记忆表，新增字段：
 
-- `kind=preference`：用户偏好
-- `kind=constraint`：日程/器械/伤病约束
-- `kind=summary`：阶段性训练摘要
+| 字段 | 说明 |
+|---|---|
+| `kind` | `preference` / `constraint` / `schedule` / `equipment` / `injury` / `goal` / `behavior` |
+| `memory_key` | 稳定键，例如 `weekly_schedule`、`travel_equipment` |
+| `content` | 一句精简事实 |
+| `source` | `agent` / `coach` / `manual` |
+| `confidence` | 提炼置信度 |
+| `active` | 软删除标记 |
+| `updated_at` / `last_used_at` | 更新和最近使用时间 |
 
-Agent 的 `remember` 工具只能写入这里，不直接修改用户档案。
+Agent 每次对话后自动提炼最多 3 条稳定事实；同一 `memory_key` 的日程/器械/伤病/目标会更新而不是无限追加。默认保留最近 80 条活跃记忆，上下文读取最近 20 条。
+
+原始对话仍保存在 `chat_messages`，不会丢；但每次提示只带最近 10 条消息和记忆摘要，避免把完整历史塞进上下文。
+
 
 ## 4. 工具
 
@@ -122,9 +131,13 @@ POST /api/v1/agent/chat
 
 POST /api/v1/agent/proposals/{proposal_id}/apply
 GET  /api/v1/agent/proposals/{proposal_id}
+GET  /api/v1/agent/memories
+DELETE /api/v1/agent/memories/{memory_id}
 ```
 
 Agent 回复中的 `proposal` 只包含变更摘要和验证结果；应用接口返回正式计划。
+
+记忆接口只返回当前账号的 `active` 记忆，删除是软删除，账号注销时随用户数据一起清理。
 
 ## 7. 后续演进
 
