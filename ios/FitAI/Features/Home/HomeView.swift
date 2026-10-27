@@ -494,7 +494,9 @@ struct HomeView: View {
                 Text("本周完成")
                     .font(.headline)
                 Spacer()
-                Text("\(store.currentWeekSessions.count)/\(store.profile.weeklyDays) 次")
+                Text(store.currentWeekPlannedCount == 0
+                     ? "本周全休"
+                     : "\(store.currentWeekSessions.count)/\(store.currentWeekPlannedCount) 次")
                     .font(.subheadline)
                     .foregroundStyle(Theme.secondaryText)
             }
@@ -551,7 +553,7 @@ struct HomeView: View {
             }
 
             HStack(spacing: 8) {
-                reviewMetric("本周完成", "\(completed)/\(max(1, store.profile.weeklyDays)) 次")
+                reviewMetric("本周完成", "\(completed)/\(max(1, store.currentWeekPlannedCount)) 次")
                 reviewMetric("平均 RPE", averageRPE > 0 ? averageRPE.formatted(.number.precision(.fractionLength(1))) : "—")
                 reviewMetric("训练容量", "\(Int(store.currentWeekVolume)) kg")
             }

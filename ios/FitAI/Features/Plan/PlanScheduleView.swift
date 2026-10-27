@@ -4,7 +4,9 @@ struct PlanScheduleView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 
-    private let weeks = 4
+    private var weeks: Int {
+        max(4, store.plan?.weeks ?? 4)
+    }
     private let weekLabels = ["一", "二", "三", "四", "五", "六", "日"]
 
     @State private var startDate = FitnessDate.startOfDay(Date())
@@ -41,17 +43,16 @@ struct PlanScheduleView: View {
         }
     }
 
-    private var complete: Bool {
-        counts.allSatisfy { $0 == daysPerWeek }
+    private var canSave: Bool {
+        selectedCount > 0
     }
 
     private var selectedCount: Int {
         counts.reduce(0, +)
     }
 
-    private var targetCount: Int { daysPerWeek * weeks }
-
-    private var remainingCount: Int {
+    /// 比基准每周天数少选的日期，会在保存时标记为跳过。
+    private var skippedCount: Int {
         counts.reduce(0) { $0 + max(0, daysPerWeek - $1) }
     }
 
@@ -66,20 +67,27 @@ struct PlanScheduleView: View {
                             .font(.caption)
                             .foregroundStyle(Theme.warning)
                     }
-                    Text(complete
-                         ? "已选满 \(targetCount) 个训练日"
-                         : "还差 \(remainingCount) 个训练日")
+                    Text(selectedCount == 0
+                         ? "至少选择一个训练日"
+                         : "已选 \(selectedCount) 天 · 每周最多 \(daysPerWeek) 天")
                         .font(.caption)
-                        .foregroundStyle(complete ? Theme.accent : Theme.tertiaryText)
+                        .foregroundStyle(selectedCount == 0 ? Theme.warning : Theme.accent)
+
+                    if skippedCount > 0 {
+                        Text("有 \(skippedCount) 个原训练日会被标记为跳过，不会算作未完成。")
+                            .font(.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
 
                     Button("保存训练日期") {
                         save()
                     }
                     .buttonStyle(PrimaryButtonStyle())
-                    .disabled(!complete)
-                    .opacity(complete ? 1 : 0.45)
+                    .disabled(!canSave)
+                    .opacity(canSave ? 1 : 0.45)
 
-                    Text("临时没空时，请在今日页点「今天没空」顺延单次训练；这里用于重新安排完整 4 周日期。")
+                    Text("每周可以少于基准天数；少选会跳过对应训练。临时没空时，也可以在今日页点「今天没空」只顺延单次训练。")
                         .font(.caption2)
                         .foregroundStyle(Theme.tertiaryText)
                         .fixedSize(horizontal: false, vertical: true)
@@ -106,14 +114,14 @@ struct PlanScheduleView: View {
                 Text("未来 \(weeks) 周")
                     .font(.headline)
                     .foregroundStyle(.white)
-                Text("每周 \(daysPerWeek) 练 · \(store.profile.split.title)")
+                Text("每周最多 \(daysPerWeek) 练 · 可少选 · \(store.profile.split.title)")
                     .font(.caption)
                     .foregroundStyle(Theme.secondaryText)
             }
             Spacer()
-            Text("\(selectedCount)/\(targetCount)")
+            Text("已选 \(selectedCount)")
                 .font(.headline.weight(.bold))
-                .foregroundStyle(complete ? Theme.accent : Theme.warning)
+                .foregroundStyle(selectedCount > 0 ? Theme.accent : Theme.warning)
                 .padding(.horizontal, 11)
                 .padding(.vertical, 7)
                 .background(Theme.surfaceStrong, in: Capsule())
@@ -146,7 +154,7 @@ struct PlanScheduleView: View {
                             .foregroundStyle(Theme.tertiaryText)
                         Text("\(counts[block.id])/\(daysPerWeek)")
                             .font(.system(size: 8, weight: .semibold))
-                            .foregroundStyle(counts[block.id] == daysPerWeek ? Theme.accent : Theme.warning)
+                            .foregroundStyle(counts[block.id] == 0 ? Theme.warning : Theme.accent)
                     }
                     .frame(width: 52, alignment: .leading)
 
@@ -196,22 +204,32 @@ struct PlanScheduleView: View {
         startDate = FitnessDate.startOfDay(Date())
         let offsets = defaultOffsets[daysPerWeek] ?? defaultOffsets[3]!
         for block in blocks {
-            var chosen: [String] = []
-            for day in plan.days {
-                guard let dayDate = plan.scheduledDate(for: day) else { continue }
-                let diff = calendar.dateComponents([.day], from: startDate, to: FitnessDate.startOfDay(dayDate)).day ?? -1
-                if diff >= block.id * 7, diff < (block.id + 1) * 7 {
-                    chosen.append(FitnessDate.key(dayDate))
-                }
+            let blockDays = plan.days.filter { day in
+                guard let dayDate = plan.scheduledDate(for: day) else { return false }
+                let diff = calendar.dateComponents(
+                    [.day],
+                    from: startDate,
+                    to: FitnessDate.startOfDay(dayDate)
+                ).day ?? -1
+                return diff >= block.id * 7 && diff < (block.id + 1) * 7
             }
-            chosen = Array(Set(chosen)).sorted()
+            var chosen = Array(Set(
+                blockDays
+                    .filter { $0.date != nil && $0.skippedAt == nil }
+                    .compactMap { plan.scheduledDate(for: $0) }
+                    .map { FitnessDate.key($0) }
+            )).sorted()
             if chosen.count > daysPerWeek {
                 chosen = Array(chosen.prefix(daysPerWeek))
             }
-            for offset in offsets where chosen.count < daysPerWeek {
-                let key = FitnessDate.key(FitnessDate.addingDays(offset, to: block.start))
-                if !chosen.contains(key) {
-                    chosen.append(key)
+            // 老计划没有具体日期时，才填充默认训练日；已有日期的周不强制补满。
+            let hasExplicitDate = blockDays.contains { $0.date != nil }
+            if chosen.isEmpty && !hasExplicitDate {
+                for offset in offsets where chosen.count < daysPerWeek {
+                    let key = FitnessDate.key(FitnessDate.addingDays(offset, to: block.start))
+                    if !chosen.contains(key) {
+                        chosen.append(key)
+                    }
                 }
             }
             chosen.sorted().forEach { selected.insert($0) }
@@ -234,7 +252,7 @@ struct PlanScheduleView: View {
     }
 
     private func save() {
-        guard complete else { return }
+        guard canSave else { return }
         var selection: [Int: [Date]] = [:]
         for block in blocks {
             let dates = block.dates.filter { selected.contains(FitnessDate.key($0)) }
@@ -243,7 +261,7 @@ struct PlanScheduleView: View {
         if store.applyPlanSchedule(selection) {
             dismiss()
         } else {
-            message = "保存失败，请确认每周选满 \(daysPerWeek) 天"
+            message = "保存失败，请检查所选日期后重试"
         }
     }
 

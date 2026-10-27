@@ -554,7 +554,7 @@ struct CoachChatView: View {
                     .foregroundStyle(Theme.tertiaryText)
             }
 
-            Text("\(store.currentWeekSessions.count)/\(store.profile.weeklyDays) 练 · 完成率 \(Int(store.weeklyCompletion * 100))%")
+            Text("\(store.currentWeekSessions.count)/\(store.currentWeekPlannedCount) 练 · 完成率 \(Int(store.weeklyCompletion * 100))%")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
 

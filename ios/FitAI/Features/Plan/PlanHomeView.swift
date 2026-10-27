@@ -862,7 +862,7 @@ struct PlanHomeView: View {
                     Text(plan.title)
                         .font(.headline)
                         .foregroundStyle(.white)
-                    Text("v\(plan.version) · \(plan.days.count) 个训练日 · 本周完成 \(completed)/\(max(1, store.profile.weeklyDays))")
+                    Text("v\(plan.version) · \(plan.days.count) 个训练日 · 本周完成 \(completed)/\(max(1, store.currentWeekPlannedCount))")
                         .font(.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }

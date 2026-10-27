@@ -232,7 +232,11 @@ extension AppStore {
         guard var current = plan else { return false }
         let target = max(1, min(7, profile.weeklyDays))
         for week in 1...current.weeks {
-            guard let dates = selection[week], dates.count == target else { return false }
+            guard let dates = selection[week],
+                  dates.count <= target,
+                  Set(dates).count == dates.count else {
+                return false
+            }
         }
         for week in 1...current.weeks {
             let indices = current.days.indices
@@ -243,9 +247,16 @@ extension AppStore {
                     return left < right
                 }
             let dates = (selection[week] ?? []).sorted()
-            for (slot, index) in indices.enumerated() where slot < dates.count {
-                current.days[index].date = FitnessDate.startOfDay(dates[slot])
-                current.days[index].weekday = FitnessDate.weekdayNumber(dates[slot])
+            guard dates.count <= indices.count else { return false }
+            for (slot, index) in indices.enumerated() {
+                if slot < dates.count {
+                    current.days[index].date = FitnessDate.startOfDay(dates[slot])
+                    current.days[index].weekday = FitnessDate.weekdayNumber(dates[slot])
+                    current.days[index].skippedAt = nil
+                } else if current.days[index].skippedAt == nil {
+                    // 用户主动少选的天数标记为跳过，不进入今日卡和通知。
+                    current.days[index].skippedAt = Date()
+                }
             }
         }
         current.days.sort {

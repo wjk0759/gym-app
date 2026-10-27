@@ -147,9 +147,15 @@ final class AppStore {
         return sessions.filter { interval.contains($0.date) }
     }
 
+    var currentWeekPlannedCount: Int {
+        guard let plan else { return max(1, profile.weeklyDays) }
+        return plan.weekDays(in: currentPlanWeek).count
+    }
+
     var weeklyCompletion: Double {
-        guard profile.weeklyDays > 0 else { return 0 }
-        return min(1.0, Double(currentWeekSessions.count) / Double(profile.weeklyDays))
+        let planned = currentWeekPlannedCount
+        guard planned > 0 else { return 0 }
+        return min(1.0, Double(currentWeekSessions.count) / Double(planned))
     }
 
     var totalVolume: Double {
