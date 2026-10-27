@@ -212,12 +212,53 @@ struct AgentPlanProposal: Codable, Identifiable, Hashable {
     var proposed: AgentProposalDiff.Proposed? { diff?.proposed }
 }
 
+struct AgentActionPayload: Codable, Hashable {
+    let dayID: String?
+    let date: String?
+    let targetDate: String?
+    let screen: String?
+    let goalType: String?
+    let targetWeightKG: Double?
+    let weeklyDays: Int?
+    let sessionMinutes: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case dayID = "day_id"
+        case date
+        case targetDate = "target_date"
+        case screen
+        case goalType = "goal_type"
+        case targetWeightKG = "target_weight_kg"
+        case weeklyDays = "weekly_days"
+        case sessionMinutes = "session_minutes"
+    }
+}
+
+struct AgentAction: Codable, Identifiable, Hashable {
+    let id: String
+    let type: String
+    let title: String
+    let summary: String
+    let requiresConfirmation: Bool
+    let payload: AgentActionPayload?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case type
+        case title
+        case summary
+        case requiresConfirmation = "requires_confirmation"
+        case payload
+    }
+}
+
 struct AgentChatResponse: Decodable {
     let sessionID: UUID?
     let runID: String
     let status: String
     let reply: String
     let proposal: AgentPlanProposal?
+    let actions: [AgentAction]?
     let elapsedMS: Int?
 
     enum CodingKeys: String, CodingKey {
@@ -226,6 +267,7 @@ struct AgentChatResponse: Decodable {
         case status
         case reply
         case proposal
+        case actions
         case elapsedMS = "elapsed_ms"
     }
 }
@@ -658,10 +700,12 @@ struct APIClient {
 
     func agentChat(
         message: String,
-        sessionID: UUID? = nil
+        sessionID: UUID? = nil,
+        appContext: [String: Any]? = nil
     ) async throws -> AgentChatResponse {
         var payload: [String: Any] = ["message": message]
         if let sessionID { payload["session_id"] = sessionID.uuidString }
+        if let appContext { payload["app_context"] = appContext }
         let body = try JSONSerialization.data(withJSONObject: payload)
         return try await send(path: "agent/chat", method: "POST", body: body)
     }

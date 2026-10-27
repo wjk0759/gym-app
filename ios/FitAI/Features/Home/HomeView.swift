@@ -135,6 +135,7 @@ struct HomeView: View {
                 store.refreshWeeklyReview()
             }
             .onAppear {
+                presentLaunchIfNeeded()
                 guard !didAutoPrompt else { return }
                 didAutoPrompt = true
                 if store.bodyCheckInDue {
@@ -147,6 +148,14 @@ struct HomeView: View {
                     bodyCheckInManual = false
                     showBodyCheckIn = true
                 }
+            }
+            .onChange(of: store.workoutLaunchDayID) { _, dayID in
+                guard let dayID,
+                      let day = store.plan?.days.first(where: { $0.id == dayID }) else {
+                    return
+                }
+                store.workoutLaunchDayID = nil
+                workoutDay = day
             }
         }
     }
@@ -666,5 +675,14 @@ struct HomeView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
             workoutDay = day
         }
+    }
+
+    private func presentLaunchIfNeeded() {
+        guard let dayID = store.workoutLaunchDayID,
+              let day = store.plan?.days.first(where: { $0.id == dayID }) else {
+            return
+        }
+        store.workoutLaunchDayID = nil
+        workoutDay = day
     }
 }

@@ -32,6 +32,7 @@
 | 性能优化与基准 | `docs/10-performance.md` | 完成 |
 | 训练记录深度迭代 | `docs/12-training-log.md` | 完成 |
 | 灵活训练排期 | `docs/26-flexible-plan-scheduling.md` | 完成 |
+| App Action Agent | `docs/27-app-action-agent.md` | 完成 |
 | 器械 Tab：动作选择与识别 | `docs/13-equipment-picker.md` | 完成 |
 | FastAPI 后端骨架 | `backend/` | 可启动，AI 默认 Mock |
 | SwiftUI App 骨架 | `ios/` | 可运行，默认本地 Mock 数据 |
@@ -45,6 +46,7 @@
 - AI 教练对话（DeepSeek V4.1 Flash 远程思考；含疼痛/伤病安全拦截）
 - 训练偏好记忆：删掉的动作会被记住，后续计划尽量避开；复盘会展示本周完成率、RPE、训练容量和具体调整预告
 - 服务端 Agent 周复盘：训练完成后自动更新首页的完成率、强度和下周行动建议，并可通过后台审计工具轨迹
+- App Action Agent：用户说“明天没空/打开计划/开始训练/改目标”，Agent 生成操作卡，确认后在 App 内执行，而不是只给文字建议
 - 体型照片分析：拍照获取训练重点，应用到计划；不做体脂/医疗诊断
 - 饮食照片识别：拍照估算食物、热量与三大营养素，可改份量/勾选后加入今日饮食
 - 饮食记录不限制“健康食物”：内置螺蛳粉、火锅、奶茶等常见外食，也可以手动添加任意食物并复用

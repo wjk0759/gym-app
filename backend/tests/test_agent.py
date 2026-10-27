@@ -1,4 +1,6 @@
-from app.services.agent import _normalize_split, _normalize_weekdays
+import pytest
+
+from app.services.agent import _normalize_app_actions, _normalize_split, _normalize_weekdays
 
 
 def test_weekday_normalization():
@@ -13,3 +15,51 @@ def test_split_aliases():
     assert _normalize_split("全身") == "1分化"
     assert _normalize_split("5分化") == "5分化"
     assert _normalize_split(None) is None
+
+
+def test_app_action_normalization():
+    context = {"plan": {"days": [{"id": "day-1"}]}}
+    actions = _normalize_app_actions(
+        [
+            {
+                "type": "reschedule_training",
+                "title": "顺延拉日",
+                "summary": "保留训练内容",
+                "payload": {"day_id": "day-1", "target_date": "next_free"},
+            },
+            {
+                "type": "open_screen",
+                "title": "打开计划",
+                "payload": {"screen": "plan"},
+            },
+        ],
+        context,
+    )
+    assert len(actions) == 2
+    assert actions[0]["requires_confirmation"] is True
+    assert actions[1]["requires_confirmation"] is False
+    assert actions[0]["id"] != actions[1]["id"]
+
+
+def test_app_action_rejects_unknown_day_or_screen():
+    context = {"plan": {"days": [{"id": "day-1"}]}}
+    with pytest.raises(ValueError):
+        _normalize_app_actions(
+            [{"type": "skip_training", "payload": {"day_id": "not-mine"}}],
+            context,
+        )
+    with pytest.raises(ValueError):
+        _normalize_app_actions(
+            [{"type": "open_screen", "payload": {"screen": "unknown"}}],
+            context,
+        )
+    with pytest.raises(ValueError):
+        _normalize_app_actions(
+            [
+                {
+                    "type": "reschedule_training",
+                    "payload": {"day_id": "day-1", "target_date": "tomorrow"},
+                }
+            ],
+            context,
+        )

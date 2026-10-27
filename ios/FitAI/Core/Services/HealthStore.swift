@@ -363,6 +363,11 @@ extension AppStore {
         return true
     }
 
+    @discardableResult
+    func reschedulePlanDay(_ day: PlanDay, to date: Date) -> Bool {
+        movePlanDay(day.id, to: date)
+    }
+
     private func movePlanDay(_ dayID: UUID, to date: Date) -> Bool {
         guard var current = plan,
               let index = current.days.firstIndex(where: { $0.id == dayID }) else {

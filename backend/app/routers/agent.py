@@ -38,6 +38,7 @@ async def agent_chat(
         payload.message,
         session_id=session.id,
         history=history,
+        app_context=payload.app_context,
     )
 
     session.messages.append(ChatMessage(role="user", content=payload.message))
@@ -50,6 +51,7 @@ async def agent_chat(
         "status": result["status"],
         "reply": result["reply"],
         "proposal": result["proposal"],
+        "actions": result.get("actions", []),
         "elapsed_ms": result["elapsed_ms"],
     }
 

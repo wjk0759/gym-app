@@ -109,10 +109,16 @@ struct CoachChatView: View {
                     } else {
                         adjustmentQuickBar
                     }
-                } else if let proposal = store.agentProposal {
-                    agentProposalCard(proposal)
-                } else if !store.chat.isEmpty {
-                    suggestionBar
+                } else {
+                    if let proposal = store.agentProposal {
+                        agentProposalCard(proposal)
+                    }
+                    if !store.agentActions.isEmpty {
+                        agentActionsCard
+                    }
+                    if store.agentProposal == nil && store.agentActions.isEmpty && !store.chat.isEmpty {
+                        suggestionBar
+                    }
                 }
 
                 inputBar
@@ -280,6 +286,87 @@ struct CoachChatView: View {
         )
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
+    }
+
+    private var agentActionsCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("AGENT 操作")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(Theme.accent)
+                Spacer()
+                Text(store.agentActions.contains(where: { $0.requiresConfirmation }) ? "待确认" : "可执行")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(Theme.warning)
+            }
+
+            ForEach(store.agentActions) { action in
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: agentActionIcon(action.type))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                        .frame(width: 22)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(action.title)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white)
+                        if !action.summary.isEmpty {
+                            Text(action.summary)
+                                .font(.caption)
+                                .foregroundStyle(Theme.secondaryText)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+
+            Text("这些操作只在 FitAI 内执行，不会跨 App，也不涉及付款。")
+                .font(.caption2)
+                .foregroundStyle(Theme.tertiaryText)
+
+            HStack(spacing: 8) {
+                Button {
+                    store.executeAgentActions()
+                } label: {
+                    if store.isExecutingAgentActions {
+                        ProgressView().tint(.black)
+                    } else {
+                        Text("确认并执行")
+                    }
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(store.isExecutingAgentActions)
+
+                Button("忽略") {
+                    store.dismissAgentActions()
+                }
+                .buttonStyle(SecondaryButtonStyle())
+                .disabled(store.isExecutingAgentActions)
+            }
+        }
+        .padding(14)
+        .background(
+            Theme.surface,
+            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Theme.accent.opacity(0.25), lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+
+    private func agentActionIcon(_ type: String) -> String {
+        switch type {
+        case "reschedule_training": return "calendar.badge.clock"
+        case "skip_training": return "forward.end"
+        case "start_training": return "play.circle"
+        case "open_screen": return "rectangle.portrait.and.arrow.right"
+        case "update_goal": return "target"
+        default: return "bolt"
+        }
     }
 
     private func agentProposalCard(_ proposal: AgentPlanProposal) -> some View {

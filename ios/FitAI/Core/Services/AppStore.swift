@@ -37,6 +37,9 @@ final class AppStore {
     var isAgentWorking = false
     var agentSessionID: UUID?
     var agentProposal: AgentPlanProposal?
+    var agentActions: [AgentAction] = []
+    var isExecutingAgentActions = false
+    var workoutLaunchDayID: UUID?
     var weeklyReview: AgentWeeklyReview?
     var isReviewingWeekly = false
     private var reviewRefreshQueued = false
@@ -1007,6 +1010,9 @@ final class AppStore {
         planAdjustmentRequested = false
         agentSessionID = nil
         agentProposal = nil
+        agentActions = []
+        isExecutingAgentActions = false
+        workoutLaunchDayID = nil
         isReplying = false
         persist()
     }
@@ -1068,6 +1074,7 @@ final class AppStore {
         chat.append(ChatMessage(role: .user, text: trimmed))
         isReplying = true
         agentProposal = nil
+        agentActions = []
         persist()
 
         Task { @MainActor in
@@ -1076,11 +1083,13 @@ final class AppStore {
                 self.persist()
             }
             do {
+                let context = self.agentAppContext()
                 let response: AgentChatResponse
                 do {
                     response = try await APIClient.shared.agentChat(
                         message: trimmed,
-                        sessionID: self.agentSessionID
+                        sessionID: self.agentSessionID,
+                        appContext: context
                     )
                 } catch let error as APIError where error.statusCode == 404 {
                     // 后端数据库可能已经清理/切换账号，旧 session 会让请求 404；
@@ -1088,11 +1097,13 @@ final class AppStore {
                     self.agentSessionID = nil
                     response = try await APIClient.shared.agentChat(
                         message: trimmed,
-                        sessionID: nil
+                        sessionID: nil,
+                        appContext: context
                     )
                 }
                 self.agentSessionID = response.sessionID
                 self.agentProposal = response.proposal
+                self.agentActions = response.actions ?? []
                 self.chat.append(
                     ChatMessage(
                         role: .assistant,
@@ -1118,6 +1129,174 @@ final class AppStore {
                 )
             }
         }
+    }
+
+    // MARK: - App Action 执行层
+
+    private func agentAppContext() -> [String: Any] {
+        var context: [String: Any] = [
+            "today": FitnessDate.key(Date()),
+            "selected_tab": selectedTab,
+        ]
+        guard let plan else { return context }
+        let days: [[String: Any]] = plan.days.map { day in
+            let date = plan.scheduledDate(for: day)
+            return [
+                "id": day.id.uuidString,
+                "title": day.title,
+                "date": date.map { FitnessDate.key($0) } ?? "",
+                "week_index": day.weekIndex,
+                "completed": isPlanDayCompleted(day),
+                "skipped": day.skippedAt != nil,
+            ]
+        }
+        context["plan"] = [
+            "id": plan.id.uuidString,
+            "title": plan.title,
+            "weeks": plan.weeks,
+            "weekly_days": plan.weeklyDays ?? profile.weeklyDays,
+            "days": days,
+        ]
+        if let today = todayDay, let date = plan.scheduledDate(for: today) {
+            context["today_day"] = [
+                "id": today.id.uuidString,
+                "title": today.title,
+                "date": FitnessDate.key(date),
+            ]
+        }
+        return context
+    }
+
+    func executeAgentActions() {
+        guard !agentActions.isEmpty, !isExecutingAgentActions else { return }
+        let actions = agentActions
+        agentActions = []
+        isExecutingAgentActions = true
+        persist()
+        Task { @MainActor in
+            defer {
+                self.isExecutingAgentActions = false
+                self.persist()
+            }
+            var results: [String] = []
+            for action in actions {
+                results.append(self.executeAgentAction(action))
+            }
+            self.chat.append(
+                ChatMessage(
+                    role: .assistant,
+                    text: "已为你完成：\n" + results.joined(separator: "\n")
+                )
+            )
+            self.toast = "Agent 操作已执行"
+        }
+    }
+
+    func dismissAgentActions() {
+        agentActions = []
+        persist()
+    }
+
+    private func executeAgentAction(_ action: AgentAction) -> String {
+        switch action.type {
+        case "open_screen":
+            guard let screen = action.payload?.screen else {
+                return "没有指定要打开的页面"
+            }
+            switch screen {
+            case "today": selectedTab = 0
+            case "plan": selectedTab = 1
+            case "coach": selectedTab = 2
+            case "equipment": selectedTab = 3
+            case "profile": selectedTab = 4
+            default: return "暂不支持打开 \(screen)"
+            }
+            return "已打开\(action.title)"
+
+        case "start_training":
+            let day = resolveActionPlanDay(action.payload)
+                ?? todayDay
+                ?? plan?.days
+                    .filter { $0.skippedAt == nil && !isPlanDayCompleted($0) }
+                    .sorted {
+                        (plan?.scheduledDate(for: $0) ?? .distantFuture)
+                            < (plan?.scheduledDate(for: $1) ?? .distantFuture)
+                    }
+                    .first
+            guard let day else { return "没有找到可以开始的训练" }
+            selectedTab = 0
+            workoutLaunchDayID = day.id
+            return "正在打开「\(day.title)」训练"
+
+        case "reschedule_training":
+            guard let day = resolveActionPlanDay(action.payload) else {
+                return "没有找到要改期的训练"
+            }
+            if let targetText = action.payload?.targetDate,
+               targetText != "next_free",
+               let target = FitnessDate.date(from: targetText) {
+                return reschedulePlanDay(day, to: target)
+                    ? "已将「\(day.title)」改到 \(FitnessDate.short(target))"
+                    : "改期失败，目标日期可能已有训练"
+            }
+            return deferPlanDay(day)
+                ? "已将「\(day.title)」顺延到最近空档"
+                : "顺延失败，没有可用空档"
+
+        case "skip_training":
+            guard let day = resolveActionPlanDay(action.payload) else {
+                return "没有找到要跳过的训练"
+            }
+            return skipPlanDay(day)
+                ? "已跳过「\(day.title)」"
+                : "跳过失败"
+
+        case "update_goal":
+            guard let payload = action.payload else { return "目标参数为空" }
+            var updated = profile
+            switch payload.goalType {
+            case "lose_fat": updated.goalType = .loseFat
+            case "build_muscle": updated.goalType = .buildMuscle
+            case "recomp": updated.goalType = .recomp
+            case "endurance": updated.goalType = .endurance
+            default: break
+            }
+            if let weight = payload.targetWeightKG {
+                updated.targetWeightKG = weight
+            }
+            if let days = payload.weeklyDays {
+                updated.weeklyDays = min(7, max(1, days))
+            }
+            if let minutes = payload.sessionMinutes {
+                updated.sessionMinutes = min(180, max(15, minutes))
+            }
+            if let targetText = payload.targetDate,
+               let date = FitnessDate.date(from: targetText) {
+                updated.targetDate = date
+            }
+            updateProfile(updated)
+            return "已更新训练目标"
+
+        default:
+            return "暂不支持操作：\(action.type)"
+        }
+    }
+
+    private func resolveActionPlanDay(_ payload: AgentActionPayload?) -> PlanDay? {
+        guard let plan else { return nil }
+        if let id = payload?.dayID, let uuid = UUID(uuidString: id) {
+            return plan.days.first { $0.id == uuid }
+        }
+        if let value = payload?.date, let date = FitnessDate.date(from: value) {
+            if let matched = plan.day(on: date) {
+                return matched
+            }
+            let key = FitnessDate.key(date)
+            return plan.days.first {
+                plan.scheduledDate(for: $0).map { FitnessDate.key($0) == key } == true
+            }
+        }
+        return nil
     }
 
     func applyAgentProposal() {
@@ -1217,6 +1396,9 @@ final class AppStore {
         isAgentWorking = false
         agentSessionID = nil
         agentProposal = nil
+        agentActions = []
+        isExecutingAgentActions = false
+        workoutLaunchDayID = nil
     }
 
     @discardableResult

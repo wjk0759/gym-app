@@ -25,6 +25,7 @@
           <el-select v-model="filters.intent" clearable placeholder="意图" @change="applyFilters">
             <el-option label="教练对话" value="coach_chat" />
             <el-option label="计划调整" value="plan_change" />
+            <el-option label="App 操作" value="app_action" />
             <el-option label="自动复盘" value="review_week" />
           </el-select>
           <el-input
@@ -229,6 +230,7 @@ function onSize(value: number): void {
 function intentLabel(value: string): string {
   if (value === 'plan_change') return '计划调整'
   if (value === 'coach_chat') return '教练对话'
+  if (value === 'app_action') return 'App 操作'
   if (value === 'review_week') return '自动复盘'
   return value
 }

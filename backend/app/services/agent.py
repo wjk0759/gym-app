@@ -12,6 +12,7 @@ import re
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from uuid import uuid4
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
@@ -44,7 +45,21 @@ from .serializers import (
 
 MAX_STEPS = 7
 PROPOSAL_TTL_MINUTES = 30
-ALLOWED_TOOLS = {"get_context", "get_recent_training", "propose_plan", "remember"}
+ALLOWED_TOOLS = {
+    "get_context",
+    "get_recent_training",
+    "propose_plan",
+    "propose_app_actions",
+    "remember",
+}
+APP_ACTION_TYPES = {
+    "reschedule_training",
+    "skip_training",
+    "start_training",
+    "open_screen",
+    "update_goal",
+}
+APP_SCREENS = {"today", "plan", "coach", "equipment", "profile"}
 
 SPLIT_ALIASES = {
     "1分化": "1分化",
@@ -75,12 +90,13 @@ def _normalize_split(value: Any) -> str | None:
     )
 
 SYSTEM_PROMPT = """你是 FitAI 教练 Agent，不是普通的单轮聊天机器人。
-你可以读取用户状态、读取训练记录、生成计划草案和记录长期偏好，但你不能直接修改最终计划。
+你可以读取用户状态、读取训练记录、生成计划草案、记录长期偏好，并为用户准备 App 内的可执行操作。
 
 你每一步只能输出一个 JSON 对象，不要输出 Markdown：
 {"action":"tool","tool":"get_context","arguments":{}}
 {"action":"tool","tool":"get_recent_training","arguments":{"days":30}}
 {"action":"tool","tool":"propose_plan","arguments":{"weekly_days":3,"weekdays":[2,4,6],"session_minutes":45,"split":"3分化","weeks":4}}
+{"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"reschedule_training","title":"把明天的训练改到周四","summary":"保留原训练内容，只调整日期","requires_confirmation":true,"payload":{"day_id":"本地训练日ID","target_date":"2026-10-29"}}]}}
 {"action":"tool","tool":"remember","arguments":{"kind":"preference","content":"用户出差期间只有哑铃"}}
 {"action":"final","message":"给用户的最终回复"}
 {"action":"ask_user","message":"需要补充的信息"}
@@ -96,6 +112,16 @@ SYSTEM_PROMPT = """你是 FitAI 教练 Agent，不是普通的单轮聊天机器
 8. 给出训练建议前，至少参考 get_context 或 get_recent_training 中的一项真实信息；优先引用用户的当前计划、训练日、器械、伤病或最近完成情况。
 9. 不要用泛泛的“多喝水、坚持训练、循序渐进”凑字数。先给结论，再给 2–3 个具体动作/组数/重量/时间建议，并说明依据。
 10. 如果用户的安排已经发生变化，直接指出哪一天、哪个动作或哪个参数需要改，不要重复整份计划。
+
+App Context 和可执行操作：
+- state.app_context 是 iOS 本地计划日期和当前页面，包含 plan.days（day_id/title/date/completed/skipped）以及 today。
+- 用户要求改期、跳过、开始训练、打开页面或修改目标时，必须调用 propose_app_actions，不要只在 final 里描述。
+- 只能使用这些 action type：reschedule_training、skip_training、start_training、open_screen、update_goal。
+- reschedule_training / skip_training 优先使用 app_context 里存在的 day_id；也可以传 date（YYYY-MM-DD）。改期目标用 target_date；如果用户说“最近空档”，target_date 传 "next_free"。
+- open_screen 的 payload.screen 只能是：today、plan、coach、equipment、profile。
+- update_goal 的 payload 字段可包含 goal_type（lose_fat/build_muscle/recomp/endurance）、target_weight_kg、target_date、weekly_days、session_minutes。
+- 不要声称操作已执行。final 中应说明“已准备好操作，请确认”或“已为你打开”，让 iOS 执行层完成实际动作。
+- 所有写操作必须 requires_confirmation=true；open_screen 可以 false。
 """
 
 
@@ -370,12 +396,107 @@ def _record_step(
     )
 
 
+def _normalize_app_actions(
+    raw_actions: Any, app_context: dict | None = None
+) -> list[dict]:
+    if not isinstance(raw_actions, list) or not raw_actions:
+        raise ValueError("actions must be a non-empty list")
+    if len(raw_actions) > 3:
+        raise ValueError("at most 3 actions are allowed")
+
+    plan_days = []
+    if isinstance(app_context, dict):
+        plan = app_context.get("plan")
+        if isinstance(plan, dict):
+            plan_days = plan.get("days") if isinstance(plan.get("days"), list) else []
+    allowed_day_ids = {
+        str(item.get("id"))
+        for item in plan_days
+        if isinstance(item, dict) and item.get("id")
+    }
+
+    result: list[dict] = []
+    for raw in raw_actions:
+        if not isinstance(raw, dict):
+            continue
+        action_type = str(raw.get("type", "")).strip()
+        if action_type not in APP_ACTION_TYPES:
+            raise ValueError(f"unsupported action type: {action_type}")
+
+        payload = raw.get("payload")
+        payload = payload if isinstance(payload, dict) else {}
+        day_id = str(payload.get("day_id", "")).strip()
+        if day_id and allowed_day_ids and day_id not in allowed_day_ids:
+            raise ValueError("day_id is not present in app_context")
+        date_value = str(payload.get("date", "")).strip()
+        target_date = str(payload.get("target_date", "")).strip()
+
+        def valid_date(value: str) -> bool:
+            if not value:
+                return False
+            try:
+                datetime.strptime(value, "%Y-%m-%d")
+                return True
+            except ValueError:
+                return False
+
+        if action_type in {"reschedule_training", "skip_training"}:
+            if not day_id and not valid_date(date_value):
+                raise ValueError(f"{action_type} requires day_id or date")
+        if action_type == "reschedule_training":
+            if target_date != "next_free" and not valid_date(target_date):
+                raise ValueError("target_date must be YYYY-MM-DD or next_free")
+            payload["target_date"] = target_date
+        if action_type == "open_screen":
+            screen = str(payload.get("screen", "")).strip()
+            if screen not in APP_SCREENS:
+                raise ValueError("unsupported screen")
+            payload["screen"] = screen
+        if action_type == "update_goal":
+            goal_type = str(payload.get("goal_type", "")).strip()
+            if goal_type and goal_type not in {
+                "lose_fat",
+                "build_muscle",
+                "recomp",
+                "endurance",
+            }:
+                raise ValueError("unsupported goal_type")
+            if not any(
+                key in payload
+                for key in (
+                    "goal_type",
+                    "target_weight_kg",
+                    "target_date",
+                    "weekly_days",
+                    "session_minutes",
+                )
+            ):
+                raise ValueError("update_goal requires at least one field")
+
+        title = str(raw.get("title") or action_type).strip()[:120]
+        summary = str(raw.get("summary") or "").strip()[:500]
+        result.append(
+            {
+                "id": str(uuid4()),
+                "type": action_type,
+                "title": title,
+                "summary": summary,
+                "requires_confirmation": action_type != "open_screen",
+                "payload": _safe_json(payload),
+            }
+        )
+    if not result:
+        raise ValueError("no valid actions")
+    return result
+
+
 def _tool_result(
     db: Session,
     run: AgentRun,
     user_id: str,
     tool: str,
     arguments: dict,
+    app_context: dict | None = None,
 ) -> dict:
     if tool == "get_context":
         return {"ok": True, "context": _context(db, user_id)}
@@ -471,6 +592,12 @@ def _tool_result(
         db.add(proposal)
         db.commit()
         return {"ok": True, "proposal": _serialize_proposal(proposal)}
+    if tool == "propose_app_actions":
+        try:
+            actions = _normalize_app_actions(arguments.get("actions"), app_context)
+        except ValueError as exc:
+            return {"ok": False, "error": str(exc)}
+        return {"ok": True, "actions": actions}
     return {"ok": False, "error": f"unknown tool: {tool}"}
 
 
@@ -679,11 +806,20 @@ async def run_agent(
     *,
     session_id: str | None = None,
     history: list[ChatMessage] | None = None,
+    app_context: dict | None = None,
 ) -> dict:
+    action_words = ("改到", "顺延", "跳过", "打开", "开始训练", "取消训练", "改目标")
+    intent = (
+        "app_action"
+        if any(word in message for word in action_words)
+        else "plan_change"
+        if any(word in message for word in ("计划", "安排", "每周", "训练日", "频率"))
+        else "coach_chat"
+    )
     run = AgentRun(
         user_id=user_id,
         session_id=session_id,
-        intent="plan_change" if any(word in message for word in ("计划", "安排", "每周", "训练日", "频率")) else "coach_chat",
+        intent=intent,
         status="running",
         model=settings.llm_model,
         input_text=message[:4000],
@@ -694,6 +830,7 @@ async def run_agent(
     observations: list[dict] = []
     final_message: str | None = None
     proposal: AgentPlanProposal | None = None
+    actions: list[dict] = []
     error: str | None = None
     started = time.perf_counter()
 
@@ -709,6 +846,7 @@ async def run_agent(
             "status": run.status,
             "reply": final_message,
             "proposal": None,
+            "actions": [],
             "elapsed_ms": int((time.perf_counter() - started) * 1000),
         }
 
@@ -726,6 +864,7 @@ async def run_agent(
                     for item in (history or [])[-10:]
                     if item.role in {"user", "assistant"}
                 ],
+                "app_context": _safe_json(app_context or {}),
                 "observations": observations,
                 "allowed_tools": sorted(ALLOWED_TOOLS),
                 "max_steps": MAX_STEPS,
@@ -750,7 +889,9 @@ async def run_agent(
                     arguments = raw.get("arguments") if isinstance(raw.get("arguments"), dict) else {}
                     tool_started = time.perf_counter()
                     try:
-                        result = _tool_result(db, run, user_id, tool, arguments)
+                        result = _tool_result(
+                            db, run, user_id, tool, arguments, app_context
+                        )
                         status = "ok" if result.get("ok", True) else "error"
                         tool_error = None if status == "ok" else str(result.get("error", ""))[:500]
                     except Exception as exc:  # noqa: BLE001 - tool failures return to model
@@ -775,6 +916,8 @@ async def run_agent(
                             AgentPlanProposal,
                             result["proposal"].get("id"),
                         )
+                    if isinstance(result.get("actions"), list):
+                        actions = result["actions"]
                     continue
                 if action in {"final", "ask_user"}:
                     final_message = str(raw.get("message", "")).strip()
@@ -799,7 +942,9 @@ async def run_agent(
                 .scalars()
                 .first()
             )
-        if proposal is not None and run.status == "running":
+        if proposal is not None or any(
+            item.get("requires_confirmation") for item in actions
+        ):
             run.status = "needs_confirmation"
         elif run.status == "running":
             run.status = "completed"
@@ -831,6 +976,7 @@ async def run_agent(
         "status": run.status,
         "reply": final_message or "",
         "proposal": _serialize_proposal(proposal) if proposal else None,
+        "actions": actions,
         "elapsed_ms": int((time.perf_counter() - started) * 1000),
     }
 

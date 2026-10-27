@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from datetime import date as dt_date
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -153,6 +153,8 @@ class ChatIn(BaseModel):
 class AgentChatIn(BaseModel):
     session_id: str | None = None
     message: str = Field(min_length=1, max_length=4000)
+    # iOS 本地计划日期、当前页面等；Agent 只读，不能凭此直接写服务端。
+    app_context: dict[str, Any] | None = None
 
 
 class DietPlanIn(BaseModel):
