@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 
 from ..deps import CurrentUser, DBSession
-from ..models import Goal, Profile, Program, SetLog, User, WorkoutSession, utcnow
+from ..models import AuthSession, Goal, Profile, Program, SetLog, User, WorkoutSession, utcnow
 from ..schemas import GoalIn, ProfileIn
 from ..services.serializers import (
     goal_to_dict,
@@ -195,6 +195,15 @@ def delete_me(user_id: CurrentUser, db: DBSession):
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="用户不存在")
-    user.deleted_at = utcnow()
+    now = utcnow()
+    user.deleted_at = now
+    user.status = "pending_deletion"
+    for session in db.execute(
+        select(AuthSession).where(
+            AuthSession.user_id == user_id,
+            AuthSession.revoked_at.is_(None),
+        )
+    ).scalars():
+        session.revoked_at = now
     db.commit()
     return {"status": "pending_deletion", "cooling_off_days": 15}

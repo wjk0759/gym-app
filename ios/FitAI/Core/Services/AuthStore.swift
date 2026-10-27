@@ -162,6 +162,27 @@ final class AuthStore {
         apply(response)
     }
 
+    // MARK: - Sign in with Apple
+
+    func loginWithApple(identityToken: String, fullName: String?) async throws {
+        isWorking = true
+        defer { isWorking = false }
+        errorMessage = nil
+        var body: [String: Any] = [
+            "identity_token": identityToken,
+            "device_name": deviceName,
+            "agreed_terms": true
+        ]
+        if let fullName, !fullName.isEmpty {
+            body["full_name"] = fullName
+        }
+        let response: AuthResponse = try await request(
+            "/auth/apple/login",
+            body: body
+        )
+        apply(response)
+    }
+
     // MARK: - 静默续期与退出
 
     @discardableResult
@@ -191,6 +212,21 @@ final class AuthStore {
                 token: token
             )
         }
+        clearSession()
+    }
+
+    func deleteAccount() async throws {
+        guard let token = AuthTokenStore.shared.accessToken else {
+            throw AuthError(message: "请先登录")
+        }
+        isWorking = true
+        defer { isWorking = false }
+        errorMessage = nil
+        let _: EmptyResponse = try await request(
+            "/me",
+            method: "DELETE",
+            token: token
+        )
         clearSession()
     }
 

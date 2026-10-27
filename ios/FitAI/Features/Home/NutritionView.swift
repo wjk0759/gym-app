@@ -38,6 +38,7 @@ struct NutritionView: View {
             total.protein += log.protein
             total.carbs += log.carbs
             total.fat += log.fat
+            total.fiber += log.fiber ?? 0
         }
     }
 
@@ -195,6 +196,7 @@ struct NutritionView: View {
                 macro("蛋白质", "\(Int(dayNutrition.protein)) / \(targets.protein)g", color: Theme.accent)
                 macro("碳水", "\(Int(dayNutrition.carbs)) / \(targets.carbs)g", color: Theme.warning)
                 macro("脂肪", "\(Int(dayNutrition.fat)) / \(targets.fat)g", color: Color(red: 0.55, green: 0.70, blue: 0.98))
+                macro("膳食纤维", "\(Int(dayNutrition.fiber)) / \(targets.fiber)g", color: Theme.blue)
             }
 
             Text("BMR \(targets.bmr) kcal · 维持热量约 \(targets.tdee) kcal")
@@ -615,7 +617,8 @@ struct AddFoodView: View {
                 kcal: food.kcal * factor,
                 protein: food.protein * factor,
                 carbs: food.carbs * factor,
-                fat: food.fat * factor
+                fat: food.fat * factor,
+                fiber: food.fiberPer100g * factor
             )
         )
         dismiss()

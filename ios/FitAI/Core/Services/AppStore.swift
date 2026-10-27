@@ -29,6 +29,7 @@ final class AppStore {
     var useEquipmentLibraryForPlans = true
     var isGenerating = false
     var isReplying = false
+    var isSyncingWorkouts = false
     var toast: String?
     var reminderHour = 19
     var reminderMinute = 0
@@ -152,6 +153,7 @@ final class AppStore {
             total.protein += log.protein
             total.carbs += log.carbs
             total.fat += log.fat
+            total.fiber += log.fiber ?? 0
         }
     }
 
@@ -274,7 +276,8 @@ final class AppStore {
                     _ = try? await goalSync
                     var generated = try await APIClient.shared.generatePlan(
                         force: force,
-                        equipmentSlugs: librarySlugs
+                        equipmentSlugs: librarySlugs,
+                        split: snapshot.split
                     )
                     generated.version = max(generated.version, (self.plan?.version ?? 0) + 1)
                     self.archiveCurrentPlan()
@@ -528,6 +531,7 @@ final class AppStore {
         )
         sessions.insert(session, at: 0)
         persist()
+        syncPendingWorkouts()
 
         if healthKitEnabled {
             let end = Date()
@@ -544,6 +548,7 @@ final class AppStore {
     func addSession(_ session: WorkoutSession) {
         sessions.insert(session, at: 0)
         persist()
+        syncPendingWorkouts()
     }
 
     func updateSession(_ session: WorkoutSession) {
@@ -552,6 +557,30 @@ final class AppStore {
         }
         sessions[index] = session
         persist()
+    }
+
+    /// 将本地训练记录补传到 FastAPI；失败时保持 pending，下次登录或完成训练再试。
+    func syncPendingWorkouts() {
+        guard !isSyncingWorkouts,
+              AuthTokenStore.shared.accessToken != nil else { return }
+        let pending = sessions.filter { $0.syncedAt == nil }
+        guard !pending.isEmpty else { return }
+        isSyncingWorkouts = true
+        Task { @MainActor in
+            defer { self.isSyncingWorkouts = false }
+            for session in pending {
+                do {
+                    let remoteID = try await APIClient.shared.createWorkout(session)
+                    if let index = self.sessions.firstIndex(where: { $0.id == session.id }) {
+                        self.sessions[index].remoteID = remoteID
+                        self.sessions[index].syncedAt = Date()
+                    }
+                } catch {
+                    // 网络或服务端暂时不可用时保留待同步状态，不阻塞本地训练闭环。
+                }
+            }
+            self.persist()
+        }
     }
 
     func deleteSession(_ id: UUID) {

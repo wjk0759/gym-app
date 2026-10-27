@@ -31,6 +31,7 @@ struct RootView: View {
             store.switchUser(auth.userID)
             if auth.isAuthenticated {
                 enableRemoteMode()
+                store.syncPendingWorkouts()
             }
         }
         .onChange(of: subscriptions.isPro) { _, isPro in
@@ -40,17 +41,21 @@ struct RootView: View {
             store.switchUser(auth.userID)
             if isAuthenticated {
                 enableRemoteMode()
+                store.syncPendingWorkouts()
             }
         }
         .onChange(of: auth.userID) { _, userID in
             store.switchUser(userID)
             if auth.isAuthenticated {
                 enableRemoteMode()
+                store.syncPendingWorkouts()
             }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active {
                 store.flushPersistence()
+            } else if auth.isAuthenticated {
+                store.syncPendingWorkouts()
             }
         }
     }

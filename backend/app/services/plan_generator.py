@@ -89,6 +89,23 @@ SPLITS: dict[int, list[tuple[str, list[str]]]] = {
     ],
 }
 
+# 用户显式选择的训练分化优先于按每周天数推断的模板。
+SPLIT_TEMPLATES: dict[str, list[tuple[str, list[str]]]] = {
+    "1分化": [
+        ("全身 A", FULL_BODY),
+        ("全身 B", ["legs", "back", "chest", "core"]),
+        ("全身 C", ["glutes", "chest", "arms", "core"]),
+    ],
+    "3分化": [("推", PUSH), ("拉", PULL), ("腿", LEGS)],
+    "5分化": [
+        ("胸", ["chest", "chest", "arms", "core"]),
+        ("背", ["back", "back", "arms", "core"]),
+        ("腿", LEGS),
+        ("肩", ["shoulders", "shoulders", "core"]),
+        ("手臂", ["arms", "arms", "shoulders"]),
+    ],
+}
+
 
 def _session_exercise_count(minutes: int) -> int:
     if minutes <= 30:
@@ -233,16 +250,17 @@ def fallback_plan(
     goal_type: str,
     available: list[Exercise],
     weeks: int = 4,
+    split: str | None = None,
 ) -> dict:
     weekly_days = max(1, min(7, int(profile.weekly_days or 3)))
     weekdays = DEFAULT_WEEKDAYS[weekly_days]
-    split = SPLITS[weekly_days]
+    templates = SPLIT_TEMPLATES.get(split or "", SPLITS[weekly_days])
     count = min(_session_exercise_count(profile.session_minutes or 45), 6)
 
     days = []
     for week_index in range(1, weeks + 1):
         for index, weekday in enumerate(weekdays):
-            title, focus = split[index % len(split)]
+            title, focus = templates[index % len(templates)]
             picks = _pick_for_day(available, focus, count)
             if not picks:
                 continue
@@ -259,8 +277,9 @@ def fallback_plan(
             )
 
     label = GOAL_LABELS.get(goal_type, "训练")
+    split_label = f" · {split}" if split in SPLIT_TEMPLATES else ""
     return {
-        "title": f"{weeks} 周{label}计划 · 每周 {weekly_days} 练",
+        "title": f"{weeks} 周{label}计划{split_label} · 每周 {weekly_days} 练",
         "weeks": weeks,
         "days": days,
     }
@@ -279,6 +298,7 @@ def _user_prompt(
     available: list[Exercise],
     weeks: int,
     equipment_slugs: list[str] | None = None,
+    split: str | None = None,
 ) -> str:
     candidates = [
         {
@@ -303,6 +323,7 @@ def _user_prompt(
             "session_minutes": profile.session_minutes,
             "goal_type": goal_type,
             "goal": goal,
+            "split": split,
             "equipment_library_slugs": equipment_slugs or [],
         },
         "weeks": weeks,
@@ -324,6 +345,7 @@ async def generate_plan(
     goal: Any = None,
     weeks: int = 4,
     equipment_slugs: list[str] | None = None,
+    split: str | None = None,
 ) -> dict:
     available = _allowed_exercises(
         db, profile.equipment, profile.injuries, equipment_slugs
@@ -347,6 +369,7 @@ async def generate_plan(
                     available,
                     weeks,
                     equipment_slugs,
+                    split,
                 ),
             )
             cleaned, warnings = validate_plan(
@@ -386,7 +409,7 @@ async def generate_plan(
                 error=error,
             )
 
-    raw = fallback_plan(profile, goal_type, available, weeks=weeks)
+    raw = fallback_plan(profile, goal_type, available, weeks=weeks, split=split)
     cleaned, fallback_warnings = validate_plan(
         raw,
         exercises=by_slug,

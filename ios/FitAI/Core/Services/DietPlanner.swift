@@ -7,6 +7,7 @@ struct NutritionTargets {
     let protein: Int
     let carbs: Int
     let fat: Int
+    let fiber: Int
 }
 
 struct MealSuggestion: Identifiable {
@@ -63,7 +64,8 @@ enum DietPlanner {
             kcal: Int(kcal.rounded()),
             protein: Int(protein.rounded()),
             carbs: Int(carbs.rounded()),
-            fat: Int(fat.rounded())
+            fat: Int(fat.rounded()),
+            fiber: max(25, Int((kcal / 1000 * 14).rounded()))
         )
     }
 

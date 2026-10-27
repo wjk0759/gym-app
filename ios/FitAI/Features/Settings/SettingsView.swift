@@ -31,6 +31,7 @@ struct SettingsView: View {
     @State private var showExport = false
     @State private var showPasswordSettings = false
     @State private var showBodyCheckIn = false
+    @State private var showDeleteAccount = false
 
     var body: some View {
         AppScrollView {
@@ -84,6 +85,26 @@ struct SettingsView: View {
             Button("取消", role: .cancel) {}
         } message: {
             Text("退出后本机训练数据会保留，下次登录可继续使用。")
+        }
+        .confirmationDialog(
+            "注销账号？",
+            isPresented: $showDeleteAccount,
+            titleVisibility: .visible
+        ) {
+            Button("申请注销账号", role: .destructive) {
+                Task {
+                    do {
+                        try await auth.deleteAccount()
+                        store.resetAll()
+                    } catch {
+                        message = "注销失败：\(error.localizedDescription)"
+                        showMessage = true
+                    }
+                }
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("账号会进入 15 天冷静期，期间可联系客服恢复；冷静期结束后删除账号及云端数据。本机数据会立即清除。")
         }
         .sheet(isPresented: $showExport) {
             DataExportView()
@@ -166,6 +187,19 @@ struct SettingsView: View {
                 .foregroundStyle(Theme.tertiaryText)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
+
+            Divider().overlay(Theme.stroke)
+
+            Button {
+                showDeleteAccount = true
+            } label: {
+                Text("注销账号")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.danger)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 9)
+            }
+            .buttonStyle(.plain)
         }
         .card()
     }

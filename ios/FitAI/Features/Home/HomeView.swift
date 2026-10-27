@@ -318,6 +318,7 @@ struct HomeView: View {
                     nutritionMetric("蛋白", consumed.protein, targets.protein)
                     nutritionMetric("碳水", consumed.carbs, targets.carbs)
                     nutritionMetric("脂肪", consumed.fat, targets.fat)
+                    nutritionMetric("纤维", consumed.fiber, targets.fiber)
                 }
 
                 HStack {

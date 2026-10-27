@@ -410,6 +410,9 @@ struct WorkoutSession: Codable, Identifiable, Hashable {
     var feeling: Int
     var notes: String? = nil
     var sets: [SetLog]
+    /// 已同步到服务端的远端记录 ID；旧本地记录为空。
+    var remoteID: String? = nil
+    var syncedAt: Date? = nil
 
     var volume: Double {
         sets.filter(\.completed).reduce(0) { partial, item in
@@ -552,6 +555,8 @@ struct FoodLog: Codable, Identifiable, Hashable {
     var protein: Double
     var carbs: Double
     var fat: Double
+    /// 旧数据没有该字段；0 表示未记录，不阻塞解码。
+    var fiber: Double? = nil
 }
 
 struct NutritionTotals {
@@ -559,6 +564,7 @@ struct NutritionTotals {
     var protein: Double = 0
     var carbs: Double = 0
     var fat: Double = 0
+    var fiber: Double = 0
 }
 
 /// 饮食照片识别出的单个食物。营养值按每 100g 保存，修改克数后可实时重算。
@@ -570,6 +576,7 @@ struct FoodRecognitionItem: Identifiable, Hashable {
     var proteinPer100g: Double
     var carbsPer100g: Double
     var fatPer100g: Double
+    var fiberPer100g: Double? = nil
     var confidence: Double
     var selected: Bool = true
 
@@ -577,6 +584,7 @@ struct FoodRecognitionItem: Identifiable, Hashable {
     var protein: Double { proteinPer100g * grams / 100 }
     var carbs: Double { carbsPer100g * grams / 100 }
     var fat: Double { fatPer100g * grams / 100 }
+    var fiber: Double { (fiberPer100g ?? max(0, carbsPer100g * 0.05)) * grams / 100 }
 }
 
 struct FoodRecognitionResult: Hashable {

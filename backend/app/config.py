@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     access_token_minutes: int = 30
     refresh_token_days: int = 30
 
+    # Sign in with Apple 的 audience 通常是 App Bundle ID（或 Service ID）。
+    apple_client_id: str = "com.fitai.app"
+
     # 短信：dev 返回开发验证码；webhook 把验证码 POST 给自定义短信网关。
     sms_provider: str = "dev"
     sms_webhook_url: str = ""

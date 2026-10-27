@@ -33,6 +33,7 @@ PASSWORD_ALGORITHM = "scrypt"
 PHONE_LENGTH = 11
 _access_rate: dict[str, list[float]] = {}
 _sms_rate: dict[str, list[float]] = {}
+_apple_jwk_client: jwt.PyJWKClient | None = None
 
 
 def jwt_secret() -> str:
@@ -408,6 +409,63 @@ def login_with_phone(
         db.flush()
         is_new = True
     return _issue_session(db, user, "phone_code", request_meta, is_new, f"用户{phone[-4:]}")
+
+
+def login_with_apple(
+    db: Session,
+    identity_token: str,
+    full_name: str | None = None,
+    request_meta: dict | None = None,
+) -> dict:
+    """Verify an Apple identity token and create/find the local account.
+
+    Apple only sends the display name on the first authorization; later logins
+    rely on the stable `sub` claim.
+    """
+    global _apple_jwk_client
+
+    if not settings.apple_client_id:
+        raise HTTPException(status_code=503, detail="Apple 登录未配置 APPLE_CLIENT_ID")
+
+    try:
+        if _apple_jwk_client is None:
+            _apple_jwk_client = jwt.PyJWKClient(
+                "https://appleid.apple.com/auth/keys",
+                cache_keys=True,
+            )
+        signing_key = _apple_jwk_client.get_signing_key_from_jwt(identity_token)
+        payload = jwt.decode(
+            identity_token,
+            signing_key.key,
+            algorithms=["RS256"],
+            audience=settings.apple_client_id,
+            issuer="https://appleid.apple.com",
+        )
+    except Exception as exc:  # noqa: BLE001 - provider errors must not leak token details
+        raise HTTPException(status_code=401, detail="Apple 登录校验失败") from exc
+
+    apple_sub = payload.get("sub")
+    if not apple_sub:
+        raise HTTPException(status_code=401, detail="Apple 登录凭证缺少用户标识")
+
+    user = db.execute(
+        select(User).where(User.apple_sub == apple_sub)
+    ).scalar_one_or_none()
+    is_new = user is None
+    if user is None:
+        user = User(apple_sub=apple_sub, status="active")
+        db.add(user)
+        db.flush()
+
+    nickname = (full_name or "").strip() or "Apple 用户"
+    return _issue_session(
+        db,
+        user,
+        "apple",
+        request_meta,
+        is_new,
+        nickname,
+    )
 
 
 def reset_password_with_code(

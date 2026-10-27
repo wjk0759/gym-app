@@ -155,6 +155,9 @@ struct PlanReviewView: View {
     private var nutritionCard: some View {
         let current = review.current
         let targets = DietPlanner.targets(profile: store.profile)
+        let fiberValue = current.hasNutrition
+            ? "\(Int(current.totalFiber / Double(max(1, current.loggedFoodDays))))"
+            : "—"
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("饮食营养")
@@ -173,6 +176,9 @@ struct PlanReviewView: View {
                 macroMetric("碳水", current.hasNutrition ? "\(Int(current.totalCarbs / Double(max(1, current.loggedFoodDays))))g" : "—", "目标 \(targets.carbs)g")
                 macroMetric("脂肪", current.hasNutrition ? "\(Int(current.totalFat / Double(max(1, current.loggedFoodDays))))g" : "—", "目标 \(targets.fat)g")
             }
+            Text("膳食纤维 \(fiberValue)g / 目标 \(targets.fiber)g")
+                .font(.caption2)
+                .foregroundStyle(Theme.tertiaryText)
             Text("日均值只按有记录的天计算；未记录的天不当作 0 摄入。")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)

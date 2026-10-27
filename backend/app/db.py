@@ -44,6 +44,7 @@ class Base(DeclarativeBase):
 # 轻量迁移：create_all 不会给已有表补列。开发期 SQLite 和早期 Postgres
 # 都需要这些新增认证字段，因此启动时按列检测补齐。
 _USER_AUTH_COLUMNS = {
+    "apple_sub": "VARCHAR(255)",
     "username": "VARCHAR(50)",
     "password_hash": "VARCHAR(255)",
     "wechat_openid": "VARCHAR(128)",
@@ -119,6 +120,12 @@ def ensure_schema() -> None:
             text(
                 "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_username "
                 "ON users(username) WHERE username IS NOT NULL"
+            )
+        )
+        connection.execute(
+            text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_apple_sub "
+                "ON users(apple_sub) WHERE apple_sub IS NOT NULL"
             )
         )
         connection.execute(

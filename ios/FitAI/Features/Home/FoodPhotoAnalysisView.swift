@@ -395,7 +395,8 @@ struct FoodPhotoAnalysisView: View {
                 kcal: item.kcal,
                 protein: item.protein,
                 carbs: item.carbs,
-                fat: item.fat
+                fat: item.fat,
+                fiber: item.fiber
             )
         }
         store.addFoodLogs(logs)

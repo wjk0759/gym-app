@@ -11,6 +11,7 @@ from ..config import settings
 from ..deps import DBSession, DEMO_USER_ID, CurrentUser
 from ..models import AuthEvent, AuthSession, Goal, Profile, User
 from ..schemas import (
+    AppleLoginIn,
     DevLoginIn,
     OAuthCodeIn,
     OAuthExchangeIn,
@@ -70,6 +71,7 @@ def _auth_me(db: DBSession, user_id: str) -> dict:
             "password": bool(user.password_hash),
             "wechat": bool(user.wechat_openid),
             "qq": bool(user.qq_openid),
+            "apple": bool(user.apple_sub),
         },
     }
 
@@ -287,6 +289,21 @@ def oauth_exchange(
     return auth_service.exchange_oauth_ticket(
         db,
         payload.ticket,
+        _meta(request, payload.device_name),
+    )
+
+
+@router.post("/apple/login")
+def apple_login(
+    payload: AppleLoginIn,
+    request: Request,
+    db: DBSession,
+):
+    _require_terms(payload.agreed_terms)
+    return auth_service.login_with_apple(
+        db,
+        payload.identity_token,
+        payload.full_name,
         _meta(request, payload.device_name),
     )
 

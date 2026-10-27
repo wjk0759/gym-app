@@ -10,6 +10,8 @@ struct FoodItem: Identifiable, Hashable, Codable {
     let protein: Double
     let carbs: Double
     let fat: Double
+    /// 每 100g 膳食纤维；旧自定义食物没有该字段时按碳水估算。
+    var fiber: Double? = nil
     /// 常用份量，例如一碗螺蛳粉约 600g；自定义食物可以带入自己的份量。
     var defaultGrams: Double?
 
@@ -20,6 +22,7 @@ struct FoodItem: Identifiable, Hashable, Codable {
         protein: Double,
         carbs: Double,
         fat: Double,
+        fiber: Double? = nil,
         defaultGrams: Double? = nil
     ) {
         self.name = name
@@ -28,7 +31,12 @@ struct FoodItem: Identifiable, Hashable, Codable {
         self.protein = protein
         self.carbs = carbs
         self.fat = fat
+        self.fiber = fiber
         self.defaultGrams = defaultGrams
+    }
+
+    var fiberPer100g: Double {
+        fiber ?? max(0, carbs * 0.05)
     }
 
     var servingGrams: Double {

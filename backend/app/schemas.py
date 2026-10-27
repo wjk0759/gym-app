@@ -55,6 +55,13 @@ class OAuthCodeIn(BaseModel):
     agreed_terms: bool = False
 
 
+class AppleLoginIn(BaseModel):
+    identity_token: str = Field(min_length=20, max_length=5000)
+    full_name: str | None = Field(default=None, max_length=80)
+    device_name: str | None = Field(default=None, max_length=120)
+    agreed_terms: bool = False
+
+
 class PasswordSetIn(BaseModel):
     password: str = Field(min_length=8, max_length=72)
 
@@ -93,6 +100,7 @@ class GoalIn(BaseModel):
 class PlanGenerateIn(BaseModel):
     force: bool = False
     equipment_slugs: list[str] = Field(default_factory=list, max_length=50)
+    split: str | None = Field(default=None, max_length=20)
 
 
 class PlanExercisePatch(BaseModel):

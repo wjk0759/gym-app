@@ -30,6 +30,8 @@
 	<string>用于读取体重与训练数据，帮助你追踪身体变化。</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>用于把完成的训练写入 Apple 健康，作为你的训练记录。</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>用于连接局域网内的 FitAI 开发服务器，进行 Mac 预览与联调。</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>用于选择器械、体型或饮食照片进行识别与分析。</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

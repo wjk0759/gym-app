@@ -72,6 +72,7 @@ private struct FoodAnalysisResponse: Decodable {
         let proteinPer100g: Double
         let carbsPer100g: Double
         let fatPer100g: Double
+        let fiberPer100g: Double?
         let confidence: Double
 
         enum CodingKeys: String, CodingKey {
@@ -81,6 +82,7 @@ private struct FoodAnalysisResponse: Decodable {
             case proteinPer100g = "protein_per_100g"
             case carbsPer100g = "carbs_per_100g"
             case fatPer100g = "fat_per_100g"
+            case fiberPer100g = "fiber_per_100g"
             case confidence
         }
     }
@@ -101,10 +103,14 @@ private struct TokenRefreshResponse: Decodable {
     }
 }
 
+private struct WorkoutCreateResponse: Decodable {
+    let id: String
+}
+
 struct APIClient {
     static let shared = APIClient()
 
-    private let baseURL: URL
+    private var baseURL: URL { AppConfig.apiBaseURL }
     private let userID = "00000000-0000-0000-0000-000000000001"
 
     private static let iso8601WithFractionalSeconds: ISO8601DateFormatter = {
@@ -127,9 +133,7 @@ struct APIClient {
         return formatter
     }()
 
-    init(baseURL: URL = AppConfig.apiBaseURL) {
-        self.baseURL = baseURL
-    }
+    init() {}
 
     private func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
         let decoder = JSONDecoder()
@@ -190,6 +194,40 @@ struct APIClient {
         try await sendVoid(path: "me/goal", method: "PUT", body: body)
     }
 
+    // MARK: - 训练记录
+
+    func createWorkout(_ session: WorkoutSession) async throws -> String {
+        let finishedAt = session.date
+        let startedAt = finishedAt.addingTimeInterval(-Double(max(0, session.durationMinutes) * 60))
+        var payload: [String: Any] = [
+            "started_at": Self.iso8601WithFractionalSeconds.string(from: startedAt),
+            "finished_at": Self.iso8601WithFractionalSeconds.string(from: finishedAt),
+            "feeling": min(5, max(1, session.feeling)),
+            "sets": session.sets.map { log in
+                var value: [String: Any] = [
+                    "slug": log.slug,
+                    "set_index": log.setIndex,
+                    "weight_kg": log.weightKG,
+                    "reps": log.reps,
+                    "rpe": log.rpe,
+                    "completed": log.completed
+                ]
+                if log.weightKG <= 0 { value.removeValue(forKey: "weight_kg") }
+                return value
+            }
+        ]
+        if let notes = session.notes, !notes.isEmpty {
+            payload["notes"] = notes
+        }
+        let body = try JSONSerialization.data(withJSONObject: payload)
+        let response: WorkoutCreateResponse = try await send(
+            path: "workouts",
+            method: "POST",
+            body: body
+        )
+        return response.id
+    }
+
     // MARK: - 健康检查
 
     func health() async throws -> Bool {
@@ -210,11 +248,13 @@ struct APIClient {
 
     func generatePlan(
         force: Bool = true,
-        equipmentSlugs: [String] = []
+        equipmentSlugs: [String] = [],
+        split: SplitType
     ) async throws -> TrainingPlan {
         let body = try JSONSerialization.data(withJSONObject: [
             "force": force,
-            "equipment_slugs": equipmentSlugs
+            "equipment_slugs": equipmentSlugs,
+            "split": split.rawValue
         ])
         return try await send(path: "plans/generate", method: "POST", body: body)
     }
@@ -298,6 +338,7 @@ struct APIClient {
                     proteinPer100g: item.proteinPer100g,
                     carbsPer100g: item.carbsPer100g,
                     fatPer100g: item.fatPer100g,
+                    fiberPer100g: item.fiberPer100g,
                     confidence: item.confidence
                 )
             },

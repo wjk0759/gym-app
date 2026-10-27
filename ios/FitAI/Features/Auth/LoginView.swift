@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthenticationServices
 
 enum LegalDocumentKind: String, Identifiable {
     case terms
@@ -504,6 +505,51 @@ struct LoginView: View {
                     color: Color(red: 0.26, green: 0.58, blue: 0.96),
                     provider: "qq"
                 )
+            }
+
+            SignInWithAppleButton(.signIn) { request in
+                request.requestedScopes = [.fullName, .email]
+            } onCompletion: { result in
+                switch result {
+                case .success(let authorization):
+                    guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                          let data = credential.identityToken,
+                          let token = String(data: data, encoding: .utf8) else {
+                        localError = "Apple 登录未返回身份凭证"
+                        return
+                    }
+                    let name = [credential.fullName?.givenName, credential.fullName?.familyName]
+                        .compactMap { $0 }
+                        .joined()
+                    Task {
+                        do {
+                            try await auth.loginWithApple(
+                                identityToken: token,
+                                fullName: name.isEmpty ? nil : name
+                            )
+                        } catch {
+                            localError = error.localizedDescription
+                        }
+                    }
+                case .failure(let error):
+                    if (error as? ASAuthorizationError)?.code != .canceled {
+                        localError = "Apple 登录失败：\(error.localizedDescription)"
+                    }
+                @unknown default:
+                    break
+                }
+            }
+            .signInWithAppleButtonStyle(.white)
+            .frame(height: 50)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .disabled(!consent || auth.isWorking)
+            .opacity(consent ? 1 : 0.55)
+
+            if !consent {
+                Text("勾选下方用户协议与隐私政策后可使用 Apple 登录")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .multilineTextAlignment(.center)
             }
 
 #if DEBUG

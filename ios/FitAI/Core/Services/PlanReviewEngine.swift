@@ -11,6 +11,7 @@ struct ReviewSnapshot {
     let totalProtein: Double
     let totalCarbs: Double
     let totalFat: Double
+    let totalFiber: Double
     let averageDailyMinutes: Double
     let averageSessionMinutes: Double
     let averageIntake: Double?
@@ -237,11 +238,12 @@ enum PlanReviewEngine {
         let minutes = sessions.reduce(0) { $0 + $1.durationMinutes }
         let volume = sessions.reduce(0) { $0 + $1.volume }
         let sets = sessions.reduce(0) { $0 + $1.sets.filter(\.completed).count }
-        let nutrition = foodLogs.reduce(into: (kcal: 0.0, protein: 0.0, carbs: 0.0, fat: 0.0)) { total, log in
+        let nutrition = foodLogs.reduce(into: (kcal: 0.0, protein: 0.0, carbs: 0.0, fat: 0.0, fiber: 0.0)) { total, log in
             total.kcal += log.kcal
             total.protein += log.protein
             total.carbs += log.carbs
             total.fat += log.fat
+            total.fiber += log.fiber ?? 0
         }
         let loggedDays = foodDays.count
         let averageIntake = loggedDays > 0 ? nutrition.kcal / Double(loggedDays) : nil
@@ -264,6 +266,7 @@ enum PlanReviewEngine {
             totalProtein: nutrition.protein,
             totalCarbs: nutrition.carbs,
             totalFat: nutrition.fat,
+            totalFiber: nutrition.fiber,
             averageDailyMinutes: days > 0 ? Double(minutes) / Double(days) : 0,
             averageSessionMinutes: sessions.isEmpty ? 0 : Double(minutes) / Double(sessions.count),
             averageIntake: averageIntake,
