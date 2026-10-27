@@ -470,11 +470,15 @@ def _tool_result(
     return {"ok": False, "error": f"unknown tool: {tool}"}
 
 
+REVIEW_TZ = timezone(timedelta(hours=8))
+
+
 def _week_start(now: datetime) -> datetime:
-    start = (now - timedelta(days=now.weekday())).replace(
+    local = now.astimezone(REVIEW_TZ)
+    start = (local - timedelta(days=local.weekday())).replace(
         hour=0, minute=0, second=0, microsecond=0
     )
-    return start
+    return start.astimezone(timezone.utc)
 
 
 def _review_snapshot(
@@ -593,7 +597,7 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
 
     review = {
         "period": "week",
-        "week_start": week_start.date().isoformat(),
+        "week_start": week_start.astimezone(REVIEW_TZ).date().isoformat(),
         "stats": {
             "sessions": current["sessions"],
             "planned": target,
