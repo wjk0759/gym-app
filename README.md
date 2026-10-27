@@ -33,6 +33,7 @@
 | 训练记录深度迭代 | `docs/12-training-log.md` | 完成 |
 | 灵活训练排期 | `docs/26-flexible-plan-scheduling.md` | 完成 |
 | App Action Agent | `docs/27-app-action-agent.md` | 完成 |
+| 动作库数据与导入 | `docs/28-exercise-library.md` | 完成 |
 | 器械 Tab：动作选择与识别 | `docs/13-equipment-picker.md` | 完成 |
 | FastAPI 后端骨架 | `backend/` | 可启动，AI 默认 Mock |
 | SwiftUI App 骨架 | `ios/` | 可运行，默认本地 Mock 数据 |
@@ -56,6 +57,7 @@
 - 训练保护：0 组不落记录、支持撤销上一组、参考上次重量/次数
 - 训练数据：训练月历、日容量、动作历史、动作容量趋势、历史最佳组（PR）与训练心得
 - 后台数据管理系统：用户、计划、训练、对话、识别、动作库与操作审计
+- 动作库已导入 1,338 个动作，覆盖胸、背、腿、臀、肩、手臂、核心和有氧；动作名称与中文说明可搜索
 - 企业级登录：手机验证码、账号密码、微信/QQ OAuth、自动注册、忘记密码、修改密码、JWT + Refresh Token、会话撤销
 - 器械拍照/选图 → 识别候选（本地 Mock / 远程视觉）→ 动作卡片与视频播放
 - 饮食计划（本地热量与三餐模板 + 食物库/自定义食物记录）→ 美团跳转占位
