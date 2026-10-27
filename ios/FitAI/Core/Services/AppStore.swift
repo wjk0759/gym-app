@@ -1111,6 +1111,11 @@ final class AppStore {
                         isSafety: false
                     )
                 )
+                if !self.agentActions.isEmpty,
+                   self.agentActions.allSatisfy({ !$0.requiresConfirmation }) {
+                    // 打开页面等低风险操作直接执行；所有写操作仍保留确认卡。
+                    self.executeAgentActions()
+                }
             } catch {
                 let local = CoachService.reply(
                     to: trimmed,
