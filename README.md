@@ -35,6 +35,7 @@
 | App Action Agent | `docs/27-app-action-agent.md` | 完成 |
 | 动作库数据与导入 | `docs/28-exercise-library.md` | 完成 |
 | 动作演示素材接入 | `docs/29-exercise-demo-media.md` | 免费示例已接 |
+| 动作演示视觉方案对比 | `docs/30-exercise-visual-options.md` | 预览已生成 |
 | 器械 Tab：动作选择与识别 | `docs/13-equipment-picker.md` | 完成 |
 | FastAPI 后端骨架 | `backend/` | 可启动，AI 默认 Mock |
 | SwiftUI App 骨架 | `ios/` | 可运行，默认本地 Mock 数据 |

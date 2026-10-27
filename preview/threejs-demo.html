@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FitAI · Three.js 3D 动作预览</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: #0b1018; color: #e8eef8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { display: flex; flex-direction: column; }
+    .shell { width: min(1100px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 20px; }
+    h1 { margin: 0; font-size: 24px; letter-spacing: -0.03em; }
+    .lead { margin: 9px 0 0; color: #8d9bb0; font-size: 13px; line-height: 1.65; }
+    .notice { margin-top: 12px; padding: 10px 12px; border: 1px solid rgba(248,196,92,.28); border-radius: 10px; color: #c8b27d; background: rgba(248,196,92,.06); font-size: 11px; line-height: 1.6; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    button { padding: 8px 11px; border: 1px solid rgba(148,163,184,.2); border-radius: 9px; background: #111925; color: #b9c7db; font-size: 11px; cursor: pointer; }
+    button.active { border-color: rgba(61,220,151,.45); color: #67e6ad; background: rgba(61,220,151,.1); }
+    #stage { position: relative; height: min(66vh, 620px); min-height: 380px; margin-top: 12px; overflow: hidden; border: 1px solid rgba(148,163,184,.16); border-radius: 18px; background: radial-gradient(circle at 50% 35%, #1b2a3b, #0e151f 72%); }
+    #stage canvas { display: block; width: 100%; height: 100%; }
+    #status { position: absolute; left: 14px; bottom: 14px; padding: 6px 9px; border-radius: 8px; background: rgba(0,0,0,.42); color: #9fb0c8; font-size: 11px; }
+    .foot { margin-top: 12px; color: #66758c; font-size: 10.5px; line-height: 1.6; }
+    a { color: #8db4ff; }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <h1>Three.js / GLB 动作预览</h1>
+    <p class="lead">这是“渲染器 + 模型 + 动画”的组合演示，不是组件库。页面加载一个 MIT 授权的木人偶 GLB，并在浏览器里实时播放骨骼动画。</p>
+    <div class="notice">注意：这个 GLB 是 Desk Break 的桌面/拉伸动作库（435 个），不是健身房器械动作。这里只验证 Three.js 的渲染、旋转、缩放和动画切换；真正的卧推/器械动画仍需要购买或制作对应动作素材。</div>
+    <div class="toolbar" id="toolbar"></div>
+    <section id="stage"><div id="status">loading GLB…</div></section>
+    <div class="foot">模型与动画：<a href="https://github.com/shlomorsh/desk-break" target="_blank" rel="noreferrer">shlomorsh/desk-break</a> · MIT · 木人偶约 1.75m。Three.js 通过 CDN 加载，GLB 也从 CDN 读取。</div>
+  </main>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const stage = document.querySelector('#stage');
+    const status = document.querySelector('#status');
+    const toolbar = document.querySelector('#toolbar');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x0e151f, 5, 12);
+
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+    camera.position.set(2.3, 1.45, 3.8);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    stage.prepend(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 0.95, 0);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.minDistance = 1.7;
+    controls.maxDistance = 7;
+    controls.update();
+
+    scene.add(new THREE.HemisphereLight(0xcfe4ff, 0x18202b, 2.2));
+    const key = new THREE.DirectionalLight(0xffffff, 2.5);
+    key.position.set(3, 5, 4);
+    scene.add(key);
+    const rim = new THREE.DirectionalLight(0x5b8cff, 1.5);
+    rim.position.set(-4, 2, -3);
+    scene.add(rim);
+
+    const floor = new THREE.Mesh(
+      new THREE.CircleGeometry(2.4, 64),
+      new THREE.MeshStandardMaterial({ color: 0x111925, roughness: 0.9, metalness: 0.05 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0;
+    scene.add(floor);
+    const grid = new THREE.GridHelper(4.8, 24, 0x33445a, 0x1e2b3a);
+    grid.position.y = 0.002;
+    scene.add(grid);
+
+    let mixer = null;
+    let actions = new Map();
+    let current = null;
+    let model = null;
+
+    function resize() {
+      const width = stage.clientWidth;
+      const height = stage.clientHeight;
+      renderer.setSize(width, height, false);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+    }
+    new ResizeObserver(resize).observe(stage);
+    resize();
+
+    function play(name) {
+      const action = actions.get(name);
+      if (!action || current === action) return;
+      if (current) current.fadeOut(0.2);
+      action.reset().fadeIn(0.2).play();
+      current = action;
+      status.textContent = `playing · ${name}`;
+      document.querySelectorAll('button[data-clip]').forEach((button) => {
+        button.classList.toggle('active', button.dataset.clip === name);
+      });
+    }
+
+    const loader = new GLTFLoader();
+    loader.load(
+      'https://cdn.jsdelivr.net/gh/shlomorsh/desk-break@main/library/exercises.glb',
+      (gltf) => {
+        model = gltf.scene;
+        scene.add(model);
+        model.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(model);
+        model.position.y -= box.min.y;
+        mixer = new THREE.AnimationMixer(model);
+        gltf.animations.forEach((clip) => actions.set(clip.name, mixer.clipAction(clip)));
+        const preferred = ['biceps-curl', 'mini-squat', 'plank-full', 'arm-circles-small']
+          .filter((name) => actions.has(name));
+        toolbar.innerHTML = preferred
+          .map((name) => `<button data-clip="${name}">${name}</button>`)
+          .join('');
+        toolbar.querySelectorAll('button[data-clip]').forEach((button) => {
+          button.addEventListener('click', () => play(button.dataset.clip));
+        });
+        play(preferred[0] || gltf.animations[0]?.name);
+        status.textContent = `loaded · ${gltf.animations.length} animations`;
+      },
+      undefined,
+      (error) => {
+        status.textContent = 'GLB load failed';
+        console.error(error);
+      }
+    );
+
+    const clock = new THREE.Clock();
+    function frame() {
+      requestAnimationFrame(frame);
+      const delta = clock.getDelta();
+      if (mixer) mixer.update(delta);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    frame();
+  </script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FitAI · Workout Guide 动作插画预览</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: #0b1018; color: #e8eef8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    main { width: min(1100px, calc(100% - 32px)); margin: 0 auto; padding: 38px 0 56px; }
+    h1 { margin: 0; font-size: 26px; letter-spacing: -0.03em; }
+    .lead { margin: 10px 0 0; color: #8d9bb0; font-size: 14px; line-height: 1.7; }
+    .badge { display: inline-block; margin-top: 14px; padding: 5px 9px; border: 1px solid rgba(61,220,151,.3); border-radius: 999px; color: #67e6ad; font-size: 11px; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }
+    .card { overflow: hidden; border: 1px solid rgba(148,163,184,.16); border-radius: 18px; background: #111925; }
+    .stage { display: grid; place-items: center; aspect-ratio: 1 / 1; background: radial-gradient(circle at 50% 38%, #1b2a3b, #0e151f 70%); }
+    .frame { width: 78%; height: 78%; object-fit: contain; filter: drop-shadow(0 10px 18px rgba(0,0,0,.4)); transition: opacity 90ms linear; }
+    .meta { padding: 13px 15px 15px; }
+    .meta strong { display: block; font-size: 14px; }
+    .meta span { display: block; margin-top: 4px; color: #7f8da2; font-size: 11px; }
+    .strip { display: flex; gap: 4px; padding: 0 15px 14px; }
+    .strip img { width: 31%; border-radius: 6px; background: #16202c; }
+    .note { margin-top: 22px; padding: 14px 16px; border: 1px solid rgba(91,140,255,.22); border-radius: 12px; color: #9fb0c8; font-size: 12px; line-height: 1.65; background: rgba(91,140,255,.05); }
+    a { color: #8db4ff; }
+    @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } main { padding-top: 24px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>@bryllim/workout-guide</h1>
+    <p class="lead">302 个动作、每个动作 3 帧透明 SVG，风格是白色线稿，不是 3D。下面用真实素材循环播放三帧，看看适不适合 FitAI。</p>
+    <span class="badge">CC BY-SA 4.0 · 2D 线稿 · 无需 3D 引擎</span>
+
+    <section class="grid" id="grid"></section>
+
+    <div class="note">
+      资源作者：<a href="https://bryllim.com" target="_blank" rel="noreferrer">Bryl Lim</a>；
+      部分首帧来自 <a href="https://github.com/everkinetic/data" target="_blank" rel="noreferrer">Everkinetic</a>。
+      素材许可：<a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">CC BY-SA 4.0</a>。
+      本页只做评估预览，图片从官方 gallery 远程加载，未复制进仓库。
+    </div>
+  </main>
+  <script>
+    const exercises = [
+      { slug: 'bench-press', name: 'Bench Press', meta: 'Chest · Barbell' },
+      { slug: 'dumbbell-fly', name: 'Dumbbell Fly', meta: 'Chest · Dumbbell' },
+      { slug: 'lat-pulldown', name: 'Lat Pulldown', meta: 'Lats · Cable' }
+    ];
+    const base = 'https://bryllim.github.io/workout-guide/frames';
+    const grid = document.querySelector('#grid');
+    grid.innerHTML = exercises.map((exercise) => `
+      <article class="card">
+        <div class="stage">
+          <img class="frame" id="frame-${exercise.slug}" alt="${exercise.name}" src="${base}/${exercise.slug}/frame-1.svg">
+        </div>
+        <div class="meta"><strong>${exercise.name}</strong><span>${exercise.meta} · 3-frame loop</span></div>
+        <div class="strip">
+          ${[1, 2, 3].map((n) => `<img src="${base}/${exercise.slug}/frame-${n}.svg" alt="">`).join('')}
+        </div>
+      </article>
+    `).join('');
+
+    let index = 1;
+    setInterval(() => {
+      index = index % 3 + 1;
+      exercises.forEach((exercise) => {
+        document.querySelector(`#frame-${exercise.slug}`).src = `${base}/${exercise.slug}/frame-${index}.svg`;
+      });
+    }, 420);
+  </script>
+</body>
+</html>
