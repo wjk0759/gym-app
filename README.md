@@ -93,6 +93,15 @@ FitAI/
 
 CI：推送到 GitHub 后，`.github/workflows/ios-build.yml` 会在 macOS runner 上编译 iOS 工程，`.github/workflows/backend-tests.yml` 会跑后端测试。这样即使本地只有 Windows，也能先发现编译错误。
 
+### 分支策略
+
+- `develop`：日常开发集成分支
+- `testing`：测试/验收分支，只从 `develop` 合并
+- `main`：生产分支，只从 `testing` 合并并在发布时打 tag
+- `feature/*` / `hotfix/*`：功能与紧急修复分支
+
+完整流程见 [分支与发布流程](docs/25-branch-strategy.md)。
+
 ---
 
 ## 快速开始（Windows，先跑后端）
