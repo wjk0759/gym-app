@@ -145,36 +145,14 @@ with TestClient(app) as client:
     with SessionLocal() as db:
         plan_id = db.execute(select(Program.id)).scalars().first()
         workout_id = db.execute(select(WorkoutSession.id)).scalars().first()
-        chat_id = db.execute(select(ChatSession.id)).scalars().first()
 
     user_headers = {"X-User-Id": DEMO_USER_ID}
-    admin_headers = {"X-Admin-Token": "dev-admin-token"}
     endpoints = [
         ("workouts", "/api/v1/workouts?limit=50", user_headers),
         ("summary", "/api/v1/workouts/summary?weeks=8", user_headers),
         ("workout-detail", f"/api/v1/workouts/{workout_id}", user_headers),
         ("plan-current", "/api/v1/plans/current", user_headers),
         ("plan-detail", f"/api/v1/plans/{plan_id}", user_headers),
-        ("admin-stats", "/api/v1/admin/stats", admin_headers),
-        ("admin-workouts", "/api/v1/admin/workouts?limit=50", admin_headers),
-        (
-            "admin-workout-detail",
-            f"/api/v1/admin/workouts/{workout_id}",
-            admin_headers,
-        ),
-        ("admin-programs", "/api/v1/admin/programs?limit=50", admin_headers),
-        (
-            "admin-program-detail",
-            f"/api/v1/admin/programs/{plan_id}",
-            admin_headers,
-        ),
-        ("admin-chats", "/api/v1/admin/chats?limit=50", admin_headers),
-        ("admin-chat-detail", f"/api/v1/admin/chats/{chat_id}", admin_headers),
-        (
-            "admin-user-detail",
-            f"/api/v1/admin/users/{DEMO_USER_ID}",
-            admin_headers,
-        ),
     ]
 
     for name, path, headers in endpoints:

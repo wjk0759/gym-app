@@ -45,6 +45,8 @@ export interface DashboardSummary {
   usersTotal: number
   usersNew7d: number
   onboardedUsers: number
+  active7d: number
+  active30d: number
   sessionsTotal: number
   sessions7d: number
   programsActive: number
@@ -56,8 +58,50 @@ export interface DashboardSummary {
   exercisesTotal: number
   videosPublished: number
   mealPlansTotal: number
+  aiErrors: number
   daily: DashboardDailyPoint[]
   aiKinds: DashboardKindPoint[]
+  goals: DashboardGoalCount[]
+  equipment: DashboardEquipmentCount[]
+  recentUsers: DashboardRecentUser[]
+  recentWorkouts: DashboardRecentWorkout[]
+  recentSafety: DashboardRecentSafety[]
+}
+
+export interface DashboardGoalCount {
+  type: string
+  label: string
+  count: number
+}
+
+export interface DashboardEquipmentCount {
+  type: string
+  count: number
+}
+
+export interface DashboardRecentUser {
+  id: string
+  nickname: string
+  createdAt: string
+}
+
+export interface DashboardRecentWorkout {
+  id: string
+  userId: string
+  nickname: string
+  startedAt: string
+  setCount: number
+  volumeKg: number
+  durationMin: number | null
+}
+
+export interface DashboardRecentSafety {
+  id: string
+  userId: string
+  nickname: string
+  safetyFlag: string
+  content: string
+  createdAt: string
 }
 
 export interface UserListItem {
@@ -73,6 +117,8 @@ export interface UserListItem {
   goalType: string | null
   workoutCount: number
   deleted: boolean
+  updatedAt: string | null
+  authMethods: Record<string, boolean>
 }
 
 export interface UserProgramBrief {
@@ -99,13 +145,52 @@ export interface UserChatBrief {
   messageCount: number
 }
 
+export interface UserScanBrief {
+  id: string
+  status: string
+  model: string | null
+  result: unknown
+  createdAt: string
+}
+
+export interface UserMealBrief {
+  id: string
+  planDate: string
+  targetKcal: number | null
+  createdAt: string
+}
+
+export interface UserAiJobBrief {
+  id: string
+  kind: string
+  model: string | null
+  status: string
+  latencyMs: number | null
+  error: string | null
+  createdAt: string
+}
+
+export interface UserMetrics {
+  workouts: number
+  volumeKg: number
+  programs: number
+  chats: number
+  scans: number
+  meals: number
+}
+
 export interface UserDetail {
   user: UserListItem
   profile: Record<string, unknown>
   goal: Record<string, unknown>
+  metrics: UserMetrics
+  goals: Array<Record<string, unknown>>
   programs: UserProgramBrief[]
   workouts: UserWorkoutBrief[]
   chats: UserChatBrief[]
+  scans: UserScanBrief[]
+  meals: UserMealBrief[]
+  aiJobs: UserAiJobBrief[]
 }
 
 export interface PlanListItem {
@@ -443,4 +528,30 @@ export interface AgentRunDetail {
   run: AgentRunItem
   steps: AgentStepItem[]
   proposals: AgentProposalItem[]
+}
+
+export interface AgentActionItem {
+  id: string
+  userId: string
+  userLabel: string
+  runId: string | null
+  actionId: string
+  actionType: string
+  status: string
+  message: string | null
+  detail: unknown
+  createdAt: string
+}
+
+export interface ScheduleStateItem {
+  id: string
+  userId: string
+  userLabel: string
+  planId: string
+  planVersion: number | null
+  dayId: string
+  assignedDate: string | null
+  skippedAt: string | null
+  clientUpdatedAt: string
+  updatedAt: string
 }

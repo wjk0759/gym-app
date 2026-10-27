@@ -71,13 +71,9 @@ async def main() -> None:
     parser.add_argument("--user-id", required=True)
     parser.add_argument("--requests", type=int, default=100)
     parser.add_argument("--concurrency", type=int, default=10)
-    parser.add_argument("--admin-token", default="")
     args = parser.parse_args()
 
     headers = {"X-User-Id": args.user_id}
-    admin_headers = (
-        {"X-Admin-Token": args.admin_token} if args.admin_token else None
-    )
     limits = httpx.Limits(
         max_connections=max(20, args.concurrency),
         max_keepalive_connections=max(20, args.concurrency),
@@ -93,15 +89,6 @@ async def main() -> None:
                 name,
                 path,
                 headers,
-                args.requests,
-                args.concurrency,
-            )
-        if admin_headers:
-            await bench(
-                client,
-                "admin stats",
-                "/api/v1/admin/stats",
-                admin_headers,
                 args.requests,
                 args.concurrency,
             )

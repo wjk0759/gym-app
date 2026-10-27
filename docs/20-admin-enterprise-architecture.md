@@ -1,6 +1,6 @@
 # FitAI 企业级管理后台架构
 
-> 版本：1.0 · 2026-10-27  
+> 版本：1.1 · 2026-10-28
 > 范围：后台管理控制面（Vue3 + Spring Boot + MySQL），不包含 iOS/Web App 的迁移。
 
 ## 1. 目标与边界
@@ -13,6 +13,7 @@
 - **后台控制面独立**：`admin-web` + `admin-server`，单独构建、部署、扩缩容和发布。
 - **共享 MySQL 8**：Spring Boot 管理后台表，并读取/管理 FastAPI 的 App 数据。
 - **明确过渡方案**：当前阶段由 admin-server 的 Flyway 管理完整 schema；这是为了避免两套 ORM 各自建表。后续若 App API 也迁移到 Spring Boot，再将 schema 管理权迁移到统一平台团队。
+- **旧后台已迁移完成**：FastAPI 的 `/admin`、`/api/v1/admin/*`、静态管理资源和 `ADMIN_*` 配置已删除；Spring + Vue 是唯一正式后台。
 
 不做过度设计：后台规模不需要微服务、Kafka、Redis 或独立搜索集群。当前采用**模块化单体**，按业务能力分包，保留拆分边界。
 
@@ -54,12 +55,14 @@ admin-server/src/main/java/com/fitai/admin
 ├── dashboard        运营指标
 ├── users            用户与画像
 ├── plans            训练计划
+├── schedule         跨设备排期状态
 ├── workouts         训练记录
 ├── chats            教练对话
 ├── scans            器械识别
 ├── exercises        动作库
 ├── videos           教学视频 + 媒体上传
 ├── ai               AI 调用与质量指标
+├── agent            Agent 运行与 App 动作审计
 ├── audit            审计查询
 └── media            媒体存储
 ```
@@ -125,7 +128,10 @@ GET    /api/admin/v1/users?q=alice&status=active&page=1&size=20
 GET    /api/admin/v1/users/{id}
 PATCH  /api/admin/v1/users/{id}/status
 DELETE /api/admin/v1/users/{id}
+DELETE /api/admin/v1/users/{id}/purge
 POST   /api/admin/v1/users/{id}/restore
+GET    /api/admin/v1/schedule?planId=...
+GET    /api/admin/v1/agent/actions?status=executed
 GET    /api/admin/v1/videos
 POST   /api/admin/v1/videos
 POST   /api/admin/v1/videos/{id}/publish
@@ -163,7 +169,7 @@ admin-web
 ├── router/       路由、权限守卫
 ├── layouts/      管理台壳布局、响应式侧栏、修改密码
 ├── components/   分页、指标卡、状态标签、趋势图、JSON 展示
-├── views/        10 个业务模块 + 登录 / 403 / 404
+├── views/        14 个业务模块 + 登录 / 403 / 404
 ├── directives/   v-permission
 └── utils/        日期/状态/数值格式化
 ```

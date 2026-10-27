@@ -76,6 +76,13 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/{id}/purge")
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<Void> purge(@PathVariable String id) {
+        service.purge(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{id}/restore")
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<Void> restore(@PathVariable String id) {

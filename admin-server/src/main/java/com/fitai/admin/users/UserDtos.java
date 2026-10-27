@@ -20,7 +20,9 @@ public final class UserDtos {
             Integer weeklyDays,
             String goalType,
             long workoutCount,
-            boolean deleted
+            boolean deleted,
+            String updatedAt,
+            Map<String, Object> authMethods
     ) {
     }
 
@@ -28,9 +30,14 @@ public final class UserDtos {
             UserListItem user,
             Map<String, Object> profile,
             Map<String, Object> goal,
+            Map<String, Object> metrics,
+            List<Map<String, Object>> goals,
             List<ProgramBrief> programs,
             List<WorkoutBrief> workouts,
-            List<ChatBrief> chats
+            List<ChatBrief> chats,
+            List<ScanBrief> scans,
+            List<MealBrief> meals,
+            List<AiJobBrief> aiJobs
     ) {
     }
 
@@ -58,6 +65,34 @@ public final class UserDtos {
             String title,
             String createdAt,
             long messageCount
+    ) {
+    }
+
+    public record ScanBrief(
+            String id,
+            String status,
+            String model,
+            Object result,
+            String createdAt
+    ) {
+    }
+
+    public record MealBrief(
+            String id,
+            String planDate,
+            Integer targetKcal,
+            String createdAt
+    ) {
+    }
+
+    public record AiJobBrief(
+            String id,
+            String kind,
+            String model,
+            String status,
+            Integer latencyMs,
+            String error,
+            String createdAt
     ) {
     }
 }

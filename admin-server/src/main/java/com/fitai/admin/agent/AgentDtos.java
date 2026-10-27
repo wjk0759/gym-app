@@ -59,4 +59,18 @@ public final class AgentDtos {
             List<AgentProposalItem> proposals
     ) {
     }
+
+    public record AgentActionItem(
+            String id,
+            String userId,
+            String userLabel,
+            String runId,
+            String actionId,
+            String actionType,
+            String status,
+            String message,
+            Object detail,
+            String createdAt
+    ) {
+    }
 }

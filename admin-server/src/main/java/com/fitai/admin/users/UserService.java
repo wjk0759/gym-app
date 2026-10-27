@@ -65,6 +65,17 @@ public class UserService {
     }
 
     @Transactional
+    public void purge(String id) {
+        if (!repository.exists(id)) {
+            throw ApiException.notFound("USER_NOT_FOUND", "用户不存在");
+        }
+        if (!repository.purge(id)) {
+            throw ApiException.notFound("USER_NOT_FOUND", "用户不存在");
+        }
+        auditService.record("USER_PURGED", "user", id, Map.of("hardDelete", true));
+    }
+
+    @Transactional
     public void restore(String id) {
         if (!repository.exists(id)) {
             throw ApiException.notFound("USER_NOT_FOUND", "用户不存在");

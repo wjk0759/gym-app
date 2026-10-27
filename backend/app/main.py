@@ -1,5 +1,4 @@
 from contextlib import asynccontextmanager
-from pathlib import Path
 import logging
 
 import anyio.to_thread
@@ -7,7 +6,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
@@ -20,7 +19,6 @@ from .media import MEDIA_ROOT, ensure_media_dirs
 from .middleware import RequestContextMiddleware
 from .models import User
 from .routers import (
-    admin,
     agent,
     auth,
     body,
@@ -158,7 +156,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 
 API_PREFIX = "/api/v1"
-for module in (auth, profile, plans, workouts, coach, agent, equipment, diet, body, videos, schedule, admin):
+for module in (auth, profile, plans, workouts, coach, agent, equipment, diet, body, videos, schedule):
     app.include_router(module.router, prefix=API_PREFIX)
 
 ensure_media_dirs()
@@ -168,22 +166,6 @@ app.mount(
     name="media",
 )
 
-ADMIN_DIR = Path(__file__).resolve().parent / "admin"
-if (ADMIN_DIR / "assets").is_dir():
-    app.mount(
-        "/admin/assets",
-        StaticFiles(directory=str(ADMIN_DIR / "assets")),
-        name="admin-assets",
-    )
-
-
-@app.get("/admin", include_in_schema=False)
-def admin_console():
-    page = ADMIN_DIR / "index.html"
-    if not page.exists():
-        raise HTTPException(status_code=404, detail="admin console not found")
-    return FileResponse(page, headers={"Cache-Control": "no-store"})
-
 
 @app.get("/")
 def root():
@@ -192,7 +174,6 @@ def root():
         "version": "0.1.0",
         "docs": "/docs",
         "api": API_PREFIX,
-        "admin": "/admin",
     }
 
 

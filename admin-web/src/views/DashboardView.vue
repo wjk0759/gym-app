@@ -11,7 +11,7 @@
         <MetricCard
           label="有效用户"
           :value="formatNumber(summary?.usersTotal)"
-          :foot="`近 7 天新增 ${formatNumber(summary?.usersNew7d)} · 完成引导 ${formatNumber(summary?.onboardedUsers)}`"
+          :foot="`近 7 天新增 ${formatNumber(summary?.usersNew7d)} · 引导完成 ${formatNumber(summary?.onboardedUsers)} · 7/30 日活跃 ${formatNumber(summary?.active7d)}/${formatNumber(summary?.active30d)}`"
           glow="rgba(91, 140, 255, 0.28)"
         />
         <MetricCard
@@ -76,7 +76,7 @@
           <div class="panel-heading">
             <div>
               <h3>AI 请求分布</h3>
-              <p>近 30 天按能力类型统计</p>
+              <p>近 30 天按能力类型统计 · {{ formatNumber(summary?.aiErrors) }} 个失败</p>
             </div>
             <router-link to="/ai" class="panel-link">查看 AI 运营</router-link>
           </div>
@@ -92,6 +92,94 @@
             </div>
           </div>
           <el-empty v-else description="暂无 AI 请求数据" :image-size="80" />
+        </div>
+      </section>
+
+      <section class="data-grid">
+        <div class="panel insight-panel">
+          <div class="panel-heading">
+            <div>
+              <h3>用户目标</h3>
+              <p>当前活跃目标的分布</p>
+            </div>
+            <span class="faint">{{ formatNumber(summary?.goals.length) }} 类</span>
+          </div>
+          <div v-if="summary?.goals.length" class="dist-list">
+            <div v-for="item in summary.goals" :key="item.type" class="dist-row">
+              <div class="dist-meta"><span>{{ item.label }}</span><strong>{{ formatNumber(item.count) }}</strong></div>
+              <div class="dist-track"><span :style="{ width: shareWidth(item.count, goalMax) }" /></div>
+            </div>
+          </div>
+          <el-empty v-else description="暂无目标数据" :image-size="64" />
+        </div>
+
+        <div class="panel insight-panel">
+          <div class="panel-heading">
+            <div>
+              <h3>器械覆盖</h3>
+              <p>用户档案中可用的训练器械</p>
+            </div>
+            <span class="faint">{{ formatNumber(summary?.equipment.length) }} 类</span>
+          </div>
+          <div v-if="summary?.equipment.length" class="dist-list">
+            <div v-for="item in summary.equipment" :key="item.type" class="dist-row">
+              <div class="dist-meta"><span>{{ equipmentLabel(item.type) }}</span><strong>{{ formatNumber(item.count) }}</strong></div>
+              <div class="dist-track"><span :style="{ width: shareWidth(item.count, equipmentMax) }" /></div>
+            </div>
+          </div>
+          <el-empty v-else description="暂无器械数据" :image-size="64" />
+        </div>
+      </section>
+
+      <section class="dashboard-grid recent-grid">
+        <div class="panel list-panel">
+          <div class="panel-heading">
+            <div>
+              <h3>最近注册用户</h3>
+              <p>最新进入服务的账号</p>
+            </div>
+            <router-link to="/users" class="panel-link">全部用户</router-link>
+          </div>
+          <div v-if="summary?.recentUsers.length" class="activity-list">
+            <router-link v-for="item in summary.recentUsers" :key="item.id" to="/users" class="activity-row">
+              <div><strong>{{ item.nickname }}</strong><span>{{ shortId(item.id) }}</span></div>
+              <span class="faint">{{ formatDateTime(item.createdAt) }}</span>
+            </router-link>
+          </div>
+          <el-empty v-else description="暂无用户" :image-size="64" />
+        </div>
+
+        <div class="panel list-panel">
+          <div class="panel-heading">
+            <div>
+              <h3>最近训练</h3>
+              <p>最新同步的训练记录</p>
+            </div>
+            <router-link to="/workouts" class="panel-link">全部记录</router-link>
+          </div>
+          <div v-if="summary?.recentWorkouts.length" class="activity-list">
+            <router-link v-for="item in summary.recentWorkouts" :key="item.id" to="/workouts" class="activity-row">
+              <div><strong>{{ item.nickname }}</strong><span>{{ formatNumber(item.setCount) }} 组 · {{ formatNumber(item.volumeKg) }} kg</span></div>
+              <span class="faint">{{ formatDateTime(item.startedAt) }}</span>
+            </router-link>
+          </div>
+          <el-empty v-else description="暂无训练" :image-size="64" />
+        </div>
+      </section>
+
+      <section v-if="summary?.recentSafety.length" class="panel safety-panel">
+        <div class="panel-heading">
+          <div>
+            <h3>安全兜底消息</h3>
+            <p>胸痛、眩晕、孕期、术后等高风险提示</p>
+          </div>
+          <el-tag type="warning" effect="plain">{{ formatNumber(summary.safetyFlags) }} 条</el-tag>
+        </div>
+        <div class="activity-list">
+          <router-link v-for="item in summary.recentSafety" :key="item.id" to="/chats" class="activity-row safety-row">
+            <div><strong>{{ item.nickname }} · {{ safetyLabel(item.safetyFlag) }}</strong><span>{{ item.content }}</span></div>
+            <span class="faint">{{ formatDateTime(item.createdAt) }}</span>
+          </router-link>
         </div>
       </section>
 
@@ -135,7 +223,7 @@ import TrendChart, { type TrendSeries } from '@/components/TrendChart.vue'
 import { dashboardApi } from '@/api/operations'
 import { errorMessage } from '@/api/client'
 import type { DashboardSummary } from '@/api/types'
-import { formatNumber } from '@/utils/format'
+import { formatDateTime, formatNumber, shortId } from '@/utils/format'
 
 const loading = ref(false)
 const summary = ref<DashboardSummary | null>(null)
@@ -159,6 +247,8 @@ const publishedRate = computed(() => {
   return total ? `${Math.round((published / total) * 100)}%` : '0%'
 })
 const maxKind = computed(() => Math.max(1, ...(summary.value?.aiKinds ?? []).map((item) => item.count)))
+const goalMax = computed(() => Math.max(1, ...(summary.value?.goals ?? []).map((item) => item.count)))
+const equipmentMax = computed(() => Math.max(1, ...(summary.value?.equipment ?? []).map((item) => item.count)))
 
 async function load(): Promise<void> {
   loading.value = true
@@ -187,6 +277,32 @@ function kindWidth(count: number): string {
   return `${Math.max(6, Math.round((count / maxKind.value) * 100))}%`
 }
 
+function shareWidth(count: number, max: number): string {
+  return `${Math.max(5, Math.round((count / max) * 100))}%`
+}
+
+function equipmentLabel(value: string): string {
+  return {
+    bodyweight: '自重',
+    dumbbell: '哑铃',
+    barbell: '杠铃',
+    machine: '固定器械',
+    cable: '绳索',
+    band: '弹力带',
+    kettlebell: '壶铃',
+  }[value] ?? value
+}
+
+function safetyLabel(value: string): string {
+  return {
+    medical_referral: '医疗转介',
+    pregnancy: '孕期',
+    postoperative: '术后',
+    chest_pain: '胸痛',
+    dizziness: '眩晕',
+  }[value] ?? value
+}
+
 onMounted(load)
 </script>
 
@@ -195,6 +311,110 @@ onMounted(load)
   display: grid;
   grid-template-columns: minmax(0, 1.65fr) minmax(280px, 0.75fr);
   gap: 14px;
+}
+
+.data-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.insight-panel,
+.list-panel,
+.safety-panel {
+  overflow: hidden;
+}
+
+.faint {
+  color: var(--fitai-text-faint);
+  font-size: 11px;
+}
+
+.dist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 18px;
+}
+
+.dist-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 5px;
+  color: var(--fitai-text-muted);
+  font-size: 12px;
+}
+
+.dist-meta strong {
+  color: var(--fitai-text);
+}
+
+.dist-track {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.dist-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #5b8cff, #3ddc97);
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 18px 16px;
+}
+
+.activity-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+  color: inherit;
+}
+
+.activity-row:last-child {
+  border-bottom: 0;
+}
+
+.activity-row div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.activity-row strong {
+  overflow: hidden;
+  color: var(--fitai-text);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-row span {
+  overflow: hidden;
+  color: var(--fitai-text-faint);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-row .faint {
+  flex: 0 0 auto;
+  padding-top: 2px;
+}
+
+.safety-row strong {
+  color: #f8c45c;
 }
 
 .chart-panel,
@@ -346,6 +566,10 @@ onMounted(load)
 
 @media (max-width: 1100px) {
   .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .data-grid {
     grid-template-columns: 1fr;
   }
 

@@ -1,6 +1,6 @@
 # FitAI（中文暂定名：练途）
 
-> **2026-10 架构更新：** 管理后台已独立为 `admin-web/`（Vue3 + TypeScript + Element Plus）与 `admin-server/`（Spring Boot 3 + JWT/RBAC + Flyway），共享 MySQL 8。详见 [企业级管理后台架构](docs/20-admin-enterprise-architecture.md)。FastAPI 继续负责 iOS/Web App API；旧 `/admin` 仅作为过渡入口保留。
+> **2026-10 架构更新：** 管理后台已独立为 `admin-web/`（Vue3 + TypeScript + Element Plus）与 `admin-server/`（Spring Boot 3 + JWT/RBAC + Flyway），共享 MySQL 8。详见 [企业级管理后台架构](docs/20-admin-enterprise-architecture.md)。FastAPI 继续负责 iOS/Web App API；旧 `/admin` 数据后台已迁移完成后删除，只保留 Spring + Vue 控制台。
 
 ![iOS Build](https://github.com/wjk0759/gym-app/actions/workflows/ios-build.yml/badge.svg)
 ![Backend Tests](https://github.com/wjk0759/gym-app/actions/workflows/backend-tests.yml/badge.svg)
@@ -11,7 +11,7 @@
 
 > 当前版本：`v0.1.0` 基础工程
 > 市场：中国大陆优先
-> 形态：SwiftUI 原生 iOS + FastAPI 后端 + PostgreSQL
+> 形态：SwiftUI 原生 iOS + FastAPI 后端 + Spring 管理控制台 + MySQL 8
 
 ---
 
@@ -123,35 +123,33 @@ uvicorn app.main:app --reload
 
 ### 数据管理后台
 
-Windows 直接双击项目根目录的：
+后台已统一到 Spring Boot + Vue，不再使用 FastAPI 内置页面：
 
 ```text
-启动后台管理.cmd
+admin-web/       Vue3 + TypeScript + Element Plus
+admin-server/    Spring Boot 3 + JWT/RBAC + Flyway
+deploy/admin/    MySQL 8 + admin-server + Nginx
 ```
 
-或者手动启动后打开：
-
-```text
-http://127.0.0.1:8000/admin
-```
-
-本地开发默认口令：`dev-admin-token`。生产环境必须修改 `backend/.env` 中的 `ADMIN_TOKEN`，否则后台会按环境配置拒绝访问。
+本地开发地址：<http://127.0.0.1:5173/admin/>。首次启动管理员由
+`FITAI_BOOTSTRAP_USERNAME` / `FITAI_BOOTSTRAP_PASSWORD` 注入；创建后请关闭
+`FITAI_BOOTSTRAP_ENABLED`。FastAPI 的 `/admin` 与 `/api/v1/admin/*` 已删除。
 
 后台当前支持：
 
-- 数据概览：用户、活跃、训练、计划、AI 对话、安全拦截、器械识别
-- 用户管理：搜索、查看档案/目标/计划/训练/对话、软注销、恢复、彻底删除、导出 JSON
-- 计划管理：查看完整训练日、归档、设为当前计划
+- 数据概览：用户、活跃、训练、计划、AI 对话、安全拦截、器械识别、动作库、饮食计划
+- 用户管理：搜索、查看档案/目标/计划/训练/对话/识别/饮食/AI 任务、软注销、恢复、彻底删除、导出 JSON
+- 计划与排期：计划详情、归档、设为当前计划；查看跨设备排期、跳过记录与最后写入时间
 - 训练记录：逐组详情、删除
 - AI 对话：查看消息、安全拦截筛选、删除
 - 器械识别：候选结果、置信度、删除
 - 动作库：编辑动作说明、器械和禁忌症
 - 教学视频：上传视频/封面、绑定动作、预览、编辑、发布/下架；发布后自动同步到 App 只读接口
-- AI 使用：DeepSeek/模型配置、调用量、成功率、延迟、Token、失败原因和三种 Coach Skill 使用情况
-- Agent 运行：只读查看意图、工具轨迹、计划草案、校验结果和失败原因
-- 操作日志：所有后台写操作审计
+- AI 使用：模型配置、调用量、成功率、延迟、Token、失败原因和 Coach Skill 使用情况
+- Agent：运行轨迹、计划草案、动作执行结果、撤销与失败审计
+- 操作日志：所有后台写操作审计，支持管理员账号与 RBAC
 
-> 视频文件默认保存在 `backend/media/`，生产环境应配置 `MEDIA_ROOT` 指向数据盘，或替换为 OSS/COS + CDN。视频发布前需要确认版权/教练授权。
+> 视频文件默认保存在 `backend/media/`，Spring 与 FastAPI 共用该目录；生产环境应配置数据盘，或替换为 OSS/COS + CDN。视频发布前需要确认版权/教练授权。
 
 > 注意：饮食记录、身体指标、器械库和训练记录已支持服务端同步；体型照片分析结果、自定义食物和器械照片仍主要存储在 iOS 本地，后台只能读取已经同步到服务端的数据。
 
@@ -255,7 +253,7 @@ App 默认使用本地 Mock 数据，不依赖后端。启动后端后，在 App
 
 ## 企业级管理后台（Vue3 + Spring Boot + MySQL）
 
-原 FastAPI 内置后台 `/admin` 保留为过渡入口；新的独立后台位于：
+FastAPI 内置数据后台已完整迁移并删除；唯一正式后台位于：
 
 - `admin-web/`：Vue3 + TypeScript + Element Plus + Pinia + Vue Router
 - `admin-server/`：Spring Boot 3 + Spring Security/JWT + RBAC + Flyway + JdbcClient
@@ -265,7 +263,16 @@ App 默认使用本地 Mock 数据，不依赖后端。启动后端后，在 App
 本机开发：
 
 ```powershell
-cd admin-server
+# 只启动 MySQL（127.0.0.1:3307）
+cd deploy/admin
+docker compose up -d mysql
+
+# Spring Boot（连接 3307；密码与 deploy/admin/.env 一致）
+cd ..\..\admin-server
+$env:FITAI_DB_URL='jdbc:mysql://127.0.0.1:3307/fitai?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC'
+$env:FITAI_DB_USERNAME='fitai'
+$env:FITAI_DB_PASSWORD='<MYSQL_PASSWORD>'
+$env:FITAI_JWT_SECRET='<至少 32 字节随机串>'
 mvn spring-boot:run
 
 cd ..\admin-web

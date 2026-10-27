@@ -76,6 +76,7 @@
                   </el-dropdown-item>
                   <el-dropdown-item v-if="canWrite && !row.deleted" command="delete">删除账号</el-dropdown-item>
                   <el-dropdown-item v-if="canWrite && row.deleted" command="restore">恢复账号</el-dropdown-item>
+                  <el-dropdown-item v-if="canWrite && row.deleted" command="purge">彻底删除</el-dropdown-item>
                   <el-dropdown-item command="export" divided>导出 JSON</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -117,6 +118,15 @@
               </div>
             </div>
             <el-button v-if="canWrite" size="small" @click="exportUser(detail.user)">导出 JSON</el-button>
+          </div>
+
+          <div class="metric-strip">
+            <div><span>训练</span><strong>{{ formatNumber(detail.metrics.workouts) }}</strong></div>
+            <div><span>容量</span><strong>{{ formatNumber(detail.metrics.volumeKg) }} kg</strong></div>
+            <div><span>计划</span><strong>{{ formatNumber(detail.metrics.programs) }}</strong></div>
+            <div><span>对话</span><strong>{{ formatNumber(detail.metrics.chats) }}</strong></div>
+            <div><span>识别</span><strong>{{ formatNumber(detail.metrics.scans) }}</strong></div>
+            <div><span>饮食</span><strong>{{ formatNumber(detail.metrics.meals) }}</strong></div>
           </div>
 
           <el-tabs v-model="detailTab">
@@ -196,6 +206,54 @@
                   <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
                 </el-table-column>
                 <template #empty><el-empty description="暂无教练对话" :image-size="70" /></template>
+              </el-table>
+            </el-tab-pane>
+
+            <el-tab-pane :label="`器械识别 · ${detail.scans.length}`" name="scans">
+              <el-table :data="detail.scans" size="small">
+                <el-table-column prop="model" label="模型" min-width="160" />
+                <el-table-column label="状态" width="100">
+                  <template #default="{ row }"><StatusTag :status="row.status" /></template>
+                </el-table-column>
+                <el-table-column label="结果" min-width="220">
+                  <template #default="{ row }">
+                    <span class="faint">{{ summarizeScan(row.result) }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="时间" width="150">
+                  <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+                </el-table-column>
+                <template #empty><el-empty description="暂无器械识别" :image-size="70" /></template>
+              </el-table>
+            </el-tab-pane>
+
+            <el-tab-pane :label="`饮食计划 · ${detail.meals.length}`" name="meals">
+              <el-table :data="detail.meals" size="small">
+                <el-table-column prop="planDate" label="日期" width="120" />
+                <el-table-column label="目标热量" width="110" align="right">
+                  <template #default="{ row }">{{ row.targetKcal ? `${row.targetKcal} kcal` : '—' }}</template>
+                </el-table-column>
+                <el-table-column label="创建时间" width="160">
+                  <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+                </el-table-column>
+                <template #empty><el-empty description="暂无饮食计划" :image-size="70" /></template>
+              </el-table>
+            </el-tab-pane>
+
+            <el-tab-pane :label="`AI 任务 · ${detail.aiJobs.length}`" name="aiJobs">
+              <el-table :data="detail.aiJobs" size="small">
+                <el-table-column prop="kind" label="任务" min-width="130" />
+                <el-table-column prop="model" label="模型" min-width="150" show-overflow-tooltip />
+                <el-table-column label="状态" width="100">
+                  <template #default="{ row }"><StatusTag :status="row.status" /></template>
+                </el-table-column>
+                <el-table-column label="耗时" width="100" align="right">
+                  <template #default="{ row }">{{ row.latencyMs ? `${row.latencyMs} ms` : '—' }}</template>
+                </el-table-column>
+                <el-table-column label="时间" width="150">
+                  <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+                </el-table-column>
+                <template #empty><el-empty description="暂无 AI 任务" :image-size="70" /></template>
               </el-table>
             </el-tab-pane>
           </el-tabs>
@@ -346,6 +404,22 @@ async function restore(row: UserListItem): Promise<void> {
   }
 }
 
+async function purge(row: UserListItem): Promise<void> {
+  try {
+    await ElMessageBox.confirm(
+      `彻底删除会永久移除「${row.nickname || row.phone || row.id}」及其关联数据，且无法恢复。确定继续吗？`,
+      '彻底删除用户',
+      { confirmButtonText: '永久删除', cancelButtonText: '取消', type: 'error' },
+    )
+    await usersApi.purge(row.id)
+    ElMessage.success('用户数据已永久删除')
+    if (detail.value?.user.id === row.id) drawerVisible.value = false
+    await load()
+  } catch (reason) {
+    if (reason !== 'cancel' && reason !== 'close') ElMessage.error(errorMessage(reason))
+  }
+}
+
 async function exportUser(row: UserListItem): Promise<void> {
   try {
     await usersApi.export(row.id)
@@ -364,6 +438,8 @@ function handleAction(command: string, row: UserListItem): void {
     void remove(row)
   } else if (command === 'restore') {
     void restore(row)
+  } else if (command === 'purge') {
+    void purge(row)
   } else if (command === 'export') {
     void exportUser(row)
   }
@@ -374,6 +450,16 @@ function display(value: unknown): string {
   if (Array.isArray(value)) return value.length ? value.join('、') : '—'
   if (typeof value === 'object') return JSON.stringify(value)
   return String(value)
+}
+
+function summarizeScan(result: unknown): string {
+  if (!Array.isArray(result) || !result.length) return '—'
+  const first = result[0]
+  if (first && typeof first === 'object') {
+    const item = first as Record<string, unknown>
+    return display(item.nameZh ?? item.name ?? item.equipment ?? item.label ?? first)
+  }
+  return display(first)
 }
 
 function displayWithUnit(value: unknown, unit: string): string {
@@ -497,6 +583,33 @@ onMounted(load)
   font-size: 12px;
 }
 
+.metric-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  padding: 14px 0 2px;
+}
+
+.metric-strip div {
+  padding: 9px 10px;
+  border: 1px solid var(--fitai-border);
+  border-radius: 9px;
+  background: rgba(148, 163, 184, 0.035);
+}
+
+.metric-strip span {
+  display: block;
+  color: var(--fitai-text-faint);
+  font-size: 10px;
+}
+
+.metric-strip strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--fitai-text);
+  font-size: 13px;
+}
+
 .chip-row {
   display: flex;
   flex-wrap: wrap;
@@ -511,6 +624,10 @@ onMounted(load)
 @media (max-width: 720px) {
   :deep(.hide-mobile) {
     display: none;
+  }
+
+  .metric-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 </style>

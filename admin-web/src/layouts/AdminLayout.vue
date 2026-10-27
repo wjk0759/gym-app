@@ -159,6 +159,7 @@ const allMenuItems: MenuItem[] = [
   { path: '/dashboard', label: '运营总览', icon: DataLine, permission: 'dashboard:read' },
   { path: '/users', label: '用户管理', icon: User, permission: 'user:read' },
   { path: '/plans', label: '训练计划', icon: Calendar, permission: 'plan:read' },
+  { path: '/schedule', label: '排期状态', icon: Calendar, permission: 'plan:read' },
   { path: '/workouts', label: '训练记录', icon: TrendCharts, permission: 'workout:read' },
   { path: '/chats', label: '教练对话', icon: ChatDotRound, permission: 'chat:read' },
   { path: '/scans', label: '器械识别', icon: Camera, permission: 'scan:read' },
@@ -166,6 +167,7 @@ const allMenuItems: MenuItem[] = [
   { path: '/videos', label: '教学视频', icon: VideoCamera, permission: 'video:read' },
   { path: '/ai', label: 'AI 运营', icon: Cpu, permission: 'ai:read' },
   { path: '/agent-runs', label: 'Agent 运行', icon: Cpu, permission: 'ai:read' },
+  { path: '/agent-actions', label: 'Agent 动作', icon: Cpu, permission: 'ai:read' },
   { path: '/audit', label: '审计日志', icon: Document, permission: 'audit:read' },
   { path: '/settings', label: '系统设置', icon: Setting, permission: 'settings:manage' },
 ]

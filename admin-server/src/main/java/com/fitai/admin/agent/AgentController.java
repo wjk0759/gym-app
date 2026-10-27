@@ -36,4 +36,16 @@ public class AgentController {
     public AgentDtos.AgentRunDetail detail(@PathVariable String id) {
         return repository.detail(id);
     }
+
+    @GetMapping("/actions")
+    @PreAuthorize("hasAuthority('ai:read')")
+    public PageResponse<AgentDtos.AgentActionItem> actions(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String actionType,
+            @RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return repository.actions(status, actionType, q, page, size);
+    }
 }

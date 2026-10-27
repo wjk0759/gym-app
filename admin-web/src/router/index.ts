@@ -40,6 +40,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '训练计划', permission: 'plan:read' },
       },
       {
+        path: 'schedule',
+        name: 'schedule',
+        component: () => import('@/views/ScheduleView.vue'),
+        meta: { title: '排期状态', permission: 'plan:read' },
+      },
+      {
         path: 'workouts',
         name: 'workouts',
         component: () => import('@/views/WorkoutsView.vue'),
@@ -80,6 +86,12 @@ const routes: RouteRecordRaw[] = [
         name: 'agent-runs',
         component: () => import('@/views/AgentRunsView.vue'),
         meta: { title: 'Agent 运行', permission: 'ai:read' },
+      },
+      {
+        path: 'agent-actions',
+        name: 'agent-actions',
+        component: () => import('@/views/AgentActionsView.vue'),
+        meta: { title: 'Agent 动作', permission: 'ai:read' },
       },
       {
         path: 'audit',

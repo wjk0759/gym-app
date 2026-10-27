@@ -1,6 +1,6 @@
 # FitAI Backend
 
-FastAPI + SQLAlchemy，默认 SQLite 零依赖启动，生产切 PostgreSQL。
+FastAPI + SQLAlchemy，纯 App 本地开发可用 SQLite；与 Spring 管理后台联调时连接同一 MySQL 8。
 
 ## 启动
 
@@ -15,11 +15,11 @@ uvicorn app.main:app --reload
 
 - API 文档：<http://127.0.0.1:8000/docs>
 - 健康检查：<http://127.0.0.1:8000/health>
-- 数据管理后台：<http://127.0.0.1:8000/admin>
+- 管理后台：已迁移到 Spring + Vue，见项目根目录 `README.md` 与 `admin-web/`
 
-后台开发口令默认 `dev-admin-token`；生产环境必须设置 `.env` 的 `ADMIN_TOKEN`。管理接口统一要求 `X-Admin-Token`，写操作会记录到 `admin_audit_logs`。
+FastAPI 不再提供 `/admin` 或 `/api/v1/admin/*`。管理后台使用 `admin-server` 的 `/api/admin/v1`，由 Spring Security JWT/RBAC 和审计保护；视频媒体仍通过 FastAPI `/media` 与 Spring `/media` 共享目录。
 
-首次启动会自动建表，并写入 27 个基础动作。
+首次启动会自动建表，并写入 27 个基础动作。MySQL 模式下 Schema 由 `admin-server` Flyway 管理，先启动 admin-server 或执行迁移。
 
 ## 接入真实模型
 
@@ -35,19 +35,22 @@ LLM_REASONING_EFFORT=high
 
 任何 OpenAI 兼容接口都可以（通义、豆包、DeepSeek）。没有 Key 时自动使用规则模板，不影响调试。
 
-## 切 PostgreSQL
+## 切 MySQL
+
+与 Spring 管理后台共享 MySQL 8：
 
 ```powershell
-docker compose up -d db
+cd deploy/admin
+docker compose up -d mysql
 ```
 
 `.env`：
 
 ```ini
-DATABASE_URL=postgresql+psycopg://fitai:fitai@localhost:5432/fitai
+DATABASE_URL=mysql+pymysql://fitai:change-me-strong-db-password@127.0.0.1:3307/fitai?charset=utf8mb4
 ```
 
-生产环境请用 `db/schema.sql` 初始化，并引入 Alembic 管理迁移。
+MySQL Schema 由 `admin-server` Flyway 管理；旧 SQLite 数据可用 `tools/db/migrate_sqlite_to_mysql.py --replace` 迁移。
 
 ## 目录
 
@@ -60,7 +63,6 @@ app/
 ├── schemas.py           # Pydantic 入参
 ├── deps.py              # 鉴权与 DB 依赖
 ├── seed.py              # 动作库种子数据
-├── admin/               # 后台 HTML / CSS / JS
 ├── routers/             # 接口
 ├── services/            # LLM、计划生成、校验、问答、识别
 └── prompts/             # 系统提示词
@@ -73,4 +75,4 @@ pytest -q
 python scripts\smoke.py
 ```
 
-冒烟测试覆盖用户建档、计划、训练、教练安全拦截、器械识别、饮食照片和后台管理接口。
+冒烟测试覆盖用户建档、计划、训练、教练安全拦截、器械识别、饮食照片和 Agent 动作审计。

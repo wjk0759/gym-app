@@ -5,9 +5,9 @@
 | 模块 | 状态 | 说明 |
 |---|---|---|
 | 产品文档 | 完成 | PRD、架构、数据模型、API、AI、合规、路线图 |
-| 数据库 | 开发完成 | SQLite 开发；PostgreSQL/pgvector 建表脚本已有，生产迁移未上 Alembic |
-| 后端 | 可运行 | FastAPI + 认证、计划、训练、教练、器械、视频、饮食、后台、AI 使用 |
-| 后端测试 | 通过 | 14 个单测 + 端到端 smoke |
+| 数据库 | 开发完成 | 本地 SQLite 或共享 MySQL 8；Schema 由 admin-server Flyway 管理 |
+| 后端 | 可运行 | FastAPI App API（认证、计划、训练、教练、器械、视频、饮食、AI）+ Spring 管理控制面 |
+| 后端测试 | 通过 | FastAPI 22 个单测 + smoke；Spring 单元/集成测试与 admin-web 类型/构建检查 |
 | iOS 工程 | 可编译 | CI macOS 模拟器编译通过；真机安装仍需签名和 Mac |
 | iOS 编译 | 已验证 | GitHub Actions iOS Build 通过；未做真机 UI 自动化 |
 | 登录 | 已完成基础闭环 | 手机验证码、账号密码、自动注册、忘记密码、修改密码、微信/QQ 模拟 OAuth |

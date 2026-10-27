@@ -30,6 +30,10 @@ export const usersApi = {
     await apiDelete(`/users/${encodeURIComponent(id)}`)
   },
 
+  async purge(id: string): Promise<void> {
+    await apiDelete(`/users/${encodeURIComponent(id)}/purge`)
+  },
+
   async restore(id: string): Promise<void> {
     await apiPost(`/users/${encodeURIComponent(id)}/restore`)
   },

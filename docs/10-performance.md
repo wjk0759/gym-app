@@ -70,10 +70,10 @@ PRAGMA foreign_keys=ON;
 | `GET /api/v1/workouts` | 51 | 2 |
 | `GET /api/v1/workouts/summary` | 58 | 3 |
 | `GET /api/v1/plans/current` | 14 | 3 |
-| `GET /api/v1/admin/workouts` | 53 | 4 |
-| `GET /api/v1/admin/programs` | 16 | 5 |
-| `GET /api/v1/admin/chats` | 28 | 4 |
-| `GET /api/v1/admin/users/{id}` | 97 | 13 |
+| `GET /api/v1/admin/workouts`（已删除） | 53 | 4 |
+| `GET /api/v1/admin/programs`（已删除） | 16 | 5 |
+| `GET /api/v1/admin/chats`（已删除） | 28 | 4 |
+| `GET /api/v1/admin/users/{id}`（已删除） | 97 | 13 |
 
 SQL 次数比单次耗时更稳定。该表用于回归检查，不代表生产网络或真实 LLM 延迟。
 
@@ -101,15 +101,15 @@ cd E:\Projects\FitAI\backend
 - 后台 AI 概览改为聚合 SQL；后台统计的 14 个单表 count 合并为一条多 scalar subquery 查询。
 - 新增聊天/训练/目标/器械扫描的复合索引；MySQL 迁移为 `V7__backend_performance.sql`。
 
-`perf_probe.py` 复测的代表性 SQL 次数：
+`perf_probe.py` 复测的代表性 SQL 次数（其中 `/api/v1/admin/*` 为迁移前历史数据，接口已删除）：
 
 | 接口 | 优化后 SQL 次数 |
 |---|---:|
 | `GET /api/v1/workouts` | 2 |
 | `GET /api/v1/workouts/summary` | 2 |
 | `GET /api/v1/plans/current` | 3 |
-| `GET /api/v1/admin/stats` | 13 |
-| `GET /api/v1/admin/users/{id}` | 15 |
+| `GET /api/v1/admin/stats`（已删除） | 13 |
+| `GET /api/v1/admin/users/{id}`（已删除） | 15 |
 
 ### 7.2 并发与连接池
 
@@ -118,7 +118,7 @@ cd E:\Projects\FitAI\backend
 - LLM 连接池和并发信号量可配置：`LLM_MAX_CONCURRENCY`、`LLM_TIMEOUT_SECONDS`，防止单进程把上游限流打满。
 - Agent 的记忆提炼改为后台任务，不再把第二轮 LLM 调用算进用户回复延迟；后台任务使用独立 session。
 - Docker 默认使用 `WEB_CONCURRENCY=4` 的 uvicorn worker；实际连接数应按 `worker 数 × DB_POOL_SIZE` 控制在 MySQL `max_connections` 内。
-- FastAPI 管理接口支持校验 Spring Boot 管理端签发的短期 JWT（`ADMIN_JWT_SECRET` / `ADMIN_JWT_ISSUER`），按路径映射 `user/plan/workout/chat/scan/exercise/video/ai/audit` 权限；生产配置 JWT 后不再接受静态 `ADMIN_TOKEN`。
+- 后台管理已迁移到 Spring Boot + Vue；FastAPI 不再挂载 `/admin`，也不再接受管理端令牌。管理 API、RBAC、审计和短期 JWT 全部由 Spring 控制面负责。
 
 ### 7.3 数据闭环与幂等
 
@@ -144,7 +144,7 @@ cd E:\Projects\FitAI\backend
 | `GET /api/v1/workouts` | 8.5 ms | 5.3 ms |
 | `GET /api/v1/workouts/summary` | 8.8 ms | 6.1 ms |
 | `GET /api/v1/body/metrics` | 7.8 ms | 6.5 ms |
-| `GET /api/v1/admin/stats` | 13.8 ms | 13.4 ms |
+| `GET /api/v1/admin/stats`（已删除） | 13.8 ms | 13.4 ms |
 
 并发压测（200 请求 / 20 并发）中，后台统计 p50 从约 1564 ms 降到 1296 ms，吞吐从约 69.5 RPS 提升到 84.9 RPS；其余读接口主要受单进程 GIL 和测试机负载影响，数字波动较大。Windows 单进程 SQLite 的并发数字不能直接当作生产容量。生产验收应在 MySQL + 4 worker 下重跑 `bench_api.py`，并观察连接池等待、MySQL slow query、LLM 429 率。
 
@@ -154,5 +154,5 @@ cd E:\Projects\FitAI\backend
 - iOS 图片上传前按 1600px 左右下采样，减少视觉模型上传时间。
 - 真机上用 Instruments（Time Profiler / Allocations / Network）验证 SwiftUI 滚动与启动耗时。
 - 配置真实 DeepSeek Key 后，单独统计首 token 延迟和完整回复延迟；当前流式接口已存在，iOS 端尚未消费流式回复。
-- App Action 执行结果已回写 `agent_action_events`；训练排期已支持跨设备同步，5 分钟本地撤销已实现。跨设备撤销和更完整的审计历史页面仍未完成。
+- App Action 执行结果已回写 `agent_action_events`，Spring 后台已提供动作审计页；训练排期已支持跨设备同步，5 分钟本地撤销已实现。跨设备撤销仍未完成。
 - 多实例部署时把登录/短信限流从进程内字典迁移到 Redis，并增加 AI 接口的用户级配额。
