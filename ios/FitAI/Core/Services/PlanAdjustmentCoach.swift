@@ -13,6 +13,10 @@ struct PlanAdjustmentProposal: Identifiable, Equatable {
     let restDelta: Int
     let maxExercises: Int?
     let maxDaysPerWeek: Int?
+    let weeklyDays: Int?
+    let sessionMinutes: Int?
+    let weekdays: [Int]?
+    let regeneratePlan: Bool
     let painMuscle: MuscleGroup?
     let avoidSlugs: [String]
 }
@@ -77,13 +81,33 @@ extension AppStore {
         if planAdjustmentStage == 1 {
             planAdjustmentIssue = text
             planAdjustmentCategory = classifyAdjustmentIssue(text)
-            planAdjustmentStage = 2
-            chat.append(
-                ChatMessage(
-                    role: .assistant,
-                    text: adjustmentDetailPrompt(for: planAdjustmentCategory)
+            planAdjustmentDetail = text
+            let hasSchedule = !scheduleWeekdays(in: text).isEmpty
+                || firstNumber(in: text, pattern: "每周[^0-9]{0,5}(\\d)\\s*(?:练|次|天)") != nil
+                || firstNumber(in: text, pattern: "(\\d{2,3})\\s*分钟") != nil
+            if hasSchedule {
+                let proposal = makePlanAdjustmentProposal()
+                planAdjustmentProposal = proposal
+                planAdjustmentStage = 3
+                if text.contains("直接") || text.contains("就按") || text.contains("生成") || text.contains("不用确认") {
+                    applyPlanAdjustment()
+                    return
+                }
+                chat.append(
+                    ChatMessage(
+                        role: .assistant,
+                        text: "我理解你的安排是\(scheduleSummary(for: proposal))。确认后我会直接按这个频率、日期和时长生成一版新计划，不再只改组数。"
+                    )
                 )
-            )
+            } else {
+                planAdjustmentStage = 2
+                chat.append(
+                    ChatMessage(
+                        role: .assistant,
+                        text: adjustmentDetailPrompt(for: planAdjustmentCategory)
+                    )
+                )
+            }
         } else if planAdjustmentStage == 2 {
             planAdjustmentDetail = text
             if planAdjustmentCategory.isEmpty || planAdjustmentCategory == "generic" {
@@ -119,7 +143,30 @@ extension AppStore {
     }
 
     func applyPlanAdjustment() {
-        guard let proposal = planAdjustmentProposal, var current = plan else { return }
+        guard let proposal = planAdjustmentProposal else { return }
+        if proposal.regeneratePlan {
+            var updated = profile
+            if let weeklyDays = proposal.weeklyDays {
+                updated.weeklyDays = max(1, min(7, weeklyDays))
+            }
+            if let sessionMinutes = proposal.sessionMinutes {
+                updated.sessionMinutes = max(15, min(180, sessionMinutes))
+            }
+            profile = updated
+            planAdjustmentStage = 0
+            planAdjustmentProposal = nil
+            planAdjustmentRequested = false
+            chat.append(
+                ChatMessage(
+                    role: .assistant,
+                    text: "收到，我会按\(scheduleSummary(for: proposal))重新生成 4 周计划。训练日和时长会直接写进计划。"
+                )
+            )
+            persist()
+            generatePlan(force: true, weeklyWeekdays: proposal.weekdays)
+            return
+        }
+        guard var current = plan else { return }
         current.version += 1
         current.updatedAt = Date()
 
@@ -214,6 +261,29 @@ extension AppStore {
         persist()
     }
 
+    /// Used by the normal coach input to route explicit schedule requests into
+    /// the plan-adjustment flow instead of giving a generic chat answer.
+    func isPlanScheduleRequest(_ text: String) -> Bool {
+        let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard value.contains("周") || value.contains("星期") || value.contains("礼拜") else {
+            return false
+        }
+        return value.contains("练") || value.contains("训练") || value.contains("计划") || value.contains("安排")
+    }
+
+    private func scheduleSummary(for proposal: PlanAdjustmentProposal) -> String {
+        var parts: [String] = []
+        if let weekdays = proposal.weekdays, !weekdays.isEmpty {
+            parts.append("每周" + weekdays.map { Weekday.shortNames[max(0, min(6, $0 - 1))] }.joined(separator: "、"))
+        } else if let weeklyDays = proposal.weeklyDays {
+            parts.append("每周 \(weeklyDays) 练")
+        }
+        if let minutes = proposal.sessionMinutes {
+            parts.append("每次 \(minutes) 分钟")
+        }
+        return parts.isEmpty ? "你描述的频率和训练时长" : parts.joined(separator: "，")
+    }
+
     private func classifyAdjustmentIssue(_ text: String) -> String {
         if text.contains("疼") || text.contains("痛") || text.contains("膝") || text.contains("肩")
             || text.contains("腰") || text.contains("肘") || text.contains("腕")
@@ -261,6 +331,36 @@ extension AppStore {
         }
     }
 
+    private func scheduleWeekdays(in text: String) -> [Int] {
+        let mapping: [Character: Int] = [
+            "一": 1, "二": 2, "三": 3, "四": 4,
+            "五": 5, "六": 6, "日": 7, "天": 7
+        ]
+        let patterns = [
+            "(?:周|星期|礼拜)([一二三四五六日天])",
+            "每\\s*(?:周|星期|礼拜)\\s*([一二三四五六日天、,，和及\\s]+)"
+        ]
+        var found = Set<Int>()
+        for pattern in patterns {
+            guard let regex = try? NSRegularExpression(pattern: pattern) else { continue }
+            let range = NSRange(text.startIndex..<text.endIndex, in: text)
+            for match in regex.matches(in: text, range: range) {
+                guard match.numberOfRanges > 1,
+                      let valueRange = Range(match.range(at: 1), in: text) else { continue }
+                let suffix = text[valueRange.upperBound...].first
+                if let suffix, "次天练个".contains(suffix) {
+                    continue
+                }
+                for character in text[valueRange] {
+                    if let day = mapping[character] {
+                        found.insert(day)
+                    }
+                }
+            }
+        }
+        return found.sorted()
+    }
+
     private func firstNumber(in text: String, pattern: String) -> Int? {
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
         let range = NSRange(text.startIndex..<text.endIndex, in: text)
@@ -298,6 +398,26 @@ extension AppStore {
             ? "目前训练记录还不多，我会用更保守的调整，先确保你能稳定执行。"
             : "最近 30 天完成 \(recent.count) 次训练，本周 \(currentWeekSessions.count) 次，平均 \(averageMinutes) 分钟。"
         let quote = String("\(planAdjustmentIssue) \(planAdjustmentDetail)".prefix(80))
+        let scheduleText = "\(planAdjustmentIssue) \(planAdjustmentDetail)"
+        let parsedWeekdays = scheduleWeekdays(in: scheduleText)
+        let parsedWeeklyDays = firstNumber(
+            in: scheduleText,
+            pattern: "每周[^0-9]{0,5}(\\d)\\s*(?:练|次|天)"
+        )
+        let parsedSessionMinutes = firstNumber(
+            in: scheduleText,
+            pattern: "(\\d{2,3})\\s*分钟"
+        )
+        var weeklyDays: Int? = parsedWeekdays.isEmpty ? parsedWeeklyDays : parsedWeekdays.count
+        if let value = weeklyDays {
+            weeklyDays = max(1, min(7, value))
+        }
+        var sessionMinutes = parsedSessionMinutes
+        if let value = sessionMinutes {
+            sessionMinutes = max(15, min(180, value))
+        }
+        var weekdays = parsedWeekdays.isEmpty ? nil : parsedWeekdays
+        var regeneratePlan = weekdays != nil || weeklyDays != nil || sessionMinutes != nil
         var setsDelta = 0
         var weightMultiplier = 1.0
         var restDelta = 0
@@ -393,6 +513,10 @@ extension AppStore {
             restDelta: restDelta,
             maxExercises: maxExercises,
             maxDaysPerWeek: maxDaysPerWeek,
+            weeklyDays: weeklyDays,
+            sessionMinutes: sessionMinutes,
+            weekdays: weekdays,
+            regeneratePlan: regeneratePlan,
             painMuscle: painMuscle,
             avoidSlugs: avoidSlugs
         )

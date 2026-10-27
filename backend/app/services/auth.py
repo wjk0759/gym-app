@@ -276,30 +276,73 @@ def register_or_login_password(
         if kind == "phone"
         else db.execute(select(User).where(User.username == value)).scalar_one_or_none()
     )
-    is_new = False
     if user is None:
-        validate_password(password)
-        nickname = f"用户{value[-4:]}" if kind == "phone" else value
-        user = User(
-            phone=value if kind == "phone" else None,
-            username=value if kind == "username" else None,
-            password_hash=hash_password(password),
-            status="active",
+        _record_failed_login(
+            db,
+            value,
+            "password",
+            request_meta,
+            {"reason": "not_registered"},
         )
-        db.add(user)
-        db.flush()
-        is_new = True
-    else:
-        if user.password_hash is None:
-            _record_failed_login(db, value, "password", request_meta, {"reason": "password_not_set"})
-            raise HTTPException(
-                status_code=409,
-                detail="该账号尚未设置密码，请先用手机验证码登录",
-            )
-        if not verify_password(password, user.password_hash):
-            _record_failed_login(db, value, "password", request_meta, {"reason": "bad_password"})
-            raise HTTPException(status_code=401, detail="账号或密码不正确")
-    return _issue_session(db, user, "password", request_meta, is_new, nickname if is_new else None)
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "REGISTRATION_REQUIRED",
+                "message": "账号未注册，请先用手机号验证码完成注册",
+            },
+        )
+    if user.password_hash is None:
+        _record_failed_login(db, value, "password", request_meta, {"reason": "password_not_set"})
+        raise HTTPException(
+            status_code=409,
+            detail="该账号尚未设置密码，请先用手机验证码登录",
+        )
+    if not verify_password(password, user.password_hash):
+        _record_failed_login(db, value, "password", request_meta, {"reason": "bad_password"})
+        raise HTTPException(status_code=401, detail="账号或密码不正确")
+    return _issue_session(db, user, "password", request_meta, False, None)
+
+
+def register_with_password(
+    db: Session,
+    account: str,
+    password: str,
+    phone: str,
+    code: str,
+    request_meta: dict | None = None,
+) -> dict:
+    """Create an account only after the phone ownership is verified by SMS."""
+    check_login_limit(account.lower())
+    kind, value = normalize_account(account)
+    phone = normalize_phone(phone)
+    validate_password(password)
+
+    if kind == "phone" and value != phone:
+        raise HTTPException(status_code=400, detail="手机号账号必须与验证手机号一致")
+
+    existing = (
+        db.execute(select(User).where(User.phone == phone)).scalar_one_or_none()
+        if kind == "phone"
+        else db.execute(select(User).where(User.username == value)).scalar_one_or_none()
+    )
+    if existing is not None:
+        raise HTTPException(status_code=409, detail="该账号或手机号已注册，请直接登录")
+
+    phone_owner = db.execute(select(User).where(User.phone == phone)).scalar_one_or_none()
+    if phone_owner is not None:
+        raise HTTPException(status_code=409, detail="该手机号已注册，请直接登录")
+
+    _consume_sms_code(db, phone, "login", code)
+    user = User(
+        phone=phone,
+        username=value if kind == "username" else None,
+        password_hash=hash_password(password),
+        status="active",
+    )
+    db.add(user)
+    db.flush()
+    nickname = value if kind == "username" else f"用户{phone[-4:]}"
+    return _issue_session(db, user, "password", request_meta, True, nickname)
 
 
 def send_sms_code(

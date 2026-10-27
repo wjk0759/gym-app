@@ -236,7 +236,7 @@ struct CoachChatView: View {
                 }
             }
             HStack(spacing: 8) {
-                Button("应用调整") {
+                Button(proposal.regeneratePlan ? "生成新计划" : "应用调整") {
                     store.applyPlanAdjustment()
                 }
                 .buttonStyle(PrimaryButtonStyle())
@@ -588,6 +588,9 @@ struct CoachChatView: View {
         let trimmed = String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(500))
         guard !trimmed.isEmpty, !store.isReplying else { return }
         if store.planAdjustmentStage > 0 {
+            store.sendPlanAdjustmentMessage(trimmed)
+        } else if store.isPlanScheduleRequest(trimmed) {
+            store.beginPlanAdjustment()
             store.sendPlanAdjustmentMessage(trimmed)
         } else {
             store.sendChat(trimmed, skill: selectedSkill)

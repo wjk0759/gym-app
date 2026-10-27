@@ -261,7 +261,7 @@ final class AppStore {
         }
     }
 
-    func generatePlan(force: Bool = true) {
+    func generatePlan(force: Bool = true, weeklyWeekdays: [Int]? = nil) {
         guard profile.isOnboarded else { return }
         guard hasPlanEquipment else {
             toast = "请至少选择一种可用器械：徒手 / 哑铃 / 杠铃 / 固定器械 / 绳索"
@@ -273,7 +273,7 @@ final class AppStore {
         let snapshot = profile
         let librarySlugs = equipmentSlugsForPlan
 
-        if canUseRemoteAI {
+        if canUseRemoteAI && weeklyWeekdays == nil {
             Task { @MainActor in
                 do {
                     async let profileSync = APIClient.shared.syncProfile(snapshot)
@@ -293,7 +293,8 @@ final class AppStore {
                     var fallback = PlanGenerator.generate(
                         profile: snapshot,
                         dislikedSlugs: self.dislikedSlugs,
-                        equipmentSlugs: librarySlugs
+                        equipmentSlugs: librarySlugs,
+                        weeklyWeekdays: weeklyWeekdays
                     )
                     fallback.version = (self.plan?.version ?? 0) + 1
                     self.archiveCurrentPlan()
@@ -312,7 +313,8 @@ final class AppStore {
             var generated = PlanGenerator.generate(
                 profile: snapshot,
                 dislikedSlugs: self.dislikedSlugs,
-                equipmentSlugs: librarySlugs
+                equipmentSlugs: librarySlugs,
+                weeklyWeekdays: weeklyWeekdays
             )
             generated.version = (self.plan?.version ?? 0) + 1
             self.archiveCurrentPlan()

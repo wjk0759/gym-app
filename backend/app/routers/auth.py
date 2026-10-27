@@ -16,6 +16,7 @@ from ..schemas import (
     OAuthCodeIn,
     OAuthExchangeIn,
     PasswordLoginIn,
+    PasswordRegisterIn,
     PasswordResetIn,
     PasswordSetIn,
     PhoneLoginIn,
@@ -104,6 +105,19 @@ def password_login(payload: PasswordLoginIn, request: Request, db: DBSession):
         db,
         payload.account,
         payload.password,
+        _meta(request, payload.device_name),
+    )
+
+
+@router.post("/password/register")
+def password_register(payload: PasswordRegisterIn, request: Request, db: DBSession):
+    _require_terms(payload.agreed_terms)
+    return auth_service.register_with_password(
+        db,
+        payload.account,
+        payload.password,
+        payload.phone,
+        payload.code,
         _meta(request, payload.device_name),
     )
 

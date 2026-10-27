@@ -37,6 +37,15 @@ class PasswordLoginIn(BaseModel):
     agreed_terms: bool = False
 
 
+class PasswordRegisterIn(BaseModel):
+    account: str = Field(min_length=4, max_length=50)
+    password: str = Field(min_length=8, max_length=72)
+    phone: str = Field(min_length=11, max_length=20)
+    code: str = Field(min_length=4, max_length=8)
+    device_name: str | None = Field(default=None, max_length=120)
+    agreed_terms: bool = False
+
+
 class RefreshIn(BaseModel):
     refresh_token: str = Field(min_length=20, max_length=200)
     device_name: str | None = Field(default=None, max_length=120)

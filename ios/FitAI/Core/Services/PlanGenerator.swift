@@ -63,20 +63,29 @@ enum PlanGenerator {
     static func generate(
         profile: UserProfile,
         dislikedSlugs: Set<String> = [],
-        equipmentSlugs: [String] = []
+        equipmentSlugs: [String] = [],
+        weeklyWeekdays: [Int]? = nil
     ) -> TrainingPlan {
         let available = allowedExercises(
             profile,
             disliked: dislikedSlugs,
             equipmentSlugs: equipmentSlugs
         )
-        let weeklyDays = max(1, min(7, profile.weeklyDays))
-        let weekdays = defaultWeekdays[weeklyDays] ?? Array(1...weeklyDays)
+        let requestedWeekdays = (weeklyWeekdays ?? [])
+            .filter { (1...7).contains($0) }
+        let usesWeekdayNumbers = !requestedWeekdays.isEmpty
+        let weeklyDays = usesWeekdayNumbers
+            ? requestedWeekdays.count
+            : max(1, min(7, profile.weeklyDays))
+        let weekdays = usesWeekdayNumbers
+            ? Array(Set(requestedWeekdays)).sorted()
+            : defaultWeekdays[weeklyDays] ?? Array(1...weeklyDays)
         let templates = templatePool(for: profile.split)
         let count = exerciseCount(minutes: profile.sessionMinutes)
         let params = goalParams[profile.goalType] ?? goalParams[.recomp]!
         let weeks = 4
         let today = FitnessDate.startOfDay(Date())
+        let todayWeekday = FitnessDate.weekdayNumber(today)
 
         var days: [PlanDay] = []
         for week in 1...weeks {
@@ -84,7 +93,13 @@ enum PlanGenerator {
                 let (title, focus) = templates[index % templates.count]
                 let picks = pickExercises(focus: focus, from: available, count: count)
                 guard !picks.isEmpty else { continue }
-                let firstDate = FitnessDate.addingDays(offset, to: today)
+                let firstDate: Date
+                if usesWeekdayNumbers {
+                    let delta = (offset - todayWeekday + 7) % 7
+                    firstDate = FitnessDate.addingDays(delta, to: today)
+                } else {
+                    firstDate = FitnessDate.addingDays(offset, to: today)
+                }
                 let date = FitnessDate.addingDays((week - 1) * 7, to: firstDate)
 
                 let exercises = picks.enumerated().map { offset, exercise -> PlanExercise in

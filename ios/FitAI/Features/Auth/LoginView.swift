@@ -40,6 +40,9 @@ struct LoginView: View {
     @State private var legal: LegalDocumentKind?
     @State private var showServerSettings = false
     @State private var showPasswordReset = false
+    @State private var showRegistration = false
+    @State private var registrationAccount = ""
+    @State private var registrationPassword = ""
     @State private var showConsentPrompt = false
     @State private var pendingConsentAction: PendingConsentAction?
 
@@ -91,6 +94,12 @@ struct LoginView: View {
         }
         .sheet(isPresented: $showPasswordReset) {
             PasswordResetView(prefillPhone: account.count == 11 ? account : phone)
+        }
+        .sheet(isPresented: $showRegistration) {
+            PasswordRegistrationView(
+                account: registrationAccount,
+                password: registrationPassword
+            )
         }
         .confirmationDialog(
             "登录前确认",
@@ -202,7 +211,7 @@ struct LoginView: View {
 
             Text(mode == .phone
                  ? "未注册手机号会自动创建账号并登录"
-                 : "未注册账号会自动创建并登录")
+                 : "未注册账号会引导你用手机号验证码完成注册")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -663,7 +672,14 @@ struct LoginView: View {
                     try await auth.loginWithPassword(account: account, password: password)
                 }
             } catch {
-                localError = error.localizedDescription
+                if mode == .password, error.localizedDescription.contains("账号未注册") {
+                    registrationAccount = account
+                    registrationPassword = password
+                    showRegistration = true
+                    localError = nil
+                } else {
+                    localError = error.localizedDescription
+                }
             }
         }
     }

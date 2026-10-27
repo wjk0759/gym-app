@@ -130,6 +130,30 @@ final class AuthStore {
         }
     }
 
+    func registerWithPassword(
+        account: String,
+        password: String,
+        phone: String,
+        code: String
+    ) async throws {
+        isWorking = true
+        defer { isWorking = false }
+        errorMessage = nil
+        let response: AuthResponse = try await request(
+            "/auth/password/register",
+            body: [
+                "account": account,
+                "password": password,
+                "phone": phone,
+                "code": code,
+                "device_name": deviceName,
+                "agreed_terms": true
+            ]
+        )
+        apply(response)
+        self.phone = phone
+    }
+
     // MARK: - 微信 / QQ
 
     func loginWithSocial(provider: String) async throws {
