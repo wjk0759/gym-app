@@ -364,7 +364,7 @@ struct CoachChatView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .card()
 
-            if !store.isPro {
+            if !store.canUseRemoteAI {
                 Button {
                     showPaywall = true
                 } label: {

@@ -37,6 +37,8 @@ final class AppStore {
     var useRemoteAI = AppConfig.useRemoteAI
     /// StoreKit 权益通过 SubscriptionManager 同步；只有 Pro 才会请求远程 DeepSeek。
     var isPro = false
+    /// 仅用于 Debug 预览 DeepSeek；正式包不会暴露出开关。
+    var debugForceRemoteAI = false
     var healthKitEnabled = false
 
     private var currentUserID: String? = AuthTokenStore.shared.userID
@@ -174,6 +176,10 @@ final class AppStore {
         currentWeekSessions.reduce(0) { $0 + $1.volume }
     }
 
+    var canUseRemoteAI: Bool {
+        useRemoteAI && (isPro || debugForceRemoteAI)
+    }
+
     var planAdjustmentPreview: PlanGenerator.Adjustment {
         PlanGenerator.adjustment(
             completionRate: weeklyCompletion,
@@ -267,7 +273,7 @@ final class AppStore {
         let snapshot = profile
         let librarySlugs = equipmentSlugsForPlan
 
-        if useRemoteAI && isPro {
+        if canUseRemoteAI {
             Task { @MainActor in
                 do {
                     async let profileSync = APIClient.shared.syncProfile(snapshot)
@@ -616,7 +622,7 @@ final class AppStore {
 
         chat.append(ChatMessage(role: .user, text: trimmed))
 
-        if useRemoteAI && isPro {
+        if canUseRemoteAI {
             isReplying = true
             persist()
             Task { @MainActor in

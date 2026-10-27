@@ -310,7 +310,7 @@ struct EquipmentRecognitionView: View {
         Task { @MainActor in
             candidates = await EquipmentRecognitionService.recognize(
                 imageData: data,
-                preferRemote: store.useRemoteAI && store.isPro
+                preferRemote: store.canUseRemoteAI
             )
             isScanning = false
             UINotificationFeedbackGenerator().notificationOccurred(.success)

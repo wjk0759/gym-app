@@ -241,8 +241,8 @@ struct SettingsView: View {
                 )
                 statusPill(
                     "AI",
-                    store.isPro && store.useRemoteAI ? "DeepSeek" : "本地规则",
-                    active: store.isPro && store.useRemoteAI
+                    store.canUseRemoteAI ? "DeepSeek" : "本地规则",
+                    active: store.canUseRemoteAI
                 )
             }
 
@@ -573,6 +573,20 @@ struct SettingsView: View {
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)
+
+#if DEBUG
+            Toggle("开发模式：跳过 Pro 限制", isOn: Binding(
+                get: { store.debugForceRemoteAI },
+                set: { store.debugForceRemoteAI = $0 }
+            ))
+            .font(.caption)
+            .tint(Theme.accent)
+
+            Text("仅 Debug 生效，用于在没有 StoreKit 商品时预览 DeepSeek；正式版本仍按 Pro 权益限制。")
+                .font(.caption2)
+                .foregroundStyle(Theme.tertiaryText)
+                .fixedSize(horizontal: false, vertical: true)
+#endif
 
             Text(AppConfig.apiBaseURL.absoluteString)
                 .font(.caption2)
