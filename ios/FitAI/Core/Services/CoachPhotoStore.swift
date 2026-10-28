@@ -22,7 +22,7 @@ extension AppStore {
         videoDurationSeconds: Int? = nil
     ) {
         let trimmed = caption.trimmingCharacters(in: .whitespacesAndNewlines)
-        let images = Array(imageData.prefix(6))
+        let images = Array(imageData.prefix(CoachAttachmentPolicy.maxImages))
         guard !images.isEmpty else { return }
 
         let customQuestion = (question ?? trimmed).trimmingCharacters(in: .whitespacesAndNewlines)

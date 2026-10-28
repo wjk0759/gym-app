@@ -65,10 +65,10 @@ struct CoachAttachmentDraftBar: View {
 
                     Spacer(minLength: 0)
                 }
-            } else if let video {
+            } else if let selectedVideo = video {
                 HStack(spacing: 10) {
                     ZStack {
-                        Image(uiImage: video.thumbnail)
+                        Image(uiImage: selectedVideo.thumbnail)
                             .resizable()
                             .scaledToFill()
                             .frame(width: 150, height: 84)
@@ -85,7 +85,7 @@ struct CoachAttachmentDraftBar: View {
                         Text("视频已就绪")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(Theme.primaryText)
-                        Text("\(video.durationSeconds)s · 发送时上传最多 6 个关键帧")
+                        Text("\(selectedVideo.durationSeconds)s · 发送时上传最多 6 个关键帧")
                             .font(.caption2)
                             .foregroundStyle(Theme.tertiaryText)
                     }

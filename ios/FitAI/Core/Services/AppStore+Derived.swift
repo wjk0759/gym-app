@@ -3,47 +3,41 @@ import Foundation
 extension AppStore {
     // MARK: - Derived state
 
-    var currentPlanWeek: Int {
-        guard let plan else { return 1 }
+    /// Monday of the plan's first calendar week.
+    private var planStartMonday: Date? {
+        guard let plan else { return nil }
         let calendar = Calendar.current
         let start = calendar.startOfDay(for: plan.createdAt)
         let startWeekday = calendar.component(.weekday, from: start)
         let mondayOffset = startWeekday == 1 ? -6 : 2 - startWeekday
-        guard let planMonday = calendar.date(byAdding: .day, value: mondayOffset, to: start) else {
-            return 1
-        }
+        return calendar.date(byAdding: .day, value: mondayOffset, to: start)
+    }
+
+    var currentPlanWeek: Int {
+        guard let plan, let planMonday = planStartMonday else { return 1 }
+        let calendar = Calendar.current
         let now = calendar.startOfDay(for: Date())
         let days = calendar.dateComponents([.day], from: planMonday, to: now).day ?? 0
         return min(max(1, days / 7 + 1), max(1, plan.weeks))
     }
 
     var currentPlanWeekInterval: DateInterval? {
-        guard let plan else { return nil }
+        guard let planMonday = planStartMonday else { return nil }
         let calendar = Calendar.current
-        let start = calendar.startOfDay(for: plan.createdAt)
-        let startWeekday = calendar.component(.weekday, from: start)
-        let mondayOffset = startWeekday == 1 ? -6 : 2 - startWeekday
-        guard let planMonday = calendar.date(byAdding: .day, value: mondayOffset, to: start),
-              let weekStart = calendar.date(
-                byAdding: .day,
-                value: (currentPlanWeek - 1) * 7,
-                to: planMonday
-              ),
-              let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) else {
+        guard let weekStart = calendar.date(
+            byAdding: .day,
+            value: (currentPlanWeek - 1) * 7,
+            to: planMonday
+        ),
+        let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) else {
             return nil
         }
         return DateInterval(start: weekStart, end: weekEnd)
     }
 
     var isPlanFinished: Bool {
-        guard let plan else { return false }
+        guard let plan, let planMonday = planStartMonday else { return false }
         let calendar = Calendar.current
-        let start = calendar.startOfDay(for: plan.createdAt)
-        let startWeekday = calendar.component(.weekday, from: start)
-        let mondayOffset = startWeekday == 1 ? -6 : 2 - startWeekday
-        guard let planMonday = calendar.date(byAdding: .day, value: mondayOffset, to: start) else {
-            return false
-        }
         let days = calendar.dateComponents(
             [.day],
             from: planMonday,

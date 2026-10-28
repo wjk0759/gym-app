@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 /// A locally staged image. It deliberately keeps both the display image and

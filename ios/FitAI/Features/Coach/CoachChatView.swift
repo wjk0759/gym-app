@@ -42,7 +42,7 @@ struct CoachChatView: View {
         draftVideo == nil
             && !isLoadingAttachments
             && !isLoadingVideo
-            && draftAttachments.count < CoachAttachmentPolicy.maxImages
+            && CoachAttachmentPolicy.remainingImageSlots(currentCount: draftAttachments.count) > 0
             && !store.isReplying
     }
 
@@ -260,7 +260,10 @@ struct CoachChatView: View {
             .photosPicker(
                 isPresented: $showPhotoPicker,
                 selection: $photoItems,
-                maxSelectionCount: max(1, CoachAttachmentPolicy.maxImages - draftAttachments.count),
+                maxSelectionCount: max(
+                    1,
+                    CoachAttachmentPolicy.remainingImageSlots(currentCount: draftAttachments.count)
+                ),
                 matching: .images,
                 photoLibrary: .shared()
             )
@@ -419,49 +422,49 @@ struct CoachChatView: View {
                     status: store.agentActions.contains(where: { $0.requiresConfirmation }) ? "待确认" : "可执行"
                 )
 
-            ForEach(store.agentActions) { action in
-                HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: agentActionIcon(action.type))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.accent)
-                        .frame(width: 22)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(action.title)
+                ForEach(store.agentActions) { action in
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: agentActionIcon(action.type))
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Theme.primaryText)
-                        if !action.summary.isEmpty {
-                            Text(action.summary)
-                                .font(.caption)
-                                .foregroundStyle(Theme.secondaryText)
-                                .fixedSize(horizontal: false, vertical: true)
+                            .foregroundStyle(Theme.accent)
+                            .frame(width: 22)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(action.title)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Theme.primaryText)
+                            if !action.summary.isEmpty {
+                                Text(action.summary)
+                                    .font(.caption)
+                                    .foregroundStyle(Theme.secondaryText)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
                         }
+                        Spacer(minLength: 0)
                     }
-                    Spacer(minLength: 0)
                 }
-            }
 
-            Text("这些操作只在 FitAI 内执行，不会跨 App，也不涉及付款。")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
+                Text("这些操作只在 FitAI 内执行，不会跨 App，也不涉及付款。")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
 
-            HStack(spacing: 8) {
-                Button {
-                    store.executeAgentActions()
-                } label: {
-                    CoachLoadingLabel(
-                        title: "确认并执行",
-                        isLoading: store.isExecutingAgentActions
-                    )
+                HStack(spacing: 8) {
+                    Button {
+                        store.executeAgentActions()
+                    } label: {
+                        CoachLoadingLabel(
+                            title: "确认并执行",
+                            isLoading: store.isExecutingAgentActions
+                        )
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                    .disabled(store.isExecutingAgentActions)
+
+                    Button("忽略") {
+                        store.dismissAgentActions()
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .disabled(store.isExecutingAgentActions)
                 }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(store.isExecutingAgentActions)
-
-                Button("忽略") {
-                    store.dismissAgentActions()
-                }
-                .buttonStyle(SecondaryButtonStyle())
-                .disabled(store.isExecutingAgentActions)
-            }
             }
         }
     }
@@ -614,57 +617,61 @@ struct CoachChatView: View {
         CoachCard(border: Theme.accent.opacity(0.25)) {
             VStack(alignment: .leading, spacing: 9) {
                 CoachCardHeader(eyebrow: "AGENT 计划草案", status: "待确认")
-            Text(proposal.title)
-                .font(.headline)
-                .foregroundStyle(Theme.primaryText)
-                .fixedSize(horizontal: false, vertical: true)
-            if !proposal.changes.isEmpty {
-                ForEach(proposal.changes, id: \.self) { change in
-                    HStack(alignment: .top, spacing: 7) {
-                        Circle()
-                            .fill(Theme.accent)
-                            .frame(width: 5, height: 5)
-                            .padding(.top, 5)
-                        Text(change)
-                            .font(.caption)
-                            .foregroundStyle(Theme.secondaryText)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-            }
-            if let proposed = proposal.proposed {
-                HStack(spacing: 12) {
-                    if let weeklyDays = proposed.weeklyDays {
-                        Text("每周 \(weeklyDays) 练")
-                    }
-                    if let minutes = proposed.sessionMinutes {
-                        Text("\(minutes) 分钟/次")
-                    }
-                    if let weeks = proposed.weeks {
-                        Text("\(weeks) 周")
-                    }
-                }
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-            }
-            HStack(spacing: 8) {
-                Button {
-                    store.applyAgentProposal()
-                } label: {
-                    CoachLoadingLabel(
-                        title: "应用到正式计划",
-                        isLoading: store.isAgentWorking
-                    )
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(store.isAgentWorking)
 
-                Button("忽略") {
-                    store.dismissAgentProposal()
+                Text(proposal.title)
+                    .font(.headline)
+                    .foregroundStyle(Theme.primaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if !proposal.changes.isEmpty {
+                    ForEach(proposal.changes, id: \.self) { change in
+                        HStack(alignment: .top, spacing: 7) {
+                            Circle()
+                                .fill(Theme.accent)
+                                .frame(width: 5, height: 5)
+                                .padding(.top, 5)
+                            Text(change)
+                                .font(.caption)
+                                .foregroundStyle(Theme.secondaryText)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                 }
-                .buttonStyle(SecondaryButtonStyle())
-                .disabled(store.isAgentWorking)
-            }
+
+                if let proposed = proposal.proposed {
+                    HStack(spacing: 12) {
+                        if let weeklyDays = proposed.weeklyDays {
+                            Text("每周 \(weeklyDays) 练")
+                        }
+                        if let minutes = proposed.sessionMinutes {
+                            Text("\(minutes) 分钟/次")
+                        }
+                        if let weeks = proposed.weeks {
+                            Text("\(weeks) 周")
+                        }
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+                }
+
+                HStack(spacing: 8) {
+                    Button {
+                        store.applyAgentProposal()
+                    } label: {
+                        CoachLoadingLabel(
+                            title: "应用到正式计划",
+                            isLoading: store.isAgentWorking
+                        )
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                    .disabled(store.isAgentWorking)
+
+                    Button("忽略") {
+                        store.dismissAgentProposal()
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .disabled(store.isAgentWorking)
+                }
             }
         }
     }
