@@ -38,8 +38,17 @@ struct WorkoutSessionView: View {
     @State private var adjustReps = "10-12"
     @State private var adjustWeight = 0.0
     @State private var adjustRest = 60
+    @State private var weightStep = 2.5
+    @State private var valueEditor: ValueEditor?
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    private enum ValueEditor: String, Identifiable {
+        case weight
+        case reps
+
+        var id: String { rawValue }
+    }
 
     var body: some View {
         NavigationStack {
@@ -180,6 +189,9 @@ struct WorkoutSessionView: View {
             .sheet(isPresented: $showAdjustSheet) {
                 adjustSheet
             }
+            .sheet(item: $valueEditor) { editor in
+                valueEntrySheet(editor)
+            }
         }
     }
 
@@ -303,17 +315,39 @@ struct WorkoutSessionView: View {
                 Text("目标 RPE \(exercise.rpe, specifier: "%.1f")")
                     .font(.caption)
                     .foregroundStyle(Theme.secondaryText)
-                Button("调整") {
+                Button {
                     openAdjustSheet(exercise)
+                } label: {
+                    Text("调整")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                        .padding(.horizontal, 10)
+                        .frame(height: 30)
+                        .background(
+                            Theme.accent.opacity(0.12),
+                            in: Capsule(style: .continuous)
+                        )
                 }
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.accent)
+                .buttonStyle(SubtlePressStyle(scale: 0.95))
+                .accessibilityHint("调整目标组数、次数、重量和休息")
             }
 
             if let last = store.lastSet(for: exercise.slug) {
                 HStack(spacing: 6) {
                     Image(systemName: "clock.arrow.circlepath")
                     Text("上次 \(last.weightKG > 0 ? "\(last.weightKG.formatted()) kg × \(last.reps)" : "自重 × \(last.reps)") · RPE \(last.rpe.formatted(.number.precision(.fractionLength(1))))")
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                    Spacer(minLength: 6)
+                    Button("用上次") {
+                        weight = last.weightKG
+                        reps = last.reps
+                        Haptics.select()
+                    }
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+                    .buttonStyle(SubtlePressStyle())
+                    .accessibilityLabel("使用上次的重量和次数")
                 }
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
@@ -329,27 +363,60 @@ struct WorkoutSessionView: View {
                 .foregroundStyle(Theme.tertiaryText)
             }
 
-            if !isBodyweight {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("本组数据")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                    Spacer(minLength: 4)
+                    Text("点数字输入 · 长按连续调")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+
+                if !isBodyweight {
+                    ValueStepperControl(
+                        title: "本组重量",
+                        value: weightText(weight),
+                        unit: "kg",
+                        hint: "步进 \(weightStepText(weightStep)) kg",
+                        canDecrease: weight > 0,
+                        canIncrease: weight < 300,
+                        onDecrease: { adjustWeight(by: -weightStep) },
+                        onIncrease: { adjustWeight(by: weightStep) },
+                        onEdit: { valueEditor = .weight }
+                    )
+
+                    weightStepPicker
+                } else {
+                    HStack(spacing: 6) {
+                        Image(systemName: "figure.strengthtraining.functional")
+                        Text("自重动作，直接填写本组实际次数")
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .padding(.horizontal, 10)
+                    .frame(height: 32)
+                    .background(
+                        Theme.surfaceStrong,
+                        in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    )
+                }
+
                 ValueStepperControl(
-                    title: "重量",
-                    value: String(format: "%.1f", weight),
-                    unit: "kg",
-                    canDecrease: weight > 0,
-                    canIncrease: weight < 300,
-                    onDecrease: { weight = max(0, weight - 2.5) },
-                    onIncrease: { weight = min(300, weight + 2.5) }
+                    title: "实际次数",
+                    value: "\(reps)",
+                    unit: "次",
+                    hint: "目标 \(exercise.reps) 次",
+                    canDecrease: reps > 1,
+                    canIncrease: reps < 60,
+                    onDecrease: { reps = max(1, reps - 1) },
+                    onIncrease: { reps = min(60, reps + 1) },
+                    onEdit: { valueEditor = .reps }
                 )
             }
-
-            ValueStepperControl(
-                title: "次数",
-                value: "\(reps)",
-                unit: "次",
-                canDecrease: reps > 1,
-                canIncrease: reps < 60,
-                onDecrease: { reps = max(1, reps - 1) },
-                onIncrease: { reps = min(60, reps + 1) }
-            )
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
@@ -383,6 +450,44 @@ struct WorkoutSessionView: View {
             }
         }
         .card()
+    }
+
+    private var weightStepPicker: some View {
+        HStack(spacing: 6) {
+            Text("每次调整")
+                .font(.caption2)
+                .foregroundStyle(Theme.tertiaryText)
+
+            ForEach([1.25, 2.5, 5.0], id: \.self) { step in
+                Button {
+                    Haptics.select()
+                    weightStep = step
+                } label: {
+                    Text("\(weightStepText(step)) kg")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(weightStep == step ? Color.black.opacity(0.9) : Theme.secondaryText)
+                        .padding(.horizontal, 10)
+                        .frame(height: 34)
+                        .background(
+                            Capsule(style: .continuous)
+                                .fill(weightStep == step ? Theme.accent : Theme.surfaceStrong)
+                        )
+                        .overlay(
+                            Capsule(style: .continuous)
+                                .stroke(
+                                    weightStep == step ? Color.clear : Color.white.opacity(0.07),
+                                    lineWidth: 0.8
+                                )
+                        )
+                }
+                .buttonStyle(SubtlePressStyle(scale: 0.95))
+                .accessibilityLabel("每次调整 \(weightStepText(step)) 千克")
+                .accessibilityAddTraits(weightStep == step ? .isSelected : [])
+            }
+
+            Spacer(minLength: 0)
+        }
+        .motionAnimation(Motion.quick, value: weightStep)
     }
 
     private func trainingTipCard(_ exercise: PlanExercise) -> some View {
@@ -433,10 +538,15 @@ struct WorkoutSessionView: View {
                 }
 
                 if done < exercise.sets {
-                    Button("完成第 \(done + 1) 组") {
+                    Button {
                         completeSet(exercise)
+                    } label: {
+                        Text("完成第 \(done + 1) 组 · \(setSummary(for: exercise))")
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
                     }
                     .buttonStyle(PrimaryButtonStyle())
+                    .accessibilityLabel("完成第 \(done + 1) 组，\(setSummary(for: exercise))")
                 } else {
                     Button(nextTitle) {
                         advance()
@@ -648,6 +758,58 @@ struct WorkoutSessionView: View {
         } else if let last = store.lastSet(for: exercise.slug) {
             weight = last.weightKG
             reps = last.reps
+        }
+    }
+
+    private func adjustWeight(by delta: Double) {
+        let next = weight + delta
+        weight = min(300, max(0, (next * 100).rounded() / 100))
+    }
+
+    private func weightText(_ value: Double) -> String {
+        if value.rounded() == value {
+            return String(Int(value))
+        }
+        if (value * 10).rounded() == value * 10 {
+            return String(format: "%.1f", value)
+        }
+        return String(format: "%.2f", value)
+    }
+
+    private func weightStepText(_ value: Double) -> String {
+        weightText(value)
+    }
+
+    private func setSummary(for exercise: PlanExercise) -> String {
+        let load = exercise.exercise?.equipment == .bodyweight
+            ? "自重"
+            : "\(weightText(weight)) kg"
+        return "\(load) × \(reps) 次"
+    }
+
+    @ViewBuilder
+    private func valueEntrySheet(_ editor: ValueEditor) -> some View {
+        switch editor {
+        case .weight:
+            WorkoutValueEntrySheet(
+                title: "本组重量",
+                unit: "kg",
+                footnote: "当前 \(weightText(weight)) kg。输入本组实际使用的重量，保存后完成这一组会按这个重量记录。",
+                allowsDecimal: true,
+                range: 0...300
+            ) { value in
+                weight = min(300, max(0, value))
+            }
+        case .reps:
+            WorkoutValueEntrySheet(
+                title: "实际次数",
+                unit: "次",
+                footnote: "当前 \(reps) 次。输入本组实际完成的次数，即使少于目标次数也按实际记录。",
+                allowsDecimal: false,
+                range: 1...60
+            ) { value in
+                reps = min(60, max(1, Int(value.rounded())))
+            }
         }
     }
 

@@ -164,53 +164,94 @@ struct TypingDots: View {
     }
 }
 
-/// 训练重量/次数的大号加减控件，替代系统 Stepper 的小箭头。
+/// 训练重量/次数的大号加减控件：
+/// 大触控区、长按连续调整、点中间数字精确输入。
 struct ValueStepperControl: View {
     let title: String
     let value: String
     let unit: String?
+    var hint: String? = nil
     var canDecrease: Bool = true
     var canIncrease: Bool = true
     let onDecrease: () -> Void
     let onIncrease: () -> Void
+    var onEdit: (() -> Void)? = nil
 
     var body: some View {
-        HStack(spacing: 12) {
-            Text(title)
-                .font(.subheadline)
-                .foregroundStyle(Theme.secondaryText)
-
-            Spacer(minLength: 8)
-
-            HStack(spacing: 2) {
-                stepButton(symbol: "minus", enabled: canDecrease, action: onDecrease)
-
-                HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text(value)
-                        .font(.title3.weight(.bold).monospacedDigit())
-                        .foregroundStyle(.white)
-                        .contentTransition(.numericText())
-                        .animation(Motion.quick, value: value)
-                    if let unit {
-                        Text(unit)
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(Theme.tertiaryText)
-                    }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                Spacer(minLength: 4)
+                if let hint {
+                    Text(hint)
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
-                .frame(minWidth: 88)
+            }
 
+            HStack(spacing: 8) {
+                stepButton(symbol: "minus", enabled: canDecrease, action: onDecrease)
+                centerValue
                 stepButton(symbol: "plus", enabled: canIncrease, action: onIncrease)
             }
-            .padding(3)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(Theme.surfaceStrong)
-            )
-            .overlay(
-                Capsule(style: .continuous)
-                    .stroke(Color.white.opacity(0.07), lineWidth: 0.8)
-            )
         }
+        .sensoryFeedback(.selection, trigger: value)
+    }
+
+    @ViewBuilder
+    private var centerValue: some View {
+        if let onEdit {
+            Button {
+                Haptics.tap()
+                onEdit()
+            } label: {
+                valueDisplay
+                    .overlay(alignment: .trailing) {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Theme.accent.opacity(0.8))
+                            .padding(.trailing, 11)
+                            .allowsHitTesting(false)
+                    }
+            }
+            .buttonStyle(SubtlePressStyle(scale: 0.98))
+            .accessibilityLabel("\(title) \(value) \(unit ?? "")")
+            .accessibilityHint("点击精确输入")
+        } else {
+            valueDisplay
+        }
+    }
+
+    private var valueDisplay: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 3) {
+            Text(value)
+                .font(.system(size: 30, weight: .bold, design: .rounded).monospacedDigit())
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.65)
+                .contentTransition(.numericText())
+                .motionAnimation(Motion.quick, value: value)
+            if let unit {
+                Text(unit)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 52)
+        .background(
+            Theme.surfaceStrong,
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.white.opacity(0.075), lineWidth: 1)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private func stepButton(
@@ -218,22 +259,25 @@ struct ValueStepperControl: View {
         enabled: Bool,
         action: @escaping () -> Void
     ) -> some View {
-        Button {
-            Haptics.impact(.light)
-            action()
-        } label: {
+        Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(enabled ? Theme.accent : Theme.tertiaryText.opacity(0.5))
-                .frame(width: 38, height: 34)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundStyle(enabled ? Theme.accent : Theme.tertiaryText.opacity(0.35))
+                .frame(width: 54, height: 52)
                 .background(
-                    Circle()
-                        .fill(enabled ? Theme.accent.opacity(0.12) : Color.clear)
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .fill(enabled ? Theme.accent.opacity(0.13) : Color.white.opacity(0.035))
                 )
-                .contentShape(Circle())
+                .overlay(
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .stroke(enabled ? Theme.accent.opacity(0.28) : Color.clear, lineWidth: 1)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
         }
-        .buttonStyle(SubtlePressStyle())
+        .buttonStyle(SubtlePressStyle(scale: 0.92))
+        .buttonRepeatBehavior(.enabled)
         .disabled(!enabled)
         .accessibilityLabel(symbol == "minus" ? "减少\(title)" : "增加\(title)")
+        .accessibilityHint("长按连续调整")
     }
 }
