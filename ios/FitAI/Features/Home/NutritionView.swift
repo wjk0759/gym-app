@@ -430,6 +430,7 @@ struct AddFoodView: View {
     @State private var grams: Double = 100
     @State private var showCustomFood = false
     @State private var customInitialName = ""
+    @State private var addedFoods: [String] = []
 
     init(initialMeal: MealType, date: Date = Date()) {
         self.date = Calendar.current.startOfDay(for: date)
@@ -454,6 +455,23 @@ struct AddFoodView: View {
                         }
                     }
                     .pickerStyle(.segmented)
+
+                    if !addedFoods.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Label("已记录 \(addedFoods.count) 种食物", systemImage: "checkmark.circle.fill")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(Theme.accent)
+                            Text(addedFoods.joined(separator: "、"))
+                                .font(.caption)
+                                .foregroundStyle(Theme.secondaryText)
+                                .lineLimit(3)
+                            Text("可以继续搜索添加，全部记好后点右上角「完成」。")
+                                .font(.caption2)
+                                .foregroundStyle(Theme.tertiaryText)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .card(padding: 12)
+                    }
 
                     TextField("搜索食物，例如：螺蛳粉、奶茶、鸡胸肉", text: $query)
                         .onChange(of: query) { _, value in
@@ -533,10 +551,17 @@ struct AddFoodView: View {
             .navigationTitle("记录食物")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
+                if addedFoods.isEmpty {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("取消") { dismiss() }
+                    }
+                } else {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("完成") { dismiss() }
+                    }
                 }
             }
+            .keyboardDoneToolbar()
             .sheet(isPresented: $showCustomFood) {
                 CustomFoodEntryView(initialName: customInitialName) { food in
                     selected = food
@@ -621,7 +646,13 @@ struct AddFoodView: View {
                 fiber: food.fiberPer100g * factor
             )
         )
-        dismiss()
+        Haptics.success()
+        withAnimation(Motion.quick) {
+            addedFoods.append("\(meal.label) · \(food.name) \(Int(grams))g")
+        }
+        selected = nil
+        query = ""
+        grams = 100
     }
 }
 
@@ -725,6 +756,7 @@ struct CustomFoodEntryView: View {
                     Button("取消") { dismiss() }
                 }
             }
+            .keyboardDoneToolbar()
         }
     }
 

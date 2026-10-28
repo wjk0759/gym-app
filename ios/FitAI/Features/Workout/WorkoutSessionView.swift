@@ -734,6 +734,7 @@ struct WorkoutSessionView: View {
                     Button("取消") { showAdjustSheet = false }
                 }
             }
+            .keyboardDoneToolbar()
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)

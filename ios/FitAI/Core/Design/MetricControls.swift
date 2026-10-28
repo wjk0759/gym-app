@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import UIKit
 
 enum WorkoutPickerOptions {
     static let sets = Array(1...10)
@@ -229,6 +230,30 @@ struct WeightInputField: View {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .stroke(Color.white.opacity(0.075), lineWidth: 1)
             )
+        }
+    }
+}
+
+enum KeyboardDismiss {
+    static func dismiss() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder),
+            to: nil,
+            from: nil,
+            for: nil
+        )
+    }
+}
+
+extension View {
+    func keyboardDoneToolbar() -> some View {
+        toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("完成") {
+                    KeyboardDismiss.dismiss()
+                }
+            }
         }
     }
 }

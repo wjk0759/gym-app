@@ -142,6 +142,7 @@ struct CustomWorkoutBuilderView: View {
                     Button("取消") { dismiss() }
                 }
             }
+            .keyboardDoneToolbar()
             .sheet(isPresented: $showActionPicker) {
                 NavigationStack {
                     EquipmentPickerView(
