@@ -12,582 +12,13 @@ struct APIError: LocalizedError {
     var errorDescription: String? { message }
 }
 
-struct RemoteWorkoutSet: Decodable {
-    let slug: String
-    let setIndex: Int
-    let weightKG: Double?
-    let reps: Int?
-    let rpe: Double?
-    let completed: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case slug
-        case setIndex = "set_index"
-        case weightKG = "weight_kg"
-        case reps
-        case rpe
-        case completed
-    }
-}
-
-struct RemoteWorkout: Decodable {
-    let id: String
-    let clientID: String?
-    let programDayID: String?
-    let startedAt: Date
-    let finishedAt: Date?
-    let durationMin: Int?
-    let feeling: Int?
-    let notes: String?
-    let sets: [RemoteWorkoutSet]
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case clientID = "client_id"
-        case programDayID = "program_day_id"
-        case startedAt = "started_at"
-        case finishedAt = "finished_at"
-        case durationMin = "duration_min"
-        case feeling
-        case notes
-        case sets
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(String.self, forKey: .id)
-        clientID = try container.decodeIfPresent(String.self, forKey: .clientID)
-        programDayID = try container.decodeIfPresent(String.self, forKey: .programDayID)
-        startedAt = try container.decode(Date.self, forKey: .startedAt)
-        finishedAt = try container.decodeIfPresent(Date.self, forKey: .finishedAt)
-        durationMin = try container.decodeIfPresent(Int.self, forKey: .durationMin)
-        feeling = try container.decodeIfPresent(Int.self, forKey: .feeling)
-        notes = try container.decodeIfPresent(String.self, forKey: .notes)
-        sets = try container.decodeIfPresent([RemoteWorkoutSet].self, forKey: .sets) ?? []
-    }
-}
-
-struct RemoteWorkoutList: Decodable {
-    let items: [RemoteWorkout]
-}
-
-struct RemoteScheduleDay: Decodable {
-    let dayID: String
-    let assignedDate: String?
-    let skippedAt: Date?
-    let clientUpdatedAt: Date?
-    let serverUpdatedAt: Date?
-
-    enum CodingKeys: String, CodingKey {
-        case dayID = "day_id"
-        case assignedDate = "assigned_date"
-        case skippedAt = "skipped_at"
-        case clientUpdatedAt = "client_updated_at"
-        case serverUpdatedAt = "server_updated_at"
-    }
-}
-
-struct RemoteScheduleState: Decodable {
-    let planID: String
-    let days: [RemoteScheduleDay]
-
-    enum CodingKeys: String, CodingKey {
-        case planID = "plan_id"
-        case days
-    }
-}
-
-struct PlanScheduleUploadDay: Encodable {
-    let dayID: String
-    let assignedDate: String?
-    let skippedAt: Date?
-    let clientUpdatedAt: Date
-
-    enum CodingKeys: String, CodingKey {
-        case dayID = "day_id"
-        case assignedDate = "assigned_date"
-        case skippedAt = "skipped_at"
-        case clientUpdatedAt = "client_updated_at"
-    }
-}
-
-struct HealthStatus: Decodable {
-    let status: String?
-    let env: String?
-    let llm: String?
-    let vision: String?
-    let meituan: String?
-}
-
-struct ChatResponse: Decodable {
-    let sessionID: UUID?
-    let reply: String
-    let safetyFlag: String?
-
-    enum CodingKeys: String, CodingKey {
-        case sessionID = "session_id"
-        case reply
-        case safetyFlag = "safety_flag"
-    }
-}
-
-private struct EquipmentScanResponse: Decodable {
-    struct Candidate: Decodable {
-        let slug: String
-        let confidence: Double
-    }
-
-    let candidates: [Candidate]
-    let description: String?
-    let name: String?
-    let notInLibrary: Bool?
-
-    enum CodingKeys: String, CodingKey {
-        case candidates
-        case description
-        case name
-        case notInLibrary = "not_in_library"
-    }
-}
-
-private struct ExerciseVideoResponse: Decodable {
-    struct Video: Decodable {
-        let videoURL: String?
-
-        enum CodingKeys: String, CodingKey {
-            case videoURL = "video_url"
-        }
-    }
-
-    let video: Video?
-}
-
-private struct MeituanLinkResponse: Decodable {
-    let deeplink: String?
-    let h5URL: String?
-
-    enum CodingKeys: String, CodingKey {
-        case deeplink
-        case h5URL = "h5_url"
-    }
-}
-
-private struct BodyAnalysisResponse: Decodable {
-    let summary: String
-    let focusAreas: [String]
-    let recommendations: [String]
-    let confidence: Double
-    let disclaimer: String
-
-    enum CodingKeys: String, CodingKey {
-        case summary
-        case focusAreas = "focus_areas"
-        case recommendations
-        case confidence
-        case disclaimer
-    }
-}
-
-private struct FoodAnalysisResponse: Decodable {
-    struct Item: Decodable {
-        let name: String
-        let grams: Double
-        let kcalPer100g: Double
-        let proteinPer100g: Double
-        let carbsPer100g: Double
-        let fatPer100g: Double
-        let fiberPer100g: Double?
-        let confidence: Double
-
-        enum CodingKeys: String, CodingKey {
-            case name
-            case grams
-            case kcalPer100g = "kcal_per_100g"
-            case proteinPer100g = "protein_per_100g"
-            case carbsPer100g = "carbs_per_100g"
-            case fatPer100g = "fat_per_100g"
-            case fiberPer100g = "fiber_per_100g"
-            case confidence
-        }
-    }
-
-    let items: [Item]
-    let confidence: Double
-    let disclaimer: String
-    let model: String?
-    let summary: String?
-    let isFood: Bool?
-
-    enum CodingKeys: String, CodingKey {
-        case items
-        case confidence
-        case disclaimer
-        case model
-        case summary
-        case isFood = "is_food"
-    }
-}
-
-struct AgentProposalDiff: Codable, Hashable {
-    struct Proposed: Codable, Hashable {
-        let title: String?
-        let weeklyDays: Int?
-        let weekdays: [Int]?
-        let sessionMinutes: Int?
-        let weeks: Int?
-        let dayCount: Int?
-
-        enum CodingKeys: String, CodingKey {
-            case title
-            case weeklyDays = "weekly_days"
-            case weekdays
-            case sessionMinutes = "session_minutes"
-            case weeks
-            case dayCount = "day_count"
-        }
-    }
-
-    let changes: [String]
-    let proposed: Proposed?
-
-    enum CodingKeys: String, CodingKey {
-        case changes
-        case proposed
-    }
-}
-
-struct AgentPlanProposal: Codable, Identifiable, Hashable {
-    let id: String
-    let title: String
-    let status: String
-    let changes: [String]
-    let diff: AgentProposalDiff?
-    let expiresAt: Date?
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case title
-        case status
-        case changes
-        case diff
-        case expiresAt = "expires_at"
-    }
-
-    var proposed: AgentProposalDiff.Proposed? { diff?.proposed }
-}
-
-struct AgentActionPayload: Codable, Hashable {
-    let dayID: String?
-    let date: String?
-    let targetDate: String?
-    let screen: String?
-    let goalType: String?
-    let targetWeightKG: Double?
-    let weeklyDays: Int?
-    let sessionMinutes: Int?
-    let weightKG: Double?
-    let bodyFatPCT: Double?
-    let waistCM: Double?
-    let strategy: String?
-    let weekStart: String?
-
-    enum CodingKeys: String, CodingKey {
-        case dayID = "day_id"
-        case date
-        case targetDate = "target_date"
-        case screen
-        case goalType = "goal_type"
-        case targetWeightKG = "target_weight_kg"
-        case weeklyDays = "weekly_days"
-        case sessionMinutes = "session_minutes"
-        case weightKG = "weight_kg"
-        case bodyFatPCT = "body_fat_pct"
-        case waistCM = "waist_cm"
-        case strategy
-        case weekStart = "week_start"
-    }
-}
-
-struct AgentAction: Codable, Identifiable, Hashable {
-    let id: String
-    let type: String
-    let title: String
-    let summary: String
-    let requiresConfirmation: Bool
-    let payload: AgentActionPayload?
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case type
-        case title
-        case summary
-        case requiresConfirmation = "requires_confirmation"
-        case payload
-    }
-}
-
-struct AgentChatResponse: Decodable {
-    let sessionID: UUID?
-    let runID: String
-    let status: String
-    let reply: String
-    let proposal: AgentPlanProposal?
-    let actions: [AgentAction]?
-    let safetyFlag: String?
-    let elapsedMS: Int?
-
-    enum CodingKeys: String, CodingKey {
-        case sessionID = "session_id"
-        case runID = "run_id"
-        case status
-        case reply
-        case proposal
-        case actions
-        case safetyFlag = "safety_flag"
-        case elapsedMS = "elapsed_ms"
-    }
-}
-
-struct AgentApplyResponse: Decodable {
-    let program: TrainingPlan
-}
-
-struct AgentMemory: Codable, Identifiable, Hashable {
-    let id: String
-    let kind: String
-    let key: String
-    let content: String
-    let source: String
-    let confidence: Double
-    let updatedAt: Date?
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case kind
-        case key
-        case content
-        case source
-        case confidence
-        case updatedAt = "updated_at"
-    }
-}
-
-struct AgentMemoryResponse: Decodable {
-    let items: [AgentMemory]
-}
-
-struct AgentReviewStats: Codable, Hashable {
-    let sessions: Int
-    let planned: Int
-    let completionRate: Double
-    let volumeKG: Double
-    let averageRPE: Double?
-    let averageDurationMin: Int
-    let previousVolumeKG: Double
-    let nutritionLoggedDays: Int
-    let planTitle: String?
-
-    enum CodingKeys: String, CodingKey {
-        case sessions
-        case planned
-        case completionRate = "completion_rate"
-        case volumeKG = "volume_kg"
-        case averageRPE = "average_rpe"
-        case averageDurationMin = "average_duration_min"
-        case previousVolumeKG = "previous_volume_kg"
-        case nutritionLoggedDays = "nutrition_logged_days"
-        case planTitle = "plan_title"
-    }
-}
-
-struct AgentWeeklyReview: Codable, Hashable, Identifiable {
-    let runID: String
-    let period: String
-    let weekStart: String
-    let stats: AgentReviewStats
-    let summary: String
-    let wins: [String]
-    let watchouts: [String]
-    let actions: [String]
-    let generatedAt: Date
-
-    var id: String { runID }
-
-    enum CodingKeys: String, CodingKey {
-        case runID = "run_id"
-        case period
-        case weekStart = "week_start"
-        case stats
-        case summary
-        case wins
-        case watchouts
-        case actions
-        case generatedAt = "generated_at"
-    }
-}
-
-struct RemoteFoodLog: Decodable {
-    let clientID: String
-    let loggedAt: Date
-    let meal: String
-    let foodName: String
-    let grams: Double
-    let kcal: Double
-    let protein: Double
-    let carbs: Double
-    let fat: Double
-    let fiber: Double
-
-    enum CodingKeys: String, CodingKey {
-        case clientID = "client_id"
-        case loggedAt = "logged_at"
-        case meal
-        case foodName = "food_name"
-        case grams
-        case kcal
-        case protein
-        case carbs
-        case fat
-        case fiber
-    }
-}
-
-struct RemoteFoodLogResponse: Decodable {
-    let items: [RemoteFoodLog]
-}
-
-struct RemoteBodyMetric: Decodable {
-    let clientID: String
-    let measuredAt: Date
-    let weightKG: Double
-    let bodyFatPCT: Double
-    let waistCM: Double
-    let armCM: Double?
-    let thighCM: Double?
-
-    enum CodingKeys: String, CodingKey {
-        case clientID = "client_id"
-        case measuredAt = "measured_at"
-        case weightKG = "weight_kg"
-        case bodyFatPCT = "body_fat_pct"
-        case waistCM = "waist_cm"
-        case armCM = "arm_cm"
-        case thighCM = "thigh_cm"
-    }
-}
-
-struct RemoteBodyMetricResponse: Decodable {
-    let items: [RemoteBodyMetric]
-}
-
-struct RemoteEquipmentItem: Decodable {
-    let clientID: String
-    let name: String
-    let slug: String?
-    let muscle: String?
-    let equipment: String?
-    let notes: String
-    let createdAt: Date
-
-    enum CodingKeys: String, CodingKey {
-        case clientID = "client_id"
-        case name
-        case slug
-        case muscle
-        case equipment
-        case notes
-        case createdAt = "created_at"
-    }
-}
-
-struct RemoteEquipmentItemResponse: Decodable {
-    let items: [RemoteEquipmentItem]
-}
-private struct TokenRefreshResponse: Decodable {
-    let accessToken: String
-    let refreshToken: String
-
-    enum CodingKeys: String, CodingKey {
-        case accessToken = "access_token"
-        case refreshToken = "refresh_token"
-    }
-}
-
-private struct WorkoutCreateResponse: Decodable {
-    let id: String
-}
-
 struct APIClient {
     static let shared = APIClient()
 
     private var baseURL: URL { AppConfig.apiBaseURL }
-    private let userID = "00000000-0000-0000-0000-000000000001"
-
-    private static let iso8601WithFractionalSeconds: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
-
-    private static let iso8601: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter
-    }()
-
-    private static let birthDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter
-    }()
-
-    private static let utcDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter
-    }()
-
-    private static let naiveDateFormatters: [DateFormatter] = {
-        ["yyyy-MM-dd'T'HH:mm:ss.SSSSSS", "yyyy-MM-dd'T'HH:mm:ss.SSS", "yyyy-MM-dd'T'HH:mm:ss"].map { format in
-            let formatter = DateFormatter()
-            formatter.calendar = Calendar(identifier: .gregorian)
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            formatter.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
-            formatter.dateFormat = format
-            return formatter
-        }
-    }()
+    private let transport = APITransport()
 
     init() {}
-
-    private func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .custom { decoder in
-            let container = try decoder.singleValueContainer()
-            let text = try container.decode(String.self)
-            if let date = Self.iso8601WithFractionalSeconds.date(from: text) {
-                return date
-            }
-            if let date = Self.iso8601.date(from: text) {
-                return date
-            }
-            for formatter in Self.naiveDateFormatters {
-                if let date = formatter.date(from: text) {
-                    return date
-                }
-            }
-            throw DecodingError.dataCorruptedError(
-                in: container,
-                debugDescription: "无法解析日期：\(text)"
-            )
-        }
-        return try decoder.decode(type, from: data)
-    }
 
     // MARK: - 档案
 
@@ -624,20 +55,21 @@ struct APIClient {
         if let targetBodyFat = profile.targetBodyFatPCT {
             payload["target_body_fat_pct"] = targetBodyFat
         }
-        payload["target_date"] = Self.birthDateFormatter.string(from: profile.targetDate)
+        payload["target_date"] = APIDateCoding.dateOnlyLocal.string(from: profile.targetDate)
         let body = try JSONSerialization.data(withJSONObject: payload)
         try await sendVoid(path: "me/goal", method: "PUT", body: body)
     }
 
     // MARK: - 训练记录
 
-    func createWorkout(_ session: WorkoutSession) async throws -> String {
+    /// The create and update endpoints share the same shape; only `client_id`
+    /// differs. Keeping this in one builder avoids the two payloads drifting.
+    private func workoutPayload(_ session: WorkoutSession, includeClientID: Bool) -> [String: Any] {
         let finishedAt = session.date
         let startedAt = finishedAt.addingTimeInterval(-Double(max(0, session.durationMinutes) * 60))
         var payload: [String: Any] = [
-            "client_id": session.id.uuidString,
-            "started_at": Self.iso8601WithFractionalSeconds.string(from: startedAt),
-            "finished_at": Self.iso8601WithFractionalSeconds.string(from: finishedAt),
+            "started_at": APIDateCoding.iso8601WithFractionalSeconds.string(from: startedAt),
+            "finished_at": APIDateCoding.iso8601WithFractionalSeconds.string(from: finishedAt),
             "feeling": min(5, max(1, session.feeling)),
             "sets": session.sets.map { log in
                 var value: [String: Any] = [
@@ -652,13 +84,20 @@ struct APIClient {
                 return value
             }
         ]
+        if includeClientID {
+            payload["client_id"] = session.id.uuidString
+        }
         if let notes = session.notes, !notes.isEmpty {
             payload["notes"] = notes
         }
         if let day = session.programDayID {
             payload["program_day_id"] = day
         }
-        let body = try JSONSerialization.data(withJSONObject: payload)
+        return payload
+    }
+
+    func createWorkout(_ session: WorkoutSession) async throws -> String {
+        let body = try JSONSerialization.data(withJSONObject: workoutPayload(session, includeClientID: true))
         let response: WorkoutCreateResponse = try await send(
             path: "workouts",
             method: "POST",
@@ -668,32 +107,7 @@ struct APIClient {
     }
 
     func updateWorkout(id: String, session: WorkoutSession) async throws {
-        let finishedAt = session.date
-        let startedAt = finishedAt.addingTimeInterval(-Double(max(0, session.durationMinutes) * 60))
-        var payload: [String: Any] = [
-            "started_at": Self.iso8601WithFractionalSeconds.string(from: startedAt),
-            "finished_at": Self.iso8601WithFractionalSeconds.string(from: finishedAt),
-            "feeling": min(5, max(1, session.feeling)),
-            "sets": session.sets.map { log in
-                var value: [String: Any] = [
-                    "slug": log.slug,
-                    "set_index": log.setIndex,
-                    "weight_kg": log.weightKG,
-                    "reps": log.reps,
-                    "rpe": log.rpe,
-                    "completed": log.completed
-                ]
-                if log.weightKG <= 0 { value.removeValue(forKey: "weight_kg") }
-                return value
-            }
-        ]
-        if let notes = session.notes, !notes.isEmpty {
-            payload["notes"] = notes
-        }
-        if let day = session.programDayID {
-            payload["program_day_id"] = day
-        }
-        let body = try JSONSerialization.data(withJSONObject: payload)
+        let body = try JSONSerialization.data(withJSONObject: workoutPayload(session, includeClientID: false))
         try await sendVoid(
             path: "workouts/\(id)",
             method: "PATCH",
@@ -712,7 +126,7 @@ struct APIClient {
             value: -max(1, days),
             to: Date()
         ) ?? Date()
-        let text = Self.utcDateFormatter.string(from: from)
+        let text = APIDateCoding.dateOnlyUTC.string(from: from)
         let data = try await perform(
             path: "workouts?from=\(text)&limit=100&include_sets=true",
             method: "GET",
@@ -787,7 +201,7 @@ struct APIClient {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .custom { date, encoder in
             var container = encoder.singleValueContainer()
-            try container.encode(Self.iso8601WithFractionalSeconds.string(from: date))
+            try container.encode(APIDateCoding.iso8601WithFractionalSeconds.string(from: date))
         }
         let body = try encoder.encode(
             Payload(planID: planID, planVersion: planVersion, days: days)
@@ -898,7 +312,7 @@ struct APIClient {
     func syncFoodLog(_ log: FoodLog) async throws {
         let payload: [String: Any] = [
             "client_id": log.id.uuidString,
-            "logged_at": Self.iso8601WithFractionalSeconds.string(from: log.date),
+            "logged_at": APIDateCoding.iso8601WithFractionalSeconds.string(from: log.date),
             "meal": log.meal.rawValue,
             "food_name": log.foodName,
             "grams": log.grams,
@@ -932,7 +346,7 @@ struct APIClient {
     func syncBodyMetric(_ metric: BodyMetric) async throws {
         var payload: [String: Any] = [
             "client_id": metric.id.uuidString,
-            "measured_at": Self.iso8601WithFractionalSeconds.string(from: metric.date),
+            "measured_at": APIDateCoding.iso8601WithFractionalSeconds.string(from: metric.date),
             "weight_kg": metric.weightKG,
             "body_fat_pct": metric.bodyFatPCT,
             "waist_cm": metric.waistCM
@@ -1132,7 +546,7 @@ struct APIClient {
         return nil
     }
 
-    // MARK: - 网络
+    // MARK: - Transport
 
     private func send<T: Decodable>(
         path: String,
@@ -1140,17 +554,11 @@ struct APIClient {
         body: Data?,
         timeout: TimeInterval = 90
     ) async throws -> T {
-        let data = try await perform(
-            path: path,
-            method: method,
-            body: body,
-            timeout: timeout
-        )
-        return try decode(T.self, from: data)
+        try await transport.send(path: path, method: method, body: body, timeout: timeout)
     }
 
     private func sendVoid(path: String, method: String, body: Data?) async throws {
-        _ = try await perform(path: path, method: method, body: body)
+        try await transport.sendVoid(path: path, method: method, body: body)
     }
 
     private func upload(
@@ -1159,22 +567,11 @@ struct APIClient {
         filename: String,
         fields: [String: String] = [:]
     ) async throws -> Data {
-        let boundary = "Boundary-\(UUID().uuidString)"
-        var body = Data()
-        appendMultipartFields(fields, boundary: boundary, to: &body)
-        body.append(contentsOf: Data("--\(boundary)\r\n".utf8))
-        body.append(contentsOf: Data(
-            "Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".utf8
-        ))
-        body.append(contentsOf: Data("Content-Type: image/jpeg\r\n\r\n".utf8))
-        body.append(imageData)
-        body.append(contentsOf: Data("\r\n--\(boundary)--\r\n".utf8))
-
-        return try await perform(
+        try await transport.upload(
             path: path,
-            method: "POST",
-            body: body,
-            contentType: "multipart/form-data; boundary=\(boundary)"
+            imageData: imageData,
+            filename: filename,
+            fields: fields
         )
     }
 
@@ -1183,44 +580,11 @@ struct APIClient {
         images: [Data],
         fields: [String: String] = [:]
     ) async throws -> Data {
-        guard !images.isEmpty else {
-            throw APIError(message: "没有可上传的图片")
-        }
-        let boundary = "Boundary-\(UUID().uuidString)"
-        var body = Data()
-        appendMultipartFields(fields, boundary: boundary, to: &body)
-        for (index, imageData) in images.enumerated() {
-            body.append(contentsOf: Data("--\(boundary)\r\n".utf8))
-            body.append(contentsOf: Data(
-                "Content-Disposition: form-data; name=\"files\"; filename=\"form-\(index + 1).jpg\"\r\n".utf8
-            ))
-            body.append(contentsOf: Data("Content-Type: image/jpeg\r\n\r\n".utf8))
-            body.append(imageData)
-            body.append(contentsOf: Data("\r\n".utf8))
-        }
-        body.append(contentsOf: Data("--\(boundary)--\r\n".utf8))
-
-        return try await perform(
-            path: path,
-            method: "POST",
-            body: body,
-            contentType: "multipart/form-data; boundary=\(boundary)"
-        )
+        try await transport.uploadMany(path: path, images: images, fields: fields)
     }
 
-    private func appendMultipartFields(
-        _ fields: [String: String],
-        boundary: String,
-        to body: inout Data
-    ) {
-        for (name, value) in fields {
-            body.append(contentsOf: Data("--\(boundary)\r\n".utf8))
-            body.append(contentsOf: Data(
-                "Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".utf8
-            ))
-            body.append(contentsOf: Data(value.utf8))
-            body.append(contentsOf: Data("\r\n".utf8))
-        }
+    private func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
+        try transport.decode(type, from: data)
     }
 
     private func perform(
@@ -1228,93 +592,19 @@ struct APIClient {
         method: String,
         body: Data?,
         contentType: String = "application/json",
-        retried: Bool = false,
         timeout: TimeInterval = 90
     ) async throws -> Data {
-        guard let url = URL(string: baseURL.absoluteString + "/" + path) else {
-            throw APIError(message: "接口地址不合法")
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = method
-        request.setValue(contentType, forHTTPHeaderField: "Content-Type")
-        if let token = AuthTokenStore.shared.accessToken {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        } else {
-            request.setValue(userID, forHTTPHeaderField: "X-User-Id")
-        }
-        request.httpBody = body
-        request.timeoutInterval = timeout
-
-        let data: Data
-        let response: URLResponse
-        do {
-            (data, response) = try await URLSession.shared.data(for: request)
-        } catch let error as URLError {
-            if [.cannotConnectToHost, .notConnectedToInternet, .timedOut, .networkConnectionLost]
-                .contains(error.code) {
-                throw APIError(
-                    message: "无法连接服务端：请确认后端已启动，并在 Debug 构建中填写正确的局域网 API 地址。"
-                )
-            }
-            throw APIError(message: error.localizedDescription)
-        }
-        guard let http = response as? HTTPURLResponse else {
-            throw APIError(message: "网络响应异常")
-        }
-        if http.statusCode == 401,
-           !retried,
-           AuthTokenStore.shared.refreshToken != nil {
-            if await refreshAccessToken() {
-                return try await perform(
-                    path: path,
-                    method: method,
-                    body: body,
-                    contentType: contentType,
-                    retried: true,
-                    timeout: timeout
-                )
-            }
-        }
-        guard (200..<300).contains(http.statusCode) else {
-            let text = String(data: data, encoding: .utf8) ?? ""
-            throw APIError(message: "服务返回 \(http.statusCode)：\(text.prefix(200))", statusCode: http.statusCode)
-        }
-        return data
-    }
-
-    private func refreshAccessToken() async -> Bool {
-        guard let refreshToken = AuthTokenStore.shared.refreshToken,
-              let url = URL(string: AppConfig.apiBaseURL.absoluteString + "/auth/refresh") else {
-            return false
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try? JSONSerialization.data(withJSONObject: [
-            "refresh_token": refreshToken
-        ])
-        request.timeoutInterval = 20
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            guard let http = response as? HTTPURLResponse,
-                  (200..<300).contains(http.statusCode) else {
-                return false
-            }
-            let refresh = try JSONDecoder().decode(TokenRefreshResponse.self, from: data)
-            AuthTokenStore.shared.updateTokens(
-                accessToken: refresh.accessToken,
-                refreshToken: refresh.refreshToken
-            )
-            return true
-        } catch {
-            return false
-        }
+        try await transport.perform(
+            path: path,
+            method: method,
+            body: body,
+            contentType: contentType,
+            timeout: timeout
+        )
     }
 
     private func birthDateString(age: Int) -> String {
-        let date = Calendar.current.date(byAdding: .year, value: -age, to: Date()) ?? Date()
-        return Self.birthDateFormatter.string(from: date)
+        APIDateCoding.birthDateString(age: age)
     }
 
     private func apiGoalType(_ type: GoalType) -> String {

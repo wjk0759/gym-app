@@ -17,7 +17,7 @@ struct CoachChatView: View {
     @State private var showBodyAnalysis = false
     @State private var showDietLibrary = false
     @State private var showVideoReview = false
-    @State private var draftAttachments: [DraftAttachment] = []
+    @State private var draftAttachments: [CoachDraftImage] = []
     @State private var draftVideo: CoachVideoAttachment?
     @State private var photoItems: [PhotosPickerItem] = []
     @State private var videoItem: PhotosPickerItem?
@@ -28,17 +28,6 @@ struct CoachChatView: View {
     @State private var attachmentError: String?
     @FocusState private var focused: Bool
 
-    private enum AttachmentLimits {
-        static let maxImages = 6
-        static let maxImageBytes = 8 * 1024 * 1024
-        static let maxTotalBytes = 24 * 1024 * 1024
-    }
-
-    private struct DraftAttachment: Identifiable {
-        let id = UUID()
-        let image: UIImage
-        let data: Data
-    }
 
     private var canSend: Bool {
         !store.isReplying
@@ -53,7 +42,7 @@ struct CoachChatView: View {
         draftVideo == nil
             && !isLoadingAttachments
             && !isLoadingVideo
-            && draftAttachments.count < AttachmentLimits.maxImages
+            && draftAttachments.count < CoachAttachmentPolicy.maxImages
             && !store.isReplying
     }
 
@@ -271,7 +260,7 @@ struct CoachChatView: View {
             .photosPicker(
                 isPresented: $showPhotoPicker,
                 selection: $photoItems,
-                maxSelectionCount: max(1, AttachmentLimits.maxImages - draftAttachments.count),
+                maxSelectionCount: max(1, CoachAttachmentPolicy.maxImages - draftAttachments.count),
                 matching: .images,
                 photoLibrary: .shared()
             )
@@ -361,124 +350,74 @@ struct CoachChatView: View {
     }
 
     private func proposalCard(_ proposal: PlanAdjustmentProposal) -> some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Text("调整方案 · 根据你的反馈")
-                .font(.system(size: 9, weight: .bold))
-                .foregroundStyle(Theme.accent)
-            Text(proposal.headline)
-                .font(.headline)
-                .foregroundStyle(Theme.primaryText)
-            Text(proposal.summary)
-                .font(.caption)
-                .foregroundStyle(Theme.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
-            ForEach(Array(proposal.changes.prefix(4).enumerated()), id: \.offset) { index, change in
-                HStack(alignment: .top, spacing: 8) {
-                    Text(String(format: "%02d", index + 1))
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(Theme.accent)
-                        .frame(width: 22, alignment: .leading)
-                    Text(change)
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                        .fixedSize(horizontal: false, vertical: true)
+        CoachCard {
+            VStack(alignment: .leading, spacing: 9) {
+                CoachEyebrow(text: "调整方案 · 根据你的反馈")
+                Text(proposal.headline)
+                    .font(.headline)
+                    .foregroundStyle(Theme.primaryText)
+                Text(proposal.summary)
+                    .font(.caption)
+                    .foregroundStyle(Theme.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(Array(proposal.changes.prefix(4).enumerated()), id: \.offset) { index, change in
+                    HStack(alignment: .top, spacing: 8) {
+                        Text(String(format: "%02d", index + 1))
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Theme.accent)
+                            .frame(width: 22, alignment: .leading)
+                        Text(change)
+                            .font(.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-            }
-            HStack(spacing: 8) {
-                Button(proposal.regeneratePlan ? "生成新计划" : "应用调整") {
-                    store.applyPlanAdjustment()
+                HStack(spacing: 8) {
+                    Button(proposal.regeneratePlan ? "生成新计划" : "应用调整") {
+                        store.applyPlanAdjustment()
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                    Button("再改一点") {
+                        store.revisePlanAdjustment()
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
                 }
-                .buttonStyle(PrimaryButtonStyle())
-                Button("再改一点") {
-                    store.revisePlanAdjustment()
-                }
-                .buttonStyle(SecondaryButtonStyle())
             }
         }
-        .padding(14)
-        .background(
-            Theme.surface,
-            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.10), lineWidth: 1)
-        )
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
     }
 
     private var agentRetryCard: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "arrow.clockwise.circle.fill")
-                .foregroundStyle(Theme.warning)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("这次远程请求没有完成")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.primaryText)
-                Text("你的输入已保留，可以重试；不会重复生成计划。")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-            Spacer(minLength: 6)
-            Button("重试") {
-                store.retryAgentChat()
-            }
-            .font(.caption.weight(.bold))
-            .foregroundStyle(Theme.accent)
-            .disabled(store.isReplying)
-            .buttonStyle(SubtlePressStyle())
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(Theme.surfaceStrong)
-        .overlay(alignment: .top) {
-            Rectangle().fill(Theme.stroke).frame(height: 1)
-        }
+        CoachInlineBanner(
+            icon: "arrow.clockwise.circle.fill",
+            tint: Theme.warning,
+            title: "这次远程请求没有完成",
+            message: "你的输入已保留，可以重试；不会重复生成计划。",
+            actionTitle: "重试",
+            isBusy: store.isReplying,
+            action: { store.retryAgentChat() }
+        )
     }
 
     @ViewBuilder
     private var agentUndoCard: some View {
         if let undo = store.pendingUndo {
-            HStack(spacing: 10) {
-                Image(systemName: "arrow.uturn.backward.circle.fill")
-                    .foregroundStyle(Theme.accent)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("已执行：\(undo.title)")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Theme.primaryText)
-                    Text("5 分钟内可以撤销这次操作")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-                Spacer(minLength: 6)
-                Button("撤销") {
-                    store.undoLastAgentAction()
-                }
-                .font(.caption.weight(.bold))
-                .foregroundStyle(Theme.accent)
-                .buttonStyle(SubtlePressStyle())
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Theme.surfaceStrong)
-            .overlay(alignment: .top) {
-                Rectangle().fill(Theme.stroke).frame(height: 1)
-            }
+            CoachInlineBanner(
+                icon: "arrow.uturn.backward.circle.fill",
+                title: "已执行：\(undo.title)",
+                message: "5 分钟内可以撤销这次操作",
+                actionTitle: "撤销",
+                action: { store.undoLastAgentAction() }
+            )
         }
     }
 
     private var agentActionsCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("AGENT 操作")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(Theme.accent)
-                Spacer()
-                Text(store.agentActions.contains(where: { $0.requiresConfirmation }) ? "待确认" : "可执行")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Theme.warning)
-            }
+        CoachCard(border: Theme.accent.opacity(0.25)) {
+            VStack(alignment: .leading, spacing: 10) {
+                CoachCardHeader(
+                    eyebrow: "AGENT 操作",
+                    status: store.agentActions.contains(where: { $0.requiresConfirmation }) ? "待确认" : "可执行"
+                )
 
             ForEach(store.agentActions) { action in
                 HStack(alignment: .top, spacing: 10) {
@@ -509,11 +448,10 @@ struct CoachChatView: View {
                 Button {
                     store.executeAgentActions()
                 } label: {
-                    if store.isExecutingAgentActions {
-                        ProgressView().tint(.black)
-                    } else {
-                        Text("确认并执行")
-                    }
+                    CoachLoadingLabel(
+                        title: "确认并执行",
+                        isLoading: store.isExecutingAgentActions
+                    )
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(store.isExecutingAgentActions)
@@ -524,18 +462,8 @@ struct CoachChatView: View {
                 .buttonStyle(SecondaryButtonStyle())
                 .disabled(store.isExecutingAgentActions)
             }
+            }
         }
-        .padding(14)
-        .background(
-            Theme.surface,
-            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Theme.accent.opacity(0.25), lineWidth: 1)
-        )
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
     }
 
     private func agentActionIcon(_ type: String) -> String {
@@ -683,16 +611,9 @@ struct CoachChatView: View {
     }
 
     private func agentProposalCard(_ proposal: AgentPlanProposal) -> some View {
-        VStack(alignment: .leading, spacing: 9) {
-            HStack {
-                Text("AGENT 计划草案")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(Theme.accent)
-                Spacer()
-                Text("待确认")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Theme.warning)
-            }
+        CoachCard(border: Theme.accent.opacity(0.25)) {
+            VStack(alignment: .leading, spacing: 9) {
+                CoachCardHeader(eyebrow: "AGENT 计划草案", status: "待确认")
             Text(proposal.title)
                 .font(.headline)
                 .foregroundStyle(Theme.primaryText)
@@ -730,11 +651,10 @@ struct CoachChatView: View {
                 Button {
                     store.applyAgentProposal()
                 } label: {
-                    if store.isAgentWorking {
-                        ProgressView().tint(.black)
-                    } else {
-                        Text("应用到正式计划")
-                    }
+                    CoachLoadingLabel(
+                        title: "应用到正式计划",
+                        isLoading: store.isAgentWorking
+                    )
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(store.isAgentWorking)
@@ -745,15 +665,8 @@ struct CoachChatView: View {
                 .buttonStyle(SecondaryButtonStyle())
                 .disabled(store.isAgentWorking)
             }
+            }
         }
-        .padding(14)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Theme.accent.opacity(0.25), lineWidth: 1)
-        )
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
     }
 
     private var inputPlaceholder: String {
@@ -900,11 +813,7 @@ struct CoachChatView: View {
     }
 
     private func bubble(_ message: ChatMessage) -> some View {
-        HStack {
-            if message.role == .user {
-                Spacer(minLength: 40)
-            }
-
+        CoachChatBubble(isUser: message.role == .user, isSafety: message.isSafety) {
             VStack(alignment: .leading, spacing: 6) {
                 if message.isSafety {
                     Label("安全提醒", systemImage: "exclamationmark.triangle.fill")
@@ -948,26 +857,6 @@ struct CoachChatView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(12)
-            .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(
-                        message.role == .user
-                            ? Theme.accent
-                            : (message.isSafety ? Theme.warning.opacity(0.12) : Theme.surface)
-                    )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(
-                        message.isSafety ? Theme.warning.opacity(0.5) : Color.clear,
-                        lineWidth: 1
-                    )
-            )
-
-            if message.role == .assistant {
-                Spacer(minLength: 40)
-            }
         }
     }
 
@@ -984,50 +873,30 @@ struct CoachChatView: View {
     private var coachQuickActions: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                quickAction("训练计划", icon: "calendar") {
+                CoachQuickActionButton(title: "训练计划", icon: "calendar") {
                     send("帮我安排今天的训练")
                 }
-                quickAction("饮食方案", icon: "fork.knife") {
+                CoachQuickActionButton(title: "饮食方案", icon: "fork.knife") {
                     showDietLibrary = true
                 }
-                quickAction("动作点评", icon: "camera.viewfinder") {
+                CoachQuickActionButton(title: "动作点评", icon: "camera.viewfinder") {
                     cameraTitle = "动作点评"
                     cameraHint = "拍全身侧面，光线清楚，尽量包含器械和完整动作。照片只用于本次点评。"
                     showCamera = true
                 }
-                quickAction("视频点评", icon: "video.fill") {
+                CoachQuickActionButton(title: "视频点评", icon: "video.fill") {
                     showVideoReview = true
                 }
-                quickAction("器械识别", icon: "dumbbell") {
+                CoachQuickActionButton(title: "器械识别", icon: "dumbbell") {
                     showEquipmentScan = true
                 }
-                quickAction("记录", icon: "list.bullet.rectangle") {
+                CoachQuickActionButton(title: "记录", icon: "list.bullet.rectangle") {
                     store.selectedTab = 1
                 }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
         }
-    }
-
-    private func quickAction(
-        _ title: String,
-        icon: String,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button {
-            Haptics.tap()
-            action()
-        } label: {
-            Label(title, systemImage: icon)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.accent)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Theme.accent.opacity(0.09), in: Capsule())
-                .overlay(Capsule().stroke(Theme.accent.opacity(0.18), lineWidth: 0.8))
-        }
-        .buttonStyle(SubtlePressStyle(scale: 0.95))
     }
 
     private var inputBar: some View {
@@ -1225,45 +1094,42 @@ struct CoachChatView: View {
             attachmentError = "请先移除已选视频，图片和视频不能同时发送。"
             return
         }
-        let remaining = AttachmentLimits.maxImages - draftAttachments.count
+        let remaining = CoachAttachmentPolicy.remainingImageSlots(currentCount: draftAttachments.count)
         guard remaining > 0 else {
-            attachmentError = "最多只能添加 \(AttachmentLimits.maxImages) 张照片。"
+            attachmentError = "最多只能添加 \(CoachAttachmentPolicy.maxImages) 张照片。"
             return
         }
 
         let selected = photoItems
-        var accepted: [DraftAttachment] = []
+        var accepted: [CoachDraftImage] = []
         for item in selected.prefix(remaining) {
             do {
                 let loaded = try await PhotoLibraryLoader.load(
                     item,
                     maxDimension: 1600,
                     compressionQuality: 0.75,
-                    maxBytes: AttachmentLimits.maxImageBytes
+                    maxBytes: CoachAttachmentPolicy.maxImageBytes
                 )
                 accepted.append(
-                    DraftAttachment(image: loaded.image, data: loaded.jpegData)
+                    CoachDraftImage(image: loaded.image, data: loaded.jpegData)
                 )
             } catch {
                 attachmentError = error.localizedDescription
             }
         }
 
-        var totalBytes = draftAttachments.reduce(0) { $0 + $1.data.count }
         for attachment in accepted {
-            guard draftAttachments.count < AttachmentLimits.maxImages else {
-                attachmentError = "最多只能添加 \(AttachmentLimits.maxImages) 张照片。"
-                break
-            }
-            guard totalBytes + attachment.data.count <= AttachmentLimits.maxTotalBytes else {
-                attachmentError = "图片总大小不能超过 24MB。"
+            if let error = CoachAttachmentPolicy.validationError(
+                appending: attachment.data,
+                to: draftAttachments.map(\.data)
+            ) {
+                attachmentError = error
                 break
             }
             draftAttachments.append(attachment)
-            totalBytes += attachment.data.count
         }
         if selected.count > remaining {
-            attachmentError = "最多只能添加 \(AttachmentLimits.maxImages) 张照片。"
+            attachmentError = "最多只能添加 \(CoachAttachmentPolicy.maxImages) 张照片。"
         }
     }
 
@@ -1313,175 +1179,34 @@ struct CoachChatView: View {
             attachmentError = "请先移除已选视频，图片和视频不能同时发送。"
             return
         }
-        guard draftAttachments.count < AttachmentLimits.maxImages else {
-            attachmentError = "最多只能添加 \(AttachmentLimits.maxImages) 张照片。"
+        if let error = CoachAttachmentPolicy.validationError(
+            appending: data,
+            to: draftAttachments.map(\.data)
+        ) {
+            attachmentError = error
             return
         }
-        guard data.count <= AttachmentLimits.maxImageBytes else {
-            attachmentError = "单张图片不能超过 8MB。"
-            return
-        }
-        let totalBytes = draftAttachments.reduce(0) { $0 + $1.data.count } + data.count
-        guard totalBytes <= AttachmentLimits.maxTotalBytes else {
-            attachmentError = "图片总大小不能超过 24MB。"
-            return
-        }
-        draftAttachments.append(DraftAttachment(image: image, data: data))
+        draftAttachments.append(CoachDraftImage(image: image, data: data))
         attachmentError = nil
     }
 
     private var attachmentDraftBar: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Label(
-                    !(draftVideo != nil || isLoadingVideo)
-                        ? "待发送图片 \(draftAttachments.count)/\(AttachmentLimits.maxImages)"
-                        : "待发送视频",
-                    systemImage: !(draftVideo != nil || isLoadingVideo) ? "paperclip" : "video.fill"
-                )
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.secondaryText)
-
-                if isLoadingAttachments || isLoadingVideo {
-                    ProgressView()
-                        .controlSize(.small)
-                }
-
-                Spacer()
-
-                Button("清空") {
-                    draftAttachments = []
-                    draftVideo = nil
-                }
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.tertiaryText)
+        CoachAttachmentDraftBar(
+            images: draftAttachments,
+            video: draftVideo,
+            isLoadingImages: isLoadingAttachments,
+            isLoadingVideo: isLoadingVideo,
+            onClear: {
+                draftAttachments = []
+                draftVideo = nil
+            },
+            onRemoveImage: { id in
+                draftAttachments.removeAll { $0.id == id }
+            },
+            onRemoveVideo: {
+                draftVideo = nil
             }
-
-            if isLoadingVideo, draftVideo == nil {
-                HStack(spacing: 10) {
-                    VStack(spacing: 5) {
-                        ProgressView()
-                            .tint(Theme.accent)
-                        Text("读取中")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundStyle(Theme.secondaryText)
-                    }
-                    .frame(width: 150, height: 84)
-                    .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("正在分析视频画面…")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Theme.primaryText)
-                        Text("本地抽取关键帧并识别姿态，请稍等")
-                            .font(.caption2)
-                            .foregroundStyle(Theme.tertiaryText)
-                    }
-
-                    Spacer(minLength: 0)
-                }
-            } else if let video = draftVideo {
-                HStack(spacing: 10) {
-                    ZStack {
-                        Image(uiImage: video.thumbnail)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 150, height: 84)
-                            .clipped()
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 30, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.94))
-                            .shadow(radius: 2)
-                    }
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("视频已就绪")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Theme.primaryText)
-                        Text("\(video.durationSeconds)s · 发送时上传最多 6 个关键帧")
-                            .font(.caption2)
-                            .foregroundStyle(Theme.tertiaryText)
-                    }
-
-                    Spacer(minLength: 0)
-
-                    Button {
-                        draftVideo = nil
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(Theme.secondaryText)
-                            .frame(width: 26, height: 26)
-                            .background(Theme.surfaceStrong, in: Circle())
-                    }
-                    .accessibilityLabel("移除视频")
-                }
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        if isLoadingAttachments {
-                            VStack(spacing: 4) {
-                                ProgressView()
-                                    .tint(Theme.accent)
-                                Text("读取中")
-                                    .font(.system(size: 9, weight: .medium))
-                                    .foregroundStyle(Theme.secondaryText)
-                            }
-                            .frame(width: 68, height: 68)
-                            .background(
-                                Theme.surfaceStrong,
-                                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            )
-                        }
-
-                        ForEach(draftAttachments) { attachment in
-                            ZStack(alignment: .topTrailing) {
-                                Image(uiImage: attachment.image)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 68, height: 68)
-                                    .clipped()
-                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-                                Button {
-                                    draftAttachments.removeAll { $0.id == attachment.id }
-                                } label: {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 8, weight: .bold))
-                                        .foregroundStyle(.white)
-                                        .frame(width: 18, height: 18)
-                                        .background(.black.opacity(0.66), in: Circle())
-                                }
-                                .offset(x: 5, y: -5)
-                                .accessibilityLabel("移除图片")
-                            }
-                        }
-                    }
-                    .padding(.trailing, 8)
-                    .padding(.vertical, 2)
-                }
-            }
-
-            Text(
-                !(draftVideo != nil || isLoadingVideo)
-                    ? "图片和视频只能二选一；可以先添加多张图片，写完说明后再发送。"
-                    : "视频一次只能发送一个；发送时最多上传 6 个关键帧和本机姿态摘要，不上传原视频。"
-            )
-            .font(.caption2)
-            .foregroundStyle(Theme.tertiaryText)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background {
-            GlassSurface(cornerRadius: 0, material: false)
-        }
-        .overlay(alignment: .top) {
-            Rectangle()
-                .fill(Color.white.opacity(colorScheme == .dark ? 0.12 : 0.48))
-                .frame(height: 0.8)
-        }
+        )
     }
 
     private func send(_ text: String) {
@@ -1503,131 +1228,5 @@ struct CoachChatView: View {
         } else {
             store.sendChat(trimmed)
         }
-    }
-}
-
-private struct ChatMessageImageGrid: View {
-    let messageID: UUID
-    let images: [Data]
-
-    var body: some View {
-        if images.count == 1 {
-            ChatImageThumbnail(
-                messageID: messageID,
-                data: images[0],
-                width: 240,
-                height: 160
-            )
-        } else {
-            LazyVGrid(
-                columns: [
-                    GridItem(.fixed(104), spacing: 6),
-                    GridItem(.fixed(104), spacing: 6)
-                ],
-                spacing: 6
-            ) {
-                ForEach(Array(images.enumerated()), id: \.offset) { index, data in
-                    ChatImageThumbnail(
-                        messageID: messageID,
-                        data: data,
-                        cacheKeySuffix: String(index),
-                        width: 104,
-                        height: 104
-                    )
-                }
-            }
-            .frame(width: 214, alignment: .leading)
-        }
-    }
-}
-
-private struct ChatVideoThumbnail: View {
-    let messageID: UUID
-    let data: Data
-    let duration: Int
-
-    var body: some View {
-        ChatImageThumbnail(
-            messageID: messageID,
-            data: data,
-            cacheKeySuffix: "video",
-            width: 240,
-            height: 160
-        )
-        .overlay {
-            Image(systemName: "play.circle.fill")
-                .font(.system(size: 44, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.94))
-                .shadow(radius: 3)
-        }
-        .overlay(alignment: .bottomTrailing) {
-            Text("\(duration)s")
-                .font(.caption2.weight(.bold).monospacedDigit())
-                .foregroundStyle(.white)
-                .padding(.horizontal, 7)
-                .padding(.vertical, 4)
-                .background(.black.opacity(0.62), in: Capsule())
-                .padding(7)
-        }
-    }
-}
-
-private struct ChatImageThumbnail: View {
-    let messageID: UUID
-    let data: Data
-    var cacheKeySuffix: String = ""
-    var width: CGFloat = 240
-    var height: CGFloat = 160
-
-    @State private var image: UIImage?
-    private static let cache = NSCache<NSString, UIImage>()
-
-    var body: some View {
-        Group {
-            if let image {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-            } else {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Theme.surfaceStrong)
-            }
-        }
-        .frame(width: width, height: height)
-        .clipped()
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .task(id: messageID.uuidString + cacheKeySuffix) {
-            await load()
-        }
-    }
-
-    @MainActor
-    private func load() async {
-        let key = (messageID.uuidString + cacheKeySuffix) as NSString
-        if let cached = Self.cache.object(forKey: key) {
-            image = cached
-            return
-        }
-        let payload = data
-        let decoded = await Task.detached(priority: .userInitiated) {
-            Self.downsample(payload, maxPixel: 480)
-        }.value
-        guard let decoded else { return }
-        Self.cache.setObject(decoded, forKey: key)
-        image = decoded
-    }
-
-    nonisolated private static func downsample(_ data: Data, maxPixel: CGFloat) -> UIImage? {
-        let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: maxPixel,
-            kCGImageSourceShouldCacheImmediately: true
-        ]
-        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
-              let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
-            return nil
-        }
-        return UIImage(cgImage: cgImage)
     }
 }
