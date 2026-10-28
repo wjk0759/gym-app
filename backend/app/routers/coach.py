@@ -8,10 +8,10 @@ from ..deps import CurrentUser, DBSession
 from ..models import ChatMessage, ChatSession, Profile, Program
 from ..schemas import ChatIn
 from ..services import coach_vision
-from ..services.safety import assess_safety
 from ..services.coach import coach_reply
 from ..services.memory import schedule_memory_extraction
 from ..services.queries import active_program
+from ..services.safety import assess_safety
 
 router = APIRouter(prefix="/coach", tags=["coach"])
 

@@ -313,7 +313,8 @@ DOSE_WORDS = (
     "吃多少",
 )
 
-CONDITION_RISK = HIGH_IMPACT + (
+CONDITION_RISK = (
+    *HIGH_IMPACT,
     "断食",
     "禁食",
     "7天断食",

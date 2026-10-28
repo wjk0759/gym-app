@@ -6,8 +6,9 @@ the product-level behavior stable while prompts and model routing evolve.
 
 import pytest
 
-from app.services.coach import _input_strategy, detect_safety
+from app.services.coach import _input_strategy
 from app.services.coach_vision import _question_mode
+from app.services.safety import detect_safety
 
 
 @pytest.mark.parametrize(

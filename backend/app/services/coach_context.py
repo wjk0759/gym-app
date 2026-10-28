@@ -8,7 +8,7 @@ UI. All values here are computed from database state, not from the model.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session

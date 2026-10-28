@@ -32,10 +32,10 @@ from ..models import (
 )
 from . import llm
 from .coach_context import build_coach_context, recent_training
-from .safety import assess_safety
 from .memory import remember_facts, schedule_memory_extraction
 from .plan_generator import build_template_plan
 from .queries import active_goal, active_program
+from .safety import assess_safety
 from .serializers import save_plan
 
 logger = logging.getLogger(__name__)

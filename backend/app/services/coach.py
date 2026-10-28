@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import time
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Literal
 
@@ -14,7 +13,7 @@ from ..config import settings
 from ..models import ChatMessage, Exercise, Profile, Program
 from . import llm
 from .coach_context import build_coach_context, context_as_text
-from .safety import assess_safety, detect_safety
+from .safety import assess_safety
 
 PROMPT_DIR = Path(__file__).resolve().parent.parent / "prompts"
 PROMPT_FILES = {
