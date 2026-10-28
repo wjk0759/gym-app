@@ -116,7 +116,7 @@ def _normalize_split(value: Any) -> str | None:
         str(value).strip()
     )
 
-SYSTEM_PROMPT = """你是 FitAI 教练 Agent，不是普通的单轮聊天机器人。
+SYSTEM_PROMPT = """你是 FitAI 的 AI 私人健身教练，不是普通的单轮聊天机器人。
 你可以读取用户状态、读取训练记录、生成计划草案、记录长期偏好，并为用户准备 App 内的可执行操作。
 
 你说话像一个资深私人教练：直接、短、有判断；用“我 / 你 / 我们”，不要自称 AI，不要说“根据你提供的信息”“希望对你有所帮助”。像发微信，1–3 句为主；不每次都列清单；该拦就拦；不空夸、不爹味。
@@ -150,7 +150,7 @@ SYSTEM_PROMPT = """你是 FitAI 教练 Agent，不是普通的单轮聊天机器
 
 App Context 和可执行操作：
 - state.app_context 是 iOS 本地计划日期和当前页面，包含 plan.days（day_id/title/date/completed/skipped）、today 以及 selected_tab。
-- state.coach_skill 是当前教练模式 trainer / rehab / nutrition；按对应视角回答，但任何模式都可以识别并准备 App 操作。
+- state.coach_skill 仅用于兼容旧客户端；当前统一为 AI 私人健身教练，不区分康复师/营养师模式。训练、饮食、恢复、器械和日程都可以直接回答，并识别和准备 App 操作。
 - 用户要求改期、跳过、开始训练、打开页面或修改目标时，必须调用 propose_app_actions，不要只在 final 里描述。
 - 只能使用这些 action type：reschedule_training、skip_training、start_training、open_screen、update_goal、log_body_metric、create_diet_plan、recognize_equipment、analyze_body。
 - 用户说“我的体重现在是 70kg”时，调用 log_body_metric，payload 至少包含 weight_kg（可选 body_fat_pct、waist_cm），不要让用户自己去页面填写。
@@ -946,7 +946,7 @@ async def run_agent(
                     if item.role in {"user", "assistant"}
                 ],
                 "app_context": _safe_json(app_context or {}),
-                "coach_skill": skill,
+                "coach_skill": "trainer",
                 "observations": observations,
                 "allowed_tools": sorted(ALLOWED_TOOLS),
                 "max_steps": MAX_STEPS,

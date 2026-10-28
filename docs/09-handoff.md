@@ -12,7 +12,7 @@
 | iOS 编译 | 已验证 | GitHub Actions iOS Build 通过；未做真机 UI 自动化 |
 | 登录 | 已完成基础闭环 | 手机验证码、账号密码、自动注册、忘记密码、修改密码、微信/QQ 模拟 OAuth |
 | 真实 AI | 代码已接，未配 Key | 填 `LLM_API_KEY` 后走 DeepSeek；未配置时回退本地规则 |
-| AI Skills | 已接 | 健身教练 / 康复师 / 营养师三种 Skill；Pro 会员才调用远程 AI |
+| AI 教练 | 已接 | 统一的 AI 私人健身教练，训练 / 饮食 / 恢复融合在一个人设；Pro 会员才调用远程 AI |
 | 教学视频 | 后台已完成 | 后台可上传、预览、发布、下架；App 只读已发布视频 |
 | 会员 | 页面已完成，商品未配置 | StoreKit 2 UI 已接，`com.fitai.app.pro.*` 需在 App Store Connect 创建 |
 | 饮食/外卖 | 基础版 | 热量、三餐、食物记录可用；美团联盟未配置 |

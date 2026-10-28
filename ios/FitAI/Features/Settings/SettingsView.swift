@@ -667,7 +667,7 @@ struct SettingsView: View {
                  ? (store.useRemoteAI
                     ? "Pro 已解锁：生成计划、教练对话和视觉识别会请求 DeepSeek/后端；失败时自动回退本地。"
                     : "已开通 Pro，但当前关闭了远程 AI。打开开关后可使用 DeepSeek。")
-                 : "AI 能力为 Pro 会员权益。未开通时使用本地规则建议；开通后可调用 DeepSeek 的教练、康复师和营养师 Skill。")
+                 : "AI 能力为 Pro 会员权益。未开通时使用本地规则建议；开通后可调用 DeepSeek 的 AI 私人健身教练。")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)

@@ -5,7 +5,7 @@ extension AppStore {
     /// 单图入口，保留给 Discover / 视频点评等已有页面。
     func sendCoachPhoto(
         _ image: UIImage,
-        question: String = "请点评动作姿势、器械使用和下一组最需要改的一点。",
+        question: String = "请分析这张图片：如果涉及训练动作、饮食、器械或体型，按相应角度回答。",
         userText: String = ""
     ) {
         guard let data = image.jpegData(compressionQuality: 0.65) else { return }
@@ -27,7 +27,7 @@ extension AppStore {
 
         let customQuestion = (question ?? trimmed).trimmingCharacters(in: .whitespacesAndNewlines)
         let visionQuestion = customQuestion.isEmpty
-            ? "请先判断这些照片是否包含训练动作；如果有，给出一个最重要的下一组提示。"
+            ? "请先判断图片内容：如果是训练动作，点评姿势并给一个最重要的改进点；如果是食物，估算热量和营养；如果是器械，说明用途和替代；如果是其他内容，如实说明。"
             : customQuestion
 
         cancelActiveChatRequest()
@@ -88,7 +88,7 @@ extension AppStore {
                 self.chat.append(
                     ChatMessage(
                         role: .assistant,
-                        text: "附件收到了，但这次视觉分析没有完成。你可以先用文字告诉我动作、重量和不适位置，我继续帮你判断。"
+                        text: "附件收到了，但这次视觉分析没有完成。你可以先用文字补充问题，我继续帮你判断。"
                     )
                 )
             }
@@ -120,11 +120,14 @@ extension AppStore {
         if !result.observations.isEmpty {
             parts.append("我看到：\n" + result.observations.map { "· \($0)" }.joined(separator: "\n"))
         }
-        if let cue = result.nextCue, !cue.isEmpty {
-            parts.append("下一组只盯一件事：\(cue)")
-        }
-        if !result.isTraining, result.warning == nil {
-            parts.append("这组附件不太像训练动作；如果你要点评动作，建议拍全身、侧面、光线清楚的一张。")
+
+        let mode = (result.mode ?? (result.isTraining ? "training" : "general")).lowercased()
+        if mode == "training" {
+            if result.isTraining, let cue = result.nextCue, !cue.isEmpty {
+                parts.append("下一组先改：\(cue)")
+            } else if result.warning == nil {
+                parts.append("这组附件不太像训练动作；如果你要点评动作，建议拍全身、侧面、光线清楚的一张。")
+            }
         }
         return parts.joined(separator: "\n\n")
     }

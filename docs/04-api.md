@@ -354,7 +354,7 @@ AI 复盘并生成新版本：
 {"session_id": "uuid|null", "message": "深蹲膝盖内扣怎么办？", "skill": "trainer"}
 ```
 
-`skill` 取值：`trainer` / `rehab` / `nutrition`。分别对应健身教练、康复师、运动营养师 Skill。
+`skill` 取值仍兼容 `trainer` / `rehab` / `nutrition`，但后端当前统一按 `trainer`（AI 私人健身教练）处理；新客户端只需传 `trainer` 或省略。
 
 ```json
 {

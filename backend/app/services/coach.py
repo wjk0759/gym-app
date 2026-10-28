@@ -340,6 +340,9 @@ async def coach_reply(
     skill: CoachSkill = "trainer",
     context: str | None = None,
 ) -> dict:
+    # 当前产品只保留一个 AI 私人健身教练人设；旧 skill 参数仅用于兼容。
+    skill = "trainer"
+
     flag, safety_reply = detect_safety(message)
     if safety_reply:
         return {"reply": safety_reply, "safety_flag": flag, "citations": []}

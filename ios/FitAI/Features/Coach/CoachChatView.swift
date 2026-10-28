@@ -8,7 +8,6 @@ struct CoachChatView: View {
     @Environment(AppStore.self) private var store
 
     @State private var input = ""
-    @State private var selectedSkill: CoachSkill = .trainer
     @State private var showPaywall = false
     @State private var showCamera = false
     @State private var cameraTitle = "拍照问教练"
@@ -27,7 +26,6 @@ struct CoachChatView: View {
     @State private var isLoadingVideo = false
     @State private var attachmentError: String?
     @FocusState private var focused: Bool
-    @Namespace private var skillNamespace
 
     private enum AttachmentLimits {
         static let maxImages = 6
@@ -75,8 +73,8 @@ struct CoachChatView: View {
     private let starters = [
         StarterPrompt(text: "今天练什么？", icon: "calendar"),
         StarterPrompt(text: "没有器械怎么替代？", icon: "dumbbell"),
-        StarterPrompt(text: "深蹲膝盖不舒服", icon: "cross.case"),
-        StarterPrompt(text: "训练后很酸正常吗？", icon: "bed.double")
+        StarterPrompt(text: "减脂怎么吃？", icon: "fork.knife"),
+        StarterPrompt(text: "膝盖不舒服还能练吗？", icon: "cross.case")
     ]
 
     var body: some View {
@@ -84,8 +82,6 @@ struct CoachChatView: View {
             VStack(spacing: 0) {
                 if store.planAdjustmentStage > 0 {
                     adjustmentBanner
-                } else {
-                    skillPicker
                 }
 
                 ScrollViewReader { proxy in
@@ -173,7 +169,7 @@ struct CoachChatView: View {
                 inputBar
             }
             .background(AppBackground())
-            .navigationTitle(store.planAdjustmentStage > 0 ? "调整计划" : "AI 教练")
+            .navigationTitle(store.planAdjustmentStage > 0 ? "调整计划" : "AI 私人教练")
             .navigationBarTitleDisplayMode(.inline)
             .onChange(of: store.planAdjustmentRequested) { _, requested in
                 if requested {
@@ -769,77 +765,7 @@ struct CoachChatView: View {
         if store.planAdjustmentStage == 3 {
             return "需要再改可以继续说…"
         }
-        return selectedSkill.placeholder
-    }
-
-    private var skillPicker: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(CoachSkill.allCases) { skill in
-                    Button {
-                        guard selectedSkill != skill else { return }
-                        Haptics.select()
-                        withAnimation(Motion.quick) {
-                            selectedSkill = skill
-                        }
-                    } label: {
-                        Label(skill.label, systemImage: skill.icon)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(
-                                selectedSkill == skill ? Theme.accent : Theme.secondaryText
-                            )
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background {
-                                ZStack {
-                                    Capsule()
-                                        .fill(selectedSkill == skill ? Color.clear : Theme.surfaceStrong)
-                                    if selectedSkill == skill {
-                                        Capsule()
-                                            .fill(Theme.accent.opacity(0.12))
-                                            .matchedGeometryEffect(id: "skillPill", in: skillNamespace)
-                                    }
-                                }
-                            }
-                            .overlay(
-                                Capsule()
-                                    .stroke(
-                                        selectedSkill == skill
-                                            ? Theme.accent.opacity(0.5)
-                                            : Color.clear,
-                                        lineWidth: 1
-                                    )
-                                    .animation(Motion.quick, value: selectedSkill)
-                            )
-                    }
-                    .buttonStyle(SubtlePressStyle(scale: 0.96))
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-        }
-        .background(Theme.background)
-    }
-
-    private var currentStarters: [StarterPrompt] {
-        switch selectedSkill {
-        case .trainer:
-            return starters
-        case .rehab:
-            return [
-                StarterPrompt(text: "膝盖不舒服还能练吗？", icon: "cross.case"),
-                StarterPrompt(text: "训练后腰痛怎么恢复？", icon: "figure.walk"),
-                StarterPrompt(text: "扭伤后多久能训练？", icon: "clock"),
-                StarterPrompt(text: "恢复期能做什么动作？", icon: "figure.cooldown")
-            ]
-        case .nutrition:
-            return [
-                StarterPrompt(text: "每天吃多少蛋白质？", icon: "leaf"),
-                StarterPrompt(text: "减脂怎么安排三餐？", icon: "fork.knife"),
-                StarterPrompt(text: "训练后吃什么？", icon: "takeoutbag.and.cup.and.straw"),
-                StarterPrompt(text: "外卖怎么选更健康？", icon: "cart")
-            ]
-        }
+        return "训练、饮食、恢复、计划都能问…"
     }
 
     private var welcome: some View {
@@ -853,10 +779,10 @@ struct CoachChatView: View {
                     )
                     .offset(x: -4, y: 2)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(selectedSkill.label)在线")
+                        Text("AI 私人健身教练")
                             .font(.headline)
                             .foregroundStyle(Theme.primaryText)
-                        Text(selectedSkill.detail)
+                        Text("训练、饮食、恢复、计划都能问")
                             .font(.caption2)
                             .foregroundStyle(Theme.tertiaryText)
                         Text(store.canUseRemoteAI ? "DeepSeek 远程 AI · 读取训练上下文" : "本地规则建议 · 未调用模型")
@@ -882,10 +808,10 @@ struct CoachChatView: View {
                         Image(systemName: "sparkles")
                             .foregroundStyle(Theme.accent)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("解锁 DeepSeek AI \(selectedSkill.label)")
+                            Text("解锁 DeepSeek AI 教练")
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(Theme.primaryText)
-                            Text("当前使用本地规则建议；Pro 会员可使用完整 AI Skill。")
+                            Text("当前使用本地规则建议；Pro 会员可使用完整 AI 教练。")
                                 .font(.caption2)
                                 .foregroundStyle(Theme.secondaryText)
                         }
@@ -910,7 +836,7 @@ struct CoachChatView: View {
                     columns: [GridItem(.flexible()), GridItem(.flexible())],
                     spacing: 10
                 ) {
-                    ForEach(currentStarters) { item in
+                    ForEach(starters) { item in
                         Button {
                             send(item.text)
                         } label: {
@@ -1540,14 +1466,14 @@ struct CoachChatView: View {
         KeyboardDismiss.dismiss()
         if store.canUseRemoteAI {
             // 所有 Skill、所有自然语言都先交给 Agent 理解；不再由本地关键词决定意图。
-            store.sendAgentChat(trimmed, skill: selectedSkill)
+            store.sendAgentChat(trimmed)
         } else if store.planAdjustmentStage > 0 {
             store.sendPlanAdjustmentMessage(trimmed)
         } else if store.isPlanScheduleRequest(trimmed) {
             store.beginPlanAdjustment()
             store.sendPlanAdjustmentMessage(trimmed)
         } else {
-            store.sendChat(trimmed, skill: selectedSkill)
+            store.sendChat(trimmed)
         }
     }
 }

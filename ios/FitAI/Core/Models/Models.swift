@@ -550,7 +550,7 @@ enum CoachSkill: String, Codable, CaseIterable, Identifiable {
 
     var detail: String {
         switch self {
-        case .trainer: return "训练安排、动作替代和负荷调整"
+        case .trainer: return "训练、饮食、恢复和计划都能问"
         case .rehab: return "疼痛分级、恢复期活动和就医提示"
         case .nutrition: return "热量、蛋白质和膳食结构建议"
         }
@@ -558,7 +558,7 @@ enum CoachSkill: String, Codable, CaseIterable, Identifiable {
 
     var placeholder: String {
         switch self {
-        case .trainer: return "问问训练、动作或计划…"
+        case .trainer: return "训练、饮食、恢复、计划都能问…"
         case .rehab: return "描述疼痛位置、时间和程度…"
         case .nutrition: return "问问热量、蛋白质或饮食安排…"
         }
@@ -664,6 +664,8 @@ struct FoodRecognitionResult: Hashable {
 }
 
 struct CoachVisionResult: Decodable {
+    /// training / nutrition / equipment / body / general
+    let mode: String?
     let isTraining: Bool
     let summary: String
     let observations: [String]
@@ -672,6 +674,7 @@ struct CoachVisionResult: Decodable {
     let warning: String?
 
     enum CodingKeys: String, CodingKey {
+        case mode
         case isTraining = "is_training"
         case summary
         case observations

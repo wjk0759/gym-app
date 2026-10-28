@@ -127,7 +127,7 @@ struct PaywallView: View {
                 .font(.title2.weight(.bold))
                 .foregroundStyle(Theme.primaryText)
 
-            Text("解锁 DeepSeek AI 计划、三种专业 Skill 与完整的教练对话。")
+            Text("解锁 DeepSeek AI 计划、完整私人教练对话与视觉分析。")
                 .font(.subheadline)
                 .foregroundStyle(Theme.secondaryText)
                 .multilineTextAlignment(.center)
@@ -139,7 +139,7 @@ struct PaywallView: View {
     private var benefits: some View {
         VStack(alignment: .leading, spacing: 12) {
             benefit("DeepSeek AI 计划生成与调整", icon: "wand.and.stars")
-            benefit("健身教练、康复师、营养师 AI Skills", icon: "person.3.fill")
+            benefit("一个 AI 私人健身教练，训练、饮食、恢复都能问", icon: "person.fill")
             benefit("周复盘、训练偏好记忆与动作替代", icon: "bubble.left.and.bubble.right")
             benefit("器械拍照识别与饮食记录", icon: "camera.viewfinder")
         }
