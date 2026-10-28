@@ -184,11 +184,19 @@ struct VideoReviewView: View {
                 throw ReviewError("无法读取这个视频")
             }
             tempURL = file.url
+            let attributes = try? FileManager.default.attributesOfItem(atPath: file.url.path)
+            let fileBytes = (attributes?[.size] as? NSNumber)?.intValue ?? 0
+            guard fileBytes <= 200 * 1024 * 1024 else {
+                throw ReviewError("视频不能超过 200MB，建议截取 5–40 秒的片段")
+            }
             let asset = AVURLAsset(url: file.url)
             let loadedDuration = try await asset.load(.duration)
             let seconds = CMTimeGetSeconds(loadedDuration)
             guard seconds.isFinite, seconds > 0.5 else {
                 throw ReviewError("视频太短，至少需要 1 秒")
+            }
+            guard seconds <= 180 else {
+                throw ReviewError("视频不要超过 3 分钟，截取关键片段即可")
             }
 
             let url = file.url

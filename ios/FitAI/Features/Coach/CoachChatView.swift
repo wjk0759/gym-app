@@ -1,5 +1,6 @@
 import Foundation
 import ImageIO
+import PhotosUI
 import SwiftUI
 import UIKit
 
@@ -16,11 +17,29 @@ struct CoachChatView: View {
     @State private var showBodyAnalysis = false
     @State private var showDietLibrary = false
     @State private var showVideoReview = false
+    @State private var draftAttachments: [DraftAttachment] = []
+    @State private var photoItems: [PhotosPickerItem] = []
+    @State private var isLoadingAttachments = false
+    @State private var attachmentError: String?
     @FocusState private var focused: Bool
     @Namespace private var skillNamespace
 
+    private enum AttachmentLimits {
+        static let maxImages = 6
+        static let maxImageBytes = 8 * 1024 * 1024
+        static let maxTotalBytes = 24 * 1024 * 1024
+    }
+
+    private struct DraftAttachment: Identifiable {
+        let id = UUID()
+        let image: UIImage
+        let data: Data
+    }
+
     private var canSend: Bool {
-        !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !store.isReplying
+        !store.isReplying
+            && (!input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                || !draftAttachments.isEmpty)
     }
 
     private struct StarterPrompt: Identifiable {
@@ -133,6 +152,10 @@ struct CoachChatView: View {
                     agentUndoCard
                 }
 
+                if !draftAttachments.isEmpty || isLoadingAttachments {
+                    attachmentDraftBar
+                }
+
                 inputBar
             }
             .background(AppBackground())
@@ -187,7 +210,7 @@ struct CoachChatView: View {
                     title: cameraTitle,
                     hint: cameraHint,
                     onImage: { image in
-                        store.sendCoachPhoto(image)
+                        stageCameraImage(image)
                         showCamera = false
                     },
                     onCancel: {
@@ -210,6 +233,21 @@ struct CoachChatView: View {
                         KeyboardDismiss.dismiss()
                     }
                 }
+            }
+            .onChange(of: photoItems.map(\.itemIdentifier)) { _, _ in
+                guard !photoItems.isEmpty else { return }
+                Task { await loadPickedPhotos() }
+            }
+            .alert(
+                "图片没有加入",
+                isPresented: Binding(
+                    get: { attachmentError != nil },
+                    set: { if !$0 { attachmentError = nil } }
+                )
+            ) {
+                Button("知道了", role: .cancel) {}
+            } message: {
+                Text(attachmentError ?? "")
             }
         }
     }
@@ -911,14 +949,19 @@ struct CoachChatView: View {
                         .foregroundStyle(Theme.warning)
                 }
 
-                if let data = message.imageData {
-                    ChatImageThumbnail(messageID: message.id, data: data)
+                if !message.allImageData.isEmpty {
+                    ChatMessageImageGrid(
+                        messageID: message.id,
+                        images: message.allImageData
+                    )
                 }
 
-                Text(message.text)
-                    .font(.subheadline)
-                    .foregroundStyle(message.role == .user ? Theme.onAccent : Theme.primaryText)
-                    .fixedSize(horizontal: false, vertical: true)
+                if !message.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text(message.text)
+                        .font(.subheadline)
+                        .foregroundStyle(message.role == .user ? Theme.onAccent : Theme.primaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             .padding(12)
             .background(
@@ -1009,6 +1052,26 @@ struct CoachChatView: View {
             .buttonStyle(SubtlePressStyle())
             .accessibilityLabel("拍照问教练")
 
+            PhotosPicker(
+                selection: $photoItems,
+                maxSelectionCount: max(1, AttachmentLimits.maxImages - draftAttachments.count),
+                matching: .images,
+                photoLibrary: .shared()
+            ) {
+                Image(systemName: "photo.on.rectangle")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+                    .frame(width: 40, height: 42)
+                    .background(Theme.surfaceStrong, in: Circle())
+            }
+            .buttonStyle(SubtlePressStyle())
+            .disabled(
+                isLoadingAttachments
+                    || draftAttachments.count >= AttachmentLimits.maxImages
+                    || store.isReplying
+            )
+            .accessibilityLabel("从相册添加照片")
+
             TextField(inputPlaceholder, text: $input, axis: .vertical)
                 .lineLimit(1...4)
                 .focused($focused)
@@ -1040,7 +1103,7 @@ struct CoachChatView: View {
                 .accessibilityLabel("停止本次回复")
             } else {
                 Button {
-                    send(input)
+                    sendCurrent()
                 } label: {
                     Image(systemName: "arrow.up")
                         .font(.headline)
@@ -1067,6 +1130,168 @@ struct CoachChatView: View {
         }
     }
 
+    private func sendCurrent() {
+        guard !store.isReplying else { return }
+        if draftAttachments.isEmpty {
+            send(input)
+            return
+        }
+
+        let caption = String(input.trimmingCharacters(in: .whitespacesAndNewlines).prefix(500))
+        let images = draftAttachments.map(\.data)
+        guard !images.isEmpty else { return }
+
+        Haptics.impact(.light)
+        input = ""
+        focused = false
+        KeyboardDismiss.dismiss()
+        draftAttachments = []
+        store.sendCoachPhotos(images, caption: caption)
+    }
+
+    private func stageCameraImage(_ image: UIImage) {
+        let prepared = image.fitWithin(maxDimension: 1600)
+        guard let data = prepared.jpegData(compressionQuality: 0.75) else {
+            attachmentError = "照片处理失败，换一张试试。"
+            return
+        }
+        appendDraft(image: prepared, data: data)
+    }
+
+    @MainActor
+    private func loadPickedPhotos() async {
+        guard !isLoadingAttachments else { return }
+        isLoadingAttachments = true
+        defer {
+            isLoadingAttachments = false
+            photoItems = []
+        }
+
+        let remaining = AttachmentLimits.maxImages - draftAttachments.count
+        guard remaining > 0 else {
+            attachmentError = "最多只能添加 \(AttachmentLimits.maxImages) 张照片。"
+            return
+        }
+
+        let selected = photoItems
+        var accepted: [DraftAttachment] = []
+        for item in selected.prefix(remaining) {
+            do {
+                let loaded = try await PhotoLibraryLoader.load(
+                    item,
+                    maxDimension: 1600,
+                    compressionQuality: 0.75,
+                    maxBytes: AttachmentLimits.maxImageBytes
+                )
+                accepted.append(
+                    DraftAttachment(image: loaded.image, data: loaded.jpegData)
+                )
+            } catch {
+                attachmentError = error.localizedDescription
+            }
+        }
+
+        var totalBytes = draftAttachments.reduce(0) { $0 + $1.data.count }
+        for attachment in accepted {
+            guard draftAttachments.count < AttachmentLimits.maxImages else {
+                attachmentError = "最多只能添加 \(AttachmentLimits.maxImages) 张照片。"
+                break
+            }
+            guard totalBytes + attachment.data.count <= AttachmentLimits.maxTotalBytes else {
+                attachmentError = "图片总大小不能超过 24MB。"
+                break
+            }
+            draftAttachments.append(attachment)
+            totalBytes += attachment.data.count
+        }
+        if selected.count > remaining {
+            attachmentError = "最多只能添加 \(AttachmentLimits.maxImages) 张照片。"
+        }
+    }
+
+    private func appendDraft(image: UIImage, data: Data) {
+        guard draftAttachments.count < AttachmentLimits.maxImages else {
+            attachmentError = "最多只能添加 \(AttachmentLimits.maxImages) 张照片。"
+            return
+        }
+        guard data.count <= AttachmentLimits.maxImageBytes else {
+            attachmentError = "单张图片不能超过 8MB。"
+            return
+        }
+        let totalBytes = draftAttachments.reduce(0) { $0 + $1.data.count } + data.count
+        guard totalBytes <= AttachmentLimits.maxTotalBytes else {
+            attachmentError = "图片总大小不能超过 24MB。"
+            return
+        }
+        draftAttachments.append(DraftAttachment(image: image, data: data))
+        attachmentError = nil
+    }
+
+    private var attachmentDraftBar: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Label(
+                    "待发送图片 \(draftAttachments.count)/\(AttachmentLimits.maxImages)",
+                    systemImage: "paperclip"
+                )
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.secondaryText)
+
+                if isLoadingAttachments {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+
+                Spacer()
+
+                Button("清空") {
+                    draftAttachments = []
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.tertiaryText)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(draftAttachments) { attachment in
+                        ZStack(alignment: .topTrailing) {
+                            Image(uiImage: attachment.image)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 68, height: 68)
+                                .clipped()
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                            Button {
+                                draftAttachments.removeAll { $0.id == attachment.id }
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 8, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 18, height: 18)
+                                    .background(.black.opacity(0.66), in: Circle())
+                            }
+                            .offset(x: 5, y: -5)
+                            .accessibilityLabel("移除图片")
+                        }
+                    }
+                }
+                .padding(.trailing, 8)
+                .padding(.vertical, 2)
+            }
+
+            Text("可以先添加多张，写完说明后再点发送；单张最多 8MB。")
+                .font(.caption2)
+                .foregroundStyle(Theme.tertiaryText)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(Theme.chrome)
+        .overlay(alignment: .top) {
+            Rectangle().fill(Theme.stroke).frame(height: 1)
+        }
+    }
+
     private func send(_ text: String) {
         let trimmed = String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(500))
         guard !trimmed.isEmpty, !store.isReplying else { return }
@@ -1089,9 +1314,47 @@ struct CoachChatView: View {
     }
 }
 
+private struct ChatMessageImageGrid: View {
+    let messageID: UUID
+    let images: [Data]
+
+    var body: some View {
+        if images.count == 1 {
+            ChatImageThumbnail(
+                messageID: messageID,
+                data: images[0],
+                width: 240,
+                height: 160
+            )
+        } else {
+            LazyVGrid(
+                columns: [
+                    GridItem(.fixed(104), spacing: 6),
+                    GridItem(.fixed(104), spacing: 6)
+                ],
+                spacing: 6
+            ) {
+                ForEach(Array(images.enumerated()), id: \.offset) { index, data in
+                    ChatImageThumbnail(
+                        messageID: messageID,
+                        data: data,
+                        cacheKeySuffix: String(index),
+                        width: 104,
+                        height: 104
+                    )
+                }
+            }
+            .frame(width: 214, alignment: .leading)
+        }
+    }
+}
+
 private struct ChatImageThumbnail: View {
     let messageID: UUID
     let data: Data
+    var cacheKeySuffix: String = ""
+    var width: CGFloat = 240
+    var height: CGFloat = 160
 
     @State private var image: UIImage?
     private static let cache = NSCache<NSString, UIImage>()
@@ -1107,18 +1370,17 @@ private struct ChatImageThumbnail: View {
                     .fill(Theme.surfaceStrong)
             }
         }
-        .frame(maxWidth: 240)
-        .frame(height: 160)
+        .frame(width: width, height: height)
         .clipped()
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .task(id: messageID) {
+        .task(id: messageID.uuidString + cacheKeySuffix) {
             await load()
         }
     }
 
     @MainActor
     private func load() async {
-        let key = messageID.uuidString as NSString
+        let key = (messageID.uuidString + cacheKeySuffix) as NSString
         if let cached = Self.cache.object(forKey: key) {
             image = cached
             return

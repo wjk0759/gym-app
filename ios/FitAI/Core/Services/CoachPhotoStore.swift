@@ -2,13 +2,32 @@ import Foundation
 import UIKit
 
 extension AppStore {
-    /// 教练动作照片点评：真正走后端视觉模型，不再本地假装回复。
+    /// 单图入口，保留给 Discover / 视频点评等已有页面。
     func sendCoachPhoto(
         _ image: UIImage,
         question: String = "请点评动作姿势、器械使用和下一组最需要改的一点。",
-        userText: String = "请教练看看这张训练照片，指出动作问题。"
+        userText: String = ""
     ) {
         guard let data = image.jpegData(compressionQuality: 0.65) else { return }
+        sendCoachPhotos([data], caption: userText, question: question)
+    }
+
+    /// 教练页附件发送：图片先进入等待区，用户确认后再调用这里。
+    /// caption 为空时只显示图片，不再伪造“请教练看看这张训练照片”的用户文字。
+    func sendCoachPhotos(
+        _ imageData: [Data],
+        caption: String,
+        question: String? = nil
+    ) {
+        let trimmed = caption.trimmingCharacters(in: .whitespacesAndNewlines)
+        let images = Array(imageData.prefix(6))
+        guard !images.isEmpty else { return }
+
+        let customQuestion = (question ?? trimmed).trimmingCharacters(in: .whitespacesAndNewlines)
+        let visionQuestion = customQuestion.isEmpty
+            ? "请先判断这些照片是否包含训练动作；如果有，给出一个最重要的下一组提示。"
+            : customQuestion
+
         cancelActiveChatRequest()
         removeTrailingChatTimeoutNotices()
         agentProposal = nil
@@ -19,8 +38,8 @@ extension AppStore {
         chat.append(
             ChatMessage(
                 role: .user,
-                text: userText,
-                imageData: data
+                text: trimmed,
+                imageDataList: images
             )
         )
 
@@ -42,10 +61,18 @@ extension AppStore {
                 }
             }
             do {
-                let result = try await APIClient.shared.reviewCoachVision(
-                    imageData: data,
-                    question: question
-                )
+                let result: CoachVisionResult
+                if images.count == 1 {
+                    result = try await APIClient.shared.reviewCoachVision(
+                        imageData: images[0],
+                        question: visionQuestion
+                    )
+                } else {
+                    result = try await APIClient.shared.reviewCoachVisionBatch(
+                        imageData: images,
+                        question: visionQuestion
+                    )
+                }
                 try Task.checkCancellation()
                 self.chat.append(
                     ChatMessage(role: .assistant, text: self.formattedVisionReply(result))

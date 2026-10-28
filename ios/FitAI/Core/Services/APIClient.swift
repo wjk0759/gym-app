@@ -1080,6 +1080,18 @@ struct APIClient {
         return try decode(CoachVisionResult.self, from: data)
     }
 
+    func reviewCoachVisionBatch(
+        imageData: [Data],
+        question: String
+    ) async throws -> CoachVisionResult {
+        let data = try await uploadMany(
+            path: "coach/vision/batch",
+            images: imageData,
+            fields: ["question": question]
+        )
+        return try decode(CoachVisionResult.self, from: data)
+    }
+
     func fetchDietPlan(dateString: String) async throws -> RemoteDietPlan {
         let body = try JSONSerialization.data(withJSONObject: ["date": dateString])
         return try await send(path: "diet/plan", method: "POST", body: body)
@@ -1147,14 +1159,7 @@ struct APIClient {
     ) async throws -> Data {
         let boundary = "Boundary-\(UUID().uuidString)"
         var body = Data()
-        for (name, value) in fields {
-            body.append(contentsOf: Data("--\(boundary)\r\n".utf8))
-            body.append(contentsOf: Data(
-                "Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".utf8
-            ))
-            body.append(contentsOf: Data(value.utf8))
-            body.append(contentsOf: Data("\r\n".utf8))
-        }
+        appendMultipartFields(fields, boundary: boundary, to: &body)
         body.append(contentsOf: Data("--\(boundary)\r\n".utf8))
         body.append(contentsOf: Data(
             "Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".utf8
@@ -1169,6 +1174,51 @@ struct APIClient {
             body: body,
             contentType: "multipart/form-data; boundary=\(boundary)"
         )
+    }
+
+    private func uploadMany(
+        path: String,
+        images: [Data],
+        fields: [String: String] = [:]
+    ) async throws -> Data {
+        guard !images.isEmpty else {
+            throw APIError(message: "没有可上传的图片")
+        }
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var body = Data()
+        appendMultipartFields(fields, boundary: boundary, to: &body)
+        for (index, imageData) in images.enumerated() {
+            body.append(contentsOf: Data("--\(boundary)\r\n".utf8))
+            body.append(contentsOf: Data(
+                "Content-Disposition: form-data; name=\"files\"; filename=\"form-\(index + 1).jpg\"\r\n".utf8
+            ))
+            body.append(contentsOf: Data("Content-Type: image/jpeg\r\n\r\n".utf8))
+            body.append(imageData)
+            body.append(contentsOf: Data("\r\n".utf8))
+        }
+        body.append(contentsOf: Data("--\(boundary)--\r\n".utf8))
+
+        return try await perform(
+            path: path,
+            method: "POST",
+            body: body,
+            contentType: "multipart/form-data; boundary=\(boundary)"
+        )
+    }
+
+    private func appendMultipartFields(
+        _ fields: [String: String],
+        boundary: String,
+        to body: inout Data
+    ) {
+        for (name, value) in fields {
+            body.append(contentsOf: Data("--\(boundary)\r\n".utf8))
+            body.append(contentsOf: Data(
+                "Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".utf8
+            ))
+            body.append(contentsOf: Data(value.utf8))
+            body.append(contentsOf: Data("\r\n".utf8))
+        }
     }
 
     private func perform(

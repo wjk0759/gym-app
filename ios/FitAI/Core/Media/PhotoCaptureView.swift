@@ -90,7 +90,7 @@ struct PhotoCaptureView: View {
 
                     Button {
                         camera.capture { image in
-                            onImage(image)
+                            deliver(image)
                         }
                     } label: {
                         ZStack {
@@ -140,6 +140,16 @@ struct PhotoCaptureView: View {
         } message: {
             Text(photoError ?? "")
         }
+    }
+
+    private func deliver(_ image: UIImage) {
+        let prepared = image.fitWithin(maxDimension: 1600)
+        guard let data = prepared.jpegData(compressionQuality: 0.75),
+              data.count <= 8 * 1024 * 1024 else {
+            photoError = "照片压缩后仍然太大，请换一张小于 8MB 的照片"
+            return
+        }
+        onImage(prepared)
     }
 
     @MainActor

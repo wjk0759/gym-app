@@ -86,12 +86,15 @@ def _vision_endpoint() -> str:
 async def complete_vision_json(
     system: str,
     user_text: str,
-    image_base64: str,
+    image_base64: str | list[str],
     mime: str = "image/jpeg",
 ) -> dict:
-    """One-shot image -> JSON using the configured vision model."""
+    """One or more images -> one JSON response using the vision model."""
     if settings.use_mock_vision:
         raise LLMError("mock vision: no vision model configured")
+    images = [image_base64] if isinstance(image_base64, str) else list(image_base64)
+    if not images:
+        raise LLMError("no images provided")
 
     messages = [
         {"role": "system", "content": system},
@@ -99,10 +102,13 @@ async def complete_vision_json(
             "role": "user",
             "content": [
                 {"type": "text", "text": user_text},
-                {
-                    "type": "image_url",
-                    "image_url": {"url": f"data:{mime};base64,{image_base64}"},
-                },
+                *[
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{mime};base64,{encoded}"},
+                    }
+                    for encoded in images
+                ],
             ],
         },
     ]

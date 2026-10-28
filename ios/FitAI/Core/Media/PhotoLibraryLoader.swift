@@ -5,6 +5,7 @@ import UIKit
 enum PhotoLibraryLoadError: LocalizedError {
     case unreadable
     case encodeFailed
+    case tooLarge
 
     var errorDescription: String? {
         switch self {
@@ -12,6 +13,8 @@ enum PhotoLibraryLoadError: LocalizedError {
             return "无法读取这张照片，换一张试试。"
         case .encodeFailed:
             return "照片处理失败，换一张试试。"
+        case .tooLarge:
+            return "照片压缩后仍然太大，请换一张小于 8MB 的照片。"
         }
     }
 }
@@ -22,7 +25,8 @@ enum PhotoLibraryLoader {
     static func load(
         _ item: PhotosPickerItem,
         maxDimension: CGFloat = 1600,
-        compressionQuality: CGFloat = 0.78
+        compressionQuality: CGFloat = 0.78,
+        maxBytes: Int = 8 * 1024 * 1024
     ) async throws -> (image: UIImage, jpegData: Data) {
         guard let data = try? await item.loadTransferable(type: Data.self),
               let image = UIImage(data: data) else {
@@ -31,6 +35,9 @@ enum PhotoLibraryLoader {
         let prepared = image.fitWithin(maxDimension: maxDimension)
         guard let jpeg = prepared.jpegData(compressionQuality: compressionQuality) else {
             throw PhotoLibraryLoadError.encodeFailed
+        }
+        guard jpeg.count <= maxBytes else {
+            throw PhotoLibraryLoadError.tooLarge
         }
         return (prepared, jpeg)
     }

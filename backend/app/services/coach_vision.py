@@ -14,17 +14,17 @@ from . import llm
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = (
-    "你是资深力量教练，正在看用户上传的训练照片或多帧拼图。"
-    "如果是一张多帧拼图，按从上到下的时间顺序看，动作变化比单帧更重要。"
+    "你是资深力量教练，正在看用户上传的一张或多张训练照片。"
+    "多张照片按上传顺序看，动作变化比单帧更重要；如果画面不是训练动作、健身器械或食物，"
+    "is_training 输出 false，并如实说明拍到了什么。"
     "只点评画面里明确可见的内容，不猜测镜头外动作，不诊断伤病。"
-    "如果画面不是训练动作或健身器械，is_training 输出 false，并如实说明拍到了什么。"
     "如果出现胸痛、晕厥、明显畸形、无法承重等急性风险，safety_flag 输出 medical_referral，"
     "并建议立即停止训练、线下就医。"
     "只输出一个 JSON 对象，不要 Markdown。"
 )
 
 USER_PROMPT = (
-    "请点评这张训练照片。输出 JSON："
+    "请点评这些训练照片（按上传顺序）。输出 JSON："
     '{"is_training":true或false,'
     '"summary":"一句话结论",'
     '"observations":["最多4条可见问题或做得好的地方"],'
@@ -36,10 +36,18 @@ USER_PROMPT = (
 async def review(image_bytes: bytes, question: str = "") -> dict:
     if not image_bytes:
         return _fallback("没有收到图片")
+    return await review_many([image_bytes], question)
+
+
+async def review_many(images: list[bytes], question: str = "") -> dict:
+    if not images:
+        return _fallback("没有收到图片")
     if settings.use_mock_vision:
         return _fallback("当前未配置视觉模型")
 
     prompt = USER_PROMPT
+    if len(images) > 1:
+        prompt += f"\n本次共有 {len(images)} 张照片，请按上传顺序综合判断。"
     if question.strip():
         prompt += f"\n用户补充：{question.strip()[:300]}"
 
@@ -47,7 +55,7 @@ async def review(image_bytes: bytes, question: str = "") -> dict:
         raw = await llm.complete_vision_json(
             SYSTEM_PROMPT,
             prompt,
-            base64.b64encode(image_bytes).decode(),
+            [base64.b64encode(image).decode() for image in images],
         )
     except Exception as exc:  # noqa: BLE001 - 视觉失败必须降级而不是让拍照崩溃
         logger.warning("coach vision failed: %s", exc)

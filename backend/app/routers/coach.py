@@ -28,6 +28,18 @@ def _should_extract_memory(message: str, safety_flag: str | None) -> bool:
     return safety_flag is None and len(message.strip()) >= 8
 
 
+MAX_VISION_FILES = 6
+MAX_VISION_FILE_BYTES = 8 * 1024 * 1024
+MAX_VISION_TOTAL_BYTES = 24 * 1024 * 1024
+
+
+def _vision_profile(db: DBSession, user_id: str) -> Profile:
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="请先完成个人档案")
+    return profile
+
+
 @router.post("/vision")
 async def vision(
     user_id: CurrentUser,
@@ -36,17 +48,47 @@ async def vision(
     question: str = Form(default=""),
 ):
     """One-shot training-photo review. Photos are not persisted server-side."""
-    profile = db.get(Profile, user_id)
-    if profile is None:
-        raise HTTPException(status_code=404, detail="请先完成个人档案")
+    _vision_profile(db, user_id)
 
     image_bytes = await file.read()
     if not image_bytes:
         raise HTTPException(status_code=400, detail="图片为空")
-    if len(image_bytes) > 8 * 1024 * 1024:
+    if len(image_bytes) > MAX_VISION_FILE_BYTES:
         raise HTTPException(status_code=413, detail="图片不能超过 8MB")
 
     return await coach_vision.review(image_bytes, question)
+
+
+@router.post("/vision/batch")
+async def vision_batch(
+    user_id: CurrentUser,
+    db: DBSession,
+    files: list[UploadFile] = File(...),
+    question: str = Form(default=""),
+):
+    """Review several staged photos as one ordered set."""
+    _vision_profile(db, user_id)
+    if not files:
+        raise HTTPException(status_code=400, detail="没有收到图片")
+    if len(files) > MAX_VISION_FILES:
+        raise HTTPException(status_code=413, detail="一次最多上传 6 张图片")
+
+    images: list[bytes] = []
+    total_bytes = 0
+    for upload in files:
+        image_bytes = await upload.read()
+        if not image_bytes:
+            continue
+        if len(image_bytes) > MAX_VISION_FILE_BYTES:
+            raise HTTPException(status_code=413, detail="单张图片不能超过 8MB")
+        total_bytes += len(image_bytes)
+        if total_bytes > MAX_VISION_TOTAL_BYTES:
+            raise HTTPException(status_code=413, detail="图片总大小不能超过 24MB")
+        images.append(image_bytes)
+
+    if not images:
+        raise HTTPException(status_code=400, detail="图片为空")
+    return await coach_vision.review_many(images, question)
 
 
 @router.post("/chat")

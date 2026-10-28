@@ -577,6 +577,15 @@ struct ChatMessage: Codable, Identifiable, Hashable {
     var date: Date = Date()
     var isSafety: Bool = false
     var imageData: Data? = nil
+    /// 一条消息可以带多张待发送的图片；`imageData` 保留用于旧数据。
+    var imageDataList: [Data]? = nil
+
+    var allImageData: [Data] {
+        if let imageDataList, !imageDataList.isEmpty {
+            return imageDataList
+        }
+        return imageData.map { [$0] } ?? []
+    }
 }
 
 // MARK: - 饮食记录
