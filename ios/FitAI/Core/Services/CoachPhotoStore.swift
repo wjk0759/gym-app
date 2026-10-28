@@ -17,7 +17,9 @@ extension AppStore {
     func sendCoachPhotos(
         _ imageData: [Data],
         caption: String,
-        question: String? = nil
+        question: String? = nil,
+        videoThumbnailData: Data? = nil,
+        videoDurationSeconds: Int? = nil
     ) {
         let trimmed = caption.trimmingCharacters(in: .whitespacesAndNewlines)
         let images = Array(imageData.prefix(6))
@@ -39,7 +41,9 @@ extension AppStore {
             ChatMessage(
                 role: .user,
                 text: trimmed,
-                imageDataList: images
+                imageDataList: videoThumbnailData == nil ? images : nil,
+                videoThumbnailData: videoThumbnailData,
+                videoDurationSeconds: videoDurationSeconds
             )
         )
 
@@ -84,7 +88,7 @@ extension AppStore {
                 self.chat.append(
                     ChatMessage(
                         role: .assistant,
-                        text: "照片收到了，但这次视觉分析没有完成。你可以先用文字告诉我动作、重量和不适位置，我继续帮你判断。"
+                        text: "附件收到了，但这次视觉分析没有完成。你可以先用文字告诉我动作、重量和不适位置，我继续帮你判断。"
                     )
                 )
             }
@@ -120,7 +124,7 @@ extension AppStore {
             parts.append("下一组只盯一件事：\(cue)")
         }
         if !result.isTraining, result.warning == nil {
-            parts.append("这张图不太像训练动作；如果你要点评动作，建议拍全身、侧面、光线清楚的一张。")
+            parts.append("这组附件不太像训练动作；如果你要点评动作，建议拍全身、侧面、光线清楚的一张。")
         }
         return parts.joined(separator: "\n\n")
     }

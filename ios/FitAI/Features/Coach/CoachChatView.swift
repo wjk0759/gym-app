@@ -18,8 +18,11 @@ struct CoachChatView: View {
     @State private var showDietLibrary = false
     @State private var showVideoReview = false
     @State private var draftAttachments: [DraftAttachment] = []
+    @State private var draftVideo: CoachVideoAttachment?
     @State private var photoItems: [PhotosPickerItem] = []
+    @State private var videoItem: PhotosPickerItem?
     @State private var isLoadingAttachments = false
+    @State private var isLoadingVideo = false
     @State private var attachmentError: String?
     @FocusState private var focused: Bool
     @Namespace private var skillNamespace
@@ -39,7 +42,8 @@ struct CoachChatView: View {
     private var canSend: Bool {
         !store.isReplying
             && (!input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                || !draftAttachments.isEmpty)
+                || !draftAttachments.isEmpty
+                || draftVideo != nil)
     }
 
     private struct StarterPrompt: Identifiable {
@@ -152,7 +156,10 @@ struct CoachChatView: View {
                     agentUndoCard
                 }
 
-                if !draftAttachments.isEmpty || isLoadingAttachments {
+                if !draftAttachments.isEmpty
+                    || draftVideo != nil
+                    || isLoadingAttachments
+                    || isLoadingVideo {
                     attachmentDraftBar
                 }
 
@@ -241,6 +248,10 @@ struct CoachChatView: View {
             .onChange(of: photoItems.map(\.itemIdentifier)) { _, _ in
                 guard !photoItems.isEmpty else { return }
                 Task { await loadPickedPhotos() }
+            }
+            .onChange(of: videoItem?.itemIdentifier) { _, _ in
+                guard let videoItem else { return }
+                Task { await loadVideo(videoItem) }
             }
             .alert(
                 "图片没有加入",
@@ -953,7 +964,14 @@ struct CoachChatView: View {
                         .foregroundStyle(Theme.warning)
                 }
 
-                if !message.allImageData.isEmpty {
+                if let videoData = message.videoThumbnailData,
+                   let duration = message.videoDurationSeconds {
+                    ChatVideoThumbnail(
+                        messageID: message.id,
+                        data: videoData,
+                        duration: duration
+                    )
+                } else if !message.allImageData.isEmpty {
                     ChatMessageImageGrid(
                         messageID: message.id,
                         images: message.allImageData
@@ -1054,6 +1072,7 @@ struct CoachChatView: View {
                     .background(Theme.surfaceStrong, in: Circle())
             }
             .buttonStyle(SubtlePressStyle())
+            .disabled(draftVideo != nil || store.isReplying)
             .accessibilityLabel("拍照问教练")
 
             PhotosPicker(
@@ -1070,11 +1089,34 @@ struct CoachChatView: View {
             }
             .buttonStyle(SubtlePressStyle())
             .disabled(
-                isLoadingAttachments
+                draftVideo != nil
+                    || isLoadingAttachments
+                    || isLoadingVideo
                     || draftAttachments.count >= AttachmentLimits.maxImages
                     || store.isReplying
             )
             .accessibilityLabel("从相册添加照片")
+
+            PhotosPicker(
+                selection: $videoItem,
+                matching: .videos,
+                photoLibrary: .shared()
+            ) {
+                Image(systemName: "video.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+                    .frame(width: 40, height: 42)
+                    .background(Theme.surfaceStrong, in: Circle())
+            }
+            .buttonStyle(SubtlePressStyle())
+            .disabled(
+                !draftAttachments.isEmpty
+                    || draftVideo != nil
+                    || isLoadingAttachments
+                    || isLoadingVideo
+                    || store.isReplying
+            )
+            .accessibilityLabel("添加视频")
 
             TextField(inputPlaceholder, text: $input, axis: .vertical)
                 .lineLimit(1...4)
@@ -1136,12 +1178,41 @@ struct CoachChatView: View {
 
     private func sendCurrent() {
         guard !store.isReplying else { return }
+        let caption = String(input.trimmingCharacters(in: .whitespacesAndNewlines).prefix(500))
+
+        if let video = draftVideo {
+            guard draftAttachments.isEmpty else {
+                attachmentError = "图片和视频不能同时发送，请先清空其中一种。"
+                return
+            }
+            let thumbnailData = video.thumbnail.jpegData(compressionQuality: 0.72)
+                ?? video.contactSheetData
+            let question = """
+            这是一段 \(video.durationSeconds) 秒训练视频按时间顺序抽取的 3 个关键帧拼图（从上到下）。
+            请判断是否包含训练动作；如果有，指出一个最需要改的动作点；如果画面不是训练内容，请如实说明。
+            \(caption.isEmpty ? "" : "用户补充：\(caption)")
+            """
+
+            Haptics.impact(.light)
+            input = ""
+            focused = false
+            KeyboardDismiss.dismiss()
+            draftVideo = nil
+            store.sendCoachPhotos(
+                [video.contactSheetData],
+                caption: caption,
+                question: question,
+                videoThumbnailData: thumbnailData,
+                videoDurationSeconds: video.durationSeconds
+            )
+            return
+        }
+
         if draftAttachments.isEmpty {
             send(input)
             return
         }
 
-        let caption = String(input.trimmingCharacters(in: .whitespacesAndNewlines).prefix(500))
         let images = draftAttachments.map(\.data)
         guard !images.isEmpty else { return }
 
@@ -1171,6 +1242,10 @@ struct CoachChatView: View {
             photoItems = []
         }
 
+        guard draftVideo == nil else {
+            attachmentError = "请先移除已选视频，图片和视频不能同时发送。"
+            return
+        }
         let remaining = AttachmentLimits.maxImages - draftAttachments.count
         guard remaining > 0 else {
             attachmentError = "最多只能添加 \(AttachmentLimits.maxImages) 张照片。"
@@ -1216,6 +1291,11 @@ struct CoachChatView: View {
     @MainActor
     private func consumePendingCoachAttachments() {
         guard !store.pendingCoachAttachmentData.isEmpty else { return }
+        guard draftVideo == nil else {
+            store.pendingCoachAttachmentData = []
+            attachmentError = "请先移除已选视频，图片和视频不能同时发送。"
+            return
+        }
         let incoming = store.pendingCoachAttachmentData
         store.pendingCoachAttachmentData = []
         for data in incoming {
@@ -1227,7 +1307,33 @@ struct CoachChatView: View {
         }
     }
 
+    @MainActor
+    private func loadVideo(_ item: PhotosPickerItem) async {
+        guard !isLoadingVideo else { return }
+        guard draftAttachments.isEmpty else {
+            videoItem = nil
+            attachmentError = "请先清空已选图片，图片和视频不能同时发送。"
+            return
+        }
+        isLoadingVideo = true
+        defer {
+            isLoadingVideo = false
+            videoItem = nil
+        }
+        do {
+            let video = try await VideoAttachmentProcessor.prepare(item)
+            draftVideo = video
+            attachmentError = nil
+        } catch {
+            attachmentError = error.localizedDescription
+        }
+    }
+
     private func appendDraft(image: UIImage, data: Data) {
+        guard draftVideo == nil else {
+            attachmentError = "请先移除已选视频，图片和视频不能同时发送。"
+            return
+        }
         guard draftAttachments.count < AttachmentLimits.maxImages else {
             attachmentError = "最多只能添加 \(AttachmentLimits.maxImages) 张照片。"
             return
@@ -1249,13 +1355,15 @@ struct CoachChatView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Label(
-                    "待发送图片 \(draftAttachments.count)/\(AttachmentLimits.maxImages)",
-                    systemImage: "paperclip"
+                    !(draftVideo != nil || isLoadingVideo)
+                        ? "待发送图片 \(draftAttachments.count)/\(AttachmentLimits.maxImages)"
+                        : "待发送视频",
+                    systemImage: !(draftVideo != nil || isLoadingVideo) ? "paperclip" : "video.fill"
                 )
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Theme.secondaryText)
 
-                if isLoadingAttachments {
+                if isLoadingAttachments || isLoadingVideo {
                     ProgressView()
                         .controlSize(.small)
                 }
@@ -1264,43 +1372,88 @@ struct CoachChatView: View {
 
                 Button("清空") {
                     draftAttachments = []
+                    draftVideo = nil
                 }
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Theme.tertiaryText)
             }
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(draftAttachments) { attachment in
-                        ZStack(alignment: .topTrailing) {
-                            Image(uiImage: attachment.image)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 68, height: 68)
-                                .clipped()
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            if let video = draftVideo {
+                HStack(spacing: 10) {
+                    ZStack {
+                        Image(uiImage: video.thumbnail)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 150, height: 84)
+                            .clipped()
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
-                            Button {
-                                draftAttachments.removeAll { $0.id == attachment.id }
-                            } label: {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 8, weight: .bold))
-                                    .foregroundStyle(.white)
-                                    .frame(width: 18, height: 18)
-                                    .background(.black.opacity(0.66), in: Circle())
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 30, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.94))
+                            .shadow(radius: 2)
+                    }
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("视频已就绪")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Theme.primaryText)
+                        Text("\(video.durationSeconds)s · 发送时抽取 3 个关键帧")
+                            .font(.caption2)
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Button {
+                        draftVideo = nil
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Theme.secondaryText)
+                            .frame(width: 26, height: 26)
+                            .background(Theme.surfaceStrong, in: Circle())
+                    }
+                    .accessibilityLabel("移除视频")
+                }
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(draftAttachments) { attachment in
+                            ZStack(alignment: .topTrailing) {
+                                Image(uiImage: attachment.image)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 68, height: 68)
+                                    .clipped()
+                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                                Button {
+                                    draftAttachments.removeAll { $0.id == attachment.id }
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 8, weight: .bold))
+                                        .foregroundStyle(.white)
+                                        .frame(width: 18, height: 18)
+                                        .background(.black.opacity(0.66), in: Circle())
+                                }
+                                .offset(x: 5, y: -5)
+                                .accessibilityLabel("移除图片")
                             }
-                            .offset(x: 5, y: -5)
-                            .accessibilityLabel("移除图片")
                         }
                     }
+                    .padding(.trailing, 8)
+                    .padding(.vertical, 2)
                 }
-                .padding(.trailing, 8)
-                .padding(.vertical, 2)
             }
 
-            Text("可以先添加多张，写完说明后再点发送；单张最多 8MB。")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
+            Text(
+                !(draftVideo != nil || isLoadingVideo)
+                    ? "图片和视频只能二选一；可以先添加多张图片，写完说明后再发送。"
+                    : "视频一次只能发送一个，发送时只上传 3 个关键帧拼图，不上传原视频。"
+            )
+            .font(.caption2)
+            .foregroundStyle(Theme.tertiaryText)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -1363,6 +1516,37 @@ private struct ChatMessageImageGrid: View {
                 }
             }
             .frame(width: 214, alignment: .leading)
+        }
+    }
+}
+
+private struct ChatVideoThumbnail: View {
+    let messageID: UUID
+    let data: Data
+    let duration: Int
+
+    var body: some View {
+        ChatImageThumbnail(
+            messageID: messageID,
+            data: data,
+            cacheKeySuffix: "video",
+            width: 240,
+            height: 160
+        )
+        .overlay {
+            Image(systemName: "play.circle.fill")
+                .font(.system(size: 44, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.94))
+                .shadow(radius: 3)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            Text("\(duration)s")
+                .font(.caption2.weight(.bold).monospacedDigit())
+                .foregroundStyle(.white)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 4)
+                .background(.black.opacity(0.62), in: Capsule())
+                .padding(7)
         }
     }
 }

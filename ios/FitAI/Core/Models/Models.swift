@@ -579,6 +579,9 @@ struct ChatMessage: Codable, Identifiable, Hashable {
     var imageData: Data? = nil
     /// 一条消息可以带多张待发送的图片；`imageData` 保留用于旧数据。
     var imageDataList: [Data]? = nil
+    /// 视频只保存预览缩略图和时长；原始视频不会上传或持久化。
+    var videoThumbnailData: Data? = nil
+    var videoDurationSeconds: Int? = nil
 
     var allImageData: [Data] {
         if let imageDataList, !imageDataList.isEmpty {
