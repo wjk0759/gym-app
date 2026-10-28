@@ -39,6 +39,31 @@ def test_food_question_is_not_forced_into_training_review(monkeypatch):
     assert "榴莲" in result["summary"]
 
 
+def test_vision_response_stays_compact(monkeypatch):
+    async def fake_vision(system, user, image, mime="image/jpeg"):
+        return {
+            "mode": "nutrition",
+            "is_training": False,
+            "summary": "很长的总结" * 80,
+            "observations": ["很长的观察" * 20 for _ in range(5)],
+            "next_cue": None,
+            "safety_flag": None,
+        }
+
+    monkeypatch.setattr(
+        coach_vision,
+        "settings",
+        SimpleNamespace(use_mock_vision=False),
+    )
+    monkeypatch.setattr(coach_vision.llm, "complete_vision_json", fake_vision)
+
+    result = asyncio.run(review(b"food", "这是什么？"))
+
+    assert len(result["summary"]) <= 240
+    assert len(result["observations"]) == 3
+    assert all(len(item) <= 80 for item in result["observations"])
+
+
 def test_training_question_keeps_training_mode(monkeypatch):
     async def fake_vision(system, user, image, mime="image/jpeg"):
         return {

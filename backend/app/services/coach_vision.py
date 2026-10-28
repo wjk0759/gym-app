@@ -24,6 +24,7 @@ SYSTEM_PROMPT = (
     "器械：mode=equipment，说明器械名称、用途、可练部位和替代方案；除非用户明确问动作，否则不点评动作。"
     "体型/体态：mode=body，只描述可见体态和训练重点，不诊断、不评价身材、不制造焦虑。"
     "其他健身相关：mode=general，直接回答；与健身无关的内容简短说明你的服务范围，不要硬套训练模板。"
+    "回复像教练发微信：先给一句结论，最多 3 条要点，不写长报告，不复述整张图。"
     "多张照片或视频关键帧按上传顺序看，动作变化比单帧更重要。"
     "只根据画面中明确可见的内容回答，不猜测镜头外动作，不诊断伤病。"
     "如果出现胸痛、晕厥、明显畸形、无法承重等急性风险，safety_flag 输出 medical_referral，并建议立即停止训练、线下就医。"
@@ -34,8 +35,8 @@ USER_PROMPT = (
     "请根据用户问题和图片内容选择 mode，输出 JSON："
     '{"mode":"training|nutrition|equipment|body|general",'
     '"is_training":true或false,'
-    '"summary":"一句话结论",'
-    '"observations":["最多 4 条可见事实、估算或判断"],'
+    '"summary":"一句话结论，最多 120 字",'
+    '"observations":["最多 3 条可见事实、估算或判断，每条最多 50 字"],'
     '"next_cue":"仅 training 模式给一个动作要点；其他模式必须为 null",'
     '"safety_flag":null或"medical_referral"}'
     "如果图片是食物，summary 直接回答热量/营养问题；如果是训练，summary 直接说动作问题；"
@@ -184,7 +185,7 @@ async def review_many(images: list[bytes], question: str = "") -> dict:
         logger.warning("coach vision failed: %s", exc)
         return _fallback(f"视觉分析失败：{str(exc)[:160]}")
 
-    summary = str(raw.get("summary") or "").strip()[:400]
+    summary = str(raw.get("summary") or "").strip()[:240]
     if not summary:
         return _fallback("视觉模型没有返回有效分析")
 
@@ -192,10 +193,10 @@ async def review_many(images: list[bytes], question: str = "") -> dict:
     if isinstance(observations_raw, str):
         observations_raw = [observations_raw]
     observations = [
-        str(item).strip()[:160]
+        str(item).strip()[:80]
         for item in (observations_raw or [])
         if str(item).strip()
-    ][:4]
+    ][:3]
 
     raw_mode = str(raw.get("mode") or "").strip().lower()
     mode = raw_mode if raw_mode in VALID_MODES else (intent or "general")

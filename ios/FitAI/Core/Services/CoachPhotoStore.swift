@@ -117,8 +117,9 @@ extension AppStore {
             parts.append("先停一下：这张照片/描述里可能有需要线下评估的风险，不建议继续加练。")
         }
         parts.append(result.summary)
-        if !result.observations.isEmpty {
-            parts.append("我看到：\n" + result.observations.map { "· \($0)" }.joined(separator: "\n"))
+        let observations = Array(result.observations.prefix(3))
+        if !observations.isEmpty {
+            parts.append("我看到：\n" + observations.map { "· \($0)" }.joined(separator: "\n"))
         }
 
         let mode = (result.mode ?? (result.isTraining ? "training" : "general")).lowercased()
