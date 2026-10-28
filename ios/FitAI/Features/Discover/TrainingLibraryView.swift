@@ -90,15 +90,25 @@ struct TrainingLibraryView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("练法选明白，\n进馆不发呆。")
-                .font(.system(size: 29, weight: .heavy, design: .rounded))
-                .foregroundStyle(.white)
-                .fixedSize(horizontal: false, vertical: true)
-            Text("先选适合出勤频率的分化，再让教练按你的器械和时间排动作。")
-                .font(.subheadline)
-                .foregroundStyle(Theme.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
+        HStack(alignment: .center, spacing: 6) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("练法选明白，\n进馆不发呆。")
+                    .font(.system(size: 29, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("先选适合出勤频率的分化，再让教练按你的器械和时间排动作。")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+
+            Image("ThemeTraining")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 118, height: 118)
+                .offset(x: 12, y: 4)
         }
     }
 

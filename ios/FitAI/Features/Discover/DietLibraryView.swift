@@ -111,15 +111,25 @@ struct DietLibraryView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("吃法选明白，\n三餐不瞎猜。")
-                .font(.system(size: 29, weight: .heavy, design: .rounded))
-                .foregroundStyle(.white)
-                .fixedSize(horizontal: false, vertical: true)
-            Text("先选策略，再按你的目标和体重生成一周餐单。所有方案都保留替换空间。")
-                .font(.subheadline)
-                .foregroundStyle(Theme.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
+        HStack(alignment: .center, spacing: 6) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("吃法选明白，\n三餐不瞎猜。")
+                    .font(.system(size: 29, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("先选策略，再按你的目标和体重生成一周餐单。所有方案都保留替换空间。")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+
+            Image("ThemeDiet")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 118, height: 118)
+                .offset(x: 12, y: 4)
         }
     }
 

@@ -375,11 +375,18 @@ struct EquipmentLibraryView: View {
 
     private var emptyCard: some View {
         VStack(spacing: 10) {
-            Image(systemName: store.equipmentLibrary.isEmpty ? "dumbbell" : "magnifyingglass")
-                .font(.system(size: 28, weight: .light))
-                .foregroundStyle(Theme.accent)
-                .frame(width: 50, height: 50)
-                .background(Theme.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            if store.equipmentLibrary.isEmpty {
+                Image("ThemeEquipment")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 122, height: 122)
+            } else {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 28, weight: .light))
+                    .foregroundStyle(Theme.accent)
+                    .frame(width: 50, height: 50)
+                    .background(Theme.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
 
             Text(store.equipmentLibrary.isEmpty ? "器械库还是空的" : "没有匹配的器械")
                 .font(.subheadline.weight(.semibold))

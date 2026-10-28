@@ -211,12 +211,6 @@ struct HomeView: View {
                     )
                 )
 
-            Image(systemName: "figure.strengthtraining.traditional")
-                .font(.system(size: 118, weight: .black))
-                .foregroundStyle(Color.black.opacity(0.16))
-                .offset(x: 24, y: 26)
-                .rotationEffect(.degrees(-8))
-
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
                     Text("练途")
@@ -228,14 +222,27 @@ struct HomeView: View {
                 }
                 .foregroundStyle(Color.black.opacity(0.78))
 
-                Text("不画饼，\n只把今天练明白。")
-                    .font(.system(size: 30, weight: .heavy, design: .rounded))
-                    .foregroundStyle(Color.black.opacity(0.9))
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .center, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("不画饼，\n只把今天练明白。")
+                            .font(.system(size: 24, weight: .heavy, design: .rounded))
+                            .foregroundStyle(Color.black.opacity(0.9))
+                            .fixedSize(horizontal: false, vertical: true)
 
-                Text("训练、饮食、动作点评，直接跟教练说。")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color.black.opacity(0.62))
+                        Text("训练、饮食、动作点评，直接跟教练说。")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.black.opacity(0.62))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Image("ThemeCoach")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 104, height: 104)
+                        .offset(x: 8, y: 4)
+                }
 
                 HStack(spacing: 8) {
                     Button {

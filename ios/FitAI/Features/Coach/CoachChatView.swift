@@ -765,14 +765,11 @@ struct CoachChatView: View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 11) {
-                    ZStack {
-                        Circle()
-                            .fill(Theme.accent.opacity(0.13))
-                            .frame(width: 42, height: 42)
-                        Image(systemName: "brain.head.profile")
-                            .font(.headline)
-                            .foregroundStyle(Theme.accent)
-                    }
+                    Image("ThemeCoach")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 76, height: 76)
+                        .offset(x: -4, y: 2)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(selectedSkill.label)在线")
                             .font(.headline)

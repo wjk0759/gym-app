@@ -175,9 +175,10 @@ struct DiscoverView: View {
                         )
                     )
 
-                Image(systemName: "camera.viewfinder")
-                    .font(.system(size: 92, weight: .black))
-                    .foregroundStyle(Color.black.opacity(0.14))
+                Image("ThemeEquipment")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 146, height: 146)
                     .offset(x: 22, y: 24)
 
                 VStack(alignment: .leading, spacing: 9) {
