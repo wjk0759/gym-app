@@ -11,9 +11,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..config import settings
-from ..models import ChatMessage, Exercise, Profile, Program, WorkoutSession
+from ..models import ChatMessage, Exercise, Profile, Program
 from . import llm
-from .memory import list_memories
+from .coach_context import build_coach_context, context_as_text
 
 PROMPT_DIR = Path(__file__).resolve().parent.parent / "prompts"
 PROMPT_FILES = {
@@ -133,88 +133,8 @@ def _system_prompt(skill: CoachSkill = "trainer") -> str:
 
 
 def _context(db: Session, profile: Profile, program: Program | None) -> str:
-    now = datetime.now()
-    weekday = "一二三四五六日"[now.weekday()]
-    parts = [
-        f"现在是 {now.month} 月 {now.day} 日，周{weekday}，{now.hour} 点左右。",
-        f"用户：{profile.nickname or '用户'}，{profile.sex}，{profile.age or '?'} 岁，"
-        f"{profile.height_cm or '?'}cm，{profile.weight_kg or '?'}kg，"
-        f"训练经验 {profile.experience}。",
-        f"伤病：{'、'.join(profile.injuries or []) or '无'}。",
-        f"训练安排：每周 {profile.weekly_days or '?'} 练，单次约 {profile.session_minutes or '?'} 分钟。",
-        f"可用器械：{'、'.join(profile.equipment or []) or '未设置'}。",
-        f"目标：{program.goal_type if program else '未设置'}。",
-    ]
-
-    # 长期记忆：让教练记得用户的稳定偏好、约束和习惯。
-    try:
-        memories = list_memories(db, profile.user_id, 10)
-        if memories:
-            parts.append("你记得用户：" + "；".join(item.content for item in memories))
-    except Exception:  # noqa: BLE001 - 记忆查询失败不影响对话
-        pass
-
-    # 最近训练：次数 + 上一次练了什么，方便教练接着上次说。
-    try:
-        since = datetime.now(timezone.utc) - timedelta(days=7)
-        recent = (
-            db.execute(
-                select(WorkoutSession).where(
-                    WorkoutSession.user_id == profile.user_id,
-                    WorkoutSession.started_at >= since,
-                )
-            )
-            .scalars()
-            .all()
-        )
-        parts.append(f"最近 7 天完成训练：{len(recent)} 次。")
-
-        last = (
-            db.execute(
-                select(WorkoutSession)
-                .where(WorkoutSession.user_id == profile.user_id)
-                .order_by(WorkoutSession.started_at.desc())
-                .limit(1)
-            )
-            .scalar_one_or_none()
-        )
-        if last is not None:
-            started = last.started_at.strftime("%m-%d")
-            parts.append(
-                f"最近一次训练：{started}，约 {last.duration_min or '?'} 分钟，"
-                f"{len(last.sets)} 组。"
-            )
-            slugs = list(dict.fromkeys(item.exercise_slug for item in last.sets))
-            names = {
-                item.slug: item.name_zh
-                for item in db.execute(
-                    select(Exercise).where(Exercise.slug.in_(slugs[:8]))
-                ).scalars()
-            }
-            lines: list[str] = []
-            for slug in slugs[:4]:
-                sets = [item for item in last.sets if item.exercise_slug == slug]
-                if not sets:
-                    continue
-                top = max(sets, key=lambda item: (item.weight_kg or 0, item.reps or 0))
-                lines.append(
-                    f"{names.get(slug, slug)} {top.weight_kg or 0}kg×{top.reps or '?'}"
-                )
-            if lines:
-                parts.append("上次主要动作：" + "、".join(lines))
-    except Exception:  # noqa: BLE001 - 上下文查询失败不影响对话
-        pass
-
-    if program:
-        first_day = next(
-            (day for day in program.days if day.week_index == 1), None
-        )
-        if first_day:
-            names = "、".join(
-                item.exercise.name_zh for item in first_day.exercises if item.exercise
-            )
-            parts.append(f"计划示例（第 1 周 {first_day.title}）：{names}。")
-    return "\n".join(parts)
+    """Render the same deterministic context used by the agent for legacy chat."""
+    return context_as_text(build_coach_context(db, profile.user_id))
 
 
 def _mock_reply(

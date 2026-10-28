@@ -25,6 +25,7 @@
 - App 统一调用 `POST /coach/chat` 和 Agent；请求里的 `skill` 字段仅为旧客户端兼容，后端按 `trainer` 统一处理。
 - 远程 DeepSeek 只对 Pro 会员开放；未开通或模型失败时回退到本地规则。
 - 统一人设 Prompt 位于 `backend/app/prompts/coach_system.md`；旧 `coach_rehab.md` / `coach_nutrition.md` 暂留但不再对外使用。
+- 服务端确定性上下文见 `docs/36-coach-context.md`；Agent 和旧教练接口共用同一份事实。
 - AI 调用会写入 `ai_jobs`，后台「AI 使用」查看调用量、延迟、降级和失败。
 
 > 会员校验目前在客户端按 StoreKit 权益执行；生产环境建议增加 Apple 收据/Server Notification 校验，避免直接调用后端绕过会员。

@@ -23,10 +23,7 @@ from ..models import (
     AgentPlanProposal,
     AgentRun,
     AgentStep,
-    BodyMetric,
     ChatMessage,
-    EquipmentLibraryItem,
-    FoodLog,
     Profile,
     Program,
     SetLog,
@@ -35,18 +32,11 @@ from ..models import (
 )
 from . import llm
 from .coach import detect_safety
-from .memory import (
-    list_memories,
-    remember_facts,
-    schedule_memory_extraction,
-)
+from .coach_context import build_coach_context, recent_training
+from .memory import remember_facts, schedule_memory_extraction
 from .plan_generator import build_template_plan
 from .queries import active_goal, active_program
-from .serializers import (
-    goal_to_dict,
-    profile_to_dict,
-    save_plan,
-)
+from .serializers import save_plan
 
 logger = logging.getLogger(__name__)
 
@@ -144,11 +134,12 @@ SYSTEM_PROMPT = """你是 FitAI 的 AI 私人健身教练，不是普通的单�
 5. 疼痛、胸闷、晕厥、呼吸困难、孕期/术后等情况必须建议就医或停止相关训练，不做医疗诊断。
 6. 不要编造工具、动作 slug、训练记录或用户信息。信息不足时用 ask_user。
 7. 不要输出 JSON 以外的内容。
-8. 给出训练建议前，至少参考 get_context 或 get_recent_training 中的一项真实信息；优先引用用户的当前计划、训练日、器械、伤病或最近完成情况。
+8. 给出训练建议前，优先参考 state.coach_context（服务端已计算好的档案、目标、当前计划、最近训练、饮食、身体数据和记忆）；需要刷新或查看更细的近期记录时再调用 get_context / get_recent_training。不要自己重算计划日期、热量、体重或训练量。
 9. 不要用泛泛的“多喝水、坚持训练、循序渐进”凑字数。先给结论，再给 2–3 个具体动作/组数/重量/时间建议，并说明依据。
 10. 如果用户的安排已经发生变化，直接指出哪一天、哪个动作或哪个参数需要改，不要重复整份计划。
 
 App Context 和可执行操作：
+- state.coach_context 是服务端构建的版本化上下文，包含 profile、goal、current_plan（当前周训练）、recent_training、body_metrics、nutrition_7d、equipment_library 和 memories；它是回答事实问题的首选依据。
 - state.app_context 是 iOS 本地计划日期和当前页面，包含 plan.days（day_id/title/date/completed/skipped）、today 以及 selected_tab。
 - state.coach_skill 仅用于兼容旧客户端；当前统一为 AI 私人健身教练，不区分康复师/营养师模式。训练、饮食、恢复、器械和日程都可以直接回答，并识别和准备 App 操作。
 - 用户要求改期、跳过、开始训练、打开页面或修改目标时，必须调用 propose_app_actions，不要只在 final 里描述。
@@ -188,173 +179,6 @@ def _program_summary(program: Program | None) -> dict | None:
         "weekdays": sorted(day.weekday for day in first_week),
         "day_titles": [day.title for day in first_week],
         "generated_by": program.generated_by,
-    }
-
-
-def _body_context(db: Session, user_id: str) -> list[dict]:
-    rows = (
-        db.execute(
-            select(BodyMetric)
-            .where(BodyMetric.user_id == user_id)
-            .order_by(BodyMetric.measured_at.desc())
-            .limit(5)
-        )
-        .scalars()
-        .all()
-    )
-    return [
-        {
-            "date": item.measured_at.date().isoformat(),
-            "weight_kg": item.weight_kg,
-            "body_fat_pct": item.body_fat_pct,
-            "waist_cm": item.waist_cm,
-        }
-        for item in rows
-    ]
-
-
-def _nutrition_context(db: Session, user_id: str, days: int = 7) -> dict:
-    days = max(1, min(30, days))
-    since = utcnow() - timedelta(days=days)
-    row = db.execute(
-        select(
-            func.count(func.distinct(func.date(FoodLog.logged_at))),
-            func.coalesce(func.sum(FoodLog.kcal), 0.0),
-            func.coalesce(func.sum(FoodLog.protein), 0.0),
-            func.coalesce(func.sum(FoodLog.carbs), 0.0),
-            func.coalesce(func.sum(FoodLog.fat), 0.0),
-            func.coalesce(func.sum(FoodLog.fiber), 0.0),
-        ).where(
-            FoodLog.user_id == user_id,
-            FoodLog.logged_at >= since,
-        )
-    ).one()
-    return {
-        "days": days,
-        "logged_days": int(row[0] or 0),
-        "kcal": round(float(row[1] or 0), 1),
-        "protein_g": round(float(row[2] or 0), 1),
-        "carbs_g": round(float(row[3] or 0), 1),
-        "fat_g": round(float(row[4] or 0), 1),
-        "fiber_g": round(float(row[5] or 0), 1),
-    }
-
-
-def _equipment_context(db: Session, user_id: str) -> list[dict]:
-    rows = (
-        db.execute(
-            select(EquipmentLibraryItem)
-            .where(EquipmentLibraryItem.user_id == user_id)
-            .order_by(EquipmentLibraryItem.created_at.desc())
-            .limit(20)
-        )
-        .scalars()
-        .all()
-    )
-    return [
-        {
-            "name": item.name,
-            "slug": item.slug,
-            "muscle": item.muscle,
-            "equipment": item.equipment,
-            "notes": item.notes,
-        }
-        for item in rows
-    ]
-
-
-def _context(db: Session, user_id: str) -> dict:
-    profile = db.get(Profile, user_id)
-    program = active_program(db, user_id) if profile is not None else None
-    memories = list_memories(db, user_id, 20)
-    if memories:
-        used_at = utcnow()
-        for item in memories:
-            item.last_used_at = used_at
-        db.flush()
-    memory_payload = [
-        {"kind": item.kind, "key": item.memory_key, "content": item.content}
-        for item in memories
-    ]
-    if profile is None:
-        return {"needs_profile": True, "memories": memory_payload}
-    return {
-        "profile": profile_to_dict(profile),
-        "goal": goal_to_dict(active_goal(db, user_id)),
-        "current_plan": _program_summary(program),
-        "body_metrics": _body_context(db, user_id),
-        "nutrition_7d": _nutrition_context(db, user_id, 7),
-        "equipment_library": _equipment_context(db, user_id),
-        "memories": memory_payload,
-    }
-
-
-def _recent_training(db: Session, user_id: str, days: int = 30) -> dict:
-    days = max(1, min(90, int(days)))
-    since = utcnow() - timedelta(days=days)
-    where = (
-        WorkoutSession.user_id == user_id,
-        WorkoutSession.started_at >= since,
-    )
-    aggregate = db.execute(
-        select(
-            func.count(func.distinct(WorkoutSession.id)),
-            func.count(SetLog.id),
-            func.coalesce(func.sum(SetLog.weight_kg * SetLog.reps), 0.0),
-            func.coalesce(func.sum(SetLog.rpe), 0.0),
-        )
-        .select_from(WorkoutSession)
-        .outerjoin(
-            SetLog,
-            and_(
-                SetLog.session_id == WorkoutSession.id,
-                SetLog.completed.is_(True),
-            ),
-        )
-        .where(*where)
-    ).one()
-
-    sessions = (
-        db.execute(
-            select(WorkoutSession)
-            .where(*where)
-            .order_by(WorkoutSession.started_at.desc())
-            .limit(10)
-        )
-        .scalars()
-        .all()
-    )
-    ids = [item.id for item in sessions]
-    set_counts = (
-        dict(
-            db.execute(
-                select(SetLog.session_id, func.count(SetLog.id))
-                .where(SetLog.session_id.in_(ids))
-                .group_by(SetLog.session_id)
-            ).all()
-        )
-        if ids
-        else {}
-    )
-    completed_sets = int(aggregate[1] or 0)
-    total_rpe = float(aggregate[3] or 0)
-    return {
-        "days": days,
-        "session_count": int(aggregate[0] or 0),
-        "completed_sets": completed_sets,
-        "total_volume_kg": round(float(aggregate[2] or 0), 1),
-        "average_rpe": round(total_rpe / completed_sets, 2)
-        if completed_sets
-        else None,
-        "recent_sessions": [
-            {
-                "date": item.started_at.date().isoformat(),
-                "duration_min": item.duration_min,
-                "feeling": item.feeling,
-                "set_count": int(set_counts.get(item.id, 0)),
-            }
-            for item in sessions
-        ],
     }
 
 
@@ -572,9 +396,12 @@ def _tool_result(
     app_context: dict | None = None,
 ) -> dict:
     if tool == "get_context":
-        return {"ok": True, "context": _context(db, user_id)}
+        return {
+            "ok": True,
+            "context": build_coach_context(db, user_id, app_context=app_context),
+        }
     if tool == "get_recent_training":
-        return {"ok": True, **_recent_training(db, user_id, int(arguments.get("days", 30)))}
+        return {"ok": True, **recent_training(db, user_id, int(arguments.get("days", 30)))}
     if tool == "remember":
         kind = str(arguments.get("kind", "preference"))[:30]
         content = str(arguments.get("content", "")).strip()[:1000]
@@ -760,7 +587,7 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
     previous_start = week_start - timedelta(days=7)
     current = _review_snapshot(db, user_id, week_start, week_start + timedelta(days=7))
     previous = _review_snapshot(db, user_id, previous_start, week_start)
-    context = _context(db, user_id)
+    context = build_coach_context(db, user_id)
     nutrition = context.get("nutrition_7d") or {}
     target = max(1, int(profile.weekly_days or 3))
     completion = min(1.5, current["sessions"] / target)
@@ -940,6 +767,7 @@ async def run_agent(
             state = {
                 "user_message": message,
                 "current_date": datetime.now(timezone.utc).date().isoformat(),
+                "coach_context": build_coach_context(db, user_id),
                 "history": [
                     {"role": item.role, "content": item.content[:1000]}
                     for item in (history or [])[-10:]
