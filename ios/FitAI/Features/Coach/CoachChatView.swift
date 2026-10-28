@@ -21,6 +21,8 @@ struct CoachChatView: View {
     @State private var draftVideo: CoachVideoAttachment?
     @State private var photoItems: [PhotosPickerItem] = []
     @State private var videoItem: PhotosPickerItem?
+    @State private var showPhotoPicker = false
+    @State private var showVideoPicker = false
     @State private var isLoadingAttachments = false
     @State private var isLoadingVideo = false
     @State private var attachmentError: String?
@@ -46,6 +48,22 @@ struct CoachChatView: View {
             && (!input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 || !draftAttachments.isEmpty
                 || draftVideo != nil)
+    }
+
+    private var canAddImageAttachment: Bool {
+        draftVideo == nil
+            && !isLoadingAttachments
+            && !isLoadingVideo
+            && draftAttachments.count < AttachmentLimits.maxImages
+            && !store.isReplying
+    }
+
+    private var canAddVideoAttachment: Bool {
+        draftAttachments.isEmpty
+            && draftVideo == nil
+            && !isLoadingAttachments
+            && !isLoadingVideo
+            && !store.isReplying
     }
 
     private struct StarterPrompt: Identifiable {
@@ -253,6 +271,19 @@ struct CoachChatView: View {
             } message: {
                 Text(attachmentError ?? "")
             }
+            .photosPicker(
+                isPresented: $showPhotoPicker,
+                selection: $photoItems,
+                maxSelectionCount: max(1, AttachmentLimits.maxImages - draftAttachments.count),
+                matching: .images,
+                photoLibrary: .shared()
+            )
+            .photosPicker(
+                isPresented: $showVideoPicker,
+                selection: $videoItem,
+                matching: .videos,
+                photoLibrary: .shared()
+            )
         }
     }
 
@@ -1074,64 +1105,49 @@ struct CoachChatView: View {
 
     private var inputBar: some View {
         HStack(spacing: 8) {
-            Button {
-                Haptics.tap()
-                cameraTitle = "拍照问教练"
-                cameraHint = "尽量拍到完整动作或器械，避免脸和隐私部位。照片只用于本次对话。"
-                showCamera = true
+            Menu {
+                Button {
+                    Haptics.tap()
+                    cameraTitle = "拍照问教练"
+                    cameraHint = "尽量拍到完整动作或器械，避免脸和隐私部位。照片只用于本次对话。"
+                    focused = false
+                    KeyboardDismiss.dismiss()
+                    showCamera = true
+                } label: {
+                    Label("拍照", systemImage: "camera.fill")
+                }
+                .disabled(!canAddImageAttachment)
+
+                Button {
+                    Haptics.tap()
+                    focused = false
+                    KeyboardDismiss.dismiss()
+                    showPhotoPicker = true
+                } label: {
+                    Label("从相册选照片", systemImage: "photo.on.rectangle")
+                }
+                .disabled(!canAddImageAttachment)
+
+                Button {
+                    Haptics.tap()
+                    focused = false
+                    KeyboardDismiss.dismiss()
+                    showVideoPicker = true
+                } label: {
+                    Label("选择视频", systemImage: "video.fill")
+                }
+                .disabled(!canAddVideoAttachment)
             } label: {
-                Image(systemName: "camera.fill")
-                    .font(.subheadline.weight(.semibold))
+                Image(systemName: "plus")
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(Theme.accent)
                     .frame(width: 40, height: 42)
                     .background(Theme.surfaceStrong, in: Circle())
+                    .contentShape(Circle())
             }
             .buttonStyle(SubtlePressStyle())
-            .disabled(draftVideo != nil || store.isReplying)
-            .accessibilityLabel("拍照问教练")
-
-            PhotosPicker(
-                selection: $photoItems,
-                maxSelectionCount: max(1, AttachmentLimits.maxImages - draftAttachments.count),
-                matching: .images,
-                photoLibrary: .shared()
-            ) {
-                Image(systemName: "photo.on.rectangle")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
-                    .frame(width: 40, height: 42)
-                    .background(Theme.surfaceStrong, in: Circle())
-            }
-            .buttonStyle(SubtlePressStyle())
-            .disabled(
-                draftVideo != nil
-                    || isLoadingAttachments
-                    || isLoadingVideo
-                    || draftAttachments.count >= AttachmentLimits.maxImages
-                    || store.isReplying
-            )
-            .accessibilityLabel("从相册添加照片")
-
-            PhotosPicker(
-                selection: $videoItem,
-                matching: .videos,
-                photoLibrary: .shared()
-            ) {
-                Image(systemName: "video.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
-                    .frame(width: 40, height: 42)
-                    .background(Theme.surfaceStrong, in: Circle())
-            }
-            .buttonStyle(SubtlePressStyle())
-            .disabled(
-                !draftAttachments.isEmpty
-                    || draftVideo != nil
-                    || isLoadingAttachments
-                    || isLoadingVideo
-                    || store.isReplying
-            )
-            .accessibilityLabel("添加视频")
+            .disabled(!canAddImageAttachment && !canAddVideoAttachment)
+            .accessibilityLabel("添加图片或视频")
 
             TextField(inputPlaceholder, text: $input, axis: .vertical)
                 .lineLimit(1...4)
