@@ -18,7 +18,7 @@ struct RootView: View {
         let atmosphere = WeatherAtmosphere.make(snapshot: weather.snapshot, date: phaseNow)
 
         ZStack {
-            AppBackground()
+            Theme.background.ignoresSafeArea()
 
             Group {
                 if auth.isRestoring {
@@ -156,6 +156,8 @@ struct RootView: View {
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppBackground())
         .transition(.opacity)
     }
 

@@ -115,16 +115,7 @@ struct AppBackground: View {
                 endRadius: 560
             )
 
-            if atmosphere.isPrecipitation {
-                RainDropletTexture(
-                    intensity: atmosphere.precipitationIntensity,
-                    seed: 2.7
-                )
-                .opacity(colorScheme == .dark ? 0.52 : 0.30)
-                .blur(radius: 0.8)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
-            }
+            WeatherSkyLayer()
         }
         .animation(
             Motion.resolved(.easeInOut(duration: 1.1), reduceMotion: reduceMotion),

@@ -13,7 +13,9 @@ final class WeatherTests: XCTestCase {
         XCTAssertEqual(WeatherKind(code: 999), .unknown)
     }
 
-    func testAlertKindPrioritizesThunderThenSnowThenRain() {
+    func testAlertKindPrioritizesTyphoonThenThunderThenSnowThenRain() {
+        XCTAssertEqual(makeSnapshot(code: 61, windKPH: 90).alertKind, .typhoon)
+        XCTAssertEqual(makeSnapshot(code: 61, windKPH: 70).alertKind, .typhoon)
         XCTAssertEqual(makeSnapshot(code: 95).alertKind, .thunder)
         XCTAssertEqual(makeSnapshot(code: 71).alertKind, .snow)
         XCTAssertEqual(makeSnapshot(code: 61).alertKind, .rain)
@@ -29,8 +31,8 @@ final class WeatherTests: XCTestCase {
         let evening = makeDate(calendar: calendar, hour: 18, minute: 30)
         let night = makeDate(calendar: calendar, hour: 23, minute: 0)
 
-        XCTAssertEqual(WeatherAtmosphere.phase(for: dawn, timeZone: utc), .dawn)
-        XCTAssertEqual(WeatherAtmosphere.phase(for: day, timeZone: utc), .day)
+        XCTAssertEqual(WeatherAtmosphere.phase(for: dawn, timeZone: utc), .morning)
+        XCTAssertEqual(WeatherAtmosphere.phase(for: day, timeZone: utc), .noon)
         XCTAssertEqual(WeatherAtmosphere.phase(for: evening, timeZone: utc), .evening)
         XCTAssertEqual(WeatherAtmosphere.phase(for: night, timeZone: utc), .night)
     }
@@ -55,16 +57,27 @@ final class WeatherTests: XCTestCase {
         XCTAssertEqual(snapshot.alertKind, .rainLikely)
     }
 
+    func testAtmosphereKeepsWindAndCloudCover() {
+        let snapshot = makeSnapshot(code: 61, windKPH: 70)
+        let atmosphere = WeatherAtmosphere.make(snapshot: snapshot)
+
+        XCTAssertTrue(atmosphere.isWindy)
+        XCTAssertTrue(atmosphere.isTyphoon)
+        XCTAssertGreaterThan(atmosphere.windIntensity, 0.6)
+        XCTAssertEqual(atmosphere.cloudCover, 50)
+    }
+
     private func makeSnapshot(
         code: Int,
         precipitation: Double = 0,
-        probability: Int? = nil
+        probability: Int? = nil,
+        windKPH: Double = 8
     ) -> WeatherSnapshot {
         WeatherSnapshot(
             temperatureC: 18,
             apparentTemperatureC: 17,
             humidity: 60,
-            windKPH: 8,
+            windKPH: windKPH,
             weatherCode: code,
             isDay: true,
             precipitationMM: precipitation,

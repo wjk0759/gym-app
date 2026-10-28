@@ -405,10 +405,10 @@ struct SettingsView: View {
                 )
             ) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("降雨 / 降雪出行提醒")
+                    Text("恶劣天气出行提醒")
                         .font(.subheadline)
                         .foregroundStyle(Theme.primaryText)
-                    Text("有雨雪或降雨概率较高时，每天最多提醒一次；夜间不打扰")
+                    Text("有雨雪、大风或降雨概率较高时，每天最多提醒一次；夜间不打扰")
                         .font(.caption2)
                         .foregroundStyle(Theme.tertiaryText)
                 }

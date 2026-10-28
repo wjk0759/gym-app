@@ -212,10 +212,17 @@ struct HomeView: View {
     private func weatherAdvisory(_ kind: WeatherAlertKind) -> some View {
         let isThunder = kind == .thunder
         let isSnow = kind == .snow
-        let tint = isThunder || isSnow ? Theme.warning : Theme.blue
+        let isTyphoon = kind == .typhoon
+        let tint = isThunder || isSnow || isTyphoon ? Theme.warning : Theme.blue
+        let symbol: String = {
+            if isTyphoon { return "wind" }
+            if isThunder { return "cloud.bolt.rain.fill" }
+            if isSnow { return "snowflake" }
+            return "umbrella.fill"
+        }()
 
         return HStack(spacing: 10) {
-            Image(systemName: isThunder ? "cloud.bolt.rain.fill" : (isSnow ? "snowflake" : "umbrella.fill"))
+            Image(systemName: symbol)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(tint)
                 .frame(width: 34, height: 34)
@@ -249,6 +256,7 @@ struct HomeView: View {
         case .snow: return "雨雪天气，慢一点走"
         case .thunder: return "雷雨天气，减少户外停留"
         case .rainLikely: return "今天可能下雨"
+        case .typhoon: return "风力很大，减少外出"
         }
     }
 
@@ -258,6 +266,7 @@ struct HomeView: View {
         case .snow: return "路面可能结冰，避开急转和湿滑台阶，热身多花 3 分钟。"
         case .thunder: return "尽量避开空旷地带和积水路段，必要时把训练改到室内。"
         case .rainLikely: return "降雨概率较高，包里备好雨具，出门前再看一眼天气。"
+        case .typhoon: return "远离广告牌、树木和临时搭建物，训练改到室内，别在风口停留。"
         }
     }
 
@@ -275,6 +284,14 @@ struct HomeView: View {
                         endPoint: .bottomTrailing
                     )
                 )
+
+            // 首页主卡也带一点实时天气动画，避免天气层只藏在卡片边缘。
+            WeatherSkyLayer()
+                .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                .opacity(0.52)
+                .blendMode(.softLight)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {

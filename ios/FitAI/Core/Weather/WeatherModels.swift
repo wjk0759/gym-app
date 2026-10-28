@@ -123,6 +123,7 @@ enum WeatherAlertKind: String, Codable, Sendable, Equatable {
     case snow
     case thunder
     case rainLikely
+    case typhoon
 
     func title(for snapshot: WeatherSnapshot) -> String {
         switch self {
@@ -134,6 +135,8 @@ enum WeatherAlertKind: String, Codable, Sendable, Equatable {
             return "雷雨出行提醒"
         case .rainLikely:
             return "今天可能下雨"
+        case .typhoon:
+            return "台风 / 大风出行提醒"
         }
     }
 
@@ -150,6 +153,9 @@ enum WeatherAlertKind: String, Codable, Sendable, Equatable {
         case .rainLikely:
             let probability = snapshot.precipitationProbability ?? 0
             return "\(place)今天降雨概率约 \(probability)%。出门带伞，通勤和训练路上注意湿滑。"
+        case .typhoon:
+            let wind = (snapshot.windKPH ?? 0).formatted(.number.precision(.fractionLength(0)))
+            return "\(place)\(snapshot.conditionLabel)，风力约 \(wind) km/h，\(temperature)°C。尽量避开广告牌、树木和临时搭建物，减少不必要外出。"
         }
     }
 }
@@ -217,6 +223,10 @@ struct WeatherSnapshot: Codable, Equatable, Sendable {
     }
 
     var alertKind: WeatherAlertKind? {
+        let wind = windKPH ?? 0
+        if wind >= 88 || (wind >= 62 && isWet) {
+            return .typhoon
+        }
         if kind.isStorm {
             return .thunder
         }

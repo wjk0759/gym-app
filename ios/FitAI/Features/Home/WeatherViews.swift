@@ -84,7 +84,8 @@ struct WeatherBadgeView: View {
             if weather.isStale {
                 return "\(snapshot.conditionLabel) · 待刷新"
             }
-            return "\(snapshot.conditionLabel) · \(snapshot.placeDisplayName)"
+            let condition = atmosphere.isTyphoon ? "台风/大风" : snapshot.conditionLabel
+            return "\(condition) · \(snapshot.placeDisplayName)"
         }
         if weather.needsLocationPermission {
             return "允许定位查看天气"
@@ -175,7 +176,8 @@ struct WeatherDetailSheet: View {
                         .lineLimit(1)
 
                     if let snapshot = weather.snapshot {
-                        Text("\(atmosphere.phase.label) · \(snapshot.conditionLabel)")
+                        let condition = atmosphere.isTyphoon ? "台风/大风" : snapshot.conditionLabel
+                        Text("\(atmosphere.phase.label) · \(condition)")
                             .font(.caption)
                             .foregroundStyle(Theme.secondaryText)
                     } else {
@@ -319,10 +321,10 @@ struct WeatherDetailSheet: View {
                 )
             ) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("降雨 / 降雪出行提醒")
+                    Text("恶劣天气出行提醒")
                         .font(.headline)
                         .foregroundStyle(Theme.primaryText)
-                    Text("有雨雪或降雨概率较高时，每天最多提醒一次；22:00–07:00 不打扰。")
+                    Text("有雨雪、大风或降雨概率较高时，每天最多提醒一次；22:00–07:00 不打扰。")
                         .font(.caption2)
                         .foregroundStyle(Theme.tertiaryText)
                 }

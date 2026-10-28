@@ -2,17 +2,17 @@ import Foundation
 import SwiftUI
 
 enum WeatherPhase: String, CaseIterable, Sendable, Equatable {
-    case dawn
-    case day
+    case morning
+    case noon
     case evening
     case night
 
     var label: String {
         switch self {
-        case .dawn: return "清晨"
-        case .day: return "白天"
+        case .morning: return "早上"
+        case .noon: return "中午"
         case .evening: return "傍晚"
-        case .night: return "夜间"
+        case .night: return "晚上"
         }
     }
 }
@@ -23,13 +23,17 @@ struct WeatherAtmosphere: Equatable, Sendable {
     var isDaylight: Bool
     var precipitationMM: Double
     var rainProbability: Int?
+    var windKPH: Double?
+    var cloudCover: Int?
 
     static let neutral = WeatherAtmosphere(
         kind: .clear,
-        phase: .day,
+        phase: .noon,
         isDaylight: true,
         precipitationMM: 0,
-        rainProbability: nil
+        rainProbability: nil,
+        windKPH: nil,
+        cloudCover: nil
     )
 
     var isPrecipitation: Bool {
@@ -46,10 +50,53 @@ struct WeatherAtmosphere: Equatable, Sendable {
         if kind.isStorm {
             value = max(value, 0.85)
         }
-        if kind.isSnow {
+        if isSnow {
             value = max(value, 0.48)
         }
         return value
+    }
+
+    var windIntensity: Double {
+        let speed = windKPH ?? 0
+        return min(1, max(0, (speed - 10) / 80))
+    }
+
+    var isWindy: Bool {
+        (windKPH ?? 0) >= 30
+    }
+
+    var isTyphoon: Bool {
+        let speed = windKPH ?? 0
+        return speed >= 88 || (speed >= 62 && isPrecipitation)
+    }
+
+    var cloudiness: Double {
+        if let cloudCover {
+            return min(1, max(0, Double(cloudCover) / 100))
+        }
+        switch kind {
+        case .clear: return 0.06
+        case .mostlyClear: return 0.22
+        case .partlyCloudy: return 0.52
+        case .overcast: return 0.94
+        case .fog: return 0.82
+        case .drizzle, .rain, .heavyRain, .freezingRain, .thunderstorm: return 0.88
+        case .snow, .heavySnow: return 0.72
+        case .unknown: return 0.5
+        }
+    }
+
+    var celestialVisibility: Double {
+        if isPrecipitation || kind == .overcast || kind == .fog {
+            return 0
+        }
+        switch kind {
+        case .clear: return 1
+        case .mostlyClear: return 0.82
+        case .partlyCloudy: return 0.30
+        case .unknown: return 0.45
+        default: return 0
+        }
     }
 
     func accent(for scheme: ColorScheme) -> Color {
@@ -66,11 +113,11 @@ struct WeatherAtmosphere: Equatable, Sendable {
                 : Color(red: 0.36, green: 0.72, blue: 0.94)
         }
         switch phase {
-        case .dawn:
+        case .morning:
             return light
                 ? Color(red: 0.78, green: 0.32, blue: 0.16)
                 : Color(red: 0.97, green: 0.62, blue: 0.45)
-        case .day:
+        case .noon:
             return Theme.accent
         case .evening:
             return light
@@ -122,7 +169,7 @@ struct WeatherAtmosphere: Equatable, Sendable {
         }
 
         switch phase {
-        case .dawn:
+        case .morning:
             return light
                 ? [
                     Color(red: 1.000, green: 0.955, blue: 0.940),
@@ -132,7 +179,7 @@ struct WeatherAtmosphere: Equatable, Sendable {
                     Color(red: 0.075, green: 0.045, blue: 0.070),
                     Color(red: 0.045, green: 0.035, blue: 0.060)
                 ]
-        case .day:
+        case .noon:
             return light
                 ? [
                     Color(red: 0.965, green: 0.985, blue: 0.960),
@@ -173,9 +220,9 @@ struct WeatherAtmosphere: Equatable, Sendable {
             return Color(red: 0.42, green: 0.62, blue: 0.78).opacity(scheme == .dark ? 0.08 : 0.06)
         }
         switch phase {
-        case .dawn:
+        case .morning:
             return Color(red: 1.0, green: 0.56, blue: 0.36).opacity(scheme == .dark ? 0.11 : 0.09)
-        case .day:
+        case .noon:
             return Theme.accent.opacity(scheme == .dark ? 0.08 : 0.08)
         case .evening:
             return Color(red: 1.0, green: 0.50, blue: 0.25).opacity(scheme == .dark ? 0.13 : 0.09)
@@ -189,11 +236,11 @@ struct WeatherAtmosphere: Equatable, Sendable {
         calendar.timeZone = timeZone
         let hour = calendar.component(.hour, from: date)
         switch hour {
-        case 5..<8:
-            return .dawn
-        case 8..<17:
-            return .day
-        case 17..<20:
+        case 5..<11:
+            return .morning
+        case 11..<16:
+            return .noon
+        case 16..<19:
             return .evening
         default:
             return .night
@@ -210,9 +257,11 @@ struct WeatherAtmosphere: Equatable, Sendable {
         return WeatherAtmosphere(
             kind: kind,
             phase: phase,
-            isDaylight: snapshot?.isDay ?? (8..<18).contains(hour),
+            isDaylight: snapshot?.isDay ?? (6..<19).contains(hour),
             precipitationMM: snapshot?.precipitationMM ?? 0,
-            rainProbability: snapshot?.precipitationProbability
+            rainProbability: snapshot?.precipitationProbability,
+            windKPH: snapshot?.windKPH,
+            cloudCover: snapshot?.cloudCover
         )
     }
 }

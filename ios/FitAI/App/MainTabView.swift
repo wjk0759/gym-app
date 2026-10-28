@@ -33,30 +33,35 @@ struct MainTabView: View {
         @Bindable var store = store
         TabView(selection: $store.selectedTab) {
             HomeView()
+                .environment(\.weatherAnimationActive, store.selectedTab == 0)
                 .tag(0)
                 .tabItem {
                     Label("今日", systemImage: "figure.strengthtraining.traditional")
                 }
 
             PlanHomeView()
+                .environment(\.weatherAnimationActive, store.selectedTab == 1)
                 .tag(1)
                 .tabItem {
                     Label("记录", systemImage: "calendar")
                 }
 
             CoachChatView()
+                .environment(\.weatherAnimationActive, store.selectedTab == 2)
                 .tag(2)
                 .tabItem {
                     Label("教练", systemImage: "bubble.left.and.bubble.right")
                 }
 
             DiscoverView()
+                .environment(\.weatherAnimationActive, store.selectedTab == 3)
                 .tag(3)
                 .tabItem {
                     Label("发现", systemImage: "square.grid.2x2")
                 }
 
             ProfileView()
+                .environment(\.weatherAnimationActive, store.selectedTab == 4)
                 .tag(4)
                 .tabItem {
                     Label("我的", systemImage: "person.crop.circle")
