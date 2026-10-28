@@ -482,6 +482,7 @@ async def generate_plan(
                     equipment_slugs,
                     split,
                 ),
+                reasoning_effort=settings.llm_plan_reasoning_effort,
             )
             cleaned, warnings = validate_plan(
                 raw,

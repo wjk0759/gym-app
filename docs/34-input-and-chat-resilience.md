@@ -24,7 +24,7 @@ iOS 端的输入框不再依赖每个页面单独实现“完成”按钮：
 - 一次动作卡可能包含多天“跳过训练”；执行后会保存整批撤销状态，撤销会一起恢复，而不是只恢复最后一天。
 - 后端允许一次工具调用最多 7 个动作；整周取消/多天跳过应在一轮内完成，不再因为 3 个动作上限被拆成多轮。教练 Agent 的推理强度单独使用 `LLM_AGENT_REASONING_EFFORT=high`，避免 `max` 带来的额外延迟。
 - 体重、体脂、腰围等身体数据只能走 `log_body_metric`；`remember` 会拒绝身体数据，防止 Agent 反复调用记忆工具耗尽步骤。
-- AI 计划生成耗时可能接近 100 秒，iOS 的 `plans/generate` 超时已放宽到 150 秒；如果不需要 AI 计划，后端保持 `LLM_PLAN_ENABLED=false` 使用毫秒级模板。
+- AI 计划生成耗时可能接近 100 秒，iOS 的 `plans/generate` 超时已放宽到 150 秒；计划生成单独使用 `LLM_PLAN_REASONING_EFFORT=high`。如果不需要 AI 计划，后端保持 `LLM_PLAN_ENABLED=false` 使用毫秒级模板。
 
 ## 验收清单
 

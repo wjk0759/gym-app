@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     # Agent 每一步工具决策单独控制推理强度；整周取消这类多动作请求
     # 用 max 会额外花几十秒，high 在准确率和延迟之间更稳。
     llm_agent_reasoning_effort: str = "high"
+    # AI 计划生成的 reasoning 强度也单独控制；max 可能让一次计划生成
+    # 接近 100 秒，high 更适合前台等待。
+    llm_plan_reasoning_effort: str = "high"
     # 计划生成是否走 LLM。当前可用的 DeepSeek 模型都会产出大量 reasoning tokens，
     # 一次 4 周计划要 20s~200s。默认关闭，改用确定性的规则模板（毫秒级返回）。
     # 需要 AI 编排时再设 LLM_PLAN_ENABLED=true。
