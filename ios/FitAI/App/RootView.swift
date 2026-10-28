@@ -1,5 +1,6 @@
 import Combine
 import SwiftUI
+import UIKit
 
 struct RootView: View {
     @Environment(AppStore.self) private var store
@@ -11,6 +12,7 @@ struct RootView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var splashPulse = false
     @State private var phaseNow = Date()
+    @State private var keyboardVisible = false
 
     private let phaseTimer = Timer.publish(every: 300, on: .main, in: .common).autoconnect()
 
@@ -37,12 +39,19 @@ struct RootView: View {
             }
         }
         .environment(\.weatherAtmosphere, atmosphere)
+        .environment(\.keyboardVisible, keyboardVisible)
         .tint(atmosphere.accent(for: colorScheme))
         .overlay {
             if atmosphere.isPrecipitation {
                 RainGlassOverlay(intensity: atmosphere.precipitationIntensity)
                     .ignoresSafeArea()
             }
+        }
+        .overlay {
+            KeyboardDismissInstaller()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
         }
         .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: auth.isRestoring)
         .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: auth.isAuthenticated)
@@ -103,8 +112,15 @@ struct RootView: View {
                 activateWeatherIfNeeded()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            keyboardVisible = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardVisible = false
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active {
+                keyboardVisible = false
                 store.flushPersistence()
             } else {
                 phaseNow = Date()

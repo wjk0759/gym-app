@@ -202,6 +202,13 @@ struct CoachChatView: View {
                             .foregroundStyle(Theme.secondaryText)
                     }
                 }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("收起") {
+                        focused = false
+                        KeyboardDismiss.dismiss()
+                    }
+                }
             }
         }
     }
@@ -1022,21 +1029,37 @@ struct CoachChatView: View {
                     in: RoundedRectangle(cornerRadius: 18, style: .continuous)
                 )
 
-            Button {
-                send(input)
-            } label: {
-                Image(systemName: "arrow.up")
-                    .font(.headline)
-                    .foregroundStyle(Theme.onAccent)
-                    .frame(width: 42, height: 42)
-                    .background(
-                        Circle().fill(canSend ? Theme.accent : Theme.secondaryText.opacity(0.35))
-                    )
-                    .scaleEffect(canSend ? 1 : 0.94)
-                    .animation(Motion.quick, value: canSend)
+            if store.isReplying {
+                Button {
+                    Haptics.impact(.light)
+                    KeyboardDismiss.dismiss()
+                    store.cancelAgentChat()
+                } label: {
+                    Image(systemName: "stop.fill")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(Theme.onAccent)
+                        .frame(width: 42, height: 42)
+                        .background(Circle().fill(Theme.warning))
+                }
+                .buttonStyle(SubtlePressStyle())
+                .accessibilityLabel("停止本次回复")
+            } else {
+                Button {
+                    send(input)
+                } label: {
+                    Image(systemName: "arrow.up")
+                        .font(.headline)
+                        .foregroundStyle(Theme.onAccent)
+                        .frame(width: 42, height: 42)
+                        .background(
+                            Circle().fill(canSend ? Theme.accent : Theme.secondaryText.opacity(0.35))
+                        )
+                        .scaleEffect(canSend ? 1 : 0.94)
+                        .animation(Motion.quick, value: canSend)
+                }
+                .buttonStyle(SubtlePressStyle())
+                .disabled(!canSend)
             }
-            .buttonStyle(SubtlePressStyle())
-            .disabled(!canSend)
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
@@ -1053,6 +1076,10 @@ struct CoachChatView: View {
         let trimmed = String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(500))
         guard !trimmed.isEmpty, !store.isReplying else { return }
         Haptics.impact(.light)
+        // 先结束编辑，再发请求：避免消息插入、键盘收起和列表滚动同时发生。
+        input = ""
+        focused = false
+        KeyboardDismiss.dismiss()
         if store.canUseRemoteAI {
             // 所有 Skill、所有自然语言都先交给 Agent 理解；不再由本地关键词决定意图。
             store.sendAgentChat(trimmed, skill: selectedSkill)
@@ -1064,7 +1091,5 @@ struct CoachChatView: View {
         } else {
             store.sendChat(trimmed, skill: selectedSkill)
         }
-        input = ""
-        focused = false
     }
 }

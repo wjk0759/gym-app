@@ -63,6 +63,15 @@ final class AppStore {
     var isSyncingUserData = false
     private var scheduleSyncRequested = false
     @ObservationIgnored private var draftPersistWorkItem: DispatchWorkItem?
+    @ObservationIgnored private var agentChatTask: Task<Void, Never>?
+    @ObservationIgnored private var agentChatWatchdog: Task<Void, Never>?
+    @ObservationIgnored private var agentChatRequestID: UUID?
+    @ObservationIgnored var coachPhotoTask: Task<Void, Never>?
+    @ObservationIgnored var coachPhotoWatchdog: Task<Void, Never>?
+    @ObservationIgnored var coachPhotoRequestID: UUID?
+    @ObservationIgnored private var legacyChatTask: Task<Void, Never>?
+    @ObservationIgnored private var legacyChatWatchdog: Task<Void, Never>?
+    @ObservationIgnored private var legacyChatRequestID: UUID?
     /// 已从本地删除、但服务端 DELETE 尚未成功的训练记录 ID。
     var pendingWorkoutDeletionIDs: [String] = []
     var isAgentWorking = false
@@ -1168,18 +1177,35 @@ final class AppStore {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
+        cancelActiveChatRequest()
+        lastAgentRetryText = nil
         chat.append(ChatMessage(role: .user, text: trimmed))
 
         if canUseRemoteAI {
+            let requestID = UUID()
+            legacyChatRequestID = requestID
             isReplying = true
             persist()
-            Task { @MainActor in
+
+            let task = Task { @MainActor [weak self] in
+                guard let self else { return }
+                defer {
+                    if self.legacyChatRequestID == requestID {
+                        self.legacyChatRequestID = nil
+                        self.legacyChatTask = nil
+                        self.legacyChatWatchdog?.cancel()
+                        self.legacyChatWatchdog = nil
+                        self.isReplying = false
+                        self.persist()
+                    }
+                }
                 do {
                     let response = try await APIClient.shared.sendChat(
                         message: trimmed,
                         skill: skill,
-                        context: coachContext
+                        context: self.coachContext
                     )
+                    try Task.checkCancellation()
                     self.chat.append(
                         ChatMessage(
                             role: .assistant,
@@ -1187,7 +1213,10 @@ final class AppStore {
                             isSafety: response.safetyFlag != nil
                         )
                     )
+                } catch is CancellationError {
+                    return
                 } catch {
+                    guard !Task.isCancelled else { return }
                     let local = CoachService.reply(
                         to: trimmed,
                         profile: self.profile,
@@ -1204,7 +1233,25 @@ final class AppStore {
                         )
                     )
                 }
+            }
+            legacyChatTask = task
+            legacyChatWatchdog = Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: 30_000_000_000)
+                guard !Task.isCancelled,
+                      let self,
+                      self.legacyChatRequestID == requestID,
+                      self.isReplying else { return }
+                self.legacyChatRequestID = nil
+                task.cancel()
+                self.legacyChatTask = nil
+                self.legacyChatWatchdog = nil
                 self.isReplying = false
+                self.chat.append(
+                    ChatMessage(
+                        role: .assistant,
+                        text: "这次回复等待太久了，可能是网络或模型服务较慢。可以稍后再试。"
+                    )
+                )
                 self.persist()
             }
             return
@@ -1223,6 +1270,7 @@ final class AppStore {
     }
 
     func clearChat() {
+        cancelActiveChatRequest()
         chat.removeAll()
         planAdjustmentStage = 0
         planAdjustmentProposal = nil
@@ -1298,9 +1346,13 @@ final class AppStore {
     ) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+        cancelActiveChatRequest()
         if appendUserMessage {
             chat.append(ChatMessage(role: .user, text: trimmed))
         }
+
+        let requestID = UUID()
+        agentChatRequestID = requestID
         isReplying = true
         agentProposal = nil
         agentActions = []
@@ -1309,10 +1361,18 @@ final class AppStore {
         pendingUndo = nil
         persist()
 
-        Task { @MainActor in
+        let task = Task { @MainActor [weak self] in
+            guard let self else { return }
             defer {
-                self.isReplying = false
-                self.persist()
+                // 旧请求或被取消的请求不能覆盖新请求的 UI 状态。
+                if self.agentChatRequestID == requestID {
+                    self.agentChatRequestID = nil
+                    self.agentChatTask = nil
+                    self.agentChatWatchdog?.cancel()
+                    self.agentChatWatchdog = nil
+                    self.isReplying = false
+                    self.persist()
+                }
             }
             do {
                 let context = self.agentAppContext()
@@ -1335,6 +1395,7 @@ final class AppStore {
                         appContext: context
                     )
                 }
+                try Task.checkCancellation()
                 self.agentSessionID = response.sessionID
                 self.agentRunID = response.runID
                 if response.status == "failed" {
@@ -1357,7 +1418,11 @@ final class AppStore {
                         isSafety: false
                     )
                 )
+                self.lastAgentRetryText = nil
+            } catch is CancellationError {
+                return
             } catch {
+                guard !Task.isCancelled else { return }
                 self.lastAgentRetryText = trimmed
                 self.lastAgentRetrySkill = skill
                 let local = CoachService.reply(
@@ -1377,6 +1442,58 @@ final class AppStore {
                 )
             }
         }
+        agentChatTask = task
+
+        // 网络请求和模型服务偶尔会长时间不返回；给 UI 一个明确的超时出口。
+        agentChatWatchdog = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 30_000_000_000)
+            guard !Task.isCancelled,
+                  let self,
+                  self.agentChatRequestID == requestID,
+                  self.isReplying else { return }
+            self.agentChatRequestID = nil
+            task.cancel()
+            self.agentChatTask = nil
+            self.agentChatWatchdog = nil
+            self.isReplying = false
+            self.lastAgentRetryText = trimmed
+            self.lastAgentRetrySkill = skill
+            self.chat.append(
+                ChatMessage(
+                    role: .assistant,
+                    text: "这次回复等待太久了，可能是网络或模型服务较慢。问题已保留，可以点重试。"
+                )
+            )
+            self.persist()
+        }
+    }
+
+    /// 用户主动停止当前回复，不等待网络请求自然结束。
+    func cancelAgentChat() {
+        guard isReplying else { return }
+        cancelActiveChatRequest()
+        lastAgentRetryText = nil
+        chat.append(ChatMessage(role: .assistant, text: "已停止本次回复。"))
+        persist()
+    }
+
+    func cancelActiveChatRequest() {
+        agentChatRequestID = nil
+        agentChatTask?.cancel()
+        agentChatTask = nil
+        agentChatWatchdog?.cancel()
+        agentChatWatchdog = nil
+        coachPhotoRequestID = nil
+        coachPhotoTask?.cancel()
+        coachPhotoTask = nil
+        coachPhotoWatchdog?.cancel()
+        coachPhotoWatchdog = nil
+        legacyChatRequestID = nil
+        legacyChatTask?.cancel()
+        legacyChatTask = nil
+        legacyChatWatchdog?.cancel()
+        legacyChatWatchdog = nil
+        isReplying = false
     }
 
     func retryAgentChat() {
@@ -1841,6 +1958,7 @@ final class AppStore {
     }
 
     private func resetInMemory() {
+        cancelActiveChatRequest()
         draftPersistWorkItem?.cancel()
         draftPersistWorkItem = nil
         profile = UserProfile()

@@ -810,7 +810,7 @@ struct APIClient {
         if let sessionID { payload["session_id"] = sessionID.uuidString }
         if let context { payload["context"] = context }
         let body = try JSONSerialization.data(withJSONObject: payload)
-        return try await send(path: "coach/chat", method: "POST", body: body)
+        return try await send(path: "coach/chat", method: "POST", body: body, timeout: 40)
     }
 
     // MARK: - Agent
@@ -828,7 +828,7 @@ struct APIClient {
         if let sessionID { payload["session_id"] = sessionID.uuidString }
         if let appContext { payload["app_context"] = appContext }
         let body = try JSONSerialization.data(withJSONObject: payload)
-        return try await send(path: "agent/chat", method: "POST", body: body)
+        return try await send(path: "agent/chat", method: "POST", body: body, timeout: 40)
     }
 
     func agentWeeklyReview() async throws -> AgentWeeklyReview {
@@ -1119,9 +1119,15 @@ struct APIClient {
     private func send<T: Decodable>(
         path: String,
         method: String,
-        body: Data?
+        body: Data?,
+        timeout: TimeInterval = 90
     ) async throws -> T {
-        let data = try await perform(path: path, method: method, body: body)
+        let data = try await perform(
+            path: path,
+            method: method,
+            body: body,
+            timeout: timeout
+        )
         return try decode(T.self, from: data)
     }
 
@@ -1166,7 +1172,8 @@ struct APIClient {
         method: String,
         body: Data?,
         contentType: String = "application/json",
-        retried: Bool = false
+        retried: Bool = false,
+        timeout: TimeInterval = 90
     ) async throws -> Data {
         guard let url = URL(string: baseURL.absoluteString + "/" + path) else {
             throw APIError(message: "接口地址不合法")
@@ -1181,7 +1188,7 @@ struct APIClient {
             request.setValue(userID, forHTTPHeaderField: "X-User-Id")
         }
         request.httpBody = body
-        request.timeoutInterval = 90
+        request.timeoutInterval = timeout
 
         let data: Data
         let response: URLResponse
@@ -1208,7 +1215,8 @@ struct APIClient {
                     method: method,
                     body: body,
                     contentType: contentType,
-                    retried: true
+                    retried: true,
+                    timeout: timeout
                 )
             }
         }

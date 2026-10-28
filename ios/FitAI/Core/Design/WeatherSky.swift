@@ -9,6 +9,7 @@ struct WeatherSkyLayer: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.weatherAnimationActive) private var animationActive
+    @Environment(\.keyboardVisible) private var keyboardVisible
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: paused)) { timeline in
@@ -26,7 +27,7 @@ struct WeatherSkyLayer: View {
     }
 
     private var paused: Bool {
-        reduceMotion || scenePhase != .active || !animationActive
+        reduceMotion || scenePhase != .active || !animationActive || keyboardVisible
     }
 
     private var isLight: Bool {
@@ -362,13 +363,15 @@ struct WeatherSkyLayer: View {
         let intensity = atmosphere.precipitationIntensity
         guard intensity > 0 else { return }
 
-        let count = min(170, 50 + Int(intensity * 120))
+        let count = min(140, 44 + Int(intensity * 96))
         let wind = atmosphere.windIntensity
         let color = rainColor
         let fade = isLight ? 0.72 : 1.0
+        // 雨滴数量多，使用纯色描边而不是每滴创建一个渐变对象，避免天气动画抢主线程。
+        let opacity = (0.18 + intensity * 0.24) * fade
+        let lineWidth = CGFloat(0.7 + intensity * 0.9)
 
         for index in 0..<count {
-            let seed = Double(index)
             let fall = 0.55 + weatherSkyNoise(index, 1.1) * 0.55
             let yNorm = weatherSkyWrap(weatherSkyNoise(index, 2.2) + time * fall * 0.55)
             let xNorm = weatherSkyWrap(
@@ -379,23 +382,13 @@ struct WeatherSkyLayer: View {
             let length = CGFloat((6 + weatherSkyNoise(index, 4.5) * 17) * (0.65 + intensity))
             let slant = CGFloat(1.5 + wind * 22)
 
-            let top = CGPoint(x: x, y: y)
-            let bottom = CGPoint(x: x - slant, y: y + length)
             var path = Path()
-            path.move(to: top)
-            path.addLine(to: bottom)
+            path.move(to: CGPoint(x: x, y: y))
+            path.addLine(to: CGPoint(x: x - slant, y: y + length))
             context.stroke(
                 path,
-                with: .linearGradient(
-                    Gradient(colors: [
-                        color.opacity(0.02 * fade),
-                        color.opacity((0.22 + intensity * 0.24) * fade),
-                        color.opacity(0.02 * fade)
-                    ]),
-                    startPoint: top,
-                    endPoint: bottom
-                ),
-                lineWidth: CGFloat(0.7 + intensity * 0.9)
+                with: .color(color.opacity(opacity)),
+                lineWidth: lineWidth
             )
         }
 

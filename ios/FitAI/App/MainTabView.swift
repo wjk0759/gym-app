@@ -47,7 +47,8 @@ struct MainTabView: View {
                 }
 
             CoachChatView()
-                .environment(\.weatherAnimationActive, store.selectedTab == 2)
+                // 教练等待回复时暂停背景天气动画，优先保证消息列表和输入响应。
+                .environment(\.weatherAnimationActive, store.selectedTab == 2 && !store.isReplying)
                 .tag(2)
                 .tabItem {
                     Label("教练", systemImage: "bubble.left.and.bubble.right")
