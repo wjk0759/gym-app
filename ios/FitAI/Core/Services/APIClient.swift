@@ -225,7 +225,7 @@ struct APIClient {
             "message": message,
             "skill": skill.rawValue
         ]
-        if let sessionID { payload["session_id"] = sessionID.uuidString }
+        if let sessionID { payload["session_id"] = sessionID.uuidString.lowercased() }
         if let context { payload["context"] = context }
         let body = try JSONSerialization.data(withJSONObject: payload)
         return try await send(path: "coach/chat", method: "POST", body: body, timeout: 50)
@@ -244,7 +244,7 @@ struct APIClient {
             "message": message,
             "skill": skill.rawValue
         ]
-        if let sessionID { payload["session_id"] = sessionID.uuidString }
+        if let sessionID { payload["session_id"] = sessionID.uuidString.lowercased() }
         if let appContext { payload["app_context"] = appContext }
         if let requestID { payload["request_id"] = requestID.uuidString }
         let body = try JSONSerialization.data(withJSONObject: payload)
@@ -486,24 +486,37 @@ struct APIClient {
         )
     }
 
-    func reviewCoachVision(imageData: Data, question: String) async throws -> CoachVisionResult {
+    func reviewCoachVision(
+        imageData: Data,
+        question: String,
+        sessionID: UUID? = nil
+    ) async throws -> CoachVisionResult {
+        var fields = ["question": question]
+        if let sessionID {
+            fields["session_id"] = sessionID.uuidString.lowercased()
+        }
         let data = try await upload(
             path: "coach/vision",
             imageData: imageData,
             filename: "form.jpg",
-            fields: ["question": question]
+            fields: fields
         )
         return try decode(CoachVisionResult.self, from: data)
     }
 
     func reviewCoachVisionBatch(
         imageData: [Data],
-        question: String
+        question: String,
+        sessionID: UUID? = nil
     ) async throws -> CoachVisionResult {
+        var fields = ["question": question]
+        if let sessionID {
+            fields["session_id"] = sessionID.uuidString.lowercased()
+        }
         let data = try await uploadMany(
             path: "coach/vision/batch",
             images: imageData,
-            fields: ["question": question]
+            fields: fields
         )
         return try decode(CoachVisionResult.self, from: data)
     }

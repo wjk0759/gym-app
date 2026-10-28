@@ -1,6 +1,7 @@
 import asyncio
 from types import SimpleNamespace
 
+from app.routers.coach import _vision_history_text
 from app.services import coach_vision
 from app.services.coach_vision import review
 
@@ -62,6 +63,63 @@ def test_vision_response_stays_compact(monkeypatch):
     assert len(result["summary"]) <= 240
     assert len(result["observations"]) == 3
     assert all(len(item) <= 80 for item in result["observations"])
+
+
+def test_vision_prompt_allows_visible_estimate_with_limits():
+    assert "视觉区间" in coach_vision.SYSTEM_PROMPT
+    assert "视觉估算" in coach_vision.SYSTEM_PROMPT
+    assert "不是训练动作" in coach_vision.SYSTEM_PROMPT
+    assert "先回答" in coach_vision.USER_PROMPT
+
+
+def test_vision_history_is_text_only_and_compact():
+    text = _vision_history_text(
+        {
+            "summary": "能看到人物上半身，坐姿和衣着限制了体脂判断。",
+            "observations": ["室内办公桌前", "怀里抱着一只猫", "只能看到上半身"],
+            "next_cue": "收紧核心",
+        }
+    )
+
+    assert "能看到人物上半身" in text
+    assert "可见：" in text
+    assert "猫" in text
+    assert "提示：" in text
+    assert len(text) <= 4000
+
+
+def test_conversation_context_reaches_vision_prompt(monkeypatch):
+    captured: dict[str, str] = {}
+
+    async def fake_vision(system, user, image, mime="image/jpeg"):
+        captured["prompt"] = user
+        return {
+            "mode": "body",
+            "is_training": False,
+            "summary": "只看到上半身，体脂只能粗略估。",
+            "observations": ["人物坐在桌前"],
+            "next_cue": None,
+            "safety_flag": None,
+        }
+
+    monkeypatch.setattr(
+        coach_vision,
+        "settings",
+        SimpleNamespace(use_mock_vision=False),
+    )
+    monkeypatch.setattr(coach_vision.llm, "complete_vision_json", fake_vision)
+
+    asyncio.run(
+        review(
+            b"person",
+            "图中人物体脂率多少？",
+            conversation_context="用户：她体脂率多少？\n助手：能看到人物。",
+        )
+    )
+
+    assert "图中人物体脂率多少" in captured["prompt"]
+    assert "前文" in captured["prompt"]
+    assert "助手：能看到人物" in captured["prompt"]
 
 
 def test_training_question_keeps_training_mode(monkeypatch):

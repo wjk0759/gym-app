@@ -22,10 +22,14 @@ SYSTEM_PROMPT = (
     "训练动作：mode=training，观察可见姿势、动作阶段、器械和安全风险，next_cue 只给一个最重要的动作提示。"
     "食物/营养：mode=nutrition，识别食物、份量和营养，热量和克数是估算，明确提示需要称重；不要给动作提示。"
     "器械：mode=equipment，说明器械名称、用途、可练部位和替代方案；除非用户明确问动作，否则不点评动作。"
-    "体型/体态：mode=body，只描述可见体态和训练重点，不诊断、不评价身材、不制造焦虑。"
+    "体型/体态/身体成分：mode=body。先说明画面里能看到什么（全身/半身、角度、遮挡），再回答用户问的可见属性。"
+    "用户问体脂率、围度或肌肉量时，可以基于画面给粗略视觉区间和依据，但必须标明这是视觉估算、不是测量，并说明误差来源；"
+    "信息不足时先回答目前能判断的部分，再说明需要全身正面/侧面照或体成分测量，不要直接拒答。不评价美丑、不制造焦虑、不做医疗诊断。"
     "其他健身相关：mode=general，直接回答；与健身无关的内容简短说明你的服务范围，不要硬套训练模板。"
     "回复像教练发微信：先给一句结论，最多 3 条要点，不写长报告，不复述整张图。"
     "多张照片或视频关键帧按上传顺序看，动作变化比单帧更重要。"
+    "如果画面里有人，先承认人物和可见范围；不要用“不是训练动作”作为拒绝回答体型、体态或身体成分问题的理由。"
+    "用户问的是图片中人物或物品的可见属性时，先给最佳判断或区间，再说明限制；不要空泛地说无法判断。"
     "只根据画面中明确可见的内容回答，不猜测镜头外动作，不诊断伤病。"
     "如果出现胸痛、晕厥、明显畸形、无法承重等急性风险，safety_flag 输出 medical_referral，并建议立即停止训练、线下就医。"
     "只输出一个 JSON 对象，不要输出 Markdown。"
@@ -40,7 +44,8 @@ USER_PROMPT = (
     '"next_cue":"仅 training 模式给一个动作要点；其他模式必须为 null",'
     '"safety_flag":null或"medical_referral"}'
     "如果图片是食物，summary 直接回答热量/营养问题；如果是训练，summary 直接说动作问题；"
-    "不要输出固定的训练点评模板。"
+    "如果用户问人物或物品的可见属性，summary 先回答该问题，能给区间就给区间，不能确定就说明缺什么；"
+    "不要输出固定的训练点评模板，也不要用“无法据此判断”代替回答。"
 )
 
 _TRAINING_WORDS = (
@@ -156,11 +161,15 @@ async def review(
     image_bytes: bytes,
     question: str = "",
     safety_context: str | None = None,
+    conversation_context: str | None = None,
 ) -> dict:
     if not image_bytes:
         return _fallback("没有收到图片")
     return await review_many(
-        [image_bytes], question, safety_context=safety_context
+        [image_bytes],
+        question,
+        safety_context=safety_context,
+        conversation_context=conversation_context,
     )
 
 
@@ -168,6 +177,7 @@ async def review_many(
     images: list[bytes],
     question: str = "",
     safety_context: str | None = None,
+    conversation_context: str | None = None,
 ) -> dict:
     if not images:
         return _fallback("没有收到图片")
@@ -184,6 +194,11 @@ async def review_many(
         prompt += f"\n用户问题：{question.strip()[:2000]}"
     else:
         prompt += "\n用户没有补充文字。先识别图片内容再选择 mode，不要默认 training。"
+    if conversation_context:
+        prompt += (
+            "\n前文（只用于理解“这张/图中/她/他”等指代，不要重复前文结论）："
+            f"{conversation_context[:1600]}"
+        )
     if safety_context:
         prompt += f"\n安全上下文（必须遵守）：{safety_context[:800]}"
 

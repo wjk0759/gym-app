@@ -6,6 +6,7 @@ the product-level behavior stable while prompts and model routing evolve.
 
 import pytest
 
+from app.services.agent import SYSTEM_PROMPT as AGENT_SYSTEM_PROMPT
 from app.services.coach import _input_strategy
 from app.services.coach_vision import _question_mode
 from app.services.safety import detect_safety
@@ -40,6 +41,13 @@ def test_safety_golden(message, expected_flag):
     assert flag == expected_flag
     if expected_flag:
         assert reply
+
+
+def test_agent_has_visual_follow_up_rules():
+    assert "visual_context" in AGENT_SYSTEM_PROMPT
+    assert "不要说自己没收到图" in AGENT_SYSTEM_PROMPT
+    assert "视觉估算" in AGENT_SYSTEM_PROMPT
+    assert "[图片]" in AGENT_SYSTEM_PROMPT
 
 
 @pytest.mark.parametrize(

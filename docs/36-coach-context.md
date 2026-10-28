@@ -20,7 +20,7 @@
 | `nutrition_7d` | 最近 7 天饮食记录天数、热量、蛋白质、碳水、脂肪、纤维 |
 | `equipment_library` | 用户个人器械库 |
 | `memories` | 长期记忆，读取时更新 `last_used_at` |
-| `app_context` | iOS 传来的当前页面、本地计划日期和完成/跳过状态 |
+| `app_context` | iOS 传来的当前页面、本地计划日期和完成/跳过状态，以及最近一次图片的 `visual_context` |
 | `today` | 服务端当前日期和星期 |
 
 没有档案时返回 `needs_profile: true`，只保留记忆和 `app_context`，不伪造身体数据。

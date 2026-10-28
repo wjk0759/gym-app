@@ -50,6 +50,7 @@ final class AppStore {
     var chat: [ChatMessage] = []
     var selectedTab = 0
     var coachContext: String?
+    var coachVisualMemory: CoachVisualMemory?
     var planAdjustmentRequested = false
     var planAdjustmentStage = 0
     var planAdjustmentIssue = ""
@@ -935,7 +936,7 @@ final class AppStore {
                     let response = try await APIClient.shared.sendChat(
                         message: trimmed,
                         skill: skill,
-                        context: self.coachContext
+                        context: self.coachContextForReply
                     )
                     try Task.checkCancellation()
                     self.chat.append(
@@ -1008,6 +1009,7 @@ final class AppStore {
         agentRunID = nil
         agentProposal = nil
         agentActions = []
+        coachVisualMemory = nil
         isExecutingAgentActions = false
         workoutLaunchDayID = nil
         lastAgentRetryText = nil
@@ -1256,6 +1258,16 @@ final class AppStore {
             "today": FitnessDate.key(Date()),
             "selected_tab": selectedTab,
         ]
+        if let visual = coachVisualMemory {
+            context["visual_context"] = [
+                "summary": visual.summary,
+                "observations": visual.observations,
+                "mode": visual.mode,
+                "image_count": visual.imageCount,
+                "last_question": visual.lastQuestion,
+                "updated_at": APIDateCoding.iso8601WithFractionalSeconds.string(from: visual.updatedAt),
+            ]
+        }
         guard let plan else { return context }
         let days: [[String: Any]] = plan.days.map { day in
             let date = plan.scheduledDate(for: day)
@@ -1768,6 +1780,7 @@ final class AppStore {
         agentRunID = nil
         agentProposal = nil
         agentActions = []
+        coachVisualMemory = nil
         isExecutingAgentActions = false
         workoutLaunchDayID = nil
         pendingRoute = nil
@@ -1855,6 +1868,7 @@ final class AppStore {
         var bodyCheckInDismissedDate: String?
         var pendingWorkoutDeletionIDs: [String]?
         var weeklyReview: AgentWeeklyReview?
+        var coachVisualMemory: CoachVisualMemory?
     }
 
     private func load() {
@@ -1907,6 +1921,7 @@ final class AppStore {
         bodyCheckInDismissedDate = state.bodyCheckInDismissedDate
         pendingWorkoutDeletionIDs = state.pendingWorkoutDeletionIDs ?? []
         weeklyReview = state.weeklyReview
+        coachVisualMemory = state.coachVisualMemory
         useEquipmentLibraryForPlans = state.useEquipmentLibraryForPlans ?? true
         if persistAfterMigration {
             persist()
@@ -1941,7 +1956,8 @@ final class AppStore {
             bodyCheckInAnchor: bodyCheckInAnchor,
             bodyCheckInDismissedDate: bodyCheckInDismissedDate,
             pendingWorkoutDeletionIDs: pendingWorkoutDeletionIDs,
-            weeklyReview: weeklyReview
+            weeklyReview: weeklyReview,
+            coachVisualMemory: coachVisualMemory
         )
         let url = fileURL
 

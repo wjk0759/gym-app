@@ -69,15 +69,27 @@ extension AppStore {
                 if images.count == 1 {
                     result = try await APIClient.shared.reviewCoachVision(
                         imageData: images[0],
-                        question: visionQuestion
+                        question: visionQuestion,
+                        sessionID: self.agentSessionID
                     )
                 } else {
                     result = try await APIClient.shared.reviewCoachVisionBatch(
                         imageData: images,
-                        question: visionQuestion
+                        question: visionQuestion,
+                        sessionID: self.agentSessionID
                     )
                 }
                 try Task.checkCancellation()
+                if let sessionID = result.sessionID {
+                    self.agentSessionID = sessionID
+                }
+                if result.warning == nil {
+                    self.coachVisualMemory = CoachVisualMemory(
+                        result: result,
+                        imageCount: images.count,
+                        question: visionQuestion
+                    )
+                }
                 self.chat.append(
                     ChatMessage(
                         role: .assistant,

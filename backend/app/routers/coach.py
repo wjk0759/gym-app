@@ -54,18 +54,96 @@ def _vision_profile(db: DBSession, user_id: str) -> Profile:
     return profile
 
 
+def _vision_session(
+    db: DBSession,
+    user_id: str,
+    session_id: str | None,
+    question: str,
+) -> ChatSession:
+    """Keep a text-only visual turn so later Agent replies can follow up.
+
+    Raw images are deliberately not stored; only the question, a marker and the
+    compact visual summary are persisted.
+    """
+    if session_id:
+        session = db.get(ChatSession, session_id.strip().lower())
+        if session is None or session.user_id != user_id:
+            raise HTTPException(status_code=404, detail="对话不存在")
+        return session
+    session = ChatSession(
+        user_id=user_id,
+        title=(question.strip()[:30] or "图片分析"),
+    )
+    db.add(session)
+    db.commit()
+    return session
+
+
+def _vision_conversation_context(session: ChatSession, limit: int = 6) -> str:
+    lines: list[str] = []
+    for item in session.messages[-limit:]:
+        if item.role not in {"user", "assistant"}:
+            continue
+        role = "用户" if item.role == "user" else "助手"
+        lines.append(f"{role}：{item.content[:300]}")
+    return "\n".join(lines)
+
+
+def _vision_history_text(result: dict) -> str:
+    parts: list[str] = []
+    summary = str(result.get("summary") or "").strip()
+    if summary:
+        parts.append(summary)
+    observations = result.get("observations") or []
+    if observations:
+        parts.append("可见：" + "；".join(str(item)[:80] for item in observations[:3]))
+    next_cue = str(result.get("next_cue") or "").strip()
+    if next_cue:
+        parts.append("提示：" + next_cue[:240])
+    return "\n".join(parts)[:4000] or "图片分析完成。"
+
+
+def _record_vision_turn(
+    db: DBSession,
+    session: ChatSession,
+    question: str,
+    image_count: int,
+    result: dict,
+) -> dict:
+    marker = "[图片]" if image_count <= 1 else f"[图片 x{image_count}]"
+    content = f"{marker} {question.strip()}".strip()
+    session.messages.append(
+        ChatMessage(role="user", content=content[:2000])
+    )
+    session.messages.append(
+        ChatMessage(
+            role="assistant",
+            content=_vision_history_text(result),
+            safety_flag=result.get("safety_flag"),
+        )
+    )
+    db.commit()
+    result["session_id"] = session.id
+    return result
+
+
 @router.post("/vision")
 async def vision(
     user_id: CurrentUser,
     db: DBSession,
     file: UploadFile = File(...),
     question: str = Form(default=""),
+    session_id: str | None = Form(default=None),
 ):
-    """One-shot training-photo review. Photos are not persisted server-side."""
+    """Review one photo, then keep a text-only visual turn for follow-ups."""
     profile = _vision_profile(db, user_id)
+    session = _vision_session(db, user_id, session_id, question)
+    conversation_context = _vision_conversation_context(session)
     decision = assess_safety(profile, question)
     if decision.reply:
-        return _vision_safety_response(decision)
+        return _record_vision_turn(
+            db, session, question, 1, _vision_safety_response(decision)
+        )
 
     image_bytes = await file.read()
     if not image_bytes:
@@ -73,9 +151,13 @@ async def vision(
     if len(image_bytes) > MAX_VISION_FILE_BYTES:
         raise HTTPException(status_code=413, detail="图片不能超过 8MB")
 
-    return await coach_vision.review(
-        image_bytes, question, safety_context=decision.caution
+    result = await coach_vision.review(
+        image_bytes,
+        question,
+        safety_context=decision.caution,
+        conversation_context=conversation_context,
     )
+    return _record_vision_turn(db, session, question, 1, result)
 
 
 @router.post("/vision/batch")
@@ -84,12 +166,17 @@ async def vision_batch(
     db: DBSession,
     files: list[UploadFile] = File(...),
     question: str = Form(default=""),
+    session_id: str | None = Form(default=None),
 ):
     """Review several staged photos as one ordered set."""
     profile = _vision_profile(db, user_id)
+    session = _vision_session(db, user_id, session_id, question)
+    conversation_context = _vision_conversation_context(session)
     decision = assess_safety(profile, question)
     if decision.reply:
-        return _vision_safety_response(decision)
+        return _record_vision_turn(
+            db, session, question, len(files), _vision_safety_response(decision)
+        )
     if not files:
         raise HTTPException(status_code=400, detail="没有收到图片")
     if len(files) > MAX_VISION_FILES:
@@ -110,9 +197,13 @@ async def vision_batch(
 
     if not images:
         raise HTTPException(status_code=400, detail="图片为空")
-    return await coach_vision.review_many(
-        images, question, safety_context=decision.caution
+    result = await coach_vision.review_many(
+        images,
+        question,
+        safety_context=decision.caution,
+        conversation_context=conversation_context,
     )
+    return _record_vision_turn(db, session, question, len(images), result)
 
 
 @router.post("/chat")
