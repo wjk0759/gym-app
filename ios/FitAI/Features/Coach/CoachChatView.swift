@@ -966,6 +966,9 @@ struct CoachChatView: View {
                         .foregroundStyle(Theme.warning)
                 }
 
+                let isUploading = store.isReplying
+                    && message.role == .user
+                    && store.chat.last?.id == message.id
                 if let videoData = message.videoThumbnailData,
                    let duration = message.videoDurationSeconds {
                     ChatVideoThumbnail(
@@ -973,11 +976,23 @@ struct CoachChatView: View {
                         data: videoData,
                         duration: duration
                     )
+                    .overlay {
+                        if isUploading {
+                            attachmentUploadingOverlay
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+                    }
                 } else if !message.allImageData.isEmpty {
                     ChatMessageImageGrid(
                         messageID: message.id,
                         images: message.allImageData
                     )
+                    .overlay {
+                        if isUploading {
+                            attachmentUploadingOverlay
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+                    }
                 }
 
                 if !message.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -1008,6 +1023,16 @@ struct CoachChatView: View {
                 Spacer(minLength: 40)
             }
         }
+    }
+
+    private var attachmentUploadingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.28)
+            ProgressView()
+                .tint(.white)
+                .scaleEffect(1.05)
+        }
+        .allowsHitTesting(false)
     }
 
     private var coachQuickActions: some View {
