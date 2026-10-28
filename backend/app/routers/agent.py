@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import time
 
 from fastapi import APIRouter, HTTPException
@@ -20,6 +21,7 @@ router = APIRouter(prefix="/agent", tags=["agent"])
 _AGENT_RESULT_TTL_SECONDS = 600
 _AGENT_RESULT_CACHE_LIMIT = 256
 _agent_result_cache: dict[str, tuple[float, dict]] = {}
+_agent_request_locks: dict[str, asyncio.Lock] = {}
 
 
 def _agent_cache_key(user_id: str, request_id: str) -> str:
@@ -57,10 +59,9 @@ def _remember_agent_result(user_id: str, request_id: str | None, result: dict) -
             _agent_result_cache.pop(next(iter(_agent_result_cache)))
 
 
-@router.post("/chat")
-async def agent_chat(
+async def _agent_chat_inner(
     payload: AgentChatIn,
-    user_id: CurrentUser,
+    user_id: str,
     db: DBSession,
 ):
     cached = _cached_agent_result(user_id, payload.request_id)
@@ -112,6 +113,30 @@ async def agent_chat(
     }
     _remember_agent_result(user_id, payload.request_id, response)
     return response
+
+
+@router.post("/chat")
+async def agent_chat(
+    payload: AgentChatIn,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    # 同一 request_id 的并发重试等待第一个请求完成后再读缓存，
+    # 避免客户端断开/重试时同时创建两条 AgentRun。
+    if not payload.request_id:
+        return await _agent_chat_inner(payload, user_id, db)
+
+    key = _agent_cache_key(user_id, payload.request_id)
+    lock = _agent_request_locks.get(key)
+    if lock is None:
+        if len(_agent_request_locks) > _AGENT_RESULT_CACHE_LIMIT:
+            for old_key, old_lock in list(_agent_request_locks.items()):
+                if not old_lock.locked():
+                    _agent_request_locks.pop(old_key, None)
+        lock = asyncio.Lock()
+        _agent_request_locks[key] = lock
+    async with lock:
+        return await _agent_chat_inner(payload, user_id, db)
 
 
 @router.post("/actions/{action_id}/result")
