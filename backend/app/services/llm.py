@@ -221,7 +221,12 @@ def _parse_json_object(content: str) -> dict:
     raise LLMError(f"LLM returned invalid JSON: {content[:200]}")
 
 
-async def complete_json(system: str, user: str) -> dict:
+async def complete_json(
+    system: str,
+    user: str,
+    *,
+    reasoning_effort: str | None = None,
+) -> dict:
     if settings.use_mock_llm:
         raise LLMError("mock mode: no LLM key configured")
 
@@ -235,7 +240,7 @@ async def complete_json(system: str, user: str) -> dict:
             "model": settings.llm_model,
             "messages": messages,
             "temperature": 0.3,
-            "reasoning_effort": settings.llm_reasoning_effort,
+            "reasoning_effort": reasoning_effort or settings.llm_reasoning_effort,
             "response_format": {"type": "json_object"},
         }
         try:

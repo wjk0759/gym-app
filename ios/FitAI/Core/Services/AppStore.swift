@@ -29,6 +29,16 @@ enum AgentUndoState {
 
 @Observable
 final class AppStore {
+    static let chatRequestTimeoutNanoseconds: UInt64 = 45_000_000_000
+    static let agentTimeoutNotice = "这次回复等待太久了，可能是网络或模型服务较慢。问题已保留，可以点重试。"
+    static let legacyTimeoutNotice = "这次回复等待太久了，可能是网络或模型服务较慢。可以稍后再试。"
+    static let photoTimeoutNotice = "这张照片的分析等待太久了，可能是网络或视觉服务较慢。可以重新拍一张，或先用文字描述动作和不舒服的位置。"
+    static let chatTimeoutNotices: Set<String> = [
+        agentTimeoutNotice,
+        legacyTimeoutNotice,
+        photoTimeoutNotice
+    ]
+
     var profile = UserProfile()
     var plan: TrainingPlan?
     var planHistory: [TrainingPlan] = []
@@ -1178,6 +1188,7 @@ final class AppStore {
         guard !trimmed.isEmpty else { return }
 
         cancelActiveChatRequest()
+        removeTrailingChatTimeoutNotices()
         lastAgentRetryText = nil
         chat.append(ChatMessage(role: .user, text: trimmed))
 
@@ -1236,7 +1247,7 @@ final class AppStore {
             }
             legacyChatTask = task
             legacyChatWatchdog = Task { @MainActor [weak self] in
-                try? await Task.sleep(nanoseconds: 30_000_000_000)
+                try? await Task.sleep(nanoseconds: Self.chatRequestTimeoutNanoseconds)
                 guard !Task.isCancelled,
                       let self,
                       self.legacyChatRequestID == requestID,
@@ -1247,10 +1258,7 @@ final class AppStore {
                 self.legacyChatWatchdog = nil
                 self.isReplying = false
                 self.chat.append(
-                    ChatMessage(
-                        role: .assistant,
-                        text: "这次回复等待太久了，可能是网络或模型服务较慢。可以稍后再试。"
-                    )
+                    ChatMessage(role: .assistant, text: Self.legacyTimeoutNotice)
                 )
                 self.persist()
             }
@@ -1347,6 +1355,7 @@ final class AppStore {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         cancelActiveChatRequest()
+        removeTrailingChatTimeoutNotices()
         if appendUserMessage {
             chat.append(ChatMessage(role: .user, text: trimmed))
         }
@@ -1446,7 +1455,7 @@ final class AppStore {
 
         // 网络请求和模型服务偶尔会长时间不返回；给 UI 一个明确的超时出口。
         agentChatWatchdog = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 30_000_000_000)
+            try? await Task.sleep(nanoseconds: Self.chatRequestTimeoutNanoseconds)
             guard !Task.isCancelled,
                   let self,
                   self.agentChatRequestID == requestID,
@@ -1458,12 +1467,7 @@ final class AppStore {
             self.isReplying = false
             self.lastAgentRetryText = trimmed
             self.lastAgentRetrySkill = skill
-            self.chat.append(
-                ChatMessage(
-                    role: .assistant,
-                    text: "这次回复等待太久了，可能是网络或模型服务较慢。问题已保留，可以点重试。"
-                )
-            )
+            self.chat.append(ChatMessage(role: .assistant, text: Self.agentTimeoutNotice))
             self.persist()
         }
     }
@@ -1475,6 +1479,15 @@ final class AppStore {
         lastAgentRetryText = nil
         chat.append(ChatMessage(role: .assistant, text: "已停止本次回复。"))
         persist()
+    }
+
+    /// 重试/新消息前清掉上一次请求留下的超时气泡，避免同一个问题堆出多条错误提示。
+    func removeTrailingChatTimeoutNotices() {
+        while let last = chat.last,
+              last.role == .assistant,
+              Self.chatTimeoutNotices.contains(last.text) {
+            chat.removeLast()
+        }
     }
 
     func cancelActiveChatRequest() {

@@ -810,7 +810,7 @@ struct APIClient {
         if let sessionID { payload["session_id"] = sessionID.uuidString }
         if let context { payload["context"] = context }
         let body = try JSONSerialization.data(withJSONObject: payload)
-        return try await send(path: "coach/chat", method: "POST", body: body, timeout: 40)
+        return try await send(path: "coach/chat", method: "POST", body: body, timeout: 50)
     }
 
     // MARK: - Agent
@@ -828,7 +828,7 @@ struct APIClient {
         if let sessionID { payload["session_id"] = sessionID.uuidString }
         if let appContext { payload["app_context"] = appContext }
         let body = try JSONSerialization.data(withJSONObject: payload)
-        return try await send(path: "agent/chat", method: "POST", body: body, timeout: 40)
+        return try await send(path: "agent/chat", method: "POST", body: body, timeout: 50)
     }
 
     func agentWeeklyReview() async throws -> AgentWeeklyReview {

@@ -80,3 +80,34 @@ def test_body_metric_action_requires_valid_weight():
         _normalize_app_actions(
             [{"type": "log_body_metric", "payload": {"weight_kg": "heavy"}}]
         )
+
+
+def test_app_action_allows_full_week_skips():
+    context = {
+        "plan": {
+            "days": [{"id": f"day-{index}"} for index in range(1, 9)]
+        }
+    }
+    raw_actions = [
+        {
+            "type": "skip_training",
+            "title": f"取消第 {index} 天",
+            "payload": {"day_id": f"day-{index}"},
+        }
+        for index in range(1, 8)
+    ]
+    actions = _normalize_app_actions(raw_actions, context)
+    assert len(actions) == 7
+
+    with pytest.raises(ValueError):
+        _normalize_app_actions(
+            [
+                *raw_actions,
+                {
+                    "type": "skip_training",
+                    "title": "取消第 8 天",
+                    "payload": {"day_id": "day-8"},
+                },
+            ],
+            context,
+        )

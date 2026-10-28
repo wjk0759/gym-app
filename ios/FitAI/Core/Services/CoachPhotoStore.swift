@@ -10,6 +10,7 @@ extension AppStore {
     ) {
         guard let data = image.jpegData(compressionQuality: 0.65) else { return }
         cancelActiveChatRequest()
+        removeTrailingChatTimeoutNotices()
         agentProposal = nil
         agentActions = []
         agentRunID = nil
@@ -64,7 +65,7 @@ extension AppStore {
         coachPhotoTask = task
 
         coachPhotoWatchdog = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 30_000_000_000)
+            try? await Task.sleep(nanoseconds: AppStore.chatRequestTimeoutNanoseconds)
             guard !Task.isCancelled,
                   let self,
                   self.coachPhotoRequestID == requestID,
@@ -74,12 +75,7 @@ extension AppStore {
             self.coachPhotoTask = nil
             self.coachPhotoWatchdog = nil
             self.isReplying = false
-            self.chat.append(
-                ChatMessage(
-                    role: .assistant,
-                    text: "这张照片的分析等待太久了，可能是网络或视觉服务较慢。可以重新拍一张，或先用文字描述动作和不舒服的位置。"
-                )
-            )
+            self.chat.append(ChatMessage(role: .assistant, text: AppStore.photoTimeoutNotice))
             self.persist()
         }
     }

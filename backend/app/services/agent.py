@@ -51,6 +51,9 @@ from .serializers import (
 logger = logging.getLogger(__name__)
 
 MAX_STEPS = 7
+# 一周最多 7 天；整周取消/批量跳过应在一次工具调用里完成，
+# 否则模型会被“最多 3 个动作”的校验逼着拆成多轮，延迟从十几秒涨到一分钟以上。
+MAX_APP_ACTIONS = 7
 PROPOSAL_TTL_MINUTES = 30
 ALLOWED_TOOLS = {
     "get_context",
@@ -155,6 +158,7 @@ App Context 和可执行操作：
 - 用户想拍器械、问某个器械怎么练、或想把器械加入个人动作库时，调用 recognize_equipment。payload 可以为空；不要假装已经识别，等用户在相机里拍完。
 - 用户想拍体型照、看体态、问训练重点时，调用 analyze_body。payload 可以为空；不要假装已经分析，等用户拍完。
 - reschedule_training / skip_training 优先使用 app_context 里存在的 day_id；也可以传 date（YYYY-MM-DD）。改期目标用 target_date；如果用户说“最近空档”，target_date 传 "next_free"。
+- 用户要求取消/跳过整周或多天训练时，把每一天的 skip_training 放在同一次 propose_app_actions 的 actions 数组里（最多 7 个），不要拆成多次工具调用。
 - open_screen 的 payload.screen 只能是：today、plan、coach、equipment、profile、training_schedule、nutrition、body_checkin、profile_edit、workout_history、agent_memory、period_schedule。
 - update_goal 的 payload 字段可包含 goal_type（lose_fat/build_muscle/recomp/endurance）、target_weight_kg、target_date、weekly_days、session_minutes。
 - 不要声称操作已执行。final 中应说明“已准备好操作，请确认”，不要声称页面已经打开、训练已经开始或训练已经改期；由 iOS 确认后执行。
@@ -443,8 +447,8 @@ def _normalize_app_actions(
 ) -> list[dict]:
     if not isinstance(raw_actions, list) or not raw_actions:
         raise ValueError("actions must be a non-empty list")
-    if len(raw_actions) > 3:
-        raise ValueError("at most 3 actions are allowed")
+    if len(raw_actions) > MAX_APP_ACTIONS:
+        raise ValueError(f"at most {MAX_APP_ACTIONS} actions are allowed")
 
     plan_days = []
     if isinstance(app_context, dict):
@@ -946,6 +950,7 @@ async def run_agent(
                 raw = await llm.complete_json(
                     SYSTEM_PROMPT,
                     json.dumps(state, ensure_ascii=False),
+                    reasoning_effort=settings.llm_agent_reasoning_effort,
                 )
                 _record_step(
                     db,
