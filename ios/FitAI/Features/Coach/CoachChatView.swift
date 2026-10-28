@@ -6,6 +6,7 @@ import UIKit
 
 struct CoachChatView: View {
     @Environment(AppStore.self) private var store
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var input = ""
     @State private var showPaywall = false
@@ -1085,10 +1086,19 @@ struct CoachChatView: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 11)
-                .background(
-                    Theme.surfaceStrong,
-                    in: RoundedRectangle(cornerRadius: 18, style: .continuous)
-                )
+                .background {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(
+                            Color.white.opacity(colorScheme == .dark ? 0.075 : 0.46)
+                        )
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(
+                            Color.white.opacity(colorScheme == .dark ? 0.10 : 0.42),
+                            lineWidth: 0.8
+                        )
+                }
 
             if store.isReplying {
                 Button {
@@ -1122,15 +1132,29 @@ struct CoachChatView: View {
                 .disabled(!canSend)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
-        .padding(.bottom, 10)
-        .background(Theme.chrome)
-        .overlay(alignment: .top) {
-            Rectangle()
-                .fill(Theme.stroke)
-                .frame(height: 1)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background {
+            GlassSurface(cornerRadius: 26, material: true)
         }
+        .overlay {
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .stroke(
+                    focused
+                        ? Theme.accent.opacity(0.55)
+                        : Color.white.opacity(colorScheme == .dark ? 0.22 : 0.68),
+                    lineWidth: focused ? 1.1 : 0.8
+                )
+                .animation(Motion.quick, value: focused)
+        }
+        .shadow(
+            color: Theme.shadow.opacity(colorScheme == .dark ? 0.42 : 0.20),
+            radius: 18,
+            y: 8
+        )
+        .padding(.horizontal, 10)
+        .padding(.top, 6)
+        .padding(.bottom, 6)
     }
 
     private func sendCurrent() {
@@ -1450,9 +1474,13 @@ struct CoachChatView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(Theme.chrome)
+        .background {
+            GlassSurface(cornerRadius: 0, material: false)
+        }
         .overlay(alignment: .top) {
-            Rectangle().fill(Theme.stroke).frame(height: 1)
+            Rectangle()
+                .fill(Color.white.opacity(colorScheme == .dark ? 0.12 : 0.48))
+                .frame(height: 0.8)
         }
     }
 

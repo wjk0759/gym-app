@@ -69,6 +69,8 @@ struct MainTabView: View {
                 }
         }
         .tint(atmosphere.accent(for: colorScheme))
+        .toolbarBackground(.ultraThinMaterial, for: .tabBar)
+        .toolbarBackground(.visible, for: .tabBar)
         .sensoryFeedback(.selection, trigger: store.selectedTab)
         .sheet(item: $store.pendingRoute) { route in
             destination(for: route)

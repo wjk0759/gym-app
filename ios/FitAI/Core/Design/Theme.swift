@@ -13,8 +13,8 @@ enum Theme {
         light: UIColor(red: 0.997, green: 0.999, blue: 0.995, alpha: 1)
     )
     static let chrome = adaptive(
-        dark: UIColor(red: 0.050, green: 0.054, blue: 0.063, alpha: 1),
-        light: UIColor(red: 0.972, green: 0.980, blue: 0.962, alpha: 1)
+        dark: UIColor(red: 0.050, green: 0.054, blue: 0.063, alpha: 0.82),
+        light: UIColor(red: 0.972, green: 0.980, blue: 0.962, alpha: 0.88)
     )
     static let surface = adaptive(
         dark: UIColor(white: 1, alpha: 0.055),
@@ -116,6 +116,17 @@ struct AppBackground: View {
                 endRadius: 560
             )
 
+            // 静态色场让玻璃卡片有可折射的层次，不增加逐帧开销。
+            RadialGradient(
+                colors: [
+                    Theme.accent.opacity(colorScheme == .dark ? 0.10 : 0.075),
+                    .clear
+                ],
+                center: .topTrailing,
+                startRadius: 10,
+                endRadius: 500
+            )
+
             // 非首页不创建 Canvas 层：静态渐变已经足够表达氛围，
             // 也能避免 Tab 切换后旧画面继续占着大图层。
             if weatherAnimationActive {
@@ -133,41 +144,8 @@ struct AppBackground: View {
 struct CardModifier: ViewModifier {
     var padding: CGFloat = 18
 
-    @Environment(\.colorScheme) private var colorScheme
-
     func body(content: Content) -> some View {
-        content
-            .padding(padding)
-            .background {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(Theme.cardSurface)
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Theme.primaryText.opacity(colorScheme == .dark ? 0.045 : 0.025),
-                                Theme.primaryText.opacity(0.006)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            }
-            .overlay(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Theme.cardEdge,
-                                Theme.stroke.opacity(0.45)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.8
-                    )
-            )
-            .shadow(color: Theme.shadow.opacity(0.7), radius: 8, y: 4)
+        content.glassCard(padding: padding)
     }
 }
 

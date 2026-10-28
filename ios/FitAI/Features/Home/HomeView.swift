@@ -14,11 +14,8 @@ struct HomeView: View {
     @State private var showSchedule = false
 
     var body: some View {
-        let today = store.todayDay
         let period = store.todayPeriod
         let missed = store.missedPlanDays
-        let draft = store.workoutDraft
-        let draftDay = store.draftPlanDay
 
         return NavigationStack {
             AppScrollView {
@@ -34,75 +31,44 @@ struct HomeView: View {
                     coachHero
                         .staggerIn(1)
 
+                    // Today action first, then nutrition, goal and weekly review.
+                    todaySection
+                        .staggerIn(2)
+                        .softContentTransition()
+
+                    if store.plan != nil && !store.isGenerating {
+                        nutritionCard
+                            .staggerIn(3)
+                            .softContentTransition()
+                    }
+
+                    if !missed.isEmpty {
+                        missedPlanCard
+                            .staggerIn(4)
+                            .softContentTransition()
+                    }
+
                     GoalCardView {
                         bodyCheckInManual = true
                         showBodyCheckIn = true
                     }
-                    .staggerIn(2)
+                    .staggerIn(5)
 
-                    Group {
-                        if store.isGenerating {
-                            generatingCard
-                                .staggerIn(2)
-                                .softContentTransition()
-                        } else if let plan = store.plan {
-                            if let draft,
-                               let draftDay,
-                               !store.isPlanDayCompleted(draftDay),
-                               draftDay.id != today?.id || period?.mode == .rest {
-                                resumeDraftCard(draft, day: draftDay)
-                                    .staggerIn(2)
-                                    .softContentTransition()
-                            }
+                    weekCard
+                        .staggerIn(6)
+                        .softContentTransition()
 
-                            if period?.mode == .rest {
-                                nutritionCard
-                                    .staggerIn(2)
-                                    .softContentTransition()
-                                restCard(plan: plan, period: period)
-                                    .staggerIn(3)
-                                    .softContentTransition()
-                            } else if let day = today {
-                                trainingCard(plan: plan, day: day, period: period)
-                                    .staggerIn(2)
-                                    .softContentTransition()
-                                nutritionCard
-                                    .staggerIn(3)
-                                    .softContentTransition()
-                            } else {
-                                nutritionCard
-                                    .staggerIn(2)
-                                    .softContentTransition()
-                                restCard(plan: plan, period: period)
-                                    .staggerIn(3)
-                                    .softContentTransition()
-                            }
-
-                            if !missed.isEmpty {
-                                missedPlanCard
-                                    .staggerIn(4)
-                                    .softContentTransition()
-                            }
-
-                            weekCard
-                                .staggerIn(missed.isEmpty ? 4 : 5)
-                                .softContentTransition()
-
-                            if period?.mode != .rest {
-                                aiReviewCard(plan: plan)
-                                    .staggerIn(missed.isEmpty ? 5 : 6)
-                                    .softContentTransition()
-                            }
-                        } else {
-                            noPlanCard
-                                .staggerIn(2)
-                                .softContentTransition()
-                        }
+                    if let plan = store.plan,
+                       period?.mode != .rest,
+                       !store.isGenerating {
+                        aiReviewCard(plan: plan)
+                            .staggerIn(7)
+                            .softContentTransition()
                     }
                 }
                 .motionAnimation(Motion.smooth, value: store.isGenerating)
                 .motionAnimation(Motion.smooth, value: store.plan?.version)
-                .motionAnimation(Motion.smooth, value: today?.id)
+                .motionAnimation(Motion.smooth, value: store.todayDay?.id)
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
                 .padding(.bottom, 28)
@@ -188,6 +154,35 @@ struct HomeView: View {
                 store.workoutLaunchDayID = nil
                 workoutDay = day
             }
+        }
+    }
+
+    @ViewBuilder
+    private var todaySection: some View {
+        let today = store.todayDay
+        let period = store.todayPeriod
+        let draft = store.workoutDraft
+        let draftDay = store.draftPlanDay
+
+        if store.isGenerating {
+            generatingCard
+        } else if let plan = store.plan {
+            if let draft,
+               let draftDay,
+               !store.isPlanDayCompleted(draftDay),
+               (draftDay.id != today?.id || period?.mode == .rest) {
+                resumeDraftCard(draft, day: draftDay)
+            }
+
+            if period?.mode == .rest {
+                restCard(plan: plan, period: period)
+            } else if let day = today {
+                trainingCard(plan: plan, day: day, period: period)
+            } else {
+                restCard(plan: plan, period: period)
+            }
+        } else {
+            noPlanCard
         }
     }
 
@@ -359,6 +354,21 @@ struct HomeView: View {
         }
         .frame(maxWidth: .infinity)
         .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.40),
+                            Color.white.opacity(0.08),
+                            Color.black.opacity(0.10)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.8
+                )
+        }
         .shadow(color: Theme.accent.opacity(0.20), radius: 22, y: 12)
     }
 
@@ -574,7 +584,7 @@ struct HomeView: View {
                     .frame(maxWidth: .infinity, alignment: .center)
             }
         }
-        .card()
+        .glassCard()
     }
 
     private func resumeDraftCard(_ draft: WorkoutDraft, day: PlanDay) -> some View {

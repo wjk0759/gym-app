@@ -70,6 +70,6 @@ struct GoalCardView: View {
                     .background(Theme.accent.opacity(0.10), in: Capsule())
             }
         }
-        .card()
+        .glassCard()
     }
 }
