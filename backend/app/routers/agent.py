@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -13,6 +15,47 @@ from ..services.serializers import serialize_program
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 
+# 开发/单进程部署下的短时幂等缓存。正式多 worker 部署应替换为 Redis 或
+# 数据库任务表；它至少能覆盖“客户端超时后立刻点重试”的常见情况。
+_AGENT_RESULT_TTL_SECONDS = 600
+_AGENT_RESULT_CACHE_LIMIT = 256
+_agent_result_cache: dict[str, tuple[float, dict]] = {}
+
+
+def _agent_cache_key(user_id: str, request_id: str) -> str:
+    return f"{user_id}:{request_id}"
+
+
+def _cached_agent_result(user_id: str, request_id: str | None) -> dict | None:
+    if not request_id:
+        return None
+    key = _agent_cache_key(user_id, request_id)
+    item = _agent_result_cache.get(key)
+    if item is None:
+        return None
+    created_at, result = item
+    if time.monotonic() - created_at > _AGENT_RESULT_TTL_SECONDS:
+        _agent_result_cache.pop(key, None)
+        return None
+    return result
+
+
+def _remember_agent_result(user_id: str, request_id: str | None, result: dict) -> None:
+    if not request_id or result.get("status") == "failed":
+        return
+    now = time.monotonic()
+    _agent_result_cache[_agent_cache_key(user_id, request_id)] = (now, result)
+    if len(_agent_result_cache) > _AGENT_RESULT_CACHE_LIMIT:
+        expired = [
+            key
+            for key, (created_at, _) in _agent_result_cache.items()
+            if now - created_at > _AGENT_RESULT_TTL_SECONDS
+        ]
+        for key in expired:
+            _agent_result_cache.pop(key, None)
+        while len(_agent_result_cache) > _AGENT_RESULT_CACHE_LIMIT:
+            _agent_result_cache.pop(next(iter(_agent_result_cache)))
+
 
 @router.post("/chat")
 async def agent_chat(
@@ -20,6 +63,10 @@ async def agent_chat(
     user_id: CurrentUser,
     db: DBSession,
 ):
+    cached = _cached_agent_result(user_id, payload.request_id)
+    if cached is not None:
+        return cached
+
     session: ChatSession | None = None
     if payload.session_id:
         session = db.get(ChatSession, payload.session_id)
@@ -54,7 +101,7 @@ async def agent_chat(
     session.messages.append(ChatMessage(role="assistant", content=result["reply"]))
     db.commit()
 
-    return {
+    response = {
         "session_id": session.id,
         "run_id": result["run_id"],
         "status": result["status"],
@@ -63,6 +110,8 @@ async def agent_chat(
         "actions": result.get("actions", []),
         "elapsed_ms": result["elapsed_ms"],
     }
+    _remember_agent_result(user_id, payload.request_id, response)
+    return response
 
 
 @router.post("/actions/{action_id}/result")

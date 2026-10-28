@@ -752,7 +752,9 @@ struct APIClient {
             "equipment_slugs": equipmentSlugs,
             "split": split.rawValue
         ])
-        return try await send(path: "plans/generate", method: "POST", body: body)
+        // AI 计划生成在 DeepSeek reasoning 开启时可能接近 100 秒；
+        // 90 秒会先于服务端返回而失败，随后又落回本地模板。
+        return try await send(path: "plans/generate", method: "POST", body: body, timeout: 150)
     }
 
     func fetchSchedule(planID: String) async throws -> RemoteScheduleState {
@@ -819,7 +821,8 @@ struct APIClient {
         message: String,
         sessionID: UUID? = nil,
         skill: CoachSkill = .trainer,
-        appContext: [String: Any]? = nil
+        appContext: [String: Any]? = nil,
+        requestID: UUID? = nil
     ) async throws -> AgentChatResponse {
         var payload: [String: Any] = [
             "message": message,
@@ -827,6 +830,7 @@ struct APIClient {
         ]
         if let sessionID { payload["session_id"] = sessionID.uuidString }
         if let appContext { payload["app_context"] = appContext }
+        if let requestID { payload["request_id"] = requestID.uuidString }
         let body = try JSONSerialization.data(withJSONObject: payload)
         return try await send(path: "agent/chat", method: "POST", body: body, timeout: 50)
     }

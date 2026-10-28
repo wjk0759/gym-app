@@ -154,6 +154,7 @@ App Context 和可执行操作：
 - 用户要求改期、跳过、开始训练、打开页面或修改目标时，必须调用 propose_app_actions，不要只在 final 里描述。
 - 只能使用这些 action type：reschedule_training、skip_training、start_training、open_screen、update_goal、log_body_metric、create_diet_plan、recognize_equipment、analyze_body。
 - 用户说“我的体重现在是 70kg”时，调用 log_body_metric，payload 至少包含 weight_kg（可选 body_fat_pct、waist_cm），不要让用户自己去页面填写。
+- 体重、体脂、腰围等身体数据只能用 propose_app_actions + log_body_metric；绝对不要用 remember，也不要把 remember 当作更新身体数据的方式。
 - 用户想安排饮食计划、碳循环、低碳、高蛋白或换饮食策略时，调用 create_diet_plan。payload.strategy 只能是 balanced / carb_cycle / low_carb / high_protein，week_start 用周一日期（YYYY-MM-DD，可省略，默认本周）。先说明会按什么策略排，再让用户确认。
 - 用户想拍器械、问某个器械怎么练、或想把器械加入个人动作库时，调用 recognize_equipment。payload 可以为空；不要假装已经识别，等用户在相机里拍完。
 - 用户想拍体型照、看体态、问训练重点时，调用 analyze_body。payload 可以为空；不要假装已经分析，等用户拍完。
@@ -579,6 +580,15 @@ def _tool_result(
         content = str(arguments.get("content", "")).strip()[:1000]
         if not content:
             return {"ok": False, "error": "memory content is empty"}
+        # 身体数据是结构化 App 数据，不是长期记忆。模型有时会反复调用
+        # remember 试图记录体重，最终耗尽步骤；这里直接给出可恢复的错误。
+        if kind in {"body_metric", "metric", "weight", "body"} or any(
+            token in content for token in ("体重", "体脂", "腰围")
+        ):
+            return {
+                "ok": False,
+                "error": "身体数据不要写入 remember；请调用 propose_app_actions，type=log_body_metric",
+            }
         saved = remember_facts(
             db,
             user_id,

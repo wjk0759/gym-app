@@ -10,7 +10,7 @@ struct AgentUndoAction: Identifiable {
     let state: AgentUndoState
 }
 
-enum AgentUndoState {
+indirect enum AgentUndoState {
     case schedule(
         planID: UUID,
         dayID: UUID,
@@ -25,6 +25,8 @@ enum AgentUndoState {
         previousProfile: UserProfile
     )
     case profile(UserProfile)
+    /// 一次 Agent 动作卡可能包含多天操作，撤销时要一起恢复。
+    case batch([AgentUndoState])
 }
 
 @Observable
@@ -98,6 +100,7 @@ final class AppStore {
     var pendingRoute: AppRoute?
     var lastAgentRetryText: String?
     var lastAgentRetrySkill: CoachSkill = .trainer
+    @ObservationIgnored private var lastAgentRequestID: UUID?
     var pendingUndo: AgentUndoAction?
     var weeklyReview: AgentWeeklyReview?
     var isReviewingWeekly = false
@@ -1350,7 +1353,8 @@ final class AppStore {
     func sendAgentChat(
         _ text: String,
         skill: CoachSkill = .trainer,
-        appendUserMessage: Bool = true
+        appendUserMessage: Bool = true,
+        requestID: UUID? = nil
     ) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -1360,8 +1364,9 @@ final class AppStore {
             chat.append(ChatMessage(role: .user, text: trimmed))
         }
 
-        let requestID = UUID()
-        agentChatRequestID = requestID
+        let activeRequestID = requestID ?? UUID()
+        agentChatRequestID = activeRequestID
+        lastAgentRequestID = activeRequestID
         isReplying = true
         agentProposal = nil
         agentActions = []
@@ -1374,7 +1379,7 @@ final class AppStore {
             guard let self else { return }
             defer {
                 // 旧请求或被取消的请求不能覆盖新请求的 UI 状态。
-                if self.agentChatRequestID == requestID {
+                if self.agentChatRequestID == activeRequestID {
                     self.agentChatRequestID = nil
                     self.agentChatTask = nil
                     self.agentChatWatchdog?.cancel()
@@ -1391,7 +1396,8 @@ final class AppStore {
                         message: trimmed,
                         sessionID: self.agentSessionID,
                         skill: skill,
-                        appContext: context
+                        appContext: context,
+                        requestID: activeRequestID
                     )
                 } catch let error as APIError where error.statusCode == 404 {
                     // 后端数据库可能已经清理/切换账号，旧 session 会让请求 404；
@@ -1401,7 +1407,8 @@ final class AppStore {
                         message: trimmed,
                         sessionID: nil,
                         skill: skill,
-                        appContext: context
+                        appContext: context,
+                        requestID: activeRequestID
                     )
                 }
                 try Task.checkCancellation()
@@ -1428,6 +1435,7 @@ final class AppStore {
                     )
                 )
                 self.lastAgentRetryText = nil
+                self.lastAgentRequestID = nil
             } catch is CancellationError {
                 return
             } catch {
@@ -1458,7 +1466,7 @@ final class AppStore {
             try? await Task.sleep(nanoseconds: Self.chatRequestTimeoutNanoseconds)
             guard !Task.isCancelled,
                   let self,
-                  self.agentChatRequestID == requestID,
+                  self.agentChatRequestID == activeRequestID,
                   self.isReplying else { return }
             self.agentChatRequestID = nil
             task.cancel()
@@ -1492,6 +1500,7 @@ final class AppStore {
 
     func cancelActiveChatRequest() {
         agentChatRequestID = nil
+        lastAgentRequestID = nil
         agentChatTask?.cancel()
         agentChatTask = nil
         agentChatWatchdog?.cancel()
@@ -1512,8 +1521,14 @@ final class AppStore {
     func retryAgentChat() {
         guard let text = lastAgentRetryText, !isReplying else { return }
         let skill = lastAgentRetrySkill
+        let requestID = lastAgentRequestID
         lastAgentRetryText = nil
-        sendAgentChat(text, skill: skill, appendUserMessage: false)
+        sendAgentChat(
+            text,
+            skill: skill,
+            appendUserMessage: false,
+            requestID: requestID
+        )
     }
 
     // MARK: - App Action 执行层
@@ -1575,20 +1590,14 @@ final class AppStore {
                 self.persist()
             }
             var results: [String] = []
+            var undoStates: [AgentUndoState] = []
             for action in actions {
                 var undoState: AgentUndoState?
                 let message = self.executeAgentAction(action, undo: &undoState)
                 results.append(message)
                 let status = self.agentActionStatus(for: message)
                 if status != "failed", let undoState {
-                    self.pendingUndo = AgentUndoAction(
-                        id: action.id,
-                        title: action.title,
-                        actionType: action.type,
-                        expiresAt: Date().addingTimeInterval(300),
-                        runID: runID,
-                        state: undoState
-                    )
+                    undoStates.append(undoState)
                 }
                 Task {
                     try? await APIClient.shared.reportAgentAction(
@@ -1599,6 +1608,16 @@ final class AppStore {
                         message: message
                     )
                 }
+            }
+            if !undoStates.isEmpty, let first = actions.first {
+                self.pendingUndo = AgentUndoAction(
+                    id: first.id,
+                    title: undoStates.count == 1 ? first.title : "恢复本次 \(undoStates.count) 项修改",
+                    actionType: undoStates.count == 1 ? first.type : "batch",
+                    expiresAt: Date().addingTimeInterval(300),
+                    runID: runID,
+                    state: undoStates.count == 1 ? undoStates[0] : .batch(undoStates)
+                )
             }
             self.chat.append(
                 ChatMessage(
@@ -1830,7 +1849,35 @@ final class AppStore {
             return
         }
         let now = Date()
-        switch pending.state {
+        let succeeded = undoSingleAction(pending.state, at: now)
+        if case let .batch(states) = pending.state {
+            toast = succeeded
+                ? "已撤销本次 \(states.count) 项修改"
+                : "部分修改撤销失败，请检查计划"
+        }
+        Task {
+            try? await APIClient.shared.reportAgentAction(
+                id: pending.id,
+                runID: pending.runID,
+                type: pending.actionType,
+                status: "undone",
+                message: "用户撤销"
+            )
+        }
+    }
+
+    @discardableResult
+    private func undoSingleAction(_ state: AgentUndoState, at now: Date) -> Bool {
+        switch state {
+        case let .batch(states):
+            var allSucceeded = true
+            for item in states {
+                if !undoSingleAction(item, at: now) {
+                    allSucceeded = false
+                }
+            }
+            return allSucceeded
+
         case let .schedule(
             planID,
             dayID,
@@ -1843,7 +1890,7 @@ final class AppStore {
                   current.id == planID,
                   let index = current.days.firstIndex(where: { $0.id == dayID }) else {
                 toast = "当前计划已变化，无法撤销"
-                return
+                return false
             }
             current.days[index].date = previousDate
             current.days[index].weekday = previousWeekday
@@ -1857,6 +1904,7 @@ final class AppStore {
             rescheduleNotifications()
             syncPendingUserData()
             toast = "已撤销排期修改"
+            return true
 
         case let .bodyMetric(metricID, previousMetric, previousProfile):
             removeBodyMetric(id: metricID)
@@ -1871,19 +1919,12 @@ final class AppStore {
                 try? await APIClient.shared.syncGoal(previousProfile)
             }
             toast = "已撤销身体数据"
+            return true
 
         case let .profile(previousProfile):
             updateProfile(previousProfile)
             toast = "已撤销目标修改"
-        }
-        Task {
-            try? await APIClient.shared.reportAgentAction(
-                id: pending.id,
-                runID: pending.runID,
-                type: pending.actionType,
-                status: "undone",
-                message: "用户撤销"
-            )
+            return true
         }
     }
 

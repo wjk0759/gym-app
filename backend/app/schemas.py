@@ -156,6 +156,9 @@ class ChatIn(BaseModel):
 
 class AgentChatIn(BaseModel):
     session_id: str | None = None
+    # 客户端重试时复用同一个 request_id，服务端可以返回已经完成的结果，
+    # 避免网络超时后重试又生成一份 AgentRun / 动作。
+    request_id: str | None = Field(default=None, max_length=64)
     message: str = Field(min_length=1, max_length=4000)
     skill: Literal["trainer", "rehab", "nutrition"] = "trainer"
     # iOS 本地计划日期、当前页面等；Agent 只读，不能凭此直接写服务端。
