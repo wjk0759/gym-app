@@ -1551,16 +1551,20 @@ final class AppStore {
             return "正在打开\(action.title)"
 
         case "start_training":
+            let draftFallback = draftPlanDay.flatMap { isPlanDayCompleted($0) ? nil : $0 }
+            let todayFallback = todayDay.flatMap { isPlanDayCompleted($0) ? nil : $0 }
+            let upcomingFallback = plan?.days
+                .filter { $0.skippedAt == nil && !isPlanDayCompleted($0) }
+                .sorted { lhs, rhs in
+                    let lhsDate = plan?.scheduledDate(for: lhs) ?? .distantFuture
+                    let rhsDate = plan?.scheduledDate(for: rhs) ?? .distantFuture
+                    return lhsDate < rhsDate
+                }
+                .first
             let day = resolveActionPlanDay(action.payload)
-                ?? draftPlanDay.flatMap { isPlanDayCompleted($0) ? nil : $0 }
-                ?? todayDay.flatMap { isPlanDayCompleted($0) ? nil : $0 }
-                ?? plan?.days
-                    .filter { $0.skippedAt == nil && !isPlanDayCompleted($0) }
-                    .sorted {
-                        (plan?.scheduledDate(for: $0) ?? .distantFuture)
-                            < (plan?.scheduledDate(for: $1) ?? .distantFuture)
-                    }
-                    .first
+                ?? draftFallback
+                ?? todayFallback
+                ?? upcomingFallback
             guard let day else { return "没有找到可以开始的训练" }
             selectedTab = 0
             workoutLaunchDayID = day.id
