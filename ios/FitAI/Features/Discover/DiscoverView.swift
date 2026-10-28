@@ -137,9 +137,10 @@ struct DiscoverView: View {
                     title: "动作点评",
                     hint: "拍全身侧面，光线清楚，尽量包含器械和完整动作。照片只用于本次点评。",
                     onImage: { image in
-                        store.sendCoachPhoto(image)
+                        if let data = image.jpegData(compressionQuality: 0.75) {
+                            store.queueCoachAttachment(data)
+                        }
                         showActionCamera = false
-                        store.selectedTab = 2
                     },
                     onCancel: {
                         showActionCamera = false

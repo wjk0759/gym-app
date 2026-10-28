@@ -94,6 +94,8 @@ final class AppStore {
     var dietWeekPlan: RemoteDietWeek?
     var coachEquipmentScanRequested = false
     var coachBodyAnalysisRequested = false
+    /// 从发现页/相机入口带回教练页的待发送图片；不直接发送。
+    var pendingCoachAttachmentData: [Data] = []
     var coachEquipmentResult: EquipmentScanResult?
     var isExecutingAgentActions = false
     var workoutLaunchDayID: UUID?
@@ -650,6 +652,13 @@ final class AppStore {
     func appendCoachNotice(_ text: String) {
         chat.append(ChatMessage(role: .assistant, text: text))
         persist()
+    }
+
+    /// 其他入口把照片交给教练时，只进入教练页的待发送区，不替用户发送。
+    func queueCoachAttachment(_ data: Data) {
+        guard !data.isEmpty else { return }
+        pendingCoachAttachmentData.append(data)
+        selectedTab = 2
     }
 
     // MARK: - 训练与对话

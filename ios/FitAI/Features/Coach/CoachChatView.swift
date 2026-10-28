@@ -170,6 +170,10 @@ struct CoachChatView: View {
                 if store.planAdjustmentRequested {
                     store.beginPlanAdjustment()
                 }
+                consumePendingCoachAttachments()
+            }
+            .onChange(of: store.pendingCoachAttachmentData.count) { _, _ in
+                consumePendingCoachAttachments()
             }
             .onChange(of: store.coachEquipmentScanRequested) { _, requested in
                 if requested {
@@ -1206,6 +1210,20 @@ struct CoachChatView: View {
         }
         if selected.count > remaining {
             attachmentError = "最多只能添加 \(AttachmentLimits.maxImages) 张照片。"
+        }
+    }
+
+    @MainActor
+    private func consumePendingCoachAttachments() {
+        guard !store.pendingCoachAttachmentData.isEmpty else { return }
+        let incoming = store.pendingCoachAttachmentData
+        store.pendingCoachAttachmentData = []
+        for data in incoming {
+            guard let image = UIImage(data: data) else {
+                attachmentError = "有一张照片无法读取，请重新选择。"
+                continue
+            }
+            appendDraft(image: image, data: data)
         }
     }
 
