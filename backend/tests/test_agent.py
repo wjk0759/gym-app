@@ -1,6 +1,11 @@
 import pytest
 
-from app.services.agent import _normalize_app_actions, _normalize_split, _normalize_weekdays
+from app.services.agent import (
+    _guard_pending_action_claims,
+    _normalize_app_actions,
+    _normalize_split,
+    _normalize_weekdays,
+)
 
 
 def test_weekday_normalization():
@@ -63,6 +68,20 @@ def test_app_action_rejects_unknown_day_or_screen():
             ],
             context,
         )
+
+
+def test_pending_action_claims_are_softened():
+    text = _guard_pending_action_claims(
+        "已把今天的上肢训练改到周六，点确认就生效。"
+    )
+    assert "准备把今天的上肢训练改到周六" in text
+    assert "已把" not in text
+
+
+def test_pending_action_claim_gets_confirmation_note_when_missing():
+    text = _guard_pending_action_claims("已取消本周剩下的训练。")
+    assert "准备取消本周剩下的训练" in text
+    assert "确认" in text
 
 
 def test_body_metric_action_requires_valid_weight():

@@ -267,6 +267,40 @@ def _record_step(
     )
 
 
+_PENDING_ACTION_CLAIMS = (
+    ("已经帮你", "准备帮你"),
+    ("已经为你", "准备为你"),
+    ("已经取消", "准备取消"),
+    ("已经记录", "准备记录"),
+    ("已经更新", "准备更新"),
+    ("已经改", "准备改"),
+    ("已经生效", "确认后生效"),
+    ("已为你", "准备为你"),
+    ("已帮你", "准备帮你"),
+    ("已把", "准备把"),
+    ("已取消", "准备取消"),
+    ("已记录", "准备记录"),
+    ("已更新", "准备更新"),
+    ("已改", "准备改"),
+    ("已开始", "准备开始"),
+    ("已写入", "准备写入"),
+    ("已保存", "准备保存"),
+    ("已生效", "确认后生效"),
+)
+
+def _guard_pending_action_claims(message: str) -> str:
+    """Do not let the model claim a card was applied before user confirmation."""
+    text = message.strip()
+    changed = False
+    for old, new in _PENDING_ACTION_CLAIMS:
+        if old in text:
+            text = text.replace(old, new)
+            changed = True
+    if changed and "确认" not in text:
+        text += "\n\n操作还没有执行，点确认后才生效。"
+    return text
+
+
 def _normalize_app_actions(
     raw_actions: Any, app_context: dict | None = None
 ) -> list[dict]:
@@ -860,6 +894,7 @@ async def run_agent(
         if proposal is not None or any(
             item.get("requires_confirmation") for item in actions
         ):
+            final_message = _guard_pending_action_claims(final_message)
             run.status = "needs_confirmation"
         elif run.status == "running":
             run.status = "completed"
