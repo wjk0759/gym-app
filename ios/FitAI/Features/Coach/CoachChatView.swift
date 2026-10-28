@@ -1378,7 +1378,30 @@ struct CoachChatView: View {
                 .foregroundStyle(Theme.tertiaryText)
             }
 
-            if let video = draftVideo {
+            if isLoadingVideo, draftVideo == nil {
+                HStack(spacing: 10) {
+                    VStack(spacing: 5) {
+                        ProgressView()
+                            .tint(Theme.accent)
+                        Text("读取中")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(Theme.secondaryText)
+                    }
+                    .frame(width: 150, height: 84)
+                    .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("正在分析视频画面…")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Theme.primaryText)
+                        Text("本地抽取关键帧并识别姿态，请稍等")
+                            .font(.caption2)
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+
+                    Spacer(minLength: 0)
+                }
+            } else if let video = draftVideo {
                 HStack(spacing: 10) {
                     ZStack {
                         Image(uiImage: video.thumbnail)
@@ -1398,7 +1421,7 @@ struct CoachChatView: View {
                         Text("视频已就绪")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(Theme.primaryText)
-                        Text("\(video.durationSeconds)s · 发送时抽取 3 个关键帧")
+                        Text("\(video.durationSeconds)s · 发送时上传最多 6 个关键帧")
                             .font(.caption2)
                             .foregroundStyle(Theme.tertiaryText)
                     }
@@ -1419,6 +1442,21 @@ struct CoachChatView: View {
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
+                        if isLoadingAttachments {
+                            VStack(spacing: 4) {
+                                ProgressView()
+                                    .tint(Theme.accent)
+                                Text("读取中")
+                                    .font(.system(size: 9, weight: .medium))
+                                    .foregroundStyle(Theme.secondaryText)
+                            }
+                            .frame(width: 68, height: 68)
+                            .background(
+                                Theme.surfaceStrong,
+                                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            )
+                        }
+
                         ForEach(draftAttachments) { attachment in
                             ZStack(alignment: .topTrailing) {
                                 Image(uiImage: attachment.image)
