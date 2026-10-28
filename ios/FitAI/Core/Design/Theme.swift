@@ -90,6 +90,7 @@ struct AppBackground: View {
     @Environment(\.weatherAtmosphere) private var atmosphere
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.weatherAnimationActive) private var weatherAnimationActive
 
     var body: some View {
         ZStack {
@@ -115,7 +116,11 @@ struct AppBackground: View {
                 endRadius: 560
             )
 
-            WeatherSkyLayer()
+            // 非首页不创建 Canvas 层：静态渐变已经足够表达氛围，
+            // 也能避免 Tab 切换后旧画面继续占着大图层。
+            if weatherAnimationActive {
+                WeatherSkyLayer()
+            }
         }
         .animation(
             Motion.resolved(.easeInOut(duration: 1.1), reduceMotion: reduceMotion),
@@ -128,30 +133,25 @@ struct AppBackground: View {
 struct CardModifier: ViewModifier {
     var padding: CGFloat = 18
 
-    @Environment(\.weatherAtmosphere) private var atmosphere
     @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
         content
             .padding(padding)
             .background {
-                if atmosphere.isPrecipitation {
-                    RainCardSurface(intensity: atmosphere.precipitationIntensity)
-                } else {
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .fill(Theme.cardSurface)
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Theme.primaryText.opacity(colorScheme == .dark ? 0.045 : 0.025),
-                                    Theme.primaryText.opacity(0.006)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(Theme.cardSurface)
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Theme.primaryText.opacity(colorScheme == .dark ? 0.045 : 0.025),
+                                Theme.primaryText.opacity(0.006)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         )
-                }
+                    )
             }
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -167,22 +167,7 @@ struct CardModifier: ViewModifier {
                         lineWidth: 0.8
                     )
             )
-            .shadow(color: Theme.shadow, radius: 14, y: 7)
-    }
-}
-
-private struct RainCardSurface: View {
-    let intensity: Double
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Theme.cardSurface)
-            RainDropletTexture(intensity: intensity, seed: 8.1)
-                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                .opacity(colorScheme == .dark ? 0.22 : 0.14)
-        }
+            .shadow(color: Theme.shadow.opacity(0.7), radius: 8, y: 4)
     }
 }
 
@@ -296,6 +281,39 @@ struct SectionTitle: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// 轻量几何图形替代插画：只用系统符号和一层渐变，避免大图解码和“卡通感”。
+struct HeroGlyph: View {
+    let symbol: String
+    var size: CGFloat = 100
+    var tint: Color = Theme.accent
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            tint.opacity(0.22),
+                            tint.opacity(0.05)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+                .stroke(tint.opacity(0.18), lineWidth: 1)
+
+            Image(systemName: symbol)
+                .font(.system(size: size * 0.38, weight: .semibold))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(tint.opacity(0.94))
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
     }
 }
 

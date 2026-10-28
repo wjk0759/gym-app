@@ -104,11 +104,12 @@ struct TrainingLibraryView: View {
 
             Spacer(minLength: 0)
 
-            Image("ThemeTraining")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 118, height: 118)
-                .offset(x: 12, y: 4)
+            HeroGlyph(
+                symbol: "figure.run",
+                size: 118,
+                tint: Theme.onMedia
+            )
+            .offset(x: 12, y: 4)
         }
     }
 

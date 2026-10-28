@@ -118,7 +118,7 @@ struct PhotoCaptureView: View {
             if isLoadingPhoto {
                 ProgressView("正在读取照片…")
                     .padding(18)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                    .background(.black.opacity(0.62), in: RoundedRectangle(cornerRadius: 16))
             }
         }
         .onAppear { camera.start() }

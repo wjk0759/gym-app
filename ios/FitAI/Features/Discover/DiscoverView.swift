@@ -176,11 +176,12 @@ struct DiscoverView: View {
                         )
                     )
 
-                Image("ThemeEquipment")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 146, height: 146)
-                    .offset(x: 22, y: 24)
+                HeroGlyph(
+                    symbol: "dumbbell.fill",
+                    size: 146,
+                    tint: Theme.onMedia
+                )
+                .offset(x: 22, y: 24)
 
                 VStack(alignment: .leading, spacing: 9) {
                     Text("不认识器械？")

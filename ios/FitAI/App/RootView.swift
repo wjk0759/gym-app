@@ -42,12 +42,7 @@ struct RootView: View {
         .environment(\.weatherAtmosphere, atmosphere)
         .environment(\.keyboardVisible, keyboardVisible)
         .tint(atmosphere.accent(for: colorScheme))
-        .overlay {
-            if atmosphere.isPrecipitation {
-                RainGlassOverlay(intensity: atmosphere.precipitationIntensity)
-                    .ignoresSafeArea()
-            }
-        }
+        // 全屏水珠层会持续参与合成；雨天效果保留在背景天空里，避免影响滚动和输入。
         .overlay {
             KeyboardDismissInstaller()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

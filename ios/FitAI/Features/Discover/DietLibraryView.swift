@@ -125,11 +125,12 @@ struct DietLibraryView: View {
 
             Spacer(minLength: 0)
 
-            Image("ThemeDiet")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 118, height: 118)
-                .offset(x: 12, y: 4)
+            HeroGlyph(
+                symbol: "fork.knife",
+                size: 118,
+                tint: Theme.onMedia
+            )
+            .offset(x: 12, y: 4)
         }
     }
 

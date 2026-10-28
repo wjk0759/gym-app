@@ -378,10 +378,11 @@ struct EquipmentLibraryView: View {
     private var emptyCard: some View {
         VStack(spacing: 10) {
             if store.equipmentLibrary.isEmpty {
-                Image("ThemeEquipment")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 122, height: 122)
+                HeroGlyph(
+                    symbol: "dumbbell.fill",
+                    size: 122,
+                    tint: Theme.accent
+                )
             } else {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 28, weight: .light))

@@ -80,14 +80,7 @@ struct CoachChatView: View {
                                 ForEach(store.chat) { message in
                                     bubble(message)
                                         .id(message.id)
-                                        .transition(
-                                            .asymmetric(
-                                                insertion: .opacity
-                                                    .combined(with: .move(edge: message.role == .user ? .trailing : .leading))
-                                                    .combined(with: .scale(scale: 0.98)),
-                                                removal: .opacity
-                                            )
-                                        )
+                                        .transition(.opacity)
                                 }
 
                                 if store.isReplying {
@@ -109,21 +102,15 @@ struct CoachChatView: View {
                                 }
                             }
                             .padding(20)
-                            .motionAnimation(Motion.smooth, value: store.chat.count)
-                            .motionAnimation(Motion.quick, value: store.isReplying)
                         }
                     }
                     .onChange(of: store.chat.count) { _, _ in
                         guard let last = store.chat.last else { return }
-                        withAnimation(Motion.smooth) {
-                            proxy.scrollTo(last.id, anchor: .bottom)
-                        }
+                        proxy.scrollTo(last.id, anchor: .bottom)
                     }
                     .onChange(of: store.isReplying) { _, _ in
                         guard let last = store.chat.last else { return }
-                        withAnimation(Motion.smooth) {
-                            proxy.scrollTo(last.id, anchor: .bottom)
-                        }
+                        proxy.scrollTo(last.id, anchor: .bottom)
                     }
                 }
 
@@ -828,11 +815,12 @@ struct CoachChatView: View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 11) {
-                    Image("ThemeCoach")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 76, height: 76)
-                        .offset(x: -4, y: 2)
+                    HeroGlyph(
+                        symbol: "bubble.left.and.bubble.right.fill",
+                        size: 76,
+                        tint: Theme.accent
+                    )
+                    .offset(x: -4, y: 2)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(selectedSkill.label)在线")
                             .font(.headline)

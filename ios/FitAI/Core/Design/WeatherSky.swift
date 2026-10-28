@@ -12,7 +12,7 @@ struct WeatherSkyLayer: View {
     @Environment(\.keyboardVisible) private var keyboardVisible
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 12.0, paused: paused)) { timeline in
+        TimelineView(.animation(minimumInterval: 1.0 / 10.0, paused: paused)) { timeline in
             Canvas { context, size in
                 draw(
                     context: &context,
@@ -73,7 +73,7 @@ struct WeatherSkyLayer: View {
         let cover = 1 - atmosphere.cloudiness
         guard cover > 0.12 else { return }
 
-        let count = Int(20 + cover * 48)
+        let count = Int(14 + cover * 34)
         let color = isLight
             ? Color(red: 0.12, green: 0.24, blue: 0.38)
             : Color.white
@@ -131,7 +131,7 @@ struct WeatherSkyLayer: View {
         )
 
         if atmosphere.phase != .night, visibility > 0.42 {
-            let rayCount = 10
+            let rayCount = 7
             for index in 0..<rayCount {
                 let angle = Double(index) / Double(rayCount) * .pi * 2 + time * 0.025
                 let inner = radius * 1.45
@@ -157,29 +157,26 @@ struct WeatherSkyLayer: View {
             }
         }
 
-        context.drawLayer { layer in
-            layer.addFilter(.blur(radius: radius * 0.10))
-            layer.fill(
-                Path(
-                    ellipseIn: CGRect(
-                        x: center.x - radius,
-                        y: center.y - radius,
-                        width: radius * 2,
-                        height: radius * 2
-                    )
-                ),
-                with: .radialGradient(
-                    Gradient(colors: [
-                        Color.white.opacity(0.95 * visibility),
-                        color.opacity(0.78 * visibility),
-                        color.opacity(0.48 * visibility)
-                    ]),
-                    center: center,
-                    startRadius: 0,
-                    endRadius: radius
+        context.fill(
+            Path(
+                ellipseIn: CGRect(
+                    x: center.x - radius,
+                    y: center.y - radius,
+                    width: radius * 2,
+                    height: radius * 2
                 )
+            ),
+            with: .radialGradient(
+                Gradient(colors: [
+                    Color.white.opacity(0.95 * visibility),
+                    color.opacity(0.78 * visibility),
+                    color.opacity(0.48 * visibility)
+                ]),
+                center: center,
+                startRadius: 0,
+                endRadius: radius
             )
-        }
+        )
 
         if atmosphere.phase == .night {
             // 月面暗斑，让月亮不是一颗纯色圆点。
@@ -281,19 +278,17 @@ struct WeatherSkyLayer: View {
             (1.00, 0.00, 0.65, 0.50)
         ]
 
-        // 所有云共用一个模糊层，避免每朵云都单独做一次 backdrop blur。
-        context.drawLayer { layer in
-            layer.addFilter(.blur(radius: max(CGFloat(4), baseScale * 0.15)))
-            for cloud in clouds {
-                for part in parts {
-                    let rect = CGRect(
-                        x: cloud.center.x + part.0 * cloud.scale,
-                        y: cloud.center.y + part.1 * cloud.scale,
-                        width: part.2 * cloud.scale,
-                        height: part.3 * cloud.scale
-                    )
-                    layer.fill(Path(ellipseIn: rect), with: .color(alpha))
-                }
+        // 不再每帧对云层做 blur：低透明度的多层椭圆已经足够形成软边，
+        // 在滚动和输入时能明显减少合成开销。
+        for cloud in clouds {
+            for part in parts {
+                let rect = CGRect(
+                    x: cloud.center.x + part.0 * cloud.scale,
+                    y: cloud.center.y + part.1 * cloud.scale,
+                    width: part.2 * cloud.scale,
+                    height: part.3 * cloud.scale
+                )
+                context.fill(Path(ellipseIn: rect), with: .color(alpha))
             }
         }
     }
@@ -363,7 +358,7 @@ struct WeatherSkyLayer: View {
         let intensity = atmosphere.precipitationIntensity
         guard intensity > 0 else { return }
 
-        let count = min(140, 44 + Int(intensity * 96))
+        let count = min(108, 36 + Int(intensity * 72))
         let wind = atmosphere.windIntensity
         let color = rainColor
         let fade = isLight ? 0.72 : 1.0
@@ -393,7 +388,7 @@ struct WeatherSkyLayer: View {
         }
 
         // 地面积水的细小涟漪。
-        for index in 0..<12 {
+        for index in 0..<8 {
             let pulse = weatherSkyWrap(weatherSkyNoise(index, 8.1) + time * 0.75)
             let x = CGFloat(weatherSkyNoise(index, 9.2)) * size.width
             let y = size.height * CGFloat(0.80 + weatherSkyNoise(index, 10.3) * 0.14)
@@ -414,7 +409,7 @@ struct WeatherSkyLayer: View {
 
     private func drawSnow(context: inout GraphicsContext, size: CGSize, time: TimeInterval) {
         let intensity = atmosphere.precipitationIntensity
-        let count = min(120, 48 + Int(intensity * 70))
+        let count = min(94, 40 + Int(intensity * 54))
         let wind = atmosphere.windIntensity
         let color = snowColor
         let fade = isLight ? 0.72 : 1.0
@@ -452,7 +447,7 @@ struct WeatherSkyLayer: View {
         guard wind > 0.12 else { return }
 
         let color = windColor
-        let count = 3 + Int(wind * 7)
+        let count = 3 + Int(wind * 5)
         for index in 0..<count {
             let progress = weatherSkyWrap(
                 weatherSkyNoise(index, 1.3) + time * (0.04 + wind * 0.20)
@@ -523,26 +518,32 @@ struct WeatherSkyLayer: View {
 
     private func drawFog(context: inout GraphicsContext, size: CGSize, time: TimeInterval) {
         let color = fogColor
-        context.drawLayer { layer in
-            layer.addFilter(.blur(radius: size.width * 0.06))
-            for index in 0..<4 {
-                let progress = weatherSkyWrap(
-                    Double(index) * 0.23 + time * 0.006
+        for index in 0..<4 {
+            let progress = weatherSkyWrap(
+                Double(index) * 0.23 + time * 0.006
+            )
+            let x = CGFloat(progress) * size.width * 1.25 - size.width * 0.12
+            let y = size.height * CGFloat(0.20 + Double(index) * 0.14)
+            let width = size.width * CGFloat(0.82 + weatherSkyNoise(index, 3.8) * 0.22)
+            let rect = CGRect(
+                x: x,
+                y: y,
+                width: width,
+                height: size.height * 0.10
+            )
+            context.fill(
+                Path(ellipseIn: rect),
+                with: .radialGradient(
+                    Gradient(colors: [
+                        color.opacity(0.15),
+                        color.opacity(0.05),
+                        .clear
+                    ]),
+                    center: CGPoint(x: rect.midX, y: rect.midY),
+                    startRadius: 0,
+                    endRadius: max(rect.width, rect.height) * 0.55
                 )
-                let x = CGFloat(progress) * size.width * 1.25 - size.width * 0.12
-                let y = size.height * CGFloat(0.20 + Double(index) * 0.14)
-                let width = size.width * CGFloat(0.82 + weatherSkyNoise(index, 3.8) * 0.22)
-                let rect = CGRect(
-                    x: x,
-                    y: y,
-                    width: width,
-                    height: size.height * 0.10
-                )
-                layer.fill(
-                    Path(ellipseIn: rect),
-                    with: .color(color.opacity(0.16))
-                )
-            }
+            )
         }
     }
 
@@ -618,7 +619,7 @@ struct WeatherSkyLayer: View {
 }
 
 private struct WeatherAnimationActiveKey: EnvironmentKey {
-    static let defaultValue = true
+    static let defaultValue = false
 }
 
 extension EnvironmentValues {

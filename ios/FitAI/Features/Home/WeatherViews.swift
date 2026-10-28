@@ -43,7 +43,7 @@ struct WeatherBadgeView: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
-            .background(.ultraThinMaterial, in: Capsule(style: .continuous))
+            .background(Theme.surfaceStrong, in: Capsule(style: .continuous))
             .overlay(
                 Capsule(style: .continuous)
                     .stroke(Theme.stroke, lineWidth: 0.8)
@@ -425,7 +425,7 @@ struct WeatherDetailSheet: View {
             Text("天气数据：Open-Meteo")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
-            Text("界面会跟随系统深浅色、清晨/白天/傍晚/夜间和天气自动调整；雨天会使用磨砂玻璃与水珠纹理。")
+            Text("界面会跟随系统深浅色、清晨/白天/傍晚/夜间和天气自动调整；雨天使用克制的背景雨线，避免高成本材质拖慢滚动。")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)

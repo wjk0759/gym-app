@@ -40,27 +40,29 @@ struct MainTabView: View {
                 }
 
             PlanHomeView()
-                .environment(\.weatherAnimationActive, store.selectedTab == 1)
+                // 天气动画只在首页跑；其他页保留静态氛围即可，避免滚动和输入时抢帧。
+                .environment(\.weatherAnimationActive, false)
                 .tag(1)
                 .tabItem {
                     Label("记录", systemImage: "calendar")
                 }
 
             CoachTabRoot()
+                .environment(\.weatherAnimationActive, false)
                 .tag(2)
                 .tabItem {
                     Label("教练", systemImage: "bubble.left.and.bubble.right")
                 }
 
             DiscoverView()
-                .environment(\.weatherAnimationActive, store.selectedTab == 3)
+                .environment(\.weatherAnimationActive, false)
                 .tag(3)
                 .tabItem {
                     Label("发现", systemImage: "square.grid.2x2")
                 }
 
             ProfileView()
-                .environment(\.weatherAnimationActive, store.selectedTab == 4)
+                .environment(\.weatherAnimationActive, false)
                 .tag(4)
                 .tabItem {
                     Label("我的", systemImage: "person.crop.circle")
@@ -102,10 +104,8 @@ struct MainTabView: View {
 }
 
 private struct CoachTabRoot: View {
-    @Environment(AppStore.self) private var store
-
     var body: some View {
         CoachChatView()
-            .environment(\.weatherAnimationActive, store.selectedTab == 2 && !store.isReplying)
+            .environment(\.weatherAnimationActive, false)
     }
 }

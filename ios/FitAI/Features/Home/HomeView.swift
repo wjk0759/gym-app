@@ -248,7 +248,7 @@ struct HomeView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(tint.opacity(0.22), lineWidth: 0.8)
@@ -317,11 +317,12 @@ struct HomeView: View {
 
                     Spacer(minLength: 0)
 
-                    Image("ThemeCoach")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 104, height: 104)
-                        .offset(x: 8, y: 4)
+                    HeroGlyph(
+                        symbol: "figure.strengthtraining.traditional",
+                        size: 104,
+                        tint: Theme.onAccent
+                    )
+                    .offset(x: 8, y: 4)
                 }
 
                 HStack(spacing: 8) {

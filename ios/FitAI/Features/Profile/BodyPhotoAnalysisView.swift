@@ -195,7 +195,7 @@ struct BodyPhotoAnalysisView: View {
                 if isLoadingPhoto {
                     ProgressView("正在读取照片…")
                         .padding(16)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .background(Theme.cardSurface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
             }
 
