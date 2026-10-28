@@ -92,7 +92,7 @@ struct FoodPhotoAnalysisView: View {
                     Button("关闭") { dismiss() }
                 }
             }
-            .onChange(of: photoItem?.itemIdentifier) { _, _ in
+            .onChange(of: photoItem) { _, _ in
                 guard let item = photoItem else { return }
                 Task { @MainActor in
                     await load(item)
@@ -446,5 +446,6 @@ struct FoodPhotoAnalysisView: View {
         imageData = picked.jpegData(compressionQuality: 0.7)
         image = picked
         items = []
+        photoItem = nil
     }
 }

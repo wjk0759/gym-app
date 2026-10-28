@@ -774,7 +774,7 @@ struct AddEquipmentView: View {
                     }
                 }
             }
-            .onChange(of: photoItem?.itemIdentifier) { _, _ in
+            .onChange(of: photoItem) { _, _ in
                 guard let item = photoItem else { return }
                 Task { @MainActor in
                     await load(item)
@@ -865,5 +865,6 @@ struct AddEquipmentView: View {
             return
         }
         photoData = image.jpegData(compressionQuality: 0.7)
+        photoItem = nil
     }
 }

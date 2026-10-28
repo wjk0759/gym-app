@@ -14,6 +14,7 @@ struct PhotoCaptureView: View {
     @StateObject private var camera = PhotoCaptureController()
     @State private var photoItem: PhotosPickerItem?
     @State private var isLoadingPhoto = false
+    @State private var photoError: String?
 
     init(
         title: String = "拍摄器械",
@@ -122,23 +123,38 @@ struct PhotoCaptureView: View {
         }
         .onAppear { camera.start() }
         .onDisappear { camera.stop() }
-        .onChange(of: photoItem?.itemIdentifier) { _, _ in
-            guard let photoItem else { return }
+        .onChange(of: photoItem) { _, item in
+            guard let item else { return }
             Task { @MainActor in
-                await loadPhoto(photoItem)
+                await loadPhoto(item)
             }
+        }
+        .alert(
+            "照片没有读进来",
+            isPresented: Binding(
+                get: { photoError != nil },
+                set: { if !$0 { photoError = nil } }
+            )
+        ) {
+            Button("知道了", role: .cancel) {}
+        } message: {
+            Text(photoError ?? "")
         }
     }
 
     @MainActor
     private func loadPhoto(_ item: PhotosPickerItem) async {
         isLoadingPhoto = true
-        defer { isLoadingPhoto = false }
-        guard let data = try? await item.loadTransferable(type: Data.self),
-              let image = UIImage(data: data) else {
-            return
+        defer {
+            isLoadingPhoto = false
+            photoItem = nil
         }
-        onImage(image)
+        do {
+            let loaded = try await PhotoLibraryLoader.load(item, maxDimension: 1600)
+            onImage(loaded.image)
+        } catch {
+            photoError = error.localizedDescription
+        }
     }
 }
 

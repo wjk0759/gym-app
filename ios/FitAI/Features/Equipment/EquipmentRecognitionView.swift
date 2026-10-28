@@ -58,7 +58,7 @@ struct EquipmentRecognitionView: View {
                 .accessibilityLabel("关闭器械识别")
             }
         }
-        .onChange(of: photoItem?.itemIdentifier) { _, _ in
+        .onChange(of: photoItem) { _, _ in
             guard let photoItem else { return }
             Task { @MainActor in
                 await load(photoItem)
@@ -348,6 +348,7 @@ struct EquipmentRecognitionView: View {
         selectedImage = image
         candidates = []
         description = ""
+        photoItem = nil
         recognizedName = ""
         notInLibrary = false
         scan()
