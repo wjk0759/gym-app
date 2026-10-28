@@ -49,7 +49,8 @@ async def review_many(images: list[bytes], question: str = "") -> dict:
     if len(images) > 1:
         prompt += f"\n本次共有 {len(images)} 张照片，请按上传顺序综合判断。"
     if question.strip():
-        prompt += f"\n用户补充：{question.strip()[:300]}"
+        # 视频关键帧请求会附带采样数、时间点和姿态摘要，不能只保留 300 字。
+        prompt += f"\n用户补充：{question.strip()[:2000]}"
 
     try:
         raw = await llm.complete_vision_json(

@@ -41,6 +41,8 @@ struct CoachChatView: View {
 
     private var canSend: Bool {
         !store.isReplying
+            && !isLoadingVideo
+            && !isLoadingAttachments
             && (!input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 || !draftAttachments.isEmpty
                 || draftVideo != nil)
@@ -1177,7 +1179,7 @@ struct CoachChatView: View {
     }
 
     private func sendCurrent() {
-        guard !store.isReplying else { return }
+        guard !store.isReplying, !isLoadingVideo, !isLoadingAttachments else { return }
         let caption = String(input.trimmingCharacters(in: .whitespacesAndNewlines).prefix(500))
 
         if let video = draftVideo {
@@ -1186,12 +1188,10 @@ struct CoachChatView: View {
                 return
             }
             let thumbnailData = video.thumbnail.jpegData(compressionQuality: 0.72)
-                ?? video.contactSheetData
-            let question = """
-            这是一段 \(video.durationSeconds) 秒训练视频按时间顺序抽取的 3 个关键帧拼图（从上到下）。
-            请判断是否包含训练动作；如果有，指出一个最需要改的动作点；如果画面不是训练内容，请如实说明。
-            \(caption.isEmpty ? "" : "用户补充：\(caption)")
-            """
+                ?? video.frames.first
+            let question = caption.isEmpty
+                ? video.analysisPrompt
+                : video.analysisPrompt + "\n用户补充：\(caption)"
 
             Haptics.impact(.light)
             input = ""
@@ -1199,7 +1199,7 @@ struct CoachChatView: View {
             KeyboardDismiss.dismiss()
             draftVideo = nil
             store.sendCoachPhotos(
-                [video.contactSheetData],
+                video.frames,
                 caption: caption,
                 question: question,
                 videoThumbnailData: thumbnailData,
@@ -1450,7 +1450,7 @@ struct CoachChatView: View {
             Text(
                 !(draftVideo != nil || isLoadingVideo)
                     ? "图片和视频只能二选一；可以先添加多张图片，写完说明后再发送。"
-                    : "视频一次只能发送一个，发送时只上传 3 个关键帧拼图，不上传原视频。"
+                    : "视频一次只能发送一个；发送时最多上传 6 个关键帧和本机姿态摘要，不上传原视频。"
             )
             .font(.caption2)
             .foregroundStyle(Theme.tertiaryText)
