@@ -182,7 +182,7 @@ struct ValueStepperControl: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Spacer(minLength: 4)
                 if let hint {
                     Text(hint)
@@ -230,7 +230,7 @@ struct ValueStepperControl: View {
         HStack(alignment: .firstTextBaseline, spacing: 3) {
             Text(value)
                 .font(.system(size: 30, weight: .bold, design: .rounded).monospacedDigit())
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
                 .contentTransition(.numericText())

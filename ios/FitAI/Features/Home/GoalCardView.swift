@@ -15,7 +15,7 @@ struct GoalCardView: View {
                         .foregroundStyle(Theme.accent)
                     Text(goal.distanceText)
                         .font(.title3.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text("目标日期 \(goal.targetDateText) · \(goal.dateStatus)")
                         .font(.caption)
                         .foregroundStyle(Theme.secondaryText)

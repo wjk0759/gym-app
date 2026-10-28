@@ -38,7 +38,7 @@ struct PasswordResetView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("重置登录密码")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                         Text("验证注册手机号后设置新密码，重置后其他设备会退出登录。")
                             .font(.subheadline)
                             .foregroundStyle(Theme.secondaryText)
@@ -58,7 +58,7 @@ struct PasswordResetView: View {
                                     .frame(width: 1, height: 18)
                                 TextField("请输入注册手机号", text: $phone)
                                     .font(.subheadline)
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Theme.primaryText)
                                     .keyboardType(.numberPad)
                                     .textContentType(.telephoneNumber)
                                     .onChange(of: phone) { _, value in
@@ -73,7 +73,7 @@ struct PasswordResetView: View {
                             fieldShell {
                                 TextField("请输入 6 位验证码", text: $code)
                                     .font(.subheadline)
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Theme.primaryText)
                                     .keyboardType(.numberPad)
                                     .textContentType(.oneTimeCode)
                                     .onChange(of: code) { _, value in
@@ -109,7 +109,7 @@ struct PasswordResetView: View {
                                     .frame(width: 18)
                                 SecureField("至少 8 位，含字母和数字", text: $newPassword)
                                     .font(.subheadline)
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Theme.primaryText)
                                     .textContentType(.newPassword)
                                     .onChange(of: newPassword) { _, _ in errorMessage = "" }
                             }
@@ -123,7 +123,7 @@ struct PasswordResetView: View {
                                     .frame(width: 18)
                                 SecureField("再次输入新密码", text: $confirmPassword)
                                     .font(.subheadline)
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Theme.primaryText)
                                     .textContentType(.newPassword)
                                     .onChange(of: confirmPassword) { _, _ in errorMessage = "" }
                             }

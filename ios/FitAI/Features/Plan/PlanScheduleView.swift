@@ -113,7 +113,7 @@ struct PlanScheduleView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("未来 \(weeks) 周")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Text("每周最多 \(daysPerWeek) 练 · 可少选 · \(store.profile.split.title)")
                     .font(.caption)
                     .foregroundStyle(Theme.secondaryText)
@@ -148,7 +148,7 @@ struct PlanScheduleView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("第\(block.id + 1)周")
                             .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                         Text("\(FitnessDate.short(block.start))–\(FitnessDate.short(block.end))")
                             .font(.system(size: 8))
                             .foregroundStyle(Theme.tertiaryText)
@@ -177,7 +177,7 @@ struct PlanScheduleView: View {
         } label: {
             Text("\(calendar.component(.day, from: date))")
                 .font(.system(size: 12, weight: active ? .bold : .medium, design: .rounded))
-                .foregroundStyle(active ? Color.black : (isToday ? Theme.accent : Theme.secondaryText))
+                .foregroundStyle(active ? Theme.onAccent : (isToday ? Theme.accent : Theme.secondaryText))
                 .frame(maxWidth: .infinity)
                 .frame(height: 34)
                 .background(

@@ -184,13 +184,13 @@ struct LoginView: View {
                     .shadow(color: Theme.accent.opacity(0.40), radius: 18, y: 8)
                 Image(systemName: "figure.strengthtraining.traditional")
                     .font(.system(size: compact ? 19 : 22, weight: .bold))
-                    .foregroundStyle(Color.black)
+                    .foregroundStyle(Theme.onAccent)
             }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("练途")
                     .font(.title3.weight(.bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Text("AI 健身教练")
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(Theme.tertiaryText)
@@ -217,7 +217,7 @@ struct LoginView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("登录练途")
                 .font(.system(size: compact ? 27 : 34, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text("同步训练计划、记录和 AI 复盘")
                 .font(compact ? .caption : .subheadline)
                 .foregroundStyle(Theme.secondaryText)
@@ -407,7 +407,7 @@ struct LoginView: View {
 
                     TextField("请输入手机号", text: $phone)
                         .font(.subheadline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                         .keyboardType(.numberPad)
                         .textContentType(.telephoneNumber)
                         .focused($focusedField, equals: .phone)
@@ -429,7 +429,7 @@ struct LoginView: View {
 
                     TextField("请输入 6 位验证码", text: $code)
                         .font(.subheadline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                         .keyboardType(.numberPad)
                         .textContentType(.oneTimeCode)
                         .focused($focusedField, equals: .code)
@@ -487,7 +487,7 @@ struct LoginView: View {
 
                     TextField("请输入手机号或用户名", text: $account)
                         .font(.subheadline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .textContentType(.username)
@@ -516,7 +516,7 @@ struct LoginView: View {
                         }
                     }
                     .font(.subheadline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .onChange(of: password) { _, _ in localError = nil }
@@ -575,7 +575,7 @@ struct LoginView: View {
                     if consent {
                         Image(systemName: "checkmark")
                             .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(Color.black)
+                            .foregroundStyle(Theme.onAccent)
                     }
                 }
                 .contentShape(Rectangle())
@@ -724,7 +724,7 @@ struct LoginView: View {
                     .frame(width: 20)
                 Text(title)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 12)
@@ -957,7 +957,7 @@ struct LegalDocumentView: View {
 
                     Text(kind.title)
                         .font(.title2.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
 
                     Text(intro)
                         .font(.subheadline)
@@ -968,7 +968,7 @@ struct LegalDocumentView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(section.title)
                                 .font(.headline)
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Theme.primaryText)
                             Text(section.body)
                                 .font(.subheadline)
                                 .foregroundStyle(Theme.secondaryText)

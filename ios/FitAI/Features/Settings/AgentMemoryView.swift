@@ -67,7 +67,7 @@ struct AgentMemoryView: View {
         VStack(alignment: .leading, spacing: 5) {
             Text("教练会记住什么")
                 .font(.system(size: 23, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text("这里保存的是从对话中提炼出的稳定事实，不是完整聊天记录。关闭记忆后，教练仍可回答本次问题，但不会主动引用这些偏好。")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
@@ -97,7 +97,7 @@ struct AgentMemoryView: View {
             }
             Text(item.content)
                 .font(.subheadline)
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 8) {
                 Text(item.source == "agent" ? "自动提炼" : item.source)

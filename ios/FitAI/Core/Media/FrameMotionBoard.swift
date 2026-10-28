@@ -95,7 +95,7 @@ struct FrameMotionBoard: View {
     private func detailPill(_ text: String) -> some View {
         Text(text)
             .font(.system(size: 9.5, weight: .bold))
-            .foregroundStyle(Color(red: 0.02, green: 0.14, blue: 0.08))
+            .foregroundStyle(Theme.onAccent)
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
             .background(Theme.accent.opacity(0.92), in: Capsule())

@@ -97,7 +97,7 @@ struct PeriodScheduleView: View {
         VStack(alignment: .leading, spacing: 5) {
             Text("选择经期区间")
                 .font(.system(size: 24, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text("经期会显示在计划日历上；可设置为轻重量训练或直接休息。训练计划本身会保留。")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
@@ -118,10 +118,10 @@ struct PeriodScheduleView: View {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(item.title)
                                 .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(mode == item ? Color.black : .white)
+                                .foregroundStyle(mode == item ? Theme.onAccent : Theme.primaryText)
                             Text(item.detail)
                                 .font(.caption2)
-                                .foregroundStyle(mode == item ? Color.black.opacity(0.7) : Theme.tertiaryText)
+                                .foregroundStyle(mode == item ? Theme.onAccent.opacity(0.7) : Theme.tertiaryText)
                                 .lineLimit(2)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -153,7 +153,7 @@ struct PeriodScheduleView: View {
                 VStack(spacing: 2) {
                     Text(monthTitle)
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text("点选经期区间")
                         .font(.caption2)
                         .foregroundStyle(Theme.tertiaryText)
@@ -198,7 +198,7 @@ struct PeriodScheduleView: View {
         } label: {
             Text("\(calendar.component(.day, from: date))")
                 .font(.system(size: 12, weight: active ? .bold : .medium, design: .rounded))
-                .foregroundStyle(active ? Color.white : (isToday ? Theme.accent : Theme.secondaryText))
+                .foregroundStyle(active ? Theme.onMedia : (isToday ? Theme.accent : Theme.secondaryText))
                 .frame(maxWidth: .infinity)
                 .frame(height: 38)
                 .background(

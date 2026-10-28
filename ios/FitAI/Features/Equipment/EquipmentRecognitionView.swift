@@ -149,7 +149,7 @@ struct EquipmentRecognitionView: View {
                     .foregroundStyle(Theme.tertiaryText)
                 Text("识别你的器械")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Text("从最匹配到相似候选")
                     .font(.caption2)
                     .foregroundStyle(Theme.secondaryText)
@@ -179,7 +179,7 @@ struct EquipmentRecognitionView: View {
             HStack {
                 Text("匹配器械")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Spacer()
                 Text("\(candidates.count) 个候选")
                     .font(.caption)
@@ -202,7 +202,7 @@ struct EquipmentRecognitionView: View {
                                 .foregroundStyle(Theme.accent)
                             Text("已加入个人动作库：\(customAddedName)")
                                 .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Theme.primaryText)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         Text("可在「我的器械库」查看；生成计划仍只使用动作库内已收录的标准动作。")
@@ -214,7 +214,7 @@ struct EquipmentRecognitionView: View {
                              ? "先拍摄或选择一张器械照片。"
                              : "暂未识别到动作库中的器械，可以直接补全并加入个人库。")
                             .font(.subheadline.weight(.medium))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                             .fixedSize(horizontal: false, vertical: true)
 
                         if !description.isEmpty {
@@ -230,7 +230,7 @@ struct EquipmentRecognitionView: View {
                             } label: {
                                 Label("补全器械信息", systemImage: "plus.circle.fill")
                                     .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Theme.primaryText)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 11)
                                     .background(Theme.accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -269,7 +269,7 @@ struct EquipmentRecognitionView: View {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(candidate.exercise.nameZH)
                                 .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Theme.primaryText)
                             Text("\(candidate.exercise.muscle.label) · \(candidate.exercise.equipment.label)")
                                 .font(.caption2)
                                 .foregroundStyle(Theme.secondaryText)
@@ -529,7 +529,7 @@ private struct CustomExerciseAddSheet: View {
 
             Text("补全后加入你的个人动作库")
                 .font(.system(size: 25, weight: .heavy, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text("AI 已预填识别名称。确认名称、训练肌群和器械类型后，加入你的个人器械库。")
@@ -606,7 +606,7 @@ private struct CustomExerciseAddSheet: View {
         Button(action: action) {
             Text(title)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(selected ? Color.black : Theme.secondaryText)
+                .foregroundStyle(selected ? Theme.onAccent : Theme.secondaryText)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 9)
                 .background(

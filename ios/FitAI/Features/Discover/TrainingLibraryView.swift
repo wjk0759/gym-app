@@ -94,7 +94,7 @@ struct TrainingLibraryView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("练法选明白，\n进馆不发呆。")
                     .font(.system(size: 29, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                     .fixedSize(horizontal: false, vertical: true)
                 Text("先选适合出勤频率的分化，再让教练按你的器械和时间排动作。")
                     .font(.subheadline)
@@ -118,7 +118,7 @@ struct TrainingLibraryView: View {
             HStack(alignment: .top, spacing: 11) {
                 Image(systemName: card.symbol)
                     .font(.title2.weight(.bold))
-                    .foregroundStyle(selected ? Color.black : Theme.accent)
+                    .foregroundStyle(selected ? Theme.onAccent : Theme.accent)
                     .frame(width: 48, height: 48)
                     .background(
                         selected ? Theme.accent : Theme.accent.opacity(0.12),
@@ -131,7 +131,7 @@ struct TrainingLibraryView: View {
                         .foregroundStyle(Theme.accent)
                     Text(card.split.title)
                         .font(.title3.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text(card.split.detail)
                         .font(.caption)
                         .foregroundStyle(Theme.secondaryText)
@@ -142,7 +142,7 @@ struct TrainingLibraryView: View {
                 if selected {
                     Text("当前")
                         .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(Color.black)
+                        .foregroundStyle(Theme.onAccent)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(Theme.accent, in: Capsule())

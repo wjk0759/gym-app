@@ -46,6 +46,8 @@
 	<string>用于读取体重与训练数据，帮助你追踪身体变化。</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>用于把完成的训练写入 Apple 健康，作为你的训练记录。</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>用于获取你所在城市的实时天气，并在下雨或下雪时提醒你注意出行安全。位置只在你使用 App 时获取，不写入训练记录。</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>用于连接局域网内的 FitAI 开发服务器，进行 Mac 预览与联调。</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
@@ -66,7 +68,5 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
-	<key>UIUserInterfaceStyle</key>
-	<string>Dark</string>
 </dict>
 </plist>

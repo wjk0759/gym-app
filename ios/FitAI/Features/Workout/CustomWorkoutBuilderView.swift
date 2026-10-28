@@ -79,7 +79,7 @@ struct CustomWorkoutBuilderView: View {
                         HStack {
                             Text("训练顺序")
                                 .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Theme.primaryText)
                             Spacer(minLength: 8)
                             Text("按住左侧手柄拖动排序")
                                 .font(.system(size: 9.5))
@@ -164,7 +164,7 @@ struct CustomWorkoutBuilderView: View {
                 .foregroundStyle(Theme.accent)
             Text(mode == .plan || mode == .editPlan ? title : "先排顺序，再开始")
                 .font(.title2.weight(.bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text(mode == .editPlan
                  ? "调整动作顺序、组数和负荷；保存后直接写回训练计划。"
                  : mode == .plan
@@ -211,7 +211,7 @@ struct CustomWorkoutBuilderView: View {
         HStack(spacing: 4) {
             Text(value)
                 .font(.system(size: 12, weight: .bold).monospacedDigit())
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .contentTransition(.numericText())
             Text(label)
                 .font(.system(size: 9.5))
@@ -247,7 +247,7 @@ struct CustomWorkoutBuilderView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(info?.nameZH ?? item.slug)
                         .font(.system(size: 13.5, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                         .lineLimit(1)
                     Text(metaText(info))
                         .font(.system(size: 10))
@@ -361,7 +361,7 @@ struct CustomWorkoutBuilderView: View {
             HStack {
                 Text("\(totalSets) 组 · 约 \(estimatedMinutes) 分钟")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Spacer(minLength: 8)
                 Text(mode == .editPlan ? "保存后立即更新计划" : "开始后仍可调整")
                     .font(.system(size: 9.5))

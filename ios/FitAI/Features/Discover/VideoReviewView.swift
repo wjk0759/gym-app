@@ -83,7 +83,7 @@ struct VideoReviewView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("发一段视频，\n让教练看动作。")
                 .font(.system(size: 29, weight: .heavy, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .fixedSize(horizontal: false, vertical: true)
             Text("本地抽取开始、中段、结束 3 个关键帧，指出最值得改的一处。原视频不会上传。")
                 .font(.subheadline)
@@ -116,7 +116,7 @@ struct VideoReviewView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("正在抽取关键帧…")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Text("视频只在本机处理")
                     .font(.caption2)
                     .foregroundStyle(Theme.tertiaryText)
@@ -130,7 +130,7 @@ struct VideoReviewView: View {
             HStack {
                 Text("关键帧预览")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Spacer()
                 Text("\(Int(duration)) 秒")
                     .font(.caption.monospacedDigit())

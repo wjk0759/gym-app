@@ -110,7 +110,7 @@ struct ProfileFormView: View {
                 Text("BMI")
                 Spacer()
                 Text(String(format: "%.1f", draft.bmi))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Text(draft.bmiLabel)
                     .font(.caption)
                     .foregroundStyle(Theme.accent)
@@ -253,7 +253,7 @@ struct ProfileFormView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.label)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
                     Text(selected ? "已启用" : "未选择")
@@ -362,7 +362,7 @@ struct ProfileFormView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(item.label)
                                 .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Theme.primaryText)
                             Text(item.detail)
                                 .font(.caption2)
                                 .foregroundStyle(Theme.secondaryText)
@@ -463,7 +463,7 @@ struct MetricSlider: View {
                 Spacer()
                 Text("\(display)\(unit)")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
             }
             Slider(value: $value, in: range, step: step)
                 .tint(Theme.accent)

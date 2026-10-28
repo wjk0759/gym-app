@@ -1,14 +1,22 @@
+import Combine
 import SwiftUI
 
 struct RootView: View {
     @Environment(AppStore.self) private var store
     @Environment(AuthStore.self) private var auth
     @Environment(SubscriptionManager.self) private var subscriptions
+    @Environment(WeatherStore.self) private var weather
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var splashPulse = false
+    @State private var phaseNow = Date()
+
+    private let phaseTimer = Timer.publish(every: 300, on: .main, in: .common).autoconnect()
 
     var body: some View {
+        let atmosphere = WeatherAtmosphere.make(snapshot: weather.snapshot, date: phaseNow)
+
         ZStack {
             AppBackground()
 
@@ -28,9 +36,18 @@ struct RootView: View {
                 }
             }
         }
+        .environment(\.weatherAtmosphere, atmosphere)
+        .tint(atmosphere.accent(for: colorScheme))
+        .overlay {
+            if atmosphere.isPrecipitation {
+                RainGlassOverlay(intensity: atmosphere.precipitationIntensity)
+                    .ignoresSafeArea()
+            }
+        }
         .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: auth.isRestoring)
         .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: auth.isAuthenticated)
         .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: store.profile.isOnboarded)
+        .animation(Motion.resolved(.easeInOut(duration: 0.9), reduceMotion: reduceMotion), value: atmosphere.isPrecipitation)
         .sensoryFeedback(.success, trigger: auth.isAuthenticated) { _, isAuthenticated in
             isAuthenticated
         }
@@ -45,6 +62,16 @@ struct RootView: View {
                 store.refreshWeeklyReview()
                 store.syncPendingUserData()
             }
+            activateWeatherIfNeeded()
+        }
+        .onReceive(phaseTimer) { date in
+            phaseNow = date
+            if auth.isAuthenticated, store.profile.isOnboarded {
+                weather.refreshIfNeeded()
+                Task { @MainActor in
+                    await weather.evaluateCurrentAlertIfNeeded()
+                }
+            }
         }
         .onChange(of: subscriptions.isPro) { _, isPro in
             store.isPro = isPro
@@ -58,6 +85,7 @@ struct RootView: View {
                 store.refreshWeeklyReview()
                 store.syncPendingUserData()
             }
+            activateWeatherIfNeeded()
         }
         .onChange(of: auth.userID) { _, userID in
             store.switchUser(userID)
@@ -67,16 +95,26 @@ struct RootView: View {
                 store.syncRemoteWorkouts()
                 store.refreshWeeklyReview()
                 store.syncPendingUserData()
+                activateWeatherIfNeeded()
+            }
+        }
+        .onChange(of: store.profile.isOnboarded) { _, isOnboarded in
+            if isOnboarded {
+                activateWeatherIfNeeded()
             }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active {
                 store.flushPersistence()
-            } else if auth.isAuthenticated {
-                store.syncPendingWorkouts()
-                store.syncRemoteWorkouts()
-                store.refreshWeeklyReview()
-                store.syncPendingUserData()
+            } else {
+                phaseNow = Date()
+                if auth.isAuthenticated {
+                    store.syncPendingWorkouts()
+                    store.syncRemoteWorkouts()
+                    store.refreshWeeklyReview()
+                    store.syncPendingUserData()
+                    activateWeatherIfNeeded()
+                }
             }
         }
     }
@@ -98,7 +136,7 @@ struct RootView: View {
                     .shadow(color: Theme.accent.opacity(0.45), radius: 24, y: 8)
                 Image(systemName: "figure.strengthtraining.traditional")
                     .font(.system(size: 31, weight: .bold))
-                    .foregroundStyle(Color.black)
+                    .foregroundStyle(Theme.onAccent)
             }
             .scaleEffect(splashPulse ? 1.05 : 1)
             .animation(
@@ -111,7 +149,7 @@ struct RootView: View {
 
             Text("练途")
                 .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             ProgressView()
                 .tint(Theme.accent)
             Text("正在恢复登录状态…")
@@ -119,6 +157,11 @@ struct RootView: View {
                 .foregroundStyle(Theme.secondaryText)
         }
         .transition(.opacity)
+    }
+
+    private func activateWeatherIfNeeded() {
+        guard auth.isAuthenticated, store.profile.isOnboarded else { return }
+        weather.activate()
     }
 
     private func enableRemoteMode() {

@@ -65,7 +65,7 @@ struct WeekDietPlanView: View {
         VStack(alignment: .leading, spacing: 7) {
             Text("把饮食计划排成一周")
                 .font(.system(size: 23, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text("碳循环会把高碳日放在训练日、低碳日放在休息日，蛋白质每天固定。计划写入后可在营养页按天查看。")
                 .font(.subheadline)
                 .foregroundStyle(Theme.secondaryText)
@@ -78,7 +78,7 @@ struct WeekDietPlanView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("每餐这样搭")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 7) {
                     foodGuideChip("蛋白 1 掌心", icon: "fish.fill", color: Theme.blue)
@@ -104,7 +104,7 @@ struct WeekDietPlanView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("饮食策略")
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
 
             Picker("策略", selection: $strategy) {
                 ForEach(strategies, id: \.id) { item in
@@ -147,7 +147,7 @@ struct WeekDietPlanView: View {
             HStack {
                 Text(week.strategy?.label ?? "本周计划")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Spacer()
                 Text("\(week.days.count) 天")
                     .font(.caption)
@@ -169,7 +169,7 @@ struct WeekDietPlanView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("\(meal.name) · \(meal.kcal) kcal")
                                     .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Theme.primaryText)
                                 Text(meal.items.joined(separator: "、"))
                                     .font(.caption2)
                                     .foregroundStyle(Theme.secondaryText)
@@ -182,7 +182,7 @@ struct WeekDietPlanView: View {
                     HStack {
                         Text(day.title)
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                         Spacer()
                         Text("\(day.targets.targetKcal ?? 0) kcal")
                             .font(.caption.weight(.semibold))

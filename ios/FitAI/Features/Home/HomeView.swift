@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(AppStore.self) private var store
+    @Environment(WeatherStore.self) private var weather
 
     @State private var showCompose = false
     @State private var pendingWorkoutDay: PlanDay?
@@ -18,6 +19,11 @@ struct HomeView: View {
                 VStack(spacing: 16) {
                     greeting
                         .staggerIn(0)
+
+                    if let advisory = weather.snapshot?.alertKind {
+                        weatherAdvisory(advisory)
+                            .staggerIn(1)
+                    }
 
                     coachHero
                         .staggerIn(1)
@@ -182,18 +188,77 @@ struct HomeView: View {
     // MARK: - 顶部
 
     private var greeting: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("\(timeGreeting)，\(store.profile.nickname)")
-                .font(.headline.weight(.semibold))
-                .foregroundStyle(.white)
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
-            Text(Date().formatted(.dateTime.month().day().weekday(.wide)))
-                .font(.subheadline)
-                .foregroundStyle(Theme.secondaryText)
+        HStack(alignment: .top, spacing: 10) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("\(timeGreeting)，\(store.profile.nickname)")
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(Theme.primaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+                Text(Date().formatted(.dateTime.month().day().weekday(.wide)))
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.secondaryText)
+            }
+            .layoutPriority(1)
+
+            Spacer(minLength: 0)
+
+            WeatherBadgeView()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 4)
+    }
+
+    private func weatherAdvisory(_ kind: WeatherAlertKind) -> some View {
+        let isThunder = kind == .thunder
+        let isSnow = kind == .snow
+        let tint = isThunder || isSnow ? Theme.warning : Theme.blue
+
+        return HStack(spacing: 10) {
+            Image(systemName: isThunder ? "cloud.bolt.rain.fill" : (isSnow ? "snowflake" : "umbrella.fill"))
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 34, height: 34)
+                .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(advisoryTitle(kind))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.primaryText)
+                Text(advisoryDetail(kind))
+                    .font(.caption2)
+                    .foregroundStyle(Theme.secondaryText)
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(tint.opacity(0.22), lineWidth: 0.8)
+        )
+        .accessibilityElement(children: .combine)
+    }
+
+    private func advisoryTitle(_ kind: WeatherAlertKind) -> String {
+        switch kind {
+        case .rain: return "今天有雨，出门带伞"
+        case .snow: return "雨雪天气，慢一点走"
+        case .thunder: return "雷雨天气，减少户外停留"
+        case .rainLikely: return "今天可能下雨"
+        }
+    }
+
+    private func advisoryDetail(_ kind: WeatherAlertKind) -> String {
+        switch kind {
+        case .rain: return "路面湿滑，训练前后注意保暖；如果通勤绕路，优先保证安全。"
+        case .snow: return "路面可能结冰，避开急转和湿滑台阶，热身多花 3 分钟。"
+        case .thunder: return "尽量避开空旷地带和积水路段，必要时把训练改到室内。"
+        case .rainLikely: return "降雨概率较高，包里备好雨具，出门前再看一眼天气。"
+        }
     }
 
     private var coachHero: some View {
@@ -220,18 +285,18 @@ struct HomeView: View {
                         .tracking(1.4)
                         .opacity(0.55)
                 }
-                .foregroundStyle(Color.black.opacity(0.78))
+                .foregroundStyle(Theme.onAccent.opacity(0.78))
 
                 HStack(alignment: .center, spacing: 4) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("不画饼，\n只把今天练明白。")
                             .font(.system(size: 24, weight: .heavy, design: .rounded))
-                            .foregroundStyle(Color.black.opacity(0.9))
+                            .foregroundStyle(Theme.onAccent.opacity(0.9))
                             .fixedSize(horizontal: false, vertical: true)
 
                         Text("训练、饮食、动作点评，直接跟教练说。")
                             .font(.caption.weight(.semibold))
-                            .foregroundStyle(Color.black.opacity(0.62))
+                            .foregroundStyle(Theme.onAccent.opacity(0.62))
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
@@ -251,7 +316,7 @@ struct HomeView: View {
                     } label: {
                         Label("找教练聊聊", systemImage: "arrow.up.right")
                             .font(.caption.weight(.bold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.onMedia)
                             .padding(.horizontal, 13)
                             .padding(.vertical, 9)
                             .background(Color.black.opacity(0.72), in: Capsule())
@@ -378,7 +443,7 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(day.title)
                     .font(.title2.weight(.bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Text(day.focusText)
                     .font(.subheadline)
                     .foregroundStyle(Theme.secondaryText)
@@ -432,7 +497,7 @@ struct HomeView: View {
                             .frame(width: 6, height: 6)
                         Text(item.displayName)
                             .font(.subheadline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                         Spacer()
                         Text(period == nil
                              ? item.targetText
@@ -455,7 +520,7 @@ struct HomeView: View {
                         .foregroundStyle(Theme.accent)
                     Text("今天已完成，训练记录已保存")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Spacer(minLength: 0)
                 }
                 .padding(12)
@@ -503,7 +568,7 @@ struct HomeView: View {
                     .foregroundStyle(Theme.warning)
                 Text("有一次训练还没结束")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Spacer()
                 Button("放弃") {
                     store.clearWorkoutDraft(dayID: day.id)
@@ -545,7 +610,7 @@ struct HomeView: View {
                     .foregroundStyle(period?.mode == .rest ? Theme.danger : Theme.accent)
                 Text(period?.mode == .rest ? "经期休息日" : "今天休息")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Spacer()
                 Text("第 \(store.currentPlanWeek) 周")
                     .font(.caption2)
@@ -587,7 +652,7 @@ struct HomeView: View {
                             .foregroundStyle(Theme.warning)
                         Text("有 \(missed.count) 次训练没完成")
                             .font(.headline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                         Spacer()
                     }
 
@@ -640,7 +705,7 @@ struct HomeView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("今日饮食")
                             .font(.headline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                         Text("\(store.profile.goalType.label)计划 · 记录饮食")
                             .font(.caption)
                             .foregroundStyle(Theme.secondaryText)
@@ -699,7 +764,7 @@ struct HomeView: View {
                 .foregroundStyle(Theme.tertiaryText)
             Text("\(Int(value)) / \(target)g")
                 .font(.caption2.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
@@ -743,7 +808,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value)
                 .font(.title3.weight(.bold).monospacedDigit())
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .contentTransition(.numericText())
             Text(title)
                 .font(.caption2)
@@ -765,7 +830,7 @@ struct HomeView: View {
                         .foregroundStyle(Theme.accent)
                     Text(plan.title)
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                         .lineLimit(2)
                     Text("第 \(plan.version) 版 · \(plan.weeks) 周 · \(plan.days.count) 个训练日")
                         .font(.caption)
@@ -863,7 +928,7 @@ struct HomeView: View {
                 .foregroundStyle(Theme.tertiaryText)
             Text(value)
                 .font(.caption.weight(.semibold).monospacedDigit())
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .contentTransition(.numericText())
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -880,7 +945,7 @@ struct HomeView: View {
                 .foregroundStyle(Theme.tertiaryText)
             Text(value)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
         }
     }
 

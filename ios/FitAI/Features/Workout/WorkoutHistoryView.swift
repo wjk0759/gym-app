@@ -69,7 +69,7 @@ struct WorkoutHistoryView: View {
                         .foregroundStyle(Theme.accent)
                     Text(sessions.isEmpty ? "还没有记录" : "\(sessions.count) 次训练")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                 }
                 Spacer()
                 Image(systemName: "calendar")
@@ -103,7 +103,7 @@ struct WorkoutHistoryView: View {
             VStack(spacing: 2) {
                 Text(monthStart.formatted(.dateTime.year().month(.wide)))
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Button("回到本月") {
                     Haptics.tap()
                     month = Date()
@@ -204,7 +204,7 @@ struct WorkoutHistoryView: View {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(session.dayTitle)
                                     .font(.subheadline.weight(.medium))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Theme.primaryText)
                                 Text(session.date.formatted(.dateTime.month().day().weekday(.abbreviated)))
                                     .font(.caption2)
                                     .foregroundStyle(Theme.tertiaryText)
@@ -300,7 +300,7 @@ struct WorkoutHistoryView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text(title)
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)

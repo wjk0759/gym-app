@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct SettingsToolbarButton: View {
     var body: some View {
@@ -21,6 +22,8 @@ struct SettingsView: View {
     @Environment(AppStore.self) private var store
     @Environment(AuthStore.self) private var auth
     @Environment(SubscriptionManager.self) private var subscriptions
+    @Environment(WeatherStore.self) private var weather
+    @Environment(\.openURL) private var openURL
 
     @State private var serviceState: ServiceState = .checking
     @State private var serviceModel = ""
@@ -34,6 +37,7 @@ struct SettingsView: View {
     @State private var showBodyCheckIn = false
     @State private var showDeleteAccount = false
     @State private var showAgentMemory = false
+    @State private var showWeatherDetail = false
 
     var body: some View {
         AppScrollView {
@@ -48,6 +52,9 @@ struct SettingsView: View {
                 bodyCheckInCard
                 healthCard
                 preferenceCard
+
+                sectionLabel("天气与出行")
+                weatherCard
 
 #if DEBUG
                 sectionLabel("AI 与连接")
@@ -124,6 +131,12 @@ struct SettingsView: View {
         .sheet(isPresented: $showAgentMemory) {
             AgentMemoryView()
         }
+        .sheet(isPresented: $showWeatherDetail) {
+            WeatherDetailSheet()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(Theme.background)
+        }
     }
 
     // MARK: - 账号
@@ -150,7 +163,7 @@ struct SettingsView: View {
                 Spacer()
                 Text(maskedPhone)
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
             }
 
             HStack {
@@ -357,6 +370,84 @@ struct SettingsView: View {
         .card()
     }
 
+    private var weatherCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: weather.snapshot?.symbolName ?? "cloud.sun.fill")
+                    .font(.title3)
+                    .foregroundStyle(weather.snapshot?.isWet == true ? Theme.blue : Theme.accent)
+                    .frame(width: 30, height: 30)
+                    .background(
+                        (weather.snapshot?.isWet == true ? Theme.blue : Theme.accent).opacity(0.12),
+                        in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(weather.snapshot?.placeDisplayName ?? "本地天气")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.primaryText)
+                    Text(weather.snapshot.map { "\($0.conditionLabel) · \($0.temperatureText)" } ?? weather.authorizationLabel)
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+
+                Spacer(minLength: 4)
+
+                Button("详情") { showWeatherDetail = true }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+            }
+
+            Toggle(
+                isOn: Binding(
+                    get: { weather.alertsEnabled },
+                    set: { weather.setWeatherAlerts($0) }
+                )
+            ) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("降雨 / 降雪出行提醒")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.primaryText)
+                    Text("有雨雪或降雨概率较高时，每天最多提醒一次；夜间不打扰")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+            }
+            .tint(Theme.accent)
+
+            if weather.alertsEnabled && !weather.alertsAuthorized {
+                HStack(spacing: 12) {
+                    Button("开启系统通知权限") {
+                        Task {
+                            let granted = await weather.requestWeatherAlertPermission()
+                            message = granted
+                                ? "天气提醒已开启。"
+                                : "没有获得通知权限，请到系统设置中允许「练途」通知。"
+                            showMessage = true
+                        }
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+
+                    Button("去系统设置") {
+                        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+                        openURL(url)
+                    }
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Theme.tertiaryText)
+                }
+            }
+
+            Text("定位只用于本地天气查询；关闭 App 后不会持续获取位置。")
+                .font(.caption2)
+                .foregroundStyle(Theme.tertiaryText)
+        }
+        .card(padding: 14)
+        .task {
+            await weather.refreshNotificationAuthorization()
+        }
+    }
+
     private func syncReminder() {
         reminderDate = Calendar.current.date(
             bySettingHour: store.reminderHour,
@@ -411,7 +502,7 @@ struct SettingsView: View {
                     } label: {
                         Text(frequency.title)
                             .font(.caption.weight(.semibold))
-                            .foregroundStyle(store.bodyCheckInFrequency == frequency ? Color.black : Theme.secondaryText)
+                            .foregroundStyle(store.bodyCheckInFrequency == frequency ? Theme.onAccent : Theme.secondaryText)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 7)
                             .background(
@@ -434,7 +525,7 @@ struct SettingsView: View {
                             } label: {
                                 Text(Weekday.shortNames[weekday - 1])
                                     .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(store.bodyCheckInWeekday == weekday ? Color.black : Theme.secondaryText)
+                                    .foregroundStyle(store.bodyCheckInWeekday == weekday ? Theme.onAccent : Theme.secondaryText)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 7)
                                     .background(
@@ -658,7 +749,7 @@ struct SettingsView: View {
                         .frame(width: 22)
                     Text("导出我的数据")
                         .font(.subheadline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.caption2)
@@ -710,7 +801,7 @@ struct SettingsView: View {
                     .frame(width: 22)
                 Text(title)
                     .font(.subheadline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.caption2)

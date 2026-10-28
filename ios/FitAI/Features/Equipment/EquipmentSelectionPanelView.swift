@@ -35,7 +35,6 @@ struct EquipmentSelectionPanelView: View {
         }
         .frame(minWidth: 260, idealWidth: 330, maxWidth: 380)
         .background(Theme.background)
-        .preferredColorScheme(.dark)
     }
 
     private var header: some View {
@@ -44,7 +43,7 @@ struct EquipmentSelectionPanelView: View {
                 HStack(spacing: 7) {
                     Text("已选动作")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text("\(exercises.count)")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(Theme.accent)
@@ -79,7 +78,7 @@ struct EquipmentSelectionPanelView: View {
                 .foregroundStyle(Theme.tertiaryText)
             Text("还没有选择动作")
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text("在下面点选动作，再决定生成训练或存入器械库。")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
@@ -115,7 +114,7 @@ struct EquipmentSelectionPanelView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(exercise.nameZH)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                     .lineLimit(1)
 
                 HStack(spacing: 6) {
@@ -204,7 +203,7 @@ struct EquipmentSelectionPanelView: View {
             HStack(spacing: 11) {
                 Image(systemName: icon)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(primary ? Color.black.opacity(0.82) : Theme.accent)
+                    .foregroundStyle(primary ? Theme.onAccent.opacity(0.82) : Theme.accent)
                     .frame(width: 34, height: 34)
                     .background(
                         primary ? Color.black.opacity(0.12) : Theme.accent.opacity(0.11),
@@ -226,7 +225,7 @@ struct EquipmentSelectionPanelView: View {
                     .font(.caption.weight(.bold))
                     .opacity(0.55)
             }
-            .foregroundStyle(primary ? Color.black.opacity(0.90) : Color.white)
+            .foregroundStyle(primary ? Theme.onAccent.opacity(0.90) : Theme.primaryText)
             .padding(12)
             .background {
                 if primary {

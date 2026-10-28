@@ -73,7 +73,7 @@ struct ExerciseProgressView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(exercise?.nameZH ?? slug)
                 .font(.title2.weight(.bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text("\(exercise?.muscle.label ?? "") · \(exercise?.equipment.label ?? "")")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
@@ -96,7 +96,7 @@ struct ExerciseProgressView: View {
                      ? "\(best.weightKG.formatted()) kg × \(best.reps) 次"
                      : "自重 × \(best.reps) 次")
                     .font(.title3.weight(.bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Text("RPE \(best.rpe.formatted(.number.precision(.fractionLength(1))))")
                     .font(.caption2)
                     .foregroundStyle(Theme.tertiaryText)
@@ -166,7 +166,7 @@ struct ExerciseProgressView: View {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(session.date.formatted(.dateTime.month().day().weekday(.abbreviated)))
                                     .font(.subheadline.weight(.medium))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Theme.primaryText)
                                 Text(session.dayTitle)
                                     .font(.caption2)
                                     .foregroundStyle(Theme.tertiaryText)

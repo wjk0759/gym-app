@@ -200,7 +200,7 @@ struct PlanHomeView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("今天 · 吃练记录")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text("每天一笔，变化才有方向。")
                         .font(.caption)
                         .foregroundStyle(Theme.tertiaryText)
@@ -214,7 +214,7 @@ struct PlanHomeView: View {
             HStack(alignment: .lastTextBaseline, spacing: 6) {
                 Text("\(Int(consumed.kcal))")
                     .font(.system(size: 34, weight: .heavy, design: .rounded).monospacedDigit())
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                     .contentTransition(.numericText())
                 Text("/ \(targets.kcal) kcal")
                     .font(.caption.weight(.semibold))
@@ -285,7 +285,7 @@ struct PlanHomeView: View {
                     .foregroundStyle(Theme.tertiaryText)
                 Text(value)
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
@@ -318,7 +318,7 @@ struct PlanHomeView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Text(subtitle)
                     .font(.system(size: 9.5))
                     .foregroundStyle(Theme.tertiaryText)
@@ -368,7 +368,7 @@ struct PlanHomeView: View {
                 VStack(spacing: 2) {
                     Text(monthTitle)
                         .font(.headline.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text("训练 · 饮食 · 计划")
                         .font(.system(size: 9.5))
                         .foregroundStyle(Theme.tertiaryText)
@@ -590,7 +590,7 @@ struct PlanHomeView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(selectedDate.formatted(.dateTime.month().day().weekday(.wide)))
                         .font(.headline.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text(subtitle)
                         .font(.caption)
                         .foregroundStyle(planCompleted ? Theme.accent : Theme.tertiaryText)
@@ -627,7 +627,7 @@ struct PlanHomeView: View {
                         .foregroundStyle(Theme.danger)
                     Text("经期第 \(period.day) 天 · \(period.mode.title)")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Spacer()
                 }
                 .padding(9)
@@ -657,7 +657,7 @@ struct PlanHomeView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(String(session.dayTitle.prefix(40)))
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Theme.primaryText)
                                 .lineLimit(1)
                             Text("\(session.exerciseCount) 个动作 · \(session.durationMinutes) 分钟 · \(Int(session.volume)) kg")
                                 .font(.system(size: 9.5))
@@ -686,7 +686,7 @@ struct PlanHomeView: View {
                             .foregroundStyle(Theme.accent)
                         Text(plannedDay.title)
                             .font(.system(size: 12.5, weight: .semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                         Text("\(plannedDay.focusText) · \(plannedDay.exercises.count) 个动作")
                             .font(.system(size: 9.5))
                             .foregroundStyle(Theme.tertiaryText)
@@ -801,7 +801,7 @@ struct PlanHomeView: View {
                     HStack {
                         Text(log.foodName)
                             .font(.system(size: 11))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                         Text("\(log.meal.label) · \(Int(log.grams))g")
                             .font(.system(size: 9))
                             .foregroundStyle(Theme.tertiaryText)
@@ -862,7 +862,7 @@ struct PlanHomeView: View {
                         .foregroundStyle(Theme.accent)
                     Text("最近 30 天")
                         .font(.title3.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                 }
                 Spacer()
                 NavigationLink {
@@ -928,7 +928,7 @@ struct PlanHomeView: View {
                 HStack {
                     Text("最近训练")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Spacer()
                 }
                 .padding(.top, 2)
@@ -941,7 +941,7 @@ struct PlanHomeView: View {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(String(session.dayTitle.prefix(40)))
                                     .font(.system(size: 12, weight: .medium))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Theme.primaryText)
                                     .lineLimit(1)
                                 Text(session.date.formatted(date: .abbreviated, time: .shortened))
                                     .font(.system(size: 9))
@@ -974,7 +974,7 @@ struct PlanHomeView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value)
                 .font(.system(size: 15, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
             Text(label)
@@ -1021,7 +1021,7 @@ struct PlanHomeView: View {
                         .foregroundStyle(Theme.accent)
                     Text(plan.title)
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text("v\(plan.version) · \(plan.days.count) 个训练日 · 本周完成 \(completed)/\(max(1, store.currentWeekPlannedCount))")
                         .font(.caption)
                         .foregroundStyle(Theme.secondaryText)
@@ -1229,7 +1229,7 @@ struct PlanHistoryView: View {
                         HStack {
                             Text("历史版本")
                                 .font(.headline)
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Theme.primaryText)
                             Spacer()
                             Text("\(store.planHistory.count) 个")
                                 .font(.caption)
@@ -1278,7 +1278,7 @@ struct PlanHistoryView: View {
             }
             Text(plan.title)
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text("\(plan.days.count) 个训练日 · 开始于 \(plan.createdAt.formatted(date: .abbreviated, time: .omitted))")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
@@ -1300,7 +1300,7 @@ struct PlanHistoryView: View {
             }
             Text(plan.title)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text("\(plan.days.count) 个训练日 · \(plan.weeks) 周")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)

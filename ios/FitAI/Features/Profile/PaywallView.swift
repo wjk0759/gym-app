@@ -86,7 +86,7 @@ struct PaywallView: View {
                         Text(product.displayPrice)
                     }
                     .font(.headline)
-                    .foregroundStyle(Color.black)
+                    .foregroundStyle(Theme.onAccent)
                     .padding(.horizontal, 18)
                     .padding(.vertical, 15)
                     .background(
@@ -125,7 +125,7 @@ struct PaywallView: View {
 
             Text("把 AI 教练带在身边")
                 .font(.title2.weight(.bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
 
             Text("解锁 DeepSeek AI 计划、三种专业 Skill 与完整的教练对话。")
                 .font(.subheadline)
@@ -154,7 +154,7 @@ struct PaywallView: View {
                 .frame(width: 22)
             Text(text)
                 .font(.subheadline)
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Spacer()
             Image(systemName: "checkmark")
                 .font(.caption.weight(.bold))
@@ -213,11 +213,11 @@ struct PaywallView: View {
                                 HStack(spacing: 6) {
                                     Text(product.displayName)
                                         .font(.subheadline.weight(.semibold))
-                                        .foregroundStyle(.white)
+                                        .foregroundStyle(Theme.primaryText)
                                     if yearly {
                                         Text("推荐")
                                             .font(.system(size: 9, weight: .bold))
-                                            .foregroundStyle(Color.black)
+                                            .foregroundStyle(Theme.onAccent)
                                             .padding(.horizontal, 6)
                                             .padding(.vertical, 3)
                                             .background(Theme.accent, in: Capsule())
@@ -241,7 +241,7 @@ struct PaywallView: View {
 
                             Text(product.displayPrice)
                                 .font(.headline)
-                                .foregroundStyle(selected ? Theme.accent : .white)
+                                .foregroundStyle(selected ? Theme.accent : Theme.primaryText)
 
                             Image(systemName: selected ? "checkmark.circle.fill" : "circle")
                                 .font(.title3)

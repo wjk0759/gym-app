@@ -155,7 +155,7 @@ struct NutritionView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("拍照识别饮食")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text("拍一餐，估算热量与三大营养素")
                         .font(.caption)
                         .foregroundStyle(Theme.secondaryText)
@@ -193,7 +193,7 @@ struct NutritionView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("本周饮食计划")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text("碳循环 / 低碳 / 高蛋白 · 一周安排")
                         .font(.caption)
                         .foregroundStyle(Theme.secondaryText)
@@ -347,7 +347,7 @@ struct NutritionView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(log.foodName)
                             .font(.subheadline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                         Text("\(log.grams.formatted()) g")
                             .font(.caption2)
                             .foregroundStyle(Theme.tertiaryText)
@@ -605,7 +605,7 @@ struct AddFoodView: View {
                                         VStack(alignment: .leading, spacing: 3) {
                                             Text(food.name)
                                                 .font(.subheadline.weight(.medium))
-                                                .foregroundStyle(.white)
+                                                .foregroundStyle(Theme.primaryText)
                                             Text("\(food.category) · 每 100g")
                                                 .font(.caption2)
                                                 .foregroundStyle(Theme.secondaryText)
@@ -702,7 +702,7 @@ struct AddFoodView: View {
                     Text("份量")
                     Spacer()
                     Text("\(Int(grams)) g")
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                 }
             }
 
@@ -785,7 +785,7 @@ struct CustomFoodEntryView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("按你实际吃的一份填写")
                             .font(.headline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                         Text("不知道蛋白质、碳水或脂肪可以留空。先记下热量也可以，之后还能补充。")
                             .font(.caption)
                             .foregroundStyle(Theme.secondaryText)

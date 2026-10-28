@@ -168,7 +168,7 @@ struct OnboardingView: View {
 
             Text(stepTitle)
                 .font(.system(size: 30, weight: .heavy, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(stepSubtitle)

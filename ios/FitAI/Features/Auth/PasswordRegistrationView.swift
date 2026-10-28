@@ -74,7 +74,7 @@ struct PasswordRegistrationView: View {
         VStack(alignment: .leading, spacing: 7) {
             Text("这个账号还没有注册")
                 .font(.system(size: 24, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text("先用手机号验证码确认手机号，再创建账号并登录。")
                 .font(.subheadline)
                 .foregroundStyle(Theme.secondaryText)
@@ -86,7 +86,7 @@ struct PasswordRegistrationView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("注册账号")
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             HStack {
                 Text("账号")
                     .font(.subheadline)
@@ -94,7 +94,7 @@ struct PasswordRegistrationView: View {
                 Spacer()
                 Text(account)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
             }
             Text("密码已按你刚才输入的内容保留，注册成功后直接登录。")
                 .font(.caption2)
@@ -107,7 +107,7 @@ struct PasswordRegistrationView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("验证手机号")
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
 
             VStack(alignment: .leading, spacing: 7) {
                 Text("手机号")
@@ -122,7 +122,7 @@ struct PasswordRegistrationView: View {
                         .frame(width: 1, height: 18)
                     TextField("请输入手机号", text: $phone)
                         .font(.subheadline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                         .keyboardType(.numberPad)
                         .textContentType(.telephoneNumber)
                         .onChange(of: phone) { _, value in
@@ -139,7 +139,7 @@ struct PasswordRegistrationView: View {
                 fieldShell {
                     TextField("请输入 6 位验证码", text: $code)
                         .font(.subheadline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                         .keyboardType(.numberPad)
                         .textContentType(.oneTimeCode)
                         .onChange(of: code) { _, value in

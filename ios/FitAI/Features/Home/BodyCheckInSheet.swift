@@ -76,7 +76,7 @@ struct BodyCheckInSheet: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(manual ? "今天记录一次\n让目标进度自动更新" : "身体数据 · \(store.bodyCheckInFrequencyLabel)")
                 .font(.system(size: 24, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text("体重、体脂和腰围是目标进度与复盘的核心数据。围度可以在编辑资料里继续补充。")
                 .font(.subheadline)
                 .foregroundStyle(Theme.secondaryText)
@@ -108,7 +108,7 @@ struct BodyCheckInSheet: View {
                 .keyboardType(keyboard)
                 .multilineTextAlignment(.trailing)
                 .font(.headline.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text(unit)
                 .font(.caption)
                 .foregroundStyle(Theme.tertiaryText)

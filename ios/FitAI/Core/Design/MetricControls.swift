@@ -60,7 +60,7 @@ struct WheelPickerField<Value: Hashable>: View {
                 HStack(spacing: 4) {
                     Text(display(selection))
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                     Spacer(minLength: 0)
@@ -115,7 +115,7 @@ private struct WheelPickerSheet<Value: Hashable>: View {
 
                 Text(title)
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
 
                 Spacer()
 
@@ -217,7 +217,7 @@ struct WeightInputField: View {
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.center)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
 
                 Text("kg")
                     .font(.system(size: 10, weight: .semibold))
@@ -280,7 +280,7 @@ struct WorkoutValueEntrySheet: View {
                         .focused($isFocused)
                         .multilineTextAlignment(.center)
                         .font(.system(size: 54, weight: .heavy, design: .rounded).monospacedDigit())
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                         .tint(Theme.accent)
                         .frame(maxWidth: 220)
                         .onSubmit { save() }

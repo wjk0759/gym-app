@@ -135,7 +135,7 @@ struct FoodPhotoAnalysisView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("拍一张这餐的照片\n自动估算热量和营养")
                 .font(.system(size: 24, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text("照片只用于本次识别，不保存。识别后可以修改份量、勾选实际吃下的食物，再加入今日饮食。")
                 .font(.subheadline)
                 .foregroundStyle(Theme.secondaryText)
@@ -167,7 +167,7 @@ struct FoodPhotoAnalysisView: View {
                         } label: {
                             Image(systemName: "xmark")
                                 .font(.caption.weight(.bold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Theme.onMedia)
                                 .padding(8)
                                 .background(.black.opacity(0.55), in: Circle())
                         }
@@ -180,7 +180,7 @@ struct FoodPhotoAnalysisView: View {
                         .foregroundStyle(Theme.accent)
                     Text("拍照或选择一张餐食照片")
                         .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text("尽量俯拍，让食物完整进入画面")
                         .font(.caption)
                         .foregroundStyle(Theme.tertiaryText)
@@ -258,7 +258,7 @@ struct FoodPhotoAnalysisView: View {
 
                         Text(item.name)
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
 
                         Spacer()
 
@@ -276,7 +276,7 @@ struct FoodPhotoAnalysisView: View {
                         .labelsHidden()
                         Text("\(Int(item.grams)) g")
                             .font(.caption.weight(.medium))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                             .frame(width: 58, alignment: .trailing)
                     }
 
@@ -343,7 +343,7 @@ struct FoodPhotoAnalysisView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text(title)
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)

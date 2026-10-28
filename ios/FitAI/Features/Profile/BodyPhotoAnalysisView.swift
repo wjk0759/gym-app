@@ -86,7 +86,7 @@ struct BodyPhotoAnalysisView: View {
 
             Text("拍一张，\n看清训练重点。")
                 .font(.system(size: 30, weight: .heavy, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text("照片只用于本次训练建议，不给体脂率、不诊断体态，也不会写进训练记录。")
@@ -112,7 +112,7 @@ struct BodyPhotoAnalysisView: View {
                         HStack {
                             Label("已选择照片", systemImage: "checkmark.circle.fill")
                                 .font(.caption2.weight(.semibold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Theme.onMedia)
                                 .padding(.horizontal, 9)
                                 .padding(.vertical, 6)
                                 .background(.black.opacity(0.56), in: Capsule())
@@ -127,7 +127,7 @@ struct BodyPhotoAnalysisView: View {
                             } label: {
                                 Image(systemName: "xmark")
                                     .font(.caption.weight(.bold))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Theme.onMedia)
                                     .frame(width: 32, height: 32)
                                     .background(.black.opacity(0.56), in: Circle())
                             }
@@ -148,7 +148,7 @@ struct BodyPhotoAnalysisView: View {
                         }
                         Text("把全身放进画面")
                             .font(.headline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                         Text("正面或侧面都可以，镜头与腰同高，别裁掉脚")
                             .font(.caption)
                             .foregroundStyle(Theme.tertiaryText)
@@ -261,7 +261,7 @@ struct BodyPhotoAnalysisView: View {
             Toggle(isOn: $consent) {
                 Text("我同意将照片用于本次训练分析")
                     .font(.subheadline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
             }
             .tint(Theme.accent)
 
@@ -305,7 +305,7 @@ struct BodyPhotoAnalysisView: View {
 
             Text(analysis.summary)
                 .font(.subheadline)
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
             VStack(alignment: .leading, spacing: 6) {

@@ -168,7 +168,7 @@ struct WorkoutDetailView: View {
             Text(String(draft.dayTitle.prefix(40)))
                 .lineLimit(2)
                 .font(.title3.weight(.bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
 
             Text(draft.date.formatted(date: .complete, time: .shortened))
                 .font(.caption)
@@ -188,7 +188,7 @@ struct WorkoutDetailView: View {
                 Text(feelingEmoji(draft.feeling))
                 Text(feelingText(draft.feeling))
                     .font(.caption.weight(.medium))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
             }
 
             if let notes = draft.notes, !notes.isEmpty {
@@ -198,7 +198,7 @@ struct WorkoutDetailView: View {
                         .foregroundStyle(Theme.secondaryText)
                     Text(String(notes.prefix(300)))
                         .font(.subheadline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                         .lineLimit(6)
                         .multilineTextAlignment(.leading)
                 }
@@ -229,7 +229,7 @@ struct WorkoutDetailView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(exercise?.nameZH ?? group.slug)
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text("\(exercise?.muscle.label ?? "") · \(exercise?.equipment.label ?? "")")
                         .font(.caption2)
                         .foregroundStyle(Theme.secondaryText)
@@ -259,7 +259,7 @@ struct WorkoutDetailView: View {
                          ? "\(item.weightKG.formatted()) kg × \(item.reps)"
                          : "自重 × \(item.reps)")
                         .font(.subheadline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
 
                     Spacer()
 
@@ -360,7 +360,7 @@ struct WorkoutDetailView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(exercise?.nameZH ?? group.slug)
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text("\(exercise?.muscle.label ?? "") · \(exercise?.equipment.label ?? "")")
                         .font(.caption2)
                         .foregroundStyle(Theme.secondaryText)

@@ -33,7 +33,7 @@ struct PlanReviewView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("\(review.period.title)复盘")
                 .font(.system(size: 26, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text("\(review.rangeLabel) · 对比\(review.period.previousTitle)")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
@@ -51,7 +51,7 @@ struct PlanReviewView: View {
                 } label: {
                     Text(item.title)
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(period == item ? Color.black : Theme.secondaryText)
+                        .foregroundStyle(period == item ? Theme.onAccent : Theme.secondaryText)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 9)
                         .background(
@@ -133,7 +133,7 @@ struct PlanReviewView: View {
             HStack {
                 Text("训练明细")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Spacer()
                 Text("\(review.current.trainingDays) 个训练日")
                     .font(.caption2)
@@ -162,7 +162,7 @@ struct PlanReviewView: View {
             HStack {
                 Text("饮食营养")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Spacer()
                 Text(current.hasNutrition
                      ? "有记录日均 · \(current.loggedFoodDays)/\(review.periodDays) 天"
@@ -191,7 +191,7 @@ struct PlanReviewView: View {
             HStack {
                 Text("\(review.period.title)训练记录")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Spacer()
                 NavigationLink {
                     WorkoutHistoryView()
@@ -218,7 +218,7 @@ struct PlanReviewView: View {
                                 .frame(width: 42, alignment: .leading)
                             Text(session.dayTitle)
                                 .font(.caption.weight(.medium))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Theme.primaryText)
                                 .lineLimit(1)
                             Spacer()
                             Text("\(session.durationMinutes) 分钟 · \(Int(session.volume)) kg")
@@ -240,7 +240,7 @@ struct PlanReviewView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             Text(label)
@@ -260,7 +260,7 @@ struct PlanReviewView: View {
                 .foregroundStyle(Theme.tertiaryText)
             Text(value)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             Text(note)

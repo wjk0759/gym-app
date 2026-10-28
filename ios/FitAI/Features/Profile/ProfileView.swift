@@ -63,7 +63,7 @@ struct ProfileView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(store.profile.nickname)
                             .font(.title3.weight(.bold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                             .lineLimit(1)
                             .minimumScaleFactor(0.85)
                         Text("\(store.profile.goalType.label) · \(store.profile.experience.label) · 每周 \(store.profile.weeklyDays) 练")
@@ -109,7 +109,7 @@ struct ProfileView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("练途 Pro")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                         Text("AI 计划、教练与器械识别")
                             .font(.caption2)
                             .foregroundStyle(Theme.tertiaryText)
@@ -183,7 +183,7 @@ struct ProfileView: View {
                 .foregroundStyle(Theme.tertiaryText)
             Text(value)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
@@ -212,7 +212,7 @@ struct ProfileView: View {
                     Spacer()
                     Text("\(store.profile.targetWeightKG, specifier: "%.1f") kg")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                 }
             }
 
@@ -224,7 +224,7 @@ struct ProfileView: View {
                     Spacer()
                     Text(String(format: "%.0f cm", targetWaist))
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                 }
             }
 
@@ -236,7 +236,7 @@ struct ProfileView: View {
                     Spacer()
                     Text(String(format: "%.1f%%", targetBodyFat))
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                 }
             }
 
@@ -247,7 +247,7 @@ struct ProfileView: View {
                 Spacer()
                 Text(store.profile.targetDate.formatted(date: .abbreviated, time: .omitted))
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
             }
 
             Text("目标仅作方向，不追求极端速度。减重建议不超过 0.5kg/周。")
@@ -316,7 +316,7 @@ struct ProfileView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("我的器械库")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text("已录入 \(store.equipmentLibrary.count) 件 · 教学视频与计划")
                         .font(.caption)
                         .foregroundStyle(Theme.secondaryText)

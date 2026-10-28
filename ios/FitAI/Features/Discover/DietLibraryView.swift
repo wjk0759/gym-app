@@ -115,7 +115,7 @@ struct DietLibraryView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("吃法选明白，\n三餐不瞎猜。")
                     .font(.system(size: 29, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                     .fixedSize(horizontal: false, vertical: true)
                 Text("先选策略，再按你的目标和体重生成一周餐单。所有方案都保留替换空间。")
                     .font(.subheadline)
@@ -165,7 +165,7 @@ struct DietLibraryView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value)
                 .font(.subheadline.weight(.bold).monospacedDigit())
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text(label)
                 .font(.system(size: 9))
                 .foregroundStyle(Theme.tertiaryText)
@@ -195,7 +195,7 @@ struct DietLibraryView: View {
 
                 Text(strategy.label)
                     .font(.headline.weight(.bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
 
                 Text(strategy.tagline)
                     .font(.caption.weight(.semibold))
@@ -258,7 +258,7 @@ struct DietLibraryView: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Text(detail)
                     .font(.system(size: 9))
                     .foregroundStyle(Theme.tertiaryText)

@@ -19,7 +19,12 @@ final class NotificationScheduler {
     /// 按实际训练日期生成一次性提醒，最多 60 条，支持顺延、跳过和临时改期。
     @discardableResult
     func schedule(plan: TrainingPlan?, hour: Int, minute: Int) async -> Int {
-        center.removeAllPendingNotificationRequests()
+        let pending = await center.pendingNotificationRequests()
+        center.removePendingNotificationRequests(
+            withIdentifiers: pending
+                .map(\.identifier)
+                .filter { $0.hasPrefix("workout-") }
+        )
         guard let plan else { return 0 }
 
         let calendar = FitnessDate.calendar
@@ -75,6 +80,27 @@ final class NotificationScheduler {
     }
 
     /// 训练上传成功后立即提醒查看服务端生成的复盘；本地通知不依赖 APNs。
+    /// 天气提醒也走本地通知。只有用户允许通知且天气服务判定有雨/雪时才会调用。
+    @discardableResult
+    func notifyWeather(title: String, body: String, identifier: String) async -> Bool {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        content.userInfo = ["kind": "weather"]
+        let request = UNNotificationRequest(
+            identifier: identifier,
+            content: content,
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        )
+        do {
+            try await center.add(request)
+            return true
+        } catch {
+            return false
+        }
+    }
+
     func notifyReviewReady() {
         let content = UNMutableNotificationContent()
         content.title = "AI 复盘已更新"

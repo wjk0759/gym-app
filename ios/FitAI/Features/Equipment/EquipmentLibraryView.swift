@@ -143,7 +143,7 @@ struct EquipmentLibraryView: View {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text("\(store.equipmentLibrary.count)")
                             .font(.system(size: 34, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                             .lineLimit(1)
                         Text("件")
                             .font(.caption)
@@ -167,7 +167,7 @@ struct EquipmentLibraryView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("计划优先使用")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text(store.useEquipmentLibraryForPlans
                          ? "生成计划时优先匹配我的器械"
                          : "已关闭，按档案器械生成")
@@ -189,7 +189,7 @@ struct EquipmentLibraryView: View {
 
                 TextField("搜索我的器械", text: $query)
                     .textInputAutocapitalization(.never)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                     .submitLabel(.search)
                     .onChange(of: query) { _, value in
                         if value.count > 60 {
@@ -226,7 +226,7 @@ struct EquipmentLibraryView: View {
             } label: {
                 Image(systemName: "camera.viewfinder")
                     .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(.black.opacity(0.86))
+                    .foregroundStyle(Theme.onAccent.opacity(0.86))
                     .frame(width: 46, height: 46)
                     .background(
                         LinearGradient(
@@ -308,7 +308,7 @@ struct EquipmentLibraryView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.name)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                     .lineLimit(1)
                 Text("\(item.muscle?.label ?? "未分类") · \(item.equipment?.label ?? "未设置")")
                     .font(.caption2)
@@ -390,7 +390,7 @@ struct EquipmentLibraryView: View {
 
             Text(store.equipmentLibrary.isEmpty ? "器械库还是空的" : "没有匹配的器械")
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
 
             Text(store.equipmentLibrary.isEmpty
                  ? "拍照或从相册识别第一件器械，生成计划时会优先使用它。"
@@ -627,7 +627,7 @@ struct EquipmentSearchView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(exercise.nameZH)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text("\(exercise.muscle.label) · \(exercise.equipment.label)")
                         .font(.caption2)
                         .foregroundStyle(Theme.secondaryText)
@@ -719,7 +719,7 @@ struct AddEquipmentView: View {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(selectedExercise?.nameZH ?? "选择动作")
                                         .font(.subheadline.weight(.medium))
-                                        .foregroundStyle(.white)
+                                        .foregroundStyle(Theme.primaryText)
                                     Text(selectedExercise.map {
                                         "\($0.muscle.label) · \($0.equipment.label)"
                                     } ?? "用于匹配计划与教学视频")

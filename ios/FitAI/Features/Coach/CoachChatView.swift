@@ -227,7 +227,7 @@ struct CoachChatView: View {
                         : "确认方案"
             )
             .font(.headline)
-            .foregroundStyle(.white)
+            .foregroundStyle(Theme.primaryText)
             HStack(spacing: 6) {
                 ForEach(["说明问题", "补充细节", "确认方案"], id: \.self) { label in
                     Text(label)
@@ -289,7 +289,7 @@ struct CoachChatView: View {
                 .foregroundStyle(Theme.accent)
             Text(proposal.headline)
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text(proposal.summary)
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
@@ -337,7 +337,7 @@ struct CoachChatView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("这次远程请求没有完成")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Text("你的输入已保留，可以重试；不会重复生成计划。")
                     .font(.caption2)
                     .foregroundStyle(Theme.tertiaryText)
@@ -368,7 +368,7 @@ struct CoachChatView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("已执行：\(undo.title)")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text("5 分钟内可以撤销这次操作")
                         .font(.caption2)
                         .foregroundStyle(Theme.tertiaryText)
@@ -411,7 +411,7 @@ struct CoachChatView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(action.title)
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                         if !action.summary.isEmpty {
                             Text(action.summary)
                                 .font(.caption)
@@ -497,7 +497,7 @@ struct CoachChatView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("\(meal.name) · \(meal.kcal) kcal")
                                     .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Theme.primaryText)
                                 Text(meal.items.joined(separator: "、"))
                                     .font(.caption2)
                                     .foregroundStyle(Theme.secondaryText)
@@ -510,7 +510,7 @@ struct CoachChatView: View {
                     HStack {
                         Text(day.title)
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                         Spacer()
                         Text("\(day.targets.targetKcal ?? 0) kcal")
                             .font(.caption.weight(.semibold))
@@ -565,7 +565,7 @@ struct CoachChatView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(candidate.exercise.nameZH)
                                 .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Theme.primaryText)
                             Text("\(candidate.exercise.muscle.label) · \(candidate.exercise.equipment.label)")
                                 .font(.caption2)
                                 .foregroundStyle(Theme.secondaryText)
@@ -617,7 +617,7 @@ struct CoachChatView: View {
             }
             Text(proposal.title)
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .fixedSize(horizontal: false, vertical: true)
             if !proposal.changes.isEmpty {
                 ForEach(proposal.changes, id: \.self) { change in
@@ -773,7 +773,7 @@ struct CoachChatView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(selectedSkill.label)在线")
                             .font(.headline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                         Text(selectedSkill.detail)
                             .font(.caption2)
                             .foregroundStyle(Theme.tertiaryText)
@@ -802,7 +802,7 @@ struct CoachChatView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("解锁 DeepSeek AI \(selectedSkill.label)")
                                 .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Theme.primaryText)
                             Text("当前使用本地规则建议；Pro 会员可使用完整 AI Skill。")
                                 .font(.caption2)
                                 .foregroundStyle(Theme.secondaryText)
@@ -822,7 +822,7 @@ struct CoachChatView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text("快速开始")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
 
                 LazyVGrid(
                     columns: [GridItem(.flexible()), GridItem(.flexible())],
@@ -838,7 +838,7 @@ struct CoachChatView: View {
                                     .foregroundStyle(Theme.accent)
                                 Text(item.text)
                                     .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Theme.primaryText)
                                     .multilineTextAlignment(.leading)
                                     .lineLimit(2)
                             }
@@ -866,7 +866,7 @@ struct CoachChatView: View {
             HStack {
                 Text("本周状态")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Spacer()
                 Text("第 \(store.currentPlanWeek) 周")
                     .font(.caption2)
@@ -915,7 +915,7 @@ struct CoachChatView: View {
 
                 Text(message.text)
                     .font(.subheadline)
-                    .foregroundStyle(message.role == .user ? Color.black : Color.white)
+                    .foregroundStyle(message.role == .user ? Theme.onAccent : Theme.primaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(12)
@@ -1027,7 +1027,7 @@ struct CoachChatView: View {
             } label: {
                 Image(systemName: "arrow.up")
                     .font(.headline)
-                    .foregroundStyle(Color.black)
+                    .foregroundStyle(Theme.onAccent)
                     .frame(width: 42, height: 42)
                     .background(
                         Circle().fill(canSend ? Theme.accent : Theme.secondaryText.opacity(0.35))

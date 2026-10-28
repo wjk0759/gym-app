@@ -84,7 +84,7 @@ struct DiscoverView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("我的器械库")
                                     .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Theme.primaryText)
                                 Text("已录入 \(store.equipmentLibrary.count) 件 · 查看动作与训练数据")
                                     .font(.caption2)
                                     .foregroundStyle(Theme.tertiaryText)
@@ -153,7 +153,7 @@ struct DiscoverView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("发现")
                 .font(.system(size: 34, weight: .heavy, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text("认器械，学动作，找方案。")
                 .font(.subheadline)
                 .foregroundStyle(Theme.secondaryText)
@@ -184,14 +184,14 @@ struct DiscoverView: View {
                 VStack(alignment: .leading, spacing: 9) {
                     Text("不认识器械？")
                         .font(.system(size: 24, weight: .heavy, design: .rounded))
-                        .foregroundStyle(Color.black.opacity(0.86))
+                        .foregroundStyle(Theme.onAccent.opacity(0.86))
                     Text("拍给我。识别后直接告诉你练什么、怎么练。")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.black.opacity(0.64))
+                        .foregroundStyle(Theme.onAccent.opacity(0.64))
                         .fixedSize(horizontal: false, vertical: true)
                     Label("拍器械", systemImage: "camera.fill")
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.onMedia)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .background(Color.black.opacity(0.72), in: Capsule())
@@ -266,7 +266,7 @@ struct DiscoverView: View {
             }
             Text(title)
                 .font(.subheadline.weight(.bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text(subtitle)
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
@@ -294,7 +294,7 @@ struct DiscoverView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("动作点评")
                         .font(.subheadline.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Text("拍一张，或发一段视频，让教练指出下一组最该改的一点")
                         .font(.caption2)
                         .foregroundStyle(Theme.tertiaryText)
@@ -323,7 +323,7 @@ struct DiscoverView: View {
                 } label: {
                     Label("选视频", systemImage: "video.fill")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 9)
                         .background(Theme.surfaceStrong, in: Capsule())
@@ -346,11 +346,11 @@ struct DiscoverView: View {
                 HStack(spacing: 6) {
                     Text(split.title)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     if store.profile.split == split {
                         Text("当前")
                             .font(.system(size: 8.5, weight: .bold))
-                            .foregroundStyle(Color.black)
+                            .foregroundStyle(Theme.onAccent)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(Theme.accent, in: Capsule())
@@ -383,7 +383,7 @@ struct DiscoverView: View {
             }
             Text(item.label)
                 .font(.subheadline.weight(.bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
             Text(item.tagline)
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)

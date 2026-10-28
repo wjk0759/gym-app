@@ -61,7 +61,7 @@ struct WorkoutSessionView: View {
                             .foregroundStyle(Theme.accent)
                         Text("已恢复上次进度：\(logs.count) 组")
                             .font(.caption.weight(.semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                         Spacer(minLength: 4)
                         Button("知道了") {
                             withAnimation(Motion.quick) {
@@ -279,7 +279,7 @@ struct WorkoutSessionView: View {
 
             Text(exercise.displayName)
                 .font(.title2.weight(.bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
 
             Text(exercise.targetText)
                 .font(.subheadline.weight(.medium))
@@ -367,7 +367,7 @@ struct WorkoutSessionView: View {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("本组数据")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Spacer(minLength: 4)
                     Text("点数字输入 · 长按连续调")
                         .font(.caption2)
@@ -465,7 +465,7 @@ struct WorkoutSessionView: View {
                 } label: {
                     Text("\(weightStepText(step)) kg")
                         .font(.caption2.weight(.semibold))
-                        .foregroundStyle(weightStep == step ? Color.black.opacity(0.9) : Theme.secondaryText)
+                        .foregroundStyle(weightStep == step ? Theme.onAccent.opacity(0.9) : Theme.secondaryText)
                         .padding(.horizontal, 10)
                         .frame(height: 34)
                         .background(
@@ -495,7 +495,7 @@ struct WorkoutSessionView: View {
             HStack {
                 Text("训练提示")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Spacer()
                 Text("目标 RPE \(exercise.rpe, specifier: "%.1f")")
                     .font(.caption2)
@@ -594,7 +594,7 @@ struct WorkoutSessionView: View {
                     .animation(.linear(duration: 1), value: remaining)
                 Text("\(remaining)")
                     .font(.system(size: 15, weight: .bold, design: .rounded).monospacedDigit())
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                     .contentTransition(.numericText())
             }
             .frame(width: 52, height: 52)
@@ -603,7 +603,7 @@ struct WorkoutSessionView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text("组间休息")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                 Text(urgent ? "马上开始下一组" : "呼吸放松，保持动作质量")
                     .font(.caption2)
                     .foregroundStyle(urgent ? Theme.warning : Theme.secondaryText)
@@ -628,7 +628,7 @@ struct WorkoutSessionView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text(isFullSession ? "训练完成" : "本次训练记录")
                 .font(.title2.weight(.bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
 
             if !isFullSession {
                 Text("已完成 \(logs.count)/\(plannedTotalSets) 组；保存后日历只记录这些完成组，不会算成整个训练日。")
@@ -690,7 +690,7 @@ struct WorkoutSessionView: View {
                 HStack {
                     Text("训练心得（可选）")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                     Spacer()
                     Text("\(notes.count)/300")
                         .font(.caption2)
@@ -985,7 +985,7 @@ struct WorkoutSessionView: View {
                             .foregroundStyle(Theme.accent)
                         Text(currentExercise?.displayName ?? "调整当前动作")
                             .font(.title3.weight(.bold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.primaryText)
                         Text("只调整这次训练的目标，不会改动长期计划。降低目标组数后会直接进入下一个动作。")
                             .font(.caption)
                             .foregroundStyle(Theme.secondaryText)

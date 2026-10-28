@@ -7,6 +7,7 @@ import UIKit
 struct EquipmentItemDetailView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @AppStorage("pinnedEquipmentIDs") private var pinnedEquipmentIDsRaw = ""
 
     private let itemID: UUID?
@@ -216,7 +217,7 @@ struct EquipmentItemDetailView: View {
 
                 Text(item.name)
                     .font(.subheadline.weight(.bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.primaryText)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -287,7 +288,7 @@ struct EquipmentItemDetailView: View {
             Text(item.name)
                 .font(.system(size: 30, weight: .bold))
                 .tracking(-0.8)
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .padding(.top, 6)
 
             Text(heroDescription(for: item))
@@ -321,7 +322,7 @@ struct EquipmentItemDetailView: View {
 
             Text(title)
                 .font(.system(size: 20, weight: .bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .padding(.top, 4)
 
             Text(lead)
@@ -340,10 +341,15 @@ struct EquipmentItemDetailView: View {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [
-                            Color(red: 0.067, green: 0.102, blue: 0.169),
-                            Color(red: 0.047, green: 0.078, blue: 0.137)
-                        ],
+                        colors: colorScheme == .light
+                            ? [
+                                Color(red: 0.965, green: 0.975, blue: 0.965),
+                                Color(red: 0.900, green: 0.930, blue: 0.915)
+                            ]
+                            : [
+                                Color(red: 0.067, green: 0.102, blue: 0.169),
+                                Color(red: 0.047, green: 0.078, blue: 0.137)
+                            ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -351,9 +357,9 @@ struct EquipmentItemDetailView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                .stroke(colorScheme == .light ? Theme.stroke : Color.white.opacity(0.08), lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.18), radius: 18, y: 10)
+        .shadow(color: colorScheme == .light ? Theme.shadowSoft : Color.black.opacity(0.18), radius: 18, y: 10)
         .id(index)
     }
 
@@ -404,11 +410,11 @@ struct EquipmentItemDetailView: View {
 
                     Text("教学视频准备中")
                         .font(.subheadline.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.onMedia)
 
                     Text(isPreview ? "这个动作的官方示范视频还在准备中。" : "这件器械的官方示范视频还在准备中。")
                         .font(.system(size: 10.5))
-                        .foregroundStyle(Theme.secondaryText)
+                        .foregroundStyle(Theme.onMedia.opacity(0.70))
                 }
             }
             .frame(height: 200)
@@ -481,7 +487,7 @@ struct EquipmentItemDetailView: View {
         .overlay(alignment: .topTrailing) {
             Image(systemName: "arrow.up.right")
                 .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(Color(red: 0.02, green: 0.08, blue: 0.04))
+                .foregroundStyle(Theme.onAccent)
                 .frame(width: 28, height: 28)
                 .background(Theme.accent, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 .padding(10)
@@ -495,7 +501,7 @@ struct EquipmentItemDetailView: View {
                     VStack(spacing: 4) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(Color.white.opacity(index < 2 ? 0.055 : 0.03))
+                                .fill(Theme.surfaceStrong.opacity(index < 2 ? 1 : 0.65))
                             Image(systemName: index < 2 ? equipmentSymbol(item) : "ellipsis")
                                 .font(.system(size: 21, weight: .light))
                                 .foregroundStyle(
@@ -511,12 +517,12 @@ struct EquipmentItemDetailView: View {
                     .frame(maxWidth: .infinity)
                     .padding(5)
                     .background(
-                        Color.white.opacity(0.025),
+                        Theme.surface,
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(Color.white.opacity(0.07), lineWidth: 0.8)
+                            .stroke(Theme.stroke, lineWidth: 0.8)
                     )
                 }
             }
@@ -534,13 +540,13 @@ struct EquipmentItemDetailView: View {
                 HStack(alignment: .top, spacing: 11) {
                     Text("\(index + 1)")
                         .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.onMedia)
                         .frame(width: 24, height: 24)
                         .background(Theme.blue, in: Circle())
 
                     Text(point)
                         .font(.system(size: 13))
-                        .foregroundStyle(Color.white.opacity(0.82))
+                        .foregroundStyle(Theme.primaryText.opacity(0.82))
                         .lineSpacing(2.5)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -649,7 +655,7 @@ struct EquipmentItemDetailView: View {
                         .foregroundStyle(Theme.tertiaryText)
                     Text(statsMetric.rawValue)
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.primaryText)
                 }
 
                 Spacer(minLength: 8)
@@ -707,7 +713,7 @@ struct EquipmentItemDetailView: View {
                         .font(.system(size: 16, weight: .medium))
                         .foregroundStyle(Theme.secondaryText)
                         .frame(width: 30, height: 30)
-                        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     Text("这个周期还没有训练记录")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(Theme.secondaryText)
@@ -720,12 +726,12 @@ struct EquipmentItemDetailView: View {
                 .padding(.vertical, 24)
                 .padding(.horizontal, 16)
                 .background(
-                    Color.white.opacity(0.025),
+                    Theme.surface,
                     in: RoundedRectangle(cornerRadius: 14, style: .continuous)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(Color.white.opacity(0.08), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                        .stroke(Theme.stroke, style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
                 )
                 .padding(.top, 10)
             } else {
@@ -768,7 +774,7 @@ struct EquipmentItemDetailView: View {
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 4)) { value in
                         AxisGridLine()
-                            .foregroundStyle(Color.white.opacity(0.05))
+                            .foregroundStyle(Theme.stroke.opacity(0.65))
                         AxisValueLabel {
                             if let date = value.as(Date.self) {
                                 Text(date.formatted(.dateTime.month().day()))
@@ -781,7 +787,7 @@ struct EquipmentItemDetailView: View {
                 .chartYAxis {
                     AxisMarks(position: .leading) { value in
                         AxisGridLine()
-                            .foregroundStyle(Color.white.opacity(0.05))
+                            .foregroundStyle(Theme.stroke.opacity(0.65))
                         AxisValueLabel {
                             if let number = value.as(Double.self) {
                                 Text("\(Int(number.rounded()))")
@@ -794,7 +800,7 @@ struct EquipmentItemDetailView: View {
                 .chartLegend(.hidden)
                 .chartPlotStyle { plotArea in
                     plotArea
-                        .background(Color.white.opacity(0.012))
+                        .background(Theme.surface.opacity(0.5))
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
                 .frame(height: 180)
@@ -816,7 +822,7 @@ struct EquipmentItemDetailView: View {
                 .foregroundStyle(Theme.tertiaryText)
             Text(value)
                 .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
             Text(note)
@@ -945,13 +951,13 @@ struct EquipmentItemDetailView: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(
-                accent ? Theme.accent.opacity(0.10) : Color.white.opacity(0.035),
+                accent ? Theme.accent.opacity(0.10) : Theme.surface,
                 in: Capsule()
             )
             .overlay(
                 Capsule()
                     .stroke(
-                        accent ? Theme.accent.opacity(0.24) : Color.white.opacity(0.09),
+                        accent ? Theme.accent.opacity(0.24) : Theme.stroke,
                         lineWidth: 0.8
                     )
             )
@@ -960,7 +966,7 @@ struct EquipmentItemDetailView: View {
     private func detailBadge(_ text: String, accent: Bool = false) -> some View {
         Text(text)
             .font(.system(size: 9, weight: .semibold))
-            .foregroundStyle(accent ? Theme.accent : Theme.tertiaryText)
+            .foregroundStyle(accent ? Theme.accent : Theme.onMedia.opacity(0.72))
             .padding(.horizontal, 7)
             .padding(.vertical, 4)
             .background(Color.black.opacity(0.38), in: Capsule())

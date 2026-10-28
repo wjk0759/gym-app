@@ -69,7 +69,7 @@ struct ExercisePickerView: View {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(exercise.nameZH)
                                         .font(.subheadline.weight(.medium))
-                                        .foregroundStyle(.white)
+                                        .foregroundStyle(Theme.primaryText)
                                     Text("\(exercise.muscle.label) · \(exercise.equipment.label)")
                                         .font(.caption2)
                                         .foregroundStyle(Theme.secondaryText)

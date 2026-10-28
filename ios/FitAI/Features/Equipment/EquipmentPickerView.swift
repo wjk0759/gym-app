@@ -213,7 +213,7 @@ struct EquipmentPickerView: View {
         HStack(spacing: 6) {
             Text("动作库")
                 .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
 
             Text("\(filteredExercises.count)")
                 .font(.system(size: 9, weight: .bold, design: .rounded))
@@ -273,7 +273,7 @@ struct EquipmentPickerView: View {
                 if !selectedExercises.isEmpty {
                     Text("\(selectedExercises.count)")
                         .font(.system(size: 9, weight: .bold, design: .rounded))
-                        .foregroundStyle(.black)
+                        .foregroundStyle(Theme.onAccent)
                         .frame(minWidth: 18, minHeight: 18)
                         .background(Theme.accent, in: Capsule())
                         .offset(x: 3, y: -3)
@@ -311,7 +311,7 @@ struct EquipmentPickerView: View {
         if let feedback {
             Text(feedback)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 9)
                 .background(Theme.chrome, in: Capsule())
@@ -339,7 +339,7 @@ struct EquipmentPickerView: View {
             TextField("搜索动作、肌群或器械", text: $query)
                 .font(.system(size: 14))
                 .textInputAutocapitalization(.never)
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .submitLabel(.search)
                 .onChange(of: query) { _, value in
                     if value.count > 60 {
@@ -623,7 +623,7 @@ struct EquipmentPickerView: View {
 
             Text(exercise.nameZH)
                 .font(.system(size: 13.5, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.primaryText)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
                 .padding(.horizontal, 9)
@@ -682,7 +682,7 @@ struct EquipmentPickerView: View {
                 .stroke(selected ? Theme.accent : Color.white.opacity(0.32), lineWidth: 1)
             Image(systemName: selected ? "checkmark" : "plus")
                 .font(.system(size: selected ? 11 : 10, weight: .bold))
-                .foregroundStyle(selected ? Color.black : Color.white.opacity(0.82))
+                .foregroundStyle(selected ? Theme.onAccent : Color.white.opacity(0.82))
         }
         .frame(width: 30, height: 30)
         .scaleEffect(selected ? 1.06 : 1)
