@@ -419,6 +419,9 @@ struct WorkoutSession: Codable, Identifiable, Hashable {
     var sets: [SetLog]
     /// 关联的计划训练日，用于跨设备恢复训练日标题与 Agent 上下文。
     var programDayID: String? = nil
+    /// 这次训练实际计划的组数；用于区分“练了一半”和“完成整个训练日”。
+    /// 旧记录为空时回退到计划动作的组数。
+    var plannedSets: Int? = nil
     /// 已同步到服务端的远端记录 ID；旧本地记录为空。
     var remoteID: String? = nil
     var syncedAt: Date? = nil
@@ -433,6 +436,33 @@ struct WorkoutSession: Codable, Identifiable, Hashable {
 
     var exerciseCount: Int {
         Set(sets.map(\.slug)).count
+    }
+}
+
+/// 训练中的本地草稿：暂停、切后台或中途退出时保存，再次进入同一训练日时恢复。
+/// 草稿不会生成正式训练记录；用户点“结束并保存”后才写入 sessions。
+struct WorkoutDraft: Codable, Identifiable, Hashable {
+    var id: UUID { dayID }
+    var dayID: UUID
+    var dayTitle: String
+    var logs: [SetLog]
+    var currentIndex: Int
+    var plannedSets: Int
+    var elapsedSeconds: Double
+    var feeling: Int
+    var notes: String
+    var adjustedExercises: [PlanExercise]
+    /// 本次训练实际使用的动作列表；计划日被自定义调整后，恢复时必须沿用这份顺序。
+    var exercises: [PlanExercise]? = nil
+    var updatedAt: Date = Date()
+
+    var completedSets: Int {
+        logs.filter(\.completed).count
+    }
+
+    var progress: Double {
+        guard plannedSets > 0 else { return 0 }
+        return min(1, Double(completedSets) / Double(plannedSets))
     }
 }
 
@@ -484,6 +514,13 @@ struct EquipmentCandidate: Identifiable, Hashable {
     var id: String { exercise.slug }
     let exercise: Exercise
     let confidence: Double
+}
+
+struct EquipmentScanResult {
+    var candidates: [EquipmentCandidate]
+    var description: String
+    var name: String
+    var notInLibrary: Bool
 }
 
 // MARK: - 对话
@@ -610,6 +647,113 @@ struct FoodRecognitionResult: Hashable {
     var confidence: Double
     var disclaimer: String
     var model: String
+    var summary: String = ""
+    var isFood: Bool = true
+}
+
+struct CoachVisionResult: Decodable {
+    let isTraining: Bool
+    let summary: String
+    let observations: [String]
+    let nextCue: String?
+    let safetyFlag: String?
+    let warning: String?
+
+    enum CodingKeys: String, CodingKey {
+        case isTraining = "is_training"
+        case summary
+        case observations
+        case nextCue = "next_cue"
+        case safetyFlag = "safety_flag"
+        case warning
+    }
+}
+
+struct RemoteDietPlan: Decodable {
+    struct Meal: Decodable {
+        let meal: String
+        let name: String
+        let kcal: Int
+        let items: [String]
+    }
+
+    let meals: [Meal]
+    let tips: [String]?
+    let note: String?
+    let generatedBy: String?
+    let warning: String?
+
+    enum CodingKeys: String, CodingKey {
+        case meals
+        case tips
+        case note
+        case warning
+        case generatedBy = "generated_by"
+    }
+}
+
+struct RemoteDietWeek: Decodable {
+    struct Strategy: Decodable {
+        let id: String
+        let label: String
+        let description: String?
+        let caution: String?
+    }
+
+    struct Targets: Decodable {
+        let targetKcal: Int?
+        let proteinG: Int?
+        let carbG: Int?
+        let fatG: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case targetKcal = "target_kcal"
+            case proteinG = "protein_g"
+            case carbG = "carb_g"
+            case fatG = "fat_g"
+        }
+    }
+
+    struct Meal: Decodable, Identifiable {
+        let meal: String
+        let name: String
+        let kcal: Int
+        let items: [String]
+
+        var id: String { meal }
+    }
+
+    struct Day: Decodable, Identifiable {
+        let date: String
+        let weekday: Int
+        let dayType: String
+        let dayTypeLabel: String
+        let title: String
+        let targets: Targets
+        let meals: [Meal]
+
+        var id: String { date }
+
+        enum CodingKeys: String, CodingKey {
+            case date
+            case weekday
+            case dayType = "day_type"
+            case dayTypeLabel = "day_type_label"
+            case title
+            case targets
+            case meals
+        }
+    }
+
+    let weekStart: String
+    let strategy: Strategy?
+    let days: [Day]
+
+    enum CodingKeys: String, CodingKey {
+        case weekStart = "week_start"
+        case strategy
+        case days
+    }
 }
 
 // MARK: - 器械库与体型分析
@@ -625,6 +769,7 @@ struct EquipmentItem: Codable, Identifiable, Hashable {
     var photoData: Data?
     var createdAt: Date = Date()
     var syncedAt: Date? = nil
+    var source: String? = nil
 
     var exercise: Exercise? {
         slug.flatMap { ExerciseLibrary.exercise(slug: $0) }

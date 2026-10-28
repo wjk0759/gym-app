@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from ..deps import CurrentUser, DBSession
-from ..models import Exercise, Program, ProgramDay, Profile, SetLog, WorkoutSession
+from ..models import Exercise, Profile, Program, ProgramDay, SetLog, WorkoutSession
 from ..schemas import WorkoutIn
 
 router = APIRouter(prefix="/workouts", tags=["workouts"])
@@ -257,7 +257,7 @@ def summary(user_id: CurrentUser, db: DBSession, weeks: int = Query(default=4, g
 
     total_volume = 0.0
     by_week: dict[str, dict] = {}
-    for session_id, started_at, duration_min, volume in rows:
+    for _, started_at, _, volume in rows:
         volume = float(volume or 0)
         total_volume += volume
         year, week, _ = started_at.isocalendar()

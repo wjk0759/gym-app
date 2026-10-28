@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     llm_model: str = "deepseek-flash"
     # low | high | max；教练 Agent 默认使用 high，兼顾质量和延迟。
     llm_reasoning_effort: str = "high"
+    # 计划生成是否走 LLM。当前可用的 DeepSeek 模型都会产出大量 reasoning tokens，
+    # 一次 4 周计划要 20s~200s。默认关闭，改用确定性的规则模板（毫秒级返回）。
+    # 需要 AI 编排时再设 LLM_PLAN_ENABLED=true。
+    llm_plan_enabled: bool = False
     # 限制单进程同时打到模型服务的请求数，避免把连接池和上游限流打满。
     llm_max_concurrency: int = 8
     llm_timeout_seconds: float = 90.0
@@ -65,7 +69,9 @@ class Settings(BaseSettings):
 
     @property
     def use_mock_vision(self) -> bool:
-        return not self.vision_model or not self.vision_api_key
+        return not self.vision_model or not (
+            self.vision_api_key or self.llm_api_key
+        )
 
     @property
     def allowed_origins(self) -> list[str]:

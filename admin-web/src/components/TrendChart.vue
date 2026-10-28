@@ -8,7 +8,7 @@ import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart } from 'echarts/charts'
 import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
-import * as echarts from 'echarts/core'
+import { init, type ECharts } from 'echarts/core'
 
 use([CanvasRenderer, LineChart, GridComponent, LegendComponent, TooltipComponent])
 
@@ -27,7 +27,7 @@ const props = withDefaults(defineProps<{
 })
 
 const chartRef = ref<HTMLDivElement | null>(null)
-let chart: echarts.ECharts | null = null
+let chart: ECharts | null = null
 let observer: ResizeObserver | null = null
 
 function render(): void {
@@ -77,7 +77,7 @@ function render(): void {
 
 onMounted(() => {
   if (!chartRef.value) return
-  chart = echarts.init(chartRef.value)
+  chart = init(chartRef.value)
   render()
   observer = new ResizeObserver(() => chart?.resize())
   observer.observe(chartRef.value)

@@ -6,17 +6,22 @@ enum EquipmentRecognitionService {
     static func recognize(
         imageData: Data,
         preferRemote: Bool
-    ) async -> [EquipmentCandidate] {
+    ) async -> EquipmentScanResult {
         if preferRemote {
             do {
                 let remote = try await APIClient.shared.scanEquipment(imageData: imageData)
-                if !remote.isEmpty {
+                if !remote.candidates.isEmpty || !remote.description.isEmpty {
                     return remote
                 }
             } catch {
                 // 远程失败不弹错，直接回退本地识别，避免阻断用户操作。
             }
         }
-        return EquipmentService.recognize(imageData: imageData)
+        return EquipmentScanResult(
+            candidates: EquipmentService.recognize(imageData: imageData),
+            description: "",
+            name: "",
+            notInLibrary: false
+        )
     }
 }

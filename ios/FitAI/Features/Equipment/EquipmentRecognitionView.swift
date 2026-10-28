@@ -7,20 +7,32 @@ struct EquipmentRecognitionView: View {
     @Environment(\.dismiss) private var dismiss
 
     private let onSelect: ((Exercise) -> Void)?
+    private let onSaved: ((EquipmentItem) -> Void)?
+    private let onRecognized: ((EquipmentScanResult) -> Void)?
 
-    init(onSelect: ((Exercise) -> Void)? = nil) {
+    init(
+        onSelect: ((Exercise) -> Void)? = nil,
+        onSaved: ((EquipmentItem) -> Void)? = nil,
+        onRecognized: ((EquipmentScanResult) -> Void)? = nil
+    ) {
         self.onSelect = onSelect
+        self.onSaved = onSaved
+        self.onRecognized = onRecognized
     }
 
     @State private var photoItem: PhotosPickerItem?
     @State private var selectedImage: UIImage?
     @State private var imageData: Data?
     @State private var candidates: [EquipmentCandidate] = []
+    @State private var description = ""
     @State private var selectedExercise: Exercise?
     @State private var isScanning = false
     @State private var showCamera = false
     @State private var didAutoStartCamera = false
     @State private var savedSlugs: Set<String> = []
+    @State private var recognizedName = ""
+    @State private var notInLibrary = false
+    @State private var showAddCustom = false
 
     var body: some View {
         AppScrollView {
@@ -78,6 +90,26 @@ struct EquipmentRecognitionView: View {
         }
         .sheet(item: $selectedExercise) { exercise in
             EquipmentItemDetailView(exercise: exercise)
+        }
+        .sheet(isPresented: $showAddCustom) {
+            CustomExerciseAddSheet(
+                initialName: recognizedName,
+                onAdd: { name, muscle, equipment in
+                    let item = EquipmentItem(
+                        name: name,
+                        slug: nil,
+                        muscle: muscle,
+                        equipment: equipment,
+                        videoURL: nil,
+                        notes: "拍照识别未收录，手动添加",
+                        photoData: selectedImage?.jpegData(compressionQuality: 0.5) ?? imageData,
+                        source: "recognition"
+                    )
+                    store.addEquipment(item)
+                    onSaved?(item)
+                }
+            )
+            .presentationDetents([.medium])
         }
     }
 
@@ -159,6 +191,27 @@ struct EquipmentRecognitionView: View {
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.white)
                         .fixedSize(horizontal: false, vertical: true)
+
+                    if !description.isEmpty {
+                        Text(description)
+                            .font(.subheadline)
+                            .foregroundStyle(Color.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    if notInLibrary {
+                        Button {
+                            showAddCustom = true
+                        } label: {
+                            Text("添加到个人动作库")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(Theme.accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
 
                     if selectedImage != nil {
                         Text("拍摄建议：让器械完整进入画面，避免只露出边缘；暗光、遮挡或只拍局部都会降低识别率。")
@@ -271,17 +324,17 @@ struct EquipmentRecognitionView: View {
 
     private func saveToLibrary(_ candidate: EquipmentCandidate) {
         guard !isSaved(candidate) else { return }
-        store.addEquipment(
-            EquipmentItem(
-                name: candidate.exercise.nameZH,
-                slug: candidate.exercise.slug,
-                muscle: candidate.exercise.muscle,
-                equipment: candidate.exercise.equipment,
-                videoURL: candidate.exercise.videoURL?.absoluteString,
-                notes: "来自拍照识别",
-                photoData: selectedImage?.jpegData(compressionQuality: 0.5) ?? imageData
-            )
+        let item = EquipmentItem(
+            name: candidate.exercise.nameZH,
+            slug: candidate.exercise.slug,
+            muscle: candidate.exercise.muscle,
+            equipment: candidate.exercise.equipment,
+            videoURL: candidate.exercise.videoURL?.absoluteString,
+            notes: "来自拍照识别",
+            photoData: selectedImage?.jpegData(compressionQuality: 0.5) ?? imageData
         )
+        store.addEquipment(item)
+        onSaved?(item)
         savedSlugs.insert(candidate.exercise.slug)
     }
 
@@ -294,6 +347,9 @@ struct EquipmentRecognitionView: View {
         imageData = data
         selectedImage = image
         candidates = []
+        description = ""
+        recognizedName = ""
+        notInLibrary = false
         scan()
     }
 
@@ -301,6 +357,9 @@ struct EquipmentRecognitionView: View {
         selectedImage = image
         imageData = image.jpegData(compressionQuality: 0.8)
         candidates = []
+        description = ""
+        recognizedName = ""
+        notInLibrary = false
     }
 
     private func scan() {
@@ -308,12 +367,71 @@ struct EquipmentRecognitionView: View {
         isScanning = true
 
         Task { @MainActor in
-            candidates = await EquipmentRecognitionService.recognize(
+            let result = await EquipmentRecognitionService.recognize(
                 imageData: data,
                 preferRemote: store.canUseRemoteAI
             )
+            candidates = result.candidates
+            description = result.description
+            recognizedName = result.name
+            notInLibrary = result.notInLibrary
+            onRecognized?(result)
             isScanning = false
             UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
+    }
+}
+
+/// 拍照识别到「动作库未收录」的器械时，用户自定义添加的个人动作表单。
+private struct CustomExerciseAddSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let initialName: String
+    let onAdd: (String, MuscleGroup, Equipment) -> Void
+
+    @State private var name = ""
+    @State private var muscle: MuscleGroup = .chest
+    @State private var equipment: Equipment = .machine
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("动作名称") {
+                    TextField("例如：髋外展机", text: $name)
+                }
+                Section("训练肌群") {
+                    Picker("肌群", selection: $muscle) {
+                        ForEach(MuscleGroup.allCases) { group in
+                            Text(group.label).tag(group)
+                        }
+                    }
+                }
+                Section("器械类型") {
+                    Picker("器械", selection: $equipment) {
+                        ForEach(Equipment.allCases) { item in
+                            Text(item.label).tag(item)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("添加到个人动作库")
+            .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                if name.isEmpty { name = initialName }
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("添加") {
+                        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !trimmed.isEmpty else { return }
+                        onAdd(trimmed, muscle, equipment)
+                        dismiss()
+                    }
+                }
+            }
         }
     }
 }

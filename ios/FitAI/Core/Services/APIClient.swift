@@ -138,6 +138,16 @@ private struct EquipmentScanResponse: Decodable {
     }
 
     let candidates: [Candidate]
+    let description: String?
+    let name: String?
+    let notInLibrary: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case candidates
+        case description
+        case name
+        case notInLibrary = "not_in_library"
+    }
 }
 
 private struct ExerciseVideoResponse: Decodable {
@@ -205,6 +215,17 @@ private struct FoodAnalysisResponse: Decodable {
     let confidence: Double
     let disclaimer: String
     let model: String?
+    let summary: String?
+    let isFood: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case items
+        case confidence
+        case disclaimer
+        case model
+        case summary
+        case isFood = "is_food"
+    }
 }
 
 struct AgentProposalDiff: Codable, Hashable {
@@ -267,6 +288,8 @@ struct AgentActionPayload: Codable, Hashable {
     let weightKG: Double?
     let bodyFatPCT: Double?
     let waistCM: Double?
+    let strategy: String?
+    let weekStart: String?
 
     enum CodingKeys: String, CodingKey {
         case dayID = "day_id"
@@ -280,6 +303,8 @@ struct AgentActionPayload: Codable, Hashable {
         case weightKG = "weight_kg"
         case bodyFatPCT = "body_fat_pct"
         case waistCM = "waist_cm"
+        case strategy
+        case weekStart = "week_start"
     }
 }
 
@@ -775,13 +800,15 @@ struct APIClient {
     func sendChat(
         message: String,
         sessionID: UUID? = nil,
-        skill: CoachSkill = .trainer
+        skill: CoachSkill = .trainer,
+        context: String? = nil
     ) async throws -> ChatResponse {
         var payload: [String: Any] = [
             "message": message,
             "skill": skill.rawValue
         ]
         if let sessionID { payload["session_id"] = sessionID.uuidString }
+        if let context { payload["context"] = context }
         let body = try JSONSerialization.data(withJSONObject: payload)
         return try await send(path: "coach/chat", method: "POST", body: body)
     }
@@ -936,6 +963,7 @@ struct APIClient {
         if let slug = item.slug { payload["slug"] = slug }
         if let muscle = item.muscle { payload["muscle"] = muscle.rawValue }
         if let equipment = item.equipment { payload["equipment"] = equipment.rawValue }
+        if let source = item.source { payload["source"] = source }
         let body = try JSONSerialization.data(withJSONObject: payload)
         try await sendVoid(path: "equipment/items", method: "POST", body: body)
     }
@@ -959,19 +987,25 @@ struct APIClient {
 
     // MARK: - 器械识别
 
-    func scanEquipment(imageData: Data) async throws -> [EquipmentCandidate] {
+    func scanEquipment(imageData: Data) async throws -> EquipmentScanResult {
         let data = try await upload(
             path: "equipment/scan",
             imageData: imageData,
             filename: "photo.jpg"
         )
         let response = try decode(EquipmentScanResponse.self, from: data)
-        return response.candidates.compactMap { candidate in
+        let candidates = response.candidates.compactMap { candidate -> EquipmentCandidate? in
             guard let exercise = ExerciseLibrary.exercise(slug: candidate.slug) else {
                 return nil
             }
             return EquipmentCandidate(exercise: exercise, confidence: candidate.confidence)
         }
+        return EquipmentScanResult(
+            candidates: candidates,
+            description: response.description ?? "",
+            name: response.name ?? "",
+            notInLibrary: response.notInLibrary ?? false
+        )
     }
 
     func officialVideoURL(slug: String) async throws -> URL? {
@@ -1026,8 +1060,41 @@ struct APIClient {
             },
             confidence: response.confidence,
             disclaimer: response.disclaimer,
-            model: response.model ?? "remote"
+            model: response.model ?? "remote",
+            summary: response.summary ?? "",
+            isFood: response.isFood ?? !response.items.isEmpty
         )
+    }
+
+    func reviewCoachVision(imageData: Data, question: String) async throws -> CoachVisionResult {
+        let data = try await upload(
+            path: "coach/vision",
+            imageData: imageData,
+            filename: "form.jpg",
+            fields: ["question": question]
+        )
+        return try decode(CoachVisionResult.self, from: data)
+    }
+
+    func fetchDietPlan(dateString: String) async throws -> RemoteDietPlan {
+        let body = try JSONSerialization.data(withJSONObject: ["date": dateString])
+        return try await send(path: "diet/plan", method: "POST", body: body)
+    }
+
+    func fetchDietWeek(strategy: String, weekStart: String?) async throws -> RemoteDietWeek {
+        var payload: [String: Any] = ["strategy": strategy]
+        if let weekStart { payload["week_start"] = weekStart }
+        let body = try JSONSerialization.data(withJSONObject: payload)
+        return try await send(path: "diet/plan/week", method: "POST", body: body)
+    }
+
+    func fetchSavedDietWeek(weekStart: String?) async throws -> RemoteDietWeek {
+        var path = "diet/plan/week"
+        if let weekStart,
+           let encoded = weekStart.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+            path += "?week_start=\(encoded)"
+        }
+        return try await send(path: path, method: "GET", body: nil)
     }
 
     func meituanLink(keyword: String) async throws -> URL? {
@@ -1065,10 +1132,19 @@ struct APIClient {
     private func upload(
         path: String,
         imageData: Data,
-        filename: String
+        filename: String,
+        fields: [String: String] = [:]
     ) async throws -> Data {
         let boundary = "Boundary-\(UUID().uuidString)"
         var body = Data()
+        for (name, value) in fields {
+            body.append(contentsOf: Data("--\(boundary)\r\n".utf8))
+            body.append(contentsOf: Data(
+                "Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".utf8
+            ))
+            body.append(contentsOf: Data(value.utf8))
+            body.append(contentsOf: Data("\r\n".utf8))
+        }
         body.append(contentsOf: Data("--\(boundary)\r\n".utf8))
         body.append(contentsOf: Data(
             "Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".utf8

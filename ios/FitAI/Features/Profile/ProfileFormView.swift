@@ -3,13 +3,36 @@ import SwiftUI
 
 struct ProfileFormView: View {
     @Binding var draft: UserProfile
+    var step: Int? = nil
 
     var body: some View {
-        VStack(spacing: 18) {
+        Group {
+            if let step {
+                stepContent(step)
+            } else {
+                VStack(spacing: 18) {
+                    basicsCard
+                    bodyCard
+                    equipmentCard
+                    trainingCard
+                    goalCard
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func stepContent(_ step: Int) -> some View {
+        switch step {
+        case 0:
             basicsCard
+        case 1:
             bodyCard
+        case 2:
             equipmentCard
+        case 3:
             trainingCard
+        default:
             goalCard
         }
     }

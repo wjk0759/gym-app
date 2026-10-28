@@ -11,7 +11,6 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from ..models import AIJob
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -69,6 +68,103 @@ def _headers() -> dict[str, str]:
 
 def _endpoint() -> str:
     return settings.llm_base_url.rstrip("/") + "/chat/completions"
+
+
+def _vision_headers() -> dict[str, str]:
+    key = settings.vision_api_key or settings.llm_api_key
+    return {
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+    }
+
+
+def _vision_endpoint() -> str:
+    base = settings.vision_base_url or settings.llm_base_url
+    return base.rstrip("/") + "/chat/completions"
+
+
+async def complete_vision_json(
+    system: str,
+    user_text: str,
+    image_base64: str,
+    mime: str = "image/jpeg",
+) -> dict:
+    """One-shot image -> JSON using the configured vision model."""
+    if settings.use_mock_vision:
+        raise LLMError("mock vision: no vision model configured")
+
+    messages = [
+        {"role": "system", "content": system},
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": user_text},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{mime};base64,{image_base64}"},
+                },
+            ],
+        },
+    ]
+    payload = {
+        "model": settings.vision_model,
+        "messages": messages,
+        "temperature": 0.2,
+        "response_format": {"type": "json_object"},
+    }
+    last_error: Exception | None = None
+    for attempt in range(2):
+        try:
+            async with _get_semaphore():
+                response = await _get_client().post(
+                    _vision_endpoint(), headers=_vision_headers(), json=payload
+                )
+        except httpx.TransportError as exc:
+            last_error = exc
+            if attempt == 0:
+                await asyncio.sleep(0.6)
+                continue
+            raise LLMError(f"vision network error: {str(exc)[:300]}") from exc
+
+        if response.status_code >= 400:
+            if response.status_code == 400 and "response_format" in payload:
+                payload.pop("response_format", None)
+                try:
+                    async with _get_semaphore():
+                        response = await _get_client().post(
+                            _vision_endpoint(), headers=_vision_headers(), json=payload
+                        )
+                except httpx.TransportError as exc:
+                    last_error = exc
+                    if attempt == 0:
+                        await asyncio.sleep(0.6)
+                        continue
+                    raise LLMError(f"vision network error: {str(exc)[:300]}") from exc
+            if response.status_code in {429, 500, 502, 503, 504} and attempt == 0:
+                await asyncio.sleep(0.8)
+                continue
+            raise LLMError(f"vision HTTP {response.status_code}: {response.text[:300]}")
+
+        try:
+            data = response.json()
+            content = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError, ValueError) as exc:
+            last_error = exc
+            if attempt == 0:
+                await asyncio.sleep(0.4)
+                continue
+            raise LLMError("unexpected vision response shape") from exc
+
+        try:
+            return _parse_json_object(content)
+        except LLMError as exc:
+            last_error = exc
+            if attempt == 0:
+                await asyncio.sleep(0.3)
+                continue
+            raise
+
+    raise LLMError(f"vision JSON retry failed: {last_error}")
 
 
 def _strip_fences(content: str) -> str:
@@ -188,14 +284,15 @@ async def complete_json(system: str, user: str) -> dict:
             if attempt == 0:
                 # Ask once for a single object; this handles models that emit
                 # two tool decisions in one response.
-                messages = messages + [
+                messages = [
+                    *messages,
                     {
                         "role": "user",
                         "content": (
                             "上一次输出不是单个合法 JSON 对象。"
                             "请只输出一个 JSON 对象，不要输出多个对象、Markdown 或解释。"
                         ),
-                    }
+                    },
                 ]
                 await asyncio.sleep(0.3)
                 continue

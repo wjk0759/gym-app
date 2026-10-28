@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select
 
 from ..config import settings
-from ..deps import DBSession, DEMO_USER_ID, CurrentUser
+from ..deps import DEMO_USER_ID, CurrentUser, DBSession
 from ..models import AuthEvent, AuthSession, Profile, User
 from ..schemas import (
     AppleLoginIn,

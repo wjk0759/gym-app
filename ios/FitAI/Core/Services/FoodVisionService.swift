@@ -51,7 +51,9 @@ enum FoodVisionService {
             items: items,
             confidence: confidence,
             disclaimer: disclaimer,
-            model: "local-mock"
+            model: "local-mock",
+            summary: "（本地估算样例，未启用视觉识别）",
+            isFood: true
         )
     }
 }

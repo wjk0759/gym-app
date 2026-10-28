@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from datetime import date as dt_date
-from datetime import datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -151,6 +150,8 @@ class ChatIn(BaseModel):
     session_id: str | None = None
     message: str = Field(min_length=1, max_length=2000)
     skill: Literal["trainer", "rehab", "nutrition"] = "trainer"
+    # 体型分析等上下文，随消息带给教练，帮助回复结合分析结果。
+    context: str | None = None
 
 
 class AgentChatIn(BaseModel):
@@ -186,6 +187,11 @@ class DietPlanIn(BaseModel):
     date: dt_date | None = None
 
 
+class DietWeekIn(BaseModel):
+    week_start: dt_date | None = None
+    strategy: str = Field(default="balanced", max_length=30)
+
+
 class FoodLogIn(BaseModel):
     client_id: str = Field(min_length=1, max_length=36)
     logged_at: datetime
@@ -216,3 +222,4 @@ class EquipmentLibraryIn(BaseModel):
     muscle: str | None = Field(default=None, max_length=30)
     equipment: str | None = Field(default=None, max_length=30)
     notes: str = Field(default="", max_length=1000)
+    source: str = Field(default="manual", max_length=20)

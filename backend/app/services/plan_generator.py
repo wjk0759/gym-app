@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from ..models import Exercise, Profile
 from . import llm
-from .plan_validator import PlanValidationError, injury_tags, validate_plan
+from .plan_validator import injury_tags, validate_plan
 
 PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "plan_system.md"
 
@@ -350,6 +350,33 @@ def build_template_plan(
     }
 
 
+def _candidate_pool(
+    available: list[Exercise], per_muscle: int = 12, cap: int = 96
+) -> list[Exercise]:
+    """Balanced candidate sample across muscle groups.
+
+    ``available`` is returned in slug order, which after the Xunji switch puts
+    hundreds of chest/back variants first. Sending ``available[:80]`` to the
+    model starved it of legs/shoulders/arms. Sample compound-first exercises
+    per muscle so the model has a representative pool to pick from.
+    """
+    order = ["legs", "chest", "back", "shoulders", "arms", "glutes", "core", "cardio"]
+    groups: dict[str, list[Exercise]] = {}
+    for item in available:
+        groups.setdefault(item.muscle_group, []).append(item)
+
+    pool: list[Exercise] = []
+    for muscle in order:
+        items = sorted(
+            groups.get(muscle, []),
+            key=lambda item: (not item.is_compound, item.difficulty, item.slug),
+        )
+        pool.extend(items[:per_muscle])
+        if len(pool) >= cap:
+            return pool[:cap]
+    return pool[:cap]
+
+
 def _user_prompt(
     profile: Profile,
     goal_type: str,
@@ -367,7 +394,7 @@ def _user_prompt(
             "equipment": item.equipment,
             "compound": item.is_compound,
         }
-        for item in available[:80]
+        for item in _candidate_pool(available)
     ]
     split_templates = SPLIT_TEMPLATES.get(split or "", [])
     payload = {
@@ -416,6 +443,14 @@ async def generate_plan(
     equipment_slugs: list[str] | None = None,
     split: str | None = None,
 ) -> dict:
+    # Fast path: the reasoning LLM is far too slow for plan generation (see
+    # ai_jobs: plan=64s). The deterministic template is instant and already
+    # validated, and matches the iOS local generator.
+    if not settings.llm_plan_enabled:
+        return build_template_plan(
+            db, profile, goal_type, weeks=weeks, split=split
+        )
+
     available = _allowed_exercises(
         db, profile.equipment, profile.injuries, equipment_slugs
     )

@@ -6,9 +6,16 @@ from sqlalchemy.exc import IntegrityError
 
 from ..deps import CurrentUser, DBSession
 from ..models import FoodLog, Goal, MealPlan, Profile
-from ..schemas import DietPlanIn, FoodLogIn
-from ..services.diet import build_plan, calculate_targets, meituan_link
+from ..schemas import DietPlanIn, DietWeekIn, FoodLogIn
+from ..services.diet import (
+    build_ai_plan,
+    build_diet_week,
+    calculate_targets,
+    list_diet_strategies,
+    meituan_link,
+)
 from ..services.food_vision import analyze as analyze_food_photo
+from ..services.queries import active_program
 
 router = APIRouter(prefix="/diet", tags=["diet"])
 
@@ -151,13 +158,13 @@ def targets(user_id: CurrentUser, db: DBSession):
 
 
 @router.post("/plan")
-def plan(payload: DietPlanIn, user_id: CurrentUser, db: DBSession):
+async def plan(payload: DietPlanIn, user_id: CurrentUser, db: DBSession):
     profile = db.get(Profile, user_id)
     if profile is None:
         raise HTTPException(status_code=404, detail="请先完成个人档案")
 
     plan_date = payload.date or date.today()
-    result = build_plan(profile, _goal_type(db, user_id), plan_date)
+    result = await build_ai_plan(db, profile, _goal_type(db, user_id), plan_date)
 
     record = db.execute(
         select(MealPlan).where(
@@ -191,6 +198,98 @@ def plan(payload: DietPlanIn, user_id: CurrentUser, db: DBSession):
         db.commit()
 
     return result
+
+
+@router.get("/strategies")
+def strategies(user_id: CurrentUser):
+    return {"items": list_diet_strategies()}
+
+
+def _program_training_days(program) -> list[int] | None:
+    if program is None:
+        return None
+    days = sorted(
+        {int(day.weekday) for day in program.days if day.week_index == 1}
+    )
+    return days or None
+
+
+def _monday(day: date) -> date:
+    return day - timedelta(days=day.weekday())
+
+
+def _save_meal_plan(db, user_id: str, plan_date: date, plan: dict) -> None:
+    record = db.execute(
+        select(MealPlan).where(
+            MealPlan.user_id == user_id, MealPlan.plan_date == plan_date
+        )
+    ).scalar_one_or_none()
+    if record is None:
+        record = MealPlan(user_id=user_id, plan_date=plan_date)
+        db.add(record)
+    targets = plan.get("targets") or {}
+    record.target_kcal = targets.get("target_kcal")
+    record.target_protein_g = targets.get("protein_g")
+    record.target_carb_g = targets.get("carb_g")
+    record.target_fat_g = targets.get("fat_g")
+    record.plan = plan
+
+
+@router.post("/plan/week")
+def plan_week(payload: DietWeekIn, user_id: CurrentUser, db: DBSession):
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="请先完成个人档案")
+
+    week_start = _monday(payload.week_start or date.today())
+    program = active_program(db, user_id)
+    result = build_diet_week(
+        profile,
+        _goal_type(db, user_id),
+        payload.strategy,
+        week_start,
+        _program_training_days(program),
+    )
+
+    for day in result["days"]:
+        _save_meal_plan(db, user_id, date.fromisoformat(day["date"]), day)
+    try:
+        db.commit()
+    except IntegrityError:
+        # Another device generated the same week concurrently; re-apply.
+        db.rollback()
+        for day in result["days"]:
+            _save_meal_plan(db, user_id, date.fromisoformat(day["date"]), day)
+        db.commit()
+
+    return result
+
+
+@router.get("/plan/week")
+def get_plan_week(
+    user_id: CurrentUser,
+    db: DBSession,
+    week_start: date | None = Query(default=None),
+):
+    start = _monday(week_start or date.today())
+    end = start + timedelta(days=6)
+    rows = (
+        db.execute(
+            select(MealPlan)
+            .where(
+                MealPlan.user_id == user_id,
+                MealPlan.plan_date >= start,
+                MealPlan.plan_date <= end,
+            )
+            .order_by(MealPlan.plan_date)
+        )
+        .scalars()
+        .all()
+    )
+    return {
+        "week_start": start.isoformat(),
+        "days": [row.plan for row in rows if row.plan],
+    }
 
 
 @router.get("/meituan-link")

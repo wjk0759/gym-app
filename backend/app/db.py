@@ -306,6 +306,17 @@ def ensure_schema() -> None:
                     "ON exercises(is_active)"
                 )
             )
+        if "equipment_library" in tables:
+            equipment_columns = {
+                column["name"] for column in inspector.get_columns("equipment_library")
+            }
+            if "source" not in equipment_columns:
+                connection.execute(
+                    text(
+                        "ALTER TABLE equipment_library "
+                        "ADD COLUMN source VARCHAR(20) DEFAULT 'manual'"
+                    )
+                )
         for table, ddl in _PERFORMANCE_INDEXES:
             if table in tables:
                 connection.execute(text(ddl))

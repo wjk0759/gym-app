@@ -11,8 +11,12 @@ struct NutritionView: View {
     @State private var isOpening = false
     @State private var showAddFood = false
     @State private var showFoodPhoto = false
+    @State private var showWeekPlan = false
     @State private var selectedMeal: MealType = .breakfast
     @State private var pendingFoodDelete: FoodLog?
+    @State private var aiMeals: [MealSuggestion]?
+    @State private var aiPlanNote = ""
+    @State private var isGeneratingPlan = false
 
     init(date: Date = Date()) {
         self.date = Calendar.current.startOfDay(for: date)
@@ -43,7 +47,31 @@ struct NutritionView: View {
     }
 
     private var meals: [MealSuggestion] {
-        DietPlanner.meals(profile: store.profile)
+        aiMeals ?? DietPlanner.meals(profile: store.profile)
+    }
+
+    private var dateString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
+
+    @MainActor
+    private func generateAIPlan() async {
+        guard store.canUseRemoteAI, !isGeneratingPlan else { return }
+        isGeneratingPlan = true
+        defer { isGeneratingPlan = false }
+        do {
+            let plan = try await APIClient.shared.fetchDietPlan(dateString: dateString)
+            guard !plan.meals.isEmpty else { return }
+            aiMeals = plan.meals.map {
+                MealSuggestion(name: $0.name, kcal: $0.kcal, items: $0.items)
+            }
+            aiPlanNote = plan.note ?? ""
+        } catch {
+            message = "AI 饮食计划生成失败，先使用本地餐单参考。"
+            showAlert = true
+        }
     }
 
     var body: some View {
@@ -51,6 +79,7 @@ struct NutritionView: View {
             VStack(spacing: 16) {
                 header
                 photoFoodCard
+                weekPlanCard
                 todayLogCard
                 macroCard
                 suggestionHeader
@@ -79,6 +108,9 @@ struct NutritionView: View {
         }
         .sheet(isPresented: $showFoodPhoto) {
             FoodPhotoAnalysisView(date: date)
+        }
+        .sheet(isPresented: $showWeekPlan) {
+            WeekDietPlanView()
         }
         .confirmationDialog(
             "删除这条饮食记录？",
@@ -125,6 +157,44 @@ struct NutritionView: View {
                         .font(.headline)
                         .foregroundStyle(.white)
                     Text("拍一餐，估算热量与三大营养素")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                Theme.surface,
+                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Theme.stroke, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var weekPlanCard: some View {
+        Button {
+            showWeekPlan = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "calendar.badge.clock")
+                    .font(.title2)
+                    .foregroundStyle(Theme.accent)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("本周饮食计划")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Text("碳循环 / 低碳 / 高蛋白 · 一周安排")
                         .font(.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
@@ -302,12 +372,44 @@ struct NutritionView: View {
     }
 
     private var suggestionHeader: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text("建议餐单")
-                .font(.headline)
-            Text("按目标热量估算，只是参考；外食、奶茶也可以正常记录。")
-                .font(.caption)
-                .foregroundStyle(Theme.secondaryText)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(aiMeals == nil ? "建议餐单" : "AI 饮食计划")
+                        .font(.headline)
+                    Text(aiMeals == nil
+                         ? "按目标热量估算；点右侧让 AI 按你的档案生成。"
+                         : "根据你的档案、体型和目标生成，可随时重新生成。")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 8)
+
+                Button {
+                    Task { await generateAIPlan() }
+                } label: {
+                    if isGeneratingPlan {
+                        HStack(spacing: 6) {
+                            ProgressView().controlSize(.small)
+                            Text("生成中…")
+                        }
+                    } else {
+                        Label(aiMeals == nil ? "AI 生成" : "重新生成", systemImage: "sparkles")
+                    }
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.accent)
+                .disabled(isGeneratingPlan || !store.canUseRemoteAI)
+            }
+
+            if !aiPlanNote.isEmpty {
+                Text(aiPlanNote)
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 4)

@@ -9,7 +9,7 @@ import threading
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
-from urllib.parse import parse_qs, quote, urlencode
+from urllib.parse import parse_qs, urlencode
 
 import httpx
 import jwt

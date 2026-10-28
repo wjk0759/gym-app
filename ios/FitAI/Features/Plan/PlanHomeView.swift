@@ -13,6 +13,7 @@ struct PlanHomeView: View {
     @State private var showPeriod = false
     @State private var sessionSheet: SessionSheet?
     @State private var editingDay: PlanDay?
+    @State private var workoutDay: PlanDay?
 
     private struct SessionSheet: Identifiable {
         let id = UUID()
@@ -30,6 +31,7 @@ struct PlanHomeView: View {
                         generatingCard
                     } else {
                         planQuickActions
+                        recordSummaryCard
                         calendarCard(plan: store.plan)
                         selectedDayCard(plan: store.plan)
 
@@ -46,7 +48,7 @@ struct PlanHomeView: View {
                 .padding(.bottom, 28)
             }
             .background(AppBackground())
-            .navigationTitle("训练日历")
+            .navigationTitle("记录")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -88,6 +90,12 @@ struct PlanHomeView: View {
             }
             .fullScreenCover(item: $editingDay) { day in
                 PlanEditorView(day: day)
+            }
+            .fullScreenCover(item: $workoutDay) { day in
+                WorkoutSessionView(
+                    day: day,
+                    periodMode: store.periodDay(for: day.date ?? selectedDate)?.mode
+                )
             }
             .confirmationDialog(
                 "重新生成计划？",
@@ -174,6 +182,120 @@ struct PlanHomeView: View {
         .buttonStyle(SubtlePressStyle(scale: 0.98))
     }
 
+    private var recordSummaryCard: some View {
+        let targets = DietPlanner.targets(profile: store.profile)
+        let consumed = store.todayNutrition
+        let ratio = min(1, consumed.kcal / Double(max(1, targets.kcal)))
+        let today = Date()
+        let todaySessions = sessions(on: today)
+        let plannedDay = planDay(on: today, plan: store.plan)
+        let plannedComplete = plannedDay.map { store.isPlanDayCompleted($0) } ?? false
+        let plannedProgress = plannedDay.map { store.planDayProgress($0) } ?? 0
+        let trainingText: String = plannedComplete
+            ? "已完成"
+            : (plannedDay == nil ? (todaySessions.isEmpty ? "休息日" : "已记录") : "待完成 \(Int(plannedProgress * 100))%")
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("今天 · 吃练记录")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Text("每天一笔，变化才有方向。")
+                        .font(.caption)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+                Spacer()
+                Text(today.formatted(.dateTime.month().day().weekday(.wide)))
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Theme.secondaryText)
+            }
+
+            HStack(alignment: .lastTextBaseline, spacing: 6) {
+                Text("\(Int(consumed.kcal))")
+                    .font(.system(size: 34, weight: .heavy, design: .rounded).monospacedDigit())
+                    .foregroundStyle(.white)
+                    .contentTransition(.numericText())
+                Text("/ \(targets.kcal) kcal")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.tertiaryText)
+                Spacer()
+                Text("\(Int(ratio * 100))%")
+                    .font(.caption.weight(.bold).monospacedDigit())
+                    .foregroundStyle(Theme.accent)
+            }
+
+            ProgressView(value: ratio)
+                .tint(Theme.accent)
+
+            HStack(spacing: 10) {
+                recordMetric(
+                    title: "蛋白质",
+                    value: "\(Int(consumed.protein)) / \(targets.protein)g",
+                    icon: "bolt.fill",
+                    color: Theme.accent
+                )
+                recordMetric(
+                    title: "训练",
+                    value: trainingText,
+                    icon: plannedComplete ? "checkmark.seal.fill" : "figure.strengthtraining.traditional",
+                    color: plannedComplete ? Theme.accent : Theme.warning
+                )
+            }
+
+            HStack(spacing: 8) {
+                NavigationLink {
+                    NutritionView(date: today)
+                } label: {
+                    Label("补记饮食", systemImage: "fork.knife")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                        .background(Theme.accent.opacity(0.09), in: Capsule())
+                }
+                .buttonStyle(.plain)
+
+                NavigationLink {
+                    WorkoutHistoryView()
+                } label: {
+                    Label("训练记录", systemImage: "clock.arrow.circlepath")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.secondaryText)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                        .background(Theme.surfaceStrong, in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .card()
+    }
+
+    private func recordMetric(title: String, value: String, icon: String, color: Color) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(color)
+                .frame(width: 26, height: 26)
+                .background(color.opacity(0.12), in: Circle())
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.system(size: 9.5))
+                    .foregroundStyle(Theme.tertiaryText)
+                Text(value)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(9)
+        .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
     private func planActionTileLabel(
         title: String,
         subtitle: String,
@@ -222,8 +344,12 @@ struct PlanHomeView: View {
         let sessionsByDay = Dictionary(grouping: store.sessions) { key($0.date) }
         let foodByDay = Dictionary(grouping: store.foodLogs) { key($0.date) }
         var planByDay: [Date: PlanDay] = [:]
+        var completedPlanDayIDs = Set<UUID>()
         if let plan {
             for day in plan.days {
+                if store.isPlanDayCompleted(day) {
+                    completedPlanDayIDs.insert(day.id)
+                }
                 if let scheduled = plan.scheduledDate(for: day) {
                     planByDay[key(scheduled)] = day
                 }
@@ -275,14 +401,16 @@ struct PlanHomeView: View {
                         sessionsByDay: sessionsByDay,
                         foodByDay: foodByDay,
                         planByDay: planByDay,
+                        completedPlanDayIDs: completedPlanDayIDs,
                         periodDays: periodDays
                     )
                 }
             }
             .motionAnimation(Motion.smooth, value: visibleMonth)
 
-            HStack(spacing: 13) {
+            HStack(spacing: 11) {
                 legendDot(color: Theme.accent, label: "完成训练", filled: true)
+                legendDot(color: Theme.accent.opacity(0.42), label: "部分完成", filled: true)
                 legendDot(color: Theme.accent.opacity(0.7), label: "训练计划", filled: false)
                 legendDot(color: Theme.warning, label: "饮食记录", filled: true)
             }
@@ -327,6 +455,7 @@ struct PlanHomeView: View {
         sessionsByDay: [Date: [WorkoutSession]],
         foodByDay: [Date: [FoodLog]],
         planByDay: [Date: PlanDay],
+        completedPlanDayIDs: Set<UUID>,
         periodDays: Set<Date>
     ) -> some View {
         let key = calendar.startOfDay(for: date)
@@ -334,7 +463,10 @@ struct PlanHomeView: View {
         let isSelected = calendar.isDate(date, inSameDayAs: selectedDate)
         let isToday = calendar.isDateInToday(date)
         let hasSession = !(sessionsByDay[key]?.isEmpty ?? true)
-        let hasPlan = planByDay[key] != nil
+        let plannedDay = planByDay[key]
+        let plannedComplete = plannedDay.map { completedPlanDayIDs.contains($0.id) } ?? false
+        let hasDraft = plannedDay.map { store.workoutDraft?.dayID == $0.id } ?? false
+        let hasPlan = plannedDay != nil
         let hasFood = !(foodByDay[key]?.isEmpty ?? true)
         let hasPeriod = periodDays.contains(key)
 
@@ -358,8 +490,12 @@ struct PlanHomeView: View {
                     .frame(maxWidth: .infinity)
 
                 HStack(spacing: 2.5) {
-                    if hasSession {
-                        Circle().fill(Theme.accent).frame(width: 4, height: 4)
+                    if hasSession || hasDraft || plannedComplete {
+                        Circle()
+                            .fill(plannedDay == nil || plannedComplete
+                                  ? Theme.accent
+                                  : Theme.accent.opacity(0.42))
+                            .frame(width: 4, height: 4)
                     }
                     if hasPlan {
                         Circle()
@@ -372,7 +508,7 @@ struct PlanHomeView: View {
                     if hasPeriod {
                         Circle().fill(Theme.danger).frame(width: 4, height: 4)
                     }
-                    if !hasSession && !hasPlan && !hasFood && !hasPeriod {
+                    if !hasSession && !hasDraft && !hasPlan && !hasFood && !hasPeriod {
                         Color.clear.frame(width: 4, height: 4)
                     }
                 }
@@ -431,6 +567,23 @@ struct PlanHomeView: View {
         let plannedDay = planDay(on: selectedDate, plan: plan)
         let logs = foodLogs(on: selectedDate)
         let totals = nutritionTotals(logs)
+        let plannedSets = plannedDay.map { store.plannedSets(for: $0) } ?? 0
+        let doneSets = plannedDay.map { store.completedSets(for: $0) } ?? 0
+        let planCompleted = plannedDay.map { store.isPlanDayCompleted($0) } ?? false
+        let hasDraft = plannedDay.map { store.workoutDraft?.dayID == $0.id } ?? false
+        let progress = plannedDay.map { store.planDayProgress($0) } ?? 0
+        let subtitle: String
+        if hasDraft && !planCompleted {
+            subtitle = "训练进行中 · 已练 \(doneSets)/\(plannedSets) 组"
+        } else if planCompleted {
+            subtitle = "计划训练已完成"
+        } else if plannedDay != nil, doneSets > 0 {
+            subtitle = "已完成 \(doneSets)/\(plannedSets) 组 · 还差 \(max(0, plannedSets - doneSets)) 组"
+        } else if daySessions.isEmpty {
+            subtitle = plannedDay == nil ? "休息日" : "计划训练日"
+        } else {
+            subtitle = "完成 \(daySessions.count) 次训练"
+        }
 
         return VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top) {
@@ -438,11 +591,9 @@ struct PlanHomeView: View {
                     Text(selectedDate.formatted(.dateTime.month().day().weekday(.wide)))
                         .font(.headline.weight(.bold))
                         .foregroundStyle(.white)
-                    Text(daySessions.isEmpty
-                         ? (plannedDay == nil ? "休息日" : "计划训练日")
-                         : "完成 \(daySessions.count) 次训练")
+                    Text(subtitle)
                         .font(.caption)
-                        .foregroundStyle(Theme.tertiaryText)
+                        .foregroundStyle(planCompleted ? Theme.accent : Theme.tertiaryText)
                 }
                 Spacer()
                 NavigationLink {
@@ -453,6 +604,21 @@ struct PlanHomeView: View {
                         .foregroundStyle(Theme.accent)
                 }
                 .buttonStyle(.plain)
+            }
+
+            if plannedDay != nil, doneSets > 0 {
+                VStack(spacing: 5) {
+                    ProgressView(value: progress)
+                        .tint(planCompleted ? Theme.accent : Theme.warning)
+                    HStack {
+                        Text(planCompleted ? "全部 \(plannedSets) 组已完成" : "已记录 \(doneSets)/\(plannedSets) 组")
+                        Spacer()
+                        Text("\(Int(progress * 100))%")
+                    }
+                    .font(.system(size: 9.5, weight: .medium).monospacedDigit())
+                    .foregroundStyle(Theme.tertiaryText)
+                }
+                .padding(.top, 9)
             }
 
             if let period = store.periodDay(for: selectedDate) {
@@ -483,7 +649,7 @@ struct PlanHomeView: View {
                     sessionSheet = SessionSheet(session: session, isNew: false)
                 } label: {
                     HStack(spacing: 9) {
-                        Image(systemName: "checkmark")
+                        Image(systemName: planCompleted ? "checkmark" : "circle.lefthalf.filled")
                             .font(.system(size: 9, weight: .bold))
                             .foregroundStyle(Theme.accent)
                             .frame(width: 24, height: 24)
@@ -566,18 +732,39 @@ struct PlanHomeView: View {
                 .padding(.top, 7)
             }
 
-            if store.periodDay(for: selectedDate)?.mode == .rest {
+            if hasDraft, let plannedDay, !planCompleted {
+                Button {
+                    workoutDay = plannedDay
+                } label: {
+                    Label("继续训练 · 已练 \(doneSets)/\(plannedSets) 组", systemImage: "play.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .padding(.top, 9)
+            } else if store.periodDay(for: selectedDate)?.mode == .rest {
                 Text("经期休息日：训练计划保留，但今天不要求力量训练。散步、拉伸和补铁优先。")
                     .font(.caption2)
                     .foregroundStyle(Theme.danger)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 9)
+            } else if planCompleted {
+                HStack(spacing: 7) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .foregroundStyle(Theme.accent)
+                    Text("训练日已完成，记录已保存")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(Theme.secondaryText)
+                    Spacer(minLength: 0)
+                }
+                .padding(.top, 9)
             } else if selectedDate <= calendar.startOfDay(for: Date()) {
                 Button {
                     beginCalendarTraining(plan: plan)
                 } label: {
                     Label(
-                        daySessions.isEmpty ? "记录这天的训练" : "补记一次训练",
+                        doneSets > 0
+                            ? "再记一次训练"
+                            : (daySessions.isEmpty ? "记录这天的训练" : "补记一次训练"),
                         systemImage: "plus"
                     )
                     .font(.system(size: 11, weight: .semibold))
@@ -951,23 +1138,40 @@ struct PlanHomeView: View {
             second: 0,
             of: selectedDate
         ) ?? selectedDate
-        let sets = (plannedDay?.exercises ?? []).flatMap { item in
+
+        let completedBySlug: [String: Int] = plannedDay.map { day in
+            store.planDaySessions(day).reduce(into: [String: Int]()) { result, session in
+                for set in session.sets where set.completed {
+                    result[set.slug, default: 0] += 1
+                }
+            }
+        } ?? [:]
+
+        var sets: [SetLog] = []
+        var plannedTotal = 0
+        for item in plannedDay?.exercises ?? [] {
             let reps = Int(WorkoutPickerOptions.normalizedReps(item.reps)) ?? 10
             let baseWeight = max(0, item.weightKG ?? 0)
             let weight = isLight && baseWeight > 0
                 ? ((baseWeight * 0.8) * 2).rounded() / 2
                 : baseWeight
-            let setCount = isLight ? max(2, item.sets - 1) : item.sets
-            return (0..<max(1, setCount)).map { index in
-                SetLog(
-                    slug: item.slug,
-                    setIndex: index + 1,
-                    weightKG: weight,
-                    reps: reps,
-                    rpe: item.rpe
+            let setCount = max(1, isLight ? max(2, item.sets - 1) : item.sets)
+            plannedTotal += setCount
+            let done = min(setCount, completedBySlug[item.slug, default: 0])
+            let remaining = max(0, setCount - done)
+            for index in 0..<remaining {
+                sets.append(
+                    SetLog(
+                        slug: item.slug,
+                        setIndex: done + index + 1,
+                        weightKG: weight,
+                        reps: reps,
+                        rpe: item.rpe
+                    )
                 )
             }
         }
+
         sessionSheet = SessionSheet(
             session: WorkoutSession(
                 date: time,
@@ -975,7 +1179,9 @@ struct PlanHomeView: View {
                 durationMinutes: plannedDay?.estimatedMinutes ?? 45,
                 feeling: 3,
                 notes: nil,
-                sets: sets
+                sets: sets,
+                programDayID: plannedDay?.id.uuidString,
+                plannedSets: plannedTotal > 0 ? plannedTotal : nil
             ),
             isNew: true
         )

@@ -27,12 +27,13 @@ struct CustomWorkoutBuilderView: View {
         title: String? = nil,
         mode: CustomWorkoutMode = .custom,
         initialExercises: [PlanExercise],
+        templateDay: PlanDay? = nil,
         onStart: @escaping (PlanDay) -> Void
     ) {
         self.initialExercises = initialExercises
         self.onStart = onStart
         self.onSave = nil
-        self.templateDay = nil
+        self.templateDay = templateDay
         self.mode = mode
         self.title = title ?? (mode == .plan ? "今日训练" : "自选训练")
         _exercises = State(initialValue: initialExercises.map { item in
@@ -431,9 +432,11 @@ struct CustomWorkoutBuilderView: View {
         let focus = Array(Set(normalized.compactMap { $0.exercise?.muscle }))
         onStart(
             PlanDay(
-                weekday: Weekday.today,
-                date: Date(),
-                title: title,
+                id: templateDay?.id ?? UUID(),
+                weekIndex: templateDay?.weekIndex ?? 1,
+                weekday: templateDay?.weekday ?? Weekday.today,
+                date: templateDay?.date ?? Date(),
+                title: templateDay?.title ?? title,
                 focus: focus,
                 exercises: normalized
             )

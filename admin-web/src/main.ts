@@ -1,9 +1,11 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import ElementPlus from 'element-plus'
-import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import 'element-plus/dist/index.css'
+import { ElLoading } from 'element-plus'
 import 'element-plus/theme-chalk/dark/css-vars.css'
+import 'element-plus/es/components/base/style/css'
+import 'element-plus/es/components/loading/style/css'
+import 'element-plus/es/components/message/style/css'
+import 'element-plus/es/components/message-box/style/css'
 import './styles/base.css'
 
 import App from './App.vue'
@@ -28,8 +30,8 @@ setUnauthorizedHandler(() => {
 })
 
 app.directive('permission', permission)
+app.directive('loading', ElLoading.directive)
 app.use(router)
-app.use(ElementPlus, { locale: zhCn })
 
 router.isReady().then(() => {
   app.mount('#app')

@@ -1,5 +1,5 @@
-from contextlib import asynccontextmanager
 import logging
+from contextlib import asynccontextmanager
 
 import anyio.to_thread
 from fastapi import FastAPI, HTTPException, Request
@@ -62,7 +62,6 @@ async def lifespan(app: FastAPI):
     except Exception:  # pragma: no cover - older AnyIO fallback
         logger.warning("could not resize AnyIO thread limiter")
     logging.getLogger("fitai.access").setLevel(logging.INFO)
-    ensure_schema()
     # MySQL schema is owned by admin-server Flyway. Only local SQLite/Postgres
     # development uses SQLAlchemy create_all to avoid two schema creators.
     if engine.dialect.name != "mysql":

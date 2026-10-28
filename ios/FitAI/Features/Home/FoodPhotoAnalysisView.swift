@@ -20,6 +20,8 @@ struct FoodPhotoAnalysisView: View {
     @State private var confidence = 0.0
     @State private var analysisDisclaimer = ""
     @State private var analysisModel = ""
+    @State private var analysisSummary = ""
+    @State private var isFood = true
     @State private var isAnalyzing = false
     @State private var showCamera = false
     @State private var didAutoStartCamera = false
@@ -68,6 +70,10 @@ struct FoodPhotoAnalysisView: View {
                     }
                     .buttonStyle(PrimaryButtonStyle())
                     .disabled(imageData == nil || isAnalyzing)
+
+                    if !analysisSummary.isEmpty {
+                        summaryCard
+                    }
 
                     if !items.isEmpty {
                         resultCard
@@ -353,6 +359,25 @@ struct FoodPhotoAnalysisView: View {
             .card(padding: 14)
     }
 
+    private var summaryCard: some View {
+        Text(analysisSummary)
+            .font(.subheadline)
+            .foregroundStyle(isFood ? Theme.secondaryText : Color.orange)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(
+                (isFood ? Color.white.opacity(0.04) : Color.orange.opacity(0.12)),
+                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(
+                        isFood ? Color.white.opacity(0.06) : Color.orange.opacity(0.35),
+                        lineWidth: 1
+                    )
+            )
+    }
+
     private func analyze() {
         guard let imageData else { return }
         isAnalyzing = true
@@ -382,6 +407,8 @@ struct FoodPhotoAnalysisView: View {
         confidence = result.confidence
         analysisDisclaimer = result.disclaimer
         analysisModel = result.model
+        analysisSummary = result.summary
+        isFood = result.isFood
         isAnalyzing = false
     }
 

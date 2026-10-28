@@ -5,6 +5,7 @@ import UIKit
 struct WorkoutSessionView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
     let day: PlanDay
     let periodMode: PeriodTrainingMode?
@@ -23,7 +24,11 @@ struct WorkoutSessionView: View {
     @State private var restTotal: Double = 1
     @State private var feeling = 4
     @State private var notes = ""
-    @State private var startedAt = Date()
+    @State private var elapsedSeconds: TimeInterval = 0
+    @State private var resumedExercises: [PlanExercise]?
+    @State private var didLoadDraft = false
+    @State private var didFinish = false
+    @State private var showResumeBanner = false
     @State private var showExitConfirm = false
     @State private var showEmptySaveAlert = false
     @State private var adjustedExercises: [UUID: PlanExercise] = [:]
@@ -40,6 +45,37 @@ struct WorkoutSessionView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 progressHeader
+
+                if showResumeBanner {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.clockwise.circle.fill")
+                            .foregroundStyle(Theme.accent)
+                        Text("已恢复上次进度：\(logs.count) 组")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.white)
+                        Spacer(minLength: 4)
+                        Button("知道了") {
+                            withAnimation(Motion.quick) {
+                                showResumeBanner = false
+                            }
+                        }
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Theme.tertiaryText)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .background(
+                        Theme.accent.opacity(0.1),
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(Theme.accent.opacity(0.22), lineWidth: 1)
+                    )
+                    .appPagePadding()
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
 
                 ScrollViewReader { proxy in
                     AppScrollView {
@@ -97,34 +133,47 @@ struct WorkoutSessionView: View {
             .toolbar {
                 if currentExercise != nil {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("结束") { showExitConfirm = true }
+                        Button("暂停") { showExitConfirm = true }
                     }
                 }
             }
             .onAppear {
                 UIApplication.shared.isIdleTimerDisabled = true
-                startedAt = Date()
+                loadDraftIfNeeded()
                 prepare(currentExercise)
             }
             .onDisappear {
+                saveDraftIfNeeded(persistImmediately: true)
+                store.flushPersistence()
                 UIApplication.shared.isIdleTimerDisabled = false
+            }
+            .onChange(of: scenePhase) { _, phase in
+                guard phase != .active else { return }
+                saveDraftIfNeeded(persistImmediately: true)
+                store.flushPersistence()
             }
             .onReceive(timer) { _ in
                 tickRest()
+                tickElapsed()
             }
             .confirmationDialog(
-                "结束这次训练？",
+                "暂停或结束训练？",
                 isPresented: $showExitConfirm,
                 titleVisibility: .visible
             ) {
+                Button("暂停，稍后继续") { pauseAndExit() }
                 Button("结束并保存", role: .destructive) { finish() }
                 Button("继续训练", role: .cancel) {}
             } message: {
-                Text("已完成的 \(logs.count) 组会保存到训练记录。")
+                Text("暂停会保存已完成的 \(logs.count) 组，下次进来接着练；结束并保存会生成训练记录。")
             }
             .alert("还没有训练记录", isPresented: $showEmptySaveAlert) {
                 Button("继续训练", role: .cancel) {}
-                Button("放弃并退出", role: .destructive) { dismiss() }
+                Button("放弃并退出", role: .destructive) {
+                    store.clearWorkoutDraft(dayID: day.id)
+                    didFinish = true
+                    dismiss()
+                }
             } message: {
                 Text("至少完成一组后再保存，避免产生一条 0 组的空训练记录。")
             }
@@ -137,9 +186,7 @@ struct WorkoutSessionView: View {
     // MARK: - 顶部进度
 
     private var progressHeader: some View {
-        let totalSets = day.exercises.reduce(0) { partial, exercise in
-            partial + effectiveExercise(exercise).sets
-        }
+        let totalSets = plannedTotalSets
         let progress = Double(logs.count) / Double(max(1, totalSets))
 
         return VStack(spacing: 8) {
@@ -149,7 +196,7 @@ struct WorkoutSessionView: View {
                     .foregroundStyle(Theme.secondaryText)
                     .contentTransition(.numericText())
                 Spacer()
-                Text("\(min(index + 1, day.exercises.count))/\(day.exercises.count) 动作")
+                Text("\(min(index + 1, activeDay.exercises.count))/\(activeDay.exercises.count) 动作")
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(Theme.tertiaryText)
                     .contentTransition(.numericText())
@@ -170,8 +217,23 @@ struct WorkoutSessionView: View {
     // MARK: - 当前动作
 
     private var currentExercise: PlanExercise? {
-        guard day.exercises.indices.contains(index) else { return nil }
-        return effectiveExercise(day.exercises[index])
+        guard activeDay.exercises.indices.contains(index) else { return nil }
+        return effectiveExercise(activeDay.exercises[index])
+    }
+
+    /// 恢复草稿时使用草稿里的动作列表，避免用户自定义过的训练顺序被计划原顺序覆盖。
+    private var activeDay: PlanDay {
+        var value = day
+        if let resumedExercises {
+            value.exercises = resumedExercises
+        }
+        return value
+    }
+
+    private var plannedTotalSets: Int {
+        activeDay.exercises.reduce(0) { partial, exercise in
+            partial + max(1, effectiveExercise(exercise).sets)
+        }
     }
 
     private func effectiveExercise(_ exercise: PlanExercise) -> PlanExercise {
@@ -192,7 +254,7 @@ struct WorkoutSessionView: View {
     private func exerciseCard(_ exercise: PlanExercise) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("动作 \(index + 1)/\(day.exercises.count)")
+                Text("动作 \(index + 1)/\(activeDay.exercises.count)")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Theme.accent)
                 Spacer()
@@ -400,7 +462,7 @@ struct WorkoutSessionView: View {
     }
 
     private var nextTitle: String {
-        index < day.exercises.count - 1 ? "下一个动作" : "查看训练总结"
+        index < activeDay.exercises.count - 1 ? "下一个动作" : "查看训练总结"
     }
 
     private func restCard(_ remaining: Int) -> some View {
@@ -454,9 +516,16 @@ struct WorkoutSessionView: View {
 
     private var summaryCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("训练完成")
+            Text(isFullSession ? "训练完成" : "本次训练记录")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
+
+            if !isFullSession {
+                Text("已完成 \(logs.count)/\(plannedTotalSets) 组；保存后日历只记录这些完成组，不会算成整个训练日。")
+                    .font(.caption)
+                    .foregroundStyle(Theme.warning)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 12) {
@@ -554,8 +623,13 @@ struct WorkoutSessionView: View {
         .motionAnimation(Motion.quick, value: value)
     }
 
+    private var isFullSession: Bool {
+        let completed = store.finalizedCompletedSets(for: day) + logs.filter(\.completed).count
+        return completed >= plannedTotalSets
+    }
+
     private var durationMinutes: Int {
-        max(1, Int(Date().timeIntervalSince(startedAt) / 60))
+        max(1, Int(elapsedSeconds / 60))
     }
 
     // MARK: - 行为
@@ -568,7 +642,10 @@ struct WorkoutSessionView: View {
         reps = Int(digits) ?? 10
         rpe = exercise.rpe
 
-        if let last = store.lastSet(for: exercise.slug) {
+        if let last = logs.last(where: { $0.slug == exercise.slug && $0.completed }) {
+            weight = last.weightKG
+            reps = last.reps
+        } else if let last = store.lastSet(for: exercise.slug) {
             weight = last.weightKG
             reps = last.reps
         }
@@ -587,6 +664,7 @@ struct WorkoutSessionView: View {
             )
         )
         Haptics.success()
+        saveDraftIfNeeded()
         let rest = exercise.restSec
         restTotal = Double(max(1, rest))
         restRemaining = rest > 0 ? rest : nil
@@ -594,12 +672,13 @@ struct WorkoutSessionView: View {
 
     private func advance() {
         restRemaining = nil
-        if index < day.exercises.count - 1 {
+        if index < activeDay.exercises.count - 1 {
             index += 1
             prepare(currentExercise)
         } else {
-            index = day.exercises.count
+            index = activeDay.exercises.count
         }
+        saveDraftIfNeeded()
     }
 
     private func tickRest() {
@@ -612,20 +691,86 @@ struct WorkoutSessionView: View {
         }
     }
 
+    private func tickElapsed() {
+        guard !didFinish, index < activeDay.exercises.count else { return }
+        elapsedSeconds += 1
+    }
+
+    private func loadDraftIfNeeded() {
+        guard !didLoadDraft else { return }
+        didLoadDraft = true
+        guard let draft = store.draft(for: day.id) else { return }
+
+        logs = draft.logs
+        if let exercises = draft.exercises, !exercises.isEmpty {
+            resumedExercises = exercises
+        }
+        let draftExerciseCount = draft.exercises?.count ?? 0
+        let exerciseCount = draftExerciseCount > 0 ? draftExerciseCount : day.exercises.count
+        index = min(max(0, draft.currentIndex), exerciseCount)
+        elapsedSeconds = max(0, draft.elapsedSeconds)
+        feeling = draft.feeling
+        notes = draft.notes
+        adjustedExercises = Dictionary(
+            draft.adjustedExercises.map { ($0.id, $0) },
+            uniquingKeysWith: { _, latest in latest }
+        )
+
+        guard !draft.logs.isEmpty else { return }
+        withAnimation(Motion.smooth) {
+            showResumeBanner = true
+        }
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            withAnimation(Motion.quick) {
+                showResumeBanner = false
+            }
+        }
+    }
+
+    private func saveDraftIfNeeded(persistImmediately: Bool = false) {
+        guard !didFinish, !logs.isEmpty else { return }
+        store.saveWorkoutDraft(
+            WorkoutDraft(
+                dayID: day.id,
+                dayTitle: activeDay.title,
+                logs: logs,
+                currentIndex: index,
+                plannedSets: plannedTotalSets,
+                elapsedSeconds: elapsedSeconds,
+                feeling: feeling,
+                notes: String(notes.prefix(300)),
+                adjustedExercises: Array(adjustedExercises.values),
+                exercises: activeDay.exercises
+            ),
+            persistImmediately: persistImmediately
+        )
+    }
+
+    private func pauseAndExit() {
+        saveDraftIfNeeded(persistImmediately: true)
+        store.flushPersistence()
+        dismiss()
+    }
+
     private func finish() {
         guard !logs.isEmpty else {
             showEmptySaveAlert = true
             return
         }
+        didFinish = true
         var sessionDay = day
-        sessionDay.exercises = day.exercises.map(effectiveExercise)
+        sessionDay.exercises = activeDay.exercises.map(effectiveExercise)
+        let planned = plannedTotalSets
         store.record(
             day: sessionDay,
             sets: logs,
             durationMinutes: durationMinutes,
             feeling: feeling,
-            notes: String(notes.prefix(300))
+            notes: String(notes.prefix(300)),
+            plannedSets: planned
         )
+        store.clearWorkoutDraft(dayID: day.id)
         dismiss()
     }
 
@@ -641,7 +786,7 @@ struct WorkoutSessionView: View {
     private func saveAdjustedExercise() {
         guard
             let id = adjustExerciseID,
-            let base = day.exercises.first(where: { $0.id == id })
+            let base = activeDay.exercises.first(where: { $0.id == id })
         else {
             showAdjustSheet = false
             return
@@ -661,6 +806,7 @@ struct WorkoutSessionView: View {
             }
         }
 
+        saveDraftIfNeeded()
         showAdjustSheet = false
         Haptics.success()
     }

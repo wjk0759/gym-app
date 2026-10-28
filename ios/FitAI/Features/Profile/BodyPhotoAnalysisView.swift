@@ -242,6 +242,14 @@ struct BodyPhotoAnalysisView: View {
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(analysis.appliedToPlan)
+
+            Button {
+                store.openCoachAfterBodyAnalysis(analysis)
+                dismiss()
+            } label: {
+                Label("去 AI 教练继续", systemImage: "bubble.left.and.bubble.right")
+            }
+            .buttonStyle(SecondaryButtonStyle())
         }
         .card()
     }

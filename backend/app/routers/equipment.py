@@ -90,6 +90,7 @@ def _equipment_item_dict(item: EquipmentLibraryItem) -> dict:
         "muscle": item.muscle,
         "equipment": item.equipment,
         "notes": item.notes,
+        "source": item.source,
         "created_at": item.created_at.isoformat(),
     }
 
@@ -100,6 +101,7 @@ def _apply_equipment_item(item: EquipmentLibraryItem, payload: EquipmentLibraryI
     item.muscle = payload.muscle
     item.equipment = payload.equipment
     item.notes = payload.notes
+    item.source = payload.source or "manual"
 
 
 @router.post("/equipment/items", status_code=201)

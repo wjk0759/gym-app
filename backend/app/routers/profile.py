@@ -32,7 +32,6 @@ from ..services.serializers import (
     serialize_program,
 )
 
-
 router = APIRouter(prefix="/me", tags=["profile"])
 
 

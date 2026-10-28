@@ -9,20 +9,18 @@ struct CoachChatView: View {
     @State private var selectedSkill: CoachSkill = .trainer
     @State private var showPaywall = false
     @State private var showCamera = false
+    @State private var cameraTitle = "拍照问教练"
+    @State private var cameraHint = "尽量拍到完整动作或器械，避免脸和隐私部位。照片只用于本次对话。"
+    @State private var showEquipmentScan = false
+    @State private var showBodyAnalysis = false
+    @State private var showDietLibrary = false
+    @State private var showVideoReview = false
     @FocusState private var focused: Bool
     @Namespace private var skillNamespace
 
     private var canSend: Bool {
         !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !store.isReplying
     }
-
-    private let suggestions = [
-        "今天练什么？",
-        "没有器械怎么替代？",
-        "深蹲时膝盖不舒服",
-        "训练后很酸正常吗？",
-        "每天要吃多少蛋白质？"
-    ]
 
     private struct StarterPrompt: Identifiable {
         let text: String
@@ -116,8 +114,14 @@ struct CoachChatView: View {
                     if !store.agentActions.isEmpty {
                         agentActionsCard
                     }
+                    if let week = store.dietWeekPlan {
+                        dietWeekCard(week)
+                    }
+                    if let equipment = store.coachEquipmentResult {
+                        coachEquipmentCard(equipment)
+                    }
                     if store.agentProposal == nil && store.agentActions.isEmpty && !store.chat.isEmpty {
-                        suggestionBar
+                        coachQuickActions
                     }
                 }
 
@@ -143,13 +147,44 @@ struct CoachChatView: View {
                     store.beginPlanAdjustment()
                 }
             }
+            .onChange(of: store.coachEquipmentScanRequested) { _, requested in
+                if requested {
+                    showEquipmentScan = true
+                    store.coachEquipmentScanRequested = false
+                }
+            }
+            .sheet(isPresented: $showEquipmentScan) {
+                EquipmentRecognitionView(
+                    onSaved: { item in
+                        store.appendCoachNotice("已加入个人动作库：\(item.name)")
+                    },
+                    onRecognized: { result in
+                        store.coachEquipmentResult = result
+                    }
+                )
+            }
+            .onChange(of: store.coachBodyAnalysisRequested) { _, requested in
+                if requested {
+                    showBodyAnalysis = true
+                    store.coachBodyAnalysisRequested = false
+                }
+            }
+            .sheet(isPresented: $showBodyAnalysis) {
+                BodyPhotoAnalysisView()
+            }
+            .sheet(isPresented: $showDietLibrary) {
+                DietLibraryView()
+            }
+            .sheet(isPresented: $showVideoReview) {
+                VideoReviewView()
+            }
             .sheet(isPresented: $showPaywall) {
                 PaywallView()
             }
             .fullScreenCover(isPresented: $showCamera) {
                 PhotoCaptureView(
-                    title: "拍照问教练",
-                    hint: "尽量拍到完整动作或器械，避免脸和隐私部位。照片只用于本次对话。",
+                    title: cameraTitle,
+                    hint: cameraHint,
                     onImage: { image in
                         store.sendCoachPhoto(image)
                         showCamera = false
@@ -433,8 +468,140 @@ struct CoachChatView: View {
         case "open_screen": return "rectangle.portrait.and.arrow.right"
         case "update_goal": return "target"
         case "log_body_metric": return "scalemass"
+        case "create_diet_plan": return "fork.knife"
+        case "recognize_equipment": return "camera.viewfinder"
+        case "analyze_body": return "figure.stand"
         default: return "bolt"
         }
+    }
+
+    private func dietWeekCard(_ week: RemoteDietWeek) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("本周饮食计划", systemImage: "fork.knife")
+                    .font(.headline)
+                Spacer()
+                Text(week.strategy?.label ?? "饮食")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+            }
+
+            Text("按训练日/休息日安排，点开每天看餐单。")
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+
+            ForEach(week.days) { day in
+                DisclosureGroup {
+                    VStack(alignment: .leading, spacing: 7) {
+                        ForEach(day.meals) { meal in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("\(meal.name) · \(meal.kcal) kcal")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.white)
+                                Text(meal.items.joined(separator: "、"))
+                                    .font(.caption2)
+                                    .foregroundStyle(Theme.secondaryText)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                    .padding(.top, 4)
+                } label: {
+                    HStack {
+                        Text(day.title)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white)
+                        Spacer()
+                        Text("\(day.targets.targetKcal ?? 0) kcal")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Theme.accent)
+                    }
+                }
+                .tint(Theme.accent)
+                if day.id != week.days.last?.id {
+                    Divider().opacity(0.15)
+                }
+            }
+
+            if let caution = week.strategy?.caution, !caution.isEmpty {
+                Text(caution)
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .card()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+
+    private func coachEquipmentCard(_ result: EquipmentScanResult) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("器械识别", systemImage: "camera.viewfinder")
+                    .font(.headline)
+                Spacer()
+                Button("清除") {
+                    store.coachEquipmentResult = nil
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.tertiaryText)
+            }
+
+            if !result.description.isEmpty {
+                Text(result.description)
+                    .font(.caption)
+                    .foregroundStyle(result.notInLibrary ? Color.orange : Theme.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if result.candidates.isEmpty {
+                Text(result.notInLibrary ? "动作库未收录；可在识别页自定义添加。" : "没有匹配到动作库里的器械。")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+            } else {
+                ForEach(result.candidates) { candidate in
+                    HStack(spacing: 10) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(candidate.exercise.nameZH)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.white)
+                            Text("\(candidate.exercise.muscle.label) · \(candidate.exercise.equipment.label)")
+                                .font(.caption2)
+                                .foregroundStyle(Theme.secondaryText)
+                        }
+                        Spacer()
+                        Button(isEquipmentSaved(candidate) ? "已加入" : "加入") {
+                            guard !isEquipmentSaved(candidate) else { return }
+                            store.addEquipment(
+                                EquipmentItem(
+                                    name: candidate.exercise.nameZH,
+                                    slug: candidate.exercise.slug,
+                                    muscle: candidate.exercise.muscle,
+                                    equipment: candidate.exercise.equipment,
+                                    videoURL: candidate.exercise.videoURL?.absoluteString,
+                                    notes: "来自拍照识别",
+                                    source: "recognition"
+                                )
+                            )
+                        }
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(isEquipmentSaved(candidate) ? Theme.tertiaryText : Theme.accent)
+                        .disabled(isEquipmentSaved(candidate))
+                    }
+                    if candidate.id != result.candidates.last?.id {
+                        Divider().opacity(0.15)
+                    }
+                }
+            }
+        }
+        .card()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+
+    private func isEquipmentSaved(_ candidate: EquipmentCandidate) -> Bool {
+        store.equipmentLibrary.contains { $0.slug == candidate.exercise.slug }
     }
 
     private func agentProposalCard(_ proposal: AgentPlanProposal) -> some View {
@@ -709,7 +876,7 @@ struct CoachChatView: View {
                     .foregroundStyle(Theme.tertiaryText)
             }
 
-            Text("\(store.currentWeekSessions.count)/\(store.currentWeekPlannedCount) 练 · 完成率 \(Int(store.weeklyCompletion * 100))%")
+            Text("\(store.currentWeekCompletedCount)/\(store.currentWeekPlannedCount) 练 · 完成率 \(Int(store.weeklyCompletion * 100))%")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
 
@@ -777,21 +944,28 @@ struct CoachChatView: View {
         }
     }
 
-    private var suggestionBar: some View {
+    private var coachQuickActions: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                ForEach(suggestions, id: \.self) { text in
-                    Button {
-                        send(text)
-                    } label: {
-                        Text(text)
-                            .font(.caption)
-                            .foregroundStyle(Theme.secondaryText)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(Theme.surfaceStrong, in: Capsule())
-                    }
-                    .buttonStyle(SubtlePressStyle(scale: 0.95))
+                quickAction("训练计划", icon: "calendar") {
+                    send("帮我安排今天的训练")
+                }
+                quickAction("饮食方案", icon: "fork.knife") {
+                    showDietLibrary = true
+                }
+                quickAction("动作点评", icon: "camera.viewfinder") {
+                    cameraTitle = "动作点评"
+                    cameraHint = "拍全身侧面，光线清楚，尽量包含器械和完整动作。照片只用于本次点评。"
+                    showCamera = true
+                }
+                quickAction("视频点评", icon: "video.fill") {
+                    showVideoReview = true
+                }
+                quickAction("器械识别", icon: "dumbbell") {
+                    showEquipmentScan = true
+                }
+                quickAction("记录", icon: "list.bullet.rectangle") {
+                    store.selectedTab = 1
                 }
             }
             .padding(.horizontal, 16)
@@ -799,10 +973,32 @@ struct CoachChatView: View {
         }
     }
 
+    private func quickAction(
+        _ title: String,
+        icon: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button {
+            Haptics.tap()
+            action()
+        } label: {
+            Label(title, systemImage: icon)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.accent)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Theme.accent.opacity(0.09), in: Capsule())
+                .overlay(Capsule().stroke(Theme.accent.opacity(0.18), lineWidth: 0.8))
+        }
+        .buttonStyle(SubtlePressStyle(scale: 0.95))
+    }
+
     private var inputBar: some View {
         HStack(spacing: 8) {
             Button {
                 Haptics.tap()
+                cameraTitle = "拍照问教练"
+                cameraHint = "尽量拍到完整动作或器械，避免脸和隐私部位。照片只用于本次对话。"
                 showCamera = true
             } label: {
                 Image(systemName: "camera.fill")

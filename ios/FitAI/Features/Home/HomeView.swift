@@ -19,11 +19,14 @@ struct HomeView: View {
                     greeting
                         .staggerIn(0)
 
+                    coachHero
+                        .staggerIn(1)
+
                     GoalCardView {
                         bodyCheckInManual = true
                         showBodyCheckIn = true
                     }
-                    .staggerIn(1)
+                    .staggerIn(2)
 
                     Group {
                         if store.isGenerating {
@@ -31,6 +34,15 @@ struct HomeView: View {
                                 .staggerIn(2)
                                 .softContentTransition()
                         } else if let plan = store.plan {
+                            if let draft = store.workoutDraft,
+                               let draftDay = store.draftPlanDay,
+                               !store.isPlanDayCompleted(draftDay),
+                               draftDay.id != store.todayDay?.id || store.todayPeriod?.mode == .rest {
+                                resumeDraftCard(draft, day: draftDay)
+                                    .staggerIn(2)
+                                    .softContentTransition()
+                            }
+
                             if store.todayPeriod?.mode == .rest {
                                 nutritionCard
                                     .staggerIn(2)
@@ -91,7 +103,8 @@ struct HomeView: View {
                     CustomWorkoutBuilderView(
                         title: day.title,
                         mode: .plan,
-                        initialExercises: day.exercises
+                        initialExercises: day.exercises,
+                        templateDay: day
                     ) { plannedDay in
                         pendingWorkoutDay = plannedDay
                     }
@@ -136,6 +149,12 @@ struct HomeView: View {
             }
             .onAppear {
                 presentLaunchIfNeeded()
+                if let draft = store.workoutDraft,
+                   let day = store.todayDay,
+                   day.id == draft.dayID,
+                   store.isPlanDayCompleted(day) {
+                    store.clearWorkoutDraft(dayID: day.id)
+                }
                 guard !didAutoPrompt else { return }
                 didAutoPrompt = true
                 if store.bodyCheckInDue {
@@ -175,6 +194,84 @@ struct HomeView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 4)
+    }
+
+    private var coachHero: some View {
+        ZStack(alignment: .topTrailing) {
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Theme.accent.opacity(0.94),
+                            Theme.accentDeep.opacity(0.82),
+                            Theme.cardSurface
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            Image(systemName: "figure.strengthtraining.traditional")
+                .font(.system(size: 118, weight: .black))
+                .foregroundStyle(Color.black.opacity(0.16))
+                .offset(x: 24, y: 26)
+                .rotationEffect(.degrees(-8))
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    Text("练途")
+                        .font(.system(size: 14, weight: .black, design: .rounded))
+                    Text("AI FITNESS CLUB")
+                        .font(.system(size: 8, weight: .bold))
+                        .tracking(1.4)
+                        .opacity(0.55)
+                }
+                .foregroundStyle(Color.black.opacity(0.78))
+
+                Text("不画饼，\n只把今天练明白。")
+                    .font(.system(size: 30, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Color.black.opacity(0.9))
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text("训练、饮食、动作点评，直接跟教练说。")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.black.opacity(0.62))
+
+                HStack(spacing: 8) {
+                    Button {
+                        Haptics.tap()
+                        store.selectedTab = 2
+                    } label: {
+                        Label("找教练聊聊", systemImage: "arrow.up.right")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 13)
+                            .padding(.vertical, 9)
+                            .background(Color.black.opacity(0.72), in: Capsule())
+                    }
+                    .buttonStyle(SubtlePressStyle(scale: 0.96))
+
+                    Button {
+                        Haptics.tap()
+                        store.selectedTab = 3
+                    } label: {
+                        Label("发现方案", systemImage: "square.grid.2x2")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Color.black.opacity(0.78))
+                            .padding(.horizontal, 13)
+                            .padding(.vertical, 9)
+                            .background(Color.white.opacity(0.34), in: Capsule())
+                    }
+                    .buttonStyle(SubtlePressStyle(scale: 0.96))
+                }
+                .padding(.top, 2)
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity)
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .shadow(color: Theme.accent.opacity(0.20), radius: 22, y: 12)
     }
 
     private var timeGreeting: String {
@@ -228,17 +325,43 @@ struct HomeView: View {
     }
 
     private func trainingCard(plan: TrainingPlan, day: PlanDay, period: PeriodDay?) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
+        let draft = store.draft(for: day.id)
+        let isCompleted = store.isPlanDayCompleted(day)
+        let plannedSets = store.plannedSets(for: day)
+        let completedSets = store.completedSets(for: day)
+        let progress = store.planDayProgress(day)
+        let isInProgress = draft != nil && !isCompleted
+        let isPartial = !isCompleted && !isInProgress && completedSets > 0
+
+        let stateColor: Color
+        let stateLabel: String
+        let primaryTitle: String
+        if isCompleted {
+            stateColor = Theme.accent
+            stateLabel = "今日已完成"
+            primaryTitle = "已完成"
+        } else if isInProgress {
+            stateColor = Theme.warning
+            stateLabel = "训练进行中"
+            primaryTitle = "继续训练 · 已练 \(draft?.completedSets ?? completedSets) 组"
+        } else if isPartial {
+            stateColor = Theme.warning
+            stateLabel = "已完成 \(Int(progress * 100))%"
+            primaryTitle = "再练一次"
+        } else {
+            stateColor = period == nil ? Theme.accent : Theme.danger
+            stateLabel = period == nil ? "今日训练" : "经期轻量版"
+            primaryTitle = period == nil ? "开始训练" : "开始经期轻量训练"
+        }
+
+        return VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text(period == nil ? "今日训练" : "经期轻量版")
+                Text(stateLabel)
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(period == nil ? Theme.accent : Theme.danger)
+                    .foregroundStyle(stateColor)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
-                    .background(
-                        (period == nil ? Theme.accent : Theme.danger).opacity(0.12),
-                        in: Capsule()
-                    )
+                    .background(stateColor.opacity(0.12), in: Capsule())
                 Spacer()
                 Text("第 \(store.currentPlanWeek) 周 / 共 \(plan.weeks) 周")
                     .font(.caption)
@@ -252,6 +375,31 @@ struct HomeView: View {
                 Text(day.focusText)
                     .font(.subheadline)
                     .foregroundStyle(Theme.secondaryText)
+            }
+
+            if isCompleted || isInProgress || isPartial {
+                VStack(spacing: 6) {
+                    HStack {
+                        Text(isCompleted
+                             ? "已完成全部 \(plannedSets) 组"
+                             : "已完成 \(completedSets)/\(plannedSets) 组")
+                        Spacer()
+                        Text("\(Int(progress * 100))%")
+                    }
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(Theme.secondaryText)
+
+                    ProgressView(value: progress)
+                        .tint(stateColor)
+                }
+            }
+
+            if let draft, !isCompleted {
+                Text(draft.currentIndex < day.exercises.count
+                     ? "上次练到：\(day.exercises[draft.currentIndex].displayName)"
+                     : "所有动作已完成，待保存")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
             }
 
             if let period {
@@ -273,7 +421,7 @@ struct HomeView: View {
                 ForEach(day.exercises.prefix(3)) { item in
                     HStack(spacing: 10) {
                         Circle()
-                            .fill((period == nil ? Theme.accent : Theme.danger).opacity(0.7))
+                            .fill(stateColor.opacity(0.7))
                             .frame(width: 6, height: 6)
                         Text(item.displayName)
                             .font(.subheadline)
@@ -294,23 +442,81 @@ struct HomeView: View {
                 }
             }
 
-            Button(period == nil ? "开始训练" : "开始经期轻量训练") {
-                showCompose = true
+            if isCompleted {
+                HStack(spacing: 9) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .foregroundStyle(Theme.accent)
+                    Text("今天已完成，训练记录已保存")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                    Spacer(minLength: 0)
+                }
+                .padding(12)
+                .background(
+                    Theme.accent.opacity(0.09),
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                )
+            } else {
+                Button(primaryTitle) {
+                    if isInProgress || isPartial {
+                        workoutDay = day
+                    } else {
+                        showCompose = true
+                    }
+                }
+                .buttonStyle(PrimaryButtonStyle())
+            }
+
+            if !isCompleted && !isInProgress {
+                Button("今天没空 / 改天") {
+                    showTodayUnavailable = true
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.tertiaryText)
+                .frame(maxWidth: .infinity)
+                .buttonStyle(SubtlePressStyle())
+            }
+
+            if !isCompleted {
+                Text(isInProgress
+                     ? "中途退出会自动保存进度，下次接着练"
+                     : (isPartial ? "已记录完成的部分；在训练日历里可补记剩余组" : "下一步可调整动作顺序、组数和重量"))
+                    .font(.caption2)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+        }
+        .card()
+    }
+
+    private func resumeDraftCard(_ draft: WorkoutDraft, day: PlanDay) -> some View {
+        VStack(alignment: .leading, spacing: 11) {
+            HStack(spacing: 8) {
+                Image(systemName: "pause.circle.fill")
+                    .foregroundStyle(Theme.warning)
+                Text("有一次训练还没结束")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                Spacer()
+                Button("放弃") {
+                    store.clearWorkoutDraft(dayID: day.id)
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.tertiaryText)
+                .buttonStyle(SubtlePressStyle())
+            }
+
+            Text("\(day.title) · 已练 \(draft.completedSets)/\(draft.plannedSets) 组")
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+
+            ProgressView(value: draft.progress)
+                .tint(Theme.warning)
+
+            Button("继续训练") {
+                workoutDay = day
             }
             .buttonStyle(PrimaryButtonStyle())
-
-            Button("今天没空 / 改天") {
-                showTodayUnavailable = true
-            }
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(Theme.tertiaryText)
-            .frame(maxWidth: .infinity)
-            .buttonStyle(SubtlePressStyle())
-
-            Text("下一步可调整动作顺序、组数和重量")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-                .frame(maxWidth: .infinity, alignment: .center)
         }
         .card()
     }
@@ -498,22 +704,24 @@ struct HomeView: View {
     // MARK: - 周进度与教练
 
     private var weekCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let completion = store.weeklyCompletion
+        let completedCount = store.currentWeekCompletedCount
+        return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("本周完成")
                     .font(.headline)
                 Spacer()
                 Text(store.currentWeekPlannedCount == 0
                      ? "本周全休"
-                     : "\(store.currentWeekSessions.count)/\(store.currentWeekPlannedCount) 次")
+                     : "\(completedCount)/\(store.currentWeekPlannedCount) 次")
                     .font(.subheadline)
                     .foregroundStyle(Theme.secondaryText)
             }
 
-            ProgressView(value: store.weeklyCompletion)
+            ProgressView(value: completion)
                 .tint(Theme.accent)
                 .scaleEffect(x: 1, y: 1.6, anchor: .center)
-                .motionAnimation(Motion.smooth, value: store.weeklyCompletion)
+                .motionAnimation(Motion.smooth, value: completion)
 
             HStack(spacing: 16) {
                 stat(value: "\(store.sessions.count)", title: "累计训练")

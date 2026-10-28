@@ -299,20 +299,71 @@ extension AppStore {
 
     // MARK: - Flexible rescheduling
 
-    func isPlanDayCompleted(_ day: PlanDay) -> Bool {
-        guard let plan else { return false }
-        if sessions.contains(where: { $0.programDayID == day.id.uuidString }) {
-            return true
-        }
-        guard let scheduled = plan.scheduledDate(for: day) else { return false }
-        // 旧版本训练记录没有 programDayID，用标题 + 日期兜底。
-        return sessions.contains { session in
-            session.dayTitle == day.title
+    /// 与某个计划日关联的训练记录。新记录用 programDayID；
+    /// 旧记录或旧版临时 programDayID 不属于当前计划时，用“同一天 + 同一标题”兜底。
+    func planDaySessions(_ day: PlanDay) -> [WorkoutSession] {
+        let dayID = day.id.uuidString
+        let scheduled = plan?.scheduledDate(for: day)
+        let currentPlanDayIDs = Set(plan?.days.map { $0.id.uuidString } ?? [])
+        return sessions.filter { session in
+            if session.programDayID == dayID { return true }
+            // 旧版“今日训练编排”会生成临时 programDayID；它不属于任何当前计划日时，
+            // 仍用同一天 + 同一标题匹配，避免完成训练后首页继续提示开始训练。
+            if let programDayID = session.programDayID,
+               currentPlanDayIDs.contains(programDayID) {
+                return false
+            }
+            guard let scheduled else { return false }
+            return session.dayTitle == day.title
                 && FitnessDate.calendar.isDate(session.date, inSameDayAs: scheduled)
         }
     }
 
-    /// 已经过期、没有完成、也没有明确跳过的训练。只回溯 14 天，避免一次显示太多陈年欠账。
+    /// 这次训练计划的组数。优先用训练记录/草稿里保存的实际计划组数，
+    /// 这样经期轻量版少做一组也不会被误判成“没练完”。
+    func plannedSets(for day: PlanDay) -> Int {
+        let planSets = day.exercises.reduce(0) { partial, exercise in
+            partial + max(1, exercise.sets)
+        }
+        let draftSets = workoutDraft?.dayID == day.id ? workoutDraft?.plannedSets : nil
+        let recordedSets = planDaySessions(day).compactMap(\.plannedSets).max()
+        let effectiveSets = draftSets ?? recordedSets ?? planSets
+        return max(1, effectiveSets)
+    }
+
+    /// 已经正式保存的训练记录里完成了多少组。
+    func finalizedCompletedSets(for day: PlanDay) -> Int {
+        planDaySessions(day).reduce(0) { partial, session in
+            partial + session.sets.filter(\.completed).count
+        }
+    }
+
+    /// 当前训练草稿里完成了多少组。
+    func draftCompletedSets(for day: PlanDay) -> Int {
+        guard workoutDraft?.dayID == day.id, let draft = workoutDraft else { return 0 }
+        return draft.logs.filter(\.completed).count
+    }
+
+    /// 展示用完成组数 = 已保存记录 + 当前未结束草稿。
+    func completedSets(for day: PlanDay) -> Int {
+        finalizedCompletedSets(for: day) + draftCompletedSets(for: day)
+    }
+
+    func planDayProgress(_ day: PlanDay) -> Double {
+        let planned = plannedSets(for: day)
+        guard planned > 0 else { return 0 }
+        return min(1, Double(completedSets(for: day)) / Double(planned))
+    }
+
+    /// 只有正式保存且覆盖了计划组数，才算完成整个训练日。
+    /// 练了一半、暂停中的草稿都不算完成。
+    func isPlanDayCompleted(_ day: PlanDay) -> Bool {
+        let planned = plannedSets(for: day)
+        guard planned > 0 else { return false }
+        return finalizedCompletedSets(for: day) >= planned
+    }
+
+    /// 已经过期、没有完成、也没有明确跳过的训练。只回溯 28 天，避免一次显示太多陈年欠账。
     var missedPlanDays: [PlanDay] {
         guard let plan else { return [] }
         let today = FitnessDate.startOfDay(Date())
@@ -320,6 +371,7 @@ extension AppStore {
         return plan.days
             .filter { day in
                 guard day.skippedAt == nil,
+                      workoutDraft?.dayID != day.id,
                       !isPlanDayCompleted(day),
                       let date = plan.scheduledDate(for: day) else { return false }
                 let dayStart = FitnessDate.startOfDay(date)

@@ -6,6 +6,7 @@ struct OnboardingView: View {
     @Environment(AuthStore.self) private var auth
 
     @State private var draft = UserProfile()
+    @State private var step = 0
     @State private var alertMessage = ""
     @State private var showAlert = false
     @State private var showExitConfirm = false
@@ -14,8 +15,10 @@ struct OnboardingView: View {
         AppScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 header
-                ProfileFormView(draft: $draft)
-                safetyCard
+                ProfileFormView(draft: $draft, step: step)
+                if step == 0 {
+                    safetyCard
+                }
 
                 Text("继续即表示你已阅读并同意《用户协议》与《隐私政策》。健康数据仅用于生成训练与饮食建议。")
                     .font(.caption2)
@@ -32,10 +35,24 @@ struct OnboardingView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
                 Divider().overlay(Theme.stroke)
-                Button(action: save) {
-                    Text("生成我的计划")
+                HStack(spacing: 10) {
+                    if step > 0 {
+                        Button("上一步") {
+                            withAnimation(Motion.smooth) {
+                                step -= 1
+                            }
+                        }
+                        .buttonStyle(SecondaryButtonStyle())
+                        .frame(maxWidth: 110)
+                    }
+
+                    Button {
+                        advance()
+                    } label: {
+                        Text(step < 4 ? "下一步" : "生成我的计划")
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
                 }
-                .buttonStyle(PrimaryButtonStyle())
                 .padding(.horizontal, 20)
                 .padding(.top, 10)
                 .padding(.bottom, 8)
@@ -66,6 +83,44 @@ struct OnboardingView: View {
         }
     }
 
+    private var stepTitle: String {
+        switch step {
+        case 0: return "先认识你"
+        case 1: return "身体基线"
+        case 2: return "你能用什么"
+        case 3: return "一周怎么安排"
+        default: return "目标定清楚"
+        }
+    }
+
+    private var stepSubtitle: String {
+        switch step {
+        case 0: return "基础信息用于计算热量与训练负荷。"
+        case 1: return "体重、体脂和围度会用来追踪变化，不用追求完美数字。"
+        case 2: return "只选你实际能用的器械，计划才不会落空。"
+        case 3: return "按真实出勤频率安排，比一开始练太猛更重要。"
+        default: return "目标只作方向，减重建议不超过 0.5kg/周。"
+        }
+    }
+
+    private func advance() {
+        if step == 0 {
+            let name = draft.nickname.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !name.isEmpty else {
+                alertMessage = "先填一个称呼，方便教练在对话里称呼你。"
+                showAlert = true
+                return
+            }
+        }
+        guard step < 4 else {
+            save()
+            return
+        }
+        withAnimation(Motion.smooth) {
+            step += 1
+        }
+    }
+
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
@@ -92,14 +147,34 @@ struct OnboardingView: View {
                 .accessibilityLabel("退出登录")
             }
 
-            Text("先花 2 分钟\n让计划适合你")
-                .font(.system(size: 32, weight: .bold, design: .rounded))
+            HStack {
+                Text("起步评估")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.secondaryText)
+                Spacer()
+                Text("\(step + 1) / 5")
+                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+            }
+
+            HStack(spacing: 4) {
+                ForEach(0..<5, id: \.self) { index in
+                    Capsule()
+                        .fill(index <= step ? Theme.accent : Theme.surfaceStrong)
+                        .frame(height: 3)
+                }
+            }
+            .animation(Motion.quick, value: step)
+
+            Text(stepTitle)
+                .font(.system(size: 30, weight: .heavy, design: .rounded))
                 .foregroundStyle(.white)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text("我们会根据你的目标、器械和可用时间编排训练，并随着记录持续调整。")
+            Text(stepSubtitle)
                 .font(.subheadline)
                 .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.bottom, 4)
     }

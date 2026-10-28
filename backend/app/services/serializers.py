@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
-from ..models import Exercise, Goal, PlanExercise, Program, ProgramDay, Profile
+from ..models import Exercise, Goal, PlanExercise, Profile, Program, ProgramDay
 from .locking import lock_user
 
 

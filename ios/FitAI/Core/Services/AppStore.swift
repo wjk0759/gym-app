@@ -33,8 +33,11 @@ final class AppStore {
     var plan: TrainingPlan?
     var planHistory: [TrainingPlan] = []
     var sessions: [WorkoutSession] = []
+    /// 当前训练中的本地草稿；只保留一个，避免同一天出现多份进度。
+    var workoutDraft: WorkoutDraft?
     var chat: [ChatMessage] = []
     var selectedTab = 0
+    var coachContext: String?
     var planAdjustmentRequested = false
     var planAdjustmentStage = 0
     var planAdjustmentIssue = ""
@@ -59,6 +62,7 @@ final class AppStore {
     var isSyncingRemoteWorkouts = false
     var isSyncingUserData = false
     private var scheduleSyncRequested = false
+    @ObservationIgnored private var draftPersistWorkItem: DispatchWorkItem?
     /// 已从本地删除、但服务端 DELETE 尚未成功的训练记录 ID。
     var pendingWorkoutDeletionIDs: [String] = []
     var isAgentWorking = false
@@ -66,6 +70,10 @@ final class AppStore {
     var agentRunID: String?
     var agentProposal: AgentPlanProposal?
     var agentActions: [AgentAction] = []
+    var dietWeekPlan: RemoteDietWeek?
+    var coachEquipmentScanRequested = false
+    var coachBodyAnalysisRequested = false
+    var coachEquipmentResult: EquipmentScanResult?
     var isExecutingAgentActions = false
     var workoutLaunchDayID: UUID?
     var pendingRoute: AppRoute?
@@ -191,10 +199,24 @@ final class AppStore {
         return plan.weekDays(in: currentPlanWeek).count
     }
 
+    /// 计划日维度真正完成的次数；练了一半不算完成一次。
+    var currentWeekCompletedCount: Int {
+        guard let plan else { return currentWeekSessions.count }
+        return plan.weekDays(in: currentPlanWeek).filter { isPlanDayCompleted($0) }.count
+    }
+
     var weeklyCompletion: Double {
-        let planned = currentWeekPlannedCount
-        guard planned > 0 else { return 0 }
-        return min(1.0, Double(currentWeekSessions.count) / Double(planned))
+        guard let plan else {
+            let planned = currentWeekPlannedCount
+            guard planned > 0 else { return 0 }
+            return min(1.0, Double(currentWeekSessions.count) / Double(planned))
+        }
+        let days = plan.weekDays(in: currentPlanWeek)
+        guard !days.isEmpty else { return 0 }
+        let progress = days.reduce(0.0) { partial, day in
+            partial + planDayProgress(day)
+        }
+        return min(1.0, progress / Double(days.count))
     }
 
     var totalVolume: Double {
@@ -424,6 +446,8 @@ final class AppStore {
 
     private func archiveCurrentPlan() {
         guard let current = plan else { return }
+        // 计划版本变化后训练日 ID 会变化，旧草稿无法安全恢复。
+        workoutDraft = nil
         guard planHistory.first?.id != current.id else { return }
         planHistory.insert(current, at: 0)
         if planHistory.count > 5 {
@@ -586,6 +610,26 @@ final class AppStore {
         persist()
     }
 
+    /// 体型分析后跳转到 AI 教练：把分析结果作为上下文带进对话，闭环继续。
+    func openCoachAfterBodyAnalysis(_ analysis: BodyAnalysis) {
+        let focus = analysis.focusAreas.map(\.label).joined(separator: "、")
+        var text = "📋 体型分析结果\n\n\(analysis.summary)\n\n训练重点：\(focus.isEmpty ? "全身均衡" : focus)"
+        if !analysis.recommendations.isEmpty {
+            text += "\n\n建议：\n" + analysis.recommendations.map { "· \($0)" }.joined(separator: "\n")
+        }
+        text += "\n\n你可以让我根据这个分析调整训练计划，或者告诉我你的想法。"
+        chat.append(ChatMessage(role: .assistant, text: text))
+        coachContext = text
+        persist()
+        selectedTab = 2
+    }
+
+    /// 把教练能力的执行结果写回对话，保持“结果留在教练页”的闭环。
+    func appendCoachNotice(_ text: String) {
+        chat.append(ChatMessage(role: .assistant, text: text))
+        persist()
+    }
+
     // MARK: - 训练与对话
 
     func record(
@@ -593,7 +637,8 @@ final class AppStore {
         sets: [SetLog],
         durationMinutes: Int,
         feeling: Int,
-        notes: String? = nil
+        notes: String? = nil,
+        plannedSets: Int? = nil
     ) {
         let cleanNotes = notes?.trimmingCharacters(in: .whitespacesAndNewlines)
         let session = WorkoutSession(
@@ -602,8 +647,12 @@ final class AppStore {
             feeling: feeling,
             notes: (cleanNotes?.isEmpty ?? true) ? nil : cleanNotes,
             sets: sets,
-            programDayID: day.id.uuidString
+            programDayID: day.id.uuidString,
+            plannedSets: plannedSets
         )
+        if workoutDraft?.dayID == day.id {
+            workoutDraft = nil
+        }
         sessions.insert(session, at: 0)
         persist()
         syncPendingWorkouts()
@@ -624,6 +673,50 @@ final class AppStore {
         sessions.insert(session, at: 0)
         persist()
         syncPendingWorkouts()
+    }
+
+    // MARK: - 训练草稿
+
+    func draft(for dayID: UUID) -> WorkoutDraft? {
+        guard let workoutDraft, workoutDraft.dayID == dayID else { return nil }
+        return workoutDraft
+    }
+
+    /// 当前草稿对应的计划日；计划已重新生成时可能找不到。
+    var draftPlanDay: PlanDay? {
+        guard let draft = workoutDraft, let plan else { return nil }
+        return plan.days.first { $0.id == draft.dayID }
+    }
+
+    func saveWorkoutDraft(_ draft: WorkoutDraft, persistImmediately: Bool = false) {
+        let isNewDraft = workoutDraft?.dayID != draft.dayID
+        workoutDraft = draft
+
+        if persistImmediately || isNewDraft {
+            draftPersistWorkItem?.cancel()
+            draftPersistWorkItem = nil
+            persist()
+            return
+        }
+
+        // 训练中每完成一组就全量编码落盘会放大 I/O。首次保存立即落盘，
+        // 后续最多每 10 秒合并一次；暂停/切后台/退出时再强制落盘。
+        guard draftPersistWorkItem == nil else { return }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.draftPersistWorkItem = nil
+            self.persist()
+        }
+        draftPersistWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10, execute: work)
+    }
+
+    func clearWorkoutDraft(dayID: UUID? = nil) {
+        if let dayID {
+            guard workoutDraft?.dayID == dayID else { return }
+        }
+        workoutDraft = nil
+        persist()
     }
 
     func updateSession(_ session: WorkoutSession) {
@@ -762,11 +855,13 @@ final class AppStore {
                 guard sessions[index].pendingRemoteUpdate != true else { continue }
                 let localID = sessions[index].id
                 let localTitle = sessions[index].dayTitle
-                let merged = makeWorkoutSession(
+                let localPlannedSets = sessions[index].plannedSets
+                var merged = makeWorkoutSession(
                     from: item,
                     dayTitle: planTitle ?? localTitle,
                     localID: localID
                 )
+                merged.plannedSets = localPlannedSets ?? merged.plannedSets
                 if merged != sessions[index] {
                     sessions[index] = merged
                     changed = true
@@ -778,11 +873,13 @@ final class AppStore {
                 // Match the local client UUID instead of appending a duplicate.
                 guard sessions[index].pendingRemoteUpdate != true else { continue }
                 let localTitle = sessions[index].dayTitle
-                let merged = makeWorkoutSession(
+                let localPlannedSets = sessions[index].plannedSets
+                var merged = makeWorkoutSession(
                     from: item,
                     dayTitle: planTitle ?? localTitle,
                     localID: localID
                 )
+                merged.plannedSets = localPlannedSets ?? merged.plannedSets
                 if merged != sessions[index] {
                     sessions[index] = merged
                     changed = true
@@ -1080,7 +1177,8 @@ final class AppStore {
                 do {
                     let response = try await APIClient.shared.sendChat(
                         message: trimmed,
-                        skill: skill
+                        skill: skill,
+                        context: coachContext
                     )
                     self.chat.append(
                         ChatMessage(
@@ -1304,6 +1402,10 @@ final class AppStore {
                 "date": date.map { FitnessDate.key($0) } ?? "",
                 "week_index": day.weekIndex,
                 "completed": isPlanDayCompleted(day),
+                "in_progress": !isPlanDayCompleted(day) && workoutDraft?.dayID == day.id,
+                "progress": planDayProgress(day),
+                "planned_sets": plannedSets(for: day),
+                "completed_sets": completedSets(for: day),
                 "skipped": day.skippedAt != nil,
             ]
         }
@@ -1319,6 +1421,11 @@ final class AppStore {
                 "id": today.id.uuidString,
                 "title": today.title,
                 "date": FitnessDate.key(date),
+                "completed": isPlanDayCompleted(today),
+                "in_progress": !isPlanDayCompleted(today) && workoutDraft?.dayID == today.id,
+                "progress": planDayProgress(today),
+                "completed_sets": completedSets(for: today),
+                "planned_sets": plannedSets(for: today),
             ]
         }
         return context
@@ -1445,7 +1552,8 @@ final class AppStore {
 
         case "start_training":
             let day = resolveActionPlanDay(action.payload)
-                ?? todayDay
+                ?? draftPlanDay.flatMap { isPlanDayCompleted($0) ? nil : $0 }
+                ?? todayDay.flatMap { isPlanDayCompleted($0) ? nil : $0 }
                 ?? plan?.days
                     .filter { $0.skippedAt == nil && !isPlanDayCompleted($0) }
                     .sorted {
@@ -1535,6 +1643,30 @@ final class AppStore {
                 previousProfile: previousProfile
             )
             return "已记录体重 \(weight.formatted(.number.precision(.fractionLength(1)))) kg"
+
+        case "create_diet_plan":
+            let strategy = action.payload?.strategy ?? "balanced"
+            let weekStart = action.payload?.weekStart
+            Task { @MainActor in
+                do {
+                    let week = try await APIClient.shared.fetchDietWeek(
+                        strategy: strategy,
+                        weekStart: weekStart
+                    )
+                    self.dietWeekPlan = week
+                } catch {
+                    self.toast = "饮食计划生成失败，请稍后重试"
+                }
+            }
+            return "正在生成本周饮食计划…"
+
+        case "recognize_equipment":
+            coachEquipmentScanRequested = true
+            return "正在打开器械识别…"
+
+        case "analyze_body":
+            coachBodyAnalysisRequested = true
+            return "正在打开体型分析…"
 
         default:
             return "暂不支持操作：\(action.type)"
@@ -1705,10 +1837,13 @@ final class AppStore {
     }
 
     private func resetInMemory() {
+        draftPersistWorkItem?.cancel()
+        draftPersistWorkItem = nil
         profile = UserProfile()
         plan = nil
         planHistory = []
         sessions = []
+        workoutDraft = nil
         chat = []
         foodLogs = []
         customFoods = []
@@ -1805,6 +1940,7 @@ final class AppStore {
         var plan: TrainingPlan?
         var planHistory: [TrainingPlan]?
         var sessions: [WorkoutSession]
+        var workoutDraft: WorkoutDraft?
         var chat: [ChatMessage]
         var foodLogs: [FoodLog]?
         var customFoods: [FoodItem]?
@@ -1848,6 +1984,7 @@ final class AppStore {
         plan = state.plan
         planHistory = state.planHistory ?? []
         sessions = state.sessions
+        workoutDraft = state.workoutDraft
         chat = state.chat
         foodLogs = state.foodLogs ?? []
         customFoods = state.customFoods ?? []
@@ -1883,11 +2020,14 @@ final class AppStore {
     }
 
     func persist() {
+        draftPersistWorkItem?.cancel()
+        draftPersistWorkItem = nil
         let state = PersistedState(
             profile: profile,
             plan: plan,
             planHistory: planHistory,
             sessions: sessions,
+            workoutDraft: workoutDraft,
             chat: chat,
             foodLogs: foodLogs,
             customFoods: customFoods,
@@ -1963,6 +2103,11 @@ final class AppStore {
 
     /// 进入后台或切换账号前调用，确保已排队的写入完成。
     func flushPersistence() {
+        if draftPersistWorkItem != nil {
+            draftPersistWorkItem?.cancel()
+            draftPersistWorkItem = nil
+            persist()
+        }
         persistenceQueue.sync {
             persistenceLock.lock()
             let state = pendingPersistedState

@@ -39,7 +39,7 @@ struct MainTabView: View {
             PlanHomeView()
                 .tag(1)
                 .tabItem {
-                    Label("计划", systemImage: "calendar")
+                    Label("记录", systemImage: "calendar")
                 }
 
             CoachChatView()
@@ -48,13 +48,11 @@ struct MainTabView: View {
                     Label("教练", systemImage: "bubble.left.and.bubble.right")
                 }
 
-            NavigationStack {
-                EquipmentPickerView()
-            }
-            .tag(3)
-            .tabItem {
-                Label("器械", systemImage: "dumbbell")
-            }
+            DiscoverView()
+                .tag(3)
+                .tabItem {
+                    Label("发现", systemImage: "square.grid.2x2")
+                }
 
             ProfileView()
                 .tag(4)

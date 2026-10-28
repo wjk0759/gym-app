@@ -29,20 +29,19 @@ EXERCISES = {
 
 
 def make_plan(slugs, weeks=4):
-    days = []
-    for week in range(1, weeks + 1):
-        days.append(
-            {
-                "week_index": week,
-                "weekday": 1,
-                "title": "全身",
-                "focus": ["chest"],
-                "exercises": [
-                    {"slug": slug, "sets": 3, "reps": "8-10", "rest_sec": 60}
-                    for slug in slugs
-                ],
-            }
-        )
+    days = [
+        {
+            "week_index": week,
+            "weekday": 1,
+            "title": "全身",
+            "focus": ["chest"],
+            "exercises": [
+                {"slug": slug, "sets": 3, "reps": "8-10", "rest_sec": 60}
+                for slug in slugs
+            ],
+        }
+        for week in range(1, weeks + 1)
+    ]
     return {"title": "测试计划", "weeks": weeks, "days": days}
 
 

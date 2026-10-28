@@ -6,9 +6,9 @@ from sqlalchemy import select
 from ..deps import CurrentUser, DBSession
 from ..models import Exercise, Goal, PlanExercise, Profile, Program, WorkoutSession
 from ..schemas import PlanDayPatch, PlanGenerateIn
+from ..services.locking import lock_user
 from ..services.plan_generator import generate_plan
 from ..services.plan_validator import PlanValidationError, injury_tags
-from ..services.locking import lock_user
 from ..services.queries import active_program, owned_program, owned_program_day
 from ..services.serializers import (
     clone_program,
@@ -125,7 +125,7 @@ def update_day(
         ).scalars()
     } if exercise_slugs else {}
 
-    for index, item in enumerate(payload.exercises, start=1):
+    for item in payload.exercises:
         exercise = exercises.get(item.slug)
         if exercise is None:
             raise HTTPException(status_code=422, detail=f"动作 {item.slug} 不存在")

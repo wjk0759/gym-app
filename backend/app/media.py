@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from pathlib import Path
 
 from .config import settings
@@ -25,7 +26,5 @@ def remove_media_url(url: str | None) -> None:
     candidate = (MEDIA_ROOT / url.removeprefix("/media/")).resolve()
     if MEDIA_ROOT not in candidate.parents:
         return
-    try:
+    with suppress(OSError):
         candidate.unlink(missing_ok=True)
-    except OSError:
-        pass

@@ -8,7 +8,15 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
+import logging
+
+from ..config import settings
+from . import llm
+from .plan_validator import VALID_MUSCLES
+
+logger = logging.getLogger(__name__)
 
 DISCLAIMER = (
     "照片分析仅用于训练重点参考，不构成体脂率、体态诊断或医疗建议。"
@@ -60,6 +68,61 @@ VARIANTS = [
 
 
 async def analyze(image_bytes: bytes, filename: str = "body.jpg") -> dict:
+    if settings.use_mock_vision:
+        return _mock_analyze(image_bytes, filename)
+    try:
+        data = await llm.complete_vision_json(
+            _SYSTEM_PROMPT, _USER_PROMPT, base64.b64encode(image_bytes).decode()
+        )
+        focus = [
+            str(item)
+            for item in (data.get("focus_areas") or [])
+            if str(item) in VALID_MUSCLES
+        ][:4]
+        return {
+            "summary": str(data.get("summary") or "")[:200],
+            "focus_areas": focus,
+            "recommendations": [
+                str(item)[:120] for item in (data.get("recommendations") or [])[:4]
+            ],
+            "confidence": round(_clamp_confidence(data.get("confidence")), 2),
+            "disclaimer": DISCLAIMER,
+            "model": settings.vision_model,
+            "image_name": filename,
+        }
+    except Exception as exc:  # noqa: BLE001 - 分析失败回退，不阻断流程
+        logger.warning("body vision failed, fallback to mock: %s", exc)
+        payload = _mock_analyze(image_bytes, filename)
+        payload["warning"] = f"视觉分析失败，已回退本地建议：{str(exc)[:200]}"
+        return payload
+
+
+_SYSTEM_PROMPT = (
+    "你是健身教练。根据图片给出训练重点建议，不做体脂率或医疗诊断。"
+    "如果图片不是人体/体型照片，如实说明拍到的是什么，不要硬给建议。"
+    "只输出一个 JSON 对象，不要解释。"
+)
+
+_USER_PROMPT = (
+    '根据图片内容，输出 JSON：'
+    '{"summary":"如实描述图片里有什么并给出训练建议",'
+    '"focus_areas":["chest|back|legs|glutes|shoulders|arms|core|cardio"],'
+    '"recommendations":["建议1","建议2","建议3"],"confidence":0.0到1.0}。'
+    '如果图片不是人体/体型照片（比如一块木头、食物、文字、地面），'
+    'focus_areas 输出空数组，summary 必须如实说明这是什么、为什么无法分析。'
+    "只输出 JSON，focus_areas 最多 4 个。"
+)
+
+
+def _clamp_confidence(value) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return 0.7
+    return max(0.0, min(1.0, number))
+
+
+def _mock_analyze(image_bytes: bytes, filename: str = "body.jpg") -> dict:
     digest = hashlib.sha256(image_bytes).digest()
     variant = VARIANTS[digest[0] % len(VARIANTS)]
     return {

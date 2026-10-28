@@ -9,7 +9,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import func, select
@@ -80,9 +79,11 @@ def _dedupe_extracted_facts(facts: list[dict]) -> list[dict]:
         kind = str(fact.get("kind", "")).lower()
         key = str(fact.get("key", "")).lower()
         content = _normalize_content(fact.get("content"))
-        if kind == "preference" and key in {"preference", "general"}:
-            if any(token in content for token in ("每周", "训练日", "分钟", "器械", "哑铃", "杠铃", "出差")):
-                continue
+        if kind == "preference" and key in {"preference", "general"} and any(
+            token in content
+            for token in ("每周", "训练日", "分钟", "器械", "哑铃", "杠铃", "出差")
+        ):
+            continue
         filtered.append(fact)
     return filtered
 
