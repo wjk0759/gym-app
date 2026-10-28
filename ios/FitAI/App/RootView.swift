@@ -13,6 +13,7 @@ struct RootView: View {
     @State private var splashPulse = false
     @State private var phaseNow = Date()
     @State private var keyboardVisible = false
+    @State private var syncedUserID: String?
 
     private let phaseTimer = Timer.publish(every: 300, on: .main, in: .common).autoconnect()
 
@@ -63,15 +64,7 @@ struct RootView: View {
         .task {
             store.isPro = subscriptions.isPro
             await auth.restoreIfNeeded()
-            store.switchUser(auth.userID)
-            if auth.isAuthenticated {
-                enableRemoteMode()
-                store.syncPendingWorkouts()
-                store.syncRemoteWorkouts()
-                store.refreshWeeklyReview()
-                store.syncPendingUserData()
-            }
-            activateWeatherIfNeeded()
+            refreshSession()
         }
         .onReceive(phaseTimer) { date in
             phaseNow = date
@@ -85,27 +78,11 @@ struct RootView: View {
         .onChange(of: subscriptions.isPro) { _, isPro in
             store.isPro = isPro
         }
-        .onChange(of: auth.isAuthenticated) { _, isAuthenticated in
-            store.switchUser(auth.userID)
-            if isAuthenticated {
-                enableRemoteMode()
-                store.syncPendingWorkouts()
-                store.syncRemoteWorkouts()
-                store.refreshWeeklyReview()
-                store.syncPendingUserData()
-            }
-            activateWeatherIfNeeded()
+        .onChange(of: auth.isAuthenticated) { _, _ in
+            refreshSession()
         }
-        .onChange(of: auth.userID) { _, userID in
-            store.switchUser(userID)
-            if auth.isAuthenticated {
-                enableRemoteMode()
-                store.syncPendingWorkouts()
-                store.syncRemoteWorkouts()
-                store.refreshWeeklyReview()
-                store.syncPendingUserData()
-                activateWeatherIfNeeded()
-            }
+        .onChange(of: auth.userID) { _, _ in
+            refreshSession()
         }
         .onChange(of: store.profile.isOnboarded) { _, isOnboarded in
             if isOnboarded {
@@ -175,6 +152,25 @@ struct RootView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppBackground())
         .transition(.opacity)
+    }
+
+    private func refreshSession() {
+        store.switchUser(auth.userID)
+        guard auth.isAuthenticated else {
+            syncedUserID = nil
+            return
+        }
+        guard syncedUserID != auth.userID else {
+            activateWeatherIfNeeded()
+            return
+        }
+        syncedUserID = auth.userID
+        enableRemoteMode()
+        store.syncPendingWorkouts()
+        store.syncRemoteWorkouts()
+        store.refreshWeeklyReview()
+        store.syncPendingUserData()
+        activateWeatherIfNeeded()
     }
 
     private func activateWeatherIfNeeded() {

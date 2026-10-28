@@ -191,27 +191,19 @@ struct VideoReviewView: View {
                 throw ReviewError("视频太短，至少需要 1 秒")
             }
 
-            let generator = AVAssetImageGenerator(asset: asset)
-            generator.appliesPreferredTrackTransform = true
-            generator.maximumSize = CGSize(width: 720, height: 1280)
-            let ratios = [0.2, 0.5, 0.8]
-            var images: [UIImage] = []
-            var times: [Int] = []
-            for ratio in ratios {
-                let time = CMTime(seconds: max(0.1, seconds * ratio), preferredTimescale: 600)
-                do {
-                    let image = try generator.copyCGImage(at: time, actualTime: nil)
-                    images.append(UIImage(cgImage: image))
-                    times.append(Int(seconds * ratio))
-                } catch {
-                    // 视频尾部/关键帧缺失时跳过这一帧，其他帧仍可用。
-                }
-            }
-            guard !images.isEmpty else {
+            let url = file.url
+            let frames = await Task.detached(priority: .userInitiated) {
+                Self.extractFrames(from: url, seconds: seconds)
+            }.value
+            guard !frames.images.isEmpty else {
                 throw ReviewError("没有抽取到有效画面，换一段视频试试")
             }
 
-            contactSheet = makeContactSheet(images, times: times)
+            let images = frames.images
+            let times = frames.times
+            contactSheet = await Task.detached(priority: .userInitiated) {
+                Self.makeContactSheet(images, times: times)
+            }.value
             duration = seconds
         } catch {
             errorMessage = (error as? ReviewError)?.message ?? "视频处理失败，换一段视频试试"
@@ -222,7 +214,27 @@ struct VideoReviewView: View {
         isProcessing = false
     }
 
-    private func makeContactSheet(_ images: [UIImage], times: [Int]) -> UIImage {
+    private static func extractFrames(from url: URL, seconds: Double) -> (images: [UIImage], times: [Int]) {
+        let asset = AVURLAsset(url: url)
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        generator.maximumSize = CGSize(width: 720, height: 1280)
+        var images: [UIImage] = []
+        var times: [Int] = []
+        for ratio in [0.2, 0.5, 0.8] {
+            let time = CMTime(seconds: max(0.1, seconds * ratio), preferredTimescale: 600)
+            do {
+                let image = try generator.copyCGImage(at: time, actualTime: nil)
+                images.append(UIImage(cgImage: image))
+                times.append(Int(seconds * ratio))
+            } catch {
+                // 视频尾部/关键帧缺失时跳过这一帧，其他帧仍可用。
+            }
+        }
+        return (images, times)
+    }
+
+    private static func makeContactSheet(_ images: [UIImage], times: [Int]) -> UIImage {
         let width: CGFloat = 720
         let frameHeight = width * 9 / 16
         let size = CGSize(width: width, height: frameHeight * CGFloat(images.count))

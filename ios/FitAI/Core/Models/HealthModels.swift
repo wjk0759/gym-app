@@ -85,12 +85,12 @@ enum BodyCheckInFrequency: String, Codable, CaseIterable, Identifiable {
 // MARK: - 日期键
 
 enum FitnessDate {
-    static var calendar: Calendar {
+    static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.locale = Locale(identifier: "zh_CN")
         calendar.firstWeekday = 2
         return calendar
-    }
+    }()
 
     private static let keyFormatter: DateFormatter = {
         let formatter = DateFormatter()

@@ -46,9 +46,7 @@ struct MainTabView: View {
                     Label("记录", systemImage: "calendar")
                 }
 
-            CoachChatView()
-                // 教练等待回复时暂停背景天气动画，优先保证消息列表和输入响应。
-                .environment(\.weatherAnimationActive, store.selectedTab == 2 && !store.isReplying)
+            CoachTabRoot()
                 .tag(2)
                 .tabItem {
                     Label("教练", systemImage: "bubble.left.and.bubble.right")
@@ -100,5 +98,14 @@ struct MainTabView: View {
         case .periodSchedule:
             PeriodScheduleView()
         }
+    }
+}
+
+private struct CoachTabRoot: View {
+    @Environment(AppStore.self) private var store
+
+    var body: some View {
+        CoachChatView()
+            .environment(\.weatherAnimationActive, store.selectedTab == 2 && !store.isReplying)
     }
 }

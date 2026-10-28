@@ -25,6 +25,7 @@ struct WorkoutSessionView: View {
     @State private var feeling = 4
     @State private var notes = ""
     @State private var elapsedSeconds: TimeInterval = 0
+    @State private var activeStartedAt = Date()
     @State private var resumedExercises: [PlanExercise]?
     @State private var didLoadDraft = false
     @State private var didFinish = false
@@ -150,6 +151,7 @@ struct WorkoutSessionView: View {
                 UIApplication.shared.isIdleTimerDisabled = true
                 loadDraftIfNeeded()
                 prepare(currentExercise)
+                activeStartedAt = Date()
             }
             .onDisappear {
                 saveDraftIfNeeded(persistImmediately: true)
@@ -157,13 +159,16 @@ struct WorkoutSessionView: View {
                 UIApplication.shared.isIdleTimerDisabled = false
             }
             .onChange(of: scenePhase) { _, phase in
-                guard phase != .active else { return }
-                saveDraftIfNeeded(persistImmediately: true)
-                store.flushPersistence()
+                if phase == .active {
+                    elapsedSeconds = currentElapsed
+                    activeStartedAt = Date()
+                } else {
+                    saveDraftIfNeeded(persistImmediately: true)
+                    store.flushPersistence()
+                }
             }
             .onReceive(timer) { _ in
                 tickRest()
-                tickElapsed()
             }
             .confirmationDialog(
                 "暂停或结束训练？",
@@ -738,8 +743,12 @@ struct WorkoutSessionView: View {
         return completed >= plannedTotalSets
     }
 
+    private var currentElapsed: TimeInterval {
+        elapsedSeconds + Date().timeIntervalSince(activeStartedAt)
+    }
+
     private var durationMinutes: Int {
-        max(1, Int(elapsedSeconds / 60))
+        max(1, Int(currentElapsed / 60))
     }
 
     // MARK: - 行为
@@ -853,11 +862,6 @@ struct WorkoutSessionView: View {
         }
     }
 
-    private func tickElapsed() {
-        guard !didFinish, index < activeDay.exercises.count else { return }
-        elapsedSeconds += 1
-    }
-
     private func loadDraftIfNeeded() {
         guard !didLoadDraft else { return }
         didLoadDraft = true
@@ -899,7 +903,7 @@ struct WorkoutSessionView: View {
                 logs: logs,
                 currentIndex: index,
                 plannedSets: plannedTotalSets,
-                elapsedSeconds: elapsedSeconds,
+                elapsedSeconds: currentElapsed,
                 feeling: feeling,
                 notes: String(notes.prefix(300)),
                 adjustedExercises: Array(adjustedExercises.values),

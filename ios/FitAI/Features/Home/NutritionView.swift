@@ -22,6 +22,12 @@ struct NutritionView: View {
         self.date = Calendar.current.startOfDay(for: date)
     }
 
+    private struct DayLogsSnapshot {
+        let logs: [FoodLog]
+        let totals: NutritionTotals
+        let byMeal: [MealType: [FoodLog]]
+    }
+
     private var targets: NutritionTargets {
         DietPlanner.targets(profile: store.profile)
     }
@@ -30,30 +36,37 @@ struct NutritionView: View {
         Calendar.current.isDateInToday(date)
     }
 
-    private var dayLogs: [FoodLog] {
-        store.foodLogs.filter {
-            Calendar.current.isDate($0.date, inSameDayAs: date)
+    private var daySnapshot: DayLogsSnapshot {
+        let dayStart = FitnessDate.calendar.startOfDay(for: date)
+        let logs = store.foodLogs.filter {
+            FitnessDate.calendar.startOfDay(for: $0.date) == dayStart
         }
-    }
-
-    private var dayNutrition: NutritionTotals {
-        dayLogs.reduce(into: NutritionTotals()) { total, log in
+        let totals = logs.reduce(into: NutritionTotals()) { total, log in
             total.kcal += log.kcal
             total.protein += log.protein
             total.carbs += log.carbs
             total.fat += log.fat
             total.fiber += log.fiber ?? 0
         }
+        return DayLogsSnapshot(
+            logs: logs,
+            totals: totals,
+            byMeal: Dictionary(grouping: logs, by: \.meal)
+        )
     }
 
     private var meals: [MealSuggestion] {
         aiMeals ?? DietPlanner.meals(profile: store.profile)
     }
 
-    private var dateString: String {
+    private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: date)
+        return formatter
+    }()
+
+    private var dateString: String {
+        Self.dateFormatter.string(from: date)
     }
 
     @MainActor
@@ -75,13 +88,16 @@ struct NutritionView: View {
     }
 
     var body: some View {
-        AppScrollView {
+        let nutritionTargets = targets
+        let snapshot = daySnapshot
+
+        return AppScrollView {
             VStack(spacing: 16) {
-                header
+                header(snapshot: snapshot, targets: nutritionTargets)
                 photoFoodCard
                 weekPlanCard
-                todayLogCard
-                macroCard
+                todayLogCard(snapshot: snapshot, targets: nutritionTargets)
+                macroCard(snapshot: snapshot, targets: nutritionTargets)
                 suggestionHeader
 
                 ForEach(meals) { meal in
@@ -219,8 +235,8 @@ struct NutritionView: View {
         .buttonStyle(.plain)
     }
 
-    private var header: some View {
-        let consumed = dayNutrition
+    private func header(snapshot: DayLogsSnapshot, targets: NutritionTargets) -> some View {
+        let consumed = snapshot.totals
         let remainingKcal = max(0, targets.kcal - Int(consumed.kcal))
         let remainingProtein = max(0, targets.protein - Int(consumed.protein))
         let goalLabel = isToday ? "今日" : "当天"
@@ -257,16 +273,18 @@ struct NutritionView: View {
         .card()
     }
 
-    private var macroCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+    private func macroCard(snapshot: DayLogsSnapshot, targets: NutritionTargets) -> some View {
+        let totals = snapshot.totals
+
+        return VStack(alignment: .leading, spacing: 12) {
             Text("宏量营养素")
                 .font(.headline)
 
             HStack(spacing: 10) {
-                macro("蛋白质", "\(Int(dayNutrition.protein)) / \(targets.protein)g", color: Theme.accent)
-                macro("碳水", "\(Int(dayNutrition.carbs)) / \(targets.carbs)g", color: Theme.warning)
-                macro("脂肪", "\(Int(dayNutrition.fat)) / \(targets.fat)g", color: Color(red: 0.55, green: 0.70, blue: 0.98))
-                macro("膳食纤维", "\(Int(dayNutrition.fiber)) / \(targets.fiber)g", color: Theme.blue)
+                macro("蛋白质", "\(Int(totals.protein)) / \(targets.protein)g", color: Theme.accent)
+                macro("碳水", "\(Int(totals.carbs)) / \(targets.carbs)g", color: Theme.warning)
+                macro("脂肪", "\(Int(totals.fat)) / \(targets.fat)g", color: Color(red: 0.55, green: 0.70, blue: 0.98))
+                macro("膳食纤维", "\(Int(totals.fiber)) / \(targets.fiber)g", color: Theme.blue)
             }
 
             Text("BMR \(targets.bmr) kcal · 维持热量约 \(targets.tdee) kcal")
@@ -276,8 +294,8 @@ struct NutritionView: View {
         .card()
     }
 
-    private var todayLogCard: some View {
-        let totals = dayNutrition
+    private func todayLogCard(snapshot: DayLogsSnapshot, targets: NutritionTargets) -> some View {
+        let totals = snapshot.totals
         let ratio = min(1.0, totals.kcal / Double(max(1, targets.kcal)))
 
         return VStack(alignment: .leading, spacing: 12) {
@@ -293,7 +311,7 @@ struct NutritionView: View {
             ProgressView(value: ratio)
                 .tint(Theme.accent)
 
-            if dayLogs.isEmpty {
+            if snapshot.logs.isEmpty {
                 Text("还没有记录。记下吃了什么，才能知道离目标还差多少。")
                     .font(.caption)
                     .foregroundStyle(Theme.secondaryText)
@@ -304,7 +322,7 @@ struct NutritionView: View {
                 .buttonStyle(SecondaryButtonStyle())
             } else {
                 ForEach(MealType.allCases) { meal in
-                    mealLogSection(meal)
+                    mealLogSection(meal, logs: snapshot.byMeal[meal] ?? [])
                 }
 
                 Button {
@@ -320,8 +338,7 @@ struct NutritionView: View {
     }
 
     @ViewBuilder
-    private func mealLogSection(_ meal: MealType) -> some View {
-        let logs = dayLogs.filter { $0.meal == meal }
+    private func mealLogSection(_ meal: MealType, logs: [FoodLog]) -> some View {
         if !logs.isEmpty {
             HStack {
                 Text(meal.label)

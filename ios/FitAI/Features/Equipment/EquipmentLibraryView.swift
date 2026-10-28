@@ -1,3 +1,4 @@
+import ImageIO
 import PhotosUI
 import SwiftUI
 import UIKit
@@ -56,16 +57,19 @@ struct EquipmentLibraryView: View {
     }
 
     var body: some View {
-        AppScrollView {
+        let items = filteredItems
+        let pinned = pinnedIDs
+
+        return AppScrollView {
             VStack(spacing: 16) {
                 overviewCard
                 libraryTools
-                librarySectionHeader
+                librarySectionHeader(count: items.count)
 
-                if filteredItems.isEmpty {
+                if items.isEmpty {
                     emptyCard
                 } else {
-                    libraryList
+                    libraryList(items: items, pinned: pinned)
                 }
 
                 Text("器械库会作为 AI 生成计划的可用来源。删除器械不会影响历史训练记录。")
@@ -246,22 +250,22 @@ struct EquipmentLibraryView: View {
         }
     }
 
-    private var librarySectionHeader: some View {
+    private func librarySectionHeader(count: Int) -> some View {
         HStack {
             Text("器械清单")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Theme.secondaryText)
             Spacer()
-            Text("\(filteredItems.count) 件 · 左滑删除")
+            Text("\(count) 件 · 左滑删除")
                 .font(.caption2)
                 .foregroundStyle(Theme.tertiaryText)
         }
         .padding(.horizontal, 3)
     }
 
-    private var libraryList: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(filteredItems.enumerated()), id: \.element.id) { index, item in
+    private func libraryList(items: [EquipmentItem], pinned: Set<String>) -> some View {
+        LazyVStack(spacing: 0) {
+            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                 SwipeDeleteRow(
                     isOpen: openRowID == item.id,
                     onOpen: {
@@ -283,10 +287,10 @@ struct EquipmentLibraryView: View {
                         pendingDelete = item
                     }
                 ) {
-                    libraryRow(item)
+                    libraryRow(item, pinned: pinned)
                 }
 
-                if index < filteredItems.count - 1 {
+                if index < items.count - 1 {
                     Rectangle()
                         .fill(Theme.stroke.opacity(0.75))
                         .frame(height: 1)
@@ -301,7 +305,7 @@ struct EquipmentLibraryView: View {
         )
     }
 
-    private func libraryRow(_ item: EquipmentItem) -> some View {
+    private func libraryRow(_ item: EquipmentItem, pinned: Set<String>) -> some View {
         HStack(spacing: 12) {
             libraryThumbnail(item)
 
@@ -318,7 +322,7 @@ struct EquipmentLibraryView: View {
 
             Spacer(minLength: 5)
 
-            if pinnedIDs.contains(item.id.uuidString) {
+            if pinned.contains(item.id.uuidString) {
                 Image(systemName: "pin.fill")
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(Theme.accent)
@@ -355,10 +359,8 @@ struct EquipmentLibraryView: View {
                         endPoint: .bottomTrailing
                     )
                 )
-            if let data = item.photoData, let image = UIImage(data: data) {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
+            if let data = item.photoData {
+                EquipmentThumbnail(itemID: item.id, data: data)
             } else {
                 Image(systemName: equipmentSymbol(item))
                     .font(.system(size: 22, weight: .light))
@@ -873,5 +875,58 @@ struct AddEquipmentView: View {
         }
         photoData = image.jpegData(compressionQuality: 0.7)
         photoItem = nil
+    }
+}
+
+private struct EquipmentThumbnail: View {
+    let itemID: UUID
+    let data: Data
+
+    @State private var image: UIImage?
+    private static let cache = NSCache<NSString, UIImage>()
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Color.clear
+            }
+        }
+        .task(id: itemID) {
+            await load()
+        }
+    }
+
+    @MainActor
+    private func load() async {
+        let key = "\(itemID.uuidString)-\(data.count)" as NSString
+        if let cached = Self.cache.object(forKey: key) {
+            image = cached
+            return
+        }
+        let payload = data
+        let decoded = await Task.detached(priority: .utility) {
+            Self.downsample(payload, maxPixel: 140)
+        }.value
+        guard let decoded else { return }
+        Self.cache.setObject(decoded, forKey: key)
+        image = decoded
+    }
+
+    nonisolated private static func downsample(_ data: Data, maxPixel: CGFloat) -> UIImage? {
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixel,
+            kCGImageSourceShouldCacheImmediately: true
+        ]
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+            return nil
+        }
+        return UIImage(cgImage: cgImage)
     }
 }

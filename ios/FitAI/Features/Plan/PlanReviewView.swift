@@ -5,20 +5,18 @@ struct PlanReviewView: View {
 
     @State private var period: ReviewPeriod = .month
 
-    private var review: ReviewData {
-        PlanReviewEngine.make(store: store, period: period)
-    }
-
     var body: some View {
-        AppScrollView {
+        let review = PlanReviewEngine.make(store: store, period: period)
+
+        return AppScrollView {
             VStack(spacing: 16) {
-                header
+                header(review)
                 periodPicker
-                trendSummary
-                kpiGrid
-                trainingCard
-                nutritionCard
-                recentCard
+                trendSummary(review)
+                kpiGrid(review)
+                trainingCard(review)
+                nutritionCard(review)
+                recentCard(review)
             }
             .appPagePadding()
             .padding(.top, 8)
@@ -29,7 +27,7 @@ struct PlanReviewView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private var header: some View {
+    private func header(_ review: ReviewData) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("\(review.period.title)复盘")
                 .font(.system(size: 26, weight: .bold, design: .rounded))
@@ -64,7 +62,7 @@ struct PlanReviewView: View {
         .card(padding: 6)
     }
 
-    private var trendSummary: some View {
+    private func trendSummary(_ review: ReviewData) -> some View {
         HStack(spacing: 12) {
             Text("↑ 优于上期 \(review.goodCount)")
                 .foregroundStyle(Theme.accent)
@@ -77,7 +75,7 @@ struct PlanReviewView: View {
         .font(.caption2)
     }
 
-    private var kpiGrid: some View {
+    private func kpiGrid(_ review: ReviewData) -> some View {
         LazyVGrid(
             columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
             spacing: 8
@@ -128,7 +126,7 @@ struct PlanReviewView: View {
         )
     }
 
-    private var trainingCard: some View {
+    private func trainingCard(_ review: ReviewData) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("训练明细")
@@ -152,7 +150,7 @@ struct PlanReviewView: View {
         .card()
     }
 
-    private var nutritionCard: some View {
+    private func nutritionCard(_ review: ReviewData) -> some View {
         let current = review.current
         let targets = DietPlanner.targets(profile: store.profile)
         let fiberValue = current.hasNutrition
@@ -186,7 +184,7 @@ struct PlanReviewView: View {
         .card()
     }
 
-    private var recentCard: some View {
+    private func recentCard(_ review: ReviewData) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("\(review.period.title)训练记录")

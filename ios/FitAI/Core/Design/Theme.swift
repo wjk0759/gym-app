@@ -167,20 +167,7 @@ struct CardModifier: ViewModifier {
                         lineWidth: 0.8
                     )
             )
-            .overlay(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(Theme.primaryText.opacity(0.035), lineWidth: 0.6)
-                    .blendMode(.plusLighter)
-                    .mask(
-                        LinearGradient(
-                            colors: [.white, .clear],
-                            startPoint: .top,
-                            endPoint: .center
-                        )
-                    )
-            )
-            .shadow(color: Theme.shadow, radius: 22, y: 12)
-            .shadow(color: Theme.shadowSoft, radius: 4, y: 1)
+            .shadow(color: Theme.shadow, radius: 14, y: 7)
     }
 }
 
@@ -191,12 +178,10 @@ private struct RainCardSurface: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(.ultraThinMaterial)
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Theme.cardSurface.opacity(colorScheme == .dark ? 0.46 : 0.54))
+                .fill(Theme.cardSurface)
             RainDropletTexture(intensity: intensity, seed: 8.1)
                 .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                .opacity(colorScheme == .dark ? 0.30 : 0.18)
+                .opacity(colorScheme == .dark ? 0.22 : 0.14)
         }
     }
 }
@@ -255,7 +240,7 @@ struct SecondaryButtonStyle: ButtonStyle {
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .fill(.ultraThinMaterial)
+                    .fill(Theme.surfaceStrong)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 15, style: .continuous)

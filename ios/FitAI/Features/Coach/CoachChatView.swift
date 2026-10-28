@@ -1,4 +1,5 @@
 import Foundation
+import ImageIO
 import SwiftUI
 import UIKit
 
@@ -910,14 +911,8 @@ struct CoachChatView: View {
                         .foregroundStyle(Theme.warning)
                 }
 
-                if let data = message.imageData, let image = UIImage(data: data) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(maxWidth: 240)
-                        .frame(height: 160)
-                        .clipped()
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                if let data = message.imageData {
+                    ChatImageThumbnail(messageID: message.id, data: data)
                 }
 
                 Text(message.text)
@@ -1091,5 +1086,63 @@ struct CoachChatView: View {
         } else {
             store.sendChat(trimmed, skill: selectedSkill)
         }
+    }
+}
+
+private struct ChatImageThumbnail: View {
+    let messageID: UUID
+    let data: Data
+
+    @State private var image: UIImage?
+    private static let cache = NSCache<NSString, UIImage>()
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Theme.surfaceStrong)
+            }
+        }
+        .frame(maxWidth: 240)
+        .frame(height: 160)
+        .clipped()
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .task(id: messageID) {
+            await load()
+        }
+    }
+
+    @MainActor
+    private func load() async {
+        let key = messageID.uuidString as NSString
+        if let cached = Self.cache.object(forKey: key) {
+            image = cached
+            return
+        }
+        let payload = data
+        let decoded = await Task.detached(priority: .userInitiated) {
+            Self.downsample(payload, maxPixel: 480)
+        }.value
+        guard let decoded else { return }
+        Self.cache.setObject(decoded, forKey: key)
+        image = decoded
+    }
+
+    nonisolated private static func downsample(_ data: Data, maxPixel: CGFloat) -> UIImage? {
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixel,
+            kCGImageSourceShouldCacheImmediately: true
+        ]
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+            return nil
+        }
+        return UIImage(cgImage: cgImage)
     }
 }

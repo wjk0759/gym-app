@@ -12,7 +12,7 @@ struct WeatherSkyLayer: View {
     @Environment(\.keyboardVisible) private var keyboardVisible
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: paused)) { timeline in
+        TimelineView(.animation(minimumInterval: 1.0 / 12.0, paused: paused)) { timeline in
             Canvas { context, size in
                 draw(
                     context: &context,

@@ -14,7 +14,13 @@ struct HomeView: View {
     @State private var showSchedule = false
 
     var body: some View {
-        NavigationStack {
+        let today = store.todayDay
+        let period = store.todayPeriod
+        let missed = store.missedPlanDays
+        let draft = store.workoutDraft
+        let draftDay = store.draftPlanDay
+
+        return NavigationStack {
             AppScrollView {
                 VStack(spacing: 16) {
                     greeting
@@ -40,24 +46,24 @@ struct HomeView: View {
                                 .staggerIn(2)
                                 .softContentTransition()
                         } else if let plan = store.plan {
-                            if let draft = store.workoutDraft,
-                               let draftDay = store.draftPlanDay,
+                            if let draft,
+                               let draftDay,
                                !store.isPlanDayCompleted(draftDay),
-                               draftDay.id != store.todayDay?.id || store.todayPeriod?.mode == .rest {
+                               draftDay.id != today?.id || period?.mode == .rest {
                                 resumeDraftCard(draft, day: draftDay)
                                     .staggerIn(2)
                                     .softContentTransition()
                             }
 
-                            if store.todayPeriod?.mode == .rest {
+                            if period?.mode == .rest {
                                 nutritionCard
                                     .staggerIn(2)
                                     .softContentTransition()
-                                restCard(plan: plan, period: store.todayPeriod)
+                                restCard(plan: plan, period: period)
                                     .staggerIn(3)
                                     .softContentTransition()
-                            } else if let day = store.todayDay {
-                                trainingCard(plan: plan, day: day, period: store.todayPeriod)
+                            } else if let day = today {
+                                trainingCard(plan: plan, day: day, period: period)
                                     .staggerIn(2)
                                     .softContentTransition()
                                 nutritionCard
@@ -67,24 +73,24 @@ struct HomeView: View {
                                 nutritionCard
                                     .staggerIn(2)
                                     .softContentTransition()
-                                restCard(plan: plan, period: store.todayPeriod)
+                                restCard(plan: plan, period: period)
                                     .staggerIn(3)
                                     .softContentTransition()
                             }
 
-                            if !store.missedPlanDays.isEmpty {
+                            if !missed.isEmpty {
                                 missedPlanCard
                                     .staggerIn(4)
                                     .softContentTransition()
                             }
 
                             weekCard
-                                .staggerIn(store.missedPlanDays.isEmpty ? 4 : 5)
+                                .staggerIn(missed.isEmpty ? 4 : 5)
                                 .softContentTransition()
 
-                            if store.todayPeriod?.mode != .rest {
+                            if period?.mode != .rest {
                                 aiReviewCard(plan: plan)
-                                    .staggerIn(store.missedPlanDays.isEmpty ? 5 : 6)
+                                    .staggerIn(missed.isEmpty ? 5 : 6)
                                     .softContentTransition()
                             }
                         } else {
@@ -96,7 +102,7 @@ struct HomeView: View {
                 }
                 .motionAnimation(Motion.smooth, value: store.isGenerating)
                 .motionAnimation(Motion.smooth, value: store.plan?.version)
-                .motionAnimation(Motion.smooth, value: store.todayDay?.id)
+                .motionAnimation(Motion.smooth, value: today?.id)
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
                 .padding(.bottom, 28)
@@ -284,14 +290,6 @@ struct HomeView: View {
                         endPoint: .bottomTrailing
                     )
                 )
-
-            // 首页主卡也带一点实时天气动画，避免天气层只藏在卡片边缘。
-            WeatherSkyLayer()
-                .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-                .opacity(0.52)
-                .blendMode(.softLight)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
