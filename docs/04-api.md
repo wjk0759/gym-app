@@ -367,7 +367,7 @@ AI 复盘并生成新版本：
 }
 ```
 
-`safety_flag` 取值：`medical_referral` / `self_harm` / `minor` / `null`。
+`safety_flag` 取值：`crisis` / `medical_referral` / `minor_guard` / `fall_guard` / `condition_guard` / `medication_guard` / `injury_guard` / `ped_guard` / `supplement_guard` / `null`。
 只有 Pro 会员的 App 会调用远程 DeepSeek；未开通时客户端使用本地规则回复。
 
 #### `POST /coach/chat/stream`

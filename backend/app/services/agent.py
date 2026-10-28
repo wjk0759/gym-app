@@ -31,8 +31,8 @@ from ..models import (
     utcnow,
 )
 from . import llm
-from .coach import detect_safety
 from .coach_context import build_coach_context, recent_training
+from .safety import assess_safety
 from .memory import remember_facts, schedule_memory_extraction
 from .plan_generator import build_template_plan
 from .queries import active_goal, active_program
@@ -142,6 +142,7 @@ SYSTEM_PROMPT = """你是 FitAI 的 AI 私人健身教练，不是普通的单�
 
 App Context 和可执行操作：
 - state.coach_context 是服务端构建的版本化上下文，包含 profile、goal、current_plan（当前周训练）、recent_training、body_metrics、nutrition_7d、equipment_library 和 memories；它是回答事实问题的首选依据。
+- state.safety_context 是服务端前置安全上下文（未成年、慢性病、用药、跌倒/平衡风险）；必须遵守，必要时建议家长、医生或康复师介入。
 - state.app_context 是 iOS 本地计划日期和当前页面，包含 plan.days（day_id/title/date/completed/skipped）、today 以及 selected_tab。
 - state.coach_skill 仅用于兼容旧客户端；当前统一为 AI 私人健身教练，不区分康复师/营养师模式。训练、饮食、恢复、器械和日程都可以直接回答，并识别和准备 App 操作。
 - 用户要求改期、跳过、开始训练、打开页面或修改目标时，必须调用 propose_app_actions，不要只在 final 里描述。
@@ -778,9 +779,10 @@ async def run_agent(
     error: str | None = None
     started = time.perf_counter()
 
-    _safety_flag, safety_reply = detect_safety(message)
-    if safety_reply:
-        final_message = safety_reply
+    profile = db.get(Profile, user_id)
+    decision = assess_safety(profile, message)
+    if decision.reply:
+        final_message = decision.reply
         run.status = "completed"
         run.output_text = final_message
         run.completed_at = utcnow()
@@ -791,6 +793,7 @@ async def run_agent(
             "reply": final_message,
             "proposal": None,
             "actions": [],
+            "safety_flag": decision.flag,
             "elapsed_ms": int((time.perf_counter() - started) * 1000),
         }
 
@@ -804,6 +807,7 @@ async def run_agent(
                 "user_message": message,
                 "current_date": datetime.now(timezone.utc).date().isoformat(),
                 "coach_context": build_coach_context(db, user_id),
+                "safety_context": decision.caution,
                 "history": [
                     {"role": item.role, "content": item.content[:1000]}
                     for item in (history or [])[-10:]
@@ -946,6 +950,7 @@ async def run_agent(
         "reply": final_message or "",
         "proposal": _serialize_proposal(proposal) if proposal else None,
         "actions": actions,
+        "safety_flag": decision.flag,
         "elapsed_ms": int((time.perf_counter() - started) * 1000),
     }
 

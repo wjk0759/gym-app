@@ -8,6 +8,7 @@ from ..deps import CurrentUser, DBSession
 from ..models import ChatMessage, ChatSession, Profile, Program
 from ..schemas import ChatIn
 from ..services import coach_vision
+from ..services.safety import assess_safety
 from ..services.coach import coach_reply
 from ..services.memory import schedule_memory_extraction
 from ..services.queries import active_program
@@ -33,6 +34,19 @@ MAX_VISION_FILE_BYTES = 8 * 1024 * 1024
 MAX_VISION_TOTAL_BYTES = 24 * 1024 * 1024
 
 
+
+
+def _vision_safety_response(decision) -> dict:
+    return {
+        "mode": "general",
+        "is_training": False,
+        "summary": decision.reply or "",
+        "observations": [],
+        "next_cue": "",
+        "safety_flag": decision.flag,
+        "warning": None,
+    }
+
 def _vision_profile(db: DBSession, user_id: str) -> Profile:
     profile = db.get(Profile, user_id)
     if profile is None:
@@ -48,7 +62,10 @@ async def vision(
     question: str = Form(default=""),
 ):
     """One-shot training-photo review. Photos are not persisted server-side."""
-    _vision_profile(db, user_id)
+    profile = _vision_profile(db, user_id)
+    decision = assess_safety(profile, question)
+    if decision.reply:
+        return _vision_safety_response(decision)
 
     image_bytes = await file.read()
     if not image_bytes:
@@ -56,7 +73,9 @@ async def vision(
     if len(image_bytes) > MAX_VISION_FILE_BYTES:
         raise HTTPException(status_code=413, detail="图片不能超过 8MB")
 
-    return await coach_vision.review(image_bytes, question)
+    return await coach_vision.review(
+        image_bytes, question, safety_context=decision.caution
+    )
 
 
 @router.post("/vision/batch")
@@ -67,7 +86,10 @@ async def vision_batch(
     question: str = Form(default=""),
 ):
     """Review several staged photos as one ordered set."""
-    _vision_profile(db, user_id)
+    profile = _vision_profile(db, user_id)
+    decision = assess_safety(profile, question)
+    if decision.reply:
+        return _vision_safety_response(decision)
     if not files:
         raise HTTPException(status_code=400, detail="没有收到图片")
     if len(files) > MAX_VISION_FILES:
@@ -88,7 +110,9 @@ async def vision_batch(
 
     if not images:
         raise HTTPException(status_code=400, detail="图片为空")
-    return await coach_vision.review_many(images, question)
+    return await coach_vision.review_many(
+        images, question, safety_context=decision.caution
+    )
 
 
 @router.post("/chat")

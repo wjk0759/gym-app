@@ -152,13 +152,23 @@ def _question_mode(question: str) -> str | None:
     return best if scores[best] > 0 else None
 
 
-async def review(image_bytes: bytes, question: str = "") -> dict:
+async def review(
+    image_bytes: bytes,
+    question: str = "",
+    safety_context: str | None = None,
+) -> dict:
     if not image_bytes:
         return _fallback("没有收到图片")
-    return await review_many([image_bytes], question)
+    return await review_many(
+        [image_bytes], question, safety_context=safety_context
+    )
 
 
-async def review_many(images: list[bytes], question: str = "") -> dict:
+async def review_many(
+    images: list[bytes],
+    question: str = "",
+    safety_context: str | None = None,
+) -> dict:
     if not images:
         return _fallback("没有收到图片")
     if settings.use_mock_vision:
@@ -174,6 +184,8 @@ async def review_many(images: list[bytes], question: str = "") -> dict:
         prompt += f"\n用户问题：{question.strip()[:2000]}"
     else:
         prompt += "\n用户没有补充文字。先识别图片内容再选择 mode，不要默认 training。"
+    if safety_context:
+        prompt += f"\n安全上下文（必须遵守）：{safety_context[:800]}"
 
     try:
         raw = await llm.complete_vision_json(

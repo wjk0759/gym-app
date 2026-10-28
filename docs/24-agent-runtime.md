@@ -115,7 +115,7 @@ Agent 循环在每次等待模型前提交并释放数据库连接；模型调�
 
 ## 5. 安全约束
 
-- 现有 `detect_safety` 在 Agent 入口优先执行，红旗症状直接返回就医提示。
+- `assess_safety` 在 Agent 入口优先执行：消息红线、未成年人、慢性病/用药、跌倒/平衡和疼痛+大重量都会先分流；硬拦截时直接返回 `safety_flag`，不调用模型和工具。
 - 计划草案只能使用动作库中的动作，并经过器械/伤病/频率校验。
 - 应用前检查 `base_program_id/base_version`，防止覆盖用户刚刚手动改过的计划。
 - 草案 30 分钟过期。
@@ -138,7 +138,7 @@ GET  /api/v1/agent/memories
 DELETE /api/v1/agent/memories/{memory_id}
 ```
 
-Agent 回复中的 `proposal` 只包含变更摘要和验证结果；应用接口返回正式计划。
+Agent 回复中的 `proposal` 只包含变更摘要和验证结果；应用接口返回正式计划。响应新增 `safety_flag`，安全拦截时 `proposal` 和 `actions` 为空。
 
 记忆接口只返回当前账号的 `active` 记忆，删除是软删除，账号注销时随用户数据一起清理。
 

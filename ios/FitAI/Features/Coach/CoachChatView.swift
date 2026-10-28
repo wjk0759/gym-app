@@ -906,7 +906,7 @@ struct CoachChatView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 if message.isSafety {
-                    Label("需要就医评估", systemImage: "exclamationmark.triangle.fill")
+                    Label("安全提醒", systemImage: "exclamationmark.triangle.fill")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(Theme.warning)
                 }

@@ -79,7 +79,11 @@ extension AppStore {
                 }
                 try Task.checkCancellation()
                 self.chat.append(
-                    ChatMessage(role: .assistant, text: self.formattedVisionReply(result))
+                    ChatMessage(
+                        role: .assistant,
+                        text: self.formattedVisionReply(result),
+                        isSafety: result.safetyFlag != nil
+                    )
                 )
             } catch is CancellationError {
                 return

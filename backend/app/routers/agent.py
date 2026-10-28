@@ -99,7 +99,13 @@ async def _agent_chat_inner(
         ) from exc
 
     session.messages.append(ChatMessage(role="user", content=payload.message))
-    session.messages.append(ChatMessage(role="assistant", content=result["reply"]))
+    session.messages.append(
+        ChatMessage(
+            role="assistant",
+            content=result["reply"],
+            safety_flag=result.get("safety_flag"),
+        )
+    )
     db.commit()
 
     response = {
@@ -109,6 +115,7 @@ async def _agent_chat_inner(
         "reply": result["reply"],
         "proposal": result["proposal"],
         "actions": result.get("actions", []),
+        "safety_flag": result.get("safety_flag"),
         "elapsed_ms": result["elapsed_ms"],
     }
     _remember_agent_result(user_id, payload.request_id, response)

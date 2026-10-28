@@ -1440,7 +1440,7 @@ final class AppStore {
                     ChatMessage(
                         role: .assistant,
                         text: response.reply,
-                        isSafety: false
+                        isSafety: response.safetyFlag != nil
                     )
                 )
                 self.lastAgentRetryText = nil

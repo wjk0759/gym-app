@@ -14,6 +14,7 @@ from ..config import settings
 from ..models import ChatMessage, Exercise, Profile, Program
 from . import llm
 from .coach_context import build_coach_context, context_as_text
+from .safety import assess_safety, detect_safety
 
 PROMPT_DIR = Path(__file__).resolve().parent.parent / "prompts"
 PROMPT_FILES = {
@@ -22,53 +23,6 @@ PROMPT_FILES = {
     "nutrition": PROMPT_DIR / "coach_nutrition.md",
 }
 CoachSkill = Literal["trainer", "rehab", "nutrition"]
-
-SAFETY_RULES: list[tuple[tuple[str, ...], str, str]] = [
-    (
-        ("自杀", "不想活", "自残", "伤害自己", "活着没意思", "结束生命"),
-        "crisis",
-        "我很在意你现在的安全。请先联系身边可信任的人，或拨打当地急救/心理援助热线"
-        "（如 120，或北京心理危机干预中心 010-82951332）。训练的事先放一放，"
-        "等你安全了我们再聊。",
-    ),
-    (
-        ("胸痛", "胸闷", "呼吸困难", "喘不上气", "晕厥", "昏倒"),
-        "medical_referral",
-        "你描述的可能是需要立即处理的情况。请马上停止训练，坐下休息；如果症状持续或加重，请立即就医或拨打 120。"
-        "我可以帮你把今天的训练改成休息，但不要继续做任何高强度动作。",
-    ),
-    (
-        ("剧痛", "刺痛", "肿胀", "麻木", "无法承重", "骨折", "扭伤"),
-        "medical_referral",
-        "关节剧痛、肿胀或麻木不适合继续训练。请先停止相关动作，冰敷并尽快找医生或康复师评估。"
-        "在明确诊断前，我不会给你继续加练的建议。",
-    ),
-    (
-        ("怀孕", "孕期", "产后", "术后", "手术"),
-        "medical_referral",
-        "孕期、产后恢复期和术后训练需要专业评估。建议先咨询产科医生或康复师，再决定训练内容。"
-        "我可以帮你记录当前状态，但不提供这类训练处方。",
-    ),
-    (
-        ("厌食", "暴食", "催吐", "不想吃饭", "绝食"),
-        "medical_referral",
-        "你提到的饮食状态需要专业支持。建议联系营养科或心理医生；我不会给你极端热量或断食方案。",
-    ),
-]
-
-DEFAULT_SAFETY_REPLY = (
-    "这个话题涉及医疗判断，我不能替代医生。建议你咨询专业人士；"
-    "如果你愿意，我可以帮你把训练调整为低强度恢复内容。"
-)
-
-
-def detect_safety(message: str) -> tuple[str | None, str | None]:
-    text = message.lower()
-    for keywords, flag, reply in SAFETY_RULES:
-        if any(keyword in text for keyword in keywords):
-            return flag, reply
-    return None, None
-
 
 def _input_strategy(message: str) -> str | None:
     """Cheap heuristic for messy real-world messages; guides the LLM's handling."""
@@ -263,9 +217,9 @@ async def coach_reply(
     # 当前产品只保留一个 AI 私人健身教练人设；旧 skill 参数仅用于兼容。
     skill = "trainer"
 
-    flag, safety_reply = detect_safety(message)
-    if safety_reply:
-        return {"reply": safety_reply, "safety_flag": flag, "citations": []}
+    decision = assess_safety(profile, message)
+    if decision.reply:
+        return {"reply": decision.reply, "safety_flag": decision.flag, "citations": []}
 
     citations: list[dict] = []
     if not settings.use_mock_llm:
@@ -278,6 +232,13 @@ async def coach_reply(
                 {
                     "role": "system",
                     "content": "最近一次体型分析结果如下，回答时结合它：\n" + context,
+                }
+            )
+        if decision.caution:
+            messages.append(
+                {
+                    "role": "system",
+                    "content": "安全上下文（必须遵守）：" + decision.caution,
                 }
             )
         strategy = _input_strategy(message)

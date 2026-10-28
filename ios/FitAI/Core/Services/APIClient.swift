@@ -333,6 +333,7 @@ struct AgentChatResponse: Decodable {
     let reply: String
     let proposal: AgentPlanProposal?
     let actions: [AgentAction]?
+    let safetyFlag: String?
     let elapsedMS: Int?
 
     enum CodingKeys: String, CodingKey {
@@ -342,6 +343,7 @@ struct AgentChatResponse: Decodable {
         case reply
         case proposal
         case actions
+        case safetyFlag = "safety_flag"
         case elapsedMS = "elapsed_ms"
     }
 }
