@@ -49,7 +49,7 @@
   - `CoachLoadingLabel`
   - `CoachQuickActionButton`
   - `CoachChatBubble`
-- `CoachAttachmentPolicy.swift`：附件数量/大小规则与错误文案。
+- `Core/Services/CoachAttachmentPolicy.swift`：附件数量/大小规则与错误文案，服务和 UI 共用。
 - `CoachAttachmentDraftBar.swift`：待发送附件展示，只接收数据和回调。
 - `CoachAttachmentDraft.swift`：暂存图片模型。
 - `CoachImageViews.swift`：气泡内图片/视频缩略图与缓存。
