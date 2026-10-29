@@ -495,7 +495,7 @@ struct LoginView: View {
     }
 
     private var otherLoginSection: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 10) {
             socialIconButton(
                 image: Image(systemName: "apple.logo"),
                 tint: .black,
@@ -524,6 +524,7 @@ struct LoginView: View {
             }
         }
         .padding(.horizontal, 2)
+        .offset(y: -6)
     }
 
     private func socialIconButton(
@@ -538,9 +539,9 @@ struct LoginView: View {
                 .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 18, height: 18)
+                .frame(width: 16, height: 16)
                 .foregroundStyle(tint)
-                .frame(width: 44, height: 44)
+                .frame(width: 40, height: 40)
                 .background(background, in: Circle())
                 .overlay(Circle().stroke(Theme.stroke, lineWidth: 0.5))
                 .contentShape(Circle())
