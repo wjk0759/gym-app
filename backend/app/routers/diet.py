@@ -252,7 +252,12 @@ async def plan_week(payload: DietWeekIn, user_id: CurrentUser, db: DBSession):
         _program_training_days(program),
     )
 
+    # MealPlan stores one day per row, so keep the week-level provenance on
+    # each day for the GET endpoint and the AI/template badge in iOS.
     for day in result["days"]:
+        day["generated_by"] = result.get("generated_by")
+        if result.get("warning"):
+            day["warning"] = result["warning"]
         _save_meal_plan(db, user_id, date.fromisoformat(day["date"]), day)
     try:
         db.commit()
@@ -287,9 +292,28 @@ def get_plan_week(
         .scalars()
         .all()
     )
+    days = [row.plan for row in rows if row.plan]
+    generated_by = next(
+        (day.get("generated_by") for day in days if day.get("generated_by")),
+        None,
+    )
+    warning = next(
+        (day.get("warning") for day in days if day.get("warning")),
+        None,
+    )
+    if not generated_by and days:
+        has_recipe_dishes = any(
+            meal.get("dishes")
+            for day in days
+            for meal in (day.get("meals") or [])
+            if isinstance(meal, dict)
+        )
+        generated_by = "ai" if has_recipe_dishes else "template"
     return {
         "week_start": start.isoformat(),
-        "days": [row.plan for row in rows if row.plan],
+        "days": days,
+        "generated_by": generated_by,
+        "warning": warning,
     }
 
 
