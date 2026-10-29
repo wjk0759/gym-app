@@ -63,6 +63,7 @@ struct LoginView: View {
     }
 
     @FocusState private var focusedField: Field?
+    @State private var isFocusMode = false
 
     private var errorText: String? {
         localError ?? auth.errorMessage
@@ -73,29 +74,29 @@ struct LoginView: View {
             AppBackground()
 
             Color.black
-                .opacity(focusedField == nil ? 0 : 0.72)
+                .opacity(isFocusMode ? 0.72 : 0)
                 .ignoresSafeArea()
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    focusedField = nil
+                    dismissLoginFocus()
                 }
-                .allowsHitTesting(focusedField != nil)
+                .allowsHitTesting(isFocusMode)
 
             VStack(spacing: 14) {
-                if focusedField == nil {
+                if !isFocusMode {
                     brandHeader
                 }
 
                 loginCard
-                    .scaleEffect(focusedField == nil ? 1 : 1.02)
-                    .offset(y: focusedField == nil ? 0 : -10)
+                    .scaleEffect(isFocusMode ? 1.02 : 1)
+                    .offset(y: isFocusMode ? -10 : 0)
                     .shadow(
-                        color: .black.opacity(focusedField == nil ? 0 : 0.55),
+                        color: .black.opacity(isFocusMode ? 0.55 : 0),
                         radius: 34,
                         y: 14
                     )
 
-                if focusedField == nil {
+                if !isFocusMode {
                     consentFooter
                     otherLoginSection
                 }
@@ -110,7 +111,7 @@ struct LoginView: View {
                 .spring(response: 0.65, dampingFraction: 0.93),
                 reduceMotion: reduceMotion
             ),
-            value: focusedField
+            value: isFocusMode
         )
         .sheet(item: $legal) { kind in
             LegalDocumentView(kind: kind)
@@ -153,11 +154,28 @@ struct LoginView: View {
         } message: {
             Text("登录需要使用你的账号标识，并可能同步训练资料。请确认已阅读并同意《用户协议》和《隐私政策》。")
         }
-        .onChange(of: mode) { _, _ in
-            focusedField = nil
+        .onChange(of: focusedField) { _, newValue in
+            if newValue != nil {
+                isFocusMode = true
+            }
+        }
+        .onChange(of: mode) { _, newMode in
             localError = nil
             auth.clearError()
+            guard isFocusMode else {
+                focusedField = nil
+                return
+            }
+            let nextField: Field = newMode == .phone ? .phone : .account
+            DispatchQueue.main.async {
+                focusedField = nextField
+            }
         }
+    }
+
+    private func dismissLoginFocus() {
+        focusedField = nil
+        isFocusMode = false
     }
 
     private var brandHeader: some View {
@@ -230,7 +248,7 @@ struct LoginView: View {
             }
 
             Button {
-                focusedField = nil
+                dismissLoginFocus()
                 submit()
             } label: {
                 HStack(spacing: 8) {

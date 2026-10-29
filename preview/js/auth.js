@@ -1,9 +1,12 @@
 /* FitAI Web Preview page module: login and legal */
 
+let loginFocusMode = false;
+let loginFocusInputId = "";
+
 function loginScreen() {
   const phoneMode = state.authMode === "phone";
   return `
-    <div class="login-page">
+    <div class="login-page${loginFocusMode ? " login-focus" : ""}">
       <div class="login-brand">
         <div class="login-mark">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -27,12 +30,12 @@ function loginScreen() {
             <div class="login-input">
               <span class="login-prefix">+86</span>
               <span class="login-input-divider"></span>
-              <input id="login-phone" type="tel" inputmode="numeric" maxlength="11" autocomplete="tel" placeholder="手机号" value="${esc(state.authPhone)}" oninput="app.previewAuthField('authPhone', this.value)">
+              <input id="login-phone" type="tel" inputmode="numeric" maxlength="11" autocomplete="tel" placeholder="手机号" value="${esc(state.authPhone)}" onfocus="app.previewAuthFocus(this)" oninput="app.previewAuthField('authPhone', this.value)">
             </div>
           </div>
           <div class="login-field">
             <div class="login-input">
-              <input id="login-code" type="tel" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6 位验证码" value="${esc(state.authCode)}" oninput="app.previewAuthField('authCode', this.value)">
+              <input id="login-code" type="tel" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6 位验证码" value="${esc(state.authCode)}" onfocus="app.previewAuthFocus(this)" oninput="app.previewAuthField('authCode', this.value)">
               <button class="code-btn" onclick="app.previewSendCode()">获取验证码</button>
             </div>
           </div>
@@ -40,12 +43,12 @@ function loginScreen() {
         ` : `
           <div class="login-field">
             <div class="login-input">
-              <input id="login-account" type="text" maxlength="50" autocomplete="username" placeholder="手机号或用户名" value="${esc(state.authAccount)}" oninput="app.previewAuthField('authAccount', this.value)">
+              <input id="login-account" type="text" maxlength="50" autocomplete="username" placeholder="手机号或用户名" value="${esc(state.authAccount)}" onfocus="app.previewAuthFocus(this)" oninput="app.previewAuthField('authAccount', this.value)">
             </div>
           </div>
           <div class="login-field">
             <div class="login-input">
-              <input id="login-password" type="password" maxlength="64" autocomplete="current-password" placeholder="密码" value="${esc(state.authPassword)}" oninput="app.previewAuthField('authPassword', this.value)">
+              <input id="login-password" type="password" maxlength="64" autocomplete="current-password" placeholder="密码" value="${esc(state.authPassword)}" onfocus="app.previewAuthFocus(this)" oninput="app.previewAuthField('authPassword', this.value)">
             </div>
           </div>
           <div class="row between">
@@ -186,3 +189,10 @@ function legalModal() {
   `;
 }
 
+
+/* Stay in focus mode while using the login card; dismiss on outside taps. */
+document.addEventListener("click", (event) => {
+  if (!loginFocusMode) return;
+  if (event.target.closest(".login-card")) return;
+  app.previewAuthBlur();
+});

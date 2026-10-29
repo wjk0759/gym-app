@@ -223,11 +223,33 @@ Object.assign(window.app, {
     toast("已载入示例数据", 1400);
   },
 
+  previewAuthFocus(input) {
+    loginFocusMode = true;
+    loginFocusInputId = input?.id || "";
+    document.querySelector(".login-page")?.classList.add("login-focus");
+  },
+
+  previewAuthBlur() {
+    loginFocusMode = false;
+    loginFocusInputId = "";
+    document.querySelector(".login-page")?.classList.remove("login-focus");
+  },
+
+  restoreLoginFocus() {
+    if (!loginFocusMode) return;
+    requestAnimationFrame(() => {
+      const target = document.getElementById(loginFocusInputId)
+        || document.querySelector(".login-card input");
+      target?.focus({ preventScroll: true });
+    });
+  },
+
   previewAuthMode(mode) {
     state.authMode = mode;
     state.authError = "";
     save();
     render();
+    this.restoreLoginFocus();
   },
 
   previewAuthField(key, value) {
@@ -247,6 +269,7 @@ Object.assign(window.app, {
     if (!/^1\d{10}$/.test(state.authPhone)) {
       state.authError = "请输入正确的 11 位手机号";
       render();
+      this.restoreLoginFocus();
       return;
     }
     state.authDevCode = "123456";
@@ -254,6 +277,7 @@ Object.assign(window.app, {
     state.authError = "";
     save();
     render();
+    this.restoreLoginFocus();
     toast("开发验证码 123456 已填入");
   },
 
@@ -275,6 +299,7 @@ Object.assign(window.app, {
   },
 
   previewLogin() {
+    this.previewAuthBlur();
     if (!state.authConsent) {
       state.authConsentPrompt = true;
       state.authConsentProvider = null;
