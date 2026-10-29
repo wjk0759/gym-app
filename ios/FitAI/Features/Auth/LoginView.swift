@@ -45,6 +45,7 @@ struct LoginView: View {
     @State private var registrationPassword = ""
     @State private var showConsentPrompt = false
     @State private var pendingConsentAction: PendingConsentAction?
+    @State private var showOtherLogin = false
 
     private enum PendingConsentAction {
         case login
@@ -66,16 +67,16 @@ struct LoginView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
-                header
-                headline
+            VStack(alignment: .leading, spacing: 20) {
+                brandHeader
+                intro
                 loginCard
-                socialSection
                 consentFooter
+                otherLoginSection
                 devServerLink
-                    .padding(.top, 4)
+                    .padding(.top, 2)
             }
-            .frame(maxWidth: 480)
+            .frame(maxWidth: 420)
             .padding(.horizontal, 20)
             .padding(.vertical, 28)
             .frame(maxWidth: .infinity)
@@ -128,58 +129,47 @@ struct LoginView: View {
         }
     }
 
-    private var header: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Theme.accent)
-                    .frame(width: 48, height: 48)
-                Image(systemName: "figure.strengthtraining.traditional")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(Theme.onAccent)
-            }
+    private var brandHeader: some View {
+        HStack(spacing: 11) {
+            HeroGlyph(
+                symbol: "figure.strengthtraining.traditional",
+                size: 50,
+                tint: Theme.accent
+            )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("练途")
-                    .font(.title3.weight(.bold))
+                    .font(AppType.title)
                     .foregroundStyle(Theme.primaryText)
-                Text("AI 健身教练")
-                    .font(.caption)
+                Text("AI 私人健身教练")
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.tertiaryText)
             }
 
             Spacer(minLength: 0)
-
-            Text("训练 · 饮食 · 复盘")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(Theme.accent)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 5)
-                .background(Theme.accent.opacity(0.10), in: Capsule())
         }
     }
 
-    private var headline: some View {
+    private var intro: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("欢迎回来")
-                .font(AppType.display)
+                .font(AppType.hero)
                 .foregroundStyle(Theme.primaryText)
             Text("登录后同步训练计划、记录和 AI 复盘。")
                 .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var loginCard: some View {
         VStack(spacing: 16) {
-            Picker("登录方式", selection: $mode) {
-                ForEach(Mode.allCases) { item in
-                    Text(item.rawValue).tag(item)
-                }
-            }
-            .pickerStyle(.segmented)
-            .controlSize(.large)
+            AnimatedSegmentedControl(
+                items: Mode.allCases,
+                selection: $mode,
+                label: { $0.rawValue }
+            )
 
             Group {
                 if mode == .phone {
@@ -196,7 +186,7 @@ struct LoginView: View {
                     Text(errorText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .font(.caption)
+                .font(AppType.caption)
                 .foregroundStyle(Theme.danger)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(11)
@@ -213,10 +203,10 @@ struct LoginView: View {
             } label: {
                 HStack(spacing: 8) {
                     if auth.isWorking {
-                        ProgressView().tint(.black)
+                        ProgressView().tint(Theme.onAccent)
                         Text("正在登录…")
                     } else {
-                        Text("登录并继续")
+                        Text("登录")
                         Image(systemName: "arrow.right")
                             .font(.subheadline.weight(.bold))
                     }
@@ -228,26 +218,12 @@ struct LoginView: View {
             Text(mode == .phone
                  ? "未注册手机号将自动创建账号"
                  : "未注册账号会引导完成注册")
-                .font(.caption2)
+                .font(AppType.micro)
                 .foregroundStyle(Theme.tertiaryText)
                 .frame(maxWidth: .infinity, alignment: .center)
         }
-        .padding(18)
-        .background(
-            Theme.cardSurface,
-            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Theme.stroke, lineWidth: 0.5)
-        )
-    }
-
-    private func fieldLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.caption.weight(.medium))
-            .foregroundStyle(Theme.secondaryText)
-            .padding(.leading, 2)
+        .frame(maxWidth: .infinity)
+        .glassCard(padding: 18, cornerRadius: AppLayout.heroCornerRadius)
     }
 
     private func fieldShell<Content: View>(
@@ -277,177 +253,157 @@ struct LoginView: View {
     }
 
     private var phoneFields: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 7) {
-                fieldLabel("手机号")
+        VStack(spacing: 12) {
+            fieldShell(focused: focusedField == .phone, field: .phone) {
+                Image(systemName: "iphone")
+                    .font(AppType.caption)
+                    .foregroundStyle(focusedField == .phone ? Theme.accent : Theme.tertiaryText)
+                    .frame(width: 18)
 
-                fieldShell(focused: focusedField == .phone, field: .phone) {
-                    Image(systemName: "iphone")
-                        .font(.subheadline)
-                        .foregroundStyle(focusedField == .phone ? Theme.accent : Theme.tertiaryText)
-                        .frame(width: 18)
+                Text("+86")
+                    .font(AppType.body.weight(.semibold))
+                    .foregroundStyle(Theme.secondaryText)
 
-                    Text("+86")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.secondaryText)
+                Rectangle()
+                    .fill(Theme.stroke)
+                    .frame(width: 1, height: 18)
 
-                    Rectangle()
-                        .fill(Theme.stroke)
-                        .frame(width: 1, height: 18)
-
-                    TextField("请输入手机号", text: $phone)
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.primaryText)
-                        .keyboardType(.numberPad)
-                        .textContentType(.telephoneNumber)
-                        .focused($focusedField, equals: .phone)
-                        .onChange(of: phone) { _, newValue in
-                            phone = String(newValue.filter(\.isNumber).prefix(11))
-                            localError = nil
-                        }
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 7) {
-                fieldLabel("验证码")
-
-                fieldShell(focused: focusedField == .code, field: .code) {
-                    Image(systemName: "number")
-                        .font(.subheadline)
-                        .foregroundStyle(focusedField == .code ? Theme.accent : Theme.tertiaryText)
-                        .frame(width: 18)
-
-                    TextField("请输入 6 位验证码", text: $code)
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.primaryText)
-                        .keyboardType(.numberPad)
-                        .textContentType(.oneTimeCode)
-                        .focused($focusedField, equals: .code)
-                        .onChange(of: code) { _, newValue in
-                            code = String(newValue.filter(\.isNumber).prefix(6))
-                            localError = nil
-                        }
-
-                    Button {
-                        sendCode()
-                    } label: {
-                        Group {
-                            if isSendingCode {
-                                ProgressView()
-                                    .tint(Theme.accent)
-                            } else {
-                                Text(countdown > 0 ? "\(countdown)s 后重发" : "获取验证码")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(
-                                        countdown > 0 || !isValidPhone ? Theme.tertiaryText : Theme.accent
-                                    )
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 7)
-                                    .background(
-                                        Theme.accent.opacity(
-                                            countdown > 0 || !isValidPhone ? 0 : 0.10
-                                        ),
-                                        in: Capsule()
-                                    )
-                            }
-                        }
-                        .frame(minWidth: 88, minHeight: 44)
-                        .contentShape(Rectangle())
+                TextField("手机号", text: $phone)
+                    .font(AppType.body)
+                    .foregroundStyle(Theme.primaryText)
+                    .keyboardType(.numberPad)
+                    .textContentType(.telephoneNumber)
+                    .focused($focusedField, equals: .phone)
+                    .accessibilityLabel("手机号")
+                    .onChange(of: phone) { _, newValue in
+                        phone = String(newValue.filter(\.isNumber).prefix(11))
+                        localError = nil
                     }
-                    .buttonStyle(.plain)
-                    .disabled(!isValidPhone || countdown > 0 || isSendingCode)
-                }
             }
 
-            Text(devCode.map { "开发验证码 \($0)，已自动填入" } ?? "验证码仅用于本次登录，请勿转发")
-                .font(.caption2)
+            fieldShell(focused: focusedField == .code, field: .code) {
+                Image(systemName: "number")
+                    .font(AppType.caption)
+                    .foregroundStyle(focusedField == .code ? Theme.accent : Theme.tertiaryText)
+                    .frame(width: 18)
+
+                TextField("6 位验证码", text: $code)
+                    .font(AppType.body)
+                    .foregroundStyle(Theme.primaryText)
+                    .keyboardType(.numberPad)
+                    .textContentType(.oneTimeCode)
+                    .focused($focusedField, equals: .code)
+                    .accessibilityLabel("验证码")
+                    .onChange(of: code) { _, newValue in
+                        code = String(newValue.filter(\.isNumber).prefix(6))
+                        localError = nil
+                    }
+
+                Button {
+                    sendCode()
+                } label: {
+                    Group {
+                        if isSendingCode {
+                            ProgressView()
+                                .tint(Theme.accent)
+                        } else {
+                            Text(countdown > 0 ? "\(countdown)s 后重发" : "获取验证码")
+                                .font(AppType.caption.weight(.semibold))
+                                .foregroundStyle(
+                                    countdown > 0 || !isValidPhone ? Theme.tertiaryText : Theme.accent
+                                )
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 6)
+                                .background(
+                                    Theme.accent.opacity(
+                                        countdown > 0 || !isValidPhone ? 0 : 0.10
+                                    ),
+                                    in: Capsule()
+                                )
+                        }
+                    }
+                    .frame(minWidth: 86, minHeight: 40)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(!isValidPhone || countdown > 0 || isSendingCode)
+            }
+
+            Text(devCode.map { "开发验证码 \($0)，已自动填入" } ?? "验证码仅用于本次登录")
+                .font(AppType.micro)
                 .foregroundStyle(devCode == nil ? Theme.tertiaryText : Theme.warning)
                 .lineLimit(1)
-                .minimumScaleFactor(0.9)
-                .frame(maxWidth: .infinity, minHeight: 16, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.leading, 2)
         }
     }
 
     private var passwordFields: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 7) {
-                fieldLabel("手机号或用户名")
+        VStack(spacing: 12) {
+            fieldShell(focused: focusedField == .account, field: .account) {
+                Image(systemName: "person")
+                    .font(AppType.caption)
+                    .foregroundStyle(focusedField == .account ? Theme.accent : Theme.tertiaryText)
+                    .frame(width: 18)
 
-                fieldShell(focused: focusedField == .account, field: .account) {
-                    Image(systemName: "person")
-                        .foregroundStyle(focusedField == .account ? Theme.accent : Theme.tertiaryText)
-                        .frame(width: 18)
-
-                    TextField("请输入手机号或用户名", text: $account)
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.primaryText)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .textContentType(.username)
-                        .focused($focusedField, equals: .account)
-                        .onChange(of: account) { _, _ in localError = nil }
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 7) {
-                fieldLabel("密码")
-
-                fieldShell(focused: focusedField == .password, field: .password) {
-                    Image(systemName: "lock")
-                        .foregroundStyle(focusedField == .password ? Theme.accent : Theme.tertiaryText)
-                        .frame(width: 18)
-
-                    Group {
-                        if showPassword {
-                            TextField("请输入密码", text: $password)
-                                .textContentType(.password)
-                                .focused($focusedField, equals: .password)
-                        } else {
-                            SecureField("请输入密码", text: $password)
-                                .textContentType(.password)
-                                .focused($focusedField, equals: .password)
-                        }
-                    }
-                    .font(.subheadline)
+                TextField("手机号或用户名", text: $account)
+                    .font(AppType.body)
                     .foregroundStyle(Theme.primaryText)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    .onChange(of: password) { _, _ in localError = nil }
-
-                    Button {
-                        showPassword.toggle()
-                    } label: {
-                        Image(systemName: showPassword ? "eye.slash" : "eye")
-                            .foregroundStyle(Theme.tertiaryText)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(showPassword ? "隐藏密码" : "显示密码")
-                }
+                    .textContentType(.username)
+                    .focused($focusedField, equals: .account)
+                    .accessibilityLabel("手机号或用户名")
+                    .onChange(of: account) { _, _ in localError = nil }
             }
 
-            HStack(spacing: 8) {
-                Text("密码至少 8 位，含字母和数字")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.9)
+            fieldShell(focused: focusedField == .password, field: .password) {
+                Image(systemName: "lock")
+                    .font(AppType.caption)
+                    .foregroundStyle(focusedField == .password ? Theme.accent : Theme.tertiaryText)
+                    .frame(width: 18)
 
-                Spacer(minLength: 4)
+                Group {
+                    if showPassword {
+                        TextField("密码", text: $password)
+                            .textContentType(.password)
+                            .focused($focusedField, equals: .password)
+                    } else {
+                        SecureField("密码", text: $password)
+                            .textContentType(.password)
+                            .focused($focusedField, equals: .password)
+                    }
+                }
+                .font(AppType.body)
+                .foregroundStyle(Theme.primaryText)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .accessibilityLabel("密码")
+                .onChange(of: password) { _, _ in localError = nil }
 
+                Button {
+                    showPassword.toggle()
+                } label: {
+                    Image(systemName: showPassword ? "eye.slash" : "eye")
+                        .foregroundStyle(Theme.tertiaryText)
+                        .frame(width: 40, height: 40)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(showPassword ? "隐藏密码" : "显示密码")
+            }
+
+            HStack {
+                Spacer(minLength: 0)
                 Button("忘记密码？") {
                     showPasswordReset = true
                 }
-                .font(.subheadline)
+                .font(AppType.caption)
                 .foregroundStyle(Theme.accent)
                 .buttonStyle(.plain)
-                .frame(minHeight: 44)
+                .frame(minHeight: 36)
                 .contentShape(Rectangle())
             }
-            .frame(maxWidth: .infinity, minHeight: 16, alignment: .leading)
-            .padding(.leading, 2)
         }
     }
 
@@ -461,39 +417,39 @@ struct LoginView: View {
             } label: {
                 HStack(alignment: .top, spacing: 12) {
                     Image(systemName: consent ? "checkmark.circle.fill" : "circle")
-                        .font(.title3)
+                        .font(.subheadline)
                         .foregroundStyle(consent ? Theme.accent : Theme.tertiaryText)
 
                     Text("我已阅读并同意以下条款，且已年满 14 周岁")
-                        .font(.subheadline)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.primaryText)
                         .multilineTextAlignment(.leading)
 
                     Spacer(minLength: 0)
                 }
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("同意用户协议与隐私政策")
             .accessibilityValue(consent ? "已同意" : "未同意")
 
-            HStack(spacing: 20) {
+            HStack(spacing: 18) {
                 Button("《用户协议》") {
                     legal = .terms
                 }
-                .frame(minHeight: 44)
+                .frame(minHeight: 36)
                 .contentShape(Rectangle())
 
                 Button("《隐私政策》") {
                     legal = .privacy
                 }
-                .frame(minHeight: 44)
+                .frame(minHeight: 36)
                 .contentShape(Rectangle())
 
                 Spacer(minLength: 0)
             }
-            .font(.subheadline)
+            .font(AppType.caption)
             .foregroundStyle(Theme.accent)
             .buttonStyle(.plain)
         }
@@ -501,17 +457,43 @@ struct LoginView: View {
         .padding(.horizontal, 2)
     }
 
-    private var socialSection: some View {
+    private var otherLoginSection: some View {
         VStack(spacing: 10) {
-            HStack(spacing: 10) {
-                Rectangle().fill(Theme.stroke).frame(height: 1)
-                Text("或使用第三方账号")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(Theme.tertiaryText)
-                    .fixedSize()
-                Rectangle().fill(Theme.stroke).frame(height: 1)
-            }
+            Button {
+                Haptics.tap()
+                withAnimation(Motion.quick) {
+                    showOtherLogin.toggle()
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Text("其他登录方式")
+                        .font(AppType.buttonSecondary)
+                        .foregroundStyle(Theme.secondaryText)
 
+                    Spacer(minLength: 0)
+
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(Theme.tertiaryText)
+                        .rotationEffect(.degrees(showOtherLogin ? 180 : 0))
+                }
+                .frame(minHeight: 36)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(showOtherLogin ? "收起其他登录方式" : "展开其他登录方式")
+
+            if showOtherLogin {
+                socialSection
+                    .transition(.opacity.combined(with: .offset(y: 6)))
+            }
+        }
+        .padding(.horizontal, 2)
+        .animation(Motion.quick, value: showOtherLogin)
+    }
+
+    private var socialSection: some View {
+        VStack(spacing: 8) {
             HStack(spacing: 8) {
                 socialButton(
                     title: "微信登录",
@@ -560,7 +542,7 @@ struct LoginView: View {
                 }
             }
             .signInWithAppleButtonStyle(.white)
-            .frame(height: 48)
+            .frame(height: 46)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .disabled(!consent || auth.isWorking)
             .opacity(consent ? 1 : 0.5)
@@ -580,7 +562,7 @@ struct LoginView: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
-            .font(.system(size: 9.5))
+            .font(AppType.micro)
             .foregroundStyle(Theme.tertiaryText.opacity(0.85))
             .frame(maxWidth: .infinity)
         }
@@ -607,16 +589,16 @@ struct LoginView: View {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppType.caption.weight(.semibold))
                     .foregroundStyle(color)
                     .frame(width: 20)
                 Text(title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppType.buttonSecondary)
                     .foregroundStyle(Theme.primaryText)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 12)
+            .padding(.vertical, 11)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 color.opacity(0.10),
