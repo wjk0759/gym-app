@@ -45,7 +45,6 @@ struct LoginView: View {
     @State private var registrationPassword = ""
     @State private var showConsentPrompt = false
     @State private var pendingConsentAction: PendingConsentAction?
-    @Namespace private var modeNamespace
 
     private enum PendingConsentAction {
         case login
@@ -61,56 +60,28 @@ struct LoginView: View {
 
     @FocusState private var focusedField: Field?
 
-    private var isEditing: Bool { focusedField != nil }
-
     private var errorText: String? {
         localError ?? auth.errorMessage
     }
 
     var body: some View {
-        GeometryReader { proxy in
-            let compact = proxy.size.height < 760
-
-            ZStack {
-                AppBackground()
-                Color.clear
-                    .contentShape(Rectangle())
-                    .onTapGesture { focusedField = nil }
-
-                VStack(spacing: 0) {
-                    Spacer(minLength: 8)
-
-                    if !isEditing {
-                        header(compact: compact)
-                            .transition(.opacity.combined(with: .offset(y: -8)))
-                        Spacer(minLength: compact ? 10 : 16)
-                        headline(compact: compact)
-                            .transition(.opacity.combined(with: .offset(y: -8)))
-                        Spacer(minLength: compact ? 10 : 16)
-                    }
-
-                    loginCard(compact: compact)
-
-                    if !isEditing {
-                        Spacer(minLength: compact ? 10 : 14)
-                        socialSection(compact: compact)
-                            .transition(.opacity.combined(with: .offset(y: 8)))
-                        Spacer(minLength: compact ? 8 : 12)
-                        consentFooter
-                            .transition(.opacity.combined(with: .offset(y: 8)))
-                        devServerLink
-                            .padding(.top, 6)
-                    }
-
-                    Spacer(minLength: 8)
-                }
-                .padding(.horizontal, compact ? 18 : 22)
-                .padding(.bottom, 6)
-                .frame(maxWidth: 480)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .animation(Motion.smooth, value: isEditing)
+        ScrollView {
+            VStack(spacing: 24) {
+                header
+                headline
+                loginCard
+                socialSection
+                consentFooter
+                devServerLink
+                    .padding(.top, 4)
             }
+            .frame(maxWidth: 480)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 28)
+            .frame(maxWidth: .infinity)
         }
+        .background(AppBackground())
+        .scrollDismissesKeyboard(.interactively)
         .sheet(item: $legal) { kind in
             LegalDocumentView(kind: kind)
         }
@@ -157,14 +128,14 @@ struct LoginView: View {
         }
     }
 
-    private func header(compact: Bool) -> some View {
+    private var header: some View {
         HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: compact ? 12 : 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(Theme.accent)
-                    .frame(width: compact ? 42 : 48, height: compact ? 42 : 48)
+                    .frame(width: 48, height: 48)
                 Image(systemName: "figure.strengthtraining.traditional")
-                    .font(.system(size: compact ? 19 : 22, weight: .bold))
+                    .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(Theme.onAccent)
             }
 
@@ -173,42 +144,42 @@ struct LoginView: View {
                     .font(.title3.weight(.bold))
                     .foregroundStyle(Theme.primaryText)
                 Text("AI 健身教练")
-                    .font(.caption2.weight(.medium))
+                    .font(.caption)
                     .foregroundStyle(Theme.tertiaryText)
             }
 
             Spacer(minLength: 0)
 
-            if !compact {
-                Text("训练 · 饮食 · 复盘")
-                    .font(.system(size: 9.5, weight: .semibold))
-                    .foregroundStyle(Theme.accent.opacity(0.9))
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 5)
-                    .background(Theme.accent.opacity(0.09), in: Capsule())
-                    .overlay(
-                        Capsule()
-                            .stroke(Theme.accent.opacity(0.16), lineWidth: 0.8)
-                    )
-            }
+            Text("训练 · 饮食 · 复盘")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(Theme.accent)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 5)
+                .background(Theme.accent.opacity(0.10), in: Capsule())
         }
     }
 
-    private func headline(compact: Bool) -> some View {
+    private var headline: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("登录练途")
-                .font(compact ? AppType.title : AppType.display)
+            Text("欢迎回来")
+                .font(AppType.display)
                 .foregroundStyle(Theme.primaryText)
-            Text("同步训练计划、记录和 AI 复盘")
-                .font(compact ? AppType.caption : AppType.body)
+            Text("登录后同步训练计划、记录和 AI 复盘。")
+                .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func loginCard(compact: Bool) -> some View {
-        VStack(spacing: compact ? 12 : 14) {
-            modeSwitch
+    private var loginCard: some View {
+        VStack(spacing: 16) {
+            Picker("登录方式", selection: $mode) {
+                ForEach(Mode.allCases) { item in
+                    Text(item.rawValue).tag(item)
+                }
+            }
+            .pickerStyle(.segmented)
+            .controlSize(.large)
 
             Group {
                 if mode == .phone {
@@ -261,7 +232,7 @@ struct LoginView: View {
                 .foregroundStyle(Theme.tertiaryText)
                 .frame(maxWidth: .infinity, alignment: .center)
         }
-        .padding(compact ? 16 : 18)
+        .padding(18)
         .background(
             Theme.cardSurface,
             in: RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -269,47 +240,6 @@ struct LoginView: View {
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(Theme.stroke, lineWidth: 0.5)
-        )
-    }
-
-    private var modeSwitch: some View {
-        HStack(spacing: 4) {
-            ForEach(Mode.allCases) { item in
-                Button {
-                    guard mode != item else { return }
-                    Haptics.select()
-                    withAnimation(Motion.quick) {
-                        mode = item
-                    }
-                } label: {
-                    Text(item.rawValue)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(mode == item ? Theme.accent : Theme.secondaryText)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background {
-                            if mode == item {
-                                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                    .fill(Theme.accent.opacity(0.16))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                            .stroke(Theme.accent.opacity(0.38), lineWidth: 0.8)
-                                    )
-                                    .matchedGeometryEffect(id: "modePill", in: modeNamespace)
-                            }
-                        }
-                }
-                .buttonStyle(SubtlePressStyle(scale: 0.97))
-            }
-        }
-        .padding(4)
-        .background(
-            Theme.surface,
-            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .stroke(Theme.stroke, lineWidth: 1)
         )
     }
 
@@ -322,6 +252,7 @@ struct LoginView: View {
 
     private func fieldShell<Content: View>(
         focused: Bool,
+        field: Field,
         @ViewBuilder content: () -> Content
     ) -> some View {
         HStack(spacing: 10) {
@@ -329,6 +260,12 @@ struct LoginView: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 52)
+        .contentShape(Rectangle())
+        .simultaneousGesture(
+            TapGesture().onEnded {
+                focusedField = field
+            }
+        )
         .background {
             SoftSurface(
                 cornerRadius: 14,
@@ -344,7 +281,7 @@ struct LoginView: View {
             VStack(alignment: .leading, spacing: 7) {
                 fieldLabel("手机号")
 
-                fieldShell(focused: focusedField == .phone) {
+                fieldShell(focused: focusedField == .phone, field: .phone) {
                     Image(systemName: "iphone")
                         .font(.subheadline)
                         .foregroundStyle(focusedField == .phone ? Theme.accent : Theme.tertiaryText)
@@ -374,7 +311,7 @@ struct LoginView: View {
             VStack(alignment: .leading, spacing: 7) {
                 fieldLabel("验证码")
 
-                fieldShell(focused: focusedField == .code) {
+                fieldShell(focused: focusedField == .code, field: .code) {
                     Image(systemName: "number")
                         .font(.subheadline)
                         .foregroundStyle(focusedField == .code ? Theme.accent : Theme.tertiaryText)
@@ -394,24 +331,28 @@ struct LoginView: View {
                     Button {
                         sendCode()
                     } label: {
-                        if isSendingCode {
-                            ProgressView().tint(Theme.accent)
-                                .frame(width: 78)
-                        } else {
-                            Text(countdown > 0 ? "\(countdown)s 后重发" : "获取验证码")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(
-                                    countdown > 0 || !isValidPhone ? Theme.tertiaryText : Theme.accent
-                                )
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 7)
-                                .background(
-                                    Theme.accent.opacity(
-                                        countdown > 0 || !isValidPhone ? 0 : 0.10
-                                    ),
-                                    in: Capsule()
-                                )
+                        Group {
+                            if isSendingCode {
+                                ProgressView()
+                                    .tint(Theme.accent)
+                            } else {
+                                Text(countdown > 0 ? "\(countdown)s 后重发" : "获取验证码")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(
+                                        countdown > 0 || !isValidPhone ? Theme.tertiaryText : Theme.accent
+                                    )
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 7)
+                                    .background(
+                                        Theme.accent.opacity(
+                                            countdown > 0 || !isValidPhone ? 0 : 0.10
+                                        ),
+                                        in: Capsule()
+                                    )
+                            }
                         }
+                        .frame(minWidth: 88, minHeight: 44)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .disabled(!isValidPhone || countdown > 0 || isSendingCode)
@@ -433,7 +374,7 @@ struct LoginView: View {
             VStack(alignment: .leading, spacing: 7) {
                 fieldLabel("手机号或用户名")
 
-                fieldShell(focused: focusedField == .account) {
+                fieldShell(focused: focusedField == .account, field: .account) {
                     Image(systemName: "person")
                         .foregroundStyle(focusedField == .account ? Theme.accent : Theme.tertiaryText)
                         .frame(width: 18)
@@ -452,7 +393,7 @@ struct LoginView: View {
             VStack(alignment: .leading, spacing: 7) {
                 fieldLabel("密码")
 
-                fieldShell(focused: focusedField == .password) {
+                fieldShell(focused: focusedField == .password, field: .password) {
                     Image(systemName: "lock")
                         .foregroundStyle(focusedField == .password ? Theme.accent : Theme.tertiaryText)
                         .frame(width: 18)
@@ -479,6 +420,8 @@ struct LoginView: View {
                     } label: {
                         Image(systemName: showPassword ? "eye.slash" : "eye")
                             .foregroundStyle(Theme.tertiaryText)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(showPassword ? "隐藏密码" : "显示密码")
@@ -497,9 +440,11 @@ struct LoginView: View {
                 Button("忘记密码？") {
                     showPasswordReset = true
                 }
-                .font(.caption2.weight(.semibold))
+                .font(.subheadline)
                 .foregroundStyle(Theme.accent)
                 .buttonStyle(.plain)
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
             }
             .frame(maxWidth: .infinity, minHeight: 16, alignment: .leading)
             .padding(.leading, 2)
@@ -507,67 +452,57 @@ struct LoginView: View {
     }
 
     private var consentFooter: some View {
-        HStack(alignment: .top, spacing: 7) {
+        VStack(alignment: .leading, spacing: 4) {
             Button {
                 Haptics.select()
                 withAnimation(Motion.quick) {
                     consent.toggle()
                 }
             } label: {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(consent ? Theme.accent : Color.clear)
-                        .frame(width: 18, height: 18)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 5, style: .continuous)
-                                .stroke(
-                                    consent ? Theme.accent : Theme.tertiaryText.opacity(0.55),
-                                    lineWidth: 1.2
-                                )
-                        )
-                    if consent {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(Theme.onAccent)
-                    }
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: consent ? "checkmark.circle.fill" : "circle")
+                        .font(.title3)
+                        .foregroundStyle(consent ? Theme.accent : Theme.tertiaryText)
+
+                    Text("我已阅读并同意以下条款，且已年满 14 周岁")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.primaryText)
+                        .multilineTextAlignment(.leading)
+
+                    Spacer(minLength: 0)
                 }
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(SubtlePressStyle(scale: 0.9))
+            .buttonStyle(.plain)
             .accessibilityLabel("同意用户协议与隐私政策")
             .accessibilityValue(consent ? "已同意" : "未同意")
 
-            VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 2) {
-                    Text("我已阅读并同意")
-                    Button {
-                        legal = .terms
-                    } label: {
-                        Text("《用户协议》").underline().foregroundStyle(Theme.accent)
-                    }
-                    Text("和")
-                    Button {
-                        legal = .privacy
-                    } label: {
-                        Text("《隐私政策》").underline().foregroundStyle(Theme.accent)
-                    }
+            HStack(spacing: 20) {
+                Button("《用户协议》") {
+                    legal = .terms
                 }
-                .buttonStyle(.plain)
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
 
-                Text("且已年满 14 周岁")
+                Button("《隐私政策》") {
+                    legal = .privacy
+                }
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+
+                Spacer(minLength: 0)
             }
-            .font(.system(size: 10.5))
-            .foregroundStyle(Theme.tertiaryText)
-            .fixedSize(horizontal: false, vertical: true)
-
-            Spacer(minLength: 0)
+            .font(.subheadline)
+            .foregroundStyle(Theme.accent)
+            .buttonStyle(.plain)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 2)
     }
 
-    private func socialSection(compact: Bool) -> some View {
-        VStack(spacing: compact ? 8 : 10) {
+    private var socialSection: some View {
+        VStack(spacing: 10) {
             HStack(spacing: 10) {
                 Rectangle().fill(Theme.stroke).frame(height: 1)
                 Text("或使用第三方账号")
@@ -625,7 +560,7 @@ struct LoginView: View {
                 }
             }
             .signInWithAppleButtonStyle(.white)
-            .frame(height: compact ? 44 : 48)
+            .frame(height: 48)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .disabled(!consent || auth.isWorking)
             .opacity(consent ? 1 : 0.5)

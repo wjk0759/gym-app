@@ -60,6 +60,7 @@ struct PrimaryButtonStyle: ButtonStyle {
                 Theme.accent,
                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
             )
+            .contentShape(Rectangle())
             .opacity(configuration.isPressed ? 0.82 : 1)
     }
 }
@@ -75,6 +76,7 @@ struct SecondaryButtonStyle: ButtonStyle {
                 Color(.secondarySystemFill),
                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
             )
+            .contentShape(Rectangle())
             .opacity(configuration.isPressed ? 0.70 : 1)
     }
 }

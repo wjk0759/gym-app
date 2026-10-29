@@ -326,6 +326,8 @@ struct WorkoutSessionView: View {
                     openAdjustSheet(exercise)
                 }
                 .font(.subheadline)
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
                 .accessibilityHint("调整目标组数、次数、重量和休息")
             }
 
@@ -341,6 +343,8 @@ struct WorkoutSessionView: View {
                         reps = last.reps
                     }
                     .font(.caption.weight(.semibold))
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
                     .buttonStyle(.borderless)
                     .accessibilityLabel("使用上次的重量和次数")
                 }
@@ -436,6 +440,8 @@ struct WorkoutSessionView: View {
                     restRemaining = nil
                 }
                 .font(.subheadline)
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
                 .buttonStyle(.borderless)
             }
         }

@@ -71,6 +71,8 @@ struct CardPressStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
             .opacity(configuration.isPressed ? 0.65 : 1)
     }
 }
@@ -81,6 +83,8 @@ struct SubtlePressStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
             .opacity(configuration.isPressed ? 0.55 : 1)
     }
 }

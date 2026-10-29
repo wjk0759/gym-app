@@ -508,6 +508,8 @@ struct SettingsView: View {
                             .background(
                                 Capsule().fill(store.bodyCheckInFrequency == frequency ? Theme.accent : Theme.surfaceStrong)
                             )
+                            .frame(minHeight: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
@@ -532,6 +534,8 @@ struct SettingsView: View {
                                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                                             .fill(store.bodyCheckInWeekday == weekday ? Theme.accent : Theme.surfaceStrong)
                                     )
+                                    .frame(minHeight: 44)
+                                    .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                         }

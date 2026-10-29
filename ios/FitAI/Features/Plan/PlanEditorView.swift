@@ -106,6 +106,8 @@ struct ExercisePickerView: View {
     ) -> some View {
         Button(action: action) {
             TagChip(text: title, selected: selected)
+                .padding(.vertical, 7)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
