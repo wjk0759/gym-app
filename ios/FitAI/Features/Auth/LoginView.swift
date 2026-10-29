@@ -20,7 +20,7 @@ enum LegalDocumentKind: String, Identifiable {
 struct LoginView: View {
     @Environment(AuthStore.self) private var auth
 
-    private enum Mode: String, CaseIterable, Identifiable {
+    private enum Mode: String, CaseIterable, Identifiable, Hashable {
         case phone = "手机验证码"
         case password = "账号密码"
         var id: String { rawValue }
