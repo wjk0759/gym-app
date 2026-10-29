@@ -14,8 +14,26 @@ enum Theme {
     static let secondaryText = Color(.secondaryLabel)
     static let tertiaryText = Color(.tertiaryLabel)
 
+    /// 品牌亮绿。用于大图标、媒体上的装饰和深色模式强调；
+    /// 系统背景上的文字/图标请用 `accentText`，填充控件请用 `accentFill`。
     static let accent = Color.accentColor
     static let onAccent = Color.white
+
+    /// 填充型主按钮使用更深的绿色，保证白字对比度 ≥ 4.5:1。
+    /// 品牌亮绿 #5CDB8C 继续用于图标、选中态和深色模式强调色。
+    static let accentFill = Color(red: 0.08, green: 0.45, blue: 0.28)
+    static let onAccentFill = Color.white
+
+    /// 链接、复选框和图标文字：浅色模式深绿，深色模式亮绿。
+    static let accentText = Color(
+        uiColor: UIColor { traits in
+            if traits.userInterfaceStyle == .dark {
+                return UIColor(red: 0.36, green: 0.86, blue: 0.55, alpha: 1)
+            }
+            return UIColor(red: 0.08, green: 0.45, blue: 0.28, alpha: 1)
+        }
+    )
+
     static let danger = Color.red
     static let warning = Color.orange
     static let blue = Color.blue
@@ -50,22 +68,26 @@ extension View {
 }
 
 struct PrimaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(AppType.button)
-            .foregroundStyle(.white)
+            .foregroundStyle(Theme.onAccentFill)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
             .background(
-                Theme.accent,
+                Theme.accentFill,
                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
             )
             .contentShape(Rectangle())
-            .opacity(configuration.isPressed ? 0.82 : 1)
+            .opacity(isEnabled ? (configuration.isPressed ? 0.82 : 1) : 0.45)
     }
 }
 
 struct SecondaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(AppType.buttonSecondary)
@@ -77,7 +99,7 @@ struct SecondaryButtonStyle: ButtonStyle {
                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
             )
             .contentShape(Rectangle())
-            .opacity(configuration.isPressed ? 0.70 : 1)
+            .opacity(isEnabled ? (configuration.isPressed ? 0.70 : 1) : 0.45)
     }
 }
 
@@ -88,11 +110,11 @@ struct TagChip: View {
     var body: some View {
         Text(text)
             .font(AppType.chip)
-            .foregroundStyle(selected ? Color.white : Color.secondary)
+            .foregroundStyle(selected ? Theme.onAccentFill : Color.secondary)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .background(
-                selected ? Theme.accent : Color(.tertiarySystemFill),
+                selected ? Theme.accentFill : Color(.tertiarySystemFill),
                 in: Capsule()
             )
     }
@@ -121,7 +143,7 @@ struct SectionTitle: View {
 struct HeroGlyph: View {
     let symbol: String
     var size: CGFloat = 100
-    var tint: Color = Theme.accent
+    var tint: Color = Theme.accentText
 
     var body: some View {
         Image(systemName: symbol)

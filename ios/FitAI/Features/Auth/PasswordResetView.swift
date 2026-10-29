@@ -4,25 +4,39 @@ import SwiftUI
 struct PasswordResetView: View {
     @Environment(AuthStore.self) private var auth
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    let prefillPhone: String
+    var onResetCompleted: ((String) -> Void)?
 
-    @State private var phone = ""
+    private enum Field: Hashable {
+        case phone
+        case code
+        case newPassword
+        case confirmPassword
+    }
+
+    @State private var phone: String
     @State private var code = ""
     @State private var newPassword = ""
     @State private var confirmPassword = ""
+    @State private var showPassword = false
     @State private var isSendingCode = false
+    @State private var isSubmitting = false
     @State private var countdown = 0
-    @State private var errorMessage = ""
+    @State private var countdownTask: Task<Void, Never>?
+    @State private var devCode: String?
+    @State private var errorMessage: String?
     @State private var showSuccess = false
 
-    init(prefillPhone: String) {
-        self.prefillPhone = prefillPhone
-        _phone = State(initialValue: prefillPhone)
+    @FocusState private var focusedField: Field?
+
+    init(prefillPhone: String, onResetCompleted: ((String) -> Void)? = nil) {
+        self.onResetCompleted = onResetCompleted
+        _phone = State(initialValue: AuthInput.phoneDigits(prefillPhone))
     }
 
     private var isValidPhone: Bool {
-        phone.count == 11 && phone.allSatisfy { $0.isNumber }
+        AuthInput.isValidPhone(phone)
     }
 
     private var isValidPassword: Bool {
@@ -32,190 +46,251 @@ struct PasswordResetView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            AppScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("重置登录密码")
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundStyle(Theme.primaryText)
-                        Text("验证注册手机号后设置新密码，重置后其他设备会退出登录。")
-                            .font(.subheadline)
-                            .foregroundStyle(Theme.secondaryText)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+        Form {
+            Section {
+                HStack(spacing: 8) {
+                    Text("+86")
+                        .foregroundStyle(.secondary)
 
-                    VStack(alignment: .leading, spacing: 14) {
-                        VStack(alignment: .leading, spacing: 7) {
-                            fieldLabel("手机号")
-                            fieldShell {
-                                Text("+86")
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(Theme.secondaryText)
-                                Rectangle()
-                                    .fill(Theme.stroke)
-                                    .frame(width: 1, height: 18)
-                                TextField("请输入注册手机号", text: $phone)
-                                    .font(.subheadline)
-                                    .foregroundStyle(Theme.primaryText)
-                                    .keyboardType(.numberPad)
-                                    .textContentType(.telephoneNumber)
-                                    .onChange(of: phone) { _, value in
-                                        phone = String(value.filter(\.isNumber).prefix(11))
-                                        errorMessage = ""
-                                    }
+                    TextField("手机号", text: $phone)
+                        .keyboardType(.phonePad)
+                        .textContentType(.telephoneNumber)
+                        .focused($focusedField, equals: .phone)
+                        .submitLabel(.next)
+                        .onSubmit {
+                            focusedField = .code
+                        }
+                        .accessibilityLabel("手机号")
+                        .onChange(of: phone) { _, newValue in
+                            let filtered = AuthInput.phoneDigits(newValue)
+                            if filtered != newValue {
+                                phone = filtered
                             }
-                        }
-
-                        VStack(alignment: .leading, spacing: 7) {
-                            fieldLabel("验证码")
-                            fieldShell {
-                                TextField("请输入 6 位验证码", text: $code)
-                                    .font(.subheadline)
-                                    .foregroundStyle(Theme.primaryText)
-                                    .keyboardType(.numberPad)
-                                    .textContentType(.oneTimeCode)
-                                    .onChange(of: code) { _, value in
-                                        code = String(value.filter(\.isNumber).prefix(6))
-                                        errorMessage = ""
-                                    }
-
-                                Button {
-                                    sendCode()
-                                } label: {
-                                    if isSendingCode {
-                                        ProgressView().tint(Theme.accent)
-                                    } else {
-                                        Text(countdown > 0 ? "\(countdown)s 后重发" : "获取验证码")
-                                            .font(.caption.weight(.semibold))
-                                            .foregroundStyle(
-                                                countdown > 0 || !isValidPhone
-                                                    ? Theme.tertiaryText
-                                                    : Theme.accent
-                                            )
-                                    }
-                                }
-                                .buttonStyle(.plain)
-                                .disabled(!isValidPhone || countdown > 0 || isSendingCode)
+                            if countdown > 0 || devCode != nil {
+                                code = ""
+                                devCode = nil
+                                countdown = 0
+                                countdownTask?.cancel()
                             }
+                            errorMessage = nil
                         }
-
-                        VStack(alignment: .leading, spacing: 7) {
-                            fieldLabel("新密码")
-                            fieldShell {
-                                Image(systemName: "lock")
-                                    .foregroundStyle(Theme.tertiaryText)
-                                    .frame(width: 18)
-                                SecureField("至少 8 位，含字母和数字", text: $newPassword)
-                                    .font(.subheadline)
-                                    .foregroundStyle(Theme.primaryText)
-                                    .textContentType(.newPassword)
-                                    .onChange(of: newPassword) { _, _ in errorMessage = "" }
-                            }
-                        }
-
-                        VStack(alignment: .leading, spacing: 7) {
-                            fieldLabel("确认新密码")
-                            fieldShell {
-                                Image(systemName: "lock.rotation")
-                                    .foregroundStyle(Theme.tertiaryText)
-                                    .frame(width: 18)
-                                SecureField("再次输入新密码", text: $confirmPassword)
-                                    .font(.subheadline)
-                                    .foregroundStyle(Theme.primaryText)
-                                    .textContentType(.newPassword)
-                                    .onChange(of: confirmPassword) { _, _ in errorMessage = "" }
-                            }
-                        }
-
-                        if !errorMessage.isEmpty {
-                            Text(errorMessage)
-                                .font(.caption)
-                                .foregroundStyle(Theme.danger)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-
-                        Button {
-                            resetPassword()
-                        } label: {
-                            if auth.isWorking {
-                                ProgressView().tint(.black)
-                            } else {
-                                Text("重置密码")
-                            }
-                        }
-                        .buttonStyle(PrimaryButtonStyle())
-                        .disabled(auth.isWorking)
-
-                        Text("如果手机号已经停用或无法接收验证码，请通过 App 内反馈渠道联系支持。")
-                            .font(.caption2)
-                            .foregroundStyle(Theme.tertiaryText)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .card()
                 }
-                .padding(20)
-                .padding(.bottom, 20)
-            }
-            .background(AppBackground())
-            .scrollDismissesKeyboard(.interactively)
-            .navigationTitle("找回密码")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭") { dismiss() }
+
+                if dynamicTypeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: 4) {
+                        codeInput
+                        HStack {
+                            Spacer()
+                            resendCodeButton
+                        }
+                    }
+                } else {
+                    HStack(spacing: 8) {
+                        codeInput
+                        resendCodeButton
+                    }
+                }
+            } header: {
+                Text("验证手机号")
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("验证码将发送至该手机号；重置后其他设备会退出登录。")
+                    #if DEBUG
+                    if let devCode {
+                        Text("开发验证码：\(devCode)")
+                            .foregroundStyle(Theme.warning)
+                    }
+                    #endif
                 }
             }
-            .alert("密码已重置", isPresented: $showSuccess) {
-                Button("返回登录") { dismiss() }
-            } message: {
-                Text("请使用手机号和新密码重新登录。")
+            .disabled(isSubmitting)
+
+            Section {
+                Group {
+                    if showPassword {
+                        TextField("新密码", text: $newPassword)
+                    } else {
+                        SecureField("新密码", text: $newPassword)
+                    }
+                }
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .textContentType(.newPassword)
+                .focused($focusedField, equals: .newPassword)
+                .submitLabel(.next)
+                .onSubmit {
+                    focusedField = .confirmPassword
+                }
+                .accessibilityLabel("新密码")
+                .onChange(of: newPassword) { _, _ in
+                    errorMessage = nil
+                }
+
+                Group {
+                    if showPassword {
+                        TextField("确认新密码", text: $confirmPassword)
+                    } else {
+                        SecureField("确认新密码", text: $confirmPassword)
+                    }
+                }
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .textContentType(.newPassword)
+                .focused($focusedField, equals: .confirmPassword)
+                .submitLabel(.go)
+                .onSubmit {
+                    resetPassword()
+                }
+                .accessibilityLabel("确认新密码")
+                .onChange(of: confirmPassword) { _, _ in
+                    errorMessage = nil
+                }
+
+                Toggle("显示密码", isOn: $showPassword)
+                    .tint(Theme.accentText)
+            } header: {
+                Text("设置新密码")
+            } footer: {
+                Text("至少 8 位，需同时包含字母和数字。")
             }
+            .disabled(isSubmitting)
+
+            Section {
+                Button {
+                    resetPassword()
+                } label: {
+                    HStack(spacing: 8) {
+                        if isSubmitting {
+                            ProgressView()
+                                .controlSize(.small)
+                                .tint(Theme.onAccentFill)
+                        }
+                        Text(isSubmitting ? "正在重置…" : "重置密码")
+                    }
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Theme.onAccentFill)
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .tint(Theme.accentFill)
+                .disabled(isSubmitting || isSendingCode)
+                .accessibilityLabel(isSubmitting ? "正在重置密码" : "重置密码")
+            } footer: {
+                VStack(alignment: .leading, spacing: 8) {
+                    if let errorMessage {
+                        Label(errorMessage, systemImage: "exclamationmark.circle.fill")
+                            .font(.footnote)
+                            .foregroundStyle(Theme.danger)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityElement(children: .combine)
+                    }
+
+                    Text("如果手机号已经停用或无法接收验证码，请通过 App 内反馈渠道联系支持。")
+                        .font(.footnote)
+                }
+            }
+        }
+        .navigationTitle("找回密码")
+        .navigationBarTitleDisplayMode(.inline)
+        .scrollDismissesKeyboard(.interactively)
+        .tint(Theme.accentText)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("完成") {
+                    focusedField = nil
+                }
+            }
+        }
+        .alert("密码已重置", isPresented: $showSuccess) {
+            Button("返回登录") {
+                onResetCompleted?(AuthInput.phoneDigits(phone))
+                dismiss()
+            }
+        } message: {
+            Text("请使用手机号和新密码重新登录。")
+        }
+        .sensoryFeedback(.error, trigger: errorMessage) { _, newValue in
+            newValue != nil
+        }
+        .sensoryFeedback(.success, trigger: showSuccess) { _, newValue in
+            newValue
+        }
+        .announcesAuthError(errorMessage)
+        .onDisappear {
+            countdownTask?.cancel()
         }
     }
 
-    private func fieldLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.caption.weight(.medium))
-            .foregroundStyle(Theme.secondaryText)
-            .padding(.leading, 2)
+    private var codeInput: some View {
+        TextField("6 位验证码", text: $code)
+            .keyboardType(.numberPad)
+            .textContentType(.oneTimeCode)
+            .focused($focusedField, equals: .code)
+            .submitLabel(.next)
+            .onSubmit {
+                focusedField = .newPassword
+            }
+            .accessibilityLabel("验证码")
+            .onChange(of: code) { _, newValue in
+                let filtered = AuthInput.codeDigits(newValue)
+                if filtered != newValue {
+                    code = filtered
+                }
+                errorMessage = nil
+            }
     }
 
-    private func fieldShell<Content: View>(
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        HStack(spacing: 10) {
-            content()
+    private var resendCodeButton: some View {
+        Button {
+            sendCode()
+        } label: {
+            if isSendingCode {
+                ProgressView()
+                    .controlSize(.small)
+            } else {
+                Text(countdown > 0 ? "\(countdown) 秒后" : "获取验证码")
+                    .monospacedDigit()
+            }
         }
-        .padding(.horizontal, 14)
-        .frame(height: 52)
-        .background(
-            Theme.surfaceStrong,
-            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        .buttonStyle(.borderless)
+        .font(.subheadline.weight(.medium))
+        .frame(minWidth: 88, minHeight: 44)
+        .contentShape(Rectangle())
+        .disabled(
+            !isValidPhone || countdown > 0 || isSendingCode || isSubmitting
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Theme.stroke, lineWidth: 1)
+        .accessibilityLabel(
+            countdown > 0 ? "\(countdown) 秒后可重新获取验证码" : "获取验证码"
         )
     }
 
     private func sendCode() {
+        guard !isSendingCode, !isSubmitting else { return }
         guard isValidPhone else {
             errorMessage = "请输入正确的 11 位手机号"
+            focusedField = .phone
             return
         }
+
+        errorMessage = nil
+        let sentPhone = phone
+        isSendingCode = true
         Task { @MainActor in
-            isSendingCode = true
             defer { isSendingCode = false }
             do {
-                if let devCode = try await auth.sendCode(
-                    phone: phone,
+                let value = try await auth.sendCode(
+                    phone: sentPhone,
                     purpose: "reset_password"
-                ) {
-                    code = devCode
+                )
+                guard phone == sentPhone else { return }
+                if let value {
+                    devCode = value
+                    code = value
                 }
                 startCountdown()
+                focusedField = .code
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -223,34 +298,45 @@ struct PasswordResetView: View {
     }
 
     private func startCountdown() {
+        countdownTask?.cancel()
         countdown = 60
-        Task { @MainActor in
+        countdownTask = Task { @MainActor in
             while countdown > 0 {
                 try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { return }
                 countdown -= 1
             }
         }
     }
 
     private func resetPassword() {
+        guard !isSubmitting, !isSendingCode else { return }
         guard isValidPhone else {
             errorMessage = "请输入正确的 11 位手机号"
+            focusedField = .phone
             return
         }
         guard code.count == 6 else {
             errorMessage = "请输入 6 位验证码"
+            focusedField = .code
             return
         }
         guard isValidPassword else {
             errorMessage = "新密码至少 8 位，并同时包含字母和数字"
+            focusedField = .newPassword
             return
         }
         guard newPassword == confirmPassword else {
             errorMessage = "两次输入的新密码不一致"
+            focusedField = .confirmPassword
             return
         }
 
+        focusedField = nil
+        errorMessage = nil
+        isSubmitting = true
         Task { @MainActor in
+            defer { isSubmitting = false }
             do {
                 try await auth.resetPassword(
                     phone: phone,

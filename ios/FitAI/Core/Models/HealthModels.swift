@@ -64,7 +64,7 @@ struct BodyMetric: Codable, Identifiable, Hashable {
     var dateKey: String { FitnessDate.key(date) }
 }
 
-enum BodyCheckInFrequency: String, Codable, CaseIterable, Identifiable {
+enum BodyCheckInFrequency: String, Codable, CaseIterable, Identifiable, Hashable {
     case off
     case weekly
     case biweekly

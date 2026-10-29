@@ -140,7 +140,7 @@ struct CoachLoadingLabel: View {
     var body: some View {
         if isLoading {
             ProgressView()
-                .tint(.black)
+                .tint(Theme.onAccentFill)
         } else {
             Text(title)
         }

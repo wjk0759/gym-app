@@ -14,7 +14,7 @@ struct AgentMemoryView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     header
                     if isLoading {
-                        ProgressView().tint(Theme.accent)
+                        ProgressView().tint(Theme.accentText)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 30)
                     } else if items.isEmpty {
@@ -66,7 +66,7 @@ struct AgentMemoryView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 5) {
             Text("教练会记住什么")
-                .font(.system(size: 23, weight: .bold, design: .rounded))
+                .font(.title2.weight(.bold))
                 .foregroundStyle(Theme.primaryText)
             Text("这里保存的是从对话中提炼出的稳定事实，不是完整聊天记录。关闭记忆后，教练仍可回答本次问题，但不会主动引用这些偏好。")
                 .font(.caption)
@@ -80,10 +80,10 @@ struct AgentMemoryView: View {
             HStack {
                 Text(kindLabel(item.kind))
                     .font(.caption2.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.accentText)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Theme.accent.opacity(0.10), in: Capsule())
+                    .background(Theme.accentText.opacity(0.10), in: Capsule())
                 Spacer()
                 Button {
                     pendingDelete = item

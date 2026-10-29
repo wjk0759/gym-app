@@ -289,7 +289,7 @@ struct BodyPhotoAnalysisView: View {
         } label: {
             if isAnalyzing {
                 HStack(spacing: 8) {
-                    ProgressView().tint(.black)
+                    ProgressView().tint(Theme.onAccentFill)
                     Text("正在分析体型…")
                 }
             } else {

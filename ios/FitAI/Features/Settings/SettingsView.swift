@@ -33,50 +33,34 @@ struct SettingsView: View {
     @State private var message = ""
     @State private var legalDocument: LegalDocumentKind?
     @State private var showExport = false
-    @State private var showPasswordSettings = false
     @State private var showBodyCheckIn = false
     @State private var showDeleteAccount = false
     @State private var showAgentMemory = false
     @State private var showWeatherDetail = false
 
     var body: some View {
-        AppScrollView {
-            VStack(spacing: AppLayout.sectionSpacing) {
-                accountCard
-
-                sectionLabel("服务状态")
-                serviceCard
-
-                sectionLabel("训练设置")
-                reminderCard
-                bodyCheckInCard
-                healthCard
-                preferenceCard
-
-                sectionLabel("天气与出行")
-                weatherCard
-
-#if DEBUG
-                sectionLabel("AI 与连接")
-                aiCard
-#endif
-
-                sectionLabel("数据与隐私")
-                privacyCard
-
-                sectionLabel("账号操作")
-                logoutCard
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
-            .padding(.bottom, 28)
+        Form {
+            accountSection
+            serviceSection
+            reminderSection
+            bodyCheckInSection
+            healthSection
+            preferenceSection
+            weatherSection
+            #if DEBUG
+            aiSection
+            #endif
+            privacySection
+            accountActionsSection
         }
-        .background(AppBackground())
         .navigationTitle("设置")
         .navigationBarTitleDisplayMode(.inline)
+        .scrollDismissesKeyboard(.interactively)
+        .tint(Theme.accentText)
         .onAppear(perform: syncReminder)
         .task {
             await checkService()
+            _ = await weather.refreshNotificationAuthorization()
         }
         .alert("提示", isPresented: $showMessage) {
             Button("知道了", role: .cancel) {}
@@ -121,9 +105,6 @@ struct SettingsView: View {
         .sheet(item: $legalDocument) { kind in
             LegalDocumentView(kind: kind)
         }
-        .sheet(isPresented: $showPasswordSettings) {
-            PasswordSettingsView()
-        }
         .sheet(isPresented: $showBodyCheckIn) {
             BodyCheckInSheet(manual: true)
                 .presentationDetents([.medium, .large])
@@ -141,85 +122,27 @@ struct SettingsView: View {
 
     // MARK: - 账号
 
-    private var accountCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("账号与安全")
-                        .font(.headline)
-                    Text("登录态已加密保存在本机 Keychain")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-                Spacer()
-                Image(systemName: "lock.shield.fill")
-                    .foregroundStyle(Theme.accent)
-            }
+    private var accountSection: some View {
+        Section {
+            LabeledContent("登录账号", value: maskedPhone)
 
-            HStack {
-                Text("登录账号")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.secondaryText)
-                Spacer()
-                Text(maskedPhone)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(Theme.primaryText)
-            }
-
-            HStack {
-                Text("用户 ID")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.secondaryText)
-                Spacer()
+            LabeledContent("用户 ID") {
                 Text(String(auth.userID?.prefix(8) ?? ""))
                     .font(.caption.monospaced())
-                    .foregroundStyle(Theme.tertiaryText)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
             }
 
-            infoRow("设置 / 修改登录密码", icon: "key") {
-                showPasswordSettings = true
-            }
-        }
-        .card()
-    }
-
-    private var logoutCard: some View {
-        VStack(spacing: 10) {
-            Button {
-                showLogout = true
+            NavigationLink {
+                PasswordSettingsView()
             } label: {
-                Text("退出登录")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.danger)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Theme.danger.opacity(0.10))
-                    )
+                Label("设置 / 修改登录密码", systemImage: "key")
             }
-            .buttonStyle(.plain)
-
-            Text("退出登录不会删除训练计划、训练记录或身体数据。")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Divider().overlay(Theme.stroke)
-
-            Button {
-                showDeleteAccount = true
-            } label: {
-                Text("注销账号")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.danger)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 9)
-            }
-            .buttonStyle(.plain)
+        } header: {
+            Text("账号与安全")
+        } footer: {
+            Text("登录态已加密保存在本机 Keychain。")
         }
-        .card()
     }
 
     private var maskedPhone: String {
@@ -229,54 +152,48 @@ struct SettingsView: View {
         return "\(phone.prefix(3))****\(phone.suffix(4))"
     }
 
-    private var serviceCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("服务连接")
-                        .font(.headline)
-                    Text(serviceText)
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                }
-                Spacer()
+    // MARK: - 服务状态
+
+    private var serviceSection: some View {
+        Section {
+            HStack(spacing: 10) {
                 Circle()
                     .fill(serviceColor)
                     .frame(width: 9, height: 9)
+                Text(serviceText)
+                    .font(.subheadline)
+                Spacer(minLength: 0)
             }
 
-#if DEBUG
-            Text(AppConfig.apiBaseURLString)
-                .font(.caption2.monospaced())
-                .foregroundStyle(Theme.tertiaryText)
-#endif
-
-            HStack(spacing: 10) {
-                statusPill(
-                    "会员",
-                    subscriptions.isPro ? "Pro" : "免费",
-                    active: subscriptions.isPro
-                )
-                statusPill(
-                    "AI",
-                    store.canUseRemoteAI ? "DeepSeek" : "本地规则",
-                    active: store.canUseRemoteAI
-                )
-            }
+            LabeledContent("会员", value: subscriptions.isPro ? "Pro" : "免费")
+            LabeledContent(
+                "AI 服务",
+                value: store.canUseRemoteAI ? "远程 DeepSeek" : "本地规则"
+            )
 
             Button("重新检查") {
                 Task { await checkService() }
             }
-            .buttonStyle(SecondaryButtonStyle())
+            .buttonStyle(.borderless)
 
+            #if DEBUG
+            VStack(alignment: .leading, spacing: 2) {
+                Text("API 地址")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(AppConfig.apiBaseURLString)
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+            #endif
+        } header: {
+            Text("服务状态")
+        } footer: {
             if serviceState == .offline {
                 Text("未连接后端时，登录同步、真实 AI、教学视频等功能会不可用；本地训练记录仍可继续使用。")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .card()
     }
 
     private var serviceText: String {
@@ -290,23 +207,9 @@ struct SettingsView: View {
     private var serviceColor: Color {
         switch serviceState {
         case .checking: return Theme.warning
-        case .online: return Theme.accent
+        case .online: return Theme.accentText
         case .offline: return Theme.danger
         }
-    }
-
-    private func statusPill(_ title: String, _ value: String, active: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title)
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-            Text(value)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(active ? Theme.accent : Theme.secondaryText)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-        .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private func checkService() async {
@@ -323,128 +226,35 @@ struct SettingsView: View {
 
     // MARK: - 训练设置
 
-    private var reminderCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("训练提醒")
-                        .font(.headline)
-                    Text("按每周训练日发送本地通知")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                }
-                Spacer()
-                Image(systemName: store.notificationsEnabled ? "bell.badge.fill" : "bell.slash")
-                    .foregroundStyle(store.notificationsEnabled ? Theme.accent : Theme.tertiaryText)
-            }
-
+    private var reminderSection: some View {
+        Section {
             DatePicker(
                 "提醒时间",
                 selection: $reminderDate,
                 displayedComponents: .hourAndMinute
             )
-            .font(.subheadline)
 
-            HStack(spacing: 10) {
-                Button("保存提醒") {
-                    saveReminder()
-                }
-                .buttonStyle(PrimaryButtonStyle())
-
-                if store.notificationsEnabled {
-                    Button("关闭") {
-                        store.disableReminders()
-                        message = "已关闭训练提醒。"
-                        showMessage = true
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                }
+            Button("保存提醒") {
+                saveReminder()
             }
+            .buttonStyle(.borderless)
 
-            Text(store.notificationsEnabled
-                 ? "已开启：共 \(store.plan?.firstWeek.count ?? 0) 个训练日。修改计划后会自动更新。"
-                 : "未开启。iOS 的静音和专注模式可能影响提醒，请在系统设置中允许通知。")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-        }
-        .card()
-    }
-
-    private var weatherCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                Image(systemName: weather.snapshot?.symbolName ?? "cloud.sun.fill")
-                    .font(.title3)
-                    .foregroundStyle(weather.snapshot?.isWet == true ? Theme.blue : Theme.accent)
-                    .frame(width: 30, height: 30)
-                    .background(
-                        (weather.snapshot?.isWet == true ? Theme.blue : Theme.accent).opacity(0.12),
-                        in: RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    )
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(weather.snapshot?.placeDisplayName ?? "本地天气")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.primaryText)
-                    Text(weather.snapshot.map { "\($0.conditionLabel) · \($0.temperatureText)" } ?? weather.authorizationLabel)
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
+            if store.notificationsEnabled {
+                Button("关闭训练提醒") {
+                    store.disableReminders()
+                    message = "已关闭训练提醒。"
+                    showMessage = true
                 }
-
-                Spacer(minLength: 4)
-
-                Button("详情") { showWeatherDetail = true }
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                .buttonStyle(.borderless)
             }
-
-            Toggle(
-                isOn: Binding(
-                    get: { weather.alertsEnabled },
-                    set: { weather.setWeatherAlerts($0) }
-                )
-            ) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("恶劣天气出行提醒")
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.primaryText)
-                    Text("有雨雪、大风或降雨概率较高时，每天最多提醒一次；夜间不打扰")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-            }
-            .tint(Theme.accent)
-
-            if weather.alertsEnabled && !weather.alertsAuthorized {
-                HStack(spacing: 12) {
-                    Button("开启系统通知权限") {
-                        Task {
-                            let granted = await weather.requestWeatherAlertPermission()
-                            message = granted
-                                ? "天气提醒已开启。"
-                                : "没有获得通知权限，请到系统设置中允许「练途」通知。"
-                            showMessage = true
-                        }
-                    }
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
-
-                    Button("去系统设置") {
-                        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-                        openURL(url)
-                    }
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(Theme.tertiaryText)
-                }
-            }
-
-            Text("定位只用于本地天气查询；关闭 App 后不会持续获取位置。")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-        }
-        .card(padding: 14)
-        .task {
-            await weather.refreshNotificationAuthorization()
+        } header: {
+            Text("训练提醒")
+        } footer: {
+            Text(
+                store.notificationsEnabled
+                    ? "已开启：共 \(store.plan?.firstWeek.count ?? 0) 个训练日。修改计划后会自动更新。"
+                    : "未开启。iOS 的静音和专注模式可能影响提醒，请在系统设置中允许通知。"
+            )
         }
     }
 
@@ -475,122 +285,69 @@ struct SettingsView: View {
         }
     }
 
-    private var bodyCheckInCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("身体数据提醒")
-                        .font(.headline)
-                    Text(store.bodyCheckInFrequencyLabel)
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                }
-                Spacer()
-                Image(systemName: store.bodyCheckInFrequency == .off ? "bell.slash" : "bell.badge")
-                    .foregroundStyle(store.bodyCheckInFrequency == .off ? Theme.tertiaryText : Theme.accent)
-            }
-
-            Text("到日期后打开「今日」会弹出体重 / 体脂 / 腰围记录卡；保存或隐藏后本次消失。")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
-
-            HStack(spacing: 7) {
+    private var bodyCheckInSection: some View {
+        Section {
+            Picker(
+                "提醒频率",
+                selection: Binding(
+                    get: { store.bodyCheckInFrequency },
+                    set: { store.setBodyCheckInFrequency($0) }
+                )
+            ) {
                 ForEach(BodyCheckInFrequency.allCases) { frequency in
-                    Button {
-                        store.setBodyCheckInFrequency(frequency)
-                    } label: {
-                        Text(frequency.title)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(store.bodyCheckInFrequency == frequency ? Theme.onAccent : Theme.secondaryText)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 7)
-                            .background(
-                                Capsule().fill(store.bodyCheckInFrequency == frequency ? Theme.accent : Theme.surfaceStrong)
-                            )
-                            .frame(minHeight: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
+                    Text(frequency.title).tag(frequency)
                 }
             }
+            .pickerStyle(.menu)
 
-            if store.bodyCheckInFrequency == .weekly || store.bodyCheckInFrequency == .biweekly {
-                VStack(alignment: .leading, spacing: 7) {
-                    Text("选择星期")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
-                    HStack(spacing: 5) {
-                        ForEach(1...7, id: \.self) { weekday in
-                            Button {
-                                store.setBodyCheckInWeekday(weekday)
-                            } label: {
-                                Text(Weekday.shortNames[weekday - 1])
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(store.bodyCheckInWeekday == weekday ? Theme.onAccent : Theme.secondaryText)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 7)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                            .fill(store.bodyCheckInWeekday == weekday ? Theme.accent : Theme.surfaceStrong)
-                                    )
-                                    .frame(minHeight: 44)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                        }
+            if store.bodyCheckInFrequency == .weekly
+                || store.bodyCheckInFrequency == .biweekly {
+                Picker(
+                    "提醒日",
+                    selection: Binding(
+                        get: { store.bodyCheckInWeekday },
+                        set: { store.setBodyCheckInWeekday($0) }
+                    )
+                ) {
+                    ForEach(1...7, id: \.self) { weekday in
+                        Text(Weekday.shortNames[weekday - 1]).tag(weekday)
                     }
                 }
+                .pickerStyle(.menu)
             }
 
             if store.bodyCheckInFrequency == .monthly {
-                HStack {
-                    Text("每月几号")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                    Spacer()
-                    Picker("每月几号", selection: Binding(
+                Picker(
+                    "每月几号",
+                    selection: Binding(
                         get: { store.bodyCheckInDay },
                         set: { store.setBodyCheckInDay($0) }
-                    )) {
-                        ForEach(1...28, id: \.self) { day in
-                            Text("\(day) 日").tag(day)
-                        }
+                    )
+                ) {
+                    ForEach(1...28, id: \.self) { day in
+                        Text("\(day) 日").tag(day)
                     }
-                    .pickerStyle(.menu)
-                    .tint(Theme.accent)
                 }
+                .pickerStyle(.menu)
             }
 
             Button("记录今日身体数据") {
                 showBodyCheckIn = true
             }
-            .buttonStyle(SecondaryButtonStyle())
+            .buttonStyle(.borderless)
+        } header: {
+            Text("身体数据提醒")
+        } footer: {
+            Text("到日期后打开「今日」会弹出体重 / 体脂 / 腰围记录卡；保存或隐藏后本次消失。")
         }
-        .card()
     }
 
-    private var healthCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Apple 健康")
-                        .font(.headline)
-                    Text(store.healthKitEnabled ? "已连接 · 体重会同步" : "未连接")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                }
-                Spacer()
-                Image(systemName: "heart.text.square.fill")
-                    .foregroundStyle(
-                        store.healthKitEnabled ? Theme.accent : Theme.tertiaryText
-                    )
-            }
-
-            Text("连接后读取最近体重，并把完成的训练写入 Apple 健康。")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
+    private var healthSection: some View {
+        Section {
+            LabeledContent(
+                "状态",
+                value: store.healthKitEnabled ? "已连接 · 体重会同步" : "未连接"
+            )
 
             if store.healthKitEnabled {
                 Button("关闭 Apple 健康同步") {
@@ -598,15 +355,18 @@ struct SettingsView: View {
                     message = "已关闭 Apple 健康同步。"
                     showMessage = true
                 }
-                .buttonStyle(SecondaryButtonStyle())
+                .buttonStyle(.borderless)
             } else {
                 Button("连接 Apple 健康") {
                     connectHealthKit()
                 }
-                .buttonStyle(SecondaryButtonStyle())
+                .buttonStyle(.borderless)
             }
+        } header: {
+            Text("Apple 健康")
+        } footer: {
+            Text("连接后读取最近体重，并把完成的训练写入 Apple 健康。")
         }
-        .card()
     }
 
     private func connectHealthKit() {
@@ -621,21 +381,9 @@ struct SettingsView: View {
         }
     }
 
-    private var preferenceCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("训练偏好")
-                    .font(.headline)
-                Spacer()
-                Text("已记住 \(store.dislikedSlugs.count) 个")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
-            }
-
-            Text("在计划里删除过的动作会被记住，下次生成时尽量避开；重新添加会解除。")
-                .font(.caption)
-                .foregroundStyle(Theme.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
+    private var preferenceSection: some View {
+        Section {
+            LabeledContent("已记住", value: "\(store.dislikedSlugs.count) 个动作")
 
             if !store.dislikedSlugs.isEmpty {
                 Button("清除训练偏好") {
@@ -643,64 +391,141 @@ struct SettingsView: View {
                     message = "已清除训练偏好，下次生成会重新考虑这些动作。"
                     showMessage = true
                 }
-                .buttonStyle(SecondaryButtonStyle())
+                .buttonStyle(.borderless)
             }
+        } header: {
+            Text("训练偏好")
+        } footer: {
+            Text("在计划里删除过的动作会被记住，下次生成时尽量避开；重新添加会解除。")
         }
-        .card()
+    }
+
+    // MARK: - 天气
+
+    private var weatherSection: some View {
+        Section {
+            HStack(spacing: 12) {
+                Image(systemName: weather.snapshot?.symbolName ?? "cloud.sun.fill")
+                    .font(.title3)
+                    .foregroundStyle(weatherIconTint)
+                    .frame(width: 30, height: 30)
+                    .background(
+                        weatherIconTint.opacity(0.12),
+                        in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(weather.snapshot?.placeDisplayName ?? "本地天气")
+                        .font(.subheadline.weight(.semibold))
+                    Text(
+                        weather.snapshot.map {
+                            "\($0.conditionLabel) · \($0.temperatureText)"
+                        } ?? weather.authorizationLabel
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 4)
+
+                Button("详情") {
+                    showWeatherDetail = true
+                }
+                .font(.footnote.weight(.semibold))
+                .buttonStyle(.borderless)
+            }
+
+            Toggle(
+                isOn: Binding(
+                    get: { weather.alertsEnabled },
+                    set: { weather.setWeatherAlerts($0) }
+                )
+            ) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("恶劣天气出行提醒")
+                    Text("有雨雪、大风或降雨概率较高时，每天最多提醒一次；夜间不打扰")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .tint(Theme.accentText)
+
+            if weather.alertsEnabled && !weather.alertsAuthorized {
+                Button("开启系统通知权限") {
+                    Task {
+                        let granted = await weather.requestWeatherAlertPermission()
+                        message = granted
+                            ? "天气提醒已开启。"
+                            : "没有获得通知权限，请到系统设置中允许「练途」通知。"
+                        showMessage = true
+                    }
+                }
+                .buttonStyle(.borderless)
+
+                Button("去系统设置") {
+                    guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+                    openURL(url)
+                }
+                .buttonStyle(.borderless)
+            }
+        } header: {
+            Text("天气与出行")
+        } footer: {
+            Text("定位只用于本地天气查询；关闭 App 后不会持续获取位置。")
+        }
+    }
+
+    private var weatherIconTint: Color {
+        weather.snapshot?.isWet == true ? Theme.blue : Theme.accentText
     }
 
     // MARK: - AI 与连接
 
-    private var aiCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("AI 服务")
-                        .font(.headline)
-                    Text(store.useRemoteAI ? "远程模式 · 调用后端模型" : "本地模式 · 规则模板")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                }
-                Spacer()
-                Toggle("", isOn: remoteBinding)
-                    .labelsHidden()
-                    .tint(Theme.accent)
+    #if DEBUG
+    private var aiSection: some View {
+        Section {
+            Toggle("使用远程 AI", isOn: remoteBinding)
+                .tint(Theme.accentText)
+
+            Toggle(
+                "开发模式：跳过 Pro 限制",
+                isOn: Binding(
+                    get: { store.debugForceRemoteAI },
+                    set: { store.debugForceRemoteAI = $0 }
+                )
+            )
+            .tint(Theme.accentText)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("API 地址")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(AppConfig.apiBaseURL.absoluteString)
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
             }
-
-            Text(store.isPro
-                 ? (store.useRemoteAI
-                    ? "Pro 已解锁：生成计划、教练对话和视觉识别会请求 DeepSeek/后端；失败时自动回退本地。"
-                    : "已开通 Pro，但当前关闭了远程 AI。打开开关后可使用 DeepSeek。")
-                 : "AI 能力为 Pro 会员权益。未开通时使用本地规则建议；开通后可调用 DeepSeek 的 AI 私人健身教练。")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
-
-#if DEBUG
-            Toggle("开发模式：跳过 Pro 限制", isOn: Binding(
-                get: { store.debugForceRemoteAI },
-                set: { store.debugForceRemoteAI = $0 }
-            ))
-            .font(.caption)
-            .tint(Theme.accent)
-
-            Text("仅 Debug 生效，用于在没有 StoreKit 商品时预览 DeepSeek；正式版本仍按 Pro 权益限制。")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
-#endif
-
-            Text(AppConfig.apiBaseURL.absoluteString)
-                .font(.caption2)
-                .foregroundStyle(Theme.secondaryText)
 
             Button("测试连接") {
                 testConnection()
             }
-            .buttonStyle(SecondaryButtonStyle())
+            .buttonStyle(.borderless)
+        } header: {
+            Text("AI 与连接")
+        } footer: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(
+                    store.isPro
+                        ? (store.useRemoteAI
+                            ? "Pro 已解锁：生成计划、教练对话和视觉识别会请求 DeepSeek/后端；失败时自动回退本地。"
+                            : "已开通 Pro，但当前关闭了远程 AI。打开开关后可使用 DeepSeek。")
+                        : "AI 能力为 Pro 会员权益。未开通时使用本地规则建议；开通后可调用 DeepSeek 的 AI 私人健身教练。"
+                )
+                Text("开发模式仅 Debug 生效，用于在没有 StoreKit 商品时预览 DeepSeek；正式版本仍按 Pro 权益限制。")
+            }
         }
-        .card()
     }
+    #endif
 
     private var remoteBinding: Binding<Bool> {
         Binding(
@@ -729,11 +554,8 @@ struct SettingsView: View {
 
     // MARK: - 数据与隐私
 
-    private var privacyCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("协议与数据")
-                .font(.headline)
-
+    private var privacySection: some View {
+        Section {
             infoRow("隐私政策", icon: "hand.raised") {
                 legalDocument = .privacy
             }
@@ -743,25 +565,9 @@ struct SettingsView: View {
             infoRow("AI 记忆", icon: "brain.head.profile") {
                 showAgentMemory = true
             }
-
-            Button {
+            infoRow("导出我的数据", icon: "square.and.arrow.up") {
                 showExport = true
-            } label: {
-                HStack {
-                    Image(systemName: "square.and.arrow.up")
-                        .foregroundStyle(Theme.accent)
-                        .frame(width: 22)
-                    Text("导出我的数据")
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.primaryText)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
-                }
             }
-            .buttonStyle(.plain)
-
             infoRow("生成式 AI 备案信息", icon: "checkmark.seal") {
                 legalDocument = .ai
             }
@@ -770,30 +576,47 @@ struct SettingsView: View {
                 Link(destination: repDBURL) {
                     HStack {
                         Image(systemName: "figure.strengthtraining.traditional")
-                            .foregroundStyle(Theme.accent)
+                            .foregroundStyle(Theme.accentText)
                             .frame(width: 22)
                         Text("动作图：Exercise data by RepDB (repdb.co)")
-                            .font(.caption2)
-                            .foregroundStyle(Theme.secondaryText)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                         Spacer()
                         Image(systemName: "arrow.up.right")
                             .font(.caption2)
-                            .foregroundStyle(Theme.tertiaryText)
+                            .foregroundStyle(.secondary)
                     }
+                    .contentShape(Rectangle())
                 }
             }
-
-            Text("本产品不提供医疗诊断或治疗建议。孕期、术后、心血管疾病或关节急性疼痛，请先咨询医生。")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Text("版本 \(AppConfig.appVersion)")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
+        } header: {
+            Text("协议与数据")
+        } footer: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("本产品不提供医疗诊断或治疗建议。孕期、术后、心血管疾病或关节急性疼痛，请先咨询医生。")
+                Text("版本 \(AppConfig.appVersion)")
+            }
         }
-        .card()
     }
+
+    // MARK: - 账号操作
+
+    private var accountActionsSection: some View {
+        Section {
+            Button("退出登录", role: .destructive) {
+                showLogout = true
+            }
+            Button("注销账号", role: .destructive) {
+                showDeleteAccount = true
+            }
+        } header: {
+            Text("账号操作")
+        } footer: {
+            Text("退出登录不会删除训练计划、训练记录或身体数据。")
+        }
+    }
+
+    // MARK: - 通用行
 
     private func infoRow(
         _ title: String,
@@ -803,27 +626,18 @@ struct SettingsView: View {
         Button(action: action) {
             HStack {
                 Image(systemName: icon)
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.accentText)
                     .frame(width: 22)
                 Text(title)
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.primaryText)
+                    .foregroundStyle(.primary)
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
+                    .foregroundStyle(.tertiary)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-
-    private func sectionLabel(_ text: String) -> some View {
-        Text(text)
-            .font(AppType.micro)
-            .tracking(1.2)
-            .foregroundStyle(Theme.tertiaryText)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 10)
-            .padding(.horizontal, 2)
     }
 }

@@ -10,27 +10,17 @@ struct ProfileView: View {
 
     var body: some View {
         NavigationStack {
-            AppScrollView {
-                VStack(spacing: AppLayout.sectionSpacing) {
-                    sectionLabel("账户与会员")
-                        .padding(.top, 0)
-                    accountCard
-
-                    sectionLabel("身体与目标")
-                    metricsCard
-                    goalCard
-
-                    sectionLabel("训练工具")
-                    bodyAnalysisCard
-                    equipmentLibraryCard
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .padding(.bottom, 28)
+            Form {
+                accountSection
+                bodyMetricsSection
+                trainingStatsSection
+                goalSection
+                bodyAnalysisSection
+                equipmentSection
             }
-            .background(AppBackground())
             .navigationTitle("我的")
             .navigationBarTitleDisplayMode(.large)
+            .tint(Theme.accentText)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     SettingsToolbarButton()
@@ -40,294 +30,216 @@ struct ProfileView: View {
                 BodyCheckInSheet(manual: true)
                     .presentationDetents([.medium, .large])
             }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView()
+            }
+            .sheet(isPresented: $showBodyAnalysis) {
+                BodyPhotoAnalysisView()
+            }
         }
     }
 
     // MARK: - 账户与会员
 
-    private var accountCard: some View {
-        VStack(spacing: 0) {
+    private var accountSection: some View {
+        Section {
             NavigationLink {
                 ProfileEditView()
             } label: {
                 HStack(spacing: 14) {
                     ZStack {
                         Circle()
-                            .fill(Theme.accent.opacity(0.18))
-                            .frame(width: 54, height: 54)
+                            .fill(Theme.accentText.opacity(0.14))
+                            .frame(width: 52, height: 52)
                         Text(String(store.profile.nickname.prefix(1)))
-                            .font(.title2.weight(.bold))
-                            .foregroundStyle(Theme.accent)
-                    }
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(store.profile.nickname)
                             .font(.title3.weight(.bold))
-                            .foregroundStyle(Theme.primaryText)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
-                        Text("\(store.profile.goalType.label) · \(store.profile.experience.label) · 每周 \(store.profile.weeklyDays) 练")
-                            .font(.caption)
-                            .foregroundStyle(Theme.secondaryText)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
+                            .foregroundStyle(Theme.accentText)
                     }
 
-                    Spacer(minLength: 8)
-
-                    HStack(spacing: 4) {
-                        Text("编辑资料")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Theme.accent)
-                        Image(systemName: "chevron.right")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(Theme.tertiaryText)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(store.profile.nickname)
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                        Text(
+                            "\(store.profile.goalType.label) · \(store.profile.experience.label) · 每周 \(store.profile.weeklyDays) 练"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
                     }
-                    .fixedSize()
                 }
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-
-            Divider()
-                .overlay(Theme.stroke)
-                .padding(.vertical, 13)
 
             Button {
                 showPaywall = true
             } label: {
                 HStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(Theme.accent.opacity(0.12))
-                            .frame(width: 34, height: 34)
-                        Image(systemName: "crown.fill")
-                            .font(.subheadline)
-                            .foregroundStyle(Theme.accent)
-                    }
+                    Image(systemName: "crown.fill")
+                        .foregroundStyle(Theme.accentText)
+                        .frame(width: 22)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text("练途 Pro")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Theme.primaryText)
+                            .foregroundStyle(.primary)
                         Text("AI 计划、教练与器械识别")
-                            .font(.caption2)
-                            .foregroundStyle(Theme.tertiaryText)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
 
-                    Spacer()
+                    Spacer(minLength: 8)
 
-                    Text("开通 / 管理")
+                    Text(store.isPro ? "已开通" : "开通 / 管理")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(Theme.accent)
+                        .foregroundStyle(Theme.accentText)
+
                     Image(systemName: "chevron.right")
                         .font(.caption2.weight(.semibold))
-                        .foregroundStyle(Theme.tertiaryText)
+                        .foregroundStyle(.tertiary)
                 }
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-        }
-        .card()
-        .sheet(isPresented: $showPaywall) {
-            PaywallView()
+        } header: {
+            Text("账户与会员")
+        } footer: {
+            Text("资料仅用于生成训练计划和教练对话。")
         }
     }
 
-    private func sectionLabel(_ text: String) -> some View {
-        Text(text)
-            .font(AppType.micro)
-            .tracking(1.2)
-            .foregroundStyle(Theme.tertiaryText)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 10)
-            .padding(.horizontal, 2)
-    }
+    // MARK: - 身体数据
 
-    private var metricsCard: some View {
-        VStack(spacing: 14) {
-            HStack(spacing: 12) {
-                metric("体重", String(format: "%.1f kg", store.profile.weightKG))
-                metric("BMI", String(format: "%.1f", store.profile.bmi) + " · " + store.profile.bmiLabel)
-            }
-            HStack(spacing: 12) {
-                metric("体脂", String(format: "%.1f%%", store.profile.bodyFatPCT))
-                metric("腰围", String(format: "%.0f cm", store.profile.waistCM))
-            }
-            HStack(spacing: 12) {
-                metric("臂围", String(format: "%.1f cm", store.profile.armCM))
-                metric("大腿围", String(format: "%.1f cm", store.profile.thighCM))
-            }
-            HStack(spacing: 12) {
-                metric("累计训练", "\(store.sessions.count) 次")
-                metric("总容量", "\(Int(store.totalVolume)) kg")
-            }
+    private var bodyMetricsSection: some View {
+        Section {
+            LabeledContent("体重", value: String(format: "%.1f kg", store.profile.weightKG))
+            LabeledContent(
+                "BMI",
+                value: String(format: "%.1f", store.profile.bmi) + " · " + store.profile.bmiLabel
+            )
+            LabeledContent("体脂", value: String(format: "%.1f%%", store.profile.bodyFatPCT))
+            LabeledContent("腰围", value: String(format: "%.0f cm", store.profile.waistCM))
+            LabeledContent("臂围", value: String(format: "%.1f cm", store.profile.armCM))
+            LabeledContent("大腿围", value: String(format: "%.1f cm", store.profile.thighCM))
+
             Button("记录今日身体数据") {
                 showBodyCheckIn = true
             }
-            .buttonStyle(SecondaryButtonStyle())
+            .buttonStyle(.borderless)
+        } header: {
+            Text("身体数据")
+        } footer: {
             if let latest = store.latestBodyMetric {
                 Text("最近记录 \(latest.date.formatted(date: .abbreviated, time: .omitted))")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .card()
     }
 
-    private func metric(_ title: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-            Text(value)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Theme.primaryText)
+    private var trainingStatsSection: some View {
+        Section {
+            LabeledContent("累计训练", value: "\(store.sessions.count) 次")
+            LabeledContent("总容量", value: "\(Int(store.totalVolume)) kg")
+        } header: {
+            Text("训练统计")
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    private var goalCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("当前目标")
-                    .font(.headline)
-                Spacer()
-                Text(store.profile.goalType.label)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(Theme.accent.opacity(0.12), in: Capsule())
-            }
+    // MARK: - 目标
+
+    private var goalSection: some View {
+        Section {
+            LabeledContent("当前目标", value: store.profile.goalType.label)
 
             if store.profile.goalType != .endurance {
-                HStack {
-                    Text("目标体重")
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.secondaryText)
-                    Spacer()
-                    Text("\(store.profile.targetWeightKG, specifier: "%.1f") kg")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.primaryText)
-                }
+                LabeledContent(
+                    "目标体重",
+                    value: String(format: "%.1f kg", store.profile.targetWeightKG)
+                )
             }
 
             if let targetWaist = store.profile.targetWaistCM {
-                HStack {
-                    Text("目标腰围")
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.secondaryText)
-                    Spacer()
-                    Text(String(format: "%.0f cm", targetWaist))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.primaryText)
-                }
+                LabeledContent(
+                    "目标腰围",
+                    value: String(format: "%.0f cm", targetWaist)
+                )
             }
 
             if let targetBodyFat = store.profile.targetBodyFatPCT {
-                HStack {
-                    Text("目标体脂")
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.secondaryText)
-                    Spacer()
-                    Text(String(format: "%.1f%%", targetBodyFat))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.primaryText)
-                }
+                LabeledContent(
+                    "目标体脂",
+                    value: String(format: "%.1f%%", targetBodyFat)
+                )
             }
 
-            HStack {
-                Text("目标日期")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.secondaryText)
-                Spacer()
-                Text(store.profile.targetDate.formatted(date: .abbreviated, time: .omitted))
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(Theme.primaryText)
-            }
-
+            LabeledContent(
+                "目标日期",
+                value: store.profile.targetDate.formatted(date: .abbreviated, time: .omitted)
+            )
+        } header: {
+            Text("目标")
+        } footer: {
             Text("目标仅作方向，不追求极端速度。减重建议不超过 0.5kg/周。")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
         }
-        .card()
     }
 
     // MARK: - 训练工具
 
-    private var bodyAnalysisCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("体型照片分析")
-                        .font(.headline)
-                    Text("拍一张照片，获取训练重点建议")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                }
-                Spacer()
-                Image(systemName: "figure.stand")
-                    .foregroundStyle(Theme.accent)
-            }
-
+    private var bodyAnalysisSection: some View {
+        Section {
             if let latest = store.bodyAnalyses.first {
-                Text(latest.summary)
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
-                    .lineLimit(2)
-                HStack(spacing: 6) {
-                    ForEach(latest.focusAreas) { muscle in
-                        TagChip(text: muscle.label, selected: true)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(latest.summary)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 6) {
+                            ForEach(latest.focusAreas) { muscle in
+                                TagChip(text: muscle.label, selected: true)
+                            }
+                        }
                     }
                 }
-            } else {
-                Text("照片只用于本次分析，不写入训练记录。分析结果仅作训练重点参考。")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
             }
 
-            Button("拍照分析体型") {
+            Button {
                 showBodyAnalysis = true
+            } label: {
+                Label("拍照分析体型", systemImage: "camera")
             }
-            .buttonStyle(SecondaryButtonStyle())
-        }
-        .card()
-        .sheet(isPresented: $showBodyAnalysis) {
-            BodyPhotoAnalysisView()
+            .buttonStyle(.borderless)
+        } header: {
+            Text("体型照片分析")
+        } footer: {
+            Text("照片只用于本次分析，不写入训练记录。分析结果仅作训练重点参考。")
         }
     }
 
-    private var equipmentLibraryCard: some View {
-        NavigationLink {
-            EquipmentLibraryView()
-        } label: {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(Theme.accent.opacity(0.12))
-                        .frame(width: 42, height: 42)
+    private var equipmentSection: some View {
+        Section {
+            NavigationLink {
+                EquipmentLibraryView()
+            } label: {
+                HStack(spacing: 12) {
                     Image(systemName: "square.stack.3d.up")
-                        .foregroundStyle(Theme.accent)
+                        .foregroundStyle(Theme.accentText)
+                        .frame(width: 22)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("我的器械库")
+                            .foregroundStyle(.primary)
+                        Text("已录入 \(store.equipmentLibrary.count) 件 · 教学视频与计划")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("我的器械库")
-                        .font(.headline)
-                        .foregroundStyle(Theme.primaryText)
-                    Text("已录入 \(store.equipmentLibrary.count) 件 · 教学视频与计划")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.tertiaryText)
             }
-            .card()
+        } header: {
+            Text("训练工具")
+        } footer: {
+            Text("生成计划时会优先使用器械库中已启用的器械。")
         }
-        .buttonStyle(.plain)
     }
 }

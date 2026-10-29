@@ -32,7 +32,7 @@ struct ProfileEditView: View {
             ToolbarItem(placement: .confirmationAction) {
                 Button("保存", action: save)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.accentText)
             }
         }
         .onAppear {

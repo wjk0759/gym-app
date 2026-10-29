@@ -113,7 +113,7 @@ struct ProfileFormView: View {
                     .foregroundStyle(Theme.primaryText)
                 Text(draft.bmiLabel)
                     .font(.caption)
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.accentText)
             }
             .font(.subheadline)
 
@@ -192,7 +192,7 @@ struct ProfileFormView: View {
                         systemImage: allEquipmentSelected ? "xmark.circle" : "checkmark.circle"
                     )
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.accentText)
                 }
                 .buttonStyle(SubtlePressStyle(scale: 0.96))
 
@@ -211,7 +211,7 @@ struct ProfileFormView: View {
         HStack(spacing: 2) {
             Text("\(draft.equipment.count)")
                 .font(.subheadline.weight(.bold).monospacedDigit())
-                .foregroundStyle(Theme.accent)
+                .foregroundStyle(Theme.accentText)
                 .contentTransition(.numericText())
             Text("/ \(Equipment.allCases.count)")
                 .font(.caption2.weight(.medium))
@@ -219,10 +219,10 @@ struct ProfileFormView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(Theme.accent.opacity(0.10), in: Capsule())
+        .background(Theme.accentText.opacity(0.10), in: Capsule())
         .overlay(
             Capsule()
-                .stroke(Theme.accent.opacity(0.20), lineWidth: 0.8)
+                .stroke(Theme.accentText.opacity(0.20), lineWidth: 0.8)
         )
         .motionAnimation(Motion.quick, value: draft.equipment.count)
     }
@@ -243,11 +243,11 @@ struct ProfileFormView: View {
             HStack(spacing: 9) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(selected ? Theme.accent.opacity(0.18) : Theme.surface)
+                        .fill(selected ? Theme.accentText.opacity(0.18) : Theme.surface)
                         .frame(width: 34, height: 34)
                     Image(systemName: item.symbolName)
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(selected ? Theme.accent : Theme.secondaryText)
+                        .foregroundStyle(selected ? Theme.accentText : Theme.secondaryText)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -258,30 +258,30 @@ struct ProfileFormView: View {
                         .minimumScaleFactor(0.85)
                     Text(selected ? "已启用" : "未选择")
                         .font(.system(size: 9.5, weight: .medium))
-                        .foregroundStyle(selected ? Theme.accent.opacity(0.9) : Theme.tertiaryText)
+                        .foregroundStyle(selected ? Theme.accentText.opacity(0.9) : Theme.tertiaryText)
                 }
 
                 Spacer(minLength: 0)
 
                 Image(systemName: selected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(selected ? Theme.accent : Theme.tertiaryText.opacity(0.35))
+                    .foregroundStyle(selected ? Theme.accentText : Theme.tertiaryText.opacity(0.35))
                     .contentTransition(.symbolEffect(.replace))
             }
             .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .fill(selected ? Theme.accent.opacity(0.10) : Theme.surfaceStrong.opacity(0.75))
+                    .fill(selected ? Theme.accentText.opacity(0.10) : Theme.surfaceStrong.opacity(0.75))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
                     .stroke(
-                        selected ? Theme.accent.opacity(0.42) : Theme.stroke,
+                        selected ? Theme.accentText.opacity(0.42) : Theme.stroke,
                         lineWidth: 1
                     )
             )
-            .shadow(color: selected ? Theme.accent.opacity(0.14) : Color.clear, radius: 7, y: 3)
+            .shadow(color: selected ? Theme.accentText.opacity(0.14) : Color.clear, radius: 7, y: 3)
         }
         .buttonStyle(CardPressStyle(scale: 0.97))
         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -372,11 +372,11 @@ struct ProfileFormView: View {
                         .padding(12)
                         .background(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(draft.goalType == item ? Theme.accent.opacity(0.16) : Theme.surfaceStrong)
+                                .fill(draft.goalType == item ? Theme.accentText.opacity(0.16) : Theme.surfaceStrong)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(draft.goalType == item ? Theme.accent : Color.clear, lineWidth: 1)
+                                .stroke(draft.goalType == item ? Theme.accentText : Color.clear, lineWidth: 1)
                         )
                     }
                     .buttonStyle(.plain)
@@ -466,7 +466,7 @@ struct MetricSlider: View {
                     .foregroundStyle(Theme.primaryText)
             }
             Slider(value: $value, in: range, step: step)
-                .tint(Theme.accent)
+                .tint(Theme.accentText)
         }
     }
 

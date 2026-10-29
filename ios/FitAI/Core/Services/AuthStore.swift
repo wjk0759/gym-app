@@ -54,8 +54,8 @@ final class AuthStore {
 
     @discardableResult
     func sendCode(phone: String, purpose: String = "login") async throws -> String? {
-        isWorking = true
-        defer { isWorking = false }
+        // 发码和登录是两个独立操作。不要复用 isWorking，否则登录按钮
+        // 会在发送验证码时错误地显示“正在登录…”。
         errorMessage = nil
         let response: SmsSendResponse = try await request(
             "/auth/phone/send-code",
@@ -305,7 +305,9 @@ final class AuthStore {
                     continuation.resume(returning: callback)
                 } else if let error {
                     if (error as? ASWebAuthenticationSessionError)?.code == .canceledLogin {
-                        continuation.resume(throwing: AuthError(message: "已取消授权"))
+                        continuation.resume(
+                            throwing: AuthError(message: "已取消授权", code: "CANCELLED")
+                        )
                     } else {
                         continuation.resume(throwing: AuthError(message: error.localizedDescription))
                     }
@@ -360,8 +362,8 @@ final class AuthStore {
             throw AuthError(message: "网络响应异常")
         }
         guard (200..<300).contains(http.statusCode) else {
-            let message = Self.errorMessage(from: data)
-            throw AuthError(message: message)
+            let payload = Self.errorPayload(from: data)
+            throw AuthError(message: payload.message, code: payload.code)
         }
         if T.self == EmptyResponse.self {
             guard let empty = EmptyResponse() as? T else {
@@ -372,27 +374,44 @@ final class AuthStore {
         return try JSONDecoder().decode(T.self, from: data)
     }
 
-    private static func errorMessage(from data: Data) -> String {
+    private struct ErrorPayload {
+        let message: String
+        let code: String?
+    }
+
+    private static func errorPayload(from data: Data) -> ErrorPayload {
+        let fallback = ErrorPayload(message: "操作失败，请稍后再试", code: nil)
         guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return "登录失败，请稍后再试"
+            return fallback
         }
-        if let error = object["error"] as? [String: Any],
-           let message = error["message"] as? String {
-            return message
+        if let error = object["error"] as? [String: Any] {
+            return ErrorPayload(
+                message: error["message"] as? String ?? fallback.message,
+                code: error["code"] as? String
+            )
         }
         if let detail = object["detail"] as? String {
-            return detail
+            return ErrorPayload(message: detail, code: nil)
         }
-        if let detail = object["detail"] as? [String: Any],
-           let message = detail["message"] as? String {
-            return message
+        if let detail = object["detail"] as? [String: Any] {
+            return ErrorPayload(
+                message: detail["message"] as? String ?? fallback.message,
+                code: detail["code"] as? String
+            )
         }
-        return "登录失败，请稍后再试"
+        return fallback
     }
 }
 
 struct AuthError: LocalizedError {
     let message: String
+    let code: String?
+
+    init(message: String, code: String? = nil) {
+        self.message = message
+        self.code = code
+    }
+
     var errorDescription: String? { message }
 }
 

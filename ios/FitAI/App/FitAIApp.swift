@@ -24,6 +24,7 @@ struct FitAIApp: App {
                 .environment(auth)
                 .environment(subscriptions)
                 .environment(weather)
+                .tint(Theme.accentText)
                 .task {
                     await subscriptions.load()
 #if DEBUG

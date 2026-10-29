@@ -120,18 +120,18 @@ struct RootView: View {
         VStack(spacing: 18) {
             ZStack {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(Theme.accent)
+                    .fill(Theme.accentFill)
                     .frame(width: 72, height: 72)
                 Image(systemName: "figure.strengthtraining.traditional")
                     .font(.system(size: 31, weight: .semibold))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.onAccentFill)
             }
 
             Text("练途")
                 .font(AppType.hero)
                 .foregroundStyle(Theme.primaryText)
             ProgressView()
-                .tint(Theme.accent)
+                .tint(Theme.accentText)
             Text("正在恢复登录状态…")
                 .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
