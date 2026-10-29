@@ -7,7 +7,6 @@ import UIKit
 struct EquipmentItemDetailView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
     @AppStorage("pinnedEquipmentIDs") private var pinnedEquipmentIDsRaw = ""
 
     private let itemID: UUID?
@@ -338,28 +337,9 @@ struct EquipmentItemDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
         .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: colorScheme == .light
-                            ? [
-                                Color(red: 0.965, green: 0.975, blue: 0.965),
-                                Color(red: 0.900, green: 0.930, blue: 0.915)
-                            ]
-                            : [
-                                Color(red: 0.067, green: 0.102, blue: 0.169),
-                                Color(red: 0.047, green: 0.078, blue: 0.137)
-                            ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+            Theme.cardSurface,
+            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(colorScheme == .light ? Theme.stroke : Color.white.opacity(0.08), lineWidth: 1)
-        )
-        .shadow(color: colorScheme == .light ? Theme.shadowSoft : Color.black.opacity(0.18), radius: 18, y: 10)
         .id(index)
     }
 
@@ -671,40 +651,37 @@ struct EquipmentItemDetailView: View {
                 .foregroundStyle(Theme.tertiaryText)
                 .padding(.top, 16)
 
-            HStack(spacing: 4) {
+            Picker("统计周期", selection: $statsPeriod) {
                 ForEach(EquipmentStatsPeriod.allCases) { period in
-                    statsOption(period.rawValue, active: statsPeriod == period) {
-                        statsPeriod = period
-                    }
+                    Text(period.rawValue).tag(period)
                 }
             }
+            .pickerStyle(.segmented)
+            .labelsHidden()
             .padding(.top, 6)
 
             if statsPeriod == .custom {
-                HStack(spacing: 6) {
-                    customDateControl("开始", selection: $customStart)
-                    Text("—")
-                        .font(.system(size: 9))
-                        .foregroundStyle(Theme.tertiaryText)
-                    customDateControl("结束", selection: $customEnd)
+                VStack(spacing: 6) {
+                    dateRow("开始日期", selection: $customStart)
+                    dateRow("结束日期", selection: $customEnd)
                 }
                 .padding(.top, 8)
 
                 if customRangeInvalid {
                     Text("开始日期不能晚于结束日期。")
-                        .font(.system(size: 9.5))
+                        .font(.caption)
                         .foregroundStyle(Theme.danger)
                         .padding(.top, 6)
                 }
             }
 
-            HStack(spacing: 4) {
+            Picker("指标", selection: $statsMetric) {
                 ForEach(EquipmentStatsMetric.allCases) { metric in
-                    statsOption(metric.rawValue, active: statsMetric == metric) {
-                        statsMetric = metric
-                    }
+                    Text(metric.rawValue).tag(metric)
                 }
             }
+            .pickerStyle(.segmented)
+            .labelsHidden()
             .padding(.top, 10)
 
             if stats.points.isEmpty {
@@ -843,49 +820,24 @@ struct EquipmentItemDetailView: View {
         )
     }
 
-    private func statsOption(_ title: String, active: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+    private func dateRow(_ title: String, selection: Binding<Date>) -> some View {
+        HStack(spacing: 12) {
             Text(title)
-                .font(.system(size: 9.5, weight: .semibold))
-                .foregroundStyle(active ? Theme.accent : Theme.secondaryText)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 7)
-                .background(
-                    active ? Theme.accent.opacity(0.12) : Theme.surface,
-                    in: RoundedRectangle(cornerRadius: 9, style: .continuous)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .stroke(
-                            active ? Theme.accent.opacity(0.28) : Theme.stroke,
-                            lineWidth: 0.8
-                        )
-                )
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func customDateControl(_ title: String, selection: Binding<Date>) -> some View {
-        HStack(spacing: 4) {
-            Text(title)
-                .font(.system(size: 9))
-                .foregroundStyle(Theme.tertiaryText)
+            Spacer(minLength: 8)
             DatePicker("", selection: selection, displayedComponents: .date)
                 .labelsHidden()
                 .datePickerStyle(.compact)
+                .fixedSize()
                 .tint(Theme.accent)
         }
-        .padding(.horizontal, 7)
-        .padding(.vertical, 5)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .background(
-            Theme.surface,
-            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Theme.stroke, lineWidth: 0.8)
+            Color(.tertiarySystemFill),
+            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
         )
     }
 

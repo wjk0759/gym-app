@@ -145,6 +145,15 @@ struct WorkoutSessionView: View {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("暂停") { showExitConfirm = true }
                     }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu {
+                            Button("跳过这个动作") { advance() }
+                            Button("结束并保存", role: .destructive) { finish() }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                        }
+                        .accessibilityLabel("更多训练操作")
+                    }
                 }
             }
             .onAppear {
@@ -220,11 +229,7 @@ struct WorkoutSessionView: View {
             }
             ProgressView(value: min(1, progress))
                 .tint(Theme.accent)
-                .scaleEffect(x: 1, y: 1.5, anchor: .center)
-                .motionAnimation(Motion.smooth, value: progress)
         }
-        .motionAnimation(Motion.quick, value: logs.count)
-        .motionAnimation(Motion.quick, value: index)
         .appPagePadding()
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -312,28 +317,15 @@ struct WorkoutSessionView: View {
         let done = completedSets(for: exercise)
         let isBodyweight = exercise.exercise?.equipment == .bodyweight
 
-        return VStack(alignment: .leading, spacing: 16) {
+        return VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
                 Text("第 \(min(done + 1, exercise.sets)) 组 / 共 \(exercise.sets) 组")
                     .font(.headline)
                 Spacer(minLength: 4)
-                Text("目标 RPE \(exercise.rpe, specifier: "%.1f")")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
-                Button {
+                Button("调整") {
                     openAdjustSheet(exercise)
-                } label: {
-                    Text("调整")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Theme.accent)
-                        .padding(.horizontal, 10)
-                        .frame(height: 30)
-                        .background(
-                            Theme.accent.opacity(0.12),
-                            in: Capsule(style: .continuous)
-                        )
                 }
-                .buttonStyle(SubtlePressStyle(scale: 0.95))
+                .font(.subheadline)
                 .accessibilityHint("调整目标组数、次数、重量和休息")
             }
 
@@ -347,15 +339,13 @@ struct WorkoutSessionView: View {
                     Button("用上次") {
                         weight = last.weightKG
                         reps = last.reps
-                        Haptics.select()
                     }
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
-                    .buttonStyle(SubtlePressStyle())
+                    .font(.caption.weight(.semibold))
+                    .buttonStyle(.borderless)
                     .accessibilityLabel("使用上次的重量和次数")
                 }
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
 
             if let best = store.bestSet(for: exercise.slug) {
@@ -364,135 +354,111 @@ struct WorkoutSessionView: View {
                         .foregroundStyle(Theme.warning)
                     Text("历史最佳 \(best.weightKG > 0 ? "\(best.weightKG.formatted()) kg × \(best.reps)" : "自重 × \(best.reps)")")
                 }
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
 
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("本组数据")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.primaryText)
-                    Spacer(minLength: 4)
-                    Text("点数字输入 · 长按连续调")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                }
-
-                if !isBodyweight {
-                    ValueStepperControl(
-                        title: "本组重量",
-                        value: weightText(weight),
-                        unit: "kg",
-                        hint: "步进 \(weightStepText(weightStep)) kg",
-                        canDecrease: weight > 0,
-                        canIncrease: weight < 300,
-                        onDecrease: { adjustWeight(by: -weightStep) },
-                        onIncrease: { adjustWeight(by: weightStep) },
-                        onEdit: { valueEditor = .weight }
-                    )
-
-                    weightStepPicker
-                } else {
-                    HStack(spacing: 6) {
-                        Image(systemName: "figure.strengthtraining.functional")
-                        Text("自重动作，直接填写本组实际次数")
+            VStack(spacing: 0) {
+                if isBodyweight {
+                    HStack(spacing: 8) {
+                        Label("自重动作", systemImage: "figure.strengthtraining.functional")
+                        Spacer()
+                        Text("直接记录次数")
+                            .foregroundStyle(.secondary)
                     }
-                    .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
-                    .padding(.horizontal, 10)
-                    .frame(height: 32)
-                    .background(
-                        Theme.surfaceStrong,
-                        in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    )
+                    .font(.subheadline)
+                    .padding(.vertical, 12)
+                } else {
+                    metricStepperRow(
+                        title: "重量",
+                        value: "\(weightText(weight)) kg",
+                        onEdit: { valueEditor = .weight }
+                    ) {
+                        Stepper("", value: $weight, in: 0...300, step: weightStep)
+                            .labelsHidden()
+                    }
+
+                    Divider()
+
+                    HStack(spacing: 12) {
+                        Text("每次调整")
+                        Picker("每次调整", selection: $weightStep) {
+                            Text("1.25 kg").tag(1.25)
+                            Text("2.5 kg").tag(2.5)
+                            Text("5 kg").tag(5.0)
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                    }
+                    .font(.subheadline)
+                    .padding(.vertical, 10)
+
+                    Divider()
                 }
 
-                ValueStepperControl(
-                    title: "实际次数",
-                    value: "\(reps)",
-                    unit: "次",
-                    hint: "目标 \(exercise.reps) 次",
-                    canDecrease: reps > 1,
-                    canIncrease: reps < 60,
-                    onDecrease: { reps = max(1, reps - 1) },
-                    onIncrease: { reps = min(60, reps + 1) },
+                metricStepperRow(
+                    title: "次数",
+                    value: "\(reps) 次",
                     onEdit: { valueEditor = .reps }
-                )
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text("主观强度 RPE")
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.secondaryText)
-                    Spacer()
-                    Text(rpe.formatted(.number.precision(.fractionLength(1))))
-                        .font(.subheadline.weight(.semibold).monospacedDigit())
-                        .foregroundStyle(Theme.accent)
-                        .contentTransition(.numericText())
+                ) {
+                    Stepper("", value: $reps, in: 1...60)
+                        .labelsHidden()
                 }
-                .motionAnimation(Motion.quick, value: rpe)
-                Slider(value: $rpe, in: 6...10, step: 0.5)
-                    .tint(Theme.accent)
-                    .sensoryFeedback(.selection, trigger: Int(rpe * 2))
-                Text("6 = 很轻松 · 8 = 还能做 2 次 · 10 = 力竭")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("主观强度 RPE")
+                        Spacer()
+                        Picker("RPE", selection: $rpe) {
+                            ForEach(Array(stride(from: 6.0, through: 10.0, by: 0.5)), id: \.self) { value in
+                                Text(value.formatted(.number.precision(.fractionLength(1))))
+                                    .tag(value)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
+                    }
+                    Text("6 = 很轻松 · 8 = 还能做 2 次 · 10 = 力竭")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .font(.subheadline)
+                .padding(.vertical, 12)
             }
 
             if done > 0,
                let last = logs.last,
                last.slug == exercise.slug {
-                Button("撤销上一组") {
+                Button("撤销上一组", role: .destructive) {
                     logs.removeLast()
                     restRemaining = nil
                 }
-                .font(.caption)
-                .foregroundStyle(Theme.warning)
+                .font(.subheadline)
+                .buttonStyle(.borderless)
             }
         }
         .card()
     }
 
-    private var weightStepPicker: some View {
-        HStack(spacing: 6) {
-            Text("每次调整")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
-
-            ForEach([1.25, 2.5, 5.0], id: \.self) { step in
-                Button {
-                    Haptics.select()
-                    weightStep = step
-                } label: {
-                    Text("\(weightStepText(step)) kg")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(weightStep == step ? Theme.onAccent.opacity(0.9) : Theme.secondaryText)
-                        .padding(.horizontal, 10)
-                        .frame(height: 34)
-                        .background(
-                            Capsule(style: .continuous)
-                                .fill(weightStep == step ? Theme.accent : Theme.surfaceStrong)
-                        )
-                        .overlay(
-                            Capsule(style: .continuous)
-                                .stroke(
-                                    weightStep == step ? Color.clear : Theme.stroke,
-                                    lineWidth: 0.8
-                                )
-                        )
-                }
-                .buttonStyle(SubtlePressStyle(scale: 0.95))
-                .accessibilityLabel("每次调整 \(weightStepText(step)) 千克")
-                .accessibilityAddTraits(weightStep == step ? .isSelected : [])
-            }
-
-            Spacer(minLength: 0)
+    private func metricStepperRow<Control: View>(
+        title: String,
+        value: String,
+        onEdit: @escaping () -> Void,
+        @ViewBuilder control: () -> Control
+    ) -> some View {
+        HStack(spacing: 12) {
+            Text(title)
+            Spacer(minLength: 8)
+            Button(value, action: onEdit)
+                .buttonStyle(.borderless)
+                .foregroundStyle(.primary)
+                .monospacedDigit()
+            control()
         }
-        .motionAnimation(Motion.quick, value: weightStep)
+        .font(.subheadline)
+        .padding(.vertical, 12)
     }
 
     private func trainingTipCard(_ exercise: PlanExercise) -> some View {
@@ -526,20 +492,11 @@ struct WorkoutSessionView: View {
             if let exercise = currentExercise {
                 let done = completedSets(for: exercise)
 
-                HStack {
-                    Button("跳过这个动作") {
-                        advance()
-                    }
-                    .font(.caption)
-                    .foregroundStyle(Theme.tertiaryText)
-
-                    Spacer()
-
-                    if done > 0 {
-                        Text("已完成 \(done) 组")
-                            .font(.caption)
-                            .foregroundStyle(Theme.accent)
-                    }
+                if done > 0 {
+                    Text("已完成 \(done) 组")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
                 if done < exercise.sets {
@@ -568,11 +525,9 @@ struct WorkoutSessionView: View {
         .appPagePadding()
         .padding(.top, AppLayout.actionBarSpacing)
         .padding(.bottom, 8)
-        .background(Theme.chrome)
+        .background(.bar)
         .overlay(alignment: .top) {
-            Rectangle()
-                .fill(Theme.stroke)
-                .frame(height: 1)
+            Divider()
         }
     }
 
@@ -770,11 +725,6 @@ struct WorkoutSessionView: View {
         }
     }
 
-    private func adjustWeight(by delta: Double) {
-        let next = weight + delta
-        weight = min(300, max(0, (next * 100).rounded() / 100))
-    }
-
     private func weightText(_ value: Double) -> String {
         if value.rounded() == value {
             return String(Int(value))
@@ -783,10 +733,6 @@ struct WorkoutSessionView: View {
             return String(format: "%.1f", value)
         }
         return String(format: "%.2f", value)
-    }
-
-    private func weightStepText(_ value: Double) -> String {
-        weightText(value)
     }
 
     private func setSummary(for exercise: PlanExercise) -> String {
