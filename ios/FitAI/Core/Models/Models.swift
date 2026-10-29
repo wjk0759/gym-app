@@ -709,6 +709,30 @@ struct RemoteDietPlan: Decodable {
     }
 }
 
+struct RemoteDietRecipe: Decodable {
+    let title: String
+    let ingredients: [String]
+    let steps: [String]
+    let tip: String?
+}
+
+struct RemoteDietDish: Decodable, Identifiable {
+    let name: String
+    let items: [String]
+    let recipe: RemoteDietRecipe?
+
+    var id: String {
+        name + "|" + items.joined(separator: "|")
+    }
+}
+
+struct DietRecipeSelection: Identifiable {
+    let id = UUID()
+    let dayTitle: String
+    let mealName: String
+    let dish: RemoteDietDish
+}
+
 struct RemoteDietWeek: Decodable {
     struct Strategy: Decodable {
         let id: String
@@ -736,6 +760,7 @@ struct RemoteDietWeek: Decodable {
         let name: String
         let kcal: Int
         let items: [String]
+        let dishes: [RemoteDietDish]?
 
         var id: String { meal }
     }
@@ -765,11 +790,15 @@ struct RemoteDietWeek: Decodable {
     let weekStart: String
     let strategy: Strategy?
     let days: [Day]
+    let generatedBy: String?
+    let warning: String?
 
     enum CodingKeys: String, CodingKey {
         case weekStart = "week_start"
         case strategy
         case days
+        case generatedBy = "generated_by"
+        case warning
     }
 }
 

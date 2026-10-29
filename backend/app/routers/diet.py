@@ -8,8 +8,8 @@ from ..deps import CurrentUser, DBSession
 from ..models import FoodLog, Goal, MealPlan, Profile
 from ..schemas import DietPlanIn, DietWeekIn, FoodLogIn
 from ..services.diet import (
+    build_ai_diet_week,
     build_ai_plan,
-    build_diet_week,
     calculate_targets,
     list_diet_strategies,
     meituan_link,
@@ -236,14 +236,15 @@ def _save_meal_plan(db, user_id: str, plan_date: date, plan: dict) -> None:
 
 
 @router.post("/plan/week")
-def plan_week(payload: DietWeekIn, user_id: CurrentUser, db: DBSession):
+async def plan_week(payload: DietWeekIn, user_id: CurrentUser, db: DBSession):
     profile = db.get(Profile, user_id)
     if profile is None:
         raise HTTPException(status_code=404, detail="请先完成个人档案")
 
     week_start = _monday(payload.week_start or date.today())
     program = active_program(db, user_id)
-    result = build_diet_week(
+    result = await build_ai_diet_week(
+        db,
         profile,
         _goal_type(db, user_id),
         payload.strategy,

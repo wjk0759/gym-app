@@ -20,6 +20,7 @@ from . import llm
 logger = logging.getLogger(__name__)
 
 PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "diet_plan.md"
+WEEK_PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "diet_week.md"
 
 MEAL_TEMPLATE = [
     {
@@ -293,6 +294,207 @@ async def build_ai_plan(
         return result
 
 
+def _week_system_prompt() -> str:
+    if WEEK_PROMPT_PATH.exists():
+        return WEEK_PROMPT_PATH.read_text(encoding="utf-8")
+    return (
+        "你是运动营养教练。只输出 JSON；安排 7 天家常饮食，"
+        "每餐 2–4 道菜，每道菜必须带 ingredients 和 steps；"
+        "不做疾病饮食处方，不推荐药物或补剂剂量。"
+    )
+
+
+def _week_user_prompt(
+    profile: Profile,
+    goal_type: str,
+    strategy: DietStrategy,
+    fallback: dict,
+) -> str:
+    payload = {
+        "user": {
+            "sex": profile.sex,
+            "age": profile.age,
+            "height_cm": profile.height_cm,
+            "weight_kg": profile.weight_kg,
+            "body_fat_pct": profile.body_fat_pct,
+            "experience": profile.experience,
+            "weekly_days": profile.weekly_days,
+            "injuries": profile.injuries or [],
+            "goal_type": goal_type,
+        },
+        "strategy": {
+            "id": strategy.id,
+            "label": strategy.label,
+            "description": strategy.description,
+            "caution": strategy.caution,
+        },
+        "days": [
+            {
+                "date": day["date"],
+                "weekday": day["weekday"],
+                "day_type": day["day_type"],
+                "targets": day["targets"],
+                "meal_ratios": {
+                    "breakfast": 0.25,
+                    "lunch": 0.35,
+                    "dinner": 0.30,
+                    "snack": 0.10,
+                },
+            }
+            for day in fallback["days"]
+        ],
+        "style": {
+            "language": "zh-CN",
+            "preference": "中国家常菜，蒸炒炖烤拌都可以；不要默认水煮鸡胸/西兰花/沙拉",
+            "dishes_per_meal": "2–4 道",
+            "recipe": "每道菜必须有 title、ingredients、至少 2 步 steps；步骤要可执行",
+        },
+    }
+    return json.dumps(payload, ensure_ascii=False)
+
+
+def _normalize_ai_meal(
+    raw_meal: dict,
+    fallback_meal: dict,
+) -> dict | None:
+    meal_key = str(raw_meal.get("meal") or "").strip()
+    if meal_key not in {"breakfast", "lunch", "dinner", "snack"}:
+        return None
+    items = _clean_items(raw_meal.get("items"))
+    dishes = _normalize_dishes(raw_meal.get("dishes"), items)
+    if not items:
+        items = _clean_items(
+            [item for dish in dishes for item in dish.get("items", [])]
+        )
+    if not items:
+        return None
+    kcal = _to_int(raw_meal.get("kcal"), fallback_meal["kcal"])
+    target = max(1, int(fallback_meal["kcal"]))
+    kcal = min(max(0, kcal), target * 2)
+    if kcal <= 0:
+        kcal = target
+    return {
+        "meal": meal_key,
+        "name": str(raw_meal.get("name") or fallback_meal["name"]).strip()[:20],
+        "kcal": kcal,
+        "items": items[:10],
+        "dishes": dishes,
+    }
+
+
+def _normalize_ai_meals(
+    raw_day: dict,
+    fallback_day: dict,
+) -> list[dict]:
+    raw_meals = raw_day.get("meals") if isinstance(raw_day, dict) else None
+    if not isinstance(raw_meals, list):
+        return []
+    by_key = {
+        str(item.get("meal") or "").strip(): item
+        for item in raw_meals
+        if isinstance(item, dict)
+    }
+    meals: list[dict] = []
+    ai_used = False
+    for fallback_meal in fallback_day["meals"]:
+        raw_meal = by_key.get(fallback_meal["meal"])
+        normalized = (
+            _normalize_ai_meal(raw_meal, fallback_meal) if raw_meal else None
+        )
+        if normalized:
+            meals.append(normalized)
+            ai_used = True
+        else:
+            meals.append(fallback_meal)
+    return meals if ai_used else []
+
+
+def _normalize_ai_week(raw: dict, fallback: dict) -> dict:
+    raw_days = raw.get("days") if isinstance(raw, dict) else None
+    if not isinstance(raw_days, list):
+        raise ValueError("AI 周饮食计划没有 days")
+
+    raw_by_date: dict[str, dict] = {}
+    for item in raw_days:
+        if not isinstance(item, dict):
+            continue
+        key = str(item.get("date") or "").strip()
+        if key:
+            raw_by_date[key] = item
+
+    ai_used = False
+    partial = False
+    for index, fallback_day in enumerate(fallback["days"]):
+        raw_day = raw_by_date.get(fallback_day["date"])
+        if raw_day is None and index < len(raw_days):
+            candidate = raw_days[index]
+            raw_day = candidate if isinstance(candidate, dict) else None
+        meals = _normalize_ai_meals(raw_day, fallback_day) if raw_day else []
+        if meals:
+            fallback_day["meals"] = meals
+            ai_used = True
+        else:
+            partial = True
+
+    if not ai_used:
+        raise ValueError("AI 周饮食计划没有有效餐次")
+
+    note = str(raw.get("note") or "").strip()[:300]
+    fallback["generated_by"] = "ai"
+    fallback["model"] = settings.llm_model
+    fallback["note"] = note or fallback.get("disclaimer", "")
+    if partial:
+        fallback["warning"] = "部分日期未生成有效餐次，已用规则模板补齐"
+    return fallback
+
+
+async def build_ai_diet_week(
+    db,
+    profile: Profile,
+    goal_type: str,
+    strategy_id: str,
+    week_start: date,
+    training_days: list[int] | None = None,
+) -> dict:
+    """AI week menu with recipes; template fallback keeps the page usable."""
+    fallback = build_diet_week(
+        profile, goal_type, strategy_id, week_start, training_days
+    )
+    if settings.use_mock_llm:
+        return fallback
+
+    strategy = _strategy(strategy_id)
+    try:
+        raw = await llm.complete_json(
+            _week_system_prompt(),
+            _week_user_prompt(profile, goal_type, strategy, fallback),
+            reasoning_effort="low",
+        )
+        result = _normalize_ai_week(raw, fallback)
+        llm.record_job(
+            db,
+            getattr(profile, "user_id", None),
+            kind="diet_week",
+            status="ok",
+            model=settings.llm_model,
+        )
+        return result
+    except Exception as exc:  # noqa: BLE001 - fallback keeps the feature usable
+        logger.warning("AI diet week failed, fallback to template: %s", exc)
+        fallback["generated_by"] = "template"
+        fallback["warning"] = "AI 周计划生成失败，已使用规则模板"
+        with suppress(Exception):
+            llm.record_job(
+                db,
+                getattr(profile, "user_id", None),
+                kind="diet_week",
+                status="fallback",
+                model=settings.llm_model,
+                error=str(exc)[:500],
+            )
+        return fallback
+
+
 # ---------------------------------------------------------------------------
 # Diet strategies: one registry, reused by the diet module and the coach
 # ---------------------------------------------------------------------------
@@ -559,6 +761,75 @@ def _template_for(strategy: DietStrategy, day_type: str) -> list[dict]:
     return MEAL_TEMPLATE
 
 
+def _clean_items(value) -> list[str]:
+    if isinstance(value, str):
+        value = [value]
+    result: list[str] = []
+    for item in value or []:
+        text = str(item).strip()[:100]
+        if text and text not in result:
+            result.append(text)
+    return result[:10]
+
+
+def _fallback_recipe(name: str, items: list[str]) -> dict:
+    ingredients = _clean_items(items)
+    if not ingredients:
+        ingredients = ["常见家常食材（按一人份准备）"]
+    return {
+        "title": f"{name}家常做法",
+        "ingredients": ingredients,
+        "steps": [
+            "按上面的份量准备食材，蔬菜洗净切好，肉类提前解冻。",
+            "用少油中小火把主要食材做熟，按家常口味少盐调味。",
+            "搭配主食和蔬菜装盘；需要时按当天训练量调整份量。",
+        ],
+        "tip": "食材和调味可以按口味替换；有过敏或疾病饮食需求请先咨询医生或营养师。",
+    }
+
+
+def _normalize_recipe(raw, name: str, items: list[str]) -> dict:
+    if not isinstance(raw, dict):
+        return _fallback_recipe(name, items)
+    ingredients = _clean_items(raw.get("ingredients")) or _clean_items(items)
+    steps = _clean_items(raw.get("steps"))
+    if len(ingredients) < 2 or len(steps) < 2:
+        return _fallback_recipe(name, items)
+    return {
+        "title": str(raw.get("title") or name).strip()[:80] or name,
+        "ingredients": ingredients[:10],
+        "steps": steps[:6],
+        "tip": str(raw.get("tip") or "").strip()[:200] or None,
+    }
+
+
+def _fallback_dish(name: str, items: list[str]) -> dict:
+    return {
+        "name": name,
+        "items": _clean_items(items),
+        "recipe": _fallback_recipe(name, items),
+    }
+
+
+def _normalize_dishes(raw_dishes, meal_items: list[str]) -> list[dict]:
+    dishes: list[dict] = []
+    for raw in raw_dishes or []:
+        if not isinstance(raw, dict):
+            continue
+        name = str(raw.get("name") or "").strip()[:80]
+        items = _clean_items(raw.get("items")) or _clean_items(meal_items)
+        if not name or not items:
+            continue
+        dishes.append(
+            {
+                "name": name,
+                "items": items[:10],
+                "recipe": _normalize_recipe(raw.get("recipe"), name, items),
+            }
+        )
+    return dishes[:4] or [_fallback_dish("家常餐", meal_items)]
+
+
 def _meals_for(template: list[dict], target_kcal: int) -> list[dict]:
     return [
         {
@@ -566,6 +837,7 @@ def _meals_for(template: list[dict], target_kcal: int) -> list[dict]:
             "name": item["name"],
             "kcal": round(target_kcal * item["ratio"]),
             "items": item["items"],
+            "dishes": [_fallback_dish(item["name"], item["items"])],
         }
         for item in template
     ]

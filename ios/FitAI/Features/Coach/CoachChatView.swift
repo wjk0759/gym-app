@@ -26,6 +26,7 @@ struct CoachChatView: View {
     @State private var isLoadingAttachments = false
     @State private var isLoadingVideo = false
     @State private var attachmentError: String?
+    @State private var selectedDietRecipe: DietRecipeSelection?
     @FocusState private var focused: Bool
 
 
@@ -208,6 +209,9 @@ struct CoachChatView: View {
             }
             .sheet(isPresented: $showPaywall) {
                 PaywallView()
+            }
+            .sheet(item: $selectedDietRecipe) { selection in
+                DietRecipeSheet(selection: selection)
             }
             .fullScreenCover(isPresented: $showCamera) {
                 PhotoCaptureView(
@@ -489,15 +493,30 @@ struct CoachChatView: View {
             HStack {
                 Label("本周饮食计划", systemImage: "fork.knife")
                     .font(.headline)
+                Text(week.generatedBy == "ai" ? "AI" : "模板")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(week.generatedBy == "ai" ? Theme.accent : Theme.tertiaryText)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 4)
+                    .background(
+                        (week.generatedBy == "ai" ? Theme.accent : Theme.tertiaryText).opacity(0.10),
+                        in: Capsule()
+                    )
                 Spacer()
                 Text(week.strategy?.label ?? "饮食")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Theme.accent)
             }
 
-            Text("按训练日/休息日安排，点开每天看餐单。")
+            Text("点开每天看餐单，点菜名查看家常做法。")
                 .font(.caption)
                 .foregroundStyle(Theme.secondaryText)
+
+            if let warning = week.warning, !warning.isEmpty {
+                Text(warning)
+                    .font(.caption2)
+                    .foregroundStyle(Theme.warning)
+            }
 
             ForEach(week.days) { day in
                 DisclosureGroup {
@@ -507,10 +526,26 @@ struct CoachChatView: View {
                                 Text("\(meal.name) · \(meal.kcal) kcal")
                                     .font(.caption.weight(.semibold))
                                     .foregroundStyle(Theme.primaryText)
-                                Text(meal.items.joined(separator: "、"))
-                                    .font(.caption2)
-                                    .foregroundStyle(Theme.secondaryText)
-                                    .fixedSize(horizontal: false, vertical: true)
+
+                                if let dishes = meal.dishes, !dishes.isEmpty {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        ForEach(Array(dishes.enumerated()), id: \.offset) { pair in
+                                            let dish = pair.element
+                                            DietDishRow(dish: dish) {
+                                                selectedDietRecipe = DietRecipeSelection(
+                                                    dayTitle: day.title,
+                                                    mealName: meal.name,
+                                                    dish: dish
+                                                )
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Text(meal.items.joined(separator: "、"))
+                                        .font(.caption2)
+                                        .foregroundStyle(Theme.secondaryText)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
                             }
                         }
                     }

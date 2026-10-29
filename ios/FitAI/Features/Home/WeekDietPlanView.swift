@@ -9,6 +9,7 @@ struct WeekDietPlanView: View {
     @State private var strategy = "carb_cycle"
     @State private var isLoading = false
     @State private var errorMessage = ""
+    @State private var selectedRecipe: DietRecipeSelection?
 
     private let forceStrategy: Bool
 
@@ -32,7 +33,7 @@ struct WeekDietPlanView: View {
                     foodGuide
                     strategyCard
                     if isLoading {
-                        ProgressView("正在排本周饮食…")
+                        ProgressView("AI 教练正在排本周饮食…")
                             .tint(Theme.accent)
                             .padding(.vertical, 24)
                     } else if let week {
@@ -58,6 +59,9 @@ struct WeekDietPlanView: View {
             .task {
                 await load()
             }
+            .sheet(item: $selectedRecipe) { selection in
+                DietRecipeSheet(selection: selection)
+            }
         }
     }
 
@@ -66,7 +70,7 @@ struct WeekDietPlanView: View {
             Text("把饮食计划排成一周")
                 .font(.system(size: 23, weight: .bold, design: .rounded))
                 .foregroundStyle(Theme.primaryText)
-            Text("碳循环会把高碳日放在训练日、低碳日放在休息日，蛋白质每天固定。计划写入后可在营养页按天查看。")
+            Text("AI 教练会按目标、训练日和饮食策略排本周餐单；每道菜都可以点开看家常做法。AI 暂不可用时会自动回退模板。")
                 .font(.subheadline)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
@@ -148,10 +152,26 @@ struct WeekDietPlanView: View {
                 Text(week.strategy?.label ?? "本周计划")
                     .font(.headline)
                     .foregroundStyle(Theme.primaryText)
+                Text(week.generatedBy == "ai" ? "AI 生成" : "模板")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(week.generatedBy == "ai" ? Theme.accent : Theme.tertiaryText)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 4)
+                    .background(
+                        (week.generatedBy == "ai" ? Theme.accent : Theme.tertiaryText).opacity(0.10),
+                        in: Capsule()
+                    )
                 Spacer()
                 Text("\(week.days.count) 天")
                     .font(.caption)
                     .foregroundStyle(Theme.tertiaryText)
+            }
+
+            if let warning = week.warning, !warning.isEmpty {
+                Text(warning)
+                    .font(.caption2)
+                    .foregroundStyle(Theme.warning)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             ForEach(week.days) { day in
@@ -170,10 +190,26 @@ struct WeekDietPlanView: View {
                                 Text("\(meal.name) · \(meal.kcal) kcal")
                                     .font(.caption.weight(.semibold))
                                     .foregroundStyle(Theme.primaryText)
-                                Text(meal.items.joined(separator: "、"))
-                                    .font(.caption2)
-                                    .foregroundStyle(Theme.secondaryText)
-                                    .fixedSize(horizontal: false, vertical: true)
+
+                                if let dishes = meal.dishes, !dishes.isEmpty {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        ForEach(Array(dishes.enumerated()), id: \.offset) { pair in
+                                            let dish = pair.element
+                                            DietDishRow(dish: dish) {
+                                                selectedRecipe = DietRecipeSelection(
+                                                    dayTitle: day.title,
+                                                    mealName: meal.name,
+                                                    dish: dish
+                                                )
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Text(meal.items.joined(separator: "、"))
+                                        .font(.caption2)
+                                        .foregroundStyle(Theme.secondaryText)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
                             }
                         }
                     }
@@ -217,7 +253,12 @@ struct WeekDietPlanView: View {
         }
         do {
             let saved = try await APIClient.shared.fetchSavedDietWeek(weekStart: nil)
-            if !saved.days.isEmpty {
+            let hasRecipes = saved.days.contains { day in
+                day.meals.contains { meal in
+                    !(meal.dishes ?? []).isEmpty
+                }
+            }
+            if !saved.days.isEmpty, saved.generatedBy == "ai", hasRecipes {
                 week = saved
                 if let id = saved.strategy?.id { strategy = id }
                 return

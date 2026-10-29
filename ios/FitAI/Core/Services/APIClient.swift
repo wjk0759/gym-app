@@ -530,7 +530,9 @@ struct APIClient {
         var payload: [String: Any] = ["strategy": strategy]
         if let weekStart { payload["week_start"] = weekStart }
         let body = try JSONSerialization.data(withJSONObject: payload)
-        return try await send(path: "diet/plan/week", method: "POST", body: body)
+        // A seven-day menu with recipes is a larger model response than the
+        // one-day plan; keep the client timeout aligned with plan generation.
+        return try await send(path: "diet/plan/week", method: "POST", body: body, timeout: 180)
     }
 
     func fetchSavedDietWeek(weekStart: String?) async throws -> RemoteDietWeek {
