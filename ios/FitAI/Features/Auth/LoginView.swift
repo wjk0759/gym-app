@@ -266,7 +266,27 @@ struct LoginView: View {
             .disabled(auth.isWorking)
         }
         .frame(maxWidth: .infinity)
-        .glassCard(padding: 14, cornerRadius: 18)
+        .glassCard(padding: 14, cornerRadius: 18, material: true)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.18),
+                            Theme.stroke.opacity(0.35),
+                            Color.white.opacity(0.05)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.8
+                )
+        )
+        .shadow(
+            color: .black.opacity(isFocusMode ? 0 : 0.14),
+            radius: 18,
+            y: 8
+        )
     }
 
     private func fieldShell<Content: View>(
