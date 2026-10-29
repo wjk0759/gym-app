@@ -71,11 +71,9 @@ struct GlassCardModifier: ViewModifier {
                         lineWidth: 0.8
                     )
             }
-            .shadow(
-                color: Theme.shadow.opacity(colorScheme == .dark ? 0.52 : 0.30),
-                radius: material ? 18 : 10,
-                y: material ? 8 : 4
-            )
+            // No per-card shadow: scrolling and transitions would composite
+            // an offscreen shadow layer every frame. The tint, gradient
+            // highlight and hairline keep the glass depth without that cost.
     }
 }
 

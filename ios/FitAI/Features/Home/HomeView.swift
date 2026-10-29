@@ -43,7 +43,7 @@ struct HomeView: View {
                     }
 
                     if !missed.isEmpty {
-                        missedPlanCard
+                        missedPlanCard(missed)
                             .staggerIn(4)
                             .softContentTransition()
                     }
@@ -666,9 +666,8 @@ struct HomeView: View {
         .card()
     }
 
-    private var missedPlanCard: some View {
-        let missed = store.missedPlanDays
-        return Group {
+    private func missedPlanCard(_ missed: [PlanDay]) -> some View {
+        Group {
             if let plan = store.plan,
                let first = missed.first,
                let date = plan.scheduledDate(for: first) {

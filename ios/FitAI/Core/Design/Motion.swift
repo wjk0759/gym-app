@@ -22,30 +22,46 @@ enum Motion {
 
 /// 统一的触感反馈，避免各处直接 new 生成器。
 enum Haptics {
+    private static let lightImpact = UIImpactFeedbackGenerator(style: .light)
+    private static let mediumImpact = UIImpactFeedbackGenerator(style: .medium)
+    private static let heavyImpact = UIImpactFeedbackGenerator(style: .heavy)
+    private static let selectionGenerator = UISelectionFeedbackGenerator()
+    private static let notificationGenerator = UINotificationFeedbackGenerator()
+
     static func tap() {
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.prepare()
-        generator.impactOccurred(intensity: 0.7)
+        lightImpact.prepare()
+        lightImpact.impactOccurred(intensity: 0.7)
     }
 
     static func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle = .light) {
-        let generator = UIImpactFeedbackGenerator(style: style)
+        let generator: UIImpactFeedbackGenerator
+        switch style {
+        case .light, .soft:
+            generator = lightImpact
+        case .medium:
+            generator = mediumImpact
+        case .heavy, .rigid:
+            generator = heavyImpact
+        @unknown default:
+            generator = lightImpact
+        }
         generator.prepare()
         generator.impactOccurred()
     }
 
     static func select() {
-        let generator = UISelectionFeedbackGenerator()
-        generator.prepare()
-        generator.selectionChanged()
+        selectionGenerator.prepare()
+        selectionGenerator.selectionChanged()
     }
 
     static func success() {
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        notificationGenerator.prepare()
+        notificationGenerator.notificationOccurred(.success)
     }
 
     static func warning() {
-        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        notificationGenerator.prepare()
+        notificationGenerator.notificationOccurred(.warning)
     }
 }
 

@@ -331,7 +331,6 @@ struct PlanHomeView: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color.white.opacity(0.07), lineWidth: 0.8)
         )
-        .shadow(color: .black.opacity(0.14), radius: 10, y: 6)
     }
 
     // MARK: - 日历

@@ -193,10 +193,9 @@ struct PrimaryButtonStyle: ButtonStyle {
                         lineWidth: 0.8
                     )
             )
-            .shadow(color: Theme.accent.opacity(configuration.isPressed ? 0.10 : 0.22), radius: 18, y: 9)
-            .brightness(configuration.isPressed ? -0.05 : 0)
+            .shadow(color: Theme.accent.opacity(0.20), radius: 12, y: 6)
             .opacity(configuration.isPressed ? 0.90 : 1)
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .scaleEffect(configuration.isPressed ? 0.975 : 1)
             .animation(Motion.press, value: configuration.isPressed)
             .onChange(of: configuration.isPressed) { _, pressed in
                 if pressed { Haptics.impact(.light) }
