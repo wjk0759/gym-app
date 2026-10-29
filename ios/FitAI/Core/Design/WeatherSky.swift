@@ -2,13 +2,12 @@ import Foundation
 import SwiftUI
 
 /// 天气动画层：太阳、月亮、云、雨、雪、风、雾、闪电都在这里画。
-/// 放在 AppBackground 的最底层，不拦截任何交互；20fps、后台/非当前 Tab 自动暂停。
+/// 放在 AppBackground 的最底层，不拦截任何交互；10fps、后台自动暂停。
 struct WeatherSkyLayer: View {
     @Environment(\.weatherAtmosphere) private var atmosphere
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.weatherAnimationActive) private var animationActive
     @Environment(\.keyboardVisible) private var keyboardVisible
 
     var body: some View {
@@ -27,7 +26,7 @@ struct WeatherSkyLayer: View {
     }
 
     private var paused: Bool {
-        reduceMotion || scenePhase != .active || !animationActive || keyboardVisible
+        reduceMotion || scenePhase != .active || keyboardVisible
     }
 
     private var isLight: Bool {
@@ -615,17 +614,6 @@ struct WeatherSkyLayer: View {
         isLight
             ? Color(red: 0.48, green: 0.57, blue: 0.61)
             : Color(red: 0.63, green: 0.72, blue: 0.78)
-    }
-}
-
-private struct WeatherAnimationActiveKey: EnvironmentKey {
-    static let defaultValue = false
-}
-
-extension EnvironmentValues {
-    var weatherAnimationActive: Bool {
-        get { self[WeatherAnimationActiveKey.self] }
-        set { self[WeatherAnimationActiveKey.self] = newValue }
     }
 }
 

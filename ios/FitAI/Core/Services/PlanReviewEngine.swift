@@ -63,12 +63,26 @@ struct ReviewData {
     let periodDays: Int
 }
 
+struct ReviewInput {
+    let sessions: [WorkoutSession]
+    let foodLogs: [FoodLog]
+    let bodyMetrics: [BodyMetric]
+    let profile: UserProfile
+
+    init(store: AppStore) {
+        sessions = store.sessions
+        foodLogs = store.foodLogs
+        bodyMetrics = store.bodyMetrics
+        profile = store.profile
+    }
+}
+
 enum PlanReviewEngine {
-    static func make(store: AppStore, period: ReviewPeriod, now: Date = Date()) -> ReviewData {
+    static func make(input: ReviewInput, period: ReviewPeriod, now: Date = Date()) -> ReviewData {
         let bounds = bounds(for: period, now: now)
-        let targets = DietPlanner.targets(profile: store.profile)
+        let targets = DietPlanner.targets(profile: input.profile)
         let current = snapshot(
-            store: store,
+            input: input,
             start: bounds.currentStart,
             end: bounds.currentEnd,
             days: bounds.periodDays,
@@ -76,7 +90,7 @@ enum PlanReviewEngine {
             fallbackBody: true
         )
         let previous = snapshot(
-            store: store,
+            input: input,
             start: bounds.previousStart,
             end: bounds.previousEnd,
             days: bounds.previousDays,
@@ -91,7 +105,7 @@ enum PlanReviewEngine {
             "duration": trend(current: current.averageDailyMinutes, previous: previous.averageDailyMinutes, mode: .higher, digits: 1, unit: " 分钟"),
             "intake": trend(current: current.averageIntake, previous: previous.averageIntake, mode: .closeness, digits: 0, unit: " kcal", target: Double(targets.kcal)),
             "deficit": trend(current: currentGap, previous: previousGap, mode: .closeness, digits: 0, unit: " kcal", target: 0),
-            "weight": trend(current: current.weight, previous: previous.weight, mode: .goalWeight, digits: 1, unit: " kg", target: store.profile.targetWeightKG),
+            "weight": trend(current: current.weight, previous: previous.weight, mode: .goalWeight, digits: 1, unit: " kg", target: input.profile.targetWeightKG),
             "bodyFat": trend(current: current.bodyFat, previous: previous.bodyFat, mode: .lower, digits: 1, unit: "%")
         ]
 
@@ -139,7 +153,7 @@ enum PlanReviewEngine {
                 unit: "kg",
                 previousDisplay: previous.weight.map { "\(format($0, digits: 1)) kg" } ?? "—",
                 trend: trends["weight"]!,
-                note: store.profile.targetWeightKG > 0 ? "目标 \(format(store.profile.targetWeightKG, digits: 1)) kg" : "未设目标"
+                note: input.profile.targetWeightKG > 0 ? "目标 \(format(input.profile.targetWeightKG, digits: 1)) kg" : "未设目标"
             ),
             ReviewKPI(
                 id: "bodyFat",
@@ -225,15 +239,15 @@ enum PlanReviewEngine {
     }
 
     private static func snapshot(
-        store: AppStore,
+        input: ReviewInput,
         start: Date,
         end: Date,
         days: Int,
         targets: NutritionTargets,
         fallbackBody: Bool
     ) -> ReviewSnapshot {
-        let sessions = store.sessions.filter { $0.date >= start && $0.date <= end }
-        let foodLogs = store.foodLogs.filter { $0.date >= start && $0.date <= end }
+        let sessions = input.sessions.filter { $0.date >= start && $0.date <= end }
+        let foodLogs = input.foodLogs.filter { $0.date >= start && $0.date <= end }
         let foodDays = Set(foodLogs.map { FitnessDate.key($0.date) })
         let minutes = sessions.reduce(0) { $0 + $1.durationMinutes }
         let volume = sessions.reduce(0) { $0 + $1.volume }
@@ -248,12 +262,12 @@ enum PlanReviewEngine {
         let loggedDays = foodDays.count
         let averageIntake = loggedDays > 0 ? nutrition.kcal / Double(loggedDays) : nil
         let calorieGap = averageIntake.map { Double(targets.kcal) - $0 }
-        let body = store.bodyMetrics
+        let body = input.bodyMetrics
             .filter { $0.date <= end }
             .sorted { $0.date > $1.date }
             .first
-        let fallbackWeight = fallbackBody ? store.profile.weightKG : nil
-        let fallbackFat = fallbackBody ? store.profile.bodyFatPCT : nil
+        let fallbackWeight = fallbackBody ? input.profile.weightKG : nil
+        let fallbackFat = fallbackBody ? input.profile.bodyFatPCT : nil
 
         return ReviewSnapshot(
             sessions: sessions.sorted { $0.date > $1.date },

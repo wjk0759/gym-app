@@ -33,36 +33,30 @@ struct MainTabView: View {
         @Bindable var store = store
         TabView(selection: $store.selectedTab) {
             HomeView()
-                .environment(\.weatherAnimationActive, store.selectedTab == 0)
                 .tag(0)
                 .tabItem {
                     Label("今日", systemImage: "figure.strengthtraining.traditional")
                 }
 
             PlanHomeView()
-                // 天气动画只在首页跑；其他页保留静态氛围即可，避免滚动和输入时抢帧。
-                .environment(\.weatherAnimationActive, false)
                 .tag(1)
                 .tabItem {
                     Label("记录", systemImage: "calendar")
                 }
 
-            CoachTabRoot()
-                .environment(\.weatherAnimationActive, false)
+            CoachChatView()
                 .tag(2)
                 .tabItem {
                     Label("教练", systemImage: "bubble.left.and.bubble.right")
                 }
 
             DiscoverView()
-                .environment(\.weatherAnimationActive, false)
                 .tag(3)
                 .tabItem {
                     Label("发现", systemImage: "square.grid.2x2")
                 }
 
             ProfileView()
-                .environment(\.weatherAnimationActive, false)
                 .tag(4)
                 .tabItem {
                     Label("我的", systemImage: "person.crop.circle")
@@ -105,9 +99,3 @@ struct MainTabView: View {
     }
 }
 
-private struct CoachTabRoot: View {
-    var body: some View {
-        CoachChatView()
-            .environment(\.weatherAnimationActive, false)
-    }
-}

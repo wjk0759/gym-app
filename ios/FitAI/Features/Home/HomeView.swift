@@ -73,7 +73,7 @@ struct HomeView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 28)
             }
-            .background(AppBackground())
+            .background(AppBackground(animated: true))
             .navigationTitle("今日")
             .navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(isPresented: $showCompose, onDismiss: presentPendingWorkout) {

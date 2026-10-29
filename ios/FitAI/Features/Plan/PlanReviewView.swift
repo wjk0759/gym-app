@@ -4,19 +4,24 @@ struct PlanReviewView: View {
     @Environment(AppStore.self) private var store
 
     @State private var period: ReviewPeriod = .month
+    @State private var review: ReviewData?
 
     var body: some View {
-        let review = PlanReviewEngine.make(store: store, period: period)
-
-        return AppScrollView {
-            VStack(spacing: 16) {
-                header(review)
-                periodPicker
-                trendSummary(review)
-                kpiGrid(review)
-                trainingCard(review)
-                nutritionCard(review)
-                recentCard(review)
+        AppScrollView {
+            LazyVStack(spacing: 16) {
+                if let review {
+                    header(review)
+                    periodPicker
+                    trendSummary(review)
+                    kpiGrid(review)
+                    trainingCard(review)
+                    nutritionCard(review)
+                    recentCard(review)
+                } else {
+                    reviewHeaderPlaceholder
+                    periodPicker
+                    reviewLoadingCard
+                }
             }
             .appPagePadding()
             .padding(.top, 8)
@@ -25,6 +30,45 @@ struct PlanReviewView: View {
         .background(AppBackground())
         .navigationTitle("数据复盘")
         .navigationBarTitleDisplayMode(.inline)
+        .task(id: period) {
+            await loadReview()
+        }
+    }
+
+    private var reviewHeaderPlaceholder: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("\(period.title)复盘")
+                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .foregroundStyle(Theme.primaryText)
+            Text("正在整理本期数据…")
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var reviewLoadingCard: some View {
+        VStack(spacing: 10) {
+            ProgressView()
+                .tint(Theme.accent)
+            Text("正在计算训练与饮食数据")
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 36)
+        .card()
+    }
+
+    private func loadReview() async {
+        review = nil
+        let input = ReviewInput(store: store)
+        let targetPeriod = period
+        let data = await Task.detached(priority: .userInitiated) {
+            PlanReviewEngine.make(input: input, period: targetPeriod)
+        }.value
+        guard !Task.isCancelled else { return }
+        review = data
     }
 
     private func header(_ review: ReviewData) -> some View {
