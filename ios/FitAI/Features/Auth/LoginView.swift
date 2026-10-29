@@ -455,18 +455,18 @@ struct LoginView: View {
     }
 
     private var otherLoginSection: some View {
-        HStack(spacing: 18) {
+        HStack(spacing: 14) {
             socialIconButton(
-                symbol: "apple.logo",
-                tint: Theme.primaryText,
-                background: Color(.tertiarySystemFill),
+                image: Image(systemName: "apple.logo"),
+                tint: .black,
+                background: .white,
                 label: "Apple 登录"
             ) {
                 startAppleSignIn()
             }
 
             socialIconButton(
-                symbol: "message.fill",
+                image: Image("WeChatIcon"),
                 tint: Color(red: 0.20, green: 0.78, blue: 0.36),
                 background: Color(red: 0.20, green: 0.78, blue: 0.36).opacity(0.12),
                 label: "微信登录"
@@ -475,7 +475,7 @@ struct LoginView: View {
             }
 
             socialIconButton(
-                symbol: "person.2.fill",
+                image: Image("QQIcon"),
                 tint: Color(red: 0.26, green: 0.58, blue: 0.96),
                 background: Color(red: 0.26, green: 0.58, blue: 0.96).opacity(0.12),
                 label: "QQ 登录"
@@ -487,23 +487,26 @@ struct LoginView: View {
     }
 
     private func socialIconButton(
-        symbol: String,
+        image: Image,
         tint: Color,
         background: Color,
         label: String,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 21, weight: .semibold))
+            image
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 18, height: 18)
                 .foregroundStyle(tint)
-                .frame(width: 52, height: 52)
+                .frame(width: 44, height: 44)
                 .background(background, in: Circle())
                 .overlay(Circle().stroke(Theme.stroke, lineWidth: 0.5))
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .frame(width: 52, height: 52)
+        .frame(width: 44, height: 44)
         .contentShape(Rectangle())
         .disabled(auth.isWorking)
         .accessibilityLabel(label)

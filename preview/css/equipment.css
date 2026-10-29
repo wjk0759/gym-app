@@ -2489,3 +2489,12 @@ body.dragging-scroll * {
 .social-icon-btn.apple { background: #fff; border-color: #fff; color: #000; }
 .social-icon-btn.wechat span { color: #60dc94; }
 .social-icon-btn.qq span { color: #8fb3fa; }
+
+/* smaller icon-only social row */
+.login-icon-row { gap: 14px; padding: 0 0 4px; }
+.social-icon-btn { width: 44px; height: 44px; font-size: 15px; }
+.social-icon-btn svg { width: 18px; height: 18px; }
+
+/* brand colors for the smaller social icons */
+.social-icon-btn.wechat { color: #60dc94; }
+.social-icon-btn.qq { color: #8fb3fa; }
