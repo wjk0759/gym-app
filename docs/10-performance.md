@@ -154,7 +154,7 @@ cd E:\Projects\FitAI\backend
 - 没有这个声明时，iPhone Pro/Pro Max 的 ProMotion 屏幕会被系统限制在 60Hz，表现为整个 App 的滚动、弹层、转场都像低刷新率。
 - 仅在 ProMotion 机型上生效；非 Pro iPhone 的硬件上限仍是 60Hz。低电量模式也会主动限制高刷新率。
 - 验证时不要用微信/普通屏幕录制判断帧率：本次收到的录屏是约 27.6fps 的 30fps 文件。需要在真机上用 Xcode Instruments（Core Animation / Time Profiler）或 DEBUG 帧率探针确认。
-- 如果开启后仍有单个页面掉帧，再按页面查主线程阻塞、材质/阴影合成和 `TimelineView` 重绘，不要把所有问题都归因于刷新率。
+- 如果开启后仍有单个页面掉帧，再按页面查主线程 body/派生计算、材质与阴影合成；当前已移除逐帧 `TimelineView` 天气层。
 
 ## 9. 后续可继续做的优化
 
@@ -164,3 +164,23 @@ cd E:\Projects\FitAI\backend
 - 配置真实 DeepSeek Key 后，单独统计首 token 延迟和完整回复延迟；当前流式接口已存在，iOS 端尚未消费流式回复。
 - App Action 执行结果已回写 `agent_action_events`，Spring 后台已提供动作审计页；训练排期已支持跨设备同步，5 分钟本地撤销已实现。跨设备撤销仍未完成。
 - 多实例部署时把登录/短信限流从进程内字典迁移到 Redis，并增加 AI 接口的用户级配额。
+
+## 10. 2026-10 移除逐帧天气与逐卡阴影
+
+真机 Release（iPhone 14 Pro / 120Hz）上，点按钮、打开 Sheet 和路由推入仍有明显掉帧。排查后确认不是训练数据量导致，而是多类合成成本在 120Hz 的 8.3ms 帧预算下叠加：
+
+- `WeatherSkyLayer` 通过环境值 `weatherAnimationActive` 控制，而该环境值会从首页继续传给 NavigationStack 目标页、Sheet 和 fullScreenCover。从首页打开饮食、训练、身体打卡等页面时会创建第二个全屏 `TimelineView` + `Canvas`。
+- 每张卡片都带 `.shadow`，按压和转场时缩放/透明度动画会让阴影逐帧离屏合成。
+- `PrimaryButtonStyle` 按压时同时动画阴影颜色、`brightness`、透明度和缩放。
+- Tab Bar 同时使用 `UITabBarAppearance` 的 blur 和 SwiftUI `.toolbarBackground(.ultraThinMaterial)`，可能重复采样。
+
+本轮修改：
+
+- 删除 `Core/Design/WeatherSky.swift`，移除 `weatherAnimationActive` 环境键和所有 Canvas 引用；天气只影响静态背景色、强调色和文案。
+- `AppBackground` 只保留静态渐变，不再创建任何逐帧绘制层。
+- 移除 `GlassCardModifier` 的逐卡 shadow，保留半透明 tint、渐变高光和细边框；hero/悬浮元素仍按需保留独立阴影。
+- `PrimaryButtonStyle` 改为静态阴影，移除 `brightness` 动画，只保留透明度与轻微缩放。
+- `Haptics` 复用共享生成器，避免每次点击创建并预热 Taptic Engine。
+- Tab Bar 只保留 `UITabBarAppearance` 的 blur，移除 SwiftUI 叠加的 Material。
+
+复测重点：首页打开 Sheet、首页推入饮食/记录页、其他 Tab 推入详情页、长列表滚动、连续点按主要按钮。若仍有转场掉帧，下一步应把 Sheet/全屏入口状态从大页面根部下沉到小 wrapper（参考 `SheetPresentingButton`），并拆分超大 body。

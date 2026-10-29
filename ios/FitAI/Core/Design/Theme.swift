@@ -87,13 +87,13 @@ enum Theme {
 }
 
 struct AppBackground: View {
-    var animated: Bool = false
-
     @Environment(\.weatherAtmosphere) private var atmosphere
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        // Static only: weather animation used to be inherited by sheets and
+        // navigation destinations, creating multiple full-screen draw layers.
         ZStack {
             Theme.background
 
@@ -128,26 +128,12 @@ struct AppBackground: View {
                 endRadius: 500
             )
 
-            // 非首页不创建 Canvas 层：静态渐变已经足够表达氛围，
-            // 也能避免 Tab 切换后旧画面继续占着大图层。
-            if showsWeather {
-                WeatherSkyLayer()
-            }
         }
         .animation(
             Motion.resolved(.easeInOut(duration: 1.1), reduceMotion: reduceMotion),
             value: atmosphere
         )
         .ignoresSafeArea()
-    }
-
-    private var showsWeather: Bool {
-        #if DEBUG
-        if ProcessInfo.processInfo.environment["FITAI_QA_NO_WEATHER"] == "1" {
-            return false
-        }
-        #endif
-        return animated
     }
 }
 
