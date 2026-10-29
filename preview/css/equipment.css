@@ -2498,3 +2498,14 @@ body.dragging-scroll * {
 /* brand colors for the smaller social icons */
 .social-icon-btn.wechat { color: #60dc94; }
 .social-icon-btn.qq { color: #8fb3fa; }
+
+/* keep the login card height stable between phone and password modes */
+.login-card .field-hint {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.login-card .row.between {
+  min-height: 44px;
+  align-items: center;
+}

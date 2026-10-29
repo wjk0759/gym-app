@@ -337,7 +337,7 @@ struct LoginView: View {
                 .font(AppType.micro)
                 .foregroundStyle(devCode == nil ? Theme.tertiaryText : Theme.warning)
                 .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .padding(.leading, 2)
         }
     }
