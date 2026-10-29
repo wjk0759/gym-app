@@ -2556,3 +2556,32 @@ body.dragging-scroll * {
   transform: scale(1.02);
   box-shadow: 0 34px 80px rgba(0, 0, 0, 0.65);
 }
+
+/* slow focus lift / settle */
+.app::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0);
+  transition: background 520ms cubic-bezier(0.22, 1, 0.36, 1),
+              backdrop-filter 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app:has(.login-page input:focus)::after {
+  background: rgba(0, 0, 0, 0.72);
+}
+.login-card {
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app:has(.login-page input:focus) .login-card {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 34px 80px rgba(0, 0, 0, 0.65);
+}
+.app:has(.login-page input:focus) .login-brand,
+.app:has(.login-page input:focus) .login-consent,
+.app:has(.login-page input:focus) .login-icon-row {
+  opacity: 0.05;
+  transition: opacity 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}

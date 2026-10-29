@@ -88,6 +88,7 @@ struct LoginView: View {
 
                 loginCard
                     .scaleEffect(focusedField == nil ? 1 : 1.02)
+                    .offset(y: focusedField == nil ? 0 : -10)
                     .shadow(
                         color: .black.opacity(focusedField == nil ? 0 : 0.55),
                         radius: 34,
@@ -105,7 +106,10 @@ struct LoginView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .animation(
-            Motion.resolved(.easeInOut(duration: 0.22), reduceMotion: reduceMotion),
+            Motion.resolved(
+                .spring(response: 0.65, dampingFraction: 0.93),
+                reduceMotion: reduceMotion
+            ),
             value: focusedField
         )
         .sheet(item: $legal) { kind in
