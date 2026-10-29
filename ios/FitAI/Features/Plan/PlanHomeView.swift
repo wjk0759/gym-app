@@ -10,7 +10,6 @@ struct PlanHomeView: View {
     @State private var showRegenerate = false
     @State private var showHistory = false
     @State private var showSchedule = false
-    @State private var showPeriod = false
     @State private var sessionSheet: SessionSheet?
     @State private var editingDay: PlanDay?
     @State private var workoutDay: PlanDay?
@@ -85,9 +84,6 @@ struct PlanHomeView: View {
             .sheet(isPresented: $showSchedule) {
                 PlanScheduleView()
             }
-            .sheet(isPresented: $showPeriod) {
-                PeriodScheduleView()
-            }
             .fullScreenCover(item: $editingDay) { day in
                 PlanEditorView(day: day)
             }
@@ -142,13 +138,15 @@ struct PlanHomeView: View {
             }
 
             if store.profile.sex == .female {
-                planActionTile(
-                    title: "经期",
-                    subtitle: "轻量训练安排",
-                    icon: "drop.fill",
-                    tint: Theme.danger
-                ) {
-                    showPeriod = true
+                SheetPresentingButton {
+                    planActionTileLabel(
+                        title: "经期",
+                        subtitle: "轻量训练安排",
+                        icon: "drop.fill",
+                        tint: Theme.danger
+                    )
+                } sheet: {
+                    PeriodScheduleView()
                 }
             }
 

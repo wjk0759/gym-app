@@ -3,6 +3,7 @@ import SwiftUI
 struct PeriodScheduleView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var month = FitnessDate.startOfMonth(Date())
     @State private var startKey: String?
@@ -81,9 +82,10 @@ struct PeriodScheduleView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 28)
             }
-            .background(AppBackground())
             .navigationTitle("经期安排")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Theme.background, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }
@@ -91,6 +93,7 @@ struct PeriodScheduleView: View {
             }
             .onAppear(perform: load)
         }
+        .presentationBackground { PeriodSheetBackground() }
     }
 
     private var header: some View {
@@ -113,7 +116,11 @@ struct PeriodScheduleView: View {
             HStack(spacing: 8) {
                 ForEach(PeriodTrainingMode.allCases) { item in
                     Button {
-                        mode = item
+                        guard mode != item else { return }
+                        Haptics.select()
+                        withAnimation(Motion.resolved(Motion.quick, reduceMotion: reduceMotion)) {
+                            mode = item
+                        }
                     } label: {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(item.title)
@@ -135,7 +142,7 @@ struct PeriodScheduleView: View {
                 }
             }
         }
-        .card()
+        .periodCard()
     }
 
     private var calendarCard: some View {
@@ -184,7 +191,7 @@ struct PeriodScheduleView: View {
                 }
             }
         }
-        .card()
+        .periodCard()
     }
 
     private func dayCell(_ date: Date) -> some View {
@@ -211,7 +218,7 @@ struct PeriodScheduleView: View {
                 )
                 .opacity(inMonth ? 1 : 0.28)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SubtlePressStyle(scale: 0.96))
     }
 
     private func isSelected(_ key: String) -> Bool {
@@ -220,6 +227,7 @@ struct PeriodScheduleView: View {
     }
 
     private func select(_ key: String) {
+        Haptics.select()
         if startKey == nil || (startKey != nil && endKey != nil) {
             startKey = key
             endKey = nil
@@ -232,6 +240,7 @@ struct PeriodScheduleView: View {
     }
 
     private func moveMonth(_ amount: Int) {
+        Haptics.tap()
         month = calendar.date(byAdding: .month, value: amount, to: month) ?? month
     }
 
@@ -250,7 +259,43 @@ struct PeriodScheduleView: View {
         guard let startKey else { return }
         let end = endKey ?? startKey
         if store.savePeriodRange(startKey: startKey, endKey: end, mode: mode) {
+            Haptics.success()
             dismiss()
         }
+    }
+}
+
+private struct PeriodSheetBackground: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        ZStack {
+            Theme.background
+            LinearGradient(
+                colors: [
+                    Theme.surface.opacity(colorScheme == .dark ? 0.92 : 0.72),
+                    .clear
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+        .ignoresSafeArea()
+    }
+}
+
+private extension View {
+    /// Sheet-local surface: no blur, no shadow, one fill and one hairline.
+    /// The heavy glass card is intentionally avoided while the modal animates.
+    func periodCard() -> some View {
+        padding(16)
+            .background(
+                Theme.surface,
+                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Theme.stroke.opacity(0.75), lineWidth: 0.8)
+            }
     }
 }
