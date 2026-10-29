@@ -148,7 +148,15 @@ cd E:\Projects\FitAI\backend
 
 并发压测（200 请求 / 20 并发）中，后台统计 p50 从约 1564 ms 降到 1296 ms，吞吐从约 69.5 RPS 提升到 84.9 RPS；其余读接口主要受单进程 GIL 和测试机负载影响，数字波动较大。Windows 单进程 SQLite 的并发数字不能直接当作生产容量。生产验收应在 MySQL + 4 worker 下重跑 `bench_api.py`，并观察连接池等待、MySQL slow query、LLM 429 率。
 
-## 8. 后续可继续做的优化
+## 8. ProMotion / 高刷新率（2026-10）
+
+- `Info.plist` 增加 `CADisableMinimumFrameDurationOnPhone = true`。
+- 没有这个声明时，iPhone Pro/Pro Max 的 ProMotion 屏幕会被系统限制在 60Hz，表现为整个 App 的滚动、弹层、转场都像低刷新率。
+- 仅在 ProMotion 机型上生效；非 Pro iPhone 的硬件上限仍是 60Hz。低电量模式也会主动限制高刷新率。
+- 验证时不要用微信/普通屏幕录制判断帧率：本次收到的录屏是约 27.6fps 的 30fps 文件。需要在真机上用 Xcode Instruments（Core Animation / Time Profiler）或 DEBUG 帧率探针确认。
+- 如果开启后仍有单个页面掉帧，再按页面查主线程阻塞、材质/阴影合成和 `TimelineView` 重绘，不要把所有问题都归因于刷新率。
+
+## 9. 后续可继续做的优化
 
 - 后台对话/训练列表用 SQL 聚合替代加载完整消息和训练组，进一步降低大数据量下的内存占用。
 - iOS 图片上传前按 1600px 左右下采样，减少视觉模型上传时间。
