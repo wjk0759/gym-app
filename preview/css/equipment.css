@@ -2509,3 +2509,13 @@ body.dragging-scroll * {
   min-height: 44px;
   align-items: center;
 }
+
+/* compact helper row */
+.login-card .field-hint {
+  min-height: 28px;
+  line-height: 1.35;
+}
+.login-card .row.between {
+  min-height: 28px;
+}
+.compact-link { padding: 2px 0; }
