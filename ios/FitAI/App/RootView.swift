@@ -25,13 +25,13 @@ struct RootView: View {
             Theme.background.ignoresSafeArea()
 
             Group {
-                if auth.isRestoring {
+                if auth.isRestoring && !qaBypassAuth {
                     splash
                         .transition(.opacity)
-                } else if !auth.isAuthenticated {
+                } else if !auth.isAuthenticated && !qaBypassAuth {
                     LoginView()
                         .transition(screenTransition)
-                } else if store.profile.isOnboarded {
+                } else if store.profile.isOnboarded || qaBypassAuth {
                     MainTabView()
                         .transition(screenTransition)
                 } else {
@@ -173,6 +173,14 @@ struct RootView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppBackground())
         .transition(.opacity)
+    }
+
+    private var qaBypassAuth: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.environment["FITAI_QA_BYPASS_AUTH"] == "1"
+        #else
+        false
+        #endif
     }
 
     private func refreshSession() {

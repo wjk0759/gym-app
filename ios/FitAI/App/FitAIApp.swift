@@ -48,6 +48,7 @@ struct FitAIApp: App {
                     await subscriptions.load()
 #if DEBUG
                     StressHarness.runIfRequested()
+                    FrameHitchMonitor.shared.startIfRequested()
 #endif
                 }
         }
