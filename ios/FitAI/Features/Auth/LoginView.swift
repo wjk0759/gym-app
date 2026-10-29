@@ -45,7 +45,6 @@ struct LoginView: View {
     @State private var registrationPassword = ""
     @State private var showConsentPrompt = false
     @State private var pendingConsentAction: PendingConsentAction?
-    @State private var showOtherLogin = false
 
     private enum PendingConsentAction {
         case login
@@ -66,23 +65,29 @@ struct LoginView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+        VStack(spacing: 14) {
+            if focusedField == nil {
                 brandHeader
-                intro
-                loginCard
+            }
+
+            loginCard
+
+            if focusedField == nil {
                 consentFooter
                 otherLoginSection
-                devServerLink
-                    .padding(.top, 2)
             }
-            .frame(maxWidth: 420)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 28)
-            .frame(maxWidth: .infinity)
         }
-        .background(AppBackground())
-        .scrollDismissesKeyboard(.interactively)
+        .frame(maxWidth: 420)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background {
+            AppBackground()
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    focusedField = nil
+                }
+        }
         .sheet(item: $legal) { kind in
             LegalDocumentView(kind: kind)
         }
@@ -133,7 +138,7 @@ struct LoginView: View {
         HStack(spacing: 11) {
             HeroGlyph(
                 symbol: "figure.strengthtraining.traditional",
-                size: 50,
+                size: 44,
                 tint: Theme.accent
             )
 
@@ -147,29 +152,31 @@ struct LoginView: View {
             }
 
             Spacer(minLength: 0)
-        }
-    }
 
-    private var intro: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("欢迎回来")
-                .font(AppType.hero)
-                .foregroundStyle(Theme.primaryText)
-            Text("登录后同步训练计划、记录和 AI 复盘。")
-                .font(AppType.body)
-                .foregroundStyle(Theme.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
+#if DEBUG
+            Menu {
+                Button("开发服务器") {
+                    showServerSettings = true
+                }
+            } label: {
+                Image(systemName: "gearshape")
+                    .foregroundStyle(Theme.secondaryText)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("开发设置")
+#endif
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var loginCard: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             AnimatedSegmentedControl(
                 items: Mode.allCases,
                 selection: $mode,
                 label: { $0.rawValue }
             )
+            .controlSize(.large)
 
             Group {
                 if mode == .phone {
@@ -189,12 +196,11 @@ struct LoginView: View {
                 .font(AppType.caption)
                 .foregroundStyle(Theme.danger)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(11)
+                .padding(10)
                 .background(
                     Theme.danger.opacity(0.09),
-                    in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    in: RoundedRectangle(cornerRadius: 10, style: .continuous)
                 )
-                .transition(.opacity.combined(with: .offset(y: -6)))
             }
 
             Button {
@@ -214,16 +220,9 @@ struct LoginView: View {
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(auth.isWorking)
-
-            Text(mode == .phone
-                 ? "未注册手机号将自动创建账号"
-                 : "未注册账号会引导完成注册")
-                .font(AppType.micro)
-                .foregroundStyle(Theme.tertiaryText)
-                .frame(maxWidth: .infinity, alignment: .center)
         }
         .frame(maxWidth: .infinity)
-        .glassCard(padding: 18, cornerRadius: AppLayout.heroCornerRadius)
+        .glassCard(padding: 14, cornerRadius: 18)
     }
 
     private func fieldShell<Content: View>(
@@ -386,7 +385,7 @@ struct LoginView: View {
                 } label: {
                     Image(systemName: showPassword ? "eye.slash" : "eye")
                         .foregroundStyle(Theme.tertiaryText)
-                        .frame(width: 40, height: 40)
+                        .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -408,21 +407,21 @@ struct LoginView: View {
     }
 
     private var consentFooter: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 6) {
             Button {
                 Haptics.select()
                 withAnimation(Motion.quick) {
                     consent.toggle()
                 }
             } label: {
-                HStack(alignment: .top, spacing: 12) {
+                HStack(alignment: .top, spacing: 10) {
                     Image(systemName: consent ? "checkmark.circle.fill" : "circle")
                         .font(.subheadline)
                         .foregroundStyle(consent ? Theme.accent : Theme.tertiaryText)
 
-                    Text("我已阅读并同意以下条款，且已年满 14 周岁")
-                        .font(AppType.caption)
-                        .foregroundStyle(Theme.primaryText)
+                    Text("我已阅读并同意《用户协议》和《隐私政策》，且已年满 14 周岁")
+                        .font(.footnote)
+                        .foregroundStyle(Theme.secondaryText)
                         .multilineTextAlignment(.leading)
 
                     Spacer(minLength: 0)
@@ -434,81 +433,24 @@ struct LoginView: View {
             .accessibilityLabel("同意用户协议与隐私政策")
             .accessibilityValue(consent ? "已同意" : "未同意")
 
-            HStack(spacing: 18) {
-                Button("《用户协议》") {
-                    legal = .terms
-                }
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
-
-                Button("《隐私政策》") {
-                    legal = .privacy
-                }
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
-
-                Spacer(minLength: 0)
+            Menu {
+                Button("用户协议") { legal = .terms }
+                Button("隐私政策") { legal = .privacy }
+            } label: {
+                Image(systemName: "doc.text")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.accent)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
-            .font(AppType.caption)
-            .foregroundStyle(Theme.accent)
-            .buttonStyle(.plain)
+            .accessibilityLabel("查看协议")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 2)
     }
 
     private var otherLoginSection: some View {
-        VStack(spacing: 10) {
-            Button {
-                Haptics.tap()
-                withAnimation(Motion.quick) {
-                    showOtherLogin.toggle()
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Text("其他登录方式")
-                        .font(AppType.buttonSecondary)
-                        .foregroundStyle(Theme.secondaryText)
-
-                    Spacer(minLength: 0)
-
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(Theme.tertiaryText)
-                        .rotationEffect(.degrees(showOtherLogin ? 180 : 0))
-                }
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(showOtherLogin ? "收起其他登录方式" : "展开其他登录方式")
-
-            if showOtherLogin {
-                socialSection
-                    .transition(.opacity.combined(with: .offset(y: 6)))
-            }
-        }
-        .padding(.horizontal, 2)
-        .animation(Motion.quick, value: showOtherLogin)
-    }
-
-    private var socialSection: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 8) {
-                socialButton(
-                    title: "微信登录",
-                    icon: "message.fill",
-                    color: Color(red: 0.20, green: 0.78, blue: 0.36),
-                    provider: "wechat"
-                )
-                socialButton(
-                    title: "QQ 登录",
-                    icon: "person.2.fill",
-                    color: Color(red: 0.26, green: 0.58, blue: 0.96),
-                    provider: "qq"
-                )
-            }
-
+        HStack(spacing: 10) {
             SignInWithAppleButton(.signIn) { request in
                 request.requestedScopes = [.fullName, .email]
             } onCompletion: { result in
@@ -546,71 +488,34 @@ struct LoginView: View {
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .disabled(!consent || auth.isWorking)
             .opacity(consent ? 1 : 0.5)
+
+            Menu {
+                Button("微信登录") {
+                    performSocialLoginAfterConsent("wechat")
+                }
+                Button("QQ 登录") {
+                    performSocialLoginAfterConsent("qq")
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .font(.title3)
+                    .foregroundStyle(Theme.secondaryText)
+                    .frame(width: 46, height: 46)
+                    .contentShape(Rectangle())
+            }
+            .disabled(auth.isWorking)
+            .accessibilityLabel("更多登录方式")
         }
+        .padding(.horizontal, 2)
     }
 
-    private var devServerLink: some View {
-#if DEBUG
-        Button {
-            Haptics.tap()
-            showServerSettings = true
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "server.rack")
-                Text("开发服务器")
-                Text(AppConfig.apiBaseURLString)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-            }
-            .font(AppType.micro)
-            .foregroundStyle(Theme.tertiaryText.opacity(0.85))
-            .frame(maxWidth: .infinity)
+    private func performSocialLoginAfterConsent(_ provider: String) {
+        guard consent else {
+            pendingConsentAction = .social(provider)
+            showConsentPrompt = true
+            return
         }
-        .buttonStyle(SubtlePressStyle(scale: 0.98))
-#else
-        EmptyView()
-#endif
-    }
-
-    private func socialButton(
-        title: String,
-        icon: String,
-        color: Color,
-        provider: String
-    ) -> some View {
-        Button {
-            Haptics.tap()
-            guard consent else {
-                pendingConsentAction = .social(provider)
-                showConsentPrompt = true
-                return
-            }
-            performSocialLogin(provider)
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(AppType.caption.weight(.semibold))
-                    .foregroundStyle(color)
-                    .frame(width: 20)
-                Text(title)
-                    .font(AppType.buttonSecondary)
-                    .foregroundStyle(Theme.primaryText)
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 11)
-            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .background(
-                color.opacity(0.10),
-                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(color.opacity(0.24), lineWidth: 0.8)
-            )
-        }
-        .buttonStyle(SubtlePressStyle(scale: 0.97))
-        .disabled(auth.isWorking)
+        performSocialLogin(provider)
     }
 
     private var isValidPhone: Bool {
