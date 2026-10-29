@@ -14,7 +14,6 @@ struct CoachAttachmentDraftBar: View {
     let onRemoveImage: (UUID) -> Void
     let onRemoveVideo: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -35,7 +34,7 @@ struct CoachAttachmentDraftBar: View {
 
                 Spacer()
 
-                Button("清空") {
+                Button("清空", role: .destructive) {
                     onClear()
                 }
                 .font(.caption.weight(.semibold))
@@ -164,8 +163,8 @@ struct CoachAttachmentDraftBar: View {
         }
         .overlay(alignment: .top) {
             Rectangle()
-                .fill(Color.white.opacity(colorScheme == .dark ? 0.12 : 0.48))
-                .frame(height: 0.8)
+                .fill(Theme.stroke)
+                .frame(height: 0.5)
         }
     }
 }

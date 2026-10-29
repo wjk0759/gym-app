@@ -6,7 +6,6 @@ import UIKit
 
 struct CoachChatView: View {
     @Environment(AppStore.self) private var store
-    @Environment(\.colorScheme) private var colorScheme
 
     @State private var input = ""
     @State private var showPaywall = false
@@ -183,14 +182,17 @@ struct CoachChatView: View {
                 }
             }
             .sheet(isPresented: $showEquipmentScan) {
-                EquipmentRecognitionView(
-                    onSaved: { item in
-                        store.appendCoachNotice("已加入个人动作库：\(item.name)")
-                    },
-                    onRecognized: { result in
-                        store.coachEquipmentResult = result
-                    }
-                )
+                NavigationStack {
+                    EquipmentRecognitionView(
+                        isModal: true,
+                        onSaved: { item in
+                            store.appendCoachNotice("已加入个人动作库：\(item.name)")
+                        },
+                        onRecognized: { result in
+                            store.coachEquipmentResult = result
+                        }
+                    )
+                }
             }
             .onChange(of: store.coachBodyAnalysisRequested) { _, requested in
                 if requested {
@@ -229,7 +231,7 @@ struct CoachChatView: View {
             .toolbar {
                 if !store.chat.isEmpty {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button("清空") { store.clearChat() }
+                        Button("清空", role: .destructive) { store.clearChat() }
                             .font(.footnote)
                             .foregroundStyle(Theme.secondaryText)
                     }
@@ -754,7 +756,6 @@ struct CoachChatView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .card()
-            .staggerIn(0)
 
             if !store.canUseRemoteAI {
                 Button {
@@ -780,7 +781,6 @@ struct CoachChatView: View {
                     .card(padding: 14)
                 }
                 .buttonStyle(CardPressStyle(scale: 0.985))
-                .staggerIn(1)
             }
 
             VStack(alignment: .leading, spacing: 10) {
@@ -818,10 +818,8 @@ struct CoachChatView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .staggerIn(2)
 
             weeklyRecap
-                .staggerIn(3)
         }
     }
 
@@ -999,16 +997,11 @@ struct CoachChatView: View {
                 .padding(.vertical, 11)
                 .background {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(
-                            Color.white.opacity(colorScheme == .dark ? 0.075 : 0.46)
-                        )
+                        .fill(Color(.tertiarySystemFill))
                 }
                 .overlay {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(
-                            Color.white.opacity(colorScheme == .dark ? 0.10 : 0.42),
-                            lineWidth: 0.8
-                        )
+                        .stroke(Theme.stroke, lineWidth: 0.5)
                 }
 
             if store.isReplying {
@@ -1058,11 +1051,6 @@ struct CoachChatView: View {
                 )
                 .animation(Motion.quick, value: focused)
         }
-        .shadow(
-            color: Theme.shadow.opacity(colorScheme == .dark ? 0.42 : 0.20),
-            radius: 18,
-            y: 8
-        )
         .padding(.horizontal, 10)
         .padding(.top, 6)
         .padding(.bottom, 6)

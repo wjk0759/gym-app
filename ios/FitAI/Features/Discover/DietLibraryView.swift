@@ -221,18 +221,10 @@ struct DietLibraryView: View {
                 }
             }
             .frame(maxWidth: .infinity, minHeight: 190, alignment: .topLeading)
-            .padding(13)
+            .padding(14)
             .background(
-                LinearGradient(
-                    colors: [strategy.color.opacity(0.10), Theme.cardSurface],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
+                Theme.cardSurface,
                 in: RoundedRectangle(cornerRadius: 18, style: .continuous)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(strategy.color.opacity(0.16), lineWidth: 0.8)
             )
         }
         .buttonStyle(.plain)

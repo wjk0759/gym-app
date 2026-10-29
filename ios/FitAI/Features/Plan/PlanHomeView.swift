@@ -48,7 +48,7 @@ struct PlanHomeView: View {
             }
             .background(AppBackground())
             .navigationTitle("记录")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("今天") {

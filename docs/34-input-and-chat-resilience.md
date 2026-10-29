@@ -2,13 +2,12 @@
 
 ## 键盘收起
 
-iOS 端的输入框不再依赖每个页面单独实现“完成”按钮：
+iOS 端使用系统键盘行为，不再在 window 上挂自定义 tap recognizer：
 
-- `RootView` 安装 `KeyboardDismissInstaller`，在 `UIWindow` 上挂一个不拦截业务点击的 `UITapGestureRecognizer`。
-- 点击输入框以外的区域会调用 `endEditing(true)`；点击输入框本身不会被拦截，方便在多个输入框之间切换。
-- `AppScrollView` 继续使用 `.scrollDismissesKeyboard(.interactively)`，下滑内容也会收起键盘。
-- 教练页额外提供键盘工具栏“收起”，以及发送前主动解除焦点。
-- 背景不再运行逐帧天气动画，键盘弹出和消息发送时没有额外的全屏重绘。
+- `AppScrollView` 使用 `.scrollDismissesKeyboard(.interactively)`，下滑内容会收起键盘。
+- 需要明确“完成”的表单使用原生 `.toolbar(placement: .keyboard)` 的 `完成` 按钮。
+- 教练页在键盘工具栏提供“收起”，发送前主动解除焦点。
+- 页面背景为静态系统背景，键盘弹出和消息发送时没有额外的全屏重绘。
 
 ## 教练请求超时与停止
 

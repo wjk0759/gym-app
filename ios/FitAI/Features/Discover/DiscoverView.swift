@@ -3,7 +3,6 @@ import SwiftUI
 /// 发现：认器械、学动作、找训练与饮食方案。把原来分散在“器械”Tab 的能力收进一个入口。
 struct DiscoverView: View {
     @Environment(AppStore.self) private var store
-    @Environment(\.colorScheme) private var colorScheme
 
     @State private var showEquipmentScan = false
     @State private var showBodyAnalysis = false
@@ -37,14 +36,9 @@ struct DiscoverView: View {
         NavigationStack {
             AppScrollView {
                 VStack(alignment: .leading, spacing: AppLayout.sectionSpacing) {
-                    header
-                        .staggerIn(0)
                     equipmentHero
-                        .staggerIn(1)
                     quickGrid
-                        .staggerIn(2)
                     actionReviewCard
-                        .staggerIn(3)
 
                     VStack(alignment: .leading, spacing: 10) {
                         SectionTitle(title: "训练方案", subtitle: "先选分化，再让教练排动作。")
@@ -108,16 +102,19 @@ struct DiscoverView: View {
             }
             .background(AppBackground())
             .navigationTitle("发现")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .sheet(isPresented: $showEquipmentScan) {
-                EquipmentRecognitionView(
-                    onSaved: { item in
-                        store.toast = "已加入个人动作库：\(item.name)"
-                    },
-                    onRecognized: { result in
-                        store.coachEquipmentResult = result
-                    }
-                )
+                NavigationStack {
+                    EquipmentRecognitionView(
+                        isModal: true,
+                        onSaved: { item in
+                            store.toast = "已加入个人动作库：\(item.name)"
+                        },
+                        onRecognized: { result in
+                            store.coachEquipmentResult = result
+                        }
+                    )
+                }
             }
             .sheet(isPresented: $showBodyAnalysis) {
                 BodyPhotoAnalysisView()
@@ -155,48 +152,13 @@ struct DiscoverView: View {
         }
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text("发现")
-                .font(AppType.display)
-                .tracking(-0.6)
-                .foregroundStyle(Theme.primaryText)
-            Text("认器械，学动作，找方案。")
-                .font(AppType.body)
-                .foregroundStyle(Theme.secondaryText)
-        }
-    }
-
     private var equipmentHero: some View {
         Button {
-            Haptics.tap()
             showEquipmentScan = true
         } label: {
             ZStack(alignment: .topTrailing) {
-                RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Theme.accent,
-                                Theme.accentDeep,
-                                Theme.accentSecondary
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .overlay(alignment: .topTrailing) {
-                        RadialGradient(
-                            colors: [
-                                Color.white.opacity(colorScheme == .dark ? 0.24 : 0.10),
-                                .clear
-                            ],
-                            center: .topTrailing,
-                            startRadius: 2,
-                            endRadius: 200
-                        )
-                        .allowsHitTesting(false)
-                    }
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Theme.accent)
 
                 HeroGlyph(
                     symbol: "dumbbell.fill",
@@ -207,26 +169,24 @@ struct DiscoverView: View {
 
                 VStack(alignment: .leading, spacing: 9) {
                     Text("不认识器械？")
-                        .font(.system(size: 25, weight: .heavy, design: .rounded))
-                        .tracking(-0.3)
-                        .foregroundStyle(Theme.onAccent.opacity(0.88))
+                        .font(AppType.title)
+                        .foregroundStyle(Theme.onAccent)
                     Text("拍给我。识别后直接告诉你练什么、怎么练。")
-                        .font(AppType.caption)
-                        .foregroundStyle(Theme.onAccent.opacity(0.74))
+                        .font(AppType.callout)
+                        .foregroundStyle(Theme.onAccent.opacity(0.8))
                         .fixedSize(horizontal: false, vertical: true)
                     Label("拍器械", systemImage: "camera.fill")
-                        .font(AppType.caption.weight(.bold))
-                        .foregroundStyle(Theme.onMedia)
-                        .padding(.horizontal, 13)
-                        .padding(.vertical, 8)
-                        .background(Color.black.opacity(0.72), in: Capsule())
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.onAccent)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(.ultraThinMaterial, in: Capsule())
                 }
-                .padding(19)
+                .padding(20)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(maxWidth: .infinity, minHeight: 152, alignment: .topLeading)
-            .clipShape(RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous))
-            .shadow(color: Theme.accent.opacity(0.22), radius: 18, y: 10)
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -424,18 +384,10 @@ struct DiscoverView: View {
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(11)
+        .padding(12)
         .background(
-            LinearGradient(
-                colors: [item.color.opacity(0.10), Theme.cardSurface],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            ),
+            Theme.cardSurface,
             in: RoundedRectangle(cornerRadius: 15, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .stroke(item.color.opacity(0.14), lineWidth: 0.8)
         )
     }
 }

@@ -65,30 +65,23 @@ enum Haptics {
     }
 }
 
-/// 大卡片/导航卡片的按压反馈：轻微缩放 + 变暗 + 一次轻触感。
+/// Native-like press highlight for card and compact buttons.
 struct CardPressStyle: ButtonStyle {
-    var scale: CGFloat = 0.978
+    var scale: CGFloat = 1
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? scale : 1)
-            .opacity(configuration.isPressed ? 0.93 : 1)
-            .animation(Motion.press, value: configuration.isPressed)
-            .onChange(of: configuration.isPressed) { _, pressed in
-                if pressed { Haptics.tap() }
-            }
+            .opacity(configuration.isPressed ? 0.65 : 1)
     }
 }
 
-/// 小控件（胶囊、图标按钮）的按压反馈：只做缩放，不加触感以免过密。
+/// Native-like press highlight for compact controls.
 struct SubtlePressStyle: ButtonStyle {
-    var scale: CGFloat = 0.94
+    var scale: CGFloat = 1
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? scale : 1)
-            .opacity(configuration.isPressed ? 0.9 : 1)
-            .animation(Motion.press, value: configuration.isPressed)
+            .opacity(configuration.isPressed ? 0.55 : 1)
     }
 }
 
@@ -259,14 +252,11 @@ struct ValueStepperControl: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 52)
-        .background {
-            SoftSurface(
-                cornerRadius: 14,
-                tint: Theme.surfaceStrong,
-                stroke: Theme.stroke
-            )
-        }
-        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(
+            Color(.secondarySystemFill),
+            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private func stepButton(
@@ -276,19 +266,12 @@ struct ValueStepperControl: View {
     ) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 20, weight: .bold))
-                .foregroundStyle(enabled ? Theme.accent : Theme.tertiaryText.opacity(0.35))
+                .font(.system(size: 20, weight: .semibold))
                 .frame(width: 54, height: 52)
-                .background {
-                    SoftSurface(
-                        cornerRadius: 15,
-                        tint: enabled ? Theme.accent.opacity(0.13) : Theme.surface,
-                        stroke: enabled ? Theme.accent.opacity(0.28) : Theme.stroke
-                    )
-                }
-                .contentShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+                .contentShape(Rectangle())
         }
-        .buttonStyle(SubtlePressStyle(scale: 0.92))
+        .buttonStyle(.bordered)
+        .controlSize(.large)
         .buttonRepeatBehavior(.enabled)
         .disabled(!enabled)
         .accessibilityLabel(symbol == "minus" ? "减少\(title)" : "增加\(title)")

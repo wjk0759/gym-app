@@ -36,12 +36,12 @@
 
 ### 主题
 
-- `Core/Design/Theme.swift` 使用动态 `UIColor` 语义色，随 iOS 浅色/深色模式切换。
-- `Core/Design/Atmosphere.swift` 根据天气和时段生成背景、强调色、雨雪强度、风速和云量。
-- 背景只使用静态色场和渐变表达时段/天气，不创建 `Canvas`、`TimelineView` 或逐帧动画层；雨雪强度只影响颜色和文案。
+- `Core/Design/Theme.swift` 直接使用系统 semantic colors，随浅色/深色、对比度和 Liquid Glass 自动适配。
+- `Core/Design/Atmosphere.swift` 根据天气和时段生成天气胶囊的语义色、雨雪强度、风速和云量。
+- 页面背景统一为系统 `systemGroupedBackground`，不创建 `Canvas`、`TimelineView`、mesh 或逐帧动画层。
 - 时段：早上 05:00–10:59、中午 11:00–15:59、傍晚 16:00–18:59、晚上其余时间。
-- 卡片采用分层玻璃：导航和悬浮输入框使用原生 Material；主训练卡和普通列表卡使用半透明 tint、渐变高光和细边框，避免每张卡都做 blur。
-- 为保证 120Hz 下的滚动、弹层和路由转场，所有页面共享静态背景；打开 Sheet、全屏页或推入新页面时不会额外创建全屏绘制层。
+- 卡片使用系统 `secondarySystemGroupedBackground`；只有导航、Tab Bar 和悬浮输入框使用原生 Material，普通卡片不做 blur。
+- 为保证 120Hz 下的滚动、弹层和路由转场，所有页面共享静态系统背景；打开 Sheet、全屏页或推入新页面时不会额外创建全屏绘制层。
 
 ## 测试清单
 

@@ -1,6 +1,5 @@
 import Combine
 import SwiftUI
-import UIKit
 
 struct RootView: View {
     @Environment(AppStore.self) private var store
@@ -8,11 +7,8 @@ struct RootView: View {
     @Environment(SubscriptionManager.self) private var subscriptions
     @Environment(WeatherStore.self) private var weather
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var splashPulse = false
     @State private var phaseNow = Date()
-    @State private var keyboardVisible = false
     @State private var syncedUserID: String?
     @State private var toastDismissTask: Task<Void, Never>?
 
@@ -41,16 +37,6 @@ struct RootView: View {
             }
         }
         .environment(\.weatherAtmosphere, atmosphere)
-        .environment(\.keyboardVisible, keyboardVisible)
-        .fontDesign(.rounded)
-        .tint(atmosphere.accent(for: colorScheme))
-        // 全屏水珠层会持续参与合成；雨天效果保留在背景天空里，避免影响滚动和输入。
-        .overlay {
-            KeyboardDismissInstaller()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
-        }
         .overlay(alignment: .top) {
             if let message = store.toast, !message.isEmpty {
                 ToastBanner(message: message)
@@ -64,7 +50,6 @@ struct RootView: View {
         .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: auth.isRestoring)
         .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: auth.isAuthenticated)
         .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: store.profile.isOnboarded)
-        .animation(Motion.resolved(.easeInOut(duration: 0.9), reduceMotion: reduceMotion), value: atmosphere.isPrecipitation)
         .sensoryFeedback(.success, trigger: auth.isAuthenticated) { _, isAuthenticated in
             isAuthenticated
         }
@@ -96,15 +81,8 @@ struct RootView: View {
                 activateWeatherIfNeeded()
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
-            keyboardVisible = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            keyboardVisible = false
-        }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active {
-                keyboardVisible = false
                 store.flushPersistence()
             } else {
                 phaseNow = Date()
@@ -135,36 +113,22 @@ struct RootView: View {
     }
 
     private var screenTransition: AnyTransition {
-        guard !reduceMotion else { return .opacity }
-        return .asymmetric(
-            insertion: .opacity.combined(with: .scale(scale: 0.985)),
-            removal: .opacity
-        )
+        .opacity
     }
 
     private var splash: some View {
         VStack(spacing: 18) {
             ZStack {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(Theme.buttonGradient)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Theme.accent)
                     .frame(width: 72, height: 72)
-                    .shadow(color: Theme.accent.opacity(0.38), radius: 20, y: 8)
                 Image(systemName: "figure.strengthtraining.traditional")
-                    .font(.system(size: 31, weight: .bold))
+                    .font(.system(size: 31, weight: .semibold))
                     .foregroundStyle(Theme.onAccent)
             }
-            .scaleEffect(splashPulse ? 1.05 : 1)
-            .animation(
-                reduceMotion
-                    ? nil
-                    : .easeInOut(duration: 1.6).repeatForever(autoreverses: true),
-                value: splashPulse
-            )
-            .onAppear { splashPulse = true }
 
             Text("练途")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .tracking(-0.3)
+                .font(AppType.hero)
                 .foregroundStyle(Theme.primaryText)
             ProgressView()
                 .tint(Theme.accent)

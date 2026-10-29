@@ -184,21 +184,8 @@ struct CustomWorkoutBuilderView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(
-            RadialGradient(
-                colors: [Theme.accent.opacity(0.16), .clear],
-                center: .topLeading,
-                startRadius: 2,
-                endRadius: 260
-            ),
-            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
-        )
-        .background(
             Theme.surface,
             in: RoundedRectangle(cornerRadius: 20, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Theme.stroke, lineWidth: 1)
         )
     }
 

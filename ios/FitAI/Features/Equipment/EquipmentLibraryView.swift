@@ -63,7 +63,6 @@ struct EquipmentLibraryView: View {
         return AppScrollView {
             VStack(spacing: 16) {
                 overviewCard
-                libraryTools
                 librarySectionHeader(count: items.count)
 
                 if items.isEmpty {
@@ -84,8 +83,16 @@ struct EquipmentLibraryView: View {
         .background(AppBackground())
         .navigationTitle("器械库")
         .navigationBarTitleDisplayMode(.inline)
+        .searchable(text: $query, prompt: "搜索我的器械")
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                NavigationLink {
+                    EquipmentRecognitionView()
+                } label: {
+                    Image(systemName: "camera.viewfinder")
+                }
+                .accessibilityLabel("拍照或相册添加器械")
+
                 Button {
                     activeSheet = .manual
                 } label: {
@@ -182,72 +189,6 @@ struct EquipmentLibraryView: View {
             .tint(Theme.accent)
         }
         .card(padding: 18)
-    }
-
-    private var libraryTools: some View {
-        HStack(spacing: 8) {
-            HStack(spacing: 9) {
-                Image(systemName: "magnifyingglass")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(Theme.tertiaryText)
-
-                TextField("搜索我的器械", text: $query)
-                    .textInputAutocapitalization(.never)
-                    .foregroundStyle(Theme.primaryText)
-                    .submitLabel(.search)
-                    .onChange(of: query) { _, value in
-                        if value.count > 60 {
-                            query = String(value.prefix(60))
-                        }
-                    }
-
-                if !query.isEmpty {
-                    Button {
-                        query = ""
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.subheadline)
-                            .foregroundStyle(Theme.tertiaryText)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("清空搜索")
-                }
-            }
-            .padding(.leading, 13)
-            .padding(.trailing, 10)
-            .padding(.vertical, 11)
-            .background(
-                Theme.surfaceStrong,
-                in: RoundedRectangle(cornerRadius: 15, style: .continuous)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .stroke(Theme.stroke, lineWidth: 1)
-            )
-
-            NavigationLink {
-                EquipmentRecognitionView()
-            } label: {
-                Image(systemName: "camera.viewfinder")
-                    .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(Theme.onAccent.opacity(0.86))
-                    .frame(width: 46, height: 46)
-                    .background(
-                        LinearGradient(
-                            colors: [Theme.accent, Theme.accentDeep],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(Color.white.opacity(0.18), lineWidth: 0.8)
-                    )
-                    .shadow(color: Theme.accent.opacity(0.16), radius: 12, y: 6)
-            }
-            .accessibilityLabel("拍照或相册添加器械")
-        }
     }
 
     private func librarySectionHeader(count: Int) -> some View {
@@ -352,13 +293,7 @@ struct EquipmentLibraryView: View {
     private func libraryThumbnail(_ item: EquipmentItem) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Theme.accent.opacity(0.16), Theme.surface],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                .fill(Theme.surface)
             if let data = item.photoData {
                 EquipmentThumbnail(itemID: item.id, data: data)
             } else {

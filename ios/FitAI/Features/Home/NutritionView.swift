@@ -592,18 +592,6 @@ struct AddFoodView: View {
                         .card(padding: 12)
                     }
 
-                    TextField("搜索食物，例如：螺蛳粉、奶茶、鸡胸肉", text: $query)
-                        .onChange(of: query) { _, value in
-                            if value.count > 60 {
-                                query = String(value.prefix(60))
-                            }
-                        }
-                        .padding(12)
-                        .background(
-                            Theme.surfaceStrong,
-                            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        )
-
                     Text("记录是为了了解，不是为了给食物打分。奶茶、火锅、螺蛳粉都可以记。")
                         .font(.caption2)
                         .foregroundStyle(Theme.tertiaryText)
@@ -669,6 +657,7 @@ struct AddFoodView: View {
             .background(AppBackground())
             .navigationTitle("记录食物")
             .navigationBarTitleDisplayMode(.inline)
+            .searchable(text: $query, prompt: "搜索食物")
             .toolbar {
                 if addedFoods.isEmpty {
                     ToolbarItem(placement: .cancellationAction) {

@@ -57,7 +57,7 @@ struct EquipmentSelectionPanelView: View {
             Spacer(minLength: 4)
 
             if !exercises.isEmpty {
-                Button("清空", action: onClear)
+                Button("清空", role: .destructive, action: onClear)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Theme.tertiaryText)
             }
@@ -228,19 +228,8 @@ struct EquipmentSelectionPanelView: View {
             .foregroundStyle(primary ? Theme.onAccent.opacity(0.90) : Theme.primaryText)
             .padding(12)
             .background {
-                if primary {
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [Theme.accent, Theme.accentDeep],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                } else {
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .fill(Theme.surfaceStrong)
-                }
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .fill(primary ? Theme.accent : Theme.surfaceStrong)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 15, style: .continuous)

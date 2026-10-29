@@ -21,182 +21,53 @@ enum WorkoutPickerOptions {
     }
 }
 
-/// A compact field that opens a native wheel picker sheet.
-/// Reused by both the workout composer and the in-session adjust sheet.
+/// Native menu picker used by workout and composer forms.
 struct WheelPickerField<Value: Hashable>: View {
     let title: String
     @Binding var selection: Value
     let options: [Value]
     let display: (Value) -> String
 
-    @State private var showPicker = false
-    @State private var draft: Value
-
-    init(
-        title: String,
-        selection: Binding<Value>,
-        options: [Value],
-        display: @escaping (Value) -> String
-    ) {
-        self.title = title
-        _selection = selection
-        self.options = options
-        self.display = display
-        _draft = State(initialValue: selection.wrappedValue)
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.system(size: 10.5))
-                .foregroundStyle(Theme.tertiaryText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
                 .lineLimit(1)
-
-            Button {
-                Haptics.tap()
-                draft = selection
-                showPicker = true
-            } label: {
-                HStack(spacing: 4) {
-                    Text(display(selection))
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Theme.primaryText)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                    Spacer(minLength: 0)
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-                .padding(.horizontal, 9)
-                .frame(height: 46)
-                .background {
-                    SoftSurface(
-                        cornerRadius: 10,
-                        tint: Theme.surfaceStrong,
-                        stroke: Theme.stroke
-                    )
-                }
-            }
-            .buttonStyle(SubtlePressStyle(scale: 0.98))
-            .accessibilityLabel("选择\(title)")
-            .sheet(isPresented: $showPicker) {
-                WheelPickerSheet(
-                    title: title,
-                    options: options,
-                    selection: $draft,
-                    display: display
-                ) {
-                    selection = draft
-                }
-                .presentationDetents([.height(320)])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(Theme.background)
-            }
-        }
-    }
-}
-
-private struct WheelPickerSheet<Value: Hashable>: View {
-    @Environment(\.dismiss) private var dismiss
-
-    let title: String
-    let options: [Value]
-    @Binding var selection: Value
-    let display: (Value) -> String
-    let onConfirm: () -> Void
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button("取消") { dismiss() }
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.secondaryText)
-
-                Spacer()
-
-                Text(title)
-                    .font(.headline)
-                    .foregroundStyle(Theme.primaryText)
-
-                Spacer()
-
-                Button("确认") {
-                    onConfirm()
-                    dismiss()
-                }
-                .font(.subheadline.weight(.bold))
-                .foregroundStyle(Theme.accent)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-
-            Rectangle()
-                .fill(Theme.stroke)
-                .frame(height: 1)
 
             Picker(title, selection: $selection) {
                 ForEach(options, id: \.self) { option in
-                    Text(display(option))
-                        .tag(option)
+                    Text(display(option)).tag(option)
                 }
             }
-            .pickerStyle(.wheel)
+            .pickerStyle(.menu)
             .labelsHidden()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .padding(.horizontal, 12)
+            .background(
+                Color(.secondarySystemFill),
+                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+            )
+            .accessibilityLabel("选择\(title)")
         }
-        .background(Theme.background)
     }
 }
 
-/// 统一的滑动分段选择器：选中块用 matchedGeometry 滑动，带触感反馈。
+/// Native segmented picker used across forms and filters.
 struct AnimatedSegmentedControl<Item: Hashable>: View {
     let items: [Item]
     @Binding var selection: Item
     let label: (Item) -> String
 
-    @Namespace private var namespace
-
     var body: some View {
-        HStack(spacing: 3) {
+        Picker(selection: $selection) {
             ForEach(items, id: \.self) { item in
-                Button {
-                    guard selection != item else { return }
-                    Haptics.select()
-                    withAnimation(Motion.quick) {
-                        selection = item
-                    }
-                } label: {
-                    Text(label(item))
-                        .font(AppType.chip)
-                        .foregroundStyle(selection == item ? Theme.accent : Theme.secondaryText)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 9)
-                        .background {
-                            if selection == item {
-                                SoftSurface(
-                                    cornerRadius: 10,
-                                    tint: Theme.accent.opacity(0.16),
-                                    stroke: Theme.accent.opacity(0.38)
-                                )
-                                .matchedGeometryEffect(id: "segment", in: namespace)
-                            }
-                        }
-                }
-                .buttonStyle(SubtlePressStyle(scale: 0.96))
-                .accessibilityAddTraits(selection == item ? .isSelected : [])
+                Text(label(item)).tag(item)
             }
+        } label: {
+            EmptyView()
         }
-        .padding(3)
-        .background {
-            SoftSurface(
-                cornerRadius: 13,
-                tint: Theme.surface,
-                stroke: Theme.stroke
-            )
-        }
+        .pickerStyle(.segmented)
     }
 }
 

@@ -9,12 +9,15 @@ struct EquipmentRecognitionView: View {
     private let onSelect: ((Exercise) -> Void)?
     private let onSaved: ((EquipmentItem) -> Void)?
     private let onRecognized: ((EquipmentScanResult) -> Void)?
+    private let isModal: Bool
 
     init(
+        isModal: Bool = false,
         onSelect: ((Exercise) -> Void)? = nil,
         onSaved: ((EquipmentItem) -> Void)? = nil,
         onRecognized: ((EquipmentScanResult) -> Void)? = nil
     ) {
+        self.isModal = isModal
         self.onSelect = onSelect
         self.onSaved = onSaved
         self.onRecognized = onRecognized
@@ -50,15 +53,14 @@ struct EquipmentRecognitionView: View {
         .background(AppBackground())
         .navigationTitle("器械识别")
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(true)
+        .navigationBarBackButtonHidden(isModal)
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark")
+            if isModal {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("关闭", role: .cancel) {
+                        dismiss()
+                    }
                 }
-                .accessibilityLabel("关闭器械识别")
             }
         }
         .onChange(of: photoItem) { _, _ in

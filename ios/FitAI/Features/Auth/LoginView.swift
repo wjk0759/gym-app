@@ -19,7 +19,6 @@ enum LegalDocumentKind: String, Identifiable {
 
 struct LoginView: View {
     @Environment(AuthStore.self) private var auth
-    @Environment(\.colorScheme) private var colorScheme
 
     private enum Mode: String, CaseIterable, Identifiable {
         case phone = "手机验证码"
@@ -74,8 +73,6 @@ struct LoginView: View {
 
             ZStack {
                 AppBackground()
-                authGlow
-                    .allowsHitTesting(false)
                 Color.clear
                     .contentShape(Rectangle())
                     .onTapGesture { focusedField = nil }
@@ -160,23 +157,12 @@ struct LoginView: View {
         }
     }
 
-    private var authGlow: some View {
-        RadialGradient(
-            colors: [Theme.accent.opacity(0.14), .clear],
-            center: .top,
-            startRadius: 0,
-            endRadius: 360
-        )
-        .ignoresSafeArea()
-    }
-
     private func header(compact: Bool) -> some View {
         HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: compact ? 13 : 15, style: .continuous)
-                    .fill(Theme.buttonGradient)
+                RoundedRectangle(cornerRadius: compact ? 12 : 14, style: .continuous)
+                    .fill(Theme.accent)
                     .frame(width: compact ? 42 : 48, height: compact ? 42 : 48)
-                    .shadow(color: Theme.accent.opacity(0.34), radius: 16, y: 8)
                 Image(systemName: "figure.strengthtraining.traditional")
                     .font(.system(size: compact ? 19 : 22, weight: .bold))
                     .foregroundStyle(Theme.onAccent)
@@ -211,8 +197,7 @@ struct LoginView: View {
     private func headline(compact: Bool) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("登录练途")
-                .font(.system(size: compact ? 27 : 34, weight: .bold, design: .rounded))
-                .tracking(-0.5)
+                .font(compact ? AppType.title : AppType.display)
                 .foregroundStyle(Theme.primaryText)
             Text("同步训练计划、记录和 AI 复盘")
                 .font(compact ? AppType.caption : AppType.body)
@@ -277,43 +262,14 @@ struct LoginView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(compact ? 16 : 18)
-        .background {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Theme.cardSurface)
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.05),
-                            Color.white.opacity(0.012)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: colorScheme == .dark
-                            ? [
-                                Color.white.opacity(0.16),
-                                Color.white.opacity(0.03)
-                            ]
-                            : [
-                                Theme.cardEdge,
-                                Color.black.opacity(0.035)
-                            ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 0.9
-                )
+        .background(
+            Theme.cardSurface,
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
         )
-        .shadow(color: Color.black.opacity(0.28), radius: 24, y: 14)
-        .motionAnimation(Motion.quick, value: mode)
-        .motionAnimation(Motion.quick, value: errorText)
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Theme.stroke, lineWidth: 0.5)
+        )
     }
 
     private var modeSwitch: some View {

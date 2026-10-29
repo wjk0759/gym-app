@@ -21,61 +21,44 @@ struct HomeView: View {
             AppScrollView {
                 VStack(spacing: AppLayout.sectionSpacing) {
                     greeting
-                        .staggerIn(0)
 
                     if let advisory = weather.snapshot?.alertKind {
                         weatherAdvisory(advisory)
-                            .staggerIn(1)
                     }
 
                     coachHero
-                        .staggerIn(1)
 
                     // Today action first, then nutrition, goal and weekly review.
                     todaySection
-                        .staggerIn(2)
-                        .softContentTransition()
 
                     if store.plan != nil && !store.isGenerating {
                         nutritionCard
-                            .staggerIn(3)
-                            .softContentTransition()
                     }
 
                     if !missed.isEmpty {
                         missedPlanCard(missed)
-                            .staggerIn(4)
-                            .softContentTransition()
                     }
 
                     GoalCardView {
                         bodyCheckInManual = true
                         showBodyCheckIn = true
                     }
-                    .staggerIn(5)
 
                     weekCard
-                        .staggerIn(6)
-                        .softContentTransition()
 
                     if let plan = store.plan,
                        period?.mode != .rest,
                        !store.isGenerating {
                         aiReviewCard(plan: plan)
-                            .staggerIn(7)
-                            .softContentTransition()
                     }
                 }
-                .motionAnimation(Motion.smooth, value: store.isGenerating)
-                .motionAnimation(Motion.smooth, value: store.plan?.version)
-                .motionAnimation(Motion.smooth, value: store.todayDay?.id)
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
                 .padding(.bottom, 28)
             }
             .background(AppBackground())
             .navigationTitle("今日")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .fullScreenCover(isPresented: $showCompose, onDismiss: presentPendingWorkout) {
                 if let day = store.todayDay {
                     CustomWorkoutBuilderView(
@@ -274,50 +257,30 @@ struct HomeView: View {
 
     private var coachHero: some View {
         ZStack(alignment: .topTrailing) {
-            RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Theme.accent,
-                            Theme.accentDeep,
-                            Theme.accentSecondary
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(alignment: .topTrailing) {
-                    RadialGradient(
-                        colors: [Color.white.opacity(0.26), .clear],
-                        center: .topTrailing,
-                        startRadius: 2,
-                        endRadius: 220
-                    )
-                    .allowsHitTesting(false)
-                }
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Theme.accent)
 
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
                     Text("练途")
-                        .font(.system(size: 14, weight: .black, design: .rounded))
+                        .font(AppType.headline)
                     Text("AI FITNESS CLUB")
-                        .font(.system(size: 8, weight: .bold))
-                        .tracking(2.0)
-                        .opacity(0.58)
+                        .font(AppType.micro)
+                        .tracking(1.5)
+                        .opacity(0.7)
                 }
-                .foregroundStyle(Theme.onAccent.opacity(0.80))
+                .foregroundStyle(Theme.onAccent)
 
                 HStack(alignment: .center, spacing: 4) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("不画饼，\n只把今天练明白。")
-                            .font(.system(size: 26, weight: .heavy, design: .rounded))
-                            .tracking(-0.4)
-                            .foregroundStyle(Theme.onAccent.opacity(0.92))
+                            .font(AppType.title)
+                            .foregroundStyle(Theme.onAccent)
                             .fixedSize(horizontal: false, vertical: true)
 
                         Text("训练、饮食、动作点评，直接跟教练说。")
-                            .font(AppType.caption.weight(.semibold))
-                            .foregroundStyle(Theme.onAccent.opacity(0.72))
+                            .font(AppType.callout)
+                            .foregroundStyle(Theme.onAccent.opacity(0.8))
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
@@ -328,59 +291,32 @@ struct HomeView: View {
                         size: 104,
                         tint: Theme.onAccent
                     )
-                    .offset(x: 8, y: 4)
                 }
 
                 HStack(spacing: 8) {
                     Button {
-                        Haptics.tap()
                         store.selectedTab = 2
                     } label: {
                         Label("找教练聊聊", systemImage: "arrow.up.right")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(Theme.onMedia)
-                            .padding(.horizontal, 13)
-                            .padding(.vertical, 9)
-                            .background(Color.black.opacity(0.72), in: Capsule())
                     }
-                    .buttonStyle(SubtlePressStyle(scale: 0.96))
+                    .buttonStyle(.bordered)
+                    .tint(.white)
 
                     Button {
-                        Haptics.tap()
                         store.selectedTab = 3
                     } label: {
                         Label("发现方案", systemImage: "square.grid.2x2")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(Color.black.opacity(0.78))
-                            .padding(.horizontal, 13)
-                            .padding(.vertical, 9)
-                            .background(Color.white.opacity(0.34), in: Capsule())
                     }
-                    .buttonStyle(SubtlePressStyle(scale: 0.96))
+                    .buttonStyle(.bordered)
+                    .tint(.white)
                 }
-                .padding(.top, 2)
+                .font(AppType.caption)
             }
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity)
-        .clipShape(RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.46),
-                            Color.white.opacity(0.08),
-                            Color.black.opacity(0.12)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 0.9
-                )
-        }
-        .shadow(color: Theme.accent.opacity(0.24), radius: 20, y: 12)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private var timeGreeting: String {
@@ -607,7 +543,7 @@ struct HomeView: View {
                     .font(.headline)
                     .foregroundStyle(Theme.primaryText)
                 Spacer()
-                Button("放弃") {
+                Button("放弃", role: .destructive) {
                     store.clearWorkoutDraft(dayID: day.id)
                 }
                 .font(.caption.weight(.semibold))

@@ -176,13 +176,13 @@ cd E:\Projects\FitAI\backend
 
 本轮修改：
 
-- 删除 `Core/Design/WeatherSky.swift`，移除 `weatherAnimationActive` 环境键和所有 Canvas 引用；天气只影响静态背景色、强调色和文案。
-- `AppBackground` 只保留静态渐变，不再创建任何逐帧绘制层。
-- 移除 `GlassCardModifier` 的逐卡 shadow，保留半透明 tint、渐变高光和细边框；hero/悬浮元素仍按需保留独立阴影。
-- `PrimaryButtonStyle` 改为静态阴影，移除 `brightness` 动画，只保留透明度与轻微缩放。
-- `Haptics` 复用共享生成器，避免每次点击创建并预热 Taptic Engine。
-- Tab Bar 只保留 `UITabBarAppearance` 的 blur，移除 SwiftUI 叠加的 Material。
-- 视觉系统升级为静态 mesh 背景 + 一次性 grain 纹理 + `SoftSurface` 新拟态控件；仍保持不运行逐帧背景、不给普通卡片加 shadow。
-- 浅色模式单独调成暖纸底 + 实白卡片 + 深色 hairline，并把天气/环境光从紫青改为暖金与绿色，避免白卡片在白底上消失。
+- 删除 `Core/Design/WeatherSky.swift`，移除 `weatherAnimationActive` 环境键和所有 Canvas 引用；天气只影响天气胶囊和文案。
+- `AppBackground` 改为系统 `systemGroupedBackground`，不再创建任何自定义背景绘制层。
+- 移除 `GlassCardModifier` 的逐卡 shadow；卡片改用 `secondarySystemGroupedBackground` + 16pt continuous corner。
+- 删除 mesh/grain 背景和 `SoftSurface` 的新拟态渐变，改用系统 semantic fill。
+- `PrimaryButtonStyle` / `SecondaryButtonStyle` 改为纯色 tint 与系统 fill，不再动画阴影、亮度或缩放。
+- 移除 `UINavigationBarAppearance` / `UITabBarAppearance` 覆盖和 SwiftUI toolbar Material，交给 iOS 26 原生 Liquid Glass。
+- 恢复系统滚动条；移除自定义 stagger、soft transition 和全屏 glow。
+- 字体改用 Dynamic Type 的 semantic style，不再使用固定字号和全局圆体字。
 
 复测重点：首页打开 Sheet、首页推入饮食/记录页、其他 Tab 推入详情页、长列表滚动、连续点按主要按钮。若仍有转场掉帧，下一步应把 Sheet/全屏入口状态从大页面根部下沉到小 wrapper（参考 `SheetPresentingButton`），并拆分超大 body。

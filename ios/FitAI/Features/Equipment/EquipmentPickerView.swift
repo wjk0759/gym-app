@@ -114,13 +114,25 @@ struct EquipmentPickerView: View {
         .background(AppBackground())
         .navigationTitle(isPickingForSession ? "添加动作" : "动作库")
         .navigationBarTitleDisplayMode(.inline)
+        .searchable(
+            text: $query,
+            placement: .navigationBarDrawer(displayMode: .always),
+            prompt: "搜索动作、肌群或器械"
+        )
         .toolbar {
             if isPickingForSession {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }
                 }
             } else {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button {
+                        showScanner = true
+                    } label: {
+                        Image(systemName: "camera.viewfinder")
+                    }
+                    .accessibilityLabel("拍照识别器械")
+
                     NavigationLink {
                         EquipmentLibraryView()
                     } label: {
@@ -179,8 +191,6 @@ struct EquipmentPickerView: View {
     /// 搜索与器械分类固定在顶部，滚动只发生在动作列表里。
     private var equipmentTools: some View {
         VStack(alignment: .leading, spacing: 9) {
-            searchBar
-
             if isSearching {
                 searchScopeHint
             }
@@ -191,21 +201,9 @@ struct EquipmentPickerView: View {
         .padding(.top, 9)
         .padding(.bottom, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            Theme.chrome,
-            in: UnevenRoundedRectangle(
-                topLeadingRadius: 0,
-                bottomLeadingRadius: 20,
-                bottomTrailingRadius: 20,
-                topTrailingRadius: 0,
-                style: .continuous
-            )
-        )
+        .background(Theme.background)
         .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(Theme.stroke)
-                .frame(height: 1)
-                .padding(.horizontal, 16)
+            Divider()
         }
     }
 
@@ -330,80 +328,7 @@ struct EquipmentPickerView: View {
         }
     }
 
-    private var searchBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText.opacity(0.82))
 
-            TextField("搜索动作、肌群或器械", text: $query)
-                .font(.system(size: 14))
-                .textInputAutocapitalization(.never)
-                .foregroundStyle(Theme.primaryText)
-                .submitLabel(.search)
-                .onChange(of: query) { _, value in
-                    if value.count > 60 {
-                        query = String(value.prefix(60))
-                    }
-                }
-
-            if !query.isEmpty {
-                Button {
-                    Haptics.tap()
-                    query = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
-                        .frame(width: 24, height: 24)
-                }
-                .buttonStyle(SubtlePressStyle(scale: 0.9))
-                .accessibilityLabel("清空搜索")
-            }
-
-            if !isPickingForSession {
-                Button {
-                    Haptics.tap()
-                    showScanner = true
-                } label: {
-                    Image(systemName: "camera.viewfinder")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(Theme.accent)
-                        .frame(width: 34, height: 34)
-                        .background(
-                            Theme.accent.opacity(0.13),
-                            in: RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                .stroke(Theme.accent.opacity(0.12), lineWidth: 1)
-                        )
-                }
-                .buttonStyle(SubtlePressStyle(scale: 0.94))
-                .accessibilityLabel("拍照识别器械")
-            }
-        }
-        .padding(.leading, 13)
-        .padding(.trailing, 7)
-        .padding(.vertical, 6)
-        .frame(minHeight: 48)
-        .background(
-            LinearGradient(
-                colors: [Color.white.opacity(0.065), Color.white.opacity(0.032)],
-                startPoint: .top,
-                endPoint: .bottom
-            ),
-            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
-        )
-        .background(
-            Theme.surfaceStrong.opacity(0.72),
-            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .stroke(Theme.stroke, lineWidth: 1)
-        )
-    }
 
     private var muscleSidebar: some View {
         VStack(spacing: 1) {
@@ -416,20 +341,8 @@ struct EquipmentPickerView: View {
         .padding(.vertical, 5)
         .frame(width: 56)
         .background(
-            LinearGradient(
-                colors: [Color.white.opacity(0.028), Color.white.opacity(0.012)],
-                startPoint: .top,
-                endPoint: .bottom
-            ),
-            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
-        )
-        .background(
-            Theme.surface.opacity(0.86),
-            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .stroke(Theme.stroke, lineWidth: 1)
+            Theme.surface,
+            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
         )
     }
 
@@ -579,13 +492,7 @@ struct EquipmentPickerView: View {
         return VStack(alignment: .leading, spacing: 0) {
             ZStack {
                 RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(red: 0.17, green: 0.20, blue: 0.19), Theme.surface],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(Color(.tertiarySystemFill))
                     .frame(height: 102)
 
                 Circle()
