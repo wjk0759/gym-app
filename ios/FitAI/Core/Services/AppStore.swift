@@ -1873,8 +1873,32 @@ final class AppStore {
 
     private func load() {
         let started = CFAbsoluteTimeGetCurrent()
-        guard let data = try? Data(contentsOf: fileURL),
-              let state = try? JSONDecoder().decode(PersistedState.self, from: data) else {
+        let url = fileURL
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            resetInMemory()
+            return
+        }
+
+        let data: Data
+        do {
+            data = try Data(contentsOf: url)
+        } catch {
+            NSLog("FitAI state read failed: %@", error.localizedDescription)
+            resetInMemory()
+            return
+        }
+
+        let state: PersistedState
+        do {
+            state = try JSONDecoder().decode(PersistedState.self, from: data)
+        } catch {
+            // Never silently overwrite an unreadable state file: keep a
+            // timestamped copy so a user can recover a bad migration/build.
+            let backup = url.deletingLastPathComponent().appendingPathComponent(
+                "\(url.deletingPathExtension().lastPathComponent)-corrupt-\(Int(Date().timeIntervalSince1970)).json"
+            )
+            try? FileManager.default.copyItem(at: url, to: backup)
+            NSLog("FitAI state decode failed; backup=%@ error=%@", backup.lastPathComponent, error.localizedDescription)
             resetInMemory()
             return
         }

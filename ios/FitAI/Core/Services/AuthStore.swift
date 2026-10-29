@@ -364,7 +364,10 @@ final class AuthStore {
             throw AuthError(message: message)
         }
         if T.self == EmptyResponse.self {
-            return EmptyResponse() as! T
+            guard let empty = EmptyResponse() as? T else {
+                throw AuthError(message: "登录响应格式异常，请稍后重试")
+            }
+            return empty
         }
         return try JSONDecoder().decode(T.self, from: data)
     }
