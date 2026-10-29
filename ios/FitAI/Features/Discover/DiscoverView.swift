@@ -3,7 +3,6 @@ import SwiftUI
 /// 发现：认器械、学动作、找训练与饮食方案。把原来分散在“器械”Tab 的能力收进一个入口。
 struct DiscoverView: View {
     @Environment(AppStore.self) private var store
-    @Environment(\.colorScheme) private var colorScheme
 
     @State private var showEquipmentScan = false
     @State private var showBodyAnalysis = false
@@ -174,34 +173,24 @@ struct DiscoverView: View {
         } label: {
             ZStack(alignment: .topTrailing) {
                 RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
+                    .fill(.thinMaterial)
+
+                RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
-                                Theme.accent,
-                                Theme.accentDeep,
-                                Theme.accentSecondary
+                                Theme.accent.opacity(0.24),
+                                Theme.accentDeep.opacity(0.07)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
-                    .overlay(alignment: .topTrailing) {
-                        RadialGradient(
-                            colors: [
-                                Color.white.opacity(colorScheme == .dark ? 0.24 : 0.10),
-                                .clear
-                            ],
-                            center: .topTrailing,
-                            startRadius: 2,
-                            endRadius: 200
-                        )
-                        .allowsHitTesting(false)
-                    }
 
                 HeroGlyph(
                     symbol: "dumbbell.fill",
                     size: 146,
-                    tint: Theme.onAccent
+                    tint: Theme.accent
                 )
                 .offset(x: 22, y: 24)
 
@@ -209,24 +198,37 @@ struct DiscoverView: View {
                     Text("不认识器械？")
                         .font(.system(size: 25, weight: .heavy, design: .rounded))
                         .tracking(-0.3)
-                        .foregroundStyle(Theme.onAccent.opacity(0.88))
+                        .foregroundStyle(Theme.primaryText)
                     Text("拍给我。识别后直接告诉你练什么、怎么练。")
                         .font(AppType.caption)
-                        .foregroundStyle(Theme.onAccent.opacity(0.74))
+                        .foregroundStyle(Theme.secondaryText)
                         .fixedSize(horizontal: false, vertical: true)
                     Label("拍器械", systemImage: "camera.fill")
                         .font(AppType.caption.weight(.bold))
-                        .foregroundStyle(Theme.onMedia)
+                        .foregroundStyle(Theme.onAccent)
                         .padding(.horizontal, 13)
                         .padding(.vertical, 8)
-                        .background(Color.black.opacity(0.72), in: Capsule())
+                        .background {
+                            Capsule(style: .continuous)
+                                .fill(.ultraThinMaterial)
+                            Capsule(style: .continuous)
+                                .fill(Theme.accent.opacity(0.88))
+                        }
+                        .overlay {
+                            Capsule(style: .continuous)
+                                .strokeBorder(Color.white.opacity(0.14), lineWidth: 0.7)
+                        }
                 }
                 .padding(19)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(maxWidth: .infinity, minHeight: 152, alignment: .topLeading)
             .clipShape(RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous))
-            .shadow(color: Theme.accent.opacity(0.22), radius: 18, y: 10)
+            .overlay {
+                RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
+                    .strokeBorder(Theme.stroke, lineWidth: 0.8)
+            }
+            .shadow(color: Color.black.opacity(0.24), radius: 16, y: 8)
         }
         .buttonStyle(.plain)
     }

@@ -1052,16 +1052,16 @@ struct CoachChatView: View {
             RoundedRectangle(cornerRadius: 26, style: .continuous)
                 .stroke(
                     focused
-                        ? Theme.accent.opacity(0.55)
-                        : Color.white.opacity(colorScheme == .dark ? 0.22 : 0.68),
-                    lineWidth: focused ? 1.1 : 0.8
+                        ? Theme.accent.opacity(0.38)
+                        : Theme.stroke,
+                    lineWidth: focused ? 1.0 : 0.7
                 )
                 .animation(Motion.quick, value: focused)
         }
         .shadow(
-            color: Theme.shadow.opacity(colorScheme == .dark ? 0.42 : 0.20),
-            radius: 18,
-            y: 8
+            color: Theme.shadow.opacity(colorScheme == .dark ? 0.30 : 0.14),
+            radius: 16,
+            y: 7
         )
         .padding(.horizontal, 10)
         .padding(.top, 6)

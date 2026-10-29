@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// A restrained Apple-style glass surface.
+/// A restrained frosted surface.
 ///
-/// Real blur is reserved for the coach input and native navigation. Cards use
-/// a translucent tint + highlight instead, which keeps the material look
-/// without paying for a blur per row.
+/// Content cards use `thinMaterial`; floating controls use `regularMaterial`.
+/// A single translucent tint and a hairline replace the old gloss gradients,
+/// which is what made the first pass read as plastic.
 struct GlassSurface: View {
     var cornerRadius: CGFloat = AppLayout.cardCornerRadius
     var material: Bool = false
@@ -14,34 +14,31 @@ struct GlassSurface: View {
 
     var body: some View {
         ZStack {
-            if material {
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(.ultraThinMaterial)
-            }
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(material ? Material.regularMaterial : Material.thinMaterial)
 
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .fill(
-                    tint.opacity(colorScheme == .dark ? 0.62 : 0.56)
+                    tint.opacity(colorScheme == .dark ? 0.30 : 0.20)
                 )
 
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(colorScheme == .dark ? 0.10 : 0.42),
-                            Color.white.opacity(0.015),
-                            Color.black.opacity(colorScheme == .dark ? 0.10 : 0.03)
+                            Color.white.opacity(colorScheme == .dark ? 0.055 : 0.12),
+                            .clear
                         ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: .top,
+                        endPoint: .bottom
                     )
                 )
         }
     }
 }
 
-/// Soft, extruded surface for controls. Uses a dual-toned fill and a light
-/// top / dark bottom hairline instead of a real, per-control shadow.
+/// Frosted control surface: translucent material, a flat tint and one hairline.
+/// No gradients or inner highlights, so segmented controls and fields stay matte.
 struct SoftSurface: View {
     var cornerRadius: CGFloat = AppLayout.controlCornerRadius
     var tint: Color = Theme.surfaceStrong
@@ -51,29 +48,16 @@ struct SoftSurface: View {
 
     var body: some View {
         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            .fill(
-                LinearGradient(
-                    colors: [
-                        tint,
-                        tint.opacity(colorScheme == .dark ? 0.72 : 0.82)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+            .fill(.ultraThinMaterial)
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(tint)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(colorScheme == .dark ? 0.20 : 0.62),
-                                stroke.opacity(0.8),
-                                Color.black.opacity(colorScheme == .dark ? 0.30 : 0.06)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.8
+                    .strokeBorder(
+                        stroke.opacity(colorScheme == .dark ? 0.90 : 0.80),
+                        lineWidth: 0.6
                     )
             )
     }
@@ -97,17 +81,11 @@ struct GlassCardModifier: ViewModifier {
             }
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(colorScheme == .dark ? 0.30 : 0.78),
-                                Theme.stroke.opacity(0.58),
-                                Color.white.opacity(0.025)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.8
+                    .strokeBorder(
+                        colorScheme == .dark
+                            ? Color.white.opacity(0.10)
+                            : Color.black.opacity(0.06),
+                        lineWidth: 0.5
                     )
             }
             // No per-card shadow: scrolling and transitions would composite

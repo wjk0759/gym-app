@@ -8,7 +8,6 @@ struct RootView: View {
     @Environment(SubscriptionManager.self) private var subscriptions
     @Environment(WeatherStore.self) private var weather
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var splashPulse = false
     @State private var phaseNow = Date()
@@ -43,7 +42,7 @@ struct RootView: View {
         .environment(\.weatherAtmosphere, atmosphere)
         .environment(\.keyboardVisible, keyboardVisible)
         .fontDesign(.rounded)
-        .tint(atmosphere.accent(for: colorScheme))
+        .tint(Theme.accent)
         // 全屏水珠层会持续参与合成；雨天效果保留在背景天空里，避免影响滚动和输入。
         .overlay {
             KeyboardDismissInstaller()
@@ -148,7 +147,7 @@ struct RootView: View {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .fill(Theme.buttonGradient)
                     .frame(width: 72, height: 72)
-                    .shadow(color: Theme.accent.opacity(0.38), radius: 20, y: 8)
+                    .shadow(color: Color.black.opacity(0.24), radius: 16, y: 8)
                 Image(systemName: "figure.strengthtraining.traditional")
                     .font(.system(size: 31, weight: .bold))
                     .foregroundStyle(Theme.onAccent)

@@ -281,7 +281,7 @@ struct ProfileFormView: View {
                         lineWidth: 1
                     )
             )
-            .shadow(color: selected ? Theme.accent.opacity(0.14) : Color.clear, radius: 7, y: 3)
+            .shadow(color: selected ? Color.black.opacity(0.08) : Color.clear, radius: 6, y: 3)
         }
         .buttonStyle(CardPressStyle(scale: 0.97))
         .accessibilityAddTraits(selected ? .isSelected : [])

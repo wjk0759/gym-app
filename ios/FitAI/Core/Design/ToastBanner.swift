@@ -30,7 +30,7 @@ struct ToastBanner: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color.white.opacity(0.16), lineWidth: 0.8)
         }
-        .shadow(color: Theme.shadow.opacity(0.24), radius: 14, y: 6)
+        .shadow(color: Theme.shadow.opacity(0.16), radius: 12, y: 6)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isStaticText)
     }

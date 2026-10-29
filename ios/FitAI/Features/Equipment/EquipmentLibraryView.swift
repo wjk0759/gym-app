@@ -244,7 +244,7 @@ struct EquipmentLibraryView: View {
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .stroke(Color.white.opacity(0.18), lineWidth: 0.8)
                     )
-                    .shadow(color: Theme.accent.opacity(0.16), radius: 12, y: 6)
+                    .shadow(color: Color.black.opacity(0.10), radius: 10, y: 5)
             }
             .accessibilityLabel("拍照或相册添加器械")
         }

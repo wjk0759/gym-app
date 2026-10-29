@@ -275,26 +275,19 @@ struct HomeView: View {
     private var coachHero: some View {
         ZStack(alignment: .topTrailing) {
             RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
+                .fill(.thinMaterial)
+
+            RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
-                            Theme.accent,
-                            Theme.accentDeep,
-                            Theme.accentSecondary
+                            Theme.accent.opacity(0.24),
+                            Theme.accentDeep.opacity(0.07)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
-                .overlay(alignment: .topTrailing) {
-                    RadialGradient(
-                        colors: [Color.white.opacity(0.26), .clear],
-                        center: .topTrailing,
-                        startRadius: 2,
-                        endRadius: 220
-                    )
-                    .allowsHitTesting(false)
-                }
 
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
@@ -305,19 +298,19 @@ struct HomeView: View {
                         .tracking(2.0)
                         .opacity(0.58)
                 }
-                .foregroundStyle(Theme.onAccent.opacity(0.80))
+                .foregroundStyle(Theme.primaryText.opacity(0.72))
 
                 HStack(alignment: .center, spacing: 4) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("不画饼，\n只把今天练明白。")
                             .font(.system(size: 26, weight: .heavy, design: .rounded))
                             .tracking(-0.4)
-                            .foregroundStyle(Theme.onAccent.opacity(0.92))
+                            .foregroundStyle(Theme.primaryText)
                             .fixedSize(horizontal: false, vertical: true)
 
                         Text("训练、饮食、动作点评，直接跟教练说。")
                             .font(AppType.caption.weight(.semibold))
-                            .foregroundStyle(Theme.onAccent.opacity(0.72))
+                            .foregroundStyle(Theme.secondaryText)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
@@ -326,7 +319,7 @@ struct HomeView: View {
                     HeroGlyph(
                         symbol: "figure.strengthtraining.traditional",
                         size: 104,
-                        tint: Theme.onAccent
+                        tint: Theme.accent
                     )
                     .offset(x: 8, y: 4)
                 }
@@ -338,10 +331,19 @@ struct HomeView: View {
                     } label: {
                         Label("找教练聊聊", systemImage: "arrow.up.right")
                             .font(.caption.weight(.bold))
-                            .foregroundStyle(Theme.onMedia)
+                            .foregroundStyle(Theme.onAccent)
                             .padding(.horizontal, 13)
                             .padding(.vertical, 9)
-                            .background(Color.black.opacity(0.72), in: Capsule())
+                            .background {
+                                Capsule(style: .continuous)
+                                    .fill(.ultraThinMaterial)
+                                Capsule(style: .continuous)
+                                    .fill(Theme.accent.opacity(0.88))
+                            }
+                            .overlay {
+                                Capsule(style: .continuous)
+                                    .strokeBorder(Color.white.opacity(0.14), lineWidth: 0.7)
+                            }
                     }
                     .buttonStyle(SubtlePressStyle(scale: 0.96))
 
@@ -351,10 +353,17 @@ struct HomeView: View {
                     } label: {
                         Label("发现方案", systemImage: "square.grid.2x2")
                             .font(.caption.weight(.bold))
-                            .foregroundStyle(Color.black.opacity(0.78))
+                            .foregroundStyle(Theme.primaryText)
                             .padding(.horizontal, 13)
                             .padding(.vertical, 9)
-                            .background(Color.white.opacity(0.34), in: Capsule())
+                            .background {
+                                Capsule(style: .continuous)
+                                    .fill(.ultraThinMaterial)
+                            }
+                            .overlay {
+                                Capsule(style: .continuous)
+                                    .strokeBorder(Theme.stroke, lineWidth: 0.7)
+                            }
                     }
                     .buttonStyle(SubtlePressStyle(scale: 0.96))
                 }
@@ -367,20 +376,9 @@ struct HomeView: View {
         .clipShape(RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.46),
-                            Color.white.opacity(0.08),
-                            Color.black.opacity(0.12)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 0.9
-                )
+                .strokeBorder(Theme.stroke, lineWidth: 0.8)
         }
-        .shadow(color: Theme.accent.opacity(0.24), radius: 20, y: 12)
+        .shadow(color: Color.black.opacity(0.26), radius: 16, y: 8)
     }
 
     private var timeGreeting: String {

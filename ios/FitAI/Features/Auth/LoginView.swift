@@ -161,7 +161,7 @@ struct LoginView: View {
 
     private var authGlow: some View {
         RadialGradient(
-            colors: [Theme.accent.opacity(0.14), .clear],
+            colors: [Theme.accent.opacity(0.08), .clear],
             center: .top,
             startRadius: 0,
             endRadius: 360
@@ -175,7 +175,7 @@ struct LoginView: View {
                 RoundedRectangle(cornerRadius: compact ? 13 : 15, style: .continuous)
                     .fill(Theme.buttonGradient)
                     .frame(width: compact ? 42 : 48, height: compact ? 42 : 48)
-                    .shadow(color: Theme.accent.opacity(0.34), radius: 16, y: 8)
+                    .shadow(color: Color.black.opacity(0.22), radius: 12, y: 6)
                 Image(systemName: "figure.strengthtraining.traditional")
                     .font(.system(size: compact ? 19 : 22, weight: .bold))
                     .foregroundStyle(Theme.onAccent)
@@ -277,35 +277,13 @@ struct LoginView: View {
         }
         .padding(compact ? 16 : 18)
         .background {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Theme.cardSurface)
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.05),
-                            Color.white.opacity(0.012)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+            GlassSurface(cornerRadius: 24)
         }
-        .overlay(
+        .overlay {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.16),
-                            Color.white.opacity(0.03)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 0.9
-                )
-        )
-        .shadow(color: Color.black.opacity(0.28), radius: 24, y: 14)
+                .strokeBorder(Theme.stroke, lineWidth: 0.6)
+        }
+        .shadow(color: Color.black.opacity(0.16), radius: 18, y: 10)
         .motionAnimation(Motion.quick, value: mode)
         .motionAnimation(Motion.quick, value: errorText)
     }
@@ -371,7 +349,7 @@ struct LoginView: View {
             SoftSurface(
                 cornerRadius: 14,
                 tint: focused ? Theme.accent.opacity(0.06) : Theme.surfaceStrong,
-                stroke: focused ? Theme.accent.opacity(0.55) : Theme.stroke
+                stroke: focused ? Theme.accent.opacity(0.38) : Theme.stroke
             )
         }
         .animation(Motion.quick, value: focused)

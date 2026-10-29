@@ -2,15 +2,15 @@ import SwiftUI
 import UIKit
 
 enum Theme {
-    /// Deep, slightly cool dark base with vibrant mint, cyan and violet accents.
-    /// Light mode stays warm and paper-like so the glass surfaces read clearly.
+    /// Neutral graphite base with a muted sage-mint accent.
+    /// Light mode stays warm and paper-like so the frosted surfaces read clearly.
     static let background = adaptive(
-        dark: UIColor(red: 0.020, green: 0.026, blue: 0.038, alpha: 1),
-        light: UIColor(red: 0.949, green: 0.958, blue: 0.947, alpha: 1)
+        dark: UIColor(red: 0.030, green: 0.034, blue: 0.040, alpha: 1),
+        light: UIColor(red: 0.953, green: 0.957, blue: 0.949, alpha: 1)
     )
     static let cardSurface = adaptive(
-        dark: UIColor(red: 0.055, green: 0.067, blue: 0.085, alpha: 1),
-        light: UIColor(red: 0.986, green: 0.990, blue: 0.983, alpha: 1)
+        dark: UIColor(red: 0.062, green: 0.068, blue: 0.078, alpha: 1),
+        light: UIColor(red: 0.984, green: 0.986, blue: 0.980, alpha: 1)
     )
     static let chrome = adaptive(
         dark: UIColor(red: 0.024, green: 0.032, blue: 0.046, alpha: 0.86),
@@ -41,27 +41,27 @@ enum Theme {
         light: UIColor(white: 0, alpha: 0.47)
     )
     static let accent = adaptive(
-        dark: UIColor(red: 0.42, green: 0.96, blue: 0.58, alpha: 1),
-        light: UIColor(red: 0.020, green: 0.470, blue: 0.220, alpha: 1)
+        dark: UIColor(red: 0.54, green: 0.86, blue: 0.70, alpha: 1),
+        light: UIColor(red: 0.090, green: 0.360, blue: 0.250, alpha: 1)
     )
     static let accentDeep = adaptive(
-        dark: UIColor(red: 0.10, green: 0.62, blue: 0.38, alpha: 1),
-        light: UIColor(red: 0.010, green: 0.330, blue: 0.150, alpha: 1)
+        dark: UIColor(red: 0.26, green: 0.60, blue: 0.46, alpha: 1),
+        light: UIColor(red: 0.050, green: 0.250, blue: 0.170, alpha: 1)
     )
     static let accentSecondary = adaptive(
-        dark: UIColor(red: 0.36, green: 0.84, blue: 1.0, alpha: 1),
-        light: UIColor(red: 0.050, green: 0.420, blue: 0.620, alpha: 1)
+        dark: UIColor(red: 0.42, green: 0.70, blue: 0.78, alpha: 1),
+        light: UIColor(red: 0.160, green: 0.400, blue: 0.470, alpha: 1)
     )
     static let accentTertiary = adaptive(
-        dark: UIColor(red: 0.72, green: 0.62, blue: 1.0, alpha: 1),
-        light: UIColor(red: 0.360, green: 0.270, blue: 0.680, alpha: 1)
+        dark: UIColor(red: 0.64, green: 0.60, blue: 0.80, alpha: 1),
+        light: UIColor(red: 0.360, green: 0.300, blue: 0.520, alpha: 1)
     )
     static let accentWarm = adaptive(
-        dark: UIColor(red: 1.0, green: 0.72, blue: 0.38, alpha: 1),
-        light: UIColor(red: 0.700, green: 0.420, blue: 0.080, alpha: 1)
+        dark: UIColor(red: 0.88, green: 0.70, blue: 0.46, alpha: 1),
+        light: UIColor(red: 0.620, green: 0.400, blue: 0.120, alpha: 1)
     )
     static let onAccent = adaptive(
-        dark: UIColor(red: 0.008, green: 0.025, blue: 0.012, alpha: 0.95),
+        dark: UIColor(red: 0.020, green: 0.070, blue: 0.045, alpha: 0.96),
         light: UIColor(white: 1, alpha: 0.97)
     )
     static let danger = adaptive(
@@ -91,14 +91,14 @@ enum Theme {
 
     /// Reusable accent ramps for buttons, section markers and highlights.
     static let accentGradient = LinearGradient(
-        colors: [accent, accentSecondary],
+        colors: [accent, accentDeep],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
     static let buttonGradient = LinearGradient(
-        colors: [accent, accentDeep, accentSecondary],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
+        colors: [accent, accentDeep],
+        startPoint: .top,
+        endPoint: .bottom
     )
 
     /// 固定深色图片/视频上的文字，不跟随系统浅色变化。
@@ -142,30 +142,36 @@ extension View {
 }
 
 struct PrimaryButtonStyle: ButtonStyle {
+    @Environment(\.colorScheme) private var colorScheme
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(AppType.button)
             .foregroundStyle(Theme.onAccent)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(
+            .background {
+                RoundedRectangle(cornerRadius: 17, style: .continuous)
+                    .fill(.ultraThinMaterial)
+
                 RoundedRectangle(cornerRadius: 17, style: .continuous)
                     .fill(Theme.buttonGradient)
-            )
-            .overlay(
+                    .opacity(colorScheme == .dark ? 0.88 : 0.94)
+            }
+            .overlay {
                 RoundedRectangle(cornerRadius: 17, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.46), Color.white.opacity(0.08)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.9
+                    .strokeBorder(
+                        Color.white.opacity(colorScheme == .dark ? 0.14 : 0.24),
+                        lineWidth: 0.8
                     )
+            }
+            .shadow(
+                color: Color.black.opacity(colorScheme == .dark ? 0.26 : 0.12),
+                radius: 12,
+                y: 6
             )
-            .shadow(color: Theme.accent.opacity(0.20), radius: 14, y: 7)
-            .opacity(configuration.isPressed ? 0.90 : 1)
-            .scaleEffect(configuration.isPressed ? 0.975 : 1)
+            .opacity(configuration.isPressed ? 0.92 : 1)
+            .scaleEffect(configuration.isPressed ? 0.985 : 1)
             .animation(Motion.press, value: configuration.isPressed)
             .onChange(of: configuration.isPressed) { _, pressed in
                 if pressed { Haptics.impact(.light) }
@@ -174,6 +180,8 @@ struct PrimaryButtonStyle: ButtonStyle {
 }
 
 struct SecondaryButtonStyle: ButtonStyle {
+    @Environment(\.colorScheme) private var colorScheme
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(AppType.buttonSecondary)
@@ -181,17 +189,22 @@ struct SecondaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 15)
             .background {
-                SoftSurface(
-                    cornerRadius: 16,
-                    tint: Theme.surfaceStrong
-                )
-            }
-            .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Theme.primaryText.opacity(configuration.isPressed ? 0.05 : 0))
-            )
-            .opacity(configuration.isPressed ? 0.86 : 1)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+                    .fill(.ultraThinMaterial)
+
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Theme.surfaceStrong.opacity(colorScheme == .dark ? 0.55 : 0.45))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(Theme.stroke, lineWidth: 0.8)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Theme.primaryText.opacity(configuration.isPressed ? 0.04 : 0))
+            }
+            .opacity(configuration.isPressed ? 0.90 : 1)
+            .scaleEffect(configuration.isPressed ? 0.985 : 1)
             .animation(Motion.press, value: configuration.isPressed)
             .onChange(of: configuration.isPressed) { _, pressed in
                 if pressed { Haptics.tap() }
@@ -206,15 +219,26 @@ struct TagChip: View {
     var body: some View {
         Text(text)
             .font(AppType.chip)
-            .foregroundStyle(selected ? Theme.onAccent : Theme.secondaryText)
+            .foregroundStyle(selected ? Theme.accent : Theme.secondaryText)
             .padding(.horizontal, 13)
             .padding(.vertical, 8)
             .background {
-                SoftSurface(
-                    cornerRadius: 999,
-                    tint: selected ? Theme.accent : Theme.surfaceStrong,
-                    stroke: selected ? Theme.accent.opacity(0.72) : Theme.stroke
-                )
+                Capsule(style: .continuous)
+                    .fill(.ultraThinMaterial)
+
+                Capsule(style: .continuous)
+                    .fill(
+                        selected
+                            ? Theme.accent.opacity(0.16)
+                            : Theme.surface
+                    )
+            }
+            .overlay {
+                Capsule(style: .continuous)
+                    .strokeBorder(
+                        selected ? Theme.accent.opacity(0.36) : Theme.stroke,
+                        lineWidth: 0.8
+                    )
             }
             .animation(Motion.quick, value: selected)
     }
@@ -228,8 +252,8 @@ struct SectionTitle: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 Capsule(style: .continuous)
-                    .fill(Theme.accentGradient)
-                    .frame(width: 18, height: 3)
+                    .fill(Theme.accent.opacity(0.82))
+                    .frame(width: 14, height: 2)
                 Text(title)
                     .font(AppType.headline)
                     .tracking(0.1)
@@ -255,42 +279,18 @@ struct HeroGlyph: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            tint.opacity(0.28),
-                            tint.opacity(0.06),
-                            Color.black.opacity(0.08)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                .fill(.ultraThinMaterial)
 
             RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                .fill(
-                    RadialGradient(
-                        colors: [Color.white.opacity(0.18), .clear],
-                        center: .topLeading,
-                        startRadius: 0,
-                        endRadius: size * 0.8
-                    )
-                )
+                .fill(tint.opacity(0.10))
 
             RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [Color.white.opacity(0.34), tint.opacity(0.16)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
+                .strokeBorder(tint.opacity(0.22), lineWidth: 0.8)
 
             Image(systemName: symbol)
                 .font(.system(size: size * 0.38, weight: .semibold))
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(tint.opacity(0.96))
+                .foregroundStyle(tint.opacity(0.94))
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)
@@ -306,10 +306,10 @@ struct EmptyStateView: View {
         VStack(spacing: 14) {
             ZStack {
                 Circle()
-                    .fill(Theme.accent.opacity(0.10))
+                    .fill(.ultraThinMaterial)
                     .frame(width: 64, height: 64)
                 Circle()
-                    .stroke(Theme.accent.opacity(0.18), lineWidth: 1)
+                    .strokeBorder(Theme.stroke, lineWidth: 0.8)
                     .frame(width: 64, height: 64)
                 Image(systemName: icon)
                     .font(.system(size: 26, weight: .semibold))

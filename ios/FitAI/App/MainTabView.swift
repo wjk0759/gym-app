@@ -26,8 +26,6 @@ enum AppRoute: String, Identifiable, Hashable {
 
 struct MainTabView: View {
     @Environment(AppStore.self) private var store
-    @Environment(\.weatherAtmosphere) private var atmosphere
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         @Bindable var store = store
@@ -62,7 +60,7 @@ struct MainTabView: View {
                     Label("我的", systemImage: "person.crop.circle")
                 }
         }
-        .tint(atmosphere.accent(for: colorScheme))
+        .tint(Theme.accent)
         .toolbarBackground(.ultraThinMaterial, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
         .sensoryFeedback(.selection, trigger: store.selectedTab)

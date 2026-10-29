@@ -17,46 +17,38 @@ struct AmbientBackdrop: View {
                 endPoint: .bottomTrailing
             )
 
-            // Mesh-style color fields.
+            // One weather-tinted light source, then a neutral vignette.
+            // No rainbow mesh and no grain: both read as plastic at this size.
             RadialGradient(
-                colors: [atmosphere.glowColor(for: colorScheme), .clear],
+                colors: [
+                    atmosphere.glowColor(for: colorScheme).opacity(0.55),
+                    .clear
+                ],
                 center: .topLeading,
                 startRadius: 0,
-                endRadius: 540
+                endRadius: 520
             )
 
             RadialGradient(
                 colors: [
-                    Theme.accentTertiary.opacity(dark ? 0.14 : 0.055),
+                    Color.white.opacity(dark ? 0.018 : 0.05),
                     .clear
                 ],
-                center: UnitPoint(x: 0.88, y: 0.08),
-                startRadius: 10,
-                endRadius: 430
+                center: .topTrailing,
+                startRadius: 0,
+                endRadius: 420
             )
 
-            RadialGradient(
-                colors: [
-                    Theme.accentSecondary.opacity(dark ? 0.10 : 0.045),
-                    .clear
-                ],
-                center: UnitPoint(x: 0.12, y: 0.94),
-                startRadius: 20,
-                endRadius: 540
-            )
-
-            // Cinematic key light from the top-left, vignette toward the bottom-right.
+            // Soft key light, then a deep vignette for glass to sit on.
             LinearGradient(
                 colors: [
-                    Color.white.opacity(dark ? 0.045 : 0.16),
+                    Color.white.opacity(dark ? 0.018 : 0.06),
                     .clear,
-                    Color.black.opacity(dark ? 0.28 : 0.04)
+                    Color.black.opacity(dark ? 0.20 : 0.03)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-
-            GrainTexture(opacity: dark ? 0.05 : 0.022)
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
