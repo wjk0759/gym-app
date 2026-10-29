@@ -245,18 +245,10 @@ Object.assign(window.app, {
   },
 
   previewAuthMode(mode) {
-    const previousMode = state.authMode;
     state.authMode = mode;
     state.authError = "";
     save();
     render();
-    const seg = document.querySelector(".login-seg");
-    if (seg && previousMode !== mode) {
-      seg.dataset.mode = previousMode;
-      requestAnimationFrame(() => {
-        seg.dataset.mode = mode;
-      });
-    }
     this.restoreLoginFocus();
   },
 

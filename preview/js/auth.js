@@ -13,19 +13,14 @@ function loginScreen() {
             <path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10" />
           </svg>
         </div>
-        <div class="login-brand-copy">
+        <div>
           <div class="login-brand-name">练途</div>
-          <div class="login-brand-sub"><span class="login-live-dot"></span>AI 私人健身教练</div>
+          <div class="login-brand-sub">AI 健身教练</div>
         </div>
       </div>
 
-      <div class="login-intro">
-        <div class="login-kicker">WELCOME BACK</div>
-        <h1>回到你的训练节奏</h1>
-      </div>
-
       <div class="login-card">
-        <div class="login-seg" data-mode="${phoneMode ? "phone" : "password"}">
+        <div class="login-seg">
           <button class="${phoneMode ? "active" : ""}" onclick="app.previewAuthMode('phone')">手机验证码</button>
           <button class="${!phoneMode ? "active" : ""}" onclick="app.previewAuthMode('password')">账号密码</button>
         </div>
@@ -64,12 +59,7 @@ function loginScreen() {
 
         ${state.authError ? `<div class="login-error">${esc(state.authError)}</div>` : ""}
 
-        <button class="btn btn-primary login-submit" onclick="app.previewLogin()">
-          <span>登录</span>
-          <span class="login-submit-arrow" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M5 12h13M13.5 6.5 19 12l-5.5 5.5"/></svg>
-          </span>
-        </button>
+        <button class="btn btn-primary login-submit" onclick="app.previewLogin()">登录</button>
       </div>
 
       <div class="login-consent" onclick="app.previewAuthConsent()" role="button" tabindex="0" aria-label="同意用户协议与隐私政策" aria-pressed="${state.authConsent}">

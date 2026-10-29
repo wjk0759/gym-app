@@ -21,7 +21,6 @@ enum LegalDocumentKind: String, Identifiable {
 struct LoginView: View {
     @Environment(AuthStore.self) private var auth
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.colorScheme) private var colorScheme
 
     private enum Mode: String, CaseIterable, Identifiable, Hashable {
         case phone = "手机验证码"
@@ -65,7 +64,6 @@ struct LoginView: View {
 
     @FocusState private var focusedField: Field?
     @State private var isFocusMode = false
-    @Namespace private var loginModeNamespace
 
     private var errorText: String? {
         localError ?? auth.errorMessage
@@ -73,7 +71,7 @@ struct LoginView: View {
 
     var body: some View {
         ZStack {
-            loginBackdrop
+            AppBackground()
 
             Color.black
                 .opacity(isFocusMode ? 0.72 : 0)
@@ -84,13 +82,9 @@ struct LoginView: View {
                 }
                 .allowsHitTesting(isFocusMode)
 
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(spacing: 14) {
                 if !isFocusMode {
                     brandHeader
-                        .padding(.bottom, 18)
-
-                    loginIntro
-                        .padding(.bottom, 16)
                 }
 
                 loginCard
@@ -104,10 +98,7 @@ struct LoginView: View {
 
                 if !isFocusMode {
                     consentFooter
-                        .padding(.top, 14)
-
                     otherLoginSection
-                        .padding(.top, 8)
                 }
             }
             .frame(maxWidth: 420)
@@ -177,7 +168,6 @@ struct LoginView: View {
             }
             let nextField: Field = newMode == .phone ? .phone : .account
             DispatchQueue.main.async {
-                guard isFocusMode else { return }
                 focusedField = nextField
             }
         }
@@ -188,63 +178,21 @@ struct LoginView: View {
         isFocusMode = false
     }
 
-    private var loginBackdrop: some View {
-        ZStack {
-            AppBackground()
-
-            GeometryReader { proxy in
-                ZStack {
-                    Circle()
-                        .fill(Theme.accent.opacity(0.15))
-                        .frame(width: 330, height: 330)
-                        .blur(radius: 90)
-                        .offset(
-                            x: -proxy.size.width * 0.32,
-                            y: -proxy.size.height * 0.28
-                        )
-
-                    Circle()
-                        .fill(Theme.blue.opacity(0.10))
-                        .frame(width: 310, height: 310)
-                        .blur(radius: 100)
-                        .offset(
-                            x: proxy.size.width * 0.34,
-                            y: proxy.size.height * 0.24
-                        )
-
-                    Circle()
-                        .fill(Theme.accent.opacity(0.06))
-                        .frame(width: 300, height: 300)
-                        .blur(radius: 90)
-                        .offset(y: proxy.size.height * 0.04)
-                }
-            }
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
-        }
-    }
-
     private var brandHeader: some View {
-        HStack(spacing: 13) {
-            brandMark
+        HStack(spacing: 11) {
+            HeroGlyph(
+                symbol: "figure.strengthtraining.traditional",
+                size: 44,
+                tint: Theme.accent
+            )
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text("练途")
-                    .font(.system(size: 22, weight: .bold))
-                    .tracking(0.4)
+                    .font(AppType.title)
                     .foregroundStyle(Theme.primaryText)
-
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(Theme.accent)
-                        .frame(width: 5, height: 5)
-                        .shadow(color: Theme.accent.opacity(0.7), radius: 4)
-
-                    Text("AI 私人健身教练")
-                        .font(.system(size: 9.5, weight: .medium))
-                        .tracking(1.25)
-                        .foregroundStyle(Theme.tertiaryText)
-                }
+                Text("AI 私人健身教练")
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.tertiaryText)
             }
 
             Spacer(minLength: 0)
@@ -256,91 +204,23 @@ struct LoginView: View {
                 }
             } label: {
                 Image(systemName: "gearshape")
-                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Theme.secondaryText)
-                    .frame(width: 40, height: 40)
-                    .background(Theme.surface.opacity(0.45), in: Circle())
-                    .overlay(Circle().stroke(Theme.stroke.opacity(0.35), lineWidth: 0.5))
-                    .contentShape(Rectangle())
                     .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .accessibilityLabel("开发设置")
 #endif
         }
     }
 
-    private var brandMark: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .fill(.ultraThinMaterial)
-
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Theme.accent.opacity(colorScheme == .dark ? 0.20 : 0.15),
-                            Theme.accent.opacity(0.03)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(colorScheme == .dark ? 0.24 : 0.55),
-                            Theme.stroke.opacity(0.35)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 0.8
-                )
-
-            Image(systemName: "figure.strengthtraining.traditional")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(Theme.accent)
-                .shadow(color: Theme.accent.opacity(0.35), radius: 6)
-        }
-        .frame(width: 46, height: 46)
-        .shadow(color: .black.opacity(0.28), radius: 16, y: 8)
-        .shadow(color: Theme.accent.opacity(0.10), radius: 18)
-        .accessibilityHidden(true)
-    }
-
-    private var loginIntro: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            HStack(spacing: 8) {
-                Rectangle()
-                    .fill(
-                        LinearGradient(
-                            colors: [.clear, Theme.accent.opacity(0.8)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .frame(width: 20, height: 1)
-
-                Text("WELCOME BACK")
-                    .font(.system(size: 9.5, weight: .semibold))
-                    .tracking(2.2)
-                    .foregroundStyle(Theme.accent.opacity(0.78))
-            }
-
-            Text("回到你的训练节奏")
-                .font(.system(size: 26, weight: .bold))
-                .tracking(-0.3)
-                .foregroundStyle(Theme.primaryText)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 2)
-    }
-
     private var loginCard: some View {
         VStack(spacing: 12) {
-            loginModeControl
+            AnimatedSegmentedControl(
+                items: Mode.allCases,
+                selection: $mode,
+                label: { $0.rawValue }
+            )
+            .controlSize(.large)
 
             Group {
                 if mode == .phone {
@@ -360,14 +240,10 @@ struct LoginView: View {
                 .font(AppType.caption)
                 .foregroundStyle(Theme.danger)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(11)
+                .padding(10)
                 .background(
-                    Theme.danger.opacity(0.10),
-                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Theme.danger.opacity(0.18), lineWidth: 0.5)
+                    Theme.danger.opacity(0.09),
+                    in: RoundedRectangle(cornerRadius: 10, style: .continuous)
                 )
             }
 
@@ -375,167 +251,22 @@ struct LoginView: View {
                 dismissLoginFocus()
                 submit()
             } label: {
-                HStack(spacing: 10) {
+                HStack(spacing: 8) {
                     if auth.isWorking {
-                        ProgressView()
-                            .tint(Color(red: 0.02, green: 0.07, blue: 0.04))
+                        ProgressView().tint(Theme.onAccent)
                         Text("正在登录…")
-                            .font(.system(size: 15, weight: .bold))
-                            .tracking(0.3)
                     } else {
                         Text("登录")
-                            .font(.system(size: 15, weight: .bold))
-                            .tracking(0.3)
-
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 12, weight: .bold))
-                            .frame(width: 26, height: 26)
-                            .background(Color.black.opacity(0.12), in: Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white.opacity(0.18), lineWidth: 0.5)
-                            )
+                            .font(.subheadline.weight(.bold))
                     }
                 }
-                .foregroundStyle(Color(red: 0.02, green: 0.07, blue: 0.04))
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background {
-                    let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    shape
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(red: 0.34, green: 0.91, blue: 0.51),
-                                    Theme.accent,
-                                    Color(red: 0.14, green: 0.72, blue: 0.29)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .overlay(
-                            shape.stroke(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.45),
-                                        Color.white.opacity(0.04),
-                                        Color.black.opacity(0.18)
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                ),
-                                lineWidth: 1
-                            )
-                        )
-                        .shadow(color: Theme.accent.opacity(0.26), radius: 18, y: 10)
-                        .shadow(color: .black.opacity(0.18), radius: 6, y: 3)
-                }
             }
-            .buttonStyle(LoginPressStyle())
+            .buttonStyle(PrimaryButtonStyle())
             .disabled(auth.isWorking)
         }
-        .padding(17)
         .frame(maxWidth: .infinity)
-        .background { loginCardBackground }
-    }
-
-    private var loginModeControl: some View {
-        HStack(spacing: 4) {
-            ForEach(Mode.allCases) { item in
-                Button {
-                    guard mode != item else { return }
-                    Haptics.select()
-                    withAnimation(Motion.quick) {
-                        mode = item
-                    }
-                } label: {
-                    Text(item.rawValue)
-                        .font(.system(size: 12.5, weight: .semibold))
-                        .tracking(0.2)
-                        .foregroundStyle(
-                            mode == item ? Theme.primaryText : Theme.secondaryText.opacity(0.62)
-                        )
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 36)
-                        .background {
-                            if mode == item {
-                                let pill = RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                pill
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [
-                                                Color.white.opacity(colorScheme == .dark ? 0.15 : 0.72),
-                                                Color.white.opacity(colorScheme == .dark ? 0.05 : 0.28)
-                                            ],
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        )
-                                    )
-                                    .overlay(
-                                        pill.stroke(
-                                            Color.white.opacity(colorScheme == .dark ? 0.12 : 0.55),
-                                            lineWidth: 0.8
-                                        )
-                                    )
-                                    .shadow(color: .black.opacity(colorScheme == .dark ? 0.30 : 0.12), radius: 6, y: 4)
-                                    .matchedGeometryEffect(id: "login-mode-pill", in: loginModeNamespace)
-                            }
-                        }
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(mode == item ? .isSelected : [])
-            }
-        }
-        .padding(4)
-        .background {
-            let track = RoundedRectangle(cornerRadius: 15, style: .continuous)
-            track
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    track.fill(Color.black.opacity(colorScheme == .dark ? 0.20 : 0.04))
-                )
-                .overlay(
-                    track.stroke(Theme.stroke.opacity(0.35), lineWidth: 0.5)
-                )
-                .shadow(color: .black.opacity(0.10), radius: 3, y: 1)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-    }
-
-    private var loginCardBackground: some View {
-        let shape = RoundedRectangle(cornerRadius: 28, style: .continuous)
-        return ZStack {
-            shape.fill(.ultraThinMaterial)
-            shape.fill(
-                LinearGradient(
-                    colors: [
-                        Color.white.opacity(colorScheme == .dark ? 0.09 : 0.44),
-                        Color.white.opacity(colorScheme == .dark ? 0.02 : 0.10),
-                        Color.white.opacity(colorScheme == .dark ? 0.045 : 0.24)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            shape.stroke(
-                LinearGradient(
-                    colors: [
-                        Color.white.opacity(colorScheme == .dark ? 0.30 : 0.65),
-                        Theme.stroke.opacity(0.15),
-                        Theme.accent.opacity(0.18),
-                        Color.white.opacity(0.08)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
-                lineWidth: 1
-            )
-        }
-        .shadow(color: .black.opacity(colorScheme == .dark ? 0.35 : 0.14), radius: 30, y: 18)
-        .shadow(color: .black.opacity(colorScheme == .dark ? 0.18 : 0.06), radius: 8, y: 4)
-        .shadow(color: Theme.accent.opacity(0.06), radius: 44)
+        .glassCard(padding: 14, cornerRadius: 18)
     }
 
     private func fieldShell<Content: View>(
@@ -555,61 +286,33 @@ struct LoginView: View {
             }
         )
         .background {
-            loginFieldBackground(focused: focused)
+            SoftSurface(
+                cornerRadius: 14,
+                tint: focused ? Theme.accent.opacity(0.06) : Theme.surfaceStrong,
+                stroke: focused ? Theme.accent.opacity(0.55) : Theme.stroke
+            )
         }
         .animation(Motion.quick, value: focused)
-    }
-
-    private func loginFieldBackground(focused: Bool) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 15, style: .continuous)
-        let inset = colorScheme == .dark ? 0.24 : 0.03
-        return shape
-            .fill(
-                LinearGradient(
-                    colors: [
-                        Color.black.opacity(focused ? inset * 0.72 : inset),
-                        Theme.surfaceStrong.opacity(focused ? 0.85 : 0.62)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-            .overlay(
-                shape.stroke(
-                    focused ? Theme.accent.opacity(0.48) : Theme.stroke.opacity(0.55),
-                    lineWidth: 1
-                )
-            )
-            .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
-            .shadow(color: focused ? Theme.accent.opacity(0.12) : .clear, radius: 14, y: 4)
     }
 
     private var phoneFields: some View {
         VStack(spacing: 12) {
             fieldShell(focused: focusedField == .phone, field: .phone) {
                 Image(systemName: "iphone")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(focusedField == .phone ? Theme.accent : Theme.secondaryText.opacity(0.72))
+                    .font(AppType.caption)
+                    .foregroundStyle(focusedField == .phone ? Theme.accent : Theme.tertiaryText)
                     .frame(width: 18)
 
                 Text("+86")
-                    .font(.system(size: 13, weight: .semibold))
-                    .tracking(0.2)
+                    .font(AppType.body.weight(.semibold))
                     .foregroundStyle(Theme.secondaryText)
 
                 Rectangle()
-                    .fill(
-                        LinearGradient(
-                            colors: [.clear, Theme.stroke, .clear],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .frame(width: 1, height: 20)
+                    .fill(Theme.stroke)
+                    .frame(width: 1, height: 18)
 
                 TextField("手机号", text: $phone)
                     .font(AppType.body)
-                    .tracking(0.1)
                     .foregroundStyle(Theme.primaryText)
                     .keyboardType(.numberPad)
                     .textContentType(.telephoneNumber)
@@ -623,13 +326,12 @@ struct LoginView: View {
 
             fieldShell(focused: focusedField == .code, field: .code) {
                 Image(systemName: "number")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(focusedField == .code ? Theme.accent : Theme.secondaryText.opacity(0.72))
+                    .font(AppType.caption)
+                    .foregroundStyle(focusedField == .code ? Theme.accent : Theme.tertiaryText)
                     .frame(width: 18)
 
                 TextField("6 位验证码", text: $code)
                     .font(AppType.body)
-                    .tracking(0.1)
                     .foregroundStyle(Theme.primaryText)
                     .keyboardType(.numberPad)
                     .textContentType(.oneTimeCode)
@@ -649,34 +351,17 @@ struct LoginView: View {
                                 .tint(Theme.accent)
                         } else {
                             Text(countdown > 0 ? "\(countdown)s 后重发" : "获取验证码")
-                                .font(.system(size: 11.5, weight: .semibold))
-                                .tracking(0.2)
+                                .font(AppType.caption.weight(.semibold))
                                 .foregroundStyle(
                                     countdown > 0 || !isValidPhone ? Theme.tertiaryText : Theme.accent
                                 )
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 7)
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 6)
                                 .background(
                                     Theme.accent.opacity(
-                                        countdown > 0 || !isValidPhone ? 0 : 0.12
+                                        countdown > 0 || !isValidPhone ? 0 : 0.10
                                     ),
                                     in: Capsule()
-                                )
-                                .overlay(
-                                    Capsule()
-                                        .stroke(
-                                            Theme.accent.opacity(
-                                                countdown > 0 || !isValidPhone ? 0 : 0.16
-                                            ),
-                                            lineWidth: 0.8
-                                        )
-                                )
-                                .shadow(
-                                    color: Theme.accent.opacity(
-                                        countdown > 0 || !isValidPhone ? 0 : 0.08
-                                    ),
-                                    radius: 6,
-                                    y: 2
                                 )
                         }
                     }
@@ -689,8 +374,7 @@ struct LoginView: View {
 
             Text(devCode.map { "开发验证码 \($0)，已自动填入" } ?? "验证码仅用于本次登录")
                 .font(AppType.micro)
-                .tracking(0.1)
-                .foregroundStyle(devCode == nil ? Theme.tertiaryText.opacity(0.8) : Theme.warning)
+                .foregroundStyle(devCode == nil ? Theme.tertiaryText : Theme.warning)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
                 .padding(.leading, 2)
@@ -701,13 +385,12 @@ struct LoginView: View {
         VStack(spacing: 12) {
             fieldShell(focused: focusedField == .account, field: .account) {
                 Image(systemName: "person")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(focusedField == .account ? Theme.accent : Theme.secondaryText.opacity(0.72))
+                    .font(AppType.caption)
+                    .foregroundStyle(focusedField == .account ? Theme.accent : Theme.tertiaryText)
                     .frame(width: 18)
 
                 TextField("手机号或用户名", text: $account)
                     .font(AppType.body)
-                    .tracking(0.1)
                     .foregroundStyle(Theme.primaryText)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -719,8 +402,8 @@ struct LoginView: View {
 
             fieldShell(focused: focusedField == .password, field: .password) {
                 Image(systemName: "lock")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(focusedField == .password ? Theme.accent : Theme.secondaryText.opacity(0.72))
+                    .font(AppType.caption)
+                    .foregroundStyle(focusedField == .password ? Theme.accent : Theme.tertiaryText)
                     .frame(width: 18)
 
                 Group {
@@ -735,7 +418,6 @@ struct LoginView: View {
                     }
                 }
                 .font(AppType.body)
-                .tracking(0.1)
                 .foregroundStyle(Theme.primaryText)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
@@ -759,9 +441,8 @@ struct LoginView: View {
                 Button("忘记密码？") {
                     showPasswordReset = true
                 }
-                .font(.system(size: 11.5, weight: .medium))
-                .tracking(0.1)
-                .foregroundStyle(Theme.accent.opacity(0.85))
+                .font(AppType.caption)
+                .foregroundStyle(Theme.accent)
                 .buttonStyle(.plain)
                 .frame(minHeight: 28)
                 .contentShape(Rectangle())
@@ -771,53 +452,22 @@ struct LoginView: View {
     }
 
     private var consentFooter: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Button {
                 Haptics.select()
                 withAnimation(Motion.quick) {
                     consent.toggle()
                 }
             } label: {
-                HStack(alignment: .center, spacing: 10) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .fill(Theme.surface.opacity(0.55))
-
-                        if consent {
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [
-                                            Color(red: 0.39, green: 0.94, blue: 0.58),
-                                            Theme.accent
-                                        ],
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
-                        }
-
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .stroke(
-                                consent ? Theme.accent.opacity(0.7) : Theme.stroke.opacity(0.5),
-                                lineWidth: 1
-                            )
-
-                        if consent {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 9, weight: .black))
-                                .foregroundStyle(Color(red: 0.02, green: 0.07, blue: 0.04))
-                        }
-                    }
-                    .frame(width: 20, height: 20)
-                    .shadow(color: consent ? Theme.accent.opacity(0.28) : .clear, radius: 8)
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: consent ? "checkmark.circle.fill" : "circle")
+                        .font(.subheadline)
+                        .foregroundStyle(consent ? Theme.accent : Theme.tertiaryText)
 
                     Text("我已阅读并同意《用户协议》和《隐私政策》，且已年满 14 周岁")
-                        .font(.system(size: 11.5, weight: .regular))
-                        .tracking(0.1)
-                        .foregroundStyle(Theme.secondaryText.opacity(0.85))
+                        .font(.footnote)
+                        .foregroundStyle(Theme.secondaryText)
                         .multilineTextAlignment(.leading)
-                        .lineSpacing(2)
 
                     Spacer(minLength: 0)
                 }
@@ -833,35 +483,19 @@ struct LoginView: View {
                 Button("隐私政策") { legal = .privacy }
             } label: {
                 Image(systemName: "doc.text")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Theme.secondaryText)
-                    .frame(width: 32, height: 32)
-                    .background(Theme.surface.opacity(0.4), in: Circle())
-                    .overlay(Circle().stroke(Theme.stroke.opacity(0.3), lineWidth: 0.5))
-                    .contentShape(Rectangle())
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.accent)
                     .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .accessibilityLabel("查看协议")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 2)
-        .background {
-            let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
-            shape
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    shape.fill(Color.white.opacity(colorScheme == .dark ? 0.04 : 0.22))
-                )
-                .overlay(
-                    shape.stroke(Theme.stroke.opacity(0.35), lineWidth: 0.5)
-                )
-                .shadow(color: .black.opacity(0.12), radius: 14, y: 7)
-        }
+        .padding(.horizontal, 2)
     }
 
     private var otherLoginSection: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             socialIconButton(
                 image: Image(systemName: "apple.logo"),
                 tint: .black,
@@ -873,8 +507,8 @@ struct LoginView: View {
 
             socialIconButton(
                 image: Image("WeChatIcon"),
-                tint: Color(red: 0.376, green: 0.863, blue: 0.58),
-                background: Color(red: 0.376, green: 0.863, blue: 0.58).opacity(0.12),
+                tint: Color(red: 0.20, green: 0.78, blue: 0.36),
+                background: Color(red: 0.20, green: 0.78, blue: 0.36).opacity(0.12),
                 label: "微信登录"
             ) {
                 performSocialLoginAfterConsent("wechat")
@@ -882,14 +516,15 @@ struct LoginView: View {
 
             socialIconButton(
                 image: Image("QQIcon"),
-                tint: Color(red: 0.561, green: 0.702, blue: 0.98),
-                background: Color(red: 0.561, green: 0.702, blue: 0.98).opacity(0.12),
+                tint: Color(red: 0.26, green: 0.58, blue: 0.96),
+                background: Color(red: 0.26, green: 0.58, blue: 0.96).opacity(0.12),
                 label: "QQ 登录"
             ) {
                 performSocialLoginAfterConsent("qq")
             }
         }
         .padding(.horizontal, 2)
+        .offset(y: -6)
     }
 
     private func socialIconButton(
@@ -907,31 +542,11 @@ struct LoginView: View {
                 .frame(width: 16, height: 16)
                 .foregroundStyle(tint)
                 .frame(width: 40, height: 40)
-                .background {
-                    Circle()
-                        .fill(background)
-                        .overlay(
-                            Circle().fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(colorScheme == .dark ? 0.16 : 0.35),
-                                        .clear,
-                                        Color.black.opacity(0.08)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                        )
-                        .overlay(
-                            Circle().stroke(Theme.stroke.opacity(0.45), lineWidth: 0.6)
-                        )
-                        .shadow(color: .black.opacity(0.24), radius: 8, y: 5)
-                        .shadow(color: tint.opacity(0.10), radius: 10)
-                }
+                .background(background, in: Circle())
+                .overlay(Circle().stroke(Theme.stroke, lineWidth: 0.5))
                 .contentShape(Circle())
         }
-        .buttonStyle(LoginPressStyle(scale: 0.94))
+        .buttonStyle(.plain)
         .frame(width: 44, height: 44)
         .contentShape(Rectangle())
         .disabled(auth.isWorking)
@@ -1065,18 +680,6 @@ struct LoginView: View {
                 localError = error.localizedDescription
             }
         }
-    }
-}
-
-/// Soft press feedback shared by the glass login controls.
-private struct LoginPressStyle: ButtonStyle {
-    var scale: CGFloat = 0.985
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? scale : 1)
-            .opacity(configuration.isPressed ? 0.92 : 1)
-            .animation(Motion.press, value: configuration.isPressed)
     }
 }
 
