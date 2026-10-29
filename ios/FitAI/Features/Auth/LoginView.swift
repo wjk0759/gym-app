@@ -322,7 +322,7 @@ struct LoginView: View {
                                 )
                         }
                     }
-                    .frame(minWidth: 86, minHeight: 40)
+                    .frame(minWidth: 86, minHeight: 44)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -401,7 +401,7 @@ struct LoginView: View {
                 .font(AppType.caption)
                 .foregroundStyle(Theme.accent)
                 .buttonStyle(.plain)
-                .frame(minHeight: 36)
+                .frame(minHeight: 44)
                 .contentShape(Rectangle())
             }
         }
@@ -427,7 +427,7 @@ struct LoginView: View {
 
                     Spacer(minLength: 0)
                 }
-                .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -438,13 +438,13 @@ struct LoginView: View {
                 Button("《用户协议》") {
                     legal = .terms
                 }
-                .frame(minHeight: 36)
+                .frame(minHeight: 44)
                 .contentShape(Rectangle())
 
                 Button("《隐私政策》") {
                     legal = .privacy
                 }
-                .frame(minHeight: 36)
+                .frame(minHeight: 44)
                 .contentShape(Rectangle())
 
                 Spacer(minLength: 0)
@@ -477,7 +477,7 @@ struct LoginView: View {
                         .foregroundStyle(Theme.tertiaryText)
                         .rotationEffect(.degrees(showOtherLogin ? 180 : 0))
                 }
-                .frame(minHeight: 36)
+                .frame(minHeight: 44)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -599,7 +599,7 @@ struct LoginView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 11)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .background(
                 color.opacity(0.10),
                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
