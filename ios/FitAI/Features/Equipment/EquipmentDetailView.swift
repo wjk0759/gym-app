@@ -681,12 +681,9 @@ struct EquipmentItemDetailView: View {
             .padding(.top, 6)
 
             if statsPeriod == .custom {
-                HStack(spacing: 6) {
-                    customDateControl("开始", selection: $customStart)
-                    Text("—")
-                        .font(.system(size: 9))
-                        .foregroundStyle(Theme.tertiaryText)
-                    customDateControl("结束", selection: $customEnd)
+                VStack(spacing: 6) {
+                    customDateControl("开始日期", selection: $customStart)
+                    customDateControl("结束日期", selection: $customEnd)
                 }
                 .padding(.top, 8)
 
@@ -868,17 +865,22 @@ struct EquipmentItemDetailView: View {
     }
 
     private func customDateControl(_ title: String, selection: Binding<Date>) -> some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 8) {
             Text(title)
-                .font(.system(size: 9))
+                .font(.system(size: 10))
                 .foregroundStyle(Theme.tertiaryText)
+                .lineLimit(1)
+
+            Spacer(minLength: 8)
+
             DatePicker("", selection: selection, displayedComponents: .date)
                 .labelsHidden()
                 .datePickerStyle(.compact)
+                .fixedSize()
                 .tint(Theme.accent)
         }
-        .padding(.horizontal, 7)
-        .padding(.vertical, 5)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
         .background(
             Color.white.opacity(0.035),
             in: RoundedRectangle(cornerRadius: 8, style: .continuous)

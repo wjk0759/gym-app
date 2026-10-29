@@ -35,6 +35,8 @@ struct BodyPhotoAnalysisView: View {
                 }
                 .padding(20)
                 .padding(.bottom, 24)
+                .frame(maxWidth: .infinity)
+                .clipped()
             }
             .background(AppBackground())
             .navigationTitle("体型照片分析")
@@ -100,13 +102,15 @@ struct BodyPhotoAnalysisView: View {
         VStack(spacing: 12) {
             ZStack {
                 if let image {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 300)
-                        .clipped()
-                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    GeometryReader { proxy in
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: proxy.size.width, height: 300)
+                            .clipped()
+                    }
+                    .frame(height: 300)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
 
                     VStack {
                         HStack {
