@@ -16,11 +16,6 @@ function loginScreen() {
         </div>
       </div>
 
-      <div class="login-intro">
-        <h1>登录练途</h1>
-        <p>同步训练计划、记录和 AI 复盘。</p>
-      </div>
-
       <div class="login-card">
         <div class="login-seg">
           <button class="${phoneMode ? "active" : ""}" onclick="app.previewAuthMode('phone')">手机验证码</button>
@@ -29,62 +24,57 @@ function loginScreen() {
 
         ${phoneMode ? `
           <div class="login-field">
-            <div class="login-field-label">手机号</div>
             <div class="login-input">
               <span class="login-prefix">+86</span>
               <span class="login-input-divider"></span>
-              <input id="login-phone" type="tel" inputmode="numeric" maxlength="11" autocomplete="tel" placeholder="请输入手机号" value="${esc(state.authPhone)}" oninput="app.previewAuthField('authPhone', this.value)">
+              <input id="login-phone" type="tel" inputmode="numeric" maxlength="11" autocomplete="tel" placeholder="手机号" value="${esc(state.authPhone)}" oninput="app.previewAuthField('authPhone', this.value)">
             </div>
           </div>
           <div class="login-field">
-            <div class="login-field-label">验证码</div>
             <div class="login-input">
-              <input id="login-code" type="tel" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="请输入 6 位验证码" value="${esc(state.authCode)}" oninput="app.previewAuthField('authCode', this.value)">
+              <input id="login-code" type="tel" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6 位验证码" value="${esc(state.authCode)}" oninput="app.previewAuthField('authCode', this.value)">
               <button class="code-btn" onclick="app.previewSendCode()">获取验证码</button>
             </div>
           </div>
-          <div class="field-hint ${state.authDevCode ? "warning" : ""}">${state.authDevCode ? `开发验证码 ${state.authDevCode}，已自动填入` : "验证码仅用于本次登录，请勿转发"}</div>
+          <div class="field-hint ${state.authDevCode ? "warning" : ""}">${state.authDevCode ? `开发验证码 ${state.authDevCode}，已自动填入` : "验证码仅用于本次登录"}</div>
         ` : `
           <div class="login-field">
-            <div class="login-field-label">手机号或用户名</div>
             <div class="login-input">
-              <input id="login-account" type="text" maxlength="50" autocomplete="username" placeholder="请输入手机号或用户名" value="${esc(state.authAccount)}" oninput="app.previewAuthField('authAccount', this.value)">
+              <input id="login-account" type="text" maxlength="50" autocomplete="username" placeholder="手机号或用户名" value="${esc(state.authAccount)}" oninput="app.previewAuthField('authAccount', this.value)">
             </div>
           </div>
           <div class="login-field">
-            <div class="login-field-label">密码</div>
             <div class="login-input">
-              <input id="login-password" type="password" maxlength="64" autocomplete="current-password" placeholder="请输入密码" value="${esc(state.authPassword)}" oninput="app.previewAuthField('authPassword', this.value)">
+              <input id="login-password" type="password" maxlength="64" autocomplete="current-password" placeholder="密码" value="${esc(state.authPassword)}" oninput="app.previewAuthField('authPassword', this.value)">
             </div>
           </div>
-          <div class="row between" style="margin-top:-4px">
-            <div class="field-hint" style="margin:0">密码至少 8 位，含字母和数字</div>
-            <button class="link" style="font-size:11px" onclick="app.previewForgotPassword()">忘记密码？</button>
+          <div class="row between">
+            <div class="field-hint">密码至少 8 位，含字母和数字</div>
+            <button class="link compact-link" onclick="app.previewForgotPassword()">忘记密码？</button>
           </div>
         `}
 
         ${state.authError ? `<div class="login-error">${esc(state.authError)}</div>` : ""}
 
-        <button class="btn btn-primary login-submit" onclick="app.previewLogin()">登录并继续</button>
-        <div class="login-auto">${phoneMode ? "未注册手机号会自动创建账号并登录" : "未注册账号会自动创建并登录"}</div>
+        <button class="btn btn-primary login-submit" onclick="app.previewLogin()">登录</button>
       </div>
 
-      <div class="social-divider">
-        <div></div>
-        <span>或使用以下方式登录</span>
-        <div></div>
-      </div>
-
-      <div class="social-row">
-        <button class="social-login wechat" onclick="app.previewSocial('微信')"><span class="social-icon">微</span>微信登录</button>
-        <button class="social-login qq" onclick="app.previewSocial('QQ')"><span class="social-icon">Q</span>QQ 登录</button>
-      </div>
-
-      <div class="login-consent">
-        <button class="consent-check ${state.authConsent ? "checked" : ""}" onclick="app.previewAuthConsent()" aria-label="同意用户协议与隐私政策" aria-pressed="${state.authConsent}">${state.authConsent ? "✓" : ""}</button>
+      <div class="login-consent" onclick="app.previewAuthConsent()" role="button" tabindex="0" aria-label="同意用户协议与隐私政策" aria-pressed="${state.authConsent}">
+        <span class="consent-check ${state.authConsent ? "checked" : ""}">${state.authConsent ? "✓" : ""}</span>
         <div class="login-consent-copy">
-          我已阅读并同意<button class="link" onclick="app.openLegal('terms')">《用户协议》</button>和<button class="link" onclick="app.openLegal('privacy')">《隐私政策》</button>，且已年满 14 周岁
+          我已阅读并同意<button class="link" onclick="event.stopPropagation();app.openLegal('terms')">《用户协议》</button>和<button class="link" onclick="event.stopPropagation();app.openLegal('privacy')">《隐私政策》</button>，且已年满 14 周岁
         </div>
+      </div>
+
+      <div class="login-icon-row">
+        <button class="social-icon-btn apple" onclick="app.previewSocial('Apple')" aria-label="Apple 登录">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M16.7 12.9c0-2 1.6-3 1.7-3.1-.9-1.3-2.3-1.5-2.8-1.5-1.2-.1-2.3.7-2.9.7-.6 0-1.5-.7-2.5-.7-1.3 0-2.5.8-3.2 2-1.4 2.4-.4 5.9 1 7.8.7 1 1.5 2 2.6 2 1 0 1.4-.6 2.6-.6s1.5.6 2.5.6c1.1 0 1.8-.9 2.5-1.9.8-1.1 1.1-2.2 1.1-2.3-.1 0-2.1-.8-2.1-3.1z"/>
+            <path d="M14.6 6.9c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.5.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.2z"/>
+          </svg>
+        </button>
+        <button class="social-icon-btn wechat" onclick="app.previewSocial('微信')" aria-label="微信登录"><span>微</span></button>
+        <button class="social-icon-btn qq" onclick="app.previewSocial('QQ')" aria-label="QQ 登录"><span>Q</span></button>
       </div>
     </div>
   `;

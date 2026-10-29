@@ -1,5 +1,6 @@
 import SwiftUI
 import AuthenticationServices
+import UIKit
 
 enum LegalDocumentKind: String, Identifiable {
     case terms
@@ -45,9 +46,11 @@ struct LoginView: View {
     @State private var registrationPassword = ""
     @State private var showConsentPrompt = false
     @State private var pendingConsentAction: PendingConsentAction?
+    @State private var appleSignIn = AppleSignInCoordinator()
 
     private enum PendingConsentAction {
         case login
+        case apple
         case social(String)
     }
 
@@ -115,6 +118,8 @@ struct LoginView: View {
                 switch action {
                 case .some(.login):
                     performLogin()
+                case .some(.apple):
+                    startAppleSignIn()
                 case .some(.social(let provider)):
                     performSocialLogin(provider)
                 case .none:
@@ -450,63 +455,93 @@ struct LoginView: View {
     }
 
     private var otherLoginSection: some View {
-        HStack(spacing: 10) {
-            SignInWithAppleButton(.signIn) { request in
-                request.requestedScopes = [.fullName, .email]
-            } onCompletion: { result in
-                switch result {
-                case .success(let authorization):
-                    guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
-                          let data = credential.identityToken,
-                          let token = String(data: data, encoding: .utf8) else {
-                        localError = "Apple 登录未返回身份凭证"
-                        return
-                    }
-                    let name = [credential.fullName?.givenName, credential.fullName?.familyName]
-                        .compactMap { $0 }
-                        .joined()
-                    Task {
-                        do {
-                            try await auth.loginWithApple(
-                                identityToken: token,
-                                fullName: name.isEmpty ? nil : name
-                            )
-                        } catch {
-                            localError = error.localizedDescription
-                        }
-                    }
-                case .failure(let error):
-                    if (error as? ASAuthorizationError)?.code != .canceled {
-                        localError = "Apple 登录失败：\(error.localizedDescription)"
-                    }
-                @unknown default:
-                    break
-                }
+        HStack(spacing: 18) {
+            socialIconButton(
+                symbol: "apple.logo",
+                tint: Theme.primaryText,
+                background: Color(.tertiarySystemFill),
+                label: "Apple 登录"
+            ) {
+                startAppleSignIn()
             }
-            .signInWithAppleButtonStyle(.white)
-            .frame(height: 46)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .disabled(!consent || auth.isWorking)
-            .opacity(consent ? 1 : 0.5)
 
-            Menu {
-                Button("微信登录") {
-                    performSocialLoginAfterConsent("wechat")
-                }
-                Button("QQ 登录") {
-                    performSocialLoginAfterConsent("qq")
-                }
-            } label: {
-                Image(systemName: "ellipsis.circle")
-                    .font(.title3)
-                    .foregroundStyle(Theme.secondaryText)
-                    .frame(width: 46, height: 46)
-                    .contentShape(Rectangle())
+            socialIconButton(
+                symbol: "message.fill",
+                tint: Color(red: 0.20, green: 0.78, blue: 0.36),
+                background: Color(red: 0.20, green: 0.78, blue: 0.36).opacity(0.12),
+                label: "微信登录"
+            ) {
+                performSocialLoginAfterConsent("wechat")
             }
-            .disabled(auth.isWorking)
-            .accessibilityLabel("更多登录方式")
+
+            socialIconButton(
+                symbol: "person.2.fill",
+                tint: Color(red: 0.26, green: 0.58, blue: 0.96),
+                background: Color(red: 0.26, green: 0.58, blue: 0.96).opacity(0.12),
+                label: "QQ 登录"
+            ) {
+                performSocialLoginAfterConsent("qq")
+            }
         }
         .padding(.horizontal, 2)
+    }
+
+    private func socialIconButton(
+        symbol: String,
+        tint: Color,
+        background: Color,
+        label: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 21, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 52, height: 52)
+                .background(background, in: Circle())
+                .overlay(Circle().stroke(Theme.stroke, lineWidth: 0.5))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .frame(width: 52, height: 52)
+        .contentShape(Rectangle())
+        .disabled(auth.isWorking)
+        .accessibilityLabel(label)
+    }
+
+    private func startAppleSignIn() {
+        guard consent else {
+            pendingConsentAction = .apple
+            showConsentPrompt = true
+            return
+        }
+
+        appleSignIn.onCredential = { credential in
+            guard let data = credential.identityToken,
+                  let token = String(data: data, encoding: .utf8) else {
+                localError = "Apple 登录未返回身份凭证"
+                return
+            }
+            let name = [credential.fullName?.givenName, credential.fullName?.familyName]
+                .compactMap { $0 }
+                .joined()
+            Task {
+                do {
+                    try await auth.loginWithApple(
+                        identityToken: token,
+                        fullName: name.isEmpty ? nil : name
+                    )
+                } catch {
+                    localError = error.localizedDescription
+                }
+            }
+        }
+        appleSignIn.onError = { error in
+            if (error as? ASAuthorizationError)?.code != .canceled {
+                localError = "Apple 登录失败：\(error.localizedDescription)"
+            }
+        }
+        appleSignIn.start()
     }
 
     private func performSocialLoginAfterConsent(_ provider: String) {
@@ -601,6 +636,58 @@ struct LoginView: View {
                 localError = error.localizedDescription
             }
         }
+    }
+}
+
+/// Retained controller wrapper for the icon-only Sign in with Apple button.
+private final class AppleSignInCoordinator: NSObject,
+    ASAuthorizationControllerDelegate,
+    ASAuthorizationControllerPresentationContextProviding {
+    var onCredential: ((ASAuthorizationAppleIDCredential) -> Void)?
+    var onError: ((Error) -> Void)?
+    private var controller: ASAuthorizationController?
+
+    func start() {
+        let request = ASAuthorizationAppleIDProvider().createRequest()
+        request.requestedScopes = [.fullName, .email]
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        controller.delegate = self
+        controller.presentationContextProvider = self
+        self.controller = controller
+        controller.performRequests()
+    }
+
+    func authorizationController(
+        controller: ASAuthorizationController,
+        didCompleteWithAuthorization authorization: ASAuthorization
+    ) {
+        defer { self.controller = nil }
+        guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else {
+            return
+        }
+        onCredential?(credential)
+        onCredential = nil
+        onError = nil
+    }
+
+    func authorizationController(
+        controller: ASAuthorizationController,
+        didCompleteWithError error: Error
+    ) {
+        defer { self.controller = nil }
+        onError?(error)
+        onCredential = nil
+        onError = nil
+    }
+
+    func presentationAnchor(
+        for controller: ASAuthorizationController
+    ) -> ASPresentationAnchor {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        return scenes
+            .flatMap(\.windows)
+            .first(where: \.isKeyWindow)
+            ?? UIWindow(frame: UIScreen.main.bounds)
     }
 }
 

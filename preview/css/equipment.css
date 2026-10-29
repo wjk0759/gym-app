@@ -2357,3 +2357,135 @@ body.dragging-scroll * {
   }
 }
 
+
+/* ---------- single-screen login preview ---------- */
+.login-page {
+  gap: 14px;
+  padding-top: 14px;
+  padding-bottom: 8px;
+}
+.login-card {
+  gap: 12px;
+  padding: 14px;
+  border-radius: 20px;
+}
+.login-field { gap: 0; }
+.login-input { height: 50px; }
+.field-hint { min-height: 15px; margin: 0 0 0 2px; }
+.login-consent {
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 0;
+  padding: 2px;
+  min-height: 44px;
+}
+.consent-check {
+  width: 22px;
+  height: 22px;
+  margin-top: 0;
+  font-size: 11px;
+}
+.login-consent-copy {
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+.login-consent-copy .link { font-size: 11.5px; }
+.compact-link { padding: 8px 0; font-size: 11.5px; }
+.login-alt-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.apple-login {
+  flex: 1;
+  height: 46px;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  color: #000;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.login-more { position: relative; }
+.login-more summary {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--stroke);
+  border-radius: 50%;
+  background: var(--surface-strong);
+  color: var(--muted);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+.login-more summary::-webkit-details-marker { display: none; }
+.login-more-menu {
+  position: absolute;
+  right: 0;
+  bottom: 54px;
+  display: flex;
+  flex-direction: column;
+  min-width: 132px;
+  padding: 5px;
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  background: #1c1e24;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  z-index: 20;
+}
+.login-more-menu button {
+  appearance: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.login-more-menu button:hover { background: var(--surface); }
+
+/* center the single-screen login inside the preview device */
+.login-page {
+  justify-content: center;
+  min-height: 690px;
+}
+.consent-check {
+  width: 24px;
+  height: 24px;
+}
+
+/* icon-only social login */
+.login-icon-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  padding: 2px 0 6px;
+}
+.social-icon-btn {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--stroke);
+  border-radius: 50%;
+  background: var(--surface-strong);
+  color: var(--text);
+  font: inherit;
+  font-size: 18px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.social-icon-btn svg { width: 23px; height: 23px; fill: currentColor; }
+.social-icon-btn.apple { background: #fff; border-color: #fff; color: #000; }
+.social-icon-btn.wechat span { color: #60dc94; }
+.social-icon-btn.qq span { color: #8fb3fa; }
