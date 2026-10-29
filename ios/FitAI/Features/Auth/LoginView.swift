@@ -73,7 +73,7 @@ struct LoginView: View {
             AppBackground()
 
             Color.black
-                .opacity(focusedField == nil ? 0 : 0.45)
+                .opacity(focusedField == nil ? 0 : 0.72)
                 .ignoresSafeArea()
                 .contentShape(Rectangle())
                 .onTapGesture {
@@ -87,11 +87,11 @@ struct LoginView: View {
                 }
 
                 loginCard
-                    .scaleEffect(focusedField == nil ? 1 : 1.015)
+                    .scaleEffect(focusedField == nil ? 1 : 1.02)
                     .shadow(
-                        color: .black.opacity(focusedField == nil ? 0 : 0.35),
-                        radius: 26,
-                        y: 10
+                        color: .black.opacity(focusedField == nil ? 0 : 0.55),
+                        radius: 34,
+                        y: 14
                     )
 
                 if focusedField == nil {

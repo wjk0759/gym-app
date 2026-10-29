@@ -2539,3 +2539,20 @@ body.dragging-scroll * {
   transform: scale(1.012);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
 }
+
+/* deeper focus mode */
+.app:has(.login-page input:focus)::after {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(1.5px) saturate(0.55);
+  -webkit-backdrop-filter: blur(1.5px) saturate(0.55);
+}
+.app:has(.login-page input:focus) .login-brand,
+.app:has(.login-page input:focus) .login-consent,
+.app:has(.login-page input:focus) .login-icon-row {
+  opacity: 0.12;
+  transition: opacity 220ms ease;
+}
+.app:has(.login-page input:focus) .login-card {
+  transform: scale(1.02);
+  box-shadow: 0 34px 80px rgba(0, 0, 0, 0.65);
+}
