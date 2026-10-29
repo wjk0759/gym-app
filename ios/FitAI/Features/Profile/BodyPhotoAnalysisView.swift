@@ -35,8 +35,6 @@ struct BodyPhotoAnalysisView: View {
                 }
                 .padding(20)
                 .padding(.bottom, 24)
-                .frame(maxWidth: .infinity)
-                .clipped()
             }
             .background(AppBackground())
             .navigationTitle("体型照片分析")
@@ -100,108 +98,7 @@ struct BodyPhotoAnalysisView: View {
 
     private var photoStage: some View {
         VStack(spacing: 12) {
-            ZStack {
-                if let image {
-                    GeometryReader { proxy in
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: proxy.size.width, height: 300)
-                            .clipped()
-                    }
-                    .frame(height: 300)
-                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-
-                    VStack {
-                        HStack {
-                            Label("已选择照片", systemImage: "checkmark.circle.fill")
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(Theme.onMedia)
-                                .padding(.horizontal, 9)
-                                .padding(.vertical, 6)
-                                .background(.black.opacity(0.56), in: Capsule())
-                            Spacer()
-                            Button {
-                                withAnimation(Motion.quick) {
-                                    self.image = nil
-                                    imageData = nil
-                                    analysis = nil
-                                    photoItem = nil
-                                }
-                            } label: {
-                                Image(systemName: "xmark")
-                                    .font(.caption.weight(.bold))
-                                    .foregroundStyle(Theme.onMedia)
-                                    .frame(width: 32, height: 32)
-                                    .background(.black.opacity(0.56), in: Circle())
-                            }
-                            .accessibilityLabel("移除照片")
-                        }
-                        Spacer()
-                    }
-                    .padding(12)
-                } else {
-                    VStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(Theme.accent.opacity(0.10))
-                                .frame(width: 92, height: 92)
-                            Image(systemName: "figure.stand")
-                                .font(.system(size: 54, weight: .light))
-                                .foregroundStyle(Theme.accent)
-                        }
-                        Text("把全身放进画面")
-                            .font(.headline)
-                            .foregroundStyle(Theme.primaryText)
-                        Text("正面或侧面都可以，镜头与腰同高，别裁掉脚")
-                            .font(.caption)
-                            .foregroundStyle(Theme.tertiaryText)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 300)
-                    .background(
-                        LinearGradient(
-                            colors: [Theme.surfaceStrong, Theme.surface],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        in: RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .stroke(
-                                Theme.accent.opacity(0.35),
-                                style: StrokeStyle(lineWidth: 1.2, dash: [8, 7])
-                            )
-                    )
-                    .overlay(alignment: .topLeading) {
-                        cornerMark
-                            .padding(14)
-                    }
-                    .overlay(alignment: .topTrailing) {
-                        cornerMark
-                            .rotationEffect(.degrees(90))
-                            .padding(14)
-                    }
-                    .overlay(alignment: .bottomLeading) {
-                        cornerMark
-                            .rotationEffect(.degrees(-90))
-                            .padding(14)
-                    }
-                    .overlay(alignment: .bottomTrailing) {
-                        cornerMark
-                            .rotationEffect(.degrees(180))
-                            .padding(14)
-                    }
-                }
-
-                if isLoadingPhoto {
-                    ProgressView("正在读取照片…")
-                        .padding(16)
-                        .background(Theme.cardSurface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                }
-            }
+            photoCanvas
 
             HStack(spacing: 10) {
                 Button {
@@ -231,6 +128,140 @@ struct BodyPhotoAnalysisView: View {
             }
         }
         .card()
+    }
+
+    /// A width-driven portrait canvas: the photo is fitted inside instead of
+    /// filling and cropping, so full-body shots keep the head and feet.
+    private var photoCanvas: some View {
+        Color.clear
+            .aspectRatio(4 / 5, contentMode: .fit)
+            .background {
+                LinearGradient(
+                    colors: [Theme.surfaceStrong, Theme.surface],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+            .overlay {
+                if let image {
+                    selectedPhoto(image)
+                } else {
+                    emptyPhoto
+                }
+            }
+            .overlay {
+                if isLoadingPhoto {
+                    ProgressView("正在读取照片…")
+                        .padding(16)
+                        .background(
+                            Theme.cardSurface,
+                            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        )
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(
+                        image == nil ? Theme.accent.opacity(0.35) : Theme.stroke,
+                        style: StrokeStyle(
+                            lineWidth: image == nil ? 1.2 : 0.8,
+                            dash: image == nil ? [8, 7] : []
+                        )
+                    )
+            }
+    }
+
+    private func selectedPhoto(_ image: UIImage) -> some View {
+        GeometryReader { proxy in
+            ZStack {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .blur(radius: 24)
+                    .opacity(0.30)
+                    .clipped()
+
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .padding(8)
+
+                VStack {
+                    HStack {
+                        Label("已选择照片", systemImage: "checkmark.circle.fill")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(Theme.onMedia)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 6)
+                            .background(.black.opacity(0.56), in: Capsule())
+
+                        Spacer()
+
+                        Button {
+                            withAnimation(Motion.quick) {
+                                self.image = nil
+                                imageData = nil
+                                analysis = nil
+                                photoItem = nil
+                            }
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(Theme.onMedia)
+                                .frame(width: 32, height: 32)
+                                .background(.black.opacity(0.56), in: Circle())
+                        }
+                        .accessibilityLabel("移除照片")
+                    }
+                    Spacer()
+                }
+                .padding(12)
+            }
+        }
+    }
+
+    private var emptyPhoto: some View {
+        VStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Theme.accent.opacity(0.10))
+                    .frame(width: 92, height: 92)
+                Image(systemName: "figure.stand")
+                    .font(.system(size: 54, weight: .light))
+                    .foregroundStyle(Theme.accent)
+            }
+
+            Text("把全身放进画面")
+                .font(.headline)
+                .foregroundStyle(Theme.primaryText)
+
+            Text("正面或侧面都可以，镜头与腰同高，别裁掉脚")
+                .font(.caption)
+                .foregroundStyle(Theme.tertiaryText)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay(alignment: .topLeading) {
+            cornerMark.padding(14)
+        }
+        .overlay(alignment: .topTrailing) {
+            cornerMark
+                .rotationEffect(.degrees(90))
+                .padding(14)
+        }
+        .overlay(alignment: .bottomLeading) {
+            cornerMark
+                .rotationEffect(.degrees(-90))
+                .padding(14)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            cornerMark
+                .rotationEffect(.degrees(180))
+                .padding(14)
+        }
     }
 
     private var cornerMark: some View {

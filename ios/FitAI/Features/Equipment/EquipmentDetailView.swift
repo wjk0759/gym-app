@@ -20,6 +20,7 @@ struct EquipmentItemDetailView: View {
     @State private var statsMetric: EquipmentStatsMetric = .volume
     @State private var customStart = Calendar.current.date(byAdding: .month, value: -3, to: Date()) ?? Date()
     @State private var customEnd = Date()
+    @State private var showCustomRange = false
 
     init(itemID: UUID) {
         self.itemID = itemID
@@ -60,6 +61,17 @@ struct EquipmentItemDetailView: View {
 
     private var customRangeInvalid: Bool {
         statsPeriod == .custom && customStart > customEnd
+    }
+
+    private var customRangeLabel: String {
+        let calendar = Calendar.current
+        let sameYear = calendar.component(.year, from: customStart)
+            == calendar.component(.year, from: customEnd)
+        let startStyle: Date.FormatStyle = .dateTime.year().month(.defaultDigits).day()
+        let endStyle: Date.FormatStyle = sameYear
+            ? .dateTime.month(.defaultDigits).day()
+            : .dateTime.year().month(.defaultDigits).day()
+        return "\(customStart.formatted(startStyle)) – \(customEnd.formatted(endStyle))"
     }
 
     var body: some View {
@@ -681,11 +693,49 @@ struct EquipmentItemDetailView: View {
             .padding(.top, 6)
 
             if statsPeriod == .custom {
-                VStack(spacing: 6) {
-                    customDateControl("开始日期", selection: $customStart)
-                    customDateControl("结束日期", selection: $customEnd)
+                Button {
+                    Haptics.tap()
+                    showCustomRange = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Theme.accent)
+
+                        Text(customRangeLabel)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Theme.primaryText)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+
+                        Spacer(minLength: 6)
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                    .padding(.horizontal, 11)
+                    .frame(height: 40)
+                    .background(
+                        Theme.surface,
+                        in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(Theme.stroke, lineWidth: 0.8)
+                    )
                 }
+                .buttonStyle(.plain)
                 .padding(.top, 8)
+                .sheet(isPresented: $showCustomRange) {
+                    EquipmentStatsRangeSheet(
+                        start: customStart,
+                        end: customEnd
+                    ) { start, end in
+                        customStart = start
+                        customEnd = end
+                    }
+                }
 
                 if customRangeInvalid {
                     Text("开始日期不能晚于结束日期。")
@@ -862,33 +912,6 @@ struct EquipmentItemDetailView: View {
                 )
         }
         .buttonStyle(.plain)
-    }
-
-    private func customDateControl(_ title: String, selection: Binding<Date>) -> some View {
-        HStack(spacing: 8) {
-            Text(title)
-                .font(.system(size: 10))
-                .foregroundStyle(Theme.tertiaryText)
-                .lineLimit(1)
-
-            Spacer(minLength: 8)
-
-            DatePicker("", selection: selection, displayedComponents: .date)
-                .labelsHidden()
-                .datePickerStyle(.compact)
-                .fixedSize()
-                .tint(Theme.accent)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(
-            Color.white.opacity(0.035),
-            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color.white.opacity(0.07), lineWidth: 0.8)
-        )
     }
 
     private func coachCard(for item: EquipmentItem) -> some View {
@@ -1251,4 +1274,94 @@ private struct EquipmentDetailStats {
     var maxWeight: Double = 0
     var best1RM: Double = 0
     var last: Date?
+}
+
+/// Compact range picker for the stats card. Keeping the pickers in their own
+/// sheet lets the summary row stay short enough for the card on any iPhone.
+private struct EquipmentStatsRangeSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var start: Date
+    @State private var end: Date
+    let onApply: (Date, Date) -> Void
+
+    init(start: Date, end: Date, onApply: @escaping (Date, Date) -> Void) {
+        _start = State(initialValue: start)
+        _end = State(initialValue: end)
+        self.onApply = onApply
+    }
+
+    private var invalid: Bool {
+        start > end
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(spacing: 8) {
+                        dateRow("开始日期", selection: $start)
+                        dateRow("结束日期", selection: $end)
+                    }
+
+                    if invalid {
+                        Label("开始日期不能晚于结束日期", systemImage: "exclamationmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(Theme.danger)
+                    }
+
+                    Text("只影响下方的趋势和汇总，不会修改训练记录。")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.tertiaryText)
+                        .padding(.top, 2)
+                }
+                .padding(20)
+            }
+            .background(AppBackground())
+            .navigationTitle("自定义统计周期")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("应用") {
+                        onApply(start, end)
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                    .disabled(invalid)
+                }
+            }
+        }
+        .presentationDetents([.height(360)])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(Theme.background)
+    }
+
+    private func dateRow(_ title: String, selection: Binding<Date>) -> some View {
+        HStack(spacing: 12) {
+            Text(title)
+                .font(.subheadline)
+                .foregroundStyle(Theme.primaryText)
+
+            Spacer(minLength: 8)
+
+            DatePicker("", selection: selection, displayedComponents: .date)
+                .labelsHidden()
+                .datePickerStyle(.compact)
+                .fixedSize()
+                .tint(Theme.accent)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(
+            Theme.surface,
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Theme.stroke, lineWidth: 0.8)
+        )
+    }
 }
