@@ -29,8 +29,6 @@ struct SheetPresentingButton<Label: View, SheetContent: View>: View {
         .buttonStyle(SubtlePressStyle(scale: 0.98))
         .sheet(isPresented: $isPresented) {
             sheetContent
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
         }
     }
 }

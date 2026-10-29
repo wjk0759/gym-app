@@ -82,10 +82,9 @@ struct PeriodScheduleView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 28)
             }
+            .background(AppBackground())
             .navigationTitle("经期安排")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Theme.background, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }
@@ -93,7 +92,6 @@ struct PeriodScheduleView: View {
             }
             .onAppear(perform: load)
         }
-        .presentationBackground { PeriodSheetBackground() }
     }
 
     private var header: some View {
@@ -142,7 +140,7 @@ struct PeriodScheduleView: View {
                 }
             }
         }
-        .periodCard()
+        .card()
     }
 
     private var calendarCard: some View {
@@ -191,7 +189,7 @@ struct PeriodScheduleView: View {
                 }
             }
         }
-        .periodCard()
+        .card()
     }
 
     private func dayCell(_ date: Date) -> some View {
@@ -262,40 +260,5 @@ struct PeriodScheduleView: View {
             Haptics.success()
             dismiss()
         }
-    }
-}
-
-private struct PeriodSheetBackground: View {
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        ZStack {
-            Theme.background
-            LinearGradient(
-                colors: [
-                    Theme.surface.opacity(colorScheme == .dark ? 0.92 : 0.72),
-                    .clear
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
-        .ignoresSafeArea()
-    }
-}
-
-private extension View {
-    /// Sheet-local surface: no blur, no shadow, one fill and one hairline.
-    /// The heavy glass card is intentionally avoided while the modal animates.
-    func periodCard() -> some View {
-        padding(16)
-            .background(
-                Theme.surface,
-                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Theme.stroke.opacity(0.75), lineWidth: 0.8)
-            }
     }
 }
