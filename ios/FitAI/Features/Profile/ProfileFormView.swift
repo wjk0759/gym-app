@@ -243,7 +243,7 @@ struct ProfileFormView: View {
             HStack(spacing: 9) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(selected ? Theme.accent.opacity(0.18) : Color.white.opacity(0.05))
+                        .fill(selected ? Theme.accent.opacity(0.18) : Theme.surface)
                         .frame(width: 34, height: 34)
                     Image(systemName: item.symbolName)
                         .font(.system(size: 14, weight: .semibold))
@@ -277,7 +277,7 @@ struct ProfileFormView: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
                     .stroke(
-                        selected ? Theme.accent.opacity(0.42) : Color.white.opacity(0.05),
+                        selected ? Theme.accent.opacity(0.42) : Theme.stroke,
                         lineWidth: 1
                     )
             )

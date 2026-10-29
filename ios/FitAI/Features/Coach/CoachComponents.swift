@@ -9,7 +9,7 @@ struct CoachCard<Content: View>: View {
     var padding: CGFloat = 14
     var cornerRadius: CGFloat = 16
     var surface: Color = Theme.surface
-    var border: Color = Color.white.opacity(0.10)
+    var border: Color = Theme.stroke
     var horizontalPadding: CGFloat = 16
     var verticalPadding: CGFloat = 8
     private let content: Content
@@ -18,7 +18,7 @@ struct CoachCard<Content: View>: View {
         padding: CGFloat = 14,
         cornerRadius: CGFloat = 16,
         surface: Color = Theme.surface,
-        border: Color = Color.white.opacity(0.10),
+        border: Color = Theme.stroke,
         horizontalPadding: CGFloat = 16,
         verticalPadding: CGFloat = 8,
         @ViewBuilder content: () -> Content

@@ -196,6 +196,10 @@ struct BodyPhotoAnalysisView: View {
                     ProgressView("正在读取照片…")
                         .padding(16)
                         .background(Theme.cardSurface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(Theme.stroke, lineWidth: 0.8)
+                        )
                 }
             }
 

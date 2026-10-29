@@ -1053,7 +1053,7 @@ struct CoachChatView: View {
                 .stroke(
                     focused
                         ? Theme.accent.opacity(0.55)
-                        : Color.white.opacity(colorScheme == .dark ? 0.22 : 0.68),
+                        : Theme.stroke,
                     lineWidth: focused ? 1.1 : 0.8
                 )
                 .animation(Motion.quick, value: focused)

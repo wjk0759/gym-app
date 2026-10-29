@@ -27,7 +27,8 @@ struct AmbientBackdrop: View {
 
             RadialGradient(
                 colors: [
-                    Theme.accentTertiary.opacity(dark ? 0.14 : 0.055),
+                    (dark ? Theme.accentTertiary : Theme.accentWarm)
+                        .opacity(dark ? 0.14 : 0.065),
                     .clear
                 ],
                 center: UnitPoint(x: 0.88, y: 0.08),
@@ -37,7 +38,8 @@ struct AmbientBackdrop: View {
 
             RadialGradient(
                 colors: [
-                    Theme.accentSecondary.opacity(dark ? 0.10 : 0.045),
+                    (dark ? Theme.accentSecondary : Theme.accent)
+                        .opacity(dark ? 0.10 : 0.055),
                     .clear
                 ],
                 center: UnitPoint(x: 0.12, y: 0.94),
@@ -48,15 +50,15 @@ struct AmbientBackdrop: View {
             // Cinematic key light from the top-left, vignette toward the bottom-right.
             LinearGradient(
                 colors: [
-                    Color.white.opacity(dark ? 0.045 : 0.16),
+                    Color.white.opacity(dark ? 0.045 : 0.09),
                     .clear,
-                    Color.black.opacity(dark ? 0.28 : 0.04)
+                    Color.black.opacity(dark ? 0.28 : 0.065)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
 
-            GrainTexture(opacity: dark ? 0.05 : 0.022)
+            GrainTexture(opacity: dark ? 0.05 : 0.014)
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)

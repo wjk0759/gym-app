@@ -480,7 +480,7 @@ struct WorkoutSessionView: View {
                         .overlay(
                             Capsule(style: .continuous)
                                 .stroke(
-                                    weightStep == step ? Color.clear : Color.white.opacity(0.07),
+                                    weightStep == step ? Color.clear : Theme.stroke,
                                     lineWidth: 0.8
                                 )
                         )

@@ -13,6 +13,9 @@ struct GlassSurface: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
+        let dark = colorScheme == .dark
+        let tintOpacity = dark ? 0.62 : (material ? 0.60 : 0.90)
+
         ZStack {
             if material {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -20,17 +23,15 @@ struct GlassSurface: View {
             }
 
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(
-                    tint.opacity(colorScheme == .dark ? 0.62 : 0.56)
-                )
+                .fill(tint.opacity(tintOpacity))
 
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(colorScheme == .dark ? 0.10 : 0.42),
-                            Color.white.opacity(0.015),
-                            Color.black.opacity(colorScheme == .dark ? 0.10 : 0.03)
+                            Color.white.opacity(dark ? 0.10 : 0.16),
+                            Color.white.opacity(0.012),
+                            Color.black.opacity(dark ? 0.10 : 0.025)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -50,25 +51,33 @@ struct SoftSurface: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
+        let dark = colorScheme == .dark
+
         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
             .fill(
                 LinearGradient(
                     colors: [
                         tint,
-                        tint.opacity(colorScheme == .dark ? 0.72 : 0.82)
+                        tint.opacity(dark ? 0.72 : 0.94)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
             )
+            .overlay {
+                if !dark {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .fill(Color.black.opacity(0.018))
+                }
+            }
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .stroke(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(colorScheme == .dark ? 0.20 : 0.62),
-                                stroke.opacity(0.8),
-                                Color.black.opacity(colorScheme == .dark ? 0.30 : 0.06)
+                                Color.white.opacity(dark ? 0.20 : 0.42),
+                                stroke.opacity(0.9),
+                                Color.black.opacity(dark ? 0.30 : 0.055)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -87,6 +96,8 @@ struct GlassCardModifier: ViewModifier {
     @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
+        let dark = colorScheme == .dark
+
         content
             .padding(padding)
             .background {
@@ -99,11 +110,17 @@ struct GlassCardModifier: ViewModifier {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .stroke(
                         LinearGradient(
-                            colors: [
-                                Color.white.opacity(colorScheme == .dark ? 0.30 : 0.78),
-                                Theme.stroke.opacity(0.58),
-                                Color.white.opacity(0.025)
-                            ],
+                            colors: dark
+                                ? [
+                                    Color.white.opacity(0.30),
+                                    Theme.stroke.opacity(0.58),
+                                    Color.white.opacity(0.025)
+                                ]
+                                : [
+                                    Color.black.opacity(0.055),
+                                    Theme.cardEdge,
+                                    Color.black.opacity(0.035)
+                                ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),

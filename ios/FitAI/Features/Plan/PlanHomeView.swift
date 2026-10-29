@@ -489,7 +489,7 @@ struct PlanHomeView: View {
                     .font(.system(size: 11.5, weight: .semibold, design: .rounded))
                     .foregroundStyle(
                         isSelected
-                            ? Color.white
+                            ? Theme.accent
                             : (isToday ? Theme.accent : Theme.secondaryText)
                     )
                     .frame(maxWidth: .infinity)
@@ -523,7 +523,7 @@ struct PlanHomeView: View {
             .frame(height: 50)
             .background(
                 RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .fill(isSelected ? Theme.accent.opacity(0.16) : Color.white.opacity(0.025))
+                    .fill(isSelected ? Theme.accent.opacity(0.16) : Theme.surface)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 11, style: .continuous)
@@ -675,7 +675,7 @@ struct PlanHomeView: View {
                     }
                     .padding(9)
                     .background(
-                        Color.white.opacity(0.03),
+                        Theme.surface,
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                     )
                 }
@@ -725,7 +725,7 @@ struct PlanHomeView: View {
                                 .foregroundStyle(Theme.tertiaryText)
                                 .padding(.horizontal, 7)
                                 .padding(.vertical, 4)
-                                .background(Color.white.opacity(0.035), in: Capsule())
+                                .background(Theme.surface, in: Capsule())
                         }
                         if plannedDay.exercises.count > 5 {
                             Text("+\(plannedDay.exercises.count - 5)")
@@ -991,7 +991,7 @@ struct PlanHomeView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(8)
         .background(
-            Color.white.opacity(0.035),
+            Theme.surface,
             in: RoundedRectangle(cornerRadius: 11, style: .continuous)
         )
     }

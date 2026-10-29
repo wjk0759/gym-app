@@ -54,8 +54,8 @@
 
 ## 2026-10 视觉系统升级
 
-- **色彩**：深色模式改为冷调深蓝黑底，主色为薄荷绿，青/紫作为环境点缀；浅色模式保持暖白纸感。新增 `Theme.accentSecondary`、`Theme.accentTertiary`、`Theme.accentWarm` 和 `Theme.accentGradient` / `Theme.buttonGradient`。
-- **背景**：`AmbientBackdrop` 使用静态 mesh 式色场（3 个径向渐变 + 渐变主光 + vignette + grain），不引入 Canvas/TimelineView。
+- **色彩**：深色模式改为冷调深蓝黑底，主色为薄荷绿，青/紫作为环境点缀；浅色模式改为暖纸底 + 实白卡片 + 深色 hairline 边框，避免白卡片在白底上看不到边界。新增 `Theme.accentSecondary`、`Theme.accentTertiary`、`Theme.accentWarm` 和 `Theme.accentGradient` / `Theme.buttonGradient`。
+- **背景**：`AmbientBackdrop` 使用静态 mesh 式色场（3 个径向渐变 + 渐变主光 + vignette + grain），不引入 Canvas/TimelineView；浅色模式使用暖金光晕，深色模式才使用紫/青 mesh。
 - **玻璃态**：`GlassSurface` 增强顶部高光、底部暗边和半透明 tint；普通卡片不加逐卡 shadow。
 - **新拟态**：`SoftSurface` 用双色渐变填充 + 上亮下暗的 hairline 模拟软质控件，用于 Secondary 按钮、Tag、分段选择、加减控件和输入框。
 - **排版**：`AppType` 统一 display/title/headline/body/caption/micro/button 字号；RootView 全局 `fontDesign(.rounded)`；section 标题带 accent 短线。

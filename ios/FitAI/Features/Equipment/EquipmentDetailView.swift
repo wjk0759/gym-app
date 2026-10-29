@@ -247,7 +247,7 @@ struct EquipmentItemDetailView: View {
         .background(Theme.cardSurface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.10), lineWidth: 0.8)
+                .stroke(Theme.stroke, lineWidth: 0.8)
         )
     }
 
@@ -834,12 +834,12 @@ struct EquipmentItemDetailView: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 10)
         .background(
-            Color.white.opacity(0.035),
+            Theme.surface,
             in: RoundedRectangle(cornerRadius: 12, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.white.opacity(0.06), lineWidth: 0.8)
+                .stroke(Theme.stroke, lineWidth: 0.8)
         )
     }
 
@@ -853,13 +853,13 @@ struct EquipmentItemDetailView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 7)
                 .background(
-                    active ? Theme.accent.opacity(0.12) : Color.white.opacity(0.035),
+                    active ? Theme.accent.opacity(0.12) : Theme.surface,
                     in: RoundedRectangle(cornerRadius: 9, style: .continuous)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
                         .stroke(
-                            active ? Theme.accent.opacity(0.28) : Color.white.opacity(0.07),
+                            active ? Theme.accent.opacity(0.28) : Theme.stroke,
                             lineWidth: 0.8
                         )
                 )
@@ -880,12 +880,12 @@ struct EquipmentItemDetailView: View {
         .padding(.horizontal, 7)
         .padding(.vertical, 5)
         .background(
-            Color.white.opacity(0.035),
+            Theme.surface,
             in: RoundedRectangle(cornerRadius: 8, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color.white.opacity(0.07), lineWidth: 0.8)
+                .stroke(Theme.stroke, lineWidth: 0.8)
         )
     }
 

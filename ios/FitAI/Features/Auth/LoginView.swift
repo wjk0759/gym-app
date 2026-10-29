@@ -19,6 +19,7 @@ enum LegalDocumentKind: String, Identifiable {
 
 struct LoginView: View {
     @Environment(AuthStore.self) private var auth
+    @Environment(\.colorScheme) private var colorScheme
 
     private enum Mode: String, CaseIterable, Identifiable {
         case phone = "手机验证码"
@@ -295,10 +296,15 @@ struct LoginView: View {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(
                     LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.16),
-                            Color.white.opacity(0.03)
-                        ],
+                        colors: colorScheme == .dark
+                            ? [
+                                Color.white.opacity(0.16),
+                                Color.white.opacity(0.03)
+                            ]
+                            : [
+                                Theme.cardEdge,
+                                Color.black.opacity(0.035)
+                            ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
@@ -342,7 +348,7 @@ struct LoginView: View {
         }
         .padding(4)
         .background(
-            Color.white.opacity(0.035),
+            Theme.surface,
             in: RoundedRectangle(cornerRadius: 15, style: .continuous)
         )
         .overlay(

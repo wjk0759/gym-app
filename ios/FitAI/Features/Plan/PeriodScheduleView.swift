@@ -208,7 +208,7 @@ struct PeriodScheduleView: View {
                 .frame(height: 38)
                 .background(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(active ? Theme.danger.opacity(0.72) : Color.white.opacity(0.025))
+                        .fill(active ? Theme.danger.opacity(0.72) : Theme.surface)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)

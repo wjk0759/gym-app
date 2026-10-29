@@ -401,7 +401,7 @@ struct EquipmentPickerView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .stroke(Color.white.opacity(0.09), lineWidth: 1)
+                .stroke(Theme.stroke, lineWidth: 1)
         )
     }
 
@@ -429,7 +429,7 @@ struct EquipmentPickerView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                .stroke(Theme.stroke, lineWidth: 1)
         )
     }
 
@@ -513,7 +513,7 @@ struct EquipmentPickerView: View {
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(
-                    selected ? Theme.accent.opacity(0.14) : Color.white.opacity(0.03),
+                    selected ? Theme.accent.opacity(0.14) : Theme.surface,
                     in: RoundedRectangle(cornerRadius: 9, style: .continuous)
                 )
                 .overlay(
@@ -649,7 +649,7 @@ struct EquipmentPickerView: View {
         .overlay(
             RoundedRectangle(cornerRadius: 17, style: .continuous)
                 .stroke(
-                    selected ? Theme.accent.opacity(0.62) : Color.white.opacity(0.075),
+                    selected ? Theme.accent.opacity(0.62) : Theme.stroke,
                     lineWidth: 1
                 )
         )

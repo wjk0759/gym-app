@@ -366,13 +366,13 @@ struct FoodPhotoAnalysisView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
             .background(
-                (isFood ? Color.white.opacity(0.04) : Color.orange.opacity(0.12)),
+                (isFood ? Theme.surface : Color.orange.opacity(0.12)),
                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .stroke(
-                        isFood ? Color.white.opacity(0.06) : Color.orange.opacity(0.35),
+                        isFood ? Theme.stroke : Color.orange.opacity(0.35),
                         lineWidth: 1
                     )
             )

@@ -335,7 +335,7 @@ struct EquipmentLibraryView: View {
                 .padding(.horizontal, 6)
                 .padding(.vertical, 3)
                 .background(
-                    item.videoURL != nil ? Theme.accent.opacity(0.10) : Color.white.opacity(0.04),
+                    item.videoURL != nil ? Theme.accent.opacity(0.10) : Theme.surface,
                     in: Capsule()
                 )
 
@@ -354,7 +354,7 @@ struct EquipmentLibraryView: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [Theme.accent.opacity(0.16), Color.white.opacity(0.035)],
+                        colors: [Theme.accent.opacity(0.16), Theme.surface],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -423,7 +423,7 @@ struct EquipmentLibraryView: View {
         .padding(.horizontal, 24)
         .padding(.vertical, 28)
         .background(
-            Color.white.opacity(0.025),
+            Theme.surface,
             in: RoundedRectangle(cornerRadius: 20, style: .continuous)
         )
         .overlay(

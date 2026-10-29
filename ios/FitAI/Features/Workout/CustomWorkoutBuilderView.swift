@@ -198,7 +198,7 @@ struct CustomWorkoutBuilderView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                .stroke(Theme.stroke, lineWidth: 1)
         )
     }
 
@@ -293,19 +293,13 @@ struct CustomWorkoutBuilderView: View {
             }
         }
         .padding(11)
-        .background(
-            LinearGradient(
-                colors: [Color.white.opacity(0.05), Color.white.opacity(0.018)],
-                startPoint: .top,
-                endPoint: .bottom
-            ),
-            in: RoundedRectangle(cornerRadius: 17, style: .continuous)
-        )
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 17, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 17, style: .continuous)
-                .stroke(Color.white.opacity(0.075), lineWidth: 1)
-        )
+        .background {
+            SoftSurface(
+                cornerRadius: 17,
+                tint: Theme.surface,
+                stroke: Theme.stroke
+            )
+        }
         .dropDestination(for: String.self) { items, _ in
             guard
                 let raw = items.first,
@@ -335,11 +329,13 @@ struct CustomWorkoutBuilderView: View {
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(destructive ? Theme.danger : Theme.secondaryText)
                 .frame(width: 32, height: 32)
-                .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color.white.opacity(0.075), lineWidth: 1)
-                )
+                .background {
+                    SoftSurface(
+                        cornerRadius: 10,
+                        tint: Theme.surface,
+                        stroke: Theme.stroke
+                    )
+                }
         }
         .buttonStyle(SubtlePressStyle(scale: 0.94))
         .disabled(disabled)

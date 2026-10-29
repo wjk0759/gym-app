@@ -6,11 +6,11 @@ enum Theme {
     /// Light mode stays warm and paper-like so the glass surfaces read clearly.
     static let background = adaptive(
         dark: UIColor(red: 0.020, green: 0.026, blue: 0.038, alpha: 1),
-        light: UIColor(red: 0.949, green: 0.958, blue: 0.947, alpha: 1)
+        light: UIColor(red: 0.945, green: 0.949, blue: 0.936, alpha: 1)
     )
     static let cardSurface = adaptive(
         dark: UIColor(red: 0.055, green: 0.067, blue: 0.085, alpha: 1),
-        light: UIColor(red: 0.986, green: 0.990, blue: 0.983, alpha: 1)
+        light: UIColor(red: 0.998, green: 0.999, blue: 0.996, alpha: 1)
     )
     static let chrome = adaptive(
         dark: UIColor(red: 0.024, green: 0.032, blue: 0.046, alpha: 0.86),
@@ -18,15 +18,15 @@ enum Theme {
     )
     static let surface = adaptive(
         dark: UIColor(white: 1, alpha: 0.06),
-        light: UIColor(white: 0, alpha: 0.04)
+        light: UIColor(white: 0, alpha: 0.045)
     )
     static let surfaceStrong = adaptive(
         dark: UIColor(white: 1, alpha: 0.105),
-        light: UIColor(white: 0, alpha: 0.07)
+        light: UIColor(white: 0, alpha: 0.075)
     )
     static let stroke = adaptive(
         dark: UIColor(white: 1, alpha: 0.105),
-        light: UIColor(white: 0, alpha: 0.085)
+        light: UIColor(white: 0, alpha: 0.13)
     )
     static let primaryText = adaptive(
         dark: UIColor(white: 0.97, alpha: 1),
@@ -34,31 +34,31 @@ enum Theme {
     )
     static let secondaryText = adaptive(
         dark: UIColor(white: 1, alpha: 0.68),
-        light: UIColor(white: 0, alpha: 0.60)
+        light: UIColor(white: 0, alpha: 0.62)
     )
     static let tertiaryText = adaptive(
         dark: UIColor(white: 1, alpha: 0.48),
-        light: UIColor(white: 0, alpha: 0.47)
+        light: UIColor(white: 0, alpha: 0.50)
     )
     static let accent = adaptive(
         dark: UIColor(red: 0.42, green: 0.96, blue: 0.58, alpha: 1),
-        light: UIColor(red: 0.020, green: 0.470, blue: 0.220, alpha: 1)
+        light: UIColor(red: 0.020, green: 0.440, blue: 0.210, alpha: 1)
     )
     static let accentDeep = adaptive(
         dark: UIColor(red: 0.10, green: 0.62, blue: 0.38, alpha: 1),
-        light: UIColor(red: 0.010, green: 0.330, blue: 0.150, alpha: 1)
+        light: UIColor(red: 0.010, green: 0.310, blue: 0.140, alpha: 1)
     )
     static let accentSecondary = adaptive(
         dark: UIColor(red: 0.36, green: 0.84, blue: 1.0, alpha: 1),
-        light: UIColor(red: 0.050, green: 0.420, blue: 0.620, alpha: 1)
+        light: UIColor(red: 0.030, green: 0.360, blue: 0.540, alpha: 1)
     )
     static let accentTertiary = adaptive(
         dark: UIColor(red: 0.72, green: 0.62, blue: 1.0, alpha: 1),
-        light: UIColor(red: 0.360, green: 0.270, blue: 0.680, alpha: 1)
+        light: UIColor(red: 0.320, green: 0.240, blue: 0.580, alpha: 1)
     )
     static let accentWarm = adaptive(
         dark: UIColor(red: 1.0, green: 0.72, blue: 0.38, alpha: 1),
-        light: UIColor(red: 0.700, green: 0.420, blue: 0.080, alpha: 1)
+        light: UIColor(red: 0.620, green: 0.380, blue: 0.060, alpha: 1)
     )
     static let onAccent = adaptive(
         dark: UIColor(red: 0.008, green: 0.025, blue: 0.012, alpha: 0.95),
@@ -78,15 +78,15 @@ enum Theme {
     )
     static let shadow = adaptive(
         dark: UIColor(white: 0, alpha: 0.35),
-        light: UIColor(white: 0, alpha: 0.10)
+        light: UIColor(white: 0, alpha: 0.12)
     )
     static let shadowSoft = adaptive(
         dark: UIColor(white: 0, alpha: 0.16),
-        light: UIColor(white: 0, alpha: 0.05)
+        light: UIColor(white: 0, alpha: 0.06)
     )
     static let cardEdge = adaptive(
         dark: UIColor(white: 1, alpha: 0.16),
-        light: UIColor(white: 0, alpha: 0.08)
+        light: UIColor(white: 0, alpha: 0.12)
     )
 
     /// Reusable accent ramps for buttons, section markers and highlights.
