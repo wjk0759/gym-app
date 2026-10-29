@@ -762,18 +762,20 @@ struct SettingsView: View {
                 legalDocument = .ai
             }
 
-            Link(destination: URL(string: "https://repdb.co/")!) {
-                HStack {
-                    Image(systemName: "figure.strengthtraining.traditional")
-                        .foregroundStyle(Theme.accent)
-                        .frame(width: 22)
-                    Text("动作图：Exercise data by RepDB (repdb.co)")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.secondaryText)
-                    Spacer()
-                    Image(systemName: "arrow.up.right")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
+            if let repDBURL = URL(string: "https://repdb.co/") {
+                Link(destination: repDBURL) {
+                    HStack {
+                        Image(systemName: "figure.strengthtraining.traditional")
+                            .foregroundStyle(Theme.accent)
+                            .frame(width: 22)
+                        Text("动作图：Exercise data by RepDB (repdb.co)")
+                            .font(.caption2)
+                            .foregroundStyle(Theme.secondaryText)
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                            .font(.caption2)
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
                 }
             }
 

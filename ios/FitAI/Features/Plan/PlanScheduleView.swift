@@ -202,7 +202,7 @@ struct PlanScheduleView: View {
         }
         daysPerWeek = min(7, max(1, plan.weeklyDays ?? max(1, plan.days.count / max(1, plan.weeks))))
         startDate = FitnessDate.startOfDay(Date())
-        let offsets = defaultOffsets[daysPerWeek] ?? defaultOffsets[3]!
+        let offsets = defaultOffsets[daysPerWeek] ?? [0]
         for block in blocks {
             let blockDays = plan.days.filter { day in
                 guard let dayDate = plan.scheduledDate(for: day) else { return false }

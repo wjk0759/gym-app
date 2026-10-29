@@ -276,8 +276,12 @@ private struct PhotoCapturePreview: UIViewRepresentable {
 
     final class PreviewView: UIView {
         override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
+
         var previewLayer: AVCaptureVideoPreviewLayer {
-            layer as! AVCaptureVideoPreviewLayer
+            // `layerClass` guarantees this on supported iOS versions; the
+            // fallback keeps a preview alive instead of crashing if that ever
+            // changes under a future SDK.
+            layer as? AVCaptureVideoPreviewLayer ?? AVCaptureVideoPreviewLayer()
         }
     }
 }

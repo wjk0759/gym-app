@@ -14,6 +14,7 @@ struct RootView: View {
     @State private var phaseNow = Date()
     @State private var keyboardVisible = false
     @State private var syncedUserID: String?
+    @State private var toastDismissTask: Task<Void, Never>?
 
     private let phaseTimer = Timer.publish(every: 300, on: .main, in: .common).autoconnect()
 
@@ -49,6 +50,16 @@ struct RootView: View {
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
+        .overlay(alignment: .top) {
+            if let message = store.toast, !message.isEmpty {
+                ToastBanner(message: message)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .allowsHitTesting(false)
+            }
+        }
+        .animation(Motion.resolved(Motion.quick, reduceMotion: reduceMotion), value: store.toast)
         .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: auth.isRestoring)
         .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: auth.isAuthenticated)
         .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: store.profile.isOnboarded)
@@ -104,6 +115,21 @@ struct RootView: View {
                     activateWeatherIfNeeded()
                 }
             }
+        }
+        .onChange(of: store.toast) { _, message in
+            toastDismissTask?.cancel()
+            guard let message, !message.isEmpty else { return }
+            toastDismissTask = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 2_800_000_000)
+                guard !Task.isCancelled, store.toast == message else { return }
+                withAnimation(Motion.resolved(Motion.quick, reduceMotion: reduceMotion)) {
+                    store.toast = nil
+                }
+            }
+        }
+        .onDisappear {
+            toastDismissTask?.cancel()
+            toastDismissTask = nil
         }
     }
 

@@ -142,7 +142,9 @@ enum VideoAttachmentProcessor {
         guard encodedFrames.reduce(0, { $0 + $1.count }) <= 24 * 1024 * 1024 else {
             throw VideoAttachmentError.encodeFailed
         }
-        let thumbnail = selected[0].image
+        guard let thumbnail = selected.first?.image else {
+            throw VideoAttachmentError.noFrames
+        }
 
         let prompt = analysisPrompt(
             duration: seconds,
