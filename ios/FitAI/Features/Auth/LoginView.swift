@@ -20,6 +20,7 @@ enum LegalDocumentKind: String, Identifiable {
 
 struct LoginView: View {
     @Environment(AuthStore.self) private var auth
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private enum Mode: String, CaseIterable, Identifiable, Hashable {
         case phone = "手机验证码"
@@ -68,29 +69,45 @@ struct LoginView: View {
     }
 
     var body: some View {
-        VStack(spacing: 14) {
-            if focusedField == nil {
-                brandHeader
-            }
-
-            loginCard
-
-            if focusedField == nil {
-                consentFooter
-                otherLoginSection
-            }
-        }
-        .frame(maxWidth: 420)
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background {
+        ZStack {
             AppBackground()
+
+            Color.black
+                .opacity(focusedField == nil ? 0 : 0.45)
+                .ignoresSafeArea()
                 .contentShape(Rectangle())
                 .onTapGesture {
                     focusedField = nil
                 }
+                .allowsHitTesting(focusedField != nil)
+
+            VStack(spacing: 14) {
+                if focusedField == nil {
+                    brandHeader
+                }
+
+                loginCard
+                    .scaleEffect(focusedField == nil ? 1 : 1.015)
+                    .shadow(
+                        color: .black.opacity(focusedField == nil ? 0 : 0.35),
+                        radius: 26,
+                        y: 10
+                    )
+
+                if focusedField == nil {
+                    consentFooter
+                    otherLoginSection
+                }
+            }
+            .frame(maxWidth: 420)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .animation(
+            Motion.resolved(.easeInOut(duration: 0.22), reduceMotion: reduceMotion),
+            value: focusedField
+        )
         .sheet(item: $legal) { kind in
             LegalDocumentView(kind: kind)
         }
