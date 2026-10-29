@@ -259,14 +259,13 @@ struct ValueStepperControl: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 52)
-        .background(
-            Theme.surfaceStrong,
-            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.white.opacity(0.075), lineWidth: 1)
-        )
+        .background {
+            SoftSurface(
+                cornerRadius: 14,
+                tint: Theme.surfaceStrong,
+                stroke: Theme.stroke
+            )
+        }
         .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
@@ -280,14 +279,13 @@ struct ValueStepperControl: View {
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(enabled ? Theme.accent : Theme.tertiaryText.opacity(0.35))
                 .frame(width: 54, height: 52)
-                .background(
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .fill(enabled ? Theme.accent.opacity(0.13) : Color.white.opacity(0.035))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .stroke(enabled ? Theme.accent.opacity(0.28) : Color.clear, lineWidth: 1)
-                )
+                .background {
+                    SoftSurface(
+                        cornerRadius: 15,
+                        tint: enabled ? Theme.accent.opacity(0.13) : Theme.surface,
+                        stroke: enabled ? Theme.accent.opacity(0.28) : Theme.stroke
+                    )
+                }
                 .contentShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
         }
         .buttonStyle(SubtlePressStyle(scale: 0.92))

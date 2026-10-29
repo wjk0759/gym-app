@@ -13,15 +13,15 @@ struct ToastBanner: View {
                 .accessibilityHidden(true)
 
             Text(message)
-                .font(.caption.weight(.semibold))
+                .font(AppType.caption.weight(.semibold))
                 .foregroundStyle(Theme.primaryText)
                 .fixedSize(horizontal: false, vertical: true)
                 .lineLimit(3)
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             GlassSurface(cornerRadius: 16, material: true)
@@ -30,7 +30,7 @@ struct ToastBanner: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color.white.opacity(0.16), lineWidth: 0.8)
         }
-        .shadow(color: Theme.shadow.opacity(0.28), radius: 12, y: 5)
+        .shadow(color: Theme.shadow.opacity(0.24), radius: 14, y: 6)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isStaticText)
     }

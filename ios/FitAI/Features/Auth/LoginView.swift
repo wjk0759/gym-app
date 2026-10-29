@@ -173,15 +173,9 @@ struct LoginView: View {
         HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: compact ? 13 : 15, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Theme.accent, Theme.accentDeep],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(Theme.buttonGradient)
                     .frame(width: compact ? 42 : 48, height: compact ? 42 : 48)
-                    .shadow(color: Theme.accent.opacity(0.40), radius: 18, y: 8)
+                    .shadow(color: Theme.accent.opacity(0.34), radius: 16, y: 8)
                 Image(systemName: "figure.strengthtraining.traditional")
                     .font(.system(size: compact ? 19 : 22, weight: .bold))
                     .foregroundStyle(Theme.onAccent)
@@ -217,9 +211,10 @@ struct LoginView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("登录练途")
                 .font(.system(size: compact ? 27 : 34, weight: .bold, design: .rounded))
+                .tracking(-0.5)
                 .foregroundStyle(Theme.primaryText)
             Text("同步训练计划、记录和 AI 复盘")
-                .font(compact ? .caption : .subheadline)
+                .font(compact ? AppType.caption : AppType.body)
                 .foregroundStyle(Theme.secondaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -372,17 +367,13 @@ struct LoginView: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 52)
-        .background(
-            focused ? Theme.accent.opacity(0.06) : Theme.surfaceStrong,
-            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(
-                    focused ? Theme.accent.opacity(0.55) : Theme.stroke,
-                    lineWidth: focused ? 1.2 : 1
-                )
-        )
+        .background {
+            SoftSurface(
+                cornerRadius: 14,
+                tint: focused ? Theme.accent.opacity(0.06) : Theme.surfaceStrong,
+                stroke: focused ? Theme.accent.opacity(0.55) : Theme.stroke
+            )
+        }
         .animation(Motion.quick, value: focused)
     }
 

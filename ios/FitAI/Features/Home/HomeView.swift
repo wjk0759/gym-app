@@ -19,7 +19,7 @@ struct HomeView: View {
 
         return NavigationStack {
             AppScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: AppLayout.sectionSpacing) {
                     greeting
                         .staggerIn(0)
 
@@ -192,12 +192,13 @@ struct HomeView: View {
         HStack(alignment: .top, spacing: 10) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("\(timeGreeting)，\(store.profile.nickname)")
-                    .font(.headline.weight(.semibold))
+                    .font(AppType.headline)
+                    .tracking(-0.1)
                     .foregroundStyle(Theme.primaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
                 Text(Date().formatted(.dateTime.month().day().weekday(.wide)))
-                    .font(.subheadline)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
             }
             .layoutPriority(1)
@@ -273,18 +274,27 @@ struct HomeView: View {
 
     private var coachHero: some View {
         ZStack(alignment: .topTrailing) {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
+            RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
-                            Theme.accent.opacity(0.94),
-                            Theme.accentDeep.opacity(0.82),
-                            Theme.cardSurface
+                            Theme.accent,
+                            Theme.accentDeep,
+                            Theme.accentSecondary
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
+                .overlay(alignment: .topTrailing) {
+                    RadialGradient(
+                        colors: [Color.white.opacity(0.26), .clear],
+                        center: .topTrailing,
+                        startRadius: 2,
+                        endRadius: 220
+                    )
+                    .allowsHitTesting(false)
+                }
 
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
@@ -292,21 +302,22 @@ struct HomeView: View {
                         .font(.system(size: 14, weight: .black, design: .rounded))
                     Text("AI FITNESS CLUB")
                         .font(.system(size: 8, weight: .bold))
-                        .tracking(1.4)
-                        .opacity(0.55)
+                        .tracking(2.0)
+                        .opacity(0.58)
                 }
-                .foregroundStyle(Theme.onAccent.opacity(0.78))
+                .foregroundStyle(Theme.onAccent.opacity(0.80))
 
                 HStack(alignment: .center, spacing: 4) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("不画饼，\n只把今天练明白。")
-                            .font(.system(size: 24, weight: .heavy, design: .rounded))
-                            .foregroundStyle(Theme.onAccent.opacity(0.9))
+                            .font(.system(size: 26, weight: .heavy, design: .rounded))
+                            .tracking(-0.4)
+                            .foregroundStyle(Theme.onAccent.opacity(0.92))
                             .fixedSize(horizontal: false, vertical: true)
 
                         Text("训练、饮食、动作点评，直接跟教练说。")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Theme.onAccent.opacity(0.62))
+                            .font(AppType.caption.weight(.semibold))
+                            .foregroundStyle(Theme.onAccent.opacity(0.72))
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
@@ -353,23 +364,23 @@ struct HomeView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity)
-        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
+            RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
                 .stroke(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.40),
+                            Color.white.opacity(0.46),
                             Color.white.opacity(0.08),
-                            Color.black.opacity(0.10)
+                            Color.black.opacity(0.12)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
-                    lineWidth: 0.8
+                    lineWidth: 0.9
                 )
         }
-        .shadow(color: Theme.accent.opacity(0.20), radius: 22, y: 12)
+        .shadow(color: Theme.accent.opacity(0.24), radius: 20, y: 12)
     }
 
     private var timeGreeting: String {

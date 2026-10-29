@@ -35,13 +35,12 @@ struct CoachCard<Content: View>: View {
     var body: some View {
         content
             .padding(padding)
-            .background(
-                surface,
-                in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(border, lineWidth: 1)
+            .background {
+                SoftSurface(
+                    cornerRadius: cornerRadius,
+                    tint: surface,
+                    stroke: border
+                )
             }
             .padding(.horizontal, horizontalPadding)
             .padding(.vertical, verticalPadding)
@@ -54,7 +53,8 @@ struct CoachEyebrow: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 9, weight: .bold))
+            .font(AppType.micro)
+            .tracking(1.4)
             .foregroundStyle(tint)
     }
 }
@@ -65,7 +65,8 @@ struct CoachStatusText: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 9, weight: .semibold))
+            .font(AppType.micro)
+            .tracking(0.8)
             .foregroundStyle(tint)
     }
 }

@@ -182,5 +182,6 @@ cd E:\Projects\FitAI\backend
 - `PrimaryButtonStyle` 改为静态阴影，移除 `brightness` 动画，只保留透明度与轻微缩放。
 - `Haptics` 复用共享生成器，避免每次点击创建并预热 Taptic Engine。
 - Tab Bar 只保留 `UITabBarAppearance` 的 blur，移除 SwiftUI 叠加的 Material。
+- 视觉系统升级为静态 mesh 背景 + 一次性 grain 纹理 + `SoftSurface` 新拟态控件；仍保持不运行逐帧背景、不给普通卡片加 shadow。
 
 复测重点：首页打开 Sheet、首页推入饮食/记录页、其他 Tab 推入详情页、长列表滚动、连续点按主要按钮。若仍有转场掉帧，下一步应把 Sheet/全屏入口状态从大页面根部下沉到小 wrapper（参考 `SheetPresentingButton`），并拆分超大 body。

@@ -41,13 +41,15 @@ struct WeatherBadgeView: View {
                 }
                 .frame(maxWidth: 104, alignment: .leading)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(Theme.surfaceStrong, in: Capsule(style: .continuous))
-            .overlay(
-                Capsule(style: .continuous)
-                    .stroke(Theme.stroke, lineWidth: 0.8)
-            )
+            .padding(.horizontal, 11)
+            .padding(.vertical, 8)
+            .background {
+                SoftSurface(
+                    cornerRadius: 999,
+                    tint: Theme.surfaceStrong,
+                    stroke: Theme.stroke
+                )
+            }
         }
         .buttonStyle(SubtlePressStyle(scale: 0.96))
         .accessibilityLabel(accessibilityText)

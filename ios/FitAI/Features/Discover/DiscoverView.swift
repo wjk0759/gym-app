@@ -3,6 +3,7 @@ import SwiftUI
 /// 发现：认器械、学动作、找训练与饮食方案。把原来分散在“器械”Tab 的能力收进一个入口。
 struct DiscoverView: View {
     @Environment(AppStore.self) private var store
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var showEquipmentScan = false
     @State private var showBodyAnalysis = false
@@ -35,11 +36,15 @@ struct DiscoverView: View {
     var body: some View {
         NavigationStack {
             AppScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: AppLayout.sectionSpacing) {
                     header
+                        .staggerIn(0)
                     equipmentHero
+                        .staggerIn(1)
                     quickGrid
+                        .staggerIn(2)
                     actionReviewCard
+                        .staggerIn(3)
 
                     VStack(alignment: .leading, spacing: 10) {
                         SectionTitle(title: "训练方案", subtitle: "先选分化，再让教练排动作。")
@@ -151,12 +156,13 @@ struct DiscoverView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 7) {
             Text("发现")
-                .font(.system(size: 34, weight: .heavy, design: .rounded))
+                .font(AppType.display)
+                .tracking(-0.6)
                 .foregroundStyle(Theme.primaryText)
             Text("认器械，学动作，找方案。")
-                .font(.subheadline)
+                .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
         }
     }
@@ -167,42 +173,60 @@ struct DiscoverView: View {
             showEquipmentScan = true
         } label: {
             ZStack(alignment: .topTrailing) {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
                     .fill(
                         LinearGradient(
-                            colors: [Theme.accent.opacity(0.88), Theme.accentDeep.opacity(0.62)],
+                            colors: [
+                                Theme.accent,
+                                Theme.accentDeep,
+                                Theme.accentSecondary
+                            ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
+                    .overlay(alignment: .topTrailing) {
+                        RadialGradient(
+                            colors: [
+                                Color.white.opacity(colorScheme == .dark ? 0.24 : 0.10),
+                                .clear
+                            ],
+                            center: .topTrailing,
+                            startRadius: 2,
+                            endRadius: 200
+                        )
+                        .allowsHitTesting(false)
+                    }
 
                 HeroGlyph(
                     symbol: "dumbbell.fill",
                     size: 146,
-                    tint: Theme.onMedia
+                    tint: Theme.onAccent
                 )
                 .offset(x: 22, y: 24)
 
                 VStack(alignment: .leading, spacing: 9) {
                     Text("不认识器械？")
-                        .font(.system(size: 24, weight: .heavy, design: .rounded))
-                        .foregroundStyle(Theme.onAccent.opacity(0.86))
+                        .font(.system(size: 25, weight: .heavy, design: .rounded))
+                        .tracking(-0.3)
+                        .foregroundStyle(Theme.onAccent.opacity(0.88))
                     Text("拍给我。识别后直接告诉你练什么、怎么练。")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Theme.onAccent.opacity(0.64))
+                        .font(AppType.caption)
+                        .foregroundStyle(Theme.onAccent.opacity(0.74))
                         .fixedSize(horizontal: false, vertical: true)
                     Label("拍器械", systemImage: "camera.fill")
-                        .font(.caption.weight(.bold))
+                        .font(AppType.caption.weight(.bold))
                         .foregroundStyle(Theme.onMedia)
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, 13)
                         .padding(.vertical, 8)
                         .background(Color.black.opacity(0.72), in: Capsule())
                 }
-                .padding(18)
+                .padding(19)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .frame(maxWidth: .infinity, minHeight: 152, alignment: .topLeading)
+            .clipShape(RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous))
+            .shadow(color: Theme.accent.opacity(0.22), radius: 18, y: 10)
         }
         .buttonStyle(.plain)
     }
@@ -254,34 +278,42 @@ struct DiscoverView: View {
         icon: String,
         color: Color
     ) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: icon)
                     .font(.headline.weight(.bold))
                     .foregroundStyle(color)
-                    .frame(width: 34, height: 34)
-                    .background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .frame(width: 36, height: 36)
+                    .background {
+                        SoftSurface(
+                            cornerRadius: 11,
+                            tint: color.opacity(0.12),
+                            stroke: color.opacity(0.22)
+                        )
+                    }
                 Spacer()
                 Image(systemName: "arrow.up.right")
                     .font(.caption.weight(.bold))
                     .foregroundStyle(Theme.tertiaryText)
             }
             Text(title)
-                .font(.subheadline.weight(.bold))
+                .font(AppType.callout.weight(.semibold))
                 .foregroundStyle(Theme.primaryText)
             Text(subtitle)
-                .font(.caption2)
+                .font(AppType.caption)
                 .foregroundStyle(Theme.tertiaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.82)
         }
-        .frame(maxWidth: .infinity, minHeight: 115, alignment: .topLeading)
-        .padding(12)
-        .background(Theme.cardSurface, in: RoundedRectangle(cornerRadius: 17, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 17, style: .continuous)
-                .stroke(Theme.stroke, lineWidth: 0.8)
-        )
+        .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
+        .padding(14)
+        .background {
+            SoftSurface(
+                cornerRadius: 17,
+                tint: Theme.cardSurface,
+                stroke: Theme.stroke
+            )
+        }
     }
 
     private var actionReviewCard: some View {

@@ -11,7 +11,7 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             AppScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: AppLayout.sectionSpacing) {
                     sectionLabel("账户与会员")
                         .padding(.top, 0)
                     accountCard
@@ -136,11 +136,11 @@ struct ProfileView: View {
 
     private func sectionLabel(_ text: String) -> some View {
         Text(text)
-            .font(.caption.weight(.semibold))
+            .font(AppType.micro)
+            .tracking(1.2)
             .foregroundStyle(Theme.tertiaryText)
-            .textCase(.uppercase)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 8)
+            .padding(.top, 10)
             .padding(.horizontal, 2)
     }
 

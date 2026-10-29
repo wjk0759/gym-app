@@ -300,37 +300,45 @@ struct PlanHomeView: View {
         icon: String,
         tint: Color
     ) -> some View {
-        VStack(alignment: .leading, spacing: 9) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: icon)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(tint)
-                    .frame(width: 30, height: 30)
-                    .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .frame(width: 32, height: 32)
+                    .background {
+                        SoftSurface(
+                            cornerRadius: 10,
+                            tint: tint.opacity(0.12),
+                            stroke: tint.opacity(0.22)
+                        )
+                    }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(Theme.tertiaryText)
             }
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(AppType.caption.weight(.semibold))
                     .foregroundStyle(Theme.primaryText)
                 Text(subtitle)
-                    .font(.system(size: 9.5))
+                    .font(AppType.micro)
                     .foregroundStyle(Theme.tertiaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
         }
-        .padding(12)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.cardSurface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.07), lineWidth: 0.8)
-        )
+        .background {
+            SoftSurface(
+                cornerRadius: 16,
+                tint: Theme.cardSurface,
+                stroke: Theme.stroke
+            )
+        }
     }
 
     // MARK: - 日历

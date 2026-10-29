@@ -42,6 +42,7 @@ struct RootView: View {
         }
         .environment(\.weatherAtmosphere, atmosphere)
         .environment(\.keyboardVisible, keyboardVisible)
+        .fontDesign(.rounded)
         .tint(atmosphere.accent(for: colorScheme))
         // 全屏水珠层会持续参与合成；雨天效果保留在背景天空里，避免影响滚动和输入。
         .overlay {
@@ -145,9 +146,9 @@ struct RootView: View {
         VStack(spacing: 18) {
             ZStack {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(Theme.accent)
+                    .fill(Theme.buttonGradient)
                     .frame(width: 72, height: 72)
-                    .shadow(color: Theme.accent.opacity(0.45), radius: 24, y: 8)
+                    .shadow(color: Theme.accent.opacity(0.38), radius: 20, y: 8)
                 Image(systemName: "figure.strengthtraining.traditional")
                     .font(.system(size: 31, weight: .bold))
                     .foregroundStyle(Theme.onAccent)
@@ -163,11 +164,12 @@ struct RootView: View {
 
             Text("练途")
                 .font(.system(size: 28, weight: .bold, design: .rounded))
+                .tracking(-0.3)
                 .foregroundStyle(Theme.primaryText)
             ProgressView()
                 .tint(Theme.accent)
             Text("正在恢复登录状态…")
-                .font(.caption)
+                .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

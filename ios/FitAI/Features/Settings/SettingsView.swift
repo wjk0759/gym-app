@@ -41,7 +41,7 @@ struct SettingsView: View {
 
     var body: some View {
         AppScrollView {
-            VStack(spacing: 16) {
+            VStack(spacing: AppLayout.sectionSpacing) {
                 accountCard
 
                 sectionLabel("服务状态")
@@ -815,11 +815,11 @@ struct SettingsView: View {
 
     private func sectionLabel(_ text: String) -> some View {
         Text(text)
-            .font(.caption.weight(.semibold))
+            .font(AppType.micro)
+            .tracking(1.2)
             .foregroundStyle(Theme.tertiaryText)
-            .textCase(.uppercase)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 8)
+            .padding(.top, 10)
             .padding(.horizontal, 2)
     }
 }

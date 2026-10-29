@@ -7,10 +7,16 @@ import SwiftUI
 /// size classes stay consistent.
 enum AppLayout {
     static let readableMaxWidth: CGFloat = 720
-    static let compactPadding: CGFloat = 16
-    static let regularPadding: CGFloat = 24
-    static let sectionSpacing: CGFloat = 16
-    static let actionBarSpacing: CGFloat = 10
+    static let compactPadding: CGFloat = 18
+    static let regularPadding: CGFloat = 28
+    static let sectionSpacing: CGFloat = 18
+    static let actionBarSpacing: CGFloat = 12
+
+    /// Card rhythm. More generous than control spacing so content breathes.
+    static let cardPadding: CGFloat = 20
+    static let cardCornerRadius: CGFloat = 22
+    static let heroCornerRadius: CGFloat = 28
+    static let controlCornerRadius: CGFloat = 14
 }
 
 private struct AppPagePadding: ViewModifier {

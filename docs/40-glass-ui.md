@@ -14,6 +14,9 @@
 
 - `ios/FitAI/Core/Design/GlassSurface.swift`
 - `ios/FitAI/Core/Design/Theme.swift`
+- `ios/FitAI/Core/Design/AmbientBackdrop.swift`
+- `ios/FitAI/Core/Design/GrainTexture.swift`
+- `ios/FitAI/Core/Design/Typography.swift`
 - `ios/FitAI/App/FitAIApp.swift`
 - `ios/FitAI/Features/Coach/CoachChatView.swift`
 
@@ -48,3 +51,15 @@
 - 输入框使用一个 Material，不嵌套 Material。
 - Tab Bar 的模糊只由 `UITabBarAppearance` 负责，不再叠加 SwiftUI Material。
 - 页面滚动主要依赖预先合成的半透明表面，避免滚动时反复创建模糊层。
+
+## 2026-10 视觉系统升级
+
+- **色彩**：深色模式改为冷调深蓝黑底，主色为薄荷绿，青/紫作为环境点缀；浅色模式保持暖白纸感。新增 `Theme.accentSecondary`、`Theme.accentTertiary`、`Theme.accentWarm` 和 `Theme.accentGradient` / `Theme.buttonGradient`。
+- **背景**：`AmbientBackdrop` 使用静态 mesh 式色场（3 个径向渐变 + 渐变主光 + vignette + grain），不引入 Canvas/TimelineView。
+- **玻璃态**：`GlassSurface` 增强顶部高光、底部暗边和半透明 tint；普通卡片不加逐卡 shadow。
+- **新拟态**：`SoftSurface` 用双色渐变填充 + 上亮下暗的 hairline 模拟软质控件，用于 Secondary 按钮、Tag、分段选择、加减控件和输入框。
+- **排版**：`AppType` 统一 display/title/headline/body/caption/micro/button 字号；RootView 全局 `fontDesign(.rounded)`；section 标题带 accent 短线。
+- **间距**：`AppLayout` 统一 card padding 20、section spacing 18、control radius 14，圆形/卡片圆角保持连续圆角。
+- **微交互**：主按钮保留轻微缩放和透明度反馈，移除 brightness 和动态阴影；Haptics 复用生成器。
+- **氛围**：`GrainTexture` 生成一次 64pt 可平铺噪点纹理；不使用实时 blur 或逐帧噪声。
+- **性能约束**：mesh、grain、glass 都是静态合成层；hero/输入框等少量悬浮元素才有独立 shadow。

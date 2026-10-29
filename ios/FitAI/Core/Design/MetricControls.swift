@@ -70,11 +70,13 @@ struct WheelPickerField<Value: Hashable>: View {
                 }
                 .padding(.horizontal, 9)
                 .frame(height: 46)
-                .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color.white.opacity(0.075), lineWidth: 1)
-                )
+                .background {
+                    SoftSurface(
+                        cornerRadius: 10,
+                        tint: Theme.surfaceStrong,
+                        stroke: Theme.stroke
+                    )
+                }
             }
             .buttonStyle(SubtlePressStyle(scale: 0.98))
             .accessibilityLabel("选择\(title)")
@@ -166,7 +168,7 @@ struct AnimatedSegmentedControl<Item: Hashable>: View {
                     }
                 } label: {
                     Text(label(item))
-                        .font(.footnote.weight(.semibold))
+                        .font(AppType.chip)
                         .foregroundStyle(selection == item ? Theme.accent : Theme.secondaryText)
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
@@ -174,13 +176,12 @@ struct AnimatedSegmentedControl<Item: Hashable>: View {
                         .padding(.vertical, 9)
                         .background {
                             if selection == item {
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(Theme.accent.opacity(0.16))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                            .stroke(Theme.accent.opacity(0.38), lineWidth: 0.8)
-                                    )
-                                    .matchedGeometryEffect(id: "segment", in: namespace)
+                                SoftSurface(
+                                    cornerRadius: 10,
+                                    tint: Theme.accent.opacity(0.16),
+                                    stroke: Theme.accent.opacity(0.38)
+                                )
+                                .matchedGeometryEffect(id: "segment", in: namespace)
                             }
                         }
                 }
@@ -189,14 +190,13 @@ struct AnimatedSegmentedControl<Item: Hashable>: View {
             }
         }
         .padding(3)
-        .background(
-            Color.white.opacity(0.035),
-            in: RoundedRectangle(cornerRadius: 13, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .stroke(Theme.stroke, lineWidth: 0.8)
-        )
+        .background {
+            SoftSurface(
+                cornerRadius: 13,
+                tint: Theme.surface,
+                stroke: Theme.stroke
+            )
+        }
     }
 }
 
@@ -225,11 +225,13 @@ struct WeightInputField: View {
                     .padding(.trailing, 9)
             }
             .frame(height: 46)
-            .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(Color.white.opacity(0.075), lineWidth: 1)
-            )
+            .background {
+                SoftSurface(
+                    cornerRadius: 10,
+                    tint: Theme.surfaceStrong,
+                    stroke: Theme.stroke
+                )
+            }
         }
     }
 }
