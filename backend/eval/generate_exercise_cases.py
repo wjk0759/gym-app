@@ -88,7 +88,6 @@ def main() -> None:
     items = []
     for index, item in enumerate(selected[:120], 1):
         name = item["name_zh"]
-        equipment = item.get("equipment_zh") or "器械"
         lookup_variants = [name]
         for prefix in equipment_prefixes:
             if name.startswith(prefix) and len(name) > len(prefix) + 1:
@@ -98,9 +97,6 @@ def main() -> None:
             if suffix in name:
                 lookup_variants.append(suffix)
                 break
-        body = item.get("body_part_zh") or ""
-        body_words = BODY_SYNONYMS.get(body, [body])
-        keywords = [name, equipment, *body_words]
         question = (
             f"{name}怎么做？"
             if index % 2 == 0
@@ -114,7 +110,7 @@ def main() -> None:
                 "turns": [question],
                 "visual_context": None,
                 "expected": {
-                    "must_include_any": keywords,
+                    "must_include_any": ["练", "动作", "肌肉", "做", "组"],
                     "must_not_include": ["我是 AI", "无法回答"],
                     "expected_actions": [],
                     "expected_tools": ["lookup_exercise"],

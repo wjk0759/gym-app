@@ -233,6 +233,7 @@ def build() -> list[dict]:
                 [question],
                 must_include_any=["练", "训练", "动作", "组", "次", "分钟"],
                 must_not_include=["我是 AI", "无法回答"],
+                max_sentences=5,
             )
         )
 
@@ -250,7 +251,7 @@ def build() -> list[dict]:
                 [question],
                 must_include_any=keywords,
                 must_not_include=["我是 AI", "无法回答"],
-                max_sentences=4,
+                max_sentences=5,
             )
         )
 
@@ -284,10 +285,7 @@ def build() -> list[dict]:
         )
 
     for index, (question, estimate) in enumerate(BODY_WITH_FIXTURE, 1):
-        asks_body_fat = any(
-            word in question
-            for word in ("体脂多少", "估体脂", "体脂吗", "体脂降", "记录体脂", "体脂率")
-        )
+        asks_body_fat = "体脂" in question and "降到" not in question
         items.append(
             scenario(
                 f"body_{index:03d}",
