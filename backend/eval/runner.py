@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -29,6 +29,7 @@ if str(BACKEND_ROOT) not in sys.path:
 from app.config import settings  # noqa: E402
 from app.db import Base  # noqa: E402
 from app.models import (  # noqa: E402
+    AgentStep,
     AIMemory,
     BodyMetric,
     EquipmentLibraryItem,
@@ -404,6 +405,26 @@ def _evaluate(scenario: dict, result: dict, reply: str) -> list[str]:
         if action not in action_types
     )
 
+    actual_tools = {
+        str(item.get("tool"))
+        for item in (result.get("tool_calls") or [])
+        if isinstance(item, dict)
+    }
+    failures.extend(
+        f"missing tool: {tool}"
+        for tool in expected.get("expected_tools") or []
+        if tool not in actual_tools
+    )
+    expected_names = expected.get("lookup_names_any") or []
+    if expected_names:
+        found = result.get("lookup_names") or []
+        if not any(
+            wanted in name
+            for wanted in expected_names
+            for name in found
+        ):
+            failures.append(f"lookup missed: {expected_names}")
+
     visual = scenario.get("visual_context") or {}
     if (
         visual.get("kind") == "body_photo"
@@ -454,6 +475,8 @@ async def _run_scenario(db, scenario: dict) -> dict:
 
     replies: list[str] = []
     actions: list[dict] = []
+    tool_calls: list[dict] = []
+    lookup_names: list[str] = []
     safety_flags: list[str] = []
     statuses: list[str] = []
     usage: dict[str, int] = {}
@@ -473,6 +496,25 @@ async def _run_scenario(db, scenario: dict) -> dict:
         actions.extend(result.get("actions") or [])
         if result.get("safety_flag"):
             safety_flags.append(str(result["safety_flag"]))
+        for step in db.execute(
+            select(AgentStep).where(AgentStep.run_id == result["run_id"])
+        ).scalars():
+            if step.step_type != "tool":
+                continue
+            tool_calls.append(
+                {
+                    "tool": step.tool_name,
+                    "input": step.input_json or {},
+                    "output": step.output_json or {},
+                }
+            )
+            if step.tool_name == "lookup_exercise":
+                output = step.output_json or {}
+                lookup_names.extend(
+                    str(item.get("name_zh"))
+                    for item in (output.get("exercises") or [])
+                    if isinstance(item, dict) and item.get("name_zh")
+                )
         _merge_usage(usage, result.get("usage") or {})
         elapsed_ms += int(result.get("elapsed_ms") or 0)
         history.append(SimpleNamespace(role="user", content=str(message)))
@@ -486,8 +528,16 @@ async def _run_scenario(db, scenario: dict) -> dict:
         "actions": actions,
         "safety_flag": safety_flags[0] if safety_flags else None,
         "status": "failed" if "failed" in statuses else (statuses[-1] if statuses else "unknown"),
+        "tool_calls": tool_calls,
+        "lookup_names": lookup_names,
     }
     failures = _evaluate(scenario, combined_result, reply)
+    exact_names = (scenario.get("expected") or {}).get("lookup_exact_names") or []
+    lookup_exact = (
+        any(wanted in name for wanted in exact_names for name in lookup_names)
+        if exact_names
+        else None
+    )
 
     return {
         "id": scenario.get("id"),
@@ -496,6 +546,9 @@ async def _run_scenario(db, scenario: dict) -> dict:
         "turns": turns,
         "reply": reply,
         "actions": actions,
+        "tool_calls": tool_calls,
+        "lookup_names": lookup_names,
+        "lookup_exact": lookup_exact,
         "safety_flag": combined_result["safety_flag"],
         "usage": usage,
         "cost_cny": round(_usage_cost(usage), 6),
@@ -530,11 +583,16 @@ def _summarize(results: list[dict]) -> dict:
     p95 = latencies[min(len(latencies) - 1, int(len(latencies) * 0.95))] if latencies else 0
 
     by_category: dict[str, dict] = {}
+    exact_total = 0
+    exact_hits = 0
     for item in results:
         category = str(item.get("category") or "unknown")
         bucket = by_category.setdefault(category, {"total": 0, "passed": 0})
         bucket["total"] += 1
         bucket["passed"] += 1 if item.get("pass") else 0
+        if item.get("lookup_exact") is not None:
+            exact_total += 1
+            exact_hits += 1 if item.get("lookup_exact") else 0
 
     return {
         "scenarios": len(results),
@@ -545,6 +603,11 @@ def _summarize(results: list[dict]) -> dict:
         "cost_cny": round(sum(float(item.get("cost_cny") or 0) for item in results), 4),
         "latency_ms": {"p50": p50, "p95": p95},
         "by_category": by_category,
+        "lookup_exact": {
+            "hits": exact_hits,
+            "total": exact_total,
+            "rate": round(exact_hits / exact_total, 4) if exact_total else None,
+        },
         "pricing": {
             "input_cache_miss_cny_per_m": PRICE_INPUT_MISS,
             "input_cache_hit_cny_per_m": PRICE_CACHE_HIT,

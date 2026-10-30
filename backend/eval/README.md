@@ -38,7 +38,16 @@ From `backend/`:
 
 # one category
 .\.venv\Scripts\python.exe -m eval.runner --category body --output eval/results/body.jsonl
+
+# exercise RAG cases (requires data/exercises_rag.jsonl)
+.\.venv\Scripts\python.exe -m eval.generate_exercise_cases
+.\.venv\Scripts\python.exe -m eval.runner --scenarios eval/scenarios/exercise_120.jsonl --limit 120 --output eval/results/exercise-120.jsonl
 ```
+
+`exercise_120.jsonl` checks that `lookup_exercise` is actually called and that
+the retrieved names are relevant. The summary also reports `lookup_exact`:
+exact-name retrieval is a stricter quality metric, but a nearby common variant
+still counts as a useful answer.
 
 `eval/results/` is intentionally gitignored; scenario files are committed.
 

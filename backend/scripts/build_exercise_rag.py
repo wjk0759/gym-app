@@ -60,10 +60,8 @@ def _steps(value: object) -> list[str]:
 def build(source: Path) -> tuple[list[dict], dict]:
     raw = json.loads(source.read_text(encoding="utf-8"))
     exercises = raw.get("exercises") or []
-    kept: list[dict] = []
+    candidates: list[dict] = []
     dropped = Counter()
-    seen_en: set[tuple[str, str]] = set()
-    seen_zh: set[tuple[str, str]] = set()
 
     for item in exercises:
         rank = item.get("common_rank")
@@ -92,15 +90,7 @@ def build(source: Path) -> tuple[list[dict], dict]:
             dropped["too_short"] += 1
             continue
 
-        key_en = (_norm(name_en), equipment)
-        key_zh = (_norm(name_zh), equipment)
-        if key_en in seen_en or key_zh in seen_zh:
-            dropped["duplicate"] += 1
-            continue
-        seen_en.add(key_en)
-        seen_zh.add(key_zh)
-
-        kept.append(
+        candidates.append(
             {
                 "id": item.get("id"),
                 "name_zh": name_zh,
@@ -125,6 +115,27 @@ def build(source: Path) -> tuple[list[dict], dict]:
                 ),
             }
         )
+
+    # Keep the most common record for each Chinese/English + equipment key.
+    candidates.sort(
+        key=lambda item: (
+            item["common_rank"],
+            len(item["name_en"]),
+            item["name_en"],
+        )
+    )
+    kept: list[dict] = []
+    seen_en: set[tuple[str, str]] = set()
+    seen_zh: set[tuple[str, str]] = set()
+    for item in candidates:
+        key_en = (_norm(item["name_en"]), item["equipment_zh"])
+        key_zh = (_norm(item["name_zh"]), item["equipment_zh"])
+        if key_en in seen_en or key_zh in seen_zh:
+            dropped["duplicate"] += 1
+            continue
+        seen_en.add(key_en)
+        seen_zh.add(key_zh)
+        kept.append(item)
 
     kept.sort(key=lambda item: (item["common_rank"], item["name_zh"]))
     manifest = {
