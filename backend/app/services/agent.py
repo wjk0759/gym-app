@@ -832,6 +832,7 @@ async def run_agent(
             "safety_flag": decision.flag,
             "elapsed_ms": int((time.perf_counter() - started) * 1000),
             "usage": usage,
+            "error": None,
         }
 
     try:
@@ -991,6 +992,7 @@ async def run_agent(
         "safety_flag": decision.flag,
         "elapsed_ms": int((time.perf_counter() - started) * 1000),
         "usage": usage,
+        "error": error,
     }
 
 

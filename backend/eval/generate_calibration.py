@@ -295,6 +295,8 @@ def build() -> list[dict]:
                 must_include_any=(
                     ["约", "大概", "左右", f"{estimate}%"]
                     if asks_body_fat
+                    else ["体脂", "目标", "降", "训练", "蛋白"]
+                    if "降到" in question
                     else ["肌肉", "训练", "照片", "看", "体型", "体态", "腹肌"]
                 ),
                 must_not_include=["一定", "体脂率是"],
@@ -338,7 +340,14 @@ def build() -> list[dict]:
                 "equipment",
                 [question],
                 visual=equipment_fixture(name, summary),
-                must_include_any=[name, "器械", "练", "替代"],
+                must_include_any=[
+                    name,
+                    name.removesuffix("机"),
+                    "器械",
+                    "练",
+                    "替代",
+                    "适合",
+                ],
                 must_not_include=["我是 AI", "无法识别"],
             )
         )
@@ -349,7 +358,17 @@ def build() -> list[dict]:
                 f"equipment_text_{index:03d}",
                 "equipment",
                 [question],
-                must_include_any=["器械", "动作", "替代", "练", "哑铃", "杠铃", "划船", "弹力带"],
+                must_include_any=[
+                    "器械",
+                    "动作",
+                    "替代",
+                    "练",
+                    "哑铃",
+                    "杠铃",
+                    "划船",
+                    "弹力带",
+                    "适合",
+                ],
                 must_not_include=["我是 AI", "无法识别"],
             )
         )

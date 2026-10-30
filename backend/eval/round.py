@@ -33,7 +33,19 @@ from .runner import _run_scenario, _summarize  # noqa: E402
 
 STATE_DIR = Path(__file__).resolve().parent / "state"
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
-DEFAULT_BANK = Path(__file__).resolve().parent / "scenarios" / "bank.jsonl"
+DEFAULT_BANK = Path(__file__).resolve().parent / "scenarios" / "bank_3000.jsonl"
+PROVIDER_ERROR_MARKERS = (
+    "insufficient_balance",
+    "insufficient balance",
+    "HTTP 402",
+    "HTTP 401",
+    "HTTP 429",
+)
+
+
+def _provider_down(result: dict) -> bool:
+    error = str(result.get("error") or "").lower()
+    return any(marker.lower() in error for marker in PROVIDER_ERROR_MARKERS)
 
 
 def _load_bank(path: Path) -> list[dict]:
@@ -93,6 +105,8 @@ async def run_round(
     agent_service.schedule_memory_extraction = lambda *args, **kwargs: None
 
     results = []
+    aborted = False
+    abort_reason = None
     started = time.perf_counter()
     try:
         for index, scenario in enumerate(todo, 1):
@@ -108,6 +122,10 @@ async def run_round(
                     "cost_cny": 0,
                     "elapsed_ms": 0,
                 }
+            if _provider_down(result):
+                aborted = True
+                abort_reason = str(result.get("error") or "")[:300]
+                break
             results.append(result)
             print(
                 f"[{index}/{len(todo)}] {'PASS' if result.get('pass') else 'FAIL'} "
@@ -118,7 +136,7 @@ async def run_round(
         # Regression: re-run a sample of the previously passed pool.
         regression = []
         pool = [by_id[i] for i in state["passed"] if i in by_id]
-        if pool and regression_size > 0:
+        if not aborted and pool and regression_size > 0:
             random.Random(seed).shuffle(pool)
             for scenario in pool[:regression_size]:
                 try:
@@ -133,6 +151,10 @@ async def run_round(
                         "cost_cny": 0,
                         "elapsed_ms": 0,
                     }
+                if _provider_down(result):
+                    aborted = True
+                    abort_reason = str(result.get("error") or "")[:300]
+                    break
                 regression.append(result)
     finally:
         db.close()
@@ -162,6 +184,9 @@ async def run_round(
     summary["regression_failed"] = len(reg_failed)
     summary["active_remaining"] = len(state["active"])
     summary["passed_total"] = len(state["passed"])
+    summary["aborted"] = aborted
+    if abort_reason:
+        summary["abort_reason"] = abort_reason
     summary["elapsed_seconds"] = round(time.perf_counter() - started, 1)
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)

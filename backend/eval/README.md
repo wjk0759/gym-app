@@ -42,7 +42,21 @@ From `backend/`:
 # exercise RAG cases (requires data/exercises_rag.jsonl)
 .\.venv\Scripts\python.exe -m eval.generate_exercise_cases
 .\.venv\Scripts\python.exe -m eval.runner --scenarios eval/scenarios/exercise_120.jsonl --limit 120 --output eval/results/exercise-120.jsonl
+
+# rebuild the 3,000-case bank
+.\.venv\Scripts\python.exe -m eval.generate_media_cases
+.\.venv\Scripts\python.exe -m eval.generate_bank
+
+# run the next round of the 30-round loop
+.\.venv\Scripts\python.exe -m eval.round --size 100 --regression 5
 ```
+
+The bank is 3,000 cases with a 3-gram duplicate rate under 5%. `round.py`
+never deletes passed cases from the regression pool; it removes them from the
+active queue and re-samples 5 passed cases each round.
+
+Provider outages (HTTP 402/401/429) abort the round instead of being counted as
+coach failures. After topping up, re-run the same command; state resumes.
 
 `exercise_120.jsonl` checks that `lookup_exercise` is actually called and that
 the retrieved names are relevant. The summary also reports `lookup_exact`:

@@ -479,6 +479,7 @@ async def _run_scenario(db, scenario: dict) -> dict:
     lookup_names: list[str] = []
     safety_flags: list[str] = []
     statuses: list[str] = []
+    errors: list[str] = []
     usage: dict[str, int] = {}
     elapsed_ms = 0
     started = time.perf_counter()
@@ -493,6 +494,8 @@ async def _run_scenario(db, scenario: dict) -> dict:
         )
         replies.append(str(result.get("reply") or ""))
         statuses.append(str(result.get("status") or "unknown"))
+        if result.get("error"):
+            errors.append(str(result["error"]))
         actions.extend(result.get("actions") or [])
         if result.get("safety_flag"):
             safety_flags.append(str(result["safety_flag"]))
@@ -530,6 +533,7 @@ async def _run_scenario(db, scenario: dict) -> dict:
         "status": "failed" if "failed" in statuses else (statuses[-1] if statuses else "unknown"),
         "tool_calls": tool_calls,
         "lookup_names": lookup_names,
+        "error": "; ".join(errors) or None,
     }
     failures = _evaluate(scenario, combined_result, reply)
     exact_names = (scenario.get("expected") or {}).get("lookup_exact_names") or []
@@ -549,6 +553,7 @@ async def _run_scenario(db, scenario: dict) -> dict:
         "tool_calls": tool_calls,
         "lookup_names": lookup_names,
         "lookup_exact": lookup_exact,
+        "error": combined_result["error"],
         "safety_flag": combined_result["safety_flag"],
         "usage": usage,
         "cost_cny": round(_usage_cost(usage), 6),
