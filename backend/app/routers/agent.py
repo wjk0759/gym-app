@@ -117,6 +117,7 @@ async def _agent_chat_inner(
         "actions": result.get("actions", []),
         "safety_flag": result.get("safety_flag"),
         "elapsed_ms": result["elapsed_ms"],
+        "usage": result.get("usage", {}),
     }
     _remember_agent_result(user_id, payload.request_id, response)
     return response

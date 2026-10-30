@@ -32,6 +32,29 @@ def _should_extract_memory(message: str, safety_flag: str | None) -> bool:
 MAX_VISION_FILES = 6
 MAX_VISION_FILE_BYTES = 8 * 1024 * 1024
 MAX_VISION_TOTAL_BYTES = 24 * 1024 * 1024
+IMAGE_CONTENT_TYPES = {
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/heic",
+    "image/heif",
+    "image/webp",
+}
+
+
+def _require_image_upload(upload: UploadFile) -> None:
+    """Photos are the API contract; video must be converted to frames first.
+
+    The iOS client already extracts keyframes before calling this endpoint.
+    Rejecting video here keeps a 200MB upload from reaching the vision model
+    by mistake and gives the client a precise error.
+    """
+    content_type = (upload.content_type or "").lower()
+    if content_type and content_type not in IMAGE_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=415,
+            detail="请上传图片；视频请先抽取关键帧再上传",
+        )
 
 
 
@@ -144,6 +167,7 @@ async def vision(
         return _record_vision_turn(
             db, session, question, 1, _vision_safety_response(decision)
         )
+    _require_image_upload(file)
 
     image_bytes = await file.read()
     if not image_bytes:
@@ -185,6 +209,7 @@ async def vision_batch(
     images: list[bytes] = []
     total_bytes = 0
     for upload in files:
+        _require_image_upload(upload)
         image_bytes = await upload.read()
         if not image_bytes:
             continue

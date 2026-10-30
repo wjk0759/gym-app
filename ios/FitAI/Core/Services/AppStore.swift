@@ -1509,7 +1509,11 @@ final class AppStore {
             return "已更新训练目标"
 
         case "log_body_metric":
-            guard let payload = action.payload, let weight = payload.weightKG else {
+            guard let payload = action.payload else {
+                return "没有提供身体数据"
+            }
+            let weight = payload.weightKG ?? profile.weightKG
+            guard weight > 0 else {
                 return "没有提供体重"
             }
             let previousProfile = profile
@@ -1525,6 +1529,9 @@ final class AppStore {
                 previousMetric: previousMetric,
                 previousProfile: previousProfile
             )
+            if payload.weightKG == nil, let bodyFat = payload.bodyFatPCT {
+                return "已记录体脂约 \(bodyFat.formatted(.number.precision(.fractionLength(0))))%"
+            }
             return "已记录体重 \(weight.formatted(.number.precision(.fractionLength(1)))) kg"
 
         case "create_diet_plan":

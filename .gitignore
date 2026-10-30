@@ -43,6 +43,7 @@ preview/fix-*.png
 *.fig
 backend/media/
 backend/smoke_media/
+backend/eval/results/
 backend/uvicorn*.log*
 backend/admin_video_test.db
 

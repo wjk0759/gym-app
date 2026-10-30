@@ -1,0 +1,60 @@
+{
+  "source": "C:\\Users\\Administrator\\Desktop\\FitAI_Agent_数据包.json",
+  "source_meta": {
+    "title": "FitAI Agent 数据包",
+    "generated_at": "2026-10-30",
+    "exercise_count": 1324,
+    "source": "hasaneyldrm/exercises-dataset",
+    "source_url": "https://github.com/hasaneyldrm/exercises-dataset",
+    "license": "动作数据/文本 MIT；媒体 © Gym visual；本整理文件仅用于内部参考。",
+    "warning": "通用动作说明，不含禁忌症、替代动作和医疗建议；不能替代医生或康复师。"
+  },
+  "total_source": 1324,
+  "kept": 736,
+  "dropped": {
+    "duplicate": 17,
+    "unranked": 571
+  },
+  "by_body_part": {
+    "胸": 104,
+    "手臂": 182,
+    "腿": 110,
+    "核心": 53,
+    "前臂": 26,
+    "背": 130,
+    "肩": 84,
+    "小腿": 46,
+    "有氧": 1
+  },
+  "by_equipment": {
+    "杠铃": 101,
+    "哑铃": 206,
+    "史密斯": 35,
+    "绳索": 101,
+    "自重": 131,
+    "稳定球": 7,
+    "壶铃": 21,
+    "弹力带": 31,
+    "波速球": 2,
+    "药球": 3,
+    "负重": 15,
+    "雪橇机": 15,
+    "固定器械": 47,
+    "六角杠": 1,
+    "EZ 杠": 14,
+    "阻力带": 4,
+    "奥林匹克杠": 1,
+    "泡沫轴": 1
+  },
+  "license_note": "Text fields are MIT according to the source pack; media is © Gym visual and is intentionally excluded. Keep attribution when shipping.",
+  "schema": [
+    "id",
+    "name_zh",
+    "name_en",
+    "aliases",
+    "body_part_zh",
+    "equipment_zh",
+    "steps_zh",
+    "safety_note"
+  ]
+}

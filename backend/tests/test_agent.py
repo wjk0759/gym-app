@@ -101,6 +101,23 @@ def test_body_metric_action_requires_valid_weight():
         )
 
 
+def test_body_metric_action_allows_body_fat_only():
+    actions = _normalize_app_actions(
+        [
+            {
+                "type": "log_body_metric",
+                "title": "记录体脂",
+                "payload": {"body_fat_pct": 20},
+            }
+        ]
+    )
+    assert actions[0]["payload"]["body_fat_pct"] == 20
+    with pytest.raises(ValueError):
+        _normalize_app_actions(
+            [{"type": "log_body_metric", "payload": {"body_fat_pct": "high"}}]
+        )
+
+
 def test_app_action_allows_full_week_skips():
     context = {
         "plan": {

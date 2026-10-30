@@ -18,6 +18,39 @@ class LLMError(RuntimeError):
     pass
 
 
+def _merge_usage(target: dict | None, usage: dict | None) -> None:
+    """Accumulate provider usage into one JSON-safe dict.
+
+    DeepSeek reports cache hits in ``prompt_cache_hit_tokens``; some compatible
+    providers only expose ``prompt_tokens_details.cached_tokens``. Keep both so
+    calibration can price input correctly.
+    """
+    if target is None or not isinstance(usage, dict):
+        return
+    target["calls"] = int(target.get("calls", 0)) + 1
+    for key in (
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "prompt_cache_hit_tokens",
+        "prompt_cache_miss_tokens",
+    ):
+        value = usage.get(key)
+        if isinstance(value, (int, float)):
+            target[key] = int(target.get(key, 0)) + int(value)
+
+    details = usage.get("prompt_tokens_details")
+    if isinstance(details, dict):
+        cached = details.get("cached_tokens")
+        if isinstance(cached, (int, float)):
+            target["prompt_tokens_details"] = {
+                "cached_tokens": int(
+                    (target.get("prompt_tokens_details") or {}).get("cached_tokens", 0)
+                )
+                + int(cached)
+            }
+
+
 # 复用连接池，避免每次对话/计划生成都重新做 TLS 握手。
 _client: httpx.AsyncClient | None = None
 _semaphore: asyncio.Semaphore | None = None
@@ -88,6 +121,7 @@ async def complete_vision_json(
     user_text: str,
     image_base64: str | list[str],
     mime: str = "image/jpeg",
+    usage: dict | None = None,
 ) -> dict:
     """One or more images -> one JSON response using the vision model."""
     if settings.use_mock_vision:
@@ -153,6 +187,7 @@ async def complete_vision_json(
 
         try:
             data = response.json()
+            _merge_usage(usage, data.get("usage"))
             content = data["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError, ValueError) as exc:
             last_error = exc
@@ -232,6 +267,7 @@ async def complete_json(
     user: str,
     *,
     reasoning_effort: str | None = None,
+    usage: dict | None = None,
 ) -> dict:
     if settings.use_mock_llm:
         raise LLMError("mock mode: no LLM key configured")
@@ -241,12 +277,13 @@ async def complete_json(
         {"role": "user", "content": user},
     ]
     last_error: Exception | None = None
-    for attempt in range(2):
+    requested_effort = reasoning_effort or settings.llm_reasoning_effort
+    for attempt in range(3):
         payload = {
             "model": settings.llm_model,
             "messages": messages,
-            "temperature": 0.3,
-            "reasoning_effort": reasoning_effort or settings.llm_reasoning_effort,
+            "temperature": 0.0 if attempt >= 2 else 0.3,
+            "reasoning_effort": "low" if attempt >= 2 else requested_effort,
             "response_format": {"type": "json_object"},
         }
         try:
@@ -280,6 +317,7 @@ async def complete_json(
 
         try:
             data = response.json()
+            _merge_usage(usage, data.get("usage"))
             content = data["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError, ValueError) as exc:
             last_error = exc
@@ -292,18 +330,20 @@ async def complete_json(
             return _parse_json_object(content)
         except LLMError as exc:
             last_error = exc
-            if attempt == 0:
+            if attempt < 2:
                 # Ask once for a single object; this handles models that emit
-                # two tool decisions in one response.
+                # two tool decisions in one response. The final retry drops
+                # temperature and reasoning effort because an empty or
+                # truncated JSON object is usually a decoding/format failure.
+                correction = (
+                    "上一次输出不是单个合法 JSON 对象。"
+                    "请只输出一个 JSON 对象，不要输出多个对象、Markdown 或解释。"
+                    if attempt == 0
+                    else "上次仍然没有返回合法 JSON。请只输出一个最短的 JSON 对象。"
+                )
                 messages = [
                     *messages,
-                    {
-                        "role": "user",
-                        "content": (
-                            "上一次输出不是单个合法 JSON 对象。"
-                            "请只输出一个 JSON 对象，不要输出多个对象、Markdown 或解释。"
-                        ),
-                    },
+                    {"role": "user", "content": correction},
                 ]
                 await asyncio.sleep(0.3)
                 continue
@@ -312,7 +352,11 @@ async def complete_json(
     raise LLMError(f"LLM JSON retry failed: {last_error}")
 
 
-async def complete_text(messages: list[dict], temperature: float = 0.5) -> str:
+async def complete_text(
+    messages: list[dict],
+    temperature: float = 0.5,
+    usage: dict | None = None,
+) -> str:
     if settings.use_mock_llm:
         raise LLMError("mock mode: no LLM key configured")
 
@@ -341,7 +385,9 @@ async def complete_text(messages: list[dict], temperature: float = 0.5) -> str:
                 f"LLM HTTP {response.status_code}: {response.text[:300]}"
             )
         try:
-            return response.json()["choices"][0]["message"]["content"]
+            data = response.json()
+            _merge_usage(usage, data.get("usage"))
+            return data["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError, ValueError) as exc:
             last_error = exc
             if attempt == 0:
