@@ -29,6 +29,7 @@ from app.db import Base  # noqa: E402
 from app.seed import seed_exercises  # noqa: E402
 from app.services import agent as agent_service  # noqa: E402
 
+from .preflight import check_balance  # noqa: E402
 from .runner import _run_scenario, _summarize  # noqa: E402
 
 STATE_DIR = Path(__file__).resolve().parent / "state"
@@ -204,6 +205,10 @@ async def run_round(
 async def main_async(args: argparse.Namespace) -> int:
     if settings.use_mock_llm:
         print("LLM is not configured; set LLM_API_KEY in backend/.env", file=sys.stderr)
+        return 2
+    ok, balance = await check_balance()
+    print(balance, flush=True)
+    if not ok:
         return 2
     bank = _load_bank(Path(args.bank))
     if not bank:

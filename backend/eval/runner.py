@@ -47,6 +47,8 @@ from app.models import (  # noqa: E402
 from app.seed import seed_exercises  # noqa: E402
 from app.services import agent as agent_service  # noqa: E402
 
+from .preflight import check_balance  # noqa: E402
+
 # Stable CNY off-peak prices, per 1M tokens. Update only with the rate card.
 PRICE_INPUT_MISS = 1.00
 PRICE_CACHE_HIT = 0.02
@@ -624,6 +626,10 @@ def _summarize(results: list[dict]) -> dict:
 async def main_async(args: argparse.Namespace) -> int:
     if settings.use_mock_llm:
         print("LLM is not configured; set LLM_API_KEY in backend/.env", file=sys.stderr)
+        return 2
+    ok, balance = await check_balance()
+    print(balance, flush=True)
+    if not ok:
         return 2
 
     scenarios = _load_scenarios(Path(args.scenarios), args.limit)
