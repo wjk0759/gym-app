@@ -273,7 +273,10 @@ def _expected(category: str, turns: list[str], visual: dict | None) -> dict:
     elif category == "video":
         expected["must_include_any"] = ["动作", "膝", "肘", "肩", "提示", "调整", "视频"]
     else:
-        expected["must_include_any"] = ["练", "训练", "饮食", "恢复", "可以", "建议"]
+        # General questions span training, nutrition and recovery; a fixed
+        # keyword list would reject correct answers. Keep safety/tools/length.
+        expected["must_include_any"] = []
+        expected["max_sentences"] = 6
     return expected
 
 

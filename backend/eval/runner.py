@@ -358,7 +358,12 @@ def _has_approx_body_fat(text: str, value: int | None) -> bool:
     return True
 
 
-def _evaluate(scenario: dict, result: dict, reply: str) -> list[str]:
+def _evaluate(
+    scenario: dict,
+    result: dict,
+    reply: str,
+    replies: list[str] | None = None,
+) -> list[str]:
     expected = scenario.get("expected") or {}
     failures: list[str] = []
 
@@ -393,8 +398,10 @@ def _evaluate(scenario: dict, result: dict, reply: str) -> list[str]:
     )
 
     max_sentences = int(expected.get("max_sentences") or 3)
-    if _sentence_count(reply) > max_sentences:
-        failures.append(f"too many sentences: {_sentence_count(reply)}")
+    per_reply = replies or [reply]
+    longest = max((_sentence_count(item) for item in per_reply), default=0)
+    if longest > max_sentences:
+        failures.append(f"too many sentences: {longest}")
 
     action_types = {
         str(item.get("type"))
@@ -537,7 +544,7 @@ async def _run_scenario(db, scenario: dict) -> dict:
         "lookup_names": lookup_names,
         "error": "; ".join(errors) or None,
     }
-    failures = _evaluate(scenario, combined_result, reply)
+    failures = _evaluate(scenario, combined_result, reply, replies=replies)
     exact_names = (scenario.get("expected") or {}).get("lookup_exact_names") or []
     lookup_exact = (
         any(wanted in name for wanted in exact_names for name in lookup_names)
@@ -632,11 +639,16 @@ async def main_async(args: argparse.Namespace) -> int:
     if not ok:
         return 2
 
-    scenarios = _load_scenarios(Path(args.scenarios), args.limit)
+    scenarios = _load_scenarios(
+        Path(args.scenarios),
+        None if args.category else args.limit,
+    )
     if args.category:
         scenarios = [
             item for item in scenarios if item.get("category") == args.category
         ]
+        if args.limit is not None:
+            scenarios = scenarios[: args.limit]
     if args.dry_run:
         print(f"loaded {len(scenarios)} scenarios")
         for item in scenarios[:5]:

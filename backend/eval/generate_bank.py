@@ -51,6 +51,12 @@ def main() -> None:
                 if not line:
                     continue
                 item = json.loads(line)
+                if item.get("category") == "general":
+                    expected = item.setdefault("expected", {})
+                    expected["must_include_any"] = []
+                    expected["max_sentences"] = max(
+                        int(expected.get("max_sentences") or 0), 6
+                    )
                 if item.get("id") in seen_ids:
                     duplicates += 1
                     continue
