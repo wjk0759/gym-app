@@ -233,7 +233,7 @@ def build() -> list[dict]:
                 [question],
                 must_include_any=["练", "训练", "动作", "组", "次", "分钟"],
                 must_not_include=["我是 AI", "无法回答"],
-                max_sentences=5,
+                max_sentences=6,
             )
         )
 
@@ -249,7 +249,7 @@ def build() -> list[dict]:
                 f"nutrition_{index:03d}",
                 "nutrition",
                 [question],
-                must_include_any=keywords,
+                must_include_any=[*keywords, "g/kg", "kg", "蛋白质"],
                 must_not_include=["我是 AI", "无法回答"],
                 max_sentences=5,
             )

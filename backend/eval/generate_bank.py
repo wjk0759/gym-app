@@ -51,7 +51,10 @@ def main() -> None:
                 if not line:
                     continue
                 item = json.loads(line)
-                if item.get("category") == "general":
+                # LLM-generated text questions span diet/recovery/training; a
+                # fixed keyword list rejects correct answers. Keep deterministic
+                # keyword checks only for hand-crafted media/calibration cases.
+                if str(item.get("id", "")).startswith("gen_"):
                     expected = item.setdefault("expected", {})
                     expected["must_include_any"] = []
                     expected["max_sentences"] = max(

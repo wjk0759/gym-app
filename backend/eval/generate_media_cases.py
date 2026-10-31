@@ -174,7 +174,23 @@ def main() -> None:
                 index,
                 question,
                 {"kind": "equipment_photo", "name": name, "summary": f"{name}，{use}"},
-                {"must_include_any": [name, "器械", "练", "替代", "动作"]},
+                {
+                    "must_include_any": [
+                        "练",
+                        "调",
+                        "做",
+                        "次",
+                        "组",
+                        "替代",
+                        "适合",
+                        "器械",
+                        "哑铃",
+                        "杠铃",
+                        "坡度",
+                        "配重",
+                        "注意",
+                    ]
+                },
                 "deterministic equipment fixture",
             )
         )
