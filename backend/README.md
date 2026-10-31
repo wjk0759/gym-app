@@ -91,7 +91,27 @@ cd ..\..\backend
 .\start-backend.ps1
 ```
 
-`start-backend.ps1` 会检查 `DATABASE_URL` 必须是 3307，避免误连 3306。
+`start-backend.ps1` 会检查 `DATABASE_URL` 必须是 3307，避免误连 3306；默认监听 `0.0.0.0`，并打印真机可用的局域网 API 地址。
+
+真机调试时，Windows 防火墙需要放行 TCP 8000：
+
+```powershell
+New-NetFirewallRule `
+  -DisplayName "FitAI backend 8000" `
+  -Direction Inbound `
+  -Protocol TCP `
+  -LocalPort 8000 `
+  -Action Allow `
+  -Profile Any
+```
+
+App 登录页的「开发服务器」填脚本打印的地址，例如：
+
+```text
+http://192.168.1.4:8000/api/v1
+```
+
+iPhone 和电脑必须在同一局域网。
 
 SQLite 开发数据已归档到：
 

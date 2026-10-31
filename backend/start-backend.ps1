@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$ListenHost = "127.0.0.1",
+    [string]$ListenHost = "0.0.0.0",
     [int]$Port = 8000
 )
 
@@ -34,7 +34,18 @@ if (-not (Test-Path $python)) {
     throw "Python venv not found at backend/.venv."
 }
 
-Write-Host "FitAI backend -> http://${ListenHost}:${Port} (MySQL 3307)"
+Write-Host "FitAI backend listening on ${ListenHost}:${Port} (MySQL 3307)"
+Write-Host "Local: http://127.0.0.1:${Port}"
+Get-NetIPAddress -AddressFamily IPv4 |
+    Where-Object {
+        $_.IPAddress -notlike '127.*' -and
+        $_.IPAddress -notlike '169.254.*'
+    } |
+    ForEach-Object {
+        Write-Host "LAN:   http://$($_.IPAddress):${Port}  ($($_.InterfaceAlias))"
+        Write-Host "API:   http://$($_.IPAddress):${Port}/api/v1"
+    }
+
 Push-Location $root
 try {
     & $python -m uvicorn app.main:app --host $ListenHost --port $Port
