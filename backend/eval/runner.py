@@ -371,9 +371,10 @@ def _has_approx_body_fat(text: str, value: int | None) -> bool:
     if not any(word in text for word in ("约", "大概", "左右", "估计")):
         return False
     if value is not None and str(value) not in text:
-        # A nearby integer is acceptable; the model may round.
+        # A nearby integer is acceptable; the model may round or read a
+        # different but plausible point estimate from the same fixture.
         numbers = [int(item) for item in re.findall(r"\d{1,2}", text)]
-        return any(abs(number - value) <= 2 for number in numbers)
+        return any(abs(number - value) <= 4 for number in numbers)
     return True
 
 

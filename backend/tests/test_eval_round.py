@@ -40,6 +40,8 @@ def test_turn_expectations_check_each_reply_not_the_concatenation():
 def test_body_fat_must_be_approximate_and_not_a_decimal_or_range():
     assert _has_approx_body_fat("我看大概 20% 左右。", 20)
     assert _has_approx_body_fat("你 BMI 22.3，体脂大概 20% 左右。", 20)
+    assert _has_approx_body_fat("大概 24% 左右。", 20)
+    assert not _has_approx_body_fat("大概 26% 左右。", 20)
     assert not _has_approx_body_fat("你的体脂是 20.5%。", 20)
     assert not _has_approx_body_fat("大概在 18-22%。", 20)
     assert not _has_approx_body_fat("你的体脂是 20%。", 20)

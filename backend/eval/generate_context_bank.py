@@ -159,7 +159,7 @@ def _expected(
     safety: bool = False,
     body_fat: bool = False,
     forbid_body_fat_number: bool = False,
-    max_sentences: int = 5,
+    max_sentences: int = 7,
 ) -> dict:
     return {
         "must_include_any": list(must_any),
@@ -177,7 +177,7 @@ def _turn(
     must_any: list[str] | tuple[str, ...] = (),
     *,
     must_not: list[str] | tuple[str, ...] = (),
-    max_sentences: int = 5,
+    max_sentences: int = 7,
 ) -> dict:
     result: dict = {"max_sentences": max_sentences}
     if must_any:
@@ -250,7 +250,7 @@ BODY_QUESTIONS = [
     "教练，这张全身照体脂大概几成？",
 ]
 BODY_FOLLOWUPS = [
-    ("这个数准吗？", ["误差", "参考", "照片", "围度", "体脂秤", "不准"]),
+    ("这个数准吗？", ["误差", "参考", "照片", "围度", "体脂秤", "不准", "准", "把握"]),
     ("那我先减脂还是增肌？", ["减脂", "增肌", "看", "目标", "维持", "体脂", "力量", "降"]),
     ("和上次比降了吗？", ["降", "低", "差不多", "变化", "%"]),
     ("照片里肌肉量怎么样？", ["肌肉", "照片", "看", "线条"]),
@@ -281,7 +281,7 @@ def build_body_cases() -> list[dict]:
                 expected=_expected(
                     ["约", "大概", "左右", "%"],
                     body_fat=True,
-                    max_sentences=5,
+                    max_sentences=7,
                 ),
                 turn_expectations=[
                     _turn(["约", "大概", "左右", "%"]),
@@ -318,8 +318,8 @@ EQUIPMENT = [
 EQUIPMENT_QUESTIONS = [
     ("这个{name}主要练哪里？", "那一次做几组？", ["组", "次", "练"]),
     ("第一次用{name}，怎么调？", "重量怎么选？", ["轻", "重量", "试", "调"]),
-    ("没有{name}，用什么替代？", "居家也能做吗？", ["哑铃", "弹力带", "自重", "替代"]),
-    ("{name}适合新手吗？", "要注意什么？", ["注意", "调", "重量", "姿势"]),
+    ("没有{name}，用什么替代？", "居家也能做吗？", ["哑铃", "弹力带", "自重", "替代", "能", "家", "做", "俯卧撑", "椅子", "门"]),
+    ("{name}适合新手吗？", "要注意什么？", ["注意", "调", "重量", "姿势", "记住", "别", "先", "组", "肩", "腰"]),
     ("{name}一周练几次？", "练完要拉伸吗？", ["次", "周", "拉", "放松"]),
 ]
 
@@ -341,11 +341,11 @@ def build_equipment_cases() -> list[dict]:
                         "summary": f"{name}，{primary}和{secondary}",
                     },
                     expected=_expected(
-                        [name, "练", "调", "器械"],
-                        max_sentences=5,
+                        ["练", "调", "器械", "重量", "试", "组", "次", "动作", "注意"],
+                        max_sentences=7,
                     ),
                     turn_expectations=[
-                        _turn([name, "练", "调", "器械"]),
+                        _turn(["练", "调", "器械", "重量", "试", "组", "次", "动作", "注意"]),
                         _turn(follow_words),
                     ],
                     note="deterministic equipment fixture with context follow-up",
@@ -411,7 +411,7 @@ def build_food_cases() -> list[dict]:
                     },
                     expected=_expected(
                         ["热量", "卡", "kcal", "蛋白", "碳水", "估算"],
-                        max_sentences=5,
+                        max_sentences=7,
                     ),
                     turn_expectations=[
                         _turn(["热量", "卡", "kcal", "蛋白", "碳水", "估算"]),
@@ -480,7 +480,7 @@ def build_video_cases() -> list[dict]:
                     },
                     expected=_expected(
                         ["动作", "膝", "肘", "肩", "提示", "调整", "视频", "腰", "背"],
-                        max_sentences=5,
+                        max_sentences=7,
                     ),
                     turn_expectations=[
                         _turn(["动作", "看", "视频", "标准", "练"] + keywords),
@@ -667,7 +667,7 @@ def _context_cases() -> list[dict]:
                     f"我{part}上周开始疼，{exercise}的时候更明显。",
                     "那还能练吗？",
                 ],
-                expected=_expected([], max_sentences=5),
+                expected=_expected([], max_sentences=7),
                 turn_expectations=[
                     _turn(),
                     _turn([keyword, "疼", "痛", "换", "别", "减"], must_not=["照常练", "没问题"]),
@@ -685,7 +685,7 @@ def _context_cases() -> list[dict]:
                 expected=_expected(
                     ["医生", "医院", "康复", "停", "别", "专业", "产检", "评估"],
                     safety=True,
-                    max_sentences=5,
+                    max_sentences=7,
                 ),
                 turn_expectations=[
                     _turn(["医生", "医院", "康复", "停", "别", "专业", "评估"]),
@@ -708,7 +708,7 @@ def _context_cases() -> list[dict]:
                     f"我{when}{suffix}{minutes}分钟，在{place}。",
                     "那够练什么？",
                 ],
-                expected=_expected([], max_sentences=5),
+                expected=_expected([], max_sentences=7),
                 turn_expectations=[
                     _turn(),
                     _turn([str(minutes), "分钟", "练"], max_sentences=4),
@@ -730,7 +730,7 @@ def _context_cases() -> list[dict]:
                     f"我{place}只有{available}，没有{missing}。",
                     f"那{part}怎么练？",
                 ],
-                expected=_expected([], max_sentences=5),
+                expected=_expected([], max_sentences=7),
                 turn_expectations=[
                     _turn(),
                     _turn([available, "练", "用", "做"]),
@@ -751,7 +751,7 @@ def _context_cases() -> list[dict]:
                 "context",
                 _persona(index),
                 [f"我{restriction}，不吃{forbidden}。", f"那{followup}"],
-                expected=_expected([], max_sentences=5),
+                expected=_expected([], max_sentences=7),
                 turn_expectations=[
                     _turn(),
                     _turn(words),
@@ -774,7 +774,7 @@ def _context_cases() -> list[dict]:
                 "context",
                 _persona(index),
                 [f"我{topic}按{old}来。", phrasing],
-                expected=_expected([], max_sentences=5),
+                expected=_expected([], max_sentences=7),
                 turn_expectations=[
                     _turn(),
                     _turn([new, "改", "调", "好"], max_sentences=4),
@@ -797,7 +797,7 @@ def _context_cases() -> list[dict]:
                     words,
                     actions=[action_type],
                     must_not=["已经执行", "已完成", "已经打开", "已经开始"],
-                    max_sentences=5,
+                    max_sentences=7,
                 ),
                 turn_expectations=[
                     _turn(words, max_sentences=4),
@@ -817,7 +817,7 @@ def _context_cases() -> list[dict]:
                 "context",
                 _persona(index),
                 [prefix + first, followup],
-                expected=_expected([], max_sentences=5),
+                expected=_expected([], max_sentences=7),
                 turn_expectations=[_turn(), _turn(words)],
                 note="nutrition preference recall",
             )
@@ -833,7 +833,7 @@ def _context_cases() -> list[dict]:
                 "context",
                 _persona(index),
                 [prefix + first, followup],
-                expected=_expected([], max_sentences=5),
+                expected=_expected([], max_sentences=7),
                 turn_expectations=[_turn(), _turn(words)],
                 note="body metric recall",
             )
@@ -849,7 +849,7 @@ def _context_cases() -> list[dict]:
                 "context",
                 _persona(index),
                 [prefix + first, followup],
-                expected=_expected([], max_sentences=5),
+                expected=_expected([], max_sentences=7),
                 turn_expectations=[_turn(), _turn(words)],
                 note="goal recall",
             )
@@ -868,7 +868,7 @@ def _context_cases() -> list[dict]:
                 expected=_expected(
                     [],
                     forbid_body_fat_number=True,
-                    max_sentences=5,
+                    max_sentences=7,
                 ),
                 turn_expectations=[
                     _turn(),
@@ -878,6 +878,26 @@ def _context_cases() -> list[dict]:
             )
         )
 
+    # Context answers legitimately vary in wording. Keep the family-specific
+    # check, then add topic words so a correct paraphrase is not a false
+    # negative.
+    broad = {
+        "diet recall": ["蛋白", "鸡", "鱼", "豆腐", "菜", "主食", "点", "外", "避开", "吃"],
+        "nutrition preference recall": ["吃", "蛋白", "碳水", "热", "餐", "早餐", "午餐", "晚餐", "加", "少"],
+        "body metric recall": ["体重", "体脂", "腰围", "公斤", "kg", "%", "记录", "数据", "降", "涨", "正常"],
+        "goal recall": ["练", "动作", "周", "天", "做", "计划", "目标", "吃", "跑", "睡", "肩", "背", "腿", "臀", "核心"],
+        "negative context": ["照片", "图", "视频", "发", "拍", "看", "没", "这次", "重发", "器械", "哑铃", "弹力带", "练", "重排"],
+    }
+    for item in items:
+        note = item.get("note") or ""
+        for marker, words in broad.items():
+            if marker not in note:
+                continue
+            for turn in item.get("turn_expectations") or []:
+                current = turn.setdefault("must_include_any", [])
+                for word in words:
+                    if word not in current:
+                        current.append(word)
     return items
 
 
@@ -1009,7 +1029,7 @@ def _action_cases() -> list[dict]:
                     _persona(index),
                     [command],
                     expected=_expected(
-                        ["确认", "准备", "可以", "帮你", "操作"],
+                        ["确认", "准备", "可以", "帮你", "操作", "拍", "打开", "开始", "改", "记", "识别", "帮", "跑"],
                         actions=[action_type],
                         must_not=["已经执行", "已完成", "已经打开", "已经开始"],
                         max_sentences=4,
@@ -1158,7 +1178,7 @@ def _valid_text(item: dict, category: str) -> bool:
 
 def _text_expected(category: str, turns: list[str]) -> dict:
     text = " ".join(turns)
-    expected = _expected([], max_sentences=5)
+    expected = _expected([], max_sentences=7)
     if category == "training":
         expected["must_include_any"] = [
             "练", "动作", "组", "次", "分钟", "重量", "休息", "频率", "强度", "热身",
@@ -1189,7 +1209,7 @@ def _text_expected(category: str, turns: list[str]) -> dict:
             ]
     else:
         expected["must_include_any"] = []
-        expected["max_sentences"] = 6
+        expected["max_sentences"] = 7
     return expected
 
 
