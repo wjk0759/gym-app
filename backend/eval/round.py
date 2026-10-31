@@ -59,15 +59,15 @@ def _load_bank(path: Path) -> list[dict]:
     return items
 
 
-def _load_state() -> dict:
-    if (STATE_DIR / "round_state.json").exists():
-        return json.loads((STATE_DIR / "round_state.json").read_text(encoding="utf-8"))
+def _load_state(path: Path) -> dict:
+    if path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))
     return {"active": [], "passed": [], "round": 0}
 
 
-def _save_state(state: dict) -> None:
-    STATE_DIR.mkdir(parents=True, exist_ok=True)
-    (STATE_DIR / "round_state.json").write_text(
+def _save_state(path: Path, state: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
         json.dumps(state, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
@@ -79,14 +79,21 @@ async def run_round(
     size: int,
     regression_size: int,
     seed: int,
+    state_path: Path | None = None,
+    results_prefix: str = "round",
 ) -> dict:
-    state = _load_state()
+    state_path = state_path or (STATE_DIR / "round_state.json")
+    state = _load_state(state_path)
     # Scenarios always come from the current bank, never from the state file,
     # so expectation fixes propagate into the next round.
     by_id = {item["id"]: item for item in bank}
 
     if not state["active"] and state["round"] == 0:
-        state["active"] = [item["id"] for item in bank]
+        # A grouped bank would make early rounds test one category only.
+        # Shuffle the initial queue so every round samples the whole bank.
+        initial = [item["id"] for item in bank]
+        random.Random(seed).shuffle(initial)
+        state["active"] = initial
 
     active = [by_id[i] for i in state["active"] if i in by_id]
     passed_ids = set(state["passed"])
@@ -176,9 +183,10 @@ async def run_round(
             active_ids.append(r["id"])
     state["active"] = active_ids
     state["passed"] = sorted(passed_ids | {r["id"] for r in new_passed})
-    _save_state(state)
+    _save_state(state_path, state)
 
     summary = _summarize(results)
+    summary["state_path"] = str(state_path)
     summary["round"] = round_no
     summary["run_size"] = len(todo)
     summary["regression_size"] = len(regression)
@@ -191,11 +199,11 @@ async def run_round(
     summary["elapsed_seconds"] = round(time.perf_counter() - started, 1)
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    out = RESULTS_DIR / f"round-{round_no}.jsonl"
+    out = RESULTS_DIR / f"{results_prefix}-{round_no}.jsonl"
     with out.open("w", encoding="utf-8") as handle:
         for item in results:
             handle.write(json.dumps(item, ensure_ascii=False) + "\n")
-    (RESULTS_DIR / f"round-{round_no}.summary.json").write_text(
+    (RESULTS_DIR / f"{results_prefix}-{round_no}.summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
@@ -219,6 +227,8 @@ async def main_async(args: argparse.Namespace) -> int:
         size=args.size,
         regression_size=args.regression,
         seed=args.seed,
+        state_path=Path(args.state) if args.state else None,
+        results_prefix=args.results_prefix,
     )
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0
@@ -230,6 +240,16 @@ def main() -> None:
     parser.add_argument("--size", type=int, default=100)
     parser.add_argument("--regression", type=int, default=10)
     parser.add_argument("--seed", type=int, default=7)
+    parser.add_argument(
+        "--state",
+        default=None,
+        help="State JSON path; defaults to eval/state/round_state.json",
+    )
+    parser.add_argument(
+        "--results-prefix",
+        default="round",
+        help="Prefix for eval/results/<prefix>-<round>.jsonl",
+    )
     args = parser.parse_args()
     raise SystemExit(asyncio.run(main_async(args)))
 

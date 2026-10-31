@@ -49,9 +49,26 @@ From `backend/`:
 
 # run the next round of the 30-round loop
 .\.venv\Scripts\python.exe -m eval.round --size 100 --regression 5
+
+# build the second, context-focused 2,000-case bank
+.\.venv\Scripts\python.exe -m eval.generate_context_bank
+
+# deterministic core only, no LLM generation
+.\.venv\Scripts\python.exe -m eval.generate_context_bank --deterministic-only
+
+# run the new bank with its own state and result prefix
+.\.venv\Scripts\python.exe -m eval.round `
+  --bank eval/scenarios/context_2000.jsonl `
+  --state eval/state/context_2000.json `
+  --results-prefix context `
+  --size 100 --regression 5
 ```
 
-The bank is 3,000 cases with a 3-gram duplicate rate under 5%. `round.py`
+The original bank is 3,000 cases with a 3-gram duplicate rate under 5%.
+`context_2000.jsonl` is a separate bank: 400 media fixtures, 200 multi-turn
+context probes, 88 single-turn app actions, and 1,312 fresh LLM-written text
+cases. It has its own state file, so running it never advances or overwrites
+`eval/state/round_state.json`. `round.py`
 never deletes passed cases from the regression pool; it removes them from the
 active queue and re-samples 5 passed cases each round.
 
@@ -100,6 +117,25 @@ Media kinds:
 
 The coach receives the fixture in `app_context.visual_context`, exactly where
 the real analysed media summary lands.
+
+## Per-turn expectations
+
+`turn_expectations` is optional and checks each reply separately, so a later
+pronoun or follow-up cannot be masked by a correct first answer:
+
+```json
+{
+  "turns": ["我只有一对哑铃，酒店没器械。", "那这三天怎么排？"],
+  "turn_expectations": [
+    {},
+    {"must_include_any": ["哑铃", "练"], "max_sentences": 4}
+  ]
+}
+```
+
+The runner records every turn in `replies` and checks
+`turn N missing any of`, `turn N forbidden`, and `turn N too long` against
+that turn only. `expected` still applies to the combined reply.
 
 ## Token accounting
 

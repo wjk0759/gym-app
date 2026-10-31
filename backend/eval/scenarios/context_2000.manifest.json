@@ -1,0 +1,61 @@
+{
+  "generated_at": "2026-10-31T03:57:06.728408+00:00",
+  "total": 2000,
+  "old_bank": "E:\\Projects\\FitAI\\backend\\eval\\scenarios\\bank_3000.jsonl",
+  "old_bank_size": 3000,
+  "duplicate_vs_old": {
+    "exact": 0,
+    "near_3gram": 0,
+    "rate": 0.0
+  },
+  "raw_deterministic_duplicates": {
+    "exact": 2,
+    "near_3gram": 0,
+    "candidates": 730
+  },
+  "by_category": {
+    "body": 100,
+    "equipment": 100,
+    "food": 100,
+    "video": 100,
+    "action": 88,
+    "context": 200,
+    "nutrition": 371,
+    "training": 473,
+    "rehab": 338,
+    "general": 130
+  },
+  "by_turns": {
+    "1": 282,
+    "2": 1188,
+    "3": 530
+  },
+  "by_visual": {
+    "body_photo": 100,
+    "equipment_photo": 100,
+    "food_photo": 100,
+    "training_video": 100,
+    "none": 1600
+  },
+  "deterministic": 688,
+  "llm_text": 1312,
+  "llm_model": "deepseek-flash",
+  "note": "Media is a structured fixture; upload limits are tested separately.",
+  "postprocess": {
+    "no_visual_body_fat_guard": true,
+    "per_turn_max_sentences": 5,
+    "teen_persona": true
+  },
+  "internal_exact_text_duplicates": 170,
+  "by_persona": {
+    "beginner": 484,
+    "intermediate": 439,
+    "rehab": 282,
+    "busy": 523,
+    "older": 266,
+    "teen": 6
+  },
+  "teen_cases": 6,
+  "no_visual_body_fat_guard_cases": 8,
+  "internal_exact_text_duplicates_note": "Body/food items intentionally reuse a question with different photo fixtures."
+}
