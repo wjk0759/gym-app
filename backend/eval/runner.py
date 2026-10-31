@@ -362,7 +362,9 @@ def _sentence_count(text: str) -> int:
 def _has_approx_body_fat(text: str, value: int | None) -> bool:
     if not re.search(r"\d{1,2}\s*%", text):
         return False
-    if re.search(r"\d{1,2}\s*[.．]\d", text):
+    # A decimal BMI or weight is fine; only a decimal body-fat percentage is
+    # forbidden.
+    if re.search(r"\d{1,2}\s*[.．]\d+\s*%", text):
         return False
     if re.search(r"\d{1,2}\s*%?\s*[-~～—至到]\s*\d{1,2}\s*%", text):
         return False

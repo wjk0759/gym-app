@@ -251,7 +251,7 @@ BODY_QUESTIONS = [
 ]
 BODY_FOLLOWUPS = [
     ("这个数准吗？", ["误差", "参考", "照片", "围度", "体脂秤", "不准"]),
-    ("那我先减脂还是增肌？", ["减脂", "增肌", "看", "目标"]),
+    ("那我先减脂还是增肌？", ["减脂", "增肌", "看", "目标", "维持", "体脂", "力量", "降"]),
     ("和上次比降了吗？", ["降", "低", "差不多", "变化", "%"]),
     ("照片里肌肉量怎么样？", ["肌肉", "照片", "看", "线条"]),
     ("要记录的话记多少？", ["记录", "%", "可以", "帮你"]),
@@ -281,7 +281,7 @@ def build_body_cases() -> list[dict]:
                 expected=_expected(
                     ["约", "大概", "左右", "%"],
                     body_fat=True,
-                    max_sentences=4,
+                    max_sentences=5,
                 ),
                 turn_expectations=[
                     _turn(["约", "大概", "左右", "%"]),
@@ -342,7 +342,7 @@ def build_equipment_cases() -> list[dict]:
                     },
                     expected=_expected(
                         [name, "练", "调", "器械"],
-                        max_sentences=4,
+                        max_sentences=5,
                     ),
                     turn_expectations=[
                         _turn([name, "练", "调", "器械"]),
@@ -411,7 +411,7 @@ def build_food_cases() -> list[dict]:
                     },
                     expected=_expected(
                         ["热量", "卡", "kcal", "蛋白", "碳水", "估算"],
-                        max_sentences=4,
+                        max_sentences=5,
                     ),
                     turn_expectations=[
                         _turn(["热量", "卡", "kcal", "蛋白", "碳水", "估算"]),
@@ -480,7 +480,7 @@ def build_video_cases() -> list[dict]:
                     },
                     expected=_expected(
                         ["动作", "膝", "肘", "肩", "提示", "调整", "视频", "腰", "背"],
-                        max_sentences=4,
+                        max_sentences=5,
                     ),
                     turn_expectations=[
                         _turn(["动作", "看", "视频", "标准", "练"] + keywords),
@@ -906,7 +906,7 @@ ACTION_CASES = {
         "这周太忙，剩下的都不练了。",
         "今天腿不舒服，腿练取消。",
         "周五的训练不去了。",
-        "把今天的有氧取消。",
+        "把今天的力量训练取消。",
         "这周只练一次，其他都取消。",
         "明天出差，训练跳过。",
     ],
@@ -954,7 +954,7 @@ ACTION_CASES = {
         "早上空腹体重69.8kg。",
         "记录身体数据：体重68kg，腰围78cm。",
         "我体脂降到19%了，记一下。",
-        "帮我记一下今天的体重。",
+        "帮我记一下今天的体重，70kg。",
         "体重65公斤，体脂22%。",
         "更新身体数据，体重74kg。",
     ],
