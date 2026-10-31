@@ -75,4 +75,30 @@ pytest -q
 python scripts\smoke.py
 ```
 
+## 本地数据库端口（重要）
+
+| 端口 | 用途 |
+|---|---|
+| **3307** | **本项目专用 MySQL**，由 `deploy/admin/docker-compose.yml` 启动 |
+| 3306 | 本机 MySQL80，可能被其他项目使用，**不是本项目数据库** |
+
+启动：
+
+```powershell
+cd deploy/admin
+docker compose up -d mysql
+cd ..\..\backend
+.\start-backend.ps1
+```
+
+`start-backend.ps1` 会检查 `DATABASE_URL` 必须是 3307，避免误连 3306。
+
+SQLite 开发数据已归档到：
+
+```text
+backend/backup/fitai-sqlite-2026-10-31/
+```
+
+该目录只作本地备份，不参与运行，也不提交 Git。
+
 冒烟测试覆盖用户建档、计划、训练、教练安全拦截、器械识别、饮食照片和 Agent 动作审计。
