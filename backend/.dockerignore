@@ -8,6 +8,7 @@ __pycache__/
 *.log
 tests/
 scripts/
+eval/
 media/
 smoke_media/
 .pytest_cache/
