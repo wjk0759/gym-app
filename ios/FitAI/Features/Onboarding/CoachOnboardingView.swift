@@ -605,8 +605,6 @@ struct CoachOnboardingView: View {
                             .foregroundStyle(Theme.ink)
                     }
                     .tint(Theme.cobalt)
-                    .disabled(noInjuries)
-                    .opacity(noInjuries ? 0.45 : 1)
                     .padding(.vertical, 12)
 
                     if index < injuryOptions.count - 1 {
@@ -630,10 +628,13 @@ struct CoachOnboardingView: View {
                         .strokeBorder(Theme.stroke, lineWidth: 1)
                 }
                 .lineLimit(2...4)
-                .disabled(noInjuries)
-                .opacity(noInjuries ? 0.45 : 1)
+                .onChange(of: injuryNote) { _, value in
+                    if !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        noInjuries = false
+                    }
+                }
 
-            Text(noInjuries ? "有伤病时，先关掉“没有任何伤病”，再选择对应部位。" : "选择所有需要避开的部位；越具体，计划越安全。")
+            Text(noInjuries ? "有伤病就点下面的选项，会自动取消“没有任何伤病”。" : "选择所有需要避开的部位；越具体，计划越安全。")
                 .font(AppType.micro)
                 .foregroundStyle(Theme.tertiaryText)
         }
