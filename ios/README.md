@@ -37,6 +37,16 @@ xcodebuild test \
 
 首次运行会进入建档流程。所有数据保存在 App 的 Documents 目录，不需要后端。
 
+## 本轮改版（coach-redesign-2026-11）
+
+- 新视觉系统：暖纸底、墨黑字、钴蓝主色、青柠强调；去掉玻璃/霓虹感。
+- 新 onboarding：单题推进、教练旁白、打字机 + 轻触感、体型/体脂区间/重点部位图选、起点报告。
+- Today 减法：周条 + 一张主训练卡 + 饮食状态 + 教练笔记；目标、周报、错过的训练收进「展开」。
+- 新增「变化」页：体重/体脂/腰围趋势、训练执行、饮食记录、训练复盘入口。
+- 新增统一拍照入口：饮食 / 体型 / 器械 / 动作视频，复用原有分析页面。
+- 旧 `HomeView`、旧 `OnboardingView` 仍保留在代码里，但当前入口分别使用
+  `HomeV2View`、`CoachOnboardingView`，方便回滚和对照。
+
 ## 目录
 
 ```
@@ -50,6 +60,8 @@ ios/
     │   └── MainTabView.swift       # 5 个 Tab
     ├── Core/
     │   ├── Design/Theme.swift      # 颜色、卡片、按钮、标签
+    │   ├── Design/Editorial.swift  # 教练标记、打字机、周条、进度环
+    │   ├── Design/BodyShapes.swift # 体型/体脂/重点部位可视化
     │   ├── Models/Models.swift     # 领域模型
     │   ├── Data/ExerciseLibrary.swift  # 从 JSON 加载训记 1,213 条当前动作 + 80 条历史档案
     │   └── Services/
@@ -67,6 +79,7 @@ ios/
     │   ├── Workout/                # 逐组记录、休息计时、训练总结
     │   ├── Coach/                  # 对话、快捷问题、安全气泡
     │   ├── Equipment/              # 拍照/相册、识别候选、动作详情
+    │   ├── Progress/               # 变化：体重/体脂/腰围趋势与执行
     │   └── Profile/                # 档案、提醒、合规、清除数据
     └── Resources/
         ├── Info.plist
