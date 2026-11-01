@@ -1,6 +1,6 @@
-import pytest
-
 from types import SimpleNamespace
+
+import pytest
 
 from app.services.agent import (
     _guard_pending_action_claims,
