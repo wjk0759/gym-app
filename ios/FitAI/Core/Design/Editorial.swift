@@ -180,7 +180,7 @@ struct RecommendationBadge: View {
                 .font(AppType.micro)
                 .tracking(0.2)
         }
-        .foregroundStyle(Theme.ink)
+        .foregroundStyle(Theme.onAccent)
         .padding(.horizontal, 9)
         .padding(.vertical, 5)
         .background(Theme.lime, in: Capsule(style: .continuous))
@@ -252,10 +252,13 @@ struct EditorialMetric: View {
                     .font(AppType.numberSmall)
                     .foregroundStyle(Theme.ink)
                     .contentTransition(.numericText())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                 if let unit {
                     Text(unit)
                         .font(AppType.micro)
                         .foregroundStyle(Theme.secondaryText)
+                        .lineLimit(1)
                 }
             }
             Text(title)

@@ -323,7 +323,7 @@ struct ProgressOverviewView: View {
                 } label: {
                     Label("拍一张", systemImage: "camera.fill")
                         .font(AppType.caption.weight(.semibold))
-                        .foregroundStyle(Theme.ink)
+                        .foregroundStyle(Theme.onAccent)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 11)
                         .background(Theme.lime, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -635,7 +635,7 @@ private struct ProgressPhotoCompareView: View {
                             } label: {
                                 Label("分享对比图", systemImage: "square.and.arrow.up")
                                     .font(AppType.caption.weight(.bold))
-                                    .foregroundStyle(Theme.ink)
+                                    .foregroundStyle(Theme.onAccent)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 11)
                                     .background(Theme.lime, in: RoundedRectangle(cornerRadius: 11, style: .continuous))

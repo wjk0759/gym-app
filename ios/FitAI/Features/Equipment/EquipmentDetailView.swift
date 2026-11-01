@@ -1058,7 +1058,7 @@ struct EquipmentItemDetailView: View {
 
                 Text("问教练")
                     .font(AppType.micro.weight(.bold))
-                    .foregroundStyle(Theme.ink)
+                    .foregroundStyle(Theme.onAccent)
                     .padding(.horizontal, 9)
                     .padding(.vertical, 8)
                     .background(Theme.lime, in: RoundedRectangle(cornerRadius: 10, style: .continuous))

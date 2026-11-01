@@ -1010,7 +1010,7 @@ struct CoachOnboardingView: View {
             Button(action: increment) {
                 Image(systemName: "plus")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Theme.ink)
+                    .foregroundStyle(Theme.onAccent)
                     .frame(width: 38, height: 38)
                     .background(Theme.lime, in: Circle())
                     .overlay(Circle().strokeBorder(Theme.ink.opacity(0.12), lineWidth: 1))

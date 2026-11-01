@@ -218,7 +218,7 @@ struct TagChip: View {
     var body: some View {
         Text(text)
             .font(AppType.chip)
-            .foregroundStyle(selected ? Theme.ink : Theme.secondaryText)
+            .foregroundStyle(selected ? Theme.onAccent : Theme.secondaryText)
             .padding(.horizontal, 11)
             .padding(.vertical, 7)
             .background {

@@ -695,7 +695,7 @@ struct CoachChatView: View {
                             ForEach(focus.compactMap { BodyFocusArea(rawValue: $0)?.label }, id: \.self) { label in
                                 Text(label)
                                     .font(AppType.micro.weight(.bold))
-                                    .foregroundStyle(Theme.ink)
+                                    .foregroundStyle(Theme.onAccent)
                                     .padding(.horizontal, 7)
                                     .padding(.vertical, 3)
                                     .background(Theme.lime, in: Capsule(style: .continuous))
