@@ -296,7 +296,7 @@ struct EquipmentItemDetailView: View {
                 )
                 equipmentInfoRow(
                     title: "动作来源",
-                    value: item.slug,
+                    value: item.slug ?? "未记录",
                     symbol: "book.closed.fill"
                 )
                 if !item.notes.isEmpty {
