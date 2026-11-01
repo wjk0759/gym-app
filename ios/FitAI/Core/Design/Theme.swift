@@ -48,12 +48,10 @@ enum Theme {
     static let paper = cardSurface
     static let chrome = canvas.opacity(0.94)
     static let surface = ink.opacity(0.045)
-    static let surfaceStrong = ink.opacity(0.08)
     static let stroke = ink.opacity(0.12)
     static let primaryText = ink
     static let secondaryText = secondary
     static let tertiaryText = secondary.opacity(0.68)
-    static let cardEdge = stroke
 
     /// Text/icon color on ink, graphite or other dark-neutral fills.
     static let onAccent = adaptive(
@@ -68,19 +66,12 @@ enum Theme {
         dark: UIColor(white: 0, alpha: 0.45),
         light: UIColor(white: 0, alpha: 0.14)
     )
-    static let shadowSoft = adaptive(
-        dark: UIColor(white: 0, alpha: 0.22),
-        light: UIColor(white: 0, alpha: 0.06)
-    )
 
     // MARK: - Compatibility aliases
 
     // Old cobalt/blue usages become the system ink color. This is what turns
     // the previous blue UI into the reference's black/white system.
     static let accent = primary
-    static let accentDeep = primary
-    static let accentSecondary = primary
-    static let accentTertiary = secondary
     static let accentWarm = secondary
     static let danger = secondary
     static let warning = secondary
@@ -232,36 +223,6 @@ struct SectionTitle: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-/// 轻量几何图形替代插画：只用系统符号和一层渐变，避免大图解码和“卡通感”。
-struct HeroGlyph: View {
-    let symbol: String
-    var size: CGFloat = 100
-    var tint: Color = Theme.accent
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                .fill(tint.opacity(0.14))
-
-            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                .strokeBorder(Theme.ink.opacity(0.16), lineWidth: 1)
-
-            Image(systemName: symbol)
-                .font(.system(size: size * 0.38, weight: .bold))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(Theme.ink)
-        }
-        .frame(width: size, height: size)
-        .overlay(alignment: .topTrailing) {
-            Rectangle()
-                .fill(Theme.lime)
-                .frame(width: size * 0.13, height: size * 0.13)
-                .offset(x: size * 0.04, y: -size * 0.04)
-        }
-        .accessibilityHidden(true)
     }
 }
 

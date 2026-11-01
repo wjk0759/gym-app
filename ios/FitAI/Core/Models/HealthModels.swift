@@ -62,11 +62,6 @@ struct BodyMetric: Codable, Identifiable, Hashable {
     var syncedAt: Date? = nil
 
     var dateKey: String { FitnessDate.key(date) }
-
-    var hasAnyMeasure: Bool {
-        weightKG != nil || bodyFatPCT != nil || waistCM != nil
-            || armCM != nil || thighCM != nil
-    }
 }
 
 enum BodyCheckInFrequency: String, Codable, CaseIterable, Identifiable {

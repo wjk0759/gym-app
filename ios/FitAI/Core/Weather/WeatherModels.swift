@@ -218,10 +218,6 @@ struct WeatherSnapshot: Codable, Equatable, Sendable {
         kind.isWet || precipitationMM > 0 || rainMM > 0 || showersMM > 0 || snowfallCM > 0
     }
 
-    var isSnowing: Bool {
-        kind.isSnow || snowfallCM > 0
-    }
-
     var alertKind: WeatherAlertKind? {
         let wind = windKPH ?? 0
         if wind >= 88 || (wind >= 62 && isWet) {

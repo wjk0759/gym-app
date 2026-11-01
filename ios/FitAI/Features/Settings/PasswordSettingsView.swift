@@ -4,6 +4,7 @@ struct PasswordSettingsView: View {
     @Environment(AuthStore.self) private var auth
     @Environment(\.dismiss) private var dismiss
 
+    @State private var currentPassword = ""
     @State private var password = ""
     @State private var confirmation = ""
     @State private var errorMessage = ""
@@ -30,6 +31,24 @@ struct PasswordSettingsView: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .card()
+
+                    VStack(alignment: .leading, spacing: 7) {
+                        fieldLabel("当前密码（首次设置可留空）")
+                        SecureField("修改已有密码时需要填写", text: $currentPassword)
+                            .textContentType(.password)
+                            .font(AppType.callout)
+                            .padding(.horizontal, 14)
+                            .frame(height: 52)
+                            .background(
+                                Theme.ink.opacity(0.035),
+                                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            )
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .strokeBorder(Theme.stroke, lineWidth: 1)
+                            }
+                            .onChange(of: currentPassword) { _, _ in errorMessage = "" }
+                    }
 
                     VStack(alignment: .leading, spacing: 7) {
                         fieldLabel("新密码")
@@ -125,7 +144,7 @@ struct PasswordSettingsView: View {
         }
         Task { @MainActor in
             do {
-                try await auth.setPassword(password)
+                try await auth.setPassword(password, currentPassword: currentPassword)
                 showSuccess = true
             } catch {
                 errorMessage = error.localizedDescription

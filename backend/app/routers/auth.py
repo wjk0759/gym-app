@@ -136,11 +136,40 @@ def set_password(
     payload: PasswordSetIn,
     user_id: CurrentUser,
     db: DBSession,
+    authorization: Annotated[str | None, Header()] = None,
 ):
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="用户不存在")
+    if user.password_hash and (
+        not payload.current_password
+        or not auth_service.verify_password(
+            payload.current_password, user.password_hash
+        )
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "REAUTH_REQUIRED",
+                "message": "修改密码前请输入当前密码",
+            },
+        )
     user.password_hash = auth_service.hash_password(payload.password)
+
+    current_session_id = None
+    if authorization and authorization.lower().startswith("bearer "):
+        current_session_id = _bearer_payload(authorization).get("sid")
+    now = datetime.now(timezone.utc)
+    sessions = db.execute(
+        select(AuthSession).where(
+            AuthSession.user_id == user_id,
+            AuthSession.revoked_at.is_(None),
+        )
+    ).scalars()
+    for session in sessions:
+        if session.id != current_session_id:
+            session.revoked_at = now
+
     db.add(
         AuthEvent(
             user_id=user_id,
@@ -224,7 +253,14 @@ def oauth_start(provider: str, request: Request):
     if provider not in {"wechat", "qq"}:
         raise HTTPException(status_code=400, detail="不支持的登录方式")
     app_redirect = f"{settings.app_callback_scheme}://auth/callback"
-    public_base = settings.oauth_callback_base.rstrip("/") or str(request.base_url).rstrip("/")
+    public_base = (
+        settings.public_base_url.rstrip("/")
+        or settings.oauth_callback_base.rstrip("/")
+    )
+    if not public_base:
+        if settings.app_env != "dev":
+            raise HTTPException(status_code=503, detail="OAuth 公网地址未配置")
+        public_base = str(request.base_url).rstrip("/")
     callback_url = (
         f"{public_base}/api/v1/auth/oauth/{provider}/callback"
     )

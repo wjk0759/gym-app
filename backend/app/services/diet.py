@@ -689,10 +689,6 @@ def _strategy(strategy_id: str | None) -> DietStrategy:
     return DIET_STRATEGIES.get(strategy_id or "balanced", DIET_STRATEGIES["balanced"])
 
 
-def _week_start(day: date) -> date:
-    return day - timedelta(days=day.weekday())
-
-
 def _training_days(profile: Profile, provided: list[int] | None) -> list[int]:
     cleaned = sorted({int(item) for item in (provided or []) if 1 <= int(item) <= 7})
     if cleaned:

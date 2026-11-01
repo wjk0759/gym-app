@@ -73,6 +73,7 @@ class AppleLoginIn(BaseModel):
 
 class PasswordSetIn(BaseModel):
     password: str = Field(min_length=8, max_length=72)
+    current_password: str | None = Field(default=None, max_length=72)
 
 
 class PasswordResetIn(BaseModel):

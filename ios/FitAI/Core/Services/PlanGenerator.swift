@@ -33,7 +33,6 @@ enum PlanGenerator {
     ]
 
     private static let fullBody: [MuscleGroup] = [.legs, .chest, .back, .shoulders, .core]
-    private static let upper: [MuscleGroup] = [.chest, .back, .shoulders, .arms, .arms]
     private static let lower: [MuscleGroup] = [.legs, .glutes, .legs, .core, .core]
     private static let push: [MuscleGroup] = [.chest, .chest, .shoulders, .shoulders, .arms]
     private static let pull: [MuscleGroup] = [.back, .back, .back, .arms, .core]
@@ -177,49 +176,6 @@ enum PlanGenerator {
             setsDelta: 0,
             weightMultiplier: 1.0
         )
-    }
-
-    static func adjusted(
-        plan: TrainingPlan,
-        profile: UserProfile,
-        completionRate: Double,
-        averageRPE: Double = 0
-    ) -> (plan: TrainingPlan, message: String) {
-        var newPlan = plan
-        newPlan.id = UUID()
-        newPlan.version = plan.version + 1
-        newPlan.updatedAt = Date()
-        newPlan.title = plan.title + " · 调整版"
-
-        let change = adjustment(
-            completionRate: completionRate,
-            averageRPE: averageRPE
-        )
-        let setsDelta = change.setsDelta
-        let weightMultiplier = change.weightMultiplier
-
-        newPlan.days = plan.days.map { day in
-            var newDay = day
-            newDay.id = UUID()
-            newDay.exercises = day.exercises.map { item in
-                var newItem = item
-                newItem.id = UUID()
-                newItem.sets = max(2, item.sets + setsDelta)
-                if let weight = item.weightKG, weight > 0, weightMultiplier != 1.0 {
-                    let rounded = ((weight * weightMultiplier) * 2).rounded() / 2
-                    if weightMultiplier > 1 {
-                        // 轻重量下 2.5% 可能被 0.5kg 的刻度抹平，保证至少加 0.5kg
-                        newItem.weightKG = max(rounded, weight + 0.5)
-                    } else {
-                        newItem.weightKG = max(0.5, min(rounded, weight - 0.5))
-                    }
-                }
-                return newItem
-            }
-            return newDay
-        }
-
-        return (newPlan, change.detail)
     }
 
     // MARK: - 内部规则

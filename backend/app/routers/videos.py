@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy import select
 
+from ..config import settings
 from ..deps import DBSession
 from ..models import Exercise, ExerciseVideo
 
@@ -12,7 +13,12 @@ router = APIRouter(tags=["videos"])
 def _absolute_url(request: Request, url: str | None) -> str | None:
     if not url or not url.startswith("/"):
         return url
-    return str(request.base_url).rstrip("/") + url
+    base = settings.public_base_url.rstrip("/")
+    if not base:
+        if settings.app_env != "dev":
+            raise HTTPException(status_code=503, detail="媒体公网地址未配置")
+        base = str(request.base_url).rstrip("/")
+    return base + url
 
 
 @router.get("/videos/{exercise_slug}")

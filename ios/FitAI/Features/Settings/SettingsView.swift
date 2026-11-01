@@ -106,6 +106,7 @@ struct SettingsView: View {
                     do {
                         try await auth.deleteAccount()
                         store.resetAll()
+                        ProgressPhotoStore.deleteAll()
                     } catch {
                         message = "注销失败：\(error.localizedDescription)"
                         showMessage = true
@@ -114,7 +115,7 @@ struct SettingsView: View {
             }
             Button("取消", role: .cancel) {}
         } message: {
-            Text("账号会进入 15 天冷静期，期间可联系 \(LegalMeta.contactEmail) 恢复；冷静期结束后删除或匿名化账号及云端数据。本机当前账号数据会清除，进展照片和系统备份需你手动删除。")
+            Text("账号会进入 15 天冷静期，期间可联系 \(LegalMeta.contactEmail) 恢复；冷静期结束后删除或匿名化账号及云端数据。本机当前账号数据、进展照片会清除；系统备份需你手动删除。")
         }
         .sheet(isPresented: $showExport) {
             DataExportView()

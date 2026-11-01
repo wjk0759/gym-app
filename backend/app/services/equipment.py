@@ -109,7 +109,7 @@ async def recognize(db: Session, image_bytes: bytes, filename: str) -> dict:
     except Exception as exc:  # noqa: BLE001 - 识别失败回退，不让拍照崩溃
         logger.warning("equipment vision failed, fallback to mock: %s", exc)
         payload = _mock_recognize(db, image_bytes, filename)
-        payload["warning"] = f"视觉识别失败，已回退本地匹配：{str(exc)[:200]}"
+        payload["warning"] = "视觉识别暂时不可用，已回退本地匹配"
         return payload
 
     equipment = str(result.get("equipment") or "").lower()

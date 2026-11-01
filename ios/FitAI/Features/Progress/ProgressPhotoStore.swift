@@ -50,6 +50,10 @@ enum ProgressPhotoStore {
         return photo
     }
 
+    static func deleteAll() {
+        try? FileManager.default.removeItem(at: directory)
+    }
+
     static func delete(_ photo: ProgressPhoto) {
         try? FileManager.default.removeItem(at: directory.appendingPathComponent(photo.filename))
         var photos = load()

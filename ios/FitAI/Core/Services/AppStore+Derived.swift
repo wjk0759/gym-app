@@ -48,17 +48,6 @@ extension AppStore {
         return DateInterval(start: weekStart, end: weekEnd)
     }
 
-    var isPlanFinished: Bool {
-        guard let plan, let planMonday = planStartMonday else { return false }
-        let calendar = Calendar.current
-        let days = calendar.dateComponents(
-            [.day],
-            from: planMonday,
-            to: calendar.startOfDay(for: Date())
-        ).day ?? 0
-        return days >= plan.weeks * 7
-    }
-
     var todayDay: PlanDay? {
         guard let plan else { return nil }
         if let scheduled = plan.day(on: Date()) {
@@ -124,32 +113,8 @@ extension AppStore {
         }
     }
 
-    var recentAverageRPE: Double {
-        let recentSets = sessions.prefix(3).flatMap { $0.sets }.filter { $0.completed }
-        guard !recentSets.isEmpty else { return 0 }
-        return recentSets.reduce(0.0) { $0 + $1.rpe } / Double(recentSets.count)
-    }
-
-    /// 本周 RPE，和“本周完成率”使用同一个时间窗口，复盘时更一致。
-    var currentWeekAverageRPE: Double {
-        let sets = currentWeekSessions.prefix(3).flatMap { $0.sets }.filter { $0.completed }
-        guard !sets.isEmpty else { return 0 }
-        return sets.reduce(0.0) { $0 + $1.rpe } / Double(sets.count)
-    }
-
-    var currentWeekVolume: Double {
-        currentWeekSessions.reduce(0) { $0 + $1.volume }
-    }
-
     var canUseRemoteAI: Bool {
         useRemoteAI && (isPro || debugForceRemoteAI)
-    }
-
-    var planAdjustmentPreview: PlanGenerator.Adjustment {
-        PlanGenerator.adjustment(
-            completionRate: weeklyCompletion,
-            averageRPE: currentWeekAverageRPE
-        )
     }
 
     var equipmentSlugsForPlan: [String] {

@@ -404,7 +404,7 @@ def send_sms_code(
         "delivery": delivery,
         "message": "验证码已发送",
     }
-    if delivery == "dev":
+    if delivery == "dev" and settings.app_env == "dev":
         result["dev_code"] = code
     return result
 
@@ -604,6 +604,7 @@ def check_access_session(db: Session, payload: dict) -> str:
             AuthSession.id == session_id,
             AuthSession.user_id == user_id,
             AuthSession.revoked_at.is_(None),
+            AuthSession.expires_at > utcnow(),
             User.deleted_at.is_(None),
             User.status == "active",
         )
@@ -907,18 +908,3 @@ def exchange_oauth_ticket(
         request_meta,
         ticket.is_new_user,
     )
-
-
-def social_login_code(
-    db: Session,
-    provider: str,
-    code: str,
-    request_meta: dict | None = None,
-) -> dict:
-    if provider not in {"wechat", "qq"}:
-        raise HTTPException(status_code=400, detail="不支持的登录方式")
-    import asyncio
-
-    profile_data = asyncio.run(exchange_code(provider, code))
-    user, is_new = find_or_create_social_user(db, provider, profile_data)
-    return _issue_session(db, user, f"{provider}_oauth", request_meta, is_new)

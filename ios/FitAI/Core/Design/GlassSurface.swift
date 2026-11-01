@@ -126,25 +126,4 @@ extension View {
             )
         )
     }
-
-    func glassCapsule(material: Bool = false) -> some View {
-        background {
-            GlassSurface(cornerRadius: 999, material: material)
-        }
-        .overlay {
-            Capsule(style: .continuous)
-                .stroke(Theme.stroke, lineWidth: 1)
-        }
-    }
-
-    /// Soft neumorphic control surface: dual-toned fill + light/dark hairline.
-    func softSurface(
-        cornerRadius: CGFloat = AppLayout.controlCornerRadius,
-        tint: Color = Theme.surfaceStrong,
-        stroke: Color = Theme.stroke
-    ) -> some View {
-        background {
-            SoftSurface(cornerRadius: cornerRadius, tint: tint, stroke: stroke)
-        }
-    }
 }

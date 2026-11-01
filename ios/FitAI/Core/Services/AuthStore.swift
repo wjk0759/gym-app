@@ -78,16 +78,20 @@ final class AuthStore {
         )
     }
 
-    func setPassword(_ newPassword: String) async throws {
+    func setPassword(_ newPassword: String, currentPassword: String? = nil) async throws {
         guard let token = AuthTokenStore.shared.accessToken else {
             throw AuthError(message: "请先登录")
         }
         isWorking = true
         defer { isWorking = false }
         errorMessage = nil
+        var body: [String: Any] = ["password": newPassword]
+        if let currentPassword, !currentPassword.isEmpty {
+            body["current_password"] = currentPassword
+        }
         let _: EmptyResponse = try await request(
             "/auth/password/set",
-            body: ["password": newPassword],
+            body: body,
             token: token
         )
     }

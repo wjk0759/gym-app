@@ -1,17 +1,6 @@
 import Foundation
-import UIKit
 
 extension AppStore {
-    /// 单图入口，保留给 Discover / 视频点评等已有页面。
-    func sendCoachPhoto(
-        _ image: UIImage,
-        question: String = "请分析这张图片：如果涉及训练动作、饮食、器械或体型，按相应角度回答。",
-        userText: String = ""
-    ) {
-        guard let data = image.jpegData(compressionQuality: 0.65) else { return }
-        sendCoachPhotos([data], caption: userText, question: question)
-    }
-
     /// 教练页附件发送：图片先进入等待区，用户确认后再调用这里。
     /// caption 为空时只显示图片，不再伪造“请教练看看这张训练照片”的用户文字。
     func sendCoachPhotos(

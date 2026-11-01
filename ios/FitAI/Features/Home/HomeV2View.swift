@@ -30,10 +30,6 @@ struct HomeV2View: View {
         return plan.day(on: selectedDate)
     }
 
-    private var isViewingToday: Bool {
-        Calendar.current.isDateInToday(selectedDate)
-    }
-
     private var markedKeys: Set<String> {
         Set(
             (store.plan?.days ?? []).compactMap { day in

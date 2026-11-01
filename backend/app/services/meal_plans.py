@@ -21,23 +21,6 @@ def week_start_for(day: date) -> date:
     return day - timedelta(days=day.weekday())
 
 
-def meal_plan_dict(item: MealPlan) -> dict:
-    return {
-        "date": item.plan_date.isoformat(),
-        "week_start": item.week_start.isoformat() if item.week_start else None,
-        "strategy": item.strategy,
-        "generated_by": item.generated_by,
-        "model": item.model_name,
-        "target_kcal": item.target_kcal,
-        "target_protein_g": item.target_protein_g,
-        "target_carb_g": item.target_carb_g,
-        "target_fat_g": item.target_fat_g,
-        "plan": item.plan,
-        "created_at": item.created_at.isoformat(),
-        "updated_at": item.updated_at.isoformat() if item.updated_at else None,
-    }
-
-
 def _targets(plan: dict) -> dict:
     return plan.get("targets") or {}
 

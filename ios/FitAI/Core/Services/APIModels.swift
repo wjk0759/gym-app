@@ -101,9 +101,7 @@ struct PlanScheduleUploadDay: Encodable {
 
 struct HealthStatus: Decodable {
     let status: String?
-    let env: String?
     let llm: String?
-    let vision: String?
 }
 
 struct ChatResponse: Decodable {

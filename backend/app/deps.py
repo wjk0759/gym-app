@@ -1,3 +1,4 @@
+import uuid
 from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException
@@ -5,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from .config import settings
 from .db import get_db
+from .models import User
 from .services.auth import check_access_session, decode_access_token
 
 DEMO_USER_ID = "00000000-0000-0000-0000-000000000001"
@@ -24,11 +26,16 @@ def get_user_id(
         payload = decode_access_token(authorization.split(" ", 1)[1].strip())
         return check_access_session(db, payload)
 
-    if settings.app_env == "dev":
+    if settings.app_env == "dev" and settings.allow_dev_user_header:
         if x_user_id:
-            if len(x_user_id) > 64:
-                raise HTTPException(status_code=401, detail="invalid user id")
-            return x_user_id
+            try:
+                uuid.UUID(x_user_id)
+            except ValueError as exc:
+                raise HTTPException(status_code=401, detail="invalid user id") from exc
+            user = db.get(User, x_user_id)
+            if user is None or user.deleted_at is not None or user.status != "active":
+                raise HTTPException(status_code=401, detail="请先登录")
+            return user.id
         raise HTTPException(status_code=401, detail="请先登录")
 
     raise HTTPException(status_code=401, detail="请先登录")

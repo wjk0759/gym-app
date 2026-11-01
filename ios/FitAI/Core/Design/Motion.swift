@@ -140,16 +140,6 @@ extension View {
     ) -> some View {
         modifier(MotionAnimation(animation: animation, value: value))
     }
-
-    /// 内容替换时使用统一的轻柔转场。
-    func softContentTransition() -> some View {
-        transition(
-            .asymmetric(
-                insertion: .opacity.combined(with: .offset(y: 10)).combined(with: .scale(scale: 0.99)),
-                removal: .opacity
-            )
-        )
-    }
 }
 
 /// 教练「正在输入」的三点跳动，替代系统 ProgressView。

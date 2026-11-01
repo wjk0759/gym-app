@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import time
 
 import httpx
 from sqlalchemy.orm import Session
@@ -164,7 +163,8 @@ async def complete_vision_json(
             if attempt == 0:
                 await asyncio.sleep(0.6)
                 continue
-            raise LLMError(f"vision network error: {str(exc)[:300]}") from exc
+            logger.warning("vision network error: %s", exc)
+            raise LLMError("vision network error") from exc
 
         if response.status_code >= 400:
             if response.status_code == 400 and "response_format" in payload:
@@ -179,11 +179,15 @@ async def complete_vision_json(
                     if attempt == 0:
                         await asyncio.sleep(0.6)
                         continue
-                    raise LLMError(f"vision network error: {str(exc)[:300]}") from exc
+                    logger.warning("vision network error: %s", exc)
+                    raise LLMError("vision network error") from exc
             if response.status_code in {429, 500, 502, 503, 504} and attempt == 0:
                 await asyncio.sleep(0.8)
                 continue
-            raise LLMError(f"vision HTTP {response.status_code}: {response.text[:300]}")
+            logger.warning(
+                "vision HTTP %s: %s", response.status_code, response.text[:300]
+            )
+            raise LLMError(f"vision HTTP {response.status_code}")
 
         try:
             data = response.json()
@@ -205,7 +209,8 @@ async def complete_vision_json(
                 continue
             raise
 
-    raise LLMError(f"vision JSON retry failed: {last_error}")
+    logger.warning("vision JSON retry failed: %s", last_error)
+    raise LLMError("vision JSON retry failed")
 
 
 def _strip_fences(content: str) -> str:
@@ -259,7 +264,8 @@ def _parse_json_object(content: str) -> dict:
         logger.warning("LLM returned %d JSON objects; using the last one", len(objects))
         return objects[-1]
 
-    raise LLMError(f"LLM returned invalid JSON: {content[:200]}")
+    logger.warning("LLM returned invalid JSON: %s", content[:300])
+    raise LLMError("LLM returned invalid JSON")
 
 
 async def complete_json(
@@ -276,7 +282,6 @@ async def complete_json(
         {"role": "system", "content": system},
         {"role": "user", "content": user},
     ]
-    last_error: Exception | None = None
     requested_effort = reasoning_effort or settings.llm_reasoning_effort
     for attempt in range(3):
         payload = {
@@ -289,11 +294,11 @@ async def complete_json(
         try:
             response = await _post(payload)
         except httpx.TransportError as exc:
-            last_error = exc
             if attempt == 0:
                 await asyncio.sleep(0.6)
                 continue
-            raise LLMError(f"LLM network error: {str(exc)[:300]}") from exc
+            logger.warning("LLM network error: %s", exc)
+            raise LLMError("LLM network error") from exc
 
         if response.status_code >= 400:
             # Some compatible endpoints do not support response_format.
@@ -302,25 +307,25 @@ async def complete_json(
                 try:
                     response = await _post(payload)
                 except httpx.TransportError as exc:
-                    last_error = exc
                     if attempt == 0:
                         await asyncio.sleep(0.6)
                         continue
-                    raise LLMError(f"LLM network error: {str(exc)[:300]}") from exc
+                    logger.warning("LLM network error: %s", exc)
+                    raise LLMError("LLM network error") from exc
 
             if response.status_code in {429, 500, 502, 503, 504} and attempt == 0:
                 await asyncio.sleep(0.8)
                 continue
-            raise LLMError(
-                f"LLM HTTP {response.status_code}: {response.text[:300]}"
+            logger.warning(
+                "LLM HTTP %s: %s", response.status_code, response.text[:300]
             )
+            raise LLMError(f"LLM HTTP {response.status_code}")
 
         try:
             data = response.json()
             _merge_usage(usage, data.get("usage"))
             content = data["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError, ValueError) as exc:
-            last_error = exc
             if attempt == 0:
                 await asyncio.sleep(0.4)
                 continue
@@ -328,8 +333,7 @@ async def complete_json(
 
         try:
             return _parse_json_object(content)
-        except LLMError as exc:
-            last_error = exc
+        except LLMError:
             if attempt < 2:
                 # Ask once for a single object; this handles models that emit
                 # two tool decisions in one response. The final retry drops
@@ -349,7 +353,7 @@ async def complete_json(
                 continue
             raise
 
-    raise LLMError(f"LLM JSON retry failed: {last_error}")
+    raise LLMError("LLM JSON retry failed")
 
 
 async def complete_text(
@@ -366,36 +370,35 @@ async def complete_text(
         "temperature": temperature,
         "reasoning_effort": settings.llm_reasoning_effort,
     }
-    last_error: Exception | None = None
     for attempt in range(2):
         try:
             response = await _post(payload)
         except httpx.TransportError as exc:
-            last_error = exc
             if attempt == 0:
                 await asyncio.sleep(0.6)
                 continue
-            raise LLMError(f"LLM network error: {str(exc)[:300]}") from exc
+            logger.warning("LLM network error: %s", exc)
+            raise LLMError("LLM network error") from exc
 
         if response.status_code in {429, 500, 502, 503, 504} and attempt == 0:
             await asyncio.sleep(0.8)
             continue
         if response.status_code >= 400:
-            raise LLMError(
-                f"LLM HTTP {response.status_code}: {response.text[:300]}"
+            logger.warning(
+                "LLM HTTP %s: %s", response.status_code, response.text[:300]
             )
+            raise LLMError(f"LLM HTTP {response.status_code}")
         try:
             data = response.json()
             _merge_usage(usage, data.get("usage"))
             return data["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError, ValueError) as exc:
-            last_error = exc
             if attempt == 0:
                 await asyncio.sleep(0.4)
                 continue
             raise LLMError("unexpected LLM response shape") from exc
 
-    raise LLMError(f"LLM text retry failed: {last_error}")
+    raise LLMError("LLM text retry failed")
 
 
 def record_job(
@@ -419,7 +422,3 @@ def record_job(
         )
     )
     db.commit()
-
-
-def timed() -> float:
-    return time.perf_counter()

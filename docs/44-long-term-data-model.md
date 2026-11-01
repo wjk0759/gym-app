@@ -123,5 +123,5 @@ V12 增加中文 ngram 全文索引：
 2. AppStore 拆分：`LocalStateStore`、`CoachRequestController`、同步服务，降低单文件复杂度。
 3. 大 View 拆分：`PlanHomeView`、`EquipmentDetailView`、`CoachChatView`、`WorkoutSessionView`。
 4. `agent_steps` 的 JSON 体积与保留策略继续优化。
-5. `PrivacyInfo.xcprivacy` 补定位、聊天内容、UserDefaults 理由 API 等声明。
+5. 在 App Store Connect 隐私标签中逐项核对 `PrivacyInfo.xcprivacy`。
 6. 后台搜索在真实数据量上用 `EXPLAIN ANALYZE` 复核，必要时继续收紧 ID 子查询。

@@ -49,4 +49,5 @@ jobs:
         working-directory: backend
         env:
           PYTHONIOENCODING: utf-8
+          ALLOW_DEV_USER_HEADER: "true"
         run: python scripts/smoke.py

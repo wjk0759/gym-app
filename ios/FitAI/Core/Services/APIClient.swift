@@ -175,15 +175,6 @@ struct APIClient {
         return try await send(path: "plans/generate", method: "POST", body: body, timeout: 150)
     }
 
-    func fetchSchedule(planID: String) async throws -> RemoteScheduleState {
-        let encoded = planID.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? planID
-        return try await send(
-            path: "schedule?plan_id=\(encoded)",
-            method: "GET",
-            body: nil
-        )
-    }
-
     func syncSchedule(
         planID: String,
         planVersion: Int?,

@@ -93,7 +93,7 @@ async def analyze(image_bytes: bytes, filename: str = "body.jpg") -> dict:
     except Exception as exc:  # noqa: BLE001 - 分析失败回退，不阻断流程
         logger.warning("body vision failed, fallback to mock: %s", exc)
         payload = _mock_analyze(image_bytes, filename)
-        payload["warning"] = f"视觉分析失败，已回退本地建议：{str(exc)[:200]}"
+        payload["warning"] = "视觉分析暂时不可用，已回退本地建议"
         return payload
 
 

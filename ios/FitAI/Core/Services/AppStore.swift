@@ -301,21 +301,6 @@ final class AppStore {
         }
     }
 
-    func adjustPlan() {
-        guard let current = plan else { return }
-        let result = PlanGenerator.adjusted(
-            plan: current,
-            profile: profile,
-            completionRate: weeklyCompletion,
-            averageRPE: currentWeekAverageRPE
-        )
-        archiveCurrentPlan()
-        plan = result.plan
-        toast = result.message
-        persist()
-        rescheduleNotifications()
-    }
-
     func restorePlan(_ archived: TrainingPlan) {
         guard archived.id != plan?.id else { return }
         archiveCurrentPlan()
@@ -386,20 +371,6 @@ final class AppStore {
         )
         dislikedSlugs.remove(exercise.slug)
         current.days[dayIndex].exercises.append(item)
-        plan = current
-        persist()
-    }
-
-    func removeExercise(_ exerciseID: UUID, from dayID: UUID) {
-        guard var current = plan,
-              let dayIndex = current.days.firstIndex(where: { $0.id == dayID }),
-              current.days[dayIndex].exercises.count > 1 else {
-            return
-        }
-        if let removed = current.days[dayIndex].exercises.first(where: { $0.id == exerciseID }) {
-            dislikedSlugs.insert(removed.slug)
-        }
-        current.days[dayIndex].exercises.removeAll { $0.id == exerciseID }
         plan = current
         persist()
     }

@@ -63,6 +63,15 @@ public class RetentionService {
         deleted.put("plan_day_states", delete("plan_day_states", "updated_at", now.minus(180, ChronoUnit.DAYS)));
         deleted.put("ai_memories", delete("ai_memories", "updated_at", now.minus(90, ChronoUnit.DAYS), "active = FALSE"));
         deleted.put("agent_runs", delete("agent_runs", "created_at", now.minus(365, ChronoUnit.DAYS)));
+        deleted.put(
+                "users",
+                delete(
+                        "users",
+                        "deleted_at",
+                        now.minus(15, ChronoUnit.DAYS),
+                        "deleted_at IS NOT NULL"
+                )
+        );
 
         int total = deleted.values().stream().mapToInt(Integer::intValue).sum();
         if (total > 0) {

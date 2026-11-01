@@ -44,18 +44,6 @@ struct WeatherAtmosphere: Equatable, Sendable {
         kind.isSnow
     }
 
-    var precipitationIntensity: Double {
-        guard isPrecipitation else { return 0 }
-        var value = min(1, max(0.28, precipitationMM / 6))
-        if kind.isStorm {
-            value = max(value, 0.85)
-        }
-        if isSnow {
-            value = max(value, 0.48)
-        }
-        return value
-    }
-
     var windIntensity: Double {
         let speed = windKPH ?? 0
         return min(1, max(0, (speed - 10) / 80))
@@ -68,35 +56,6 @@ struct WeatherAtmosphere: Equatable, Sendable {
     var isTyphoon: Bool {
         let speed = windKPH ?? 0
         return speed >= 88 || (speed >= 62 && isPrecipitation)
-    }
-
-    var cloudiness: Double {
-        if let cloudCover {
-            return min(1, max(0, Double(cloudCover) / 100))
-        }
-        switch kind {
-        case .clear: return 0.06
-        case .mostlyClear: return 0.22
-        case .partlyCloudy: return 0.52
-        case .overcast: return 0.94
-        case .fog: return 0.82
-        case .drizzle, .rain, .heavyRain, .freezingRain, .thunderstorm: return 0.88
-        case .snow, .heavySnow: return 0.72
-        case .unknown: return 0.5
-        }
-    }
-
-    var celestialVisibility: Double {
-        if isPrecipitation || kind == .overcast || kind == .fog {
-            return 0
-        }
-        switch kind {
-        case .clear: return 1
-        case .mostlyClear: return 0.82
-        case .partlyCloudy: return 0.30
-        case .unknown: return 0.45
-        default: return 0
-        }
     }
 
     func accent(for scheme: ColorScheme) -> Color {

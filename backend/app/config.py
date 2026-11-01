@@ -5,6 +5,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     app_env: str = "dev"
+    # 仅开发/自动化测试可开启；生产即使误设为 dev 也应保持 false。
+    allow_dev_user_header: bool = False
     database_url: str = "sqlite:///./fitai.db"
     # 连接池/线程池。生产 MySQL 建议按机器规格调大，并在部署层开多个 worker。
     db_pool_size: int = 20
@@ -62,6 +64,7 @@ class Settings(BaseSettings):
     qq_app_id: str = ""
     qq_app_secret: str = ""
     oauth_callback_base: str = ""
+    public_base_url: str = ""
     app_callback_scheme: str = "fitai"
 
     cors_origins: str = "*"
