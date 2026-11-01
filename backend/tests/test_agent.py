@@ -1,8 +1,12 @@
 import pytest
 
+from types import SimpleNamespace
+
 from app.services.agent import (
     _guard_pending_action_claims,
+    _make_changes,
     _normalize_app_actions,
+    _normalize_focus,
     _normalize_split,
     _normalize_weekdays,
 )
@@ -12,6 +16,28 @@ def test_weekday_normalization():
     assert _normalize_weekdays([2, 4, 6, 2]) == [2, 4, 6]
     assert _normalize_weekdays([]) == []
     assert _normalize_weekdays([0, 8, "3"]) == [3]
+
+
+def test_focus_normalization():
+    assert _normalize_focus(["back", "肩", "bad", "legs"]) == ["back", "shoulders"]
+    assert _normalize_focus(["胸", "背部"]) == ["chest", "back"]
+    assert _normalize_focus(None) == []
+    assert _normalize_focus(["core", "arms", "legs"]) == ["core", "arms"]
+
+
+def test_plan_changes_include_focus():
+    profile = SimpleNamespace(session_minutes=45)
+    changes = _make_changes(
+        None,
+        profile,
+        {"title": "4 周计划", "days": []},
+        3,
+        [],
+        45,
+        "3分化",
+        ["back", "shoulders"],
+    )
+    assert "重点部位：背、肩" in changes
 
 
 def test_split_aliases():

@@ -687,6 +687,22 @@ struct CoachChatView: View {
                     }
                     .font(.caption2)
                     .foregroundStyle(Theme.tertiaryText)
+
+                    if let focus = proposed.focus, !focus.isEmpty {
+                        HStack(spacing: 5) {
+                            Text("重点")
+                                .foregroundStyle(Theme.tertiaryText)
+                            ForEach(focus.compactMap { BodyFocusArea(rawValue: $0)?.label }, id: \.self) { label in
+                                Text(label)
+                                    .font(AppType.micro.weight(.bold))
+                                    .foregroundStyle(Theme.ink)
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 3)
+                                    .background(Theme.lime, in: Capsule(style: .continuous))
+                            }
+                        }
+                        .font(AppType.micro)
+                    }
                 }
 
                 HStack(spacing: 8) {

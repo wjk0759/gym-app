@@ -224,6 +224,7 @@ struct AgentProposalDiff: Codable, Hashable {
         let sessionMinutes: Int?
         let weeks: Int?
         let dayCount: Int?
+        let focus: [String]?
 
         enum CodingKeys: String, CodingKey {
             case title
@@ -232,6 +233,7 @@ struct AgentProposalDiff: Codable, Hashable {
             case sessionMinutes = "session_minutes"
             case weeks
             case dayCount = "day_count"
+            case focus
         }
     }
 

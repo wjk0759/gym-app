@@ -123,7 +123,7 @@ SYSTEM_PROMPT = """你是 FitAI 的 AI 私人健身教练，不是普通的单�
 {"action":"tool","tool":"get_context","arguments":{}}
 {"action":"tool","tool":"get_recent_training","arguments":{"days":30}}
 {"action":"tool","tool":"lookup_exercise","arguments":{"query":"弹力带划船","limit":3}}
-{"action":"tool","tool":"propose_plan","arguments":{"weekly_days":3,"weekdays":[2,4,6],"session_minutes":45,"split":"3分化","weeks":4}}
+{"action":"tool","tool":"propose_plan","arguments":{"weekly_days":3,"weekdays":[2,4,6],"session_minutes":45,"split":"3分化","weeks":4,"focus":["back","shoulders"]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"reschedule_training","title":"把明天的训练改到周四","summary":"保留原训练内容，只调整日期","requires_confirmation":true,"payload":{"day_id":"本地训练日ID","target_date":"2026-10-29"}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_body_metric","title":"记录体重 70kg","summary":"写入今天身体数据","requires_confirmation":true,"payload":{"weight_kg":70}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"create_diet_plan","title":"生成本周碳循环饮食计划","summary":"训练日高碳、休息日低碳，蛋白质固定","requires_confirmation":true,"payload":{"strategy":"carb_cycle","week_start":"2026-10-26"}}]}}
@@ -137,6 +137,7 @@ SYSTEM_PROMPT = """你是 FitAI 的 AI 私人健身教练，不是普通的单�
 1. 用户要调整训练计划、频率、训练日、时长、分化或器械时，先调用 get_context；如果需要评估近期执行情况，再调用 get_recent_training。
 2. 只有用户明确描述训练安排或要求改计划时才调用 propose_plan。计划参数默认沿用用户档案，只修改用户明确提出的部分。
 3. propose_plan 成功后会返回 proposal_id 和 changes。你要在 final 中告诉用户这是待确认草案，不能声称已经应用。
+- 用户明确说想重点练某 1–2 个部位时，propose_plan 的 focus 只能是 chest / back / legs / glutes / shoulders / arms / core；没有明确重点就不要传，也不要用 propose_app_actions 代替。
 4. 用户只是问知识、动作、疼痛或恢复建议时，直接 final，不要为了使用工具而使用工具。
 5. 疼痛、胸闷、晕厥、呼吸困难、孕期/术后等情况必须建议就医或停止相关训练，不做医疗诊断。用户提到腰突、半月板损伤、肩峰撞击、足底筋膜炎等已知诊断时，不能只给动作替换；先建议找医生/康复师评估，再给无痛范围内的替代。夜间痛、静息痛、持续肿胀或疼痛超过一周，也要建议专业评估。给出“先停/先别练”后，必须补一句什么时候需要专业评估，不能只反问。
 6. 不要编造工具、动作 slug、训练记录或用户信息。信息不足时用 ask_user。
@@ -208,6 +209,47 @@ def _normalize_weekdays(raw: Any) -> list[int]:
     return result
 
 
+FOCUS_LABELS = {
+    "chest": "胸",
+    "back": "背",
+    "legs": "腿",
+    "glutes": "臀",
+    "shoulders": "肩",
+    "arms": "手臂",
+    "core": "核心",
+}
+FOCUS_ALIASES = {
+    "胸": "chest",
+    "胸部": "chest",
+    "背": "back",
+    "背部": "back",
+    "腿": "legs",
+    "腿部": "legs",
+    "臀": "glutes",
+    "臀部": "glutes",
+    "肩": "shoulders",
+    "肩部": "shoulders",
+    "手臂": "arms",
+    "胳膊": "arms",
+    "核心": "core",
+    "腰腹": "core",
+}
+
+
+def _normalize_focus(raw: Any) -> list[str]:
+    if not isinstance(raw, (list, tuple)):
+        return []
+    result: list[str] = []
+    for item in raw:
+        value = str(item).strip().lower()
+        value = FOCUS_ALIASES.get(value, value)
+        if value in FOCUS_LABELS and value not in result:
+            result.append(value)
+        if len(result) >= 2:
+            break
+    return result
+
+
 def _make_changes(
     old_program: Program | None,
     old_profile: Profile,
@@ -216,6 +258,7 @@ def _make_changes(
     weekdays: list[int],
     session_minutes: int | None,
     split: str | None,
+    focus: list[str] | None = None,
 ) -> list[str]:
     changes: list[str] = []
     old_weekly = 0
@@ -233,6 +276,8 @@ def _make_changes(
         changes.append(f"单次训练 {old_profile.session_minutes or 45} → {session_minutes} 分钟")
     if split:
         changes.append(f"训练分化为 {split}")
+    if focus:
+        changes.append("重点部位：" + "、".join(FOCUS_LABELS[item] for item in focus))
     old_days = len(old_program.days) if old_program else 0
     new_days = len(plan.get("days", []))
     if old_days != new_days:
@@ -515,6 +560,7 @@ def _tool_result(
         if session_minutes is not None:
             session_minutes = max(15, min(180, int(session_minutes)))
         split = _normalize_split(arguments.get("split"))
+        focus = _normalize_focus(arguments.get("focus"))
         weeks = max(1, min(8, int(arguments.get("weeks") or 4)))
         goal = active_goal(db, user_id)
         try:
@@ -527,6 +573,7 @@ def _tool_result(
                 weekly_days=weekly_days,
                 session_minutes=session_minutes,
                 weekdays=weekdays,
+                focus=focus,
             )
         except Exception as exc:  # noqa: BLE001 - tool error is returned to the model
             return {"ok": False, "error": str(exc)[:500]}
@@ -541,6 +588,7 @@ def _tool_result(
             weekdays,
             session_minutes,
             split,
+            focus,
         )
         diff = {
             "changes": changes,
@@ -552,6 +600,7 @@ def _tool_result(
                 "session_minutes": session_minutes or profile.session_minutes or 45,
                 "weeks": weeks,
                 "day_count": len(plan.get("days", [])),
+                "focus": focus,
             },
         }
         for old in db.execute(

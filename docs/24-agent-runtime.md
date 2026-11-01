@@ -108,10 +108,10 @@ Agent 循环在每次等待模型前提交并释放数据库连接；模型调�
 |---|---|---|
 | `get_context` | 档案、目标、当前计划、记忆 | 否 |
 | `get_recent_training` | 最近训练、容量、RPE | 否 |
-| `propose_plan` | 用规则模板构建并校验计划草案 | 写入 `agent_plan_proposals` |
+| `propose_plan` | 用规则模板构建并校验计划草案；可选 `focus` 重点部位 | 写入 `agent_plan_proposals` |
 | `remember` | 保存长期偏好/约束 | 写入 `ai_memories` |
 
-`apply_plan` 不是模型可调用工具，只能由客户端用户确认后调用。
+`propose_plan.focus` 最多两个，取值 `chest/back/legs/glutes/shoulders/arms/core`；它只调整动作优先级，不绕过器械、伤病和频率校验。`apply_plan` 不是模型可调用工具，只能由客户端用户确认后调用；应用后 iOS 会把重点部位写入本地偏好。
 
 ## 5. 安全约束
 

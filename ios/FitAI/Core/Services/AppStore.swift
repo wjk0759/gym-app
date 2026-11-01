@@ -1705,6 +1705,13 @@ final class AppStore {
                     if let minutes = proposed.sessionMinutes {
                         self.profile.sessionMinutes = max(15, min(180, minutes))
                     }
+                    if let focus = proposed.focus {
+                        let values = focus.compactMap { BodyFocusArea(rawValue: $0)?.rawValue }
+                        UserDefaults.standard.set(
+                            values.prefix(2).joined(separator: ","),
+                            forKey: "fitai_focus_areas"
+                        )
+                    }
                 }
                 self.agentProposal = nil
                 self.chat.append(
