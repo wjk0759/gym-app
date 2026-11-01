@@ -32,18 +32,22 @@ public class ScanRepository {
     ) {
         int safePage = SqlSupport.page(page);
         int safeSize = SqlSupport.size(size);
-        String where = where(query, status);
+        boolean hasQuery = query != null && !query.isBlank();
+        String from = SqlSupport.userOwnedFrom(
+                "equipment_scans", "s", "user_id", hasQuery
+        );
+        String where = where(status);
         Map<String, Object> params = params(query, status);
         long total = jdbc.sql("""
                 SELECT COUNT(*)
-                FROM equipment_scans s
+                FROM """ + from + """
                 JOIN users u ON u.id = s.user_id
                 LEFT JOIN profiles p ON p.user_id = s.user_id
                 """ + where).params(params).query(Long.class).optional().orElse(0L);
         List<ScanDtos.ScanListItem> items = jdbc.sql("""
                 SELECT s.id, s.user_id, s.image_url, s.status, s.model, s.result, s.created_at,
                        COALESCE(NULLIF(p.nickname, ''), u.phone, u.username, s.user_id) AS user_label
-                FROM equipment_scans s
+                FROM """ + from + """
                 JOIN users u ON u.id = s.user_id
                 LEFT JOIN profiles p ON p.user_id = s.user_id
                 """ + where + """
@@ -78,13 +82,10 @@ public class ScanRepository {
         return jdbc.sql("DELETE FROM equipment_scans WHERE id = :id").param("id", id).update() > 0;
     }
 
-    private String where(String query, String status) {
+    private String where(String status) {
         List<String> clauses = new ArrayList<>();
         if (status != null && !status.isBlank()) {
             clauses.add("s.status = :status");
-        }
-        if (query != null && !query.isBlank()) {
-            clauses.add(SqlSupport.userSearch("u", "p"));
         }
         return clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
     }

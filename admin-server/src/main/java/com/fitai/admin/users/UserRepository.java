@@ -44,9 +44,12 @@ public class UserRepository {
     ) {
         int safePage = SqlSupport.page(page);
         int safeSize = SqlSupport.size(size);
-        String where = where(query, status, includeDeleted);
+        boolean hasQuery = query != null && !query.isBlank();
+        String from = SqlSupport.userSearchFrom("u", hasQuery);
+        String where = where(status, includeDeleted);
         Map<String, Object> params = params(query, status);
-        long total = jdbc.sql("SELECT COUNT(*) FROM users u LEFT JOIN profiles p ON p.user_id = u.id " + where)
+        long total = jdbc.sql("SELECT COUNT(*) FROM " + from
+                        + " LEFT JOIN profiles p ON p.user_id = u.id " + where)
                 .params(params)
                 .query(Long.class)
                 .optional()
@@ -54,7 +57,7 @@ public class UserRepository {
         List<UserDtos.UserListItem> items = jdbc.sql("""
                 SELECT
                 """ + USER_COLUMNS + """
-                FROM users u
+                FROM """ + from + """
                 LEFT JOIN profiles p ON p.user_id = u.id
                 LEFT JOIN goals g ON g.user_id = u.id AND g.status = 'active'
                 """ + where + """
@@ -227,16 +230,13 @@ public class UserRepository {
         return jdbc.sql("DELETE FROM users WHERE id = :id").param("id", id).update() > 0;
     }
 
-    private String where(String query, String status, boolean includeDeleted) {
+    private String where(String status, boolean includeDeleted) {
         List<String> clauses = new ArrayList<>();
         if (!includeDeleted) {
             clauses.add("u.deleted_at IS NULL");
         }
         if (status != null && !status.isBlank()) {
             clauses.add("u.status = :status");
-        }
-        if (query != null && !query.isBlank()) {
-            clauses.add(SqlSupport.userSearch("u", "p"));
         }
         return clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
     }

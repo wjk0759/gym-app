@@ -716,12 +716,19 @@ class MealPlan(Base):
         String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     plan_date: Mapped[date] = mapped_column(Date)
+    week_start: Mapped[date | None] = mapped_column(Date)
+    strategy: Mapped[str | None] = mapped_column(String(30))
+    generated_by: Mapped[str | None] = mapped_column(String(20))
+    model_name: Mapped[str | None] = mapped_column(String(80))
     target_kcal: Mapped[int | None] = mapped_column(Integer)
     target_protein_g: Mapped[float | None] = mapped_column(Numeric(6, 1, asdecimal=False))
     target_carb_g: Mapped[float | None] = mapped_column(Numeric(6, 1, asdecimal=False))
     target_fat_g: Mapped[float | None] = mapped_column(Numeric(6, 1, asdecimal=False))
     plan: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
 
 
 class AdminAuditLog(Base):

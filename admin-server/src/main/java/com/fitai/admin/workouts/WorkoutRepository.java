@@ -24,11 +24,15 @@ public class WorkoutRepository {
     public PageResponse<WorkoutDtos.WorkoutListItem> list(String query, int page, int size) {
         int safePage = SqlSupport.page(page);
         int safeSize = SqlSupport.size(size);
-        String where = where(query);
+        boolean hasQuery = query != null && !query.isBlank();
+        String from = SqlSupport.userOwnedFrom(
+                "workout_sessions", "w", "user_id", hasQuery
+        );
+        String where = "";
         Map<String, Object> params = params(query);
         long total = jdbc.sql("""
                 SELECT COUNT(*)
-                FROM workout_sessions w
+                FROM """ + from + """
                 JOIN users u ON u.id = w.user_id
                 LEFT JOIN profiles p ON p.user_id = w.user_id
                 """ + where).params(params).query(Long.class).optional().orElse(0L);
@@ -39,7 +43,7 @@ public class WorkoutRepository {
                        (SELECT COUNT(*) FROM set_logs s WHERE s.session_id = w.id) AS set_count,
                        (SELECT COALESCE(SUM(COALESCE(s.weight_kg, 0) * COALESCE(s.reps, 0)), 0)
                           FROM set_logs s WHERE s.session_id = w.id AND s.completed = 1) AS volume_kg
-                FROM workout_sessions w
+                FROM """ + from + """
                 JOIN users u ON u.id = w.user_id
                 LEFT JOIN profiles p ON p.user_id = w.user_id
                 """ + where + """
@@ -92,13 +96,6 @@ public class WorkoutRepository {
 
     public boolean delete(String id) {
         return jdbc.sql("DELETE FROM workout_sessions WHERE id = :id").param("id", id).update() > 0;
-    }
-
-    private String where(String query) {
-        if (query == null || query.isBlank()) {
-            return "";
-        }
-        return " WHERE " + SqlSupport.userSearch("u", "p") + " ";
     }
 
     private Map<String, Object> params(String query) {

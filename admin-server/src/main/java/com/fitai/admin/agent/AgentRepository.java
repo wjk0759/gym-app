@@ -33,6 +33,10 @@ public class AgentRepository {
     ) {
         int safePage = SqlSupport.page(page);
         int safeSize = SqlSupport.size(size);
+        boolean hasQuery = query != null && !query.isBlank();
+        String from = SqlSupport.userOwnedFrom(
+                "agent_runs", "r", "user_id", hasQuery
+        );
         List<String> clauses = new ArrayList<>();
         Map<String, Object> params = new HashMap<>();
         if (status != null && !status.isBlank()) {
@@ -43,13 +47,12 @@ public class AgentRepository {
             clauses.add("r.intent = :intent");
             params.put("intent", intent);
         }
-        if (query != null && !query.isBlank()) {
-            clauses.add(SqlSupport.userSearch("u", "p"));
+        if (hasQuery) {
             SqlSupport.putSearchParams(params, query);
         }
         String where = clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
         long total = jdbc.sql("""
-                SELECT COUNT(*) FROM agent_runs r
+                SELECT COUNT(*) FROM """ + from + """
                 LEFT JOIN users u ON u.id = r.user_id
                 LEFT JOIN profiles p ON p.user_id = r.user_id
                 """ + where).params(params).query(Long.class).optional().orElse(0L);
@@ -60,7 +63,7 @@ public class AgentRepository {
                        r.created_at, r.completed_at,
                        pp.id AS proposal_id, pp.status AS proposal_status,
                        COALESCE(NULLIF(p.nickname, ''), u.phone, u.username, r.user_id) AS user_label
-                FROM agent_runs r
+                FROM """ + from + """
                 LEFT JOIN users u ON u.id = r.user_id
                 LEFT JOIN profiles p ON p.user_id = r.user_id
                 LEFT JOIN agent_plan_proposals pp
@@ -104,6 +107,15 @@ public class AgentRepository {
     ) {
         int safePage = SqlSupport.page(page);
         int safeSize = SqlSupport.size(size);
+        boolean hasQuery = query != null && !query.isBlank();
+        String from = SqlSupport.entitySearchFrom(
+                "agent_action_events",
+                "a",
+                "id",
+                "user_id",
+                "action_id LIKE :prefix",
+                hasQuery
+        );
         List<String> clauses = new ArrayList<>();
         Map<String, Object> params = new HashMap<>();
         if (status != null && !status.isBlank()) {
@@ -114,14 +126,12 @@ public class AgentRepository {
             clauses.add("a.action_type = :actionType");
             params.put("actionType", actionType);
         }
-        if (query != null && !query.isBlank()) {
-            clauses.add("(" + SqlSupport.userSearch("u", "p")
-                    + " OR a.action_id = :rawQuery)");
+        if (hasQuery) {
             SqlSupport.putSearchParams(params, query);
         }
         String where = clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
         long total = jdbc.sql("""
-                SELECT COUNT(*) FROM agent_action_events a
+                SELECT COUNT(*) FROM """ + from + """
                 LEFT JOIN users u ON u.id = a.user_id
                 LEFT JOIN profiles p ON p.user_id = a.user_id
                 """ + where).params(params).query(Long.class).optional().orElse(0L);
@@ -129,7 +139,7 @@ public class AgentRepository {
                 SELECT a.id, a.user_id, a.run_id, a.action_id, a.action_type,
                        a.status, a.message, a.detail, a.created_at,
                        COALESCE(NULLIF(p.nickname, ''), u.phone, u.username, a.user_id) AS user_label
-                FROM agent_action_events a
+                FROM """ + from + """
                 LEFT JOIN users u ON u.id = a.user_id
                 LEFT JOIN profiles p ON p.user_id = a.user_id
                 """ + where + """

@@ -54,11 +54,17 @@ def get_me(user_id: CurrentUser, db: DBSession):
 def upsert_profile(payload: ProfileIn, user_id: CurrentUser, db: DBSession):
     lock_user(db, user_id)
     profile = db.get(Profile, user_id)
+    is_onboarding = profile is None or profile.onboarded_at is None
     if profile is None:
         profile = Profile(user_id=user_id)
         db.add(profile)
 
     data = payload.model_dump(exclude_unset=True)
+    if not is_onboarding:
+        # Ongoing weight/body-fat/waist changes must go through /body/metrics.
+        # The profile fields are a read cache owned by BodyMetricsService.
+        for field in ("weight_kg", "body_fat_pct", "waist_cm"):
+            data.pop(field, None)
     if data.get("birth_date"):
         age = date.today().year - data["birth_date"].year - (
             (date.today().month, date.today().day)

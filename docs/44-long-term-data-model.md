@@ -75,17 +75,53 @@ V12 增加中文 ngram 全文索引：
 
 ## 6. 迁移与验证
 
-- 迁移：`admin-server/src/main/resources/db/migration/V12__long_term_integrity.sql`
-- 已在开发 MySQL 8.4 上通过 Flyway 应用，版本为 v12。
-- 后端测试：112 passed。
+- 迁移：`admin-server/src/main/resources/db/migration/V12__long_term_integrity.sql`、`V13__meal_plan_metadata.sql`
+- 已在开发 MySQL 8.4 上通过 Flyway 应用，当前 schema 版本 v13。
+- 后端测试：116 passed。
 - API smoke：通过。
 - iOS Build：通过。
 - Admin CI：通过。
 
-## 7. 后续
+## 7. 餐单来源与周元数据（V13）
 
-1. 服务端提醒：实现 `notification_schedules` 的同步接口和定时任务。
-2. 保留任务：`sms_codes`、`oauth_tickets`、`auth_sessions`、`ai_jobs`、`agent_runs`、`chat_sessions` 等仍无自动清理。
-3. `meal_plans` 可补 `strategy / week_start / generated_by / model / updated_at`，减少解析 JSON 猜元数据。
-4. 后台搜索在数据量增大后改为 ID 子查询 + 主键回表，确保不扫全表。
-5. 档案页身体字段最终只通过 `BodyMetricsService` 写入。
+- `meal_plans` 新增 `week_start / strategy / generated_by / model_name / updated_at`。
+- 单日/整周保存统一走 `backend/app/services/meal_plans.py`，不再由 router 拼 SQL。
+- 读取一周计划直接从列取来源，不再解析 `plan` JSON 猜 `generated_by`。
+- V13 已在开发 MySQL 上应用，当前 schema 版本 v13。
+
+## 8. 档案身体字段的单写入口
+
+- `PUT /me/profile` 只在首次建档（`onboarded_at IS NULL`）时接受体重/体脂/腰围。
+- 已建档用户的身体变化必须走 `/body/metrics`；profile 字段由 `BodyMetricsService` 维护。
+- 这样避免档案表单和身体打卡各写一份、互相覆盖。
+
+## 9. 保留清理任务
+
+`admin-server` 新增 `RetentionService`：
+
+- 默认在 dev 关闭，prod 开启。
+- 每天 03:30 分批清理：短信码、OAuth ticket、过期会话、认证事件、AI job、过期计划草案、12 个月聊天、后台 refresh token、审计日志、器械识别、计划排期状态、停用记忆、一年前的 agent run。
+- 每批 2,000 行，最多 50 批，避免长事务和大锁。
+- 配置：`fitai.admin.retention.enabled / batch-size / cron`。
+
+## 10. 后台搜索的 ID 子查询
+
+- 用户类搜索先解析出 ID 集合（主键、手机号/用户名前缀、昵称 ngram），再用 `STRAIGHT_JOIN` 回表。
+- 计划/聊天/器械/视频/动作把自身文本 ID 与用户 ID 合并后再回表。
+- 这样 SQL 不再依赖 `LOWER(...) LIKE '%q%'` 的 OR 条件；数据量增大时优化器有明确的索引路径。
+- 仍需在真实数据量上用 `EXPLAIN ANALYZE` 复核，尤其是聊天和计划表。
+
+## 11. 清理的无引用代码
+
+- 删除 `ios/FitAI/Features/Home/HomeView.swift`（旧首页，无引用）。
+- 删除 `ios/FitAI/Features/Onboarding/OnboardingView.swift`（旧引导，无引用）。
+- 删除 `NutritionView` 中 8 个未使用的旧卡片/函数，约 270 行。
+
+## 12. 后续
+
+1. 服务端提醒：实现 `notification_schedules` 的同步接口和定时任务（当前只保留表与唯一约束）。
+2. AppStore 拆分：`LocalStateStore`、`CoachRequestController`、同步服务，降低单文件复杂度。
+3. 大 View 拆分：`PlanHomeView`、`EquipmentDetailView`、`CoachChatView`、`WorkoutSessionView`。
+4. `agent_steps` 的 JSON 体积与保留策略继续优化。
+5. `PrivacyInfo.xcprivacy` 补定位、聊天内容、UserDefaults 理由 API 等声明。
+6. 后台搜索在真实数据量上用 `EXPLAIN ANALYZE` 复核，必要时继续收紧 ID 子查询。

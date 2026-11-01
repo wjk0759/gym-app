@@ -34,14 +34,23 @@ public class ExerciseRepository {
     ) {
         int safePage = SqlSupport.page(page);
         int safeSize = SqlSupport.size(size);
-        String where = where(query, muscleGroup, equipment);
+        boolean hasQuery = query != null && !query.isBlank();
+        String from = SqlSupport.entityTextSearchFrom(
+                "exercises",
+                "e",
+                "slug",
+                "name_zh LIKE :prefix OR MATCH(name_zh, name_en) AGAINST (:matchQuery)"
+                        + " OR name_en LIKE :prefix OR slug LIKE :prefix",
+                hasQuery
+        );
+        String where = where(muscleGroup, equipment);
         Map<String, Object> params = params(query, muscleGroup, equipment);
-        long total = jdbc.sql("SELECT COUNT(*) FROM exercises" + where)
+        long total = jdbc.sql("SELECT COUNT(*) FROM " + from + where)
                 .params(params).query(Long.class).optional().orElse(0L);
         List<ExerciseDtos.ExerciseItem> items = jdbc.sql("""
                 SELECT slug, name_zh, name_en, muscle_group, equipment, is_compound, difficulty,
                        instructions, video_url, thumbnail_url, contraindications, source, license, created_at
-                FROM exercises
+                FROM """ + from + """
                 """ + where + """
                 ORDER BY muscle_group, name_zh
                 LIMIT :limit OFFSET :offset
@@ -118,15 +127,9 @@ public class ExerciseRepository {
                 .update() > 0;
     }
 
-    private String where(String query, String muscleGroup, String equipment) {
+    private String where(String muscleGroup, String equipment) {
         List<String> clauses = new ArrayList<>();
         clauses.add("is_active = TRUE");
-        if (query != null && !query.isBlank()) {
-            clauses.add("(name_zh LIKE :prefix"
-                    + " OR MATCH(name_zh, name_en) AGAINST (:matchQuery)"
-                    + " OR name_en LIKE :prefix"
-                    + " OR slug LIKE :prefix)");
-        }
         if (muscleGroup != null && !muscleGroup.isBlank()) {
             clauses.add("muscle_group = :muscleGroup");
         }

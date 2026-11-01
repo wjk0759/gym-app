@@ -32,16 +32,27 @@ public class EquipmentLibraryRepository {
     ) {
         int safePage = SqlSupport.page(page);
         int safeSize = SqlSupport.size(size);
-        String where = where(query, source);
+        boolean hasQuery = query != null && !query.isBlank();
+        String from = SqlSupport.entitySearchFrom(
+                "equipment_library",
+                "e",
+                "id",
+                "user_id",
+                "name LIKE :prefix OR notes LIKE :prefix"
+                        + " OR MATCH(name, notes) AGAINST (:matchQuery)",
+                hasQuery
+        );
+        String where = where(source);
         Map<String, Object> params = params(query, source);
 
-        long total = jdbc.sql("SELECT COUNT(*) FROM equipment_library e LEFT JOIN users u ON u.id = e.user_id" + where)
+        long total = jdbc.sql("SELECT COUNT(*) FROM " + from
+                        + " LEFT JOIN users u ON u.id = e.user_id" + where)
                 .params(params).query(Long.class).optional().orElse(0L);
 
         List<EquipmentLibraryDtos.Item> items = jdbc.sql("""
                 SELECT e.id, e.user_id, e.client_id, e.name, e.slug, e.muscle, e.equipment,
                        e.notes, e.source, e.created_at, u.phone, u.username
-                FROM equipment_library e
+                FROM """ + from + """
                 LEFT JOIN users u ON u.id = e.user_id
                 """ + where + """
                 ORDER BY e.created_at DESC
@@ -67,15 +78,8 @@ public class EquipmentLibraryRepository {
         return PageResponse.of(items, safePage, safeSize, total);
     }
 
-    private String where(String query, String source) {
+    private String where(String source) {
         List<String> clauses = new ArrayList<>();
-        if (query != null && !query.isBlank()) {
-            clauses.add("(e.name LIKE :prefix"
-                    + " OR MATCH(e.name, e.notes) AGAINST (:matchQuery)"
-                    + " OR e.notes LIKE :prefix"
-                    + " OR u.phone LIKE :prefix"
-                    + " OR u.username LIKE :prefix)");
-        }
         if (source != null && !source.isBlank()) {
             clauses.add("e.source = :source");
         }

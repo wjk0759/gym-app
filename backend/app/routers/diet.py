@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from ..deps import CurrentUser, DBSession
-from ..models import FoodLog, Goal, MealPlan, Profile
+from ..models import FoodLog, Goal, Profile
 from ..schemas import DietPlanIn, DietWeekIn, FoodLogIn
 from ..services.diet import (
     build_ai_diet_week,
@@ -14,6 +14,12 @@ from ..services.diet import (
     list_diet_strategies,
 )
 from ..services.food_vision import analyze as analyze_food_photo
+from ..services.meal_plans import (
+    list_week,
+    save_day_plan,
+    week_start_for,
+    week_summary,
+)
 from ..services.queries import active_program
 
 router = APIRouter(prefix="/diet", tags=["diet"])
@@ -165,35 +171,29 @@ async def plan(payload: DietPlanIn, user_id: CurrentUser, db: DBSession):
     plan_date = payload.date or date.today()
     result = await build_ai_plan(db, profile, _goal_type(db, user_id), plan_date)
 
-    record = db.execute(
-        select(MealPlan).where(
-            MealPlan.user_id == user_id, MealPlan.plan_date == plan_date
-        )
-    ).scalar_one_or_none()
-    if record is None:
-        record = MealPlan(user_id=user_id, plan_date=plan_date)
-        db.add(record)
-
-    record.target_kcal = result["targets"]["target_kcal"]
-    record.target_protein_g = result["targets"]["protein_g"]
-    record.target_carb_g = result["targets"]["carb_g"]
-    record.target_fat_g = result["targets"]["fat_g"]
-    record.plan = result
+    save_day_plan(
+        db,
+        user_id,
+        plan_date,
+        result,
+        strategy="balanced",
+        generated_by=result.get("generated_by"),
+        model_name=result.get("model"),
+    )
     try:
         db.commit()
     except IntegrityError:
         # Another device inserted the same user/day concurrently.
         db.rollback()
-        record = db.execute(
-            select(MealPlan).where(
-                MealPlan.user_id == user_id, MealPlan.plan_date == plan_date
-            )
-        ).scalar_one()
-        record.target_kcal = result["targets"]["target_kcal"]
-        record.target_protein_g = result["targets"]["protein_g"]
-        record.target_carb_g = result["targets"]["carb_g"]
-        record.target_fat_g = result["targets"]["fat_g"]
-        record.plan = result
+        save_day_plan(
+            db,
+            user_id,
+            plan_date,
+            result,
+            strategy="balanced",
+            generated_by=result.get("generated_by"),
+            model_name=result.get("model"),
+        )
         db.commit()
 
     return result
@@ -213,34 +213,13 @@ def _program_training_days(program) -> list[int] | None:
     return days or None
 
 
-def _monday(day: date) -> date:
-    return day - timedelta(days=day.weekday())
-
-
-def _save_meal_plan(db, user_id: str, plan_date: date, plan: dict) -> None:
-    record = db.execute(
-        select(MealPlan).where(
-            MealPlan.user_id == user_id, MealPlan.plan_date == plan_date
-        )
-    ).scalar_one_or_none()
-    if record is None:
-        record = MealPlan(user_id=user_id, plan_date=plan_date)
-        db.add(record)
-    targets = plan.get("targets") or {}
-    record.target_kcal = targets.get("target_kcal")
-    record.target_protein_g = targets.get("protein_g")
-    record.target_carb_g = targets.get("carb_g")
-    record.target_fat_g = targets.get("fat_g")
-    record.plan = plan
-
-
 @router.post("/plan/week")
 async def plan_week(payload: DietWeekIn, user_id: CurrentUser, db: DBSession):
     profile = db.get(Profile, user_id)
     if profile is None:
         raise HTTPException(status_code=404, detail="请先完成个人档案")
 
-    week_start = _monday(payload.week_start or date.today())
+    week_start = week_start_for(payload.week_start or date.today())
     program = active_program(db, user_id)
     result = await build_ai_diet_week(
         db,
@@ -251,20 +230,37 @@ async def plan_week(payload: DietWeekIn, user_id: CurrentUser, db: DBSession):
         _program_training_days(program),
     )
 
+    strategy_id = payload.strategy or (result.get("strategy") or {}).get("id")
     # MealPlan stores one day per row, so keep the week-level provenance on
     # each day for the GET endpoint and the AI/template badge in iOS.
     for day in result["days"]:
         day["generated_by"] = result.get("generated_by")
         if result.get("warning"):
             day["warning"] = result["warning"]
-        _save_meal_plan(db, user_id, date.fromisoformat(day["date"]), day)
+        save_day_plan(
+            db,
+            user_id,
+            date.fromisoformat(day["date"]),
+            day,
+            strategy=strategy_id,
+            generated_by=result.get("generated_by"),
+            model_name=result.get("model"),
+        )
     try:
         db.commit()
     except IntegrityError:
         # Another device generated the same week concurrently; re-apply.
         db.rollback()
         for day in result["days"]:
-            _save_meal_plan(db, user_id, date.fromisoformat(day["date"]), day)
+            save_day_plan(
+                db,
+                user_id,
+                date.fromisoformat(day["date"]),
+                day,
+                strategy=strategy_id,
+                generated_by=result.get("generated_by"),
+                model_name=result.get("model"),
+            )
         db.commit()
 
     return result
@@ -276,41 +272,14 @@ def get_plan_week(
     db: DBSession,
     week_start: date | None = Query(default=None),
 ):
-    start = _monday(week_start or date.today())
-    end = start + timedelta(days=6)
-    rows = (
-        db.execute(
-            select(MealPlan)
-            .where(
-                MealPlan.user_id == user_id,
-                MealPlan.plan_date >= start,
-                MealPlan.plan_date <= end,
-            )
-            .order_by(MealPlan.plan_date)
-        )
-        .scalars()
-        .all()
-    )
-    days = [row.plan for row in rows if row.plan]
-    generated_by = next(
-        (day.get("generated_by") for day in days if day.get("generated_by")),
-        None,
-    )
-    warning = next(
-        (day.get("warning") for day in days if day.get("warning")),
-        None,
-    )
-    if not generated_by and days:
-        has_recipe_dishes = any(
-            meal.get("dishes")
-            for day in days
-            for meal in (day.get("meals") or [])
-            if isinstance(meal, dict)
-        )
-        generated_by = "ai" if has_recipe_dishes else "template"
+    start = week_start_for(week_start or date.today())
+    rows = list_week(db, user_id, start)
+    summary = week_summary(rows)
     return {
         "week_start": start.isoformat(),
-        "days": days,
-        "generated_by": generated_by,
-        "warning": warning,
+        "days": [row.plan for row in rows if row.plan],
+        "generated_by": summary["generated_by"],
+        "warning": summary["warning"],
+        "strategy": summary["strategy"],
+        "model": summary["model"],
     }

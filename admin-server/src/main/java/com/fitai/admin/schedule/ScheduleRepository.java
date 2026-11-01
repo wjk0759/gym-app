@@ -28,21 +28,27 @@ public class ScheduleRepository {
     ) {
         int safePage = SqlSupport.page(page);
         int safeSize = SqlSupport.size(size);
+        boolean hasQuery = query != null && !query.isBlank();
+        String from = SqlSupport.entitySearchFrom(
+                "plan_day_states",
+                "s",
+                "id",
+                "user_id",
+                "plan_id LIKE :prefix OR day_id LIKE :prefix",
+                hasQuery
+        );
         List<String> clauses = new ArrayList<>();
         Map<String, Object> params = new HashMap<>();
         if (planId != null && !planId.isBlank()) {
             clauses.add("s.plan_id = :planId");
             params.put("planId", planId.trim());
         }
-        if (query != null && !query.isBlank()) {
-            clauses.add("(" + SqlSupport.userSearch("u", "p")
-                    + " OR s.plan_id = :rawQuery"
-                    + " OR s.day_id = :rawQuery)");
+        if (hasQuery) {
             SqlSupport.putSearchParams(params, query);
         }
         String where = clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
         long total = jdbc.sql("""
-                SELECT COUNT(*) FROM plan_day_states s
+                SELECT COUNT(*) FROM """ + from + """
                 LEFT JOIN users u ON u.id = s.user_id
                 LEFT JOIN profiles p ON p.user_id = s.user_id
                 """ + where).params(params).query(Long.class).optional().orElse(0L);
@@ -50,7 +56,7 @@ public class ScheduleRepository {
                 SELECT s.id, s.user_id, s.plan_id, s.plan_version, s.day_id,
                        s.assigned_date, s.skipped_at, s.client_updated_at, s.updated_at,
                        COALESCE(NULLIF(p.nickname, ''), u.phone, u.username, s.user_id) AS user_label
-                FROM plan_day_states s
+                FROM """ + from + """
                 LEFT JOIN users u ON u.id = s.user_id
                 LEFT JOIN profiles p ON p.user_id = s.user_id
                 """ + where + """

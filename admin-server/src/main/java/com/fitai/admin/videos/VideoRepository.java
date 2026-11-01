@@ -35,14 +35,22 @@ public class VideoRepository {
     ) {
         int safePage = SqlSupport.page(page);
         int safeSize = SqlSupport.size(size);
+        boolean hasQuery = query != null && !query.isBlank();
+        String from = SqlSupport.entityTextSearchFrom(
+                "exercise_videos",
+                "v",
+                "id",
+                "title LIKE :prefix OR MATCH(title) AGAINST (:matchQuery)"
+                        + " OR exercise_slug LIKE :prefix"
+                        + " OR exercise_slug IN ("
+                        + "SELECT slug FROM exercises WHERE name_zh LIKE :prefix"
+                        + " OR MATCH(name_zh, name_en) AGAINST (:matchQuery)"
+                        + " OR name_en LIKE :prefix)",
+                hasQuery
+        );
         List<String> clauses = new ArrayList<>();
         Map<String, Object> params = new HashMap<>();
-        if (query != null && !query.isBlank()) {
-            clauses.add("(v.title LIKE :prefix"
-                    + " OR MATCH(v.title) AGAINST (:matchQuery)"
-                    + " OR e.name_zh LIKE :prefix"
-                    + " OR MATCH(e.name_zh, e.name_en) AGAINST (:matchQuery)"
-                    + " OR v.exercise_slug LIKE :prefix)");
+        if (hasQuery) {
             SqlSupport.putSearchParams(params, query);
         }
         if (status != null && !status.isBlank()) {
@@ -55,14 +63,14 @@ public class VideoRepository {
         }
         String where = clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
         long total = jdbc.sql("""
-                SELECT COUNT(*) FROM exercise_videos v
+                SELECT COUNT(*) FROM """ + from + """
                 JOIN exercises e ON e.slug = v.exercise_slug
                 """ + where).params(params).query(Long.class).optional().orElse(0L);
         List<VideoDtos.VideoItem> items = jdbc.sql("""
                 SELECT v.id, v.exercise_slug, e.name_zh AS exercise_name, v.title, v.description,
                        v.video_url, v.poster_url, v.duration_seconds, v.source, v.license_note,
                        v.license_expires_at, v.status, v.version, v.created_by, v.created_at, v.updated_at
-                FROM exercise_videos v
+                FROM """ + from + """
                 JOIN exercises e ON e.slug = v.exercise_slug
                 """ + where + """
                 ORDER BY v.updated_at DESC

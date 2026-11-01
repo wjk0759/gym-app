@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import java.util.Map;
 
 public final class SqlSupport {
@@ -15,31 +14,88 @@ public final class SqlSupport {
     private SqlSupport() {
     }
 
-    public static String like(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return "%" + value.trim().toLowerCase(Locale.ROOT) + "%";
-    }
-
-    /**
-     * Index-friendly user search: exact id, phone/username prefix, and Chinese
-     * full-text nickname. The prefix fallback covers one-character queries that
-     * ngram cannot index.
-     */
-    public static String userSearch(String userAlias, String profileAlias) {
-        return "(" + userAlias + ".id = :rawQuery"
-                + " OR " + userAlias + ".phone LIKE :prefix"
-                + " OR " + userAlias + ".username LIKE :prefix"
-                + " OR MATCH(" + profileAlias + ".nickname) AGAINST (:matchQuery)"
-                + " OR " + profileAlias + ".nickname LIKE :prefix)";
-    }
-
     public static void putSearchParams(Map<String, Object> params, String query) {
         String trimmed = query.trim();
         params.put("prefix", trimmed + "%");
         params.put("matchQuery", trimmed);
         params.put("rawQuery", trimmed);
+    }
+
+    /** Index-driven user IDs: exact id, phone/username prefix, nickname ngram. */
+    public static String userIdsSubquery() {
+        return "(SELECT id FROM users WHERE id = :rawQuery"
+                + " UNION SELECT id FROM users WHERE phone LIKE :prefix"
+                + " UNION SELECT id FROM users WHERE username LIKE :prefix"
+                + " UNION SELECT user_id FROM profiles WHERE MATCH(nickname) AGAINST (:matchQuery)"
+                + " UNION SELECT user_id FROM profiles WHERE nickname LIKE :prefix)";
+    }
+
+    public static String userSearchFrom(String userAlias, boolean hasQuery) {
+        if (!hasQuery) {
+            return "users " + userAlias;
+        }
+        return userIdsSubquery() + " ids STRAIGHT_JOIN users " + userAlias
+                + " ON " + userAlias + ".id = ids.id";
+    }
+
+    /** FROM fragment for a table filtered only by its owning user. */
+    public static String userOwnedFrom(
+            String table,
+            String alias,
+            String userColumn,
+            boolean hasQuery
+    ) {
+        if (!hasQuery) {
+            return table + " " + alias;
+        }
+        return userIdsSubquery() + " ids STRAIGHT_JOIN " + table + " " + alias
+                + " ON " + alias + "." + userColumn + " = ids.id";
+    }
+
+    /**
+     * FROM fragment for a user-owned table. When a query is present, resolve
+     * candidate IDs from indexed text/user branches first, then STRAIGHT_JOIN
+     * back to the table so MySQL cannot drive from a full table scan.
+     */
+    public static String entitySearchFrom(
+            String table,
+            String alias,
+            String primaryKey,
+            String userColumn,
+            String textClause,
+            boolean hasQuery
+    ) {
+        if (!hasQuery) {
+            return table + " " + alias;
+        }
+        StringBuilder ids = new StringBuilder("(");
+        if (textClause != null && !textClause.isBlank()) {
+            ids.append("SELECT ").append(primaryKey)
+                    .append(" FROM ").append(table)
+                    .append(" WHERE ").append(textClause)
+                    .append(" UNION ");
+        }
+        ids.append("SELECT ").append(primaryKey)
+                .append(" FROM ").append(table)
+                .append(" WHERE ").append(userColumn)
+                .append(" IN (").append(userIdsSubquery()).append("))");
+        return ids + " ids STRAIGHT_JOIN " + table + " " + alias
+                + " ON " + alias + "." + primaryKey + " = ids.id";
+    }
+
+    public static String entityTextSearchFrom(
+            String table,
+            String alias,
+            String primaryKey,
+            String textClause,
+            boolean hasQuery
+    ) {
+        if (!hasQuery) {
+            return table + " " + alias;
+        }
+        return "(SELECT " + primaryKey + " FROM " + table
+                + " WHERE " + textClause + ") ids STRAIGHT_JOIN " + table + " " + alias
+                + " ON " + alias + "." + primaryKey + " = ids.id";
     }
 
     public static String iso(Object value) {

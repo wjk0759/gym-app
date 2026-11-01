@@ -114,6 +114,10 @@ public class AiRepository {
     ) {
         int safePage = SqlSupport.page(page);
         int safeSize = SqlSupport.size(size);
+        boolean hasQuery = query != null && !query.isBlank();
+        String from = SqlSupport.userOwnedFrom(
+                "ai_jobs", "j", "user_id", hasQuery
+        );
         List<String> clauses = new ArrayList<>();
         Map<String, Object> params = new HashMap<>();
         if (kind != null && !kind.isBlank()) {
@@ -124,13 +128,12 @@ public class AiRepository {
             clauses.add("j.status = :status");
             params.put("status", status);
         }
-        if (query != null && !query.isBlank()) {
-            clauses.add(SqlSupport.userSearch("u", "p"));
+        if (hasQuery) {
             SqlSupport.putSearchParams(params, query);
         }
         String where = clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
         long total = jdbc.sql("""
-                SELECT COUNT(*) FROM ai_jobs j
+                SELECT COUNT(*) FROM """ + from + """
                 LEFT JOIN users u ON u.id = j.user_id
                 LEFT JOIN profiles p ON p.user_id = j.user_id
                 """ + where).params(params).query(Long.class).optional().orElse(0L);
@@ -138,7 +141,7 @@ public class AiRepository {
                 SELECT j.id, j.user_id, j.kind, j.model, j.prompt_version, j.input_tokens,
                        j.output_tokens, j.latency_ms, j.status, j.error, j.created_at,
                        COALESCE(NULLIF(p.nickname, ''), u.phone, u.username, j.user_id) AS user_label
-                FROM ai_jobs j
+                FROM """ + from + """
                 LEFT JOIN users u ON u.id = j.user_id
                 LEFT JOIN profiles p ON p.user_id = j.user_id
                 """ + where + """

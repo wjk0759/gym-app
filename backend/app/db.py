@@ -273,6 +273,30 @@ def ensure_schema() -> None:
             )
         if "meal_plans" in tables:
             # Keep the newest row for a user/day before adding the unique index.
+            meal_columns = {
+                column["name"] for column in inspector.get_columns("meal_plans")
+            }
+            for name, ddl in {
+                "week_start": "DATE",
+                "strategy": "VARCHAR(30)",
+                "generated_by": "VARCHAR(20)",
+                "model_name": "VARCHAR(80)",
+                "updated_at": "DATETIME",
+            }.items():
+                if name not in meal_columns:
+                    connection.execute(
+                        text(f"ALTER TABLE meal_plans ADD COLUMN {name} {ddl}")
+                    )
+            connection.execute(
+                text(
+                    "UPDATE meal_plans SET "
+                    "week_start = DATE(plan_date, '-' || ((CAST(strftime('%w', plan_date) AS INTEGER) + 6) % 7) || ' days'), "
+                    "strategy = COALESCE(strategy, 'balanced'), "
+                    "generated_by = COALESCE(generated_by, 'template'), "
+                    "updated_at = COALESCE(updated_at, created_at) "
+                    "WHERE week_start IS NULL OR strategy IS NULL OR generated_by IS NULL OR updated_at IS NULL"
+                )
+            )
             connection.execute(
                 text(
                     "DELETE FROM meal_plans WHERE id NOT IN ("

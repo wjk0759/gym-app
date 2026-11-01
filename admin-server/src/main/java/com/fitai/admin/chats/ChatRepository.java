@@ -31,11 +31,20 @@ public class ChatRepository {
     ) {
         int safePage = SqlSupport.page(page);
         int safeSize = SqlSupport.size(size);
-        String where = where(query, safetyOnly);
+        boolean hasQuery = query != null && !query.isBlank();
+        String from = SqlSupport.entitySearchFrom(
+                "chat_sessions",
+                "c",
+                "id",
+                "user_id",
+                "title LIKE :prefix OR MATCH(title) AGAINST (:matchQuery)",
+                hasQuery
+        );
+        String where = where(safetyOnly);
         Map<String, Object> params = params(query);
         long total = jdbc.sql("""
                 SELECT COUNT(*)
-                FROM chat_sessions c
+                FROM """ + from + """
                 JOIN users u ON u.id = c.user_id
                 LEFT JOIN profiles p ON p.user_id = c.user_id
                 """ + where).params(params).query(Long.class).optional().orElse(0L);
@@ -45,7 +54,7 @@ public class ChatRepository {
                        (SELECT COUNT(*) FROM chat_messages m WHERE m.session_id = c.id) AS message_count,
                        (SELECT COUNT(*) FROM chat_messages m WHERE m.session_id = c.id AND m.safety_flag IS NOT NULL) AS safety_count,
                        (SELECT MAX(m.created_at) FROM chat_messages m WHERE m.session_id = c.id) AS last_message_at
-                FROM chat_sessions c
+                FROM """ + from + """
                 JOIN users u ON u.id = c.user_id
                 LEFT JOIN profiles p ON p.user_id = c.user_id
                 """ + where + """
@@ -95,20 +104,13 @@ public class ChatRepository {
         return jdbc.sql("DELETE FROM chat_sessions WHERE id = :id").param("id", id).update() > 0;
     }
 
-    private String where(String query, boolean safetyOnly) {
+    private String where(boolean safetyOnly) {
         java.util.ArrayList<String> clauses = new java.util.ArrayList<>();
         if (safetyOnly) {
             clauses.add("""
                     EXISTS (SELECT 1 FROM chat_messages sm
                             WHERE sm.session_id = c.id AND sm.safety_flag IS NOT NULL)
                     """);
-        }
-        if (query != null && !query.isBlank()) {
-            clauses.add("("
-                    + "c.title LIKE :prefix"
-                    + " OR MATCH(c.title) AGAINST (:matchQuery)"
-                    + " OR " + SqlSupport.userSearch("u", "p")
-                    + ")");
         }
         return clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
     }

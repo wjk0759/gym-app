@@ -98,6 +98,10 @@ fitai:
     security:
       refresh-cookie-path: /api/admin/v1/auth
       login-rate-limit-per-minute: ${FITAI_LOGIN_RATE_LIMIT:20}
+    retention:
+      enabled: ${FITAI_RETENTION_ENABLED:false}
+      batch-size: ${FITAI_RETENTION_BATCH_SIZE:2000}
+      cron: "${FITAI_RETENTION_CRON:0 30 3 * * *}"
 
 info:
   app:

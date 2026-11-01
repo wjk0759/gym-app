@@ -27,11 +27,20 @@ public class PlanRepository {
     public PageResponse<PlanDtos.PlanListItem> list(String query, String status, int page, int size) {
         int safePage = SqlSupport.page(page);
         int safeSize = SqlSupport.size(size);
-        String where = where(query, status);
+        boolean hasQuery = query != null && !query.isBlank();
+        String from = SqlSupport.entitySearchFrom(
+                "programs",
+                "p",
+                "id",
+                "user_id",
+                "title LIKE :prefix OR MATCH(title) AGAINST (:matchQuery)",
+                hasQuery
+        );
+        String where = where(status);
         Map<String, Object> params = params(query, status);
         long total = jdbc.sql("""
                 SELECT COUNT(*)
-                FROM programs p
+                FROM """ + from + """
                 JOIN users u ON u.id = p.user_id
                 LEFT JOIN profiles pr ON pr.user_id = p.user_id
                 """ + where).params(params).query(Long.class).optional().orElse(0L);
@@ -44,7 +53,7 @@ public class PlanRepository {
                           FROM plan_exercises e
                           JOIN program_days d2 ON d2.id = e.program_day_id
                          WHERE d2.program_id = p.id) AS exercise_count
-                FROM programs p
+                FROM """ + from + """
                 JOIN users u ON u.id = p.user_id
                 LEFT JOIN profiles pr ON pr.user_id = p.user_id
                 """ + where + """
@@ -134,17 +143,10 @@ public class PlanRepository {
                 .param("id", id).update() > 0;
     }
 
-    private String where(String query, String status) {
+    private String where(String status) {
         List<String> clauses = new ArrayList<>();
         if (status != null && !status.isBlank()) {
             clauses.add("p.status = :status");
-        }
-        if (query != null && !query.isBlank()) {
-            clauses.add("("
-                    + "p.title LIKE :prefix"
-                    + " OR MATCH(p.title) AGAINST (:matchQuery)"
-                    + " OR " + SqlSupport.userSearch("u", "pr")
-                    + ")");
         }
         return clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
     }
