@@ -30,7 +30,7 @@ struct DietLibraryView: View {
             description: "蛋白质、主食和蔬菜都保留，适合大多数人作为长期底盘。",
             caution: "不需要刻意戒主食；先保证每餐有蛋白质和蔬菜。",
             symbol: "circle.grid.cross",
-            color: Theme.accent,
+            color: Theme.cobalt,
             tags: ["日常", "长期"]
         ),
         StrategyInfo(
@@ -60,7 +60,7 @@ struct DietLibraryView: View {
             description: "减少精制主食，用蛋白质、蔬菜和适量健康脂肪提高饱腹感。",
             caution: "不适合高强度训练日、孕期、糖尿病或肾病人群自行使用。",
             symbol: "leaf.fill",
-            color: Color(red: 0.44, green: 0.78, blue: 0.35),
+            color: Theme.lime,
             tags: ["控糖", "减脂"]
         )
     ]
@@ -90,7 +90,8 @@ struct DietLibraryView: View {
                     foodGuide
                     disclaimer
                 }
-                .padding(20)
+                .appPagePadding()
+                .padding(.top, 8)
                 .padding(.bottom, 24)
             }
             .background(AppBackground())
@@ -111,26 +112,22 @@ struct DietLibraryView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .center, spacing: 6) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("吃法选明白，\n三餐不瞎猜。")
-                    .font(.system(size: 29, weight: .heavy, design: .default))
-                    .foregroundStyle(Theme.primaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("先选策略，再按你的目标和体重生成一周餐单。所有方案都保留替换空间。")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.secondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+        VStack(alignment: .leading, spacing: 7) {
+            Text("NUTRITION / 饮食方案")
+                .font(AppType.overline)
+                .tracking(1.5)
+                .foregroundStyle(Theme.cobalt)
 
-            Spacer(minLength: 0)
+            Text("吃法选明白，\n三餐不瞎猜。")
+                .font(AppType.hero)
+                .tracking(-0.6)
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
 
-            HeroGlyph(
-                symbol: "fork.knife",
-                size: 118,
-                tint: Theme.onMedia
-            )
-            .offset(x: 12, y: 4)
+            Text("先选策略，再按你的目标和体重生成一周餐单。所有方案都保留替换空间。")
+                .font(AppType.body)
+                .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -139,11 +136,11 @@ struct DietLibraryView: View {
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Label("我的目标 · \(store.profile.goalType.label)", systemImage: "target")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .font(AppType.callout.weight(.semibold))
+                    .foregroundStyle(Theme.cobalt)
                 Spacer()
                 Text("每日目标")
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
 
@@ -155,7 +152,7 @@ struct DietLibraryView: View {
             }
 
             Text("按当前体重、目标和每周 \(store.profile.weeklyDays) 练估算，结果是区间，不需要精确到个位数。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -165,15 +162,15 @@ struct DietLibraryView: View {
     private func targetMetric(_ value: String, _ label: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value)
-                .font(.subheadline.weight(.bold).monospacedDigit())
-                .foregroundStyle(Theme.primaryText)
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .foregroundStyle(Theme.ink)
             Text(label)
                 .font(.system(size: 9))
                 .foregroundStyle(Theme.tertiaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(9)
-        .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .background(Theme.ink.opacity(0.035), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
     }
 
     private func strategyCard(_ strategy: StrategyInfo) -> some View {
@@ -184,27 +181,27 @@ struct DietLibraryView: View {
             VStack(alignment: .leading, spacing: 9) {
                 HStack {
                     Image(systemName: strategy.symbol)
-                        .font(.headline.weight(.bold))
+                        .font(AppType.headline.weight(.bold))
                         .foregroundStyle(strategy.color)
                         .frame(width: 34, height: 34)
                         .background(strategy.color.opacity(0.12), in: Circle())
                     Spacer()
                     Image(systemName: "arrow.up.right")
-                        .font(.caption.weight(.bold))
+                        .font(AppType.micro)
                         .foregroundStyle(Theme.tertiaryText)
                 }
 
                 Text(strategy.label)
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.headline.weight(.bold))
+                    .foregroundStyle(Theme.ink)
 
                 Text(strategy.tagline)
-                    .font(.caption.weight(.semibold))
+                    .font(AppType.caption.weight(.semibold))
                     .foregroundStyle(strategy.color)
                     .lineLimit(1)
 
                 Text(strategy.description)
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.leading)
@@ -216,24 +213,20 @@ struct DietLibraryView: View {
                             .foregroundStyle(Theme.secondaryText)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
-                            .background(Theme.surfaceStrong, in: Capsule())
+                            .background(Theme.ink.opacity(0.035), in: Capsule())
                     }
                 }
             }
             .frame(maxWidth: .infinity, minHeight: 190, alignment: .topLeading)
             .padding(13)
             .background(
-                LinearGradient(
-                    colors: [strategy.color.opacity(0.10), Theme.cardSurface],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
+                Theme.paper,
                 in: RoundedRectangle(cornerRadius: 18, style: .continuous)
             )
-            .overlay(
+            .overlay {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(strategy.color.opacity(0.16), lineWidth: 0.8)
-            )
+                    .strokeBorder(strategy.color.opacity(0.18), lineWidth: 1)
+            }
         }
         .buttonStyle(.plain)
     }
@@ -243,7 +236,7 @@ struct DietLibraryView: View {
             SectionTitle(title: "每餐这样搭", subtitle: "按手掌和拳头估份量，比称重更容易坚持。")
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                 guideItem("蛋白质", "1 掌心 · 约 20–30g", "fish.fill", Theme.blue)
-                guideItem("蔬菜", "2 拳 · 约 200–300g", "leaf.fill", Theme.accent)
+                guideItem("蔬菜", "2 拳 · 约 200–300g", "leaf.fill", Theme.cobalt)
                 guideItem("主食", "1 拳 · 约 50–100g 熟重", "takeoutbag.and.cup.and.straw.fill", Theme.warning)
                 guideItem("油脂", "1 拇指 · 约 10g", "drop.fill", Theme.tertiaryText)
             }
@@ -254,12 +247,12 @@ struct DietLibraryView: View {
     private func guideItem(_ title: String, _ detail: String, _ icon: String, _ color: Color) -> some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.caption.weight(.bold))
+                .font(AppType.micro)
                 .foregroundStyle(color)
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
                 Text(detail)
                     .font(.system(size: 9))
                     .foregroundStyle(Theme.tertiaryText)
@@ -269,12 +262,12 @@ struct DietLibraryView: View {
             Spacer(minLength: 0)
         }
         .padding(9)
-        .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .background(Theme.ink.opacity(0.035), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
     }
 
     private var disclaimer: some View {
         Text("饮食方案只做日常营养估算，不提供疾病饮食处方。孕期、糖尿病、肾病、进食障碍或术后人群，请先咨询医生或注册营养师。")
-            .font(.caption2)
+            .font(.system(size: 9.5, weight: .medium))
             .foregroundStyle(Theme.tertiaryText)
             .fixedSize(horizontal: false, vertical: true)
     }

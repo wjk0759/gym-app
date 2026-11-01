@@ -14,15 +14,21 @@ struct AgentMemoryView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     header
                     if isLoading {
-                        ProgressView().tint(Theme.accent)
+                        ProgressView().tint(Theme.cobalt)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 30)
                     } else if items.isEmpty {
-                        EmptyStateView(
-                            icon: "brain.head.profile",
-                            title: "还没有长期记忆",
-                            message: "你告诉教练的稳定偏好、日程、器械和约束会自动提炼到这里。"
-                        )
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("还没有长期记忆")
+                                .font(AppType.headline)
+                                .foregroundStyle(Theme.ink)
+                            Text("你告诉教练的稳定偏好、日程、器械和约束会自动提炼到这里。")
+                                .font(AppType.caption)
+                                .foregroundStyle(Theme.secondaryText)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .card()
                     } else {
                         ForEach(items) { item in
                             memoryCard(item)
@@ -30,7 +36,7 @@ struct AgentMemoryView: View {
                     }
                     if let errorMessage {
                         Text(errorMessage)
-                            .font(.caption)
+                            .font(AppType.caption)
                             .foregroundStyle(Theme.danger)
                     }
                 }
@@ -64,12 +70,20 @@ struct AgentMemoryView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 7) {
+            Text("MEMORY / AI 记忆")
+                .font(AppType.overline)
+                .tracking(1.5)
+                .foregroundStyle(Theme.cobalt)
+
             Text("教练会记住什么")
-                .font(.system(size: 23, weight: .bold, design: .default))
-                .foregroundStyle(Theme.primaryText)
+                .font(AppType.hero)
+                .tracking(-0.6)
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+
             Text("这里保存的是从对话中提炼出的稳定事实，不是完整聊天记录。关闭记忆后，教练仍可回答本次问题，但不会主动引用这些偏好。")
-                .font(.caption)
+                .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -79,25 +93,29 @@ struct AgentMemoryView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(kindLabel(item.kind))
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(Theme.cobalt)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Theme.accent.opacity(0.10), in: Capsule())
+                    .background(Theme.cobalt.opacity(0.08), in: Capsule(style: .continuous))
+                    .overlay {
+                        Capsule(style: .continuous)
+                            .strokeBorder(Theme.cobalt.opacity(0.18), lineWidth: 1)
+                    }
                 Spacer()
                 Button {
                     pendingDelete = item
                 } label: {
                     Image(systemName: "trash")
-                        .font(.caption)
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(Theme.tertiaryText)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SubtlePressStyle(scale: 0.94))
                 .accessibilityLabel("删除记忆")
             }
             Text(item.content)
-                .font(.subheadline)
-                .foregroundStyle(Theme.primaryText)
+                .font(AppType.callout)
+                .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 8) {
                 Text(item.source == "agent" ? "自动提炼" : item.source)
@@ -108,7 +126,7 @@ struct AgentMemoryView: View {
                     Text(updatedAt.formatted(date: .abbreviated, time: .omitted))
                 }
             }
-            .font(.caption2)
+            .font(.system(size: 9.5, weight: .medium))
             .foregroundStyle(Theme.tertiaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

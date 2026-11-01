@@ -213,17 +213,17 @@ struct EquipmentPickerView: View {
         HStack(spacing: 6) {
             Text("动作库")
                 .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(Theme.primaryText)
+                .foregroundStyle(Theme.ink)
 
             Text("\(filteredExercises.count)")
                 .font(.system(size: 9, weight: .bold, design: .default))
-                .foregroundStyle(Theme.accent)
+                .foregroundStyle(Theme.cobalt)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(Theme.accent.opacity(0.08), in: Capsule())
+                .background(Theme.cobalt.opacity(0.08), in: Capsule())
                 .overlay(
                     Capsule()
-                        .stroke(Theme.accent.opacity(0.14), lineWidth: 1)
+                        .stroke(Theme.cobalt.opacity(0.14), lineWidth: 1)
                 )
 
             Spacer(minLength: 8)
@@ -259,12 +259,12 @@ struct EquipmentPickerView: View {
             ZStack(alignment: .topTrailing) {
                 Image(systemName: selectedExercises.isEmpty ? "dumbbell" : "dumbbell.fill")
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(selectedExercises.isEmpty ? Theme.tertiaryText : Theme.accent)
+                    .foregroundStyle(selectedExercises.isEmpty ? Theme.tertiaryText : Theme.cobalt)
                     .frame(width: 50, height: 50)
                     .background(Theme.chrome, in: Circle())
                     .overlay(
                         Circle().stroke(
-                            selectedExercises.isEmpty ? Theme.stroke : Theme.accent.opacity(0.5),
+                            selectedExercises.isEmpty ? Theme.stroke : Theme.cobalt.opacity(0.5),
                             lineWidth: 1
                         )
                     )
@@ -275,7 +275,7 @@ struct EquipmentPickerView: View {
                         .font(.system(size: 9, weight: .bold, design: .default))
                         .foregroundStyle(Theme.onAccent)
                         .frame(minWidth: 18, minHeight: 18)
-                        .background(Theme.accent, in: Capsule())
+                        .background(Theme.cobalt, in: Capsule())
                         .offset(x: 3, y: -3)
                         .contentTransition(.numericText())
                 }
@@ -310,8 +310,8 @@ struct EquipmentPickerView: View {
     private var feedbackBanner: some View {
         if let feedback {
             Text(feedback)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.primaryText)
+                .font(AppType.caption.weight(.semibold))
+                .foregroundStyle(Theme.ink)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 9)
                 .background(Theme.chrome, in: Capsule())
@@ -339,7 +339,7 @@ struct EquipmentPickerView: View {
             TextField("搜索动作、肌群或器械", text: $query)
                 .font(.system(size: 14))
                 .textInputAutocapitalization(.never)
-                .foregroundStyle(Theme.primaryText)
+                .foregroundStyle(Theme.ink)
                 .submitLabel(.search)
                 .onChange(of: query) { _, value in
                     if value.count > 60 {
@@ -368,15 +368,15 @@ struct EquipmentPickerView: View {
                 } label: {
                     Image(systemName: "camera.viewfinder")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(Theme.accent)
+                        .foregroundStyle(Theme.cobalt)
                         .frame(width: 34, height: 34)
                         .background(
-                            Theme.accent.opacity(0.13),
+                            Theme.cobalt.opacity(0.13),
                             in: RoundedRectangle(cornerRadius: 11, style: .continuous)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                .stroke(Theme.accent.opacity(0.12), lineWidth: 1)
+                                .stroke(Theme.cobalt.opacity(0.12), lineWidth: 1)
                         )
                 }
                 .buttonStyle(SubtlePressStyle(scale: 0.94))
@@ -388,20 +388,12 @@ struct EquipmentPickerView: View {
         .padding(.vertical, 6)
         .frame(minHeight: 48)
         .background(
-            LinearGradient(
-                colors: [Color.white.opacity(0.065), Color.white.opacity(0.032)],
-                startPoint: .top,
-                endPoint: .bottom
-            ),
-            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
-        )
-        .background(
-            Theme.surfaceStrong.opacity(0.72),
+            Theme.ink.opacity(0.035),
             in: RoundedRectangle(cornerRadius: 15, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .stroke(Color.white.opacity(0.09), lineWidth: 1)
+                .strokeBorder(Theme.stroke, lineWidth: 1)
         )
     }
 
@@ -416,20 +408,12 @@ struct EquipmentPickerView: View {
         .padding(.vertical, 5)
         .frame(width: 56)
         .background(
-            LinearGradient(
-                colors: [Color.white.opacity(0.028), Color.white.opacity(0.012)],
-                startPoint: .top,
-                endPoint: .bottom
-            ),
-            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
-        )
-        .background(
-            Theme.surface.opacity(0.86),
+            Theme.paper,
             in: RoundedRectangle(cornerRadius: 15, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                .strokeBorder(Theme.stroke, lineWidth: 1)
         )
     }
 
@@ -447,18 +431,18 @@ struct EquipmentPickerView: View {
         } label: {
             Text(title)
                 .font(.system(size: 11.5, weight: active ? .bold : .medium))
-                .foregroundStyle(active ? Theme.accent : Theme.secondaryText.opacity(0.86))
+                .foregroundStyle(active ? Theme.cobalt : Theme.secondaryText.opacity(0.86))
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 6.5)
                 .background(
-                    active ? Theme.accent.opacity(0.14) : Color.clear,
+                    active ? Theme.cobalt.opacity(0.14) : Color.clear,
                     in: RoundedRectangle(cornerRadius: 8, style: .continuous)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .stroke(
-                            active ? Theme.accent.opacity(0.12) : Color.clear,
+                            active ? Theme.cobalt.opacity(0.12) : Color.clear,
                             lineWidth: 1
                         )
                 )
@@ -509,17 +493,17 @@ struct EquipmentPickerView: View {
         } label: {
             Text(title)
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(selected ? Theme.accent : Theme.secondaryText.opacity(0.86))
+                .foregroundStyle(selected ? Theme.cobalt : Theme.secondaryText.opacity(0.86))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(
-                    selected ? Theme.accent.opacity(0.14) : Color.white.opacity(0.03),
+                    selected ? Theme.cobalt.opacity(0.14) : Color.white.opacity(0.03),
                     in: RoundedRectangle(cornerRadius: 9, style: .continuous)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
                         .stroke(
-                            selected ? Theme.accent.opacity(0.36) : Theme.stroke,
+                            selected ? Theme.cobalt.opacity(0.36) : Theme.stroke,
                             lineWidth: 1
                         )
                 )
@@ -532,11 +516,22 @@ struct EquipmentPickerView: View {
     @ViewBuilder
     private var exerciseGrid: some View {
         if filteredExercises.isEmpty {
-            EmptyStateView(
-                icon: "line.3.horizontal.decrease.circle",
-                title: "没有匹配的动作",
-                message: "换个肌群或器械筛选，或者清空搜索关键词。"
-            )
+            VStack(alignment: .leading, spacing: 6) {
+                Text("没有匹配的动作")
+                    .font(AppType.headline)
+                    .foregroundStyle(Theme.ink)
+                Text("换个肌群或器械筛选，或者清空搜索关键词。")
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(Theme.paper, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(Theme.stroke, lineWidth: 1)
+            }
             .padding(.top, 8)
         } else {
             LazyVGrid(columns: gridColumns, spacing: 9) {
@@ -579,26 +574,20 @@ struct EquipmentPickerView: View {
         return VStack(alignment: .leading, spacing: 0) {
             ZStack {
                 RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(red: 0.17, green: 0.20, blue: 0.19), Theme.surface],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(Theme.ink.opacity(0.04))
                     .frame(height: 102)
 
                 Circle()
-                    .fill(Theme.accent.opacity(0.06))
+                    .fill(Theme.cobalt.opacity(0.06))
                     .overlay(
                         Circle()
-                            .stroke(Theme.accent.opacity(0.12), lineWidth: 1)
+                            .stroke(Theme.cobalt.opacity(0.12), lineWidth: 1)
                     )
                     .frame(width: 54, height: 54)
                     .overlay(
                         Image(systemName: muscleSymbol(exercise.muscle))
                             .font(.system(size: 29, weight: .light))
-                            .foregroundStyle(Theme.accent.opacity(0.9))
+                            .foregroundStyle(Theme.cobalt.opacity(0.9))
                     )
             }
             .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
@@ -622,8 +611,8 @@ struct EquipmentPickerView: View {
             }
 
             Text(exercise.nameZH)
-                .font(.system(size: 13.5, weight: .semibold))
-                .foregroundStyle(Theme.primaryText)
+                .font(AppType.callout.weight(.semibold))
+                .foregroundStyle(Theme.ink)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
                 .padding(.horizontal, 9)
@@ -631,32 +620,27 @@ struct EquipmentPickerView: View {
 
             HStack(spacing: 3) {
                 Text("\(exercise.muscle.label) · \(exercise.equipment.label)")
-                    .font(.system(size: 10))
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText.opacity(0.9))
                     .lineLimit(1)
                 Spacer(minLength: 0)
                 Image(systemName: isPickingForSession ? "plus.circle.fill" : "chevron.right")
                     .font(.system(size: isPickingForSession ? 13 : 9, weight: .semibold))
-                    .foregroundStyle(isPickingForSession ? Theme.accent : Theme.tertiaryText.opacity(0.72))
+                    .foregroundStyle(isPickingForSession ? Theme.cobalt : Theme.tertiaryText.opacity(0.72))
             }
             .padding(.horizontal, 9)
             .padding(.top, 4)
             .padding(.bottom, 10)
         }
-        .background(Theme.cardSurface)
-        .background(selected ? Theme.accent.opacity(0.06) : Color.clear)
+        .background(Theme.paper)
+        .background(selected ? Theme.cobalt.opacity(0.06) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 17, style: .continuous)
-                .stroke(
-                    selected ? Theme.accent.opacity(0.62) : Color.white.opacity(0.075),
+                .strokeBorder(
+                    selected ? Theme.cobalt.opacity(0.62) : Theme.stroke,
                     lineWidth: 1
                 )
-        )
-        .shadow(
-            color: selected ? Theme.accent.opacity(0.12) : .clear,
-            radius: 10,
-            y: 6
         )
         .animation(Motion.quick, value: selected)
     }
@@ -677,9 +661,9 @@ struct EquipmentPickerView: View {
     private func selectionControl(_ exercise: Exercise, selected: Bool) -> some View {
         ZStack {
             Circle()
-                .fill(selected ? Theme.accent : Color.black.opacity(0.42))
+                .fill(selected ? Theme.cobalt : Color.black.opacity(0.42))
             Circle()
-                .stroke(selected ? Theme.accent : Color.white.opacity(0.32), lineWidth: 1)
+                .stroke(selected ? Theme.cobalt : Color.white.opacity(0.32), lineWidth: 1)
             Image(systemName: selected ? "checkmark" : "plus")
                 .font(.system(size: selected ? 11 : 10, weight: .bold))
                 .foregroundStyle(selected ? Theme.onAccent : Color.white.opacity(0.82))

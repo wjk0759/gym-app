@@ -19,26 +19,33 @@ struct PasswordSettingsView: View {
         NavigationStack {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("设置密码后，可以用手机号或用户名 + 密码登录。修改后，其他已登录设备需要重新验证。")
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.secondaryText)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .card()
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("SECURITY / 登录密码")
+                            .font(AppType.overline)
+                            .tracking(1.5)
+                            .foregroundStyle(Theme.cobalt)
+                        Text("设置密码后，可以用手机号或用户名 + 密码登录。修改后，其他已登录设备需要重新验证。")
+                            .font(AppType.body)
+                            .foregroundStyle(Theme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .card()
 
                     VStack(alignment: .leading, spacing: 7) {
                         fieldLabel("新密码")
                         SecureField("至少 8 位，含字母和数字", text: $password)
                             .textContentType(.newPassword)
+                            .font(AppType.callout)
                             .padding(.horizontal, 14)
                             .frame(height: 52)
                             .background(
-                                Theme.surfaceStrong,
+                                Theme.ink.opacity(0.035),
                                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
                             )
-                            .overlay(
+                            .overlay {
                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .stroke(Theme.stroke, lineWidth: 1)
-                            )
+                                    .strokeBorder(Theme.stroke, lineWidth: 1)
+                            }
                             .onChange(of: password) { _, _ in errorMessage = "" }
                     }
 
@@ -46,23 +53,24 @@ struct PasswordSettingsView: View {
                         fieldLabel("确认新密码")
                         SecureField("再次输入新密码", text: $confirmation)
                             .textContentType(.newPassword)
+                            .font(AppType.callout)
                             .padding(.horizontal, 14)
                             .frame(height: 52)
                             .background(
-                                Theme.surfaceStrong,
+                                Theme.ink.opacity(0.035),
                                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
                             )
-                            .overlay(
+                            .overlay {
                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .stroke(Theme.stroke, lineWidth: 1)
-                            )
+                                    .strokeBorder(Theme.stroke, lineWidth: 1)
+                            }
                             .onChange(of: confirmation) { _, _ in errorMessage = "" }
                     }
 
                     if !errorMessage.isEmpty {
                         Text(errorMessage)
-                            .font(.caption)
-                            .foregroundStyle(Theme.danger)
+                            .font(AppType.caption)
+                            .foregroundStyle(Theme.coral)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
@@ -70,7 +78,7 @@ struct PasswordSettingsView: View {
                         save()
                     } label: {
                         if auth.isWorking {
-                            ProgressView().tint(.black)
+                            ProgressView().tint(Theme.onAccent)
                         } else {
                             Text("保存密码")
                         }
@@ -78,7 +86,9 @@ struct PasswordSettingsView: View {
                     .buttonStyle(PrimaryButtonStyle())
                     .disabled(auth.isWorking)
                 }
-                .padding(20)
+                .appPagePadding()
+                .padding(.top, 8)
+                .padding(.bottom, 24)
             }
             .background(AppBackground())
             .scrollDismissesKeyboard(.interactively)
@@ -99,7 +109,7 @@ struct PasswordSettingsView: View {
 
     private func fieldLabel(_ text: String) -> some View {
         Text(text)
-            .font(.caption.weight(.medium))
+            .font(.system(size: 9.5, weight: .semibold))
             .foregroundStyle(Theme.secondaryText)
             .padding(.leading, 2)
     }

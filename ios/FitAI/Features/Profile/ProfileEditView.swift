@@ -15,13 +15,13 @@ struct ProfileEditView: View {
                 ProfileFormView(draft: $draft)
 
                 Text("修改目标、训练安排、时长或器械后，保存会自动按新设置重排计划；手动改过的训练日会被覆盖。")
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 4)
                     .padding(.bottom, 8)
             }
-            .padding(.horizontal, 20)
+            .appPagePadding()
             .padding(.top, 12)
         }
         .background(AppBackground())
@@ -31,8 +31,8 @@ struct ProfileEditView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("保存", action: save)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.cobalt)
             }
         }
         .onAppear {

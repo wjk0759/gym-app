@@ -52,16 +52,17 @@ struct TrainingLibraryView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Label("计划会按你的器械和时间生成", systemImage: "wand.and.stars")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Theme.accent)
+                            .font(AppType.caption.weight(.semibold))
+                            .foregroundStyle(Theme.cobalt)
                         Text("当前器械：\(store.profile.equipment.map(\.label).sorted().joined(separator: " / "))\n每周 \(store.profile.weeklyDays) 练 · 每次 \(store.profile.sessionMinutes) 分钟")
-                            .font(.caption)
+                            .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .card(padding: 14)
                 }
-                .padding(20)
+                .appPagePadding()
+                .padding(.top, 8)
                 .padding(.bottom, 24)
             }
             .background(AppBackground())
@@ -90,26 +91,22 @@ struct TrainingLibraryView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .center, spacing: 6) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("练法选明白，\n进馆不发呆。")
-                    .font(.system(size: 29, weight: .heavy, design: .default))
-                    .foregroundStyle(Theme.primaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("先选适合出勤频率的分化，再让教练按你的器械和时间排动作。")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.secondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+        VStack(alignment: .leading, spacing: 7) {
+            Text("TRAINING / 训练方案")
+                .font(AppType.overline)
+                .tracking(1.5)
+                .foregroundStyle(Theme.cobalt)
 
-            Spacer(minLength: 0)
+            Text("练法选明白，\n进馆不发呆。")
+                .font(AppType.hero)
+                .tracking(-0.6)
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
 
-            HeroGlyph(
-                symbol: "figure.run",
-                size: 118,
-                tint: Theme.onMedia
-            )
-            .offset(x: 12, y: 4)
+            Text("先选适合出勤频率的分化，再让教练按你的器械和时间排动作。")
+                .font(AppType.body)
+                .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -119,22 +116,22 @@ struct TrainingLibraryView: View {
             HStack(alignment: .top, spacing: 11) {
                 Image(systemName: card.symbol)
                     .font(.title2.weight(.bold))
-                    .foregroundStyle(selected ? Theme.onAccent : Theme.accent)
+                    .foregroundStyle(selected ? Theme.onAccent : Theme.cobalt)
                     .frame(width: 48, height: 48)
                     .background(
-                        selected ? Theme.accent : Theme.accent.opacity(0.12),
+                        selected ? Theme.cobalt : Theme.cobalt.opacity(0.12),
                         in: RoundedRectangle(cornerRadius: 14, style: .continuous)
                     )
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(card.eyebrow)
                         .font(.system(size: 9.5, weight: .bold))
-                        .foregroundStyle(Theme.accent)
+                        .foregroundStyle(Theme.cobalt)
                     Text(card.split.title)
-                        .font(.title3.weight(.bold))
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.title)
+                        .foregroundStyle(Theme.ink)
                     Text(card.split.detail)
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
 
@@ -146,7 +143,7 @@ struct TrainingLibraryView: View {
                         .foregroundStyle(Theme.onAccent)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Theme.accent, in: Capsule())
+                        .background(Theme.cobalt, in: Capsule())
                 }
             }
 
@@ -155,18 +152,18 @@ struct TrainingLibraryView: View {
                 Text("·")
                 Text("当前每周 \(store.profile.weeklyDays) 练")
             }
-            .font(.caption2)
+            .font(.system(size: 9.5, weight: .medium))
             .foregroundStyle(Theme.tertiaryText)
 
             VStack(alignment: .leading, spacing: 5) {
                 ForEach(card.bullets, id: \.self) { item in
                     HStack(alignment: .top, spacing: 7) {
                         Circle()
-                            .fill(Theme.accent.opacity(0.8))
+                            .fill(Theme.cobalt.opacity(0.8))
                             .frame(width: 4, height: 4)
                             .padding(.top, 5)
                         Text(item)
-                            .font(.caption)
+                            .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                     }
                 }

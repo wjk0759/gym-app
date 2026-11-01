@@ -40,8 +40,9 @@ struct PaywallView: View {
                     restoreSection
                     legal
                 }
-                .padding(20)
-                .padding(.bottom, 20)
+                .appPagePadding()
+                .padding(.top, 8)
+                .padding(.bottom, 24)
             }
             .background(AppBackground())
             .safeAreaInset(edge: .bottom) {
@@ -84,20 +85,26 @@ struct PaywallView: View {
                         Text("立即订阅")
                         Spacer()
                         Text(product.displayPrice)
+                            .font(.system(size: 16, weight: .bold, design: .monospaced))
                     }
-                    .font(.headline)
+                    .font(AppType.button)
                     .foregroundStyle(Theme.onAccent)
                     .padding(.horizontal, 18)
                     .padding(.vertical, 15)
                     .background(
                         RoundedRectangle(cornerRadius: 15, style: .continuous)
-                            .fill(Theme.accent)
+                            .fill(Theme.cobalt)
                     )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            .strokeBorder(Theme.ink.opacity(0.18), lineWidth: 1)
+                    }
+                    .shadow(color: Theme.ink.opacity(0.16), radius: 0, x: 0, y: 4)
                 }
                 .buttonStyle(.plain)
 
                 Text("自动续期，可随时在系统设置中取消")
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
             .padding(.horizontal, 20)
@@ -113,27 +120,40 @@ struct PaywallView: View {
     }
 
     private var header: some View {
-        VStack(spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(Theme.accent.opacity(0.16))
-                    .frame(width: 76, height: 76)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
                 Image(systemName: "crown.fill")
-                    .font(.system(size: 30, weight: .semibold))
-                    .foregroundStyle(Theme.accent)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(Theme.onAccent)
+                    .frame(width: 38, height: 38)
+                    .background(Theme.lime, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("练途 Pro")
+                        .font(AppType.overline)
+                        .tracking(1.2)
+                        .foregroundStyle(Theme.cobalt)
+                    Text("解锁完整教练")
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+
+                Spacer(minLength: 0)
             }
 
-            Text("把 AI 教练带在身边")
-                .font(.title2.weight(.bold))
-                .foregroundStyle(Theme.primaryText)
+            Text("把 AI 教练\n带在身边")
+                .font(AppType.hero)
+                .tracking(-0.6)
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
 
             Text("解锁 DeepSeek AI 计划、完整私人教练对话与视觉分析。")
-                .font(.subheadline)
+                .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
-                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity)
-        .card(padding: 24)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .editorialCard(accent: Theme.lime)
     }
 
     private var benefits: some View {
@@ -150,15 +170,15 @@ struct PaywallView: View {
     private func benefit(_ text: String, icon: String) -> some View {
         HStack(spacing: 10) {
             Image(systemName: icon)
-                .foregroundStyle(Theme.accent)
+                .foregroundStyle(Theme.cobalt)
                 .frame(width: 22)
             Text(text)
-                .font(.subheadline)
-                .foregroundStyle(Theme.primaryText)
+                .font(AppType.callout)
+                .foregroundStyle(Theme.ink)
             Spacer()
             Image(systemName: "checkmark")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(Theme.accent)
+                .font(AppType.micro)
+                .foregroundStyle(Theme.cobalt)
         }
     }
 
@@ -167,19 +187,19 @@ struct PaywallView: View {
         if manager.isPro {
             VStack(spacing: 10) {
                 Label("已订阅练途 Pro", systemImage: "checkmark.seal.fill")
-                    .font(.headline)
-                    .foregroundStyle(Theme.accent)
+                    .font(AppType.headline)
+                    .foregroundStyle(Theme.cobalt)
                 Text("所有 Pro 功能已解锁。")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
             }
             .frame(maxWidth: .infinity)
             .card()
         } else if manager.isLoading {
             VStack(spacing: 10) {
-                ProgressView().tint(Theme.accent)
+                ProgressView().tint(Theme.cobalt)
                 Text("正在加载订阅商品…")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
             }
             .frame(maxWidth: .infinity)
@@ -187,9 +207,9 @@ struct PaywallView: View {
         } else if manager.products.isEmpty {
             VStack(spacing: 12) {
                 Text("订阅即将开放")
-                    .font(.headline)
+                    .font(AppType.headline)
                 Text("练途 Pro 正在准备中，稍后可以在 App Store 完成订阅。")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
                     .multilineTextAlignment(.center)
                 Button("重新加载") {
@@ -212,27 +232,27 @@ struct PaywallView: View {
                             VStack(alignment: .leading, spacing: 5) {
                                 HStack(spacing: 6) {
                                     Text(product.displayName)
-                                        .font(.subheadline.weight(.semibold))
-                                        .foregroundStyle(Theme.primaryText)
+                                        .font(AppType.callout.weight(.semibold))
+                                        .foregroundStyle(Theme.ink)
                                     if yearly {
                                         Text("推荐")
                                             .font(.system(size: 9, weight: .bold))
                                             .foregroundStyle(Theme.onAccent)
                                             .padding(.horizontal, 6)
                                             .padding(.vertical, 3)
-                                            .background(Theme.accent, in: Capsule())
+                                            .background(Theme.cobalt, in: Capsule())
                                         if let annualSaving {
                                             Text("省 \(annualSaving)%")
                                                 .font(.system(size: 9, weight: .bold))
-                                                .foregroundStyle(Theme.accent)
+                                                .foregroundStyle(Theme.cobalt)
                                                 .padding(.horizontal, 6)
                                                 .padding(.vertical, 3)
-                                                .background(Theme.accent.opacity(0.10), in: Capsule())
+                                                .background(Theme.cobalt.opacity(0.10), in: Capsule())
                                         }
                                     }
                                 }
                                 Text(product.description)
-                                    .font(.caption2)
+                                    .font(.system(size: 9.5, weight: .medium))
                                     .foregroundStyle(Theme.secondaryText)
                                     .lineLimit(2)
                             }
@@ -240,22 +260,22 @@ struct PaywallView: View {
                             Spacer()
 
                             Text(product.displayPrice)
-                                .font(.headline)
-                                .foregroundStyle(selected ? Theme.accent : Theme.primaryText)
+                                .font(AppType.headline)
+                                .foregroundStyle(selected ? Theme.cobalt : Theme.ink)
 
                             Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                                .font(.title3)
-                                .foregroundStyle(selected ? Theme.accent : Theme.tertiaryText)
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(selected ? Theme.cobalt : Theme.tertiaryText)
                         }
                         .padding(14)
                         .background(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(selected ? Theme.accent.opacity(0.08) : Theme.surfaceStrong)
+                                .fill(selected ? Theme.cobalt.opacity(0.08) : Theme.paper)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(
-                                    selected ? Theme.accent.opacity(0.75) : Theme.stroke,
+                                .strokeBorder(
+                                    selected ? Theme.cobalt.opacity(0.75) : Theme.stroke,
                                     lineWidth: selected ? 1.5 : 1
                                 )
                         )
@@ -279,11 +299,11 @@ struct PaywallView: View {
             Button("恢复购买") {
                 Task { await manager.restore() }
             }
-            .font(.footnote.weight(.semibold))
-            .foregroundStyle(Theme.accent)
+            .font(AppType.caption.weight(.semibold))
+            .foregroundStyle(Theme.cobalt)
 
             Text("订阅会自动续期，可随时在系统「设置 → Apple ID → 订阅」中取消。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .multilineTextAlignment(.center)
         }
@@ -291,7 +311,7 @@ struct PaywallView: View {
 
     private var legal: some View {
         Text("付款将通过 Apple ID 完成。订阅到期前 24 小时会自动续期，可在系统设置中关闭。商品与价格以 App Store 页面为准。")
-            .font(.caption2)
+            .font(.system(size: 9.5, weight: .medium))
             .foregroundStyle(Theme.tertiaryText)
             .frame(maxWidth: .infinity, alignment: .leading)
             .card(padding: 14)

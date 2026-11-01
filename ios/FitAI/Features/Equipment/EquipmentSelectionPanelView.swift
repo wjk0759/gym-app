@@ -42,14 +42,14 @@ struct EquipmentSelectionPanelView: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 7) {
                     Text("已选动作")
-                        .font(.headline)
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.headline)
+                        .foregroundStyle(Theme.ink)
                     Text("\(exercises.count)")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(Theme.accent)
+                        .font(AppType.caption.weight(.bold))
+                        .foregroundStyle(Theme.cobalt)
                 }
                 Text(exercises.isEmpty ? "还没有选择动作" : "选好后先安排顺序和负荷，再存入器械库")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -58,7 +58,7 @@ struct EquipmentSelectionPanelView: View {
 
             if !exercises.isEmpty {
                 Button("清空", action: onClear)
-                    .font(.caption.weight(.semibold))
+                    .font(AppType.caption.weight(.semibold))
                     .foregroundStyle(Theme.tertiaryText)
             }
         }
@@ -77,10 +77,10 @@ struct EquipmentSelectionPanelView: View {
                 .font(.system(size: 32, weight: .light))
                 .foregroundStyle(Theme.tertiaryText)
             Text("还没有选择动作")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Theme.primaryText)
+                .font(AppType.callout.weight(.semibold))
+                .foregroundStyle(Theme.ink)
             Text("在下面点选动作，再决定生成训练或存入器械库。")
-                .font(.caption)
+                .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -107,29 +107,29 @@ struct EquipmentSelectionPanelView: View {
         return HStack(spacing: 11) {
             Image(systemName: exercise.equipment.symbolName)
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Theme.accent)
+                .foregroundStyle(Theme.cobalt)
                 .frame(width: 34, height: 34)
-                .background(Theme.accent.opacity(0.11), in: Circle())
+                .background(Theme.cobalt.opacity(0.11), in: Circle())
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(exercise.nameZH)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.callout.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
                     .lineLimit(1)
 
                 HStack(spacing: 6) {
                     Text("\(exercise.muscle.label) · \(exercise.equipment.label)")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.secondaryText)
                         .lineLimit(1)
 
                     if saved {
                         Text("已在库")
                             .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(Theme.accent)
+                            .foregroundStyle(Theme.cobalt)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(Theme.accent.opacity(0.12), in: Capsule())
+                            .background(Theme.cobalt.opacity(0.12), in: Capsule())
                     }
                 }
             }
@@ -143,7 +143,7 @@ struct EquipmentSelectionPanelView: View {
                     .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(Theme.secondaryText)
                     .frame(width: 28, height: 28)
-                    .background(Theme.surfaceStrong, in: Circle())
+                    .background(Theme.ink.opacity(0.035), in: Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("移除 \(exercise.nameZH)")
@@ -203,18 +203,18 @@ struct EquipmentSelectionPanelView: View {
             HStack(spacing: 11) {
                 Image(systemName: icon)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(primary ? Theme.onAccent.opacity(0.82) : Theme.accent)
+                    .foregroundStyle(primary ? Theme.onAccent : Theme.cobalt)
                     .frame(width: 34, height: 34)
                     .background(
-                        primary ? Color.black.opacity(0.12) : Theme.accent.opacity(0.11),
+                        primary ? Theme.onAccent.opacity(0.16) : Theme.cobalt.opacity(0.10),
                         in: Circle()
                     )
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.subheadline.weight(.bold))
+                        .font(AppType.callout.weight(.bold))
                     Text(subtitle)
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .lineLimit(2)
                         .opacity(0.70)
                 }
@@ -222,29 +222,21 @@ struct EquipmentSelectionPanelView: View {
                 Spacer(minLength: 4)
 
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.bold))
+                    .font(AppType.caption.weight(.bold))
                     .opacity(0.55)
             }
-            .foregroundStyle(primary ? Theme.onAccent.opacity(0.90) : Theme.primaryText)
+            .foregroundStyle(primary ? Theme.onAccent : Theme.ink)
             .padding(12)
             .background {
-                if primary {
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [Theme.accent, Theme.accentDeep],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                } else {
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .fill(Theme.surfaceStrong)
-                }
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .fill(primary ? Theme.cobalt : Theme.paper)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .stroke(primary ? Color.white.opacity(0.18) : Theme.stroke, lineWidth: 0.8)
+                    .strokeBorder(
+                        primary ? Theme.ink.opacity(0.18) : Theme.stroke,
+                        lineWidth: 1
+                    )
             }
         }
         .buttonStyle(.plain)

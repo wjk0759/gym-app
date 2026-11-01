@@ -16,14 +16,14 @@ struct WeatherBadgeView: View {
             HStack(spacing: 7) {
                 Image(systemName: symbolName)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(atmosphere.isPrecipitation ? atmosphere.accent(for: colorScheme) : Theme.accent)
+                    .foregroundStyle(atmosphere.isPrecipitation ? atmosphere.accent(for: colorScheme) : Theme.cobalt)
                     .frame(width: 19)
 
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(alignment: .firstTextBaseline, spacing: 3) {
                         Text(primaryText)
                             .font(.system(size: 15, weight: .bold, design: .default).monospacedDigit())
-                            .foregroundStyle(Theme.primaryText)
+                            .foregroundStyle(Theme.ink)
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
                         if weather.isRefreshing {
@@ -46,7 +46,7 @@ struct WeatherBadgeView: View {
             .background {
                 SoftSurface(
                     cornerRadius: 999,
-                    tint: Theme.surfaceStrong,
+                    tint: Theme.ink.opacity(0.035),
                     stroke: Theme.stroke
                 )
             }
@@ -170,21 +170,26 @@ struct WeatherDetailSheet: View {
 
     private var currentCard: some View {
         VStack(alignment: .leading, spacing: 14) {
+            Text("LOCAL / 本地天气")
+                .font(AppType.overline)
+                .tracking(1.4)
+                .foregroundStyle(Theme.cobalt)
+
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(weather.snapshot?.placeDisplayName ?? "当前位置")
-                        .font(.headline)
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.headline)
+                        .foregroundStyle(Theme.ink)
                         .lineLimit(1)
 
                     if let snapshot = weather.snapshot {
                         let condition = atmosphere.isTyphoon ? "台风/大风" : snapshot.conditionLabel
                         Text("\(atmosphere.phase.label) · \(condition)")
-                            .font(.caption)
+                            .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                     } else {
                         Text("正在获取本地实时天气")
-                            .font(.caption)
+                            .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                     }
                 }
@@ -196,7 +201,7 @@ struct WeatherDetailSheet: View {
                     .foregroundStyle(
                         weather.snapshot?.isWet == true
                             ? atmosphere.accent(for: colorScheme)
-                            : Theme.accent
+                            : Theme.cobalt
                     )
             }
 
@@ -204,9 +209,9 @@ struct WeatherDetailSheet: View {
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
                     Text(snapshot.temperatureText)
                         .font(.system(size: 54, weight: .heavy, design: .default).monospacedDigit())
-                        .foregroundStyle(Theme.primaryText)
+                        .foregroundStyle(Theme.ink)
                     Text("C")
-                        .font(.title3.weight(.semibold))
+                        .font(AppType.title)
                         .foregroundStyle(Theme.tertiaryText)
                 }
 
@@ -226,7 +231,7 @@ struct WeatherDetailSheet: View {
                             .tint(Theme.secondaryText)
                     }
                 }
-                .font(.caption)
+                .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
             } else {
                 stateContent
@@ -240,33 +245,33 @@ struct WeatherDetailSheet: View {
     private var stateContent: some View {
         if weather.needsLocationPermission {
             Text("允许定位后，会在这里显示当前位置的实时天气。")
-                .font(.caption)
+                .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
         } else {
             switch weather.state {
             case .locating, .loading:
                 HStack(spacing: 8) {
-                    ProgressView().tint(Theme.accent)
+                    ProgressView().tint(Theme.cobalt)
                     Text("正在定位并获取天气…")
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
             case .permissionDenied:
                 Text("需要定位权限才能显示你所在城市的天气。")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
             case .failed(let message):
                 VStack(alignment: .leading, spacing: 8) {
                     Text(message)
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.warning)
                     Button("重试") { weather.refresh() }
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Theme.accent)
+                        .font(AppType.caption.weight(.semibold))
+                        .foregroundStyle(Theme.cobalt)
                 }
             case .idle, .ready:
                 Text("暂无天气数据")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.tertiaryText)
             }
         }
@@ -276,12 +281,12 @@ struct WeatherDetailSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("体感与出行")
-                    .font(.headline)
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.headline)
+                    .foregroundStyle(Theme.ink)
                 Spacer()
                 if let updatedAt = weather.snapshot?.updatedAt {
                     Text("更新于 \(updatedAt.formatted(date: .omitted, time: .shortened))")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                 }
             }
@@ -302,12 +307,12 @@ struct WeatherDetailSheet: View {
 
                 if weather.isStale {
                     Label("天气数据已超过 1 小时，正在等待刷新", systemImage: "clock.arrow.circlepath")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.warning)
                 }
             } else {
                 Text("获取到天气后会显示体感温度、湿度、风速和云量。")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
             }
         }
@@ -324,21 +329,21 @@ struct WeatherDetailSheet: View {
             ) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("恶劣天气出行提醒")
-                        .font(.headline)
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.headline)
+                        .foregroundStyle(Theme.ink)
                     Text("有雨雪、大风或降雨概率较高时，每天最多提醒一次；22:00–07:00 不打扰。")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                 }
             }
-            .tint(Theme.accent)
+            .tint(Theme.cobalt)
 
             if weather.alertsEnabled && !weather.alertsAuthorized {
                 HStack(spacing: 8) {
                     Image(systemName: "bell.slash.fill")
                         .foregroundStyle(Theme.warning)
                     Text("系统通知未开启")
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                     Spacer(minLength: 4)
                     Button("开启") {
@@ -349,24 +354,24 @@ struct WeatherDetailSheet: View {
                                 : "没有获得通知权限，请到系统设置中允许「练途」通知。"
                         }
                     }
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.cobalt)
 
                     Button("去设置") { openSystemSettings() }
-                        .font(.caption2.weight(.semibold))
+                        .font(.system(size: 9.5, weight: .semibold))
                         .foregroundStyle(Theme.tertiaryText)
                 }
             }
 
             if let alertMessage {
                 Text(alertMessage)
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             Text("提醒会在 App 刷新天气时检查；如果没有后台常驻定位，关闭 App 后不会持续获取位置。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -377,12 +382,12 @@ struct WeatherDetailSheet: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Label(weather.authorizationLabel, systemImage: weather.locationBlocked ? "location.slash.fill" : "location.fill")
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppType.callout.weight(.semibold))
                     .foregroundStyle(weather.locationBlocked ? Theme.warning : Theme.secondaryText)
                 Spacer()
                 Button("刷新") { weather.refresh() }
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.cobalt)
                     .disabled(weather.isRefreshing)
             }
 
@@ -399,7 +404,7 @@ struct WeatherDetailSheet: View {
                 .buttonStyle(SecondaryButtonStyle())
             case .authorizedAlways, .authorizedWhenInUse:
                 Text("定位只在你打开 App 时使用一次，用于查询当地天气。")
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             @unknown default:
                 EmptyView()
@@ -407,7 +412,7 @@ struct WeatherDetailSheet: View {
 
             if let lastError = weather.lastError {
                 Text(lastError)
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.warning)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -418,17 +423,17 @@ struct WeatherDetailSheet: View {
     private var privacyCard: some View {
         VStack(alignment: .leading, spacing: 7) {
             Label("位置与天气隐私", systemImage: "lock.shield.fill")
-                .font(.caption.weight(.semibold))
+                .font(AppType.caption.weight(.semibold))
                 .foregroundStyle(Theme.secondaryText)
             Text("位置不会写入训练记录，也不会经过 FitAI 服务器。天气请求只把四舍五入到约 1 公里的坐标发送给 Open-Meteo；城市名由 iOS 地理编码服务反查。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)
             Text("天气数据：Open-Meteo")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
             Text("界面会跟随系统深浅色、清晨/白天/傍晚/夜间和天气自动调整；雨天使用克制的背景雨线，避免高成本材质拖慢滚动。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -439,15 +444,15 @@ struct WeatherDetailSheet: View {
         HStack(spacing: 9) {
             Image(systemName: icon)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Theme.accent)
+                .foregroundStyle(Theme.cobalt)
                 .frame(width: 20)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
                 Text(value)
-                    .font(.caption.weight(.semibold).monospacedDigit())
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.caption.weight(.semibold).monospacedDigit())
+                    .foregroundStyle(Theme.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
             }
@@ -455,7 +460,7 @@ struct WeatherDetailSheet: View {
         }
         .padding(9)
         .background(
-            Theme.surfaceStrong,
+            Theme.ink.opacity(0.035),
             in: RoundedRectangle(cornerRadius: 11, style: .continuous)
         )
     }

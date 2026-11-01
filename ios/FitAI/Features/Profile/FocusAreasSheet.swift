@@ -15,7 +15,7 @@ struct FocusAreasSheet: View {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     EditorialHeader(
-                        eyebrow: "训练重点",
+                        eyebrow: "FOCUS / 训练重点",
                         title: "想让计划多照顾哪里？",
                         subtitle: "最多选两个。计划会在每一天优先安排对应动作，但不会破坏训练分化。"
                     )
@@ -45,7 +45,7 @@ struct FocusAreasSheet: View {
                         .foregroundStyle(Theme.tertiaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(20)
+                .appPagePadding()
                 .padding(.bottom, 24)
             }
             .background(AppBackground())

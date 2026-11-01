@@ -43,7 +43,7 @@ struct ProfileFormView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("怎么称呼你")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
                 TextField("例如：小林", text: $draft.nickname)
                     .textInputAutocapitalization(.never)
@@ -54,7 +54,7 @@ struct ProfileFormView: View {
                     }
                     .padding(12)
                     .background(
-                        Theme.surfaceStrong,
+                        Theme.ink.opacity(0.035),
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                     )
             }
@@ -110,12 +110,12 @@ struct ProfileFormView: View {
                 Text("BMI")
                 Spacer()
                 Text(String(format: "%.1f", draft.bmi))
-                    .foregroundStyle(Theme.primaryText)
+                    .foregroundStyle(Theme.ink)
                 Text(draft.bmiLabel)
-                    .font(.caption)
-                    .foregroundStyle(Theme.accent)
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.cobalt)
             }
-            .font(.subheadline)
+            .font(AppType.callout)
 
             MetricSlider(
                 title: "腰围",
@@ -191,15 +191,15 @@ struct ProfileFormView: View {
                         allEquipmentSelected ? "全部取消" : "全选",
                         systemImage: allEquipmentSelected ? "xmark.circle" : "checkmark.circle"
                     )
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.cobalt)
                 }
                 .buttonStyle(SubtlePressStyle(scale: 0.96))
 
                 Spacer(minLength: 0)
 
                 Text("至少选择一种")
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
             .padding(.horizontal, 2)
@@ -210,19 +210,19 @@ struct ProfileFormView: View {
     private var equipmentCountBadge: some View {
         HStack(spacing: 2) {
             Text("\(draft.equipment.count)")
-                .font(.subheadline.weight(.bold).monospacedDigit())
-                .foregroundStyle(Theme.accent)
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .foregroundStyle(Theme.cobalt)
                 .contentTransition(.numericText())
             Text("/ \(Equipment.allCases.count)")
-                .font(.caption2.weight(.medium))
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(Theme.accent.opacity(0.10), in: Capsule())
+        .background(Theme.cobalt.opacity(0.10), in: Capsule())
         .overlay(
             Capsule()
-                .stroke(Theme.accent.opacity(0.20), lineWidth: 0.8)
+                .stroke(Theme.cobalt.opacity(0.20), lineWidth: 0.8)
         )
         .motionAnimation(Motion.quick, value: draft.equipment.count)
     }
@@ -243,45 +243,44 @@ struct ProfileFormView: View {
             HStack(spacing: 9) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(selected ? Theme.accent.opacity(0.18) : Color.white.opacity(0.05))
+                        .fill(selected ? Theme.cobalt.opacity(0.14) : Theme.ink.opacity(0.05))
                         .frame(width: 34, height: 34)
                     Image(systemName: item.symbolName)
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(selected ? Theme.accent : Theme.secondaryText)
+                        .foregroundStyle(selected ? Theme.cobalt : Theme.secondaryText)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.label)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
                     Text(selected ? "已启用" : "未选择")
                         .font(.system(size: 9.5, weight: .medium))
-                        .foregroundStyle(selected ? Theme.accent.opacity(0.9) : Theme.tertiaryText)
+                        .foregroundStyle(selected ? Theme.cobalt.opacity(0.9) : Theme.tertiaryText)
                 }
 
                 Spacer(minLength: 0)
 
                 Image(systemName: selected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(selected ? Theme.accent : Theme.tertiaryText.opacity(0.35))
+                    .foregroundStyle(selected ? Theme.cobalt : Theme.tertiaryText.opacity(0.35))
                     .contentTransition(.symbolEffect(.replace))
             }
             .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .fill(selected ? Theme.accent.opacity(0.10) : Theme.surfaceStrong.opacity(0.75))
+                    .fill(selected ? Theme.cobalt.opacity(0.08) : Theme.paper)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .stroke(
-                        selected ? Theme.accent.opacity(0.42) : Color.white.opacity(0.05),
+                    .strokeBorder(
+                        selected ? Theme.cobalt.opacity(0.42) : Theme.stroke,
                         lineWidth: 1
                     )
             )
-            .shadow(color: selected ? Color.black.opacity(0.08) : Color.clear, radius: 6, y: 3)
         }
         .buttonStyle(CardPressStyle(scale: 0.97))
         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -303,7 +302,7 @@ struct ProfileFormView: View {
                 fieldHeader("训练分化", systemImage: "square.grid.2x2")
                 AnimatedSegmentedControl(items: SplitType.allCases, selection: $draft.split) { $0.title }
                 Text(draft.split.detail)
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
                     .id(draft.split)
@@ -332,7 +331,7 @@ struct ProfileFormView: View {
                     }
                     .padding(12)
                     .background(
-                        Theme.surfaceStrong,
+                        Theme.ink.opacity(0.035),
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                     )
             }
@@ -346,7 +345,7 @@ struct ProfileFormView: View {
 
     private func fieldHeader(_ title: String, systemImage: String) -> some View {
         Label(title, systemImage: systemImage)
-            .font(.caption.weight(.semibold))
+            .font(AppType.caption.weight(.semibold))
             .foregroundStyle(Theme.secondaryText)
     }
 
@@ -361,10 +360,10 @@ struct ProfileFormView: View {
                     } label: {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(item.label)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(Theme.primaryText)
+                                .font(AppType.callout.weight(.semibold))
+                                .foregroundStyle(Theme.ink)
                             Text(item.detail)
-                                .font(.caption2)
+                                .font(.system(size: 9.5, weight: .medium))
                                 .foregroundStyle(Theme.secondaryText)
                                 .multilineTextAlignment(.leading)
                         }
@@ -372,11 +371,14 @@ struct ProfileFormView: View {
                         .padding(12)
                         .background(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(draft.goalType == item ? Theme.accent.opacity(0.16) : Theme.surfaceStrong)
+                                .fill(draft.goalType == item ? Theme.cobalt.opacity(0.08) : Theme.paper)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(draft.goalType == item ? Theme.accent : Color.clear, lineWidth: 1)
+                                .strokeBorder(
+                                    draft.goalType == item ? Theme.cobalt : Theme.stroke,
+                                    lineWidth: 1
+                                )
                         )
                     }
                     .buttonStyle(.plain)
@@ -413,11 +415,11 @@ struct ProfileFormView: View {
                 in: Date()...Calendar.current.date(byAdding: .year, value: 1, to: Date())!,
                 displayedComponents: .date
             )
-            .font(.subheadline)
+            .font(AppType.callout)
 
             if draft.bmi < 18.5 && draft.goalType == .loseFat {
                 Label("当前 BMI 低于 18.5，不建议减脂。请选择重塑体型或增肌。", systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.warning)
             }
         }
@@ -458,15 +460,15 @@ struct MetricSlider: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(title)
-                    .font(.subheadline)
+                    .font(AppType.callout)
                     .foregroundStyle(Theme.secondaryText)
                 Spacer()
                 Text("\(display)\(unit)")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.callout.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
             }
             Slider(value: $value, in: range, step: step)
-                .tint(Theme.accent)
+                .tint(Theme.cobalt)
         }
     }
 

@@ -34,18 +34,19 @@ struct WeekDietPlanView: View {
                     strategyCard
                     if isLoading {
                         ProgressView("AI 教练正在排本周饮食…")
-                            .tint(Theme.accent)
+                            .tint(Theme.cobalt)
                             .padding(.vertical, 24)
                     } else if let week {
                         weekCard(week)
                     } else if !errorMessage.isEmpty {
                         Text(errorMessage)
-                            .font(.caption)
+                            .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                             .card(padding: 14)
                     }
                 }
-                .padding(20)
+                .appPagePadding()
+                .padding(.top, 8)
                 .padding(.bottom, 24)
             }
             .background(AppBackground())
@@ -67,11 +68,19 @@ struct WeekDietPlanView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("把饮食计划排成一周")
-                .font(.system(size: 23, weight: .bold, design: .default))
-                .foregroundStyle(Theme.primaryText)
+            Text("MEAL PLAN / 本周饮食")
+                .font(AppType.overline)
+                .tracking(1.5)
+                .foregroundStyle(Theme.cobalt)
+
+            Text("把饮食排成一周")
+                .font(AppType.hero)
+                .tracking(-0.6)
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+
             Text("AI 教练会按目标、训练日和饮食策略排本周餐单；每道菜都可以点开看家常做法。AI 暂不可用时会自动回退模板。")
-                .font(.subheadline)
+                .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -81,12 +90,12 @@ struct WeekDietPlanView: View {
     private var foodGuide: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("每餐这样搭")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.primaryText)
+                .font(AppType.caption.weight(.semibold))
+                .foregroundStyle(Theme.ink)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 7) {
                     foodGuideChip("蛋白 1 掌心", icon: "fish.fill", color: Theme.blue)
-                    foodGuideChip("蔬菜 2 拳", icon: "leaf.fill", color: Theme.accent)
+                    foodGuideChip("蔬菜 2 拳", icon: "leaf.fill", color: Theme.cobalt)
                     foodGuideChip("主食 1 拳", icon: "takeoutbag.and.cup.and.straw.fill", color: Theme.warning)
                     foodGuideChip("油脂 1 拇指", icon: "drop.fill", color: Theme.tertiaryText)
                 }
@@ -97,7 +106,7 @@ struct WeekDietPlanView: View {
 
     private func foodGuideChip(_ text: String, icon: String, color: Color) -> some View {
         Label(text, systemImage: icon)
-            .font(.caption2.weight(.semibold))
+            .font(.system(size: 9.5, weight: .semibold))
             .foregroundStyle(Theme.secondaryText)
             .padding(.horizontal, 9)
             .padding(.vertical, 6)
@@ -107,8 +116,8 @@ struct WeekDietPlanView: View {
     private var strategyCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("饮食策略")
-                .font(.headline)
-                .foregroundStyle(Theme.primaryText)
+                .font(AppType.headline)
+                .foregroundStyle(Theme.ink)
 
             Picker("策略", selection: $strategy) {
                 ForEach(strategies, id: \.id) { item in
@@ -118,7 +127,7 @@ struct WeekDietPlanView: View {
             .pickerStyle(.segmented)
 
             Text(cautionText)
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -150,26 +159,26 @@ struct WeekDietPlanView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(week.strategy?.label ?? "本周计划")
-                    .font(.headline)
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.headline)
+                    .foregroundStyle(Theme.ink)
                 Text(week.generatedBy == "ai" ? "AI 生成" : "模板")
                     .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(week.generatedBy == "ai" ? Theme.accent : Theme.tertiaryText)
+                    .foregroundStyle(week.generatedBy == "ai" ? Theme.cobalt : Theme.tertiaryText)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 4)
                     .background(
-                        (week.generatedBy == "ai" ? Theme.accent : Theme.tertiaryText).opacity(0.10),
+                        (week.generatedBy == "ai" ? Theme.cobalt : Theme.tertiaryText).opacity(0.10),
                         in: Capsule()
                     )
                 Spacer()
                 Text("\(week.days.count) 天")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.tertiaryText)
             }
 
             if let warning = week.warning, !warning.isEmpty {
                 Text(warning)
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.warning)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -188,8 +197,8 @@ struct WeekDietPlanView: View {
                         ForEach(day.meals) { meal in
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("\(meal.name) · \(meal.kcal) kcal")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(Theme.primaryText)
+                                    .font(AppType.caption.weight(.semibold))
+                                    .foregroundStyle(Theme.ink)
 
                                 if let dishes = meal.dishes, !dishes.isEmpty {
                                     VStack(alignment: .leading, spacing: 2) {
@@ -206,7 +215,7 @@ struct WeekDietPlanView: View {
                                     }
                                 } else {
                                     Text(meal.items.joined(separator: "、"))
-                                        .font(.caption2)
+                                        .font(.system(size: 9.5, weight: .medium))
                                         .foregroundStyle(Theme.secondaryText)
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
@@ -217,23 +226,23 @@ struct WeekDietPlanView: View {
                 } label: {
                     HStack {
                         Text(day.title)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Theme.primaryText)
+                            .font(AppType.callout.weight(.semibold))
+                            .foregroundStyle(Theme.ink)
                         Spacer()
                         Text("\(day.targets.targetKcal ?? 0) kcal")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Theme.accent)
+                            .font(AppType.caption.weight(.semibold))
+                            .foregroundStyle(Theme.cobalt)
                     }
                 }
-                .tint(Theme.accent)
+                .tint(Theme.cobalt)
                 if day.id != week.days.last?.id {
-                    Divider().opacity(0.15)
+                    InkDivider()
                 }
             }
 
             if let caution = week.strategy?.caution, !caution.isEmpty {
                 Text(caution)
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
