@@ -34,20 +34,13 @@ struct WeekDietPlanView: View {
                         ProgressView("AI 教练正在排本周饮食…")
                             .tint(Theme.cobalt)
                             .padding(.vertical, 24)
-                    } else if let week {
-                        weekCard(week)
-                    } else if !errorMessage.isEmpty {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text(errorMessage)
-                                .font(AppType.caption)
-                                .foregroundStyle(Theme.secondaryText)
-                                .fixedSize(horizontal: false, vertical: true)
-                            Button("重试") {
-                                Task { await load() }
-                            }
-                            .buttonStyle(SecondaryButtonStyle())
+                    } else {
+                        if let week {
+                            weekCard(week)
                         }
-                        .card(padding: 14)
+                        if !errorMessage.isEmpty {
+                            errorCard
+                        }
                     }
                 }
                 .appPagePadding()
@@ -160,6 +153,20 @@ struct WeekDietPlanView: View {
         default:
             return "均衡策略，最稳；适合大多数人。"
         }
+    }
+
+    private var errorCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(errorMessage)
+                .font(AppType.caption)
+                .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("重试") {
+                Task { await load() }
+            }
+            .buttonStyle(SecondaryButtonStyle())
+        }
+        .card(padding: 14)
     }
 
     private func weekCard(_ week: RemoteDietWeek) -> some View {
