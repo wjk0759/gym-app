@@ -53,49 +53,40 @@ struct LoginView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            GeometryReader { proxy in
-                // Width, unlike height, does not change when the keyboard
-                // appears. This keeps the compact/regular layout stable during
-                // the keyboard animation.
-                let compact = proxy.size.width < AppLayout.compactWidthThreshold
+        GeometryReader { proxy in
+            // Width, unlike height, does not change when the keyboard
+            // appears. This keeps the compact/regular layout stable during
+            // the keyboard animation.
+            let compact = proxy.size.width < AppLayout.compactWidthThreshold
 
-                ZStack {
-                    AppBackground()
+            ZStack {
+                AppBackground()
 
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            Spacer(minLength: 8)
-
-                            header(compact: compact)
-                            Spacer(minLength: compact ? 10 : 16)
-                            headline(compact: compact)
-                            Spacer(minLength: compact ? 10 : 16)
-
-                            loginCard(compact: compact)
-
-                            Spacer(minLength: compact ? 10 : 14)
-                            socialSection(compact: compact)
-                            Spacer(minLength: compact ? 8 : 12)
-                            consentFooter
-                            devServerLink
-                                .padding(.top, 6)
-
-                            Spacer(minLength: 8)
-                        }
-                        .padding(.horizontal, compact ? 18 : 22)
-                        .padding(.bottom, 6)
-                        .frame(maxWidth: 480)
-                        .frame(maxWidth: .infinity)
-                        .frame(minHeight: proxy.size.height, alignment: .top)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: compact ? 12 : 16) {
+                        header(compact: compact)
+                        headline(compact: compact)
+                        loginCard(compact: compact)
+                        socialSection(compact: compact)
+                        consentFooter
+                        devServerLink
+                            .padding(.top, 2)
                     }
-                    .scrollIndicators(.hidden)
-                    .scrollDismissesKeyboard(.interactively)
-                    .scrollBounceBehavior(.always)
+                    .padding(.horizontal, compact ? 18 : 22)
+                    .padding(.top, compact ? 12 : 24)
+                    .padding(.bottom, 24)
+                    .frame(maxWidth: 480)
+                    .frame(maxWidth: .infinity)
+                }
+                .scrollIndicators(.hidden)
+                .scrollDismissesKeyboard(.interactively)
+                .scrollBounceBehavior(.always)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if focusedField != nil {
+                    keyboardDoneBar
                 }
             }
-            .toolbar(.hidden, for: .navigationBar)
-            .keyboardDoneToolbar { focusedField = nil }
             .sheet(item: $legal) { kind in
                 LegalDocumentView(kind: kind)
             }
@@ -140,6 +131,25 @@ struct LoginView: View {
                 localError = nil
                 auth.clearError()
             }
+        }
+    }
+
+    private var keyboardDoneBar: some View {
+        HStack {
+            Spacer()
+            Button("完成") {
+                focusedField = nil
+            }
+            .font(AppType.callout.weight(.semibold))
+            .foregroundStyle(Theme.cobalt)
+            .frame(minWidth: 64, minHeight: 44)
+        }
+        .padding(.horizontal, 12)
+        .background(Theme.chrome)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(Theme.stroke)
+                .frame(height: 1)
         }
     }
 
@@ -324,7 +334,6 @@ struct LoginView: View {
                 stroke: focused ? Theme.cobalt.opacity(0.38) : Theme.stroke
             )
         }
-        .animation(Motion.quick, value: focused)
     }
 
     private var phoneFields: some View {
@@ -600,43 +609,53 @@ struct LoginView: View {
                 }
             }
 
-            SignInWithAppleButton(.signIn) { request in
-                request.requestedScopes = [.fullName, .email]
-            } onCompletion: { result in
-                switch result {
-                case .success(let authorization):
-                    guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
-                          let data = credential.identityToken,
-                          let token = String(data: data, encoding: .utf8) else {
-                        localError = "Apple 登录未返回身份凭证"
-                        return
-                    }
-                    let name = [credential.fullName?.givenName, credential.fullName?.familyName]
-                        .compactMap { $0 }
-                        .joined()
-                    Task {
-                        do {
-                            try await auth.loginWithApple(
-                                identityToken: token,
-                                fullName: name.isEmpty ? nil : name
-                            )
-                        } catch {
-                            localError = error.localizedDescription
+            if consent {
+                SignInWithAppleButton(.signIn) { request in
+                    request.requestedScopes = [.fullName, .email]
+                } onCompletion: { result in
+                    switch result {
+                    case .success(let authorization):
+                        guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                              let data = credential.identityToken,
+                              let token = String(data: data, encoding: .utf8) else {
+                            localError = "Apple 登录未返回身份凭证"
+                            return
                         }
+                        let name = [credential.fullName?.givenName, credential.fullName?.familyName]
+                            .compactMap { $0 }
+                            .joined()
+                        Task {
+                            do {
+                                try await auth.loginWithApple(
+                                    identityToken: token,
+                                    fullName: name.isEmpty ? nil : name
+                                )
+                            } catch {
+                                localError = error.localizedDescription
+                            }
+                        }
+                    case .failure(let error):
+                        if (error as? ASAuthorizationError)?.code != .canceled {
+                            localError = "Apple 登录失败：\(error.localizedDescription)"
+                        }
+                    @unknown default:
+                        break
                     }
-                case .failure(let error):
-                    if (error as? ASAuthorizationError)?.code != .canceled {
-                        localError = "Apple 登录失败：\(error.localizedDescription)"
-                    }
-                @unknown default:
-                    break
                 }
+                .signInWithAppleButtonStyle(.white)
+                .frame(height: compact ? 44 : 48)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .disabled(auth.isWorking)
+            } else {
+                Text("勾选下方协议后可使用 Apple 登录")
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .frame(maxWidth: .infinity, minHeight: compact ? 44 : 48)
+                    .background(
+                        Theme.ink.opacity(0.035),
+                        in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    )
             }
-            .signInWithAppleButtonStyle(.white)
-            .frame(height: compact ? 44 : 48)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .disabled(!consent || auth.isWorking)
-            .opacity(consent ? 1 : 0.5)
         }
     }
 
