@@ -297,7 +297,7 @@ struct NutritionView: View {
                 macroPill("蛋白", value: totals.protein, target: targets.protein, color: Theme.cobalt)
                 macroPill("碳水", value: totals.carbs, target: targets.carbs, color: Theme.warning)
                 macroPill("脂肪", value: totals.fat, target: targets.fat, color: Theme.coral)
-                macroPill("纤维", value: totals.fiber, target: targets.fiber, color: Theme.cobaltSecondary)
+                macroPill("纤维", value: totals.fiber, target: targets.fiber, color: Theme.lime)
             }
             HStack(spacing: 6) {
                 Text("BMR \(targets.bmr) kcal")
@@ -396,7 +396,7 @@ struct NutritionView: View {
         logs: [FoodLog]
     ) -> some View {
         let loggedKcal = logs.reduce(0.0) { $0 + $1.kcal }
-        let colors: [Color] = [Theme.cobalt, Theme.lime, Theme.coral, Theme.cobaltWarm]
+        let colors: [Color] = [Theme.cobalt, Theme.lime, Theme.coral, Theme.accentWarm]
         let color = colors[index % colors.count]
 
         return notebookPage(accent: color) {
@@ -463,7 +463,7 @@ struct NutritionView: View {
             case .breakfast: return Theme.cobalt
             case .lunch: return Theme.lime
             case .dinner: return Theme.coral
-            case .snack: return Theme.cobaltWarm
+            case .snack: return Theme.accentWarm
             }
         }()
 
