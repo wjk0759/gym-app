@@ -59,28 +59,28 @@ struct WorkoutSessionView: View {
                 if showResumeBanner {
                     HStack(spacing: 8) {
                         Image(systemName: "arrow.clockwise.circle.fill")
-                            .foregroundStyle(Theme.accent)
+                            .foregroundStyle(Theme.cobalt)
                         Text("已恢复上次进度：\(logs.count) 组")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Theme.primaryText)
+                            .font(AppType.caption.weight(.semibold))
+                            .foregroundStyle(Theme.ink)
                         Spacer(minLength: 4)
                         Button("知道了") {
                             withAnimation(Motion.quick) {
                                 showResumeBanner = false
                             }
                         }
-                        .font(.caption2.weight(.semibold))
+                        .font(AppType.micro)
                         .foregroundStyle(Theme.tertiaryText)
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 9)
                     .background(
-                        Theme.accent.opacity(0.1),
+                        Theme.cobalt.opacity(0.07),
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(Theme.accent.opacity(0.22), lineWidth: 1)
+                            .strokeBorder(Theme.cobalt.opacity(0.20), lineWidth: 1)
                     )
                     .appPagePadding()
                     .padding(.top, 8)
@@ -205,21 +205,37 @@ struct WorkoutSessionView: View {
     private var progressHeader: some View {
         let totalSets = plannedTotalSets
         let progress = Double(logs.count) / Double(max(1, totalSets))
+        let exerciseCount = activeDay.exercises.count
 
-        return VStack(spacing: 8) {
-            HStack {
-                Text("\(logs.count)/\(totalSets) 组")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(Theme.secondaryText)
-                    .contentTransition(.numericText())
-                Spacer()
-                Text("\(min(index + 1, activeDay.exercises.count))/\(activeDay.exercises.count) 动作")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(Theme.tertiaryText)
-                    .contentTransition(.numericText())
+        return VStack(spacing: 9) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("SESSION / 训练进度")
+                        .font(AppType.overline)
+                        .tracking(1.2)
+                        .foregroundStyle(Theme.cobalt)
+                    Text(day.title)
+                        .font(AppType.caption.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 4)
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("\(logs.count)/\(totalSets) 组")
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Theme.ink)
+                        .contentTransition(.numericText())
+                    Text("\(min(index + 1, exerciseCount))/\(exerciseCount) 动作")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(Theme.tertiaryText)
+                        .contentTransition(.numericText())
+                }
             }
+
             ProgressView(value: min(1, progress))
-                .tint(Theme.accent)
+                .tint(Theme.cobalt)
                 .scaleEffect(x: 1, y: 1.5, anchor: .center)
                 .motionAnimation(Motion.smooth, value: progress)
         }
@@ -269,43 +285,65 @@ struct WorkoutSessionView: View {
     }
 
     private func exerciseCard(_ exercise: PlanExercise) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 11) {
             HStack {
                 Text("动作 \(index + 1)/\(activeDay.exercises.count)")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
-                Spacer()
+                    .font(AppType.overline)
+                    .tracking(1.1)
+                    .foregroundStyle(Theme.cobalt)
+
+                Spacer(minLength: 4)
+
                 if let equipment = exercise.exercise?.equipment {
                     Text(equipment.label)
-                        .font(.caption)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                 }
             }
 
             Text(exercise.displayName)
-                .font(.title2.weight(.bold))
-                .foregroundStyle(Theme.primaryText)
+                .font(AppType.hero)
+                .tracking(-0.6)
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
 
-            Text(exercise.targetText)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(Theme.accent)
+            HStack(spacing: 6) {
+                Text(exercise.targetText)
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.onAccent)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Theme.lime, in: Capsule(style: .continuous))
+
+                if periodMode == .light {
+                    Text("经期轻量")
+                        .font(AppType.micro)
+                        .foregroundStyle(Theme.coral)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 4)
+                        .background(Theme.coral.opacity(0.10), in: Capsule(style: .continuous))
+                }
+
+                Spacer(minLength: 0)
+            }
 
             if periodMode == .light {
-                Text("经期轻量版：自动少 1 组、负重约 80%。腹痛明显时请改为散步或休息。")
-                    .font(.caption)
-                    .foregroundStyle(Theme.warning)
+                Text("自动少 1 组、负重约 80%。腹痛明显时请改为散步或休息。")
+                    .font(AppType.micro)
+                    .foregroundStyle(Theme.coral)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             if let instructions = exercise.exercise?.instructions {
                 Text(instructions)
-                    .font(.subheadline)
+                    .font(AppType.callout)
                     .foregroundStyle(Theme.secondaryText)
+                    .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .card()
+        .editorialCard(accent: Theme.lime)
     }
 
     private func setCard(_ exercise: PlanExercise) -> some View {
@@ -313,25 +351,31 @@ struct WorkoutSessionView: View {
         let isBodyweight = exercise.exercise?.equipment == .bodyweight
 
         return VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 8) {
-                Text("第 \(min(done + 1, exercise.sets)) 组 / 共 \(exercise.sets) 组")
-                    .font(.headline)
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("第 \(min(done + 1, exercise.sets)) 组")
+                        .font(AppType.title)
+                        .foregroundStyle(Theme.ink)
+                    Text("共 \(exercise.sets) 组 · 目标 RPE \(exercise.rpe, specifier: "%.1f")")
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+
                 Spacer(minLength: 4)
-                Text("目标 RPE \(exercise.rpe, specifier: "%.1f")")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
+
                 Button {
                     openAdjustSheet(exercise)
                 } label: {
                     Text("调整")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Theme.accent)
+                        .font(AppType.micro)
+                        .foregroundStyle(Theme.cobalt)
                         .padding(.horizontal, 10)
                         .frame(height: 30)
-                        .background(
-                            Theme.accent.opacity(0.12),
-                            in: Capsule(style: .continuous)
-                        )
+                        .background(Theme.paper, in: Capsule(style: .continuous))
+                        .overlay {
+                            Capsule(style: .continuous)
+                                .strokeBorder(Theme.stroke, lineWidth: 1)
+                        }
                 }
                 .buttonStyle(SubtlePressStyle(scale: 0.95))
                 .accessibilityHint("调整目标组数、次数、重量和休息")
@@ -349,13 +393,18 @@ struct WorkoutSessionView: View {
                         reps = last.reps
                         Haptics.select()
                     }
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .font(AppType.micro)
+                    .foregroundStyle(Theme.cobalt)
                     .buttonStyle(SubtlePressStyle())
                     .accessibilityLabel("使用上次的重量和次数")
                 }
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
+                .padding(9)
+                .background(
+                    Theme.ink.opacity(0.035),
+                    in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                )
             }
 
             if let best = store.bestSet(for: exercise.slug) {
@@ -364,18 +413,18 @@ struct WorkoutSessionView: View {
                         .foregroundStyle(Theme.warning)
                     Text("历史最佳 \(best.weightKG > 0 ? "\(best.weightKG.formatted()) kg × \(best.reps)" : "自重 × \(best.reps)")")
                 }
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
             }
 
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("本组数据")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.headline)
+                        .foregroundStyle(Theme.ink)
                     Spacer(minLength: 4)
                     Text("点数字输入 · 长按连续调")
-                        .font(.caption2)
+                        .font(.system(size: 9, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
@@ -400,12 +449,12 @@ struct WorkoutSessionView: View {
                         Image(systemName: "figure.strengthtraining.functional")
                         Text("自重动作，直接填写本组实际次数")
                     }
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
                     .padding(.horizontal, 10)
                     .frame(height: 32)
                     .background(
-                        Theme.surfaceStrong,
+                        Theme.ink.opacity(0.035),
                         in: RoundedRectangle(cornerRadius: 10, style: .continuous)
                     )
                 }
@@ -426,20 +475,20 @@ struct WorkoutSessionView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text("主观强度 RPE")
-                        .font(.subheadline)
+                        .font(AppType.caption.weight(.semibold))
                         .foregroundStyle(Theme.secondaryText)
                     Spacer()
                     Text(rpe.formatted(.number.precision(.fractionLength(1))))
-                        .font(.subheadline.weight(.semibold).monospacedDigit())
-                        .foregroundStyle(Theme.accent)
+                        .font(.system(size: 13, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Theme.cobalt)
                         .contentTransition(.numericText())
                 }
                 .motionAnimation(Motion.quick, value: rpe)
                 Slider(value: $rpe, in: 6...10, step: 0.5)
-                    .tint(Theme.accent)
+                    .tint(Theme.cobalt)
                     .sensoryFeedback(.selection, trigger: Int(rpe * 2))
                 Text("6 = 很轻松 · 8 = 还能做 2 次 · 10 = 力竭")
-                    .font(.caption2)
+                    .font(.system(size: 9, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
 
@@ -450,8 +499,8 @@ struct WorkoutSessionView: View {
                     logs.removeLast()
                     restRemaining = nil
                 }
-                .font(.caption)
-                .foregroundStyle(Theme.warning)
+                .font(AppType.caption.weight(.semibold))
+                .foregroundStyle(Theme.coral)
             }
         }
         .card()
@@ -460,7 +509,7 @@ struct WorkoutSessionView: View {
     private var weightStepPicker: some View {
         HStack(spacing: 6) {
             Text("每次调整")
-                .font(.caption2)
+                .font(.system(size: 9, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
 
             ForEach([1.25, 2.5, 5.0], id: \.self) { step in
@@ -469,19 +518,19 @@ struct WorkoutSessionView: View {
                     weightStep = step
                 } label: {
                     Text("\(weightStepText(step)) kg")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(weightStep == step ? Theme.onAccent.opacity(0.9) : Theme.secondaryText)
+                        .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(weightStep == step ? Theme.paper : Theme.secondaryText)
                         .padding(.horizontal, 10)
                         .frame(height: 34)
                         .background(
                             Capsule(style: .continuous)
-                                .fill(weightStep == step ? Theme.accent : Theme.surfaceStrong)
+                                .fill(weightStep == step ? Theme.ink : Theme.paper)
                         )
                         .overlay(
                             Capsule(style: .continuous)
-                                .stroke(
-                                    weightStep == step ? Color.clear : Color.white.opacity(0.07),
-                                    lineWidth: 0.8
+                                .strokeBorder(
+                                    weightStep == step ? Theme.ink : Theme.stroke,
+                                    lineWidth: 1
                                 )
                         )
                 }
@@ -498,23 +547,24 @@ struct WorkoutSessionView: View {
     private func trainingTipCard(_ exercise: PlanExercise) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("训练提示")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.primaryText)
+                Text("教练提示")
+                    .font(AppType.overline)
+                    .tracking(0.9)
+                    .foregroundStyle(Theme.cobalt)
                 Spacer()
                 Text("目标 RPE \(exercise.rpe, specifier: "%.1f")")
-                    .font(.caption2)
+                    .font(.system(size: 9, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
 
             Text("保留 1–2 次余力，组间休息 \(exercise.restSec) 秒；动作变形就降重量，不要为了完成次数牺牲动作质量。")
-                .font(.caption)
+                .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
             if let last = store.lastSet(for: exercise.slug) {
                 Text("上次：\(last.weightKG > 0 ? String(format: "%.1f kg", last.weightKG) : "自重") × \(last.reps) 次")
-                    .font(.caption2)
+                    .font(.system(size: 9, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
         }
@@ -530,15 +580,15 @@ struct WorkoutSessionView: View {
                     Button("跳过这个动作") {
                         advance()
                     }
-                    .font(.caption)
+                    .font(AppType.caption.weight(.medium))
                     .foregroundStyle(Theme.tertiaryText)
 
                     Spacer()
 
                     if done > 0 {
                         Text("已完成 \(done) 组")
-                            .font(.caption)
-                            .foregroundStyle(Theme.accent)
+                            .font(AppType.caption.weight(.semibold))
+                            .foregroundStyle(Theme.cobalt)
                     }
                 }
 
@@ -592,14 +642,14 @@ struct WorkoutSessionView: View {
                 Circle()
                     .trim(from: 0, to: progress)
                     .stroke(
-                        urgent ? Theme.warning : Theme.accent,
+                        urgent ? Theme.coral : Theme.cobalt,
                         style: StrokeStyle(lineWidth: 5, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
                     .animation(.linear(duration: 1), value: remaining)
                 Text("\(remaining)")
-                    .font(.system(size: 15, weight: .bold, design: .default).monospacedDigit())
-                    .foregroundStyle(Theme.primaryText)
+                    .font(.system(size: 16, weight: .black, design: .monospaced))
+                    .foregroundStyle(Theme.ink)
                     .contentTransition(.numericText())
             }
             .frame(width: 52, height: 52)
@@ -607,11 +657,11 @@ struct WorkoutSessionView: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("组间休息")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.headline)
+                    .foregroundStyle(Theme.ink)
                 Text(urgent ? "马上开始下一组" : "呼吸放松，保持动作质量")
-                    .font(.caption2)
-                    .foregroundStyle(urgent ? Theme.warning : Theme.secondaryText)
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(urgent ? Theme.coral : Theme.secondaryText)
             }
 
             Spacer(minLength: 4)
@@ -620,30 +670,54 @@ struct WorkoutSessionView: View {
                 Haptics.tap()
                 restRemaining = nil
             }
-            .font(.footnote.weight(.semibold))
-            .foregroundStyle(Theme.accent)
+            .font(AppType.caption.weight(.semibold))
+            .foregroundStyle(Theme.cobalt)
             .buttonStyle(SubtlePressStyle())
         }
-        .card(padding: 14)
+        .padding(14)
+        .background(
+            Theme.cobalt.opacity(0.06),
+            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Theme.cobalt.opacity(0.18), lineWidth: 1)
+        }
     }
 
     // MARK: - 总结
 
     private var summaryCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(isFullSession ? "训练完成" : "本次训练记录")
-                .font(.title2.weight(.bold))
-                .foregroundStyle(Theme.primaryText)
+            VStack(alignment: .leading, spacing: 5) {
+                Text("SESSION / 总结")
+                    .font(AppType.overline)
+                    .tracking(1.2)
+                    .foregroundStyle(Theme.cobalt)
+                Text(isFullSession ? "训练完成" : "本次训练记录")
+                    .font(AppType.hero)
+                    .tracking(-0.6)
+                    .foregroundStyle(Theme.ink)
+            }
 
             if !isFullSession {
                 Text("已完成 \(logs.count)/\(plannedTotalSets) 组；保存后日历只记录这些完成组，不会算成整个训练日。")
-                    .font(.caption)
-                    .foregroundStyle(Theme.warning)
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.coral)
                     .fixedSize(horizontal: false, vertical: true)
+                    .padding(10)
+                    .background(
+                        Theme.coral.opacity(0.07),
+                        in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            .strokeBorder(Theme.coral.opacity(0.20), lineWidth: 1)
+                    }
             }
 
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: 12) {
+                HStack(spacing: 8) {
                     summaryMetric("\(logs.count)", "完成组数")
                     summaryMetric("\(Int(logs.reduce(0.0) { $0 + $1.weightKG * Double($1.reps) }))", "总容量 kg")
                     summaryMetric("\(durationMinutes)", "分钟")
@@ -658,7 +732,7 @@ struct WorkoutSessionView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("今天感觉如何？")
-                    .font(.subheadline)
+                    .font(AppType.caption.weight(.semibold))
                     .foregroundStyle(Theme.secondaryText)
                 HStack(spacing: 8) {
                     ForEach(1...5, id: \.self) { value in
@@ -674,12 +748,12 @@ struct WorkoutSessionView: View {
                                 .padding(.vertical, 8)
                                 .background(
                                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .fill(feeling == value ? Theme.accent.opacity(0.18) : Theme.surfaceStrong)
+                                        .fill(feeling == value ? Theme.ink : Theme.paper)
                                 )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .stroke(
-                                            feeling == value ? Theme.accent.opacity(0.55) : Color.clear,
+                                        .strokeBorder(
+                                            feeling == value ? Theme.ink : Theme.stroke,
                                             lineWidth: 1
                                         )
                                 )
@@ -694,20 +768,25 @@ struct WorkoutSessionView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text("训练心得（可选）")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.caption.weight(.semibold))
+                        .foregroundStyle(Theme.secondaryText)
                     Spacer()
                     Text("\(notes.count)/300")
-                        .font(.caption2)
+                        .font(.system(size: 9, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                 }
                 TextField("今天状态、动作感受、下次注意什么…", text: $notes, axis: .vertical)
+                    .font(AppType.callout)
                     .lineLimit(2...5)
                     .padding(11)
                     .background(
-                        Theme.surfaceStrong,
+                        Theme.ink.opacity(0.035),
                         in: RoundedRectangle(cornerRadius: 11, style: .continuous)
                     )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            .strokeBorder(Theme.stroke, lineWidth: 1)
+                    }
                     .onChange(of: notes) { _, value in
                         if value.count > 300 {
                             notes = String(value.prefix(300))
@@ -716,25 +795,31 @@ struct WorkoutSessionView: View {
             }
 
             Text("记录会用于下一次计划调整。至少完成一组再保存，AI 才能判断负荷。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .card()
+        .editorialCard(accent: Theme.lime)
     }
 
     private func summaryMetric(_ value: String, _ title: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(value)
-                .font(.title3.weight(.bold).monospacedDigit())
-                .foregroundStyle(Theme.accent)
+                .font(.system(size: 21, weight: .bold, design: .monospaced))
+                .foregroundStyle(Theme.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.65)
                 .contentTransition(.numericText())
             Text(title)
-                .font(.caption2)
-                .foregroundStyle(Theme.secondaryText)
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(Theme.tertiaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
-        .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(
+            Theme.ink.opacity(0.035),
+            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+        )
         .motionAnimation(Motion.quick, value: value)
     }
 
@@ -983,15 +1068,16 @@ struct WorkoutSessionView: View {
         return NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 15) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("本次训练")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(Theme.accent)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("SESSION / 调整")
+                            .font(AppType.overline)
+                            .tracking(1.2)
+                            .foregroundStyle(Theme.cobalt)
                         Text(currentExercise?.displayName ?? "调整当前动作")
-                            .font(.title3.weight(.bold))
-                            .foregroundStyle(Theme.primaryText)
+                            .font(AppType.title)
+                            .foregroundStyle(Theme.ink)
                         Text("只调整这次训练的目标，不会改动长期计划。降低目标组数后会直接进入下一个动作。")
-                            .font(.caption)
+                            .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -1025,7 +1111,7 @@ struct WorkoutSessionView: View {
                     }
 
                     Text("重量为 0 表示自重；已完成 \(doneCount) 组。")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
 
                     Button("保存调整") {
@@ -1050,6 +1136,7 @@ struct WorkoutSessionView: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .presentationBackground(Theme.background)
     }
 
 

@@ -48,7 +48,7 @@ struct WheelPickerField<Value: Hashable>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.system(size: 10.5))
+                .font(.system(size: 9.5, weight: .semibold))
                 .foregroundStyle(Theme.tertiaryText)
                 .lineLimit(1)
 
@@ -60,7 +60,7 @@ struct WheelPickerField<Value: Hashable>: View {
                 HStack(spacing: 4) {
                     Text(display(selection))
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Theme.primaryText)
+                        .foregroundStyle(Theme.ink)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                     Spacer(minLength: 0)
@@ -73,7 +73,7 @@ struct WheelPickerField<Value: Hashable>: View {
                 .background {
                     SoftSurface(
                         cornerRadius: 10,
-                        tint: Theme.surfaceStrong,
+                        tint: Theme.paper,
                         stroke: Theme.stroke
                     )
                 }
@@ -169,19 +169,16 @@ struct AnimatedSegmentedControl<Item: Hashable>: View {
                 } label: {
                     Text(label(item))
                         .font(AppType.chip)
-                        .foregroundStyle(selection == item ? Theme.accent : Theme.secondaryText)
+                        .foregroundStyle(selection == item ? Theme.paper : Theme.secondaryText)
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 9)
                         .background {
                             if selection == item {
-                                SoftSurface(
-                                    cornerRadius: 10,
-                                    tint: Theme.accent.opacity(0.16),
-                                    stroke: Theme.accent.opacity(0.38)
-                                )
-                                .matchedGeometryEffect(id: "segment", in: namespace)
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(Theme.ink)
+                                    .matchedGeometryEffect(id: "segment", in: namespace)
                             }
                         }
                 }
@@ -193,7 +190,7 @@ struct AnimatedSegmentedControl<Item: Hashable>: View {
         .background {
             SoftSurface(
                 cornerRadius: 13,
-                tint: Theme.surface,
+                tint: Theme.paper,
                 stroke: Theme.stroke
             )
         }
@@ -208,7 +205,7 @@ struct WeightInputField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.system(size: 10.5))
+                .font(.system(size: 9.5, weight: .semibold))
                 .foregroundStyle(Theme.tertiaryText)
                 .lineLimit(1)
 
@@ -216,8 +213,8 @@ struct WeightInputField: View {
                 TextField("0", value: $weight, format: .number.precision(.fractionLength(0...1)))
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.center)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(Theme.ink)
 
                 Text("kg")
                     .font(.system(size: 10, weight: .semibold))
@@ -228,7 +225,7 @@ struct WeightInputField: View {
             .background {
                 SoftSurface(
                     cornerRadius: 10,
-                    tint: Theme.surfaceStrong,
+                    tint: Theme.paper,
                     stroke: Theme.stroke
                 )
             }
@@ -270,7 +267,7 @@ struct WorkoutValueEntrySheet: View {
         NavigationStack {
             VStack(spacing: 18) {
                 Text(footnote)
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -281,30 +278,30 @@ struct WorkoutValueEntrySheet: View {
                         .keyboardType(allowsDecimal ? .decimalPad : .numberPad)
                         .focused($isFocused)
                         .multilineTextAlignment(.center)
-                        .font(.system(size: 54, weight: .heavy, design: .default).monospacedDigit())
-                        .foregroundStyle(Theme.primaryText)
-                        .tint(Theme.accent)
+                        .font(.system(size: 54, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(Theme.ink)
+                        .tint(Theme.cobalt)
                         .frame(maxWidth: 220)
                         .onSubmit { save() }
 
                     Text(unit)
-                        .font(.title3.weight(.semibold))
+                        .font(AppType.title)
                         .foregroundStyle(Theme.tertiaryText)
                 }
                 .padding(.vertical, 8)
                 .frame(maxWidth: .infinity)
                 .background(
-                    Theme.surfaceStrong,
+                    Theme.paper,
                     in: RoundedRectangle(cornerRadius: 18, style: .continuous)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Theme.stroke, lineWidth: 1)
+                        .strokeBorder(Theme.ink.opacity(0.16), lineWidth: 1.2)
                 )
                 .padding(.horizontal, 20)
 
                 Text("有效范围 \(rangeText)")
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
 
                 Spacer(minLength: 0)

@@ -197,12 +197,12 @@ struct ValueStepperControl: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(Theme.ink)
                 Spacer(minLength: 4)
                 if let hint {
                     Text(hint)
-                        .font(.caption2)
+                        .font(.system(size: 9, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
@@ -245,15 +245,15 @@ struct ValueStepperControl: View {
     private var valueDisplay: some View {
         HStack(alignment: .firstTextBaseline, spacing: 3) {
             Text(value)
-                .font(.system(size: 30, weight: .bold, design: .default).monospacedDigit())
-                .foregroundStyle(Theme.primaryText)
+                .font(.system(size: 30, weight: .bold, design: .monospaced))
+                .foregroundStyle(Theme.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
                 .contentTransition(.numericText())
                 .motionAnimation(Motion.quick, value: value)
             if let unit {
                 Text(unit)
-                    .font(.caption.weight(.semibold))
+                    .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(Theme.tertiaryText)
             }
         }
@@ -262,7 +262,7 @@ struct ValueStepperControl: View {
         .background {
             SoftSurface(
                 cornerRadius: 14,
-                tint: Theme.surfaceStrong,
+                tint: Theme.ink.opacity(0.035),
                 stroke: Theme.stroke
             )
         }
@@ -277,13 +277,13 @@ struct ValueStepperControl: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 20, weight: .bold))
-                .foregroundStyle(enabled ? Theme.accent : Theme.tertiaryText.opacity(0.35))
+                .foregroundStyle(enabled ? Theme.cobalt : Theme.tertiaryText.opacity(0.35))
                 .frame(width: 54, height: 52)
                 .background {
                     SoftSurface(
                         cornerRadius: 15,
-                        tint: enabled ? Theme.accent.opacity(0.13) : Theme.surface,
-                        stroke: enabled ? Theme.accent.opacity(0.28) : Theme.stroke
+                        tint: enabled ? Theme.cobalt.opacity(0.08) : Theme.paper,
+                        stroke: enabled ? Theme.cobalt.opacity(0.24) : Theme.stroke
                     )
                 }
                 .contentShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
