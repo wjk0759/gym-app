@@ -190,9 +190,6 @@ struct PlanReviewView: View {
                 detailMetric(formatMinutes(review.current.averageSessionMinutes), "单次分钟")
                 detailMetric("\(review.current.sessions.count)", "完成训练")
             }
-            Text("平均每日时长 = 周期内训练总分钟 ÷ 周期天数。")
-                .font(.system(size: 9, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
         }
         .card()
     }

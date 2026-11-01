@@ -182,9 +182,6 @@ struct PlanScheduleView: View {
                     Text("训练日")
                         .font(AppType.headline)
                         .foregroundStyle(Theme.ink)
-                    Text("按周选择，点一下切换")
-                        .font(.system(size: 9.5, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
                 }
 
                 Spacer(minLength: 4)

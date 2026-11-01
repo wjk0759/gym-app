@@ -72,11 +72,6 @@ struct EquipmentLibraryView: View {
                     libraryList(items: items, pinned: pinned)
                 }
 
-                Text("器械库会作为 AI 生成计划的可用来源。删除器械不会影响历史训练记录。")
-                    .font(.system(size: 9.5, weight: .medium))
-                    .foregroundStyle(Theme.tertiaryText)
-                    .lineSpacing(2)
-                    .padding(.horizontal, 4)
             }
             .padding(20)
             .padding(.bottom, 24)
@@ -154,9 +149,6 @@ struct EquipmentLibraryView: View {
                             .foregroundStyle(Theme.secondaryText)
                     }
 
-                    Text("教学视频与 AI 计划会优先读取这里")
-                        .font(.system(size: 9.5, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
                 }
 
                 Spacer(minLength: 0)
@@ -562,10 +554,6 @@ struct EquipmentSearchView: View {
     var body: some View {
         AppScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text("输入器械或动作名称，选中后直接加入器械库，并自动带上教学视频。")
-                    .font(AppType.caption)
-                    .foregroundStyle(Theme.secondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
 
                 TextField("例如：高位下拉、腿举", text: $query)
                     .focused($searchFocused)

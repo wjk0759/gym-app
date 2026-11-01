@@ -111,11 +111,6 @@ struct DiscoverView: View {
                         .foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    Text("识别器械后，直接给出动作、目标肌群和替代方案。")
-                        .font(AppType.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                        .fixedSize(horizontal: false, vertical: true)
-
                     Label("拍器械", systemImage: "camera.fill")
                         .font(AppType.caption.weight(.bold))
                         .foregroundStyle(Theme.onAccent)
@@ -265,10 +260,6 @@ struct DiscoverView: View {
                     Text("动作点评")
                         .font(AppType.headline)
                         .foregroundStyle(Theme.ink)
-                    Text("拍一张，或发一段视频，让教练指出下一组最该改的一点。")
-                        .font(AppType.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer(minLength: 0)

@@ -423,11 +423,6 @@ struct WorkoutSessionView: View {
                         .font(AppType.headline)
                         .foregroundStyle(Theme.ink)
                     Spacer(minLength: 4)
-                    Text("点数字输入 · 长按连续调")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
                 }
 
                 if !isBodyweight {
@@ -1110,7 +1105,7 @@ struct WorkoutSessionView: View {
                         )
                     }
 
-                    Text("重量为 0 表示自重；已完成 \(doneCount) 组。")
+                    Text("重量为 0 表示自重。")
                         .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
 
@@ -1138,8 +1133,6 @@ struct WorkoutSessionView: View {
         .presentationDragIndicator(.visible)
         .presentationBackground(Theme.background)
     }
-
-
 
     private func feelingEmoji(_ value: Int) -> String {
         switch value {

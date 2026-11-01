@@ -178,9 +178,6 @@ struct PaywallView: View {
                 Label("已订阅练途 Pro", systemImage: "checkmark.seal.fill")
                     .font(AppType.headline)
                     .foregroundStyle(Theme.cobalt)
-                Text("所有 Pro 功能已解锁。")
-                    .font(AppType.caption)
-                    .foregroundStyle(Theme.secondaryText)
             }
             .frame(maxWidth: .infinity)
             .card()

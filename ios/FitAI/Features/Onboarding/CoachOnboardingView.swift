@@ -154,12 +154,6 @@ struct CoachOnboardingView: View {
 
             Spacer(minLength: 30)
 
-            Text("不是体检，是决定接下来 4 周怎么练。")
-                .font(AppType.caption)
-                .foregroundStyle(Theme.tertiaryText)
-                .multilineTextAlignment(.center)
-                .padding(.bottom, 18)
-
             Button {
                 Haptics.impact(.light)
                 withAnimation(Motion.smooth) {
@@ -634,9 +628,6 @@ struct CoachOnboardingView: View {
                     }
                 }
 
-            Text(noInjuries ? "有伤病就点下面的选项，会自动取消“没有任何伤病”。" : "选择所有需要避开的部位；越具体，计划越安全。")
-                .font(AppType.micro)
-                .foregroundStyle(Theme.tertiaryText)
         }
     }
 
@@ -906,13 +897,6 @@ struct CoachOnboardingView: View {
             Text(draft.goalType.detail)
                 .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
-
-            if draft.goalType != recommendedGoal {
-                Text("如果愿意，也可以改成 \(recommendedGoal.label)：\(recommendedGoal.detail)")
-                    .font(AppType.micro)
-                    .foregroundStyle(Theme.cobalt)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
 
             InkDivider()
 
@@ -1387,5 +1371,4 @@ struct CoachOnboardingView: View {
         noInjuries = draft.injuries.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }
-
 

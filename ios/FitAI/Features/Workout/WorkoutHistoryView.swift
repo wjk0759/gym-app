@@ -388,9 +388,6 @@ struct WorkoutHistoryView: View {
                     Text(selectedDate == nil ? "这个月还没有训练记录" : "这一天没有训练记录")
                         .font(AppType.callout.weight(.semibold))
                         .foregroundStyle(Theme.ink)
-                    Text("练完一次，这里就会多一页。")
-                        .font(AppType.caption)
-                        .foregroundStyle(Theme.tertiaryText)
                     if selectedDate == nil {
                         Button("回训练手账补记") {
                             store.selectedTab = 1

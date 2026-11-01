@@ -370,10 +370,6 @@ struct WeatherDetailSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Text("提醒会在 App 刷新天气时检查；如果没有后台常驻定位，关闭 App 后不会持续获取位置。")
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .card(padding: 14)
     }
@@ -432,10 +428,6 @@ struct WeatherDetailSheet: View {
             Text("天气数据：Open-Meteo")
                 .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
-            Text("界面会跟随系统深浅色、清晨/白天/傍晚/夜间和天气自动调整；雨天使用克制的背景雨线，避免高成本材质拖慢滚动。")
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .card(padding: 14)
     }

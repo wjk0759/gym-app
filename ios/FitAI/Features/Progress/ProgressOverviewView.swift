@@ -458,9 +458,6 @@ struct ProgressOverviewView: View {
                 )
             }
 
-            Text(recent.isEmpty ? "先完成一次训练，趋势会从这里开始。" : "稳定比一次练狠更重要。")
-                .font(AppType.caption)
-                .foregroundStyle(Theme.secondaryText)
         }
         .padding(16)
         .background(Theme.paper, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
@@ -494,9 +491,6 @@ struct ProgressOverviewView: View {
                 Text("最近 28 天记录了 \(days) 天")
                     .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
-                Text(days == 0 ? "不用完美，先记一天。" : "记录本身就是反馈。")
-                    .font(AppType.micro)
-                    .foregroundStyle(Theme.tertiaryText)
             }
             Spacer()
         }
@@ -542,9 +536,6 @@ struct ProgressOverviewView: View {
                     Text("训练复盘")
                         .font(AppType.headline)
                         .foregroundStyle(Theme.ink)
-                    Text("看动作、容量和 RPE 的详细变化")
-                        .font(AppType.micro)
-                        .foregroundStyle(Theme.secondaryText)
                 }
                 Spacer()
                 Image(systemName: "arrow.up.right")
@@ -562,13 +553,12 @@ struct ProgressOverviewView: View {
     }
 
     private var disclaimer: some View {
-        Text("趋势比单次数字更重要。体重会受水分、盐分和生理期影响；不要用一天的数字否定自己。")
+        Text("体重会受水分、盐分和生理期影响，看趋势即可。")
             .font(AppType.micro)
             .foregroundStyle(Theme.tertiaryText)
             .lineSpacing(2)
     }
 }
-
 
 // MARK: - Photo comparison
 
@@ -648,9 +638,6 @@ private struct ProgressPhotoCompareView: View {
                             .disabled(comparison == nil)
                         }
 
-                        Text("拖动中间的分隔线，看同一角度的变化。")
-                            .font(AppType.micro)
-                            .foregroundStyle(Theme.tertiaryText)
                     } else {
                         EmptyStateView(
                             icon: "photo",

@@ -592,10 +592,6 @@ struct EquipmentItemDetailView: View {
                 Text("保持轨迹稳定")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(Theme.ink)
-                Text("起始位置、发力方向和还原速度，比盲目加重量更重要。")
-                    .font(.system(size: 9.5))
-                    .foregroundStyle(Theme.secondaryText)
-                    .lineSpacing(1.5)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
@@ -958,7 +954,7 @@ struct EquipmentItemDetailView: View {
                 .padding(.top, 10)
             }
 
-            Text("每个点代表一次有该动作的训练记录。1RM 为 Epley 公式估算，仅用于趋势对比，不等于实测极限。")
+            Text("1RM 为估算值，仅用于趋势对比。")
                 .font(.system(size: 9))
                 .foregroundStyle(Theme.tertiaryText)
                 .lineSpacing(2)
@@ -1038,11 +1034,6 @@ struct EquipmentItemDetailView: View {
                     Text("动作细节还不确定？")
                         .font(AppType.callout.weight(.bold))
                         .foregroundStyle(Theme.ink)
-                    Text("让教练结合你的计划，解释起始位置、发力顺序和替代动作。")
-                        .font(AppType.micro)
-                        .foregroundStyle(Theme.secondaryText)
-                        .lineSpacing(1.5)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer(minLength: 4)

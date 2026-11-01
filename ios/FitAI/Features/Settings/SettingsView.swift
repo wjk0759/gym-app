@@ -708,10 +708,6 @@ struct SettingsView: View {
             .font(AppType.caption)
             .tint(Theme.cobalt)
 
-            Text("仅 Debug 生效，用于在没有 StoreKit 商品时预览 DeepSeek；正式版本仍按 Pro 权益限制。")
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
 #endif
 
             Text(AppConfig.apiBaseURL.absoluteString)

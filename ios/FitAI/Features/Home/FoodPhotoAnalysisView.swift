@@ -150,10 +150,6 @@ struct FoodPhotoAnalysisView: View {
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text("螺蛳粉、火锅、奶茶也可以识别。这里只估算热量，不评价食物好坏。")
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(Theme.cobalt)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -258,9 +254,6 @@ struct FoodPhotoAnalysisView: View {
                     Text("识别结果")
                         .font(AppType.headline)
                         .foregroundStyle(Theme.ink)
-                    Text("勾选实际吃下的食物，份量可以调")
-                        .font(.system(size: 9.5, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
                 }
                 Spacer()
                 Text("参考置信度 \(Int(confidence * 100))%")

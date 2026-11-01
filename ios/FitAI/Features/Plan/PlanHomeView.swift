@@ -531,9 +531,6 @@ struct PlanHomeView: View {
                     Text("月历")
                         .font(AppType.headline)
                         .foregroundStyle(Theme.ink)
-                    Text("点一天，翻到那页")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
                 }
 
                 Spacer(minLength: 4)
@@ -1406,11 +1403,6 @@ struct PlanHomeView: View {
                 ProgressView(value: progress)
                     .tint(Theme.cobalt)
             }
-
-            Text("计划不是合同。时间、恢复或疼痛有变化，先和教练说。")
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
 
             Button {
                 store.requestPlanAdjustment()

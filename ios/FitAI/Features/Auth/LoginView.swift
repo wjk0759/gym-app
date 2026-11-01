@@ -931,16 +931,6 @@ struct LegalDocumentView: View {
                         }
                     }
 
-                    Text("本页为应用内公示文本。正式上线版本将在 App Store 页面与 App 内同步更新，并由法务复核。")
-                        .font(.system(size: 9.5, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(
-                            Theme.ink.opacity(0.035),
-                            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        )
                 }
                 .padding(20)
                 .padding(.bottom, 24)

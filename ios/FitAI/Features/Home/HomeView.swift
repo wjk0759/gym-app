@@ -308,10 +308,6 @@ struct HomeView: View {
                             .foregroundStyle(Theme.primaryText)
                             .fixedSize(horizontal: false, vertical: true)
 
-                        Text("训练、饮食、动作点评，直接跟教练说。")
-                            .font(AppType.caption.weight(.semibold))
-                            .foregroundStyle(Theme.secondaryText)
-                            .fixedSize(horizontal: false, vertical: true)
                     }
 
                     Spacer(minLength: 0)

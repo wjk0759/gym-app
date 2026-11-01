@@ -57,10 +57,6 @@ struct GoalCardView: View {
             }
 
             HStack(spacing: 10) {
-                Text(goal.hasTodayMetric ? "今日已打卡 · 进度已更新" : "今天记录一次，进度自动更新")
-                    .font(.system(size: 9.5, weight: .medium))
-                    .foregroundStyle(goal.hasTodayMetric ? Theme.cobalt : Theme.tertiaryText)
-                    .lineLimit(1)
                 Spacer(minLength: 4)
                 Button("记录今日数据", action: onCheckIn)
                     .font(AppType.caption.weight(.semibold))

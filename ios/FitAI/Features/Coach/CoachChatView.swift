@@ -29,7 +29,6 @@ struct CoachChatView: View {
     @State private var selectedDietRecipe: DietRecipeSelection?
     @FocusState private var focused: Bool
 
-
     private var canSend: Bool {
         !store.isReplying
             && !isLoadingVideo
@@ -508,10 +507,6 @@ struct CoachChatView: View {
                     .foregroundStyle(Theme.cobalt)
             }
 
-            Text("点开每天看餐单，点菜名查看家常做法。")
-                .font(AppType.caption)
-                .foregroundStyle(Theme.secondaryText)
-
             if let warning = week.warning, !warning.isEmpty {
                 Text(warning)
                     .font(.system(size: 9.5, weight: .medium))
@@ -749,9 +744,6 @@ struct CoachChatView: View {
                         Text("我是你的教练")
                             .font(AppType.title)
                             .foregroundStyle(Theme.ink)
-                        Text("训练、饮食、恢复、计划都能直接说")
-                            .font(AppType.caption)
-                            .foregroundStyle(Theme.secondaryText)
                     }
                 }
 

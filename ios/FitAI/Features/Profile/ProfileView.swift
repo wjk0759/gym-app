@@ -129,9 +129,6 @@ struct ProfileView: View {
                         Text("练途 Pro")
                             .font(AppType.callout.weight(.semibold))
                             .foregroundStyle(Theme.ink)
-                        Text("AI 计划、教练与器械识别")
-                            .font(.system(size: 9.5, weight: .medium))
-                            .foregroundStyle(Theme.tertiaryText)
                     }
 
                     Spacer(minLength: 4)
@@ -362,9 +359,6 @@ struct ProfileView: View {
                     Text("体型照片分析")
                         .font(AppType.headline)
                         .foregroundStyle(Theme.ink)
-                    Text("拍一张照片，获取训练重点建议")
-                        .font(AppType.caption)
-                        .foregroundStyle(Theme.secondaryText)
                 }
 
                 Spacer(minLength: 0)

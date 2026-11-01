@@ -346,10 +346,6 @@ struct NutritionView: View {
                 Text("今日食谱")
                     .font(AppType.headline)
                     .foregroundStyle(Theme.ink)
-                Text(aiMeals == nil ? "按目标热量估算；也可以让 AI 按档案重排。" : "AI 按你的档案、体型和目标排餐。")
-                    .font(AppType.micro)
-                    .foregroundStyle(Theme.secondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 8)
             Button {
@@ -374,9 +370,6 @@ struct NutritionView: View {
                 Text("我的记录")
                     .font(AppType.headline)
                     .foregroundStyle(Theme.ink)
-                Text("吃过什么就记什么，不用给食物打分。")
-                    .font(AppType.micro)
-                    .foregroundStyle(Theme.secondaryText)
             }
             Spacer()
             Text("\(snapshot.logs.count) 条")
@@ -825,12 +818,6 @@ struct NutritionView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(aiMeals == nil ? "建议餐单" : "AI 饮食计划")
                         .font(AppType.headline)
-                    Text(aiMeals == nil
-                         ? "按目标热量估算；点右侧让 AI 按你的档案生成。"
-                         : "根据你的档案、体型和目标生成，可随时重新生成。")
-                        .font(AppType.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer(minLength: 8)
@@ -1018,9 +1005,6 @@ struct AddFoodView: View {
                                 .font(AppType.caption)
                                 .foregroundStyle(Theme.secondaryText)
                                 .lineLimit(3)
-                            Text("可以继续搜索添加，全部记好后点右上角「完成」。")
-                                .font(.system(size: 9.5, weight: .medium))
-                                .foregroundStyle(Theme.tertiaryText)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .card(padding: 12)
@@ -1037,11 +1021,6 @@ struct AddFoodView: View {
                             Theme.ink.opacity(0.035),
                             in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                         )
-
-                    Text("记录是为了了解，不是为了给食物打分。奶茶、火锅、螺蛳粉都可以记。")
-                        .font(.system(size: 9.5, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
-                        .fixedSize(horizontal: false, vertical: true)
 
                     if let food = selected {
                         selectedCard(food)
@@ -1255,9 +1234,6 @@ struct CustomFoodEntryView: View {
                         Text("这一份")
                             .font(AppType.headline)
                         field("重量（g）", text: $portion, placeholder: "例如：600", keyboard: .decimalPad)
-                        Text("如果吃的是一整碗/一整份，填整份重量。螺蛳粉通常约 500–700g。")
-                            .font(.system(size: 9.5, weight: .medium))
-                            .foregroundStyle(Theme.tertiaryText)
                     }
                     .card(padding: 16)
 
@@ -1276,9 +1252,6 @@ struct CustomFoodEntryView: View {
                             field("碳水（g）", text: $carbs, placeholder: "可选", keyboard: .decimalPad)
                             field("脂肪（g）", text: $fat, placeholder: "可选", keyboard: .decimalPad)
                         }
-                        Text("这些数值会按“这一份”换算成每 100g 保存，下次搜索这个食物时可以直接复用。")
-                            .font(.system(size: 9.5, weight: .medium))
-                            .foregroundStyle(Theme.tertiaryText)
                     }
                     .card(padding: 16)
 
@@ -1293,10 +1266,6 @@ struct CustomFoodEntryView: View {
                     }
                     .buttonStyle(PrimaryButtonStyle())
 
-                    Text("没有“好食物/坏食物”。记录只是帮你了解今天吃了什么。")
-                        .font(.system(size: 9.5, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
-                        .frame(maxWidth: .infinity, alignment: .center)
                 }
                 .padding(20)
                 .padding(.bottom, 20)

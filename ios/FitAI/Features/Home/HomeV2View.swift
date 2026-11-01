@@ -642,9 +642,6 @@ struct HomeV2View: View {
                             .font(AppType.micro)
                             .foregroundStyle(Theme.tertiaryText)
                     }
-                    Text("计划不会因为忙就作废。可以顺延，也可以明确跳过。")
-                        .font(AppType.caption)
-                        .foregroundStyle(Theme.secondaryText)
                     HStack(spacing: 14) {
                         Button("顺延这次") { store.deferPlanDay(first) }
                             .font(AppType.caption.weight(.semibold))
@@ -684,9 +681,6 @@ struct HomeV2View: View {
                     .font(AppType.headline)
                     .foregroundStyle(Theme.ink)
                 Spacer()
-                Text("展开")
-                    .font(AppType.micro)
-                    .foregroundStyle(Theme.tertiaryText)
             }
             .padding(.vertical, 4)
         }

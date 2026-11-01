@@ -104,10 +104,6 @@ struct PeriodScheduleView: View {
             Text("仅适用于女性用户")
                 .font(AppType.headline)
                 .foregroundStyle(Theme.ink)
-            Text("经期安排只会在女性用户的计划和记录页中出现。")
-                .font(AppType.caption)
-                .foregroundStyle(Theme.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .editorialCard(accent: Theme.coral)

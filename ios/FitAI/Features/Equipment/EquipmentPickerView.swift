@@ -228,10 +228,6 @@ struct EquipmentPickerView: View {
 
             Spacer(minLength: 8)
 
-            Text(isPickingForSession ? "点卡片添加到训练记录" : "点卡片看详情 · ⊕ 多选")
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
-                .lineLimit(1)
         }
         .padding(.horizontal, 18)
         .padding(.top, 10)
