@@ -1,6 +1,8 @@
 import SwiftUI
 
-/// 发现：认器械、学动作、找训练与饮食方案。把原来分散在“器械”Tab 的能力收进一个入口。
+/// 发现：认器械、学动作、找训练与饮食方案。
+/// The page keeps the capability map from the old tab, but reads as an
+/// editorial index: one scan hero, four entries, then training and diet shelves.
 struct DiscoverView: View {
     @Environment(AppStore.self) private var store
 
@@ -22,88 +24,31 @@ struct DiscoverView: View {
         let label: String
         let tagline: String
         let icon: String
-        let color: Color
+        let accent: Color
     }
 
     private let dietCards: [DietCard] = [
-        DietCard(id: "balanced", label: "均衡饮食", tagline: "最稳，长期坚持", icon: "circle.grid.cross", color: Theme.accent),
-        DietCard(id: "high_protein", label: "高蛋白", tagline: "力量训练优先", icon: "bolt.heart.fill", color: Theme.blue),
-        DietCard(id: "carb_cycle", label: "碳循环", tagline: "训练日高碳", icon: "arrow.triangle.2.circlepath", color: Theme.warning),
-        DietCard(id: "low_carb", label: "低碳", tagline: "控制主食", icon: "leaf.fill", color: Color(red: 0.44, green: 0.78, blue: 0.35))
+        DietCard(id: "balanced", label: "均衡饮食", tagline: "最稳，长期坚持", icon: "circle.grid.cross", accent: Theme.cobalt),
+        DietCard(id: "high_protein", label: "高蛋白", tagline: "力量训练优先", icon: "bolt.heart.fill", accent: Theme.coral),
+        DietCard(id: "carb_cycle", label: "碳循环", tagline: "训练日高碳", icon: "arrow.triangle.2.circlepath", accent: Theme.warning),
+        DietCard(id: "low_carb", label: "低碳", tagline: "控制主食", icon: "leaf.fill", accent: Theme.lime)
     ]
 
     var body: some View {
         NavigationStack {
             AppScrollView {
-                VStack(alignment: .leading, spacing: AppLayout.sectionSpacing) {
+                VStack(alignment: .leading, spacing: 16) {
                     header
-                        .staggerIn(0)
                     equipmentHero
-                        .staggerIn(1)
                     quickGrid
-                        .staggerIn(2)
                     actionReviewCard
-                        .staggerIn(3)
-
-                    VStack(alignment: .leading, spacing: 10) {
-                        SectionTitle(title: "训练方案", subtitle: "先选分化，再让教练排动作。")
-                        ForEach(SplitType.allCases) { split in
-                            Button {
-                                Haptics.tap()
-                                showTrainingLibrary = true
-                            } label: {
-                                splitRow(split)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-
-                    VStack(alignment: .leading, spacing: 10) {
-                        SectionTitle(title: "饮食策略", subtitle: "不是少吃，是吃对。")
-                        LazyVGrid(
-                            columns: [
-                                GridItem(.flexible(), spacing: 9),
-                                GridItem(.flexible(), spacing: 9)
-                            ],
-                            spacing: 9
-                        ) {
-                            ForEach(dietCards) { item in
-                                Button {
-                                    Haptics.select()
-                                    selectedDiet = DietChoice(id: item.id, label: item.label)
-                                } label: {
-                                    dietCard(item)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
-
-                    NavigationLink {
-                        EquipmentLibraryView()
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: "square.stack.3d.up.fill")
-                                .foregroundStyle(Theme.accent)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("我的器械库")
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(Theme.primaryText)
-                                Text("已录入 \(store.equipmentLibrary.count) 件 · 查看动作与训练数据")
-                                    .font(.caption2)
-                                    .foregroundStyle(Theme.tertiaryText)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(Theme.tertiaryText)
-                        }
-                        .card(padding: 13)
-                    }
-                    .buttonStyle(.plain)
+                    splitSection
+                    dietSection
+                    equipmentLibraryLink
                 }
-                .padding(20)
-                .padding(.bottom, 24)
+                .appPagePadding()
+                .padding(.top, 8)
+                .padding(.bottom, 28)
             }
             .background(AppBackground())
             .navigationTitle("发现")
@@ -154,188 +99,203 @@ struct DiscoverView: View {
         }
     }
 
+    // MARK: - Header
+
     private var header: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("发现")
+            Text("EXPLORE / 发现")
+                .font(AppType.overline)
+                .tracking(1.5)
+                .foregroundStyle(Theme.cobalt)
+
+            Text("找点新练法")
                 .font(AppType.display)
-                .tracking(-0.6)
-                .foregroundStyle(Theme.primaryText)
+                .tracking(-0.9)
+                .foregroundStyle(Theme.ink)
+
             Text("认器械，学动作，找方案。")
                 .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
         }
     }
 
+    // MARK: - Equipment hero
+
     private var equipmentHero: some View {
         Button {
             Haptics.tap()
             showEquipmentScan = true
         } label: {
-            ZStack(alignment: .topTrailing) {
-                RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
-                    .fill(.thinMaterial)
-
-                RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Theme.accent.opacity(0.24),
-                                Theme.accentDeep.opacity(0.07)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-
-                HeroGlyph(
-                    symbol: "dumbbell.fill",
-                    size: 146,
-                    tint: Theme.accent
-                )
-                .offset(x: 22, y: 24)
-
+            HStack(alignment: .top, spacing: 14) {
                 VStack(alignment: .leading, spacing: 9) {
-                    Text("不认识器械？")
-                        .font(.system(size: 25, weight: .heavy, design: .default))
-                        .tracking(-0.3)
-                        .foregroundStyle(Theme.primaryText)
-                    Text("拍给我。识别后直接告诉你练什么、怎么练。")
+                    Text("AI 器械识别")
+                        .font(AppType.overline)
+                        .tracking(1.2)
+                        .foregroundStyle(Theme.cobalt)
+
+                    Text("拍一下，\n就知道练什么")
+                        .font(AppType.hero)
+                        .tracking(-0.6)
+                        .foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("识别器械后，直接给出动作、目标肌群和替代方案。")
                         .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                         .fixedSize(horizontal: false, vertical: true)
+
                     Label("拍器械", systemImage: "camera.fill")
                         .font(AppType.caption.weight(.bold))
                         .foregroundStyle(Theme.onAccent)
                         .padding(.horizontal, 13)
-                        .padding(.vertical, 8)
-                        .background {
-                            Capsule(style: .continuous)
-                                .fill(.ultraThinMaterial)
-                            Capsule(style: .continuous)
-                                .fill(Theme.accent.opacity(0.88))
-                        }
-                        .overlay {
-                            Capsule(style: .continuous)
-                                .strokeBorder(Color.white.opacity(0.14), lineWidth: 0.7)
-                        }
+                        .padding(.vertical, 9)
+                        .background(Theme.cobalt, in: Capsule(style: .continuous))
+                        .padding(.top, 2)
                 }
-                .padding(19)
-                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Spacer(minLength: 4)
+
+                ZStack {
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(Theme.lime)
+                    Image(systemName: "dumbbell.fill")
+                        .font(.system(size: 38, weight: .black))
+                        .foregroundStyle(Theme.onAccent)
+                }
+                .frame(width: 84, height: 84)
+                .rotationEffect(.degrees(2))
+                .padding(.top, 4)
             }
-            .frame(maxWidth: .infinity, minHeight: 152, alignment: .topLeading)
-            .clipShape(RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
-                    .strokeBorder(Theme.stroke, lineWidth: 0.8)
-            }
-            .shadow(color: Color.black.opacity(0.24), radius: 16, y: 8)
+            .editorialCard(accent: Theme.lime)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardPressStyle(scale: 0.985))
     }
+
+    // MARK: - Quick entries
 
     private var quickGrid: some View {
         LazyVGrid(
             columns: [
-                GridItem(.flexible(), spacing: 9),
-                GridItem(.flexible(), spacing: 9)
+                GridItem(.flexible(), spacing: 8),
+                GridItem(.flexible(), spacing: 8)
             ],
-            spacing: 9
+            spacing: 8
         ) {
             NavigationLink {
                 EquipmentPickerView()
             } label: {
-                actionLabel("动作教程", subtitle: "按肌群和器械学", icon: "figure.run", color: Theme.blue)
+                quickEntry(
+                    title: "动作教程",
+                    subtitle: "按肌群和器械学",
+                    icon: "figure.run",
+                    accent: Theme.cobalt
+                )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(CardPressStyle(scale: 0.97))
 
             Button {
                 Haptics.tap()
                 showTrainingLibrary = true
             } label: {
-                actionLabel("训练方案", subtitle: "全身 / 推拉腿 / 五分", icon: "calendar", color: Theme.accent)
+                quickEntry(
+                    title: "训练方案",
+                    subtitle: "全身 / 推拉腿 / 五分",
+                    icon: "calendar",
+                    accent: Theme.lime
+                )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(CardPressStyle(scale: 0.97))
 
             Button {
                 Haptics.tap()
                 showDietLibrary = true
             } label: {
-                actionLabel("饮食方案", subtitle: "均衡 / 高蛋白 / 碳循环", icon: "fork.knife", color: Theme.warning)
+                quickEntry(
+                    title: "饮食方案",
+                    subtitle: "均衡 / 高蛋白 / 碳循环",
+                    icon: "fork.knife",
+                    accent: Theme.coral
+                )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(CardPressStyle(scale: 0.97))
 
             Button {
                 Haptics.tap()
                 showBodyAnalysis = true
             } label: {
-                actionLabel("体型分析", subtitle: "拍照看训练重点", icon: "figure.stand", color: Theme.danger)
+                quickEntry(
+                    title: "体型分析",
+                    subtitle: "拍照看训练重点",
+                    icon: "figure.stand",
+                    accent: Theme.warning
+                )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(CardPressStyle(scale: 0.97))
         }
     }
 
-    private func actionLabel(
-        _ title: String,
+    private func quickEntry(
+        title: String,
         subtitle: String,
         icon: String,
-        color: Color
+        accent: Color
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 9) {
             HStack {
                 Image(systemName: icon)
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(color)
-                    .frame(width: 36, height: 36)
-                    .background {
-                        SoftSurface(
-                            cornerRadius: 11,
-                            tint: color.opacity(0.12),
-                            stroke: color.opacity(0.22)
-                        )
-                    }
-                Spacer()
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Theme.onAccent)
+                    .frame(width: 30, height: 30)
+                    .background(accent, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+
+                Spacer(minLength: 0)
+
                 Image(systemName: "arrow.up.right")
-                    .font(.caption.weight(.bold))
+                    .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(Theme.tertiaryText)
             }
-            Text(title)
-                .font(AppType.callout.weight(.semibold))
-                .foregroundStyle(Theme.primaryText)
-            Text(subtitle)
-                .font(AppType.caption)
-                .foregroundStyle(Theme.tertiaryText)
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(AppType.callout.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                Text(subtitle)
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(Theme.tertiaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
         }
-        .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
-        .padding(14)
-        .background {
-            SoftSurface(
-                cornerRadius: 17,
-                tint: Theme.cardSurface,
-                stroke: Theme.stroke
-            )
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(13)
+        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Theme.stroke, lineWidth: 1)
         }
     }
 
+    // MARK: - Review
+
     private var actionReviewCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 11) {
+            HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "camera.metering.center.weighted")
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(Theme.accent)
-                    .frame(width: 42, height: 42)
-                    .background(Theme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(Theme.onAccent)
+                    .frame(width: 36, height: 36)
+                    .background(Theme.coral, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("动作点评")
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(Theme.primaryText)
-                    Text("拍一张，或发一段视频，让教练指出下一组最该改的一点")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
+                        .font(AppType.headline)
+                        .foregroundStyle(Theme.ink)
+                    Text("拍一张，或发一段视频，让教练指出下一组最该改的一点。")
+                        .font(AppType.caption)
+                        .foregroundStyle(Theme.secondaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+
                 Spacer(minLength: 0)
             }
 
@@ -345,99 +305,215 @@ struct DiscoverView: View {
                     showActionCamera = true
                 } label: {
                     Label("拍一张", systemImage: "camera.fill")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Theme.accent)
+                        .font(AppType.caption.weight(.semibold))
+                        .foregroundStyle(Theme.onAccent)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 9)
-                        .background(Theme.accent.opacity(0.09), in: Capsule())
+                        .padding(.vertical, 10)
+                        .background(
+                            Theme.cobalt,
+                            in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SubtlePressStyle(scale: 0.97))
 
                 Button {
                     Haptics.tap()
                     showVideoReview = true
                 } label: {
                     Label("选视频", systemImage: "video.fill")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.caption.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 9)
-                        .background(Theme.surfaceStrong, in: Capsule())
+                        .padding(.vertical, 10)
+                        .background(
+                            Theme.paper,
+                            in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        )
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                .strokeBorder(Theme.stroke, lineWidth: 1)
+                        }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SubtlePressStyle(scale: 0.97))
             }
         }
-        .card(padding: 13)
+        .card()
+    }
+
+    // MARK: - Training splits
+
+    private var splitSection: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            SectionTitle(title: "训练方案", subtitle: "先选分化，再让教练排动作。")
+
+            VStack(spacing: 0) {
+                ForEach(SplitType.allCases) { split in
+                    Button {
+                        Haptics.tap()
+                        showTrainingLibrary = true
+                    } label: {
+                        splitRow(split)
+                    }
+                    .buttonStyle(.plain)
+
+                    if split != SplitType.allCases.last {
+                        InkDivider()
+                            .padding(.leading, 46)
+                    }
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 2)
+            .background(Theme.paper, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(Theme.stroke, lineWidth: 1)
+            }
+        }
     }
 
     private func splitRow(_ split: SplitType) -> some View {
         HStack(spacing: 11) {
-            Image(systemName: split == .one ? "figure.strengthtraining.functional" : (split == .three ? "arrow.triangle.2.circlepath" : "square.grid.2x2.fill"))
-                .font(.headline.weight(.bold))
-                .foregroundStyle(Theme.accent)
-                .frame(width: 38, height: 38)
-                .background(Theme.accent.opacity(0.11), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+            Image(systemName: splitIcon(split))
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(Theme.onAccent)
+                .frame(width: 32, height: 32)
+                .background(Theme.cobalt, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(split.title)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+
                     if store.profile.split == split {
                         Text("当前")
-                            .font(.system(size: 8.5, weight: .bold))
+                            .font(.system(size: 8, weight: .bold))
                             .foregroundStyle(Theme.onAccent)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(Theme.accent, in: Capsule())
+                            .background(Theme.lime, in: Capsule(style: .continuous))
                     }
                 }
+
                 Text(split.detail)
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
                     .lineLimit(1)
             }
 
-            Spacer(minLength: 0)
+            Spacer(minLength: 4)
+
             Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
+                .font(.system(size: 9, weight: .bold))
                 .foregroundStyle(Theme.tertiaryText)
         }
-        .card(padding: 12)
+        .padding(.vertical, 9)
+        .contentShape(Rectangle())
+    }
+
+    private func splitIcon(_ split: SplitType) -> String {
+        switch split {
+        case .one: return "figure.strengthtraining.functional"
+        case .three: return "arrow.triangle.2.circlepath"
+        case .five: return "square.grid.2x2.fill"
+        }
+    }
+
+    // MARK: - Diet strategies
+
+    private var dietSection: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            SectionTitle(title: "饮食策略", subtitle: "不是少吃，是吃对。")
+
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: 8),
+                    GridItem(.flexible(), spacing: 8)
+                ],
+                spacing: 8
+            ) {
+                ForEach(dietCards) { item in
+                    Button {
+                        Haptics.select()
+                        selectedDiet = DietChoice(id: item.id, label: item.label)
+                    } label: {
+                        dietCard(item)
+                    }
+                    .buttonStyle(CardPressStyle(scale: 0.97))
+                }
+            }
+        }
     }
 
     private func dietCard(_ item: DietCard) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: item.icon)
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(item.color)
-                Spacer()
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(Theme.onAccent)
+                    .frame(width: 28, height: 28)
+                    .background(item.accent, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                Spacer(minLength: 0)
+
                 Image(systemName: "arrow.up.right")
-                    .font(.caption2.weight(.bold))
+                    .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(Theme.tertiaryText)
             }
+
             Text(item.label)
-                .font(.subheadline.weight(.bold))
-                .foregroundStyle(Theme.primaryText)
+                .font(AppType.callout.weight(.semibold))
+                .foregroundStyle(Theme.ink)
             Text(item.tagline)
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(11)
-        .background(
-            LinearGradient(
-                colors: [item.color.opacity(0.10), Theme.cardSurface],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            ),
-            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
-        )
-        .overlay(
+        .padding(12)
+        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+        .overlay {
             RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .stroke(item.color.opacity(0.14), lineWidth: 0.8)
-        )
+                .strokeBorder(Theme.stroke, lineWidth: 1)
+        }
+    }
+
+    // MARK: - Equipment library
+
+    private var equipmentLibraryLink: some View {
+        NavigationLink {
+            EquipmentLibraryView()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "square.stack.3d.up.fill")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(Theme.onAccent)
+                    .frame(width: 36, height: 36)
+                    .background(Theme.cobalt, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("我的器械库")
+                        .font(AppType.headline)
+                        .foregroundStyle(Theme.ink)
+                    Text("已录入 \(store.equipmentLibrary.count) 件 · 查看动作与训练数据")
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+
+                Spacer(minLength: 4)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            .padding(14)
+            .background(Theme.paper, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(Theme.stroke, lineWidth: 1)
+            }
+        }
+        .buttonStyle(CardPressStyle(scale: 0.985))
     }
 }
