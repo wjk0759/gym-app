@@ -8,6 +8,8 @@ enum BodyType: String, CaseIterable, Identifiable {
     case invertedTriangle
     case rectangle
     case hourglass
+    case oval
+    case trapezoid
 
     var id: String { rawValue }
 
@@ -18,6 +20,8 @@ enum BodyType: String, CaseIterable, Identifiable {
         case .invertedTriangle: return "倒三角"
         case .rectangle: return "直筒型"
         case .hourglass: return "沙漏型"
+        case .oval: return "椭圆型"
+        case .trapezoid: return "梯形"
         }
     }
 
@@ -28,6 +32,8 @@ enum BodyType: String, CaseIterable, Identifiable {
         case .invertedTriangle: return "肩背更宽，臀腿偏窄"
         case .rectangle: return "肩腰臀接近，线条偏直"
         case .hourglass: return "肩臀同宽，腰部相对纤细"
+        case .oval: return "腰腹更集中，肩背相对窄"
+        case .trapezoid: return "肩宽腰粗，整体厚实"
         }
     }
 
@@ -38,6 +44,8 @@ enum BodyType: String, CaseIterable, Identifiable {
         case .invertedTriangle: return 1.12
         case .rectangle: return 0.92
         case .hourglass: return 1.02
+        case .oval: return 0.90
+        case .trapezoid: return 1.06
         }
     }
 
@@ -48,6 +56,8 @@ enum BodyType: String, CaseIterable, Identifiable {
         case .invertedTriangle: return 0.78
         case .rectangle: return 0.90
         case .hourglass: return 0.64
+        case .oval: return 1.04
+        case .trapezoid: return 0.94
         }
     }
 
@@ -58,6 +68,8 @@ enum BodyType: String, CaseIterable, Identifiable {
         case .invertedTriangle: return 0.80
         case .rectangle: return 0.92
         case .hourglass: return 1.06
+        case .oval: return 0.94
+        case .trapezoid: return 0.92
         }
     }
 
@@ -68,12 +80,31 @@ enum BodyType: String, CaseIterable, Identifiable {
         case .invertedTriangle: return .buildMuscle
         case .rectangle: return .buildMuscle
         case .hourglass: return .recomp
+        case .oval: return .recomp
+        case .trapezoid: return .buildMuscle
         }
+    }
+
+    /// Male and female body-shape vocabularies are intentionally different.
+    /// Apple/pear are female-coded; male users get inverted triangle,
+    /// rectangle, oval and trapezoid so the copy never mislabels them.
+    static func options(for sex: Sex) -> [BodyType] {
+        switch sex {
+        case .female:
+            return [.apple, .pear, .hourglass, .rectangle]
+        case .male:
+            return [.invertedTriangle, .rectangle, .oval, .trapezoid]
+        }
+    }
+
+    func isAvailable(for sex: Sex) -> Bool {
+        Self.options(for: sex).contains(self)
     }
 }
 
 struct BodySilhouette: View {
     var type: BodyType = .rectangle
+    var sex: Sex = .male
     var fullness: CGFloat = 1
     var fill: Color = Theme.ink.opacity(0.12)
     var stroke: Color = Theme.ink.opacity(0.38)
@@ -87,9 +118,12 @@ struct BodySilhouette: View {
             let shoulderY = height * 0.22
             let waistY = height * 0.47
             let hipY = height * 0.60
-            let shoulder = width * 0.5 * type.shoulder * fullness
-            let waist = width * 0.5 * type.waist * fullness
-            let hip = width * 0.5 * type.hip * fullness
+            let shoulderScale: CGFloat = sex == .female ? 0.94 : 1
+            let waistScale: CGFloat = sex == .female ? 0.90 : 1
+            let hipScale: CGFloat = sex == .female ? 1.06 : 1
+            let shoulder = width * 0.5 * type.shoulder * fullness * shoulderScale
+            let waist = width * 0.5 * type.waist * fullness * waistScale
+            let hip = width * 0.5 * type.hip * fullness * hipScale
 
             ZStack {
                 Circle()
@@ -205,6 +239,7 @@ struct BodySilhouette: View {
 
 struct BodyTypeCard: View {
     let type: BodyType
+    var sex: Sex = .male
     let selected: Bool
     var recommended: Bool = false
     var action: () -> Void
@@ -218,6 +253,7 @@ struct BodyTypeCard: View {
                 ZStack(alignment: .topTrailing) {
                     BodySilhouette(
                         type: type,
+                        sex: sex,
                         fill: selected ? Theme.cobalt.opacity(0.16) : Theme.ink.opacity(0.055),
                         stroke: selected ? Theme.cobalt : Theme.ink.opacity(0.32),
                         lineWidth: selected ? 2 : 1
@@ -266,18 +302,32 @@ struct BodyFatOption: Identifiable, Equatable {
 
     var midpoint: Double { (range.lowerBound + range.upperBound) / 2 }
 
-    static let all: [BodyFatOption] = [
-        .init(id: "very_low", label: "< 15%", range: 10...15, fullness: 0.86, note: "很精瘦"),
-        .init(id: "low", label: "15–18%", range: 15...18, fullness: 0.92, note: "偏瘦有线条"),
-        .init(id: "athletic", label: "19–22%", range: 19...22, fullness: 0.98, note: "匀称"),
-        .init(id: "average", label: "23–28%", range: 23...28, fullness: 1.06, note: "常见范围"),
-        .init(id: "higher", label: "29–34%", range: 29...34, fullness: 1.14, note: "偏丰满"),
-        .init(id: "high", label: "> 34%", range: 34...40, fullness: 1.22, note: "体脂偏高")
+    static let male: [BodyFatOption] = [
+        .init(id: "male_very_low", label: "< 10%", range: 6...10, fullness: 0.84, note: "很精瘦"),
+        .init(id: "male_low", label: "10–14%", range: 10...14, fullness: 0.90, note: "偏瘦有线条"),
+        .init(id: "male_athletic", label: "15–19%", range: 15...19, fullness: 0.98, note: "匀称"),
+        .init(id: "male_average", label: "20–24%", range: 20...24, fullness: 1.06, note: "常见范围"),
+        .init(id: "male_higher", label: "25–29%", range: 25...29, fullness: 1.14, note: "偏丰满"),
+        .init(id: "male_high", label: "≥ 30%", range: 30...40, fullness: 1.22, note: "体脂偏高")
     ]
+
+    static let female: [BodyFatOption] = [
+        .init(id: "female_very_low", label: "< 18%", range: 12...18, fullness: 0.86, note: "很精瘦"),
+        .init(id: "female_low", label: "18–24%", range: 18...24, fullness: 0.92, note: "偏瘦有线条"),
+        .init(id: "female_athletic", label: "25–29%", range: 25...29, fullness: 0.98, note: "匀称"),
+        .init(id: "female_average", label: "30–34%", range: 30...34, fullness: 1.06, note: "常见范围"),
+        .init(id: "female_higher", label: "35–39%", range: 35...39, fullness: 1.14, note: "偏丰满"),
+        .init(id: "female_high", label: "≥ 40%", range: 40...50, fullness: 1.22, note: "体脂偏高")
+    ]
+
+    static func options(for sex: Sex) -> [BodyFatOption] {
+        sex == .female ? female : male
+    }
 }
 
 struct BodyFatCard: View {
     let option: BodyFatOption
+    var sex: Sex = .male
     let selected: Bool
     var action: () -> Void
 
@@ -289,6 +339,7 @@ struct BodyFatCard: View {
             VStack(spacing: 6) {
                 BodySilhouette(
                     type: .rectangle,
+                    sex: sex,
                     fullness: option.fullness,
                     fill: selected ? Theme.lime.opacity(0.55) : Theme.ink.opacity(0.055),
                     stroke: selected ? Theme.ink : Theme.ink.opacity(0.28),
@@ -375,6 +426,7 @@ enum BodyFocusArea: String, CaseIterable, Identifiable {
 
 struct BodyFocusMap: View {
     @Binding var selected: Set<BodyFocusArea>
+    var sex: Sex = .male
     var recommended: Set<BodyFocusArea> = []
     var maxSelection: Int = 2
 
@@ -386,6 +438,7 @@ struct BodyFocusMap: View {
                         .fill(Theme.ink.opacity(0.035))
                     BodySilhouette(
                         type: .rectangle,
+                        sex: sex,
                         fill: Theme.ink.opacity(0.08),
                         stroke: Theme.ink.opacity(0.22),
                         lineWidth: 1
@@ -430,7 +483,7 @@ struct BodyFocusMap: View {
                 Text(area.label)
                     .font(AppType.micro)
             }
-            .foregroundStyle(isSelected ? Theme.ink : Theme.ink.opacity(0.72))
+            .foregroundStyle(isSelected ? Theme.onAccent : Theme.ink.opacity(0.72))
             .padding(.horizontal, 7)
             .padding(.vertical, 5)
             .background(

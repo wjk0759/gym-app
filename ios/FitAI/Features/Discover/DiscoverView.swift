@@ -12,27 +12,6 @@ struct DiscoverView: View {
     @State private var showDietLibrary = false
     @State private var showActionCamera = false
     @State private var showVideoReview = false
-    @State private var selectedDiet: DietChoice?
-
-    private struct DietChoice: Identifiable {
-        let id: String
-        let label: String
-    }
-
-    private struct DietCard: Identifiable {
-        let id: String
-        let label: String
-        let tagline: String
-        let icon: String
-        let accent: Color
-    }
-
-    private let dietCards: [DietCard] = [
-        DietCard(id: "balanced", label: "均衡饮食", tagline: "最稳，长期坚持", icon: "circle.grid.cross", accent: Theme.cobalt),
-        DietCard(id: "high_protein", label: "高蛋白", tagline: "力量训练优先", icon: "bolt.heart.fill", accent: Theme.secondary),
-        DietCard(id: "carb_cycle", label: "碳循环", tagline: "训练日高碳", icon: "arrow.triangle.2.circlepath", accent: Theme.warning),
-        DietCard(id: "low_carb", label: "低碳", tagline: "控制主食", icon: "leaf.fill", accent: Theme.lime)
-    ]
 
     var body: some View {
         NavigationStack {
@@ -43,7 +22,6 @@ struct DiscoverView: View {
                     quickGrid
                     actionReviewCard
                     splitSection
-                    dietSection
                     equipmentLibraryLink
                 }
                 .appPagePadding()
@@ -74,12 +52,6 @@ struct DiscoverView: View {
             }
             .sheet(isPresented: $showVideoReview) {
                 VideoReviewView()
-            }
-            .sheet(item: $selectedDiet) { choice in
-                WeekDietPlanView(
-                    initialStrategy: choice.id,
-                    forceStrategy: true
-                )
             }
             .fullScreenCover(isPresented: $showActionCamera) {
                 PhotoCaptureView(
@@ -420,65 +392,6 @@ struct DiscoverView: View {
         case .one: return "figure.strengthtraining.functional"
         case .three: return "arrow.triangle.2.circlepath"
         case .five: return "square.grid.2x2.fill"
-        }
-    }
-
-    // MARK: - Diet strategies
-
-    private var dietSection: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            SectionTitle(title: "饮食策略", subtitle: "不是少吃，是吃对。")
-
-            LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: 8),
-                    GridItem(.flexible(), spacing: 8)
-                ],
-                spacing: 8
-            ) {
-                ForEach(dietCards) { item in
-                    Button {
-                        Haptics.select()
-                        selectedDiet = DietChoice(id: item.id, label: item.label)
-                    } label: {
-                        dietCard(item)
-                    }
-                    .buttonStyle(CardPressStyle(scale: 0.97))
-                }
-            }
-        }
-    }
-
-    private func dietCard(_ item: DietCard) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: item.icon)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(Theme.onAccent)
-                    .frame(width: 28, height: 28)
-                    .background(item.accent, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                Spacer(minLength: 0)
-
-                Image(systemName: "arrow.up.right")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-
-            Text(item.label)
-                .font(AppType.callout.weight(.semibold))
-                .foregroundStyle(Theme.ink)
-            Text(item.tagline)
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
-                .lineLimit(1)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .strokeBorder(Theme.stroke, lineWidth: 1)
         }
     }
 

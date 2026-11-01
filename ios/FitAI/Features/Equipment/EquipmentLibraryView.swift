@@ -389,7 +389,7 @@ struct EquipmentLibraryView: View {
                 .foregroundStyle(Theme.ink)
 
             Text(store.equipmentLibrary.isEmpty
-                 ? "拍照或从相册识别第一件器械，生成计划时会优先使用它。"
+                 ? "从动作库选第一件器械，生成计划时会优先使用它。"
                  : "换个名称、肌群或器械类型试试。")
                 .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
@@ -397,12 +397,21 @@ struct EquipmentLibraryView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             if store.equipmentLibrary.isEmpty {
-                NavigationLink {
-                    EquipmentRecognitionView()
-                } label: {
-                    Text("添加第一件器械")
+                VStack(spacing: 8) {
+                    NavigationLink {
+                        EquipmentPickerView()
+                    } label: {
+                        Text("从动作库选择")
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+
+                    NavigationLink {
+                        EquipmentRecognitionView()
+                    } label: {
+                        Label("拍照识别", systemImage: "camera.fill")
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
                 }
-                .buttonStyle(PrimaryButtonStyle())
                 .padding(.top, 4)
             } else {
                 Button("清空搜索") {

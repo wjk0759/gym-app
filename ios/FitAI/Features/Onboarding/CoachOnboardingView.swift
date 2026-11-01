@@ -17,6 +17,7 @@ struct CoachOnboardingView: View {
     @State private var bodyFatID: String?
     @State private var focusAreas: Set<BodyFocusArea> = []
     @State private var injuries: Set<String> = []
+    @State private var noInjuries = true
     @State private var injuryNote = ""
     @State private var location: TrainingLocation = .gym
     @State private var welcomePhase = 0
@@ -100,6 +101,15 @@ struct CoachOnboardingView: View {
             Text("当前填写的内容还没有保存，退出后需要重新填写。")
         }
         .onAppear(perform: restoreDraft)
+        .onChange(of: draft.sex) { _, sex in
+            if let type = bodyType, !type.isAvailable(for: sex) {
+                bodyType = nil
+            }
+            if let id = bodyFatID,
+               !BodyFatOption.options(for: sex).contains(where: { $0.id == id }) {
+                bodyFatID = nil
+            }
+        }
     }
 
     // MARK: - Welcome
@@ -447,8 +457,8 @@ struct CoachOnboardingView: View {
                 columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
                 spacing: 10
             ) {
-                ForEach(BodyFatOption.all) { option in
-                    BodyFatCard(option: option, selected: bodyFatID == option.id) {
+                ForEach(BodyFatOption.options(for: draft.sex)) { option in
+                    BodyFatCard(option: option, sex: draft.sex, selected: bodyFatID == option.id) {
                         bodyFatID = option.id
                         draft.bodyFatPCT = option.midpoint
                     }
@@ -456,9 +466,10 @@ struct CoachOnboardingView: View {
             }
 
             Button {
-                let fallback = BodyFatOption.all.min {
+                let options = BodyFatOption.options(for: draft.sex)
+                let fallback = options.min {
                     abs($0.midpoint - draft.bodyFatPCT) < abs($1.midpoint - draft.bodyFatPCT)
-                } ?? BodyFatOption.all[2]
+                } ?? options[2]
                 bodyFatID = fallback.id
                 draft.bodyFatPCT = fallback.midpoint
                 advance()
@@ -483,9 +494,10 @@ struct CoachOnboardingView: View {
                 columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
                 spacing: 10
             ) {
-                ForEach(BodyType.allCases) { type in
+                ForEach(BodyType.options(for: draft.sex)) { type in
                     BodyTypeCard(
                         type: type,
+                        sex: draft.sex,
                         selected: bodyType == type,
                         recommended: type == recommendedBodyType
                     ) {
@@ -523,7 +535,7 @@ struct CoachOnboardingView: View {
                 subtitle: "可以多选；不选就是全身均衡。"
             )
 
-            BodyFocusMap(selected: $focusAreas, recommended: recommendedFocus)
+            BodyFocusMap(selected: $focusAreas, sex: draft.sex, recommended: recommendedFocus)
 
             Button {
                 focusAreas.removeAll()
@@ -544,69 +556,86 @@ struct CoachOnboardingView: View {
                 subtitle: "有伤病不会阻止你练，只会让计划绕开风险动作。"
             )
 
-            Button {
-                Haptics.select()
-                injuries.removeAll()
-                injuryNote = ""
-            } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("没有任何伤病")
-                            .font(AppType.headline)
-                            .foregroundStyle(Theme.ink)
-                        Text("计划按常规动作安排")
-                            .font(AppType.caption)
-                            .foregroundStyle(Theme.secondaryText)
+            Toggle(isOn: Binding(
+                get: { noInjuries },
+                set: { value in
+                    noInjuries = value
+                    if value {
+                        injuries.removeAll()
+                        injuryNote = ""
                     }
-                    Spacer()
-                    Image(systemName: injuries.isEmpty ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(injuries.isEmpty ? Theme.cobalt : Theme.tertiaryText)
                 }
-                .padding(16)
-                .background(Theme.paper, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .strokeBorder(injuries.isEmpty ? Theme.cobalt : Theme.stroke, lineWidth: injuries.isEmpty ? 1.8 : 1)
+            )) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("没有任何伤病")
+                        .font(AppType.headline)
+                        .foregroundStyle(Theme.ink)
+                    Text("计划按常规动作安排")
+                        .font(AppType.caption)
+                        .foregroundStyle(Theme.secondaryText)
                 }
             }
-            .buttonStyle(CardPressStyle(scale: 0.985))
+            .tint(Theme.cobalt)
+            .padding(16)
+            .background(Theme.paper, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(
+                        noInjuries ? Theme.cobalt : Theme.stroke,
+                        lineWidth: noInjuries ? 1.8 : 1
+                    )
+            }
 
-            if !injuries.isEmpty {
-                LazyVGrid(
-                    columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
-                    spacing: 8
-                ) {
-                    ForEach(injuryOptions, id: \.self) { injury in
-                        Button {
-                            Haptics.select()
-                            if injuries.contains(injury) {
-                                injuries.remove(injury)
-                            } else {
+            VStack(spacing: 0) {
+                ForEach(Array(injuryOptions.enumerated()), id: \.element) { index, injury in
+                    Toggle(isOn: Binding(
+                        get: { injuries.contains(injury) },
+                        set: { value in
+                            noInjuries = false
+                            if value {
                                 injuries.insert(injury)
+                            } else {
+                                injuries.remove(injury)
                             }
-                        } label: {
-                            TagChip(text: injury, selected: injuries.contains(injury))
-                                .frame(maxWidth: .infinity)
+                            Haptics.select()
                         }
-                        .buttonStyle(SubtlePressStyle(scale: 0.96))
+                    )) {
+                        Text(injury)
+                            .font(AppType.callout)
+                            .foregroundStyle(Theme.ink)
+                    }
+                    .tint(Theme.cobalt)
+                    .disabled(noInjuries)
+                    .opacity(noInjuries ? 0.45 : 1)
+                    .padding(.vertical, 12)
+
+                    if index < injuryOptions.count - 1 {
+                        InkDivider()
                     }
                 }
-
-                TextField("补充说明，例如：右膝下楼疼、肩峰撞击", text: $injuryNote, axis: .vertical)
-                    .font(AppType.body)
-                    .padding(14)
-                    .background(Theme.paper, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .strokeBorder(Theme.stroke, lineWidth: 1)
-                    }
-                    .lineLimit(2...4)
-            } else {
-                Text("如果要添加伤病，先点掉“没有任何伤病”。")
-                    .font(AppType.micro)
-                    .foregroundStyle(Theme.tertiaryText)
             }
+            .padding(.horizontal, 16)
+            .background(Theme.paper, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(Theme.stroke, lineWidth: 1)
+            }
+
+            TextField("补充说明，例如：右膝下楼疼、肩峰撞击", text: $injuryNote, axis: .vertical)
+                .font(AppType.body)
+                .padding(14)
+                .background(Theme.paper, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Theme.stroke, lineWidth: 1)
+                }
+                .lineLimit(2...4)
+                .disabled(noInjuries)
+                .opacity(noInjuries ? 0.45 : 1)
+
+            Text(noInjuries ? "有伤病时，先关掉“没有任何伤病”，再选择对应部位。" : "选择所有需要避开的部位；越具体，计划越安全。")
+                .font(AppType.micro)
+                .foregroundStyle(Theme.tertiaryText)
         }
     }
 
@@ -774,6 +803,7 @@ struct CoachOnboardingView: View {
             if let bodyType {
                 BodySilhouette(
                     type: bodyType,
+                    sex: draft.sex,
                     fill: Theme.cobalt.opacity(0.12),
                     stroke: Theme.cobalt,
                     lineWidth: 1.2
@@ -951,6 +981,7 @@ struct CoachOnboardingView: View {
             VStack(spacing: 10) {
                 BodySilhouette(
                     type: .rectangle,
+                    sex: sex,
                     fill: selected ? Theme.cobalt.opacity(0.16) : Theme.ink.opacity(0.06),
                     stroke: selected ? Theme.cobalt : Theme.ink.opacity(0.28),
                     lineWidth: selected ? 2 : 1
@@ -1208,13 +1239,17 @@ struct CoachOnboardingView: View {
     private var recommendedGoal: GoalType {
         if draft.bmi >= 27 || draft.bodyFatPCT >= 30 { return .loseFat }
         if draft.bmi < 20 { return .buildMuscle }
-        if bodyType == .invertedTriangle || bodyType == .rectangle { return .buildMuscle }
+        if bodyType == .invertedTriangle || bodyType == .rectangle || bodyType == .trapezoid {
+            return .buildMuscle
+        }
         return .recomp
     }
 
     private var recommendedBodyType: BodyType {
-        if let bodyType { return bodyType }
-        if draft.bmi >= 27 || draft.bodyFatPCT >= 29 { return .apple }
+        if let bodyType, bodyType.isAvailable(for: draft.sex) { return bodyType }
+        if draft.bmi >= 27 || draft.bodyFatPCT >= (draft.sex == .female ? 32 : 25) {
+            return draft.sex == .female ? .apple : .oval
+        }
         if draft.bmi < 20 { return .rectangle }
         return .rectangle
     }
@@ -1226,11 +1261,13 @@ struct CoachOnboardingView: View {
         case .invertedTriangle: return [.back, .shoulders]
         case .rectangle: return [.shoulders, .glutes]
         case .hourglass: return [.core, .glutes]
+        case .oval: return [.core, .legs]
+        case .trapezoid: return [.shoulders, .back]
         }
     }
 
     private var injuryOptions: [String] {
-        ["膝关节", "腰背", "肩颈", "心血管", "孕期/术后"]
+        ["心脏病", "高血压", "腰部疼痛", "肩颈疼痛", "膝盖疼痛", "孕期/术后"]
     }
 
     private func experienceDetail(_ item: Experience) -> String {
@@ -1309,7 +1346,7 @@ struct CoachOnboardingView: View {
         if draft.equipment.isEmpty { draft.equipment = [.bodyweight] }
 
         draft.bodyFatPCT = bodyFatID.flatMap { id in
-            BodyFatOption.all.first { $0.id == id }?.midpoint
+            BodyFatOption.options(for: draft.sex).first { $0.id == id }?.midpoint
         } ?? draft.bodyFatPCT
 
         var injuryText = injuries.sorted().joined(separator: "、")
@@ -1329,13 +1366,13 @@ struct CoachOnboardingView: View {
     private func restoreDraft() {
         guard !store.profile.nickname.isEmpty else {
             draft.equipment = [.bodyweight, .dumbbell]
-            bodyFatID = BodyFatOption.all.min {
+            bodyFatID = BodyFatOption.options(for: draft.sex).min {
                 abs($0.midpoint - draft.bodyFatPCT) < abs($1.midpoint - draft.bodyFatPCT)
             }?.id
             return
         }
         draft = store.profile
-        if let type = BodyType(rawValue: storedBodyType) {
+        if let type = BodyType(rawValue: storedBodyType), type.isAvailable(for: draft.sex) {
             bodyType = type
         }
         focusAreas = Set(
@@ -1343,9 +1380,10 @@ struct CoachOnboardingView: View {
                 .split(separator: ",")
                 .compactMap { BodyFocusArea(rawValue: String($0)) }
         )
-        bodyFatID = BodyFatOption.all.min {
+        bodyFatID = BodyFatOption.options(for: draft.sex).min {
             abs($0.midpoint - draft.bodyFatPCT) < abs($1.midpoint - draft.bodyFatPCT)
         }?.id
+        noInjuries = draft.injuries.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }
 

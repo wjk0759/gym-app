@@ -103,10 +103,7 @@ struct DietLibraryView: View {
                 }
             }
             .sheet(item: $selected) { choice in
-                WeekDietPlanView(
-                    initialStrategy: choice.id,
-                    forceStrategy: true
-                )
+                WeekDietPlanView(initialStrategy: choice.id)
             }
         }
     }

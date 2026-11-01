@@ -13,6 +13,7 @@ struct VideoReviewView: View {
 
     @State private var videoItem: PhotosPickerItem?
     @State private var contactSheet: UIImage?
+    @State private var videoThumbnail: UIImage?
     @State private var duration: Double = 0
     @State private var isProcessing = false
     @State private var errorMessage = ""
@@ -194,6 +195,7 @@ struct VideoReviewView: View {
         isProcessing = true
         errorMessage = ""
         contactSheet = nil
+        videoThumbnail = nil
         var tempURL: URL?
         do {
             guard let file = try await item.loadTransferable(type: VideoFile.self) else {
@@ -225,6 +227,7 @@ struct VideoReviewView: View {
 
             let images = frames.images
             let times = frames.times
+            videoThumbnail = images.first
             contactSheet = await Task.detached(priority: .userInitiated) {
                 Self.makeContactSheet(images, times: times)
             }.value
@@ -301,19 +304,27 @@ struct VideoReviewView: View {
     }
 
     private func send(_ image: UIImage) {
+        guard let sheetData = image.jpegData(compressionQuality: 0.72) else {
+            errorMessage = "视频预览生成失败，换一段视频试试。"
+            return
+        }
+        let thumbnailData = (videoThumbnail ?? image).jpegData(compressionQuality: 0.72)
         let noteText = note.trimmingCharacters(in: .whitespacesAndNewlines)
         let question = """
         这是一段 \(Int(duration)) 秒训练视频的 3 个关键帧拼图（从上到下按时间）。
         请结合画面逐帧指出动作问题，并只给下一组最重要的一个提示。
         \(noteText.isEmpty ? "" : "用户补充：\(noteText)")
         """
-        store.sendCoachPhoto(
-            image,
+        store.sendCoachPhotos(
+            [sheetData],
+            caption: noteText.isEmpty ? "请教练点评这段训练视频的截帧。" : noteText,
             question: question,
-            userText: "请教练点评这段训练视频的截帧。"
+            videoThumbnailData: thumbnailData,
+            videoDurationSeconds: Int(duration)
         )
+        store.selectedTab = 2
         dismiss()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
             store.selectedTab = 2
         }
     }

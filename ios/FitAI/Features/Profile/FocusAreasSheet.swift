@@ -20,7 +20,7 @@ struct FocusAreasSheet: View {
                         subtitle: "最多选两个。计划会在每一天优先安排对应动作，但不会破坏训练分化。"
                     )
 
-                    BodyFocusMap(selected: $selected)
+                    BodyFocusMap(selected: $selected, sex: store.profile.sex)
 
                     Toggle(isOn: $regenerate) {
                         VStack(alignment: .leading, spacing: 3) {

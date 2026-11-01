@@ -8,14 +8,12 @@ struct WeekDietPlanView: View {
     @State private var week: RemoteDietWeek?
     @State private var strategy = "carb_cycle"
     @State private var isLoading = false
+    @State private var didLoad = false
     @State private var errorMessage = ""
     @State private var selectedRecipe: DietRecipeSelection?
 
-    private let forceStrategy: Bool
-
-    init(initialStrategy: String? = nil, forceStrategy: Bool = false) {
+    init(initialStrategy: String? = nil) {
         _strategy = State(initialValue: initialStrategy ?? "carb_cycle")
-        self.forceStrategy = forceStrategy
     }
 
     private let strategies: [(id: String, label: String)] = [
@@ -39,10 +37,17 @@ struct WeekDietPlanView: View {
                     } else if let week {
                         weekCard(week)
                     } else if !errorMessage.isEmpty {
-                        Text(errorMessage)
-                            .font(AppType.caption)
-                            .foregroundStyle(Theme.secondaryText)
-                            .card(padding: 14)
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(errorMessage)
+                                .font(AppType.caption)
+                                .foregroundStyle(Theme.secondaryText)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Button("重试") {
+                                Task { await load() }
+                            }
+                            .buttonStyle(SecondaryButtonStyle())
+                        }
+                        .card(padding: 14)
                     }
                 }
                 .appPagePadding()
@@ -58,6 +63,8 @@ struct WeekDietPlanView: View {
                 }
             }
             .task {
+                guard !didLoad else { return }
+                didLoad = true
                 await load()
             }
             .sheet(item: $selectedRecipe) { selection in
@@ -256,26 +263,19 @@ struct WeekDietPlanView: View {
             errorMessage = "周计划需要连接后端；当前为本地模式。"
             return
         }
-        if forceStrategy {
-            await generate()
-            return
-        }
         do {
             let saved = try await APIClient.shared.fetchSavedDietWeek(weekStart: nil)
-            let hasRecipes = saved.days.contains { day in
-                day.meals.contains { meal in
-                    !(meal.dishes ?? []).isEmpty
-                }
-            }
-            if !saved.days.isEmpty, saved.generatedBy == "ai", hasRecipes {
+            if !saved.days.isEmpty {
                 week = saved
                 if let id = saved.strategy?.id { strategy = id }
                 return
             }
-            await generate()
         } catch {
-            await generate()
+            errorMessage = "读取本周计划失败，请重试。"
+            return
         }
+        // 只有完全没有保存的计划时才自动生成一次；已有计划必须由用户点“重新生成”。
+        await generate()
     }
 
     @MainActor
