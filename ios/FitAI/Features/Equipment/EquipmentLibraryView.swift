@@ -73,7 +73,7 @@ struct EquipmentLibraryView: View {
                 }
 
                 Text("器械库会作为 AI 生成计划的可用来源。删除器械不会影响历史训练记录。")
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
                     .lineSpacing(2)
                     .padding(.horizontal, 4)
@@ -130,32 +130,32 @@ struct EquipmentLibraryView: View {
             HStack(spacing: 14) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Theme.accent.opacity(0.12))
+                        .fill(Theme.cobalt.opacity(0.12))
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Theme.accent.opacity(0.24), lineWidth: 1)
+                        .stroke(Theme.cobalt.opacity(0.24), lineWidth: 1)
                     Image(systemName: "dumbbell.fill")
                         .font(.system(size: 21, weight: .semibold))
-                        .foregroundStyle(Theme.accent)
+                        .foregroundStyle(Theme.cobalt)
                 }
                 .frame(width: 50, height: 50)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("我的器械")
-                        .font(.caption.weight(.semibold))
+                        .font(AppType.caption.weight(.semibold))
                         .foregroundStyle(Theme.secondaryText)
 
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text("\(store.equipmentLibrary.count)")
                             .font(.system(size: 34, weight: .bold, design: .default))
-                            .foregroundStyle(Theme.primaryText)
+                            .foregroundStyle(Theme.ink)
                             .lineLimit(1)
                         Text("件")
-                            .font(.caption)
+                            .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                     }
 
                     Text("教学视频与 AI 计划会优先读取这里")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                 }
 
@@ -170,16 +170,16 @@ struct EquipmentLibraryView: View {
             Toggle(isOn: useLibraryBinding) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("计划优先使用")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
                     Text(store.useEquipmentLibraryForPlans
                          ? "生成计划时优先匹配我的器械"
                          : "已关闭，按档案器械生成")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                 }
             }
-            .tint(Theme.accent)
+            .tint(Theme.cobalt)
         }
         .card(padding: 18)
     }
@@ -188,12 +188,12 @@ struct EquipmentLibraryView: View {
         HStack(spacing: 8) {
             HStack(spacing: 9) {
                 Image(systemName: "magnifyingglass")
-                    .font(.subheadline.weight(.medium))
+                    .font(AppType.callout)
                     .foregroundStyle(Theme.tertiaryText)
 
                 TextField("搜索我的器械", text: $query)
                     .textInputAutocapitalization(.never)
-                    .foregroundStyle(Theme.primaryText)
+                    .foregroundStyle(Theme.ink)
                     .submitLabel(.search)
                     .onChange(of: query) { _, value in
                         if value.count > 60 {
@@ -206,7 +206,7 @@ struct EquipmentLibraryView: View {
                         query = ""
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.subheadline)
+                            .font(AppType.callout)
                             .foregroundStyle(Theme.tertiaryText)
                     }
                     .buttonStyle(.plain)
@@ -217,7 +217,7 @@ struct EquipmentLibraryView: View {
             .padding(.trailing, 10)
             .padding(.vertical, 11)
             .background(
-                Theme.surfaceStrong,
+                Theme.ink.opacity(0.035),
                 in: RoundedRectangle(cornerRadius: 15, style: .continuous)
             )
             .overlay(
@@ -230,21 +230,17 @@ struct EquipmentLibraryView: View {
             } label: {
                 Image(systemName: "camera.viewfinder")
                     .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(Theme.onAccent.opacity(0.86))
+                    .foregroundStyle(Theme.onAccent)
                     .frame(width: 46, height: 46)
                     .background(
-                        LinearGradient(
-                            colors: [Theme.accent, Theme.accentDeep],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
+                        Theme.cobalt,
                         in: RoundedRectangle(cornerRadius: 14, style: .continuous)
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(Color.white.opacity(0.18), lineWidth: 0.8)
+                            .strokeBorder(Theme.ink.opacity(0.14), lineWidth: 1)
                     )
-                    .shadow(color: Color.black.opacity(0.10), radius: 10, y: 5)
+                    .shadow(color: Theme.ink.opacity(0.14), radius: 0, x: 3, y: 3)
             }
             .accessibilityLabel("拍照或相册添加器械")
         }
@@ -253,11 +249,11 @@ struct EquipmentLibraryView: View {
     private func librarySectionHeader(count: Int) -> some View {
         HStack {
             Text("器械清单")
-                .font(.caption.weight(.semibold))
+                .font(AppType.caption.weight(.semibold))
                 .foregroundStyle(Theme.secondaryText)
             Spacer()
             Text("\(count) 件 · 左滑删除")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
         }
         .padding(.horizontal, 3)
@@ -298,7 +294,7 @@ struct EquipmentLibraryView: View {
                 }
             }
         }
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(Theme.stroke, lineWidth: 1)
@@ -311,11 +307,11 @@ struct EquipmentLibraryView: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.name)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.callout.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
                     .lineLimit(1)
                 Text("\(item.muscle?.label ?? "未分类") · \(item.equipment?.label ?? "未设置")")
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.secondaryText)
                     .lineLimit(1)
             }
@@ -325,22 +321,22 @@ struct EquipmentLibraryView: View {
             if pinned.contains(item.id.uuidString) {
                 Image(systemName: "pin.fill")
                     .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.cobalt)
                     .accessibilityLabel("已置顶")
             }
 
             Text(item.videoURL != nil ? "视频" : "准备中")
                 .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(item.videoURL != nil ? Theme.accent : Theme.tertiaryText)
+                .foregroundStyle(item.videoURL != nil ? Theme.cobalt : Theme.tertiaryText)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 3)
                 .background(
-                    item.videoURL != nil ? Theme.accent.opacity(0.10) : Color.white.opacity(0.04),
-                    in: Capsule()
+                    item.videoURL != nil ? Theme.cobalt.opacity(0.10) : Theme.ink.opacity(0.035),
+                    in: Capsule(style: .continuous)
                 )
 
             Image(systemName: "chevron.right")
-                .font(.caption2.weight(.semibold))
+                .font(.system(size: 9.5, weight: .semibold))
                 .foregroundStyle(Theme.tertiaryText)
         }
         .padding(.horizontal, 13)
@@ -352,53 +348,51 @@ struct EquipmentLibraryView: View {
     private func libraryThumbnail(_ item: EquipmentItem) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Theme.accent.opacity(0.16), Color.white.opacity(0.035)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                .fill(Theme.ink.opacity(0.035))
             if let data = item.photoData {
                 EquipmentThumbnail(itemID: item.id, data: data)
             } else {
                 Image(systemName: equipmentSymbol(item))
                     .font(.system(size: 22, weight: .light))
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.cobalt)
             }
         }
         .frame(width: 46, height: 46)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Theme.stroke, lineWidth: 1)
+                .strokeBorder(Theme.stroke, lineWidth: 1)
         )
     }
 
     private var emptyCard: some View {
         VStack(spacing: 10) {
             if store.equipmentLibrary.isEmpty {
-                HeroGlyph(
-                    symbol: "dumbbell.fill",
-                    size: 122,
-                    tint: Theme.accent
-                )
+                ZStack {
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(Theme.lime)
+                    Image(systemName: "dumbbell.fill")
+                        .font(.system(size: 36, weight: .black))
+                        .foregroundStyle(Theme.onAccent)
+                }
+                .frame(width: 92, height: 92)
+                .rotationEffect(.degrees(2))
             } else {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 28, weight: .light))
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.cobalt)
                     .frame(width: 50, height: 50)
-                    .background(Theme.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .background(Theme.cobalt.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
 
             Text(store.equipmentLibrary.isEmpty ? "器械库还是空的" : "没有匹配的器械")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Theme.primaryText)
+                .font(AppType.callout.weight(.semibold))
+                .foregroundStyle(Theme.ink)
 
             Text(store.equipmentLibrary.isEmpty
                  ? "拍照或从相册识别第一件器械，生成计划时会优先使用它。"
                  : "换个名称、肌群或器械类型试试。")
-                .font(.caption)
+                .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -423,16 +417,16 @@ struct EquipmentLibraryView: View {
         .padding(.horizontal, 24)
         .padding(.vertical, 28)
         .background(
-            Color.white.opacity(0.025),
+            Theme.paper,
             in: RoundedRectangle(cornerRadius: 20, style: .continuous)
         )
-        .overlay(
+        .overlay {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(
+                .strokeBorder(
                     Theme.stroke,
                     style: StrokeStyle(lineWidth: 1, dash: [5, 5])
                 )
-        )
+        }
     }
 
     private func equipmentSymbol(_ item: EquipmentItem) -> String {
@@ -491,7 +485,7 @@ private struct SwipeDeleteRow<Content: View>: View {
         ZStack(alignment: .trailing) {
             Button(action: onDelete) {
                 Text("删除")
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppType.callout.weight(.semibold))
                     .foregroundStyle(Theme.danger)
                     .frame(width: actionWidth)
                     .frame(maxHeight: .infinity)
@@ -561,7 +555,7 @@ struct EquipmentSearchView: View {
         AppScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 Text("输入器械或动作名称，选中后直接加入器械库，并自动带上教学视频。")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -575,16 +569,16 @@ struct EquipmentSearchView: View {
                     }
                     .padding(12)
                     .background(
-                        Theme.surfaceStrong,
+                        Theme.ink.opacity(0.035),
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                     )
 
                 HStack {
                     Text("搜索结果")
-                        .font(.headline)
+                        .font(AppType.headline)
                     Spacer()
                     Text("\(results.count) 个")
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
                 .padding(.top, 2)
@@ -604,7 +598,7 @@ struct EquipmentSearchView: View {
                 }
 
                 Text("找不到自定义器械？返回器械库后点右上角「+」，可以自己填名称、视频和备注。")
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
                     .padding(.top, 4)
             }
@@ -629,10 +623,10 @@ struct EquipmentSearchView: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(exercise.nameZH)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
                     Text("\(exercise.muscle.label) · \(exercise.equipment.label)")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.secondaryText)
                 }
 
@@ -640,17 +634,17 @@ struct EquipmentSearchView: View {
 
                 if added {
                     Text("已添加")
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.tertiaryText)
                 } else {
                     Image(systemName: "plus.circle.fill")
                         .font(.title3)
-                        .foregroundStyle(Theme.accent)
+                        .foregroundStyle(Theme.cobalt)
                 }
             }
             .padding(14)
             .background(
-                Theme.surfaceStrong,
+                Theme.ink.opacity(0.035),
                 in: RoundedRectangle(cornerRadius: 12, style: .continuous)
             )
         }
@@ -695,7 +689,7 @@ struct AddEquipmentView: View {
                 VStack(spacing: 14) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("器械名称")
-                            .font(.caption)
+                            .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                         TextField("例如：高位下拉", text: $name)
                             .onChange(of: name) { _, value in
@@ -705,7 +699,7 @@ struct AddEquipmentView: View {
                             }
                             .padding(12)
                             .background(
-                                Theme.surfaceStrong,
+                                Theme.ink.opacity(0.035),
                                 in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                             )
                     }
@@ -713,7 +707,7 @@ struct AddEquipmentView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("对应动作")
-                            .font(.caption)
+                            .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                         Button {
                             showExercisePicker = true
@@ -721,17 +715,17 @@ struct AddEquipmentView: View {
                             HStack {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(selectedExercise?.nameZH ?? "选择动作")
-                                        .font(.subheadline.weight(.medium))
-                                        .foregroundStyle(Theme.primaryText)
+                                        .font(AppType.callout)
+                                        .foregroundStyle(Theme.ink)
                                     Text(selectedExercise.map {
                                         "\($0.muscle.label) · \($0.equipment.label)"
                                     } ?? "用于匹配计划与教学视频")
-                                        .font(.caption2)
+                                        .font(.system(size: 9.5, weight: .medium))
                                         .foregroundStyle(Theme.secondaryText)
                                 }
                                 Spacer()
                                 Image(systemName: "chevron.right")
-                                    .font(.caption)
+                                    .font(AppType.caption)
                                     .foregroundStyle(Theme.tertiaryText)
                             }
                         }
@@ -741,7 +735,7 @@ struct AddEquipmentView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("备注（选填）")
-                            .font(.caption)
+                            .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                         TextField("例如：调节座位高度在 3 档", text: $notes, axis: .vertical)
                             .lineLimit(2...4)
@@ -752,7 +746,7 @@ struct AddEquipmentView: View {
                             }
                             .padding(12)
                             .background(
-                                Theme.surfaceStrong,
+                                Theme.ink.opacity(0.035),
                                 in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                             )
                     }
@@ -814,7 +808,7 @@ struct AddEquipmentView: View {
     private var photoCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("器械照片（选填）")
-                .font(.caption)
+                .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
 
             if let data = photoData, let image = UIImage(data: data) {
@@ -832,13 +826,13 @@ struct AddEquipmentView: View {
                     .buttonStyle(SecondaryButtonStyle())
                 PhotosPicker(selection: $photoItem, matching: .images) {
                     Text("相册")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.accent)
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.cobalt)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 13)
                         .background(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(Theme.accent.opacity(0.10))
+                                .fill(Theme.cobalt.opacity(0.10))
                         )
                 }
             }

@@ -42,6 +42,7 @@ struct SettingsView: View {
     var body: some View {
         AppScrollView {
             VStack(spacing: AppLayout.sectionSpacing) {
+                header
                 accountCard
 
                 sectionLabel("服务状态")
@@ -141,38 +142,56 @@ struct SettingsView: View {
 
     // MARK: - 账号
 
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text("SETTINGS / 设置")
+                .font(AppType.overline)
+                .tracking(1.5)
+                .foregroundStyle(Theme.cobalt)
+
+            Text("把偏好调好")
+                .font(AppType.display)
+                .tracking(-0.9)
+                .foregroundStyle(Theme.ink)
+
+            Text("提醒、健康、天气和数据都在这里。")
+                .font(AppType.body)
+                .foregroundStyle(Theme.secondaryText)
+        }
+    }
+
     private var accountCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("账号与安全")
-                        .font(.headline)
+                        .font(AppType.headline)
                     Text("登录态已加密保存在本机 Keychain")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                 }
                 Spacer()
                 Image(systemName: "lock.shield.fill")
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.cobalt)
             }
 
             HStack {
                 Text("登录账号")
-                    .font(.subheadline)
+                    .font(AppType.callout)
                     .foregroundStyle(Theme.secondaryText)
                 Spacer()
                 Text(maskedPhone)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.callout)
+                    .foregroundStyle(Theme.ink)
             }
 
             HStack {
                 Text("用户 ID")
-                    .font(.subheadline)
+                    .font(AppType.callout)
                     .foregroundStyle(Theme.secondaryText)
                 Spacer()
                 Text(String(auth.userID?.prefix(8) ?? ""))
-                    .font(.caption.monospaced())
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
                     .foregroundStyle(Theme.tertiaryText)
             }
 
@@ -188,32 +207,40 @@ struct SettingsView: View {
             Button {
                 showLogout = true
             } label: {
-                Text("退出登录")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.danger)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Theme.danger.opacity(0.10))
-                    )
+                HStack(spacing: 6) {
+                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                        .font(.system(size: 10, weight: .semibold))
+                    Text("退出登录")
+                        .font(AppType.caption.weight(.semibold))
+                }
+                .foregroundStyle(Theme.coral)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(
+                    Theme.coral.opacity(0.06),
+                    in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .strokeBorder(Theme.coral.opacity(0.22), lineWidth: 1)
+                }
             }
             .buttonStyle(.plain)
 
             Text("退出登录不会删除训练计划、训练记录或身体数据。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Divider().overlay(Theme.stroke)
+            InkDivider()
 
             Button {
                 showDeleteAccount = true
             } label: {
                 Text("注销账号")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.danger)
+                    .font(.system(size: 9.5, weight: .semibold))
+                    .foregroundStyle(Theme.coral)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 9)
             }
@@ -234,9 +261,9 @@ struct SettingsView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("服务连接")
-                        .font(.headline)
+                        .font(AppType.headline)
                     Text(serviceText)
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
                 Spacer()
@@ -247,7 +274,7 @@ struct SettingsView: View {
 
 #if DEBUG
             Text(AppConfig.apiBaseURLString)
-                .font(.caption2.monospaced())
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
                 .foregroundStyle(Theme.tertiaryText)
 #endif
 
@@ -271,7 +298,7 @@ struct SettingsView: View {
 
             if serviceState == .offline {
                 Text("未连接后端时，登录同步、真实 AI、教学视频等功能会不可用；本地训练记录仍可继续使用。")
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -290,7 +317,7 @@ struct SettingsView: View {
     private var serviceColor: Color {
         switch serviceState {
         case .checking: return Theme.warning
-        case .online: return Theme.accent
+        case .online: return Theme.cobalt
         case .offline: return Theme.danger
         }
     }
@@ -298,15 +325,15 @@ struct SettingsView: View {
     private func statusPill(_ title: String, _ value: String, active: Bool) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(title)
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
             Text(value)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(active ? Theme.accent : Theme.secondaryText)
+                .font(AppType.caption.weight(.semibold))
+                .foregroundStyle(active ? Theme.cobalt : Theme.secondaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
-        .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(Theme.ink.opacity(0.035), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private func checkService() async {
@@ -328,14 +355,14 @@ struct SettingsView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("训练提醒")
-                        .font(.headline)
+                        .font(AppType.headline)
                     Text("按每周训练日发送本地通知")
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
                 Spacer()
                 Image(systemName: store.notificationsEnabled ? "bell.badge.fill" : "bell.slash")
-                    .foregroundStyle(store.notificationsEnabled ? Theme.accent : Theme.tertiaryText)
+                    .foregroundStyle(store.notificationsEnabled ? Theme.cobalt : Theme.tertiaryText)
             }
 
             DatePicker(
@@ -343,7 +370,7 @@ struct SettingsView: View {
                 selection: $reminderDate,
                 displayedComponents: .hourAndMinute
             )
-            .font(.subheadline)
+            .font(AppType.callout)
 
             HStack(spacing: 10) {
                 Button("保存提醒") {
@@ -364,7 +391,7 @@ struct SettingsView: View {
             Text(store.notificationsEnabled
                  ? "已开启：共 \(store.plan?.firstWeek.count ?? 0) 个训练日。修改计划后会自动更新。"
                  : "未开启。iOS 的静音和专注模式可能影响提醒，请在系统设置中允许通知。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
         }
         .card()
@@ -375,27 +402,27 @@ struct SettingsView: View {
             HStack(spacing: 10) {
                 Image(systemName: weather.snapshot?.symbolName ?? "cloud.sun.fill")
                     .font(.title3)
-                    .foregroundStyle(weather.snapshot?.isWet == true ? Theme.blue : Theme.accent)
+                    .foregroundStyle(weather.snapshot?.isWet == true ? Theme.blue : Theme.cobalt)
                     .frame(width: 30, height: 30)
                     .background(
-                        (weather.snapshot?.isWet == true ? Theme.blue : Theme.accent).opacity(0.12),
+                        (weather.snapshot?.isWet == true ? Theme.blue : Theme.cobalt).opacity(0.12),
                         in: RoundedRectangle(cornerRadius: 9, style: .continuous)
                     )
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(weather.snapshot?.placeDisplayName ?? "本地天气")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
                     Text(weather.snapshot.map { "\($0.conditionLabel) · \($0.temperatureText)" } ?? weather.authorizationLabel)
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                 }
 
                 Spacer(minLength: 4)
 
                 Button("详情") { showWeatherDetail = true }
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.cobalt)
             }
 
             Toggle(
@@ -406,14 +433,14 @@ struct SettingsView: View {
             ) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("恶劣天气出行提醒")
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.callout)
+                        .foregroundStyle(Theme.ink)
                     Text("有雨雪、大风或降雨概率较高时，每天最多提醒一次；夜间不打扰")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                 }
             }
-            .tint(Theme.accent)
+            .tint(Theme.cobalt)
 
             if weather.alertsEnabled && !weather.alertsAuthorized {
                 HStack(spacing: 12) {
@@ -426,20 +453,20 @@ struct SettingsView: View {
                             showMessage = true
                         }
                     }
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.cobalt)
 
                     Button("去系统设置") {
                         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
                         openURL(url)
                     }
-                    .font(.caption2.weight(.semibold))
+                    .font(.system(size: 9.5, weight: .semibold))
                     .foregroundStyle(Theme.tertiaryText)
                 }
             }
 
             Text("定位只用于本地天气查询；关闭 App 后不会持续获取位置。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
         }
         .card(padding: 14)
@@ -480,18 +507,18 @@ struct SettingsView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("身体数据提醒")
-                        .font(.headline)
+                        .font(AppType.headline)
                     Text(store.bodyCheckInFrequencyLabel)
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
                 Spacer()
                 Image(systemName: store.bodyCheckInFrequency == .off ? "bell.slash" : "bell.badge")
-                    .foregroundStyle(store.bodyCheckInFrequency == .off ? Theme.tertiaryText : Theme.accent)
+                    .foregroundStyle(store.bodyCheckInFrequency == .off ? Theme.tertiaryText : Theme.cobalt)
             }
 
             Text("到日期后打开「今日」会弹出体重 / 体脂 / 腰围记录卡；保存或隐藏后本次消失。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -501,12 +528,12 @@ struct SettingsView: View {
                         store.setBodyCheckInFrequency(frequency)
                     } label: {
                         Text(frequency.title)
-                            .font(.caption.weight(.semibold))
+                            .font(AppType.caption.weight(.semibold))
                             .foregroundStyle(store.bodyCheckInFrequency == frequency ? Theme.onAccent : Theme.secondaryText)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 7)
                             .background(
-                                Capsule().fill(store.bodyCheckInFrequency == frequency ? Theme.accent : Theme.surfaceStrong)
+                                Capsule().fill(store.bodyCheckInFrequency == frequency ? Theme.cobalt : Theme.ink.opacity(0.035))
                             )
                     }
                     .buttonStyle(.plain)
@@ -516,7 +543,7 @@ struct SettingsView: View {
             if store.bodyCheckInFrequency == .weekly || store.bodyCheckInFrequency == .biweekly {
                 VStack(alignment: .leading, spacing: 7) {
                     Text("选择星期")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                     HStack(spacing: 5) {
                         ForEach(1...7, id: \.self) { weekday in
@@ -524,13 +551,13 @@ struct SettingsView: View {
                                 store.setBodyCheckInWeekday(weekday)
                             } label: {
                                 Text(Weekday.shortNames[weekday - 1])
-                                    .font(.caption2.weight(.semibold))
+                                    .font(.system(size: 9.5, weight: .semibold))
                                     .foregroundStyle(store.bodyCheckInWeekday == weekday ? Theme.onAccent : Theme.secondaryText)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 7)
                                     .background(
                                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                            .fill(store.bodyCheckInWeekday == weekday ? Theme.accent : Theme.surfaceStrong)
+                                            .fill(store.bodyCheckInWeekday == weekday ? Theme.cobalt : Theme.ink.opacity(0.035))
                                     )
                             }
                             .buttonStyle(.plain)
@@ -542,7 +569,7 @@ struct SettingsView: View {
             if store.bodyCheckInFrequency == .monthly {
                 HStack {
                     Text("每月几号")
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                     Spacer()
                     Picker("每月几号", selection: Binding(
@@ -554,7 +581,7 @@ struct SettingsView: View {
                         }
                     }
                     .pickerStyle(.menu)
-                    .tint(Theme.accent)
+                    .tint(Theme.cobalt)
                 }
             }
 
@@ -571,20 +598,20 @@ struct SettingsView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Apple 健康")
-                        .font(.headline)
+                        .font(AppType.headline)
                     Text(store.healthKitEnabled ? "已连接 · 体重会同步" : "未连接")
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
                 Spacer()
                 Image(systemName: "heart.text.square.fill")
                     .foregroundStyle(
-                        store.healthKitEnabled ? Theme.accent : Theme.tertiaryText
+                        store.healthKitEnabled ? Theme.cobalt : Theme.tertiaryText
                     )
             }
 
             Text("连接后读取最近体重，并把完成的训练写入 Apple 健康。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -621,15 +648,15 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("训练偏好")
-                    .font(.headline)
+                    .font(AppType.headline)
                 Spacer()
                 Text("已记住 \(store.dislikedSlugs.count) 个")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
             }
 
             Text("在计划里删除过的动作会被记住，下次生成时尽量避开；重新添加会解除。")
-                .font(.caption)
+                .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -652,15 +679,15 @@ struct SettingsView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("AI 服务")
-                        .font(.headline)
+                        .font(AppType.headline)
                     Text(store.useRemoteAI ? "远程模式 · 调用后端模型" : "本地模式 · 规则模板")
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
                 Spacer()
                 Toggle("", isOn: remoteBinding)
                     .labelsHidden()
-                    .tint(Theme.accent)
+                    .tint(Theme.cobalt)
             }
 
             Text(store.isPro
@@ -668,7 +695,7 @@ struct SettingsView: View {
                     ? "Pro 已解锁：生成计划、教练对话和视觉识别会请求 DeepSeek/后端；失败时自动回退本地。"
                     : "已开通 Pro，但当前关闭了远程 AI。打开开关后可使用 DeepSeek。")
                  : "AI 能力为 Pro 会员权益。未开通时使用本地规则建议；开通后可调用 DeepSeek 的 AI 私人健身教练。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -677,17 +704,17 @@ struct SettingsView: View {
                 get: { store.debugForceRemoteAI },
                 set: { store.debugForceRemoteAI = $0 }
             ))
-            .font(.caption)
-            .tint(Theme.accent)
+            .font(AppType.caption)
+            .tint(Theme.cobalt)
 
             Text("仅 Debug 生效，用于在没有 StoreKit 商品时预览 DeepSeek；正式版本仍按 Pro 权益限制。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)
 #endif
 
             Text(AppConfig.apiBaseURL.absoluteString)
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.secondaryText)
 
             Button("测试连接") {
@@ -728,7 +755,7 @@ struct SettingsView: View {
     private var privacyCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("协议与数据")
-                .font(.headline)
+                .font(AppType.headline)
 
             infoRow("隐私政策", icon: "hand.raised") {
                 legalDocument = .privacy
@@ -745,14 +772,14 @@ struct SettingsView: View {
             } label: {
                 HStack {
                     Image(systemName: "square.and.arrow.up")
-                        .foregroundStyle(Theme.accent)
+                        .foregroundStyle(Theme.cobalt)
                         .frame(width: 22)
                     Text("导出我的数据")
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.callout)
+                        .foregroundStyle(Theme.ink)
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                 }
             }
@@ -766,26 +793,26 @@ struct SettingsView: View {
                 Link(destination: repDBURL) {
                     HStack {
                         Image(systemName: "figure.strengthtraining.traditional")
-                            .foregroundStyle(Theme.accent)
+                            .foregroundStyle(Theme.cobalt)
                             .frame(width: 22)
                         Text("动作图：Exercise data by RepDB (repdb.co)")
-                            .font(.caption2)
+                            .font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(Theme.secondaryText)
                         Spacer()
                         Image(systemName: "arrow.up.right")
-                            .font(.caption2)
+                            .font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(Theme.tertiaryText)
                     }
                 }
             }
 
             Text("本产品不提供医疗诊断或治疗建议。孕期、术后、心血管疾病或关节急性疼痛，请先咨询医生。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text("版本 \(AppConfig.appVersion)")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
         }
         .card()
@@ -799,14 +826,14 @@ struct SettingsView: View {
         Button(action: action) {
             HStack {
                 Image(systemName: icon)
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.cobalt)
                     .frame(width: 22)
                 Text(title)
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.callout)
+                    .foregroundStyle(Theme.ink)
                 Spacer()
                 Image(systemName: "chevron.right")
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
         }
@@ -814,12 +841,17 @@ struct SettingsView: View {
     }
 
     private func sectionLabel(_ text: String) -> some View {
-        Text(text)
-            .font(AppType.micro)
-            .tracking(1.2)
-            .foregroundStyle(Theme.tertiaryText)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 10)
-            .padding(.horizontal, 2)
+        HStack(spacing: 6) {
+            Rectangle()
+                .fill(Theme.cobalt)
+                .frame(width: 12, height: 2)
+            Text(text)
+                .font(AppType.overline)
+                .tracking(1.1)
+                .foregroundStyle(Theme.secondaryText)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 6)
+        .padding(.horizontal, 2)
     }
 }

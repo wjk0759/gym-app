@@ -39,7 +39,8 @@ struct EquipmentRecognitionView: View {
 
     var body: some View {
         AppScrollView {
-            VStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 16) {
+                header
                 scanHeaderCard
                 matchesSection
             }
@@ -124,6 +125,25 @@ struct EquipmentRecognitionView: View {
         }
     }
 
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text("VISION / 器械识别")
+                .font(AppType.overline)
+                .tracking(1.5)
+                .foregroundStyle(Theme.cobalt)
+
+            Text("认出器械")
+                .font(AppType.display)
+                .tracking(-0.9)
+                .foregroundStyle(Theme.ink)
+
+            Text("让器械完整进入画面。识别后可以查看动作，也可以保存到个人器械库。")
+                .font(AppType.body)
+                .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     private var scanHeaderCard: some View {
         HStack(alignment: .top, spacing: 14) {
             Group {
@@ -133,64 +153,83 @@ struct EquipmentRecognitionView: View {
                         .scaledToFill()
                 } else {
                     ZStack {
-                        Theme.surfaceStrong
+                        Theme.ink.opacity(0.035)
                         Image(systemName: "camera.viewfinder")
                             .font(.system(size: 28, weight: .light))
-                            .foregroundStyle(Theme.accent)
+                            .foregroundStyle(Theme.cobalt)
                     }
                 }
             }
             .frame(width: 96, height: 96)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Theme.stroke, lineWidth: 1)
+            }
 
             VStack(alignment: .leading, spacing: 5) {
-                Text("照片识别")
-                    .font(.caption)
+                Text("照片预览")
+                    .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(Theme.tertiaryText)
-                Text("识别你的器械")
-                    .font(.headline)
-                    .foregroundStyle(Theme.primaryText)
+                Text(selectedImage == nil ? "还没有照片" : "这张照片")
+                    .font(AppType.headline)
+                    .foregroundStyle(Theme.ink)
                 Text("从最匹配到相似候选")
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.secondaryText)
 
-                HStack(spacing: 12) {
-                    Button("重新拍照") {
+                HStack(spacing: 8) {
+                    Button {
+                        Haptics.tap()
                         showCamera = true
+                    } label: {
+                        Label("拍照", systemImage: "camera.fill")
+                            .font(AppType.micro)
+                            .foregroundStyle(Theme.onAccent)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Theme.cobalt, in: Capsule(style: .continuous))
                     }
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .buttonStyle(SubtlePressStyle(scale: 0.95))
 
                     PhotosPicker(selection: $photoItem, matching: .images) {
-                        Text("从相册选择")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Theme.secondaryText)
+                        Label("相册", systemImage: "photo")
+                            .font(AppType.micro)
+                            .foregroundStyle(Theme.ink)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Theme.paper, in: Capsule(style: .continuous))
+                            .overlay {
+                                Capsule(style: .continuous)
+                                    .strokeBorder(Theme.stroke, lineWidth: 1)
+                            }
                     }
                 }
+                .padding(.top, 2)
             }
 
             Spacer(minLength: 0)
         }
-        .card()
+        .editorialCard(accent: Theme.lime)
     }
 
     private var matchesSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("匹配器械")
-                    .font(.headline)
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.headline)
+                    .foregroundStyle(Theme.ink)
                 Spacer()
                 Text("\(candidates.count) 个候选")
-                    .font(.caption)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
 
             if isScanning {
                 HStack(spacing: 8) {
-                    ProgressView().tint(Theme.accent)
+                    ProgressView().tint(Theme.cobalt)
                     Text("正在从动作库匹配…")
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
                 .padding(.vertical, 8)
@@ -199,28 +238,28 @@ struct EquipmentRecognitionView: View {
                     if !customAddedName.isEmpty {
                         HStack(spacing: 8) {
                             Image(systemName: "checkmark.seal.fill")
-                                .foregroundStyle(Theme.accent)
+                                .foregroundStyle(Theme.cobalt)
                             Text("已加入个人动作库：\(customAddedName)")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(Theme.primaryText)
+                                .font(AppType.callout.weight(.semibold))
+                                .foregroundStyle(Theme.ink)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         Text("可在「我的器械库」查看；生成计划仍只使用动作库内已收录的标准动作。")
-                            .font(.caption)
+                            .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                             .fixedSize(horizontal: false, vertical: true)
                     } else {
                         Text(selectedImage == nil
                              ? "先拍摄或选择一张器械照片。"
                              : "暂未识别到动作库中的器械，可以直接补全并加入个人库。")
-                            .font(.subheadline.weight(.medium))
-                            .foregroundStyle(Theme.primaryText)
+                            .font(AppType.callout.weight(.medium))
+                            .foregroundStyle(Theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
 
                         if !description.isEmpty {
                             Text(description)
-                                .font(.subheadline)
-                                .foregroundStyle(Color.orange)
+                                .font(AppType.caption)
+                                .foregroundStyle(Theme.coral)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
 
@@ -229,19 +268,14 @@ struct EquipmentRecognitionView: View {
                                 showAddCustom = true
                             } label: {
                                 Label("补全器械信息", systemImage: "plus.circle.fill")
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(Theme.primaryText)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 11)
-                                    .background(Theme.accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(PrimaryButtonStyle())
                         }
                     }
 
                     if selectedImage != nil && customAddedName.isEmpty {
                         Text("拍摄建议：让器械完整进入画面，避免只露出边缘；暗光、遮挡或只拍局部都会降低识别率。")
-                            .font(.caption)
+                            .font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(Theme.secondaryText)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -268,25 +302,25 @@ struct EquipmentRecognitionView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(candidate.exercise.nameZH)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(Theme.primaryText)
+                                .font(AppType.callout.weight(.semibold))
+                                .foregroundStyle(Theme.ink)
                             Text("\(candidate.exercise.muscle.label) · \(candidate.exercise.equipment.label)")
-                                .font(.caption2)
+                                .font(.system(size: 9.5, weight: .medium))
                                 .foregroundStyle(Theme.secondaryText)
                         }
                         Spacer()
                         Text("\(Int(candidate.confidence * 100))%")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(candidate.confidence >= 0.6 ? Theme.accent : Theme.warning)
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .foregroundStyle(candidate.confidence >= 0.6 ? Theme.cobalt : Theme.warning)
                     }
 
                     ProgressView(value: candidate.confidence)
-                        .tint(candidate.confidence >= 0.6 ? Theme.accent : Theme.warning)
+                        .tint(candidate.confidence >= 0.6 ? Theme.cobalt : Theme.warning)
 
                     if candidate.confidence < 0.6 {
                         Text("需要确认：这张图可能不是这个器械")
-                            .font(.caption2)
-                            .foregroundStyle(Theme.warning)
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(Theme.coral)
                     }
 
                     HStack {
@@ -297,8 +331,8 @@ struct EquipmentRecognitionView: View {
                                 isSaved(candidate) ? "已保存" : "保存到器械库",
                                 systemImage: isSaved(candidate) ? "checkmark.circle.fill" : "plus.circle"
                             )
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(isSaved(candidate) ? Theme.tertiaryText : Theme.accent)
+                            .font(.system(size: 9.5, weight: .semibold))
+                            .foregroundStyle(isSaved(candidate) ? Theme.tertiaryText : Theme.cobalt)
                         }
                         .buttonStyle(.plain)
                         .disabled(isSaved(candidate))
@@ -311,8 +345,8 @@ struct EquipmentRecognitionView: View {
                                 dismiss()
                             } label: {
                                 Label("加入已选", systemImage: "checkmark.circle.fill")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(Theme.accent)
+                                    .font(.system(size: 9.5, weight: .semibold))
+                                    .foregroundStyle(Theme.cobalt)
                             }
                             .buttonStyle(.plain)
                         }
@@ -323,7 +357,7 @@ struct EquipmentRecognitionView: View {
                             selectedExercise = candidate.exercise
                         } label: {
                             Text("查看动作 ›")
-                                .font(.caption.weight(.semibold))
+                                .font(.system(size: 9.5, weight: .semibold))
                                 .foregroundStyle(Theme.secondaryText)
                         }
                         .buttonStyle(.plain)
@@ -332,9 +366,13 @@ struct EquipmentRecognitionView: View {
                 }
                 .padding(12)
                 .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Theme.surfaceStrong)
+                    Theme.paper,
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
                 )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Theme.stroke, lineWidth: 1)
+                }
                 .contentShape(Rectangle())
                 .onTapGesture {
                     selectedExercise = candidate.exercise
@@ -345,13 +383,17 @@ struct EquipmentRecognitionView: View {
                 showAddCustom = true
             } label: {
                 Label("都不是？补全器械信息", systemImage: "plus.circle")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.tertiaryText)
+                    .font(.system(size: 9.5, weight: .semibold))
+                    .foregroundStyle(Theme.cobalt)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 9)
-                    .background(Theme.surfaceStrong, in: Capsule())
+                    .background(Theme.paper, in: Capsule(style: .continuous))
+                    .overlay {
+                        Capsule(style: .continuous)
+                            .strokeBorder(Theme.stroke, lineWidth: 1)
+                    }
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SubtlePressStyle(scale: 0.98))
         }
     }
 
@@ -498,7 +540,8 @@ private struct CustomExerciseAddSheet: View {
                     .buttonStyle(PrimaryButtonStyle())
                     .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
-                .padding(20)
+                .appPagePadding()
+                .padding(.top, 8)
                 .padding(.bottom, 24)
             }
             .background(AppBackground())
@@ -519,21 +562,20 @@ private struct CustomExerciseAddSheet: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 7) {
-                Image(systemName: "sparkles")
-                Text("AI 识别到了动作库外器械")
-            }
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(Theme.accent)
+        VStack(alignment: .leading, spacing: 7) {
+            Text("CUSTOM / 动作库")
+                .font(AppType.overline)
+                .tracking(1.5)
+                .foregroundStyle(Theme.cobalt)
 
-            Text("补全后加入你的个人动作库")
-                .font(.system(size: 25, weight: .heavy, design: .default))
-                .foregroundStyle(Theme.primaryText)
+            Text("补全器械信息")
+                .font(AppType.display)
+                .tracking(-0.9)
+                .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text("AI 已预填识别名称。确认名称、训练肌群和器械类型后，加入你的个人器械库。")
-                .font(.caption)
+                .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -542,13 +584,21 @@ private struct CustomExerciseAddSheet: View {
     private var nameCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("动作名称")
-                .font(.caption.weight(.semibold))
+                .font(.system(size: 9.5, weight: .semibold))
                 .foregroundStyle(Theme.secondaryText)
             TextField("例如：髋外展机", text: $name)
                 .focused($nameFocused)
                 .textInputAutocapitalization(.never)
+                .font(AppType.callout)
                 .padding(12)
-                .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(
+                    Theme.ink.opacity(0.035),
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(Theme.stroke, lineWidth: 1)
+                }
                 .onChange(of: name) { _, value in
                     if value.count > 40 {
                         name = String(value.prefix(40))
@@ -561,7 +611,7 @@ private struct CustomExerciseAddSheet: View {
     private var muscleCard: some View {
         VStack(alignment: .leading, spacing: 9) {
             Text("主要训练肌群")
-                .font(.caption.weight(.semibold))
+                .font(.system(size: 9.5, weight: .semibold))
                 .foregroundStyle(Theme.secondaryText)
             LazyVGrid(columns: muscleColumns, spacing: 7) {
                 ForEach(MuscleGroup.allCases) { group in
@@ -581,7 +631,7 @@ private struct CustomExerciseAddSheet: View {
     private var equipmentCard: some View {
         VStack(alignment: .leading, spacing: 9) {
             Text("器械类型")
-                .font(.caption.weight(.semibold))
+                .font(.system(size: 9.5, weight: .semibold))
                 .foregroundStyle(Theme.secondaryText)
             LazyVGrid(columns: equipmentColumns, spacing: 7) {
                 ForEach(Equipment.allCases) { item in
@@ -605,17 +655,20 @@ private struct CustomExerciseAddSheet: View {
     ) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.caption.weight(.semibold))
+                .font(AppType.caption.weight(.semibold))
                 .foregroundStyle(selected ? Theme.onAccent : Theme.secondaryText)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 9)
                 .background(
-                    selected ? Theme.accent : Theme.surfaceStrong,
+                    selected ? Theme.cobalt : Theme.paper,
                     in: RoundedRectangle(cornerRadius: 11, style: .continuous)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .stroke(selected ? Theme.accent : Color.clear, lineWidth: 0.8)
+                        .strokeBorder(
+                            selected ? Theme.cobalt : Theme.stroke,
+                            lineWidth: 1
+                        )
                 )
         }
         .buttonStyle(SubtlePressStyle(scale: 0.96))

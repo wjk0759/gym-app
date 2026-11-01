@@ -81,8 +81,9 @@ struct FoodPhotoAnalysisView: View {
 
                     disclaimer
                 }
-                .padding(20)
-                .padding(.bottom, 20)
+                .appPagePadding()
+                .padding(.top, 8)
+                .padding(.bottom, 24)
             }
             .background(AppBackground())
             .navigationTitle("拍照识别饮食")
@@ -132,20 +133,28 @@ struct FoodPhotoAnalysisView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("拍一张这餐的照片\n自动估算热量和营养")
-                .font(.system(size: 24, weight: .bold, design: .default))
-                .foregroundStyle(Theme.primaryText)
+        VStack(alignment: .leading, spacing: 7) {
+            Text("VISION / 饮食识别")
+                .font(AppType.overline)
+                .tracking(1.5)
+                .foregroundStyle(Theme.cobalt)
+
+            Text("拍一餐，算个大概")
+                .font(AppType.display)
+                .tracking(-0.9)
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+
             Text("照片只用于本次识别，不保存。识别后可以修改份量、勾选实际吃下的食物，再加入今日饮食。")
-                .font(.subheadline)
+                .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
+
             Text("螺蛳粉、火锅、奶茶也可以识别。这里只估算热量，不评价食物好坏。")
-                .font(.caption)
-                .foregroundStyle(Theme.accent)
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(Theme.cobalt)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var photoCard: some View {
@@ -166,7 +175,7 @@ struct FoodPhotoAnalysisView: View {
                             items = []
                         } label: {
                             Image(systemName: "xmark")
-                                .font(.caption.weight(.bold))
+                                .font(.system(size: 9, weight: .bold))
                                 .foregroundStyle(Theme.onMedia)
                                 .padding(8)
                                 .background(.black.opacity(0.55), in: Circle())
@@ -176,26 +185,30 @@ struct FoodPhotoAnalysisView: View {
             } else {
                 VStack(spacing: 8) {
                     Image(systemName: "fork.knife")
-                        .font(.system(size: 38, weight: .light))
-                        .foregroundStyle(Theme.accent)
+                        .font(.system(size: 34, weight: .light))
+                        .foregroundStyle(Theme.cobalt)
                     Text("拍照或选择一张餐食照片")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.callout.weight(.medium))
+                        .foregroundStyle(Theme.ink)
                     Text("尽量俯拍，让食物完整进入画面")
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.tertiaryText)
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 230)
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .background(
+                    Theme.ink.opacity(0.03),
+                    in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+                )
                 .overlay(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Theme.stroke, style: StrokeStyle(lineWidth: 1, dash: [6, 6]))
+                        .strokeBorder(Theme.stroke, style: StrokeStyle(lineWidth: 1, dash: [6, 6]))
                 )
             }
 
             HStack(spacing: 10) {
                 Button {
+                    Haptics.tap()
                     showCamera = true
                 } label: {
                     Label("拍照", systemImage: "camera")
@@ -204,14 +217,18 @@ struct FoodPhotoAnalysisView: View {
 
                 PhotosPicker(selection: $photoItem, matching: .images) {
                     Label("相册", systemImage: "photo")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.accent)
+                        .font(AppType.buttonSecondary)
+                        .foregroundStyle(Theme.cobalt)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 13)
+                        .padding(.vertical, 15)
                         .background(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(Theme.accent.opacity(0.10))
+                            Theme.ink.opacity(0.035),
+                            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
                         )
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                .strokeBorder(Theme.stroke, lineWidth: 1)
+                        }
                 }
             }
         }
@@ -221,7 +238,7 @@ struct FoodPhotoAnalysisView: View {
     private var mealCard: some View {
         VStack(alignment: .leading, spacing: 9) {
             Text("这是哪一餐？")
-                .font(.caption)
+                .font(AppType.caption.weight(.semibold))
                 .foregroundStyle(Theme.secondaryText)
             Picker("餐次", selection: $meal) {
                 ForEach(MealType.allCases) { item in
@@ -229,6 +246,7 @@ struct FoodPhotoAnalysisView: View {
                 }
             }
             .pickerStyle(.segmented)
+            .tint(Theme.cobalt)
         }
         .card(padding: 14)
     }
@@ -238,15 +256,16 @@ struct FoodPhotoAnalysisView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("识别结果")
-                        .font(.headline)
+                        .font(AppType.headline)
+                        .foregroundStyle(Theme.ink)
                     Text("勾选实际吃下的食物，份量可以调")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                 }
                 Spacer()
                 Text("参考置信度 \(Int(confidence * 100))%")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.accent)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(Theme.cobalt)
             }
 
             ForEach($items) { $item in
@@ -254,53 +273,58 @@ struct FoodPhotoAnalysisView: View {
                     HStack(spacing: 9) {
                         Toggle("", isOn: $item.selected)
                             .labelsHidden()
-                            .tint(Theme.accent)
+                            .tint(Theme.cobalt)
 
                         Text(item.name)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Theme.primaryText)
+                            .font(AppType.callout.weight(.semibold))
+                            .foregroundStyle(Theme.ink)
 
                         Spacer()
 
                         Text("\(Int(item.kcal)) kcal")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Theme.accent)
+                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(Theme.cobalt)
                     }
 
                     HStack {
                         Stepper(value: $item.grams, in: 10...1000, step: 10) {
                             Text("份量 \(Int(item.grams)) g")
-                                .font(.caption)
+                                .font(AppType.caption)
                                 .foregroundStyle(Theme.secondaryText)
                         }
                         .labelsHidden()
+                        .tint(Theme.cobalt)
                         Text("\(Int(item.grams)) g")
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(Theme.primaryText)
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundStyle(Theme.ink)
                             .frame(width: 58, alignment: .trailing)
                     }
 
                     Text("P \(item.protein.formatted(.number.precision(.fractionLength(0))))g · C \(item.carbs.formatted(.number.precision(.fractionLength(0))))g · F \(item.fat.formatted(.number.precision(.fractionLength(0))))g")
-                        .font(.caption2)
+                        .font(.system(size: 9, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                 }
                 .opacity(item.selected ? 1 : 0.45)
                 .padding(10)
                 .background(
-                    Theme.surfaceStrong,
+                    Theme.ink.opacity(0.03),
                     in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                 )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(Theme.stroke, lineWidth: 1)
+                }
             }
 
             VStack(spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("合计")
-                        .font(.caption)
+                        .font(AppType.caption.weight(.semibold))
                         .foregroundStyle(Theme.secondaryText)
                     Spacer()
                     Text("\(Int(totalKcal)) kcal")
-                        .font(.title3.weight(.bold))
-                        .foregroundStyle(Theme.accent)
+                        .font(.system(size: 20, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Theme.cobalt)
                 }
 
                 HStack(spacing: 10) {
@@ -311,20 +335,24 @@ struct FoodPhotoAnalysisView: View {
             }
             .padding(12)
             .background(
-                Theme.surfaceStrong.opacity(0.75),
+                Theme.ink.opacity(0.035),
                 in: RoundedRectangle(cornerRadius: 12, style: .continuous)
             )
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Theme.stroke, lineWidth: 1)
+            }
 
             if !analysisModel.isEmpty {
                 Text(analysisModel.hasPrefix("local")
                      ? "当前为本地估算模式，结果仅用于演示流程。"
                      : "结果来自远程识别服务，照片未保存。")
-                    .font(.caption2)
+                    .font(.system(size: 9, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
 
             Text(analysisDisclaimer)
-                .font(.caption2)
+                .font(.system(size: 9, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -342,10 +370,10 @@ struct FoodPhotoAnalysisView: View {
     private func resultMetric(_ value: String, _ title: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Theme.primaryText)
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .foregroundStyle(Theme.ink)
             Text(title)
-                .font(.caption2)
+                .font(.system(size: 9, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -353,7 +381,7 @@ struct FoodPhotoAnalysisView: View {
 
     private var disclaimer: some View {
         Text("饮食照片识别只能做估算，不能保证份量、烹饪油和隐藏配料完全准确。对花生、海鲜、乳制品等过敏原，请以包装标签或商家确认为准。")
-            .font(.caption2)
+            .font(.system(size: 9.5, weight: .medium))
             .foregroundStyle(Theme.tertiaryText)
             .frame(maxWidth: .infinity, alignment: .leading)
             .card(padding: 14)
@@ -361,21 +389,21 @@ struct FoodPhotoAnalysisView: View {
 
     private var summaryCard: some View {
         Text(analysisSummary)
-            .font(.subheadline)
-            .foregroundStyle(isFood ? Theme.secondaryText : Color.orange)
+            .font(AppType.caption)
+            .foregroundStyle(isFood ? Theme.secondaryText : Theme.coral)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
             .background(
-                (isFood ? Color.white.opacity(0.04) : Color.orange.opacity(0.12)),
+                (isFood ? Theme.paper : Theme.coral.opacity(0.07)),
                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
             )
-            .overlay(
+            .overlay {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(
-                        isFood ? Color.white.opacity(0.06) : Color.orange.opacity(0.35),
+                    .strokeBorder(
+                        isFood ? Theme.stroke : Theme.coral.opacity(0.24),
                         lineWidth: 1
                     )
-            )
+            }
     }
 
     private func analyze() {

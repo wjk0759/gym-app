@@ -54,14 +54,15 @@ struct VideoReviewView: View {
                         .buttonStyle(PrimaryButtonStyle())
                     } else if !errorMessage.isEmpty {
                         Text(errorMessage)
-                            .font(.caption)
-                            .foregroundStyle(Theme.warning)
+                            .font(AppType.caption)
+                            .foregroundStyle(Theme.coral)
                             .card(padding: 14)
                     }
 
                     privacyNote
                 }
-                .padding(20)
+                .appPagePadding()
+                .padding(.top, 8)
                 .padding(.bottom, 24)
             }
             .background(AppBackground())
@@ -80,13 +81,20 @@ struct VideoReviewView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 7) {
+            Text("VISION / 视频点评")
+                .font(AppType.overline)
+                .tracking(1.5)
+                .foregroundStyle(Theme.cobalt)
+
             Text("发一段视频，\n让教练看动作。")
-                .font(.system(size: 29, weight: .heavy, design: .default))
-                .foregroundStyle(Theme.primaryText)
+                .font(AppType.display)
+                .tracking(-0.9)
+                .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
+
             Text("本地抽取开始、中段、结束 3 个关键帧，指出最值得改的一处。原视频不会上传。")
-                .font(.subheadline)
+                .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -96,13 +104,13 @@ struct VideoReviewView: View {
         VStack(alignment: .leading, spacing: 10) {
             PhotosPicker(selection: $videoItem, matching: .videos) {
                 Label("选择训练视频", systemImage: "video.badge.plus")
-                    .font(.subheadline.weight(.bold))
+                    .font(AppType.button)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(PrimaryButtonStyle())
 
             Text("建议 5–40 秒、全身侧面、光线清楚。超过 1 分钟也可以，但只抽取 3 帧。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -112,13 +120,13 @@ struct VideoReviewView: View {
     private var processingCard: some View {
         HStack(spacing: 12) {
             ProgressView()
-                .tint(Theme.accent)
+                .tint(Theme.cobalt)
             VStack(alignment: .leading, spacing: 2) {
                 Text("正在抽取关键帧…")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.callout.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
                 Text("视频只在本机处理")
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
         }
@@ -129,11 +137,11 @@ struct VideoReviewView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("关键帧预览")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.headline)
+                    .foregroundStyle(Theme.ink)
                 Spacer()
                 Text("\(Int(duration)) 秒")
-                    .font(.caption.monospacedDigit())
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
                     .foregroundStyle(Theme.tertiaryText)
             }
             Image(uiImage: image)
@@ -142,7 +150,7 @@ struct VideoReviewView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(Theme.stroke, lineWidth: 0.8)
+                        .strokeBorder(Theme.stroke, lineWidth: 1)
                 )
         }
         .card()
@@ -151,12 +159,20 @@ struct VideoReviewView: View {
     private var noteCard: some View {
         VStack(alignment: .leading, spacing: 7) {
             Text("想让教练重点看什么？")
-                .font(.caption.weight(.semibold))
+                .font(.system(size: 9.5, weight: .semibold))
                 .foregroundStyle(Theme.secondaryText)
             TextField("例如：卧推时肩膀不舒服 / 深蹲膝盖内扣", text: $note, axis: .vertical)
+                .font(AppType.callout)
                 .lineLimit(2...4)
                 .padding(12)
-                .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(
+                    Theme.ink.opacity(0.035),
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(Theme.stroke, lineWidth: 1)
+                }
                 .onChange(of: note) { _, value in
                     if value.count > 200 {
                         note = String(value.prefix(200))
@@ -168,7 +184,7 @@ struct VideoReviewView: View {
 
     private var privacyNote: some View {
         Text("视频抽帧在本机完成，原视频不上传；只把 3 帧拼图和你的问题发给教练。涉及明显疼痛、肿胀或无法承重，请先停止训练并线下就医。")
-            .font(.caption2)
+            .font(.system(size: 9, weight: .medium))
             .foregroundStyle(Theme.tertiaryText)
             .fixedSize(horizontal: false, vertical: true)
     }
