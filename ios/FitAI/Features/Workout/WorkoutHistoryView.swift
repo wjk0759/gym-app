@@ -392,6 +392,7 @@ struct WorkoutHistoryView: View {
                         .foregroundStyle(Theme.tertiaryText)
                     if selectedDate == nil {
                         Button("回训练手账补记") {
+                            store.selectedTab = 1
                             dismiss()
                         }
                         .font(AppType.caption.weight(.semibold))

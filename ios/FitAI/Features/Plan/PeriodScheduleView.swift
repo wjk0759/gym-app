@@ -30,11 +30,6 @@ struct PeriodScheduleView: View {
         return (calendar.dateComponents([.day], from: start, to: end).day ?? 0) + 1
     }
 
-    private var monthTitle: String {
-        let components = calendar.dateComponents([.year, .month], from: month)
-        return "\(components.year ?? 0)年\(components.month ?? 0)月"
-    }
-
     private var calendarDays: [Date] {
         let first = FitnessDate.startOfMonth(month)
         let weekday = calendar.component(.weekday, from: first)
@@ -48,34 +43,23 @@ struct PeriodScheduleView: View {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if store.profile.sex != .female {
-                        EmptyStateView(
-                            icon: "calendar.badge.exclamationmark",
-                            title: "仅适用于女性用户",
-                            message: "经期安排只会在女性用户的计划页中出现。"
-                        )
+                        unavailableCard
                     } else {
                         header
                         modePicker
                         calendarCard
-                        if let rangeStart, let rangeEnd {
-                            Text("\(rangeStart) 至 \(rangeEnd) · \(rangeDays) 天")
-                                .font(.caption)
-                                .foregroundStyle(Theme.secondaryText)
-                        } else if startKey != nil {
-                            Text("再选择一个结束日期")
-                                .font(.caption)
-                                .foregroundStyle(Theme.warning)
-                        } else {
-                            Text("先点开始日期，再点结束日期")
-                                .font(.caption)
-                                .foregroundStyle(Theme.tertiaryText)
-                        }
+                        rangeStatus
                         Button("保存经期区间") {
                             save()
                         }
                         .buttonStyle(PrimaryButtonStyle())
                         .disabled(startKey == nil)
                         .opacity(startKey == nil ? 0.45 : 1)
+
+                        Text("经期只影响这几天在计划和今日页的强度提示；训练计划本身不会被删除。")
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundStyle(Theme.tertiaryText)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .appPagePadding()
@@ -94,23 +78,54 @@ struct PeriodScheduleView: View {
         }
     }
 
+    // MARK: - Header
+
     private var header: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text("选择经期区间")
-                .font(.system(size: 24, weight: .bold, design: .default))
-                .foregroundStyle(Theme.primaryText)
-            Text("经期会显示在计划日历上；可设置为轻重量训练或直接休息。训练计划本身会保留。")
-                .font(.caption)
+        VStack(alignment: .leading, spacing: 7) {
+            Text("CYCLE / 经期")
+                .font(AppType.overline)
+                .tracking(1.5)
+                .foregroundStyle(Theme.cobalt)
+
+            Text("标记经期")
+                .font(AppType.display)
+                .tracking(-0.9)
+                .foregroundStyle(Theme.ink)
+
+            Text("经期会显示在计划日历上；训练计划保留，只调整这几天的强度。")
+                .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    private var modePicker: some View {
+    private var unavailableCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("经期训练安排")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.tertiaryText)
+            Text("仅适用于女性用户")
+                .font(AppType.headline)
+                .foregroundStyle(Theme.ink)
+            Text("经期安排只会在女性用户的计划和记录页中出现。")
+                .font(AppType.caption)
+                .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .editorialCard(accent: Theme.coral)
+    }
+
+    // MARK: - Mode
+
+    private var modePicker: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("这几天怎么练")
+                    .font(AppType.headline)
+                    .foregroundStyle(Theme.ink)
+                Text("计划保留，只调整强度")
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+
             HStack(spacing: 8) {
                 ForEach(PeriodTrainingMode.allCases) { item in
                     Button {
@@ -120,58 +135,80 @@ struct PeriodScheduleView: View {
                             mode = item
                         }
                     } label: {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(item.title)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(mode == item ? Theme.onAccent : Theme.primaryText)
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 5) {
+                                Image(systemName: item == .light ? "figure.walk" : "bed.double.fill")
+                                    .font(.system(size: 11, weight: .bold))
+                                Text(item.title)
+                                    .font(AppType.caption.weight(.bold))
+                            }
                             Text(item.detail)
-                                .font(.caption2)
-                                .foregroundStyle(mode == item ? Theme.onAccent.opacity(0.7) : Theme.tertiaryText)
+                                .font(.system(size: 9, weight: .medium))
                                 .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
+                        .foregroundStyle(
+                            mode == item
+                                ? Theme.onAccent
+                                : Theme.secondaryText
+                        )
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(11)
                         .background(
-                            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                .fill(mode == item ? Theme.accent : Theme.surfaceStrong)
+                            mode == item ? Theme.coral : Theme.paper,
+                            in: RoundedRectangle(cornerRadius: 13, style: .continuous)
                         )
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                .strokeBorder(
+                                    mode == item ? Theme.coral : Theme.stroke,
+                                    lineWidth: 1
+                                )
+                        }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(SubtlePressStyle(scale: 0.97))
                 }
             }
         }
         .card()
     }
 
-    private var calendarCard: some View {
-        VStack(spacing: 10) {
-            HStack {
-                Button { moveMonth(-1) } label: {
-                    Image(systemName: "chevron.left")
-                        .frame(width: 34, height: 34)
-                        .background(Theme.surfaceStrong, in: Circle())
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(Theme.secondaryText)
+    // MARK: - Calendar
 
-                Spacer()
-                VStack(spacing: 2) {
-                    Text(monthTitle)
-                        .font(.headline)
-                        .foregroundStyle(Theme.primaryText)
-                    Text("点选经期区间")
-                        .font(.caption2)
+    private var calendarCard: some View {
+        let monthNumber = calendar.component(.month, from: month)
+        let year = calendar.component(.year, from: month)
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("经期日历")
+                        .font(AppType.headline)
+                        .foregroundStyle(Theme.ink)
+                    Text(startKey == nil ? "点开始日期，再点结束日期" : "点日期可重新选择区间")
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                 }
-                Spacer()
 
-                Button { moveMonth(1) } label: {
-                    Image(systemName: "chevron.right")
-                        .frame(width: 34, height: 34)
-                        .background(Theme.surfaceStrong, in: Circle())
+                Spacer(minLength: 4)
+
+                monthButton(systemName: "chevron.left") {
+                    moveMonth(-1)
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(Theme.secondaryText)
+
+                VStack(spacing: 1) {
+                    Text("\(monthNumber)月")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(Theme.ink)
+                    Text(String(year))
+                        .font(.system(size: 8, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+                .frame(width: 62)
+
+                monthButton(systemName: "chevron.right") {
+                    moveMonth(1)
+                }
             }
 
             HStack(spacing: 4) {
@@ -182,14 +219,59 @@ struct PeriodScheduleView: View {
                         .frame(maxWidth: .infinity)
                 }
             }
+            .padding(.top, 2)
 
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 4) {
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7),
+                spacing: 4
+            ) {
                 ForEach(calendarDays, id: \.self) { date in
                     dayCell(date)
                 }
             }
+
+            HStack(spacing: 12) {
+                HStack(spacing: 5) {
+                    Circle()
+                        .stroke(Theme.cobalt, lineWidth: 1.2)
+                        .frame(width: 7, height: 7)
+                    Text("今天")
+                }
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(Theme.coral)
+                        .frame(width: 6, height: 6)
+                    Text("经期区间")
+                }
+                Spacer(minLength: 0)
+            }
+            .font(.system(size: 9, weight: .medium))
+            .foregroundStyle(Theme.tertiaryText)
         }
         .card()
+    }
+
+    private func monthButton(systemName: String, action: @escaping () -> Void) -> some View {
+        Button {
+            Haptics.tap()
+            withAnimation(Motion.smooth) {
+                action()
+            }
+        } label: {
+            Image(systemName: systemName)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(Theme.ink)
+                .frame(width: 34, height: 34)
+                .background(
+                    Theme.ink.opacity(0.05),
+                    in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .strokeBorder(Theme.stroke, lineWidth: 1)
+                }
+        }
+        .buttonStyle(SubtlePressStyle())
     }
 
     private func dayCell(_ date: Date) -> some View {
@@ -198,26 +280,105 @@ struct PeriodScheduleView: View {
         let active = isSelected(key)
         let boundary = key == (rangeStart ?? "") || key == (rangeEnd ?? "")
         let isToday = calendar.isDateInToday(date)
+
         return Button {
             select(key)
         } label: {
-            Text("\(calendar.component(.day, from: date))")
-                .font(.system(size: 12, weight: active ? .bold : .medium, design: .default))
-                .foregroundStyle(active ? Theme.onMedia : (isToday ? Theme.accent : Theme.secondaryText))
-                .frame(maxWidth: .infinity)
-                .frame(height: 38)
-                .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(active ? Theme.danger.opacity(0.72) : Color.white.opacity(0.025))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(boundary ? Theme.danger : (isToday ? Theme.accent.opacity(0.5) : Color.clear), lineWidth: 1)
-                )
-                .opacity(inMonth ? 1 : 0.28)
+            VStack(spacing: 2) {
+                Text("\(calendar.component(.day, from: date))")
+                    .font(
+                        .system(
+                            size: 11.5,
+                            weight: boundary ? .bold : .semibold,
+                            design: .monospaced
+                        )
+                    )
+                    .foregroundStyle(
+                        boundary
+                            ? Theme.onAccent
+                            : (active ? Theme.coral : (inMonth ? Theme.ink : Theme.tertiaryText))
+                    )
+                    .frame(maxWidth: .infinity)
+
+                if active {
+                    Circle()
+                        .fill(boundary ? Theme.onAccent : Theme.coral)
+                        .frame(width: 3.5, height: 3.5)
+                } else if isToday {
+                    Circle()
+                        .stroke(Theme.cobalt, lineWidth: 1)
+                        .frame(width: 3.5, height: 3.5)
+                } else {
+                    Color.clear.frame(width: 3.5, height: 3.5)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .background {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(
+                        boundary
+                            ? Theme.coral
+                            : (active
+                                ? Theme.coral.opacity(0.13)
+                                : (isToday ? Theme.cobalt.opacity(0.04) : Color.clear))
+                    )
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(
+                        isToday && !active ? Theme.cobalt : Color.clear,
+                        lineWidth: 1.4
+                    )
+            }
+            .opacity(inMonth ? 1 : 0.3)
+            .scaleEffect(boundary ? 1.03 : 1)
+            .animation(Motion.quick, value: active)
         }
-        .buttonStyle(SubtlePressStyle(scale: 0.96))
+        .buttonStyle(SubtlePressStyle(scale: 0.95))
+        .accessibilityLabel(accessibilityText(date, key: key, active: active))
     }
+
+    // MARK: - Status
+
+    @ViewBuilder
+    private var rangeStatus: some View {
+        if let startKey {
+            let end = endKey ?? startKey
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "drop.fill")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(Theme.coral)
+                    .padding(.top, 2)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(endKey == nil ? "再选择一个结束日期" : "\(displayDate(startKey)) – \(displayDate(end))")
+                        .font(AppType.caption.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                    Text(
+                        endKey == nil
+                            ? "还没有选择结束日期"
+                            : "\(rangeDays) 天 · \(mode.title)"
+                    )
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(Theme.tertiaryText)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(11)
+            .background(
+                Theme.coral.opacity(0.07),
+                in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .strokeBorder(Theme.coral.opacity(0.22), lineWidth: 1)
+            }
+        }
+    }
+
+    // MARK: - Data
 
     private func isSelected(_ key: String) -> Bool {
         guard let rangeStart, let rangeEnd else { return false }
@@ -238,7 +399,6 @@ struct PeriodScheduleView: View {
     }
 
     private func moveMonth(_ amount: Int) {
-        Haptics.tap()
         month = calendar.date(byAdding: .month, value: amount, to: month) ?? month
     }
 
@@ -260,5 +420,24 @@ struct PeriodScheduleView: View {
             Haptics.success()
             dismiss()
         }
+    }
+
+    private func displayDate(_ key: String) -> String {
+        guard let date = FitnessDate.date(from: key) else { return key }
+        return "\(calendar.component(.month, from: date))月\(calendar.component(.day, from: date))日"
+    }
+
+    private func accessibilityText(_ date: Date, key: String, active: Bool) -> String {
+        var parts = [displayDate(key)]
+        if let rangeStart, let rangeEnd, key >= rangeStart, key <= rangeEnd {
+            parts.append("经期区间")
+        }
+        if active {
+            parts.append("已选中")
+        }
+        if calendar.isDateInToday(date) {
+            parts.append("今天")
+        }
+        return parts.joined(separator: "，")
     }
 }
