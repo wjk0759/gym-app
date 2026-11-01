@@ -68,15 +68,15 @@ struct ExercisePickerView: View {
                             HStack(spacing: 12) {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(exercise.nameZH)
-                                        .font(.subheadline.weight(.medium))
-                                        .foregroundStyle(Theme.primaryText)
+                                        .font(AppType.callout)
+                                        .foregroundStyle(Theme.ink)
                                     Text("\(exercise.muscle.label) · \(exercise.equipment.label)")
-                                        .font(.caption2)
+                                        .font(.system(size: 9.5, weight: .medium))
                                         .foregroundStyle(Theme.secondaryText)
                                 }
                                 Spacer()
                                 Image(systemName: "plus.circle")
-                                    .foregroundStyle(Theme.accent)
+                                    .foregroundStyle(Theme.cobalt)
                             }
                             .padding(.vertical, 4)
                         }

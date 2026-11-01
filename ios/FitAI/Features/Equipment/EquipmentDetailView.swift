@@ -218,7 +218,7 @@ struct EquipmentItemDetailView: View {
                     showDelete = true
                 } label: {
                     Text("从器械库删除")
-                        .font(.subheadline.weight(.semibold))
+                        .font(AppType.callout.weight(.semibold))
                         .foregroundStyle(Theme.danger)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -306,7 +306,7 @@ struct EquipmentItemDetailView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(11)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
                 }
                 Text("没有同款器械时，优先找同轨迹的替代动作；不要为了完成计划强行上重量。")
                     .font(AppType.micro)
@@ -518,7 +518,7 @@ struct EquipmentItemDetailView: View {
                 } else {
                     Image(systemName: equipmentSymbol(item))
                         .font(.system(size: 66, weight: .light))
-                        .foregroundStyle(Theme.accent.opacity(0.22))
+                        .foregroundStyle(Theme.cobalt.opacity(0.22))
                 }
 
                 VStack(spacing: 7) {
@@ -530,7 +530,7 @@ struct EquipmentItemDetailView: View {
                         .overlay(Circle().stroke(Color.white.opacity(0.30), lineWidth: 1))
 
                     Text("教学视频准备中")
-                        .font(.subheadline.weight(.bold))
+                        .font(AppType.callout.weight(.bold))
                         .foregroundStyle(Theme.onMedia)
 
                     Text(isPreview ? "这个动作的官方示范视频还在准备中。" : "这件器械的官方示范视频还在准备中。")
@@ -614,7 +614,7 @@ struct EquipmentItemDetailView: View {
                 .font(.system(size: 13, weight: .bold))
                 .foregroundStyle(Theme.onAccent)
                 .frame(width: 28, height: 28)
-                .background(Theme.accent, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .background(Theme.cobalt, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 .padding(10)
         }
     }
@@ -626,11 +626,11 @@ struct EquipmentItemDetailView: View {
                     VStack(spacing: 4) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(Theme.surfaceStrong.opacity(index < 2 ? 1 : 0.65))
+                                .fill(Theme.ink.opacity(0.035).opacity(index < 2 ? 1 : 0.65))
                             Image(systemName: index < 2 ? equipmentSymbol(item) : "ellipsis")
                                 .font(.system(size: 21, weight: .light))
                                 .foregroundStyle(
-                                    index < 2 ? Theme.accent.opacity(0.70) : Theme.tertiaryText
+                                    index < 2 ? Theme.cobalt.opacity(0.70) : Theme.tertiaryText
                                 )
                         }
                         .frame(height: 58)
@@ -642,7 +642,7 @@ struct EquipmentItemDetailView: View {
                     .frame(maxWidth: .infinity)
                     .padding(5)
                     .background(
-                        Theme.surface,
+                        Theme.paper,
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                     )
                     .overlay(
@@ -671,7 +671,7 @@ struct EquipmentItemDetailView: View {
 
                     Text(point)
                         .font(.system(size: 13))
-                        .foregroundStyle(Theme.primaryText.opacity(0.82))
+                        .foregroundStyle(Theme.ink.opacity(0.82))
                         .lineSpacing(2.5)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -681,18 +681,18 @@ struct EquipmentItemDetailView: View {
                  ? "先用轻重量确认动作路线，再逐步接近目标负荷。"
                  : "器械备注：\(item.notes)")
                 .font(.system(size: 10.5))
-                .foregroundStyle(Theme.accent.opacity(0.90))
+                .foregroundStyle(Theme.cobalt.opacity(0.90))
                 .lineSpacing(1.5)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
-                    Theme.accent.opacity(0.08),
+                    Theme.cobalt.opacity(0.08),
                     in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Theme.accent.opacity(0.14), lineWidth: 0.8)
+                        .stroke(Theme.cobalt.opacity(0.14), lineWidth: 0.8)
                 )
         }
     }
@@ -732,7 +732,7 @@ struct EquipmentItemDetailView: View {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text("重点 \(primary)")
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.cobalt)
                 Text("·")
                     .font(.system(size: 10))
                     .foregroundStyle(Theme.tertiaryText)
@@ -780,14 +780,14 @@ struct EquipmentItemDetailView: View {
                         .foregroundStyle(Theme.tertiaryText)
                     Text(statsMetric.rawValue)
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(Theme.primaryText)
+                        .foregroundStyle(Theme.ink)
                 }
 
                 Spacer(minLength: 8)
 
                 Text("\(lastValue) \(statsMetric.unit)")
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.cobalt)
             }
             .padding(.top, 18)
 
@@ -813,11 +813,11 @@ struct EquipmentItemDetailView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "calendar")
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Theme.accent)
+                            .foregroundStyle(Theme.cobalt)
 
                         Text(customRangeLabel)
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Theme.primaryText)
+                            .foregroundStyle(Theme.ink)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
 
@@ -830,7 +830,7 @@ struct EquipmentItemDetailView: View {
                     .padding(.horizontal, 11)
                     .frame(height: 40)
                     .background(
-                        Theme.surface,
+                        Theme.paper,
                         in: RoundedRectangle(cornerRadius: 10, style: .continuous)
                     )
                     .overlay(
@@ -873,7 +873,7 @@ struct EquipmentItemDetailView: View {
                         .font(.system(size: 16, weight: .medium))
                         .foregroundStyle(Theme.secondaryText)
                         .frame(width: 30, height: 30)
-                        .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .background(Theme.ink.opacity(0.035), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     Text("这个周期还没有训练记录")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(Theme.secondaryText)
@@ -886,7 +886,7 @@ struct EquipmentItemDetailView: View {
                 .padding(.vertical, 24)
                 .padding(.horizontal, 16)
                 .background(
-                    Theme.surface,
+                    Theme.paper,
                     in: RoundedRectangle(cornerRadius: 14, style: .continuous)
                 )
                 .overlay(
@@ -902,7 +902,7 @@ struct EquipmentItemDetailView: View {
                     )
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [Theme.accent.opacity(0.26), .clear],
+                            colors: [Theme.cobalt.opacity(0.26), .clear],
                             startPoint: .top,
                             endPoint: .bottom
                         )
@@ -913,7 +913,7 @@ struct EquipmentItemDetailView: View {
                         x: .value("日期", point.date),
                         y: .value(statsMetric.rawValue, metricValue(point, metric: statsMetric))
                     )
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.cobalt)
                     .lineStyle(
                         StrokeStyle(
                             lineWidth: 2.3,
@@ -927,7 +927,7 @@ struct EquipmentItemDetailView: View {
                         x: .value("日期", point.date),
                         y: .value(statsMetric.rawValue, metricValue(point, metric: statsMetric))
                     )
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.cobalt)
                     .symbolSize(24)
                 }
                 .chartYScale(domain: 0.0...chartCeiling)
@@ -960,7 +960,7 @@ struct EquipmentItemDetailView: View {
                 .chartLegend(.hidden)
                 .chartPlotStyle { plotArea in
                     plotArea
-                        .background(Theme.surface.opacity(0.5))
+                        .background(Theme.paper.opacity(0.5))
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
                 .frame(height: 180)
@@ -982,7 +982,7 @@ struct EquipmentItemDetailView: View {
                 .foregroundStyle(Theme.tertiaryText)
             Text(value)
                 .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(Theme.primaryText)
+                .foregroundStyle(Theme.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
             Text(note)
@@ -1007,19 +1007,19 @@ struct EquipmentItemDetailView: View {
         Button(action: action) {
             Text(title)
                 .font(.system(size: 9.5, weight: .semibold))
-                .foregroundStyle(active ? Theme.accent : Theme.secondaryText)
+                .foregroundStyle(active ? Theme.cobalt : Theme.secondaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 7)
                 .background(
-                    active ? Theme.accent.opacity(0.12) : Color.white.opacity(0.035),
+                    active ? Theme.cobalt.opacity(0.12) : Color.white.opacity(0.035),
                     in: RoundedRectangle(cornerRadius: 9, style: .continuous)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
                         .stroke(
-                            active ? Theme.accent.opacity(0.28) : Color.white.opacity(0.07),
+                            active ? Theme.cobalt.opacity(0.28) : Color.white.opacity(0.07),
                             lineWidth: 0.8
                         )
                 )
@@ -1080,7 +1080,7 @@ struct EquipmentItemDetailView: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(
-                accent ? Theme.lime.opacity(0.75) : Theme.surface,
+                accent ? Theme.lime.opacity(0.75) : Theme.paper,
                 in: Capsule()
             )
             .overlay(
@@ -1095,14 +1095,14 @@ struct EquipmentItemDetailView: View {
     private func detailBadge(_ text: String, accent: Bool = false) -> some View {
         Text(text)
             .font(.system(size: 9, weight: .semibold))
-            .foregroundStyle(accent ? Theme.accent : Theme.onMedia.opacity(0.72))
+            .foregroundStyle(accent ? Theme.cobalt : Theme.onMedia.opacity(0.72))
             .padding(.horizontal, 7)
             .padding(.vertical, 4)
             .background(Color.black.opacity(0.38), in: Capsule())
             .overlay(
                 Capsule()
                     .stroke(
-                        accent ? Theme.accent.opacity(0.22) : Color.white.opacity(0.10),
+                        accent ? Theme.cobalt.opacity(0.22) : Color.white.opacity(0.10),
                         lineWidth: 0.8
                     )
             )
@@ -1410,12 +1410,12 @@ private struct EquipmentStatsRangeSheet: View {
 
                     if invalid {
                         Label("开始日期不能晚于结束日期", systemImage: "exclamationmark.circle.fill")
-                            .font(.caption)
+                            .font(AppType.caption)
                             .foregroundStyle(Theme.danger)
                     }
 
                     Text("只影响下方的趋势和汇总，不会修改训练记录。")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                         .padding(.top, 2)
                 }
@@ -1446,8 +1446,8 @@ private struct EquipmentStatsRangeSheet: View {
     private func dateRow(_ title: String, selection: Binding<Date>) -> some View {
         HStack(spacing: 12) {
             Text(title)
-                .font(.subheadline)
-                .foregroundStyle(Theme.primaryText)
+                .font(AppType.callout)
+                .foregroundStyle(Theme.ink)
 
             Spacer(minLength: 8)
 
@@ -1455,12 +1455,12 @@ private struct EquipmentStatsRangeSheet: View {
                 .labelsHidden()
                 .datePickerStyle(.compact)
                 .fixedSize()
-                .tint(Theme.accent)
+                .tint(Theme.cobalt)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .background(
-            Theme.surface,
+            Theme.paper,
             in: RoundedRectangle(cornerRadius: 14, style: .continuous)
         )
         .overlay(

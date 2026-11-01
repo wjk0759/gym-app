@@ -297,7 +297,7 @@ struct NutritionView: View {
                 macroPill("蛋白", value: totals.protein, target: targets.protein, color: Theme.cobalt)
                 macroPill("碳水", value: totals.carbs, target: targets.carbs, color: Theme.warning)
                 macroPill("脂肪", value: totals.fat, target: targets.fat, color: Theme.coral)
-                macroPill("纤维", value: totals.fiber, target: targets.fiber, color: Theme.accentSecondary)
+                macroPill("纤维", value: totals.fiber, target: targets.fiber, color: Theme.cobaltSecondary)
             }
             HStack(spacing: 6) {
                 Text("BMR \(targets.bmr) kcal")
@@ -396,7 +396,7 @@ struct NutritionView: View {
         logs: [FoodLog]
     ) -> some View {
         let loggedKcal = logs.reduce(0.0) { $0 + $1.kcal }
-        let colors: [Color] = [Theme.cobalt, Theme.lime, Theme.coral, Theme.accentWarm]
+        let colors: [Color] = [Theme.cobalt, Theme.lime, Theme.coral, Theme.cobaltWarm]
         let color = colors[index % colors.count]
 
         return notebookPage(accent: color) {
@@ -463,7 +463,7 @@ struct NutritionView: View {
             case .breakfast: return Theme.cobalt
             case .lunch: return Theme.lime
             case .dinner: return Theme.coral
-            case .snack: return Theme.accentWarm
+            case .snack: return Theme.cobaltWarm
             }
         }()
 
@@ -578,27 +578,27 @@ struct NutritionView: View {
             HStack(spacing: 12) {
                 Image(systemName: "camera.viewfinder")
                     .font(.title2)
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.cobalt)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("拍照识别饮食")
-                        .font(.headline)
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.headline)
+                        .foregroundStyle(Theme.ink)
                     Text("拍一餐，估算热量与三大营养素")
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
+                    .font(AppType.caption.weight(.semibold))
                     .foregroundStyle(Theme.tertiaryText)
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                Theme.surface,
+                Theme.paper,
                 in: RoundedRectangle(cornerRadius: 16, style: .continuous)
             )
             .overlay(
@@ -616,27 +616,27 @@ struct NutritionView: View {
             HStack(spacing: 12) {
                 Image(systemName: "calendar.badge.clock")
                     .font(.title2)
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.cobalt)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("本周饮食计划")
-                        .font(.headline)
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.headline)
+                        .foregroundStyle(Theme.ink)
                     Text("碳循环 / 低碳 / 高蛋白 · 一周安排")
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
+                    .font(AppType.caption.weight(.semibold))
                     .foregroundStyle(Theme.tertiaryText)
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                Theme.surface,
+                Theme.paper,
                 in: RoundedRectangle(cornerRadius: 16, style: .continuous)
             )
             .overlay(
@@ -714,17 +714,17 @@ struct NutritionView: View {
 
         return VStack(alignment: .leading, spacing: 12) {
             Text("宏量营养素")
-                .font(.headline)
+                .font(AppType.headline)
 
             HStack(spacing: 10) {
-                macro("蛋白质", "\(Int(totals.protein)) / \(targets.protein)g", color: Theme.accent)
+                macro("蛋白质", "\(Int(totals.protein)) / \(targets.protein)g", color: Theme.cobalt)
                 macro("碳水", "\(Int(totals.carbs)) / \(targets.carbs)g", color: Theme.warning)
-                macro("脂肪", "\(Int(totals.fat)) / \(targets.fat)g", color: Color(red: 0.55, green: 0.70, blue: 0.98))
+                macro("脂肪", "\(Int(totals.fat)) / \(targets.fat)g", color: Theme.coral)
                 macro("膳食纤维", "\(Int(totals.fiber)) / \(targets.fiber)g", color: Theme.blue)
             }
 
             Text("BMR \(targets.bmr) kcal · 维持热量约 \(targets.tdee) kcal")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
         }
         .card()
@@ -737,19 +737,19 @@ struct NutritionView: View {
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(isToday ? "今日记录" : "当天记录")
-                    .font(.headline)
+                    .font(AppType.headline)
                 Spacer()
                 Text("\(Int(totals.kcal)) / \(targets.kcal) kcal")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
             }
 
             ProgressView(value: ratio)
-                .tint(Theme.accent)
+                .tint(Theme.cobalt)
 
             if snapshot.logs.isEmpty {
                 Text("还没有记录。记下吃了什么，才能知道离目标还差多少。")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
                 Button("记录第一餐") {
                     selectedMeal = suggestedMeal
@@ -778,18 +778,18 @@ struct NutritionView: View {
         if !logs.isEmpty {
             HStack {
                 Text(meal.label)
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppType.callout.weight(.semibold))
                 Spacer()
                 Text("\(Int(logs.reduce(0.0) { $0 + $1.kcal })) kcal")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
                 Button {
                     selectedMeal = meal
                     showAddFood = true
                 } label: {
                     Image(systemName: "plus.circle")
-                        .font(.caption)
-                        .foregroundStyle(Theme.accent)
+                        .font(AppType.caption)
+                        .foregroundStyle(Theme.cobalt)
                 }
                 .buttonStyle(.plain)
             }
@@ -799,21 +799,21 @@ struct NutritionView: View {
                 HStack(spacing: 10) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(log.foodName)
-                            .font(.subheadline)
-                            .foregroundStyle(Theme.primaryText)
+                            .font(AppType.callout)
+                            .foregroundStyle(Theme.ink)
                         Text("\(log.grams.formatted()) g")
-                            .font(.caption2)
+                            .font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(Theme.tertiaryText)
                     }
                     Spacer()
                     Text("\(Int(log.kcal)) kcal")
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                     Button(role: .destructive) {
                         pendingFoodDelete = log
                     } label: {
                         Image(systemName: "trash")
-                            .font(.caption2)
+                            .font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(Theme.danger.opacity(0.8))
                     }
                     .buttonStyle(.plain)
@@ -829,11 +829,11 @@ struct NutritionView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(aiMeals == nil ? "建议餐单" : "AI 饮食计划")
-                        .font(.headline)
+                        .font(AppType.headline)
                     Text(aiMeals == nil
                          ? "按目标热量估算；点右侧让 AI 按你的档案生成。"
                          : "根据你的档案、体型和目标生成，可随时重新生成。")
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -852,14 +852,14 @@ struct NutritionView: View {
                         Label(aiMeals == nil ? "AI 生成" : "重新生成", systemImage: "sparkles")
                     }
                 }
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.accent)
+                .font(AppType.caption.weight(.semibold))
+                .foregroundStyle(Theme.cobalt)
                 .disabled(isGeneratingPlan || !store.canUseRemoteAI)
             }
 
             if !aiPlanNote.isEmpty {
                 Text(aiPlanNote)
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -871,36 +871,36 @@ struct NutritionView: View {
     private func macro(_ title: String, _ value: String, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.secondaryText)
             Text(value)
-                .font(.headline)
+                .font(AppType.headline)
                 .foregroundStyle(color)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
-        .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(Theme.ink.opacity(0.035), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private func mealCard(_ meal: MealSuggestion) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(meal.name)
-                    .font(.headline)
+                    .font(AppType.headline)
                 Spacer()
                 Text("约 \(meal.kcal) kcal")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.cobalt)
             }
 
             ForEach(meal.items, id: \.self) { item in
                 HStack(alignment: .top, spacing: 8) {
                     Circle()
-                        .fill(Theme.accent.opacity(0.8))
+                        .fill(Theme.cobalt.opacity(0.8))
                         .frame(width: 5, height: 5)
                         .padding(.top, 6)
                     Text(item)
-                        .font(.subheadline)
+                        .font(AppType.callout)
                         .foregroundStyle(Theme.secondaryText)
                 }
             }
@@ -913,13 +913,13 @@ struct NutritionView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Image(systemName: "takeoutbag.and.cup.and.straw")
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.cobalt)
                 Text("附近外卖")
-                    .font(.headline)
+                    .font(AppType.headline)
             }
 
             Text("美团联盟只提供活动/搜索跳转，不提供菜品营养数据。点开后请按商家页面为准。")
-                .font(.caption)
+                .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -934,7 +934,7 @@ struct NutritionView: View {
             Text(store.useRemoteAI
                  ? "外卖链接由美团联盟提供，价格与营养信息以商家页面为准。"
                  : "外卖入口正在接入，上线后可用。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
         }
         .card()
@@ -942,7 +942,7 @@ struct NutritionView: View {
 
     private var disclaimer: some View {
         Text("饮食建议为估算，不构成医疗或疾病饮食处方。孕期、术后、糖尿病、肾病等特殊情况请咨询医生或营养师。")
-            .font(.caption2)
+            .font(.system(size: 9.5, weight: .medium))
             .foregroundStyle(Theme.tertiaryText)
             .frame(maxWidth: .infinity, alignment: .leading)
             .card(padding: 14)
@@ -1015,13 +1015,13 @@ struct AddFoodView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Label("已记录 \(addedFoods.count) 种食物", systemImage: "checkmark.circle.fill")
                                 .font(.footnote.weight(.semibold))
-                                .foregroundStyle(Theme.accent)
+                                .foregroundStyle(Theme.cobalt)
                             Text(addedFoods.joined(separator: "、"))
-                                .font(.caption)
+                                .font(AppType.caption)
                                 .foregroundStyle(Theme.secondaryText)
                                 .lineLimit(3)
                             Text("可以继续搜索添加，全部记好后点右上角「完成」。")
-                                .font(.caption2)
+                                .font(.system(size: 9.5, weight: .medium))
                                 .foregroundStyle(Theme.tertiaryText)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1036,12 +1036,12 @@ struct AddFoodView: View {
                         }
                         .padding(12)
                         .background(
-                            Theme.surfaceStrong,
+                            Theme.ink.opacity(0.035),
                             in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                         )
 
                     Text("记录是为了了解，不是为了给食物打分。奶茶、火锅、螺蛳粉都可以记。")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                         .fixedSize(horizontal: false, vertical: true)
 
@@ -1057,27 +1057,27 @@ struct AddFoodView: View {
                                     HStack {
                                         VStack(alignment: .leading, spacing: 3) {
                                             Text(food.name)
-                                                .font(.subheadline.weight(.medium))
-                                                .foregroundStyle(Theme.primaryText)
+                                                .font(AppType.callout)
+                                                .foregroundStyle(Theme.ink)
                                             Text("\(food.category) · 每 100g")
-                                                .font(.caption2)
+                                                .font(.system(size: 9.5, weight: .medium))
                                                 .foregroundStyle(Theme.secondaryText)
                                         }
                                         Spacer()
                                         VStack(alignment: .trailing, spacing: 2) {
                                             Text("\(Int(food.kcal)) kcal")
-                                                .font(.caption.weight(.semibold))
-                                                .foregroundStyle(Theme.accent)
+                                                .font(AppType.caption.weight(.semibold))
+                                                .foregroundStyle(Theme.cobalt)
                                             Text("P\(Int(food.protein)) C\(Int(food.carbs)) F\(Int(food.fat))")
-                                                .font(.caption2)
+                                                .font(.system(size: 9.5, weight: .medium))
                                                 .foregroundStyle(Theme.tertiaryText)
                                         }
                                         Image(systemName: "plus.circle")
-                                            .foregroundStyle(Theme.accent)
+                                            .foregroundStyle(Theme.cobalt)
                                     }
                                     .padding(12)
                                     .background(
-                                        Theme.surfaceStrong,
+                                        Theme.ink.opacity(0.035),
                                         in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                                     )
                                 }
@@ -1133,21 +1133,21 @@ struct AddFoodView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(food.name)
-                        .font(.headline)
+                        .font(AppType.headline)
                     Text(
                         food.defaultGrams.map {
                             "常用份量约 \(Int($0))g · 每 100g \(Int(food.kcal)) kcal"
                         } ?? "每 100g · \(Int(food.kcal)) kcal"
                     )
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
                 }
                 Spacer()
                 Button("重新选择") {
                     selected = nil
                 }
-                .font(.caption)
-                .foregroundStyle(Theme.accent)
+                .font(AppType.caption)
+                .foregroundStyle(Theme.cobalt)
             }
 
             Stepper(value: $grams, in: 10...2000, step: 10) {
@@ -1155,15 +1155,15 @@ struct AddFoodView: View {
                     Text("份量")
                     Spacer()
                     Text("\(Int(grams)) g")
-                        .foregroundStyle(Theme.primaryText)
+                        .foregroundStyle(Theme.ink)
                 }
             }
 
             HStack(spacing: 10) {
-                selectedMetric("\(Int(food.kcal * factor))", "kcal", Theme.accent)
-                selectedMetric("\(Int(food.protein * factor))g", "蛋白质", Theme.accent)
+                selectedMetric("\(Int(food.kcal * factor))", "kcal", Theme.cobalt)
+                selectedMetric("\(Int(food.protein * factor))g", "蛋白质", Theme.cobalt)
                 selectedMetric("\(Int(food.carbs * factor))g", "碳水", Theme.warning)
-                selectedMetric("\(Int(food.fat * factor))g", "脂肪", Color(red: 0.55, green: 0.70, blue: 0.98))
+                selectedMetric("\(Int(food.fat * factor))g", "脂肪", Theme.coral)
             }
 
             Button("添加到\(meal.label)") {
@@ -1177,10 +1177,10 @@ struct AddFoodView: View {
     private func selectedMetric(_ value: String, _ title: String, _ color: Color) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(value)
-                .font(.subheadline.weight(.semibold))
+                .font(AppType.callout.weight(.semibold))
                 .foregroundStyle(color)
             Text(title)
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1237,10 +1237,10 @@ struct CustomFoodEntryView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("按你实际吃的一份填写")
-                            .font(.headline)
-                            .foregroundStyle(Theme.primaryText)
+                            .font(AppType.headline)
+                            .foregroundStyle(Theme.ink)
                         Text("不知道蛋白质、碳水或脂肪可以留空。先记下热量也可以，之后还能补充。")
-                            .font(.caption)
+                            .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -1248,17 +1248,17 @@ struct CustomFoodEntryView: View {
 
                     VStack(alignment: .leading, spacing: 10) {
                         Text("食物")
-                            .font(.headline)
+                            .font(AppType.headline)
                         field("名称", text: $name, placeholder: "例如：螺蛳粉")
                     }
                     .card(padding: 16)
 
                     VStack(alignment: .leading, spacing: 10) {
                         Text("这一份")
-                            .font(.headline)
+                            .font(AppType.headline)
                         field("重量（g）", text: $portion, placeholder: "例如：600", keyboard: .decimalPad)
                         Text("如果吃的是一整碗/一整份，填整份重量。螺蛳粉通常约 500–700g。")
-                            .font(.caption2)
+                            .font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(Theme.tertiaryText)
                     }
                     .card(padding: 16)
@@ -1266,10 +1266,10 @@ struct CustomFoodEntryView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
                             Text("这一份的营养素")
-                                .font(.headline)
+                                .font(AppType.headline)
                             Spacer()
                             Text("可选")
-                                .font(.caption2)
+                                .font(.system(size: 9.5, weight: .medium))
                                 .foregroundStyle(Theme.tertiaryText)
                         }
                         field("热量（kcal）", text: $kcal, placeholder: "例如：750", keyboard: .decimalPad)
@@ -1279,14 +1279,14 @@ struct CustomFoodEntryView: View {
                             field("脂肪（g）", text: $fat, placeholder: "可选", keyboard: .decimalPad)
                         }
                         Text("这些数值会按“这一份”换算成每 100g 保存，下次搜索这个食物时可以直接复用。")
-                            .font(.caption2)
+                            .font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(Theme.tertiaryText)
                     }
                     .card(padding: 16)
 
                     if let errorMessage {
                         Text(errorMessage)
-                            .font(.caption)
+                            .font(AppType.caption)
                             .foregroundStyle(Theme.danger)
                     }
 
@@ -1296,7 +1296,7 @@ struct CustomFoodEntryView: View {
                     .buttonStyle(PrimaryButtonStyle())
 
                     Text("没有“好食物/坏食物”。记录只是帮你了解今天吃了什么。")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
@@ -1323,14 +1323,14 @@ struct CustomFoodEntryView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(title)
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.secondaryText)
             TextField(placeholder, text: text)
                 .keyboardType(keyboard)
                 .textInputAutocapitalization(.never)
                 .padding(11)
                 .background(
-                    Theme.surfaceStrong,
+                    Theme.ink.opacity(0.035),
                     in: RoundedRectangle(cornerRadius: 11, style: .continuous)
                 )
         }
