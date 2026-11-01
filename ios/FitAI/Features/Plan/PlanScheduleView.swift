@@ -43,7 +43,7 @@ struct PlanScheduleView: View {
     }
 
     private var canSave: Bool {
-        selectedCount > 0
+        selectedCount > 0 && store.plan != nil
     }
 
     private var selectedCount: Int {
@@ -68,21 +68,26 @@ struct PlanScheduleView: View {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     header
-                    overview
-                    board
-                    feedback
 
-                    Button("保存训练日期") {
-                        save()
+                    if store.plan == nil {
+                        noPlanCard
+                    } else {
+                        overview
+                        board
+                        feedback
+
+                        Button("保存训练日期") {
+                            save()
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .disabled(!canSave)
+                        .opacity(canSave ? 1 : 0.45)
+
+                        Text("每周可以少于基准天数；少选会跳过对应训练。临时没空时，也可以回到训练手账，只顺延单次训练。")
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundStyle(Theme.tertiaryText)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(!canSave)
-                    .opacity(canSave ? 1 : 0.45)
-
-                    Text("每周可以少于基准天数；少选会跳过对应训练。临时没空时，也可以回到训练手账，只顺延单次训练。")
-                        .font(.system(size: 9.5, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .appPagePadding()
                 .padding(.top, 8)
@@ -119,6 +124,24 @@ struct PlanScheduleView: View {
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    private var noPlanCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("还没有训练计划")
+                .font(AppType.headline)
+                .foregroundStyle(Theme.ink)
+            Text("先生成一份 4 周计划，再回来调整每周训练日期。")
+                .font(AppType.caption)
+                .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("回训练手账") {
+                store.selectedTab = 1
+                dismiss()
+            }
+            .buttonStyle(SecondaryButtonStyle())
+        }
+        .editorialCard(accent: Theme.lime)
     }
 
     private var overview: some View {
