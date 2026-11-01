@@ -159,21 +159,9 @@ struct BodyCheckInSheet: View {
         guard !didLoad else { return }
         didLoad = true
         let latest = store.latestBodyMetric
-        if let weight = latest?.weightKG ?? store.profile.weightKG {
-            weightText = String(format: "%.1f", weight)
-        } else {
-            weightText = ""
-        }
-        if let bodyFat = latest?.bodyFatPCT ?? store.profile.bodyFatPCT {
-            bodyFatText = String(format: "%.1f", bodyFat)
-        } else {
-            bodyFatText = ""
-        }
-        if let waist = latest?.waistCM ?? store.profile.waistCM {
-            waistText = String(format: "%.1f", waist)
-        } else {
-            waistText = ""
-        }
+        weightText = String(format: "%.1f", latest?.weightKG ?? store.profile.weightKG)
+        bodyFatText = String(format: "%.1f", latest?.bodyFatPCT ?? store.profile.bodyFatPCT)
+        waistText = String(format: "%.1f", latest?.waistCM ?? store.profile.waistCM)
     }
 
     private func save() {

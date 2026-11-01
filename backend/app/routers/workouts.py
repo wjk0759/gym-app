@@ -362,6 +362,7 @@ def update_workout(
     session.feeling = payload.feeling
     session.notes = payload.notes
     session.sets.clear()
+    db.flush()
     for item in payload.sets:
         session.sets.append(
             SetLog(

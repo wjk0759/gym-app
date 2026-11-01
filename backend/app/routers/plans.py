@@ -142,6 +142,7 @@ def update_day(
             )
 
     day.exercises.clear()
+    db.flush()
     for index, item in enumerate(payload.exercises, start=1):
         day.exercises.append(
             PlanExercise(
