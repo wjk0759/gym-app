@@ -918,7 +918,7 @@ struct CoachOnboardingView: View {
 
             if let bodyType {
                 actionLine("训练重点：\(focusText)")
-                actionLine("体型参考：\(bodyType.label)，计划会优先照顾相关部位")
+                actionLine("体型参考：\(bodyType.label)，报告会记录这个重点")
             } else {
                 actionLine("训练重点：\(focusText)")
             }

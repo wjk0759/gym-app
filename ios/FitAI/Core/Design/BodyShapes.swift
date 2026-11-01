@@ -402,7 +402,7 @@ struct BodyFocusMap: View {
             }
             .frame(height: 310)
 
-            Text("选中部位重点训练，未选部位安排较少")
+            Text("选中的部位会记录在报告里，方便你和教练沟通")
                 .font(AppType.micro)
                 .foregroundStyle(Theme.tertiaryText)
                 .frame(maxWidth: .infinity, alignment: .leading)
