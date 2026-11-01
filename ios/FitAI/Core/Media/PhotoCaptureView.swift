@@ -37,9 +37,9 @@ struct PhotoCaptureView: View {
                     .ignoresSafeArea()
             } else {
                 VStack(spacing: 12) {
-                    ProgressView().tint(Theme.accent)
+                    ProgressView().tint(Theme.lime)
                     Text(camera.errorMessage ?? "正在启动相机…")
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(.white.opacity(0.72))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
@@ -52,7 +52,7 @@ struct PhotoCaptureView: View {
                         onCancel()
                     } label: {
                         Image(systemName: "xmark")
-                            .font(.headline.weight(.semibold))
+                            .font(AppType.headline.weight(.semibold))
                             .foregroundStyle(.white)
                             .frame(width: 42, height: 42)
                             .background(.black.opacity(0.42), in: Circle())
@@ -62,14 +62,14 @@ struct PhotoCaptureView: View {
                     Spacer()
 
                     Text(title)
-                        .font(.headline)
+                        .font(AppType.headline)
                         .foregroundStyle(.white)
 
                     Spacer()
 
                     PhotosPicker(selection: $photoItem, matching: .images) {
                         Image(systemName: "photo")
-                            .font(.headline.weight(.semibold))
+                            .font(AppType.headline.weight(.semibold))
                             .foregroundStyle(.white)
                             .frame(width: 42, height: 42)
                             .background(.black.opacity(0.42), in: Circle())
@@ -83,7 +83,7 @@ struct PhotoCaptureView: View {
 
                 VStack(spacing: 12) {
                     Text(hint)
-                        .font(.caption)
+                        .font(AppType.caption)
                         .foregroundStyle(.white.opacity(0.72))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 30)
@@ -108,7 +108,7 @@ struct PhotoCaptureView: View {
 
                     if camera.errorMessage != nil {
                         Text("也可以点右上角相册，选择已有照片。")
-                            .font(.caption2)
+                            .font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(.white.opacity(0.55))
                     }
                 }

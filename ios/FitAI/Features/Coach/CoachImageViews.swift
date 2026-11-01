@@ -58,7 +58,7 @@ struct ChatVideoThumbnail: View {
         }
         .overlay(alignment: .bottomTrailing) {
             Text("\(duration)s")
-                .font(.caption2.weight(.bold).monospacedDigit())
+                .font(.system(size: 9, weight: .bold, design: .monospaced))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 7)
                 .padding(.vertical, 4)
@@ -86,7 +86,7 @@ struct ChatImageThumbnail: View {
                     .scaledToFill()
             } else {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Theme.surfaceStrong)
+                    .fill(Theme.ink.opacity(0.035))
             }
         }
         .frame(width: width, height: height)

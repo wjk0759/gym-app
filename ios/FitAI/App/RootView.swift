@@ -145,12 +145,14 @@ struct RootView: View {
         VStack(spacing: 18) {
             ZStack {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(Theme.buttonGradient)
+                    .fill(Theme.ink)
                     .frame(width: 72, height: 72)
-                    .shadow(color: Color.black.opacity(0.24), radius: 16, y: 8)
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .strokeBorder(Theme.lime, lineWidth: 2.5)
+                    .frame(width: 72, height: 72)
                 Image(systemName: "figure.strengthtraining.traditional")
                     .font(.system(size: 31, weight: .bold))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.lime)
             }
             .scaleEffect(splashPulse ? 1.05 : 1)
             .animation(
@@ -162,11 +164,11 @@ struct RootView: View {
             .onAppear { splashPulse = true }
 
             Text("练途")
-                .font(.system(size: 28, weight: .bold, design: .default))
+                .font(AppType.title)
                 .tracking(-0.3)
-                .foregroundStyle(Theme.primaryText)
+                .foregroundStyle(Theme.ink)
             ProgressView()
-                .tint(Theme.accent)
+                .tint(Theme.cobalt)
             Text("正在恢复登录状态…")
                 .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)

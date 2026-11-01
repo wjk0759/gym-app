@@ -8,8 +8,8 @@ import SwiftUI
 struct CoachCard<Content: View>: View {
     var padding: CGFloat = 14
     var cornerRadius: CGFloat = 16
-    var surface: Color = Theme.surface
-    var border: Color = Color.white.opacity(0.10)
+    var surface: Color = Theme.paper
+    var border: Color = Theme.stroke
     var horizontalPadding: CGFloat = 16
     var verticalPadding: CGFloat = 8
     private let content: Content
@@ -17,8 +17,8 @@ struct CoachCard<Content: View>: View {
     init(
         padding: CGFloat = 14,
         cornerRadius: CGFloat = 16,
-        surface: Color = Theme.surface,
-        border: Color = Color.white.opacity(0.10),
+        surface: Color = Theme.paper,
+        border: Color = Theme.stroke,
         horizontalPadding: CGFloat = 16,
         verticalPadding: CGFloat = 8,
         @ViewBuilder content: () -> Content
@@ -49,7 +49,7 @@ struct CoachCard<Content: View>: View {
 
 struct CoachEyebrow: View {
     let text: String
-    var tint: Color = Theme.accent
+    var tint: Color = Theme.cobalt
 
     var body: some View {
         Text(text)
@@ -89,7 +89,7 @@ struct CoachCardHeader: View {
 /// Reusable transient/result banner: retry, undo and similar one-line actions.
 struct CoachInlineBanner: View {
     let icon: String
-    var tint: Color = Theme.accent
+    var tint: Color = Theme.cobalt
     let title: String
     let message: String
     var actionTitle: String?
@@ -103,10 +103,10 @@ struct CoachInlineBanner: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
                 Text(message)
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
 
@@ -116,15 +116,15 @@ struct CoachInlineBanner: View {
                 Button(actionTitle) {
                     action()
                 }
-                .font(.caption.weight(.bold))
-                .foregroundStyle(Theme.accent)
+                .font(AppType.caption.weight(.bold))
+                .foregroundStyle(Theme.cobalt)
                 .disabled(isBusy)
                 .buttonStyle(SubtlePressStyle())
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(Theme.surfaceStrong)
+        .background(Theme.ink.opacity(0.035))
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(Theme.stroke)
@@ -140,7 +140,7 @@ struct CoachLoadingLabel: View {
     var body: some View {
         if isLoading {
             ProgressView()
-                .tint(.black)
+                .tint(Theme.onAccent)
         } else {
             Text(title)
         }
@@ -158,12 +158,12 @@ struct CoachQuickActionButton: View {
             action()
         } label: {
             Label(title, systemImage: icon)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.accent)
+                .font(AppType.caption.weight(.semibold))
+                .foregroundStyle(Theme.cobalt)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(Theme.accent.opacity(0.09), in: Capsule())
-                .overlay(Capsule().stroke(Theme.accent.opacity(0.18), lineWidth: 0.8))
+                .background(Theme.cobalt.opacity(0.09), in: Capsule())
+                .overlay(Capsule().stroke(Theme.cobalt.opacity(0.18), lineWidth: 0.8))
         }
         .buttonStyle(SubtlePressStyle(scale: 0.95))
     }
@@ -195,8 +195,10 @@ struct CoachChatBubble<Content: View>: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(
-                            isSafety ? Theme.warning.opacity(0.5) : Color.clear,
+                        .strokeBorder(
+                            isSafety
+                                ? Theme.coral.opacity(0.5)
+                                : (isUser ? Color.clear : Theme.stroke),
                             lineWidth: 1
                         )
                 )
@@ -209,8 +211,8 @@ struct CoachChatBubble<Content: View>: View {
 
     private var background: Color {
         if isUser {
-            return Theme.accent
+            return Theme.cobalt
         }
-        return isSafety ? Theme.warning.opacity(0.12) : Theme.surface
+        return isSafety ? Theme.warning.opacity(0.12) : Theme.paper
     }
 }

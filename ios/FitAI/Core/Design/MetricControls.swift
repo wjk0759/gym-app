@@ -110,14 +110,14 @@ private struct WheelPickerSheet<Value: Hashable>: View {
         VStack(spacing: 0) {
             HStack {
                 Button("取消") { dismiss() }
-                    .font(.subheadline)
+                    .font(AppType.callout)
                     .foregroundStyle(Theme.secondaryText)
 
                 Spacer()
 
                 Text(title)
-                    .font(.headline)
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.headline)
+                    .foregroundStyle(Theme.ink)
 
                 Spacer()
 
@@ -125,8 +125,8 @@ private struct WheelPickerSheet<Value: Hashable>: View {
                     onConfirm()
                     dismiss()
                 }
-                .font(.subheadline.weight(.bold))
-                .foregroundStyle(Theme.accent)
+                .font(AppType.callout.weight(.bold))
+                .foregroundStyle(Theme.cobalt)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
@@ -319,7 +319,7 @@ struct WorkoutValueEntrySheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("保存") { save() }
                         .fontWeight(.bold)
-                        .foregroundStyle(Theme.accent)
+                        .foregroundStyle(Theme.cobalt)
                         .disabled(!isValid)
                 }
                 ToolbarItemGroup(placement: .keyboard) {

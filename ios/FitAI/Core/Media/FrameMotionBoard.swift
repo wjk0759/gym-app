@@ -98,6 +98,6 @@ struct FrameMotionBoard: View {
             .foregroundStyle(Theme.onAccent)
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
-            .background(Theme.accent.opacity(0.92), in: Capsule())
+            .background(Theme.cobalt.opacity(0.92), in: Capsule())
     }
 }

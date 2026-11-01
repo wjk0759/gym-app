@@ -38,9 +38,9 @@ struct PasswordResetView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("重置登录密码")
                             .font(.system(size: 28, weight: .bold, design: .default))
-                            .foregroundStyle(Theme.primaryText)
+                            .foregroundStyle(Theme.ink)
                         Text("验证注册手机号后设置新密码，重置后其他设备会退出登录。")
-                            .font(.subheadline)
+                            .font(AppType.callout)
                             .foregroundStyle(Theme.secondaryText)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -51,14 +51,14 @@ struct PasswordResetView: View {
                             fieldLabel("手机号")
                             fieldShell {
                                 Text("+86")
-                                    .font(.subheadline.weight(.semibold))
+                                    .font(AppType.callout.weight(.semibold))
                                     .foregroundStyle(Theme.secondaryText)
                                 Rectangle()
                                     .fill(Theme.stroke)
                                     .frame(width: 1, height: 18)
                                 TextField("请输入注册手机号", text: $phone)
-                                    .font(.subheadline)
-                                    .foregroundStyle(Theme.primaryText)
+                                    .font(AppType.callout)
+                                    .foregroundStyle(Theme.ink)
                                     .keyboardType(.numberPad)
                                     .textContentType(.telephoneNumber)
                                     .onChange(of: phone) { _, value in
@@ -72,8 +72,8 @@ struct PasswordResetView: View {
                             fieldLabel("验证码")
                             fieldShell {
                                 TextField("请输入 6 位验证码", text: $code)
-                                    .font(.subheadline)
-                                    .foregroundStyle(Theme.primaryText)
+                                    .font(AppType.callout)
+                                    .foregroundStyle(Theme.ink)
                                     .keyboardType(.numberPad)
                                     .textContentType(.oneTimeCode)
                                     .onChange(of: code) { _, value in
@@ -85,14 +85,14 @@ struct PasswordResetView: View {
                                     sendCode()
                                 } label: {
                                     if isSendingCode {
-                                        ProgressView().tint(Theme.accent)
+                                        ProgressView().tint(Theme.cobalt)
                                     } else {
                                         Text(countdown > 0 ? "\(countdown)s 后重发" : "获取验证码")
-                                            .font(.caption.weight(.semibold))
+                                            .font(AppType.caption.weight(.semibold))
                                             .foregroundStyle(
                                                 countdown > 0 || !isValidPhone
                                                     ? Theme.tertiaryText
-                                                    : Theme.accent
+                                                    : Theme.cobalt
                                             )
                                     }
                                 }
@@ -108,8 +108,8 @@ struct PasswordResetView: View {
                                     .foregroundStyle(Theme.tertiaryText)
                                     .frame(width: 18)
                                 SecureField("至少 8 位，含字母和数字", text: $newPassword)
-                                    .font(.subheadline)
-                                    .foregroundStyle(Theme.primaryText)
+                                    .font(AppType.callout)
+                                    .foregroundStyle(Theme.ink)
                                     .textContentType(.newPassword)
                                     .onChange(of: newPassword) { _, _ in errorMessage = "" }
                             }
@@ -122,8 +122,8 @@ struct PasswordResetView: View {
                                     .foregroundStyle(Theme.tertiaryText)
                                     .frame(width: 18)
                                 SecureField("再次输入新密码", text: $confirmPassword)
-                                    .font(.subheadline)
-                                    .foregroundStyle(Theme.primaryText)
+                                    .font(AppType.callout)
+                                    .foregroundStyle(Theme.ink)
                                     .textContentType(.newPassword)
                                     .onChange(of: confirmPassword) { _, _ in errorMessage = "" }
                             }
@@ -131,8 +131,8 @@ struct PasswordResetView: View {
 
                         if !errorMessage.isEmpty {
                             Text(errorMessage)
-                                .font(.caption)
-                                .foregroundStyle(Theme.danger)
+                                .font(AppType.caption)
+                                .foregroundStyle(Theme.coral)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
 
@@ -149,7 +149,7 @@ struct PasswordResetView: View {
                         .disabled(auth.isWorking)
 
                         Text("如果手机号已经停用或无法接收验证码，请通过 App 内反馈渠道联系支持。")
-                            .font(.caption2)
+                            .font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(Theme.tertiaryText)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -177,7 +177,7 @@ struct PasswordResetView: View {
 
     private func fieldLabel(_ text: String) -> some View {
         Text(text)
-            .font(.caption.weight(.medium))
+            .font(AppType.caption.weight(.medium))
             .foregroundStyle(Theme.secondaryText)
             .padding(.leading, 2)
     }
@@ -191,7 +191,7 @@ struct PasswordResetView: View {
         .padding(.horizontal, 14)
         .frame(height: 52)
         .background(
-            Theme.surfaceStrong,
+            Theme.ink.opacity(0.035),
             in: RoundedRectangle(cornerRadius: 14, style: .continuous)
         )
         .overlay(

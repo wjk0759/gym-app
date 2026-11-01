@@ -14,8 +14,6 @@ struct CoachAttachmentDraftBar: View {
     let onRemoveImage: (UUID) -> Void
     let onRemoveVideo: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
@@ -25,7 +23,7 @@ struct CoachAttachmentDraftBar: View {
                         : "待发送视频",
                     systemImage: !(video != nil || isLoadingVideo) ? "paperclip" : "video.fill"
                 )
-                .font(.caption.weight(.semibold))
+                .font(AppType.caption.weight(.semibold))
                 .foregroundStyle(Theme.secondaryText)
 
                 if isLoadingImages || isLoadingVideo {
@@ -38,7 +36,7 @@ struct CoachAttachmentDraftBar: View {
                 Button("清空") {
                     onClear()
                 }
-                .font(.caption.weight(.semibold))
+                .font(AppType.caption.weight(.semibold))
                 .foregroundStyle(Theme.tertiaryText)
             }
 
@@ -46,20 +44,20 @@ struct CoachAttachmentDraftBar: View {
                 HStack(spacing: 10) {
                     VStack(spacing: 5) {
                         ProgressView()
-                            .tint(Theme.accent)
+                            .tint(Theme.cobalt)
                         Text("读取中")
                             .font(.system(size: 9, weight: .medium))
                             .foregroundStyle(Theme.secondaryText)
                     }
                     .frame(width: 150, height: 84)
-                    .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .background(Theme.ink.opacity(0.035), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text("正在分析视频画面…")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Theme.primaryText)
+                            .font(AppType.caption.weight(.semibold))
+                            .foregroundStyle(Theme.ink)
                         Text("本地抽取关键帧并识别姿态，请稍等")
-                            .font(.caption2)
+                            .font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(Theme.tertiaryText)
                     }
 
@@ -83,10 +81,10 @@ struct CoachAttachmentDraftBar: View {
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text("视频已就绪")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Theme.primaryText)
+                            .font(AppType.caption.weight(.semibold))
+                            .foregroundStyle(Theme.ink)
                         Text("\(selectedVideo.durationSeconds)s · 发送时上传最多 6 个关键帧")
-                            .font(.caption2)
+                            .font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(Theme.tertiaryText)
                     }
 
@@ -99,7 +97,7 @@ struct CoachAttachmentDraftBar: View {
                             .font(.system(size: 9, weight: .bold))
                             .foregroundStyle(Theme.secondaryText)
                             .frame(width: 26, height: 26)
-                            .background(Theme.surfaceStrong, in: Circle())
+                            .background(Theme.ink.opacity(0.035), in: Circle())
                     }
                     .accessibilityLabel("移除视频")
                 }
@@ -109,14 +107,14 @@ struct CoachAttachmentDraftBar: View {
                         if isLoadingImages {
                             VStack(spacing: 4) {
                                 ProgressView()
-                                    .tint(Theme.accent)
+                                    .tint(Theme.cobalt)
                                 Text("读取中")
                                     .font(.system(size: 9, weight: .medium))
                                     .foregroundStyle(Theme.secondaryText)
                             }
                             .frame(width: 68, height: 68)
                             .background(
-                                Theme.surfaceStrong,
+                                Theme.ink.opacity(0.035),
                                 in: RoundedRectangle(cornerRadius: 10, style: .continuous)
                             )
                         }
@@ -154,18 +152,16 @@ struct CoachAttachmentDraftBar: View {
                     ? "图片和视频只能二选一；可以先添加多张图片，写完说明后再发送。"
                     : "视频一次只能发送一个；发送时最多上传 6 个关键帧和本机姿态摘要，不上传原视频。"
             )
-            .font(.caption2)
+            .font(.system(size: 9.5, weight: .medium))
             .foregroundStyle(Theme.tertiaryText)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background {
-            GlassSurface(cornerRadius: 0, material: false)
-        }
+        .background(Theme.background)
         .overlay(alignment: .top) {
             Rectangle()
-                .fill(Color.white.opacity(colorScheme == .dark ? 0.12 : 0.48))
-                .frame(height: 0.8)
+                .fill(Theme.stroke)
+                .frame(height: 1)
         }
     }
 }

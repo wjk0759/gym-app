@@ -32,8 +32,8 @@ struct PasswordRegistrationView: View {
                     verificationCard
                     if let errorMessage {
                         Text(errorMessage)
-                            .font(.caption)
-                            .foregroundStyle(Theme.danger)
+                            .font(AppType.caption)
+                            .foregroundStyle(Theme.coral)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     Button {
@@ -52,7 +52,7 @@ struct PasswordRegistrationView: View {
                     .disabled(isSubmitting || isSendingCode || phone.count != 11 || code.count != 6)
 
                     Text("注册后会直接用当前账号登录；手机号只用于账号验证和找回密码。")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -74,9 +74,9 @@ struct PasswordRegistrationView: View {
         VStack(alignment: .leading, spacing: 7) {
             Text("这个账号还没有注册")
                 .font(.system(size: 24, weight: .bold, design: .default))
-                .foregroundStyle(Theme.primaryText)
+                .foregroundStyle(Theme.ink)
             Text("先用手机号验证码确认手机号，再创建账号并登录。")
-                .font(.subheadline)
+                .font(AppType.callout)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -85,19 +85,19 @@ struct PasswordRegistrationView: View {
     private var accountCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("注册账号")
-                .font(.headline)
-                .foregroundStyle(Theme.primaryText)
+                .font(AppType.headline)
+                .foregroundStyle(Theme.ink)
             HStack {
                 Text("账号")
-                    .font(.subheadline)
+                    .font(AppType.callout)
                     .foregroundStyle(Theme.secondaryText)
                 Spacer()
                 Text(account)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.callout.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
             }
             Text("密码已按你刚才输入的内容保留，注册成功后直接登录。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
         }
         .card()
@@ -106,23 +106,23 @@ struct PasswordRegistrationView: View {
     private var verificationCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("验证手机号")
-                .font(.headline)
-                .foregroundStyle(Theme.primaryText)
+                .font(AppType.headline)
+                .foregroundStyle(Theme.ink)
 
             VStack(alignment: .leading, spacing: 7) {
                 Text("手机号")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
                 fieldShell {
                     Text("+86")
-                        .font(.subheadline.weight(.semibold))
+                        .font(AppType.callout.weight(.semibold))
                         .foregroundStyle(Theme.secondaryText)
                     Rectangle()
                         .fill(Theme.stroke)
                         .frame(width: 1, height: 18)
                     TextField("请输入手机号", text: $phone)
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.callout)
+                        .foregroundStyle(Theme.ink)
                         .keyboardType(.numberPad)
                         .textContentType(.telephoneNumber)
                         .onChange(of: phone) { _, value in
@@ -134,12 +134,12 @@ struct PasswordRegistrationView: View {
 
             VStack(alignment: .leading, spacing: 7) {
                 Text("验证码")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
                 fieldShell {
                     TextField("请输入 6 位验证码", text: $code)
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.callout)
+                        .foregroundStyle(Theme.ink)
                         .keyboardType(.numberPad)
                         .textContentType(.oneTimeCode)
                         .onChange(of: code) { _, value in
@@ -150,16 +150,16 @@ struct PasswordRegistrationView: View {
                         sendCode()
                     } label: {
                         if isSendingCode {
-                            ProgressView().tint(Theme.accent)
+                            ProgressView().tint(Theme.cobalt)
                                 .frame(width: 82)
                         } else {
                             Text(countdown > 0 ? "\(countdown)s 后重发" : "获取验证码")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(countdown > 0 || phone.count != 11 ? Theme.tertiaryText : Theme.accent)
+                                .font(AppType.caption.weight(.semibold))
+                                .foregroundStyle(countdown > 0 || phone.count != 11 ? Theme.tertiaryText : Theme.cobalt)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 7)
                                 .background(
-                                    Theme.accent.opacity(countdown > 0 || phone.count != 11 ? 0 : 0.10),
+                                    Theme.cobalt.opacity(countdown > 0 || phone.count != 11 ? 0 : 0.10),
                                     in: Capsule()
                                 )
                         }
@@ -170,7 +170,7 @@ struct PasswordRegistrationView: View {
             }
 
             Text(devCode.map { "开发验证码 \($0)，已自动填入" } ?? "验证码仅用于本次注册，请勿转发。")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(devCode == nil ? Theme.tertiaryText : Theme.warning)
                 .lineLimit(1)
                 .minimumScaleFactor(0.9)
@@ -187,7 +187,7 @@ struct PasswordRegistrationView: View {
         .padding(.horizontal, 14)
         .frame(height: 52)
         .background(
-            Theme.surfaceStrong,
+            Theme.ink.opacity(0.035),
             in: RoundedRectangle(cornerRadius: 14, style: .continuous)
         )
         .overlay(

@@ -73,8 +73,6 @@ struct LoginView: View {
 
             ZStack {
                 AppBackground()
-                authGlow
-                    .allowsHitTesting(false)
                 Color.clear
                     .contentShape(Rectangle())
                     .onTapGesture { focusedField = nil }
@@ -159,34 +157,26 @@ struct LoginView: View {
         }
     }
 
-    private var authGlow: some View {
-        RadialGradient(
-            colors: [Theme.accent.opacity(0.08), .clear],
-            center: .top,
-            startRadius: 0,
-            endRadius: 360
-        )
-        .ignoresSafeArea()
-    }
-
     private func header(compact: Bool) -> some View {
         HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: compact ? 13 : 15, style: .continuous)
-                    .fill(Theme.buttonGradient)
+                    .fill(Theme.ink)
                     .frame(width: compact ? 42 : 48, height: compact ? 42 : 48)
-                    .shadow(color: Color.black.opacity(0.22), radius: 12, y: 6)
+                RoundedRectangle(cornerRadius: compact ? 13 : 15, style: .continuous)
+                    .strokeBorder(Theme.lime, lineWidth: 2)
+                    .frame(width: compact ? 42 : 48, height: compact ? 42 : 48)
                 Image(systemName: "figure.strengthtraining.traditional")
                     .font(.system(size: compact ? 19 : 22, weight: .bold))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.lime)
             }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("练途")
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.title)
+                    .foregroundStyle(Theme.ink)
                 Text("AI 健身教练")
-                    .font(.caption2.weight(.medium))
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
 
@@ -194,14 +184,14 @@ struct LoginView: View {
 
             if !compact {
                 Text("训练 · 饮食 · 复盘")
-                    .font(.system(size: 9.5, weight: .semibold))
-                    .foregroundStyle(Theme.accent.opacity(0.9))
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(Theme.cobalt)
                     .padding(.horizontal, 9)
                     .padding(.vertical, 5)
-                    .background(Theme.accent.opacity(0.09), in: Capsule())
+                    .background(Theme.cobalt.opacity(0.08), in: Capsule())
                     .overlay(
                         Capsule()
-                            .stroke(Theme.accent.opacity(0.16), lineWidth: 0.8)
+                            .strokeBorder(Theme.cobalt.opacity(0.16), lineWidth: 1)
                     )
             }
         }
@@ -212,7 +202,7 @@ struct LoginView: View {
             Text("登录练途")
                 .font(.system(size: compact ? 27 : 34, weight: .bold, design: .default))
                 .tracking(-0.5)
-                .foregroundStyle(Theme.primaryText)
+                .foregroundStyle(Theme.ink)
             Text("同步训练计划、记录和 AI 复盘")
                 .font(compact ? AppType.caption : AppType.body)
                 .foregroundStyle(Theme.secondaryText)
@@ -239,12 +229,12 @@ struct LoginView: View {
                     Text(errorText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .font(.caption)
-                .foregroundStyle(Theme.danger)
+                .font(AppType.caption)
+                .foregroundStyle(Theme.coral)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(11)
                 .background(
-                    Theme.danger.opacity(0.09),
+                    Theme.coral.opacity(0.09),
                     in: RoundedRectangle(cornerRadius: 11, style: .continuous)
                 )
                 .transition(.opacity.combined(with: .offset(y: -6)))
@@ -256,12 +246,12 @@ struct LoginView: View {
             } label: {
                 HStack(spacing: 8) {
                     if auth.isWorking {
-                        ProgressView().tint(.black)
+                        ProgressView().tint(Theme.onAccent)
                         Text("正在登录…")
                     } else {
                         Text("登录并继续")
                         Image(systemName: "arrow.right")
-                            .font(.subheadline.weight(.bold))
+                            .font(AppType.callout.weight(.bold))
                     }
                 }
             }
@@ -271,19 +261,20 @@ struct LoginView: View {
             Text(mode == .phone
                  ? "未注册手机号将自动创建账号"
                  : "未注册账号会引导完成注册")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(compact ? 16 : 18)
         .background {
-            GlassSurface(cornerRadius: 24)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Theme.paper)
         }
         .overlay {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(Theme.stroke, lineWidth: 0.6)
+                .strokeBorder(Theme.stroke, lineWidth: 1)
         }
-        .shadow(color: Color.black.opacity(0.16), radius: 18, y: 10)
+        .shadow(color: Theme.ink.opacity(0.10), radius: 0, x: 5, y: 5)
         .motionAnimation(Motion.quick, value: mode)
         .motionAnimation(Motion.quick, value: errorText)
     }
@@ -299,18 +290,14 @@ struct LoginView: View {
                     }
                 } label: {
                     Text(item.rawValue)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(mode == item ? Theme.accent : Theme.secondaryText)
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(mode == item ? Theme.paper : Theme.secondaryText)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                         .background {
                             if mode == item {
                                 RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                    .fill(Theme.accent.opacity(0.16))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                            .stroke(Theme.accent.opacity(0.38), lineWidth: 0.8)
-                                    )
+                                    .fill(Theme.ink)
                                     .matchedGeometryEffect(id: "modePill", in: modeNamespace)
                             }
                         }
@@ -320,7 +307,7 @@ struct LoginView: View {
         }
         .padding(4)
         .background(
-            Color.white.opacity(0.035),
+            Theme.paper,
             in: RoundedRectangle(cornerRadius: 15, style: .continuous)
         )
         .overlay(
@@ -331,7 +318,7 @@ struct LoginView: View {
 
     private func fieldLabel(_ text: String) -> some View {
         Text(text)
-            .font(.caption.weight(.medium))
+            .font(AppType.caption.weight(.medium))
             .foregroundStyle(Theme.secondaryText)
             .padding(.leading, 2)
     }
@@ -348,8 +335,8 @@ struct LoginView: View {
         .background {
             SoftSurface(
                 cornerRadius: 14,
-                tint: focused ? Theme.accent.opacity(0.06) : Theme.surfaceStrong,
-                stroke: focused ? Theme.accent.opacity(0.38) : Theme.stroke
+                tint: focused ? Theme.cobalt.opacity(0.06) : Theme.ink.opacity(0.035),
+                stroke: focused ? Theme.cobalt.opacity(0.38) : Theme.stroke
             )
         }
         .animation(Motion.quick, value: focused)
@@ -362,12 +349,12 @@ struct LoginView: View {
 
                 fieldShell(focused: focusedField == .phone) {
                     Image(systemName: "iphone")
-                        .font(.subheadline)
-                        .foregroundStyle(focusedField == .phone ? Theme.accent : Theme.tertiaryText)
+                        .font(AppType.callout)
+                        .foregroundStyle(focusedField == .phone ? Theme.cobalt : Theme.tertiaryText)
                         .frame(width: 18)
 
                     Text("+86")
-                        .font(.subheadline.weight(.semibold))
+                        .font(AppType.callout.weight(.semibold))
                         .foregroundStyle(Theme.secondaryText)
 
                     Rectangle()
@@ -375,8 +362,8 @@ struct LoginView: View {
                         .frame(width: 1, height: 18)
 
                     TextField("请输入手机号", text: $phone)
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.callout)
+                        .foregroundStyle(Theme.ink)
                         .keyboardType(.numberPad)
                         .textContentType(.telephoneNumber)
                         .focused($focusedField, equals: .phone)
@@ -392,13 +379,13 @@ struct LoginView: View {
 
                 fieldShell(focused: focusedField == .code) {
                     Image(systemName: "number")
-                        .font(.subheadline)
-                        .foregroundStyle(focusedField == .code ? Theme.accent : Theme.tertiaryText)
+                        .font(AppType.callout)
+                        .foregroundStyle(focusedField == .code ? Theme.cobalt : Theme.tertiaryText)
                         .frame(width: 18)
 
                     TextField("请输入 6 位验证码", text: $code)
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.callout)
+                        .foregroundStyle(Theme.ink)
                         .keyboardType(.numberPad)
                         .textContentType(.oneTimeCode)
                         .focused($focusedField, equals: .code)
@@ -411,18 +398,18 @@ struct LoginView: View {
                         sendCode()
                     } label: {
                         if isSendingCode {
-                            ProgressView().tint(Theme.accent)
+                            ProgressView().tint(Theme.cobalt)
                                 .frame(width: 78)
                         } else {
                             Text(countdown > 0 ? "\(countdown)s 后重发" : "获取验证码")
-                                .font(.caption.weight(.semibold))
+                                .font(AppType.caption.weight(.semibold))
                                 .foregroundStyle(
-                                    countdown > 0 || !isValidPhone ? Theme.tertiaryText : Theme.accent
+                                    countdown > 0 || !isValidPhone ? Theme.tertiaryText : Theme.cobalt
                                 )
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 7)
                                 .background(
-                                    Theme.accent.opacity(
+                                    Theme.cobalt.opacity(
                                         countdown > 0 || !isValidPhone ? 0 : 0.10
                                     ),
                                     in: Capsule()
@@ -435,7 +422,7 @@ struct LoginView: View {
             }
 
             Text(devCode.map { "开发验证码 \($0)，已自动填入" } ?? "验证码仅用于本次登录，请勿转发")
-                .font(.caption2)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(devCode == nil ? Theme.tertiaryText : Theme.warning)
                 .lineLimit(1)
                 .minimumScaleFactor(0.9)
@@ -451,12 +438,12 @@ struct LoginView: View {
 
                 fieldShell(focused: focusedField == .account) {
                     Image(systemName: "person")
-                        .foregroundStyle(focusedField == .account ? Theme.accent : Theme.tertiaryText)
+                        .foregroundStyle(focusedField == .account ? Theme.cobalt : Theme.tertiaryText)
                         .frame(width: 18)
 
                     TextField("请输入手机号或用户名", text: $account)
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.callout)
+                        .foregroundStyle(Theme.ink)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .textContentType(.username)
@@ -470,7 +457,7 @@ struct LoginView: View {
 
                 fieldShell(focused: focusedField == .password) {
                     Image(systemName: "lock")
-                        .foregroundStyle(focusedField == .password ? Theme.accent : Theme.tertiaryText)
+                        .foregroundStyle(focusedField == .password ? Theme.cobalt : Theme.tertiaryText)
                         .frame(width: 18)
 
                     Group {
@@ -484,8 +471,8 @@ struct LoginView: View {
                                 .focused($focusedField, equals: .password)
                         }
                     }
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.callout)
+                    .foregroundStyle(Theme.ink)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .onChange(of: password) { _, _ in localError = nil }
@@ -503,7 +490,7 @@ struct LoginView: View {
 
             HStack(spacing: 8) {
                 Text("密码至少 8 位，含字母和数字")
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.9)
@@ -513,8 +500,8 @@ struct LoginView: View {
                 Button("忘记密码？") {
                     showPasswordReset = true
                 }
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(Theme.accent)
+                .font(.system(size: 9.5, weight: .semibold))
+                .foregroundStyle(Theme.cobalt)
                 .buttonStyle(.plain)
             }
             .frame(maxWidth: .infinity, minHeight: 16, alignment: .leading)
@@ -532,12 +519,12 @@ struct LoginView: View {
             } label: {
                 ZStack {
                     RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(consent ? Theme.accent : Color.clear)
+                        .fill(consent ? Theme.cobalt : Color.clear)
                         .frame(width: 18, height: 18)
                         .overlay(
                             RoundedRectangle(cornerRadius: 5, style: .continuous)
                                 .stroke(
-                                    consent ? Theme.accent : Theme.tertiaryText.opacity(0.55),
+                                    consent ? Theme.cobalt : Theme.tertiaryText.opacity(0.55),
                                     lineWidth: 1.2
                                 )
                         )
@@ -559,13 +546,13 @@ struct LoginView: View {
                     Button {
                         legal = .terms
                     } label: {
-                        Text("《用户协议》").underline().foregroundStyle(Theme.accent)
+                        Text("《用户协议》").underline().foregroundStyle(Theme.cobalt)
                     }
                     Text("和")
                     Button {
                         legal = .privacy
                     } label: {
-                        Text("《隐私政策》").underline().foregroundStyle(Theme.accent)
+                        Text("《隐私政策》").underline().foregroundStyle(Theme.cobalt)
                     }
                 }
                 .buttonStyle(.plain)
@@ -688,12 +675,12 @@ struct LoginView: View {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppType.callout.weight(.semibold))
                     .foregroundStyle(color)
                     .frame(width: 20)
                 Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.callout.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 12)
@@ -806,11 +793,11 @@ private struct ServerSettingsView: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 14) {
                 Text("真机调试时改成电脑局域网地址。例如：")
-                    .font(.caption)
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
                 Text("http://192.168.1.4:8000/api/v1")
-                    .font(.caption.monospaced())
-                    .foregroundStyle(Theme.accent)
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Theme.cobalt)
 
                 TextField("http://192.168.1.4:8000/api/v1", text: $value)
                     .textInputAutocapitalization(.never)
@@ -818,7 +805,7 @@ private struct ServerSettingsView: View {
                     .keyboardType(.URL)
                     .padding(12)
                     .background(
-                        Theme.surfaceStrong,
+                        Theme.ink.opacity(0.035),
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                     )
 
@@ -835,7 +822,7 @@ private struct ServerSettingsView: View {
                 .buttonStyle(SecondaryButtonStyle())
 
                 Text("仅 Debug 构建显示。Release 使用固定生产域名。")
-                    .font(.caption2)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
                 Spacer()
             }
@@ -916,43 +903,43 @@ struct LegalDocumentView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
                         Text("练途 · 协议与隐私")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Theme.accent)
+                            .font(AppType.caption.weight(.semibold))
+                            .foregroundStyle(Theme.cobalt)
                         Spacer()
                         Text("更新于 2026-10-25")
-                            .font(.caption2)
+                            .font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(Theme.tertiaryText)
                     }
 
                     Text(kind.title)
                         .font(.title2.weight(.bold))
-                        .foregroundStyle(Theme.primaryText)
+                        .foregroundStyle(Theme.ink)
 
                     Text(intro)
-                        .font(.subheadline)
+                        .font(AppType.callout)
                         .foregroundStyle(Theme.secondaryText)
                         .fixedSize(horizontal: false, vertical: true)
 
                     ForEach(sections) { section in
                         VStack(alignment: .leading, spacing: 6) {
                             Text(section.title)
-                                .font(.headline)
-                                .foregroundStyle(Theme.primaryText)
+                                .font(AppType.headline)
+                                .foregroundStyle(Theme.ink)
                             Text(section.body)
-                                .font(.subheadline)
+                                .font(AppType.callout)
                                 .foregroundStyle(Theme.secondaryText)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
 
                     Text("本页为应用内公示文本。正式上线版本将在 App Store 页面与 App 内同步更新，并由法务复核。")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(
-                            Theme.surfaceStrong,
+                            Theme.ink.opacity(0.035),
                             in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                         )
                 }

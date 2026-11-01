@@ -1121,9 +1121,9 @@ struct CoachOnboardingView: View {
             HStack(spacing: 9) {
                 Image(systemName: item.symbolName)
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(selected ? Theme.ink : Theme.secondaryText)
+                    .foregroundStyle(selected ? Theme.onAccent : Theme.secondaryText)
                     .frame(width: 34, height: 34)
-                    .background(selected ? Theme.lime : Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .background(selected ? Theme.lime : Theme.ink.opacity(0.035), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 Text(item.label)
                     .font(AppType.caption.weight(.semibold))
                     .foregroundStyle(Theme.ink)

@@ -8,13 +8,13 @@ struct ToastBanner: View {
     var body: some View {
         HStack(spacing: 9) {
             Image(systemName: "info.circle.fill")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Theme.accent)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Theme.cobalt)
                 .accessibilityHidden(true)
 
             Text(message)
                 .font(AppType.caption.weight(.semibold))
-                .foregroundStyle(Theme.primaryText)
+                .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .lineLimit(3)
 
@@ -24,13 +24,14 @@ struct ToastBanner: View {
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            GlassSurface(cornerRadius: 16, material: true)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Theme.paper)
         }
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.16), lineWidth: 0.8)
+                .strokeBorder(Theme.ink.opacity(0.14), lineWidth: 1)
         }
-        .shadow(color: Theme.shadow.opacity(0.16), radius: 12, y: 6)
+        .shadow(color: Theme.ink.opacity(0.10), radius: 0, x: 3, y: 3)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isStaticText)
     }

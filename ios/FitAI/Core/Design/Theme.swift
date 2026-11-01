@@ -296,28 +296,37 @@ struct EmptyStateView: View {
     let message: String
 
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 13) {
             ZStack {
-                Circle()
-                    .fill(.ultraThinMaterial)
-                    .frame(width: 64, height: 64)
-                Circle()
-                    .strokeBorder(Theme.stroke, lineWidth: 0.8)
-                    .frame(width: 64, height: 64)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Theme.lime)
+                    .frame(width: 58, height: 58)
                 Image(systemName: icon)
-                    .font(.system(size: 26, weight: .semibold))
-                    .foregroundStyle(Theme.accent)
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(Theme.onAccent)
             }
+
             Text(title)
-                .font(AppType.title)
-                .foregroundStyle(Theme.primaryText)
+                .font(AppType.headline)
+                .foregroundStyle(Theme.ink)
+
             Text(message)
-                .font(AppType.body)
+                .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
                 .multilineTextAlignment(.center)
                 .lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity)
-        .card(padding: 30)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 28)
+        .background(
+            Theme.paper,
+            in: RoundedRectangle(cornerRadius: AppLayout.cardCornerRadius, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: AppLayout.cardCornerRadius, style: .continuous)
+                .strokeBorder(Theme.stroke, lineWidth: 1)
+        }
     }
 }
