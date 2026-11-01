@@ -285,7 +285,13 @@ struct NutritionView: View {
     private func macroStrip(snapshot: DayLogsSnapshot, targets: NutritionTargets) -> some View {
         let totals = snapshot.totals
         return VStack(spacing: 8) {
-            HStack(spacing: 6) {
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: 6),
+                    GridItem(.flexible(), spacing: 6)
+                ],
+                spacing: 6
+            ) {
                 macroPill("蛋白", value: totals.protein, target: targets.protein, color: Theme.primary)
                 macroPill("碳水", value: totals.carbs, target: targets.carbs, color: Theme.secondary)
                 macroPill("脂肪", value: totals.fat, target: targets.fat, color: Theme.primary)

@@ -797,7 +797,7 @@ struct CoachChatView: View {
                     .foregroundStyle(Theme.ink)
 
                 LazyVGrid(
-                    columns: [GridItem(.flexible()), GridItem(.flexible())],
+                    columns: [GridItem(.adaptive(minimum: 180), spacing: 10)],
                     spacing: 10
                 ) {
                     ForEach(starters) { item in

@@ -448,7 +448,7 @@ struct CoachOnboardingView: View {
             )
 
             LazyVGrid(
-                columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
+                columns: [GridItem(.adaptive(minimum: 112), spacing: 8)],
                 spacing: 10
             ) {
                 ForEach(BodyFatOption.options(for: draft.sex)) { option in

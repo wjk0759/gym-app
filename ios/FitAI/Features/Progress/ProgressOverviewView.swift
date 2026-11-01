@@ -221,16 +221,16 @@ struct ProgressOverviewView: View {
 
     private var chartCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                SectionTitle(title: "趋势", subtitle: "最近 \(metrics.count) 次记录")
-                Spacer()
-                Picker("指标", selection: $metric) {
-                    ForEach(MetricChoice.allCases) { item in
-                        Text(item.title).tag(item)
-                    }
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    chartTitle
+                    Spacer()
+                    chartMetricPicker
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 210)
+                VStack(alignment: .leading, spacing: 8) {
+                    chartTitle
+                    chartMetricPicker
+                }
             }
 
             if metrics.isEmpty {
@@ -283,6 +283,20 @@ struct ProgressOverviewView: View {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .strokeBorder(Theme.stroke, lineWidth: 1)
         }
+    }
+
+    private var chartTitle: some View {
+        SectionTitle(title: "趋势", subtitle: "最近 \(metrics.count) 次记录")
+    }
+
+    private var chartMetricPicker: some View {
+        Picker("指标", selection: $metric) {
+            ForEach(MetricChoice.allCases) { item in
+                Text(item.title).tag(item)
+            }
+        }
+        .pickerStyle(.segmented)
+        .frame(maxWidth: 210)
     }
 
     private var photosCard: some View {
