@@ -32,10 +32,10 @@ public final class SqlSupport {
 
     public static String userSearchFrom(String userAlias, boolean hasQuery) {
         if (!hasQuery) {
-            return "users " + userAlias;
+            return " users " + userAlias + " ";
         }
-        return userIdsSubquery() + " ids STRAIGHT_JOIN users " + userAlias
-                + " ON " + userAlias + ".id = ids.id";
+        return " " + userIdsSubquery() + " ids STRAIGHT_JOIN users " + userAlias
+                + " ON " + userAlias + ".id = ids.id ";
     }
 
     /** FROM fragment for a table filtered only by its owning user. */
@@ -46,10 +46,10 @@ public final class SqlSupport {
             boolean hasQuery
     ) {
         if (!hasQuery) {
-            return table + " " + alias;
+            return " " + table + " " + alias + " ";
         }
-        return userIdsSubquery() + " ids STRAIGHT_JOIN " + table + " " + alias
-                + " ON " + alias + "." + userColumn + " = ids.id";
+        return " " + userIdsSubquery() + " ids STRAIGHT_JOIN " + table + " " + alias
+                + " ON " + alias + "." + userColumn + " = ids.id ";
     }
 
     /**
@@ -66,7 +66,7 @@ public final class SqlSupport {
             boolean hasQuery
     ) {
         if (!hasQuery) {
-            return table + " " + alias;
+            return " " + table + " " + alias + " ";
         }
         StringBuilder ids = new StringBuilder("(");
         if (textClause != null && !textClause.isBlank()) {
@@ -79,8 +79,8 @@ public final class SqlSupport {
                 .append(" FROM ").append(table)
                 .append(" WHERE ").append(userColumn)
                 .append(" IN (").append(userIdsSubquery()).append("))");
-        return ids + " ids STRAIGHT_JOIN " + table + " " + alias
-                + " ON " + alias + "." + primaryKey + " = ids.id";
+        return " " + ids + " ids STRAIGHT_JOIN " + table + " " + alias
+                + " ON " + alias + "." + primaryKey + " = ids.id ";
     }
 
     public static String entityTextSearchFrom(
@@ -91,11 +91,11 @@ public final class SqlSupport {
             boolean hasQuery
     ) {
         if (!hasQuery) {
-            return table + " " + alias;
+            return " " + table + " " + alias + " ";
         }
-        return "(SELECT " + primaryKey + " FROM " + table
+        return " (SELECT " + primaryKey + " FROM " + table
                 + " WHERE " + textClause + ") ids STRAIGHT_JOIN " + table + " " + alias
-                + " ON " + alias + "." + primaryKey + " = ids.id";
+                + " ON " + alias + "." + primaryKey + " = ids.id ";
     }
 
     public static String iso(Object value) {

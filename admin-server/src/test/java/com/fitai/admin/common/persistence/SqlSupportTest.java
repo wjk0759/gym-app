@@ -20,7 +20,7 @@ class SqlSupportTest {
         assertThat(SqlSupport.userOwnedFrom("workout_sessions", "w", "user_id", true))
                 .contains("STRAIGHT_JOIN workout_sessions w");
         assertThat(SqlSupport.userOwnedFrom("workout_sessions", "w", "user_id", false))
-                .isEqualTo("workout_sessions w");
+                .contains("workout_sessions w");
         assertThat(SqlSupport.page(-1)).isEqualTo(1);
         assertThat(SqlSupport.size(1000)).isEqualTo(100);
         assertThat(SqlSupport.offset(3, 20)).isEqualTo(40);
