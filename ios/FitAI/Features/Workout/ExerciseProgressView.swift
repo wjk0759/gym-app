@@ -96,9 +96,9 @@ struct ExerciseProgressView: View {
             HStack(spacing: 8) {
                 Image(systemName: "crown.fill")
                     .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.onPrimary)
                     .frame(width: 30, height: 30)
-                    .background(Theme.lime, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(Theme.primary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                 Text("历史最佳")
                     .font(AppType.headline)

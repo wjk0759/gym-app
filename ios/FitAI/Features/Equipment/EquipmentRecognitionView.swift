@@ -311,11 +311,11 @@ struct EquipmentRecognitionView: View {
                         Spacer()
                         Text("\(Int(candidate.confidence * 100))%")
                             .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .foregroundStyle(candidate.confidence >= 0.6 ? Theme.cobalt : Theme.warning)
+                            .foregroundStyle(Theme.ink)
                     }
 
                     ProgressView(value: candidate.confidence)
-                        .tint(candidate.confidence >= 0.6 ? Theme.cobalt : Theme.warning)
+                        .tint(candidate.confidence >= 0.6 ? Theme.primary : Theme.secondary)
 
                     if candidate.confidence < 0.6 {
                         Text("需要确认：这张图可能不是这个器械")

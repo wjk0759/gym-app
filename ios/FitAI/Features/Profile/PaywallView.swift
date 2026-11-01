@@ -87,21 +87,10 @@ struct PaywallView: View {
                         Text(product.displayPrice)
                             .font(.system(size: 16, weight: .bold, design: .monospaced))
                     }
-                    .font(AppType.button)
                     .foregroundStyle(Theme.onAccent)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 15)
-                    .background(
-                        RoundedRectangle(cornerRadius: 15, style: .continuous)
-                            .fill(Theme.cobalt)
-                    )
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 15, style: .continuous)
-                            .strokeBorder(Theme.ink.opacity(0.18), lineWidth: 1)
-                    }
-                    .shadow(color: Theme.ink.opacity(0.16), radius: 0, x: 0, y: 4)
+                    .padding(.horizontal, 2)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PrimaryButtonStyle())
 
                 Text("自动续期，可随时在系统设置中取消")
                     .font(.system(size: 9.5, weight: .medium))
@@ -124,9 +113,9 @@ struct PaywallView: View {
             HStack(spacing: 10) {
                 Image(systemName: "crown.fill")
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.onPrimary)
                     .frame(width: 38, height: 38)
-                    .background(Theme.lime, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("练途 Pro")

@@ -95,7 +95,7 @@ struct WorkoutHistoryView: View {
                 Text("MONTH / \(monthShort)")
                     .font(AppType.overline)
                     .tracking(1.4)
-                    .foregroundStyle(Theme.onAccent.opacity(0.9))
+                    .foregroundStyle(Theme.onMedia.opacity(0.9))
 
                 Spacer(minLength: 4)
 
@@ -110,16 +110,16 @@ struct WorkoutHistoryView: View {
             HStack(alignment: .lastTextBaseline, spacing: 10) {
                 Text("\(sessions.count)")
                     .font(.system(size: 48, weight: .black, design: .monospaced))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.onMedia)
                     .lineLimit(1)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("次训练")
                         .font(AppType.caption.weight(.bold))
-                        .foregroundStyle(Theme.onAccent)
+                        .foregroundStyle(Theme.onMedia)
                     Text(monthTitle)
                         .font(AppType.micro)
-                        .foregroundStyle(Theme.onAccent.opacity(0.72))
+                        .foregroundStyle(Theme.onMedia.opacity(0.72))
                 }
                 .padding(.bottom, 5)
 
@@ -135,10 +135,10 @@ struct WorkoutHistoryView: View {
                     } label: {
                         Text("回到本月")
                             .font(AppType.micro)
-                            .foregroundStyle(Theme.onAccent)
+                            .foregroundStyle(Theme.onMedia)
                             .padding(.horizontal, 9)
                             .padding(.vertical, 5)
-                            .background(Theme.onAccent.opacity(0.14), in: Capsule())
+                            .background(Theme.onMedia.opacity(0.14), in: Capsule())
                     }
                     .buttonStyle(SubtlePressStyle(scale: 0.95))
                     .padding(.bottom, 4)
@@ -151,11 +151,11 @@ struct WorkoutHistoryView: View {
                     : "容量和时长只统计本机已保存的训练。"
             )
             .font(AppType.caption)
-            .foregroundStyle(Theme.onAccent.opacity(0.88))
+            .foregroundStyle(Theme.onMedia.opacity(0.88))
             .fixedSize(horizontal: false, vertical: true)
 
             Rectangle()
-                .fill(Theme.onAccent.opacity(0.22))
+                .fill(Theme.onMedia.opacity(0.22))
                 .frame(height: 1)
 
             HStack(spacing: 10) {
@@ -165,12 +165,14 @@ struct WorkoutHistoryView: View {
             }
         }
         .padding(18)
-        .background(Theme.cobalt, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(
+            Theme.inkSolid,
+            in: RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
+        )
         .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
                 .strokeBorder(Theme.ink, lineWidth: 1.5)
         }
-        .shadow(color: Theme.ink.opacity(0.14), radius: 0, x: 5, y: 5)
     }
 
     private func monthArrow(
@@ -186,9 +188,9 @@ struct WorkoutHistoryView: View {
         } label: {
             Image(systemName: systemName)
                 .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(Theme.onAccent)
+                .foregroundStyle(Theme.onMedia)
                 .frame(width: 30, height: 30)
-                .background(Theme.onAccent.opacity(0.14), in: Circle())
+                .background(Theme.onMedia.opacity(0.14), in: Circle())
         }
         .buttonStyle(SubtlePressStyle(scale: 0.92))
         .disabled(disabled)
@@ -200,16 +202,16 @@ struct WorkoutHistoryView: View {
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(value)
                     .font(.system(size: 17, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.onMedia)
                     .lineLimit(1)
                     .minimumScaleFactor(0.65)
                 Text(unit)
                     .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Theme.onAccent.opacity(0.78))
+                    .foregroundStyle(Theme.onMedia.opacity(0.78))
             }
             Text(label)
                 .font(.system(size: 9, weight: .medium))
-                .foregroundStyle(Theme.onAccent.opacity(0.85))
+                .foregroundStyle(Theme.onMedia.opacity(0.85))
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -219,6 +221,7 @@ struct WorkoutHistoryView: View {
         let sessionsByDay = Dictionary(grouping: sessions) {
             calendar.startOfDay(for: $0.date)
         }
+        let days = calendarDays
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 8) {
@@ -263,12 +266,8 @@ struct WorkoutHistoryView: View {
                 columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7),
                 spacing: 4
             ) {
-                ForEach(0..<leadingBlankCount, id: \.self) { _ in
-                    Color.clear.frame(height: 44)
-                }
-
-                ForEach(1...daysInMonth, id: \.self) { day in
-                    dayCell(day, sessionsByDay: sessionsByDay)
+                ForEach(days, id: \.self) { date in
+                    dayCell(date, sessionsByDay: sessionsByDay)
                 }
             }
 
@@ -289,14 +288,15 @@ struct WorkoutHistoryView: View {
     }
 
     private func dayCell(
-        _ day: Int,
+        _ date: Date,
         sessionsByDay: [Date: [WorkoutSession]]
     ) -> some View {
-        let date = calendar.date(byAdding: .day, value: day - 1, to: monthStart) ?? monthStart
+        let day = calendar.component(.day, from: date)
         let sessions = sessionsByDay[calendar.startOfDay(for: date)] ?? []
         let volume = sessions.reduce(0) { $0 + $1.volume }
         let isSelected = selectedDate.map { calendar.isDate($0, inSameDayAs: date) } ?? false
         let isToday = calendar.isDateInToday(date)
+        let inMonth = calendar.isDate(date, equalTo: monthStart, toGranularity: .month)
 
         return Button {
             Haptics.select()
@@ -313,14 +313,14 @@ struct WorkoutHistoryView: View {
                             design: .monospaced
                         )
                     )
-                    .foregroundStyle(isSelected ? Theme.paper : Theme.ink)
+                    .foregroundStyle(isSelected ? Theme.onPrimary : Theme.ink)
 
                 Text(volume > 0 ? compactVolume(volume) : " ")
                     .font(.system(size: 8, weight: .medium, design: .monospaced))
                     .foregroundStyle(
                         isSelected
-                            ? Theme.paper.opacity(0.78)
-                            : (volume > 0 ? Theme.cobalt : Color.clear)
+                            ? Theme.onPrimary.opacity(0.72)
+                            : (volume > 0 ? Theme.ink : Color.clear)
                     )
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
@@ -331,7 +331,7 @@ struct WorkoutHistoryView: View {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(
                         isSelected
-                            ? Theme.ink
+                            ? Theme.primary
                             : (volume > 0 ? Theme.ink.opacity(0.035) : Color.clear)
                     )
             }
@@ -343,6 +343,7 @@ struct WorkoutHistoryView: View {
                     )
             }
             .scaleEffect(isSelected ? 1.03 : 1)
+            .opacity(inMonth ? 1 : 0.3)
             .animation(Motion.quick, value: isSelected)
         }
         .buttonStyle(SubtlePressStyle(scale: 0.94))
@@ -474,12 +475,19 @@ struct WorkoutHistoryView: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 
-    private var leadingBlankCount: Int {
-        (calendar.component(.weekday, from: monthStart) - calendar.firstWeekday + 7) % 7
-    }
-
-    private var daysInMonth: Int {
-        calendar.range(of: .day, in: .month, for: monthStart)?.count ?? 30
+    private var calendarDays: [Date] {
+        let weekday = calendar.component(.weekday, from: monthStart)
+        let mondayOffset = (weekday + 5) % 7
+        guard let gridStart = calendar.date(
+            byAdding: .day,
+            value: -mondayOffset,
+            to: monthStart
+        ) else {
+            return []
+        }
+        return (0..<42).compactMap {
+            calendar.date(byAdding: .day, value: $0, to: gridStart)
+        }
     }
 
     private func changeMonth(_ delta: Int) {

@@ -73,7 +73,7 @@ struct GlassCardModifier: ViewModifier {
 struct EditorialCardModifier: ViewModifier {
     var padding: CGFloat = AppLayout.cardPadding
     var cornerRadius: CGFloat = AppLayout.heroCornerRadius
-    var accent: Color = Theme.cobalt
+    var accent: Color = Theme.primary
 
     func body(content: Content) -> some View {
         content
@@ -94,7 +94,6 @@ struct EditorialCardModifier: ViewModifier {
                     .padding(.leading, padding)
                     .padding(.top, 10)
             }
-            .shadow(color: Theme.ink.opacity(0.12), radius: 0, x: 5, y: 5)
     }
 }
 

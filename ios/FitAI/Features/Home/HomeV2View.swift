@@ -571,18 +571,18 @@ struct HomeV2View: View {
 
     private var quickActions: some View {
         HStack(spacing: 8) {
-            quickTile(title: "记录身体", symbol: "figure.stand", accent: Theme.cobalt) {
+            quickTile(title: "记录身体", symbol: "figure.stand", accent: Theme.primary) {
                 bodyCheckInManual = true
                 showBodyCheckIn = true
             }
             NavigationLink {
                 ProgressOverviewView()
             } label: {
-                quickTileLabel(title: "变化", symbol: "chart.line.uptrend.xyaxis", accent: Theme.coral)
+                quickTileLabel(title: "变化", symbol: "chart.line.uptrend.xyaxis", accent: Theme.ink, foreground: Theme.onAccent)
             }
             .buttonStyle(CardPressStyle(scale: 0.985))
 
-            quickTile(title: "问教练", symbol: "bubble.left.and.bubble.right", accent: Theme.lime) {
+            quickTile(title: "问教练", symbol: "bubble.left.and.bubble.right", accent: Theme.primary) {
                 store.selectedTab = 2
             }
         }
@@ -598,16 +598,16 @@ struct HomeV2View: View {
             Haptics.tap()
             action()
         } label: {
-            quickTileLabel(title: title, symbol: symbol, accent: accent)
+            quickTileLabel(title: title, symbol: symbol, accent: accent, foreground: Theme.onPrimary)
         }
         .buttonStyle(CardPressStyle(scale: 0.985))
     }
 
-    private func quickTileLabel(title: String, symbol: String, accent: Color) -> some View {
+    private func quickTileLabel(title: String, symbol: String, accent: Color, foreground: Color) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Image(systemName: symbol)
                 .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(Theme.ink)
+                .foregroundStyle(foreground)
                 .frame(width: 32, height: 32)
                 .background(accent, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             Text(title)

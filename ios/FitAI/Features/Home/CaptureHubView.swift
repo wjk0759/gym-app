@@ -38,10 +38,17 @@ enum CaptureKind: String, Identifiable {
 
     var accent: Color {
         switch self {
-        case .food: return Theme.coral
-        case .body: return Theme.cobalt
-        case .equipment: return Theme.lime
-        case .action: return Theme.accentWarm
+        case .food: return Theme.ink
+        case .body: return Theme.primary
+        case .equipment: return Theme.primary
+        case .action: return Theme.ink
+        }
+    }
+
+    var iconColor: Color {
+        switch self {
+        case .food, .action: return Theme.onAccent
+        case .body, .equipment: return Theme.onPrimary
         }
     }
 }
@@ -81,7 +88,7 @@ struct CaptureHubView: View {
                                 VStack(alignment: .leading, spacing: 12) {
                                     Image(systemName: kind.symbol)
                                         .font(.system(size: 22, weight: .bold))
-                                        .foregroundStyle(Theme.onAccent)
+                                        .foregroundStyle(kind.iconColor)
                                         .frame(width: 48, height: 48)
                                         .background(kind.accent, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                                         .overlay {

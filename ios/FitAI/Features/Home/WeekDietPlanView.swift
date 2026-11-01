@@ -95,7 +95,7 @@ struct WeekDietPlanView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 7) {
                     foodGuideChip("蛋白 1 掌心", icon: "fish.fill", color: Theme.blue)
-                    foodGuideChip("蔬菜 2 拳", icon: "leaf.fill", color: Theme.cobalt)
+                    foodGuideChip("蔬菜 2 拳", icon: "leaf.fill", color: Theme.secondary)
                     foodGuideChip("主食 1 拳", icon: "takeoutbag.and.cup.and.straw.fill", color: Theme.warning)
                     foodGuideChip("油脂 1 拇指", icon: "drop.fill", color: Theme.tertiaryText)
                 }

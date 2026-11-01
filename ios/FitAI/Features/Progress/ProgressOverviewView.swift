@@ -176,7 +176,7 @@ struct ProgressOverviewView: View {
                 title: "变化",
                 value: metrics.count > 1 ? String(format: "%+.1f", delta) : "—",
                 unit: metric.unit,
-                accent: delta <= 0 ? Theme.cobalt : Theme.coral
+                accent: delta <= 0 ? Theme.primary : Theme.secondary
             )
         }
     }
@@ -323,10 +323,10 @@ struct ProgressOverviewView: View {
                 } label: {
                     Label("拍一张", systemImage: "camera.fill")
                         .font(AppType.caption.weight(.semibold))
-                        .foregroundStyle(Theme.onAccent)
+                        .foregroundStyle(Theme.onPrimary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 11)
-                        .background(Theme.lime, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                         .overlay {
                             RoundedRectangle(cornerRadius: 10, style: .continuous)
                                 .strokeBorder(Theme.ink.opacity(0.12), lineWidth: 1)
@@ -607,9 +607,9 @@ private struct ProgressPhotoCompareView: View {
                             }
 
                         HStack {
-                            compareLabel("开始", date: before.date, color: Theme.cobalt)
+                            compareLabel("开始", date: before.date, color: Theme.ink)
                             Spacer()
-                            compareLabel("现在", date: after.date, color: Theme.coral)
+                            compareLabel("现在", date: after.date, color: Theme.secondary)
                         }
 
                         HStack(spacing: 8) {
@@ -635,10 +635,10 @@ private struct ProgressPhotoCompareView: View {
                             } label: {
                                 Label("分享对比图", systemImage: "square.and.arrow.up")
                                     .font(AppType.caption.weight(.bold))
-                                    .foregroundStyle(Theme.onAccent)
+                                    .foregroundStyle(Theme.onPrimary)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 11)
-                                    .background(Theme.lime, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                                    .background(Theme.primary, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
                                     .overlay {
                                         RoundedRectangle(cornerRadius: 11, style: .continuous)
                                             .strokeBorder(Theme.ink.opacity(0.12), lineWidth: 1)
@@ -766,7 +766,7 @@ private struct BeforeAfterSlider: View {
                     .shadow(color: .black.opacity(0.20), radius: 2)
 
                 Circle()
-                    .fill(Theme.ink)
+                    .fill(Theme.primary)
                     .frame(width: 38, height: 38)
                     .overlay {
                         HStack(spacing: 2) {
@@ -774,10 +774,10 @@ private struct BeforeAfterSlider: View {
                             Image(systemName: "chevron.right")
                         }
                         .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(Theme.lime)
+                        .foregroundStyle(Theme.onPrimary)
                     }
                     .overlay {
-                        Circle().strokeBorder(Theme.lime, lineWidth: 2)
+                        Circle().strokeBorder(Theme.inkSolid, lineWidth: 2)
                     }
                     .offset(x: width * position - 18)
                     .gesture(

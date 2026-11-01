@@ -29,7 +29,7 @@ struct DiscoverView: View {
 
     private let dietCards: [DietCard] = [
         DietCard(id: "balanced", label: "均衡饮食", tagline: "最稳，长期坚持", icon: "circle.grid.cross", accent: Theme.cobalt),
-        DietCard(id: "high_protein", label: "高蛋白", tagline: "力量训练优先", icon: "bolt.heart.fill", accent: Theme.coral),
+        DietCard(id: "high_protein", label: "高蛋白", tagline: "力量训练优先", icon: "bolt.heart.fill", accent: Theme.secondary),
         DietCard(id: "carb_cycle", label: "碳循环", tagline: "训练日高碳", icon: "arrow.triangle.2.circlepath", accent: Theme.warning),
         DietCard(id: "low_carb", label: "低碳", tagline: "控制主食", icon: "leaf.fill", accent: Theme.lime)
     ]
@@ -157,10 +157,10 @@ struct DiscoverView: View {
 
                 ZStack {
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(Theme.lime)
+                        .fill(Theme.primary)
                     Image(systemName: "dumbbell.fill")
                         .font(.system(size: 38, weight: .black))
-                        .foregroundStyle(Theme.onAccent)
+                        .foregroundStyle(Theme.onPrimary)
                 }
                 .frame(width: 84, height: 84)
                 .rotationEffect(.degrees(2))
@@ -188,7 +188,8 @@ struct DiscoverView: View {
                     title: "动作教程",
                     subtitle: "按肌群和器械学",
                     icon: "figure.run",
-                    accent: Theme.cobalt
+                    accent: Theme.cobalt,
+                    foreground: Theme.onAccent
                 )
             }
             .buttonStyle(CardPressStyle(scale: 0.97))
@@ -214,7 +215,7 @@ struct DiscoverView: View {
                     title: "饮食方案",
                     subtitle: "均衡 / 高蛋白 / 碳循环",
                     icon: "fork.knife",
-                    accent: Theme.coral
+                    accent: Theme.primary
                 )
             }
             .buttonStyle(CardPressStyle(scale: 0.97))
@@ -227,7 +228,8 @@ struct DiscoverView: View {
                     title: "体型分析",
                     subtitle: "拍照看训练重点",
                     icon: "figure.stand",
-                    accent: Theme.warning
+                    accent: Theme.ink,
+                    foreground: Theme.onAccent
                 )
             }
             .buttonStyle(CardPressStyle(scale: 0.97))
@@ -238,13 +240,14 @@ struct DiscoverView: View {
         title: String,
         subtitle: String,
         icon: String,
-        accent: Color
+        accent: Color,
+        foreground: Color = Theme.onPrimary
     ) -> some View {
         VStack(alignment: .leading, spacing: 9) {
             HStack {
                 Image(systemName: icon)
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(foreground)
                     .frame(width: 30, height: 30)
                     .background(accent, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
 
@@ -282,9 +285,9 @@ struct DiscoverView: View {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "camera.metering.center.weighted")
                     .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.onPrimary)
                     .frame(width: 36, height: 36)
-                    .background(Theme.coral, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("动作点评")
@@ -389,10 +392,10 @@ struct DiscoverView: View {
                     if store.profile.split == split {
                         Text("当前")
                             .font(.system(size: 8, weight: .bold))
-                            .foregroundStyle(Theme.onAccent)
+                            .foregroundStyle(Theme.onPrimary)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(Theme.lime, in: Capsule(style: .continuous))
+                            .background(Theme.primary, in: Capsule(style: .continuous))
                     }
                 }
 

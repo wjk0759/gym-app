@@ -14,10 +14,7 @@ struct FrameMotionBoard: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [
-                    Color(red: 0.86, green: 0.93, blue: 0.97),
-                    Color(red: 0.70, green: 0.82, blue: 0.91)
-                ],
+                colors: [Theme.primary.opacity(0.10), Theme.paper],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -34,18 +31,18 @@ struct FrameMotionBoard: View {
                     Spacer()
                     Text(showPeak ? "发力" : "起始")
                         .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(Color(red: 0.08, green: 0.19, blue: 0.28))
+                        .foregroundStyle(Theme.ink)
                         .padding(.horizontal, 9)
                         .padding(.vertical, 5)
-                        .background(.white.opacity(0.72), in: Capsule())
+                        .background(Theme.paper.opacity(0.86), in: Capsule())
                 }
                 Spacer()
                 Text(title)
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(Color(red: 0.07, green: 0.16, blue: 0.24))
+                    .foregroundStyle(Theme.ink)
                 Link("Exercise data by RepDB (repdb.co)", destination: attributionURL)
                     .font(.system(size: 9.5, weight: .medium))
-                    .foregroundStyle(Color(red: 0.10, green: 0.30, blue: 0.48))
+                    .foregroundStyle(Theme.ink)
             }
             .padding(13)
         }
@@ -53,7 +50,7 @@ struct FrameMotionBoard: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.34), lineWidth: 1)
+                .stroke(Theme.stroke, lineWidth: 1)
         )
         .task {
             while !Task.isCancelled {
@@ -74,7 +71,7 @@ struct FrameMotionBoard: View {
             switch phase {
             case .empty:
                 ProgressView()
-                    .tint(Color(red: 0.10, green: 0.23, blue: 0.34))
+                    .tint(Theme.primary)
             case .success(let image):
                 image
                     .resizable()
@@ -84,7 +81,7 @@ struct FrameMotionBoard: View {
             case .failure:
                 Image(systemName: "photo")
                     .font(.system(size: 44, weight: .light))
-                    .foregroundStyle(Color(red: 0.10, green: 0.23, blue: 0.34).opacity(0.35))
+                    .foregroundStyle(Theme.ink.opacity(0.35))
             @unknown default:
                 EmptyView()
             }

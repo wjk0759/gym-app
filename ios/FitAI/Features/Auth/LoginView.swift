@@ -161,14 +161,14 @@ struct LoginView: View {
         HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: compact ? 13 : 15, style: .continuous)
-                    .fill(Theme.ink)
+                    .fill(Theme.primary)
                     .frame(width: compact ? 42 : 48, height: compact ? 42 : 48)
                 RoundedRectangle(cornerRadius: compact ? 13 : 15, style: .continuous)
-                    .strokeBorder(Theme.lime, lineWidth: 2)
+                    .strokeBorder(Theme.inkSolid, lineWidth: 2)
                     .frame(width: compact ? 42 : 48, height: compact ? 42 : 48)
                 Image(systemName: "figure.strengthtraining.traditional")
                     .font(.system(size: compact ? 19 : 22, weight: .bold))
-                    .foregroundStyle(Theme.lime)
+                    .foregroundStyle(Theme.onPrimary)
             }
 
             VStack(alignment: .leading, spacing: 2) {
@@ -267,14 +267,13 @@ struct LoginView: View {
         }
         .padding(compact ? 16 : 18)
         .background {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
                 .fill(Theme.paper)
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
                 .strokeBorder(Theme.stroke, lineWidth: 1)
         }
-        .shadow(color: Theme.ink.opacity(0.10), radius: 0, x: 5, y: 5)
         .motionAnimation(Motion.quick, value: mode)
         .motionAnimation(Motion.quick, value: errorText)
     }
@@ -584,13 +583,13 @@ struct LoginView: View {
                 socialButton(
                     title: "微信登录",
                     icon: "message.fill",
-                    color: Color(red: 0.20, green: 0.78, blue: 0.36),
+                    color: Theme.secondary,
                     provider: "wechat"
                 )
                 socialButton(
                     title: "QQ 登录",
                     icon: "person.2.fill",
-                    color: Color(red: 0.26, green: 0.58, blue: 0.96),
+                    color: Theme.primary,
                     provider: "qq"
                 )
             }
@@ -676,7 +675,7 @@ struct LoginView: View {
             HStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(AppType.callout.weight(.semibold))
-                    .foregroundStyle(color)
+                    .foregroundStyle(Theme.ink)
                     .frame(width: 20)
                 Text(title)
                     .font(AppType.callout.weight(.semibold))

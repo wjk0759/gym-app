@@ -104,8 +104,8 @@ struct PlanReviewView: View {
 
     private func trendSummary(_ review: ReviewData) -> some View {
         HStack(spacing: 12) {
-            trendLegend(color: Theme.cobalt, text: "优于上期 \(review.goodCount)")
-            trendLegend(color: Theme.coral, text: "低于上期 \(review.badCount)")
+            trendLegend(color: Theme.primary, text: "优于上期 \(review.goodCount)")
+            trendLegend(color: Theme.secondary, text: "低于上期 \(review.badCount)")
             trendLegend(color: Theme.tertiaryText, text: "数据不足 \(review.insufficientCount)")
             Spacer(minLength: 0)
         }
@@ -327,8 +327,8 @@ struct PlanReviewView: View {
 
     private func toneColor(_ tone: ReviewTrend.Tone) -> Color {
         switch tone {
-        case .good: return Theme.cobalt
-        case .bad: return Theme.coral
+        case .good: return Theme.ink
+        case .bad: return Theme.secondary
         case .flat: return Theme.secondaryText
         case .muted: return Theme.tertiaryText
         }

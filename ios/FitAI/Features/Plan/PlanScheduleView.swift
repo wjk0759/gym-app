@@ -242,7 +242,7 @@ struct PlanScheduleView: View {
 
                 Text("\(count)/\(daysPerWeek)")
                     .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    .foregroundStyle(count == 0 ? Theme.warning : Theme.cobalt)
+                    .foregroundStyle(count == 0 ? Theme.ink : Theme.secondary)
             }
 
             HStack(spacing: 4) {
@@ -325,7 +325,7 @@ struct PlanScheduleView: View {
         VStack(alignment: .leading, spacing: 7) {
             HStack(spacing: 6) {
                 Circle()
-                    .fill(selectedCount == 0 ? Theme.warning : Theme.lime)
+                    .fill(selectedCount == 0 ? Theme.primary : Theme.secondary)
                     .frame(width: 5, height: 5)
                 Text(
                     selectedCount == 0
@@ -334,7 +334,7 @@ struct PlanScheduleView: View {
                 )
                 .font(AppType.caption.weight(.semibold))
                 .foregroundStyle(
-                    selectedCount == 0 ? Theme.warning : Theme.secondaryText
+                    selectedCount == 0 ? Theme.ink : Theme.secondaryText
                 )
             }
 

@@ -158,6 +158,7 @@ struct SettingsView: View {
                 .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var accountCard: some View {
@@ -316,9 +317,9 @@ struct SettingsView: View {
 
     private var serviceColor: Color {
         switch serviceState {
-        case .checking: return Theme.warning
-        case .online: return Theme.cobalt
-        case .offline: return Theme.danger
+        case .checking: return Theme.tertiaryText
+        case .online: return Theme.primary
+        case .offline: return Theme.ink
         }
     }
 

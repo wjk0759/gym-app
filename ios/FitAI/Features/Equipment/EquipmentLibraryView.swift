@@ -240,7 +240,6 @@ struct EquipmentLibraryView: View {
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .strokeBorder(Theme.ink.opacity(0.14), lineWidth: 1)
                     )
-                    .shadow(color: Theme.ink.opacity(0.14), radius: 0, x: 3, y: 3)
             }
             .accessibilityLabel("拍照或相册添加器械")
         }
@@ -370,10 +369,10 @@ struct EquipmentLibraryView: View {
             if store.equipmentLibrary.isEmpty {
                 ZStack {
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(Theme.lime)
+                        .fill(Theme.primary)
                     Image(systemName: "dumbbell.fill")
                         .font(.system(size: 36, weight: .black))
-                        .foregroundStyle(Theme.onAccent)
+                        .foregroundStyle(Theme.onPrimary)
                 }
                 .frame(width: 92, height: 92)
                 .rotationEffect(.degrees(2))

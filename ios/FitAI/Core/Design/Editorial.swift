@@ -13,12 +13,12 @@ struct CoachMark: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(Theme.ink)
+                .fill(Theme.primary)
             Circle()
-                .strokeBorder(Theme.lime, lineWidth: max(1.5, size * 0.055))
+                .strokeBorder(Theme.inkSolid, lineWidth: max(1.5, size * 0.055))
             Text(letter)
                 .font(.system(size: size * 0.38, weight: .black, design: .default))
-                .foregroundStyle(Theme.lime)
+                .foregroundStyle(Theme.onPrimary)
                 .offset(y: -0.5)
         }
         .frame(width: size, height: size)
@@ -108,10 +108,10 @@ struct WeekStrip: View {
                     VStack(spacing: 6) {
                         Text(weekdayLabel(day))
                             .font(AppType.micro)
-                            .foregroundStyle(selected ? Theme.paper : Theme.tertiaryText)
+                            .foregroundStyle(selected ? Theme.onPrimary : Theme.tertiaryText)
                         Text("\(calendar.component(.day, from: day))")
                             .font(.system(size: 17, weight: .bold, design: .monospaced))
-                            .foregroundStyle(selected ? Theme.paper : Theme.primaryText)
+                            .foregroundStyle(selected ? Theme.onPrimary : Theme.primaryText)
                         Circle()
                             .fill(
                                 completedKeys.contains(key)
@@ -124,7 +124,7 @@ struct WeekStrip: View {
                     .padding(.vertical, 9)
                     .background {
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(selected ? Theme.ink : Theme.paper)
+                            .fill(selected ? Theme.primary : Theme.paper)
                     }
                     .overlay {
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -152,7 +152,7 @@ struct WeekStrip: View {
 struct ProgressRing: View {
     var progress: Double
     var lineWidth: CGFloat = 8
-    var color: Color = Theme.cobalt
+    var color: Color = Theme.primary
     var track: Color = Theme.stroke
 
     var body: some View {
@@ -180,10 +180,10 @@ struct RecommendationBadge: View {
                 .font(AppType.micro)
                 .tracking(0.2)
         }
-        .foregroundStyle(Theme.onAccent)
+        .foregroundStyle(Theme.onPrimary)
         .padding(.horizontal, 9)
         .padding(.vertical, 5)
-        .background(Theme.lime, in: Capsule(style: .continuous))
+        .background(Theme.primary, in: Capsule(style: .continuous))
         .overlay {
             Capsule(style: .continuous)
                 .strokeBorder(Theme.ink.opacity(0.12), lineWidth: 0.8)
@@ -243,7 +243,7 @@ struct EditorialMetric: View {
     let title: String
     let value: String
     var unit: String? = nil
-    var accent: Color = Theme.cobalt
+    var accent: Color = Theme.primary
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -285,15 +285,15 @@ struct CaptureFAB: View {
         } label: {
             ZStack {
                 Circle()
-                    .fill(Theme.ink)
+                    .fill(Theme.primary)
                     .frame(width: 58, height: 58)
-                    .shadow(color: Theme.ink.opacity(0.18), radius: 0, x: 3, y: 4)
+                    .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
                 Circle()
-                    .strokeBorder(Theme.lime, lineWidth: 2)
+                    .strokeBorder(Theme.inkSolid, lineWidth: 2)
                     .frame(width: 58, height: 58)
                 Image(systemName: "camera.fill")
                     .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(Theme.lime)
+                    .foregroundStyle(Theme.onPrimary)
             }
         }
         .buttonStyle(SubtlePressStyle(scale: 0.92))

@@ -499,10 +499,7 @@ struct EquipmentItemDetailView: View {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(
                         LinearGradient(
-                            colors: [
-                                Color(red: 0.10, green: 0.13, blue: 0.20),
-                                Color(red: 0.035, green: 0.055, blue: 0.10)
-                            ],
+                            colors: [Theme.inkSolid, Theme.inkSolid.opacity(0.78)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -518,7 +515,7 @@ struct EquipmentItemDetailView: View {
                 } else {
                     Image(systemName: equipmentSymbol(item))
                         .font(.system(size: 66, weight: .light))
-                        .foregroundStyle(Theme.cobalt.opacity(0.22))
+                        .foregroundStyle(Theme.primary.opacity(0.40))
                 }
 
                 VStack(spacing: 7) {
@@ -567,10 +564,7 @@ struct EquipmentItemDetailView: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [
-                            Color(red: 0.91, green: 0.94, blue: 0.97),
-                            Color(red: 0.78, green: 0.84, blue: 0.90)
-                        ],
+                        colors: [Theme.primary.opacity(0.10), Theme.paper],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -579,7 +573,7 @@ struct EquipmentItemDetailView: View {
             ForEach(0..<3, id: \.self) { index in
                 Ellipse()
                     .stroke(
-                        Color(red: 0.10, green: 0.21, blue: 0.32).opacity(0.20),
+                        Theme.primary.opacity(0.20),
                         style: StrokeStyle(lineWidth: 1, dash: [4, 5])
                     )
                     .frame(
@@ -591,16 +585,16 @@ struct EquipmentItemDetailView: View {
 
             Image(systemName: equipmentSymbol(item))
                 .font(.system(size: 64, weight: .light))
-                .foregroundStyle(Color(red: 0.055, green: 0.11, blue: 0.18))
+                .foregroundStyle(Theme.ink)
                 .shadow(color: Color.black.opacity(0.12), radius: 10, y: 8)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("保持轨迹稳定")
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(Color(red: 0.11, green: 0.20, blue: 0.29))
+                    .foregroundStyle(Theme.ink)
                 Text("起始位置、发力方向和还原速度，比盲目加重量更重要。")
                     .font(.system(size: 9.5))
-                    .foregroundStyle(Color(red: 0.16, green: 0.27, blue: 0.37).opacity(0.82))
+                    .foregroundStyle(Theme.secondaryText)
                     .lineSpacing(1.5)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -714,10 +708,7 @@ struct EquipmentItemDetailView: View {
                 .frame(maxWidth: .infinity)
                 .background(
                     LinearGradient(
-                        colors: [
-                            Color(red: 0.035, green: 0.075, blue: 0.12),
-                            Color(red: 0.055, green: 0.10, blue: 0.15)
-                        ],
+                        colors: [Theme.inkSolid, Theme.inkSolid.opacity(0.82)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -725,7 +716,7 @@ struct EquipmentItemDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Color.white.opacity(0.06), lineWidth: 0.8)
+                        .stroke(Theme.onMedia.opacity(0.08), lineWidth: 0.8)
                 )
                 .accessibilityLabel("人体正面和背面肌肉示意图，重点训练\(primary)，\(support.joined(separator: "、"))")
 
@@ -1038,10 +1029,10 @@ struct EquipmentItemDetailView: View {
             HStack(spacing: 10) {
                 Text("L")
                     .font(.system(size: 13, weight: .black))
-                    .foregroundStyle(Theme.lime)
+                    .foregroundStyle(Theme.onPrimary)
                     .frame(width: 36, height: 36)
-                    .background(Theme.ink, in: Circle())
-                    .overlay(Circle().strokeBorder(Theme.lime, lineWidth: 1.5))
+                    .background(Theme.primary, in: Circle())
+                    .overlay(Circle().strokeBorder(Theme.inkSolid, lineWidth: 1.5))
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("动作细节还不确定？")
@@ -1058,10 +1049,10 @@ struct EquipmentItemDetailView: View {
 
                 Text("问教练")
                     .font(AppType.micro.weight(.bold))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.onPrimary)
                     .padding(.horizontal, 9)
                     .padding(.vertical, 8)
-                    .background(Theme.lime, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
             .padding(13)
             .background(Theme.paper, in: RoundedRectangle(cornerRadius: 17, style: .continuous))

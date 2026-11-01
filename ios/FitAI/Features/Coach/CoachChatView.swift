@@ -595,7 +595,7 @@ struct CoachChatView: View {
             if !result.description.isEmpty {
                 Text(result.description)
                     .font(AppType.caption)
-                    .foregroundStyle(result.notInLibrary ? Color.orange : Theme.secondaryText)
+                    .foregroundStyle(result.notInLibrary ? Theme.ink : Theme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -695,10 +695,10 @@ struct CoachChatView: View {
                             ForEach(focus.compactMap { BodyFocusArea(rawValue: $0)?.label }, id: \.self) { label in
                                 Text(label)
                                     .font(AppType.micro.weight(.bold))
-                                    .foregroundStyle(Theme.onAccent)
+                                    .foregroundStyle(Theme.onPrimary)
                                     .padding(.horizontal, 7)
                                     .padding(.vertical, 3)
-                                    .background(Theme.lime, in: Capsule(style: .continuous))
+                                    .background(Theme.primary, in: Capsule(style: .continuous))
                             }
                         }
                         .font(AppType.micro)
@@ -1071,12 +1071,6 @@ struct CoachChatView: View {
                 )
                 .animation(Motion.quick, value: focused)
         }
-        .shadow(
-            color: Theme.ink.opacity(colorScheme == .dark ? 0.22 : 0.08),
-            radius: 0,
-            x: 0,
-            y: 3
-        )
         .padding(.horizontal, 10)
         .padding(.top, 6)
         .padding(.bottom, 6)

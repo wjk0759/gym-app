@@ -145,14 +145,14 @@ struct RootView: View {
         VStack(spacing: 18) {
             ZStack {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(Theme.ink)
+                    .fill(Theme.primary)
                     .frame(width: 72, height: 72)
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .strokeBorder(Theme.lime, lineWidth: 2.5)
+                    .strokeBorder(Theme.inkSolid, lineWidth: 2.5)
                     .frame(width: 72, height: 72)
                 Image(systemName: "figure.strengthtraining.traditional")
                     .font(.system(size: 31, weight: .bold))
-                    .foregroundStyle(Theme.lime)
+                    .foregroundStyle(Theme.onPrimary)
             }
             .scaleEffect(splashPulse ? 1.05 : 1)
             .animation(

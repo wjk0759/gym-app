@@ -13,11 +13,11 @@ struct AmbientBackdrop: View {
         ZStack {
             Theme.background
 
-            // Editorial light: cobalt on one corner, lime on the other, with
-            // the weather kept as a very quiet tint instead of a full sky.
+            // Neutral studio light: the canvas stays graphite/paper; lime is
+            // reserved for UI signals and never washes the whole page green.
             RadialGradient(
                 colors: [
-                    Theme.cobalt.opacity(dark ? 0.22 : 0.11),
+                    Theme.secondary.opacity(dark ? 0.10 : 0.05),
                     .clear
                 ],
                 center: .topLeading,
@@ -27,7 +27,7 @@ struct AmbientBackdrop: View {
 
             RadialGradient(
                 colors: [
-                    Theme.lime.opacity(dark ? 0.10 : 0.13),
+                    Theme.ink.opacity(dark ? 0.08 : 0.03),
                     .clear
                 ],
                 center: .bottomTrailing,

@@ -20,7 +20,7 @@ enum ProgressPhotoExporter {
             let paper = UIColor(red: 0.957, green: 0.941, blue: 0.902, alpha: 1)
             let ink = UIColor(red: 0.070, green: 0.075, blue: 0.055, alpha: 1)
             let cobalt = UIColor(red: 0.180, green: 0.290, blue: 1.000, alpha: 1)
-            let coral = UIColor(red: 0.770, green: 0.230, blue: 0.120, alpha: 1)
+            let lime = UIColor(red: 0.370, green: 0.480, blue: 0.000, alpha: 1)
 
             paper.setFill()
             context.cgContext.fill(CGRect(origin: .zero, size: size))
@@ -41,7 +41,7 @@ enum ProgressPhotoExporter {
                 "同一角度、同一光线，变化才有意义。",
                 at: CGPoint(x: 60, y: 168),
                 font: .systemFont(ofSize: 22, weight: .regular),
-                color: UIColor(red: 0.35, green: 0.355, blue: 0.305, alpha: 1)
+                color: ink.withAlphaComponent(0.62)
             )
 
             let imageTop: CGFloat = 260
@@ -57,7 +57,7 @@ enum ProgressPhotoExporter {
                 afterImage,
                 in: CGRect(origin: CGPoint(x: 640, y: imageTop), size: imageSize),
                 label: "现在  \(dateLabel(after.date))",
-                labelColor: coral,
+                labelColor: lime,
                 context: context
             )
 
@@ -65,7 +65,7 @@ enum ProgressPhotoExporter {
                 "FitAI · 练途 · 照片只保存在本机",
                 at: CGPoint(x: 60, y: 1392),
                 font: .systemFont(ofSize: 20, weight: .semibold),
-                color: UIColor(red: 0.505, green: 0.510, blue: 0.455, alpha: 1)
+                color: ink.withAlphaComponent(0.45)
             )
         }
     }

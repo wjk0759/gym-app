@@ -294,10 +294,10 @@ struct WorkoutDetailView: View {
 
                 Text("\(group.sets.count) 组")
                     .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.onPrimary)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 3)
-                    .background(Theme.lime, in: Capsule(style: .continuous))
+                    .background(Theme.primary, in: Capsule(style: .continuous))
             }
 
             InkDivider()

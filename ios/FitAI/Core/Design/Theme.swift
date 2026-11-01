@@ -2,85 +2,68 @@ import SwiftUI
 import UIKit
 
 enum Theme {
-    /// Editorial sport palette: warm paper, ink, electric cobalt and a single
-    /// acid-lime signal. The goal is a printed training journal, not a neon
-    /// dashboard: flat paper surfaces, thin ink rules and one loud accent.
-    static let background = adaptive(
-        dark: UIColor(red: 0.050, green: 0.053, blue: 0.043, alpha: 1),
-        light: UIColor(red: 0.957, green: 0.941, blue: 0.902, alpha: 1)
+    // MARK: - Four-color system
+    //
+    // The whole app uses only four color roles:
+    // 1. `primary`   — acid lime, the signal color for CTA/selection.
+    // 2. `secondary` — graphite, the supporting neutral for muted UI.
+    // 3. `canvas`    — system-adaptive background.
+    // 4. `ink`       — system-adaptive text and solid surfaces.
+    //
+    // Black/white card surfaces are the `ink` / `canvas` hierarchy, not a
+    // fifth hue. Do not add another accent color.
+
+    /// 1. Primary: acid lime. Always paired with `onPrimary` (black).
+    static let primary = adaptive(
+        dark: UIColor(red: 0.840, green: 1.000, blue: 0.300, alpha: 1),
+        light: UIColor(red: 0.820, green: 0.980, blue: 0.230, alpha: 1)
     )
+
+    /// 2. Secondary: graphite. Used for muted text, inactive icons and
+    /// secondary fills. Contrast pair is `onAccent`.
+    static let secondary = adaptive(
+        dark: UIColor(red: 0.650, green: 0.650, blue: 0.680, alpha: 1),
+        light: UIColor(red: 0.420, green: 0.420, blue: 0.450, alpha: 1)
+    )
+
+    /// 3. Canvas: light neutral in light mode, near-black in dark mode.
+    static let canvas = adaptive(
+        dark: UIColor(red: 0.035, green: 0.035, blue: 0.035, alpha: 1),
+        light: UIColor(red: 0.949, green: 0.949, blue: 0.941, alpha: 1)
+    )
+
+    /// 4. Ink: near-black text in light mode, warm white in dark mode.
+    static let ink = adaptive(
+        dark: UIColor(red: 0.965, green: 0.965, blue: 0.945, alpha: 1),
+        light: UIColor(red: 0.040, green: 0.040, blue: 0.040, alpha: 1)
+    )
+
+    // MARK: - Neutral surface hierarchy
+
+    static let background = canvas
     static let cardSurface = adaptive(
-        dark: UIColor(red: 0.094, green: 0.098, blue: 0.078, alpha: 1),
-        light: UIColor(red: 1.000, green: 0.992, blue: 0.965, alpha: 1)
-    )
-    static let chrome = adaptive(
-        dark: UIColor(red: 0.050, green: 0.053, blue: 0.043, alpha: 0.92),
-        light: UIColor(red: 0.957, green: 0.941, blue: 0.902, alpha: 0.92)
-    )
-    static let surface = adaptive(
-        dark: UIColor(white: 1, alpha: 0.055),
-        light: UIColor(white: 0, alpha: 0.040)
-    )
-    static let surfaceStrong = adaptive(
-        dark: UIColor(white: 1, alpha: 0.10),
-        light: UIColor(white: 0, alpha: 0.075)
-    )
-    static let stroke = adaptive(
-        dark: UIColor(white: 1, alpha: 0.15),
-        light: UIColor(white: 0, alpha: 0.13)
-    )
-    static let primaryText = adaptive(
-        dark: UIColor(red: 0.972, green: 0.957, blue: 0.914, alpha: 1),
-        light: UIColor(red: 0.070, green: 0.075, blue: 0.055, alpha: 1)
-    )
-    static let secondaryText = adaptive(
-        dark: UIColor(red: 0.730, green: 0.715, blue: 0.660, alpha: 1),
-        light: UIColor(red: 0.350, green: 0.355, blue: 0.305, alpha: 1)
-    )
-    static let tertiaryText = adaptive(
-        dark: UIColor(red: 0.510, green: 0.500, blue: 0.455, alpha: 1),
-        light: UIColor(red: 0.505, green: 0.510, blue: 0.455, alpha: 1)
-    )
-    /// Electric cobalt: the single saturated brand color.
-    static let accent = adaptive(
-        dark: UIColor(red: 0.570, green: 0.630, blue: 1.000, alpha: 1),
-        light: UIColor(red: 0.180, green: 0.290, blue: 1.000, alpha: 1)
-    )
-    static let accentDeep = adaptive(
-        dark: UIColor(red: 0.390, green: 0.470, blue: 1.000, alpha: 1),
-        light: UIColor(red: 0.080, green: 0.150, blue: 0.790, alpha: 1)
-    )
-    /// Acid lime: used for recommendation badges, selected states and one
-    /// editorial highlight per screen.
-    static let accentSecondary = adaptive(
-        dark: UIColor(red: 0.840, green: 1.000, blue: 0.360, alpha: 1),
-        light: UIColor(red: 0.370, green: 0.480, blue: 0.000, alpha: 1)
-    )
-    /// Signal coral: safety, intensity and “look here” moments.
-    static let accentTertiary = adaptive(
-        dark: UIColor(red: 1.000, green: 0.540, blue: 0.440, alpha: 1),
-        light: UIColor(red: 0.770, green: 0.230, blue: 0.120, alpha: 1)
-    )
-    static let accentWarm = adaptive(
-        dark: UIColor(red: 0.960, green: 0.720, blue: 0.350, alpha: 1),
-        light: UIColor(red: 0.600, green: 0.360, blue: 0.000, alpha: 1)
-    )
-    static let onAccent = adaptive(
-        dark: UIColor(red: 0.050, green: 0.053, blue: 0.043, alpha: 1),
+        dark: UIColor(red: 0.090, green: 0.090, blue: 0.090, alpha: 1),
         light: UIColor(white: 1, alpha: 1)
     )
-    static let danger = adaptive(
-        dark: UIColor(red: 1.000, green: 0.400, blue: 0.480, alpha: 1),
-        light: UIColor(red: 0.850, green: 0.180, blue: 0.270, alpha: 1)
+    static let paper = cardSurface
+    static let chrome = canvas.opacity(0.94)
+    static let surface = ink.opacity(0.045)
+    static let surfaceStrong = ink.opacity(0.08)
+    static let stroke = ink.opacity(0.12)
+    static let primaryText = ink
+    static let secondaryText = secondary
+    static let tertiaryText = secondary.opacity(0.68)
+    static let cardEdge = stroke
+
+    /// Text/icon color on ink, graphite or other dark-neutral fills.
+    static let onAccent = adaptive(
+        dark: UIColor(red: 0.040, green: 0.040, blue: 0.040, alpha: 1),
+        light: UIColor(white: 1, alpha: 1)
     )
-    static let warning = adaptive(
-        dark: UIColor(red: 1.000, green: 0.700, blue: 0.330, alpha: 1),
-        light: UIColor(red: 0.720, green: 0.380, blue: 0.000, alpha: 1)
-    )
-    static let blue = adaptive(
-        dark: UIColor(red: 0.570, green: 0.630, blue: 1.000, alpha: 1),
-        light: UIColor(red: 0.180, green: 0.290, blue: 1.000, alpha: 1)
-    )
+
+    /// Text/icon color on the acid-lime primary. Always black for contrast.
+    static let onPrimary = Color(red: 0.040, green: 0.040, blue: 0.040)
+
     static let shadow = adaptive(
         dark: UIColor(white: 0, alpha: 0.45),
         light: UIColor(white: 0, alpha: 0.14)
@@ -89,29 +72,27 @@ enum Theme {
         dark: UIColor(white: 0, alpha: 0.22),
         light: UIColor(white: 0, alpha: 0.06)
     )
-    static let cardEdge = adaptive(
-        dark: UIColor(white: 1, alpha: 0.18),
-        light: UIColor(white: 0, alpha: 0.12)
-    )
 
-    // Semantic aliases for the new visual language.
-    static let paper = cardSurface
-    static let ink = primaryText
-    static let cobalt = accent
-    static let lime = accentSecondary
-    static let coral = accentTertiary
+    // MARK: - Compatibility aliases
 
-    /// Reusable accent ramps for buttons, section markers and highlights.
-    static let accentGradient = LinearGradient(
-        colors: [accent, accentDeep],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
-    static let buttonGradient = LinearGradient(
-        colors: [accent, accent],
-        startPoint: .top,
-        endPoint: .bottom
-    )
+    // Old cobalt/blue usages become the system ink color. This is what turns
+    // the previous blue UI into the reference's black/white system.
+    static let accent = primary
+    static let accentDeep = primary
+    static let accentSecondary = primary
+    static let accentTertiary = secondary
+    static let accentWarm = secondary
+    static let danger = secondary
+    static let warning = secondary
+    static let blue = ink
+    static let cobalt = ink
+    static let lime = primary
+    static let coral = secondary
+
+    /// Always-dark ink used for brand marks, avatars and the capture button.
+    /// Unlike `ink` (which follows text color and turns light in dark mode),
+    /// this keeps the lime-on-ink identity readable in both appearances.
+    static let inkSolid = Color(red: 0.040, green: 0.040, blue: 0.040)
 
     /// 固定深色图片/视频上的文字，不跟随系统浅色变化。
     static let onMedia = Color.white
@@ -157,24 +138,18 @@ struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(AppType.button)
-            .foregroundStyle(Theme.onAccent)
+            .foregroundStyle(Theme.onPrimary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background {
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .fill(Theme.cobalt)
+                    .fill(Theme.primary)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
                     .strokeBorder(Theme.ink.opacity(0.18), lineWidth: 1)
             }
-            .shadow(
-                color: Theme.ink.opacity(configuration.isPressed ? 0.04 : 0.16),
-                radius: 0,
-                x: 0,
-                y: configuration.isPressed ? 1 : 4
-            )
-            .offset(y: configuration.isPressed ? 2 : 0)
+            .scaleEffect(configuration.isPressed ? 0.985 : 1)
             .opacity(configuration.isPressed ? 0.94 : 1)
             .animation(Motion.press, value: configuration.isPressed)
             .onChange(of: configuration.isPressed) { _, pressed in
@@ -218,12 +193,12 @@ struct TagChip: View {
     var body: some View {
         Text(text)
             .font(AppType.chip)
-            .foregroundStyle(selected ? Theme.onAccent : Theme.secondaryText)
+            .foregroundStyle(selected ? Theme.onPrimary : Theme.secondaryText)
             .padding(.horizontal, 11)
             .padding(.vertical, 7)
             .background {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(selected ? Theme.lime : Theme.paper)
+                    .fill(selected ? Theme.primary : Theme.paper)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -299,11 +274,11 @@ struct EmptyStateView: View {
         VStack(spacing: 13) {
             ZStack {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Theme.lime)
+                    .fill(Theme.primary)
                     .frame(width: 58, height: 58)
                 Image(systemName: icon)
                     .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.onPrimary)
             }
 
             Text(title)

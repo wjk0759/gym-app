@@ -40,7 +40,7 @@ struct DietLibraryView: View {
             description: "提高蛋白质占比，适合增肌、减脂期保肌肉和训练后恢复。",
             caution: "肾病或肾功能异常人群需先咨询医生。",
             symbol: "bolt.heart.fill",
-            color: Theme.blue,
+            color: Theme.secondary,
             tags: ["增肌", "保肌肉"]
         ),
         StrategyInfo(
@@ -236,7 +236,7 @@ struct DietLibraryView: View {
             SectionTitle(title: "每餐这样搭", subtitle: "按手掌和拳头估份量，比称重更容易坚持。")
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                 guideItem("蛋白质", "1 掌心 · 约 20–30g", "fish.fill", Theme.blue)
-                guideItem("蔬菜", "2 拳 · 约 200–300g", "leaf.fill", Theme.cobalt)
+                guideItem("蔬菜", "2 拳 · 约 200–300g", "leaf.fill", Theme.secondary)
                 guideItem("主食", "1 拳 · 约 50–100g 熟重", "takeoutbag.and.cup.and.straw.fill", Theme.warning)
                 guideItem("油脂", "1 拇指 · 约 10g", "drop.fill", Theme.tertiaryText)
             }

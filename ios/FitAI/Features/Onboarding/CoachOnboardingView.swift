@@ -1010,9 +1010,9 @@ struct CoachOnboardingView: View {
             Button(action: increment) {
                 Image(systemName: "plus")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.onPrimary)
                     .frame(width: 38, height: 38)
-                    .background(Theme.lime, in: Circle())
+                    .background(Theme.primary, in: Circle())
                     .overlay(Circle().strokeBorder(Theme.ink.opacity(0.12), lineWidth: 1))
             }
             .buttonStyle(SubtlePressStyle(scale: 0.92))
@@ -1121,9 +1121,9 @@ struct CoachOnboardingView: View {
             HStack(spacing: 9) {
                 Image(systemName: item.symbolName)
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(selected ? Theme.onAccent : Theme.secondaryText)
+                    .foregroundStyle(selected ? Theme.onPrimary : Theme.secondaryText)
                     .frame(width: 34, height: 34)
-                    .background(selected ? Theme.lime : Theme.ink.opacity(0.035), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .background(selected ? Theme.primary : Theme.ink.opacity(0.035), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 Text(item.label)
                     .font(AppType.caption.weight(.semibold))
                     .foregroundStyle(Theme.ink)

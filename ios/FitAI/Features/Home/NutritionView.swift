@@ -139,16 +139,9 @@ struct NutritionView: View {
             }
             .appPagePadding()
             .appReadableContent()
-            .padding(.bottom, 104)
+            .padding(.bottom, 32)
         }
         .background(AppBackground())
-        .overlay(alignment: .bottomTrailing) {
-            CaptureFAB {
-                showFoodPhoto = true
-            }
-            .padding(.trailing, 20)
-            .padding(.bottom, 92)
-        }
         .navigationTitle(isToday ? "今日饮食" : "饮食记录")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
@@ -246,7 +239,8 @@ struct NutritionView: View {
                 title: "本周计划",
                 detail: "换饮食策略",
                 symbol: "calendar.badge.clock",
-                accent: Theme.cobalt
+                accent: Theme.ink,
+                foreground: Theme.onAccent
             ) {
                 showWeekPlan = true
             }
@@ -258,6 +252,7 @@ struct NutritionView: View {
         detail: String,
         symbol: String,
         accent: Color,
+        foreground: Color = Theme.onPrimary,
         action: @escaping () -> Void
     ) -> some View {
         Button {
@@ -267,7 +262,7 @@ struct NutritionView: View {
             HStack(spacing: 9) {
                 Image(systemName: symbol)
                     .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(Theme.ink)
+                    .foregroundStyle(foreground)
                     .frame(width: 32, height: 32)
                     .background(accent, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 VStack(alignment: .leading, spacing: 1) {
@@ -294,10 +289,10 @@ struct NutritionView: View {
         let totals = snapshot.totals
         return VStack(spacing: 8) {
             HStack(spacing: 6) {
-                macroPill("蛋白", value: totals.protein, target: targets.protein, color: Theme.cobalt)
-                macroPill("碳水", value: totals.carbs, target: targets.carbs, color: Theme.warning)
-                macroPill("脂肪", value: totals.fat, target: targets.fat, color: Theme.coral)
-                macroPill("纤维", value: totals.fiber, target: targets.fiber, color: Theme.lime)
+                macroPill("蛋白", value: totals.protein, target: targets.protein, color: Theme.primary)
+                macroPill("碳水", value: totals.carbs, target: targets.carbs, color: Theme.secondary)
+                macroPill("脂肪", value: totals.fat, target: targets.fat, color: Theme.primary)
+                macroPill("纤维", value: totals.fiber, target: targets.fiber, color: Theme.secondary)
             }
             HStack(spacing: 6) {
                 Text("BMR \(targets.bmr) kcal")
@@ -396,7 +391,7 @@ struct NutritionView: View {
         logs: [FoodLog]
     ) -> some View {
         let loggedKcal = logs.reduce(0.0) { $0 + $1.kcal }
-        let colors: [Color] = [Theme.cobalt, Theme.lime, Theme.coral, Theme.accentWarm]
+        let colors: [Color] = [Theme.primary, Theme.secondary]
         let color = colors[index % colors.count]
 
         return notebookPage(accent: color) {
@@ -484,7 +479,7 @@ struct NutritionView: View {
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(color)
+                            .foregroundStyle(Theme.ink)
                     }
                     .buttonStyle(SubtlePressStyle(scale: 0.92))
                 }
@@ -717,10 +712,10 @@ struct NutritionView: View {
                 .font(AppType.headline)
 
             HStack(spacing: 10) {
-                macro("蛋白质", "\(Int(totals.protein)) / \(targets.protein)g", color: Theme.cobalt)
-                macro("碳水", "\(Int(totals.carbs)) / \(targets.carbs)g", color: Theme.warning)
-                macro("脂肪", "\(Int(totals.fat)) / \(targets.fat)g", color: Theme.coral)
-                macro("膳食纤维", "\(Int(totals.fiber)) / \(targets.fiber)g", color: Theme.blue)
+                macro("蛋白质", "\(Int(totals.protein)) / \(targets.protein)g", color: Theme.primary)
+                macro("碳水", "\(Int(totals.carbs)) / \(targets.carbs)g", color: Theme.secondary)
+                macro("脂肪", "\(Int(totals.fat)) / \(targets.fat)g", color: Theme.primary)
+                macro("膳食纤维", "\(Int(totals.fiber)) / \(targets.fiber)g", color: Theme.secondary)
             }
 
             Text("BMR \(targets.bmr) kcal · 维持热量约 \(targets.tdee) kcal")
@@ -875,11 +870,14 @@ struct NutritionView: View {
                 .foregroundStyle(Theme.secondaryText)
             Text(value)
                 .font(AppType.headline)
-                .foregroundStyle(color)
+                .foregroundStyle(Theme.ink)
+            Capsule()
+                .fill(color)
+                .frame(width: 18, height: 3)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
-        .background(Theme.ink.opacity(0.035), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private func mealCard(_ meal: MealSuggestion) -> some View {
@@ -1161,9 +1159,9 @@ struct AddFoodView: View {
 
             HStack(spacing: 10) {
                 selectedMetric("\(Int(food.kcal * factor))", "kcal", Theme.cobalt)
-                selectedMetric("\(Int(food.protein * factor))g", "蛋白质", Theme.cobalt)
-                selectedMetric("\(Int(food.carbs * factor))g", "碳水", Theme.warning)
-                selectedMetric("\(Int(food.fat * factor))g", "脂肪", Theme.coral)
+                selectedMetric("\(Int(food.protein * factor))g", "蛋白质", Theme.primary)
+                selectedMetric("\(Int(food.carbs * factor))g", "碳水", Theme.secondary)
+                selectedMetric("\(Int(food.fat * factor))g", "脂肪", Theme.primary)
             }
 
             Button("添加到\(meal.label)") {

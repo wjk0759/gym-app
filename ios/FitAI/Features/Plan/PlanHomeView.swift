@@ -227,7 +227,6 @@ struct PlanHomeView: View {
                 .strokeBorder(Theme.ink, lineWidth: 1.2)
         }
         .rotationEffect(.degrees(-3))
-        .shadow(color: Theme.ink.opacity(0.12), radius: 0, x: 3, y: 3)
         .accessibilityHidden(true)
     }
 
@@ -235,7 +234,7 @@ struct PlanHomeView: View {
 
     private var quickActions: some View {
         HStack(spacing: 8) {
-            quickAction(title: "训练日期", symbol: "calendar.badge.clock", accent: Theme.cobalt) {
+            quickAction(title: "训练日期", symbol: "calendar.badge.clock", accent: Theme.primary) {
                 showSchedule = true
             }
 
@@ -245,7 +244,8 @@ struct PlanHomeView: View {
                 quickActionLabel(
                     title: "训练记录",
                     symbol: "clock.arrow.circlepath",
-                    accent: Theme.coral
+                    accent: Theme.ink,
+                    foreground: Theme.onAccent
                 )
             }
             .buttonStyle(CardPressStyle(scale: 0.97))
@@ -256,7 +256,7 @@ struct PlanHomeView: View {
                 quickActionLabel(
                     title: "变化",
                     symbol: "chart.xyaxis.line",
-                    accent: Theme.lime
+                    accent: Theme.primary
                 )
             }
             .buttonStyle(CardPressStyle(scale: 0.97))
@@ -266,7 +266,8 @@ struct PlanHomeView: View {
                     quickActionLabel(
                         title: "经期",
                         symbol: "drop.fill",
-                        accent: Theme.danger
+                        accent: Theme.secondary,
+                        foreground: Theme.onAccent
                     )
                 } sheet: {
                     PeriodScheduleView()
@@ -293,12 +294,13 @@ struct PlanHomeView: View {
     private func quickActionLabel(
         title: String,
         symbol: String,
-        accent: Color
+        accent: Color,
+        foreground: Color = Theme.onPrimary
     ) -> some View {
         VStack(spacing: 7) {
             Image(systemName: symbol)
                 .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(Theme.onAccent)
+                .foregroundStyle(foreground)
                 .frame(width: 28, height: 28)
                 .background(accent, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
@@ -362,26 +364,26 @@ struct PlanHomeView: View {
                 Text("MONTH / \(monthLabel)")
                     .font(AppType.overline)
                     .tracking(1.4)
-                    .foregroundStyle(Theme.onAccent.opacity(0.9))
+                    .foregroundStyle(Theme.onMedia.opacity(0.9))
                 Spacer()
                 Text(String(year))
                     .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(Theme.onAccent.opacity(0.78))
+                    .foregroundStyle(Theme.onMedia.opacity(0.78))
             }
 
             HStack(alignment: .lastTextBaseline, spacing: 10) {
                 Text("\(stats.sessions)")
                     .font(.system(size: 52, weight: .black, design: .monospaced))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.onMedia)
                     .lineLimit(1)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("次训练")
                         .font(AppType.caption.weight(.bold))
-                        .foregroundStyle(Theme.onAccent)
+                        .foregroundStyle(Theme.onMedia)
                     Text(isCurrentVisibleMonth ? "本月" : "当月")
                         .font(AppType.micro)
-                        .foregroundStyle(Theme.onAccent.opacity(0.72))
+                        .foregroundStyle(Theme.onMedia.opacity(0.72))
                 }
                 .padding(.bottom, 5)
 
@@ -390,25 +392,25 @@ struct PlanHomeView: View {
                 ProgressRing(
                     progress: stats.completion,
                     lineWidth: 5,
-                    color: Theme.onAccent,
-                    track: Theme.onAccent.opacity(0.22)
+                    color: Theme.onMedia,
+                    track: Theme.onMedia.opacity(0.22)
                 )
                 .frame(width: 46, height: 46)
                 .overlay {
                     Text(completionText)
                         .font(.system(size: 9, weight: .bold, design: .monospaced))
-                        .foregroundStyle(Theme.onAccent)
+                        .foregroundStyle(Theme.onMedia)
                 }
                 .padding(.bottom, 2)
             }
 
             Text(monthCoverNote(stats))
                 .font(AppType.caption)
-                .foregroundStyle(Theme.onAccent.opacity(0.88))
+                .foregroundStyle(Theme.onMedia.opacity(0.88))
                 .fixedSize(horizontal: false, vertical: true)
 
             Rectangle()
-                .fill(Theme.onAccent.opacity(0.22))
+                .fill(Theme.onMedia.opacity(0.22))
                 .frame(height: 1)
 
             HStack(spacing: 10) {
@@ -432,12 +434,14 @@ struct PlanHomeView: View {
             }
         }
         .padding(18)
-        .background(Theme.cobalt, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(
+            Theme.inkSolid,
+            in: RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
+        )
         .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(cornerRadius: AppLayout.heroCornerRadius, style: .continuous)
                 .strokeBorder(Theme.ink, lineWidth: 1.5)
         }
-        .shadow(color: Theme.ink.opacity(0.14), radius: 0, x: 5, y: 5)
     }
 
     private func monthStat(value: String, unit: String, label: String) -> some View {
@@ -445,18 +449,18 @@ struct PlanHomeView: View {
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(value)
                     .font(.system(size: 17, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.onMedia)
                     .lineLimit(1)
                     .minimumScaleFactor(0.65)
                 if !unit.isEmpty {
                     Text(unit)
                         .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(Theme.onAccent.opacity(0.78))
+                        .foregroundStyle(Theme.onMedia.opacity(0.78))
                 }
             }
             Text(label)
                 .font(.system(size: 9, weight: .medium))
-                .foregroundStyle(Theme.onAccent.opacity(0.85))
+                .foregroundStyle(Theme.onMedia.opacity(0.85))
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
@@ -581,10 +585,10 @@ struct PlanHomeView: View {
             .motionAnimation(Motion.smooth, value: visibleMonth)
 
             HStack(spacing: 11) {
-                legendDot(color: Theme.lime, label: "完成", filled: true)
-                legendDot(color: Theme.cobalt, label: "计划", filled: false)
-                legendDot(color: Theme.warning, label: "饮食", filled: true)
-                legendDot(color: Theme.coral, label: "经期", filled: true)
+                legendDot(color: Theme.secondary, label: "完成", filled: true)
+                legendDot(color: Theme.primary, label: "计划", filled: false)
+                legendDot(color: Theme.primary, label: "饮食", filled: true)
+                legendDot(color: Theme.secondary, label: "经期", filled: false)
             }
             .padding(.top, 2)
         }
@@ -671,7 +675,7 @@ struct PlanHomeView: View {
                     )
                     .foregroundStyle(
                         isSelected
-                            ? Theme.paper
+                            ? Theme.onPrimary
                             : (inMonth ? Theme.ink : Theme.tertiaryText)
                     )
                     .frame(maxWidth: .infinity)
@@ -679,21 +683,21 @@ struct PlanHomeView: View {
                 HStack(spacing: 2.5) {
                     if isDone {
                         Circle()
-                            .fill(Theme.lime)
+                            .fill(Theme.secondary)
                             .frame(width: 4, height: 4)
                     } else if hasPlan || hasDraft {
                         Circle()
-                            .stroke(isSelected ? Theme.paper : Theme.cobalt, lineWidth: 1)
+                            .stroke(isSelected ? Theme.onPrimary : Theme.primary, lineWidth: 1)
                             .frame(width: 4, height: 4)
                     }
                     if hasFood {
                         Circle()
-                            .fill(Theme.warning)
+                            .fill(Theme.primary)
                             .frame(width: 3.5, height: 3.5)
                     }
                     if hasPeriod {
                         Circle()
-                            .fill(Theme.coral)
+                            .stroke(Theme.secondary, lineWidth: 1)
                             .frame(width: 3.5, height: 3.5)
                     }
                     if !isDone && !hasPlan && !hasDraft && !hasFood && !hasPeriod {
@@ -706,7 +710,7 @@ struct PlanHomeView: View {
             .frame(height: 44)
             .background {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(isSelected ? Theme.ink : (hasPlan ? Theme.ink.opacity(0.035) : Color.clear))
+                    .fill(isSelected ? Theme.primary : (hasPlan ? Theme.ink.opacity(0.035) : Color.clear))
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -1677,7 +1681,6 @@ struct PlanHistoryView: View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .strokeBorder(Theme.ink, lineWidth: 1.2)
         }
-        .shadow(color: Theme.ink.opacity(0.10), radius: 0, x: 4, y: 4)
     }
 
     private var noHistoryCard: some View {

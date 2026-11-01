@@ -29,9 +29,8 @@ struct ToastBanner: View {
         }
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Theme.ink.opacity(0.14), lineWidth: 1)
+                .strokeBorder(Theme.ink.opacity(0.16), lineWidth: 1)
         }
-        .shadow(color: Theme.ink.opacity(0.10), radius: 0, x: 3, y: 3)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isStaticText)
     }

@@ -431,18 +431,18 @@ struct EquipmentPickerView: View {
         } label: {
             Text(title)
                 .font(.system(size: 11.5, weight: active ? .bold : .medium))
-                .foregroundStyle(active ? Theme.cobalt : Theme.secondaryText.opacity(0.86))
+                .foregroundStyle(active ? Theme.onPrimary : Theme.secondaryText.opacity(0.86))
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 6.5)
                 .background(
-                    active ? Theme.cobalt.opacity(0.14) : Color.clear,
+                    active ? Theme.primary : Color.clear,
                     in: RoundedRectangle(cornerRadius: 8, style: .continuous)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .stroke(
-                            active ? Theme.cobalt.opacity(0.12) : Color.clear,
+                            active ? Theme.ink.opacity(0.12) : Color.clear,
                             lineWidth: 1
                         )
                 )
@@ -493,17 +493,17 @@ struct EquipmentPickerView: View {
         } label: {
             Text(title)
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(selected ? Theme.cobalt : Theme.secondaryText.opacity(0.86))
+                .foregroundStyle(selected ? Theme.onPrimary : Theme.secondaryText.opacity(0.86))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(
-                    selected ? Theme.cobalt.opacity(0.14) : Color.white.opacity(0.03),
+                    selected ? Theme.primary : Theme.paper,
                     in: RoundedRectangle(cornerRadius: 9, style: .continuous)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
                         .stroke(
-                            selected ? Theme.cobalt.opacity(0.36) : Theme.stroke,
+                            selected ? Theme.ink.opacity(0.12) : Theme.stroke,
                             lineWidth: 1
                         )
                 )

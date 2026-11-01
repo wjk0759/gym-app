@@ -1,5 +1,21 @@
 # 玻璃质感 UI 与首页信息层级
 
+## 四色系统（2026-11 起）
+
+全站只保留四个颜色角色，浅色和深色各有一套：
+
+| 角色 | 浅色 | 深色 |
+|---|---|---|
+| `Theme.primary` 主色 | 酸性青柠 | 酸性青柠 |
+| `Theme.secondary` 副色 | 石墨灰 | 浅石墨灰 |
+| `Theme.canvas` 背景 | 中性浅灰 | 近黑 |
+| `Theme.ink` 文字/线条 | 近黑 | 暖白 |
+
+- `paper`、`surface`、`stroke`、`tertiaryText` 都是 `canvas` / `ink` / `secondary` 的透明度派生，不是新色相。
+- 状态色不再引入 coral / orange / purple / mint 等第五种色相；成功、提醒、危险统一用主色/副色 + 图标、字重和边框区分。
+- 青柠实底上的文字/图标使用 `Theme.onPrimary`（始终黑字）；石墨、墨黑/墨白实底使用 `Theme.onAccent`。
+- 品牌标记、头像、相机 FAB 使用青柠实底 + 黑色图标；`Theme.inkSolid` 只用于图片媒体和深色底片。
+
 ## 视觉方向
 
 整体走克制的 Apple 风格玻璃质感，但不把每个列表行都做成实时 blur。
@@ -52,7 +68,7 @@
 - Tab Bar 的模糊只由 `UITabBarAppearance` 负责，不再叠加 SwiftUI Material。
 - 页面滚动主要依赖预先合成的半透明表面，避免滚动时反复创建模糊层。
 
-## 2026-10 视觉系统升级
+## 2026-10 视觉系统升级（历史记录，已被四色系统取代）
 
 - **色彩**：深色模式改为冷调深蓝黑底，主色为薄荷绿，青/紫作为环境点缀；浅色模式保持暖白纸感。新增 `Theme.accentSecondary`、`Theme.accentTertiary`、`Theme.accentWarm` 和 `Theme.accentGradient` / `Theme.buttonGradient`。
 - **背景**：`AmbientBackdrop` 使用静态 mesh 式色场（3 个径向渐变 + 渐变主光 + vignette + grain），不引入 Canvas/TimelineView。
@@ -63,3 +79,12 @@
 - **微交互**：主按钮保留轻微缩放和透明度反馈，移除 brightness 和动态阴影；Haptics 复用生成器。
 - **氛围**：`GrainTexture` 生成一次 64pt 可平铺噪点纹理；不使用实时 blur 或逐帧噪声。
 - **性能约束**：mesh、grain、glass 都是静态合成层；hero/输入框等少量悬浮元素才有独立 shadow。
+
+## 2026-11 纸面视觉收口
+
+- **阴影规则**：卡片、按钮、输入框和 Toast 不再使用 `radius: 0` 的 x/y 位移硬阴影。硬阴影会在纸面卡片上投出文字重影；层级统一改用 `Theme.stroke` 细线、`Theme.ink` 1.5pt 英雄卡边框和顶部 accent 短线表达。
+- **唯一例外**：图片角标、消息附件播放键和相机 FAB 可以用柔和模糊阴影，但只作用于图形，不作用于文字层。
+- **圆角层级**：英雄卡统一 `AppLayout.heroCornerRadius`（28），普通卡片 `AppLayout.cardCornerRadius`（22），控件 `AppLayout.controlCornerRadius`（14）。
+- **品牌标记**：`Theme.inkSolid` 是始终深色的墨块，用于 CoachMark、头像、启动页和相机 FAB；`Theme.ink` 只作为自适应文字色，避免深色模式下白底青柠字对比不足。
+- **深色模式**：彩色实底上的图标/文字使用 `Theme.onAccent`（深色模式为深墨色，浅色模式为白色），不要在 accent 实底上直接用 `Theme.ink`。
+- **日历**：训练记录与计划页统一使用 42 格周历，从周一开始，跨月日期降透明度显示。

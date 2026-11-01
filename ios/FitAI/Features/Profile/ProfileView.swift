@@ -79,12 +79,12 @@ struct ProfileView: View {
                 HStack(spacing: 13) {
                     ZStack {
                         Circle()
-                            .fill(Theme.ink)
+                            .fill(Theme.primary)
                         Circle()
-                            .strokeBorder(Theme.lime, lineWidth: 2)
+                            .strokeBorder(Theme.inkSolid, lineWidth: 2)
                         Text(String(store.profile.nickname.prefix(1)))
                             .font(.system(size: 21, weight: .black))
-                            .foregroundStyle(Theme.lime)
+                            .foregroundStyle(Theme.onPrimary)
                     }
                     .frame(width: 52, height: 52)
 
@@ -121,9 +121,9 @@ struct ProfileView: View {
                 HStack(spacing: 10) {
                     Image(systemName: "crown.fill")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(Theme.onAccent)
+                        .foregroundStyle(Theme.onPrimary)
                         .frame(width: 30, height: 30)
-                        .background(Theme.lime, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .background(Theme.primary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text("练途 Pro")
@@ -253,10 +253,10 @@ struct ProfileView: View {
 
                 Text(store.profile.goalType.label)
                     .font(AppType.micro)
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.onPrimary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Theme.lime, in: Capsule(style: .continuous))
+                    .background(Theme.primary, in: Capsule(style: .continuous))
             }
 
             if store.profile.goalType != .endurance {
@@ -313,9 +313,9 @@ struct ProfileView: View {
             HStack(spacing: 12) {
                 Image(systemName: "scope")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.onPrimary)
                     .frame(width: 36, height: 36)
-                    .background(Theme.lime, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("训练重点")

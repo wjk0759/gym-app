@@ -310,10 +310,10 @@ struct WorkoutSessionView: View {
             HStack(spacing: 6) {
                 Text(exercise.targetText)
                     .font(AppType.caption.weight(.semibold))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.onPrimary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Theme.lime, in: Capsule(style: .continuous))
+                    .background(Theme.primary, in: Capsule(style: .continuous))
 
                 if periodMode == .light {
                     Text("经期轻量")
@@ -642,7 +642,7 @@ struct WorkoutSessionView: View {
                 Circle()
                     .trim(from: 0, to: progress)
                     .stroke(
-                        urgent ? Theme.coral : Theme.cobalt,
+                        urgent ? Theme.secondary : Theme.primary,
                         style: StrokeStyle(lineWidth: 5, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
@@ -661,7 +661,7 @@ struct WorkoutSessionView: View {
                     .foregroundStyle(Theme.ink)
                 Text(urgent ? "马上开始下一组" : "呼吸放松，保持动作质量")
                     .font(.system(size: 9.5, weight: .medium))
-                    .foregroundStyle(urgent ? Theme.coral : Theme.secondaryText)
+                    .foregroundStyle(urgent ? Theme.secondary : Theme.secondaryText)
             }
 
             Spacer(minLength: 4)
