@@ -1,6 +1,6 @@
 """饮食：Mifflin-St Jeor 热量计算 + 规则模板 + AI 个性化计划。
 
-注意：不提供疾病饮食处方；外卖链接只做跳转，不承诺营养匹配。
+注意：不提供疾病饮食处方。
 """
 
 from __future__ import annotations
@@ -11,7 +11,6 @@ from contextlib import suppress
 from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
-from urllib.parse import quote
 
 from ..config import settings
 from ..models import Profile
@@ -895,22 +894,4 @@ def build_diet_week(
         "days": days,
         "disclaimer": DISCLAIMER,
         "generated_by": "template",
-    }
-
-
-def meituan_link(keyword: str) -> dict | None:
-    if not settings.meituan_deeplink_base:
-        return None
-    encoded = quote(keyword)
-    deeplink = settings.meituan_deeplink_base.format(keyword=encoded)
-    h5_url = (
-        settings.meituan_h5_base.format(keyword=encoded)
-        if settings.meituan_h5_base
-        else None
-    )
-    return {
-        "deeplink": deeplink,
-        "h5_url": h5_url,
-        "keyword": keyword,
-        "disclaimer": "链接由美团联盟生成；价格、菜品与营养信息以美团页面为准。",
     }

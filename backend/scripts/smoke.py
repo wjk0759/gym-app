@@ -384,10 +384,6 @@ def main() -> None:
         assert response.status_code == 200, response.text
         print("diet idempotent day: ok")
 
-        response = client.get("/api/v1/diet/meituan-link")
-        assert response.status_code == 501, response.text
-        print("meituan: not configured (expected)")
-
         # 手机验证码登录：未注册自动建号 + JWT + 刷新 + 退出
         auth_phone = "13800138000"
         response = client.post(

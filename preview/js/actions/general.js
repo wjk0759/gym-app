@@ -14,10 +14,6 @@ Object.assign(window.app, {
     toast("上线前替换为正式隐私政策、用户协议与备案信息");
   },
 
-  mockMeituan() {
-    toast("美团联盟需要企业资质与 CPS 配置；预览版不跳转");
-  },
-
   exportData() {
     const data = JSON.stringify({
       profile: state.profile,

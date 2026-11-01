@@ -31,6 +31,9 @@ struct LoginView: View {
     @State private var pendingConsentAction: PendingConsentAction?
     @Namespace private var modeNamespace
 
+    /// 微信/QQ 登录暂时隐藏，后端能力保留；恢复时改为 true 即可。
+    private let showWeChatQQLogin = false
+
     private enum PendingConsentAction {
         case login
         case social(String)
@@ -132,7 +135,7 @@ struct LoginView: View {
                 pendingConsentAction = nil
             }
         } message: {
-            Text("登录需要使用你的账号标识，并可能同步训练资料。请确认已阅读并同意《用户协议》和《隐私政策》。")
+            Text("登录需要使用你的账号标识，并可能同步训练资料。请确认已阅读并同意《用户协议》《隐私政策》和《健康免责声明》。")
         }
         .onChange(of: mode) { _, _ in
             focusedField = nil
@@ -567,19 +570,21 @@ struct LoginView: View {
                 Rectangle().fill(Theme.stroke).frame(height: 1)
             }
 
-            HStack(spacing: 8) {
-                socialButton(
-                    title: "微信登录",
-                    icon: "message.fill",
-                    color: Theme.secondary,
-                    provider: "wechat"
-                )
-                socialButton(
-                    title: "QQ 登录",
-                    icon: "person.2.fill",
-                    color: Theme.primary,
-                    provider: "qq"
-                )
+            if showWeChatQQLogin {
+                HStack(spacing: 8) {
+                    socialButton(
+                        title: "微信登录",
+                        icon: "message.fill",
+                        color: Theme.secondary,
+                        provider: "wechat"
+                    )
+                    socialButton(
+                        title: "QQ 登录",
+                        icon: "person.2.fill",
+                        color: Theme.primary,
+                        provider: "qq"
+                    )
+                }
             }
 
             SignInWithAppleButton(.signIn) { request in

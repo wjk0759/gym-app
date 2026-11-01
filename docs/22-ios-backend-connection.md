@@ -46,7 +46,7 @@ bash backend/run_ios_preview.sh
 应返回类似：
 
 ```json
-{"status":"ok","env":"dev","llm":"mock","vision":"mock","meituan":"not_configured"}
+{"status":"ok","env":"dev","llm":"mock","vision":"mock"}
 ```
 
 然后：

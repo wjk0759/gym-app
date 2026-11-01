@@ -183,7 +183,6 @@ def health():
         "env": settings.app_env,
         "llm": "mock" if settings.use_mock_llm else settings.llm_model,
         "vision": "mock" if settings.use_mock_vision else settings.vision_model,
-        "meituan": "configured" if settings.meituan_deeplink_base else "not_configured",
     }
 
 

@@ -164,14 +164,13 @@ GET /api/admin/v1/agent/actions?status=&actionType=&q=&page=&size=
 
 复盘由确定性的 `weekly_review_rules_v1` 生成，不依赖模型 Key，因此训练完成后可以低成本自动刷新；每次复盘仍会落一条 `agent_runs`（`intent=review_week`、`model=review-rules-v1`）和工具步骤，后台可审计。iOS 会在训练创建/编辑/删除成功后强制刷新，并在同一周内缓存；训练上传成功且通知已开启时，会用本地通知提醒“AI 复盘已更新”。
 
-**边界：** 目前是客户端前台触发的主动复盘，本地通知不需要 APNs；真正的服务端定时任务 + APNs 远程推送仍需 Apple 推送证书、设备 token 注册和定时调度，属于 Mac/Apple 外部配置。
+**边界：** 复盘由客户端前台触发，提醒使用本地通知；不接 APNs 远程推送，也不依赖服务端定时任务。
 
 记忆上下文被读取时同步更新 `last_used_at`；历史重复的 generic `preference` 可用 `backend/scripts/dedupe_memories.py --dry-run` 检查，再去掉 `--dry-run` 清理。
 
 ## 9. 后续演进
 
-1. 服务端定时任务 + APNs 主动复盘
-2. 训练中动态调整（根据 RPE 和剩余时间）
-3. 饮食/身体数据全量同步后接入营养 Agent
-4. 真实视觉模型接入器械和体型识别
-5. Agent 评测集：工具选择正确率、计划合法率、安全兜底率、用户采纳率
+1. 训练中动态调整（根据 RPE 和剩余时间）
+2. 饮食/身体数据全量同步后接入营养 Agent
+3. 真实视觉模型接入器械和体型识别
+4. Agent 评测集：工具选择正确率、计划合法率、安全兜底率、用户采纳率

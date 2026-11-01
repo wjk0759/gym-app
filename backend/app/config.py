@@ -43,9 +43,6 @@ class Settings(BaseSettings):
     vision_base_url: str = ""
     vision_api_key: str = ""
 
-    meituan_deeplink_base: str = ""
-    meituan_h5_base: str = ""
-
     # 认证。生产环境必须配置 JWT_SECRET；开发环境未配置时使用固定开发密钥。
     jwt_secret: str = ""
     access_token_minutes: int = 30

@@ -104,7 +104,6 @@ struct HealthStatus: Decodable {
     let env: String?
     let llm: String?
     let vision: String?
-    let meituan: String?
 }
 
 struct ChatResponse: Decodable {
@@ -148,16 +147,6 @@ struct ExerciseVideoResponse: Decodable {
     }
 
     let video: Video?
-}
-
-struct MeituanLinkResponse: Decodable {
-    let deeplink: String?
-    let h5URL: String?
-
-    enum CodingKeys: String, CodingKey {
-        case deeplink
-        case h5URL = "h5_url"
-    }
 }
 
 struct BodyAnalysisResponse: Decodable {

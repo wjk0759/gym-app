@@ -101,12 +101,6 @@ function nutritionScreen() {
         </div>
       `).join("")}
 
-      <div class="card">
-        <div class="h3">附近外卖</div>
-        <div class="tiny muted" style="margin-top:6px">美团联盟只提供活动/搜索跳转，不提供菜品营养数据。</div>
-        <button class="btn btn-secondary" style="margin-top:10px" onclick="app.mockMeituan()">在美团找外卖 ↗</button>
-      </div>
-
       <div class="tiny faint" style="line-height:1.6">饮食建议为估算，不构成医疗或疾病饮食处方。孕期、术后、糖尿病、肾病等请咨询医生或营养师。</div>
     </div>
   `;

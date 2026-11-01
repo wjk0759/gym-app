@@ -24,7 +24,7 @@
 │  PostgreSQL（业务 + pgvector） · Redis（缓存/队列） · OSS（图片/视频）        │
 └───────────────────────────────────┬─────────────────────────────────────────┘
                                     │
-                         APNs（提醒） · 短信/邮件（可选）
+                        本地通知（无 APNs） · 短信/邮件（可选）
 ```
 
 ## 2. 客户端分层
@@ -52,7 +52,7 @@
 | `routers/workouts.py` | 训练记录上报与查询 |
 | `routers/coach.py` | 问答（普通 + SSE 流式） |
 | `routers/equipment.py` | 图片上传与器械识别 |
-| `routers/diet.py` | 热量计算、饮食计划占位、外卖链接占位 |
+| `routers/diet.py` | 热量计算、饮食计划 |
 | `services/llm.py` | 模型网关，OpenAI 兼容协议，Mock 兜底 |
 | `services/plan_generator.py` | Prompt 组装 → LLM → 解析 → 校验 → 降级 |
 | `services/plan_validator.py` | 动作、器械、伤病、负荷、结构校验 |
@@ -77,7 +77,7 @@
 |---|---|
 | iOS 17–25 | `UNUserNotificationCenter`，每个训练日一条每周重复通知，最多 7 条 |
 | iOS 26+ | `AlarmKit` 系统级闹钟（需用户授权），失败回退本地通知 |
-| 服务端 | APNs 推送用于计划调整、周报、召回；不作为训练提醒的主通道 |
+| 服务端 | 不做 APNs 远程推送；训练、周报和天气提醒均由客户端本地通知完成 |
 | 时区 | 客户端计算本地时间；`NotificationSchedule.timezone` 仅用于服务端统计 |
 
 **已知限制：**

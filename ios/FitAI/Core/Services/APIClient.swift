@@ -546,23 +546,6 @@ struct APIClient {
         return try await send(path: path, method: "GET", body: nil)
     }
 
-    func meituanLink(keyword: String) async throws -> URL? {
-        let encoded = keyword.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? keyword
-        let data = try await perform(
-            path: "diet/meituan-link?keyword=\(encoded)",
-            method: "GET",
-            body: nil
-        )
-        let response = try decode(MeituanLinkResponse.self, from: data)
-        if let text = response.deeplink, let url = URL(string: text) {
-            return url
-        }
-        if let text = response.h5URL, let url = URL(string: text) {
-            return url
-        }
-        return nil
-    }
-
     // MARK: - Transport
 
     private func send<T: Decodable>(

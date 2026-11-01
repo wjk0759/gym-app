@@ -484,18 +484,6 @@ data: {"session_id": "uuid", "safety_flag": null}
 
 返回目标热量、宏量营养素与三餐建议（当前为公式 + 模板，不接 LLM）。
 
-#### `GET /diet/meituan-link?keyword=轻食`
-
-```json
-{
-  "deeplink": "imeituan://...",
-  "h5_url": "https://...",
-  "disclaimer": "链接由美团联盟生成，价格与营养信息以美团页面为准"
-}
-```
-
-> 没有联盟资质时返回 501 `MEITUAN_NOT_CONFIGURED`，客户端隐藏入口。
-
 ### 2.8 教学视频（只读）
 
 #### `GET /videos/{exercise_slug}`

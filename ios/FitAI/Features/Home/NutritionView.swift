@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 struct NutritionView: View {
     @Environment(AppStore.self) private var store
@@ -8,7 +7,6 @@ struct NutritionView: View {
 
     @State private var showAlert = false
     @State private var message = ""
-    @State private var isOpening = false
     @State private var showAddFood = false
     @State private var showFoodPhoto = false
     @State private var showWeekPlan = false
@@ -134,7 +132,6 @@ struct NutritionView: View {
                     addFoodButton
                 }
 
-                meituanCard
                 disclaimer
             }
             .appPagePadding()
@@ -145,7 +142,7 @@ struct NutritionView: View {
         .navigationTitle(isToday ? "今日饮食" : "饮食记录")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
-        .alert("美团外卖", isPresented: $showAlert) {
+        .alert("提示", isPresented: $showAlert) {
             Button("知道了", role: .cancel) {}
         } message: {
             Text(message)
@@ -894,67 +891,12 @@ struct NutritionView: View {
         .card()
     }
 
-    private var meituanCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "takeoutbag.and.cup.and.straw")
-                    .foregroundStyle(Theme.cobalt)
-                Text("附近外卖")
-                    .font(AppType.headline)
-            }
-
-            Text("美团联盟只提供活动/搜索跳转，不提供菜品营养数据。点开后请按商家页面为准。")
-                .font(AppType.caption)
-                .foregroundStyle(Theme.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Button {
-                openMeituan()
-            } label: {
-                Label(isOpening ? "正在打开…" : "在美团找外卖", systemImage: "arrow.up.right.square")
-            }
-            .buttonStyle(SecondaryButtonStyle())
-            .disabled(isOpening || !store.useRemoteAI)
-
-            Text(store.useRemoteAI
-                 ? "外卖链接由美团联盟提供，价格与营养信息以商家页面为准。"
-                 : "外卖入口正在接入，上线后可用。")
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
-        }
-        .card()
-    }
-
     private var disclaimer: some View {
         Text("饮食建议为估算，不构成医疗或疾病饮食处方。孕期、术后、糖尿病、肾病等特殊情况请咨询医生或营养师。")
             .font(.system(size: 9.5, weight: .medium))
             .foregroundStyle(Theme.tertiaryText)
             .frame(maxWidth: .infinity, alignment: .leading)
             .card(padding: 14)
-    }
-
-    private func openMeituan() {
-        guard store.useRemoteAI else {
-            message = "外卖入口正在接入，上线后可用。"
-            showAlert = true
-            return
-        }
-
-        isOpening = true
-        Task { @MainActor in
-            do {
-                if let url = try await APIClient.shared.meituanLink(keyword: "美食") {
-                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
-                } else {
-                    message = "暂时没有可用的外卖链接，请稍后再试。"
-                    showAlert = true
-                }
-            } catch {
-                message = "外卖入口暂时不可用，请稍后再试。"
-                showAlert = true
-            }
-            isOpening = false
-        }
     }
 }
 

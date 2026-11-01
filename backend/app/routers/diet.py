@@ -12,7 +12,6 @@ from ..services.diet import (
     build_ai_plan,
     calculate_targets,
     list_diet_strategies,
-    meituan_link,
 )
 from ..services.food_vision import analyze as analyze_food_photo
 from ..services.queries import active_program
@@ -315,16 +314,3 @@ def get_plan_week(
         "generated_by": generated_by,
         "warning": warning,
     }
-
-
-@router.get("/meituan-link")
-def get_meituan_link(
-    keyword: str = Query(default="轻食", max_length=30),
-):
-    link = meituan_link(keyword)
-    if link is None:
-        raise HTTPException(
-            status_code=501,
-            detail="美团联盟未配置；配置 MEITUAN_DEEPLINK_BASE 后可用。",
-        )
-    return link
