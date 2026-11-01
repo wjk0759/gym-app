@@ -7,7 +7,6 @@ import UIKit
 struct EquipmentItemDetailView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
     @AppStorage("pinnedEquipmentIDs") private var pinnedEquipmentIDsRaw = ""
 
     private let itemID: UUID?
@@ -16,6 +15,31 @@ struct EquipmentItemDetailView: View {
     @State private var showDelete = false
     @State private var showCoach = false
     @State private var officialVideoURL: URL?
+    @State private var detailTab: DetailTab = .points
+
+    private enum DetailTab: String, CaseIterable, Identifiable {
+        case points
+        case muscles
+        case equipment
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .points: return "注意事项"
+            case .muscles: return "目标肌群"
+            case .equipment: return "所需器械"
+            }
+        }
+
+        var symbol: String {
+            switch self {
+            case .points: return "checklist"
+            case .muscles: return "figure.strengthtraining.functional"
+            case .equipment: return "dumbbell.fill"
+            }
+        }
+    }
     @State private var statsPeriod: EquipmentStatsPeriod = .ninetyDays
     @State private var statsMetric: EquipmentStatsMetric = .volume
     @State private var customStart = Calendar.current.date(byAdding: .month, value: -3, to: Date()) ?? Date()
@@ -129,55 +153,63 @@ struct EquipmentItemDetailView: View {
     private func content(for item: EquipmentItem, proxy: ScrollViewProxy) -> some View {
         VStack(spacing: 16) {
             quickActions(for: item, proxy: proxy)
+
+            // Video is the first content block, not the sixth card.
+            videoContent(for: item)
+
             hero(for: item)
+            detailTabPicker
 
-            detailSection(
-                index: "01",
-                title: "视频讲解",
-                lead: "先看动作讲解，再看后面要点，会更容易抓住发力顺序。"
-            ) {
-                videoContent(for: item)
-            }
+            Group {
+                switch detailTab {
+                case .points:
+                    VStack(spacing: 12) {
+                        detailSection(
+                            index: "01",
+                            title: "动作要点",
+                            lead: "下面的要点来自动作库和你的器械备注。"
+                        ) {
+                            pointsContent(for: item)
+                        }
 
-            detailSection(
-                index: "02",
-                title: "动作轨迹",
-                lead: "先用轨迹示意建立动作路径，再在训练中把速度放慢。"
-            ) {
-                motionBoard(for: item)
-            }
+                        detailSection(
+                            index: "02",
+                            title: "动作轨迹",
+                            lead: "先用轨迹示意建立动作路径，再在训练中把速度放慢。"
+                        ) {
+                            motionBoard(for: item)
+                        }
 
-            detailSection(
-                index: "03",
-                title: "多角度示范",
-                lead: "示范素材准备中。先用要点确认起始位置和身体角度。"
-            ) {
-                angleGrid(for: item)
+                        detailSection(
+                            index: "03",
+                            title: "多角度示范",
+                            lead: "示范素材准备中。先用要点确认起始位置和身体角度。"
+                        ) {
+                            angleGrid(for: item)
+                        }
+                    }
+                case .muscles:
+                    detailSection(
+                        index: "01",
+                        title: "目标肌群",
+                        lead: "主要训练 \(item.muscle?.label ?? "全身")，协同稳定由 \(supportMuscles(for: item).joined(separator: "、")) 参与。"
+                    ) {
+                        muscleContent(for: item)
+                    }
+                case .equipment:
+                    equipmentInfoSection(for: item)
+                }
             }
+            .transition(.opacity.combined(with: .move(edge: .bottom)))
 
             detailSection(
                 index: "04",
-                title: "动作要点",
-                lead: "下面的要点来自动作库和你的器械备注。"
-            ) {
-                pointsContent(for: item)
-            }
-
-            detailSection(
-                index: "05",
-                title: "训练肌群",
-                lead: "主要训练 \(item.muscle?.label ?? "全身")，协同稳定由 \(supportMuscles(for: item).joined(separator: "、")) 参与。"
-            ) {
-                muscleContent(for: item)
-            }
-
-            detailSection(
-                index: "06",
                 title: "训练数据",
                 lead: statsLead(for: item)
             ) {
                 statsContent(for: item)
             }
+            .id("stats")
 
             coachCard(for: item)
 
@@ -203,7 +235,7 @@ struct EquipmentItemDetailView: View {
             }
 
             Text("出现关节刺痛、麻木或肿胀时请停止动作并咨询专业人士。教学视频和示范素材由官方动作库提供。")
-                .font(.system(size: 9.5))
+                .font(AppType.micro)
                 .foregroundStyle(Theme.tertiaryText)
                 .multilineTextAlignment(.center)
                 .lineSpacing(2)
@@ -213,37 +245,126 @@ struct EquipmentItemDetailView: View {
         .padding(.bottom, 24)
     }
 
+    private var detailTabPicker: some View {
+        HStack(spacing: 6) {
+            ForEach(DetailTab.allCases) { tab in
+                let selected = detailTab == tab
+                Button {
+                    Haptics.select()
+                    withAnimation(Motion.quick) {
+                        detailTab = tab
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: tab.symbol)
+                            .font(.system(size: 10, weight: .bold))
+                        Text(tab.title)
+                            .font(AppType.caption.weight(.bold))
+                    }
+                    .foregroundStyle(selected ? Theme.onAccent : Theme.secondaryText)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 9)
+                    .background(selected ? Theme.cobalt : Color.clear, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+                .buttonStyle(SubtlePressStyle(scale: 0.96))
+            }
+        }
+        .padding(4)
+        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Theme.stroke, lineWidth: 1)
+        }
+    }
+
+    private func equipmentInfoSection(for item: EquipmentItem) -> some View {
+        detailSection(
+            index: "01",
+            title: "所需器械",
+            lead: "确认器械、握法和可替代方案，再开始动作。"
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                equipmentInfoRow(
+                    title: "器械类型",
+                    value: item.equipment?.label ?? "未设置",
+                    symbol: equipmentSymbol(item)
+                )
+                equipmentInfoRow(
+                    title: "主要刺激",
+                    value: item.muscle?.label ?? "全身",
+                    symbol: "figure.strengthtraining.functional"
+                )
+                equipmentInfoRow(
+                    title: "动作来源",
+                    value: item.slug,
+                    symbol: "book.closed.fill"
+                )
+                if !item.notes.isEmpty {
+                    Text(item.notes)
+                        .font(AppType.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(11)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                }
+                Text("没有同款器械时，优先找同轨迹的替代动作；不要为了完成计划强行上重量。")
+                    .font(AppType.micro)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func equipmentInfoRow(title: String, value: String, symbol: String) -> some View {
+        HStack(spacing: 9) {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Theme.cobalt)
+                .frame(width: 28, height: 28)
+                .background(Theme.cobalt.opacity(0.08), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            Text(title)
+                .font(AppType.caption)
+                .foregroundStyle(Theme.secondaryText)
+            Spacer()
+            Text(value)
+                .font(AppType.caption.weight(.semibold))
+                .foregroundStyle(Theme.ink)
+                .lineLimit(1)
+        }
+    }
+
     private func quickActions(for item: EquipmentItem, proxy: ScrollViewProxy) -> some View {
         let pinned = pinnedIDs.contains(item.id.uuidString)
 
         return HStack(spacing: 8) {
             HStack(spacing: 8) {
                 Image(systemName: equipmentSymbol(item))
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(Theme.accent)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(Theme.ink)
                     .frame(width: 29, height: 29)
                     .background(
-                        Theme.accent.opacity(0.12),
+                        Theme.lime.opacity(0.55),
                         in: RoundedRectangle(cornerRadius: 9, style: .continuous)
                     )
 
                 Text(item.name)
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.callout.weight(.bold))
+                    .foregroundStyle(Theme.ink)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack(spacing: 1) {
-                quickActionButton("要点", icon: "checklist") {
+                quickActionButton("要点", icon: "checklist", active: detailTab == .points) {
                     withAnimation(Motion.smooth) {
-                        proxy.scrollTo("04", anchor: .top)
+                        detailTab = .points
                     }
                 }
 
                 quickActionButton("数据", icon: "chart.bar") {
                     withAnimation(Motion.smooth) {
-                        proxy.scrollTo("06", anchor: .top)
+                        proxy.scrollTo("stats", anchor: .top)
                     }
                 }
 
@@ -256,11 +377,11 @@ struct EquipmentItemDetailView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(Theme.cardSurface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
+        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.10), lineWidth: 0.8)
-        )
+                .strokeBorder(Theme.stroke, lineWidth: 1)
+        }
     }
 
     private func quickActionButton(
@@ -279,11 +400,11 @@ struct EquipmentItemDetailView: View {
                 Text(title)
                     .font(.system(size: 9, weight: .semibold))
             }
-            .foregroundStyle(active ? Theme.accent : Theme.secondaryText)
+            .foregroundStyle(active ? Theme.ink : Theme.secondaryText)
             .frame(width: 44)
             .padding(.vertical, 5)
             .background(
-                active ? Theme.accent.opacity(0.12) : Color.clear,
+                active ? Theme.lime.opacity(0.75) : Color.clear,
                 in: RoundedRectangle(cornerRadius: 10, style: .continuous)
             )
         }
@@ -294,21 +415,22 @@ struct EquipmentItemDetailView: View {
     private func hero(for item: EquipmentItem) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("动作学习预览")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(Theme.accent)
+                .font(AppType.overline)
+                .tracking(1.4)
+                .foregroundStyle(Theme.cobalt)
 
             Text(item.name)
-                .font(.system(size: 30, weight: .bold))
+                .font(AppType.hero)
                 .tracking(-0.8)
-                .foregroundStyle(Theme.primaryText)
-                .padding(.top, 6)
+                .foregroundStyle(Theme.ink)
+                .padding(.top, 5)
 
             Text(heroDescription(for: item))
-                .font(.subheadline)
+                .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 10)
+                .padding(.top, 8)
 
             HStack(spacing: 6) {
                 detailPill(item.muscle?.label ?? "未分类")
@@ -329,49 +451,32 @@ struct EquipmentItemDetailView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(index)
-                .font(.system(size: 11, weight: .heavy))
-                .foregroundStyle(Theme.accent)
+                .font(AppType.overline)
+                .tracking(1.2)
+                .foregroundStyle(Theme.cobalt)
 
             Text(title)
-                .font(.system(size: 20, weight: .bold))
-                .foregroundStyle(Theme.primaryText)
-                .padding(.top, 4)
+                .font(AppType.title)
+                .foregroundStyle(Theme.ink)
+                .padding(.top, 3)
 
             Text(lead)
-                .font(.system(size: 12))
+                .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
                 .lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 7)
+                .padding(.top, 6)
 
             content()
-                .padding(.top, 14)
+                .padding(.top, 12)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: colorScheme == .light
-                            ? [
-                                Color(red: 0.965, green: 0.975, blue: 0.965),
-                                Color(red: 0.900, green: 0.930, blue: 0.915)
-                            ]
-                            : [
-                                Color(red: 0.067, green: 0.102, blue: 0.169),
-                                Color(red: 0.047, green: 0.078, blue: 0.137)
-                            ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(colorScheme == .light ? Theme.stroke : Color.white.opacity(0.08), lineWidth: 1)
-        )
-        .shadow(color: colorScheme == .light ? Theme.shadowSoft : Color.black.opacity(0.18), radius: 18, y: 10)
+        .padding(16)
+        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(Theme.stroke, lineWidth: 1)
+        }
         .id(index)
     }
 
@@ -379,20 +484,24 @@ struct EquipmentItemDetailView: View {
     private func videoContent(for item: EquipmentItem) -> some View {
         if let url = videoURL {
             LoopingVideoPlayer(url: url)
-                .frame(height: 200)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .frame(height: 245)
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .strokeBorder(Theme.stroke, lineWidth: 1)
+                }
                 .overlay(alignment: .topTrailing) {
                     detailBadge("官方教学视频", accent: true)
                         .padding(10)
                 }
         } else {
             ZStack {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.13, green: 0.18, blue: 0.24),
-                                Color(red: 0.045, green: 0.078, blue: 0.125)
+                                Color(red: 0.10, green: 0.13, blue: 0.20),
+                                Color(red: 0.035, green: 0.055, blue: 0.10)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -429,8 +538,12 @@ struct EquipmentItemDetailView: View {
                         .foregroundStyle(Theme.onMedia.opacity(0.70))
                 }
             }
-            .frame(height: 200)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .frame(height: 245)
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .strokeBorder(Theme.stroke, lineWidth: 1)
+            }
             .overlay(alignment: .topTrailing) {
                 detailBadge("视频待上线")
                     .padding(10)
@@ -923,19 +1036,20 @@ struct EquipmentItemDetailView: View {
             showCoach = true
         } label: {
             HStack(spacing: 10) {
-                Text("AI")
-                    .font(.system(size: 11, weight: .heavy))
-                    .foregroundStyle(Color(red: 0.02, green: 0.08, blue: 0.04))
+                Text("L")
+                    .font(.system(size: 13, weight: .black))
+                    .foregroundStyle(Theme.lime)
                     .frame(width: 36, height: 36)
-                    .background(Theme.accent, in: Circle())
+                    .background(Theme.ink, in: Circle())
+                    .overlay(Circle().strokeBorder(Theme.lime, lineWidth: 1.5))
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("动作细节还不确定？")
-                        .font(.system(size: 12.5, weight: .bold))
-                        .foregroundStyle(Color(red: 0.94, green: 0.99, blue: 0.95))
+                        .font(AppType.callout.weight(.bold))
+                        .foregroundStyle(Theme.ink)
                     Text("让教练结合你的计划，解释起始位置、发力顺序和替代动作。")
-                        .font(.system(size: 9.5))
-                        .foregroundStyle(Color(red: 0.88, green: 0.96, blue: 0.91).opacity(0.60))
+                        .font(AppType.micro)
+                        .foregroundStyle(Theme.secondaryText)
                         .lineSpacing(1.5)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -943,47 +1057,37 @@ struct EquipmentItemDetailView: View {
                 Spacer(minLength: 4)
 
                 Text("问教练")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(Color(red: 0.02, green: 0.08, blue: 0.04))
+                    .font(AppType.micro.weight(.bold))
+                    .foregroundStyle(Theme.ink)
                     .padding(.horizontal, 9)
                     .padding(.vertical, 8)
-                    .background(Theme.accent, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .background(Theme.lime, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
             .padding(13)
-            .background(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.15, green: 0.28, blue: 0.20).opacity(0.82),
-                        Color(red: 0.07, green: 0.14, blue: 0.10).opacity(0.72)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
-                in: RoundedRectangle(cornerRadius: 17, style: .continuous)
-            )
-            .overlay(
+            .background(Theme.paper, in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+            .overlay {
                 RoundedRectangle(cornerRadius: 17, style: .continuous)
-                    .stroke(Theme.accent.opacity(0.22), lineWidth: 1)
-            )
+                    .strokeBorder(Theme.stroke, lineWidth: 1)
+            }
         }
         .buttonStyle(.plain)
     }
 
     private func detailPill(_ text: String, accent: Bool = false) -> some View {
         Text(text)
-            .font(.system(size: 10, weight: .medium))
-            .foregroundStyle(accent ? Theme.accent : Theme.secondaryText)
+            .font(AppType.micro)
+            .foregroundStyle(accent ? Theme.ink : Theme.secondaryText)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(
-                accent ? Theme.accent.opacity(0.10) : Theme.surface,
+                accent ? Theme.lime.opacity(0.75) : Theme.surface,
                 in: Capsule()
             )
             .overlay(
                 Capsule()
                     .stroke(
-                        accent ? Theme.accent.opacity(0.24) : Theme.stroke,
-                        lineWidth: 0.8
+                        accent ? Theme.ink.opacity(0.16) : Theme.stroke,
+                        lineWidth: 1
                     )
             )
     }
