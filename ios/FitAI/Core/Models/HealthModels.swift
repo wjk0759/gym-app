@@ -199,7 +199,7 @@ struct GoalProgress {
 
 // MARK: - 复盘
 
-enum ReviewPeriod: String, CaseIterable, Identifiable, Equatable {
+enum ReviewPeriod: String, CaseIterable, Identifiable, Hashable {
     case week
     case month
     case year

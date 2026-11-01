@@ -76,23 +76,28 @@ struct CustomWorkoutBuilderView: View {
                     VStack(spacing: AppLayout.sectionSpacing) {
                         summaryCard
 
-                        HStack {
+                        HStack(alignment: .firstTextBaseline) {
                             Text("训练顺序")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(Theme.primaryText)
+                                .font(AppType.headline)
+                                .foregroundStyle(Theme.ink)
                             Spacer(minLength: 8)
                             Text("按住左侧手柄拖动排序")
-                                .font(.system(size: 9.5))
+                                .font(.system(size: 9, weight: .medium))
                                 .foregroundStyle(Theme.tertiaryText)
                         }
                         .padding(.horizontal, 2)
 
                         if exercises.isEmpty {
-                            EmptyStateView(
-                                icon: "dumbbell",
-                                title: "还没有动作",
-                                message: "返回动作库重新选择。"
-                            )
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("还没有动作")
+                                    .font(AppType.headline)
+                                    .foregroundStyle(Theme.ink)
+                                Text("返回动作库重新选择。")
+                                    .font(AppType.caption)
+                                    .foregroundStyle(Theme.secondaryText)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .card()
                         } else {
                             ForEach(Array(exercises.enumerated()), id: \.element.id) { index, _ in
                                 exerciseEditor(index: index)
@@ -158,66 +163,47 @@ struct CustomWorkoutBuilderView: View {
     }
 
     private var summaryCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(mode == .plan ? "今日训练" : mode == .editPlan ? "训练日" : "自选训练")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(Theme.accent)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("BUILD / 训练编排")
+                    .font(AppType.overline)
+                    .tracking(1.3)
+                    .foregroundStyle(Theme.cobalt)
+                Spacer()
+                Text(mode == .editPlan ? "编辑计划" : "开始前")
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+
             Text(mode == .plan || mode == .editPlan ? title : "先排顺序，再开始")
-                .font(.title2.weight(.bold))
-                .foregroundStyle(Theme.primaryText)
+                .font(AppType.hero)
+                .tracking(-0.6)
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+
             Text(mode == .editPlan
                  ? "调整动作顺序、组数和负荷；保存后直接写回训练计划。"
                  : mode == .plan
                  ? "今天的动作顺序、组数和重量都可以先调整；开始后仍可随时修改本次目标。"
                  : "动作顺序、组数、次数、重量都可以先改；开始后仍可在训练页临时调整。")
-                .font(.caption)
+                .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
-            HStack(spacing: 14) {
-                stat("\(exercises.count)", "个动作")
-                stat("\(totalSets)", "组")
-                stat("约 \(estimatedMinutes)", "分钟")
+            HStack(spacing: 8) {
+                EditorialMetric(title: "动作", value: "\(exercises.count)", unit: "个")
+                EditorialMetric(title: "组数", value: "\(totalSets)", unit: "组")
+                EditorialMetric(title: "预计", value: "\(estimatedMinutes)", unit: "分钟")
             }
-            .padding(.top, 4)
+            .padding(.top, 2)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(
-            RadialGradient(
-                colors: [Theme.accent.opacity(0.16), .clear],
-                center: .topLeading,
-                startRadius: 2,
-                endRadius: 260
-            ),
-            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
-        )
-        .background(
-            Theme.surface,
-            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.white.opacity(0.10), lineWidth: 1)
-        )
+        .editorialCard(accent: Theme.lime)
     }
 
     private func metaText(_ info: Exercise?) -> String {
         guard let info else { return "" }
         return "\(info.muscle.label) · \(info.equipment.label)"
-    }
-
-    private func stat(_ value: String, _ label: String) -> some View {
-        HStack(spacing: 4) {
-            Text(value)
-                .font(.system(size: 12, weight: .bold).monospacedDigit())
-                .foregroundStyle(Theme.primaryText)
-                .contentTransition(.numericText())
-            Text(label)
-                .font(.system(size: 9.5))
-                .foregroundStyle(Theme.tertiaryText)
-        }
-        .motionAnimation(Motion.quick, value: value)
     }
 
     private func exerciseEditor(index: Int) -> some View {
@@ -235,32 +221,33 @@ struct CustomWorkoutBuilderView: View {
                     .accessibilityLabel("拖动排序")
 
                 Text(String(format: "%02d", index + 1))
-                    .font(.system(size: 10, weight: .bold, design: .default))
-                    .foregroundStyle(Theme.accent)
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Theme.ink)
                     .frame(width: 30, height: 30)
-                    .background(Theme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .background(
+                        Theme.ink.opacity(0.05),
+                        in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    )
                     .overlay(
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(Theme.accent.opacity(0.16), lineWidth: 1)
+                            .strokeBorder(Theme.stroke, lineWidth: 1)
                     )
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(info?.nameZH ?? item.slug)
-                        .font(.system(size: 13.5, weight: .semibold))
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
                         .lineLimit(1)
                     Text(metaText(info))
-                        .font(.system(size: 10))
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                         .lineLimit(1)
                 }
 
                 Spacer(minLength: 4)
 
-                HStack(spacing: 4) {
-                    iconButton("trash", label: "移除", destructive: true) {
-                        remove(index)
-                    }
+                iconButton("trash", label: "移除", destructive: true) {
+                    remove(index)
                 }
             }
 
@@ -294,18 +281,13 @@ struct CustomWorkoutBuilderView: View {
         }
         .padding(11)
         .background(
-            LinearGradient(
-                colors: [Color.white.opacity(0.05), Color.white.opacity(0.018)],
-                startPoint: .top,
-                endPoint: .bottom
-            ),
+            Theme.paper,
             in: RoundedRectangle(cornerRadius: 17, style: .continuous)
         )
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 17, style: .continuous))
-        .overlay(
+        .overlay {
             RoundedRectangle(cornerRadius: 17, style: .continuous)
-                .stroke(Color.white.opacity(0.075), lineWidth: 1)
-        )
+                .strokeBorder(Theme.stroke, lineWidth: 1)
+        }
         .dropDestination(for: String.self) { items, _ in
             guard
                 let raw = items.first,
@@ -333,12 +315,15 @@ struct CustomWorkoutBuilderView: View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(destructive ? Theme.danger : Theme.secondaryText)
+                .foregroundStyle(destructive ? Theme.coral : Theme.secondaryText)
                 .frame(width: 32, height: 32)
-                .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .background(
+                    Theme.ink.opacity(0.04),
+                    in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                )
                 .overlay(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color.white.opacity(0.075), lineWidth: 1)
+                        .strokeBorder(Theme.stroke, lineWidth: 1)
                 )
         }
         .buttonStyle(SubtlePressStyle(scale: 0.94))
@@ -360,11 +345,11 @@ struct CustomWorkoutBuilderView: View {
         VStack(spacing: 8) {
             HStack {
                 Text("\(totalSets) 组 · 约 \(estimatedMinutes) 分钟")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
                 Spacer(minLength: 8)
                 Text(mode == .editPlan ? "保存后立即更新计划" : "开始后仍可调整")
-                    .font(.system(size: 9.5))
+                    .font(.system(size: 9, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
 
