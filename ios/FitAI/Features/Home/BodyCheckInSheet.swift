@@ -23,16 +23,33 @@ struct BodyCheckInSheet: View {
                 VStack(alignment: .leading, spacing: 16) {
                     header
                     fields
+
                     if let latest = store.latestBodyMetric {
                         Text("上次记录：\(FitnessDate.key(latest.date))")
-                            .font(.caption2)
+                            .font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(Theme.tertiaryText)
                     }
+
                     if !errorMessage.isEmpty {
-                        Text(errorMessage)
-                            .font(.caption)
-                            .foregroundStyle(Theme.danger)
+                        HStack(spacing: 7) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 11, weight: .bold))
+                            Text(errorMessage)
+                                .font(AppType.caption.weight(.semibold))
+                        }
+                        .foregroundStyle(Theme.coral)
+                        .padding(11)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            Theme.coral.opacity(0.07),
+                            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        )
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .strokeBorder(Theme.coral.opacity(0.22), lineWidth: 1)
+                        }
                     }
+
                     Button("保存身体数据") {
                         save()
                     }
@@ -53,12 +70,13 @@ struct BodyCheckInSheet: View {
                     }
 
                     Text("建议早上空腹、同一时间测量。数据用于体重、体脂和围度趋势，不会自动改变训练计划。")
-                        .font(.caption2)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(20)
-                .padding(.bottom, 20)
+                .appPagePadding()
+                .padding(.top, 8)
+                .padding(.bottom, 24)
             }
             .background(AppBackground())
             .navigationTitle(manual ? "记录今日数据" : "更新身体数据")
@@ -73,19 +91,26 @@ struct BodyCheckInSheet: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(manual ? "今天记录一次\n让目标进度自动更新" : "身体数据 · \(store.bodyCheckInFrequencyLabel)")
-                .font(.system(size: 24, weight: .bold, design: .default))
-                .foregroundStyle(Theme.primaryText)
+        VStack(alignment: .leading, spacing: 7) {
+            Text("BODY / 身体数据")
+                .font(AppType.overline)
+                .tracking(1.5)
+                .foregroundStyle(Theme.cobalt)
+
+            Text(manual ? "今天记录一次" : "更新身体数据")
+                .font(AppType.display)
+                .tracking(-0.9)
+                .foregroundStyle(Theme.ink)
+
             Text("体重、体脂和腰围是目标进度与复盘的核心数据。围度可以在编辑资料里继续补充。")
-                .font(.subheadline)
+                .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private var fields: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             inputRow(title: "体重", text: $weightText, unit: "kg", keyboard: .decimalPad)
             inputRow(title: "体脂率", text: $bodyFatText, unit: "%", keyboard: .decimalPad)
             inputRow(title: "腰围", text: $waistText, unit: "cm", keyboard: .decimalPad)
@@ -99,24 +124,34 @@ struct BodyCheckInSheet: View {
         unit: String,
         keyboard: UIKeyboardType
     ) -> some View {
-        HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 3) {
             Text(title)
-                .font(.subheadline)
-                .foregroundStyle(Theme.secondaryText)
-                .frame(width: 52, alignment: .leading)
-            TextField("0", text: text)
-                .keyboardType(keyboard)
-                .multilineTextAlignment(.trailing)
-                .font(.headline.weight(.semibold))
-                .foregroundStyle(Theme.primaryText)
-            Text(unit)
-                .font(.caption)
+                .font(.system(size: 9.5, weight: .semibold))
                 .foregroundStyle(Theme.tertiaryText)
-                .frame(width: 24, alignment: .leading)
+
+            HStack(alignment: .firstTextBaseline, spacing: 5) {
+                TextField("0", text: text)
+                    .keyboardType(keyboard)
+                    .multilineTextAlignment(.leading)
+                    .font(.system(size: 24, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Theme.ink)
+                    .tint(Theme.cobalt)
+
+                Text(unit)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Theme.tertiaryText)
+
+                Spacer(minLength: 0)
+            }
         }
-        .padding(.vertical, 4)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(Theme.stroke).frame(height: 1)
+        .padding(11)
+        .background(
+            Theme.ink.opacity(0.03),
+            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Theme.stroke, lineWidth: 1)
         }
     }
 

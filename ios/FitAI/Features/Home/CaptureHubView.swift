@@ -81,7 +81,7 @@ struct CaptureHubView: View {
                                 VStack(alignment: .leading, spacing: 12) {
                                     Image(systemName: kind.symbol)
                                         .font(.system(size: 22, weight: .bold))
-                                        .foregroundStyle(Theme.ink)
+                                        .foregroundStyle(Theme.onAccent)
                                         .frame(width: 48, height: 48)
                                         .background(kind.accent, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                                         .overlay {
@@ -121,7 +121,8 @@ struct CaptureHubView: View {
                     }
                     .padding(.top, 4)
                 }
-                .padding(20)
+                .appPagePadding()
+                .padding(.top, 8)
                 .padding(.bottom, 24)
             }
             .background(AppBackground())
