@@ -63,6 +63,7 @@ async def generate(
             weeks=4,
             equipment_slugs=payload.equipment_slugs,
             split=payload.split,
+            focus=payload.focus,
         )
     except PlanValidationError as exc:
         raise HTTPException(

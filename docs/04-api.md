@@ -200,13 +200,17 @@
 ```json
 {
   "force": false,
-  "equipment_slugs": ["lat_pulldown", "leg_press"]
+  "equipment_slugs": ["lat_pulldown", "leg_press"],
+  "split": "3分化",
+  "focus": ["glutes", "back"]
 }
 ```
 
 - `force=false`：已有 active 计划则直接返回
 - `force=true`：归档旧计划，生成新版本
 - `equipment_slugs`：用户器械库中已录入的动作 slug；后端优先从这些动作 + 徒手动作里编排，数量不足时回退到档案器械类型
+- `split`：可选训练分化；决定每天的训练日模板
+- `focus`：可选重点部位，取值 `chest/back/legs/glutes/shoulders/arms/core`；最多取前两个，每天优先安排 1–2 个对应动作，但不会破坏 `split` 的骨架
 
 返回 200：
 

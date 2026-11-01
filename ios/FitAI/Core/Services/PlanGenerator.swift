@@ -64,7 +64,8 @@ enum PlanGenerator {
         profile: UserProfile,
         dislikedSlugs: Set<String> = [],
         equipmentSlugs: [String] = [],
-        weeklyWeekdays: [Int]? = nil
+        weeklyWeekdays: [Int]? = nil,
+        focusAreas: Set<BodyFocusArea> = []
     ) -> TrainingPlan {
         let available = allowedExercises(
             profile,
@@ -81,6 +82,7 @@ enum PlanGenerator {
             ? Array(Set(requestedWeekdays)).sorted()
             : defaultWeekdays[weeklyDays] ?? Array(1...weeklyDays)
         let templates = templatePool(for: profile.split)
+        let requestedFocus = focusMuscles(for: focusAreas)
         let count = exerciseCount(minutes: profile.sessionMinutes)
         let params = goalParams[profile.goalType] ?? goalParams[.recomp]!
         let weeks = 4
@@ -90,7 +92,8 @@ enum PlanGenerator {
         var days: [PlanDay] = []
         for week in 1...weeks {
             for (index, offset) in weekdays.enumerated() {
-                let (title, focus) = templates[index % templates.count]
+                let (title, baseFocus) = templates[index % templates.count]
+                let focus = biasedFocus(baseFocus, requested: requestedFocus)
                 let picks = pickExercises(focus: focus, from: available, count: count)
                 guard !picks.isEmpty else { continue }
                 let firstDate: Date
@@ -220,6 +223,37 @@ enum PlanGenerator {
     }
 
     // MARK: - 内部规则
+
+    private static func focusMuscles(for areas: Set<BodyFocusArea>) -> [MuscleGroup] {
+        BodyFocusArea.allCases
+            .filter { areas.contains($0) }
+            .flatMap { area -> [MuscleGroup] in
+                switch area {
+                case .shoulders: return [.shoulders]
+                case .chest: return [.chest]
+                case .arms: return [.arms]
+                case .core: return [.core]
+                case .glutes: return [.glutes, .legs]
+                case .legs: return [.legs, .glutes]
+                case .back: return [.back]
+                }
+            }
+    }
+
+    /// Add at most two user focus muscles to the front of the day's template.
+    /// The split still supplies the skeleton; focus only changes which muscles
+    /// get first pick when the session is short.
+    private static func biasedFocus(
+        _ base: [MuscleGroup],
+        requested: [MuscleGroup]
+    ) -> [MuscleGroup] {
+        guard !requested.isEmpty else { return base }
+        var focus = base
+        for muscle in requested.prefix(2) where !focus.contains(muscle) {
+            focus.insert(muscle, at: 0)
+        }
+        return focus
+    }
 
     private static func exerciseCount(minutes: Int) -> Int {
         switch minutes {

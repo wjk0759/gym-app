@@ -161,12 +161,14 @@ struct APIClient {
     func generatePlan(
         force: Bool = true,
         equipmentSlugs: [String] = [],
-        split: SplitType
+        split: SplitType,
+        focus: [String] = []
     ) async throws -> TrainingPlan {
         let body = try JSONSerialization.data(withJSONObject: [
             "force": force,
             "equipment_slugs": equipmentSlugs,
-            "split": split.rawValue
+            "split": split.rawValue,
+            "focus": focus
         ])
         // AI 计划生成在 DeepSeek reasoning 开启时可能接近 100 秒；
         // 90 秒会先于服务端返回而失败，随后又落回本地模板。

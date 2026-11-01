@@ -1,6 +1,19 @@
 import Foundation
 
 extension AppStore {
+    /// Focus areas chosen in onboarding. This is a local preference, not a
+    /// server profile field; plan generation reads it before building either
+    /// the remote or local plan.
+    var planFocusAreas: Set<BodyFocusArea> {
+        guard let raw = UserDefaults.standard.string(forKey: "fitai_focus_areas") else {
+            return []
+        }
+        return Set(
+            raw.split(separator: ",")
+                .compactMap { BodyFocusArea(rawValue: String($0)) }
+        )
+    }
+
     // MARK: - Derived state
 
     /// Monday of the plan's first calendar week.

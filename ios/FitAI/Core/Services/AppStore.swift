@@ -224,6 +224,7 @@ final class AppStore {
         isGenerating = true
         let snapshot = profile
         let librarySlugs = equipmentSlugsForPlan
+        let focusAreas = planFocusAreas
 
         if canUseRemoteAI && weeklyWeekdays == nil {
             Task { @MainActor in
@@ -235,7 +236,8 @@ final class AppStore {
                     var generated = try await APIClient.shared.generatePlan(
                         force: force,
                         equipmentSlugs: librarySlugs,
-                        split: snapshot.split
+                        split: snapshot.split,
+                        focus: focusAreas.map(\.rawValue)
                     )
                     generated.version = max(generated.version, (self.plan?.version ?? 0) + 1)
                     self.archiveCurrentPlan()
@@ -246,7 +248,8 @@ final class AppStore {
                         profile: snapshot,
                         dislikedSlugs: self.dislikedSlugs,
                         equipmentSlugs: librarySlugs,
-                        weeklyWeekdays: weeklyWeekdays
+                        weeklyWeekdays: weeklyWeekdays,
+                        focusAreas: focusAreas
                     )
                     fallback.version = (self.plan?.version ?? 0) + 1
                     self.archiveCurrentPlan()
@@ -267,7 +270,8 @@ final class AppStore {
                 profile: snapshot,
                 dislikedSlugs: self.dislikedSlugs,
                 equipmentSlugs: librarySlugs,
-                weeklyWeekdays: weeklyWeekdays
+                weeklyWeekdays: weeklyWeekdays,
+                focusAreas: focusAreas
             )
             generated.version = (self.plan?.version ?? 0) + 1
             self.archiveCurrentPlan()

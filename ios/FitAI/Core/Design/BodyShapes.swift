@@ -376,6 +376,7 @@ enum BodyFocusArea: String, CaseIterable, Identifiable {
 struct BodyFocusMap: View {
     @Binding var selected: Set<BodyFocusArea>
     var recommended: Set<BodyFocusArea> = []
+    var maxSelection: Int = 2
 
     var body: some View {
         VStack(spacing: 12) {
@@ -402,7 +403,7 @@ struct BodyFocusMap: View {
             }
             .frame(height: 310)
 
-            Text("选中的部位会记录在报告里，方便你和教练沟通")
+            Text("最多选 \(maxSelection) 个，计划会优先安排这些部位")
                 .font(AppType.micro)
                 .foregroundStyle(Theme.tertiaryText)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -413,11 +414,14 @@ struct BodyFocusMap: View {
         let isSelected = selected.contains(area)
         let isRecommended = recommended.contains(area) && !isSelected
         return Button {
-            Haptics.select()
             if isSelected {
+                Haptics.select()
                 selected.remove(area)
-            } else {
+            } else if selected.count < maxSelection {
+                Haptics.select()
                 selected.insert(area)
+            } else {
+                Haptics.warning()
             }
         } label: {
             HStack(spacing: 4) {

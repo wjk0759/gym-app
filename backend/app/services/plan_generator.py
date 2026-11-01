@@ -258,6 +258,7 @@ def fallback_plan(
     weekly_days: int | None = None,
     session_minutes: int | None = None,
     weekdays: list[int] | None = None,
+    focus: list[str] | None = None,
 ) -> dict:
     normalized_weekdays = sorted({int(item) for item in (weekdays or []) if 1 <= int(item) <= 7})
     if normalized_weekdays:
@@ -269,12 +270,21 @@ def fallback_plan(
     templates = SPLIT_TEMPLATES.get(split or "", SPLITS[weekly_days])
     minutes = max(15, min(180, int(session_minutes or profile.session_minutes or 45)))
     count = min(_session_exercise_count(minutes), 6)
+    requested_focus = [
+        item
+        for item in (focus or [])
+        if item in {"chest", "back", "legs", "glutes", "shoulders", "arms", "core"}
+    ][:2]
 
     days = []
     for week_index in range(1, weeks + 1):
         for index, weekday in enumerate(weekday_values):
-            title, focus = templates[index % len(templates)]
-            picks = _pick_for_day(available, focus, count)
+            title, base_focus = templates[index % len(templates)]
+            day_focus = list(base_focus)
+            for muscle in requested_focus:
+                if muscle not in day_focus:
+                    day_focus.insert(0, muscle)
+            picks = _pick_for_day(available, day_focus, count)
             if not picks:
                 continue
             days.append(
@@ -282,7 +292,7 @@ def fallback_plan(
                     week_index=week_index,
                     weekday=weekday,
                     title=title,
-                    focus=focus,
+                    focus=day_focus,
                     picks=picks,
                     profile=profile,
                     goal_type=goal_type,
@@ -314,6 +324,7 @@ def build_template_plan(
     weekly_days: int | None = None,
     session_minutes: int | None = None,
     weekdays: list[int] | None = None,
+    focus: list[str] | None = None,
 ) -> dict:
     """Build a deterministic, validated plan for the agent proposal tool."""
     weeks = max(1, min(8, int(weeks)))
@@ -329,6 +340,7 @@ def build_template_plan(
         weekly_days=weekly_days,
         session_minutes=session_minutes,
         weekdays=weekdays,
+        focus=focus,
     )
     by_slug = {item.slug: item for item in available}
     effective_days = len(sorted({int(item) for item in (weekdays or []) if 1 <= int(item) <= 7})) or max(
@@ -385,6 +397,7 @@ def _user_prompt(
     weeks: int,
     equipment_slugs: list[str] | None = None,
     split: str | None = None,
+    focus: list[str] | None = None,
 ) -> str:
     candidates = [
         {
@@ -412,6 +425,7 @@ def _user_prompt(
             "goal": goal,
             "split": split,
             "equipment_library_slugs": equipment_slugs or [],
+            "focus_areas": (focus or [])[:2],
         },
         "weeks": weeks,
         "candidates": candidates,
@@ -423,6 +437,12 @@ def _user_prompt(
             "follow_split": bool(split_templates),
             "required_split_titles": [item[0] for item in split_templates],
             "required_split_focus": [item[1] for item in split_templates],
+            "focus_priority": (focus or [])[:2],
+            "focus_instruction": (
+                f"每天优先安排 1–2 个 {', '.join((focus or [])[:2])} 动作，但不要破坏分化结构。"
+                if focus
+                else "不额外指定重点部位。"
+            ),
             "split_instruction": (
                 f"必须严格使用 {split} 的模板，按顺序循环训练日标题和 focus，"
                 "不要改成全身训练或其他分化。"
@@ -442,13 +462,14 @@ async def generate_plan(
     weeks: int = 4,
     equipment_slugs: list[str] | None = None,
     split: str | None = None,
+    focus: list[str] | None = None,
 ) -> dict:
     # Fast path: the reasoning LLM is far too slow for plan generation (see
     # ai_jobs: plan=64s). The deterministic template is instant and already
     # validated, and matches the iOS local generator.
     if not settings.llm_plan_enabled:
         return build_template_plan(
-            db, profile, goal_type, weeks=weeks, split=split
+            db, profile, goal_type, weeks=weeks, split=split, focus=focus
         )
 
     available = _allowed_exercises(
@@ -481,6 +502,7 @@ async def generate_plan(
                     weeks,
                     equipment_slugs,
                     split,
+                    focus,
                 ),
                 reasoning_effort=settings.llm_plan_reasoning_effort,
             )
@@ -521,7 +543,9 @@ async def generate_plan(
                 error=error,
             )
 
-    raw = fallback_plan(profile, goal_type, available, weeks=weeks, split=split)
+    raw = fallback_plan(
+        profile, goal_type, available, weeks=weeks, split=split, focus=focus
+    )
     cleaned, fallback_warnings = validate_plan(
         raw,
         exercises=by_slug,

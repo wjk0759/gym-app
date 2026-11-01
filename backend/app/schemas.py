@@ -110,6 +110,7 @@ class PlanGenerateIn(BaseModel):
     force: bool = False
     equipment_slugs: list[str] = Field(default_factory=list, max_length=50)
     split: str | None = Field(default=None, max_length=20)
+    focus: list[str] = Field(default_factory=list, max_length=20)
 
 
 class PlanExercisePatch(BaseModel):

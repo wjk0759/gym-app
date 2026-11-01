@@ -56,6 +56,23 @@ final class PlanGeneratorTests: XCTestCase {
         XCTAssertFalse(slugs.contains("pushup"))
     }
 
+    func testFocusAreasArePrioritisedAcrossTrainingDays() {
+        var profile = makeProfile(
+            weeklyDays: 3,
+            equipment: [.bodyweight, .dumbbell, .machine, .cable]
+        )
+        profile.split = .three
+
+        let baseline = PlanGenerator.generate(profile: profile)
+        XCTAssertFalse(baseline.days.allSatisfy { $0.focus.contains(.arms) })
+
+        let focused = PlanGenerator.generate(
+            profile: profile,
+            focusAreas: [.arms]
+        )
+        XCTAssertTrue(focused.days.allSatisfy { $0.focus.contains(.arms) })
+    }
+
     func testLowCompletionReducesSets() {
         let plan = PlanGenerator.generate(profile: makeProfile())
         let adjusted = PlanGenerator.adjusted(

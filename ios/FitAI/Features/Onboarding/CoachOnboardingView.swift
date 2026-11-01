@@ -917,7 +917,7 @@ struct CoachOnboardingView: View {
                 .foregroundStyle(Theme.ink)
 
             if let bodyType {
-                actionLine("训练重点：\(focusText)")
+                actionLine("训练重点：\(focusText)，计划会优先安排")
                 actionLine("体型参考：\(bodyType.label)，报告会记录这个重点")
             } else {
                 actionLine("训练重点：\(focusText)")
