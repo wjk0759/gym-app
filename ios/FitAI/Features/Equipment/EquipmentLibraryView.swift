@@ -146,7 +146,7 @@ struct EquipmentLibraryView: View {
 
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text("\(store.equipmentLibrary.count)")
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                            .font(.system(size: 34, weight: .bold, design: .default))
                             .foregroundStyle(Theme.primaryText)
                             .lineLimit(1)
                         Text("件")

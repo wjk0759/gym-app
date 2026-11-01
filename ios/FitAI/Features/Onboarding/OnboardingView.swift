@@ -167,7 +167,7 @@ struct OnboardingView: View {
             .animation(Motion.quick, value: step)
 
             Text(stepTitle)
-                .font(.system(size: 30, weight: .heavy, design: .rounded))
+                .font(.system(size: 30, weight: .heavy, design: .default))
                 .foregroundStyle(Theme.primaryText)
                 .fixedSize(horizontal: false, vertical: true)
 

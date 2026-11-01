@@ -30,6 +30,7 @@ struct PlanReviewView: View {
         .background(AppBackground())
         .navigationTitle("数据复盘")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .task(id: period) {
             await loadReview()
         }
@@ -38,7 +39,7 @@ struct PlanReviewView: View {
     private var reviewHeaderPlaceholder: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("\(period.title)复盘")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .font(.system(size: 26, weight: .bold, design: .default))
                 .foregroundStyle(Theme.primaryText)
             Text("正在整理本期数据…")
                 .font(.caption)
@@ -74,7 +75,7 @@ struct PlanReviewView: View {
     private func header(_ review: ReviewData) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("\(review.period.title)复盘")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .font(.system(size: 26, weight: .bold, design: .default))
                 .foregroundStyle(Theme.primaryText)
             Text("\(review.rangeLabel) · 对比\(review.period.previousTitle)")
                 .font(.caption)

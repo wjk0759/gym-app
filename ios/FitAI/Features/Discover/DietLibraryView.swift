@@ -114,7 +114,7 @@ struct DietLibraryView: View {
         HStack(alignment: .center, spacing: 6) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("吃法选明白，\n三餐不瞎猜。")
-                    .font(.system(size: 29, weight: .heavy, design: .rounded))
+                    .font(.system(size: 29, weight: .heavy, design: .default))
                     .foregroundStyle(Theme.primaryText)
                     .fixedSize(horizontal: false, vertical: true)
                 Text("先选策略，再按你的目标和体重生成一周餐单。所有方案都保留替换空间。")

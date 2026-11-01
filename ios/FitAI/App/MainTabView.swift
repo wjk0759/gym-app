@@ -30,7 +30,7 @@ struct MainTabView: View {
     var body: some View {
         @Bindable var store = store
         TabView(selection: $store.selectedTab) {
-            HomeView()
+            HomeV2View()
                 .tag(0)
                 .tabItem {
                     Label("今日", systemImage: "figure.strengthtraining.traditional")
@@ -39,13 +39,13 @@ struct MainTabView: View {
             PlanHomeView()
                 .tag(1)
                 .tabItem {
-                    Label("记录", systemImage: "calendar")
+                    Label("记录", systemImage: "chart.xyaxis.line")
                 }
 
             CoachChatView()
                 .tag(2)
                 .tabItem {
-                    Label("教练", systemImage: "bubble.left.and.bubble.right")
+                    Label("教练", systemImage: "bubble.left.and.bubble.right.fill")
                 }
 
             DiscoverView()
@@ -60,8 +60,8 @@ struct MainTabView: View {
                     Label("我的", systemImage: "person.crop.circle")
                 }
         }
-        .tint(Theme.accent)
-        .toolbarBackground(.ultraThinMaterial, for: .tabBar)
+        .tint(Theme.cobalt)
+        .toolbarBackground(Theme.chrome, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
         .sensoryFeedback(.selection, trigger: store.selectedTab)
         .sheet(item: $store.pendingRoute) { route in

@@ -22,7 +22,7 @@ struct WeatherBadgeView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(alignment: .firstTextBaseline, spacing: 3) {
                         Text(primaryText)
-                            .font(.system(size: 15, weight: .bold, design: .rounded).monospacedDigit())
+                            .font(.system(size: 15, weight: .bold, design: .default).monospacedDigit())
                             .foregroundStyle(Theme.primaryText)
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
@@ -203,7 +203,7 @@ struct WeatherDetailSheet: View {
             if let snapshot = weather.snapshot {
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
                     Text(snapshot.temperatureText)
-                        .font(.system(size: 54, weight: .heavy, design: .rounded).monospacedDigit())
+                        .font(.system(size: 54, weight: .heavy, design: .default).monospacedDigit())
                         .foregroundStyle(Theme.primaryText)
                     Text("C")
                         .font(.title3.weight(.semibold))

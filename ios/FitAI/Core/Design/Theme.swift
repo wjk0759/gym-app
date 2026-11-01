@@ -2,92 +2,104 @@ import SwiftUI
 import UIKit
 
 enum Theme {
-    /// Neutral graphite base with a muted sage-mint accent.
-    /// Light mode stays warm and paper-like so the frosted surfaces read clearly.
+    /// Editorial sport palette: warm paper, ink, electric cobalt and a single
+    /// acid-lime signal. The goal is a printed training journal, not a neon
+    /// dashboard: flat paper surfaces, thin ink rules and one loud accent.
     static let background = adaptive(
-        dark: UIColor(red: 0.030, green: 0.034, blue: 0.040, alpha: 1),
-        light: UIColor(red: 0.953, green: 0.957, blue: 0.949, alpha: 1)
+        dark: UIColor(red: 0.050, green: 0.053, blue: 0.043, alpha: 1),
+        light: UIColor(red: 0.957, green: 0.941, blue: 0.902, alpha: 1)
     )
     static let cardSurface = adaptive(
-        dark: UIColor(red: 0.062, green: 0.068, blue: 0.078, alpha: 1),
-        light: UIColor(red: 0.984, green: 0.986, blue: 0.980, alpha: 1)
+        dark: UIColor(red: 0.094, green: 0.098, blue: 0.078, alpha: 1),
+        light: UIColor(red: 1.000, green: 0.992, blue: 0.965, alpha: 1)
     )
     static let chrome = adaptive(
-        dark: UIColor(red: 0.024, green: 0.032, blue: 0.046, alpha: 0.86),
-        light: UIColor(red: 0.970, green: 0.976, blue: 0.965, alpha: 0.90)
+        dark: UIColor(red: 0.050, green: 0.053, blue: 0.043, alpha: 0.92),
+        light: UIColor(red: 0.957, green: 0.941, blue: 0.902, alpha: 0.92)
     )
     static let surface = adaptive(
-        dark: UIColor(white: 1, alpha: 0.06),
-        light: UIColor(white: 0, alpha: 0.04)
+        dark: UIColor(white: 1, alpha: 0.055),
+        light: UIColor(white: 0, alpha: 0.040)
     )
     static let surfaceStrong = adaptive(
-        dark: UIColor(white: 1, alpha: 0.105),
-        light: UIColor(white: 0, alpha: 0.07)
+        dark: UIColor(white: 1, alpha: 0.10),
+        light: UIColor(white: 0, alpha: 0.075)
     )
     static let stroke = adaptive(
-        dark: UIColor(white: 1, alpha: 0.105),
-        light: UIColor(white: 0, alpha: 0.085)
+        dark: UIColor(white: 1, alpha: 0.15),
+        light: UIColor(white: 0, alpha: 0.13)
     )
     static let primaryText = adaptive(
-        dark: UIColor(white: 0.97, alpha: 1),
-        light: UIColor(red: 0.055, green: 0.070, blue: 0.060, alpha: 1)
+        dark: UIColor(red: 0.972, green: 0.957, blue: 0.914, alpha: 1),
+        light: UIColor(red: 0.070, green: 0.075, blue: 0.055, alpha: 1)
     )
     static let secondaryText = adaptive(
-        dark: UIColor(white: 1, alpha: 0.68),
-        light: UIColor(white: 0, alpha: 0.60)
+        dark: UIColor(red: 0.730, green: 0.715, blue: 0.660, alpha: 1),
+        light: UIColor(red: 0.350, green: 0.355, blue: 0.305, alpha: 1)
     )
     static let tertiaryText = adaptive(
-        dark: UIColor(white: 1, alpha: 0.48),
-        light: UIColor(white: 0, alpha: 0.47)
+        dark: UIColor(red: 0.510, green: 0.500, blue: 0.455, alpha: 1),
+        light: UIColor(red: 0.505, green: 0.510, blue: 0.455, alpha: 1)
     )
+    /// Electric cobalt: the single saturated brand color.
     static let accent = adaptive(
-        dark: UIColor(red: 0.54, green: 0.86, blue: 0.70, alpha: 1),
-        light: UIColor(red: 0.090, green: 0.360, blue: 0.250, alpha: 1)
+        dark: UIColor(red: 0.570, green: 0.630, blue: 1.000, alpha: 1),
+        light: UIColor(red: 0.180, green: 0.290, blue: 1.000, alpha: 1)
     )
     static let accentDeep = adaptive(
-        dark: UIColor(red: 0.26, green: 0.60, blue: 0.46, alpha: 1),
-        light: UIColor(red: 0.050, green: 0.250, blue: 0.170, alpha: 1)
+        dark: UIColor(red: 0.390, green: 0.470, blue: 1.000, alpha: 1),
+        light: UIColor(red: 0.080, green: 0.150, blue: 0.790, alpha: 1)
     )
+    /// Acid lime: used for recommendation badges, selected states and one
+    /// editorial highlight per screen.
     static let accentSecondary = adaptive(
-        dark: UIColor(red: 0.42, green: 0.70, blue: 0.78, alpha: 1),
-        light: UIColor(red: 0.160, green: 0.400, blue: 0.470, alpha: 1)
+        dark: UIColor(red: 0.840, green: 1.000, blue: 0.360, alpha: 1),
+        light: UIColor(red: 0.370, green: 0.480, blue: 0.000, alpha: 1)
     )
+    /// Signal coral: safety, intensity and “look here” moments.
     static let accentTertiary = adaptive(
-        dark: UIColor(red: 0.64, green: 0.60, blue: 0.80, alpha: 1),
-        light: UIColor(red: 0.360, green: 0.300, blue: 0.520, alpha: 1)
+        dark: UIColor(red: 1.000, green: 0.540, blue: 0.440, alpha: 1),
+        light: UIColor(red: 0.770, green: 0.230, blue: 0.120, alpha: 1)
     )
     static let accentWarm = adaptive(
-        dark: UIColor(red: 0.88, green: 0.70, blue: 0.46, alpha: 1),
-        light: UIColor(red: 0.620, green: 0.400, blue: 0.120, alpha: 1)
+        dark: UIColor(red: 0.960, green: 0.720, blue: 0.350, alpha: 1),
+        light: UIColor(red: 0.600, green: 0.360, blue: 0.000, alpha: 1)
     )
     static let onAccent = adaptive(
-        dark: UIColor(red: 0.020, green: 0.070, blue: 0.045, alpha: 0.96),
-        light: UIColor(white: 1, alpha: 0.97)
+        dark: UIColor(red: 0.050, green: 0.053, blue: 0.043, alpha: 1),
+        light: UIColor(white: 1, alpha: 1)
     )
     static let danger = adaptive(
-        dark: UIColor(red: 1.0, green: 0.36, blue: 0.42, alpha: 1),
-        light: UIColor(red: 0.760, green: 0.130, blue: 0.200, alpha: 1)
+        dark: UIColor(red: 1.000, green: 0.400, blue: 0.480, alpha: 1),
+        light: UIColor(red: 0.850, green: 0.180, blue: 0.270, alpha: 1)
     )
     static let warning = adaptive(
-        dark: UIColor(red: 1.0, green: 0.68, blue: 0.30, alpha: 1),
-        light: UIColor(red: 0.640, green: 0.380, blue: 0.020, alpha: 1)
+        dark: UIColor(red: 1.000, green: 0.700, blue: 0.330, alpha: 1),
+        light: UIColor(red: 0.720, green: 0.380, blue: 0.000, alpha: 1)
     )
     static let blue = adaptive(
-        dark: UIColor(red: 0.36, green: 0.78, blue: 1.0, alpha: 1),
-        light: UIColor(red: 0.120, green: 0.400, blue: 0.820, alpha: 1)
+        dark: UIColor(red: 0.570, green: 0.630, blue: 1.000, alpha: 1),
+        light: UIColor(red: 0.180, green: 0.290, blue: 1.000, alpha: 1)
     )
     static let shadow = adaptive(
-        dark: UIColor(white: 0, alpha: 0.35),
-        light: UIColor(white: 0, alpha: 0.10)
+        dark: UIColor(white: 0, alpha: 0.45),
+        light: UIColor(white: 0, alpha: 0.14)
     )
     static let shadowSoft = adaptive(
-        dark: UIColor(white: 0, alpha: 0.16),
-        light: UIColor(white: 0, alpha: 0.05)
+        dark: UIColor(white: 0, alpha: 0.22),
+        light: UIColor(white: 0, alpha: 0.06)
     )
     static let cardEdge = adaptive(
-        dark: UIColor(white: 1, alpha: 0.16),
-        light: UIColor(white: 0, alpha: 0.08)
+        dark: UIColor(white: 1, alpha: 0.18),
+        light: UIColor(white: 0, alpha: 0.12)
     )
+
+    // Semantic aliases for the new visual language.
+    static let paper = cardSurface
+    static let ink = primaryText
+    static let cobalt = accent
+    static let lime = accentSecondary
+    static let coral = accentTertiary
 
     /// Reusable accent ramps for buttons, section markers and highlights.
     static let accentGradient = LinearGradient(
@@ -96,7 +108,7 @@ enum Theme {
         endPoint: .bottomTrailing
     )
     static let buttonGradient = LinearGradient(
-        colors: [accent, accentDeep],
+        colors: [accent, accent],
         startPoint: .top,
         endPoint: .bottom
     )
@@ -142,8 +154,6 @@ extension View {
 }
 
 struct PrimaryButtonStyle: ButtonStyle {
-    @Environment(\.colorScheme) private var colorScheme
-
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(AppType.button)
@@ -151,27 +161,21 @@ struct PrimaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background {
-                RoundedRectangle(cornerRadius: 17, style: .continuous)
-                    .fill(.ultraThinMaterial)
-
-                RoundedRectangle(cornerRadius: 17, style: .continuous)
-                    .fill(Theme.buttonGradient)
-                    .opacity(colorScheme == .dark ? 0.88 : 0.94)
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .fill(Theme.cobalt)
             }
             .overlay {
-                RoundedRectangle(cornerRadius: 17, style: .continuous)
-                    .strokeBorder(
-                        Color.white.opacity(colorScheme == .dark ? 0.14 : 0.24),
-                        lineWidth: 0.8
-                    )
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .strokeBorder(Theme.ink.opacity(0.18), lineWidth: 1)
             }
             .shadow(
-                color: Color.black.opacity(colorScheme == .dark ? 0.26 : 0.12),
-                radius: 12,
-                y: 6
+                color: Theme.ink.opacity(configuration.isPressed ? 0.04 : 0.16),
+                radius: 0,
+                x: 0,
+                y: configuration.isPressed ? 1 : 4
             )
-            .opacity(configuration.isPressed ? 0.92 : 1)
-            .scaleEffect(configuration.isPressed ? 0.985 : 1)
+            .offset(y: configuration.isPressed ? 2 : 0)
+            .opacity(configuration.isPressed ? 0.94 : 1)
             .animation(Motion.press, value: configuration.isPressed)
             .onChange(of: configuration.isPressed) { _, pressed in
                 if pressed { Haptics.impact(.light) }
@@ -180,30 +184,25 @@ struct PrimaryButtonStyle: ButtonStyle {
 }
 
 struct SecondaryButtonStyle: ButtonStyle {
-    @Environment(\.colorScheme) private var colorScheme
-
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(AppType.buttonSecondary)
-            .foregroundStyle(Theme.primaryText)
+            .foregroundStyle(Theme.ink)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 15)
             .background {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(.ultraThinMaterial)
-
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Theme.surfaceStrong.opacity(colorScheme == .dark ? 0.55 : 0.45))
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .fill(Theme.paper)
             }
             .overlay {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(Theme.stroke, lineWidth: 0.8)
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .strokeBorder(Theme.ink.opacity(0.75), lineWidth: 1.2)
             }
             .overlay {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Theme.primaryText.opacity(configuration.isPressed ? 0.04 : 0))
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .fill(Theme.ink.opacity(configuration.isPressed ? 0.06 : 0))
             }
-            .opacity(configuration.isPressed ? 0.90 : 1)
+            .opacity(configuration.isPressed ? 0.92 : 1)
             .scaleEffect(configuration.isPressed ? 0.985 : 1)
             .animation(Motion.press, value: configuration.isPressed)
             .onChange(of: configuration.isPressed) { _, pressed in
@@ -219,26 +218,16 @@ struct TagChip: View {
     var body: some View {
         Text(text)
             .font(AppType.chip)
-            .foregroundStyle(selected ? Theme.accent : Theme.secondaryText)
-            .padding(.horizontal, 13)
-            .padding(.vertical, 8)
+            .foregroundStyle(selected ? Theme.ink : Theme.secondaryText)
+            .padding(.horizontal, 11)
+            .padding(.vertical, 7)
             .background {
-                Capsule(style: .continuous)
-                    .fill(.ultraThinMaterial)
-
-                Capsule(style: .continuous)
-                    .fill(
-                        selected
-                            ? Theme.accent.opacity(0.16)
-                            : Theme.surface
-                    )
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(selected ? Theme.lime : Theme.paper)
             }
             .overlay {
-                Capsule(style: .continuous)
-                    .strokeBorder(
-                        selected ? Theme.accent.opacity(0.36) : Theme.stroke,
-                        lineWidth: 0.8
-                    )
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .strokeBorder(selected ? Theme.ink.opacity(0.18) : Theme.stroke, lineWidth: 1)
             }
             .animation(Motion.quick, value: selected)
     }
@@ -250,13 +239,14 @@ struct SectionTitle: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                Capsule(style: .continuous)
-                    .fill(Theme.accent.opacity(0.82))
-                    .frame(width: 14, height: 2)
+            HStack(spacing: 9) {
+                Rectangle()
+                    .fill(Theme.lime)
+                    .frame(width: 9, height: 9)
+                    .rotationEffect(.degrees(45))
                 Text(title)
                     .font(AppType.headline)
-                    .tracking(0.1)
+                    .tracking(-0.2)
                     .foregroundStyle(Theme.primaryText)
             }
             if let subtitle {
@@ -279,20 +269,23 @@ struct HeroGlyph: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                .fill(.ultraThinMaterial)
+                .fill(tint.opacity(0.14))
 
             RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                .fill(tint.opacity(0.10))
-
-            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                .strokeBorder(tint.opacity(0.22), lineWidth: 0.8)
+                .strokeBorder(Theme.ink.opacity(0.16), lineWidth: 1)
 
             Image(systemName: symbol)
-                .font(.system(size: size * 0.38, weight: .semibold))
+                .font(.system(size: size * 0.38, weight: .bold))
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(tint.opacity(0.94))
+                .foregroundStyle(Theme.ink)
         }
         .frame(width: size, height: size)
+        .overlay(alignment: .topTrailing) {
+            Rectangle()
+                .fill(Theme.lime)
+                .frame(width: size * 0.13, height: size * 0.13)
+                .offset(x: size * 0.04, y: -size * 0.04)
+        }
         .accessibilityHidden(true)
     }
 }

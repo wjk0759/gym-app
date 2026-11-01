@@ -216,7 +216,7 @@ struct EquipmentPickerView: View {
                 .foregroundStyle(Theme.primaryText)
 
             Text("\(filteredExercises.count)")
-                .font(.system(size: 9, weight: .bold, design: .rounded))
+                .font(.system(size: 9, weight: .bold, design: .default))
                 .foregroundStyle(Theme.accent)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
@@ -272,7 +272,7 @@ struct EquipmentPickerView: View {
 
                 if !selectedExercises.isEmpty {
                     Text("\(selectedExercises.count)")
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .font(.system(size: 9, weight: .bold, design: .default))
                         .foregroundStyle(Theme.onAccent)
                         .frame(minWidth: 18, minHeight: 18)
                         .background(Theme.accent, in: Capsule())

@@ -68,7 +68,7 @@ struct WeekDietPlanView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 7) {
             Text("把饮食计划排成一周")
-                .font(.system(size: 23, weight: .bold, design: .rounded))
+                .font(.system(size: 23, weight: .bold, design: .default))
                 .foregroundStyle(Theme.primaryText)
             Text("AI 教练会按目标、训练日和饮食策略排本周餐单；每道菜都可以点开看家常做法。AI 暂不可用时会自动回退模板。")
                 .font(.subheadline)

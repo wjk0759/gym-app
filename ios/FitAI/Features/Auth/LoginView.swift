@@ -210,7 +210,7 @@ struct LoginView: View {
     private func headline(compact: Bool) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("登录练途")
-                .font(.system(size: compact ? 27 : 34, weight: .bold, design: .rounded))
+                .font(.system(size: compact ? 27 : 34, weight: .bold, design: .default))
                 .tracking(-0.5)
                 .foregroundStyle(Theme.primaryText)
             Text("同步训练计划、记录和 AI 复盘")

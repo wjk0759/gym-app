@@ -37,7 +37,7 @@ struct PasswordResetView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("重置登录密码")
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .font(.system(size: 28, weight: .bold, design: .default))
                             .foregroundStyle(Theme.primaryText)
                         Text("验证注册手机号后设置新密码，重置后其他设备会退出登录。")
                             .font(.subheadline)

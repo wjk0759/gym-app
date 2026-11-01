@@ -281,7 +281,7 @@ struct WorkoutValueEntrySheet: View {
                         .keyboardType(allowsDecimal ? .decimalPad : .numberPad)
                         .focused($isFocused)
                         .multilineTextAlignment(.center)
-                        .font(.system(size: 54, weight: .heavy, design: .rounded).monospacedDigit())
+                        .font(.system(size: 54, weight: .heavy, design: .default).monospacedDigit())
                         .foregroundStyle(Theme.primaryText)
                         .tint(Theme.accent)
                         .frame(maxWidth: 220)

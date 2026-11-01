@@ -73,7 +73,7 @@ struct PasswordRegistrationView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 7) {
             Text("这个账号还没有注册")
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .font(.system(size: 24, weight: .bold, design: .default))
                 .foregroundStyle(Theme.primaryText)
             Text("先用手机号验证码确认手机号，再创建账号并登录。")
                 .font(.subheadline)

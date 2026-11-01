@@ -134,7 +134,7 @@ struct FoodPhotoAnalysisView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("拍一张这餐的照片\n自动估算热量和营养")
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .font(.system(size: 24, weight: .bold, design: .default))
                 .foregroundStyle(Theme.primaryText)
             Text("照片只用于本次识别，不保存。识别后可以修改份量、勾选实际吃下的食物，再加入今日饮食。")
                 .font(.subheadline)

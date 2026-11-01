@@ -151,13 +151,13 @@ struct PlanHomeView: View {
             }
 
             NavigationLink {
-                PlanReviewView()
+                ProgressOverviewView()
             } label: {
                 planActionTileLabel(
-                    title: "数据复盘",
+                    title: "变化",
                     subtitle: "\(summary.sessions) 练 · \(summary.foodDays) 天饮食",
-                    icon: "chart.bar.doc.horizontal",
-                    tint: Theme.accent
+                    icon: "chart.xyaxis.line",
+                    tint: Theme.coral
                 )
             }
             .buttonStyle(CardPressStyle(scale: 0.98))
@@ -211,7 +211,7 @@ struct PlanHomeView: View {
 
             HStack(alignment: .lastTextBaseline, spacing: 6) {
                 Text("\(Int(consumed.kcal))")
-                    .font(.system(size: 34, weight: .heavy, design: .rounded).monospacedDigit())
+                    .font(.system(size: 34, weight: .heavy, design: .default).monospacedDigit())
                     .foregroundStyle(Theme.primaryText)
                     .contentTransition(.numericText())
                 Text("/ \(targets.kcal) kcal")
@@ -486,7 +486,7 @@ struct PlanHomeView: View {
         } label: {
             VStack(spacing: 4) {
                 Text("\(calendar.component(.day, from: date))")
-                    .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                    .font(.system(size: 11.5, weight: .semibold, design: .default))
                     .foregroundStyle(
                         isSelected
                             ? Color.white
@@ -978,7 +978,7 @@ struct PlanHomeView: View {
     private func trainingMetric(_ value: String, _ label: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value)
-                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .font(.system(size: 15, weight: .bold, design: .default))
                 .foregroundStyle(Theme.primaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)

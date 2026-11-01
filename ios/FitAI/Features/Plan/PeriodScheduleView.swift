@@ -97,7 +97,7 @@ struct PeriodScheduleView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 5) {
             Text("选择经期区间")
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .font(.system(size: 24, weight: .bold, design: .default))
                 .foregroundStyle(Theme.primaryText)
             Text("经期会显示在计划日历上；可设置为轻重量训练或直接休息。训练计划本身会保留。")
                 .font(.caption)
@@ -202,7 +202,7 @@ struct PeriodScheduleView: View {
             select(key)
         } label: {
             Text("\(calendar.component(.day, from: date))")
-                .font(.system(size: 12, weight: active ? .bold : .medium, design: .rounded))
+                .font(.system(size: 12, weight: active ? .bold : .medium, design: .default))
                 .foregroundStyle(active ? Theme.onMedia : (isToday ? Theme.accent : Theme.secondaryText))
                 .frame(maxWidth: .infinity)
                 .frame(height: 38)

@@ -118,7 +118,7 @@ struct DietRecipeSheet: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(selection.dish.name)
-                .font(.system(size: 25, weight: .bold, design: .rounded))
+                .font(.system(size: 25, weight: .bold, design: .default))
                 .foregroundStyle(Theme.primaryText)
             Text("\(selection.dayTitle) · \(selection.mealName)")
                 .font(.caption)

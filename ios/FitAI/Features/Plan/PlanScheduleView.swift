@@ -176,7 +176,7 @@ struct PlanScheduleView: View {
             toggle(date, block: block)
         } label: {
             Text("\(calendar.component(.day, from: date))")
-                .font(.system(size: 12, weight: active ? .bold : .medium, design: .rounded))
+                .font(.system(size: 12, weight: active ? .bold : .medium, design: .default))
                 .foregroundStyle(active ? Theme.onAccent : (isToday ? Theme.accent : Theme.secondaryText))
                 .frame(maxWidth: .infinity)
                 .frame(height: 34)

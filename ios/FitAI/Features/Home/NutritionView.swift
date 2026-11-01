@@ -112,8 +112,16 @@ struct NutritionView: View {
             .padding(.bottom, 20)
         }
         .background(AppBackground())
+        .overlay(alignment: .bottomTrailing) {
+            CaptureFAB {
+                showFoodPhoto = true
+            }
+            .padding(.trailing, 20)
+            .padding(.bottom, 92)
+        }
         .navigationTitle(isToday ? "今日饮食" : "饮食记录")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .alert("美团外卖", isPresented: $showAlert) {
             Button("知道了", role: .cancel) {}
         } message: {
@@ -241,36 +249,60 @@ struct NutritionView: View {
         let remainingProtein = max(0, targets.protein - Int(consumed.protein))
         let goalLabel = isToday ? "今日" : "当天"
 
-        return VStack(alignment: .leading, spacing: 8) {
-            Text(date.formatted(.dateTime.month().day().weekday(.wide)))
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.accent)
-            Text(isToday ? "今日热量目标" : "当天热量目标")
-                .font(.caption)
-                .foregroundStyle(Theme.secondaryText)
-
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("\(targets.kcal)")
-                    .font(.system(size: 44, weight: .bold, design: .rounded))
-                    .foregroundStyle(Theme.accent)
-                Text("kcal")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.secondaryText)
+        let ratio = min(1, consumed.kcal / Double(max(1, targets.kcal)))
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(isToday ? "TODAY / 今日" : "DAY / 当天")
+                    .font(AppType.overline)
+                    .tracking(1.4)
+                    .foregroundStyle(Theme.cobalt)
+                Spacer()
+                Text(date.formatted(.dateTime.month().day().weekday(.wide)))
+                    .font(AppType.micro)
+                    .foregroundStyle(Theme.tertiaryText)
             }
 
-            Text(remainingKcal > 0
-                 ? "还可摄入 \(remainingKcal) kcal · 蛋白质还差 \(remainingProtein)g"
-                 : "已达到\(goalLabel)热量目标 · 蛋白质还差 \(remainingProtein)g")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(remainingKcal > 0 ? Theme.accent : Theme.warning)
+            HStack(alignment: .center, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                        Text("\(targets.kcal)")
+                            .font(AppType.display)
+                            .foregroundStyle(Theme.ink)
+                        Text("kcal")
+                            .font(AppType.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                    }
+                    Text(remainingKcal > 0
+                         ? "还可摄入 \(remainingKcal) kcal"
+                         : "已达到\(goalLabel)热量目标")
+                        .font(AppType.caption.weight(.semibold))
+                        .foregroundStyle(remainingKcal > 0 ? Theme.cobalt : Theme.coral)
+                }
+                Spacer()
+                ProgressRing(progress: ratio, lineWidth: 8, color: Theme.lime)
+                    .frame(width: 66, height: 66)
+                    .overlay {
+                        VStack(spacing: 0) {
+                            Text("\(Int(ratio * 100))%")
+                                .font(AppType.caption.weight(.bold))
+                                .foregroundStyle(Theme.ink)
+                            Text("已摄入")
+                                .font(AppType.micro)
+                                .foregroundStyle(Theme.tertiaryText)
+                        }
+                    }
+            }
 
-            Text("按 \(store.profile.goalType.label) 目标与每周 \(store.profile.weeklyDays) 练估算。结果是一个区间，不需要精确到个位数。")
-                .font(.caption)
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 6) {
+                Text("蛋白还差 \(remainingProtein)g")
+                Text("·")
+                Text("按 \(store.profile.goalType.label) 目标估算")
+            }
+            .font(AppType.micro)
+            .foregroundStyle(Theme.tertiaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .card()
+        .editorialCard(accent: Theme.lime)
     }
 
     private func macroCard(snapshot: DayLogsSnapshot, targets: NutritionTargets) -> some View {

@@ -82,7 +82,7 @@ struct VideoReviewView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("发一段视频，\n让教练看动作。")
-                .font(.system(size: 29, weight: .heavy, design: .rounded))
+                .font(.system(size: 29, weight: .heavy, design: .default))
                 .foregroundStyle(Theme.primaryText)
                 .fixedSize(horizontal: false, vertical: true)
             Text("本地抽取开始、中段、结束 3 个关键帧，指出最值得改的一处。原视频不会上传。")

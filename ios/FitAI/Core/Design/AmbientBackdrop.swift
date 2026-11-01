@@ -11,27 +11,33 @@ struct AmbientBackdrop: View {
         let dark = colorScheme == .dark
 
         ZStack {
-            LinearGradient(
-                colors: atmosphere.backgroundColors(for: colorScheme),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            Theme.background
 
-            // One weather-tinted light source, then a neutral vignette.
-            // No rainbow mesh and no grain: both read as plastic at this size.
+            // Editorial light: cobalt on one corner, lime on the other, with
+            // the weather kept as a very quiet tint instead of a full sky.
             RadialGradient(
                 colors: [
-                    atmosphere.glowColor(for: colorScheme).opacity(0.55),
+                    Theme.cobalt.opacity(dark ? 0.22 : 0.11),
                     .clear
                 ],
                 center: .topLeading,
                 startRadius: 0,
-                endRadius: 520
+                endRadius: 620
             )
 
             RadialGradient(
                 colors: [
-                    Color.white.opacity(dark ? 0.018 : 0.05),
+                    Theme.lime.opacity(dark ? 0.10 : 0.13),
+                    .clear
+                ],
+                center: .bottomTrailing,
+                startRadius: 0,
+                endRadius: 560
+            )
+
+            RadialGradient(
+                colors: [
+                    atmosphere.glowColor(for: colorScheme).opacity(dark ? 0.12 : 0.07),
                     .clear
                 ],
                 center: .topTrailing,
@@ -39,16 +45,18 @@ struct AmbientBackdrop: View {
                 endRadius: 420
             )
 
-            // Soft key light, then a deep vignette for glass to sit on.
             LinearGradient(
                 colors: [
-                    Color.white.opacity(dark ? 0.018 : 0.06),
+                    Color.white.opacity(dark ? 0.012 : 0.035),
                     .clear,
-                    Color.black.opacity(dark ? 0.20 : 0.03)
+                    Theme.ink.opacity(dark ? 0.16 : 0.035)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
+
+            // A whisper of paper grain; static and tiled, no per-frame cost.
+            GrainTexture(opacity: dark ? 0.018 : 0.022)
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)

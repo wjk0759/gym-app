@@ -34,15 +34,15 @@ struct RootView: View {
                     MainTabView()
                         .transition(screenTransition)
                 } else {
-                    OnboardingView()
+                    CoachOnboardingView()
                         .transition(screenTransition)
                 }
             }
         }
         .environment(\.weatherAtmosphere, atmosphere)
         .environment(\.keyboardVisible, keyboardVisible)
-        .fontDesign(.rounded)
-        .tint(Theme.accent)
+        .fontDesign(.default)
+        .tint(Theme.cobalt)
         // 全屏水珠层会持续参与合成；雨天效果保留在背景天空里，避免影响滚动和输入。
         .overlay {
             KeyboardDismissInstaller()
@@ -162,7 +162,7 @@ struct RootView: View {
             .onAppear { splashPulse = true }
 
             Text("练途")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(.system(size: 28, weight: .bold, design: .default))
                 .tracking(-0.3)
                 .foregroundStyle(Theme.primaryText)
             ProgressView()

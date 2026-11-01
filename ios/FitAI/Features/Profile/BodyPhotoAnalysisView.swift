@@ -85,7 +85,7 @@ struct BodyPhotoAnalysisView: View {
             }
 
             Text("拍一张，\n看清训练重点。")
-                .font(.system(size: 30, weight: .heavy, design: .rounded))
+                .font(.system(size: 30, weight: .heavy, design: .default))
                 .foregroundStyle(Theme.primaryText)
                 .fixedSize(horizontal: false, vertical: true)
 

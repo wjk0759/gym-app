@@ -726,34 +726,34 @@ struct CoachChatView: View {
 
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 11) {
-                    HeroGlyph(
-                        symbol: "bubble.left.and.bubble.right.fill",
-                        size: 76,
-                        tint: Theme.accent
-                    )
-                    .offset(x: -4, y: 2)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("AI 私人健身教练")
-                            .font(.headline)
-                            .foregroundStyle(Theme.primaryText)
-                        Text("训练、饮食、恢复、计划都能问")
-                            .font(.caption2)
-                            .foregroundStyle(Theme.tertiaryText)
-                        Text(store.canUseRemoteAI ? "DeepSeek 远程 AI · 读取训练上下文" : "本地规则建议 · 未调用模型")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(store.canUseRemoteAI ? Theme.accent : Theme.tertiaryText)
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 12) {
+                    CoachMark(size: 58)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("我是你的教练")
+                            .font(AppType.title)
+                            .foregroundStyle(Theme.ink)
+                        Text("训练、饮食、恢复、计划都能直接说")
+                            .font(AppType.caption)
+                            .foregroundStyle(Theme.secondaryText)
                     }
                 }
 
-                Text("涉及疼痛、孕期、术后等情况，我会建议你就医，而不是继续加练。")
-                    .font(.subheadline)
+                Text("你不需要想好怎么问。把今天的情况、限制或照片丢给我，我来判断下一步。")
+                    .font(AppType.body)
                     .foregroundStyle(Theme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
+
+                HStack(spacing: 8) {
+                    RecommendationBadge(text: store.canUseRemoteAI ? "远程 AI 已连接" : "本地建议")
+                    Spacer()
+                    Text("疼痛 / 孕期 / 术后会先拦")
+                        .font(AppType.micro)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .card()
+            .editorialCard(accent: Theme.lime)
             .staggerIn(0)
 
             if !store.canUseRemoteAI {

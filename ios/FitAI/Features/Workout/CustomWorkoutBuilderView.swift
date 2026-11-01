@@ -235,7 +235,7 @@ struct CustomWorkoutBuilderView: View {
                     .accessibilityLabel("拖动排序")
 
                 Text(String(format: "%02d", index + 1))
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .font(.system(size: 10, weight: .bold, design: .default))
                     .foregroundStyle(Theme.accent)
                     .frame(width: 30, height: 30)
                     .background(Theme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))

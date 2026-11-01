@@ -1,64 +1,48 @@
 import SwiftUI
 
-/// A restrained frosted surface.
+/// A flat paper surface with an ink hairline.
 ///
-/// Content cards use `thinMaterial`; floating controls use `regularMaterial`.
-/// A single translucent tint and a hairline replace the old gloss gradients,
-/// which is what made the first pass read as plastic.
+/// The old frosted material read as “app chrome”; this version behaves like a
+/// printed card in a training journal. `material` is kept for source
+/// compatibility but no longer installs a blur layer.
 struct GlassSurface: View {
     var cornerRadius: CGFloat = AppLayout.cardCornerRadius
     var material: Bool = false
     var tint: Color = Theme.cardSurface
 
-    @Environment(\.colorScheme) private var colorScheme
-
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(material ? Material.regularMaterial : Material.thinMaterial)
-
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(
-                    tint.opacity(colorScheme == .dark ? 0.30 : 0.20)
-                )
+                .fill(tint)
 
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(colorScheme == .dark ? 0.055 : 0.12),
+                            Color.white.opacity(0.16),
                             .clear
                         ],
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 )
+                .blendMode(.softLight)
         }
     }
 }
 
-/// Frosted control surface: translucent material, a flat tint and one hairline.
-/// No gradients or inner highlights, so segmented controls and fields stay matte.
+/// Quiet control surface: paper fill and one ink hairline.
 struct SoftSurface: View {
     var cornerRadius: CGFloat = AppLayout.controlCornerRadius
-    var tint: Color = Theme.surfaceStrong
+    var tint: Color = Theme.cardSurface
     var stroke: Color = Theme.stroke
-
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            .fill(.ultraThinMaterial)
+            .fill(tint)
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(tint)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(
-                        stroke.opacity(colorScheme == .dark ? 0.90 : 0.80),
-                        lineWidth: 0.6
-                    )
+                    .strokeBorder(stroke, lineWidth: 1)
             )
     }
 }
@@ -67,8 +51,6 @@ struct GlassCardModifier: ViewModifier {
     var padding: CGFloat = AppLayout.cardPadding
     var cornerRadius: CGFloat = AppLayout.cardCornerRadius
     var material: Bool = false
-
-    @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
         content
@@ -81,16 +63,38 @@ struct GlassCardModifier: ViewModifier {
             }
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(
-                        colorScheme == .dark
-                            ? Color.white.opacity(0.10)
-                            : Color.black.opacity(0.06),
-                        lineWidth: 0.5
-                    )
+                    .strokeBorder(Theme.stroke, lineWidth: 1)
             }
-            // No per-card shadow: scrolling and transitions would composite
-            // an offscreen shadow layer every frame. The tint, gradient
-            // highlight and hairline keep the glass depth without that cost.
+    }
+}
+
+/// Hero-level paper card: a heavier ink rule and a hard offset shadow.
+/// Used sparingly for the one card that should stop the scroll.
+struct EditorialCardModifier: ViewModifier {
+    var padding: CGFloat = AppLayout.cardPadding
+    var cornerRadius: CGFloat = AppLayout.heroCornerRadius
+    var accent: Color = Theme.cobalt
+
+    func body(content: Content) -> some View {
+        content
+            .padding(padding)
+            .background {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(Theme.paper)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(Theme.ink, lineWidth: 1.5)
+            }
+            .overlay(alignment: .topLeading) {
+                Rectangle()
+                    .fill(accent)
+                    .frame(width: 54, height: 5)
+                    .clipShape(Capsule())
+                    .padding(.leading, padding)
+                    .padding(.top, 10)
+            }
+            .shadow(color: Theme.ink.opacity(0.12), radius: 0, x: 5, y: 5)
     }
 }
 
@@ -110,23 +114,27 @@ extension View {
         )
     }
 
+    func editorialCard(
+        padding: CGFloat = AppLayout.cardPadding,
+        cornerRadius: CGFloat = AppLayout.heroCornerRadius,
+        accent: Color = Theme.cobalt
+    ) -> some View {
+        modifier(
+            EditorialCardModifier(
+                padding: padding,
+                cornerRadius: cornerRadius,
+                accent: accent
+            )
+        )
+    }
+
     func glassCapsule(material: Bool = false) -> some View {
         background {
             GlassSurface(cornerRadius: 999, material: material)
         }
         .overlay {
             Capsule(style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.58),
-                            Theme.stroke.opacity(0.42)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 0.8
-                )
+                .stroke(Theme.stroke, lineWidth: 1)
         }
     }
 

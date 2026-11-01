@@ -292,7 +292,7 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
                     Text("练途")
-                        .font(.system(size: 14, weight: .black, design: .rounded))
+                        .font(.system(size: 14, weight: .black, design: .default))
                     Text("AI FITNESS CLUB")
                         .font(.system(size: 8, weight: .bold))
                         .tracking(2.0)
@@ -303,7 +303,7 @@ struct HomeView: View {
                 HStack(alignment: .center, spacing: 4) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("不画饼，\n只把今天练明白。")
-                            .font(.system(size: 26, weight: .heavy, design: .rounded))
+                            .font(.system(size: 26, weight: .heavy, design: .default))
                             .tracking(-0.4)
                             .foregroundStyle(Theme.primaryText)
                             .fixedSize(horizontal: false, vertical: true)

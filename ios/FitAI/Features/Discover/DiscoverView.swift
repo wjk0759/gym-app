@@ -196,7 +196,7 @@ struct DiscoverView: View {
 
                 VStack(alignment: .leading, spacing: 9) {
                     Text("不认识器械？")
-                        .font(.system(size: 25, weight: .heavy, design: .rounded))
+                        .font(.system(size: 25, weight: .heavy, design: .default))
                         .tracking(-0.3)
                         .foregroundStyle(Theme.primaryText)
                     Text("拍给我。识别后直接告诉你练什么、怎么练。")

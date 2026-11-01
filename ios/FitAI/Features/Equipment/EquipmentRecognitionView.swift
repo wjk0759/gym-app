@@ -528,7 +528,7 @@ private struct CustomExerciseAddSheet: View {
             .foregroundStyle(Theme.accent)
 
             Text("补全后加入你的个人动作库")
-                .font(.system(size: 25, weight: .heavy, design: .rounded))
+                .font(.system(size: 25, weight: .heavy, design: .default))
                 .foregroundStyle(Theme.primaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
