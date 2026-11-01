@@ -7,6 +7,7 @@ struct ProfileView: View {
     @State private var showPaywall = false
     @State private var showBodyAnalysis = false
     @State private var showBodyCheckIn = false
+    @State private var showFocusAreas = false
 
     var body: some View {
         NavigationStack {
@@ -21,6 +22,7 @@ struct ProfileView: View {
                     goalCard
 
                     sectionLabel("训练工具")
+                    focusAreasCard
                     bodyAnalysisCard
                     equipmentLibraryCard
                 }
@@ -39,6 +41,9 @@ struct ProfileView: View {
             .sheet(isPresented: $showBodyCheckIn) {
                 BodyCheckInSheet(manual: true)
                     .presentationDetents([.medium, .large])
+            }
+            .sheet(isPresented: $showFocusAreas) {
+                FocusAreasSheet()
             }
         }
     }
@@ -258,6 +263,48 @@ struct ProfileView: View {
     }
 
     // MARK: - 训练工具
+
+    private var focusAreasCard: some View {
+        let areas = store.planFocusAreas
+        return Button {
+            Haptics.tap()
+            showFocusAreas = true
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .fill(Theme.lime.opacity(0.55))
+                        .frame(width: 42, height: 42)
+                    Image(systemName: "scope")
+                        .foregroundStyle(Theme.ink)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("训练重点")
+                        .font(AppType.headline)
+                        .foregroundStyle(Theme.ink)
+                    Text(
+                        areas.isEmpty
+                            ? "全身均衡 · 点这里选重点部位"
+                            : areas.map(\.label).sorted().joined(separator: "、")
+                    )
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.secondaryText)
+                    .lineLimit(1)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            .padding(14)
+            .background(Theme.paper, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(Theme.stroke, lineWidth: 1)
+            }
+        }
+        .buttonStyle(CardPressStyle(scale: 0.985))
+    }
 
     private var bodyAnalysisCard: some View {
         VStack(alignment: .leading, spacing: 10) {
