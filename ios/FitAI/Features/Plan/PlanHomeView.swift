@@ -464,8 +464,14 @@ struct PlanHomeView: View {
     }
 
     private func monthCoverNote(_ stats: MonthStats) -> String {
+        if isFutureVisibleMonth {
+            return "\(monthLabel)还没开始。先把计划排好，到时候按页练。"
+        }
         if stats.sessions == 0 {
-            return "这个月还没有训练记录。今天写下第一笔，就有得翻了。"
+            if isCurrentVisibleMonth {
+                return "这个月还没有训练记录。今天写下第一笔，就有得翻了。"
+            }
+            return "这个月没有训练记录。空页也是记录的一部分。"
         }
         if isCurrentVisibleMonth {
             let remaining = max(
@@ -482,6 +488,10 @@ struct PlanHomeView: View {
 
     private var isCurrentVisibleMonth: Bool {
         calendar.isDate(visibleMonth, equalTo: Date(), toGranularity: .month)
+    }
+
+    private var isFutureVisibleMonth: Bool {
+        startOfMonth(visibleMonth) > startOfMonth(Date())
     }
 
     private var monthLabel: String {
@@ -667,9 +677,13 @@ struct PlanHomeView: View {
                     .frame(maxWidth: .infinity)
 
                 HStack(spacing: 2.5) {
-                    if isDone || hasPlan || hasDraft {
+                    if isDone {
                         Circle()
-                            .fill(isDone ? Theme.lime : Theme.cobalt)
+                            .fill(Theme.lime)
+                            .frame(width: 4, height: 4)
+                    } else if hasPlan || hasDraft {
+                        Circle()
+                            .stroke(isSelected ? Theme.paper : Theme.cobalt, lineWidth: 1)
                             .frame(width: 4, height: 4)
                     }
                     if hasFood {
