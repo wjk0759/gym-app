@@ -74,9 +74,9 @@ struct VideoReviewView: View {
                     Button("关闭") { dismiss() }
                 }
             }
-            .onChange(of: videoItem?.itemIdentifier) { _, _ in
-                guard let videoItem else { return }
-                Task { await prepare(videoItem) }
+            .onChange(of: videoItem) { _, item in
+                guard let item else { return }
+                Task { await prepare(item) }
             }
         }
     }
@@ -239,6 +239,7 @@ struct VideoReviewView: View {
             try? FileManager.default.removeItem(at: tempURL)
         }
         isProcessing = false
+        videoItem = nil
     }
 
     private static func extractFrames(from url: URL, seconds: Double) -> (images: [UIImage], times: [Int]) {

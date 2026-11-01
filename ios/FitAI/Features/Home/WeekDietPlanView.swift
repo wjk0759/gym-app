@@ -12,8 +12,11 @@ struct WeekDietPlanView: View {
     @State private var errorMessage = ""
     @State private var selectedRecipe: DietRecipeSelection?
 
+    private let requestedStrategy: String?
+
     init(initialStrategy: String? = nil) {
         _strategy = State(initialValue: initialStrategy ?? "carb_cycle")
+        requestedStrategy = initialStrategy
     }
 
     private let strategies: [(id: String, label: String)] = [
@@ -30,6 +33,14 @@ struct WeekDietPlanView: View {
                     header
                     foodGuide
                     strategyCard
+                    if let week,
+                       let savedStrategy = week.strategy?.id,
+                       savedStrategy != strategy {
+                        Text("当前显示的是「\(week.strategy?.label ?? savedStrategy)」计划；点下方「按当前策略重新生成」切换为「\(strategyLabel(strategy))」。")
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundStyle(Theme.coral)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     if isLoading {
                         ProgressView("AI 教练正在排本周饮食…")
                             .tint(Theme.cobalt)
@@ -155,6 +166,10 @@ struct WeekDietPlanView: View {
         }
     }
 
+    private func strategyLabel(_ id: String) -> String {
+        strategies.first { $0.id == id }?.label ?? id
+    }
+
     private var errorCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(errorMessage)
@@ -274,7 +289,9 @@ struct WeekDietPlanView: View {
             let saved = try await APIClient.shared.fetchSavedDietWeek(weekStart: nil)
             if !saved.days.isEmpty {
                 week = saved
-                if let id = saved.strategy?.id { strategy = id }
+                if requestedStrategy == nil, let id = saved.strategy?.id {
+                    strategy = id
+                }
                 return
             }
         } catch {
