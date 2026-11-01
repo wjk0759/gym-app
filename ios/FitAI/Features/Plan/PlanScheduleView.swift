@@ -7,7 +7,6 @@ struct PlanScheduleView: View {
     private var weeks: Int {
         max(4, store.plan?.weeks ?? 4)
     }
-    private let weekLabels = ["一", "二", "三", "四", "五", "六", "日"]
 
     @State private var startDate = FitnessDate.startOfDay(Date())
     @State private var daysPerWeek = 3
@@ -56,29 +55,22 @@ struct PlanScheduleView: View {
         counts.reduce(0) { $0 + max(0, daysPerWeek - $1) }
     }
 
+    /// The board starts from today, so columns follow today's weekday rather
+    /// than an assumed Monday-first week. Every block advances by seven days,
+    /// which keeps the same weekday in each column.
+    private var weekdayHeaders: [String] {
+        guard let first = blocks.first else { return [] }
+        return first.dates.map(weekdayShort)
+    }
+
     var body: some View {
         NavigationStack {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    header
                     overview
                     board
-                    if !message.isEmpty {
-                        Text(message)
-                            .font(.caption)
-                            .foregroundStyle(Theme.warning)
-                    }
-                    Text(selectedCount == 0
-                         ? "至少选择一个训练日"
-                         : "已选 \(selectedCount) 天 · 每周最多 \(daysPerWeek) 天")
-                        .font(.caption)
-                        .foregroundStyle(selectedCount == 0 ? Theme.warning : Theme.accent)
-
-                    if skippedCount > 0 {
-                        Text("有 \(skippedCount) 个原训练日会被标记为跳过，不会算作未完成。")
-                            .font(.caption)
-                            .foregroundStyle(Theme.secondaryText)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    feedback
 
                     Button("保存训练日期") {
                         save()
@@ -87,8 +79,8 @@ struct PlanScheduleView: View {
                     .disabled(!canSave)
                     .opacity(canSave ? 1 : 0.45)
 
-                    Text("每周可以少于基准天数；少选会跳过对应训练。临时没空时，也可以在今日页点「今天没空」只顺延单次训练。")
-                        .font(.caption2)
+                    Text("每周可以少于基准天数；少选会跳过对应训练。临时没空时，也可以回到训练手账，只顺延单次训练。")
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -108,90 +100,238 @@ struct PlanScheduleView: View {
         }
     }
 
+    // MARK: - Header
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text("SCHEDULE / 训练日期")
+                .font(AppType.overline)
+                .tracking(1.5)
+                .foregroundStyle(Theme.cobalt)
+
+            Text("排好这 \(weeks) 周")
+                .font(AppType.display)
+                .tracking(-0.9)
+                .foregroundStyle(Theme.ink)
+
+            Text("选训练日。少选会跳过对应训练，不算未完成。")
+                .font(AppType.body)
+                .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     private var overview: some View {
-        HStack(alignment: .center) {
+        HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("未来 \(weeks) 周")
-                    .font(.headline)
-                    .foregroundStyle(Theme.primaryText)
-                Text("每周最多 \(daysPerWeek) 练 · 可少选 · \(store.profile.split.title)")
-                    .font(.caption)
+                    .font(AppType.headline)
+                    .foregroundStyle(Theme.ink)
+                Text("每周最多 \(daysPerWeek) 练 · \(store.profile.split.title)")
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            Spacer()
-            Text("已选 \(selectedCount)")
-                .font(.headline.weight(.bold))
-                .foregroundStyle(selectedCount > 0 ? Theme.accent : Theme.warning)
-                .padding(.horizontal, 11)
-                .padding(.vertical, 7)
-                .background(Theme.surfaceStrong, in: Capsule())
+
+            Spacer(minLength: 4)
+
+            VStack(alignment: .trailing, spacing: 0) {
+                Text("\(selectedCount)")
+                    .font(.system(size: 30, weight: .black, design: .monospaced))
+                    .foregroundStyle(Theme.ink)
+                    .contentTransition(.numericText())
+                    .lineLimit(1)
+                Text("已选天数")
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
         }
         .card()
     }
 
+    // MARK: - Board
+
     private var board: some View {
-        VStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("训练日")
+                        .font(AppType.headline)
+                        .foregroundStyle(Theme.ink)
+                    Text("按周选择，点一下切换")
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+
+                Spacer(minLength: 4)
+
+                HStack(spacing: 5) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .stroke(Theme.cobalt, lineWidth: 1.2)
+                        .frame(width: 7, height: 7)
+                    Text("今天")
+                }
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(Theme.tertiaryText)
+            }
+
             HStack(spacing: 4) {
-                Text("周")
-                    .frame(width: 42, alignment: .leading)
-                ForEach(weekLabels, id: \.self) { label in
+                ForEach(weekdayHeaders, id: \.self) { label in
                     Text(label)
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(Theme.tertiaryText)
                         .frame(maxWidth: .infinity)
                 }
             }
-            .font(.system(size: 9, weight: .semibold))
-            .foregroundStyle(Theme.tertiaryText)
-            .padding(.horizontal, 4)
+            .padding(.top, 2)
 
-            ForEach(blocks) { block in
-                HStack(spacing: 4) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("第\(block.id + 1)周")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(Theme.primaryText)
-                        Text("\(FitnessDate.short(block.start))–\(FitnessDate.short(block.end))")
-                            .font(.system(size: 8))
-                            .foregroundStyle(Theme.tertiaryText)
-                        Text("\(counts[block.id])/\(daysPerWeek)")
-                            .font(.system(size: 8, weight: .semibold))
-                            .foregroundStyle(counts[block.id] == 0 ? Theme.warning : Theme.accent)
-                    }
-                    .frame(width: 52, alignment: .leading)
+            VStack(spacing: 0) {
+                ForEach(blocks) { block in
+                    weekRow(block)
 
-                    ForEach(block.dates, id: \.self) { date in
-                        dayButton(date, block: block.id)
+                    if block.id != blocks.last?.id {
+                        InkDivider()
                     }
                 }
-                .padding(.vertical, 4)
             }
         }
-        .card(padding: 12)
+        .card()
     }
 
-    private func dayButton(_ date: Date, block: Int) -> some View {
+    private func weekRow(_ block: ScheduleBlock) -> some View {
+        let count = counts[block.id]
+        let isFull = count >= daysPerWeek
+
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("第 \(block.id + 1) 周")
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+
+                Text("\(FitnessDate.short(block.start))–\(FitnessDate.short(block.end))")
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(Theme.tertiaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+
+                Spacer(minLength: 4)
+
+                Text("\(count)/\(daysPerWeek)")
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .foregroundStyle(count == 0 ? Theme.warning : Theme.cobalt)
+            }
+
+            HStack(spacing: 4) {
+                ForEach(block.dates, id: \.self) { date in
+                    dayButton(date, block: block.id, weekFull: isFull)
+                }
+            }
+        }
+        .padding(.vertical, 7)
+    }
+
+    private func dayButton(
+        _ date: Date,
+        block: Int,
+        weekFull: Bool
+    ) -> some View {
         let key = FitnessDate.key(date)
         let active = selected.contains(key)
         let isToday = calendar.isDateInToday(date)
+
         return Button {
-            toggle(date, block: block)
+            Haptics.select()
+            withAnimation(Motion.quick) {
+                toggle(date, block: block)
+            }
         } label: {
-            Text("\(calendar.component(.day, from: date))")
-                .font(.system(size: 12, weight: active ? .bold : .medium, design: .default))
-                .foregroundStyle(active ? Theme.onAccent : (isToday ? Theme.accent : Theme.secondaryText))
-                .frame(maxWidth: .infinity)
-                .frame(height: 34)
-                .background(
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .fill(active ? Theme.accent : (isToday ? Theme.accent.opacity(0.10) : Theme.surfaceStrong))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .stroke(isToday && !active ? Theme.accent.opacity(0.5) : Color.clear, lineWidth: 1)
-                )
+            VStack(spacing: 1) {
+                Text("\(calendar.component(.day, from: date))")
+                    .font(
+                        .system(
+                            size: 12,
+                            weight: active ? .bold : .semibold,
+                            design: .monospaced
+                        )
+                    )
+                    .foregroundStyle(active ? Theme.paper : Theme.ink)
+
+                if active {
+                    Circle()
+                        .fill(Theme.lime)
+                        .frame(width: 3, height: 3)
+                } else if isToday {
+                    Circle()
+                        .stroke(Theme.cobalt, lineWidth: 1)
+                        .frame(width: 3, height: 3)
+                } else {
+                    Color.clear.frame(width: 3, height: 3)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 38)
+            .background {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(
+                        active
+                            ? Theme.ink
+                            : (isToday ? Theme.cobalt.opacity(0.06) : Theme.paper)
+                    )
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .strokeBorder(
+                        isToday && !active
+                            ? Theme.cobalt
+                            : (active ? Theme.ink : Theme.stroke),
+                        lineWidth: isToday && !active ? 1.4 : 1
+                    )
+            }
+            .opacity(!active && weekFull ? 0.45 : 1)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(key)
+        .buttonStyle(SubtlePressStyle(scale: 0.94))
+        .accessibilityLabel(
+            "\(FitnessDate.short(date))，\(active ? "已选训练日" : "未选")"
+        )
     }
+
+    // MARK: - Feedback
+
+    private var feedback: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(selectedCount == 0 ? Theme.warning : Theme.lime)
+                    .frame(width: 5, height: 5)
+                Text(
+                    selectedCount == 0
+                        ? "至少选择一个训练日"
+                        : "已选 \(selectedCount) 天 · 每周最多 \(daysPerWeek) 天"
+                )
+                .font(AppType.caption.weight(.semibold))
+                .foregroundStyle(
+                    selectedCount == 0 ? Theme.warning : Theme.secondaryText
+                )
+            }
+
+            if skippedCount > 0 {
+                Text("有 \(skippedCount) 个原训练日会被标记为跳过，不会算作未完成。")
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(Theme.tertiaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if !message.isEmpty {
+                Text(message)
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(Theme.coral)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    // MARK: - Data
 
     private func load() {
         guard !didLoad else { return }
@@ -275,5 +415,11 @@ struct PlanScheduleView: View {
             6: [0, 1, 2, 3, 4, 5],
             7: [0, 1, 2, 3, 4, 5, 6]
         ]
+    }
+
+    private func weekdayShort(_ date: Date) -> String {
+        let index = (calendar.component(.weekday, from: date) + 5) % 7
+        let labels = ["一", "二", "三", "四", "五", "六", "日"]
+        return labels[max(0, min(labels.count - 1, index))]
     }
 }
