@@ -54,14 +54,19 @@ struct PeriodDay: Equatable {
 struct BodyMetric: Codable, Identifiable, Hashable {
     var id: UUID = UUID()
     var date: Date
-    var weightKG: Double
-    var bodyFatPCT: Double
-    var waistCM: Double
+    var weightKG: Double?
+    var bodyFatPCT: Double?
+    var waistCM: Double?
     var armCM: Double? = nil
     var thighCM: Double? = nil
     var syncedAt: Date? = nil
 
     var dateKey: String { FitnessDate.key(date) }
+
+    var hasAnyMeasure: Bool {
+        weightKG != nil || bodyFatPCT != nil || waistCM != nil
+            || armCM != nil || thighCM != nil
+    }
 }
 
 enum BodyCheckInFrequency: String, Codable, CaseIterable, Identifiable {

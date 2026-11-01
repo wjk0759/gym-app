@@ -236,12 +236,7 @@ public class UserRepository {
             clauses.add("u.status = :status");
         }
         if (query != null && !query.isBlank()) {
-            clauses.add("""
-                    (LOWER(COALESCE(p.nickname, '')) LIKE :q
-                     OR LOWER(COALESCE(u.username, '')) LIKE :q
-                     OR COALESCE(u.phone, '') LIKE :q
-                     OR u.id = :rawQuery)
-                    """);
+            clauses.add(SqlSupport.userSearch("u", "p"));
         }
         return clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
     }
@@ -249,8 +244,7 @@ public class UserRepository {
     private Map<String, Object> params(String query, String status) {
         Map<String, Object> params = new HashMap<>();
         if (query != null && !query.isBlank()) {
-            params.put("q", SqlSupport.like(query));
-            params.put("rawQuery", query.trim());
+            SqlSupport.putSearchParams(params, query);
         }
         if (status != null && !status.isBlank()) {
             params.put("status", status);

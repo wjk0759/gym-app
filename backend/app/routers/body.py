@@ -1,13 +1,17 @@
 from datetime import date, datetime, time, timedelta, timezone
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
-from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select
 
 from ..deps import CurrentUser, DBSession
-from ..models import BodyMetric, Profile
+from ..models import BodyMetric
 from ..schemas import BodyMetricIn
 from ..services.body_analysis import analyze
+from ..services.body_metrics import (
+    body_metric_dict,
+    delete_metric,
+    upsert_metric,
+)
 
 router = APIRouter(prefix="/body", tags=["body"])
 
@@ -34,75 +38,10 @@ async def analyze_body(
     return await analyze(data, file.filename or "body.jpg")
 
 
-def _body_metric_dict(item: BodyMetric) -> dict:
-    return {
-        "client_id": item.client_id,
-        "measured_at": item.measured_at.isoformat(),
-        "weight_kg": item.weight_kg,
-        "body_fat_pct": item.body_fat_pct,
-        "waist_cm": item.waist_cm,
-        "arm_cm": item.arm_cm,
-        "thigh_cm": item.thigh_cm,
-    }
-
-
-def _as_utc(value: datetime) -> datetime:
-    return (
-        value.replace(tzinfo=timezone.utc)
-        if value.tzinfo is None
-        else value.astimezone(timezone.utc)
-    )
-
-
-def _apply_body_metric(db, user_id: str, item: BodyMetric, payload: BodyMetricIn) -> None:
-    item.measured_at = payload.measured_at
-    item.weight_kg = payload.weight_kg
-    item.body_fat_pct = payload.body_fat_pct
-    item.waist_cm = payload.waist_cm
-    item.arm_cm = payload.arm_cm
-    item.thigh_cm = payload.thigh_cm
-    latest_at = db.scalar(
-        select(func.max(BodyMetric.measured_at)).where(
-            BodyMetric.user_id == user_id,
-            BodyMetric.client_id != payload.client_id,
-        )
-    )
-    # Older offline edits may sync after a newer measurement. Keep the
-    # aggregate profile fields at the newest metric instead of regressing them.
-    if latest_at is None or _as_utc(payload.measured_at) >= _as_utc(latest_at):
-        profile = db.get(Profile, user_id)
-        if profile is not None:
-            profile.weight_kg = payload.weight_kg
-            profile.body_fat_pct = payload.body_fat_pct
-            profile.waist_cm = payload.waist_cm
-
-
 @router.post("/metrics", status_code=201)
 def upsert_body_metric(payload: BodyMetricIn, user_id: CurrentUser, db: DBSession):
-    item = db.execute(
-        select(BodyMetric).where(
-            BodyMetric.user_id == user_id,
-            BodyMetric.client_id == payload.client_id,
-        )
-    ).scalar_one_or_none()
-    if item is None:
-        item = BodyMetric(user_id=user_id, client_id=payload.client_id)
-        db.add(item)
-    _apply_body_metric(db, user_id, item, payload)
-    try:
-        db.commit()
-    except IntegrityError:
-        # A concurrent retry won the unique(user_id, client_id) race.
-        db.rollback()
-        item = db.execute(
-            select(BodyMetric).where(
-                BodyMetric.user_id == user_id,
-                BodyMetric.client_id == payload.client_id,
-            )
-        ).scalar_one()
-        _apply_body_metric(db, user_id, item, payload)
-        db.commit()
-    return _body_metric_dict(item)
+    item = upsert_metric(db, user_id, payload)
+    return body_metric_dict(item)
 
 
 @router.get("/metrics")
@@ -131,32 +70,11 @@ def list_body_metrics(
         .scalars()
         .all()
     )
-    return {"items": [_body_metric_dict(item) for item in rows]}
+    return {"items": [body_metric_dict(item) for item in rows]}
 
 
 @router.delete("/metrics/{client_id}")
 def delete_body_metric(client_id: str, user_id: CurrentUser, db: DBSession):
-    item = db.execute(
-        select(BodyMetric).where(
-            BodyMetric.user_id == user_id,
-            BodyMetric.client_id == client_id,
-        )
-    ).scalar_one_or_none()
-    if item is None:
+    if not delete_metric(db, user_id, client_id):
         raise HTTPException(status_code=404, detail="身体数据不存在")
-    db.delete(item)
-    db.flush()
-    latest = db.execute(
-        select(BodyMetric)
-        .where(BodyMetric.user_id == user_id)
-        .order_by(BodyMetric.measured_at.desc(), BodyMetric.created_at.desc())
-        .limit(1)
-    ).scalar_one_or_none()
-    if latest is not None:
-        profile = db.get(Profile, user_id)
-        if profile is not None:
-            profile.weight_kg = latest.weight_kg
-            profile.body_fat_pct = latest.body_fat_pct
-            profile.waist_cm = latest.waist_cm
-    db.commit()
     return {"status": "deleted", "client_id": client_id}

@@ -104,12 +104,11 @@ public class ChatRepository {
                     """);
         }
         if (query != null && !query.isBlank()) {
-            clauses.add("""
-                    (LOWER(c.title) LIKE :q
-                     OR COALESCE(u.phone, '') LIKE :q
-                     OR LOWER(COALESCE(p.nickname, '')) LIKE :q
-                     OR c.user_id = :rawQuery)
-                    """);
+            clauses.add("("
+                    + "c.title LIKE :prefix"
+                    + " OR MATCH(c.title) AGAINST (:matchQuery)"
+                    + " OR " + SqlSupport.userSearch("u", "p")
+                    + ")");
         }
         return clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
     }
@@ -117,8 +116,7 @@ public class ChatRepository {
     private Map<String, Object> params(String query) {
         Map<String, Object> params = new HashMap<>();
         if (query != null && !query.isBlank()) {
-            params.put("q", SqlSupport.like(query));
-            params.put("rawQuery", query.trim());
+            SqlSupport.putSearchParams(params, query);
         }
         return params;
     }

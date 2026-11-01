@@ -70,8 +70,11 @@ public class EquipmentLibraryRepository {
     private String where(String query, String source) {
         List<String> clauses = new ArrayList<>();
         if (query != null && !query.isBlank()) {
-            clauses.add("(LOWER(e.name) LIKE :q OR LOWER(COALESCE(e.notes, '')) LIKE :q "
-                    + "OR LOWER(COALESCE(u.phone, '')) LIKE :q OR LOWER(COALESCE(u.username, '')) LIKE :q)");
+            clauses.add("(e.name LIKE :prefix"
+                    + " OR MATCH(e.name, e.notes) AGAINST (:matchQuery)"
+                    + " OR e.notes LIKE :prefix"
+                    + " OR u.phone LIKE :prefix"
+                    + " OR u.username LIKE :prefix)");
         }
         if (source != null && !source.isBlank()) {
             clauses.add("e.source = :source");
@@ -82,7 +85,7 @@ public class EquipmentLibraryRepository {
     private Map<String, Object> params(String query, String source) {
         Map<String, Object> params = new HashMap<>();
         if (query != null && !query.isBlank()) {
-            params.put("q", SqlSupport.like(query));
+            SqlSupport.putSearchParams(params, query);
         }
         if (source != null && !source.isBlank()) {
             params.put("source", source);

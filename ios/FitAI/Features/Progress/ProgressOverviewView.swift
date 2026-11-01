@@ -51,18 +51,24 @@ struct ProgressOverviewView: View {
     }
 
     private var metrics: [BodyMetric] {
-        store.bodyMetrics.sorted { $0.date < $1.date }
+        store.bodyMetrics
+            .filter { optionalMetricValue($0) != nil }
+            .sorted { $0.date < $1.date }
     }
 
     private var latest: BodyMetric? { metrics.last }
     private var first: BodyMetric? { metrics.first }
 
-    private func metricValue(_ item: BodyMetric) -> Double {
+    private func optionalMetricValue(_ item: BodyMetric) -> Double? {
         switch metric {
         case .weight: return item.weightKG
         case .bodyFat: return item.bodyFatPCT
         case .waist: return item.waistCM
         }
+    }
+
+    private func metricValue(_ item: BodyMetric) -> Double {
+        optionalMetricValue(item) ?? 0
     }
 
     private var delta: Double {

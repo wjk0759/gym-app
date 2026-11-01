@@ -44,14 +44,8 @@ public class AgentRepository {
             params.put("intent", intent);
         }
         if (query != null && !query.isBlank()) {
-            clauses.add("""
-                    (LOWER(COALESCE(p.nickname, '')) LIKE :q
-                     OR COALESCE(u.phone, '') LIKE :q
-                     OR COALESCE(u.username, '') LIKE :q
-                     OR r.user_id = :rawQuery)
-                    """);
-            params.put("q", SqlSupport.like(query));
-            params.put("rawQuery", query.trim());
+            clauses.add(SqlSupport.userSearch("u", "p"));
+            SqlSupport.putSearchParams(params, query);
         }
         String where = clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
         long total = jdbc.sql("""
@@ -121,15 +115,9 @@ public class AgentRepository {
             params.put("actionType", actionType);
         }
         if (query != null && !query.isBlank()) {
-            clauses.add("""
-                    (LOWER(COALESCE(p.nickname, '')) LIKE :q
-                     OR COALESCE(u.phone, '') LIKE :q
-                     OR COALESCE(u.username, '') LIKE :q
-                     OR a.user_id = :rawQuery
-                     OR a.action_id = :rawQuery)
-                    """);
-            params.put("q", SqlSupport.like(query));
-            params.put("rawQuery", query.trim());
+            clauses.add("(" + SqlSupport.userSearch("u", "p")
+                    + " OR a.action_id = :rawQuery)");
+            SqlSupport.putSearchParams(params, query);
         }
         String where = clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
         long total = jdbc.sql("""

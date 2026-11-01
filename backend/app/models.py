@@ -6,12 +6,14 @@ from datetime import date, datetime, timezone
 from sqlalchemy import (
     JSON,
     Boolean,
+    CheckConstraint,
     Date,
     DateTime,
     Float,
     ForeignKey,
     Index,
     Integer,
+    Numeric,
     String,
     Text,
     UniqueConstraint,
@@ -123,12 +125,12 @@ class Profile(Base):
     nickname: Mapped[str] = mapped_column(String(50), default="")
     sex: Mapped[str] = mapped_column(String(10), default="male")
     birth_date: Mapped[date | None] = mapped_column(Date)
-    height_cm: Mapped[float | None] = mapped_column(Float)
-    weight_kg: Mapped[float | None] = mapped_column(Float)
-    body_fat_pct: Mapped[float | None] = mapped_column(Float)
-    chest_cm: Mapped[float | None] = mapped_column(Float)
-    waist_cm: Mapped[float | None] = mapped_column(Float)
-    hip_cm: Mapped[float | None] = mapped_column(Float)
+    height_cm: Mapped[float | None] = mapped_column(Numeric(5, 1, asdecimal=False))
+    weight_kg: Mapped[float | None] = mapped_column(Numeric(5, 1, asdecimal=False))
+    body_fat_pct: Mapped[float | None] = mapped_column(Numeric(4, 1, asdecimal=False))
+    chest_cm: Mapped[float | None] = mapped_column(Numeric(5, 1, asdecimal=False))
+    waist_cm: Mapped[float | None] = mapped_column(Numeric(5, 1, asdecimal=False))
+    hip_cm: Mapped[float | None] = mapped_column(Numeric(5, 1, asdecimal=False))
     experience: Mapped[str] = mapped_column(String(20), default="beginner")
     injuries: Mapped[list] = mapped_column(JSON, default=list)
     equipment: Mapped[list] = mapped_column(JSON, default=lambda: ["bodyweight"])
@@ -166,9 +168,9 @@ class Goal(Base):
         String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     type: Mapped[str] = mapped_column(String(20))
-    target_weight_kg: Mapped[float | None] = mapped_column(Float)
-    target_body_fat_pct: Mapped[float | None] = mapped_column(Float)
-    target_waist_cm: Mapped[float | None] = mapped_column(Float)
+    target_weight_kg: Mapped[float | None] = mapped_column(Numeric(5, 1, asdecimal=False))
+    target_body_fat_pct: Mapped[float | None] = mapped_column(Numeric(4, 1, asdecimal=False))
+    target_waist_cm: Mapped[float | None] = mapped_column(Numeric(5, 1, asdecimal=False))
     target_date: Mapped[date | None] = mapped_column(Date)
     status: Mapped[str] = mapped_column(String(20), default="active")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
@@ -253,6 +255,14 @@ class Program(Base):
 
 class ProgramDay(Base):
     __tablename__ = "program_days"
+    __table_args__ = (
+        UniqueConstraint(
+            "program_id",
+            "week_index",
+            "weekday",
+            name="uq_program_days_program_week_weekday",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     program_id: Mapped[str] = mapped_column(
@@ -273,6 +283,13 @@ class ProgramDay(Base):
 
 class PlanExercise(Base):
     __tablename__ = "plan_exercises"
+    __table_args__ = (
+        UniqueConstraint(
+            "program_day_id",
+            "order_index",
+            name="uq_plan_exercises_day_order",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     program_day_id: Mapped[str] = mapped_column(
@@ -284,9 +301,9 @@ class PlanExercise(Base):
     order_index: Mapped[int] = mapped_column(Integer)
     sets: Mapped[int] = mapped_column(Integer, default=3)
     reps: Mapped[str] = mapped_column(String(20), default="10")
-    weight_kg: Mapped[float | None] = mapped_column(Float)
+    weight_kg: Mapped[float | None] = mapped_column(Numeric(6, 2, asdecimal=False))
     rest_sec: Mapped[int] = mapped_column(Integer, default=60)
-    rpe: Mapped[float | None] = mapped_column(Float)
+    rpe: Mapped[float | None] = mapped_column(Numeric(3, 1, asdecimal=False))
     notes: Mapped[str | None] = mapped_column(Text)
 
     day: Mapped[ProgramDay] = relationship(back_populates="exercises")
@@ -324,6 +341,14 @@ class WorkoutSession(Base):
 
 class SetLog(Base):
     __tablename__ = "set_logs"
+    __table_args__ = (
+        UniqueConstraint(
+            "session_id",
+            "exercise_slug",
+            "set_index",
+            name="uq_set_logs_session_exercise_set",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     session_id: Mapped[str] = mapped_column(
@@ -333,9 +358,9 @@ class SetLog(Base):
         String(60), ForeignKey("exercises.slug")
     )
     set_index: Mapped[int] = mapped_column(Integer)
-    weight_kg: Mapped[float | None] = mapped_column(Float)
+    weight_kg: Mapped[float | None] = mapped_column(Numeric(6, 2, asdecimal=False))
     reps: Mapped[int | None] = mapped_column(Integer)
-    rpe: Mapped[float | None] = mapped_column(Float)
+    rpe: Mapped[float | None] = mapped_column(Numeric(3, 1, asdecimal=False))
     completed: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
@@ -344,6 +369,13 @@ class SetLog(Base):
 
 class NotificationSchedule(Base):
     __tablename__ = "notification_schedules"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "weekday",
+            name="uq_notification_schedules_user_weekday",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     user_id: Mapped[str] = mapped_column(
@@ -609,12 +641,12 @@ class FoodLog(Base):
     logged_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     meal: Mapped[str] = mapped_column(String(20))
     food_name: Mapped[str] = mapped_column(String(120))
-    grams: Mapped[float] = mapped_column(Float, default=0)
-    kcal: Mapped[float] = mapped_column(Float, default=0)
-    protein: Mapped[float] = mapped_column(Float, default=0)
-    carbs: Mapped[float] = mapped_column(Float, default=0)
-    fat: Mapped[float] = mapped_column(Float, default=0)
-    fiber: Mapped[float] = mapped_column(Float, default=0)
+    grams: Mapped[float] = mapped_column(Numeric(7, 1, asdecimal=False), default=0)
+    kcal: Mapped[float] = mapped_column(Numeric(7, 1, asdecimal=False), default=0)
+    protein: Mapped[float] = mapped_column(Numeric(6, 1, asdecimal=False), default=0)
+    carbs: Mapped[float] = mapped_column(Numeric(6, 1, asdecimal=False), default=0)
+    fat: Mapped[float] = mapped_column(Numeric(6, 1, asdecimal=False), default=0)
+    fiber: Mapped[float] = mapped_column(Numeric(6, 1, asdecimal=False), default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
@@ -626,6 +658,12 @@ class BodyMetric(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "client_id", name="uq_body_metrics_user_client"),
         Index("ix_body_metrics_user_measured", "user_id", "measured_at"),
+        CheckConstraint(
+            "weight_kg IS NOT NULL OR body_fat_pct IS NOT NULL "
+            "OR waist_cm IS NOT NULL OR arm_cm IS NOT NULL "
+            "OR thigh_cm IS NOT NULL",
+            name="ck_body_metrics_any_measure",
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
@@ -634,11 +672,11 @@ class BodyMetric(Base):
     )
     client_id: Mapped[str] = mapped_column(String(36))
     measured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    weight_kg: Mapped[float] = mapped_column(Float)
-    body_fat_pct: Mapped[float] = mapped_column(Float)
-    waist_cm: Mapped[float] = mapped_column(Float)
-    arm_cm: Mapped[float | None] = mapped_column(Float)
-    thigh_cm: Mapped[float | None] = mapped_column(Float)
+    weight_kg: Mapped[float | None] = mapped_column(Numeric(5, 1, asdecimal=False))
+    body_fat_pct: Mapped[float | None] = mapped_column(Numeric(4, 1, asdecimal=False))
+    waist_cm: Mapped[float | None] = mapped_column(Numeric(5, 1, asdecimal=False))
+    arm_cm: Mapped[float | None] = mapped_column(Numeric(5, 1, asdecimal=False))
+    thigh_cm: Mapped[float | None] = mapped_column(Numeric(5, 1, asdecimal=False))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
@@ -679,9 +717,9 @@ class MealPlan(Base):
     )
     plan_date: Mapped[date] = mapped_column(Date)
     target_kcal: Mapped[int | None] = mapped_column(Integer)
-    target_protein_g: Mapped[int | None] = mapped_column(Integer)
-    target_carb_g: Mapped[int | None] = mapped_column(Integer)
-    target_fat_g: Mapped[int | None] = mapped_column(Integer)
+    target_protein_g: Mapped[float | None] = mapped_column(Numeric(6, 1, asdecimal=False))
+    target_carb_g: Mapped[float | None] = mapped_column(Numeric(6, 1, asdecimal=False))
+    target_fat_g: Mapped[float | None] = mapped_column(Numeric(6, 1, asdecimal=False))
     plan: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 

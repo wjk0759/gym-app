@@ -140,12 +140,11 @@ public class PlanRepository {
             clauses.add("p.status = :status");
         }
         if (query != null && !query.isBlank()) {
-            clauses.add("""
-                    (LOWER(p.title) LIKE :q
-                     OR LOWER(COALESCE(pr.nickname, '')) LIKE :q
-                     OR COALESCE(u.phone, '') LIKE :q
-                     OR p.user_id = :rawQuery)
-                    """);
+            clauses.add("("
+                    + "p.title LIKE :prefix"
+                    + " OR MATCH(p.title) AGAINST (:matchQuery)"
+                    + " OR " + SqlSupport.userSearch("u", "pr")
+                    + ")");
         }
         return clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
     }
@@ -153,8 +152,7 @@ public class PlanRepository {
     private Map<String, Object> params(String query, String status) {
         Map<String, Object> params = new HashMap<>();
         if (query != null && !query.isBlank()) {
-            params.put("q", SqlSupport.like(query));
-            params.put("rawQuery", query.trim());
+            SqlSupport.putSearchParams(params, query);
         }
         if (status != null && !status.isBlank()) {
             params.put("status", status);

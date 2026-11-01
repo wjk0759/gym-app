@@ -38,8 +38,12 @@ public class VideoRepository {
         List<String> clauses = new ArrayList<>();
         Map<String, Object> params = new HashMap<>();
         if (query != null && !query.isBlank()) {
-            clauses.add("(LOWER(v.title) LIKE :q OR LOWER(e.name_zh) LIKE :q OR v.exercise_slug LIKE :q)");
-            params.put("q", SqlSupport.like(query));
+            clauses.add("(v.title LIKE :prefix"
+                    + " OR MATCH(v.title) AGAINST (:matchQuery)"
+                    + " OR e.name_zh LIKE :prefix"
+                    + " OR MATCH(e.name_zh, e.name_en) AGAINST (:matchQuery)"
+                    + " OR v.exercise_slug LIKE :prefix)");
+            SqlSupport.putSearchParams(params, query);
         }
         if (status != null && !status.isBlank()) {
             clauses.add("v.status = :status");

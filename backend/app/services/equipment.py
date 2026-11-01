@@ -15,12 +15,52 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..config import settings
-from ..models import Exercise
+from ..models import EquipmentLibraryItem, Exercise, Profile
 from . import llm
 
 logger = logging.getLogger(__name__)
 
 SUPPORTED_EQUIPMENT = ("machine", "cable", "barbell", "dumbbell", "kettlebell")
+
+
+def available_equipment_types(
+    db: Session,
+    user_id: str,
+    profile_equipment: list[str] | None,
+) -> list[str]:
+    """Equipment types the user can actually use.
+
+    The personal equipment library is authoritative; the profile list remains a
+    compatibility fallback for users who have not added library items yet.
+    Bodyweight is always available.
+    """
+    rows = (
+        db.execute(
+            select(EquipmentLibraryItem.equipment).where(
+                EquipmentLibraryItem.user_id == user_id,
+                EquipmentLibraryItem.equipment.is_not(None),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    types = {str(value).strip() for value in rows if value and str(value).strip()}
+    if types:
+        types.add("bodyweight")
+        return sorted(types)
+    types.update(str(value) for value in (profile_equipment or []) if value)
+    types.add("bodyweight")
+    return sorted(types)
+
+
+def refresh_profile_equipment_cache(db: Session, user_id: str) -> None:
+    """Keep the profile equipment list in sync with the personal library."""
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        return
+    profile.equipment = available_equipment_types(
+        db, user_id, profile.equipment
+    )
 
 _SYSTEM_PROMPT = (
     "你是健身房器械识别助手。根据图片判断器械类型和对应动作。"

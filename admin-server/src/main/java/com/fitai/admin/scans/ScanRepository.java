@@ -84,11 +84,7 @@ public class ScanRepository {
             clauses.add("s.status = :status");
         }
         if (query != null && !query.isBlank()) {
-            clauses.add("""
-                    (COALESCE(u.phone, '') LIKE :q
-                     OR LOWER(COALESCE(p.nickname, '')) LIKE :q
-                     OR s.user_id = :rawQuery)
-                    """);
+            clauses.add(SqlSupport.userSearch("u", "p"));
         }
         return clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
     }
@@ -96,8 +92,7 @@ public class ScanRepository {
     private Map<String, Object> params(String query, String status) {
         Map<String, Object> params = new HashMap<>();
         if (query != null && !query.isBlank()) {
-            params.put("q", SqlSupport.like(query));
-            params.put("rawQuery", query.trim());
+            SqlSupport.putSearchParams(params, query);
         }
         if (status != null && !status.isBlank()) {
             params.put("status", status);

@@ -125,13 +125,8 @@ public class AiRepository {
             params.put("status", status);
         }
         if (query != null && !query.isBlank()) {
-            clauses.add("""
-                    (LOWER(COALESCE(p.nickname, '')) LIKE :q
-                     OR COALESCE(u.phone, '') LIKE :q
-                     OR j.user_id = :rawQuery)
-                    """);
-            params.put("q", SqlSupport.like(query));
-            params.put("rawQuery", query.trim());
+            clauses.add(SqlSupport.userSearch("u", "p"));
+            SqlSupport.putSearchParams(params, query);
         }
         String where = clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
         long total = jdbc.sql("""

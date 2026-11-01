@@ -302,7 +302,12 @@ enum PlanGenerator {
         equipmentSlugs: [String]
     ) -> [Exercise] {
         let banned = injuryTags(profile.injuries)
-        let equipment = profile.equipment
+        var equipment = profile.equipment
+        for slug in equipmentSlugs {
+            if let exercise = ExerciseLibrary.exercise(slug: slug) {
+                equipment.insert(exercise.equipment)
+            }
+        }
         let eligible = ExerciseLibrary.all.filter { exercise in
             let equipmentOK = equipment.contains(exercise.equipment)
             let injuryOK = banned.isDisjoint(with: Set(exercise.contraindications))

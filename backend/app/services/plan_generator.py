@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from ..models import Exercise, Profile
 from . import llm
+from .equipment import available_equipment_types
 from .plan_validator import injury_tags, validate_plan
 
 PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "plan_system.md"
@@ -328,7 +329,12 @@ def build_template_plan(
 ) -> dict:
     """Build a deterministic, validated plan for the agent proposal tool."""
     weeks = max(1, min(8, int(weeks)))
-    available = _allowed_exercises(db, profile.equipment, profile.injuries, None)
+    equipment_types = available_equipment_types(
+        db, profile.user_id, profile.equipment
+    )
+    available = _allowed_exercises(
+        db, equipment_types, profile.injuries, None
+    )
     if not available:
         raise ValueError("当前器械或伤病条件下没有可用动作")
     raw = fallback_plan(
@@ -349,7 +355,7 @@ def build_template_plan(
     cleaned, warnings = validate_plan(
         raw,
         exercises=by_slug,
-        equipment=profile.equipment,
+        equipment=equipment_types,
         injuries=profile.injuries,
         weekly_days=effective_days,
         weeks=weeks,
@@ -418,7 +424,7 @@ def _user_prompt(
             "weight_kg": profile.weight_kg,
             "experience": profile.experience,
             "injuries": profile.injuries,
-            "equipment": profile.equipment,
+            "equipment": sorted({item.equipment for item in available} | {"bodyweight"}),
             "weekly_days": profile.weekly_days,
             "session_minutes": profile.session_minutes,
             "goal_type": goal_type,
@@ -472,8 +478,11 @@ async def generate_plan(
             db, profile, goal_type, weeks=weeks, split=split, focus=focus
         )
 
+    equipment_types = available_equipment_types(
+        db, profile.user_id, profile.equipment
+    )
     available = _allowed_exercises(
-        db, profile.equipment, profile.injuries, equipment_slugs
+        db, equipment_types, profile.injuries, equipment_slugs
     )
     if not available:
         available = (
@@ -509,7 +518,7 @@ async def generate_plan(
             cleaned, warnings = validate_plan(
                 raw,
                 exercises=by_slug,
-                equipment=profile.equipment,
+                equipment=equipment_types,
                 injuries=profile.injuries,
                 weekly_days=profile.weekly_days,
                 weeks=weeks,
@@ -549,7 +558,7 @@ async def generate_plan(
     cleaned, fallback_warnings = validate_plan(
         raw,
         exercises=by_slug,
-        equipment=profile.equipment,
+        equipment=equipment_types,
         injuries=profile.injuries,
         weekly_days=profile.weekly_days,
         weeks=weeks,

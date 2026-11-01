@@ -154,9 +154,6 @@ extension AppStore {
 
     var equipmentSlugsForPlan: [String] {
         guard useEquipmentLibraryForPlans else { return [] }
-        return equipmentLibrary.compactMap(\.slug).filter { slug in
-            guard let exercise = ExerciseLibrary.exercise(slug: slug) else { return false }
-            return profile.equipment.contains(exercise.equipment)
-        }
+        return equipmentLibrary.compactMap(\.slug)
     }
 }

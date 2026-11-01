@@ -47,25 +47,30 @@ extension AppStore {
         bodyMetrics.removeAll { $0.dateKey == key }
         bodyMetrics.append(value)
         bodyMetrics.sort { $0.date > $1.date }
-        profile.weightKG = value.weightKG
-        profile.bodyFatPCT = value.bodyFatPCT
-        profile.waistCM = value.waistCM
+        if let weight = value.weightKG { profile.weightKG = weight }
+        if let bodyFat = value.bodyFatPCT { profile.bodyFatPCT = bodyFat }
+        if let waist = value.waistCM { profile.waistCM = waist }
         if let arm = value.armCM, arm > 0 { profile.armCM = arm }
         if let thigh = value.thighCM, thigh > 0 { profile.thighCM = thigh }
-        if profile.goalStartWeight == nil || (profile.goalStartWeight ?? 0) <= 0 {
-            profile.goalStartWeight = value.weightKG
+        if profile.goalStartWeight == nil || (profile.goalStartWeight ?? 0) <= 0,
+           let weight = value.weightKG {
+            profile.goalStartWeight = weight
             profile.goalStartDate = value.date
         }
         bodyCheckInDismissedDate = key
     }
 
     @discardableResult
-    func saveBodyCheckIn(weightKG: Double, bodyFatPCT: Double, waistCM: Double) -> BodyMetric {
+    func saveBodyCheckIn(
+        weightKG: Double?,
+        bodyFatPCT: Double?,
+        waistCM: Double?
+    ) -> BodyMetric {
         let metric = BodyMetric(
             date: Date(),
-            weightKG: (weightKG * 10).rounded() / 10,
-            bodyFatPCT: (bodyFatPCT * 10).rounded() / 10,
-            waistCM: (waistCM * 10).rounded() / 10,
+            weightKG: weightKG.map { ($0 * 10).rounded() / 10 },
+            bodyFatPCT: bodyFatPCT.map { ($0 * 10).rounded() / 10 },
+            waistCM: waistCM.map { ($0 * 10).rounded() / 10 },
             armCM: profile.armCM,
             thighCM: profile.thighCM
         )
@@ -81,9 +86,9 @@ extension AppStore {
         }
         bodyMetrics.remove(at: index)
         if let latest = bodyMetrics.sorted(by: { $0.date > $1.date }).first {
-            profile.weightKG = latest.weightKG
-            profile.bodyFatPCT = latest.bodyFatPCT
-            profile.waistCM = latest.waistCM
+            if let weight = latest.weightKG { profile.weightKG = weight }
+            if let bodyFat = latest.bodyFatPCT { profile.bodyFatPCT = bodyFat }
+            if let waist = latest.waistCM { profile.waistCM = waist }
         }
         persist()
         Task {
@@ -155,9 +160,9 @@ extension AppStore {
 
     var goalProgress: GoalProgress {
         let metrics = bodyMetrics.sorted { $0.date > $1.date }
-        let currentWeight = metrics.first?.weightKG ?? profile.weightKG
+        let currentWeight = metrics.lazy.compactMap(\.weightKG).first ?? profile.weightKG
         let startWeight = profile.goalStartWeight
-            ?? metrics.last?.weightKG
+            ?? metrics.lazy.compactMap(\.weightKG).last
             ?? profile.weightKG
         let target = profile.targetWeightKG
         let denominator = target - startWeight
@@ -171,8 +176,8 @@ extension AppStore {
         let today = FitnessDate.startOfDay(Date())
         let targetDate = FitnessDate.startOfDay(profile.targetDate)
         let daysLeft = calendar.dateComponents([.day], from: today, to: targetDate).day
-        let currentWaist = metrics.first?.waistCM ?? profile.waistCM
-        let currentBodyFat = metrics.first?.bodyFatPCT ?? profile.bodyFatPCT
+        let currentWaist = metrics.lazy.compactMap(\.waistCM).first ?? profile.waistCM
+        let currentBodyFat = metrics.lazy.compactMap(\.bodyFatPCT).first ?? profile.bodyFatPCT
         let targetWaist = (profile.goalType == .endurance ? nil : profile.targetWaistCM)
         let targetBodyFat = (profile.goalType == .endurance ? nil : profile.targetBodyFatPCT)
 

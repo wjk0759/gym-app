@@ -438,9 +438,9 @@ struct RemoteFoodLogResponse: Decodable {
 struct RemoteBodyMetric: Decodable {
     let clientID: String
     let measuredAt: Date
-    let weightKG: Double
-    let bodyFatPCT: Double
-    let waistCM: Double
+    let weightKG: Double?
+    let bodyFatPCT: Double?
+    let waistCM: Double?
     let armCM: Double?
     let thighCM: Double?
 

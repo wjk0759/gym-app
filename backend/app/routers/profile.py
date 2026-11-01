@@ -58,7 +58,7 @@ def upsert_profile(payload: ProfileIn, user_id: CurrentUser, db: DBSession):
         profile = Profile(user_id=user_id)
         db.add(profile)
 
-    data = payload.model_dump()
+    data = payload.model_dump(exclude_unset=True)
     if data.get("birth_date"):
         age = date.today().year - data["birth_date"].year - (
             (date.today().month, date.today().day)
@@ -153,8 +153,11 @@ def upsert_goal(payload: GoalIn, user_id: CurrentUser, db: DBSession):
     if goal is None:
         goal = Goal(user_id=user_id, status="active")
         db.add(goal)
+        data = payload.model_dump()
+    else:
+        data = payload.model_dump(exclude_unset=True)
 
-    for field, value in payload.model_dump().items():
+    for field, value in data.items():
         setattr(goal, field, value)
     goal.status = "active"
 

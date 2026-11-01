@@ -35,16 +35,10 @@ public class ScheduleRepository {
             params.put("planId", planId.trim());
         }
         if (query != null && !query.isBlank()) {
-            clauses.add("""
-                    (LOWER(COALESCE(p.nickname, '')) LIKE :q
-                     OR COALESCE(u.phone, '') LIKE :q
-                     OR COALESCE(u.username, '') LIKE :q
-                     OR s.user_id = :rawQuery
-                     OR s.plan_id = :rawQuery
-                     OR s.day_id = :rawQuery)
-                    """);
-            params.put("q", SqlSupport.like(query));
-            params.put("rawQuery", query.trim());
+            clauses.add("(" + SqlSupport.userSearch("u", "p")
+                    + " OR s.plan_id = :rawQuery"
+                    + " OR s.day_id = :rawQuery)");
+            SqlSupport.putSearchParams(params, query);
         }
         String where = clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
         long total = jdbc.sql("""

@@ -4,7 +4,7 @@ from datetime import date, datetime
 from datetime import date as dt_date
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 Sex = Literal["male", "female", "other"]
 Experience = Literal["beginner", "intermediate", "advanced"]
@@ -212,11 +212,26 @@ class FoodLogIn(BaseModel):
 class BodyMetricIn(BaseModel):
     client_id: str = Field(min_length=1, max_length=36)
     measured_at: datetime
-    weight_kg: float = Field(ge=30, le=300)
-    body_fat_pct: float = Field(ge=3, le=60)
-    waist_cm: float = Field(ge=30, le=200)
+    weight_kg: float | None = Field(default=None, ge=30, le=300)
+    body_fat_pct: float | None = Field(default=None, ge=3, le=60)
+    waist_cm: float | None = Field(default=None, ge=30, le=200)
     arm_cm: float | None = Field(default=None, ge=10, le=100)
     thigh_cm: float | None = Field(default=None, ge=20, le=120)
+
+    @model_validator(mode="after")
+    def require_at_least_one_measure(self):
+        if all(
+            value is None
+            for value in (
+                self.weight_kg,
+                self.body_fat_pct,
+                self.waist_cm,
+                self.arm_cm,
+                self.thigh_cm,
+            )
+        ):
+            raise ValueError("至少填写一项身体数据")
+        return self
 
 
 class EquipmentLibraryIn(BaseModel):

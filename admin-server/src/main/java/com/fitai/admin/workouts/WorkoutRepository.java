@@ -98,19 +98,13 @@ public class WorkoutRepository {
         if (query == null || query.isBlank()) {
             return "";
         }
-        return """
-                 WHERE (u.id = :rawQuery
-                        OR COALESCE(u.phone, '') LIKE :q
-                        OR LOWER(COALESCE(p.nickname, '')) LIKE :q
-                        OR LOWER(COALESCE(u.username, '')) LIKE :q)
-                """ + " ";
+        return " WHERE " + SqlSupport.userSearch("u", "p") + " ";
     }
 
     private Map<String, Object> params(String query) {
         Map<String, Object> params = new HashMap<>();
         if (query != null && !query.isBlank()) {
-            params.put("q", SqlSupport.like(query));
-            params.put("rawQuery", query.trim());
+            SqlSupport.putSearchParams(params, query);
         }
         return params;
     }

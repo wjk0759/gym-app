@@ -348,11 +348,11 @@ struct APIClient {
     func syncBodyMetric(_ metric: BodyMetric) async throws {
         var payload: [String: Any] = [
             "client_id": metric.id.uuidString,
-            "measured_at": APIDateCoding.iso8601WithFractionalSeconds.string(from: metric.date),
-            "weight_kg": metric.weightKG,
-            "body_fat_pct": metric.bodyFatPCT,
-            "waist_cm": metric.waistCM
+            "measured_at": APIDateCoding.iso8601WithFractionalSeconds.string(from: metric.date)
         ]
+        if let weight = metric.weightKG { payload["weight_kg"] = weight }
+        if let bodyFat = metric.bodyFatPCT { payload["body_fat_pct"] = bodyFat }
+        if let waist = metric.waistCM { payload["waist_cm"] = waist }
         if let arm = metric.armCM { payload["arm_cm"] = arm }
         if let thigh = metric.thighCM { payload["thigh_cm"] = thigh }
         let body = try JSONSerialization.data(withJSONObject: payload)

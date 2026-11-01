@@ -8,6 +8,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.Map;
 
 public final class SqlSupport {
 
@@ -19,6 +20,26 @@ public final class SqlSupport {
             return null;
         }
         return "%" + value.trim().toLowerCase(Locale.ROOT) + "%";
+    }
+
+    /**
+     * Index-friendly user search: exact id, phone/username prefix, and Chinese
+     * full-text nickname. The prefix fallback covers one-character queries that
+     * ngram cannot index.
+     */
+    public static String userSearch(String userAlias, String profileAlias) {
+        return "(" + userAlias + ".id = :rawQuery"
+                + " OR " + userAlias + ".phone LIKE :prefix"
+                + " OR " + userAlias + ".username LIKE :prefix"
+                + " OR MATCH(" + profileAlias + ".nickname) AGAINST (:matchQuery)"
+                + " OR " + profileAlias + ".nickname LIKE :prefix)";
+    }
+
+    public static void putSearchParams(Map<String, Object> params, String query) {
+        String trimmed = query.trim();
+        params.put("prefix", trimmed + "%");
+        params.put("matchQuery", trimmed);
+        params.put("rawQuery", trimmed);
     }
 
     public static String iso(Object value) {

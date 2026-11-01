@@ -69,7 +69,7 @@ struct BodyCheckInSheet: View {
                         .buttonStyle(SecondaryButtonStyle())
                     }
 
-                    Text("建议早上空腹、同一时间测量。数据用于体重、体脂和围度趋势，不会自动改变训练计划。")
+                    Text("建议早上空腹、同一时间测量。留空表示本次未测；数据用于体重、体脂和围度趋势，不会自动改变训练计划。")
                         .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                         .fixedSize(horizontal: false, vertical: true)
@@ -159,28 +159,57 @@ struct BodyCheckInSheet: View {
         guard !didLoad else { return }
         didLoad = true
         let latest = store.latestBodyMetric
-        weightText = String(format: "%.1f", latest?.weightKG ?? store.profile.weightKG)
-        bodyFatText = String(format: "%.1f", latest?.bodyFatPCT ?? store.profile.bodyFatPCT)
-        waistText = String(format: "%.1f", latest?.waistCM ?? store.profile.waistCM)
+        if let weight = latest?.weightKG ?? store.profile.weightKG {
+            weightText = String(format: "%.1f", weight)
+        } else {
+            weightText = ""
+        }
+        if let bodyFat = latest?.bodyFatPCT ?? store.profile.bodyFatPCT {
+            bodyFatText = String(format: "%.1f", bodyFat)
+        } else {
+            bodyFatText = ""
+        }
+        if let waist = latest?.waistCM ?? store.profile.waistCM {
+            waistText = String(format: "%.1f", waist)
+        } else {
+            waistText = ""
+        }
     }
 
     private func save() {
-        guard let weight = Double(weightText.replacingOccurrences(of: ",", with: ".")),
-              (30...300).contains(weight) else {
-            errorMessage = "体重填写 30–300 kg"
+        let weight = optionalValue(weightText, range: 30...300, label: "体重填写 30–300 kg")
+        let bodyFat = optionalValue(bodyFatText, range: 3...60, label: "体脂填写 3–60%")
+        let waist = optionalValue(waistText, range: 30...200, label: "腰围填写 30–200 cm")
+
+        if let message = weight.error ?? bodyFat.error ?? waist.error {
+            errorMessage = message
             return
         }
-        guard let bodyFat = Double(bodyFatText.replacingOccurrences(of: ",", with: ".")),
-              (3...60).contains(bodyFat) else {
-            errorMessage = "体脂填写 3–60%"
+
+        guard weight.value != nil || bodyFat.value != nil || waist.value != nil else {
+            errorMessage = "至少填写一项身体数据"
             return
         }
-        guard let waist = Double(waistText.replacingOccurrences(of: ",", with: ".")),
-              (50...150).contains(waist) else {
-            errorMessage = "腰围填写 50–150 cm"
-            return
-        }
-        store.saveBodyCheckIn(weightKG: weight, bodyFatPCT: bodyFat, waistCM: waist)
+
+        store.saveBodyCheckIn(
+            weightKG: weight.value,
+            bodyFatPCT: bodyFat.value,
+            waistCM: waist.value
+        )
         dismiss()
+    }
+
+    private func optionalValue(
+        _ text: String,
+        range: ClosedRange<Double>,
+        label: String
+    ) -> (value: Double?, error: String?) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return (nil, nil) }
+        guard let value = Double(trimmed.replacingOccurrences(of: ",", with: ".")),
+              range.contains(value) else {
+            return (nil, label)
+        }
+        return (value, nil)
     }
 }

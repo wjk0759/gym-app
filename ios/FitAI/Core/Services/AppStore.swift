@@ -194,16 +194,23 @@ final class AppStore {
             || old.experience != value.experience
             || old.equipment != value.equipment
         profile = value
-        appendBodyMetric(
-            BodyMetric(
-                date: Date(),
-                weightKG: value.weightKG,
-                bodyFatPCT: value.bodyFatPCT,
-                waistCM: value.waistCM,
-                armCM: value.armCM,
-                thighCM: value.thighCM
+        let weightChanged = old.weightKG != value.weightKG
+        let bodyFatChanged = old.bodyFatPCT != value.bodyFatPCT
+        let waistChanged = old.waistCM != value.waistCM
+        let armChanged = old.armCM != value.armCM
+        let thighChanged = old.thighCM != value.thighCM
+        if weightChanged || bodyFatChanged || waistChanged || armChanged || thighChanged {
+            appendBodyMetric(
+                BodyMetric(
+                    date: Date(),
+                    weightKG: weightChanged ? value.weightKG : nil,
+                    bodyFatPCT: bodyFatChanged ? value.bodyFatPCT : nil,
+                    waistCM: waistChanged ? value.waistCM : nil,
+                    armCM: armChanged ? value.armCM : nil,
+                    thighCM: thighChanged ? value.thighCM : nil
+                )
             )
-        )
+        }
         persist()
         syncPendingUserData()
         if planSettingsChanged, hasPlanEquipment {
@@ -878,9 +885,9 @@ final class AppStore {
             }
             bodyMetrics.sort { $0.date > $1.date }
             if let latest = bodyMetrics.first {
-                profile.weightKG = latest.weightKG
-                profile.bodyFatPCT = latest.bodyFatPCT
-                profile.waistCM = latest.waistCM
+                if let weight = latest.weightKG { profile.weightKG = weight }
+                if let bodyFat = latest.bodyFatPCT { profile.bodyFatPCT = bodyFat }
+                if let waist = latest.waistCM { profile.waistCM = waist }
                 if let arm = latest.armCM, arm > 0 { profile.armCM = arm }
                 if let thigh = latest.thighCM, thigh > 0 { profile.thighCM = thigh }
             }
@@ -1516,27 +1523,29 @@ final class AppStore {
             guard let payload = action.payload else {
                 return "没有提供身体数据"
             }
-            let weight = payload.weightKG ?? profile.weightKG
-            guard weight > 0 else {
-                return "没有提供体重"
+            guard payload.weightKG != nil || payload.bodyFatPCT != nil || payload.waistCM != nil else {
+                return "至少填写一项身体数据"
             }
             let previousProfile = profile
             let todayKey = FitnessDate.key(Date())
             let previousMetric = bodyMetrics.first { $0.dateKey == todayKey }
             let metric = saveBodyCheckIn(
-                weightKG: weight,
-                bodyFatPCT: payload.bodyFatPCT ?? profile.bodyFatPCT,
-                waistCM: payload.waistCM ?? profile.waistCM
+                weightKG: payload.weightKG,
+                bodyFatPCT: payload.bodyFatPCT,
+                waistCM: payload.waistCM
             )
             undo = .bodyMetric(
                 metricID: metric.id,
                 previousMetric: previousMetric,
                 previousProfile: previousProfile
             )
-            if payload.weightKG == nil, let bodyFat = payload.bodyFatPCT {
+            if let weight = payload.weightKG {
+                return "已记录体重 \(weight.formatted(.number.precision(.fractionLength(1)))) kg"
+            }
+            if let bodyFat = payload.bodyFatPCT {
                 return "已记录体脂约 \(bodyFat.formatted(.number.precision(.fractionLength(0))))%"
             }
-            return "已记录体重 \(weight.formatted(.number.precision(.fractionLength(1)))) kg"
+            return "已记录身体数据"
 
         case "create_diet_plan":
             let strategy = action.payload?.strategy ?? "balanced"

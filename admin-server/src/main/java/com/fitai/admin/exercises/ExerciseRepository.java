@@ -122,7 +122,10 @@ public class ExerciseRepository {
         List<String> clauses = new ArrayList<>();
         clauses.add("is_active = TRUE");
         if (query != null && !query.isBlank()) {
-            clauses.add("(LOWER(name_zh) LIKE :q OR LOWER(COALESCE(name_en, '')) LIKE :q OR slug LIKE :q)");
+            clauses.add("(name_zh LIKE :prefix"
+                    + " OR MATCH(name_zh, name_en) AGAINST (:matchQuery)"
+                    + " OR name_en LIKE :prefix"
+                    + " OR slug LIKE :prefix)");
         }
         if (muscleGroup != null && !muscleGroup.isBlank()) {
             clauses.add("muscle_group = :muscleGroup");
@@ -135,7 +138,7 @@ public class ExerciseRepository {
 
     private Map<String, Object> params(String query, String muscleGroup, String equipment) {
         Map<String, Object> params = new HashMap<>();
-        if (query != null && !query.isBlank()) params.put("q", SqlSupport.like(query));
+        if (query != null && !query.isBlank()) SqlSupport.putSearchParams(params, query);
         if (muscleGroup != null && !muscleGroup.isBlank()) params.put("muscleGroup", muscleGroup);
         if (equipment != null && !equipment.isBlank()) params.put("equipment", equipment);
         return params;

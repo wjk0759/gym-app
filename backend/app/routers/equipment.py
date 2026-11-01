@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from ..deps import CurrentUser, DBSession
 from ..models import EquipmentLibraryItem, EquipmentScan, Exercise
 from ..schemas import EquipmentLibraryIn
-from ..services.equipment import recognize
+from ..services.equipment import recognize, refresh_profile_equipment_cache
 
 router = APIRouter(tags=["equipment"])
 
@@ -120,6 +120,7 @@ def upsert_equipment_item(
         item = EquipmentLibraryItem(user_id=user_id, client_id=payload.client_id)
         db.add(item)
     _apply_equipment_item(item, payload)
+    refresh_profile_equipment_cache(db, user_id)
     try:
         db.commit()
     except IntegrityError:
@@ -131,6 +132,7 @@ def upsert_equipment_item(
             )
         ).scalar_one()
         _apply_equipment_item(item, payload)
+        refresh_profile_equipment_cache(db, user_id)
         db.commit()
     return _equipment_item_dict(item)
 
@@ -169,5 +171,7 @@ def delete_equipment_item(
     if item is None:
         raise HTTPException(status_code=404, detail="器械不存在")
     db.delete(item)
+    db.flush()
+    refresh_profile_equipment_cache(db, user_id)
     db.commit()
     return {"status": "deleted", "client_id": client_id}
