@@ -89,6 +89,7 @@ struct EquipmentLibraryView: View {
                 .accessibilityLabel("手动添加器械")
             }
         }
+        .keyboardDoneToolbar()
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .manual:
@@ -171,7 +172,7 @@ struct EquipmentLibraryView: View {
                         .foregroundStyle(Theme.tertiaryText)
                 }
             }
-            .tint(Theme.cobalt)
+            .tint(Theme.primary)
         }
         .card(padding: 18)
     }

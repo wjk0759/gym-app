@@ -442,7 +442,7 @@ struct SettingsView: View {
                         .foregroundStyle(Theme.tertiaryText)
                 }
             }
-            .tint(Theme.cobalt)
+            .tint(Theme.primary)
 
             if weather.alertsEnabled && !weather.alertsAuthorized {
                 HStack(spacing: 12) {
@@ -689,7 +689,7 @@ struct SettingsView: View {
                 Spacer()
                 Toggle("", isOn: remoteBinding)
                     .labelsHidden()
-                    .tint(Theme.cobalt)
+                    .tint(Theme.primary)
             }
 
             Text(store.isPro
@@ -707,7 +707,7 @@ struct SettingsView: View {
                 set: { store.debugForceRemoteAI = $0 }
             ))
             .font(AppType.caption)
-            .tint(Theme.cobalt)
+            .tint(Theme.primary)
 
 #endif
 

@@ -167,6 +167,7 @@ struct PasswordResetView: View {
                     Button("关闭") { dismiss() }
                 }
             }
+            .keyboardDoneToolbar()
             .alert("密码已重置", isPresented: $showSuccess) {
                 Button("返回登录") { dismiss() }
             } message: {

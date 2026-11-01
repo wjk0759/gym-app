@@ -147,6 +147,7 @@ struct WorkoutSessionView: View {
                     }
                 }
             }
+            .keyboardDoneToolbar()
             .onAppear {
                 UIApplication.shared.isIdleTimerDisabled = true
                 loadDraftIfNeeded()
@@ -318,10 +319,10 @@ struct WorkoutSessionView: View {
                 if periodMode == .light {
                     Text("经期轻量")
                         .font(AppType.micro)
-                        .foregroundStyle(Theme.coral)
+                        .foregroundStyle(Theme.cycle)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 4)
-                        .background(Theme.coral.opacity(0.10), in: Capsule(style: .continuous))
+                        .background(Theme.cycle.opacity(0.10), in: Capsule(style: .continuous))
                 }
 
                 Spacer(minLength: 0)
@@ -330,7 +331,7 @@ struct WorkoutSessionView: View {
             if periodMode == .light {
                 Text("自动少 1 组、负重约 80%。腹痛明显时请改为散步或休息。")
                     .font(AppType.micro)
-                    .foregroundStyle(Theme.coral)
+                    .foregroundStyle(Theme.cycle)
                     .fixedSize(horizontal: false, vertical: true)
             }
 

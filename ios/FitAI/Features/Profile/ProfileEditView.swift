@@ -35,6 +35,7 @@ struct ProfileEditView: View {
                     .foregroundStyle(Theme.cobalt)
             }
         }
+        .keyboardDoneToolbar()
         .onAppear {
             draft = store.profile
         }

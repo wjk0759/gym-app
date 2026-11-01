@@ -74,6 +74,7 @@ struct VideoReviewView: View {
                     Button("关闭") { dismiss() }
                 }
             }
+            .keyboardDoneToolbar()
             .onChange(of: videoItem) { _, item in
                 guard let item else { return }
                 Task { await prepare(item) }

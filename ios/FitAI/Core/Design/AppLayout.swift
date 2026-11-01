@@ -7,6 +7,9 @@ import SwiftUI
 /// size classes stay consistent.
 enum AppLayout {
     static let readableMaxWidth: CGFloat = 720
+    /// Devices narrower than this use the compact form rhythm. Width is stable
+    /// while the keyboard animates, unlike window height.
+    static let compactWidthThreshold: CGFloat = 390
     static let compactPadding: CGFloat = 18
     static let regularPadding: CGFloat = 28
     static let sectionSpacing: CGFloat = 18

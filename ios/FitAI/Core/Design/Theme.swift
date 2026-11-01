@@ -80,6 +80,14 @@ enum Theme {
     static let lime = primary
     static let coral = secondary
 
+    /// Semantic cycle/period accent. This is the one intentional exception to
+    /// the four-color palette: it carries meaning on menstrual-cycle surfaces,
+    /// not decoration. It still adapts to light/dark and pairs with `onAccent`.
+    static let cycle = adaptive(
+        dark: UIColor(red: 1.000, green: 0.560, blue: 0.720, alpha: 1),
+        light: UIColor(red: 0.760, green: 0.180, blue: 0.380, alpha: 1)
+    )
+
     /// Always-dark ink used for brand marks, avatars and the capture button.
     /// Unlike `ink` (which follows text color and turns light in dark mode),
     /// this keeps the lime-on-ink identity readable in both appearances.

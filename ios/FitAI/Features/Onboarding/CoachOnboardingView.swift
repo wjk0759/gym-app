@@ -569,7 +569,7 @@ struct CoachOnboardingView: View {
                         .foregroundStyle(Theme.secondaryText)
                 }
             }
-            .tint(Theme.cobalt)
+            .tint(Theme.primary)
             .padding(16)
             .background(Theme.paper, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay {
@@ -598,7 +598,7 @@ struct CoachOnboardingView: View {
                             .font(AppType.callout)
                             .foregroundStyle(Theme.ink)
                     }
-                    .tint(Theme.cobalt)
+                    .tint(Theme.primary)
                     .padding(.vertical, 12)
 
                     if index < injuryOptions.count - 1 {

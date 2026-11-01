@@ -67,6 +67,7 @@ struct PasswordRegistrationView: View {
                     Button("取消") { dismiss() }
                 }
             }
+            .keyboardDoneToolbar()
         }
     }
 

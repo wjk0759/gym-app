@@ -150,6 +150,7 @@ struct WorkoutDetailView: View {
                     }
                 }
             }
+            .keyboardDoneToolbar()
             .fullScreenCover(isPresented: $showExercisePicker) {
                 NavigationStack {
                     EquipmentPickerView(onSelect: { exercise in
@@ -560,7 +561,7 @@ struct WorkoutDetailView: View {
 
             Toggle("完成这一组", isOn: item.completed)
                 .font(AppType.caption)
-                .tint(Theme.cobalt)
+                .tint(Theme.primary)
         }
         .padding(11)
         .background(

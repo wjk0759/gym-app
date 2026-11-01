@@ -86,6 +86,7 @@ struct BodyCheckInSheet: View {
                     Button("关闭") { dismiss() }
                 }
             }
+            .keyboardDoneToolbar()
             .onAppear(perform: load)
         }
     }

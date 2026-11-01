@@ -389,11 +389,12 @@ enum KeyboardDismiss {
 }
 
 extension View {
-    func keyboardDoneToolbar() -> some View {
+    func keyboardDoneToolbar(_ onDone: (() -> Void)? = nil) -> some View {
         toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
                 Button("完成") {
+                    onDone?()
                     KeyboardDismiss.dismiss()
                 }
             }

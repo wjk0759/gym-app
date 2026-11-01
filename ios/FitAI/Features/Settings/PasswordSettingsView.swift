@@ -118,6 +118,7 @@ struct PasswordSettingsView: View {
                     Button("关闭") { dismiss() }
                 }
             }
+            .keyboardDoneToolbar()
             .alert("密码已保存", isPresented: $showSuccess) {
                 Button("完成") { dismiss() }
             } message: {

@@ -336,7 +336,7 @@ struct WeatherDetailSheet: View {
                         .foregroundStyle(Theme.tertiaryText)
                 }
             }
-            .tint(Theme.cobalt)
+            .tint(Theme.primary)
 
             if weather.alertsEnabled && !weather.alertsAuthorized {
                 HStack(spacing: 8) {

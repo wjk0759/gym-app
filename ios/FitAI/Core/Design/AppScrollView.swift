@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 全局内容滚动容器：统一隐藏滚动条、键盘收起和短内容不抖动。
+/// 全局内容滚动容器：统一隐藏滚动条、支持拖动收起键盘。
 struct AppScrollView<Content: View>: View {
     private let content: Content
 
@@ -16,6 +16,8 @@ struct AppScrollView<Content: View>: View {
         }
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
-        .scrollBounceBehavior(.basedOnSize)
+        // Forms often fit on one screen. Allowing bounce gives the
+        // interactive keyboard dismissal a drag to observe on short pages.
+        .scrollBounceBehavior(.always)
     }
 }

@@ -384,7 +384,7 @@ struct HomeV2View: View {
                      ? "经期已设为休息：今天不安排力量训练。"
                      : "经期第 \(period.day) 天：自动少 1 组，负重约 80%。")
                     .font(AppType.micro)
-                    .foregroundStyle(period.mode == .rest ? Theme.coral : Theme.cobalt)
+                    .foregroundStyle(Theme.cycle)
             }
 
             if completed || inProgress {

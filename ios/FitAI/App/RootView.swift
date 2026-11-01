@@ -1,6 +1,5 @@
 import Combine
 import SwiftUI
-import UIKit
 
 struct RootView: View {
     @Environment(AppStore.self) private var store
@@ -11,7 +10,6 @@ struct RootView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var splashPulse = false
     @State private var phaseNow = Date()
-    @State private var keyboardVisible = false
     @State private var syncedUserID: String?
     @State private var toastDismissTask: Task<Void, Never>?
 
@@ -40,16 +38,9 @@ struct RootView: View {
             }
         }
         .environment(\.weatherAtmosphere, atmosphere)
-        .environment(\.keyboardVisible, keyboardVisible)
         .fontDesign(.default)
         .tint(Theme.cobalt)
         // 全屏水珠层会持续参与合成；雨天效果保留在背景天空里，避免影响滚动和输入。
-        .overlay {
-            KeyboardDismissInstaller()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
-        }
         .overlay(alignment: .top) {
             if let message = store.toast, !message.isEmpty {
                 ToastBanner(message: message)
@@ -95,15 +86,8 @@ struct RootView: View {
                 activateWeatherIfNeeded()
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
-            keyboardVisible = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            keyboardVisible = false
-        }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active {
-                keyboardVisible = false
                 store.flushPersistence()
             } else {
                 phaseNow = Date()

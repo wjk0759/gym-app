@@ -130,6 +130,7 @@ struct EquipmentPickerView: View {
                 }
             }
         }
+        .keyboardDoneToolbar()
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if showSelectionButton && !isPickingForSession {
                 HStack {

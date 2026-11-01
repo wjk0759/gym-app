@@ -32,7 +32,7 @@ struct FocusAreasSheet: View {
                                 .foregroundStyle(Theme.tertiaryText)
                         }
                     }
-                    .tint(Theme.cobalt)
+                    .tint(Theme.primary)
                     .padding(14)
                     .background(Theme.paper, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .overlay {

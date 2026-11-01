@@ -85,7 +85,7 @@ struct PeriodScheduleView: View {
             Text("CYCLE / 经期")
                 .font(AppType.overline)
                 .tracking(1.5)
-                .foregroundStyle(Theme.cobalt)
+                .foregroundStyle(Theme.cycle)
 
             Text("标记经期")
                 .font(AppType.display)
@@ -106,7 +106,7 @@ struct PeriodScheduleView: View {
                 .foregroundStyle(Theme.ink)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .editorialCard(accent: Theme.coral)
+        .editorialCard(accent: Theme.cycle)
     }
 
     // MARK: - Mode
@@ -151,13 +151,13 @@ struct PeriodScheduleView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(11)
                         .background(
-                            mode == item ? Theme.coral : Theme.paper,
+                            mode == item ? Theme.cycle : Theme.paper,
                             in: RoundedRectangle(cornerRadius: 13, style: .continuous)
                         )
                         .overlay {
                             RoundedRectangle(cornerRadius: 13, style: .continuous)
                                 .strokeBorder(
-                                    mode == item ? Theme.coral : Theme.stroke,
+                                    mode == item ? Theme.cycle : Theme.stroke,
                                     lineWidth: 1
                                 )
                         }
@@ -235,7 +235,7 @@ struct PeriodScheduleView: View {
                 }
                 HStack(spacing: 5) {
                     Circle()
-                        .fill(Theme.coral)
+                        .fill(Theme.cycle)
                         .frame(width: 6, height: 6)
                     Text("经期区间")
                 }
@@ -292,13 +292,13 @@ struct PeriodScheduleView: View {
                     .foregroundStyle(
                         boundary
                             ? Theme.onAccent
-                            : (active ? Theme.coral : (inMonth ? Theme.ink : Theme.tertiaryText))
+                            : (active ? Theme.cycle : (inMonth ? Theme.ink : Theme.tertiaryText))
                     )
                     .frame(maxWidth: .infinity)
 
                 if active {
                     Circle()
-                        .fill(boundary ? Theme.onAccent : Theme.coral)
+                        .fill(boundary ? Theme.onAccent : Theme.cycle)
                         .frame(width: 3.5, height: 3.5)
                 } else if isToday {
                     Circle()
@@ -314,9 +314,9 @@ struct PeriodScheduleView: View {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(
                         boundary
-                            ? Theme.coral
+                            ? Theme.cycle
                             : (active
-                                ? Theme.coral.opacity(0.13)
+                                ? Theme.cycle.opacity(0.13)
                                 : (isToday ? Theme.cobalt.opacity(0.04) : Color.clear))
                     )
             }
@@ -344,7 +344,7 @@ struct PeriodScheduleView: View {
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: "drop.fill")
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(Theme.coral)
+                    .foregroundStyle(Theme.cycle)
                     .padding(.top, 2)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -364,12 +364,12 @@ struct PeriodScheduleView: View {
             }
             .padding(11)
             .background(
-                Theme.coral.opacity(0.07),
+                Theme.cycle.opacity(0.07),
                 in: RoundedRectangle(cornerRadius: 13, style: .continuous)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .strokeBorder(Theme.coral.opacity(0.22), lineWidth: 1)
+                    .strokeBorder(Theme.cycle.opacity(0.22), lineWidth: 1)
             }
         }
     }

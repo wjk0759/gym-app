@@ -298,7 +298,7 @@ struct BodyPhotoAnalysisView: View {
                     .font(AppType.callout)
                     .foregroundStyle(Theme.ink)
             }
-            .tint(Theme.cobalt)
+            .tint(Theme.primary)
 
             Text(store.canUseRemoteAI
                  ? "照片会发送到后端做一次性分析，不保存原图。"

@@ -48,99 +48,98 @@ struct LoginView: View {
 
     @FocusState private var focusedField: Field?
 
-    private var isEditing: Bool { focusedField != nil }
-
     private var errorText: String? {
         localError ?? auth.errorMessage
     }
 
     var body: some View {
-        GeometryReader { proxy in
-            let compact = proxy.size.height < 760
+        NavigationStack {
+            GeometryReader { proxy in
+                // Width, unlike height, does not change when the keyboard
+                // appears. This keeps the compact/regular layout stable during
+                // the keyboard animation.
+                let compact = proxy.size.width < AppLayout.compactWidthThreshold
 
-            ZStack {
-                AppBackground()
-                Color.clear
-                    .contentShape(Rectangle())
-                    .onTapGesture { focusedField = nil }
+                ZStack {
+                    AppBackground()
 
-                VStack(spacing: 0) {
-                    Spacer(minLength: 8)
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            Spacer(minLength: 8)
 
-                    if !isEditing {
-                        header(compact: compact)
-                            .transition(.opacity.combined(with: .offset(y: -8)))
-                        Spacer(minLength: compact ? 10 : 16)
-                        headline(compact: compact)
-                            .transition(.opacity.combined(with: .offset(y: -8)))
-                        Spacer(minLength: compact ? 10 : 16)
+                            header(compact: compact)
+                            Spacer(minLength: compact ? 10 : 16)
+                            headline(compact: compact)
+                            Spacer(minLength: compact ? 10 : 16)
+
+                            loginCard(compact: compact)
+
+                            Spacer(minLength: compact ? 10 : 14)
+                            socialSection(compact: compact)
+                            Spacer(minLength: compact ? 8 : 12)
+                            consentFooter
+                            devServerLink
+                                .padding(.top, 6)
+
+                            Spacer(minLength: 8)
+                        }
+                        .padding(.horizontal, compact ? 18 : 22)
+                        .padding(.bottom, 6)
+                        .frame(maxWidth: 480)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: proxy.size.height, alignment: .top)
                     }
-
-                    loginCard(compact: compact)
-
-                    if !isEditing {
-                        Spacer(minLength: compact ? 10 : 14)
-                        socialSection(compact: compact)
-                            .transition(.opacity.combined(with: .offset(y: 8)))
-                        Spacer(minLength: compact ? 8 : 12)
-                        consentFooter
-                            .transition(.opacity.combined(with: .offset(y: 8)))
-                        devServerLink
-                            .padding(.top, 6)
-                    }
-
-                    Spacer(minLength: 8)
-                }
-                .padding(.horizontal, compact ? 18 : 22)
-                .padding(.bottom, 6)
-                .frame(maxWidth: 480)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .animation(Motion.smooth, value: isEditing)
-            }
-        }
-        .sheet(item: $legal) { kind in
-            LegalDocumentView(kind: kind)
-        }
-        .sheet(isPresented: $showServerSettings) {
-            ServerSettingsView()
-        }
-        .sheet(isPresented: $showPasswordReset) {
-            PasswordResetView(prefillPhone: account.count == 11 ? account : phone)
-        }
-        .sheet(isPresented: $showRegistration) {
-            PasswordRegistrationView(
-                account: registrationAccount,
-                password: registrationPassword
-            )
-        }
-        .confirmationDialog(
-            "登录前确认",
-            isPresented: $showConsentPrompt,
-            titleVisibility: .visible
-        ) {
-            Button("同意并继续") {
-                consent = true
-                let action = pendingConsentAction
-                pendingConsentAction = nil
-                switch action {
-                case .some(.login):
-                    performLogin()
-                case .some(.social(let provider)):
-                    performSocialLogin(provider)
-                case .none:
-                    break
+                    .scrollIndicators(.hidden)
+                    .scrollDismissesKeyboard(.interactively)
+                    .scrollBounceBehavior(.always)
                 }
             }
-            Button("取消", role: .cancel) {
-                pendingConsentAction = nil
+            .toolbar(.hidden, for: .navigationBar)
+            .keyboardDoneToolbar { focusedField = nil }
+            .sheet(item: $legal) { kind in
+                LegalDocumentView(kind: kind)
             }
-        } message: {
-            Text("登录需要使用你的账号标识，并可能同步训练资料。请确认已阅读并同意《用户协议》《隐私政策》和《健康免责声明》。")
-        }
-        .onChange(of: mode) { _, _ in
-            focusedField = nil
-            localError = nil
-            auth.clearError()
+            .sheet(isPresented: $showServerSettings) {
+                ServerSettingsView()
+            }
+            .sheet(isPresented: $showPasswordReset) {
+                PasswordResetView(prefillPhone: account.count == 11 ? account : phone)
+            }
+            .sheet(isPresented: $showRegistration) {
+                PasswordRegistrationView(
+                    account: registrationAccount,
+                    password: registrationPassword
+                )
+            }
+            .confirmationDialog(
+                "登录前确认",
+                isPresented: $showConsentPrompt,
+                titleVisibility: .visible
+            ) {
+                Button("同意并继续") {
+                    consent = true
+                    let action = pendingConsentAction
+                    pendingConsentAction = nil
+                    switch action {
+                    case .some(.login):
+                        performLogin()
+                    case .some(.social(let provider)):
+                        performSocialLogin(provider)
+                    case .none:
+                        break
+                    }
+                }
+                Button("取消", role: .cancel) {
+                    pendingConsentAction = nil
+                }
+            } message: {
+                Text("登录需要使用你的账号标识，并可能同步训练资料。请确认已阅读并同意《用户协议》《隐私政策》和《健康免责声明》。")
+            }
+            .onChange(of: mode) { _, _ in
+                focusedField = nil
+                localError = nil
+                auth.clearError()
+            }
         }
     }
 
@@ -352,7 +351,9 @@ struct LoginView: View {
                         .foregroundStyle(Theme.ink)
                         .keyboardType(.numberPad)
                         .textContentType(.telephoneNumber)
+                        .submitLabel(.next)
                         .focused($focusedField, equals: .phone)
+                        .onSubmit { focusedField = .code }
                         .onChange(of: phone) { _, newValue in
                             phone = String(newValue.filter(\.isNumber).prefix(11))
                             localError = nil
@@ -374,7 +375,12 @@ struct LoginView: View {
                         .foregroundStyle(Theme.ink)
                         .keyboardType(.numberPad)
                         .textContentType(.oneTimeCode)
+                        .submitLabel(.done)
                         .focused($focusedField, equals: .code)
+                        .onSubmit {
+                            focusedField = nil
+                            submit()
+                        }
                         .onChange(of: code) { _, newValue in
                             code = String(newValue.filter(\.isNumber).prefix(6))
                             localError = nil
@@ -433,7 +439,9 @@ struct LoginView: View {
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .textContentType(.username)
+                        .submitLabel(.next)
                         .focused($focusedField, equals: .account)
+                        .onSubmit { focusedField = .password }
                         .onChange(of: account) { _, _ in localError = nil }
                 }
             }
@@ -461,6 +469,11 @@ struct LoginView: View {
                     .foregroundStyle(Theme.ink)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
+                    .submitLabel(.go)
+                    .onSubmit {
+                        focusedField = nil
+                        submit()
+                    }
                     .onChange(of: password) { _, _ in localError = nil }
 
                     Button {
@@ -827,6 +840,7 @@ private struct ServerSettingsView: View {
                     Button("关闭") { dismiss() }
                 }
             }
+            .keyboardDoneToolbar()
         }
     }
 }

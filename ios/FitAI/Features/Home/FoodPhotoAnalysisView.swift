@@ -266,7 +266,7 @@ struct FoodPhotoAnalysisView: View {
                     HStack(spacing: 9) {
                         Toggle("", isOn: $item.selected)
                             .labelsHidden()
-                            .tint(Theme.cobalt)
+                            .tint(Theme.primary)
 
                         Text(item.name)
                             .font(AppType.callout.weight(.semibold))

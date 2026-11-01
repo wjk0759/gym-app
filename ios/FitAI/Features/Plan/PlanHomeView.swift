@@ -694,7 +694,7 @@ struct PlanHomeView: View {
                     }
                     if hasPeriod {
                         Circle()
-                            .stroke(Theme.secondary, lineWidth: 1)
+                            .stroke(Theme.cycle, lineWidth: 1)
                             .frame(width: 3.5, height: 3.5)
                     }
                     if !isDone && !hasPlan && !hasDraft && !hasFood && !hasPeriod {
@@ -830,7 +830,7 @@ struct PlanHomeView: View {
             return DayStatus(text: "已记录", accent: Theme.cobalt, filled: true)
         }
         if period?.mode == .rest {
-            return DayStatus(text: "休息日", accent: Theme.coral, filled: false)
+            return DayStatus(text: "休息日", accent: Theme.cycle, filled: false)
         }
         return DayStatus(text: "休息日", accent: Theme.tertiaryText, filled: false)
     }
@@ -983,7 +983,7 @@ struct PlanHomeView: View {
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: "drop.fill")
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(Theme.coral)
+                    .foregroundStyle(Theme.cycle)
                     .padding(.top, 2)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -999,12 +999,12 @@ struct PlanHomeView: View {
             }
             .padding(10)
             .background(
-                Theme.coral.opacity(0.07),
+                Theme.cycle.opacity(0.07),
                 in: RoundedRectangle(cornerRadius: 12, style: .continuous)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(Theme.coral.opacity(0.22), lineWidth: 1)
+                    .strokeBorder(Theme.cycle.opacity(0.22), lineWidth: 1)
             }
         }
     }

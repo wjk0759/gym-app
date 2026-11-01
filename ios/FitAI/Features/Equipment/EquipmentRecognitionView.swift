@@ -552,6 +552,7 @@ private struct CustomExerciseAddSheet: View {
                     Button("取消") { dismiss() }
                 }
             }
+            .keyboardDoneToolbar()
             .onAppear {
                 if name.isEmpty {
                     name = initialName
