@@ -54,13 +54,21 @@ struct WorkoutDetailView: View {
                     }
 
                     if groups.isEmpty {
-                        EmptyStateView(
-                            icon: "list.bullet.clipboard",
-                            title: "这次没有记录组数",
-                            message: isEditing
-                                ? "点下方「添加动作」补一条训练记录。"
-                                : "点右上角「编辑」可以补录动作和组数。"
-                        )
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("这次没有记录组数")
+                                .font(AppType.headline)
+                                .foregroundStyle(Theme.ink)
+                            Text(
+                                isEditing
+                                    ? "点下方「添加动作」补一条训练记录。"
+                                    : "点右上角「编辑」可以补录动作和组数。"
+                            )
+                            .font(AppType.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .card()
                     } else {
                         ForEach(groups) { group in
                             if isEditing {
@@ -83,22 +91,31 @@ struct WorkoutDetailView: View {
                             Button(role: .destructive) {
                                 showDelete = true
                             } label: {
-                                Text("删除这条训练记录")
-                                .font(.subheadline.weight(.semibold))
+                                HStack(spacing: 6) {
+                                    Image(systemName: "trash")
+                                        .font(.system(size: 10, weight: .semibold))
+                                    Text("删除这条训练记录")
+                                        .font(AppType.caption.weight(.semibold))
+                                }
                                 .foregroundStyle(Theme.danger)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
                                 .background(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .fill(Theme.danger.opacity(0.10))
+                                    Theme.danger.opacity(0.07),
+                                    in: RoundedRectangle(cornerRadius: 13, style: .continuous)
                                 )
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                        .strokeBorder(Theme.danger.opacity(0.22), lineWidth: 1)
+                                }
                             }
                             .buttonStyle(.plain)
                         }
                     }
                 }
-                .padding(20)
-                .padding(.bottom, 20)
+                .appPagePadding()
+                .padding(.top, 8)
+                .padding(.bottom, 28)
             }
             .background(AppBackground())
             .navigationTitle(
@@ -164,110 +181,149 @@ struct WorkoutDetailView: View {
     // MARK: - 只读
 
     private var summaryCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(String(draft.dayTitle.prefix(40)))
-                .lineLimit(2)
-                .font(.title3.weight(.bold))
-                .foregroundStyle(Theme.primaryText)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
+                Text("SESSION / 训练详情")
+                    .font(AppType.overline)
+                    .tracking(1.3)
+                    .foregroundStyle(Theme.cobalt)
 
-            Text(draft.date.formatted(date: .complete, time: .shortened))
-                .font(.caption)
-                .foregroundStyle(Theme.secondaryText)
+                Spacer(minLength: 4)
 
-            HStack(spacing: 12) {
-                metric("\(draft.durationMinutes)", "分钟")
-                metric("\(draft.sets.count)", "组数")
-                metric("\(Int(draft.volume))", "容量 kg")
+                Text(draft.date.formatted(.dateTime.month().day().weekday(.abbreviated)))
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(Theme.tertiaryText)
             }
 
-            HStack {
-                Text("训练感受")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
-                Spacer()
+            Text(String(draft.dayTitle.prefix(40)))
+                .lineLimit(2)
+                .font(AppType.hero)
+                .tracking(-0.6)
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(draft.date.formatted(date: .complete, time: .shortened))
+                .font(AppType.caption)
+                .foregroundStyle(Theme.secondaryText)
+
+            HStack(spacing: 8) {
+                EditorialMetric(
+                    title: "时长",
+                    value: "\(draft.durationMinutes)",
+                    unit: "分钟"
+                )
+                EditorialMetric(
+                    title: "组数",
+                    value: "\(draft.sets.count)",
+                    unit: "组"
+                )
+                EditorialMetric(
+                    title: "容量",
+                    value: "\(Int(draft.volume))",
+                    unit: "kg"
+                )
+            }
+
+            HStack(spacing: 8) {
                 Text(feelingEmoji(draft.feeling))
+                    .font(.system(size: 19))
                 Text(feelingText(draft.feeling))
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(Theme.primaryText)
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                Spacer()
+                Text("训练感受")
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            .padding(10)
+            .background(Theme.ink.opacity(0.04), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Theme.stroke, lineWidth: 1)
             }
 
             if let notes = draft.notes, !notes.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("训练心得")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                    Text(String(notes.prefix(300)))
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.primaryText)
-                        .lineLimit(6)
-                        .multilineTextAlignment(.leading)
+                HStack(alignment: .top, spacing: 8) {
+                    RoundedRectangle(cornerRadius: 1.5)
+                        .fill(Theme.cobalt)
+                        .frame(width: 3, height: 16)
+                        .padding(.top, 2)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("训练心得")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Theme.cobalt)
+                        Text(String(notes.prefix(300)))
+                            .font(AppType.callout)
+                            .foregroundStyle(Theme.ink)
+                            .lineLimit(6)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 .padding(.top, 2)
             }
         }
-        .card()
-    }
-
-    private func metric(_ value: String, _ title: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(value)
-                .font(.title3.weight(.bold))
-                .foregroundStyle(Theme.accent)
-            Text(title)
-                .font(.caption2)
-                .foregroundStyle(Theme.secondaryText)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-        .background(Theme.surfaceStrong, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .editorialCard(accent: Theme.lime)
     }
 
     private func exerciseCard(_ group: ExerciseGroup) -> some View {
         let exercise = ExerciseLibrary.exercise(slug: group.slug)
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack {
+        return VStack(alignment: .leading, spacing: 9) {
+            HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(exercise?.nameZH ?? group.slug)
-                        .font(.headline)
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.headline)
+                        .foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text("\(exercise?.muscle.label ?? "") · \(exercise?.equipment.label ?? "")")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.secondaryText)
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(Theme.tertiaryText)
                 }
-                Spacer()
+
+                Spacer(minLength: 4)
+
                 NavigationLink {
                     ExerciseProgressView(slug: group.slug)
                 } label: {
                     Label("历史", systemImage: "chart.xyaxis.line")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(Theme.accent)
+                        .font(AppType.micro)
+                        .foregroundStyle(Theme.cobalt)
                 }
+                .buttonStyle(SubtlePressStyle(scale: 0.95))
+
                 Text("\(group.sets.count) 组")
-                    .font(.caption)
-                    .foregroundStyle(Theme.accent)
-                    .padding(.leading, 4)
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Theme.onAccent)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Theme.lime, in: Capsule(style: .continuous))
             }
 
+            InkDivider()
+
             ForEach(group.sets) { item in
-                HStack {
-                    Text("第 \(item.setIndex) 组")
-                        .font(.caption)
-                        .foregroundStyle(Theme.tertiaryText)
-                        .frame(width: 52, alignment: .leading)
+                HStack(spacing: 9) {
+                    Text("\(item.setIndex)")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Theme.ink)
+                        .frame(width: 22, height: 22)
+                        .background(Theme.ink.opacity(0.05), in: Circle())
 
                     Text(item.weightKG > 0
                          ? "\(item.weightKG.formatted()) kg × \(item.reps)"
                          : "自重 × \(item.reps)")
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                        .monospacedDigit()
 
-                    Spacer()
+                    Spacer(minLength: 4)
 
                     Text("RPE \(item.rpe.formatted(.number.precision(.fractionLength(1))))")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.secondaryText)
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Theme.tertiaryText)
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 3)
             }
         }
         .card()
@@ -277,22 +333,24 @@ struct WorkoutDetailView: View {
 
     private var editSummaryCard: some View {
         VStack(alignment: .leading, spacing: 14) {
+            Text("EDIT / 训练记录")
+                .font(AppType.overline)
+                .tracking(1.3)
+                .foregroundStyle(Theme.cobalt)
+
             VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text("训练名称")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                    Spacer()
-                    Text("\(min(40, draft.dayTitle.count))/40")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
-                }
+                fieldLabel("训练名称", counter: "\(min(40, draft.dayTitle.count))/40")
                 TextField("例如：全身 A", text: titleBinding)
+                    .font(AppType.callout)
                     .padding(11)
                     .background(
-                        Theme.surfaceStrong,
+                        Theme.ink.opacity(0.035),
                         in: RoundedRectangle(cornerRadius: 11, style: .continuous)
                     )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            .strokeBorder(Theme.stroke, lineWidth: 1)
+                    }
             }
 
             DatePicker(
@@ -301,22 +359,24 @@ struct WorkoutDetailView: View {
                 in: Date.distantPast...Date(),
                 displayedComponents: [.date, .hourAndMinute]
             )
-            .font(.subheadline)
-
-            Stepper(value: $draft.durationMinutes, in: 1...300, step: 5) {
-                HStack {
-                    Text("时长")
-                    Spacer()
-                    Text("\(draft.durationMinutes) 分钟")
-                        .foregroundStyle(Theme.secondaryText)
-                }
-            }
-            .font(.subheadline)
+            .font(AppType.callout)
+            .tint(Theme.cobalt)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("训练感受")
-                    .font(.caption)
-                    .foregroundStyle(Theme.secondaryText)
+                fieldLabel("时长")
+                Stepper(value: $draft.durationMinutes, in: 1...300, step: 5) {
+                    HStack {
+                        Text("\(draft.durationMinutes) 分钟")
+                            .font(AppType.callout.weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+                        Spacer()
+                    }
+                }
+                .tint(Theme.cobalt)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                fieldLabel("训练感受")
                 Picker("训练感受", selection: $draft.feeling) {
                     ForEach(1...5, id: \.self) { value in
                         Text("\(feelingEmoji(value)) \(feelingText(value))")
@@ -327,54 +387,88 @@ struct WorkoutDetailView: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text("训练心得")
-                        .font(.caption)
-                        .foregroundStyle(Theme.secondaryText)
-                    Spacer()
-                    Text("\(min(300, (draft.notes ?? "").count))/300")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.tertiaryText)
+                fieldLabel(
+                    "训练心得",
+                    counter: "\(min(300, (draft.notes ?? "").count))/300"
+                )
+                TextField(
+                    "今天状态、动作感受、下次注意什么…",
+                    text: notesBinding,
+                    axis: .vertical
+                )
+                .font(AppType.callout)
+                .lineLimit(2...5)
+                .padding(11)
+                .background(
+                    Theme.ink.opacity(0.035),
+                    in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .strokeBorder(Theme.stroke, lineWidth: 1)
                 }
-                TextField("今天状态、动作感受、下次注意什么…", text: notesBinding, axis: .vertical)
-                    .lineLimit(2...5)
-                    .padding(11)
-                    .background(
-                        Theme.surfaceStrong,
-                        in: RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    )
             }
 
-            HStack(spacing: 12) {
-                metric("\(draft.sets.count)", "组数")
-                metric("\(Int(draft.volume))", "容量 kg")
+            HStack(spacing: 8) {
+                EditorialMetric(
+                    title: "组数",
+                    value: "\(draft.sets.count)",
+                    unit: "组"
+                )
+                EditorialMetric(
+                    title: "容量",
+                    value: "\(Int(draft.volume))",
+                    unit: "kg"
+                )
             }
         }
-        .card()
+        .editorialCard(accent: Theme.cobalt)
+    }
+
+    private func fieldLabel(_ title: String, counter: String? = nil) -> some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 9.5, weight: .bold))
+                .foregroundStyle(Theme.secondaryText)
+            Spacer()
+            if let counter {
+                Text(counter)
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+        }
     }
 
     private func editExerciseCard(_ group: ExerciseGroup) -> some View {
         let exercise = ExerciseLibrary.exercise(slug: group.slug)
-        return VStack(alignment: .leading, spacing: 12) {
-            HStack {
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(exercise?.nameZH ?? group.slug)
-                        .font(.headline)
-                        .foregroundStyle(Theme.primaryText)
+                        .font(AppType.headline)
+                        .foregroundStyle(Theme.ink)
                     Text("\(exercise?.muscle.label ?? "") · \(exercise?.equipment.label ?? "")")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.secondaryText)
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(Theme.tertiaryText)
                 }
-                Spacer()
+
+                Spacer(minLength: 4)
+
+                Text("\(group.sets.count) 组")
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Theme.cobalt)
+
                 Button(role: .destructive) {
                     deleteExercise(group.slug)
                 } label: {
                     Image(systemName: "trash")
-                        .font(.caption)
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(Theme.danger)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SubtlePressStyle(scale: 0.94))
             }
+
+            InkDivider()
 
             ForEach(group.sets) { item in
                 if let binding = setBinding(item.id) {
@@ -386,10 +480,11 @@ struct WorkoutDetailView: View {
                 addSet(for: group.slug)
             } label: {
                 Label("添加一组", systemImage: "plus.circle")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.cobalt)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SubtlePressStyle())
+            .padding(.top, 2)
         }
         .card()
     }
@@ -398,71 +493,84 @@ struct WorkoutDetailView: View {
         VStack(alignment: .leading, spacing: 9) {
             HStack {
                 Text("第 \(item.wrappedValue.setIndex) 组")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .font(.system(size: 9.5, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Theme.ink.opacity(0.05), in: Capsule(style: .continuous))
+
                 Spacer()
+
                 Button(role: .destructive) {
                     deleteSet(item.wrappedValue.id)
                 } label: {
                     Image(systemName: "minus.circle")
-                        .font(.caption)
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(Theme.danger.opacity(0.8))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SubtlePressStyle(scale: 0.94))
             }
 
             HStack(spacing: 14) {
                 HStack(spacing: 6) {
                     Text("重量")
-                        .font(.caption)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.secondaryText)
                     TextField("0", value: item.weightKG, format: .number)
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 56)
                         .padding(7)
-                        .background(
-                            Theme.surfaceStrong,
-                            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        )
+                        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .strokeBorder(Theme.stroke, lineWidth: 1)
+                        }
                     Text("kg")
-                        .font(.caption2)
+                        .font(.system(size: 9, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                 }
 
                 HStack(spacing: 6) {
                     Text("次数")
-                        .font(.caption)
+                        .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.secondaryText)
                     Stepper("\(item.wrappedValue.reps)", value: item.reps, in: 0...100)
                         .labelsHidden()
+                        .tint(Theme.cobalt)
                     Text("\(item.wrappedValue.reps)")
-                        .font(.caption.weight(.semibold))
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Theme.ink)
                         .frame(width: 24)
                 }
             }
 
             HStack(spacing: 8) {
                 Text("RPE")
-                    .font(.caption)
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.secondaryText)
                 Slider(value: item.rpe, in: 6...10, step: 0.5)
-                    .tint(Theme.accent)
+                    .tint(Theme.cobalt)
                 Text(item.wrappedValue.rpe.formatted(.number.precision(.fractionLength(1))))
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Theme.cobalt)
                     .frame(width: 28)
             }
 
             Toggle("完成这一组", isOn: item.completed)
-                .font(.caption)
-                .tint(Theme.accent)
+                .font(AppType.caption)
+                .tint(Theme.cobalt)
         }
-        .padding(10)
+        .padding(11)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Theme.surfaceStrong.opacity(0.6))
+            Theme.ink.opacity(0.025),
+            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
         )
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Theme.stroke, lineWidth: 1)
+        }
     }
 
     // MARK: - 数据操作
