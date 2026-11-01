@@ -114,7 +114,7 @@ struct SettingsView: View {
             }
             Button("取消", role: .cancel) {}
         } message: {
-            Text("账号会进入 15 天冷静期，期间可联系客服恢复；冷静期结束后删除账号及云端数据。本机数据会立即清除。")
+            Text("账号会进入 15 天冷静期，期间可联系 \(LegalMeta.contactEmail) 恢复；冷静期结束后删除或匿名化账号及云端数据。本机当前账号数据会清除，进展照片和系统备份需你手动删除。")
         }
         .sheet(isPresented: $showExport) {
             DataExportView()
@@ -760,6 +760,9 @@ struct SettingsView: View {
             infoRow("用户协议", icon: "doc.text") {
                 legalDocument = .terms
             }
+            infoRow("健康免责声明", icon: "heart.text.square") {
+                legalDocument = .health
+            }
             infoRow("AI 记忆", icon: "brain.head.profile") {
                 showAgentMemory = true
             }
@@ -782,7 +785,7 @@ struct SettingsView: View {
             }
             .buttonStyle(.plain)
 
-            infoRow("生成式 AI 备案信息", icon: "checkmark.seal") {
+            infoRow("生成式 AI 服务说明", icon: "checkmark.seal") {
                 legalDocument = .ai
             }
 

@@ -6,6 +6,7 @@ struct PaywallView: View {
     @Environment(SubscriptionManager.self) private var manager
 
     @State private var selectedProductID: String?
+    @State private var legalDocument: LegalDocumentKind?
 
     private var effectiveProduct: Product? {
         manager.products.first { $0.id == selectedProductID }
@@ -57,6 +58,9 @@ struct PaywallView: View {
             }
             .task {
                 await manager.load()
+            }
+            .sheet(item: $legalDocument) { kind in
+                LegalDocumentView(kind: kind)
             }
             .alert(
                 "提示",
@@ -296,10 +300,28 @@ struct PaywallView: View {
     }
 
     private var legal: some View {
-        Text("付款将通过 Apple ID 完成。订阅到期前 24 小时会自动续期，可在系统设置中关闭。商品与价格以 App Store 页面为准。")
-            .font(.system(size: 9.5, weight: .medium))
-            .foregroundStyle(Theme.tertiaryText)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .card(padding: 14)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("付款将通过 Apple ID 完成。订阅到期前 24 小时会自动续期，可在系统设置中关闭。商品与价格以 App Store 页面为准。")
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(Theme.tertiaryText)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 10) {
+                legalLink("《用户协议》", kind: .terms)
+                legalLink("《隐私政策》", kind: .privacy)
+                legalLink("《健康免责声明》", kind: .health)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card(padding: 14)
+    }
+
+    private func legalLink(_ title: String, kind: LegalDocumentKind) -> some View {
+        Button(title) {
+            legalDocument = kind
+        }
+        .font(.system(size: 9.5, weight: .medium))
+        .foregroundStyle(Theme.cobalt)
+        .buttonStyle(.plain)
     }
 }

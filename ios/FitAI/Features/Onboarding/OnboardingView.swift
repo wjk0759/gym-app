@@ -20,7 +20,7 @@ struct OnboardingView: View {
                     safetyCard
                 }
 
-                Text("继续即表示你已阅读并同意《用户协议》与《隐私政策》。健康数据仅用于生成训练与饮食建议。")
+                Text("继续即表示你已阅读并同意《用户协议》《隐私政策》与《健康免责声明》。健康数据仅用于生成训练与饮食建议。")
                     .font(.caption2)
                     .foregroundStyle(Theme.tertiaryText)
                     .multilineTextAlignment(.center)
