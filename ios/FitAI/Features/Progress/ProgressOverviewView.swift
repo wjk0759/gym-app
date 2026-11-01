@@ -1,5 +1,6 @@
 import Charts
 import Foundation
+import Photos
 import PhotosUI
 import SwiftUI
 import UIKit
@@ -577,6 +578,12 @@ private struct ProgressPhotoCompareView: View {
 
     @Environment(\.dismiss) private var dismiss
 
+    @State private var shareImage: UIImage?
+    @State private var comparison: UIImage?
+    @State private var showShare = false
+    @State private var saveMessage = ""
+    @State private var showSaveAlert = false
+
     private var beforeImage: UIImage? { ProgressPhotoStore.image(for: before) }
     private var afterImage: UIImage? { ProgressPhotoStore.image(for: after) }
 
@@ -605,6 +612,42 @@ private struct ProgressPhotoCompareView: View {
                             compareLabel("现在", date: after.date, color: Theme.coral)
                         }
 
+                        HStack(spacing: 8) {
+                            Button {
+                                saveComparison()
+                            } label: {
+                                Label("保存对比图", systemImage: "square.and.arrow.down")
+                                    .font(AppType.caption.weight(.bold))
+                                    .foregroundStyle(Theme.ink)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 11)
+                                    .background(Theme.paper, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                            .strokeBorder(Theme.stroke, lineWidth: 1)
+                                    }
+                            }
+                            .buttonStyle(SubtlePressStyle(scale: 0.97))
+                            .disabled(comparison == nil)
+
+                            Button {
+                                shareComparison()
+                            } label: {
+                                Label("分享对比图", systemImage: "square.and.arrow.up")
+                                    .font(AppType.caption.weight(.bold))
+                                    .foregroundStyle(Theme.ink)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 11)
+                                    .background(Theme.lime, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                            .strokeBorder(Theme.ink.opacity(0.12), lineWidth: 1)
+                                    }
+                            }
+                            .buttonStyle(SubtlePressStyle(scale: 0.97))
+                            .disabled(comparison == nil)
+                        }
+
                         Text("拖动中间的分隔线，看同一角度的变化。")
                             .font(AppType.micro)
                             .foregroundStyle(Theme.tertiaryText)
@@ -627,7 +670,55 @@ private struct ProgressPhotoCompareView: View {
                     Button("关闭") { dismiss() }
                 }
             }
+            .sheet(isPresented: $showShare) {
+                if let shareImage {
+                    ProgressPhotoActivityView(items: [shareImage])
+                }
+            }
+            .alert("保存到相册", isPresented: $showSaveAlert) {
+                Button("知道了", role: .cancel) {}
+            } message: {
+                Text(saveMessage)
+            }
+            .task {
+                guard comparison == nil, let beforeImage, let afterImage else { return }
+                comparison = ProgressPhotoExporter.comparisonImage(
+                    before: before,
+                    after: after,
+                    beforeImage: beforeImage,
+                    afterImage: afterImage
+                )
+            }
         }
+    }
+
+    private func saveComparison() {
+        guard let image = comparison else { return }
+        PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
+            DispatchQueue.main.async {
+                guard status == .authorized || status == .limited else {
+                    saveMessage = "没有相册权限。请到系统设置里允许 FitAI 添加照片。"
+                    showSaveAlert = true
+                    return
+                }
+                PHPhotoLibrary.shared().performChanges {
+                    PHAssetChangeRequest.creationRequestForAsset(from: image)
+                } completionHandler: { success, error in
+                    DispatchQueue.main.async {
+                        saveMessage = success
+                            ? "对比图已保存到相册。"
+                            : "保存失败：\(error?.localizedDescription ?? "未知错误")"
+                        showSaveAlert = true
+                    }
+                }
+            }
+        }
+    }
+
+    private func shareComparison() {
+        guard let image = comparison else { return }
+        shareImage = image
+        showShare = true
     }
 
     private func compareLabel(_ title: String, date: Date, color: Color) -> some View {
