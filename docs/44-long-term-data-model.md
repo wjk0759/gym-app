@@ -117,12 +117,16 @@ V12 增加中文 ngram 全文索引：
 - 删除 `ios/FitAI/Features/Onboarding/OnboardingView.swift`（旧引导，无引用）。
 - 删除 `NutritionView` 中 8 个未使用的旧卡片/函数，约 270 行。
 
-## 12. 权益、试用与额度（V14–V16）
+## 12. 权益、试用与额度（V14–V19）
 
 - `user_entitlements`：Pro 权益台账。来源 `admin / storekit / promo`，按 `starts_at / expires_at / revoked_at` 判断有效；不在 `users` 上存布尔值。
 - `feature_trials`：一次性体验，唯一键 `(user_id, feature_key)`。训练计划来源 `onboarding`，饮食周计划来源 `first_generation`；老用户已在 V14 回填。
 - `feature_usage`：按自然周（Asia/Shanghai）记录 AI 教练用量，免费用户每周 3 条；安全/医疗回复不计入。
-- `auth_sessions` V15/V16：`last_touched_at`、refresh 轮换宽限期、`device_id`。持续使用会滑动延长 30 天，异常复用撤销会话。
+- `feature_generation_state` V17：计划/饮食周计划的持久冷却、进行中锁和幂等回放。成功后才开始 60 秒冷却；相同 `Idempotency-Key` 在 10 分钟内返回已保存结果。
+- `rate_limit_buckets` V18：按 `(feature, user)` 的分布式 token bucket，所有 worker 共享同一额度，避免进程内限流被多 worker 绕过。
+- `ai_runtime_control` V19：全局 AI 开关。暂停时仅 `users.is_test` 白名单可用，其他请求降级到规则/Mock；后台变更写审计日志。
+- `ai_jobs`：新增按调用记录 `input_tokens / output_tokens`，后台 AI 用量页和全局日/月预算共用这一份数据。
+- `auth_sessions` V15/V16：`last_touched_at`、refresh 轮换宽限期、`device_id`。持续使用会滑动延长 30 天，异常复用撤销会话；同设备重登只保留最新会话，单账号最多 5 个活跃设备会话。
 - 客户端只展示服务端快照，Pro / 体验 / 额度最终由 API 校验；付费墙和锁定 UI 不得替代服务端权限判断。
 
 ## 13. 后续

@@ -17,6 +17,7 @@ struct RootView: View {
 
     var body: some View {
         @Bindable var store = store
+        @Bindable var paywall = store.access.paywall
         let atmosphere = WeatherAtmosphere.make(snapshot: weather.snapshot, date: phaseNow)
 
         ZStack {
@@ -56,7 +57,7 @@ struct RootView: View {
         .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: auth.isAuthenticated)
         .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: store.profile.isOnboarded)
         .animation(Motion.resolved(.easeInOut(duration: 0.9), reduceMotion: reduceMotion), value: atmosphere.isPrecipitation)
-        .sheet(item: paywallBinding) { feature in
+        .sheet(item: $paywall.feature) { feature in
             ProPaywallSheet(feature: feature)
         }
         .sensoryFeedback(.success, trigger: auth.isAuthenticated) { _, isAuthenticated in
@@ -128,13 +129,6 @@ struct RootView: View {
         return .asymmetric(
             insertion: .opacity.combined(with: .scale(scale: 0.985)),
             removal: .opacity
-        )
-    }
-
-    private var paywallBinding: Binding<ProFeature?> {
-        Binding(
-            get: { store.access.paywall.feature },
-            set: { store.access.paywall.feature = $0 }
         )
     }
 

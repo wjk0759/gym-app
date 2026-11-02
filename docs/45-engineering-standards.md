@@ -112,3 +112,12 @@
 - 付费墙统一组件：`ProPaywallSheet`、`ProUpsellCard`、`ProLockedOverlay`；页面不得各自维护 `showPaywall`。
 - 退款、撤销、过期后服务端立即失效；客户端缓存只用于展示，不得作为授权依据。
 - 新增付费功能必须同时定义：FeatureKey、体验/额度策略、服务端校验、付费墙文案、锁定 UI、测试。
+
+## 12. 防滥用与成本
+
+- 生成类接口（训练计划、饮食周计划）必须带幂等键；服务端用 `feature_generation_state` 做进行中锁、成功冷却和回放，不能只靠客户端按钮禁用。
+- 限流用 `rate_limit_buckets` 的分布式 token bucket；禁止新增只在本进程生效的计数器。
+- 全局 AI 预算从 `ai_jobs` 的 token 汇总；70%/90% 告警，100% 自动降级。预算和全局暂停都必须在调用 provider 前检查。
+- 全局暂停只放行 `users.is_test`；后台开关变更必须写审计日志。
+- 设备会话：同一设备重登撤销旧会话，单账号最多 5 个活跃设备；多账号共用设备/同 IP 批量登录写入 `auth_events` 异常事件，先告警不误封。
+- App Attest / DeviceCheck 需要 Apple 团队配置和设备，未完成前不得宣称已上线。
