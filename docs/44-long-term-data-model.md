@@ -117,7 +117,15 @@ V12 增加中文 ngram 全文索引：
 - 删除 `ios/FitAI/Features/Onboarding/OnboardingView.swift`（旧引导，无引用）。
 - 删除 `NutritionView` 中 8 个未使用的旧卡片/函数，约 270 行。
 
-## 12. 后续
+## 12. 权益、试用与额度（V14–V16）
+
+- `user_entitlements`：Pro 权益台账。来源 `admin / storekit / promo`，按 `starts_at / expires_at / revoked_at` 判断有效；不在 `users` 上存布尔值。
+- `feature_trials`：一次性体验，唯一键 `(user_id, feature_key)`。训练计划来源 `onboarding`，饮食周计划来源 `first_generation`；老用户已在 V14 回填。
+- `feature_usage`：按自然周（Asia/Shanghai）记录 AI 教练用量，免费用户每周 3 条；安全/医疗回复不计入。
+- `auth_sessions` V15/V16：`last_touched_at`、refresh 轮换宽限期、`device_id`。持续使用会滑动延长 30 天，异常复用撤销会话。
+- 客户端只展示服务端快照，Pro / 体验 / 额度最终由 API 校验；付费墙和锁定 UI 不得替代服务端权限判断。
+
+## 13. 后续
 
 1. 服务端提醒：实现 `notification_schedules` 的同步接口和定时任务（当前只保留表与唯一约束）。
 2. AppStore 拆分：`LocalStateStore`、`CoachRequestController`、同步服务，降低单文件复杂度。
