@@ -4,6 +4,7 @@ import base64
 import hashlib
 import hmac
 import html
+import logging
 import secrets
 import threading
 import time
@@ -32,6 +33,7 @@ from .serializers import goal_to_dict, profile_to_dict
 
 PASSWORD_ALGORITHM = "scrypt"
 PHONE_LENGTH = 11
+logger = logging.getLogger(__name__)
 _access_rate: dict[str, list[float]] = {}
 _sms_rate: dict[str, list[float]] = {}
 _rate_lock = threading.Lock()
@@ -674,6 +676,21 @@ def refresh_session(
     if used_previous and (grace_until is None or grace_until < now):
         # Reuse outside the grace window is treated as token theft.
         row.revoked_at = now
+        logger.warning(
+            "refresh token reuse detected user=%s session=%s ip=%s",
+            row.user_id,
+            row.id,
+            (request_meta or {}).get("ip"),
+        )
+        _event(
+            db,
+            row.user_id,
+            "refresh_reuse",
+            "refresh",
+            success=False,
+            request_meta=request_meta,
+            detail={"sessionId": row.id},
+        )
         db.commit()
         raise HTTPException(status_code=401, detail="登录已失效，请重新登录")
     if row.revoked_at is not None or expires < now:
@@ -681,6 +698,20 @@ def refresh_session(
     request_device = (request_meta or {}).get("device_id")
     if row.device_id and request_device and row.device_id != request_device:
         row.revoked_at = now
+        logger.warning(
+            "refresh device mismatch user=%s session=%s",
+            row.user_id,
+            row.id,
+        )
+        _event(
+            db,
+            row.user_id,
+            "refresh_device_mismatch",
+            "refresh",
+            success=False,
+            request_meta=request_meta,
+            detail={"sessionId": row.id},
+        )
         db.commit()
         raise HTTPException(status_code=401, detail="登录设备不匹配，请重新登录")
     user = db.get(User, row.user_id)

@@ -72,6 +72,12 @@ def test_previous_token_is_revoked_after_grace():
     db.refresh(row)
     assert row.revoked_at is not None
     assert first["refresh_token"]
+    events = (
+        db.query(AuthEvent)
+        .filter(AuthEvent.event == "refresh_reuse")
+        .all()
+    )
+    assert len(events) == 1
 
 
 def test_touch_extends_session_expiry():
