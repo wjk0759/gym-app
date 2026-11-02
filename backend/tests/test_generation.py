@@ -120,3 +120,32 @@ def test_per_feature_cooldown_is_persisted():
         now=base + timedelta(seconds=7),
     )
     assert not allowed.is_replay
+
+
+def test_zero_cooldown_allows_immediate_next_turn():
+    db = _session()
+    base = datetime.now(timezone.utc)
+
+    lease = generation.begin_generation(
+        db,
+        USER_ID,
+        "coach_chat",
+        cooldown_seconds=0,
+        now=base,
+    )
+    generation.complete_generation(
+        db,
+        lease,
+        user_id=USER_ID,
+        result_ref="message-1",
+        now=base,
+    )
+
+    next_lease = generation.begin_generation(
+        db,
+        USER_ID,
+        "coach_chat",
+        cooldown_seconds=0,
+        now=base,
+    )
+    assert not next_lease.is_replay

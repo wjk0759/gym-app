@@ -320,6 +320,18 @@ async def chat(payload: ChatIn, user_id: CurrentUser, db: DBSession):
 
     history = list(session.messages)
     reserved_period = _reserve_coach_turn(db, profile, payload.message)
+    lease = None
+    if reserved_period is not None:
+        try:
+            lease = generation.begin_generation(
+                db,
+                user_id,
+                "coach_chat",
+                cooldown_seconds=0,
+            )
+        except Exception:
+            access.release_coach_message(db, user_id, period=reserved_period)
+            raise
     try:
         result = await coach_reply(
             db,
@@ -331,9 +343,18 @@ async def chat(payload: ChatIn, user_id: CurrentUser, db: DBSession):
             payload.context,
         )
     except Exception:
+        if lease is not None:
+            generation.abort_generation(db, lease, user_id=user_id)
         if reserved_period is not None:
             access.release_coach_message(db, user_id, period=reserved_period)
         raise
+    if lease is not None:
+        generation.complete_generation(
+            db,
+            lease,
+            user_id=user_id,
+            result_ref=session.id,
+        )
 
     session.messages.append(
         ChatMessage(role="user", content=payload.message)
@@ -380,6 +401,18 @@ async def chat_stream(payload: ChatIn, user_id: CurrentUser, db: DBSession):
 
     history = list(session.messages)
     reserved_period = _reserve_coach_turn(db, profile, payload.message)
+    lease = None
+    if reserved_period is not None:
+        try:
+            lease = generation.begin_generation(
+                db,
+                user_id,
+                "coach_chat",
+                cooldown_seconds=0,
+            )
+        except Exception:
+            access.release_coach_message(db, user_id, period=reserved_period)
+            raise
     try:
         result = await coach_reply(
             db,
@@ -391,9 +424,18 @@ async def chat_stream(payload: ChatIn, user_id: CurrentUser, db: DBSession):
             payload.context,
         )
     except Exception:
+        if lease is not None:
+            generation.abort_generation(db, lease, user_id=user_id)
         if reserved_period is not None:
             access.release_coach_message(db, user_id, period=reserved_period)
         raise
+    if lease is not None:
+        generation.complete_generation(
+            db,
+            lease,
+            user_id=user_id,
+            result_ref=session.id,
+        )
 
     session.messages.append(ChatMessage(role="user", content=payload.message))
     session.messages.append(
