@@ -5,7 +5,7 @@ final class NavigationPerformanceTests: XCTestCase {
         continueAfterFailure = false
     }
 
-    func testReviewNavigationPerformance() throws {
+    func testProgressNavigationPerformance() throws {
         let app = XCUIApplication()
         app.launchEnvironment["FITAI_QA_BYPASS_AUTH"] = "1"
         app.launchEnvironment["FITAI_QA_FRAME_LOG"] = "1"
@@ -15,10 +15,8 @@ final class NavigationPerformanceTests: XCTestCase {
         XCTAssertTrue(recordTab.waitForExistence(timeout: 10))
         recordTab.tap()
 
-        let reviewTile = app.buttons
-            .matching(NSPredicate(format: "label CONTAINS '数据复盘'"))
-            .firstMatch
-        XCTAssertTrue(reviewTile.waitForExistence(timeout: 10))
+        let progressTile = app.buttons["变化"]
+        XCTAssertTrue(progressTile.waitForExistence(timeout: 10))
 
         measure(
             metrics: [
@@ -28,12 +26,12 @@ final class NavigationPerformanceTests: XCTestCase {
                 XCTOSSignpostMetric.navigationTransitionMetric
             ]
         ) {
-            reviewTile.tap()
+            progressTile.tap()
 
-            let reviewBar = app.navigationBars["数据复盘"]
-            XCTAssertTrue(reviewBar.waitForExistence(timeout: 5))
+            let progressBar = app.navigationBars["变化"]
+            XCTAssertTrue(progressBar.waitForExistence(timeout: 5))
 
-            let backButton = reviewBar.buttons.firstMatch
+            let backButton = progressBar.buttons.firstMatch
             XCTAssertTrue(backButton.waitForExistence(timeout: 2))
             backButton.tap()
             XCTAssertTrue(recordTab.waitForExistence(timeout: 5))

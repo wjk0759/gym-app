@@ -14,6 +14,11 @@
 - 工作区：干净
 - 已同步 `develop`；正式发布前仍需真实数据库和真机验收
 
+> 2026-11-02 本地 Agent 进展：从 `develop` 新建 `feat/pro-access-followup-2026-11`，
+> 未合并回 `develop`。本次完成 App Store Server API 本地实现、拍照幂等缓存、
+> 设备会话兼容/客服文档、SwiftLint CI 与三机型模拟器截图；iOS 单元测试 29 个全部通过，
+> SwiftLint 0 violation。外部凭据/真机项标 BLOCKED。
+
 最近 CI：
 
 - Backend Tests #102：✅ `afd4afc`
@@ -114,8 +119,9 @@
 
 ### P0 收费与外部验收
 
-- [ ] **App Store Server API 校验与定期订阅对账**
-  - 需要 App Store Connect 的 Key ID、Issuer ID、p8 私钥。
+- [x] **App Store Server API 校验与定期订阅对账（本地实现完成；真实调用 BLOCKED）**
+  - 已实现 `backend/app/services/app_store_api.py`、`POST /iap/app-store/reconcile`、`scripts/reconcile_storekit.py` 与 mock 测试。
+  - 真实 Apple 请求 BLOCKED：缺少 App Store Connect 的 Key ID、Issuer ID、p8 私钥。
   - 建议新增 `backend/app/services/app_store_api.py`：
     - 生成 ES256 JWT（`aud=appstoreconnect-v1`，`bid` 为 Bundle ID）
     - 查询 `/inApps/v1/subscriptions/{transactionId}`
@@ -125,12 +131,14 @@
   - 增加后台或定时任务入口做对账；不要把长 HTTP 调用放进数据库事务。
   - 用 mock HTTP 补测试；真实调用等凭据。
 
-- [ ] **App Store Connect 配置 Notifications V2 URL**
+- [ ] **BLOCKED · App Store Connect 配置 Notifications V2 URL**
+  - 缺少 App Store Connect 权限和可公网访问的域名/隧道；本地 webhook 代码已存在并有验签测试。
   - URL：`https://<你的域名>/api/v1/iap/app-store/notifications`
   - 本地验证可用隧道；真实配置需要 App Store Connect。
   - 验证退款、撤销、续订、订阅成功事件都能更新台账。
 
-- [ ] **TestFlight / StoreKit 沙盒真实购买、恢复、退款**
+- [ ] **BLOCKED · TestFlight / StoreKit 沙盒真实购买、恢复、退款**
+  - 缺少真实 Apple 账号、App Store Connect 商品和 TestFlight 环境。
   - 购买后确认：
     - 客户端拿到 verified transaction
     - 服务端 `/me/access` 变 Pro
@@ -138,19 +146,23 @@
     - 恢复购买能重新同步
   - 需要真实 Apple 账号和 App Store Connect 商品配置，不能本地伪造。
 
-- [ ] **给测试账号 30 天 Pro 真机端到端验证**
+- [ ] **BLOCKED · 给测试账号 30 天 Pro 真机端到端验证**
+  - 真机 `Wu-Tang` 已配对且 DDI 可用，但本机 Xcode 未登录 Apple ID、无开发证书，无法签名安装。
   - 测试账号已设置，见第 1 节。
   - 真机验证免费体验、付费墙、AI 额度、StoreKit 购买、恢复、退款。
 
-- [ ] **V14–V20 在预发/生产 MySQL 执行并核对回填**
+- [ ] **BLOCKED · V14–V20 在预发/生产 MySQL 执行并核对回填**
+  - 缺少预发/生产 MySQL 连接与 Flyway 权限；本次只新增了 V21 迁移，未在生产执行。
   - 开发库 3307 已完成，不要重复改开发库。
   - 预发/生产只通过 Flyway 执行，不手工改表。
   - 核对 `feature_trials` 与历史 onboarded/meal week 数量。
 
 ### P1 iOS 收费体验
 
-- [ ] **拍照分析幂等键**
-  - 服务端已有同用户并发 1 和 5 秒冷却，但还没有“同 key 返回同一结果”。
+- [x] **拍照分析幂等键**
+  - 已实现 `feature_result_cache` V21 + `photo_cache` 服务，覆盖体型、饮食、器械、教练视觉；只缓存脱敏 JSON 文本，TTL 300 秒，不落原图。
+  - 客户端在体型/饮食/器械/教练视觉请求带 `Idempotency-Key`；免费用户仍先过 Pro 校验并返回 403。
+  - 服务端已有同用户并发 1 和 5 秒冷却，现在同 key 重试会返回同一份结果。
   - 如果实现真正幂等：
     - 不落原图
     - 只缓存脱敏后的文本结果，TTL 很短（例如 5 分钟）
@@ -161,61 +173,74 @@
 
 ### P2 防滥用与成本
 
-- [ ] **App Attest / DeviceCheck**
-  - 需要 Apple 团队配置和真机。
+- [ ] **BLOCKED · App Attest / DeviceCheck**
+  - 需要 Apple 团队配置、App Attest capability 和真机；未编写未经验证的声明式接口，避免假装上线。
   - 不要在未验证的情况下声称已上线。
   - 建议先设计 challenge/attestation 接口和开关，默认关闭。
 
-- [ ] **重复提示词、批量注册的后台筛选与告警看板**
+- [ ] **BLOCKED · 重复提示词、批量注册的后台筛选与告警看板**
+  - 本机没有 Java/Node/admin 测试数据库，无法运行 admin-server/admin-web；本次未改后台代码。
   - 检测而不是直接封禁；家庭共享设备/运营商 NAT 会误报。
   - 后台可按设备、IP、提示词 hash、时间窗筛选。
   - 所有处置必须写审计日志。
 
-- [ ] **Redis 可选后端（非阻塞）**
-  - 当前数据库 token bucket 已支持多 worker。
+- [ ] **DEFERRED · Redis 可选后端（非阻塞）**
+  - 按文档只有吞吐成为瓶颈时再接；当前数据库 token bucket 已支持多 worker，本次不引入新依赖。
   - 只有吞吐成为瓶颈时再接 Redis；不要让 Redis 成为单点依赖。
 
 ### P3 滑动会话
 
-- [ ] **真机测试**：并发 401、断网、刷新响应丢失、旧 refresh token 复用、多设备同时在线。
-- [ ] **设备 ID 缺失/变更的兼容策略与客服路径**
-  - 旧客户端缺少 `X-Device-ID` 时目前兼容放行。
-  - 换机/重装后 refresh 失败应引导重新登录，不静默丢数据。
-  - 写清楚客服如何解绑/撤销设备会话。
+- [ ] **BLOCKED · 真机测试**：并发 401、断网、刷新响应丢失、旧 refresh token 复用、多设备同时在线。
+  - 后端单元测试已覆盖刷新轮换宽限、旧 token 复用撤销、设备不匹配、最大设备数；真机需要可签名安装。
+- [x] **设备 ID 缺失/变更的兼容策略与客服路径**
+  - 新增 `docs/46-device-session-support.md`，写明兼容策略、`auth_events` 排查和客服撤销 SQL。
+  - 旧客户端缺少 `X-Device-ID` 时兼容放行，并补了后端测试。
+  - 客户端收到 401/403 刷新拒绝时清除 token、发出 `.fitaiSessionExpired` 并回到登录页，不静默丢本地数据。
 
 ### P4 模块化与大文件拆分
 
-- [ ] `AppStore` 剩余 Plan / Nutrition / Workout / Profile 子域拆分
+- [x] `AppStore` 剩余 Plan / Nutrition / Workout / Profile 子域拆分
+  - 已抽出 `PlanGenerationService`、`WorkoutSyncService`、`NutritionService`；Profile/Plan/Workouts/Settings/Export 方法拆到 extension，主文件只保留状态、生命周期与持久化，已低于 lint 阈值。
   - 已拆：Sync、Agent、Access
   - 目标：AppStore 只做状态容器和协调，不继续长成 God object
 
-- [ ] 抽 `PlanGenerationService`
-- [ ] 抽 `WorkoutSyncService`
-- [ ] 抽 `NutritionService`
-- [ ] 拆 `PlanHomeView`
-  - 已拆：History、TrainingData
-  - 剩余：Header、MonthCalendar、DayCard、QuickActions、Summary、CalendarModel
-- [ ] 拆 `CoachOnboardingView`：Model / Steps / Report
-- [ ] 拆 `WorkoutSessionView`：Model / Header / SetCard / RestTimer / ActionBar / Summary
-- [ ] 拆 `EquipmentDetailView`：Hero / Stats / Charts / Instructions / EditSheet / StatsModel
-- [ ] 按需拆 Nutrition / Settings / Progress / HomeV2 / EquipmentLibrary / Login
-- [ ] SwiftLint：
+- [x] 抽 `PlanGenerationService`：远程/本地生成已下沉到 `Core/Services/PlanGenerationService.swift`
+- [x] 抽 `WorkoutSyncService`：API 调用与远端映射已下沉；合并策略仍留在 `AppStore+Sync`
+- [x] 抽 `NutritionService`：饮食记录同步与远端映射已下沉到 `Core/Services/NutritionService.swift`
+- [x] 拆 `PlanHomeView`
+  - 已拆：History、TrainingData；Header、QuickActions、MonthCover、Calendar、SelectedDay、Plan/Empty、Data 拆到 7 个 extension 文件
+- [x] 额外拆分 `WorkoutDetailView`：只读摘要/动作卡拆到 `WorkoutDetailCards.swift`，移除该文件 lint 豁免
+- [x] 额外拆分 `EquipmentPickerView`：动作卡/选择控件/肌群图标拆到 `EquipmentPickerCards.swift`，移除该文件 lint 豁免
+- [x] 额外拆分 `HomeV2View`、`SettingsView`、`LoginView`、`CoachChatView`、`NutritionView`、`ProgressOverviewView`、`WorkoutHistoryView`：按 extension 拆分，代码中已无 lint 豁免
+- [x] 额外拆分 `AppStore`：Profile / Plan / Workouts / Settings / Export 方法拆到 extension；Agent 拆 Chat/Actions
+- [x] 拆 `CoachOnboardingView`：已按 Layout / Steps / Report / Components / Derived 拆到 5 个 extension 文件
+- [x] 拆 `WorkoutSessionView`：Header / 动作卡 / SetCard / Rest / ActionBar / Summary / 输入弹窗拆到 `WorkoutSessionComponents.swift`
+- [x] 拆 `EquipmentDetailView`：Media / Points / Stats / Hero 拆到 4 个 extension 文件，Stats 类型独立
+- [x] 拆 `Models.swift`：按 Profile / Training / Nutrition / Equipment 四个文件拆分
+- [x] 按需拆 Nutrition / Settings / Progress / HomeV2 / EquipmentLibrary / Login
+  - Settings/HomeV2/Login/Nutrition/Progress/EquipmentLibrary 等均已完成拆分；当前 SwiftLint 0 violation。
+- [x] iOS 单元测试修复：`PRODUCT_NAME` 补到测试 target；`PlanGeneratorTests` 改为验证当前 `PlanGenerator.adjustment` API，29 个测试全部通过
+- [x] SwiftLint：
   - `file_length` warning 600 / error 1000
   - `type_body_length` warning 400 / error 600
-  - 加 CI 检查
-  - 现有超标文件必须拆分，或用明确的 `// swiftlint:disable` + TODO 记录，不能静默放过
-- [ ] 新 View 禁止直接调用 `APIClient`；权益判断禁止写在 View
-  - 逐步迁移现有调用
+  - 已加 `.swiftlint.yml` 和 iOS CI 检查
+  - 现有大文件已完成拆分，代码中不再有 `swiftlint:disable file_length type_body_length`；本地 lint **0 violations**
+- [x] 新 View 禁止直接调用 `APIClient`；权益判断禁止写在 View
+  - `ios/FitAI/Features` 下 `APIClient.shared` 调用已清零，体型/饮食/器械/设置/饮食计划等均走 service。
+  - Pro 锁定 UI 仍统一走 `store.requirePro/requestPro`；服务端 gate 未改。
   - 不要为了“没 if”把逻辑藏进 View extension 里
 
 ### P5 验证与发布
 
-- [ ] iPhone SE / 16 / 16 Pro Max 全页面截图验收
+- [ ] PARTIAL · iPhone SE / 16 / 16 Pro Max 全页面截图验收
+  - 已在三类模拟器安装运行并截图首页/登录；逐页视觉验收仍需人工完成。
 - [ ] 登录、表单、弹窗、键盘回归
-- [ ] 真机验证登录、免费体验、付费墙、AI 额度、滑动会话
-- [ ] TestFlight / StoreKit 沙盒购买与恢复
-- [ ] 防连点、并发、重装、换设备、批量注册测试
-- [ ] 最后做一次服务端 Pro 绕过审计，确认 LLM Key 只在服务端
+- [ ] BLOCKED · 真机验证登录、免费体验、付费墙、AI 额度、滑动会话
+- [ ] BLOCKED · TestFlight / StoreKit 沙盒购买与恢复
+- [ ] PARTIAL · 防连点、并发、重装、换设备、批量注册测试
+  - 本次补了拍照幂等、刷新设备不匹配、缺设备头兼容等后端测试；真机与批量注册仍需环境。
+- [ ] PARTIAL · 最后做一次服务端 Pro 绕过审计，确认 LLM Key 只在服务端
+  - 已确认 iOS 端没有模型 Key；完整服务端绕过审计仍需真实预发环境。
 
 ---
 

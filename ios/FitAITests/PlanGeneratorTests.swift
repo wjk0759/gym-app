@@ -74,61 +74,32 @@ final class PlanGeneratorTests: XCTestCase {
     }
 
     func testLowCompletionReducesSets() {
-        let plan = PlanGenerator.generate(profile: makeProfile())
-        let adjusted = PlanGenerator.adjusted(
-            plan: plan,
-            profile: makeProfile(),
+        let adjustment = PlanGenerator.adjustment(
             completionRate: 0.3,
             averageRPE: 7
-        ).plan
+        )
 
-        let original = plan.days.first?.exercises.first
-        let changed = adjusted.days.first?.exercises.first
-
-        guard let original, let changed else {
-            return XCTFail("计划为空")
-        }
-        XCTAssertEqual(changed.sets, max(2, original.sets - 1))
-        XCTAssertGreaterThan(adjusted.version, plan.version)
+        XCTAssertEqual(adjustment.setsDelta, -1)
+        XCTAssertEqual(adjustment.weightMultiplier, 1.0)
     }
 
     func testHighRPELowersLoad() {
-        let plan = PlanGenerator.generate(profile: makeProfile())
-        let adjusted = PlanGenerator.adjusted(
-            plan: plan,
-            profile: makeProfile(),
+        let adjustment = PlanGenerator.adjustment(
             completionRate: 0.9,
             averageRPE: 9.5
-        ).plan
+        )
 
-        guard let oldItem = plan.days.flatMap(\.exercises).first(where: { ($0.weightKG ?? 0) > 0 }),
-              let newItem = adjusted.days
-                .flatMap(\.exercises)
-                .first(where: { $0.slug == oldItem.slug && ($0.weightKG ?? 0) > 0 }) else {
-            XCTFail("计划中没有带重量的动作")
-            return
-        }
-
-        XCTAssertLessThan(newItem.weightKG ?? 0, oldItem.weightKG ?? 0)
+        XCTAssertEqual(adjustment.setsDelta, 0)
+        XCTAssertLessThan(adjustment.weightMultiplier, 1.0)
     }
 
     func testHighCompletionAndLowRPELoadsMore() {
-        let plan = PlanGenerator.generate(profile: makeProfile())
-        let adjusted = PlanGenerator.adjusted(
-            plan: plan,
-            profile: makeProfile(),
+        let adjustment = PlanGenerator.adjustment(
             completionRate: 0.9,
             averageRPE: 7.5
-        ).plan
+        )
 
-        guard let oldItem = plan.days.flatMap(\.exercises).first(where: { ($0.weightKG ?? 0) > 0 }),
-              let newItem = adjusted.days
-                .flatMap(\.exercises)
-                .first(where: { $0.slug == oldItem.slug && ($0.weightKG ?? 0) > 0 }) else {
-            XCTFail("计划中没有带重量的动作")
-            return
-        }
-
-        XCTAssertGreaterThan(newItem.weightKG ?? 0, oldItem.weightKG ?? 0)
+        XCTAssertEqual(adjustment.setsDelta, 0)
+        XCTAssertGreaterThan(adjustment.weightMultiplier, 1.0)
     }
 }
