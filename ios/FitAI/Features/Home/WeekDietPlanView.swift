@@ -11,6 +11,7 @@ struct WeekDietPlanView: View {
     @State private var didLoad = false
     @State private var errorMessage = ""
     @State private var selectedRecipe: DietRecipeSelection?
+    @State private var lastGeneratedAt: Date?
 
     private let requestedStrategy: String?
 
@@ -160,9 +161,12 @@ struct WeekDietPlanView: View {
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(isLoading)
             } else {
-                ProUpsellCard(feature: .mealPlan) {
+                ProLockedOverlay(feature: .mealPlan) {
                     store.requestPro(.mealPlan)
                 }
+                .frame(maxWidth: .infinity)
+                .frame(height: 230)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
         }
         .card()
@@ -323,6 +327,10 @@ struct WeekDietPlanView: View {
             store.requestPro(.mealPlan)
             return
         }
+        if let last = lastGeneratedAt, Date().timeIntervalSince(last) < 60 {
+            errorMessage = "本周计划刚刚生成，请稍后再试。"
+            return
+        }
         isLoading = true
         errorMessage = ""
         defer { isLoading = false }
@@ -331,7 +339,10 @@ struct WeekDietPlanView: View {
                 strategy: strategy,
                 weekStart: nil
             )
+            lastGeneratedAt = Date()
             await store.refreshAccess()
+        } catch let error as APIError where error.statusCode == 429 {
+            errorMessage = "生成太频繁，请稍后再试。"
         } catch let error as APIError where error.statusCode == 403 {
             store.requestPro(.mealPlan)
         } catch {

@@ -68,6 +68,11 @@ struct PlanHomeView: View {
 
                             if let plan = store.plan {
                                 planSummaryCard(plan)
+                                if !store.hasProAccess {
+                                    ProUpsellCard(feature: .trainingPlan) {
+                                        store.requestPro(.trainingPlan)
+                                    }
+                                }
                             } else {
                                 emptyPlanCard
                             }

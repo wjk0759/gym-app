@@ -71,6 +71,7 @@ final class AppStore {
     var useEquipmentLibraryForPlans = true
     var isGenerating = false
     var isReplying = false
+    @ObservationIgnored private var lastPlanGeneratedAt: Date?
     var isSyncingWorkouts = false
     var isSyncingRemoteWorkouts = false
     var isSyncingUserData = false
@@ -242,6 +243,12 @@ final class AppStore {
             requestPro(.trainingPlan)
             return
         }
+        if !onboarding,
+           let last = lastPlanGeneratedAt,
+           Date().timeIntervalSince(last) < 60 {
+            toast = "计划刚刚生成，请稍后再试"
+            return
+        }
         if plan != nil && !force { return }
 
         isGenerating = true
@@ -267,10 +274,15 @@ final class AppStore {
                     self.archiveCurrentPlan()
                     self.plan = generated
                     self.toast = "已由 AI 生成计划"
+                    self.lastPlanGeneratedAt = Date()
                     if onboarding {
                         await self.consumeOnboardingTrialIfNeeded()
                     }
                     await self.refreshAccess()
+                } catch let error as APIError where error.statusCode == 429 {
+                    self.isGenerating = false
+                    self.toast = "计划生成太频繁，请稍后再试"
+                    return
                 } catch let error as APIError where error.statusCode == 403 {
                     self.isGenerating = false
                     if self.hasProAccess {
@@ -291,6 +303,7 @@ final class AppStore {
                     self.archiveCurrentPlan()
                     self.plan = fallback
                     self.toast = "AI 服务不可用，已使用本地模板"
+                    self.lastPlanGeneratedAt = Date()
                     if onboarding {
                         await self.consumeOnboardingTrialIfNeeded()
                     }
@@ -315,6 +328,7 @@ final class AppStore {
             generated.version = (self.plan?.version ?? 0) + 1
             self.archiveCurrentPlan()
             self.plan = generated
+            self.lastPlanGeneratedAt = Date()
             self.isGenerating = false
             self.persist()
             self.rescheduleNotifications()
