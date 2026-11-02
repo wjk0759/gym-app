@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 from ..deps import CurrentUser, DBSession
 from ..models import ChatMessage, ChatSession, Profile, Program
 from ..schemas import ChatIn
-from ..services import coach_vision
+from ..services import access, coach_vision
 from ..services.coach import coach_reply
 from ..services.memory import schedule_memory_extraction
 from ..services.queries import active_program
@@ -18,6 +18,31 @@ router = APIRouter(prefix="/coach", tags=["coach"])
 
 def _active_program(db: DBSession, user_id: str) -> Program | None:
     return active_program(db, user_id)
+
+
+def _reserve_coach_turn(db: DBSession, profile: Profile, message: str):
+    decision = assess_safety(profile, message)
+    if decision.reply is not None:
+        return None
+    used, _, reset_at = access.coach_usage(db, profile.user_id)
+    if not access.has_pro(db, profile.user_id) and used >= access.COACH_WEEKLY_LIMIT:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "code": "COACH_QUOTA_EXHAUSTED",
+                "message": "本周免费 AI 教练额度已用完",
+                "reset_at": reset_at.isoformat(),
+            },
+        )
+    if not access.reserve_coach_message(db, profile.user_id):
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "code": "COACH_QUOTA_EXHAUSTED",
+                "message": "本周免费 AI 教练额度已用完",
+            },
+        )
+    return access.week_start_for(access.business_today())
 
 
 def _should_extract_memory(message: str, safety_flag: str | None) -> bool:
@@ -251,15 +276,21 @@ async def chat(payload: ChatIn, user_id: CurrentUser, db: DBSession):
         db.commit()
 
     history = list(session.messages)
-    result = await coach_reply(
-        db,
-        profile,
-        _active_program(db, user_id),
-        history,
-        payload.message,
-        payload.skill,
-        payload.context,
-    )
+    reserved_period = _reserve_coach_turn(db, profile, payload.message)
+    try:
+        result = await coach_reply(
+            db,
+            profile,
+            _active_program(db, user_id),
+            history,
+            payload.message,
+            payload.skill,
+            payload.context,
+        )
+    except Exception:
+        if reserved_period is not None:
+            access.release_coach_message(db, user_id, period=reserved_period)
+        raise
 
     session.messages.append(
         ChatMessage(role="user", content=payload.message)
@@ -305,15 +336,21 @@ async def chat_stream(payload: ChatIn, user_id: CurrentUser, db: DBSession):
         db.commit()
 
     history = list(session.messages)
-    result = await coach_reply(
-        db,
-        profile,
-        _active_program(db, user_id),
-        history,
-        payload.message,
-        payload.skill,
-        payload.context,
-    )
+    reserved_period = _reserve_coach_turn(db, profile, payload.message)
+    try:
+        result = await coach_reply(
+            db,
+            profile,
+            _active_program(db, user_id),
+            history,
+            payload.message,
+            payload.skill,
+            payload.context,
+        )
+    except Exception:
+        if reserved_period is not None:
+            access.release_coach_message(db, user_id, period=reserved_period)
+        raise
 
     session.messages.append(ChatMessage(role="user", content=payload.message))
     session.messages.append(

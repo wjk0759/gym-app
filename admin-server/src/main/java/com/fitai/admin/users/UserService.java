@@ -54,6 +54,17 @@ public class UserService {
     }
 
     @Transactional
+    public void setTest(String id, boolean test) {
+        if (!repository.exists(id)) {
+            throw ApiException.notFound("USER_NOT_FOUND", "用户不存在");
+        }
+        if (!repository.setTest(id, test)) {
+            throw new ApiException(HttpStatus.CONFLICT, "USER_DELETED", "已删除用户不能标记测试账号");
+        }
+        auditService.record("USER_TEST_FLAG_CHANGED", "user", id, Map.of("test", test));
+    }
+
+    @Transactional
     public void delete(String id) {
         if (!repository.exists(id)) {
             throw ApiException.notFound("USER_NOT_FOUND", "用户不存在");

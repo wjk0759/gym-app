@@ -215,17 +215,41 @@ final class AuthStore {
 
     @discardableResult
     func refreshTokens() async -> Bool {
-        guard let refresh = AuthTokenStore.shared.refreshToken else { return false }
-        do {
-            let response: RefreshResponse = try await request(
-                "/auth/refresh",
-                body: ["refresh_token": refresh, "device_name": deviceName]
-            )
-            AuthTokenStore.shared.updateTokens(
-                accessToken: response.accessToken,
-                refreshToken: response.refreshToken
-            )
+        guard AuthTokenStore.shared.refreshToken != nil else { return false }
+        if await TokenRefreshCoordinator.shared.refresh() {
             isAuthenticated = true
+            return true
+        }
+        return false
+    }
+
+    /// Called when the app becomes active. Extending the refresh session is
+    /// deliberately cheap and idempotent; normal usage rolls it forward by 30
+    /// days without forcing a new login.
+    func touchSessionIfNeeded() async {
+        guard AuthTokenStore.shared.accessToken != nil else { return }
+        let key = "fitai_last_session_touch"
+        let last = UserDefaults.standard.object(forKey: key) as? Date
+        if let last, Date().timeIntervalSince(last) < 12 * 60 * 60 {
+            return
+        }
+        if await touchSessionOnce() {
+            UserDefaults.standard.set(Date(), forKey: key)
+            return
+        }
+        if await refreshTokens(), await touchSessionOnce() {
+            UserDefaults.standard.set(Date(), forKey: key)
+        }
+    }
+
+    private func touchSessionOnce() async -> Bool {
+        guard let token = AuthTokenStore.shared.accessToken else { return false }
+        do {
+            let _: EmptyResponse = try await request(
+                "/auth/session/touch",
+                method: "POST",
+                token: token
+            )
             return true
         } catch {
             return false
@@ -423,16 +447,6 @@ private struct AuthResponse: Decodable {
         case expiresIn = "expires_in"
         case isNewUser = "is_new_user"
         case onboardingRequired = "onboarding_required"
-    }
-}
-
-private struct RefreshResponse: Decodable {
-    let accessToken: String
-    let refreshToken: String
-
-    enum CodingKeys: String, CodingKey {
-        case accessToken = "access_token"
-        case refreshToken = "refresh_token"
     }
 }
 

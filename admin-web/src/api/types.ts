@@ -117,6 +117,7 @@ export interface UserListItem {
   goalType: string | null
   workoutCount: number
   deleted: boolean
+  test: boolean
   updatedAt: string | null
   authMethods: Record<string, boolean>
 }

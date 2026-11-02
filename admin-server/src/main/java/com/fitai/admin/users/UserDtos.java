@@ -21,6 +21,7 @@ public final class UserDtos {
             String goalType,
             long workoutCount,
             boolean deleted,
+            boolean test,
             String updatedAt,
             Map<String, Object> authMethods
     ) {

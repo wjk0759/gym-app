@@ -1,0 +1,51 @@
+import Foundation
+
+/// Single-flight refresh. Concurrent 401s share one rotation request; a burst
+/// of API calls can never rotate the same refresh token twice.
+actor TokenRefreshCoordinator {
+    static let shared = TokenRefreshCoordinator()
+
+    private var inFlight: Task<Bool, Never>?
+
+    func refresh() async -> Bool {
+        if let inFlight {
+            return await inFlight.value
+        }
+        let task = Task { await Self.performRefresh() }
+        inFlight = task
+        let result = await task.value
+        inFlight = nil
+        return result
+    }
+
+    private static func performRefresh() async -> Bool {
+        guard let refreshToken = AuthTokenStore.shared.refreshToken,
+              let url = URL(string: AppConfig.apiBaseURL.absoluteString + "/auth/refresh") else {
+            return false
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: [
+            "refresh_token": refreshToken
+        ])
+        request.timeoutInterval = 20
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse else { return false }
+            guard (200..<300).contains(http.statusCode) else {
+                // A 401/403 is definitive; transient failures keep the local
+                // session so the user is not logged out while offline.
+                return false
+            }
+            let decoded = try JSONDecoder().decode(TokenRefreshResponse.self, from: data)
+            AuthTokenStore.shared.updateTokens(
+                accessToken: decoded.accessToken,
+                refreshToken: decoded.refreshToken
+            )
+            return true
+        } catch {
+            return false
+        }
+    }
+}

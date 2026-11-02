@@ -236,6 +236,7 @@ def _issue_session(
         device_name=(request_meta or {}).get("device_name"),
         ip_address=(request_meta or {}).get("ip"),
         user_agent=(request_meta or {}).get("user_agent"),
+        last_touched_at=now,
         expires_at=now + timedelta(days=max(1, settings.refresh_token_days)),
     )
     db.add(session)
@@ -552,25 +553,47 @@ def refresh_session(
     refresh_token: str,
     request_meta: dict | None = None,
 ) -> dict:
+    now = datetime.now(timezone.utc)
+    token_hash = _refresh_hash(refresh_token)
     row = db.execute(
         select(AuthSession)
-        .where(AuthSession.refresh_token_hash == _refresh_hash(refresh_token))
+        .where(AuthSession.refresh_token_hash == token_hash)
         .with_for_update()
     ).scalar_one_or_none()
+    used_previous = False
+    if row is None:
+        # A lost refresh response must not force a login. Accept the previous
+        # token for a short grace window, then rotate it again.
+        row = db.execute(
+            select(AuthSession)
+            .where(AuthSession.previous_refresh_token_hash == token_hash)
+            .with_for_update()
+        ).scalar_one_or_none()
+        used_previous = row is not None
     if row is None:
         raise HTTPException(status_code=401, detail="登录已失效，请重新登录")
-    now = datetime.now(timezone.utc)
     expires = row.expires_at
     if expires.tzinfo is None:
         expires = expires.replace(tzinfo=timezone.utc)
+    grace_until = row.previous_hash_valid_until
+    if grace_until is not None and grace_until.tzinfo is None:
+        grace_until = grace_until.replace(tzinfo=timezone.utc)
+    if used_previous and (grace_until is None or grace_until < now):
+        # Reuse outside the grace window is treated as token theft.
+        row.revoked_at = now
+        db.commit()
+        raise HTTPException(status_code=401, detail="登录已失效，请重新登录")
     if row.revoked_at is not None or expires < now:
         raise HTTPException(status_code=401, detail="登录已失效，请重新登录")
     user = db.get(User, row.user_id)
     if user is None or user.status != "active" or user.deleted_at is not None:
         raise HTTPException(status_code=403, detail="账号已被停用")
     new_refresh = secrets.token_urlsafe(48)
+    row.previous_refresh_token_hash = token_hash
+    row.previous_hash_valid_until = now + timedelta(minutes=5)
     row.refresh_token_hash = _refresh_hash(new_refresh)
     row.last_used_at = now
+    row.last_touched_at = now
     row.expires_at = now + timedelta(days=max(1, settings.refresh_token_days))
     access_token, expires_in = _access_token(user.id, row.id)
     _event(db, user.id, "refresh", "refresh", request_meta=request_meta)
@@ -582,6 +605,22 @@ def refresh_session(
         "token_type": "bearer",
         "expires_in": expires_in,
     }
+
+
+def touch_session(db: Session, session_id: str, user_id: str) -> dict:
+    row = db.get(AuthSession, session_id)
+    if row is None or row.user_id != user_id or row.revoked_at is not None:
+        raise HTTPException(status_code=401, detail="登录已失效，请重新登录")
+    now = datetime.now(timezone.utc)
+    expires = row.expires_at
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if expires < now:
+        raise HTTPException(status_code=401, detail="登录已失效，请重新登录")
+    row.last_touched_at = now
+    row.expires_at = now + timedelta(days=max(1, settings.refresh_token_days))
+    db.commit()
+    return {"ok": True, "expires_at": row.expires_at.isoformat()}
 
 
 def revoke_session(db: Session, session_id: str, user_id: str) -> None:

@@ -102,6 +102,7 @@ struct RootView: View {
                     store.syncPendingUserData()
                     activateWeatherIfNeeded()
                     Task { await store.refreshAccess() }
+                    Task { await auth.touchSessionIfNeeded() }
                 }
             }
         }

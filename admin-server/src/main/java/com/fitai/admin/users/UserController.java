@@ -69,6 +69,16 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/{id}/test")
+    @PreAuthorize("hasAuthority('user:write')")
+    public ResponseEntity<Void> test(
+            @PathVariable String id,
+            @RequestBody UpdateTestRequest request
+    ) {
+        service.setTest(id, request.test());
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<Void> delete(@PathVariable String id) {
@@ -94,5 +104,8 @@ public class UserController {
             @Pattern(regexp = "active|suspended", message = "状态仅支持 active 或 suspended")
             String status
     ) {
+    }
+
+    public record UpdateTestRequest(boolean test) {
     }
 }

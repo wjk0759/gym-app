@@ -70,8 +70,11 @@ class AuthSession(Base):
     user_agent: Mapped[str | None] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     last_used_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_touched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    previous_refresh_token_hash: Mapped[str | None] = mapped_column(String(128))
+    previous_hash_valid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class SmsCode(Base):

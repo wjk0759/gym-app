@@ -27,6 +27,10 @@ export const usersApi = {
     await apiPatch(`/users/${encodeURIComponent(id)}/status`, { status })
   },
 
+  async setTest(id: string, test: boolean): Promise<void> {
+    await apiPatch(`/users/${encodeURIComponent(id)}/test`, { test })
+  },
+
   async remove(id: string): Promise<void> {
     await apiDelete(`/users/${encodeURIComponent(id)}`)
   },

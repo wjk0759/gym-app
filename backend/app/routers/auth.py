@@ -248,6 +248,16 @@ def revoke_other_session(
     return {"ok": True}
 
 
+@router.post("/session/touch")
+def touch_session(
+    user_id: CurrentUser,
+    db: DBSession,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    payload = _bearer_payload(authorization)
+    return auth_service.touch_session(db, payload["sid"], user_id)
+
+
 @router.get("/oauth/{provider}/start")
 def oauth_start(provider: str, request: Request):
     if provider not in {"wechat", "qq"}:

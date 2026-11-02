@@ -165,31 +165,6 @@ struct APITransport {
     }
 
     private func refreshAccessToken() async -> Bool {
-        guard let refreshToken = AuthTokenStore.shared.refreshToken,
-              let url = URL(string: baseURL.absoluteString + "/auth/refresh") else {
-            return false
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try? JSONSerialization.data(withJSONObject: [
-            "refresh_token": refreshToken
-        ])
-        request.timeoutInterval = 20
-        do {
-            let (data, response) = try await session.data(for: request)
-            guard let http = response as? HTTPURLResponse,
-                  (200..<300).contains(http.statusCode) else {
-                return false
-            }
-            let refresh = try JSONDecoder().decode(TokenRefreshResponse.self, from: data)
-            AuthTokenStore.shared.updateTokens(
-                accessToken: refresh.accessToken,
-                refreshToken: refresh.refreshToken
-            )
-            return true
-        } catch {
-            return false
-        }
+        await TokenRefreshCoordinator.shared.refresh()
     }
 }

@@ -19,7 +19,7 @@ public class UserRepository {
 
     private static final String USER_COLUMNS = """
             u.id, u.phone, u.username, u.status, u.created_at, u.updated_at,
-            u.last_login_at, u.deleted_at,
+            u.last_login_at, u.deleted_at, u.is_test,
             u.password_hash IS NOT NULL AS has_password,
             u.wechat_openid IS NOT NULL AS has_wechat,
             u.qq_openid IS NOT NULL AS has_qq,
@@ -210,6 +210,13 @@ public class UserRepository {
                 """).param("status", status).param("id", id).update() > 0;
     }
 
+    public boolean setTest(String id, boolean test) {
+        return jdbc.sql("""
+                UPDATE users SET is_test = :test, updated_at = UTC_TIMESTAMP()
+                WHERE id = :id AND deleted_at IS NULL
+                """).param("test", test ? 1 : 0).param("id", id).update() > 0;
+    }
+
     public boolean softDelete(String id) {
         return jdbc.sql("""
                 UPDATE users
@@ -262,6 +269,7 @@ public class UserRepository {
         row.put("updated_at", rs.getTimestamp("updated_at"));
         row.put("last_login_at", rs.getTimestamp("last_login_at"));
         row.put("deleted_at", rs.getTimestamp("deleted_at"));
+        row.put("is_test", rs.getBoolean("is_test"));
         row.put("has_password", rs.getBoolean("has_password"));
         row.put("has_wechat", rs.getBoolean("has_wechat"));
         row.put("has_qq", rs.getBoolean("has_qq"));
@@ -293,6 +301,7 @@ public class UserRepository {
                 string(row.get("goal_type")),
                 SqlSupport.longValue(row.get("workout_count")),
                 row.get("deleted_at") != null,
+                bool(row.get("is_test")),
                 SqlSupport.iso(row.get("updated_at")),
                 authMethods
         );

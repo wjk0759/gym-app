@@ -44,6 +44,7 @@
             <div class="stack-tags">
               <StatusTag :status="row.status" />
               <el-tag v-if="row.deleted" type="danger" effect="plain" size="small">已删除</el-tag>
+              <el-tag v-if="row.test" type="warning" effect="plain" size="small">测试</el-tag>
             </div>
           </template>
         </el-table-column>
@@ -73,6 +74,9 @@
                   <el-dropdown-item command="detail">查看详情</el-dropdown-item>
                   <el-dropdown-item v-if="canWrite && !row.deleted" command="status">
                     {{ row.status === 'active' ? '停用账号' : '启用账号' }}
+                  </el-dropdown-item>
+                  <el-dropdown-item v-if="canWrite && !row.deleted" command="test">
+                    {{ row.test ? '取消测试标记' : '标记为测试账号' }}
                   </el-dropdown-item>
                   <el-dropdown-item v-if="canWrite && !row.deleted" command="delete">删除账号</el-dropdown-item>
                   <el-dropdown-item v-if="canWrite && row.deleted" command="restore">恢复账号</el-dropdown-item>
@@ -114,6 +118,7 @@
               <div class="row">
                 <StatusTag :status="detail.user.status" />
                 <el-tag v-if="detail.user.deleted" type="danger" effect="plain" size="small">已删除</el-tag>
+                <el-tag v-if="detail.user.test" type="warning" effect="plain" size="small">测试账号</el-tag>
                 <span class="faint">加入于 {{ formatDateTime(detail.user.createdAt) }}</span>
               </div>
             </div>
@@ -546,6 +551,26 @@ async function toggleStatus(row: UserListItem): Promise<void> {
   }
 }
 
+async function toggleTest(row: UserListItem): Promise<void> {
+  const next = !row.test
+  const verb = next ? '标记为测试账号' : '取消测试标记'
+  try {
+    await ElMessageBox.confirm(`确定${verb}「${row.nickname || row.phone || row.id}」吗？`, verb, {
+      confirmButtonText: '确认',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    await usersApi.setTest(row.id, next)
+    ElMessage.success(`已${verb}`)
+    await load()
+    if (detail.value?.user.id === row.id) {
+      detail.value.user.test = next
+    }
+  } catch (reason) {
+    if (reason !== 'cancel' && reason !== 'close') ElMessage.error(errorMessage(reason))
+  }
+}
+
 async function remove(row: UserListItem): Promise<void> {
   try {
     await ElMessageBox.confirm(
@@ -607,6 +632,8 @@ function handleAction(command: string, row: UserListItem): void {
     void openDetail(row)
   } else if (command === 'status') {
     void toggleStatus(row)
+  } else if (command === 'test') {
+    void toggleTest(row)
   } else if (command === 'delete') {
     void remove(row)
   } else if (command === 'restore') {
