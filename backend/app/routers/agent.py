@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from ..deps import CurrentUser, DBSession
 from ..models import AgentActionEvent, AgentPlanProposal, AgentRun, ChatMessage, ChatSession, Profile
 from ..schemas import AgentActionResultIn, AgentChatIn
-from ..services import access
+from ..services import access, generation
 from ..services.agent import apply_proposal, generate_weekly_review, run_agent
 from ..services.memory import list_memories
 from ..services.rate_limit import enforce as enforce_rate_limit
@@ -90,6 +90,7 @@ async def _agent_chat_inner(
     safety = assess_safety(profile, payload.message) if profile else None
     reserved = False
     coach_period = None
+    lease = None
     if safety is None or safety.reply is None:
         used, coach_period, reset_at = access.coach_usage(db, user_id)
         if not access.has_pro(db, user_id) and used >= access.COACH_WEEKLY_LIMIT:
@@ -110,6 +111,16 @@ async def _agent_chat_inner(
                     "message": "本周免费 AI 教练额度已用完",
                 },
             )
+        try:
+            lease = generation.begin_generation(
+                db,
+                user_id,
+                "agent_chat",
+                cooldown_seconds=0,
+            )
+        except Exception:
+            access.release_coach_message(db, user_id, period=coach_period)
+            raise
     try:
         result = await run_agent(
             db,
@@ -121,12 +132,21 @@ async def _agent_chat_inner(
             app_context=payload.app_context,
         )
     except Exception as exc:  # safety net: never turn an Agent crash into a 500
+        if lease is not None:
+            generation.abort_generation(db, lease, user_id=user_id)
         if reserved and coach_period is not None:
             access.release_coach_message(db, user_id, period=coach_period)
         raise HTTPException(
             status_code=503,
             detail="教练 Agent 暂时不可用，请重试",
         ) from exc
+    if lease is not None:
+        generation.complete_generation(
+            db,
+            lease,
+            user_id=user_id,
+            result_ref=result["run_id"],
+        )
 
     session.messages.append(ChatMessage(role="user", content=payload.message))
     session.messages.append(
