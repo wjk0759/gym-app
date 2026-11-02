@@ -111,6 +111,7 @@
 - AI 教练周额度按自然周计算；安全/医疗回复不占额度；429 统一返回 `COACH_QUOTA_EXHAUSTED` 或 `RATE_LIMITED`。
 - 付费墙统一组件：`ProPaywallSheet`、`ProUpsellCard`、`ProLockedOverlay`；页面不得各自维护 `showPaywall`。
 - 退款、撤销、过期后服务端立即失效；客户端缓存只用于展示，不得作为授权依据。
+- StoreKit 只接受服务端验签后的交易 JWS；客户端 StoreKit 布尔值不能直接当作授权。退款/撤销由 App Store Server Notifications 更新台账。
 - 新增付费功能必须同时定义：FeatureKey、体验/额度策略、服务端校验、付费墙文案、锁定 UI、测试。
 
 ## 12. 防滥用与成本
