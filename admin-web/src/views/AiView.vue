@@ -203,12 +203,16 @@ const controlSaving = ref(false)
 
 const kindOptions = [
   { value: 'plan', label: '训练计划生成' },
+  { value: 'diet_plan', label: '单日饮食计划' },
+  { value: 'diet_week', label: '饮食周计划' },
   { value: 'coach_trainer', label: '健身教练' },
   { value: 'coach_rehab', label: '康复师' },
   { value: 'coach_nutrition', label: '营养师' },
   { value: 'food_vision', label: '饮食照片识别' },
   { value: 'body_vision', label: '体型照片分析' },
-  { value: 'equipment_vision', label: '器械照片识别' },
+  { value: 'equipment_scan', label: '器械照片识别' },
+  { value: 'coach_vision', label: '教练图片分析' },
+  { value: 'agent', label: 'AI 教练 Agent' },
 ]
 
 const dailyLabels = computed(() => (overview.value?.daily ?? []).map((item) => item.date.slice(5)))

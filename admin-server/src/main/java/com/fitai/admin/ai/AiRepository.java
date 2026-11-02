@@ -17,14 +17,19 @@ import com.fitai.admin.common.persistence.SqlSupport;
 @Repository
 public class AiRepository {
 
-    private static final Map<String, String> KIND_LABELS = Map.of(
-            "plan", "训练计划生成",
-            "coach_trainer", "健身教练",
-            "coach_rehab", "康复师",
-            "coach_nutrition", "营养师",
-            "food_vision", "饮食照片识别",
-            "body_vision", "体型照片分析",
-            "equipment_vision", "器械照片识别"
+    private static final Map<String, String> KIND_LABELS = Map.ofEntries(
+            Map.entry("plan", "训练计划生成"),
+            Map.entry("coach_trainer", "健身教练"),
+            Map.entry("coach_rehab", "康复师"),
+            Map.entry("coach_nutrition", "营养师"),
+            Map.entry("food_vision", "饮食照片识别"),
+            Map.entry("body_vision", "体型照片分析"),
+            Map.entry("equipment_scan", "器械照片识别"),
+            Map.entry("diet_plan", "单日饮食计划"),
+            Map.entry("diet_week", "饮食周计划"),
+            Map.entry("agent", "AI 教练 Agent"),
+            Map.entry("coach_vision", "教练图片分析"),
+            Map.entry("memory", "教练记忆提取")
     );
 
     private static final List<AiDtos.SkillInfo> SKILLS = List.of(

@@ -27,7 +27,6 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from ..models import FeatureGenerationState, utcnow
 
-COOLDOWN_SECONDS = 60
 REPLAY_TTL_SECONDS = 600
 # Provider calls time out on the client after 180s; leave headroom so a late
 # response does not overlap a retry, but do not block a user forever after a
