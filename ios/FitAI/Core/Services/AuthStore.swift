@@ -43,10 +43,16 @@ final class AuthStore {
                     isAuthenticated = true
                     return
                 } catch {
-                    // fall through to clear
+                    // fall through to the status check below
                 }
             }
-            clearSession()
+            if let authError = error as? AuthError,
+               authError.statusCode == 401 || authError.statusCode == 403 {
+                clearSession()
+            } else {
+                // Network/5xx should not destroy a valid local session.
+                isAuthenticated = AuthTokenStore.shared.accessToken != nil
+            }
         }
     }
 
@@ -296,7 +302,8 @@ final class AuthStore {
         AuthTokenStore.shared.save(
             accessToken: response.accessToken,
             refreshToken: response.refreshToken,
-            userID: response.userID
+            userID: response.userID,
+            expiresIn: TimeInterval(response.expiresIn)
         )
         userID = response.userID
         onboardingRequired = response.onboardingRequired
@@ -363,6 +370,7 @@ final class AuthStore {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(DeviceIdentity.current, forHTTPHeaderField: "X-Device-ID")
         if let token {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
@@ -389,7 +397,7 @@ final class AuthStore {
         }
         guard (200..<300).contains(http.statusCode) else {
             let message = Self.errorMessage(from: data)
-            throw AuthError(message: message)
+            throw AuthError(message: message, statusCode: http.statusCode)
         }
         if T.self == EmptyResponse.self {
             guard let empty = EmptyResponse() as? T else {
@@ -421,6 +429,7 @@ final class AuthStore {
 
 struct AuthError: LocalizedError {
     let message: String
+    var statusCode: Int? = nil
     var errorDescription: String? { message }
 }
 

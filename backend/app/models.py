@@ -66,6 +66,7 @@ class AuthSession(Base):
     )
     refresh_token_hash: Mapped[str] = mapped_column(String(128), unique=True, index=True)
     device_name: Mapped[str | None] = mapped_column(String(120))
+    device_id: Mapped[str | None] = mapped_column(String(64))
     ip_address: Mapped[str | None] = mapped_column(String(64))
     user_agent: Mapped[str | None] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

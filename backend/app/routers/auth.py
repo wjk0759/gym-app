@@ -35,6 +35,7 @@ def _meta(request: Request, device_name: str | None = None) -> dict:
         "ip": request.client.host if request.client else None,
         "user_agent": request.headers.get("user-agent"),
         "device_name": device_name,
+        "device_id": (request.headers.get("x-device-id") or "").strip()[:64] or None,
     }
 
 

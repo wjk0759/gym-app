@@ -234,6 +234,7 @@ def _issue_session(
         user_id=user.id,
         refresh_token_hash=_refresh_hash(refresh_token),
         device_name=(request_meta or {}).get("device_name"),
+        device_id=(request_meta or {}).get("device_id"),
         ip_address=(request_meta or {}).get("ip"),
         user_agent=(request_meta or {}).get("user_agent"),
         last_touched_at=now,
@@ -555,6 +556,9 @@ def refresh_session(
 ) -> dict:
     now = datetime.now(timezone.utc)
     token_hash = _refresh_hash(refresh_token)
+    client_key = f"{token_hash[:16]}:{(request_meta or {}).get('ip') or '-'}"
+    if not _limit(_access_rate, f"refresh:{client_key}", 30, 60):
+        raise HTTPException(status_code=429, detail="刷新过于频繁，请稍后再试")
     row = db.execute(
         select(AuthSession)
         .where(AuthSession.refresh_token_hash == token_hash)
@@ -585,6 +589,11 @@ def refresh_session(
         raise HTTPException(status_code=401, detail="登录已失效，请重新登录")
     if row.revoked_at is not None or expires < now:
         raise HTTPException(status_code=401, detail="登录已失效，请重新登录")
+    request_device = (request_meta or {}).get("device_id")
+    if row.device_id and request_device and row.device_id != request_device:
+        row.revoked_at = now
+        db.commit()
+        raise HTTPException(status_code=401, detail="登录设备不匹配，请重新登录")
     user = db.get(User, row.user_id)
     if user is None or user.status != "active" or user.deleted_at is not None:
         raise HTTPException(status_code=403, detail="账号已被停用")

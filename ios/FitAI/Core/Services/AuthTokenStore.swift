@@ -9,40 +9,57 @@ final class AuthTokenStore {
     private let accessKey = "access_token"
     private let refreshKey = "refresh_token"
     private let userKey = "user_id"
+    private let expiryKey = "access_expires_at"
     private let lock = NSLock()
 
     // Keychain 查询比内存读取慢；网络请求每次都会读取 token，因此缓存一份。
     private var cachedAccessToken: String?
     private var cachedRefreshToken: String?
     private var cachedUserID: String?
+    private var cachedAccessExpiry: Date?
 
     private init() {
         cachedAccessToken = read(accessKey)
         cachedRefreshToken = read(refreshKey)
         cachedUserID = read(userKey)
+        cachedAccessExpiry = read(expiryKey).flatMap {
+            ISO8601DateFormatter().date(from: $0)
+        }
     }
 
     var accessToken: String? { withLock { cachedAccessToken } }
     var refreshToken: String? { withLock { cachedRefreshToken } }
     var userID: String? { withLock { cachedUserID } }
+    var accessExpiresAt: Date? { withLock { cachedAccessExpiry } }
 
-    func save(accessToken: String, refreshToken: String, userID: String) {
+    func save(
+        accessToken: String,
+        refreshToken: String,
+        userID: String,
+        expiresIn: TimeInterval
+    ) {
+        let expiry = Date().addingTimeInterval(expiresIn)
         write(accessKey, value: accessToken)
         write(refreshKey, value: refreshToken)
         write(userKey, value: userID)
+        write(expiryKey, value: ISO8601DateFormatter().string(from: expiry))
         withLock {
             cachedAccessToken = accessToken
             cachedRefreshToken = refreshToken
             cachedUserID = userID
+            cachedAccessExpiry = expiry
         }
     }
 
-    func updateTokens(accessToken: String, refreshToken: String) {
+    func updateTokens(accessToken: String, refreshToken: String, expiresIn: TimeInterval) {
+        let expiry = Date().addingTimeInterval(expiresIn)
         write(accessKey, value: accessToken)
         write(refreshKey, value: refreshToken)
+        write(expiryKey, value: ISO8601DateFormatter().string(from: expiry))
         withLock {
             cachedAccessToken = accessToken
             cachedRefreshToken = refreshToken
+            cachedAccessExpiry = expiry
         }
     }
 
@@ -50,10 +67,12 @@ final class AuthTokenStore {
         delete(accessKey)
         delete(refreshKey)
         delete(userKey)
+        delete(expiryKey)
         withLock {
             cachedAccessToken = nil
             cachedRefreshToken = nil
             cachedUserID = nil
+            cachedAccessExpiry = nil
         }
     }
 

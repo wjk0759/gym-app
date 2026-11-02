@@ -26,6 +26,7 @@ actor TokenRefreshCoordinator {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(DeviceIdentity.current, forHTTPHeaderField: "X-Device-ID")
         request.httpBody = try? JSONSerialization.data(withJSONObject: [
             "refresh_token": refreshToken
         ])
@@ -41,7 +42,8 @@ actor TokenRefreshCoordinator {
             let decoded = try JSONDecoder().decode(TokenRefreshResponse.self, from: data)
             AuthTokenStore.shared.updateTokens(
                 accessToken: decoded.accessToken,
-                refreshToken: decoded.refreshToken
+                refreshToken: decoded.refreshToken,
+                expiresIn: TimeInterval(decoded.expiresIn ?? 1800)
             )
             return true
         } catch {

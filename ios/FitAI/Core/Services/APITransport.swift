@@ -116,9 +116,16 @@ struct APITransport {
             throw APIError(message: "接口地址不合法")
         }
 
+        if let expiry = AuthTokenStore.shared.accessExpiresAt,
+           expiry.timeIntervalSinceNow < 60,
+           AuthTokenStore.shared.refreshToken != nil {
+            _ = await TokenRefreshCoordinator.shared.refresh()
+        }
+
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue(contentType, forHTTPHeaderField: "Content-Type")
+        request.setValue(DeviceIdentity.current, forHTTPHeaderField: "X-Device-ID")
         if let token = AuthTokenStore.shared.accessToken {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         } else {
