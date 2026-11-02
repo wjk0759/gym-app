@@ -210,6 +210,11 @@ class StoreKitNotificationIn(BaseModel):
     )
 
 
+class StoreKitReconcileIn(BaseModel):
+    transaction_ids: list[str] = Field(default_factory=list, max_length=200)
+    limit: int = Field(default=200, ge=1, le=500)
+
+
 class FoodLogIn(BaseModel):
     client_id: str = Field(min_length=1, max_length=36)
     logged_at: datetime

@@ -66,6 +66,17 @@ class Settings(BaseSettings):
     app_store_bundle_id: str = "com.wjk.fitai"
     storekit_product_ids: str = "com.fitai.app.pro.monthly,com.fitai.app.pro.yearly"
     storekit_allowed_environments: str = "Production,Sandbox"
+    # App Store Server API 对账。生产/预发通过环境变量注入，不要提交 p8。
+    app_store_api_key_id: str = ""
+    app_store_api_issuer_id: str = ""
+    app_store_api_private_key: str = ""
+    app_store_api_private_key_path: str = ""
+    # production | sandbox；sandbox 用于 TestFlight/沙盒联调。
+    app_store_api_environment: str = "production"
+    # 仅供测试/私有代理覆盖；留空使用 Apple 官方地址。
+    app_store_api_base_url: str = ""
+    # 后台/定时任务调用 /iap/app-store/reconcile 的共享令牌。
+    app_store_reconcile_token: str = ""
 
     # 短信：dev 返回开发验证码；webhook 把验证码 POST 给自定义短信网关。
     sms_provider: str = "dev"

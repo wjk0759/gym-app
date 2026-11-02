@@ -117,6 +117,8 @@
 ## 12. 防滥用与成本
 
 - 生成类接口（训练计划、饮食周计划）必须带幂等键；服务端用 `feature_generation_state` 做进行中锁、成功冷却和回放，不能只靠客户端按钮禁用。
+- 拍照分析（体型/饮食/器械/教练视觉）使用 `Idempotency-Key` + `feature_result_cache` 做 5 分钟文本结果回放；不缓存原图，Pro 校验必须先于缓存回放，写入时清理过期行。
+- App Store Server API 对账必须先用 `app_store.verify_signed_transaction` 校验 Apple 返回的 JWS；未配置 p8 时返回 503，不允许把本地记录当成对账成功。
 - 限流用 `rate_limit_buckets` 的分布式 token bucket；禁止新增只在本进程生效的计数器。
 - 全局 AI 预算从 `ai_jobs` 的 token 汇总；70%/90% 告警，100% 自动降级。预算和全局暂停都必须在调用 provider 前检查。
 - 全局暂停只放行 `users.is_test`；后台开关变更必须写审计日志。

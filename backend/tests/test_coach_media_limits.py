@@ -148,6 +148,47 @@ def test_batch_accepts_six_video_keyframes(db, monkeypatch):
     assert result["next_cue"] == "起身时把膝盖对准脚尖。"
 
 
+def test_photo_replay_with_same_idempotency_key_is_cached(db, monkeypatch):
+    calls = 0
+
+    async def fake_review(
+        image,
+        question="",
+        safety_context=None,
+        conversation_context=None,
+        **kwargs,
+    ):
+        nonlocal calls
+        calls += 1
+        return _vision_result()
+
+    monkeypatch.setattr(coach.coach_vision, "review", fake_review)
+
+    first = asyncio.run(
+        coach.vision(
+            "media-user",
+            db,
+            _upload(b"jpeg"),
+            question="看看动作",
+            session_id=None,
+            idempotency_key="coach-key",
+        )
+    )
+    second = asyncio.run(
+        coach.vision(
+            "media-user",
+            db,
+            _upload(b"jpeg"),
+            question="看看动作",
+            session_id=None,
+            idempotency_key="coach-key",
+        )
+    )
+
+    assert first == second
+    assert calls == 1
+
+
 def test_single_photo_still_works(db, monkeypatch):
     async def fake_review(
         image,

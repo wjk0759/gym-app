@@ -180,6 +180,19 @@ def test_multi_account_device_is_logged_without_blocking():
     assert events[0].detail["accounts"] == 3
 
 
+def test_refresh_without_device_header_is_allowed_for_legacy_clients():
+    db = _session()
+    row = db.get(AuthSession, "session-1")
+    row.device_id = "device-a"
+    db.commit()
+
+    result = refresh_session(db, "old-token")
+
+    assert result["access_token"]
+    db.refresh(row)
+    assert row.revoked_at is None
+
+
 def test_refresh_from_another_device_is_rejected():
     db = _session()
     row = db.get(AuthSession, "session-1")

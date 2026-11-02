@@ -1,10 +1,11 @@
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, Header, HTTPException, Query, UploadFile
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from ..deps import CurrentUser, DBSession
 from ..models import EquipmentLibraryItem, EquipmentScan, Exercise
 from ..schemas import EquipmentLibraryIn
+from ..services import generation, photo_cache
 from ..services.equipment import recognize, refresh_profile_equipment_cache
 
 router = APIRouter(tags=["equipment"])
@@ -18,6 +19,9 @@ async def scan(
     user_id: CurrentUser,
     db: DBSession,
     file: UploadFile = File(...),
+    idempotency_key: str | None = Header(
+        default=None, alias="Idempotency-Key", max_length=64
+    ),
 ):
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(
@@ -30,24 +34,52 @@ async def scan(
     if len(data) > MAX_IMAGE_BYTES:
         raise HTTPException(status_code=413, detail="图片不能超过 8MB")
 
-    result = await recognize(
+    feature_key = "equipment_scan"
+    key = photo_cache.normalize_key(idempotency_key)
+    cached = photo_cache.get_cached_result(
+        db, user_id, feature_key, key
+    )
+    if cached is not None:
+        return cached
+
+    lease = generation.begin_generation(
         db,
-        data,
-        file.filename or "image",
-        user_id=user_id,
+        user_id,
+        feature_key,
+        idempotency_key=key,
+        cooldown_seconds=5,
     )
+    try:
+        result = await recognize(
+            db,
+            data,
+            file.filename or "image",
+            user_id=user_id,
+        )
 
-    record = EquipmentScan(
-        user_id=user_id,
-        status="succeeded",
-        result=result["candidates"],
-        model=result["model"],
-        image_url=None,  # 生产环境写入 OSS 签名 URL；当前不落原图
-    )
-    db.add(record)
-    db.commit()
+        record = EquipmentScan(
+            user_id=user_id,
+            status="succeeded",
+            result=result["candidates"],
+            model=result["model"],
+            image_url=None,  # 生产环境写入 OSS 签名 URL；当前不落原图
+        )
+        db.add(record)
+        db.commit()
 
-    result["scan_id"] = record.id
+        result["scan_id"] = record.id
+        photo_cache.store_cached_result(
+            db, user_id, feature_key, key, result
+        )
+        generation.complete_generation(
+            db,
+            lease,
+            user_id=user_id,
+            result_ref=record.id,
+        )
+    except Exception:
+        generation.abort_generation(db, lease, user_id=user_id)
+        raise
     return result
 
 

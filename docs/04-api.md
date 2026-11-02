@@ -390,7 +390,9 @@ data: {"session_id": "uuid", "safety_flag": null}
 
 #### `POST /equipment/scan`
 
-`multipart/form-data`，字段 `file`（jpeg/png，≤8MB）。
+`multipart/form-data`，字段 `file`（jpeg/png，≤8MB）。可选请求头
+`Idempotency-Key`：同一用户、同一图片的短时重试会返回首次扫描结果，
+不会再次调用视觉模型，也不会创建新的 `equipment_scans` 记录。
 
 ```json
 {
@@ -413,7 +415,9 @@ data: {"session_id": "uuid", "safety_flag": null}
 
 #### `POST /body/analyze`
 
-`multipart/form-data`，字段 `file`（jpeg/png，≤8MB）。
+`multipart/form-data`，字段 `file`（jpeg/png，≤8MB）。可选请求头
+`Idempotency-Key`：5 分钟内同 key 重试返回同一份脱敏文本结果，不重复调用
+视觉模型。Pro 校验始终先于缓存回放，免费用户仍返回 403 `PRO_REQUIRED`。
 
 ```json
 {
@@ -431,7 +435,7 @@ data: {"session_id": "uuid", "safety_flag": null}
 
 规则：
 
-- 原图不落盘、不入库，只返回本次分析结果
+- 原图不落盘、不入库；只短暂缓存脱敏后的文本结果用于幂等重试
 - 不做体脂率、体态诊断或医疗建议
 - 客户端必须单独同意后才上传；远程模式需在隐私政策中说明
 - 真实视觉模型上线前完成敏感个人信息单独同意与内容安全评估
@@ -440,7 +444,9 @@ data: {"session_id": "uuid", "safety_flag": null}
 
 #### `POST /diet/analyze`
 
-`multipart/form-data`，字段 `file`（jpeg/png/webp/heic，≤8MB）。
+`multipart/form-data`，字段 `file`（jpeg/png/webp/heic，≤8MB）。可选请求头
+`Idempotency-Key`：5 分钟内同 key 重试返回同一份脱敏识别结果，不重复调用
+视觉模型。Pro 校验始终先于缓存回放，免费用户仍返回 403 `PRO_REQUIRED`。
 
 ```json
 {
@@ -510,6 +516,22 @@ data: {"session_id": "uuid", "safety_flag": null}
 ```
 
 没有已发布视频时返回 `"video": null`，App 展示「教学视频准备中」。
+
+### 2.9 订阅对账（内部）
+
+#### `POST /iap/app-store/reconcile`
+
+请求头：`X-Admin-Token: <APP_STORE_RECONCILE_TOKEN>`。
+
+```json
+{"transaction_ids": ["2000000000000001"], "limit": 200}
+```
+
+- `transaction_ids` 为空时，按 `user_entitlements` 中已记录的 StoreKit 交易批量对账，最多 `limit` 条。
+- 服务端用 App Store Server API 查询订阅状态，并用 `app_store.verify_signed_transaction` 校验 Apple 返回的 JWS。
+- 未配置 `APP_STORE_API_KEY_ID / APP_STORE_API_ISSUER_ID / p8` 时返回 503 `APP_STORE_API_NOT_CONFIGURED`。
+- 未配置或填错 `APP_STORE_RECONCILE_TOKEN` 时返回 503 / 401。
+- 也可运行 `python scripts/reconcile_storekit.py` 作为定时任务。
 
 ## 3. 管理后台
 

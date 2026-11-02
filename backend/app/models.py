@@ -809,6 +809,28 @@ class FeatureGenerationState(Base):
     )
 
 
+class FeatureResultCache(Base):
+    """Short-lived sanitized result for photo analysis idempotent replays.
+
+    Only text/JSON results are stored here. Original images must never be
+    persisted for replay because they contain sensitive body/meal data.
+    """
+
+    __tablename__ = "feature_result_cache"
+    __table_args__ = (Index("ix_feature_result_cache_expires", "expires_at"),)
+
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    feature_key: Mapped[str] = mapped_column(String(40), primary_key=True)
+    idempotency_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    result: Mapped[dict] = mapped_column(JSON)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+
+
 class RateLimitBucket(Base):
     __tablename__ = "rate_limit_buckets"
     __table_args__ = (Index("ix_rate_limit_buckets_updated", "updated_at"),)

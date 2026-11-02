@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from ..deps import CurrentUser, DBSession
 from ..models import FoodLog, Goal, Profile
 from ..schemas import DietPlanIn, DietWeekIn, FoodLogIn
-from ..services import access, generation
+from ..services import access, generation, photo_cache
 from ..services.diet import (
     build_ai_diet_week,
     build_ai_plan,
@@ -44,6 +44,9 @@ async def analyze_meal(
     user_id: CurrentUser,
     db: DBSession,
     file: UploadFile = File(...),
+    idempotency_key: str | None = Header(
+        default=None, alias="Idempotency-Key", max_length=64
+    ),
 ):
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(status_code=415, detail="仅支持 jpeg/png/webp/heic 图片")
@@ -56,19 +59,31 @@ async def analyze_meal(
     if len(data) > MAX_IMAGE_BYTES:
         raise HTTPException(status_code=413, detail="图片不能超过 8MB")
 
+    feature_key = access.FEATURE_FOOD_PHOTO
+    key = photo_cache.normalize_key(idempotency_key)
+    cached = photo_cache.get_cached_result(
+        db, user_id, feature_key, key
+    )
+    if cached is not None:
+        return cached
+
     lease = generation.begin_generation(
         db,
         user_id,
-        access.FEATURE_FOOD_PHOTO,
+        feature_key,
+        idempotency_key=key,
         cooldown_seconds=5,
     )
     try:
-        # 原图不落盘、不入库；只返回本次识别结果
+        # 原图不落盘、不入库；只缓存脱敏后的识别文本供短时重试
         result = await analyze_food_photo(
             data,
             file.filename or "meal.jpg",
             db=db,
             user_id=user_id,
+        )
+        photo_cache.store_cached_result(
+            db, user_id, feature_key, key, result
         )
     except Exception:
         generation.abort_generation(db, lease, user_id=user_id)

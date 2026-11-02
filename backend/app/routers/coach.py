@@ -1,14 +1,13 @@
 import asyncio
 import json
-import uuid
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 
 from ..deps import CurrentUser, DBSession
 from ..models import ChatMessage, ChatSession, Profile, Program
 from ..schemas import ChatIn
-from ..services import access, coach_vision, generation
+from ..services import access, coach_vision, generation, photo_cache
 from ..services.coach import coach_reply
 from ..services.memory import schedule_memory_extraction
 from ..services.queries import active_program
@@ -185,13 +184,15 @@ async def vision(
     file: UploadFile = File(...),
     question: str = Form(default=""),
     session_id: str | None = Form(default=None),
+    idempotency_key: str | None = Header(
+        default=None, alias="Idempotency-Key", max_length=64
+    ),
 ):
     """Review one photo, then keep a text-only visual turn for follow-ups."""
     profile = _vision_profile(db, user_id)
-    session = _vision_session(db, user_id, session_id, question)
-    conversation_context = _vision_conversation_context(session)
     decision = assess_safety(profile, question)
     if decision.reply:
+        session = _vision_session(db, user_id, session_id, question)
         return _record_vision_turn(
             db, session, question, 1, _vision_safety_response(decision)
         )
@@ -205,10 +206,21 @@ async def vision(
     if len(image_bytes) > MAX_VISION_FILE_BYTES:
         raise HTTPException(status_code=413, detail="图片不能超过 8MB")
 
+    feature_key = access.FEATURE_AI_VISION
+    key = photo_cache.normalize_key(idempotency_key)
+    cached = photo_cache.get_cached_result(
+        db, user_id, feature_key, key
+    )
+    if cached is not None:
+        return cached
+
+    session = _vision_session(db, user_id, session_id, question)
+    conversation_context = _vision_conversation_context(session)
     lease = generation.begin_generation(
         db,
         user_id,
-        access.FEATURE_AI_VISION,
+        feature_key,
+        idempotency_key=key,
         cooldown_seconds=5,
     )
     try:
@@ -220,6 +232,10 @@ async def vision(
             db=db,
             user_id=user_id,
         )
+        result = _record_vision_turn(db, session, question, 1, result)
+        photo_cache.store_cached_result(
+            db, user_id, feature_key, key, result
+        )
     except Exception:
         generation.abort_generation(db, lease, user_id=user_id)
         raise
@@ -227,9 +243,9 @@ async def vision(
         db,
         lease,
         user_id=user_id,
-        result_ref=uuid.uuid4().hex,
+        result_ref=session.id,
     )
-    return _record_vision_turn(db, session, question, 1, result)
+    return result
 
 
 @router.post("/vision/batch")
@@ -239,13 +255,15 @@ async def vision_batch(
     files: list[UploadFile] = File(...),
     question: str = Form(default=""),
     session_id: str | None = Form(default=None),
+    idempotency_key: str | None = Header(
+        default=None, alias="Idempotency-Key", max_length=64
+    ),
 ):
     """Review several staged photos as one ordered set."""
     profile = _vision_profile(db, user_id)
-    session = _vision_session(db, user_id, session_id, question)
-    conversation_context = _vision_conversation_context(session)
     decision = assess_safety(profile, question)
     if decision.reply:
+        session = _vision_session(db, user_id, session_id, question)
         return _record_vision_turn(
             db, session, question, len(files), _vision_safety_response(decision)
         )
@@ -272,10 +290,21 @@ async def vision_batch(
 
     if not images:
         raise HTTPException(status_code=400, detail="图片为空")
+    feature_key = access.FEATURE_AI_VISION
+    key = photo_cache.normalize_key(idempotency_key)
+    cached = photo_cache.get_cached_result(
+        db, user_id, feature_key, key
+    )
+    if cached is not None:
+        return cached
+
+    session = _vision_session(db, user_id, session_id, question)
+    conversation_context = _vision_conversation_context(session)
     lease = generation.begin_generation(
         db,
         user_id,
-        access.FEATURE_AI_VISION,
+        feature_key,
+        idempotency_key=key,
         cooldown_seconds=5,
     )
     try:
@@ -287,6 +316,12 @@ async def vision_batch(
             db=db,
             user_id=user_id,
         )
+        result = _record_vision_turn(
+            db, session, question, len(images), result
+        )
+        photo_cache.store_cached_result(
+            db, user_id, feature_key, key, result
+        )
     except Exception:
         generation.abort_generation(db, lease, user_id=user_id)
         raise
@@ -294,9 +329,9 @@ async def vision_batch(
         db,
         lease,
         user_id=user_id,
-        result_ref=uuid.uuid4().hex,
+        result_ref=session.id,
     )
-    return _record_vision_turn(db, session, question, len(images), result)
+    return result
 
 
 @router.post("/chat")
