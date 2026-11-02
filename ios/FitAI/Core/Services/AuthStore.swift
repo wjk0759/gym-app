@@ -229,6 +229,16 @@ final class AuthStore {
         return false
     }
 
+    /// Defensive fallback for a refresh token rejected by the server. The
+    /// coordinator also posts this event; both paths converge here.
+    func handleSessionExpired() {
+        guard isAuthenticated || AuthTokenStore.shared.accessToken != nil else {
+            return
+        }
+        clearSession()
+        errorMessage = "登录已失效，请重新登录"
+    }
+
     /// Called when the app becomes active. Extending the refresh session is
     /// deliberately cheap and idempotent; normal usage rolls it forward by 30
     /// days without forcing a new login.

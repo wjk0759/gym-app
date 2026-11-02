@@ -431,8 +431,8 @@ extension AppStore {
         if let value = sessionMinutes {
             sessionMinutes = max(15, min(180, value))
         }
-        var weekdays = parsedWeekdays.isEmpty ? nil : parsedWeekdays
-        var regeneratePlan = weekdays != nil || weeklyDays != nil || sessionMinutes != nil
+        let weekdays = parsedWeekdays.isEmpty ? nil : parsedWeekdays
+        let regeneratePlan = weekdays != nil || weeklyDays != nil || sessionMinutes != nil
         var setsDelta = 0
         var weightMultiplier = 1.0
         var restDelta = 0

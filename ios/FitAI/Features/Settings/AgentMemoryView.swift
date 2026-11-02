@@ -150,7 +150,7 @@ struct AgentMemoryView: View {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            items = try await APIClient.shared.agentMemories()
+            items = try await AgentMemoryService().fetch()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -159,7 +159,7 @@ struct AgentMemoryView: View {
     private func delete(_ item: AgentMemory) async {
         pendingDelete = nil
         do {
-            try await APIClient.shared.deleteAgentMemory(id: item.id)
+            try await AgentMemoryService().delete(id: item.id)
             items.removeAll { $0.id == item.id }
         } catch {
             errorMessage = error.localizedDescription

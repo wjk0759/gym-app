@@ -3,12 +3,13 @@ import SwiftUI
 import UIKit
 
 struct BodyPhotoAnalysisView: View {
-    @Environment(AppStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
+    @Environment(AppStore.self) var store
+    @Environment(\.dismiss) var dismiss
 
     @State private var photoItem: PhotosPickerItem?
     @State private var image: UIImage?
     @State private var imageData: Data?
+    @State private var analysisKey = UUID().uuidString
     @State private var analysis: BodyAnalysis?
     @State private var isAnalyzing = false
     @State private var isLoadingPhoto = false
@@ -327,76 +328,7 @@ struct BodyPhotoAnalysisView: View {
         .disabled(imageData == nil || !consent || isAnalyzing)
     }
 
-    private func resultCard(_ analysis: BodyAnalysis) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text("分析结果")
-                    .font(AppType.headline)
-                    .foregroundStyle(Theme.ink)
-                Spacer()
-                Text("参考置信度 \(Int(analysis.confidence * 100))%")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Theme.cobalt)
-            }
 
-            Text(analysis.summary)
-                .font(AppType.callout)
-                .foregroundStyle(Theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("建议训练重点")
-                    .font(.system(size: 9.5, weight: .semibold))
-                    .foregroundStyle(Theme.secondaryText)
-                HStack(spacing: 8) {
-                    ForEach(analysis.focusAreas) { muscle in
-                        TagChip(text: muscle.label, selected: true)
-                    }
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 7) {
-                ForEach(analysis.recommendations, id: \.self) { item in
-                    HStack(alignment: .top, spacing: 8) {
-                        Circle()
-                            .fill(Theme.cobalt)
-                            .frame(width: 5, height: 5)
-                            .padding(.top, 6)
-                        Text(item)
-                            .font(AppType.caption)
-                            .foregroundStyle(Theme.secondaryText)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-            }
-
-            Text(analysis.disclaimer)
-                .font(.system(size: 9, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Button {
-                store.applyBodyAnalysis(analysis)
-                dismiss()
-            } label: {
-                Label(
-                    analysis.appliedToPlan ? "已应用到当前计划" : "应用到训练计划",
-                    systemImage: "wand.and.stars"
-                )
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(analysis.appliedToPlan)
-
-            Button {
-                store.openCoachAfterBodyAnalysis(analysis)
-                dismiss()
-            } label: {
-                Label("去 AI 教练继续", systemImage: "bubble.left.and.bubble.right")
-            }
-            .buttonStyle(SecondaryButtonStyle())
-        }
-        .card()
-    }
 
     private var disclaimer: some View {
         Text("体型照片属于敏感个人信息。请只上传你本人的照片；不要上传他人照片或未成年人照片。分析结果不构成医疗建议。")
@@ -413,7 +345,10 @@ struct BodyPhotoAnalysisView: View {
         if store.canUseRemoteAI {
             Task { @MainActor in
                 do {
-                    let result = try await APIClient.shared.analyzeBody(imageData: imageData)
+                    let result = try await BodyAnalysisService.analyzeRemote(
+                        imageData: imageData,
+                        idempotencyKey: analysisKey
+                    )
                     finish(result)
                 } catch {
                     isAnalyzing = false
@@ -439,6 +374,7 @@ struct BodyPhotoAnalysisView: View {
         let prepared = picked.fitWithin(maxDimension: 1600)
         image = prepared
         imageData = prepared.jpegData(compressionQuality: 0.78)
+        analysisKey = UUID().uuidString
         analysis = nil
         photoItem = nil
     }
@@ -454,6 +390,7 @@ struct BodyPhotoAnalysisView: View {
             let loaded = try await PhotoLibraryLoader.load(item, maxDimension: 1600)
             image = loaded.image
             imageData = loaded.jpegData
+            analysisKey = UUID().uuidString
             analysis = nil
         } catch {
             message = error.localizedDescription

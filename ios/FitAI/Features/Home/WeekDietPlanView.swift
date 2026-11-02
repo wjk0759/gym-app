@@ -308,7 +308,7 @@ struct WeekDietPlanView: View {
     private func load() async {
         await store.refreshAccess()
         do {
-            let saved = try await APIClient.shared.fetchSavedDietWeek(weekStart: nil)
+            let saved = try await NutritionService().fetchSavedWeek(weekStart: nil)
             if !saved.days.isEmpty {
                 week = saved
                 if requestedStrategy == nil, let id = saved.strategy?.id {
@@ -337,7 +337,7 @@ struct WeekDietPlanView: View {
         let idempotencyKey = pendingGenerationKey ?? UUID().uuidString
         pendingGenerationKey = idempotencyKey
         do {
-            week = try await APIClient.shared.fetchDietWeek(
+            week = try await NutritionService().fetchWeek(
                 strategy: strategy,
                 weekStart: nil,
                 idempotencyKey: idempotencyKey

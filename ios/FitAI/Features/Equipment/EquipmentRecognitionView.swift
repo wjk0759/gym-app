@@ -3,10 +3,10 @@ import SwiftUI
 import UIKit
 
 struct EquipmentRecognitionView: View {
-    @Environment(AppStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
+    @Environment(AppStore.self) var store
+    @Environment(\.dismiss) var dismiss
 
-    private let onSelect: ((Exercise) -> Void)?
+    let onSelect: ((Exercise) -> Void)?
     private let onSaved: ((EquipmentItem) -> Void)?
     private let onRecognized: ((EquipmentScanResult) -> Void)?
 
@@ -20,22 +20,23 @@ struct EquipmentRecognitionView: View {
         self.onRecognized = onRecognized
     }
 
-    @State private var photoItem: PhotosPickerItem?
-    @State private var selectedImage: UIImage?
-    @State private var imageData: Data?
-    @State private var candidates: [EquipmentCandidate] = []
-    @State private var description = ""
-    @State private var selectedExercise: Exercise?
-    @State private var isScanning = false
-    @State private var showCamera = false
-    @State private var didAutoStartCamera = false
-    @State private var savedSlugs: Set<String> = []
-    @State private var recognizedName = ""
-    @State private var notInLibrary = false
-    @State private var showAddCustom = false
-    @State private var didAutoOfferCustom = false
-    @State private var pendingCustomOffer = false
-    @State private var customAddedName = ""
+    @State var photoItem: PhotosPickerItem?
+    @State var selectedImage: UIImage?
+    @State var imageData: Data?
+    @State var scanKey = UUID().uuidString
+    @State var candidates: [EquipmentCandidate] = []
+    @State var description = ""
+    @State var selectedExercise: Exercise?
+    @State var isScanning = false
+    @State var showCamera = false
+    @State var didAutoStartCamera = false
+    @State var savedSlugs: Set<String> = []
+    @State var recognizedName = ""
+    @State var notInLibrary = false
+    @State var showAddCustom = false
+    @State var didAutoOfferCustom = false
+    @State var pendingCustomOffer = false
+    @State var customAddedName = ""
 
     var body: some View {
         AppScrollView {
@@ -288,121 +289,14 @@ struct EquipmentRecognitionView: View {
         .card()
     }
 
-    private var resultSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionTitle(
-                title: "识别结果",
-                subtitle: candidates.first.map {
-                    $0.confidence < 0.6 ? "置信度较低，请从候选中确认" : "点击查看动作要领"
-                }
-            )
 
-            ForEach(candidates) { candidate in
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(candidate.exercise.nameZH)
-                                .font(AppType.callout.weight(.semibold))
-                                .foregroundStyle(Theme.ink)
-                            Text("\(candidate.exercise.muscle.label) · \(candidate.exercise.equipment.label)")
-                                .font(.system(size: 9.5, weight: .medium))
-                                .foregroundStyle(Theme.secondaryText)
-                        }
-                        Spacer()
-                        Text("\(Int(candidate.confidence * 100))%")
-                            .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .foregroundStyle(Theme.ink)
-                    }
 
-                    ProgressView(value: candidate.confidence)
-                        .tint(candidate.confidence >= 0.6 ? Theme.primary : Theme.secondary)
-
-                    if candidate.confidence < 0.6 {
-                        Text("需要确认：这张图可能不是这个器械")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundStyle(Theme.coral)
-                    }
-
-                    HStack {
-                        Button {
-                            saveToLibrary(candidate)
-                        } label: {
-                            Label(
-                                isSaved(candidate) ? "已保存" : "保存到器械库",
-                                systemImage: isSaved(candidate) ? "checkmark.circle.fill" : "plus.circle"
-                            )
-                            .font(.system(size: 9.5, weight: .semibold))
-                            .foregroundStyle(isSaved(candidate) ? Theme.tertiaryText : Theme.cobalt)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(isSaved(candidate))
-
-                        Spacer()
-
-                        if let onSelect {
-                            Button {
-                                onSelect(candidate.exercise)
-                                dismiss()
-                            } label: {
-                                Label("加入已选", systemImage: "checkmark.circle.fill")
-                                    .font(.system(size: 9.5, weight: .semibold))
-                                    .foregroundStyle(Theme.cobalt)
-                            }
-                            .buttonStyle(.plain)
-                        }
-
-                        Spacer()
-
-                        Button {
-                            selectedExercise = candidate.exercise
-                        } label: {
-                            Text("查看动作 ›")
-                                .font(.system(size: 9.5, weight: .semibold))
-                                .foregroundStyle(Theme.secondaryText)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.top, 2)
-                }
-                .padding(12)
-                .background(
-                    Theme.paper,
-                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(Theme.stroke, lineWidth: 1)
-                }
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    selectedExercise = candidate.exercise
-                }
-            }
-
-            Button {
-                showAddCustom = true
-            } label: {
-                Label("都不是？补全器械信息", systemImage: "plus.circle")
-                    .font(.system(size: 9.5, weight: .semibold))
-                    .foregroundStyle(Theme.cobalt)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 9)
-                    .background(Theme.paper, in: Capsule(style: .continuous))
-                    .overlay {
-                        Capsule(style: .continuous)
-                            .strokeBorder(Theme.stroke, lineWidth: 1)
-                    }
-            }
-            .buttonStyle(SubtlePressStyle(scale: 0.98))
-        }
-    }
-
-    private func isSaved(_ candidate: EquipmentCandidate) -> Bool {
+    func isSaved(_ candidate: EquipmentCandidate) -> Bool {
         savedSlugs.contains(candidate.exercise.slug)
             || store.equipmentLibrary.contains { $0.slug == candidate.exercise.slug }
     }
 
-    private func saveToLibrary(_ candidate: EquipmentCandidate) {
+    func saveToLibrary(_ candidate: EquipmentCandidate) {
         guard !isSaved(candidate) else { return }
         let item = EquipmentItem(
             name: candidate.exercise.nameZH,
@@ -426,6 +320,7 @@ struct EquipmentRecognitionView: View {
         }
         imageData = data
         selectedImage = image
+        scanKey = UUID().uuidString
         candidates = []
         description = ""
         photoItem = nil
@@ -440,6 +335,7 @@ struct EquipmentRecognitionView: View {
     private func apply(_ image: UIImage) {
         selectedImage = image
         imageData = image.jpegData(compressionQuality: 0.8)
+        scanKey = UUID().uuidString
         candidates = []
         description = ""
         recognizedName = ""
@@ -456,7 +352,8 @@ struct EquipmentRecognitionView: View {
         Task { @MainActor in
             let result = await EquipmentRecognitionService.recognize(
                 imageData: data,
-                preferRemote: store.canUseRemoteAI
+                preferRemote: store.canUseRemoteAI,
+                idempotencyKey: scanKey
             )
             candidates = result.candidates
             description = result.description
@@ -485,200 +382,3 @@ struct EquipmentRecognitionView: View {
 }
 
 /// 拍照识别到「动作库未收录」的器械时，自动弹出的补全卡片。
-private struct CustomExerciseAddSheet: View {
-    @Environment(\.dismiss) private var dismiss
-
-    let initialName: String
-    let photo: UIImage?
-    let onAdd: (String, MuscleGroup, Equipment) -> Void
-
-    @State private var name = ""
-    @State private var muscle: MuscleGroup = .chest
-    @State private var equipment: Equipment = .machine
-    @FocusState private var nameFocused: Bool
-
-    private let muscleColumns = [
-        GridItem(.flexible(), spacing: 7),
-        GridItem(.flexible(), spacing: 7),
-        GridItem(.flexible(), spacing: 7)
-    ]
-
-    private let equipmentColumns = [
-        GridItem(.flexible(), spacing: 7),
-        GridItem(.flexible(), spacing: 7)
-    ]
-
-    var body: some View {
-        NavigationStack {
-            AppScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    header
-
-                    if let photo {
-                        Image(uiImage: photo)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 170)
-                            .clipped()
-                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                    .stroke(Theme.stroke, lineWidth: 0.8)
-                            )
-                    }
-
-                    nameCard
-                    muscleCard
-                    equipmentCard
-
-                    Button {
-                        add()
-                    } label: {
-                        Label("加入个人动作库", systemImage: "plus.circle.fill")
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-                .appPagePadding()
-                .padding(.top, 8)
-                .padding(.bottom, 24)
-            }
-            .background(AppBackground())
-            .navigationTitle("补充器械信息")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
-                }
-            }
-            .keyboardDoneToolbar()
-            .onAppear {
-                if name.isEmpty {
-                    name = initialName
-                }
-                nameFocused = true
-            }
-        }
-    }
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text("CUSTOM / 动作库")
-                .font(AppType.overline)
-                .tracking(1.5)
-                .foregroundStyle(Theme.cobalt)
-
-            Text("补全器械信息")
-                .font(AppType.display)
-                .tracking(-0.9)
-                .foregroundStyle(Theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Text("AI 已预填识别名称。确认名称、训练肌群和器械类型后，加入你的个人器械库。")
-                .font(AppType.body)
-                .foregroundStyle(Theme.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private var nameCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("动作名称")
-                .font(.system(size: 9.5, weight: .semibold))
-                .foregroundStyle(Theme.secondaryText)
-            TextField("例如：髋外展机", text: $name)
-                .focused($nameFocused)
-                .textInputAutocapitalization(.never)
-                .font(AppType.callout)
-                .padding(12)
-                .background(
-                    Theme.ink.opacity(0.035),
-                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(Theme.stroke, lineWidth: 1)
-                }
-                .onChange(of: name) { _, value in
-                    if value.count > 40 {
-                        name = String(value.prefix(40))
-                    }
-                }
-        }
-        .card(padding: 14)
-    }
-
-    private var muscleCard: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Text("主要训练肌群")
-                .font(.system(size: 9.5, weight: .semibold))
-                .foregroundStyle(Theme.secondaryText)
-            LazyVGrid(columns: muscleColumns, spacing: 7) {
-                ForEach(MuscleGroup.allCases) { group in
-                    selectionChip(
-                        title: group.label,
-                        selected: muscle == group
-                    ) {
-                        muscle = group
-                        Haptics.select()
-                    }
-                }
-            }
-        }
-        .card(padding: 14)
-    }
-
-    private var equipmentCard: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Text("器械类型")
-                .font(.system(size: 9.5, weight: .semibold))
-                .foregroundStyle(Theme.secondaryText)
-            LazyVGrid(columns: equipmentColumns, spacing: 7) {
-                ForEach(Equipment.allCases) { item in
-                    selectionChip(
-                        title: item.label,
-                        selected: equipment == item
-                    ) {
-                        equipment = item
-                        Haptics.select()
-                    }
-                }
-            }
-        }
-        .card(padding: 14)
-    }
-
-    private func selectionChip(
-        title: String,
-        selected: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(AppType.caption.weight(.semibold))
-                .foregroundStyle(selected ? Theme.onAccent : Theme.secondaryText)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 9)
-                .background(
-                    selected ? Theme.cobalt : Theme.paper,
-                    in: RoundedRectangle(cornerRadius: 11, style: .continuous)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .strokeBorder(
-                            selected ? Theme.cobalt : Theme.stroke,
-                            lineWidth: 1
-                        )
-                )
-        }
-        .buttonStyle(SubtlePressStyle(scale: 0.96))
-    }
-
-    private func add() {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        onAdd(trimmed, muscle, equipment)
-        dismiss()
-    }
-}

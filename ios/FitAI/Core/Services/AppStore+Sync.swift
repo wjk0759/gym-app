@@ -23,7 +23,7 @@ extension AppStore {
 
             for remoteID in pendingDeletes {
                 do {
-                    try await APIClient.shared.deleteWorkout(id: remoteID)
+                    try await workoutSync.deleteRemote(id: remoteID)
                     guard self.currentUserID == accountID else { return }
                     self.pendingWorkoutDeletionIDs.removeAll { $0 == remoteID }
                     self.persist()
@@ -41,7 +41,7 @@ extension AppStore {
 
             for session in pendingCreates {
                 do {
-                    let remoteID = try await APIClient.shared.createWorkout(session)
+                    let remoteID = try await workoutSync.createRemote(session)
                     guard self.currentUserID == accountID else { return }
                     if let index = self.sessions.firstIndex(where: { $0.id == session.id }) {
                         self.sessions[index].remoteID = remoteID
@@ -58,7 +58,7 @@ extension AppStore {
             for session in pendingUpdates {
                 guard let remoteID = session.remoteID else { continue }
                 do {
-                    try await APIClient.shared.updateWorkout(id: remoteID, session: session)
+                    try await workoutSync.updateRemote(id: remoteID, session: session)
                     guard self.currentUserID == accountID else { return }
                     if let index = self.sessions.firstIndex(where: { $0.id == session.id }) {
                         var latest = self.sessions[index]
@@ -104,7 +104,7 @@ extension AppStore {
         Task { @MainActor in
             defer { self.isSyncingRemoteWorkouts = false }
             do {
-                let remote = try await APIClient.shared.fetchRecentWorkouts()
+                let remote = try await workoutSync.fetchRecent()
                 guard self.currentUserID == accountID else { return }
                 self.mergeRemoteWorkouts(remote)
             } catch {
@@ -125,7 +125,7 @@ extension AppStore {
                 let localID = sessions[index].id
                 let localTitle = sessions[index].dayTitle
                 let localPlannedSets = sessions[index].plannedSets
-                var merged = makeWorkoutSession(
+                var merged = workoutSync.makeSession(
                     from: item,
                     dayTitle: planTitle ?? localTitle,
                     localID: localID
@@ -143,7 +143,7 @@ extension AppStore {
                 guard sessions[index].pendingRemoteUpdate != true else { continue }
                 let localTitle = sessions[index].dayTitle
                 let localPlannedSets = sessions[index].plannedSets
-                var merged = makeWorkoutSession(
+                var merged = workoutSync.makeSession(
                     from: item,
                     dayTitle: planTitle ?? localTitle,
                     localID: localID
@@ -155,7 +155,7 @@ extension AppStore {
                 }
             } else {
                 sessions.append(
-                    makeWorkoutSession(
+                    workoutSync.makeSession(
                         from: item,
                         dayTitle: planTitle ?? "训练记录",
                         localID: item.clientID.flatMap { UUID(uuidString: $0) } ?? UUID()
@@ -168,39 +168,6 @@ extension AppStore {
             sessions.sort { $0.date > $1.date }
             persist()
         }
-    }
-
-    private func makeWorkoutSession(
-        from item: RemoteWorkout,
-        dayTitle: String,
-        localID: UUID = UUID()
-    ) -> WorkoutSession {
-        let finishedAt = item.finishedAt ?? item.startedAt
-        let duration = item.durationMin ?? max(
-            0,
-            Int(finishedAt.timeIntervalSince(item.startedAt) / 60)
-        )
-        return WorkoutSession(
-            id: localID,
-            date: finishedAt,
-            dayTitle: dayTitle,
-            durationMinutes: duration,
-            feeling: min(5, max(1, item.feeling ?? 3)),
-            notes: item.notes,
-            sets: item.sets.map { set in
-                SetLog(
-                    slug: set.slug,
-                    setIndex: set.setIndex,
-                    weightKG: set.weightKG ?? 0,
-                    reps: set.reps ?? 0,
-                    rpe: set.rpe ?? 7,
-                    completed: set.completed
-                )
-            },
-            programDayID: item.programDayID,
-            remoteID: item.id,
-            syncedAt: Date()
-        )
     }
 
     // MARK: - Cross-device data sync
@@ -289,7 +256,7 @@ extension AppStore {
     private func pushPendingFoodLogs() async {
         for log in foodLogs where log.syncedAt == nil {
             do {
-                try await APIClient.shared.syncFoodLog(log)
+                try await nutrition.push(log)
                 if let index = foodLogs.firstIndex(where: { $0.id == log.id }) {
                     foodLogs[index].syncedAt = Date()
                 }
@@ -328,27 +295,15 @@ extension AppStore {
     }
 
     private func pullCloudUserData() async {
-        if let remote = try? await APIClient.shared.fetchFoodLogs() {
+        if let remote = try? await nutrition.fetchRemote() {
             let localIDs = Set(foodLogs.map(\.id))
             for item in remote {
-                guard let id = UUID(uuidString: item.clientID),
-                      let meal = MealType(rawValue: item.meal) else { continue }
-                let value = FoodLog(
-                    id: id,
-                    date: item.loggedAt,
-                    meal: meal,
-                    foodName: item.foodName,
-                    grams: item.grams,
-                    kcal: item.kcal,
-                    protein: item.protein,
-                    carbs: item.carbs,
-                    fat: item.fat,
-                    fiber: item.fiber,
-                    syncedAt: Date()
-                )
-                if let index = foodLogs.firstIndex(where: { $0.id == id }) {
+                guard let value = nutrition.makeFoodLog(from: item) else {
+                    continue
+                }
+                if let index = foodLogs.firstIndex(where: { $0.id == value.id }) {
                     foodLogs[index] = value
-                } else if !localIDs.contains(id) {
+                } else if !localIDs.contains(value.id) {
                     foodLogs.append(value)
                 }
             }

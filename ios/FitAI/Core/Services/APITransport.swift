@@ -61,7 +61,8 @@ struct APITransport {
         path: String,
         imageData: Data,
         filename: String,
-        fields: [String: String] = [:]
+        fields: [String: String] = [:],
+        headers: [String: String] = [:]
     ) async throws -> Data {
         var multipart = MultipartFormData()
         for (name, value) in fields {
@@ -73,14 +74,16 @@ struct APITransport {
             path: path,
             method: "POST",
             body: multipart.finalized(),
-            contentType: multipart.contentType
+            contentType: multipart.contentType,
+            headers: headers
         )
     }
 
     func uploadMany(
         path: String,
         images: [Data],
-        fields: [String: String] = [:]
+        fields: [String: String] = [:],
+        headers: [String: String] = [:]
     ) async throws -> Data {
         guard !images.isEmpty else {
             throw APIError(message: "没有可上传的图片")
@@ -102,7 +105,8 @@ struct APITransport {
             path: path,
             method: "POST",
             body: multipart.finalized(),
-            contentType: multipart.contentType
+            contentType: multipart.contentType,
+            headers: headers
         )
     }
 

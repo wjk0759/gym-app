@@ -3,8 +3,8 @@ import SwiftUI
 import UIKit
 
 struct FoodPhotoAnalysisView: View {
-    @Environment(AppStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
+    @Environment(AppStore.self) var store
+    @Environment(\.dismiss) var dismiss
 
     let date: Date
 
@@ -12,39 +12,40 @@ struct FoodPhotoAnalysisView: View {
         self.date = Calendar.current.startOfDay(for: date)
     }
 
-    @State private var photoItem: PhotosPickerItem?
-    @State private var image: UIImage?
-    @State private var imageData: Data?
-    @State private var meal: MealType = .lunch
-    @State private var items: [FoodRecognitionItem] = []
-    @State private var confidence = 0.0
-    @State private var analysisDisclaimer = ""
-    @State private var analysisModel = ""
-    @State private var analysisSummary = ""
-    @State private var isFood = true
-    @State private var isAnalyzing = false
-    @State private var showCamera = false
-    @State private var didAutoStartCamera = false
-    @State private var message = ""
-    @State private var showAlert = false
+    @State var photoItem: PhotosPickerItem?
+    @State var image: UIImage?
+    @State var imageData: Data?
+    @State var analysisKey = UUID().uuidString
+    @State var meal: MealType = .lunch
+    @State var items: [FoodRecognitionItem] = []
+    @State var confidence = 0.0
+    @State var analysisDisclaimer = ""
+    @State var analysisModel = ""
+    @State var analysisSummary = ""
+    @State var isFood = true
+    @State var isAnalyzing = false
+    @State var showCamera = false
+    @State var didAutoStartCamera = false
+    @State var message = ""
+    @State var showAlert = false
 
-    private var selectedItems: [FoodRecognitionItem] {
+    var selectedItems: [FoodRecognitionItem] {
         items.filter(\.selected)
     }
 
-    private var totalKcal: Double {
+    var totalKcal: Double {
         selectedItems.reduce(0) { $0 + $1.kcal }
     }
 
-    private var totalProtein: Double {
+    var totalProtein: Double {
         selectedItems.reduce(0) { $0 + $1.protein }
     }
 
-    private var totalCarbs: Double {
+    var totalCarbs: Double {
         selectedItems.reduce(0) { $0 + $1.carbs }
     }
 
-    private var totalFat: Double {
+    var totalFat: Double {
         selectedItems.reduce(0) { $0 + $1.fat }
     }
 
@@ -247,130 +248,9 @@ struct FoodPhotoAnalysisView: View {
         .card(padding: 14)
     }
 
-    private var resultCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("识别结果")
-                        .font(AppType.headline)
-                        .foregroundStyle(Theme.ink)
-                }
-                Spacer()
-                Text("参考置信度 \(Int(confidence * 100))%")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Theme.cobalt)
-            }
 
-            ForEach($items) { $item in
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 9) {
-                        Toggle("", isOn: $item.selected)
-                            .labelsHidden()
-                            .tint(Theme.primary)
 
-                        Text(item.name)
-                            .font(AppType.callout.weight(.semibold))
-                            .foregroundStyle(Theme.ink)
 
-                        Spacer()
-
-                        Text("\(Int(item.kcal)) kcal")
-                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(Theme.cobalt)
-                    }
-
-                    HStack {
-                        Stepper(value: $item.grams, in: 10...1000, step: 10) {
-                            Text("份量 \(Int(item.grams)) g")
-                                .font(AppType.caption)
-                                .foregroundStyle(Theme.secondaryText)
-                        }
-                        .labelsHidden()
-                        .tint(Theme.cobalt)
-                        Text("\(Int(item.grams)) g")
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
-                            .foregroundStyle(Theme.ink)
-                            .frame(width: 58, alignment: .trailing)
-                    }
-
-                    Text("P \(item.protein.formatted(.number.precision(.fractionLength(0))))g · C \(item.carbs.formatted(.number.precision(.fractionLength(0))))g · F \(item.fat.formatted(.number.precision(.fractionLength(0))))g")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-                .opacity(item.selected ? 1 : 0.45)
-                .padding(10)
-                .background(
-                    Theme.ink.opacity(0.03),
-                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(Theme.stroke, lineWidth: 1)
-                }
-            }
-
-            VStack(spacing: 8) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("合计")
-                        .font(AppType.caption.weight(.semibold))
-                        .foregroundStyle(Theme.secondaryText)
-                    Spacer()
-                    Text("\(Int(totalKcal)) kcal")
-                        .font(.system(size: 20, weight: .bold, design: .monospaced))
-                        .foregroundStyle(Theme.cobalt)
-                }
-
-                HStack(spacing: 10) {
-                    resultMetric("\(Int(totalProtein))g", "蛋白质")
-                    resultMetric("\(Int(totalCarbs))g", "碳水")
-                    resultMetric("\(Int(totalFat))g", "脂肪")
-                }
-            }
-            .padding(12)
-            .background(
-                Theme.ink.opacity(0.035),
-                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(Theme.stroke, lineWidth: 1)
-            }
-
-            if !analysisModel.isEmpty {
-                Text(analysisModel.hasPrefix("local")
-                     ? "当前为本地估算模式，结果仅用于演示流程。"
-                     : "结果来自远程识别服务，照片未保存。")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-
-            Text(analysisDisclaimer)
-                .font(.system(size: 9, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Button {
-                addToToday()
-            } label: {
-                Label("加入\(meal.label) · \(Int(totalKcal)) kcal", systemImage: "plus.circle.fill")
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(selectedItems.isEmpty)
-        }
-        .card()
-    }
-
-    private func resultMetric(_ value: String, _ title: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(value)
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
-                .foregroundStyle(Theme.ink)
-            Text(title)
-                .font(.system(size: 9, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
 
     private var disclaimer: some View {
         Text("饮食照片识别只能做估算，不能保证份量、烹饪油和隐藏配料完全准确。对花生、海鲜、乳制品等过敏原，请以包装标签或商家确认为准。")
@@ -410,7 +290,10 @@ struct FoodPhotoAnalysisView: View {
         if store.canUseRemoteAI {
             Task { @MainActor in
                 do {
-                    finish(try await APIClient.shared.analyzeFood(imageData: imageData))
+                    finish(try await FoodVisionService.analyzeRemote(
+                        imageData: imageData,
+                        idempotencyKey: analysisKey
+                    ))
                 } catch {
                     finish(FoodVisionService.analyze(imageData: imageData))
                 }
@@ -433,7 +316,7 @@ struct FoodPhotoAnalysisView: View {
         isAnalyzing = false
     }
 
-    private func addToToday() {
+    func addToToday() {
         let logs = selectedItems.map { item in
             FoodLog(
                 date: date,
@@ -455,6 +338,7 @@ struct FoodPhotoAnalysisView: View {
     private func apply(_ picked: UIImage) {
         image = picked
         imageData = picked.jpegData(compressionQuality: 0.7)
+        analysisKey = UUID().uuidString
         items = []
     }
 
@@ -466,6 +350,7 @@ struct FoodPhotoAnalysisView: View {
         }
         imageData = picked.jpegData(compressionQuality: 0.7)
         image = picked
+        analysisKey = UUID().uuidString
         items = []
         photoItem = nil
     }

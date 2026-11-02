@@ -5,11 +5,15 @@ import Foundation
 enum EquipmentRecognitionService {
     static func recognize(
         imageData: Data,
-        preferRemote: Bool
+        preferRemote: Bool,
+        idempotencyKey: String? = nil
     ) async -> EquipmentScanResult {
         if preferRemote {
             do {
-                let remote = try await APIClient.shared.scanEquipment(imageData: imageData)
+                let remote = try await APIClient.shared.scanEquipment(
+                    imageData: imageData,
+                    idempotencyKey: idempotencyKey
+                )
                 if !remote.candidates.isEmpty || !remote.description.isEmpty {
                     return remote
                 }

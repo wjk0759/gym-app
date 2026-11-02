@@ -59,13 +59,15 @@ extension AppStore {
                     result = try await APIClient.shared.reviewCoachVision(
                         imageData: images[0],
                         question: visionQuestion,
-                        sessionID: self.agentSessionID
+                        sessionID: self.agentSessionID,
+                        idempotencyKey: requestID.uuidString
                     )
                 } else {
                     result = try await APIClient.shared.reviewCoachVisionBatch(
                         imageData: images,
                         question: visionQuestion,
-                        sessionID: self.agentSessionID
+                        sessionID: self.agentSessionID,
+                        idempotencyKey: requestID.uuidString
                     )
                 }
                 try Task.checkCancellation()

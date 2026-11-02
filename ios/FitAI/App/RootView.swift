@@ -86,6 +86,9 @@ struct RootView: View {
         .onChange(of: subscriptions.serverSyncGeneration) { _, _ in
             Task { await store.refreshAccess() }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .fitaiSessionExpired)) { _ in
+            auth.handleSessionExpired()
+        }
         .onChange(of: auth.isAuthenticated) { _, _ in
             refreshSession()
         }

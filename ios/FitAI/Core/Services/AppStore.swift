@@ -71,13 +71,13 @@ final class AppStore {
     var useEquipmentLibraryForPlans = true
     var isGenerating = false
     var isReplying = false
-    @ObservationIgnored private var lastPlanGeneratedAt: Date?
-    @ObservationIgnored private var pendingPlanIdempotencyKey: String?
+    @ObservationIgnored var lastPlanGeneratedAt: Date?
+    @ObservationIgnored var pendingPlanIdempotencyKey: String?
     var isSyncingWorkouts = false
     var isSyncingRemoteWorkouts = false
     var isSyncingUserData = false
     var scheduleSyncRequested = false
-    @ObservationIgnored private var draftPersistWorkItem: DispatchWorkItem?
+    @ObservationIgnored var draftPersistWorkItem: DispatchWorkItem?
     @ObservationIgnored var agentChatTask: Task<Void, Never>?
     @ObservationIgnored var agentChatWatchdog: Task<Void, Never>?
     @ObservationIgnored var agentChatRequestID: UUID?
@@ -129,6 +129,10 @@ final class AppStore {
 
     var currentUserID: String? = AuthTokenStore.shared.userID
     // 状态较大时 JSON 编码和原子落盘会阻塞主线程；写入串行放到 utility 队列。
+    let planGeneration = PlanGenerationService()
+    let workoutSync = WorkoutSyncService()
+    let nutrition = NutritionService()
+
     private let persistenceQueue = DispatchQueue(
         label: "com.fitai.appstore.persistence",
         qos: .utility
@@ -153,420 +157,6 @@ final class AppStore {
     }
 
     // MARK: - 建档与计划
-
-    func completeOnboarding(_ draft: UserProfile) {
-        var value = draft
-        value.isOnboarded = true
-        normalizeGoalStart(&value)
-        profile = value
-        appendBodyMetric(
-            BodyMetric(
-                date: Date(),
-                weightKG: value.weightKG,
-                bodyFatPCT: value.bodyFatPCT,
-                waistCM: value.waistCM,
-                armCM: value.armCM,
-                thighCM: value.thighCM
-            )
-        )
-        persist()
-        syncPendingUserData()
-        generatePlan(onboarding: true)
-
-        Task { @MainActor in
-            // The onboarding plan may be generated locally. Ensure the
-            // profile exists server-side before recording its one-time trial.
-            try? await APIClient.shared.syncProfile(value)
-            try? await APIClient.shared.syncGoal(value)
-            let granted = await NotificationScheduler.shared.requestAuthorization()
-            self.notificationsEnabled = granted
-            self.persist()
-            self.rescheduleNotifications()
-        }
-    }
-
-    func updateProfile(_ updated: UserProfile) {
-        let old = profile
-        var value = updated
-        value.isOnboarded = true
-        let goalChanged = old.goalType != value.goalType
-            || old.targetWeightKG != value.targetWeightKG
-            || old.targetWaistCM != value.targetWaistCM
-            || old.targetBodyFatPCT != value.targetBodyFatPCT
-        if goalChanged {
-            value.goalStartWeight = value.weightKG
-            value.goalStartDate = Date()
-        }
-        normalizeGoalStart(&value)
-        let planSettingsChanged = old.goalType != value.goalType
-            || old.split != value.split
-            || old.weeklyDays != value.weeklyDays
-            || old.sessionMinutes != value.sessionMinutes
-            || old.experience != value.experience
-            || old.equipment != value.equipment
-        profile = value
-        let weightChanged = old.weightKG != value.weightKG
-        let bodyFatChanged = old.bodyFatPCT != value.bodyFatPCT
-        let waistChanged = old.waistCM != value.waistCM
-        let armChanged = old.armCM != value.armCM
-        let thighChanged = old.thighCM != value.thighCM
-        if weightChanged || bodyFatChanged || waistChanged || armChanged || thighChanged {
-            appendBodyMetric(
-                BodyMetric(
-                    date: Date(),
-                    weightKG: weightChanged ? value.weightKG : nil,
-                    bodyFatPCT: bodyFatChanged ? value.bodyFatPCT : nil,
-                    waistCM: waistChanged ? value.waistCM : nil,
-                    armCM: armChanged ? value.armCM : nil,
-                    thighCM: thighChanged ? value.thighCM : nil
-                )
-            )
-        }
-        persist()
-        syncPendingUserData()
-        if planSettingsChanged, hasPlanEquipment {
-            generatePlan(force: true)
-        } else {
-            rescheduleNotifications()
-        }
-    }
-
-    func generatePlan(
-        force: Bool = true,
-        weeklyWeekdays: [Int]? = nil,
-        onboarding: Bool = false
-    ) {
-        guard profile.isOnboarded else { return }
-        guard hasPlanEquipment else {
-            toast = "请至少选择一种可用器械：徒手 / 哑铃 / 杠铃 / 固定器械 / 绳索"
-            return
-        }
-        guard !isGenerating else { return }
-        if !onboarding && !hasProAccess {
-            requestPro(.trainingPlan)
-            return
-        }
-        if !onboarding,
-           let last = lastPlanGeneratedAt,
-           Date().timeIntervalSince(last) < 60 {
-            toast = "计划刚刚生成，请稍后再试"
-            return
-        }
-        if plan != nil && !force { return }
-
-        isGenerating = true
-        let snapshot = profile
-        let librarySlugs = equipmentSlugsForPlan
-        let focusAreas = planFocusAreas
-
-        if canUseRemoteAI && weeklyWeekdays == nil {
-            let idempotencyKey = pendingPlanIdempotencyKey ?? UUID().uuidString
-            pendingPlanIdempotencyKey = idempotencyKey
-            Task { @MainActor in
-                do {
-                    async let profileSync = APIClient.shared.syncProfile(snapshot)
-                    async let goalSync = APIClient.shared.syncGoal(snapshot)
-                    try await profileSync
-                    _ = try? await goalSync
-                    var generated = try await APIClient.shared.generatePlan(
-                        force: force,
-                        onboarding: onboarding,
-                        equipmentSlugs: librarySlugs,
-                        split: snapshot.split,
-                        focus: focusAreas.map(\.rawValue),
-                        idempotencyKey: idempotencyKey
-                    )
-                    generated.version = max(generated.version, (self.plan?.version ?? 0) + 1)
-                    self.pendingPlanIdempotencyKey = nil
-                    self.archiveCurrentPlan()
-                    self.plan = generated
-                    self.toast = "已由 AI 生成计划"
-                    self.lastPlanGeneratedAt = Date()
-                    if onboarding {
-                        await self.consumeOnboardingTrialIfNeeded()
-                    }
-                    await self.refreshAccess()
-                } catch let error as APIError where error.statusCode == 429 {
-                    self.isGenerating = false
-                    if error.code == "GENERATION_IN_PROGRESS" {
-                        self.toast = "计划正在生成中，请稍后查看"
-                    } else if let retry = error.retryAfter, retry > 0 {
-                        self.toast = "计划刚刚生成，请 \(retry) 秒后再试"
-                    } else {
-                        self.toast = "计划生成太频繁，请稍后再试"
-                    }
-                    return
-                } catch let error as APIError
-                    where error.isProRequired || (error.statusCode == 403 && error.code == nil) {
-                    self.isGenerating = false
-                    if self.hasProAccess {
-                        self.toast = "计划服务暂时不可用，请稍后重试"
-                    } else {
-                        self.requestPro(.trainingPlan)
-                    }
-                    return
-                } catch {
-                    var fallback = PlanGenerator.generate(
-                        profile: snapshot,
-                        dislikedSlugs: self.dislikedSlugs,
-                        equipmentSlugs: librarySlugs,
-                        weeklyWeekdays: weeklyWeekdays,
-                        focusAreas: focusAreas
-                    )
-                    fallback.version = (self.plan?.version ?? 0) + 1
-                    self.archiveCurrentPlan()
-                    self.plan = fallback
-                    self.toast = "AI 服务不可用，已使用本地模板"
-                    self.lastPlanGeneratedAt = Date()
-                    if onboarding {
-                        await self.consumeOnboardingTrialIfNeeded()
-                    }
-                }
-                self.isGenerating = false
-                self.persist()
-                self.rescheduleNotifications()
-                self.syncPendingUserData()
-            }
-            return
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) { [weak self] in
-            guard let self else { return }
-            var generated = PlanGenerator.generate(
-                profile: snapshot,
-                dislikedSlugs: self.dislikedSlugs,
-                equipmentSlugs: librarySlugs,
-                weeklyWeekdays: weeklyWeekdays,
-                focusAreas: focusAreas
-            )
-            generated.version = (self.plan?.version ?? 0) + 1
-            self.archiveCurrentPlan()
-            self.plan = generated
-            self.lastPlanGeneratedAt = Date()
-            self.isGenerating = false
-            self.persist()
-            self.rescheduleNotifications()
-            self.syncPendingUserData()
-            if onboarding {
-                Task { @MainActor in
-                    await self.consumeOnboardingTrialIfNeeded()
-                }
-            }
-        }
-    }
-
-    func requestPro(_ feature: ProFeature) {
-        access.requestPro(feature)
-    }
-
-    @discardableResult
-    func requirePro(_ feature: ProFeature) -> Bool {
-        access.requirePro(feature)
-    }
-
-    @MainActor
-    func refreshAccess() async {
-        await access.refresh()
-    }
-
-    @MainActor
-    private func consumeOnboardingTrialIfNeeded() async {
-        try? await APIClient.shared.syncProfile(profile)
-        try? await APIClient.shared.syncGoal(profile)
-        await access.consumeOnboardingTrial()
-    }
-
-    func rescheduleNotifications() {
-        guard notificationsEnabled else { return }
-        Task { @MainActor in
-            _ = await NotificationScheduler.shared.schedule(
-                plan: self.plan,
-                hour: self.reminderHour,
-                minute: self.reminderMinute
-            )
-        }
-    }
-
-    func restorePlan(_ archived: TrainingPlan) {
-        guard archived.id != plan?.id else { return }
-        archiveCurrentPlan()
-        planHistory.removeAll { $0.id == archived.id }
-        plan = archived
-        toast = "已恢复计划 v\(archived.version)"
-        persist()
-        rescheduleNotifications()
-        syncPendingUserData()
-    }
-
-    func archiveCurrentPlan() {
-        guard let current = plan else { return }
-        // 计划版本变化后训练日 ID 会变化，旧草稿无法安全恢复。
-        workoutDraft = nil
-        guard planHistory.first?.id != current.id else { return }
-        planHistory.insert(current, at: 0)
-        if planHistory.count > 5 {
-            planHistory.removeLast(planHistory.count - 5)
-        }
-    }
-
-    func lastSet(for slug: String) -> SetLog? {
-        for session in sessions {
-            if let set = session.sets.last(where: { $0.slug == slug && $0.completed }) {
-                return set
-            }
-        }
-        return nil
-    }
-
-    /// 历史最佳组：先比较重量，再比较次数；自重动作按次数比较。
-    func bestSet(for slug: String) -> SetLog? {
-        sessions
-            .flatMap(\.sets)
-            .filter { $0.slug == slug && $0.completed }
-            .max { left, right in
-                if left.weightKG != right.weightKG {
-                    return left.weightKG < right.weightKG
-                }
-                return left.reps < right.reps
-            }
-    }
-
-    func updateDay(_ day: PlanDay) {
-        guard var current = plan,
-              let index = current.days.firstIndex(where: { $0.id == day.id }) else {
-            return
-        }
-        current.days[index] = day
-        plan = current
-        persist()
-    }
-
-    func addExercise(_ exercise: Exercise, to dayID: UUID) {
-        guard var current = plan,
-              let dayIndex = current.days.firstIndex(where: { $0.id == dayID }) else {
-            return
-        }
-        let params = current.days[dayIndex].exercises.first
-        let item = PlanExercise(
-            slug: exercise.slug,
-            sets: params?.sets ?? 3,
-            reps: params?.reps ?? "10-12",
-            weightKG: nil,
-            restSec: params?.restSec ?? 60,
-            rpe: 7
-        )
-        dislikedSlugs.remove(exercise.slug)
-        current.days[dayIndex].exercises.append(item)
-        plan = current
-        persist()
-    }
-
-    func clearPreferences() {
-        dislikedSlugs.removeAll()
-        persist()
-    }
-
-    // MARK: - 训练与对话
-
-    func record(
-        day: PlanDay,
-        sets: [SetLog],
-        durationMinutes: Int,
-        feeling: Int,
-        notes: String? = nil,
-        plannedSets: Int? = nil
-    ) {
-        let cleanNotes = notes?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let session = WorkoutSession(
-            dayTitle: day.title,
-            durationMinutes: durationMinutes,
-            feeling: feeling,
-            notes: (cleanNotes?.isEmpty ?? true) ? nil : cleanNotes,
-            sets: sets,
-            programDayID: day.id.uuidString,
-            plannedSets: plannedSets
-        )
-        if workoutDraft?.dayID == day.id {
-            workoutDraft = nil
-        }
-        sessions.insert(session, at: 0)
-        persist()
-        syncPendingWorkouts()
-
-        if healthKitEnabled {
-            let end = Date()
-            let start = end.addingTimeInterval(-Double(durationMinutes * 60))
-            Task {
-                try? await HealthKitService.shared.saveStrengthWorkout(
-                    start: start,
-                    end: end
-                )
-            }
-        }
-    }
-
-    func addSession(_ session: WorkoutSession) {
-        sessions.insert(session, at: 0)
-        persist()
-        syncPendingWorkouts()
-    }
-
-    // MARK: - 训练草稿
-
-    func draft(for dayID: UUID) -> WorkoutDraft? {
-        guard let workoutDraft, workoutDraft.dayID == dayID else { return nil }
-        return workoutDraft
-    }
-
-    /// 当前草稿对应的计划日；计划已重新生成时可能找不到。
-    var draftPlanDay: PlanDay? {
-        guard let draft = workoutDraft, let plan else { return nil }
-        return plan.days.first { $0.id == draft.dayID }
-    }
-
-    func saveWorkoutDraft(_ draft: WorkoutDraft, persistImmediately: Bool = false) {
-        let isNewDraft = workoutDraft?.dayID != draft.dayID
-        workoutDraft = draft
-
-        if persistImmediately || isNewDraft {
-            draftPersistWorkItem?.cancel()
-            draftPersistWorkItem = nil
-            persist()
-            return
-        }
-
-        // 训练中每完成一组就全量编码落盘会放大 I/O。首次保存立即落盘，
-        // 后续最多每 10 秒合并一次；暂停/切后台/退出时再强制落盘。
-        guard draftPersistWorkItem == nil else { return }
-        let work = DispatchWorkItem { [weak self] in
-            guard let self else { return }
-            self.draftPersistWorkItem = nil
-            self.persist()
-        }
-        draftPersistWorkItem = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 10, execute: work)
-    }
-
-    func clearWorkoutDraft(dayID: UUID? = nil) {
-        if let dayID {
-            guard workoutDraft?.dayID == dayID else { return }
-        }
-        workoutDraft = nil
-        persist()
-    }
-
-    func updateSession(_ session: WorkoutSession) {
-        guard let index = sessions.firstIndex(where: { $0.id == session.id }) else {
-            return
-        }
-        var updated = session
-        if updated.remoteID != nil {
-            updated.pendingRemoteUpdate = true
-        }
-        sessions[index] = updated
-        persist()
-        syncPendingWorkouts()
-    }
 
     func resetAll() {
         flushPersistence()
@@ -634,88 +224,6 @@ final class AppStore {
         lastAgentRetryText = nil
         lastAgentRetrySkill = .trainer
         pendingUndo = nil
-    }
-
-    @discardableResult
-    func enableReminders(hour: Int, minute: Int) async -> Int {
-        reminderHour = hour
-        reminderMinute = minute
-        let granted = await NotificationScheduler.shared.requestAuthorization()
-        guard granted else {
-            notificationsEnabled = false
-            persist()
-            return 0
-        }
-        let count = await NotificationScheduler.shared.schedule(
-            plan: plan,
-            hour: hour,
-            minute: minute
-        )
-        notificationsEnabled = granted
-        persist()
-        return count
-    }
-
-    func disableReminders() {
-        notificationsEnabled = false
-        NotificationScheduler.shared.cancelAll()
-        persist()
-    }
-
-    // MARK: - Apple 健康
-
-    @discardableResult
-    func enableHealthKit() async -> Bool {
-        guard HealthKitService.shared.isAvailable else { return false }
-        do {
-            let granted = try await HealthKitService.shared.requestAuthorization()
-            healthKitEnabled = granted
-            if granted, let weight = try? await HealthKitService.shared.latestBodyMassKG() {
-                profile.weightKG = weight
-            }
-            persist()
-            return granted
-        } catch {
-            healthKitEnabled = false
-            persist()
-            return false
-        }
-    }
-
-    func disableHealthKit() {
-        healthKitEnabled = false
-        persist()
-    }
-
-    // MARK: - 持久化
-
-    private struct PersistedState: Codable {
-        var profile: UserProfile
-        var plan: TrainingPlan?
-        var planHistory: [TrainingPlan]?
-        var sessions: [WorkoutSession]
-        var workoutDraft: WorkoutDraft?
-        var chat: [ChatMessage]
-        var foodLogs: [FoodLog]?
-        var customFoods: [FoodItem]?
-        var dislikedSlugs: [String]?
-        var reminderHour: Int
-        var reminderMinute: Int
-        var notificationsEnabled: Bool
-        var useRemoteAI: Bool?
-        var healthKitEnabled: Bool?
-        var equipmentLibrary: [EquipmentItem]?
-        var bodyAnalyses: [BodyAnalysis]?
-        var useEquipmentLibraryForPlans: Bool?
-        var bodyMetrics: [BodyMetric]?
-        var bodyCheckInFrequency: BodyCheckInFrequency?
-        var bodyCheckInWeekday: Int?
-        var bodyCheckInDay: Int?
-        var bodyCheckInAnchor: Date?
-        var bodyCheckInDismissedDate: String?
-        var pendingWorkoutDeletionIDs: [String]?
-        var weeklyReview: AgentWeeklyReview?
-        var coachVisualMemory: CoachVisualMemory?
     }
 
     private func load() {
@@ -905,44 +413,32 @@ final class AppStore {
         }
     }
 
-    func exportData() -> String {
-        let payload = ExportPayload(
-            exportedAt: Date(),
-            profile: profile,
-            plan: plan,
-            planHistory: planHistory,
-            sessions: sessions,
-            chat: chat,
-            foodLogs: foodLogs,
-            customFoods: customFoods,
-            dislikedSlugs: Array(dislikedSlugs).sorted(),
-            healthKitEnabled: healthKitEnabled,
-            bodyAnalyses: bodyAnalyses,
-            equipmentLibrary: equipmentLibrary,
-            bodyMetrics: bodyMetrics,
-            bodyCheckInFrequency: bodyCheckInFrequency
-        )
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
-        guard let data = try? encoder.encode(payload) else { return "{}" }
-        return String(data: data, encoding: .utf8) ?? "{}"
-    }
-
-    private struct ExportPayload: Codable {
-        let exportedAt: Date
-        let profile: UserProfile
-        let plan: TrainingPlan?
-        let planHistory: [TrainingPlan]
-        let sessions: [WorkoutSession]
-        let chat: [ChatMessage]
-        let foodLogs: [FoodLog]
-        let customFoods: [FoodItem]
-        let dislikedSlugs: [String]
-        let healthKitEnabled: Bool
-        let bodyAnalyses: [BodyAnalysis]
-        let equipmentLibrary: [EquipmentItem]
-        let bodyMetrics: [BodyMetric]
-        let bodyCheckInFrequency: BodyCheckInFrequency
+    private struct PersistedState: Codable {
+        var profile: UserProfile
+        var plan: TrainingPlan?
+        var planHistory: [TrainingPlan]?
+        var sessions: [WorkoutSession]
+        var workoutDraft: WorkoutDraft?
+        var chat: [ChatMessage]
+        var foodLogs: [FoodLog]?
+        var customFoods: [FoodItem]?
+        var dislikedSlugs: [String]?
+        var reminderHour: Int
+        var reminderMinute: Int
+        var notificationsEnabled: Bool
+        var useRemoteAI: Bool?
+        var healthKitEnabled: Bool?
+        var equipmentLibrary: [EquipmentItem]?
+        var bodyAnalyses: [BodyAnalysis]?
+        var useEquipmentLibraryForPlans: Bool?
+        var bodyMetrics: [BodyMetric]?
+        var bodyCheckInFrequency: BodyCheckInFrequency?
+        var bodyCheckInWeekday: Int?
+        var bodyCheckInDay: Int?
+        var bodyCheckInAnchor: Date?
+        var bodyCheckInDismissedDate: String?
+        var pendingWorkoutDeletionIDs: [String]?
+        var weeklyReview: AgentWeeklyReview?
+        var coachVisualMemory: CoachVisualMemory?
     }
 }

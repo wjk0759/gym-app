@@ -38,6 +38,7 @@ targets:
       configs:
         Debug:
           ENABLE_TESTABILITY: YES
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
     scheme:
       gatherCoverageData: false
       testTargets:
@@ -54,6 +55,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.wjk.fitai.tests
+        PRODUCT_NAME: FitAITests
         GENERATE_INFOPLIST_FILE: YES
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/FitAI.app/FitAI"
         BUNDLE_LOADER: "$(TEST_HOST)"
@@ -69,6 +71,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.wjk.fitai.uitests
+        PRODUCT_NAME: FitAIUITests
         GENERATE_INFOPLIST_FILE: YES
         TEST_TARGET_NAME: FitAI
         CODE_SIGN_STYLE: Automatic

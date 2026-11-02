@@ -35,8 +35,19 @@ actor TokenRefreshCoordinator {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse else { return false }
             guard (200..<300).contains(http.statusCode) else {
-                // A 401/403 is definitive; transient failures keep the local
-                // session so the user is not logged out while offline.
+                // A 401/403 is definitive: the refresh token is expired,
+                // revoked, or bound to another device. Clear it and ask the
+                // user to sign in again; transient/network failures keep the
+                // local session so offline usage is not destroyed.
+                if http.statusCode == 401 || http.statusCode == 403 {
+                    AuthTokenStore.shared.clear()
+                    await MainActor.run {
+                        NotificationCenter.default.post(
+                            name: .fitaiSessionExpired,
+                            object: nil
+                        )
+                    }
+                }
                 return false
             }
             let decoded = try JSONDecoder().decode(TokenRefreshResponse.self, from: data)

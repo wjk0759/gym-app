@@ -18,6 +18,16 @@ enum FoodVisionService {
         [("麻辣香锅", 400), ("米饭", 150)]
     ]
 
+    static func analyzeRemote(
+        imageData: Data,
+        idempotencyKey: String?
+    ) async throws -> FoodRecognitionResult {
+        try await APIClient.shared.analyzeFood(
+            imageData: imageData,
+            idempotencyKey: idempotencyKey
+        )
+    }
+
     static func analyze(imageData: Data) -> FoodRecognitionResult {
         let seed = imageData.reduce(0) { partial, byte in
             (partial &* 31 &+ Int(byte)) & 0x7fff_ffff

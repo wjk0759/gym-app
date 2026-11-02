@@ -53,6 +53,16 @@ enum BodyAnalysisService {
         )
     ]
 
+    static func analyzeRemote(
+        imageData: Data,
+        idempotencyKey: String?
+    ) async throws -> BodyAnalysis {
+        try await APIClient.shared.analyzeBody(
+            imageData: imageData,
+            idempotencyKey: idempotencyKey
+        )
+    }
+
     static func analyze(imageData: Data) -> BodyAnalysis {
         let seed = imageData.reduce(0) { ($0 + Int($1)) % 100_000 }
         let variant = variants[seed % variants.count]

@@ -114,3 +114,9 @@ final class AuthTokenStore {
         SecItemDelete(query(key) as CFDictionary)
     }
 }
+
+extension Notification.Name {
+    /// Posted when the server definitively rejects the refresh token
+    /// (expired, revoked, or device mismatch). The UI must return to login.
+    static let fitaiSessionExpired = Notification.Name("fitai.session.expired")
+}

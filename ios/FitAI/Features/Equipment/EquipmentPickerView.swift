@@ -3,27 +3,27 @@ import UIKit
 
 /// 器械 Tab 的动作选择器：按肌群和器械筛选，选中的动作可以生成自选训练或加入器械库。
 struct EquipmentPickerView: View {
-    @Environment(AppStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
+    @Environment(AppStore.self) var store
+    @Environment(\.dismiss) var dismiss
 
     private let onSelectExercise: ((Exercise) -> Void)?
     private let allowedEquipment: Set<Equipment>?
 
-    @State private var selectedExercises: [Exercise] = []
-    @State private var selectedMuscle: MuscleGroup?
-    @State private var selectedEquipment: Equipment?
-    @State private var savedOnly = false
-    @State private var query = ""
-    @State private var showScanner = false
-    @State private var showSelectionPanel = false
-    @State private var showSelectionButton = false
-    @State private var feedback: String?
-    @State private var customDay: PlanDay?
-    @State private var detailExercise: Exercise?
-    @State private var composePayload: ComposePayload?
-    @State private var pendingComposeDay: PlanDay?
+    @State var selectedExercises: [Exercise] = []
+    @State var selectedMuscle: MuscleGroup?
+    @State var selectedEquipment: Equipment?
+    @State var savedOnly = false
+    @State var query = ""
+    @State var showScanner = false
+    @State var showSelectionPanel = false
+    @State var showSelectionButton = false
+    @State var feedback: String?
+    @State var customDay: PlanDay?
+    @State var detailExercise: Exercise?
+    @State var composePayload: ComposePayload?
+    @State var pendingComposeDay: PlanDay?
 
-    private struct ComposePayload: Identifiable {
+    struct ComposePayload: Identifiable {
         let id = UUID()
         let exercises: [PlanExercise]
     }
@@ -38,29 +38,29 @@ struct EquipmentPickerView: View {
         self.allowedEquipment = allowedEquipment
     }
 
-    private var isPickingForSession: Bool {
+    var isPickingForSession: Bool {
         onSelectExercise != nil
     }
 
-    private let gridColumns = [
+    let gridColumns = [
         GridItem(.flexible(), spacing: 9),
         GridItem(.flexible(), spacing: 9)
     ]
 
-    private let muscleOrder: [MuscleGroup] = [
+    let muscleOrder: [MuscleGroup] = [
         .chest, .back, .legs, .glutes, .shoulders, .arms, .core, .cardio
     ]
 
-    private var isSearching: Bool {
+    var isSearching: Bool {
         !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     /// 每次筛选只构建一次 Set，避免在 filter/sort 里反复线性查库。
-    private var savedSlugs: Set<String> {
+    var savedSlugs: Set<String> {
         Set(store.equipmentLibrary.compactMap(\.slug))
     }
 
-    private var filteredExercises: [Exercise] {
+    var filteredExercises: [Exercise] {
         let text = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let isSearching = !text.isEmpty
         let saved = savedSlugs
@@ -178,338 +178,6 @@ struct EquipmentPickerView: View {
     }
 
     /// 搜索与器械分类固定在顶部，滚动只发生在动作列表里。
-    private var equipmentTools: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            searchBar
-
-            if isSearching {
-                searchScopeHint
-            }
-
-            equipmentFilters
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 9)
-        .padding(.bottom, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            Theme.chrome,
-            in: UnevenRoundedRectangle(
-                topLeadingRadius: 0,
-                bottomLeadingRadius: 20,
-                bottomTrailingRadius: 20,
-                topTrailingRadius: 0,
-                style: .continuous
-            )
-        )
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(Theme.stroke)
-                .frame(height: 1)
-                .padding(.horizontal, 16)
-        }
-    }
-
-    private var libraryHeader: some View {
-        HStack(spacing: 6) {
-            Text("动作库")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(Theme.ink)
-
-            Text("\(filteredExercises.count)")
-                .font(.system(size: 9, weight: .bold, design: .default))
-                .foregroundStyle(Theme.cobalt)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(Theme.cobalt.opacity(0.08), in: Capsule())
-                .overlay(
-                    Capsule()
-                        .stroke(Theme.cobalt.opacity(0.14), lineWidth: 1)
-                )
-
-            Spacer(minLength: 8)
-
-        }
-        .padding(.horizontal, 18)
-        .padding(.top, 10)
-        .padding(.bottom, 8)
-    }
-
-    private var searchScopeHint: some View {
-        Label("全库搜索中，点分类可退出搜索", systemImage: "magnifyingglass")
-            .font(.system(size: 10.5))
-            .foregroundStyle(Theme.tertiaryText)
-            .padding(.leading, 4)
-    }
-
-    private var selectionFloatingButton: some View {
-        Button {
-            Haptics.tap()
-            UIApplication.shared.sendAction(
-                #selector(UIResponder.resignFirstResponder),
-                to: nil,
-                from: nil,
-                for: nil
-            )
-            showSelectionPanel = true
-        } label: {
-            ZStack(alignment: .topTrailing) {
-                Image(systemName: selectedExercises.isEmpty ? "dumbbell" : "dumbbell.fill")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(selectedExercises.isEmpty ? Theme.tertiaryText : Theme.cobalt)
-                    .frame(width: 50, height: 50)
-                    .background(Theme.chrome, in: Circle())
-                    .overlay(
-                        Circle().stroke(
-                            selectedExercises.isEmpty ? Theme.stroke : Theme.cobalt.opacity(0.5),
-                            lineWidth: 1
-                        )
-                    )
-                    .shadow(color: .black.opacity(0.22), radius: 14, y: 7)
-
-                if !selectedExercises.isEmpty {
-                    Text("\(selectedExercises.count)")
-                        .font(.system(size: 9, weight: .bold, design: .default))
-                        .foregroundStyle(Theme.onAccent)
-                        .frame(minWidth: 18, minHeight: 18)
-                        .background(Theme.cobalt, in: Capsule())
-                        .offset(x: 3, y: -3)
-                        .contentTransition(.numericText())
-                }
-            }
-            .frame(width: 54, height: 54)
-            .motionAnimation(Motion.quick, value: selectedExercises.count)
-        }
-        .buttonStyle(SubtlePressStyle(scale: 0.94))
-        .accessibilityLabel("已选动作，共 \(selectedExercises.count) 个")
-        .popover(
-            isPresented: $showSelectionPanel,
-            attachmentAnchor: .rect(.bounds),
-            arrowEdge: .bottom
-        ) {
-            EquipmentSelectionPanelView(
-                exercises: selectedExercises,
-                onRemove: { exercise in
-                    selectedExercises.removeAll { $0.slug == exercise.slug }
-                },
-                onClear: {
-                    selectedExercises.removeAll()
-                },
-                onMakePlan: makeTrainingPlanFromSelection,
-                onAddToLibrary: addSelectedToLibrary
-            )
-            .presentationCompactAdaptation(.popover)
-            .presentationBackground(Theme.background)
-        }
-    }
-
-    @ViewBuilder
-    private var feedbackBanner: some View {
-        if let feedback {
-            Text(feedback)
-                .font(AppType.caption.weight(.semibold))
-                .foregroundStyle(Theme.ink)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 9)
-                .background(Theme.chrome, in: Capsule())
-                .overlay(Capsule().stroke(Theme.stroke, lineWidth: 1))
-                .shadow(color: .black.opacity(0.20), radius: 10, y: 5)
-                .padding(.top, 6)
-                .allowsHitTesting(false)
-                .transition(.move(edge: .top).combined(with: .opacity))
-                .task(id: feedback) {
-                    try? await Task.sleep(nanoseconds: 2_200_000_000)
-                    guard !Task.isCancelled else { return }
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        self.feedback = nil
-                    }
-                }
-        }
-    }
-
-    private var searchBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText.opacity(0.82))
-
-            TextField("搜索动作、肌群或器械", text: $query)
-                .font(.system(size: 14))
-                .textInputAutocapitalization(.never)
-                .foregroundStyle(Theme.ink)
-                .submitLabel(.search)
-                .onChange(of: query) { _, value in
-                    if value.count > 60 {
-                        query = String(value.prefix(60))
-                    }
-                }
-
-            if !query.isEmpty {
-                Button {
-                    Haptics.tap()
-                    query = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
-                        .frame(width: 24, height: 24)
-                }
-                .buttonStyle(SubtlePressStyle(scale: 0.9))
-                .accessibilityLabel("清空搜索")
-            }
-
-            if !isPickingForSession {
-                Button {
-                    Haptics.tap()
-                    showScanner = true
-                } label: {
-                    Image(systemName: "camera.viewfinder")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(Theme.cobalt)
-                        .frame(width: 34, height: 34)
-                        .background(
-                            Theme.cobalt.opacity(0.13),
-                            in: RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                .stroke(Theme.cobalt.opacity(0.12), lineWidth: 1)
-                        )
-                }
-                .buttonStyle(SubtlePressStyle(scale: 0.94))
-                .accessibilityLabel("拍照识别器械")
-            }
-        }
-        .padding(.leading, 13)
-        .padding(.trailing, 7)
-        .padding(.vertical, 6)
-        .frame(minHeight: 48)
-        .background(
-            Theme.ink.opacity(0.035),
-            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .strokeBorder(Theme.stroke, lineWidth: 1)
-        )
-    }
-
-    private var muscleSidebar: some View {
-        VStack(spacing: 1) {
-            muscleSideButton(nil, title: "全部")
-            ForEach(muscleOrder) { muscle in
-                muscleSideButton(muscle, title: muscle.label)
-            }
-        }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 5)
-        .frame(width: 56)
-        .background(
-            Theme.paper,
-            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .strokeBorder(Theme.stroke, lineWidth: 1)
-        )
-    }
-
-    private func muscleSideButton(_ muscle: MuscleGroup?, title: String) -> some View {
-        let active = selectedMuscle == muscle && !isSearching
-
-        return Button {
-            Haptics.select()
-            withAnimation(Motion.quick) {
-                selectedMuscle = muscle
-                if isSearching {
-                    query = ""
-                }
-            }
-        } label: {
-            Text(title)
-                .font(.system(size: 11.5, weight: active ? .bold : .medium))
-                .foregroundStyle(active ? Theme.onPrimary : Theme.secondaryText.opacity(0.86))
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 6.5)
-                .background(
-                    active ? Theme.primary : Color.clear,
-                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(
-                            active ? Theme.ink.opacity(0.12) : Color.clear,
-                            lineWidth: 1
-                        )
-                )
-                .animation(Motion.quick, value: active)
-        }
-        .buttonStyle(SubtlePressStyle(scale: 0.95))
-        .accessibilityLabel("\(title)肌群")
-        .accessibilityAddTraits(active ? .isSelected : [])
-    }
-
-    private var equipmentFilters: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                filterChip("全部", selected: selectedEquipment == nil && !savedOnly && !isSearching) {
-                    selectedEquipment = nil
-                    savedOnly = false
-                    query = ""
-                }
-                filterChip("已添加", selected: savedOnly && selectedEquipment == nil && !isSearching) {
-                    savedOnly = true
-                    selectedEquipment = nil
-                    query = ""
-                }
-                ForEach(Equipment.allCases) { equipment in
-                    filterChip(
-                        equipment.label,
-                        selected: selectedEquipment == equipment && !savedOnly && !isSearching
-                    ) {
-                        selectedEquipment = equipment
-                        savedOnly = false
-                        query = ""
-                    }
-                }
-            }
-        }
-    }
-
-    private func filterChip(
-        _ title: String,
-        selected: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button {
-            Haptics.select()
-            withAnimation(Motion.quick) {
-                action()
-            }
-        } label: {
-            Text(title)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(selected ? Theme.onPrimary : Theme.secondaryText.opacity(0.86))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(
-                    selected ? Theme.primary : Theme.paper,
-                    in: RoundedRectangle(cornerRadius: 9, style: .continuous)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .stroke(
-                            selected ? Theme.ink.opacity(0.12) : Theme.stroke,
-                            lineWidth: 1
-                        )
-                )
-                .animation(Motion.quick, value: selected)
-        }
-        .buttonStyle(SubtlePressStyle(scale: 0.95))
-        .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-
     @ViewBuilder
     private var exerciseGrid: some View {
         if filteredExercises.isEmpty {
@@ -542,7 +210,11 @@ struct EquipmentPickerView: View {
                                 detailExercise = exercise
                             }
                         } label: {
-                            exerciseCard(exercise)
+                            EquipmentPickerExerciseCard(
+                                exercise: exercise,
+                                selected: selectedExercises.contains(where: { $0.slug == exercise.slug }),
+                                isPickingForSession: isPickingForSession
+                            )
                         }
                         .buttonStyle(CardPressStyle(scale: 0.985))
                         .accessibilityLabel(isPickingForSession ? "添加\(exercise.nameZH)" : "查看\(exercise.nameZH)详情")
@@ -551,8 +223,8 @@ struct EquipmentPickerView: View {
                             Button {
                                 toggle(exercise)
                             } label: {
-                                selectionControl(
-                                    exercise,
+                                EquipmentPickerSelectionControl(
+                                    exercise: exercise,
                                     selected: selectedExercises.contains(where: { $0.slug == exercise.slug })
                                 )
                             }
@@ -563,113 +235,6 @@ struct EquipmentPickerView: View {
                 }
             }
         }
-    }
-
-    private func exerciseCard(_ exercise: Exercise) -> some View {
-        let selected = selectedExercises.contains(where: { $0.slug == exercise.slug })
-
-        return VStack(alignment: .leading, spacing: 0) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .fill(Theme.ink.opacity(0.04))
-                    .frame(height: 102)
-
-                Circle()
-                    .fill(Theme.cobalt.opacity(0.06))
-                    .overlay(
-                        Circle()
-                            .stroke(Theme.cobalt.opacity(0.12), lineWidth: 1)
-                    )
-                    .frame(width: 54, height: 54)
-                    .overlay(
-                        Image(systemName: muscleSymbol(exercise.muscle))
-                            .font(.system(size: 29, weight: .light))
-                            .foregroundStyle(Theme.cobalt.opacity(0.9))
-                    )
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-            .overlay(alignment: .topLeading) {
-                if exercise.videoURL != nil {
-                    HStack(spacing: 3) {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 6, weight: .bold))
-                        Text("讲解")
-                            .font(.system(size: 8.5, weight: .semibold))
-                    }
-                    .foregroundStyle(Color.white.opacity(0.72))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(Color.black.opacity(0.42), in: Capsule())
-                    .overlay(
-                        Capsule().stroke(Color.white.opacity(0.1), lineWidth: 1)
-                    )
-                    .padding(7)
-                }
-            }
-
-            Text(exercise.nameZH)
-                .font(AppType.callout.weight(.semibold))
-                .foregroundStyle(Theme.ink)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-                .padding(.horizontal, 9)
-                .padding(.top, 9)
-
-            HStack(spacing: 3) {
-                Text("\(exercise.muscle.label) · \(exercise.equipment.label)")
-                    .font(.system(size: 9.5, weight: .medium))
-                    .foregroundStyle(Theme.tertiaryText.opacity(0.9))
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-                Image(systemName: isPickingForSession ? "plus.circle.fill" : "chevron.right")
-                    .font(.system(size: isPickingForSession ? 13 : 9, weight: .semibold))
-                    .foregroundStyle(isPickingForSession ? Theme.cobalt : Theme.tertiaryText.opacity(0.72))
-            }
-            .padding(.horizontal, 9)
-            .padding(.top, 4)
-            .padding(.bottom, 10)
-        }
-        .background(Theme.paper)
-        .background(selected ? Theme.cobalt.opacity(0.06) : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 17, style: .continuous)
-                .strokeBorder(
-                    selected ? Theme.cobalt.opacity(0.62) : Theme.stroke,
-                    lineWidth: 1
-                )
-        )
-        .animation(Motion.quick, value: selected)
-    }
-
-    private func muscleSymbol(_ muscle: MuscleGroup) -> String {
-        switch muscle {
-        case .chest: return "figure.strengthtraining.traditional"
-        case .back: return "figure.rower"
-        case .legs: return "figure.step.training"
-        case .glutes: return "figure.strengthtraining.functional"
-        case .shoulders: return "figure.arms.open"
-        case .arms: return "dumbbell.fill"
-        case .core: return "figure.core.training"
-        case .cardio: return "figure.run"
-        }
-    }
-
-    private func selectionControl(_ exercise: Exercise, selected: Bool) -> some View {
-        ZStack {
-            Circle()
-                .fill(selected ? Theme.cobalt : Color.black.opacity(0.42))
-            Circle()
-                .stroke(selected ? Theme.cobalt : Color.white.opacity(0.32), lineWidth: 1)
-            Image(systemName: selected ? "checkmark" : "plus")
-                .font(.system(size: selected ? 11 : 10, weight: .bold))
-                .foregroundStyle(selected ? Theme.onAccent : Color.white.opacity(0.82))
-        }
-        .frame(width: 30, height: 30)
-        .scaleEffect(selected ? 1.06 : 1)
-        .animation(Motion.quick, value: selected)
-        .contentShape(Circle())
-        .accessibilityLabel(selected ? "取消选择\(exercise.nameZH)" : "选择\(exercise.nameZH)")
     }
 
     private func toggle(_ exercise: Exercise) {
@@ -683,7 +248,7 @@ struct EquipmentPickerView: View {
         }
     }
 
-    private func makeTrainingPlanFromSelection() {
+    func makeTrainingPlanFromSelection() {
         guard !selectedExercises.isEmpty else { return }
         Haptics.tap()
         let exercises = selectedExercises.map { exercise in
@@ -715,7 +280,7 @@ struct EquipmentPickerView: View {
         }
     }
 
-    private func addSelectedToLibrary() {
+    func addSelectedToLibrary() {
         guard !selectedExercises.isEmpty else { return }
         let added = store.addExercisesToEquipmentLibrary(selectedExercises)
         if added > 0 {

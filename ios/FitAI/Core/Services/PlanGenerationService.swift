@@ -1,0 +1,48 @@
+import Foundation
+
+/// Owns plan generation mechanics so AppStore stays a state container.
+///
+/// The service deliberately returns a plan instead of mutating AppStore:
+/// versioning, archiving, toasts, trial consumption and notifications remain
+/// in the store's orchestration path.
+struct PlanGenerationService {
+    var client: APIClient = .shared
+
+    func generateRemote(
+        profile: UserProfile,
+        equipmentSlugs: [String],
+        focusAreas: Set<BodyFocusArea>,
+        force: Bool,
+        onboarding: Bool,
+        idempotencyKey: String
+    ) async throws -> TrainingPlan {
+        async let profileSync = client.syncProfile(profile)
+        async let goalSync = client.syncGoal(profile)
+        try await profileSync
+        _ = try? await goalSync
+        return try await client.generatePlan(
+            force: force,
+            onboarding: onboarding,
+            equipmentSlugs: equipmentSlugs,
+            split: profile.split,
+            focus: focusAreas.map(\.rawValue),
+            idempotencyKey: idempotencyKey
+        )
+    }
+
+    func generateLocal(
+        profile: UserProfile,
+        dislikedSlugs: Set<String>,
+        equipmentSlugs: [String],
+        weeklyWeekdays: [Int]?,
+        focusAreas: Set<BodyFocusArea>
+    ) -> TrainingPlan {
+        PlanGenerator.generate(
+            profile: profile,
+            dislikedSlugs: dislikedSlugs,
+            equipmentSlugs: equipmentSlugs,
+            weeklyWeekdays: weeklyWeekdays,
+            focusAreas: focusAreas
+        )
+    }
+}

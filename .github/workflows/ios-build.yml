@@ -27,6 +27,13 @@ jobs:
         working-directory: ios
         run: xcodegen generate
 
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: Lint structure limits
+        working-directory: ios
+        run: swiftlint lint --config .swiftlint.yml
+
       - name: Build for simulator
         working-directory: ios
         run: |
