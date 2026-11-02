@@ -50,4 +50,5 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
           ALLOW_DEV_USER_HEADER: "true"
+          GENERATION_COOLDOWN_SECONDS: "0"
         run: python scripts/smoke.py

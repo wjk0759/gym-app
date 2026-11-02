@@ -6,9 +6,16 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
+from app.config import settings
 from app.db import Base
-from app.models import AuthSession, User
-from app.services.auth import _refresh_hash, refresh_session, touch_session
+from app.models import AuthEvent, AuthSession, User
+from app.services.auth import (
+    _detect_login_anomalies,
+    _refresh_hash,
+    _revoke_excess_sessions,
+    refresh_session,
+    touch_session,
+)
 
 
 def _session() -> Session:
@@ -80,3 +87,88 @@ def test_touch_extends_session_expiry():
     assert result["ok"] is True
     assert row.expires_at > before
     assert row.last_touched_at is not None
+
+
+def test_session_limit_revokes_oldest_device(monkeypatch):
+    db = _session()
+    monkeypatch.setattr(settings, "max_active_sessions_per_user", 2)
+    now = datetime.now(timezone.utc)
+    db.add(
+        AuthSession(
+            id="session-2",
+            user_id="00000000-0000-0000-0000-000000000001",
+            refresh_token_hash=_refresh_hash("token-2"),
+            device_id="device-2",
+            expires_at=now + timedelta(days=30),
+            last_used_at=now + timedelta(minutes=1),
+        )
+    )
+    db.commit()
+
+    _revoke_excess_sessions(
+        db,
+        "00000000-0000-0000-0000-000000000001",
+        device_id="device-3",
+        now=now,
+    )
+    db.commit()
+
+    assert db.get(AuthSession, "session-1").revoked_at is not None
+    assert db.get(AuthSession, "session-2").revoked_at is None
+
+
+def test_same_device_login_revokes_previous_session(monkeypatch):
+    db = _session()
+    monkeypatch.setattr(settings, "max_active_sessions_per_user", 5)
+    now = datetime.now(timezone.utc)
+    row = db.get(AuthSession, "session-1")
+    row.device_id = "device-1"
+    db.commit()
+
+    _revoke_excess_sessions(
+        db,
+        "00000000-0000-0000-0000-000000000001",
+        device_id="device-1",
+        now=now,
+    )
+    db.commit()
+
+    assert row.revoked_at is not None
+
+
+def test_multi_account_device_is_logged_without_blocking():
+    db = _session()
+    now = datetime.now(timezone.utc)
+    row = db.get(AuthSession, "session-1")
+    row.device_id = "shared-device"
+    row.created_at = now
+    for index in (2, 3):
+        user_id = f"00000000-0000-0000-0000-00000000000{index}"
+        db.add(User(id=user_id, phone=f"1380013800{index}", status="active"))
+        db.add(
+            AuthSession(
+                id=f"session-{index}",
+                user_id=user_id,
+                refresh_token_hash=_refresh_hash(f"token-{index}"),
+                device_id="shared-device",
+                created_at=now,
+                expires_at=now + timedelta(days=30),
+            )
+        )
+    db.commit()
+
+    _detect_login_anomalies(
+        db,
+        "00000000-0000-0000-0000-000000000001",
+        {"device_id": "shared-device"},
+        now,
+    )
+    db.commit()
+
+    events = (
+        db.query(AuthEvent)
+        .filter(AuthEvent.event == "anomaly_multi_account")
+        .all()
+    )
+    assert len(events) == 1
+    assert events[0].detail["accounts"] == 3

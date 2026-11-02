@@ -19,7 +19,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..config import settings
-from ..models import AIJob, utcnow
+from ..models import AIJob, AIRuntimeControl, User, utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,12 @@ class BudgetExceeded(RuntimeError):
         self.period = period
         self.used = used
         self.limit = limit
+
+
+class AIUnavailable(RuntimeError):
+    def __init__(self, reason: str | None = None) -> None:
+        super().__init__(reason or "AI temporarily paused")
+        self.reason = reason
 
 
 @dataclass(frozen=True)
@@ -122,3 +128,21 @@ def reset_runtime_state() -> None:
     """Clear alert de-duplication state (tests)."""
     with _lock:
         _last_alert.clear()
+
+
+def ensure_ai_enabled(db: Session, user_id: str | None) -> None:
+    """Reject model calls while an operator has paused AI globally.
+
+    Test accounts remain available as a whitelist so the team can verify a fix
+    or exercise TestFlight flows during an incident.
+    """
+    control = db.get(AIRuntimeControl, 1)
+    if control is None or control.enabled:
+        return
+    if user_id is not None:
+        is_test = db.execute(
+            select(User.is_test).where(User.id == user_id)
+        ).scalar_one_or_none()
+        if is_test:
+            return
+    raise AIUnavailable(control.reason)

@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     # 70%/90% 写告警日志，100% 后所有模型调用自动降级到规则/Mock。
     llm_daily_token_budget: int = 0
     llm_monthly_token_budget: int = 0
+    # 计划/饮食周计划成功后的服务端冷却。自动化 smoke 可设为 0 连续验证，
+    # 生产保持 60 秒；客户端也有同样的 60 秒防连点。
+    generation_cooldown_seconds: int = 60
 
     vision_model: str = ""
     vision_base_url: str = ""
@@ -53,6 +56,9 @@ class Settings(BaseSettings):
     jwt_secret: str = ""
     access_token_minutes: int = 30
     refresh_token_days: int = 30
+    # 同一账号最多保留的活跃设备会话。新设备登录会撤销最久未使用的一个；
+    # 同设备再次登录只保留最新会话，避免重装/重复登录堆积。
+    max_active_sessions_per_user: int = 5
 
     # Sign in with Apple 的 audience 通常是 App Bundle ID（或 Service ID）。
     apple_client_id: str = "com.wjk.fitai"

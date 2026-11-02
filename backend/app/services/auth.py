@@ -14,7 +14,7 @@ from urllib.parse import parse_qs, urlencode
 import httpx
 import jwt
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..config import settings
@@ -217,6 +217,88 @@ def _ensure_profile(db: Session, user: User, nickname: str = "新用户") -> Pro
     return profile
 
 
+def _revoke_excess_sessions(
+    db: Session,
+    user_id: str,
+    device_id: str | None,
+    now: datetime,
+) -> None:
+    """Keep one session per device and cap the user's active device count."""
+    rows = list(
+        db.execute(
+            select(AuthSession)
+            .where(
+                AuthSession.user_id == user_id,
+                AuthSession.revoked_at.is_(None),
+                AuthSession.expires_at > now,
+            )
+            .order_by(AuthSession.last_used_at.desc())
+            .with_for_update()
+        )
+        .scalars()
+        .all()
+    )
+    if device_id:
+        for row in rows:
+            if row.device_id == device_id:
+                row.revoked_at = now
+        rows = [row for row in rows if row.revoked_at is None]
+
+    limit = max(1, settings.max_active_sessions_per_user)
+    for row in rows[limit - 1:]:
+        row.revoked_at = now
+
+
+def _detect_login_anomalies(
+    db: Session,
+    user_id: str,
+    request_meta: dict | None,
+    now: datetime,
+) -> None:
+    """Record multi-account device/IP patterns without blocking the user.
+
+    Detection is intentionally advisory: shared family devices and carrier NAT
+    produce false positives. Admin review can then choose to throttle or ban.
+    """
+    meta = request_meta or {}
+    since = now - timedelta(days=1)
+    device_id = meta.get("device_id")
+    if device_id:
+        accounts = db.execute(
+            select(func.count(func.distinct(AuthSession.user_id))).where(
+                AuthSession.device_id == device_id,
+                AuthSession.created_at >= since,
+            )
+        ).scalar() or 0
+        if accounts >= 3:
+            _event(
+                db,
+                user_id,
+                "anomaly_multi_account",
+                "device",
+                request_meta=meta,
+                detail={"deviceId": device_id, "accounts": int(accounts)},
+            )
+
+    ip_address = meta.get("ip")
+    if ip_address:
+        accounts = db.execute(
+            select(func.count(func.distinct(AuthSession.user_id))).where(
+                AuthSession.ip_address == ip_address,
+                AuthSession.created_at >= since,
+            )
+        ).scalar() or 0
+        if accounts >= 5:
+            _event(
+                db,
+                user_id,
+                "anomaly_ip_batch",
+                "ip",
+                request_meta=meta,
+                detail={"ip": ip_address, "accounts": int(accounts)},
+            )
+
+
 def _issue_session(
     db: Session,
     user: User,
@@ -229,6 +311,12 @@ def _issue_session(
         raise HTTPException(status_code=403, detail="账号已被停用")
     profile = _ensure_profile(db, user, nickname or "新用户")
     now = datetime.now(timezone.utc)
+    _revoke_excess_sessions(
+        db,
+        user.id,
+        (request_meta or {}).get("device_id"),
+        now,
+    )
     refresh_token = secrets.token_urlsafe(48)
     session = AuthSession(
         user_id=user.id,
@@ -242,6 +330,7 @@ def _issue_session(
     )
     db.add(session)
     db.flush()
+    _detect_login_anomalies(db, user.id, request_meta, now)
     access_token, expires_in = _access_token(user.id, session.id)
     _event(db, user.id, "login", method, request_meta=request_meta, detail={"new": is_new_user})
     db.commit()

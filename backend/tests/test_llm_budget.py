@@ -8,7 +8,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.config import settings
 from app.db import Base
-from app.models import AIJob, utcnow
+from app.models import AIJob, AIRuntimeControl, User, utcnow
 from app.services import llm_budget
 
 
@@ -82,3 +82,29 @@ def test_budget_alerts_at_seventy_and_ninety_percent(monkeypatch, caplog):
     with caplog.at_level(logging.WARNING):
         llm_budget.ensure_budget(db)
     assert "70%" in caplog.text
+
+
+def test_paused_ai_allows_only_test_accounts():
+    db = _session()
+    db.add(
+        AIRuntimeControl(
+            id=1,
+            enabled=False,
+            reason="维护中",
+            updated_at=utcnow(),
+        )
+    )
+    db.add(User(id="regular-user", phone="13800138002", status="active"))
+    db.add(
+        User(
+            id="test-user",
+            phone="13800138003",
+            status="active",
+            is_test=True,
+        )
+    )
+    db.commit()
+
+    with pytest.raises(llm_budget.AIUnavailable):
+        llm_budget.ensure_ai_enabled(db, "regular-user")
+    llm_budget.ensure_ai_enabled(db, "test-user")

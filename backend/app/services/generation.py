@@ -24,6 +24,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from ..config import settings
 from ..models import FeatureGenerationState, utcnow
 
 COOLDOWN_SECONDS = 60
@@ -59,6 +60,10 @@ def _normalize_key(value: str | None) -> str | None:
         return None
     cleaned = value.strip()
     return cleaned or None
+
+
+def _cooldown_seconds() -> int:
+    return max(0, int(settings.generation_cooldown_seconds))
 
 
 def _raise_generation_error(
@@ -113,6 +118,7 @@ def begin_generation(
         row = _locked_state(db, user_id, feature_key)
         if row is not None:
             age = max(0.0, (current - _as_utc(row.last_generated_at)).total_seconds())
+            cooldown = _cooldown_seconds()
             if row.state == SUCCEEDED:
                 if (
                     key is not None
@@ -124,12 +130,12 @@ def begin_generation(
                         idempotency_key=key,
                         replay_result_ref=row.last_result_ref,
                     )
-                if age < COOLDOWN_SECONDS:
+                if age < cooldown:
                     _raise_generation_error(
                         "GENERATION_COOLDOWN",
                         feature_key,
                         "刚刚生成过，请稍后再试",
-                        max(1, ceil(COOLDOWN_SECONDS - age)),
+                        max(1, ceil(cooldown - age)),
                     )
             elif row.state == RUNNING and age < IN_FLIGHT_TIMEOUT_SECONDS:
                 _raise_generation_error(

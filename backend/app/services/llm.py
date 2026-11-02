@@ -63,11 +63,15 @@ def _usage_tokens(usage: dict | None) -> tuple[int, int]:
     )
 
 
-def _budget_guard(db: Session | None) -> None:
+def _budget_guard(db: Session | None, user_id: str | None = None) -> None:
     if db is None:
         return
     try:
+        llm_budget.ensure_ai_enabled(db, user_id)
         llm_budget.ensure_budget(db)
+    except llm_budget.AIUnavailable as exc:
+        logger.warning("AI runtime paused: %s", exc)
+        raise LLMError(str(exc)) from exc
     except llm_budget.BudgetExceeded as exc:
         logger.error("LLM budget exhausted: %s", exc)
         raise LLMError(str(exc)) from exc
@@ -172,7 +176,7 @@ async def complete_vision_json(
     """One or more images -> one JSON response using the vision model."""
     if settings.use_mock_vision:
         raise LLMError("mock vision: no vision model configured")
-    _budget_guard(db)
+    _budget_guard(db, user_id)
     started = time.perf_counter()
     images = [image_base64] if isinstance(image_base64, str) else list(image_base64)
     if not images:
@@ -333,7 +337,7 @@ async def complete_json(
 ) -> dict:
     if settings.use_mock_llm:
         raise LLMError("mock mode: no LLM key configured")
-    _budget_guard(db)
+    _budget_guard(db, user_id)
     started = time.perf_counter()
 
     messages = [
@@ -426,7 +430,7 @@ async def complete_text(
 ) -> str:
     if settings.use_mock_llm:
         raise LLMError("mock mode: no LLM key configured")
-    _budget_guard(db)
+    _budget_guard(db, user_id)
     started = time.perf_counter()
 
     payload = {
