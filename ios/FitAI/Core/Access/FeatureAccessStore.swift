@@ -24,11 +24,6 @@ final class FeatureAccessStore {
     }
 
     var isPro: Bool { policy.isPro }
-    var coachRemaining: Int? { policy.coachRemaining }
-
-    func apply(_ snapshot: AccessSnapshot) {
-        self.snapshot = snapshot
-    }
 
     func clear() {
         snapshot = nil
