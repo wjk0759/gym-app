@@ -62,6 +62,10 @@ class Settings(BaseSettings):
 
     # Sign in with Apple 的 audience 通常是 App Bundle ID（或 Service ID）。
     apple_client_id: str = "com.wjk.fitai"
+    # StoreKit 2 服务端校验：Bundle ID 与允许的订阅商品。
+    app_store_bundle_id: str = "com.wjk.fitai"
+    storekit_product_ids: str = "com.fitai.app.pro.monthly,com.fitai.app.pro.yearly"
+    storekit_allowed_environments: str = "Production,Sandbox"
 
     # 短信：dev 返回开发验证码；webhook 把验证码 POST 给自定义短信网关。
     sms_provider: str = "dev"

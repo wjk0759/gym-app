@@ -22,10 +22,11 @@ from ..models import (
     WorkoutSession,
     utcnow,
 )
-from ..schemas import GoalIn, ProfileIn
-from ..services import access
+from ..schemas import GoalIn, ProfileIn, StoreKitTransactionIn
+from ..services import access, app_store
 from ..services.locking import lock_user
 from ..services.queries import active_goal
+from ..services.rate_limit import enforce as enforce_rate_limit
 from ..services.serializers import (
     goal_to_dict,
     profile_to_dict,
@@ -53,6 +54,29 @@ def get_me(user_id: CurrentUser, db: DBSession):
 
 @router.get("/access")
 def get_access(user_id: CurrentUser, db: DBSession):
+    return access.access_snapshot(db, user_id)
+
+
+@router.post("/storekit/transactions")
+def sync_storekit_transaction(
+    payload: StoreKitTransactionIn,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    enforce_rate_limit(db, "storekit_sync", user_id, 10, 60)
+    try:
+        transaction = app_store.verify_signed_transaction(
+            payload.signed_transaction
+        )
+    except app_store.StoreKitError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "INVALID_STOREKIT_TRANSACTION",
+                "message": str(exc),
+            },
+        ) from exc
+    app_store.record_entitlement(db, user_id, transaction)
     return access.access_snapshot(db, user_id)
 
 

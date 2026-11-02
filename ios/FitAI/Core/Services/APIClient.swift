@@ -565,6 +565,18 @@ struct APIClient {
         )
     }
 
+    func syncStoreKitTransaction(signedTransaction: String) async throws -> AccessSnapshot {
+        let body = try JSONSerialization.data(withJSONObject: [
+            "signed_transaction": signedTransaction
+        ])
+        return try await send(
+            path: "me/storekit/transactions",
+            method: "POST",
+            body: body,
+            timeout: 30
+        )
+    }
+
     func fetchDietWeek(
         strategy: String,
         weekStart: String?,

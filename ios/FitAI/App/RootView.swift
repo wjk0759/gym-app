@@ -79,6 +79,12 @@ struct RootView: View {
         }
         .onChange(of: subscriptions.isPro) { _, isPro in
             store.access.storeKitPro = isPro
+            if isPro {
+                Task { await store.refreshAccess() }
+            }
+        }
+        .onChange(of: subscriptions.serverSyncGeneration) { _, _ in
+            Task { await store.refreshAccess() }
         }
         .onChange(of: auth.isAuthenticated) { _, _ in
             refreshSession()

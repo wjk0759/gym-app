@@ -198,6 +198,10 @@ class DietWeekIn(BaseModel):
     strategy: str = Field(default="balanced", max_length=30)
 
 
+class StoreKitTransactionIn(BaseModel):
+    signed_transaction: str = Field(min_length=20, max_length=20000)
+
+
 class FoodLogIn(BaseModel):
     client_id: str = Field(min_length=1, max_length=36)
     logged_at: datetime

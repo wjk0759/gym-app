@@ -14,6 +14,10 @@ final class SubscriptionManager {
     var purchasedProductIDs: Set<String> = []
     var isLoading = false
     var message: String?
+    /// Bumped after a signed transaction has been accepted by the server, so
+    /// the access snapshot can refresh without coupling SubscriptionManager to
+    /// AppStore.
+    var serverSyncGeneration = 0
 
     var isPro: Bool {
         !purchasedProductIDs.isEmpty
@@ -74,11 +78,33 @@ final class SubscriptionManager {
     @MainActor
     func refreshEntitlements() async {
         var active: Set<String> = []
+        var signedTransactions: [String] = []
         for await result in Transaction.currentEntitlements {
             if case .verified(let transaction) = result {
                 active.insert(transaction.productID)
+                signedTransactions.append(result.jwsRepresentation)
             }
         }
         purchasedProductIDs = active
+        await syncTransactions(signedTransactions)
+    }
+
+    @MainActor
+    private func syncTransactions(_ signedTransactions: [String]) async {
+        guard AuthTokenStore.shared.accessToken != nil, !signedTransactions.isEmpty else {
+            return
+        }
+        var synced = false
+        for jws in signedTransactions {
+            let snapshot = try? await APIClient.shared.syncStoreKitTransaction(
+                signedTransaction: jws
+            )
+            synced = synced || snapshot != nil
+        }
+        guard synced else {
+            message = "订阅已购买，权益同步暂时失败，稍后会自动重试。"
+            return
+        }
+        serverSyncGeneration += 1
     }
 }
