@@ -58,14 +58,20 @@ def active_entitlement(
             UserEntitlement.user_id == user_id,
             UserEntitlement.plan_code == plan_code,
             UserEntitlement.revoked_at.is_(None),
-            UserEntitlement.starts_at <= current,
             UserEntitlement.expires_at > current,
         )
     ).scalars().all()
-    if not rows:
+    active_rows = [
+        row
+        for row in rows
+        if _as_utc(row.starts_at) is not None and _as_utc(row.starts_at) <= current
+    ]
+    if not active_rows:
         return Entitlement(False, None, ())
+    # A scheduled extension starts after the current entitlement ends. Show the
+    # final paid-through date, not only the current segment.
     expires = max(_as_utc(row.expires_at) for row in rows if row.expires_at)
-    sources = tuple(sorted({row.source for row in rows}))
+    sources = tuple(sorted({row.source for row in active_rows}))
     return Entitlement(True, expires, sources)
 
 

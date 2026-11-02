@@ -50,19 +50,25 @@ public class UserAccessRepository {
                 )).list();
 
         var active = jdbc.sql("""
-                SELECT MAX(expires_at) AS expires_at
-                FROM user_entitlements
+                SELECT COUNT(*) FROM user_entitlements
                 WHERE user_id = :userId
                   AND plan_code = 'pro'
                   AND revoked_at IS NULL
                   AND starts_at <= UTC_TIMESTAMP()
                   AND expires_at > UTC_TIMESTAMP()
-                """).param("userId", userId).query().listOfRows().stream().findFirst();
-        boolean pro = active
-                .map(row -> row.get("expires_at") != null)
-                .orElse(false);
-        String proExpiresAt = active
-                .map(row -> SqlSupport.iso(row.get("expires_at")))
+                """).param("userId", userId).query(Long.class).optional().orElse(0L);
+        boolean pro = active > 0;
+        String proExpiresAt = jdbc.sql("""
+                SELECT MAX(expires_at)
+                FROM user_entitlements
+                WHERE user_id = :userId
+                  AND plan_code = 'pro'
+                  AND revoked_at IS NULL
+                  AND expires_at > UTC_TIMESTAMP()
+                """).param("userId", userId)
+                .query(Timestamp.class)
+                .optional()
+                .map(SqlSupport::iso)
                 .orElse(null);
         List<String> sources = jdbc.sql("""
                 SELECT DISTINCT source
@@ -135,8 +141,23 @@ public class UserAccessRepository {
             String adminId
     ) {
         Instant now = Instant.now();
-        Timestamp startsAt = Timestamp.from(now);
-        Timestamp expiresAt = Timestamp.from(now.plus(durationDays, ChronoUnit.DAYS));
+        // Extend from the current active expiry so repeated grants add days
+        // instead of shortening a longer membership.
+        Timestamp activeExpiry = jdbc.sql("""
+                SELECT MAX(expires_at)
+                FROM user_entitlements
+                WHERE user_id = :userId
+                  AND plan_code = 'pro'
+                  AND revoked_at IS NULL
+                  AND starts_at <= UTC_TIMESTAMP()
+                  AND expires_at > UTC_TIMESTAMP()
+                """).param("userId", userId)
+                .query(Timestamp.class)
+                .optional()
+                .orElse(null);
+        Instant base = activeExpiry == null ? now : activeExpiry.toInstant();
+        Timestamp startsAt = Timestamp.from(base);
+        Timestamp expiresAt = Timestamp.from(base.plus(durationDays, ChronoUnit.DAYS));
         jdbc.sql("""
                 INSERT INTO user_entitlements
                     (id, user_id, plan_code, source, source_ref, starts_at,

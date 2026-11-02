@@ -1,5 +1,6 @@
 package com.fitai.admin.users;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -47,13 +48,21 @@ public class UserAccessService {
         }
         String adminId = CurrentAdmin.find().map(AdminPrincipal::id).orElse(null);
         repository.grant(userId, days, reason, adminId);
+        UserAccessDtos.UserAccess updated = access(userId);
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("plan", "pro");
+        detail.put("durationDays", days);
+        detail.put("reason", reason);
+        if (updated.proExpiresAt() != null) {
+            detail.put("proExpiresAt", updated.proExpiresAt());
+        }
         auditService.record(
                 "USER_ENTITLEMENT_GRANTED",
                 "user",
                 userId,
-                Map.of("plan", "pro", "durationDays", days, "reason", reason)
+                detail
         );
-        return access(userId);
+        return updated;
     }
 
     @Transactional

@@ -59,6 +59,39 @@ def test_pro_snapshot_unlocks_all_features():
     assert snapshot["features"][access.FEATURE_COACH_AI]["remaining"] is None
 
 
+def test_scheduled_extension_extends_displayed_expiry():
+    db = _session()
+    user_id = "00000000-0000-0000-0000-000000000001"
+    now = datetime.now(timezone.utc)
+    db.add_all(
+        [
+            UserEntitlement(
+                user_id=user_id,
+                plan_code="pro",
+                source="admin",
+                source_ref="current",
+                starts_at=now - timedelta(days=1),
+                expires_at=now + timedelta(days=30),
+            ),
+            UserEntitlement(
+                user_id=user_id,
+                plan_code="pro",
+                source="admin",
+                source_ref="extension",
+                starts_at=now + timedelta(days=30),
+                expires_at=now + timedelta(days=60),
+            ),
+        ]
+    )
+    db.commit()
+
+    entitlement = access.active_entitlement(db, user_id)
+
+    assert entitlement.active is True
+    assert entitlement.expires_at is not None
+    assert entitlement.expires_at > now + timedelta(days=59)
+
+
 def test_meal_trial_is_one_per_account():
     db = _session()
     user_id = "00000000-0000-0000-0000-000000000001"
