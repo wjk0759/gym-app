@@ -955,7 +955,25 @@ struct CoachChatView: View {
     }
 
     private var inputBar: some View {
-        HStack(spacing: 8) {
+        VStack(spacing: 0) {
+            if let remaining = store.access.policy.coachRemaining {
+                HStack(spacing: 8) {
+                    Text("本周免费 AI 教练剩余 \(remaining)/3 条")
+                        .font(AppType.micro)
+                        .foregroundStyle(remaining > 0 ? Theme.secondaryText : Theme.coral)
+                    Spacer(minLength: 0)
+                    if remaining == 0 {
+                        Button("升级 Pro") {
+                            store.requestPro(.coachAI)
+                        }
+                        .font(AppType.micro.weight(.semibold))
+                        .foregroundStyle(Theme.cobalt)
+                    }
+                }
+                .padding(.horizontal, 22)
+                .padding(.bottom, 4)
+            }
+            HStack(spacing: 8) {
             Menu {
                 Button {
                     Haptics.tap()
@@ -1071,6 +1089,7 @@ struct CoachChatView: View {
         .padding(.horizontal, 10)
         .padding(.top, 6)
         .padding(.bottom, 6)
+        }
     }
 
     private func sendCurrent() {
