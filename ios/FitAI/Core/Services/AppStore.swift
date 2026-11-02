@@ -288,9 +288,16 @@ final class AppStore {
                     await self.refreshAccess()
                 } catch let error as APIError where error.statusCode == 429 {
                     self.isGenerating = false
-                    self.toast = "计划生成太频繁，请稍后再试"
+                    if error.code == "GENERATION_IN_PROGRESS" {
+                        self.toast = "计划正在生成中，请稍后查看"
+                    } else if let retry = error.retryAfter, retry > 0 {
+                        self.toast = "计划刚刚生成，请 \(retry) 秒后再试"
+                    } else {
+                        self.toast = "计划生成太频繁，请稍后再试"
+                    }
                     return
-                } catch let error as APIError where error.statusCode == 403 {
+                } catch let error as APIError
+                    where error.isProRequired || (error.statusCode == 403 && error.code == nil) {
                     self.isGenerating = false
                     if self.hasProAccess {
                         self.toast = "计划服务暂时不可用，请稍后重试"
@@ -1220,8 +1227,11 @@ final class AppStore {
                 Task { await self.refreshAccess() }
             } catch is CancellationError {
                 return
-            } catch let error as APIError where error.statusCode == 429 {
+            } catch let error as APIError where error.isCoachQuotaExhausted {
                 self.requestPro(.coachAI)
+                return
+            } catch let error as APIError where error.isRateLimited || error.statusCode == 429 {
+                self.toast = "请求太频繁，请稍后再试"
                 return
             } catch {
                 guard !Task.isCancelled else { return }

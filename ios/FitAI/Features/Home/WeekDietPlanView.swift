@@ -346,8 +346,15 @@ struct WeekDietPlanView: View {
             lastGeneratedAt = Date()
             await store.refreshAccess()
         } catch let error as APIError where error.statusCode == 429 {
-            errorMessage = "生成太频繁，请稍后再试。"
-        } catch let error as APIError where error.statusCode == 403 {
+            if error.code == "GENERATION_IN_PROGRESS" {
+                errorMessage = "本周计划正在生成，请稍后查看。"
+            } else if let retry = error.retryAfter, retry > 0 {
+                errorMessage = "本周计划刚刚生成，请 \(retry) 秒后再试。"
+            } else {
+                errorMessage = "生成太频繁，请稍后再试。"
+            }
+        } catch let error as APIError
+            where error.isProRequired || (error.statusCode == 403 && error.code == nil) {
             store.requestPro(.mealPlan)
         } catch {
             errorMessage = "生成失败，请稍后重试。"

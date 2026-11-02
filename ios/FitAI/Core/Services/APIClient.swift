@@ -3,13 +3,31 @@ import Foundation
 struct APIError: LocalizedError {
     let message: String
     let statusCode: Int?
+    /// Structured `error.code` from the API (`PRO_REQUIRED`, `RATE_LIMITED`, ...).
+    let code: String?
+    let retryAfter: Int?
 
-    init(message: String, statusCode: Int? = nil) {
+    init(
+        message: String,
+        statusCode: Int? = nil,
+        code: String? = nil,
+        retryAfter: Int? = nil
+    ) {
         self.message = message
         self.statusCode = statusCode
+        self.code = code
+        self.retryAfter = retryAfter
     }
 
     var errorDescription: String? { message }
+
+    var isProRequired: Bool { code == "PRO_REQUIRED" }
+    var isCoachQuotaExhausted: Bool { code == "COACH_QUOTA_EXHAUSTED" }
+
+    var isRateLimited: Bool {
+        code == "RATE_LIMITED" || code == "GENERATION_COOLDOWN"
+            || code == "GENERATION_IN_PROGRESS"
+    }
 }
 
 struct APIClient {

@@ -111,10 +111,18 @@ def _request_id(request: Request) -> str | None:
 async def http_exception_handler(request: Request, exc: HTTPException):
     detail = exc.detail
     if isinstance(detail, dict):
+        extras = {
+            key: value
+            for key, value in detail.items()
+            if key not in {"code", "message", "details"}
+        }
+        details = detail.get("details")
+        if details is None and extras:
+            details = extras
         error = {
             "code": detail.get("code", CODE_BY_STATUS.get(exc.status_code, "ERROR")),
             "message": detail.get("message", ""),
-            "details": detail.get("details"),
+            "details": details,
         }
     else:
         error = {
