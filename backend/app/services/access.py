@@ -26,6 +26,7 @@ FEATURE_COACH_AI = "coach_ai"
 FEATURE_FOOD_PHOTO = "food_photo"
 FEATURE_BODY_PHOTO = "body_photo"
 FEATURE_AI_VISION = "ai_vision"
+FEATURE_ADVANCED_REVIEW = "advanced_review"
 COACH_WEEKLY_LIMIT = 3
 
 

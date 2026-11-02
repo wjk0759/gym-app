@@ -278,6 +278,7 @@ def get_proposal(
 
 @router.post("/reviews/weekly")
 def weekly_review(user_id: CurrentUser, db: DBSession):
+    access.require_feature(db, user_id, access.FEATURE_ADVANCED_REVIEW)
     try:
         return generate_weekly_review(db, user_id)
     except ValueError as exc:
