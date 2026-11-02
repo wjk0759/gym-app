@@ -4,7 +4,6 @@ import SwiftUI
 struct ProfileView: View {
     @Environment(AppStore.self) private var store
 
-    @State private var showPaywall = false
     @State private var showBodyAnalysis = false
     @State private var showBodyCheckIn = false
     @State private var showFocusAreas = false
@@ -42,9 +41,6 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showBodyAnalysis) {
                 BodyPhotoAnalysisView()
-            }
-            .sheet(isPresented: $showPaywall) {
-                PaywallView()
             }
         }
     }
@@ -116,7 +112,7 @@ struct ProfileView: View {
 
             Button {
                 Haptics.tap()
-                showPaywall = true
+                store.requestPro(.general)
             } label: {
                 HStack(spacing: 10) {
                     Image(systemName: "crown.fill")
@@ -129,11 +125,20 @@ struct ProfileView: View {
                         Text("练途 Pro")
                             .font(AppType.callout.weight(.semibold))
                             .foregroundStyle(Theme.ink)
+                        if let expires = store.accessSnapshot?.proExpiresAt {
+                            Text("有效期至 \(expires.formatted(date: .abbreviated, time: .omitted))")
+                                .font(AppType.micro)
+                                .foregroundStyle(Theme.tertiaryText)
+                        } else if !store.hasProAccess {
+                            Text("解锁 App 内全部功能")
+                                .font(AppType.micro)
+                                .foregroundStyle(Theme.tertiaryText)
+                        }
                     }
 
                     Spacer(minLength: 4)
 
-                    Text("管理")
+                    Text(store.hasProAccess ? "查看" : "升级")
                         .font(AppType.micro)
                         .foregroundStyle(Theme.cobalt)
 

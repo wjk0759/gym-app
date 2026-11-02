@@ -21,7 +21,6 @@ struct SettingsView: View {
 
     @Environment(AppStore.self) private var store
     @Environment(AuthStore.self) private var auth
-    @Environment(SubscriptionManager.self) private var subscriptions
     @Environment(WeatherStore.self) private var weather
     @Environment(\.openURL) private var openURL
 
@@ -283,8 +282,8 @@ struct SettingsView: View {
             HStack(spacing: 10) {
                 statusPill(
                     "会员",
-                    subscriptions.isPro ? "Pro" : "免费",
-                    active: subscriptions.isPro
+                    store.hasProAccess ? "Pro" : "免费",
+                    active: store.hasProAccess
                 )
                 statusPill(
                     "AI",
@@ -692,7 +691,7 @@ struct SettingsView: View {
                     .tint(Theme.primary)
             }
 
-            Text(store.isPro
+            Text(store.hasProAccess
                  ? (store.useRemoteAI
                     ? "Pro 已解锁：生成计划、教练对话和视觉识别会请求 DeepSeek/后端；失败时自动回退本地。"
                     : "已开通 Pro，但当前关闭了远程 AI。打开开关后可使用 DeepSeek。")

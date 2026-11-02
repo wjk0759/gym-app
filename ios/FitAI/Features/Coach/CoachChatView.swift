@@ -9,7 +9,6 @@ struct CoachChatView: View {
     @Environment(\.colorScheme) private var colorScheme
 
     @State private var input = ""
-    @State private var showPaywall = false
     @State private var showCamera = false
     @State private var cameraTitle = "拍照问教练"
     @State private var cameraHint = "尽量拍到完整动作或器械，避免脸和隐私部位。照片只用于本次对话。"
@@ -207,9 +206,6 @@ struct CoachChatView: View {
             }
             .sheet(isPresented: $showVideoReview) {
                 VideoReviewView()
-            }
-            .sheet(isPresented: $showPaywall) {
-                PaywallView()
             }
             .sheet(item: $selectedDietRecipe) { selection in
                 DietRecipeSheet(selection: selection)
@@ -773,7 +769,7 @@ struct CoachChatView: View {
 
             if !store.canUseRemoteAI {
                 Button {
-                    showPaywall = true
+                    store.requestPro(.coachAI)
                 } label: {
                     HStack(spacing: 10) {
                         Image(systemName: "sparkles")

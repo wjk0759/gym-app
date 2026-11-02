@@ -65,6 +65,7 @@ enum ProFeature: String, Identifiable, CaseIterable {
     case videoReview = "video_review"
     case advancedReview = "advanced_review"
     case equipmentScan = "equipment_scan"
+    case general = "general"
 
     var id: String { rawValue }
 
@@ -78,6 +79,7 @@ enum ProFeature: String, Identifiable, CaseIterable {
         case .videoReview: return "视频动作点评"
         case .advancedReview: return "数据复盘"
         case .equipmentScan: return "器械 AI 识别"
+        case .general: return "练途 Pro"
         }
     }
 
@@ -91,6 +93,7 @@ enum ProFeature: String, Identifiable, CaseIterable {
         case .videoReview: return "Pro 解锁视频动作点评和姿态分析。"
         case .advancedReview: return "Pro 解锁周/月/年复盘和高级趋势。"
         case .equipmentScan: return "Pro 解锁器械拍照识别。"
+        case .general: return "Pro 解锁 App 内全部功能。"
         }
     }
 
@@ -104,6 +107,7 @@ enum ProFeature: String, Identifiable, CaseIterable {
         case .videoReview: return "play.rectangle.fill"
         case .advancedReview: return "chart.xyaxis.line"
         case .equipmentScan: return "viewfinder"
+        case .general: return "crown.fill"
         }
     }
 }
