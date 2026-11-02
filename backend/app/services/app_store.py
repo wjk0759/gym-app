@@ -241,6 +241,11 @@ def verify_notification(signed_payload: str) -> dict:
     return payload
 
 
+def transaction_account_token(transaction: VerifiedTransaction) -> str | None:
+    token = transaction.raw.get("appAccountToken")
+    return token.lower() if isinstance(token, str) and token else None
+
+
 def record_entitlement(
     db: Session,
     user_id: str,

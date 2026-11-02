@@ -76,9 +76,17 @@ def sync_storekit_transaction(
                 "message": str(exc),
             },
         ) from exc
+    token = app_store.transaction_account_token(transaction)
+    if token != user_id.lower():
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STOREKIT_ACCOUNT_MISMATCH",
+                "message": "该交易未绑定当前账号",
+            },
+        )
     app_store.record_entitlement(db, user_id, transaction)
     return access.access_snapshot(db, user_id)
-
 
 @router.post("/onboarding-plan/consume")
 def consume_onboarding_plan(user_id: CurrentUser, db: DBSession):

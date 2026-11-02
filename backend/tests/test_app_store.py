@@ -58,6 +58,22 @@ def test_storekit_entitlement_is_idempotent():
     assert rows[0].metadata_json["environment"] == "Sandbox"
 
 
+def test_transaction_account_token_is_normalized():
+    transaction = _transaction()
+    assert app_store.transaction_account_token(transaction) is None
+
+    transaction = app_store.VerifiedTransaction(
+        transaction_id="2",
+        original_transaction_id="2",
+        product_id=transaction.product_id,
+        purchase_date=transaction.purchase_date,
+        expires_date=transaction.expires_date,
+        environment="Sandbox",
+        raw={"appAccountToken": "ABC-DEF"},
+    )
+    assert app_store.transaction_account_token(transaction) == "abc-def"
+
+
 def test_malformed_storekit_jws_is_rejected():
     with pytest.raises(app_store.StoreKitError):
         app_store.verify_signed_transaction("not-a-jws")
