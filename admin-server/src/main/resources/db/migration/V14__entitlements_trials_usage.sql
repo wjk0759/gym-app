@@ -53,7 +53,7 @@ CREATE TABLE feature_usage (
 
 -- Existing accounts already received their onboarding training plan. Mark the
 -- one-time trial as used so the new access rules cannot grant a second plan.
-INSERT INTO feature_trials
+INSERT IGNORE INTO feature_trials
     (user_id, feature_key, source, used_at, valid_until, result_ref, created_at)
 SELECT
     p.user_id,
@@ -64,11 +64,10 @@ SELECT
     NULL,
     NOW()
 FROM profiles p
-WHERE p.onboarded_at IS NOT NULL
-ON DUPLICATE KEY UPDATE feature_key = feature_key;
+WHERE p.onboarded_at IS NOT NULL;
 
 -- A saved week also proves the account already used its one free meal plan.
-INSERT INTO feature_trials
+INSERT IGNORE INTO feature_trials
     (user_id, feature_key, source, used_at, valid_until, result_ref, created_at)
 SELECT
     m.user_id,
@@ -79,18 +78,16 @@ SELECT
     NULL,
     NOW()
 FROM meal_plans m
-GROUP BY m.user_id
-ON DUPLICATE KEY UPDATE feature_key = feature_key;
+GROUP BY m.user_id;
 
 INSERT INTO admin_permissions (id, code, name)
 VALUES (UUID(), 'user:entitlement:write', '管理用户会员权益')
 ON DUPLICATE KEY UPDATE name = VALUES(name);
 
-INSERT INTO admin_role_permissions (role_id, permission_id)
+INSERT IGNORE INTO admin_role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM admin_roles r
 JOIN admin_permissions p ON p.code = 'user:entitlement:write'
-WHERE r.code IN ('SUPER_ADMIN', 'OPERATOR')
-ON DUPLICATE KEY UPDATE role_id = role_id;
+WHERE r.code IN ('SUPER_ADMIN', 'OPERATOR');
 
 

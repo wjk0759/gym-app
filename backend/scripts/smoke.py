@@ -24,6 +24,8 @@ sys.path.insert(0, str(ROOT))
 from fastapi.testclient import TestClient  # noqa: E402
 
 from app.main import app  # noqa: E402
+from app.db import SessionLocal  # noqa: E402
+from app.models import UserEntitlement  # noqa: E402
 
 PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="
@@ -45,6 +47,23 @@ def main() -> None:
         user_id = login.json()["user_id"]
         headers = {"X-User-Id": user_id}
         print("login:", user_id)
+
+        # Smoke coverage needs the paid endpoints. Grant a test entitlement
+        # directly; production grants go through the admin console.
+        now = datetime.now(timezone.utc)
+        with SessionLocal() as db:
+            db.add(
+                UserEntitlement(
+                    user_id=user_id,
+                    plan_code="pro",
+                    source="admin",
+                    source_ref=f"smoke-{user_id}",
+                    starts_at=now,
+                    expires_at=now + timedelta(days=1),
+                    reason="smoke test",
+                )
+            )
+            db.commit()
 
         profile = {
             "nickname": "小林",
@@ -133,8 +152,8 @@ def main() -> None:
         assert response.json()["days"][0]["assigned_date"] == "2026-10-27"
         print("schedule last-write-wins: ok")
 
-        workout_started = (datetime.now(timezone.utc) - timedelta(days=1)).replace(
-            hour=10, minute=0, second=0, microsecond=0
+        workout_started = datetime.now(timezone.utc).replace(
+            hour=0, minute=1, second=0, microsecond=0
         )
         workout_finished = workout_started + timedelta(minutes=45)
         workout = {
