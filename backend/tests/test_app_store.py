@@ -61,3 +61,21 @@ def test_bundled_apple_root_matches_pinned_fingerprint():
     root = app_store._apple_root()
     fingerprint = hashlib.sha256(root.public_bytes(Encoding.DER)).hexdigest()
     assert fingerprint == app_store.APPLE_ROOT_CA_G3_SHA256
+
+
+def test_refund_notification_revokes_entitlement_once():
+    db = _session()
+    transaction = _transaction()
+    app_store.record_entitlement(db, "iap-user", transaction)
+
+    notification = {
+        "notificationType": "REFUND",
+        "data": {"transactionId": transaction.transaction_id},
+    }
+    first = app_store.apply_notification(db, notification)
+    second = app_store.apply_notification(db, notification)
+
+    assert first == {"handled": "REFUND", "revoked": True}
+    assert second == {"handled": "REFUND", "revoked": False}
+    row = db.query(UserEntitlement).one()
+    assert row.revoked_at is not None

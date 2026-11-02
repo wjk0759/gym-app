@@ -4,6 +4,9 @@ The iOS client sends the JWS returned by StoreKit. We verify Apple's x5c
 certificate chain, pin the Apple Root CA G3 fingerprint, validate the ES256
 signature and then check bundle/product/expiry claims before writing the Pro
 ledger. No payment logic trusts client-side booleans.
+
+The same verifier also accepts App Store Server Notifications V2, so refunds,
+revocations and renewals update the ledger even when the app is closed.
 """
 
 from __future__ import annotations
@@ -35,6 +38,10 @@ APPLE_ROOT_CA_G3_PATH = (
     Path(__file__).resolve().parent.parent / "certs" / "AppleRootCA-G3.cer"
 )
 PRODUCT_TYPE_SUBSCRIPTION = "Auto-Renewable Subscription"
+REVOKE_NOTIFICATIONS = frozenset({"REFUND", "REVOKE"})
+RENEW_NOTIFICATIONS = frozenset(
+    {"SUBSCRIBED", "DID_RENEW", "OFFER_REDEEMED", "ONE_TIME_CHARGE"}
+)
 
 
 class StoreKitError(ValueError):
@@ -133,17 +140,8 @@ def _verify_jws_signature(
         raise StoreKitError("交易签名校验失败") from exc
 
 
-def _millis_to_datetime(value: object, label: str) -> datetime:
-    if not isinstance(value, (int, float)):
-        raise StoreKitError(f"{label} 缺失")
-    try:
-        return datetime.fromtimestamp(float(value) / 1000, tz=timezone.utc)
-    except (OverflowError, OSError, ValueError) as exc:
-        raise StoreKitError(f"{label} 时间不正确") from exc
-
-
-def verify_signed_transaction(signed_transaction: str) -> VerifiedTransaction:
-    parts = signed_transaction.split(".")
+def _verified_payload(signed_payload: str) -> dict:
+    parts = signed_payload.split(".")
     if len(parts) != 3:
         raise StoreKitError("交易签名格式不正确")
     header_segment, payload_segment, signature_segment = parts
@@ -168,9 +166,26 @@ def verify_signed_transaction(signed_transaction: str) -> VerifiedTransaction:
         _b64url(signature_segment),
         leaf,
     )
+    return payload
 
-    bundle_id = payload.get("bundleId")
-    if bundle_id != settings.app_store_bundle_id:
+
+def _millis_to_datetime(value: object, label: str) -> datetime:
+    if not isinstance(value, (int, float)):
+        raise StoreKitError(f"{label} 缺失")
+    try:
+        return datetime.fromtimestamp(float(value) / 1000, tz=timezone.utc)
+    except (OverflowError, OSError, ValueError) as exc:
+        raise StoreKitError(f"{label} 时间不正确") from exc
+
+
+def verify_signed_transaction(
+    signed_transaction: str,
+    *,
+    allow_revoked: bool = False,
+    require_active: bool = True,
+) -> VerifiedTransaction:
+    payload = _verified_payload(signed_transaction)
+    if payload.get("bundleId") != settings.app_store_bundle_id:
         raise StoreKitError("交易 Bundle ID 不匹配")
     allowed_products = {
         item.strip()
@@ -182,7 +197,7 @@ def verify_signed_transaction(signed_transaction: str) -> VerifiedTransaction:
         raise StoreKitError("交易商品不在允许列表")
     if payload.get("type") != PRODUCT_TYPE_SUBSCRIPTION:
         raise StoreKitError("交易不是自动续期订阅")
-    if payload.get("revocationDate"):
+    if payload.get("revocationDate") and not allow_revoked:
         raise StoreKitError("交易已退款或撤销")
     environment = str(payload.get("environment") or "")
     allowed_environments = {
@@ -197,7 +212,7 @@ def verify_signed_transaction(signed_transaction: str) -> VerifiedTransaction:
     if not transaction_id:
         raise StoreKitError("交易缺少 transactionId")
     expires_date = _millis_to_datetime(payload.get("expiresDate"), "expiresDate")
-    if expires_date <= utcnow():
+    if require_active and expires_date <= utcnow():
         raise StoreKitError("订阅已过期")
     purchase_date = _millis_to_datetime(
         payload.get("purchaseDate") or payload.get("signedDate"),
@@ -214,6 +229,16 @@ def verify_signed_transaction(signed_transaction: str) -> VerifiedTransaction:
         environment=environment,
         raw=payload,
     )
+
+
+def verify_notification(signed_payload: str) -> dict:
+    payload = _verified_payload(signed_payload)
+    data = payload.get("data")
+    if not isinstance(data, dict):
+        raise StoreKitError("通知缺少 data")
+    if data.get("bundleId") != settings.app_store_bundle_id:
+        raise StoreKitError("通知 Bundle ID 不匹配")
+    return payload
 
 
 def record_entitlement(
@@ -250,3 +275,60 @@ def record_entitlement(
     except IntegrityError:
         # A retried JWS or a notification race already recorded it.
         db.rollback()
+
+
+def revoke_transaction(db: Session, transaction_id: str) -> bool:
+    row = db.execute(
+        select(UserEntitlement)
+        .where(
+            UserEntitlement.source == "storekit",
+            UserEntitlement.source_ref == transaction_id,
+            UserEntitlement.revoked_at.is_(None),
+        )
+        .with_for_update()
+    ).scalar_one_or_none()
+    if row is None:
+        return False
+    row.revoked_at = utcnow()
+    db.commit()
+    return True
+
+
+def _notification_transaction_id(payload: dict) -> str | None:
+    data = payload.get("data") or {}
+    if isinstance(data.get("transactionId"), str):
+        return data["transactionId"]
+    signed_transaction = data.get("signedTransactionInfo")
+    if not isinstance(signed_transaction, str):
+        return None
+    return verify_signed_transaction(
+        signed_transaction,
+        allow_revoked=True,
+        require_active=False,
+    ).transaction_id
+
+
+def apply_notification(db: Session, payload: dict) -> dict:
+    notification_type = str(payload.get("notificationType") or "")
+    data = payload.get("data") or {}
+    if notification_type in REVOKE_NOTIFICATIONS:
+        transaction_id = _notification_transaction_id(payload)
+        revoked = bool(transaction_id) and revoke_transaction(db, transaction_id)
+        return {"handled": notification_type, "revoked": revoked}
+    if notification_type in RENEW_NOTIFICATIONS:
+        signed_transaction = data.get("signedTransactionInfo")
+        if not isinstance(signed_transaction, str):
+            raise StoreKitError("续订通知缺少交易信息")
+        transaction = verify_signed_transaction(signed_transaction)
+        user_id = db.execute(
+            select(UserEntitlement.user_id).where(
+                UserEntitlement.source == "storekit",
+                UserEntitlement.source_ref
+                == transaction.original_transaction_id,
+            )
+        ).scalar_one_or_none()
+        if user_id is None:
+            raise StoreKitError("找不到订阅所属用户")
+        record_entitlement(db, user_id, transaction)
+        return {"handled": notification_type, "recorded": True}
+    return {"handled": "ignored", "type": notification_type}

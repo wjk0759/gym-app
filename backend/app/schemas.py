@@ -4,7 +4,7 @@ from datetime import date, datetime
 from datetime import date as dt_date
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 Sex = Literal["male", "female", "other"]
 Experience = Literal["beginner", "intermediate", "advanced"]
@@ -200,6 +200,14 @@ class DietWeekIn(BaseModel):
 
 class StoreKitTransactionIn(BaseModel):
     signed_transaction: str = Field(min_length=20, max_length=20000)
+
+
+class StoreKitNotificationIn(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    signed_payload: str = Field(
+        alias="signedPayload", min_length=20, max_length=20000
+    )
 
 
 class FoodLogIn(BaseModel):

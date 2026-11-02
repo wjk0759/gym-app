@@ -178,3 +178,27 @@ def test_multi_account_device_is_logged_without_blocking():
     )
     assert len(events) == 1
     assert events[0].detail["accounts"] == 3
+
+
+def test_refresh_from_another_device_is_rejected():
+    db = _session()
+    row = db.get(AuthSession, "session-1")
+    row.device_id = "device-a"
+    db.commit()
+
+    with pytest.raises(HTTPException) as exc:
+        refresh_session(
+            db,
+            "old-token",
+            request_meta={"device_id": "device-b"},
+        )
+
+    assert exc.value.status_code == 401
+    db.refresh(row)
+    assert row.revoked_at is not None
+    events = (
+        db.query(AuthEvent)
+        .filter(AuthEvent.event == "refresh_device_mismatch")
+        .all()
+    )
+    assert len(events) == 1
