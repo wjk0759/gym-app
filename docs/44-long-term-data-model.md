@@ -132,8 +132,8 @@ V12 增加中文 ngram 全文索引：
 ## 13. 后续
 
 1. 服务端提醒：实现 `notification_schedules` 的同步接口和定时任务（当前只保留表与唯一约束）。
-2. AppStore 拆分：`LocalStateStore`、`CoachRequestController`、同步服务，降低单文件复杂度。
-3. 大 View 拆分：`PlanHomeView`、`EquipmentDetailView`、`CoachChatView`、`WorkoutSessionView`。
+2. AppStore 拆分：`AppStore+Sync`、`AppStore+Agent`、`FeatureAccessStore` 已拆出；剩余档案/计划/营养/训练子域继续拆分。
+3. 大 View 拆分：`PlanHistoryView` 已拆出；`PlanHomeView`、`EquipmentDetailView`、`CoachChatView`、`WorkoutSessionView` 继续拆分。
 4. `agent_steps` 的 JSON 体积与保留策略继续优化。
 5. 在 App Store Connect 隐私标签中逐项核对 `PrivacyInfo.xcprivacy`。
 6. 后台搜索在真实数据量上用 `EXPLAIN ANALYZE` 复核，必要时继续收紧 ID 子查询。
