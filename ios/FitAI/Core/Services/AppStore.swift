@@ -1796,6 +1796,8 @@ final class AppStore {
                 self.toast = "已应用 Agent 计划"
                 self.rescheduleNotifications()
                 self.syncPendingUserData()
+            } catch let error as APIError where error.isProRequired {
+                self.requestPro(.trainingPlan)
             } catch {
                 self.chat.append(
                     ChatMessage(

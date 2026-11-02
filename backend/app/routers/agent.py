@@ -320,6 +320,7 @@ def apply_agent_proposal(
     user_id: CurrentUser,
     db: DBSession,
 ):
+    access.require_feature(db, user_id, access.FEATURE_TRAINING_PLAN)
     try:
         program, proposal = apply_proposal(db, user_id, proposal_id)
     except LookupError as exc:

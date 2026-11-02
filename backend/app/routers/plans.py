@@ -224,6 +224,7 @@ def update_day(
 @router.post("/{plan_id}/adjust")
 def adjust(plan_id: str, user_id: CurrentUser, db: DBSession):
     program = _owned_program(db, user_id, plan_id)
+    access.require_feature(db, user_id, access.FEATURE_TRAINING_PLAN)
     since = datetime.now(timezone.utc) - timedelta(days=7)
     sessions = (
         db.execute(
