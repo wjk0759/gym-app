@@ -122,6 +122,7 @@ def begin_generation(
                 if (
                     key is not None
                     and row.last_idempotency_key == key
+                    and row.last_result_ref is not None
                     and age <= REPLAY_TTL_SECONDS
                 ):
                     return GenerationLease(
