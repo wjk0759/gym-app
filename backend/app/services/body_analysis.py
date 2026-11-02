@@ -11,6 +11,9 @@ from __future__ import annotations
 import base64
 import hashlib
 import logging
+from contextlib import suppress
+
+from sqlalchemy.orm import Session
 
 from ..config import settings
 from . import llm
@@ -67,12 +70,25 @@ VARIANTS = [
 ]
 
 
-async def analyze(image_bytes: bytes, filename: str = "body.jpg") -> dict:
+async def analyze(
+    image_bytes: bytes,
+    filename: str = "body.jpg",
+    *,
+    db: Session | None = None,
+    user_id: str | None = None,
+) -> dict:
     if settings.use_mock_vision:
         return _mock_analyze(image_bytes, filename)
+    usage: dict[str, int] = {}
     try:
         data = await llm.complete_vision_json(
-            _SYSTEM_PROMPT, _USER_PROMPT, base64.b64encode(image_bytes).decode()
+            _SYSTEM_PROMPT,
+            _USER_PROMPT,
+            base64.b64encode(image_bytes).decode(),
+            usage=usage,
+            db=db,
+            user_id=user_id,
+            kind="body_vision",
         )
         focus = [
             str(item)
@@ -92,6 +108,17 @@ async def analyze(image_bytes: bytes, filename: str = "body.jpg") -> dict:
         }
     except Exception as exc:  # noqa: BLE001 - 分析失败回退，不阻断流程
         logger.warning("body vision failed, fallback to mock: %s", exc)
+        if db is not None:
+            with suppress(Exception):
+                llm.record_job(
+                    db,
+                    user_id,
+                    kind="body_vision",
+                    status="fallback",
+                    model=settings.vision_model,
+                    error=str(exc)[:500],
+                    usage=usage,
+                )
         payload = _mock_analyze(image_bytes, filename)
         payload["warning"] = "视觉分析暂时不可用，已回退本地建议"
         return payload

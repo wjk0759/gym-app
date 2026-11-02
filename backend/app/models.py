@@ -806,3 +806,14 @@ class FeatureGenerationState(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
     )
+
+
+class RateLimitBucket(Base):
+    __tablename__ = "rate_limit_buckets"
+    __table_args__ = (Index("ix_rate_limit_buckets_updated", "updated_at"),)
+
+    bucket_key: Mapped[str] = mapped_column(String(120), primary_key=True)
+    tokens_milli: Mapped[int] = mapped_column(Integer)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )

@@ -53,7 +53,12 @@ async def analyze_meal(
         raise HTTPException(status_code=413, detail="图片不能超过 8MB")
 
     # 原图不落盘、不入库；只返回本次识别结果
-    return await analyze_food_photo(data, file.filename or "meal.jpg")
+    return await analyze_food_photo(
+        data,
+        file.filename or "meal.jpg",
+        db=db,
+        user_id=user_id,
+    )
 
 
 def _food_log_dict(item: FoodLog) -> dict:
@@ -241,7 +246,7 @@ async def plan_week(
     if profile is None:
         raise HTTPException(status_code=404, detail="请先完成个人档案")
 
-    enforce_rate_limit("meal_plan_generate", user_id, 3, 60)
+    enforce_rate_limit(db, "meal_plan_generate", user_id, 3, 60)
     lease = generation.begin_generation(
         db,
         user_id,

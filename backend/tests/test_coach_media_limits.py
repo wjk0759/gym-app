@@ -112,6 +112,7 @@ def test_batch_accepts_six_video_keyframes(db, monkeypatch):
         question="",
         safety_context=None,
         conversation_context=None,
+        **kwargs,
     ):
         assert len(images) == 6
         assert question == "看看我深蹲的动作"
@@ -141,6 +142,7 @@ def test_single_photo_still_works(db, monkeypatch):
         question="",
         safety_context=None,
         conversation_context=None,
+        **kwargs,
     ):
         assert image == b"jpeg"
         return _vision_result()

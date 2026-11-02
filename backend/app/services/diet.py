@@ -263,19 +263,17 @@ async def build_ai_plan(
     if settings.use_mock_llm:
         return build_plan(profile, goal_type, plan_date)
 
+    usage: dict[str, int] = {}
     try:
         raw = await llm.complete_json(
             _system_prompt(),
             _user_prompt(profile, goal_type, targets),
+            usage=usage,
+            db=db,
+            user_id=getattr(profile, "user_id", None),
+            kind="diet_plan",
         )
         result = _normalize_ai_plan(raw, targets, plan_date)
-        llm.record_job(
-            db,
-            getattr(profile, "user_id", None),
-            kind="diet_plan",
-            status="ok",
-            model=settings.llm_model,
-        )
         return result
     except Exception as exc:  # noqa: BLE001 - 任何失败都回退模板
         logger.warning("AI diet plan failed, fallback to template: %s", exc)
@@ -289,6 +287,7 @@ async def build_ai_plan(
                 status="fallback",
                 model=settings.llm_model,
                 error=str(exc)[:500],
+                usage=usage,
             )
         return result
 
@@ -463,20 +462,18 @@ async def build_ai_diet_week(
         return fallback
 
     strategy = _strategy(strategy_id)
+    usage: dict[str, int] = {}
     try:
         raw = await llm.complete_json(
             _week_system_prompt(),
             _week_user_prompt(profile, goal_type, strategy, fallback),
             reasoning_effort="low",
+            usage=usage,
+            db=db,
+            user_id=getattr(profile, "user_id", None),
+            kind="diet_week",
         )
         result = _normalize_ai_week(raw, fallback)
-        llm.record_job(
-            db,
-            getattr(profile, "user_id", None),
-            kind="diet_week",
-            status="ok",
-            model=settings.llm_model,
-        )
         return result
     except Exception as exc:  # noqa: BLE001 - fallback keeps the feature usable
         logger.warning("AI diet week failed, fallback to template: %s", exc)
@@ -490,6 +487,7 @@ async def build_ai_diet_week(
                 status="fallback",
                 model=settings.llm_model,
                 error=str(exc)[:500],
+                usage=usage,
             )
         return fallback
 

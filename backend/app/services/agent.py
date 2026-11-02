@@ -919,6 +919,9 @@ async def run_agent(
                     json.dumps(state, ensure_ascii=False),
                     reasoning_effort=settings.llm_agent_reasoning_effort,
                     usage=usage,
+                    db=db,
+                    user_id=user_id,
+                    kind="agent",
                 )
                 _record_step(
                     db,

@@ -224,6 +224,9 @@ async def extract_and_store(
                 },
                 ensure_ascii=False,
             ),
+            db=db,
+            user_id=user_id,
+            kind="memory",
         )
         facts = raw.get("memories", []) if isinstance(raw, dict) else []
         if not isinstance(facts, list):

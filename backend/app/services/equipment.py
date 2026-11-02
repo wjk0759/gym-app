@@ -10,6 +10,7 @@ import base64
 import hashlib
 import logging
 import uuid
+from contextlib import suppress
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -98,16 +99,39 @@ def _active_exercises(db: Session) -> list[Exercise]:
     return list(rows)
 
 
-async def recognize(db: Session, image_bytes: bytes, filename: str) -> dict:
+async def recognize(
+    db: Session,
+    image_bytes: bytes,
+    filename: str,
+    *,
+    user_id: str | None = None,
+) -> dict:
     if settings.use_mock_vision:
         return _mock_recognize(db, image_bytes, filename)
 
+    usage: dict[str, int] = {}
     try:
         result = await llm.complete_vision_json(
-            _SYSTEM_PROMPT, _USER_PROMPT, base64.b64encode(image_bytes).decode()
+            _SYSTEM_PROMPT,
+            _USER_PROMPT,
+            base64.b64encode(image_bytes).decode(),
+            usage=usage,
+            db=db,
+            user_id=user_id,
+            kind="equipment_scan",
         )
     except Exception as exc:  # noqa: BLE001 - 识别失败回退，不让拍照崩溃
         logger.warning("equipment vision failed, fallback to mock: %s", exc)
+        with suppress(Exception):
+            llm.record_job(
+                db,
+                user_id,
+                kind="equipment_scan",
+                status="fallback",
+                model=settings.vision_model,
+                error=str(exc)[:500],
+                usage=usage,
+            )
         payload = _mock_recognize(db, image_bytes, filename)
         payload["warning"] = "视觉识别暂时不可用，已回退本地匹配"
         return payload

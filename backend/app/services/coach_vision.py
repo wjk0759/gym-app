@@ -7,6 +7,9 @@ from __future__ import annotations
 
 import base64
 import logging
+from contextlib import suppress
+
+from sqlalchemy.orm import Session
 
 from ..config import settings
 from . import llm
@@ -162,6 +165,9 @@ async def review(
     question: str = "",
     safety_context: str | None = None,
     conversation_context: str | None = None,
+    *,
+    db: Session | None = None,
+    user_id: str | None = None,
 ) -> dict:
     if not image_bytes:
         return _fallback("没有收到图片")
@@ -170,6 +176,8 @@ async def review(
         question,
         safety_context=safety_context,
         conversation_context=conversation_context,
+        db=db,
+        user_id=user_id,
     )
 
 
@@ -178,6 +186,9 @@ async def review_many(
     question: str = "",
     safety_context: str | None = None,
     conversation_context: str | None = None,
+    *,
+    db: Session | None = None,
+    user_id: str | None = None,
 ) -> dict:
     if not images:
         return _fallback("没有收到图片")
@@ -203,13 +214,29 @@ async def review_many(
         prompt += f"\n安全上下文（必须遵守）：{safety_context[:800]}"
 
     try:
+        usage: dict[str, int] = {}
         raw = await llm.complete_vision_json(
             SYSTEM_PROMPT,
             prompt,
             [base64.b64encode(image).decode() for image in images],
+            usage=usage,
+            db=db,
+            user_id=user_id,
+            kind="coach_vision",
         )
     except Exception as exc:  # noqa: BLE001 - 视觉失败必须降级而不是让拍照崩溃
         logger.warning("coach vision failed: %s", exc)
+        if db is not None:
+            with suppress(Exception):
+                llm.record_job(
+                    db,
+                    user_id,
+                    kind="coach_vision",
+                    status="fallback",
+                    model=settings.vision_model,
+                    error=str(exc)[:500],
+                    usage=usage,
+                )
         return _fallback(f"视觉分析失败：{str(exc)[:160]}")
 
     summary = str(raw.get("summary") or "").strip()[:240]

@@ -3,12 +3,14 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 
 import httpx
 from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..models import AIJob
+from . import llm_budget
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +50,48 @@ def _merge_usage(target: dict | None, usage: dict | None) -> None:
                 )
                 + int(cached)
             }
+
+
+def _usage_tokens(usage: dict | None) -> tuple[int, int]:
+    if not isinstance(usage, dict):
+        return 0, 0
+    input_tokens = usage.get("prompt_tokens")
+    output_tokens = usage.get("completion_tokens")
+    return (
+        int(input_tokens) if isinstance(input_tokens, (int, float)) else 0,
+        int(output_tokens) if isinstance(output_tokens, (int, float)) else 0,
+    )
+
+
+def _budget_guard(db: Session | None) -> None:
+    if db is None:
+        return
+    try:
+        llm_budget.ensure_budget(db)
+    except llm_budget.BudgetExceeded as exc:
+        logger.error("LLM budget exhausted: %s", exc)
+        raise LLMError(str(exc)) from exc
+
+
+def _record_success(
+    db: Session | None,
+    user_id: str | None,
+    kind: str | None,
+    model: str | None,
+    started: float,
+    usage: dict | None,
+) -> None:
+    if db is None or not kind:
+        return
+    record_job(
+        db,
+        user_id,
+        kind=kind,
+        status="ok",
+        model=model,
+        latency_ms=int((time.perf_counter() - started) * 1000),
+        usage=usage,
+    )
 
 
 # 复用连接池，避免每次对话/计划生成都重新做 TLS 握手。
@@ -121,10 +165,15 @@ async def complete_vision_json(
     image_base64: str | list[str],
     mime: str = "image/jpeg",
     usage: dict | None = None,
+    db: Session | None = None,
+    user_id: str | None = None,
+    kind: str = "vision",
 ) -> dict:
     """One or more images -> one JSON response using the vision model."""
     if settings.use_mock_vision:
         raise LLMError("mock vision: no vision model configured")
+    _budget_guard(db)
+    started = time.perf_counter()
     images = [image_base64] if isinstance(image_base64, str) else list(image_base64)
     if not images:
         raise LLMError("no images provided")
@@ -201,7 +250,11 @@ async def complete_vision_json(
             raise LLMError("unexpected vision response shape") from exc
 
         try:
-            return _parse_json_object(content)
+            parsed = _parse_json_object(content)
+            _record_success(
+                db, user_id, kind, settings.vision_model, started, usage
+            )
+            return parsed
         except LLMError as exc:
             last_error = exc
             if attempt == 0:
@@ -274,9 +327,14 @@ async def complete_json(
     *,
     reasoning_effort: str | None = None,
     usage: dict | None = None,
+    db: Session | None = None,
+    user_id: str | None = None,
+    kind: str = "llm",
 ) -> dict:
     if settings.use_mock_llm:
         raise LLMError("mock mode: no LLM key configured")
+    _budget_guard(db)
+    started = time.perf_counter()
 
     messages = [
         {"role": "system", "content": system},
@@ -332,7 +390,9 @@ async def complete_json(
             raise LLMError("unexpected LLM response shape") from exc
 
         try:
-            return _parse_json_object(content)
+            parsed = _parse_json_object(content)
+            _record_success(db, user_id, kind, settings.llm_model, started, usage)
+            return parsed
         except LLMError:
             if attempt < 2:
                 # Ask once for a single object; this handles models that emit
@@ -360,9 +420,14 @@ async def complete_text(
     messages: list[dict],
     temperature: float = 0.5,
     usage: dict | None = None,
+    db: Session | None = None,
+    user_id: str | None = None,
+    kind: str = "llm",
 ) -> str:
     if settings.use_mock_llm:
         raise LLMError("mock mode: no LLM key configured")
+    _budget_guard(db)
+    started = time.perf_counter()
 
     payload = {
         "model": settings.llm_model,
@@ -391,7 +456,9 @@ async def complete_text(
         try:
             data = response.json()
             _merge_usage(usage, data.get("usage"))
-            return data["choices"][0]["message"]["content"]
+            content = data["choices"][0]["message"]["content"]
+            _record_success(db, user_id, kind, settings.llm_model, started, usage)
+            return content
         except (KeyError, IndexError, TypeError, ValueError) as exc:
             if attempt == 0:
                 await asyncio.sleep(0.4)
@@ -409,7 +476,9 @@ def record_job(
     model: str | None = None,
     latency_ms: int | None = None,
     error: str | None = None,
+    usage: dict | None = None,
 ) -> None:
+    input_tokens, output_tokens = _usage_tokens(usage)
     db.add(
         AIJob(
             user_id=user_id,
@@ -417,6 +486,8 @@ def record_job(
             status=status,
             model=model,
             latency_ms=latency_ms,
+            input_tokens=input_tokens or None,
+            output_tokens=output_tokens or None,
             error=(error or "")[:1000] or None,
             prompt_version="v1",
         )

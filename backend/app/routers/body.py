@@ -35,7 +35,12 @@ async def analyze_body(
         raise HTTPException(status_code=413, detail="图片不能超过 8MB")
 
     # 原图不落盘、不入库；只返回本次分析结果
-    return await analyze(data, file.filename or "body.jpg")
+    return await analyze(
+        data,
+        file.filename or "body.jpg",
+        db=db,
+        user_id=user_id,
+    )
 
 
 @router.post("/metrics", status_code=201)

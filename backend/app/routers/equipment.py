@@ -30,7 +30,12 @@ async def scan(
     if len(data) > MAX_IMAGE_BYTES:
         raise HTTPException(status_code=413, detail="图片不能超过 8MB")
 
-    result = await recognize(db, data, file.filename or "image")
+    result = await recognize(
+        db,
+        data,
+        file.filename or "image",
+        user_id=user_id,
+    )
 
     record = EquipmentScan(
         user_id=user_id,

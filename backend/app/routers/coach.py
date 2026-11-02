@@ -22,7 +22,7 @@ def _active_program(db: DBSession, user_id: str) -> Program | None:
 
 
 def _reserve_coach_turn(db: DBSession, profile: Profile, message: str):
-    enforce_rate_limit("coach_chat", profile.user_id, 10, 60)
+    enforce_rate_limit(db, "coach_chat", profile.user_id, 10, 60)
     decision = assess_safety(profile, message)
     if decision.reply is not None:
         return None
@@ -207,6 +207,8 @@ async def vision(
         question,
         safety_context=decision.caution,
         conversation_context=conversation_context,
+        db=db,
+        user_id=user_id,
     )
     return _record_vision_turn(db, session, question, 1, result)
 
@@ -254,6 +256,8 @@ async def vision_batch(
         question,
         safety_context=decision.caution,
         conversation_context=conversation_context,
+        db=db,
+        user_id=user_id,
     )
     return _record_vision_turn(db, session, question, len(images), result)
 

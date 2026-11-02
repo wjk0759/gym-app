@@ -495,6 +495,7 @@ async def generate_plan(
     started = time.perf_counter()
     error: str | None = None
     warnings: list[str] = []
+    usage: dict[str, int] = {}
 
     if not settings.use_mock_llm:
         try:
@@ -514,6 +515,10 @@ async def generate_plan(
                     focus,
                 ),
                 reasoning_effort=settings.llm_plan_reasoning_effort,
+                usage=usage,
+                db=db,
+                user_id=getattr(profile, "user_id", None),
+                kind="plan",
             )
             cleaned, warnings = validate_plan(
                 raw,
@@ -522,15 +527,6 @@ async def generate_plan(
                 injuries=profile.injuries,
                 weekly_days=profile.weekly_days,
                 weeks=weeks,
-            )
-            latency = int((time.perf_counter() - started) * 1000)
-            llm.record_job(
-                db,
-                getattr(profile, "user_id", None),
-                kind="plan",
-                status="ok",
-                model=settings.llm_model,
-                latency_ms=latency,
             )
             return {
                 "plan": cleaned,
@@ -550,6 +546,7 @@ async def generate_plan(
                 model=settings.llm_model,
                 latency_ms=int((time.perf_counter() - started) * 1000),
                 error=error,
+                usage=usage,
             )
 
     raw = fallback_plan(

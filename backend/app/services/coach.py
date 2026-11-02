@@ -252,6 +252,7 @@ async def coach_reply(
         )
         messages.append({"role": "user", "content": message})
         started = time.perf_counter()
+        usage: dict[str, int] = {}
         try:
             # The route has finished reading profile/program/history. Do not
             # keep a DB connection (and transaction) open for the LLM call.
@@ -259,14 +260,10 @@ async def coach_reply(
             reply = await llm.complete_text(
                 messages,
                 temperature=0.7 if skill == "trainer" else 0.5,
-            )
-            llm.record_job(
-                db,
-                getattr(profile, "user_id", None),
+                usage=usage,
+                db=db,
+                user_id=getattr(profile, "user_id", None),
                 kind=f"coach_{skill}",
-                status="ok",
-                model=settings.llm_model,
-                latency_ms=int((time.perf_counter() - started) * 1000),
             )
             return {"reply": reply, "safety_flag": None, "citations": []}
         except llm.LLMError as exc:
@@ -278,6 +275,7 @@ async def coach_reply(
                 model=settings.llm_model,
                 latency_ms=int((time.perf_counter() - started) * 1000),
                 error=str(exc),
+                usage=usage,
             )
 
     reply, citations = _mock_reply(message, profile, program, db, skill)

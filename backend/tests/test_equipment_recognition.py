@@ -5,7 +5,7 @@ from app.services import equipment
 
 
 def test_unmatched_equipment_returns_custom_add_signal(monkeypatch):
-    async def fake_vision(system, user, image, mime="image/jpeg"):
+    async def fake_vision(system, user, image, mime="image/jpeg", **kwargs):
         return {
             "description": "a machine not in the current library",
             "equipment": "machine",

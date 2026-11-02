@@ -71,7 +71,7 @@ async def _agent_chat_inner(
     if cached is not None:
         return cached
 
-    enforce_rate_limit("agent_chat", user_id, 10, 60)
+    enforce_rate_limit(db, "agent_chat", user_id, 10, 60)
     session: ChatSession | None = None
     if payload.session_id:
         session = db.get(ChatSession, payload.session_id)

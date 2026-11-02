@@ -15,7 +15,7 @@ def test_review_without_image_returns_honest_fallback():
 
 
 def test_food_question_is_not_forced_into_training_review(monkeypatch):
-    async def fake_vision(system, user, image, mime="image/jpeg"):
+    async def fake_vision(system, user, image, mime="image/jpeg", **kwargs):
         return {
             "mode": "training",
             "is_training": True,
@@ -41,7 +41,7 @@ def test_food_question_is_not_forced_into_training_review(monkeypatch):
 
 
 def test_vision_response_stays_compact(monkeypatch):
-    async def fake_vision(system, user, image, mime="image/jpeg"):
+    async def fake_vision(system, user, image, mime="image/jpeg", **kwargs):
         return {
             "mode": "nutrition",
             "is_training": False,
@@ -91,7 +91,7 @@ def test_vision_history_is_text_only_and_compact():
 def test_conversation_context_reaches_vision_prompt(monkeypatch):
     captured: dict[str, str] = {}
 
-    async def fake_vision(system, user, image, mime="image/jpeg"):
+    async def fake_vision(system, user, image, mime="image/jpeg", **kwargs):
         captured["prompt"] = user
         return {
             "mode": "body",
@@ -123,7 +123,7 @@ def test_conversation_context_reaches_vision_prompt(monkeypatch):
 
 
 def test_training_question_keeps_training_mode(monkeypatch):
-    async def fake_vision(system, user, image, mime="image/jpeg"):
+    async def fake_vision(system, user, image, mime="image/jpeg", **kwargs):
         return {
             "mode": "training",
             "is_training": True,

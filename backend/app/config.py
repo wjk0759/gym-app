@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     # 限制单进程同时打到模型服务的请求数，避免把连接池和上游限流打满。
     llm_max_concurrency: int = 8
     llm_timeout_seconds: float = 90.0
+    # 全局 token 预算。0 表示不启用；按 Asia/Shanghai 自然日/自然月统计，
+    # 70%/90% 写告警日志，100% 后所有模型调用自动降级到规则/Mock。
+    llm_daily_token_budget: int = 0
+    llm_monthly_token_budget: int = 0
 
     vision_model: str = ""
     vision_base_url: str = ""
