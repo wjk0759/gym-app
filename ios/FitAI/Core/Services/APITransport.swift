@@ -177,7 +177,7 @@ struct APITransport {
             let error = parsed?["error"] as? [String: Any]
             let code = error?["code"] as? String
             let details = error?["details"] as? [String: Any]
-            let retryAfter = details?["retry_after"] as? Int
+            let retryAfter = (details?["retry_after"] as? NSNumber)?.intValue
             let message = error?["message"] as? String
             throw APIError(
                 message: message ?? "服务返回 \(http.statusCode)：\(text.prefix(200))",

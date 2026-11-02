@@ -194,6 +194,7 @@ async def vision(
         return _record_vision_turn(
             db, session, question, 1, _vision_safety_response(decision)
         )
+    access.require_feature(db, user_id, access.FEATURE_AI_VISION)
     _require_image_upload(file)
 
     image_bytes = await file.read()
@@ -230,6 +231,7 @@ async def vision_batch(
         return _record_vision_turn(
             db, session, question, len(files), _vision_safety_response(decision)
         )
+    access.require_feature(db, user_id, access.FEATURE_AI_VISION)
     if not files:
         raise HTTPException(status_code=400, detail="没有收到图片")
     if len(files) > MAX_VISION_FILES:

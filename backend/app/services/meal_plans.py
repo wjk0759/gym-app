@@ -59,6 +59,15 @@ def save_day_plan(
     return record
 
 
+def get_day(db: Session, user_id: str, day: date) -> MealPlan | None:
+    return db.execute(
+        select(MealPlan).where(
+            MealPlan.user_id == user_id,
+            MealPlan.plan_date == day,
+        )
+    ).scalar_one_or_none()
+
+
 def list_week(db: Session, user_id: str, start: date) -> list[MealPlan]:
     end = start + timedelta(days=6)
     return list(

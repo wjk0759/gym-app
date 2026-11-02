@@ -16,6 +16,7 @@ from ..services.diet import (
 )
 from ..services.food_vision import analyze as analyze_food_photo
 from ..services.meal_plans import (
+    get_day,
     list_week,
     save_day_plan,
     week_start_for,
@@ -46,6 +47,7 @@ async def analyze_meal(
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(status_code=415, detail="仅支持 jpeg/png/webp/heic 图片")
 
+    access.require_feature(db, user_id, access.FEATURE_FOOD_PHOTO)
     data = await file.read()
     if not data:
         raise HTTPException(status_code=400, detail="图片为空")
@@ -170,28 +172,56 @@ def targets(user_id: CurrentUser, db: DBSession):
 
 
 @router.post("/plan")
-async def plan(payload: DietPlanIn, user_id: CurrentUser, db: DBSession):
+async def plan(
+    payload: DietPlanIn,
+    user_id: CurrentUser,
+    db: DBSession,
+    idempotency_key: str | None = Header(
+        default=None, alias="Idempotency-Key", max_length=64
+    ),
+):
     profile = db.get(Profile, user_id)
     if profile is None:
         raise HTTPException(status_code=404, detail="请先完成个人档案")
 
+    enforce_rate_limit(db, "diet_plan_generate", user_id, 3, 60)
     plan_date = payload.date or date.today()
-    result = await build_ai_plan(db, profile, _goal_type(db, user_id), plan_date)
-
-    save_day_plan(
+    lease = generation.begin_generation(
         db,
         user_id,
-        plan_date,
-        result,
-        strategy="balanced",
-        generated_by=result.get("generated_by"),
-        model_name=result.get("model"),
+        access.FEATURE_MEAL_PLAN,
+        idempotency_key=idempotency_key,
     )
+    if lease.is_replay:
+        try:
+            replay_date = date.fromisoformat(lease.replay_result_ref or "")
+        except ValueError:
+            replay_date = None
+        if replay_date is not None:
+            record = get_day(db, user_id, replay_date)
+            if record is not None and record.plan:
+                result = dict(record.plan)
+                result["access"] = access.access_snapshot(db, user_id)
+                result["idempotent_replay"] = True
+                return result
+        generation.abort_generation(db, lease, user_id=user_id)
+        lease = generation.begin_generation(
+            db,
+            user_id,
+            access.FEATURE_MEAL_PLAN,
+            idempotency_key=None,
+        )
+
     try:
-        db.commit()
-    except IntegrityError:
-        # Another device inserted the same user/day concurrently.
-        db.rollback()
+        access_mode = access.require_meal_plan_generation(db, user_id)
+    except HTTPException:
+        generation.abort_generation(db, lease, user_id=user_id)
+        raise
+
+    try:
+        result = await build_ai_plan(
+            db, profile, _goal_type(db, user_id), plan_date
+        )
         save_day_plan(
             db,
             user_id,
@@ -201,8 +231,41 @@ async def plan(payload: DietPlanIn, user_id: CurrentUser, db: DBSession):
             generated_by=result.get("generated_by"),
             model_name=result.get("model"),
         )
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            # Another device inserted the same user/day concurrently.
+            db.rollback()
+            save_day_plan(
+                db,
+                user_id,
+                plan_date,
+                result,
+                strategy="balanced",
+                generated_by=result.get("generated_by"),
+                model_name=result.get("model"),
+            )
+            db.commit()
 
+        if access_mode == "trial":
+            access.consume_trial(
+                db,
+                user_id,
+                access.FEATURE_MEAL_PLAN,
+                source="first_generation",
+                result_ref=plan_date.isoformat(),
+            )
+    except Exception:
+        generation.abort_generation(db, lease, user_id=user_id)
+        raise
+
+    generation.complete_generation(
+        db,
+        lease,
+        user_id=user_id,
+        result_ref=plan_date.isoformat(),
+    )
+    result["access"] = access.access_snapshot(db, user_id)
     return result
 
 

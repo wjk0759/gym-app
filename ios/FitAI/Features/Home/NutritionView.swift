@@ -14,6 +14,7 @@ struct NutritionView: View {
     @State private var pendingFoodDelete: FoodLog?
     @State private var aiMeals: [MealSuggestion]?
     @State private var aiPlanNote = ""
+    @State private var pendingPlanGenerationKey: String?
     @State private var isGeneratingPlan = false
     @State private var mode: NutritionMode = .plan
 
@@ -94,8 +95,14 @@ struct NutritionView: View {
         guard store.canUseRemoteAI, !isGeneratingPlan else { return }
         isGeneratingPlan = true
         defer { isGeneratingPlan = false }
+        let idempotencyKey = pendingPlanGenerationKey ?? UUID().uuidString
+        pendingPlanGenerationKey = idempotencyKey
         do {
-            let plan = try await APIClient.shared.fetchDietPlan(dateString: dateString)
+            let plan = try await APIClient.shared.fetchDietPlan(
+                dateString: dateString,
+                idempotencyKey: idempotencyKey
+            )
+            pendingPlanGenerationKey = nil
             guard !plan.meals.isEmpty else { return }
             aiMeals = plan.meals.map {
                 MealSuggestion(name: $0.name, kcal: $0.kcal, items: $0.items)

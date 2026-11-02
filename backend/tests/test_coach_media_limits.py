@@ -7,6 +7,7 @@ the clear rejection when a video file is posted to the image endpoint.
 
 import asyncio
 import io
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi import HTTPException, UploadFile
@@ -15,7 +16,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db import Base
-from app.models import Profile, User
+from app.models import Profile, User, UserEntitlement
 from app.routers import coach
 
 
@@ -30,6 +31,17 @@ def db():
     Session = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
     session = Session()
     session.add(User(id="media-user"))
+    now = datetime.now(timezone.utc)
+    session.add(
+        UserEntitlement(
+            user_id="media-user",
+            plan_code="pro",
+            source="admin",
+            source_ref="media-test",
+            starts_at=now,
+            expires_at=now + timedelta(days=1),
+        )
+    )
     session.add(
         Profile(
             user_id="media-user",

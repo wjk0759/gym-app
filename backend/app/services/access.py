@@ -23,6 +23,9 @@ BUSINESS_TZ = timezone(timedelta(hours=8))
 FEATURE_TRAINING_PLAN = "training_plan"
 FEATURE_MEAL_PLAN = "meal_plan"
 FEATURE_COACH_AI = "coach_ai"
+FEATURE_FOOD_PHOTO = "food_photo"
+FEATURE_BODY_PHOTO = "body_photo"
+FEATURE_AI_VISION = "ai_vision"
 COACH_WEEKLY_LIMIT = 3
 
 
@@ -169,6 +172,12 @@ def require_meal_plan_generation(db: Session, user_id: str) -> str:
     if trial is None:
         return "trial"
     _raise_pro_required(FEATURE_MEAL_PLAN)
+
+
+def require_feature(db: Session, user_id: str, feature_key: str) -> None:
+    """Direct Pro gate with no trial for photo/video analysis."""
+    if not has_pro(db, user_id):
+        _raise_pro_required(feature_key)
 
 
 def consume_trial(

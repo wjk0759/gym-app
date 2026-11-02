@@ -6,6 +6,7 @@ from sqlalchemy import select
 from ..deps import CurrentUser, DBSession
 from ..models import BodyMetric
 from ..schemas import BodyMetricIn
+from ..services import access
 from ..services.body_analysis import analyze
 from ..services.body_metrics import (
     body_metric_dict,
@@ -28,6 +29,7 @@ async def analyze_body(
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(status_code=415, detail="仅支持 jpeg/png/webp/heic 图片")
 
+    access.require_feature(db, user_id, access.FEATURE_BODY_PHOTO)
     data = await file.read()
     if not data:
         raise HTTPException(status_code=400, detail="图片为空")

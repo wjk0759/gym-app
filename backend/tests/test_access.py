@@ -93,6 +93,20 @@ def test_onboarding_training_trial_is_one_per_account():
         access.require_training_plan_generation(db, user_id)
 
 
+def test_pro_feature_gate_rejects_free_user():
+    db = _session()
+    user_id = "00000000-0000-0000-0000-000000000001"
+
+    with pytest.raises(HTTPException) as exc:
+        access.require_feature(db, user_id, access.FEATURE_FOOD_PHOTO)
+    assert exc.value.status_code == 403
+    assert exc.value.detail["code"] == "PRO_REQUIRED"
+    assert exc.value.detail["feature"] == access.FEATURE_FOOD_PHOTO
+
+    _grant_pro(db)
+    access.require_feature(db, user_id, access.FEATURE_FOOD_PHOTO)
+
+
 def test_coach_weekly_quota_is_three_for_free_users():
     db = _session()
     user_id = "00000000-0000-0000-0000-000000000001"

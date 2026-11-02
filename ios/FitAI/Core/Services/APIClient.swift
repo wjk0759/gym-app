@@ -552,9 +552,17 @@ struct APIClient {
         return try decode(CoachVisionResult.self, from: data)
     }
 
-    func fetchDietPlan(dateString: String) async throws -> RemoteDietPlan {
+    func fetchDietPlan(
+        dateString: String,
+        idempotencyKey: String? = nil
+    ) async throws -> RemoteDietPlan {
         let body = try JSONSerialization.data(withJSONObject: ["date": dateString])
-        return try await send(path: "diet/plan", method: "POST", body: body)
+        return try await send(
+            path: "diet/plan",
+            method: "POST",
+            body: body,
+            headers: idempotencyHeaders(idempotencyKey)
+        )
     }
 
     func fetchDietWeek(
