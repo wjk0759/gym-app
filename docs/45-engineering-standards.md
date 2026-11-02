@@ -97,7 +97,7 @@
 
 ## 10. 当前例外（需要逐步消除）
 
-- `AppStore` 仍是 God object；后续拆 `LocalStateStore`、`CoachRequestController`、同步服务。
+- `AppStore` 的 Sync / Agent / 权益状态已拆到 `AppStore+Sync`、`AppStore+Agent`、`FeatureAccessStore`；档案/计划/营养/训练子域仍在主文件，继续拆。
 - `PlanHomeView`、`EquipmentDetailView`、`CoachChatView` 等仍偏大；按页面拆组件。
 - `PlanHomeView`/`WorkoutSessionView` 仍有部分业务计算在 View 内。
 - 部分 service 仍有内部 `commit()`；新代码不要再增加。
