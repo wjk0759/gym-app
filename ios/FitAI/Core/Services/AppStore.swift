@@ -116,14 +116,16 @@ final class AppStore {
     var reminderMinute = 0
     var notificationsEnabled = false
     var useRemoteAI = AppConfig.useRemoteAI
-    /// StoreKit 权益通过 SubscriptionManager 同步；只有 Pro 才会请求远程 DeepSeek。
-    var isPro = false
-    /// Server-authoritative Pro/trial snapshot. StoreKit remains a second source.
-    var accessSnapshot: AccessSnapshot?
-    var paywallFeature: ProFeature?
+    /// Server snapshot, StoreKit fallback and paywall coordinator live here so
+    /// AppStore stays a data/sync store instead of the entitlement source.
+    @ObservationIgnored let access = FeatureAccessStore()
     /// 仅用于 Debug 预览 DeepSeek；正式包不会暴露出开关。
-    var debugForceRemoteAI = AppConfig.debugForceRemoteAI
     var healthKitEnabled = false
+
+    var debugForceRemoteAI: Bool {
+        get { access.debugForcePro }
+        set { access.debugForcePro = newValue }
+    }
 
     private var currentUserID: String? = AuthTokenStore.shared.userID
     // 状态较大时 JSON 编码和原子落盘会阻塞主线程；写入串行放到 utility 队列。
@@ -347,34 +349,24 @@ final class AppStore {
     }
 
     func requestPro(_ feature: ProFeature) {
-        paywallFeature = feature
+        access.requestPro(feature)
     }
 
     @discardableResult
     func requirePro(_ feature: ProFeature) -> Bool {
-        if hasProAccess { return true }
-        requestPro(feature)
-        return false
+        access.requirePro(feature)
     }
 
     @MainActor
     func refreshAccess() async {
-        guard AuthTokenStore.shared.accessToken != nil else {
-            accessSnapshot = nil
-            return
-        }
-        if let snapshot = try? await APIClient.shared.fetchAccess() {
-            accessSnapshot = snapshot
-        }
+        await access.refresh()
     }
 
     @MainActor
     private func consumeOnboardingTrialIfNeeded() async {
         try? await APIClient.shared.syncProfile(profile)
         try? await APIClient.shared.syncGoal(profile)
-        if let snapshot = try? await APIClient.shared.consumeOnboardingTrial() {
-            accessSnapshot = snapshot
-        }
+        await access.consumeOnboardingTrial()
     }
 
     func rescheduleNotifications() {

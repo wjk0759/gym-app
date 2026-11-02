@@ -56,14 +56,14 @@ struct RootView: View {
         .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: auth.isAuthenticated)
         .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: store.profile.isOnboarded)
         .animation(Motion.resolved(.easeInOut(duration: 0.9), reduceMotion: reduceMotion), value: atmosphere.isPrecipitation)
-        .sheet(item: $store.paywallFeature) { feature in
+        .sheet(item: paywallBinding) { feature in
             ProPaywallSheet(feature: feature)
         }
         .sensoryFeedback(.success, trigger: auth.isAuthenticated) { _, isAuthenticated in
             isAuthenticated
         }
         .task {
-            store.isPro = subscriptions.isPro
+            store.access.storeKitPro = subscriptions.isPro
             await auth.restoreIfNeeded()
             refreshSession()
         }
@@ -77,7 +77,7 @@ struct RootView: View {
             }
         }
         .onChange(of: subscriptions.isPro) { _, isPro in
-            store.isPro = isPro
+            store.access.storeKitPro = isPro
         }
         .onChange(of: auth.isAuthenticated) { _, _ in
             refreshSession()
@@ -128,6 +128,13 @@ struct RootView: View {
         return .asymmetric(
             insertion: .opacity.combined(with: .scale(scale: 0.985)),
             removal: .opacity
+        )
+    }
+
+    private var paywallBinding: Binding<ProFeature?> {
+        Binding(
+            get: { store.access.paywall.feature },
+            set: { store.access.paywall.feature = $0 }
         )
     }
 

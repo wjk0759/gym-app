@@ -127,8 +127,7 @@ struct WeekDietPlanView: View {
     }
 
     private var mealPlanAvailable: Bool {
-        store.hasProAccess
-            || (store.accessSnapshot?.mealPlanTrialAvailable ?? true)
+        store.access.policy.canGenerateMealPlan
     }
 
     private var strategyCard: some View {
