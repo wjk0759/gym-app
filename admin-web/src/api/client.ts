@@ -103,6 +103,11 @@ export async function apiPatch<T>(path: string, data?: unknown): Promise<T> {
   return response.data
 }
 
+export async function apiPut<T>(path: string, data?: unknown): Promise<T> {
+  const response = await http.put<T>(path, data)
+  return response.data
+}
+
 export async function apiDelete(path: string): Promise<void> {
   await http.delete(path)
 }

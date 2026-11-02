@@ -478,6 +478,13 @@ export interface AiJobItem {
   createdAt: string
 }
 
+export interface AiControl {
+  enabled: boolean
+  reason: string | null
+  updatedBy: string | null
+  updatedAt: string | null
+}
+
 export interface AuditItem {
   id: string
   actor: string

@@ -1,5 +1,6 @@
-import { apiGet } from './client'
+import { apiGet, apiPut } from './client'
 import type {
+  AiControl,
   AiJobItem,
   AiOverview,
   AuditItem,
@@ -35,6 +36,12 @@ export const aiApi = {
   },
   async jobs(query: AiJobQuery): Promise<PageResponse<AiJobItem>> {
     return apiGet<PageResponse<AiJobItem>>('/ai/jobs', { params: query })
+  },
+  async control(): Promise<AiControl> {
+    return apiGet<AiControl>('/ai/control')
+  },
+  async updateControl(enabled: boolean, reason: string): Promise<AiControl> {
+    return apiPut<AiControl>('/ai/control', { enabled, reason })
   },
 }
 

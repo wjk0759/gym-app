@@ -172,6 +172,35 @@ public class AiRepository {
         return jdbc.sql(sql).query(Long.class).optional().orElse(0L);
     }
 
+    public AiDtos.AiControl control() {
+        return jdbc.sql("""
+                SELECT enabled, reason, updated_by, updated_at
+                FROM ai_runtime_control
+                WHERE id = 1
+                """).query((rs, rowNum) -> new AiDtos.AiControl(
+                rs.getBoolean("enabled"),
+                rs.getString("reason"),
+                rs.getString("updated_by"),
+                SqlSupport.iso(rs.getTimestamp("updated_at"))
+        )).optional().orElse(new AiDtos.AiControl(true, null, null, null));
+    }
+
+    public void setControl(boolean enabled, String reason, String adminId) {
+        jdbc.sql("""
+                INSERT INTO ai_runtime_control (id, enabled, reason, updated_by, updated_at)
+                VALUES (1, :enabled, :reason, :adminId, UTC_TIMESTAMP())
+                ON DUPLICATE KEY UPDATE
+                    enabled = VALUES(enabled),
+                    reason = VALUES(reason),
+                    updated_by = VALUES(updated_by),
+                    updated_at = UTC_TIMESTAMP()
+                """)
+                .param("enabled", enabled)
+                .param("reason", reason)
+                .param("adminId", adminId)
+                .update();
+    }
+
     private long sum(String sql) {
         return jdbc.sql(sql).query(Long.class).optional().orElse(0L);
     }

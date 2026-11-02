@@ -2,6 +2,9 @@ package com.fitai.admin.ai;
 
 import java.util.List;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 public final class AiDtos {
 
     private AiDtos() {
@@ -29,6 +32,20 @@ public final class AiDtos {
     }
 
     public record SkillInfo(String key, String name, String description, String promptVersion) {
+    }
+
+    public record AiControl(
+            boolean enabled,
+            String reason,
+            String updatedBy,
+            String updatedAt
+    ) {
+    }
+
+    public record AiControlUpdate(
+            @NotNull Boolean enabled,
+            @Size(max = 200) String reason
+    ) {
     }
 
     public record AiJobItem(

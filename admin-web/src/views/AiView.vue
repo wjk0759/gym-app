@@ -34,6 +34,37 @@
         />
       </section>
 
+      <section class="panel control-panel">
+        <div class="panel-heading">
+          <div>
+            <h3>AI 运行开关</h3>
+            <p>暂停后仅测试账号可调用模型，其他用户自动降级到规则模板</p>
+          </div>
+          <el-tag :type="control.enabled ? 'success' : 'danger'" effect="light">
+            {{ control.enabled ? '运行中' : '已暂停' }}
+          </el-tag>
+        </div>
+        <div class="control-row">
+          <el-switch
+            v-model="control.enabled"
+            active-text="启用 AI"
+            inactive-text="暂停 AI"
+            :loading="controlSaving"
+          />
+          <el-input
+            v-model="control.reason"
+            maxlength="200"
+            show-word-limit
+            :placeholder="control.enabled ? '启用备注（选填）' : '暂停原因（必填）'"
+          />
+          <el-button type="primary" :loading="controlSaving" @click="saveControl">保存</el-button>
+        </div>
+        <p v-if="control.updatedAt" class="faint control-meta">
+          最后更新 {{ formatDateTime(control.updatedAt) }}
+          <span v-if="control.updatedBy"> · {{ control.updatedBy }}</span>
+        </p>
+      </section>
+
       <section class="ai-grid">
         <div class="panel chart-panel">
           <div class="panel-heading">
@@ -167,6 +198,8 @@ const jobTotal = ref(0)
 const jobPage = ref(1)
 const jobSize = ref(20)
 const jobFilters = reactive({ kind: '', status: '', q: '' })
+const control = reactive({ enabled: true, reason: '', updatedBy: '', updatedAt: '' })
+const controlSaving = ref(false)
 
 const kindOptions = [
   { value: 'plan', label: '训练计划生成' },
@@ -224,7 +257,38 @@ async function loadJobs(): Promise<void> {
 }
 
 async function loadAll(): Promise<void> {
-  await Promise.all([loadOverview(), loadJobs()])
+  await Promise.all([loadOverview(), loadJobs(), loadControl()])
+}
+
+async function loadControl(): Promise<void> {
+  try {
+    const data = await aiApi.control()
+    control.enabled = data.enabled
+    control.reason = data.reason ?? ''
+    control.updatedBy = data.updatedBy ?? ''
+    control.updatedAt = data.updatedAt ?? ''
+  } catch (reason) {
+    ElMessage.error(errorMessage(reason))
+  }
+}
+
+async function saveControl(): Promise<void> {
+  if (!control.enabled && !control.reason.trim()) {
+    ElMessage.warning('暂停 AI 时请填写原因')
+    return
+  }
+  controlSaving.value = true
+  try {
+    const data = await aiApi.updateControl(control.enabled, control.reason.trim())
+    control.reason = data.reason ?? ''
+    control.updatedBy = data.updatedBy ?? ''
+    control.updatedAt = data.updatedAt ?? ''
+    ElMessage.success(control.enabled ? 'AI 已启用' : 'AI 已暂停，仅测试账号可用')
+  } catch (reason) {
+    ElMessage.error(errorMessage(reason))
+  } finally {
+    controlSaving.value = false
+  }
 }
 
 function applyJobFilters(): void {
@@ -260,6 +324,26 @@ onMounted(loadAll)
 .chart-panel,
 .kind-panel {
   overflow: hidden;
+}
+
+.control-panel {
+  padding: 18px 20px;
+}
+
+.control-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.control-row :deep(.el-input) {
+  flex: 1 1 260px;
+}
+
+.control-meta {
+  margin: 10px 0 0;
 }
 
 .panel-heading {
