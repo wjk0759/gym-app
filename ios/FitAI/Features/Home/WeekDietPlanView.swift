@@ -12,6 +12,7 @@ struct WeekDietPlanView: View {
     @State private var errorMessage = ""
     @State private var selectedRecipe: DietRecipeSelection?
     @State private var lastGeneratedAt: Date?
+    @State private var pendingGenerationKey: String?
 
     private let requestedStrategy: String?
 
@@ -334,11 +335,15 @@ struct WeekDietPlanView: View {
         isLoading = true
         errorMessage = ""
         defer { isLoading = false }
+        let idempotencyKey = pendingGenerationKey ?? UUID().uuidString
+        pendingGenerationKey = idempotencyKey
         do {
             week = try await APIClient.shared.fetchDietWeek(
                 strategy: strategy,
-                weekStart: nil
+                weekStart: nil,
+                idempotencyKey: idempotencyKey
             )
+            pendingGenerationKey = nil
             lastGeneratedAt = Date()
             await store.refreshAccess()
         } catch let error as APIError where error.statusCode == 429 {

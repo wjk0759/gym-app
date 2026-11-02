@@ -174,7 +174,8 @@ struct APIClient {
         onboarding: Bool = false,
         equipmentSlugs: [String] = [],
         split: SplitType,
-        focus: [String] = []
+        focus: [String] = [],
+        idempotencyKey: String? = nil
     ) async throws -> TrainingPlan {
         let body = try JSONSerialization.data(withJSONObject: [
             "force": force,
@@ -185,7 +186,13 @@ struct APIClient {
         ])
         // AI 计划生成在 DeepSeek reasoning 开启时可能接近 100 秒；
         // 90 秒会先于服务端返回而失败，随后又落回本地模板。
-        return try await send(path: "plans/generate", method: "POST", body: body, timeout: 150)
+        return try await send(
+            path: "plans/generate",
+            method: "POST",
+            body: body,
+            timeout: 150,
+            headers: idempotencyHeaders(idempotencyKey)
+        )
     }
 
     func syncSchedule(
@@ -532,13 +539,23 @@ struct APIClient {
         return try await send(path: "diet/plan", method: "POST", body: body)
     }
 
-    func fetchDietWeek(strategy: String, weekStart: String?) async throws -> RemoteDietWeek {
+    func fetchDietWeek(
+        strategy: String,
+        weekStart: String?,
+        idempotencyKey: String? = nil
+    ) async throws -> RemoteDietWeek {
         var payload: [String: Any] = ["strategy": strategy]
         if let weekStart { payload["week_start"] = weekStart }
         let body = try JSONSerialization.data(withJSONObject: payload)
         // A seven-day menu with recipes is a larger model response than the
         // one-day plan; keep the client timeout aligned with plan generation.
-        return try await send(path: "diet/plan/week", method: "POST", body: body, timeout: 180)
+        return try await send(
+            path: "diet/plan/week",
+            method: "POST",
+            body: body,
+            timeout: 180,
+            headers: idempotencyHeaders(idempotencyKey)
+        )
     }
 
     func fetchSavedDietWeek(weekStart: String?) async throws -> RemoteDietWeek {
@@ -556,9 +573,21 @@ struct APIClient {
         path: String,
         method: String,
         body: Data?,
-        timeout: TimeInterval = 90
+        timeout: TimeInterval = 90,
+        headers: [String: String] = [:]
     ) async throws -> T {
-        try await transport.send(path: path, method: method, body: body, timeout: timeout)
+        try await transport.send(
+            path: path,
+            method: method,
+            body: body,
+            timeout: timeout,
+            headers: headers
+        )
+    }
+
+    private func idempotencyHeaders(_ key: String?) -> [String: String] {
+        guard let key, !key.isEmpty else { return [:] }
+        return ["Idempotency-Key": key]
     }
 
     private func sendVoid(path: String, method: String, body: Data?) async throws {

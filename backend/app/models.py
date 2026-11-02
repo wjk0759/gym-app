@@ -788,3 +788,21 @@ class FeatureUsage(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
     )
+
+
+class FeatureGenerationState(Base):
+    __tablename__ = "feature_generation_state"
+
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    feature_key: Mapped[str] = mapped_column(String(40), primary_key=True)
+    state: Mapped[str] = mapped_column(String(12), default="running")
+    last_generated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+    last_result_ref: Mapped[str | None] = mapped_column(String(80))
+    last_idempotency_key: Mapped[str | None] = mapped_column(String(64))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )

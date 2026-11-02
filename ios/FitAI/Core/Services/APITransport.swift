@@ -40,13 +40,15 @@ struct APITransport {
         path: String,
         method: String,
         body: Data?,
-        timeout: TimeInterval = 90
+        timeout: TimeInterval = 90,
+        headers: [String: String] = [:]
     ) async throws -> T {
         let data = try await perform(
             path: path,
             method: method,
             body: body,
-            timeout: timeout
+            timeout: timeout,
+            headers: headers
         )
         return try decode(T.self, from: data)
     }
@@ -110,7 +112,8 @@ struct APITransport {
         body: Data?,
         contentType: String = "application/json",
         retried: Bool = false,
-        timeout: TimeInterval = 90
+        timeout: TimeInterval = 90,
+        headers: [String: String] = [:]
     ) async throws -> Data {
         guard let url = URL(string: baseURL.absoluteString + "/" + path) else {
             throw APIError(message: "接口地址不合法")
@@ -133,6 +136,9 @@ struct APITransport {
         }
         request.httpBody = body
         request.timeoutInterval = timeout
+        for (name, value) in headers {
+            request.setValue(value, forHTTPHeaderField: name)
+        }
 
         let data: Data
         let response: URLResponse
@@ -160,7 +166,8 @@ struct APITransport {
                     body: body,
                     contentType: contentType,
                     retried: true,
-                    timeout: timeout
+                    timeout: timeout,
+                    headers: headers
                 )
             }
         }

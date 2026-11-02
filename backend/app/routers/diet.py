@@ -1,13 +1,13 @@
 from datetime import date, datetime, time, timedelta, timezone
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, Header, HTTPException, Query, UploadFile
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from ..deps import CurrentUser, DBSession
 from ..models import FoodLog, Goal, Profile
 from ..schemas import DietPlanIn, DietWeekIn, FoodLogIn
-from ..services import access
+from ..services import access, generation
 from ..services.diet import (
     build_ai_diet_week,
     build_ai_plan,
@@ -215,77 +215,7 @@ def _program_training_days(program) -> list[int] | None:
     return days or None
 
 
-@router.post("/plan/week")
-async def plan_week(payload: DietWeekIn, user_id: CurrentUser, db: DBSession):
-    profile = db.get(Profile, user_id)
-    if profile is None:
-        raise HTTPException(status_code=404, detail="请先完成个人档案")
-
-    enforce_rate_limit("meal_plan_generate", user_id, 3, 60)
-    access_mode = access.require_meal_plan_generation(db, user_id)
-    week_start = week_start_for(payload.week_start or date.today())
-    program = active_program(db, user_id)
-    result = await build_ai_diet_week(
-        db,
-        profile,
-        _goal_type(db, user_id),
-        payload.strategy,
-        week_start,
-        _program_training_days(program),
-    )
-
-    strategy_id = payload.strategy or (result.get("strategy") or {}).get("id")
-    # MealPlan stores one day per row, so keep the week-level provenance on
-    # each day for the GET endpoint and the AI/template badge in iOS.
-    for day in result["days"]:
-        day["generated_by"] = result.get("generated_by")
-        if result.get("warning"):
-            day["warning"] = result["warning"]
-        save_day_plan(
-            db,
-            user_id,
-            date.fromisoformat(day["date"]),
-            day,
-            strategy=strategy_id,
-            generated_by=result.get("generated_by"),
-            model_name=result.get("model"),
-        )
-    try:
-        db.commit()
-    except IntegrityError:
-        # Another device generated the same week concurrently; re-apply.
-        db.rollback()
-        for day in result["days"]:
-            save_day_plan(
-                db,
-                user_id,
-                date.fromisoformat(day["date"]),
-                day,
-                strategy=strategy_id,
-                generated_by=result.get("generated_by"),
-                model_name=result.get("model"),
-            )
-        db.commit()
-
-    if access_mode == "trial":
-        access.consume_trial(
-            db,
-            user_id,
-            access.FEATURE_MEAL_PLAN,
-            source="first_generation",
-            result_ref=week_start.isoformat(),
-        )
-    result["access"] = access.access_snapshot(db, user_id)
-    return result
-
-
-@router.get("/plan/week")
-def get_plan_week(
-    user_id: CurrentUser,
-    db: DBSession,
-    week_start: date | None = Query(default=None),
-):
-    start = week_start_for(week_start or date.today())
+def _week_payload(db: DBSession, user_id: str, start: date) -> dict:
     rows = list_week(db, user_id, start)
     summary = week_summary(rows)
     return {
@@ -296,3 +226,123 @@ def get_plan_week(
         "strategy": summary["strategy"],
         "model": summary["model"],
     }
+
+
+@router.post("/plan/week")
+async def plan_week(
+    payload: DietWeekIn,
+    user_id: CurrentUser,
+    db: DBSession,
+    idempotency_key: str | None = Header(
+        default=None, alias="Idempotency-Key", max_length=64
+    ),
+):
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="请先完成个人档案")
+
+    enforce_rate_limit("meal_plan_generate", user_id, 3, 60)
+    lease = generation.begin_generation(
+        db,
+        user_id,
+        access.FEATURE_MEAL_PLAN,
+        idempotency_key=idempotency_key,
+    )
+    if lease.is_replay:
+        try:
+            replay_start = date.fromisoformat(lease.replay_result_ref or "")
+        except ValueError:
+            replay_start = None
+        if replay_start is not None:
+            result = _week_payload(db, user_id, replay_start)
+            result["access"] = access.access_snapshot(db, user_id)
+            result["idempotent_replay"] = True
+            return result
+        generation.abort_generation(db, lease, user_id=user_id)
+        lease = generation.begin_generation(
+            db,
+            user_id,
+            access.FEATURE_MEAL_PLAN,
+            idempotency_key=None,
+        )
+
+    try:
+        access_mode = access.require_meal_plan_generation(db, user_id)
+    except HTTPException:
+        generation.abort_generation(db, lease, user_id=user_id)
+        raise
+
+    week_start = week_start_for(payload.week_start or date.today())
+    try:
+        program = active_program(db, user_id)
+        result = await build_ai_diet_week(
+            db,
+            profile,
+            _goal_type(db, user_id),
+            payload.strategy,
+            week_start,
+            _program_training_days(program),
+        )
+
+        strategy_id = payload.strategy or (result.get("strategy") or {}).get("id")
+        # MealPlan stores one day per row, so keep the week-level provenance on
+        # each day for the GET endpoint and the AI/template badge in iOS.
+        for day in result["days"]:
+            day["generated_by"] = result.get("generated_by")
+            if result.get("warning"):
+                day["warning"] = result["warning"]
+            save_day_plan(
+                db,
+                user_id,
+                date.fromisoformat(day["date"]),
+                day,
+                strategy=strategy_id,
+                generated_by=result.get("generated_by"),
+                model_name=result.get("model"),
+            )
+        try:
+            db.commit()
+        except IntegrityError:
+            # Another device generated the same week concurrently; re-apply.
+            db.rollback()
+            for day in result["days"]:
+                save_day_plan(
+                    db,
+                    user_id,
+                    date.fromisoformat(day["date"]),
+                    day,
+                    strategy=strategy_id,
+                    generated_by=result.get("generated_by"),
+                    model_name=result.get("model"),
+                )
+            db.commit()
+
+        if access_mode == "trial":
+            access.consume_trial(
+                db,
+                user_id,
+                access.FEATURE_MEAL_PLAN,
+                source="first_generation",
+                result_ref=week_start.isoformat(),
+            )
+    except Exception:
+        generation.abort_generation(db, lease, user_id=user_id)
+        raise
+
+    generation.complete_generation(
+        db,
+        lease,
+        user_id=user_id,
+        result_ref=week_start.isoformat(),
+    )
+    result["access"] = access.access_snapshot(db, user_id)
+    return result
+
+
+@router.get("/plan/week")
+def get_plan_week(
+    user_id: CurrentUser,
+    db: DBSession,
+    week_start: date | None = Query(default=None),
+):
+    return _week_payload(db, user_id, week_start_for(week_start or date.today()))

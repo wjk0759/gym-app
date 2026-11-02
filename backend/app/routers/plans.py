@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 from sqlalchemy import select
 
 from ..deps import CurrentUser, DBSession
 from ..models import Exercise, Goal, PlanExercise, Profile, Program, WorkoutSession
 from ..schemas import PlanDayPatch, PlanGenerateIn
-from ..services import access
+from ..services import access, generation
 from ..services.locking import lock_user
 from ..services.plan_generator import generate_plan
 from ..services.plan_validator import PlanValidationError, injury_tags
@@ -36,7 +36,12 @@ def _owned_program(db: DBSession, user_id: str, plan_id: str) -> Program:
 
 @router.post("/generate")
 async def generate(
-    payload: PlanGenerateIn, user_id: CurrentUser, db: DBSession
+    payload: PlanGenerateIn,
+    user_id: CurrentUser,
+    db: DBSession,
+    idempotency_key: str | None = Header(
+        default=None, alias="Idempotency-Key", max_length=64
+    ),
 ):
     profile = db.get(Profile, user_id)
     if profile is None or profile.height_cm is None or profile.weight_kg is None:
@@ -47,11 +52,39 @@ async def generate(
     if active and not payload.force:
         return serialize_program(active)
 
-    access_mode = access.require_training_plan_generation(
+    lease = generation.begin_generation(
         db,
         user_id,
-        onboarding=payload.onboarding,
+        access.FEATURE_TRAINING_PLAN,
+        idempotency_key=idempotency_key,
     )
+    if lease.is_replay:
+        replayed = load_program(db, lease.replay_result_ref or "")
+        if replayed is not None and replayed.user_id == user_id:
+            data = serialize_program(replayed)
+            data["access"] = access.access_snapshot(db, user_id)
+            data["idempotent_replay"] = True
+            return data
+        # The referenced program was removed (for example account cleanup).
+        # Release the stale replay and generate a fresh plan instead of
+        # returning a half-broken idempotent response.
+        generation.abort_generation(db, lease, user_id=user_id)
+        lease = generation.begin_generation(
+            db,
+            user_id,
+            access.FEATURE_TRAINING_PLAN,
+            idempotency_key=None,
+        )
+
+    try:
+        access_mode = access.require_training_plan_generation(
+            db,
+            user_id,
+            onboarding=payload.onboarding,
+        )
+    except HTTPException:
+        generation.abort_generation(db, lease, user_id=user_id)
+        raise
 
     goal = db.execute(
         select(Goal).where(Goal.user_id == user_id, Goal.status == "active")
@@ -74,7 +107,16 @@ async def generate(
             split=payload.split,
             focus=payload.focus,
         )
+        program = save_plan(
+            db,
+            user_id,
+            result["plan"],
+            goal_type=goal_type,
+            generated_by=result["generated_by"],
+            model_name=result["model"],
+        )
     except PlanValidationError as exc:
+        generation.abort_generation(db, lease, user_id=user_id)
         raise HTTPException(
             status_code=422,
             detail={
@@ -82,15 +124,10 @@ async def generate(
                 "message": "以你当前的伤病和器械条件，无法生成安全计划。请补充可用器械，或先咨询教练 / 康复师。",
             },
         ) from exc
+    except Exception:
+        generation.abort_generation(db, lease, user_id=user_id)
+        raise
 
-    program = save_plan(
-        db,
-        user_id,
-        result["plan"],
-        goal_type=goal_type,
-        generated_by=result["generated_by"],
-        model_name=result["model"],
-    )
     data = serialize_program(program)
     data["warnings"] = result["warnings"]
     if access_mode == "onboarding":
@@ -101,6 +138,12 @@ async def generate(
             source="onboarding",
             result_ref=program.id,
         )
+    generation.complete_generation(
+        db,
+        lease,
+        user_id=user_id,
+        result_ref=program.id,
+    )
     data["access"] = access.access_snapshot(db, user_id)
     return data
 

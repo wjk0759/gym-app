@@ -72,6 +72,7 @@ final class AppStore {
     var isGenerating = false
     var isReplying = false
     @ObservationIgnored private var lastPlanGeneratedAt: Date?
+    @ObservationIgnored private var pendingPlanIdempotencyKey: String?
     var isSyncingWorkouts = false
     var isSyncingRemoteWorkouts = false
     var isSyncingUserData = false
@@ -257,6 +258,8 @@ final class AppStore {
         let focusAreas = planFocusAreas
 
         if canUseRemoteAI && weeklyWeekdays == nil {
+            let idempotencyKey = pendingPlanIdempotencyKey ?? UUID().uuidString
+            pendingPlanIdempotencyKey = idempotencyKey
             Task { @MainActor in
                 do {
                     async let profileSync = APIClient.shared.syncProfile(snapshot)
@@ -268,9 +271,11 @@ final class AppStore {
                         onboarding: onboarding,
                         equipmentSlugs: librarySlugs,
                         split: snapshot.split,
-                        focus: focusAreas.map(\.rawValue)
+                        focus: focusAreas.map(\.rawValue),
+                        idempotencyKey: idempotencyKey
                     )
                     generated.version = max(generated.version, (self.plan?.version ?? 0) + 1)
+                    self.pendingPlanIdempotencyKey = nil
                     self.archiveCurrentPlan()
                     self.plan = generated
                     self.toast = "已由 AI 生成计划"
