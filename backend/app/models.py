@@ -798,6 +798,7 @@ class FeatureGenerationState(Base):
     )
     feature_key: Mapped[str] = mapped_column(String(40), primary_key=True)
     state: Mapped[str] = mapped_column(String(12), default="running")
+    cooldown_seconds: Mapped[int] = mapped_column(Integer, default=60)
     last_generated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow
     )

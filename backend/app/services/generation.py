@@ -61,10 +61,6 @@ def _normalize_key(value: str | None) -> str | None:
     return cleaned or None
 
 
-def _cooldown_seconds() -> int:
-    return max(0, int(settings.generation_cooldown_seconds))
-
-
 def _raise_generation_error(
     code: str,
     feature_key: str,
@@ -103,6 +99,7 @@ def begin_generation(
     feature_key: str,
     *,
     idempotency_key: str | None = None,
+    cooldown_seconds: int | None = None,
     now: datetime | None = None,
 ) -> GenerationLease:
     """Reserve a generation slot, or return a replay for the same key.
@@ -112,12 +109,20 @@ def begin_generation(
     """
     key = _normalize_key(idempotency_key)
     current = now or utcnow()
+    configured_cooldown = max(
+        0,
+        int(
+            cooldown_seconds
+            if cooldown_seconds is not None
+            else settings.generation_cooldown_seconds
+        ),
+    )
 
     for attempt in range(2):
         row = _locked_state(db, user_id, feature_key)
         if row is not None:
             age = max(0.0, (current - _as_utc(row.last_generated_at)).total_seconds())
-            cooldown = _cooldown_seconds()
+            cooldown = max(0, int(row.cooldown_seconds or 0))
             if row.state == SUCCEEDED:
                 if (
                     key is not None
@@ -146,6 +151,7 @@ def begin_generation(
                 )
 
             row.state = RUNNING
+            row.cooldown_seconds = configured_cooldown
             row.last_generated_at = current
             row.last_result_ref = None
             row.last_idempotency_key = key
@@ -156,6 +162,7 @@ def begin_generation(
                     user_id=user_id,
                     feature_key=feature_key,
                     state=RUNNING,
+                    cooldown_seconds=configured_cooldown,
                     last_generated_at=current,
                     last_idempotency_key=key,
                     updated_at=current,

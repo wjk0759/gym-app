@@ -84,3 +84,39 @@ def test_stale_running_generation_can_be_replaced():
     _begin(db, base)
     retry = _begin(db, base + timedelta(seconds=generation.IN_FLIGHT_TIMEOUT_SECONDS + 1))
     assert not retry.is_replay
+
+
+def test_per_feature_cooldown_is_persisted():
+    db = _session()
+    base = datetime.now(timezone.utc)
+
+    lease = generation.begin_generation(
+        db,
+        USER_ID,
+        "food_photo",
+        cooldown_seconds=5,
+        now=base,
+    )
+    generation.complete_generation(
+        db,
+        lease,
+        user_id=USER_ID,
+        result_ref="photo-1",
+        now=base + timedelta(seconds=1),
+    )
+
+    with pytest.raises(HTTPException):
+        generation.begin_generation(
+            db,
+            USER_ID,
+            "food_photo",
+            now=base + timedelta(seconds=4),
+        )
+
+    allowed = generation.begin_generation(
+        db,
+        USER_ID,
+        "food_photo",
+        now=base + timedelta(seconds=7),
+    )
+    assert not allowed.is_replay

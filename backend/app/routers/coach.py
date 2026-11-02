@@ -1,5 +1,6 @@
 import asyncio
 import json
+import uuid
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
@@ -7,7 +8,7 @@ from fastapi.responses import StreamingResponse
 from ..deps import CurrentUser, DBSession
 from ..models import ChatMessage, ChatSession, Profile, Program
 from ..schemas import ChatIn
-from ..services import access, coach_vision
+from ..services import access, coach_vision, generation
 from ..services.coach import coach_reply
 from ..services.memory import schedule_memory_extraction
 from ..services.queries import active_program
@@ -195,6 +196,7 @@ async def vision(
             db, session, question, 1, _vision_safety_response(decision)
         )
     access.require_feature(db, user_id, access.FEATURE_AI_VISION)
+    enforce_rate_limit(db, "coach_vision", user_id, 6, 60)
     _require_image_upload(file)
 
     image_bytes = await file.read()
@@ -203,13 +205,29 @@ async def vision(
     if len(image_bytes) > MAX_VISION_FILE_BYTES:
         raise HTTPException(status_code=413, detail="图片不能超过 8MB")
 
-    result = await coach_vision.review(
-        image_bytes,
-        question,
-        safety_context=decision.caution,
-        conversation_context=conversation_context,
-        db=db,
+    lease = generation.begin_generation(
+        db,
+        user_id,
+        access.FEATURE_AI_VISION,
+        cooldown_seconds=5,
+    )
+    try:
+        result = await coach_vision.review(
+            image_bytes,
+            question,
+            safety_context=decision.caution,
+            conversation_context=conversation_context,
+            db=db,
+            user_id=user_id,
+        )
+    except Exception:
+        generation.abort_generation(db, lease, user_id=user_id)
+        raise
+    generation.complete_generation(
+        db,
+        lease,
         user_id=user_id,
+        result_ref=uuid.uuid4().hex,
     )
     return _record_vision_turn(db, session, question, 1, result)
 
@@ -232,6 +250,7 @@ async def vision_batch(
             db, session, question, len(files), _vision_safety_response(decision)
         )
     access.require_feature(db, user_id, access.FEATURE_AI_VISION)
+    enforce_rate_limit(db, "coach_vision", user_id, 6, 60)
     if not files:
         raise HTTPException(status_code=400, detail="没有收到图片")
     if len(files) > MAX_VISION_FILES:
@@ -253,13 +272,29 @@ async def vision_batch(
 
     if not images:
         raise HTTPException(status_code=400, detail="图片为空")
-    result = await coach_vision.review_many(
-        images,
-        question,
-        safety_context=decision.caution,
-        conversation_context=conversation_context,
-        db=db,
+    lease = generation.begin_generation(
+        db,
+        user_id,
+        access.FEATURE_AI_VISION,
+        cooldown_seconds=5,
+    )
+    try:
+        result = await coach_vision.review_many(
+            images,
+            question,
+            safety_context=decision.caution,
+            conversation_context=conversation_context,
+            db=db,
+            user_id=user_id,
+        )
+    except Exception:
+        generation.abort_generation(db, lease, user_id=user_id)
+        raise
+    generation.complete_generation(
+        db,
+        lease,
         user_id=user_id,
+        result_ref=uuid.uuid4().hex,
     )
     return _record_vision_turn(db, session, question, len(images), result)
 

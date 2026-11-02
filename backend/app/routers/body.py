@@ -1,3 +1,4 @@
+import uuid
 from datetime import date, datetime, time, timedelta, timezone
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
@@ -6,13 +7,14 @@ from sqlalchemy import select
 from ..deps import CurrentUser, DBSession
 from ..models import BodyMetric
 from ..schemas import BodyMetricIn
-from ..services import access
+from ..services import access, generation
 from ..services.body_analysis import analyze
 from ..services.body_metrics import (
     body_metric_dict,
     delete_metric,
     upsert_metric,
 )
+from ..services.rate_limit import enforce as enforce_rate_limit
 
 router = APIRouter(prefix="/body", tags=["body"])
 
@@ -30,19 +32,37 @@ async def analyze_body(
         raise HTTPException(status_code=415, detail="仅支持 jpeg/png/webp/heic 图片")
 
     access.require_feature(db, user_id, access.FEATURE_BODY_PHOTO)
+    enforce_rate_limit(db, "body_analysis", user_id, 5, 60)
     data = await file.read()
     if not data:
         raise HTTPException(status_code=400, detail="图片为空")
     if len(data) > MAX_IMAGE_BYTES:
         raise HTTPException(status_code=413, detail="图片不能超过 8MB")
 
-    # 原图不落盘、不入库；只返回本次分析结果
-    return await analyze(
-        data,
-        file.filename or "body.jpg",
-        db=db,
-        user_id=user_id,
+    lease = generation.begin_generation(
+        db,
+        user_id,
+        access.FEATURE_BODY_PHOTO,
+        cooldown_seconds=5,
     )
+    try:
+        # 原图不落盘、不入库；只返回本次分析结果
+        result = await analyze(
+            data,
+            file.filename or "body.jpg",
+            db=db,
+            user_id=user_id,
+        )
+    except Exception:
+        generation.abort_generation(db, lease, user_id=user_id)
+        raise
+    generation.complete_generation(
+        db,
+        lease,
+        user_id=user_id,
+        result_ref=uuid.uuid4().hex,
+    )
+    return result
 
 
 @router.post("/metrics", status_code=201)
