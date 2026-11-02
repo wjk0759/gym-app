@@ -13,7 +13,7 @@ extension PlanHomeView {
         return store.sessions.filter { $0.date >= start && $0.date <= end }
     }
 
-    private var trainingDataCard: some View {
+    var trainingDataCard: some View {
         let recent = recentTrainingSessions
         let volume = recent.reduce(0) { $0 + $1.volume }
         let sets = recent.reduce(0) { $0 + $1.sets.filter(\.completed).count }
