@@ -151,7 +151,11 @@ struct WeekDietPlanView: View {
                 Button {
                     Task { await generate() }
                 } label: {
-                    Text(week == nil ? "免费生成本周计划" : "重新生成本周计划")
+                    Text(
+                        week == nil
+                            ? (store.hasProAccess ? "生成本周计划" : "免费生成本周计划")
+                            : (store.hasProAccess ? "重新生成本周计划" : "Pro 重新生成本周计划")
+                    )
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(isLoading)
@@ -188,7 +192,13 @@ struct WeekDietPlanView: View {
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
             Button("重试") {
-                Task { await load() }
+                Task {
+                    if week == nil {
+                        await generate()
+                    } else {
+                        await load()
+                    }
+                }
             }
             .buttonStyle(SecondaryButtonStyle())
         }

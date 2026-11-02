@@ -1128,12 +1128,6 @@ final class AppStore {
     ) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        if !hasProAccess,
-           let remaining = accessSnapshot?.coachRemaining,
-           remaining <= 0 {
-            requestPro(.coachAI)
-            return
-        }
         cancelActiveChatRequest()
         removeTrailingChatTimeoutNotices()
         if appendUserMessage {

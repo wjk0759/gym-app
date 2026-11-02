@@ -756,6 +756,11 @@ struct CoachChatView: View {
 
                 HStack(spacing: 8) {
                     RecommendationBadge(text: store.canUseRemoteAI ? "远程 AI 已连接" : "本地建议")
+                    if !store.hasProAccess, let remaining = store.accessSnapshot?.coachRemaining {
+                        Text("本周剩余 \(remaining)/3 条")
+                            .font(AppType.micro)
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
                     Spacer()
                     Text("疼痛 / 孕期 / 术后会先拦")
                         .font(AppType.micro)
