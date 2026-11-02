@@ -23,8 +23,8 @@ sys.path.insert(0, str(ROOT))
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from app.main import app  # noqa: E402
 from app.db import SessionLocal  # noqa: E402
+from app.main import app  # noqa: E402
 from app.models import UserEntitlement  # noqa: E402
 
 PNG = base64.b64decode(
