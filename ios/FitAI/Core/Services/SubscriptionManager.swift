@@ -41,7 +41,10 @@ final class SubscriptionManager {
     @MainActor
     func purchase(_ product: Product) async {
         do {
-            let result = try await product.purchase()
+            let options = AuthTokenStore.shared.userID
+                .flatMap(UUID.init(uuidString:))
+                .map { [Product.PurchaseOption.appAccountToken($0)] } ?? []
+            let result = try await product.purchase(options: options)
             switch result {
             case .success(let verification):
                 switch verification {

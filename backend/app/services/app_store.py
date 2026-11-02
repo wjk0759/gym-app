@@ -29,7 +29,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..config import settings
-from ..models import UserEntitlement, utcnow
+from ..models import User, UserEntitlement, utcnow
 
 APPLE_ROOT_CA_G3_SHA256 = (
     "63343abfb89a6a03ebb57e9b3f5fa7be7c4f5c756f3017b3a8c488c3653e9179"
@@ -327,6 +327,12 @@ def apply_notification(db: Session, payload: dict) -> dict:
                 == transaction.original_transaction_id,
             )
         ).scalar_one_or_none()
+        if user_id is None:
+            token = transaction.raw.get("appAccountToken")
+            if isinstance(token, str):
+                user_id = db.execute(
+                    select(User.id).where(User.id == token)
+                ).scalar_one_or_none()
         if user_id is None:
             raise StoreKitError("找不到订阅所属用户")
         record_entitlement(db, user_id, transaction)
