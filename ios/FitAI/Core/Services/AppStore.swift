@@ -116,6 +116,9 @@ final class AppStore {
     var useRemoteAI = AppConfig.useRemoteAI
     /// StoreKit 权益通过 SubscriptionManager 同步；只有 Pro 才会请求远程 DeepSeek。
     var isPro = false
+    /// Server-authoritative Pro/trial snapshot. StoreKit remains a second source.
+    var accessSnapshot: AccessSnapshot?
+    var paywallFeature: ProFeature?
     /// 仅用于 Debug 预览 DeepSeek；正式包不会暴露出开关。
     var debugForceRemoteAI = AppConfig.debugForceRemoteAI
     var healthKitEnabled = false
@@ -164,9 +167,13 @@ final class AppStore {
         )
         persist()
         syncPendingUserData()
-        generatePlan()
+        generatePlan(onboarding: true)
 
         Task { @MainActor in
+            // The onboarding plan may be generated locally. Ensure the
+            // profile exists server-side before recording its one-time trial.
+            try? await APIClient.shared.syncProfile(value)
+            try? await APIClient.shared.syncGoal(value)
             let granted = await NotificationScheduler.shared.requestAuthorization()
             self.notificationsEnabled = granted
             self.persist()
@@ -220,10 +227,19 @@ final class AppStore {
         }
     }
 
-    func generatePlan(force: Bool = true, weeklyWeekdays: [Int]? = nil) {
+    func generatePlan(
+        force: Bool = true,
+        weeklyWeekdays: [Int]? = nil,
+        onboarding: Bool = false
+    ) {
         guard profile.isOnboarded else { return }
         guard hasPlanEquipment else {
             toast = "请至少选择一种可用器械：徒手 / 哑铃 / 杠铃 / 固定器械 / 绳索"
+            return
+        }
+        guard !isGenerating else { return }
+        if !onboarding && !hasProAccess {
+            requestPro(.trainingPlan)
             return
         }
         if plan != nil && !force { return }
@@ -242,6 +258,7 @@ final class AppStore {
                     _ = try? await goalSync
                     var generated = try await APIClient.shared.generatePlan(
                         force: force,
+                        onboarding: onboarding,
                         equipmentSlugs: librarySlugs,
                         split: snapshot.split,
                         focus: focusAreas.map(\.rawValue)
@@ -250,6 +267,18 @@ final class AppStore {
                     self.archiveCurrentPlan()
                     self.plan = generated
                     self.toast = "已由 AI 生成计划"
+                    if onboarding {
+                        await self.consumeOnboardingTrialIfNeeded()
+                    }
+                    await self.refreshAccess()
+                } catch let error as APIError where error.statusCode == 403 {
+                    self.isGenerating = false
+                    if self.hasProAccess {
+                        self.toast = "计划服务暂时不可用，请稍后重试"
+                    } else {
+                        self.requestPro(.trainingPlan)
+                    }
+                    return
                 } catch {
                     var fallback = PlanGenerator.generate(
                         profile: snapshot,
@@ -262,6 +291,9 @@ final class AppStore {
                     self.archiveCurrentPlan()
                     self.plan = fallback
                     self.toast = "AI 服务不可用，已使用本地模板"
+                    if onboarding {
+                        await self.consumeOnboardingTrialIfNeeded()
+                    }
                 }
                 self.isGenerating = false
                 self.persist()
@@ -287,6 +319,42 @@ final class AppStore {
             self.persist()
             self.rescheduleNotifications()
             self.syncPendingUserData()
+            if onboarding {
+                Task { @MainActor in
+                    await self.consumeOnboardingTrialIfNeeded()
+                }
+            }
+        }
+    }
+
+    func requestPro(_ feature: ProFeature) {
+        paywallFeature = feature
+    }
+
+    @discardableResult
+    func requirePro(_ feature: ProFeature) -> Bool {
+        if hasProAccess { return true }
+        requestPro(feature)
+        return false
+    }
+
+    @MainActor
+    func refreshAccess() async {
+        guard AuthTokenStore.shared.accessToken != nil else {
+            accessSnapshot = nil
+            return
+        }
+        if let snapshot = try? await APIClient.shared.fetchAccess() {
+            accessSnapshot = snapshot
+        }
+    }
+
+    @MainActor
+    private func consumeOnboardingTrialIfNeeded() async {
+        try? await APIClient.shared.syncProfile(profile)
+        try? await APIClient.shared.syncGoal(profile)
+        if let snapshot = try? await APIClient.shared.consumeOnboardingTrial() {
+            accessSnapshot = snapshot
         }
     }
 
@@ -1060,6 +1128,12 @@ final class AppStore {
     ) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+        if !hasProAccess,
+           let remaining = accessSnapshot?.coachRemaining,
+           remaining <= 0 {
+            requestPro(.coachAI)
+            return
+        }
         cancelActiveChatRequest()
         removeTrailingChatTimeoutNotices()
         if appendUserMessage {
@@ -1138,7 +1212,11 @@ final class AppStore {
                 )
                 self.lastAgentRetryText = nil
                 self.lastAgentRequestID = nil
+                Task { await self.refreshAccess() }
             } catch is CancellationError {
+                return
+            } catch let error as APIError where error.statusCode == 429 {
+                self.requestPro(.coachAI)
                 return
             } catch {
                 guard !Task.isCancelled else { return }

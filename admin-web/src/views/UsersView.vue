@@ -256,10 +256,93 @@
                 <template #empty><el-empty description="暂无 AI 任务" :image-size="70" /></template>
               </el-table>
             </el-tab-pane>
+
+            <el-tab-pane label="会员" name="access">
+              <div v-loading="accessLoading" class="drawer-section">
+                <h4 class="section-title">Pro 权益</h4>
+                <div class="detail-grid">
+                  <div class="detail-item">
+                    <span>状态</span>
+                    <span>
+                      <el-tag :type="access?.pro ? 'success' : 'info'" effect="plain">
+                        {{ access?.pro ? 'Pro 有效' : '未开通' }}
+                      </el-tag>
+                    </span>
+                  </div>
+                  <div class="detail-item"><span>到期时间</span><span>{{ display(access?.proExpiresAt) }}</span></div>
+                  <div class="detail-item"><span>来源</span><span>{{ access?.sources?.join('、') || '—' }}</span></div>
+                  <div class="detail-item"><span>本周 AI 教练</span><span>{{ access ? `${access.coach.used}/${access.coach.weeklyLimit}` : '—' }}</span></div>
+                </div>
+                <div class="chip-row">
+                  <el-button v-if="canManageAccess" type="primary" size="small" @click="openGrant">设置 Pro 时长</el-button>
+                  <el-button v-if="canManageAccess" size="small" @click="resetTrial('training_plan')">重置训练计划体验</el-button>
+                  <el-button v-if="canManageAccess" size="small" @click="resetTrial('meal_plan')">重置饮食体验</el-button>
+                </div>
+              </div>
+
+              <div class="drawer-section">
+                <h4 class="section-title">免费体验</h4>
+                <div class="detail-grid">
+                  <div class="detail-item">
+                    <span>训练计划</span>
+                    <span>{{ trialLabel('training_plan') }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span>饮食周计划</span>
+                    <span>{{ trialLabel('meal_plan') }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="drawer-section">
+                <h4 class="section-title">权益记录</h4>
+                <el-table :data="access?.entitlements || []" size="small">
+                  <el-table-column prop="source" label="来源" width="90" />
+                  <el-table-column label="开始" width="150">
+                    <template #default="{ row }">{{ formatDateTime(row.startsAt) }}</template>
+                  </el-table-column>
+                  <el-table-column label="到期" width="150">
+                    <template #default="{ row }">{{ formatDateTime(row.expiresAt) }}</template>
+                  </el-table-column>
+                  <el-table-column label="状态" width="90">
+                    <template #default="{ row }">
+                      <StatusTag :status="row.revokedAt ? 'suspended' : 'active'" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="reason" label="原因" min-width="120" />
+                  <el-table-column label="操作" width="80">
+                    <template #default="{ row }">
+                      <el-button
+                        v-if="canManageAccess && !row.revokedAt"
+                        link
+                        type="danger"
+                        @click="revokeAccess(row.id)"
+                      >撤销</el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+            </el-tab-pane>
           </el-tabs>
         </template>
       </div>
     </el-drawer>
+
+    <el-dialog v-model="grantDialogVisible" title="设置 Pro 会员" width="420px">
+      <el-form label-width="88px">
+        <el-form-item label="时长">
+          <el-input-number v-model="grantForm.durationDays" :min="1" :max="3650" />
+          <span class="faint" style="margin-left: 8px">天</span>
+        </el-form-item>
+        <el-form-item label="操作原因">
+          <el-input v-model="grantForm.reason" type="textarea" :rows="2" maxlength="200" show-word-limit />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="grantDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="granting" @click="submitGrant">确认开通</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -273,7 +356,7 @@ import StatusTag from '@/components/StatusTag.vue'
 import { usersApi } from '@/api/users'
 import { errorMessage } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
-import type { UserDetail, UserListItem } from '@/api/types'
+import type { UserAccess, UserDetail, UserListItem } from '@/api/types'
 import {
   formatDateTime,
   formatDuration,
@@ -284,6 +367,7 @@ import {
 
 const auth = useAuthStore()
 const canWrite = auth.hasPermission('user:write')
+const canManageAccess = auth.hasPermission('user:entitlement:write')
 const rows = ref<UserListItem[]>([])
 const total = ref(0)
 const page = ref(1)
@@ -293,6 +377,14 @@ const drawerVisible = ref(false)
 const detailLoading = ref(false)
 const detail = ref<UserDetail | null>(null)
 const detailTab = ref('profile')
+const access = ref<UserAccess | null>(null)
+const accessLoading = ref(false)
+const grantDialogVisible = ref(false)
+const granting = ref(false)
+const grantForm = reactive({
+  durationDays: 30,
+  reason: '',
+})
 
 const filters = reactive({
   q: '',
@@ -346,13 +438,94 @@ async function openDetail(row: UserListItem): Promise<void> {
   drawerVisible.value = true
   detailLoading.value = true
   detailTab.value = 'profile'
+  access.value = null
   try {
     detail.value = await usersApi.detail(row.id)
+    await loadAccess(row.id)
   } catch (reason) {
     ElMessage.error(errorMessage(reason))
     drawerVisible.value = false
   } finally {
     detailLoading.value = false
+  }
+}
+
+async function loadAccess(userId: string): Promise<void> {
+  accessLoading.value = true
+  try {
+    access.value = await usersApi.access(userId)
+  } catch (reason) {
+    ElMessage.error(errorMessage(reason))
+  } finally {
+    accessLoading.value = false
+  }
+}
+
+function trialLabel(featureKey: string): string {
+  const trial = access.value?.trials.find((item) => item.featureKey === featureKey)
+  if (!trial) return '未使用'
+  return `已使用 · ${formatDateTime(trial.usedAt)}`
+}
+
+function openGrant(): void {
+  grantForm.durationDays = 30
+  grantForm.reason = ''
+  grantDialogVisible.value = true
+}
+
+async function submitGrant(): Promise<void> {
+  const userId = detail.value?.user.id
+  if (!userId) return
+  if (!grantForm.reason.trim()) {
+    ElMessage.warning('请填写操作原因')
+    return
+  }
+  granting.value = true
+  try {
+    access.value = await usersApi.grantAccess(
+      userId,
+      grantForm.durationDays,
+      grantForm.reason.trim(),
+    )
+    grantDialogVisible.value = false
+    ElMessage.success('Pro 会员已开通')
+  } catch (reason) {
+    ElMessage.error(errorMessage(reason))
+  } finally {
+    granting.value = false
+  }
+}
+
+async function revokeAccess(entitlementId: string): Promise<void> {
+  const userId = detail.value?.user.id
+  if (!userId) return
+  try {
+    const result = await ElMessageBox.prompt('请填写撤销原因', '撤销 Pro 权益', {
+      confirmButtonText: '撤销',
+      cancelButtonText: '取消',
+      inputPattern: /\S+/,
+      inputErrorMessage: '原因不能为空',
+    })
+    access.value = await usersApi.revokeAccess(userId, entitlementId, result.value)
+    ElMessage.success('权益已撤销')
+  } catch (reason) {
+    if (reason !== 'cancel' && reason !== 'close') ElMessage.error(errorMessage(reason))
+  }
+}
+
+async function resetTrial(featureKey: string): Promise<void> {
+  const userId = detail.value?.user.id
+  if (!userId) return
+  try {
+    await ElMessageBox.confirm(
+      '重置后该用户会重新获得一次免费体验。仅建议测试账号使用。',
+      '重置免费体验',
+      { confirmButtonText: '重置', cancelButtonText: '取消', type: 'warning' },
+    )
+    access.value = await usersApi.resetTrial(userId, featureKey)
+    ElMessage.success('免费体验已重置')
+  } catch (reason) {
+    if (reason !== 'cancel' && reason !== 'close') ElMessage.error(errorMessage(reason))
   }
 }
 

@@ -189,7 +189,9 @@ struct DiscoverView: View {
 
             Button {
                 Haptics.tap()
-                showBodyAnalysis = true
+                if store.requirePro(.bodyPhoto) {
+                    showBodyAnalysis = true
+                }
             } label: {
                 quickEntry(
                     title: "体型分析",
@@ -284,7 +286,9 @@ struct DiscoverView: View {
 
                 Button {
                     Haptics.tap()
-                    showVideoReview = true
+                    if store.requirePro(.videoReview) {
+                        showVideoReview = true
+                    }
                 } label: {
                     Label("选视频", systemImage: "video.fill")
                         .font(AppType.caption.weight(.semibold))

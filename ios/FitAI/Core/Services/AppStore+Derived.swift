@@ -113,8 +113,12 @@ extension AppStore {
         }
     }
 
+    var hasProAccess: Bool {
+        accessSnapshot?.isPro == true || isPro || debugForceRemoteAI
+    }
+
     var canUseRemoteAI: Bool {
-        useRemoteAI && (isPro || debugForceRemoteAI)
+        useRemoteAI && hasProAccess
     }
 
     var equipmentSlugsForPlan: [String] {

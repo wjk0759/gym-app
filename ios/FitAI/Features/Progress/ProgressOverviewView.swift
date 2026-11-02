@@ -25,6 +25,7 @@ struct ProgressOverviewView: View {
     @State private var comparePair: ProgressComparePair?
     @State private var photoAlert = ""
     @State private var showPhotoAlert = false
+    @State private var showReview = false
 
     private enum MetricChoice: String, CaseIterable, Identifiable {
         case weight
@@ -548,8 +549,10 @@ struct ProgressOverviewView: View {
     }
 
     private var reviewLink: some View {
-        NavigationLink {
-            PlanReviewView()
+        Button {
+            if store.requirePro(.advancedReview) {
+                showReview = true
+            }
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
@@ -570,6 +573,9 @@ struct ProgressOverviewView: View {
             }
         }
         .buttonStyle(CardPressStyle(scale: 0.985))
+        .navigationDestination(isPresented: $showReview) {
+            PlanReviewView()
+        }
     }
 
     private var disclaimer: some View {

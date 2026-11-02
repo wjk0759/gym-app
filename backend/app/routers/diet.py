@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from ..deps import CurrentUser, DBSession
 from ..models import FoodLog, Goal, Profile
 from ..schemas import DietPlanIn, DietWeekIn, FoodLogIn
+from ..services import access
 from ..services.diet import (
     build_ai_diet_week,
     build_ai_plan,
@@ -219,6 +220,7 @@ async def plan_week(payload: DietWeekIn, user_id: CurrentUser, db: DBSession):
     if profile is None:
         raise HTTPException(status_code=404, detail="请先完成个人档案")
 
+    access_mode = access.require_meal_plan_generation(db, user_id)
     week_start = week_start_for(payload.week_start or date.today())
     program = active_program(db, user_id)
     result = await build_ai_diet_week(
@@ -263,6 +265,15 @@ async def plan_week(payload: DietWeekIn, user_id: CurrentUser, db: DBSession):
             )
         db.commit()
 
+    if access_mode == "trial":
+        access.consume_trial(
+            db,
+            user_id,
+            access.FEATURE_MEAL_PLAN,
+            source="first_generation",
+            result_ref=week_start.isoformat(),
+        )
+    result["access"] = access.access_snapshot(db, user_id)
     return result
 
 

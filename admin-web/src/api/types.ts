@@ -193,6 +193,42 @@ export interface UserDetail {
   aiJobs: UserAiJobBrief[]
 }
 
+export interface UserEntitlementItem {
+  id: string
+  planCode: string
+  source: string
+  startsAt: string | null
+  expiresAt: string | null
+  revokedAt: string | null
+  grantedBy: string | null
+  reason: string | null
+  createdAt: string | null
+}
+
+export interface UserTrialItem {
+  featureKey: string
+  source: string
+  usedAt: string | null
+  validUntil: string | null
+}
+
+export interface UserCoachUsage {
+  weeklyLimit: number
+  used: number
+  remaining: number
+  periodStart: string
+  resetAt: string
+}
+
+export interface UserAccess {
+  pro: boolean
+  proExpiresAt: string | null
+  sources: string[]
+  entitlements: UserEntitlementItem[]
+  trials: UserTrialItem[]
+  coach: UserCoachUsage
+}
+
 export interface PlanListItem {
   id: string
   userId: string

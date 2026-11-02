@@ -193,7 +193,9 @@ struct CoachChatView: View {
             }
             .onChange(of: store.coachBodyAnalysisRequested) { _, requested in
                 if requested {
-                    showBodyAnalysis = true
+                    if store.requirePro(.bodyPhoto) {
+                        showBodyAnalysis = true
+                    }
                     store.coachBodyAnalysisRequested = false
                 }
             }
@@ -935,7 +937,9 @@ struct CoachChatView: View {
                     showCamera = true
                 }
                 CoachQuickActionButton(title: "视频点评", icon: "video.fill") {
-                    showVideoReview = true
+                    if store.requirePro(.videoReview) {
+                        showVideoReview = true
+                    }
                 }
                 CoachQuickActionButton(title: "器械识别", icon: "dumbbell") {
                     showEquipmentScan = true

@@ -4,6 +4,7 @@ import SwiftUI
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(SubscriptionManager.self) private var manager
+    @Environment(AppStore.self) private var store
 
     @State private var selectedProductID: String?
     @State private var legalDocument: LegalDocumentKind?
@@ -80,7 +81,7 @@ struct PaywallView: View {
 
     @ViewBuilder
     private var purchaseBar: some View {
-        if !manager.isPro, let product = effectiveProduct {
+        if !store.hasProAccess, let product = effectiveProduct {
             VStack(spacing: 8) {
                 Button {
                     Task { await manager.purchase(product) }
@@ -177,11 +178,16 @@ struct PaywallView: View {
 
     @ViewBuilder
     private var productsSection: some View {
-        if manager.isPro {
+        if store.hasProAccess {
             VStack(spacing: 10) {
-                Label("已订阅练途 Pro", systemImage: "checkmark.seal.fill")
+                Label("已开通练途 Pro", systemImage: "checkmark.seal.fill")
                     .font(AppType.headline)
                     .foregroundStyle(Theme.cobalt)
+                if let expires = store.accessSnapshot?.proExpiresAt {
+                    Text("有效期至 \(expires.formatted(date: .abbreviated, time: .omitted))")
+                        .font(AppType.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
             }
             .frame(maxWidth: .infinity)
             .card()

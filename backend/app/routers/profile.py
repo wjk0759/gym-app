@@ -23,6 +23,7 @@ from ..models import (
     utcnow,
 )
 from ..schemas import GoalIn, ProfileIn
+from ..services import access
 from ..services.locking import lock_user
 from ..services.queries import active_goal
 from ..services.serializers import (
@@ -48,6 +49,26 @@ def get_me(user_id: CurrentUser, db: DBSession):
         "profile": profile_to_dict(profile) if profile else None,
         "goal": goal_to_dict(goal),
     }
+
+
+@router.get("/access")
+def get_access(user_id: CurrentUser, db: DBSession):
+    return access.access_snapshot(db, user_id)
+
+
+@router.post("/onboarding-plan/consume")
+def consume_onboarding_plan(user_id: CurrentUser, db: DBSession):
+    profile = db.get(Profile, user_id)
+    if profile is None or profile.onboarded_at is None:
+        raise HTTPException(status_code=400, detail="请先完成引导")
+    if not access.has_pro(db, user_id):
+        access.consume_trial(
+            db,
+            user_id,
+            access.FEATURE_TRAINING_PLAN,
+            source="onboarding",
+        )
+    return access.access_snapshot(db, user_id)
 
 
 @router.put("/profile")

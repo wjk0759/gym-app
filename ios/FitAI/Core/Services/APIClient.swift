@@ -22,8 +22,19 @@ struct APIClient {
 
     // MARK: - 档案
 
-    func syncProfile(_ profile: UserProfile) async throws {
-        var payload: [String: Any] = [
+    func fetchAccess() async throws -> AccessSnapshot {
+        try await send(path: "me/access", method: "GET", body: nil)
+    }
+
+    func consumeOnboardingTrial() async throws -> AccessSnapshot {
+        try await send(
+            path: "me/onboarding-plan/consume",
+            method: "POST",
+            body: Data("{}".utf8)
+        )
+    }
+
+    func syncProfile(_ profile: UserProfile) async throws {        var payload: [String: Any] = [
             "nickname": profile.nickname,
             "sex": profile.sex.rawValue,
             "birth_date": birthDateString(age: profile.age),
@@ -160,12 +171,14 @@ struct APIClient {
 
     func generatePlan(
         force: Bool = true,
+        onboarding: Bool = false,
         equipmentSlugs: [String] = [],
         split: SplitType,
         focus: [String] = []
     ) async throws -> TrainingPlan {
         let body = try JSONSerialization.data(withJSONObject: [
             "force": force,
+            "onboarding": onboarding,
             "equipment_slugs": equipmentSlugs,
             "split": split.rawValue,
             "focus": focus

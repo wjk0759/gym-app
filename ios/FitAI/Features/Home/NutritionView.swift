@@ -230,7 +230,9 @@ struct NutritionView: View {
                 symbol: "camera.viewfinder",
                 accent: Theme.lime
             ) {
-                showFoodPhoto = true
+                if store.requirePro(.foodPhoto) {
+                    showFoodPhoto = true
+                }
             }
             toolTile(
                 title: "本周计划",

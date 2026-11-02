@@ -384,7 +384,9 @@ struct ProfileView: View {
 
             Button("拍照分析体型") {
                 Haptics.tap()
-                showBodyAnalysis = true
+                if store.requirePro(.bodyPhoto) {
+                    showBodyAnalysis = true
+                }
             }
             .buttonStyle(SecondaryButtonStyle())
         }

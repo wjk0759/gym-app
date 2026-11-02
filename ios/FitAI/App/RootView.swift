@@ -16,6 +16,7 @@ struct RootView: View {
     private let phaseTimer = Timer.publish(every: 300, on: .main, in: .common).autoconnect()
 
     var body: some View {
+        @Bindable var store = store
         let atmosphere = WeatherAtmosphere.make(snapshot: weather.snapshot, date: phaseNow)
 
         ZStack {
@@ -55,6 +56,9 @@ struct RootView: View {
         .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: auth.isAuthenticated)
         .animation(Motion.resolved(Motion.gentle, reduceMotion: reduceMotion), value: store.profile.isOnboarded)
         .animation(Motion.resolved(.easeInOut(duration: 0.9), reduceMotion: reduceMotion), value: atmosphere.isPrecipitation)
+        .sheet(item: $store.paywallFeature) { feature in
+            ProPaywallSheet(feature: feature)
+        }
         .sensoryFeedback(.success, trigger: auth.isAuthenticated) { _, isAuthenticated in
             isAuthenticated
         }
@@ -97,6 +101,7 @@ struct RootView: View {
                     store.refreshWeeklyReview()
                     store.syncPendingUserData()
                     activateWeatherIfNeeded()
+                    Task { await store.refreshAccess() }
                 }
             }
         }
@@ -182,6 +187,7 @@ struct RootView: View {
         }
         syncedUserID = auth.userID
         enableRemoteMode()
+        Task { await store.refreshAccess() }
         store.syncPendingWorkouts()
         store.syncRemoteWorkouts()
         store.refreshWeeklyReview()

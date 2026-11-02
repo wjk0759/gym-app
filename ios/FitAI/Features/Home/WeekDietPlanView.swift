@@ -124,6 +124,11 @@ struct WeekDietPlanView: View {
             .background(color.opacity(0.10), in: Capsule())
     }
 
+    private var mealPlanAvailable: Bool {
+        store.hasProAccess
+            || (store.accessSnapshot?.mealPlanTrialAvailable ?? true)
+    }
+
     private var strategyCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("饮食策略")
@@ -142,13 +147,19 @@ struct WeekDietPlanView: View {
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Button {
-                Task { await generate() }
-            } label: {
-                Text(week == nil ? "生成本周计划" : "按当前策略重新生成")
+            if mealPlanAvailable {
+                Button {
+                    Task { await generate() }
+                } label: {
+                    Text(week == nil ? "免费生成本周计划" : "重新生成本周计划")
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(isLoading)
+            } else {
+                ProUpsellCard(feature: .mealPlan) {
+                    store.requestPro(.mealPlan)
+                }
             }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(isLoading)
         }
         .card()
     }
@@ -281,10 +292,7 @@ struct WeekDietPlanView: View {
 
     @MainActor
     private func load() async {
-        guard store.canUseRemoteAI else {
-            errorMessage = "周计划需要连接后端；当前为本地模式。"
-            return
-        }
+        await store.refreshAccess()
         do {
             let saved = try await APIClient.shared.fetchSavedDietWeek(weekStart: nil)
             if !saved.days.isEmpty {
@@ -292,19 +300,19 @@ struct WeekDietPlanView: View {
                 if requestedStrategy == nil, let id = saved.strategy?.id {
                     strategy = id
                 }
-                return
             }
         } catch {
             errorMessage = "读取本周计划失败，请重试。"
-            return
         }
-        // 只有完全没有保存的计划时才自动生成一次；已有计划必须由用户点“重新生成”。
-        await generate()
     }
 
     @MainActor
     private func generate() async {
         guard !isLoading else { return }
+        guard mealPlanAvailable else {
+            store.requestPro(.mealPlan)
+            return
+        }
         isLoading = true
         errorMessage = ""
         defer { isLoading = false }
@@ -313,6 +321,9 @@ struct WeekDietPlanView: View {
                 strategy: strategy,
                 weekStart: nil
             )
+            await store.refreshAccess()
+        } catch let error as APIError where error.statusCode == 403 {
+            store.requestPro(.mealPlan)
         } catch {
             errorMessage = "生成失败，请稍后重试。"
         }

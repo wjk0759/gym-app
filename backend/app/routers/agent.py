@@ -8,10 +8,12 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from ..deps import CurrentUser, DBSession
-from ..models import AgentActionEvent, AgentPlanProposal, AgentRun, ChatMessage, ChatSession
+from ..models import AgentActionEvent, AgentPlanProposal, AgentRun, ChatMessage, ChatSession, Profile
 from ..schemas import AgentActionResultIn, AgentChatIn
+from ..services import access
 from ..services.agent import apply_proposal, generate_weekly_review, run_agent
 from ..services.memory import list_memories
+from ..services.safety import assess_safety
 from ..services.serializers import serialize_program
 
 router = APIRouter(prefix="/agent", tags=["agent"])
@@ -82,6 +84,30 @@ async def _agent_chat_inner(
         db.commit()
 
     history = list(session.messages)
+    profile = db.get(Profile, user_id)
+    safety = assess_safety(profile, payload.message) if profile else None
+    reserved = False
+    coach_period = None
+    if safety is None or safety.reply is None:
+        used, coach_period, reset_at = access.coach_usage(db, user_id)
+        if not access.has_pro(db, user_id) and used >= access.COACH_WEEKLY_LIMIT:
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "code": "COACH_QUOTA_EXHAUSTED",
+                    "message": "本周免费 AI 教练额度已用完",
+                    "reset_at": reset_at.isoformat(),
+                },
+            )
+        reserved = True
+        if not access.reserve_coach_message(db, user_id):
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "code": "COACH_QUOTA_EXHAUSTED",
+                    "message": "本周免费 AI 教练额度已用完",
+                },
+            )
     try:
         result = await run_agent(
             db,
@@ -93,6 +119,8 @@ async def _agent_chat_inner(
             app_context=payload.app_context,
         )
     except Exception as exc:  # safety net: never turn an Agent crash into a 500
+        if reserved and coach_period is not None:
+            access.release_coach_message(db, user_id, period=coach_period)
         raise HTTPException(
             status_code=503,
             detail="教练 Agent 暂时不可用，请重试",
