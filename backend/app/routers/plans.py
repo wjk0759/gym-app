@@ -11,6 +11,7 @@ from ..services.locking import lock_user
 from ..services.plan_generator import generate_plan
 from ..services.plan_validator import PlanValidationError, injury_tags
 from ..services.queries import active_program, owned_program, owned_program_day
+from ..services.rate_limit import enforce as enforce_rate_limit
 from ..services.serializers import (
     clone_program,
     goal_to_dict,
@@ -41,6 +42,7 @@ async def generate(
     if profile is None or profile.height_cm is None or profile.weight_kg is None:
         raise HTTPException(status_code=400, detail="请先完成身高、体重等基础档案")
 
+    enforce_rate_limit("plan_generate", user_id, 3, 60)
     active = _active_program(db, user_id)
     if active and not payload.force:
         return serialize_program(active)

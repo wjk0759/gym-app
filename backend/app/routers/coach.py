@@ -11,6 +11,7 @@ from ..services import access, coach_vision
 from ..services.coach import coach_reply
 from ..services.memory import schedule_memory_extraction
 from ..services.queries import active_program
+from ..services.rate_limit import enforce as enforce_rate_limit
 from ..services.safety import assess_safety
 
 router = APIRouter(prefix="/coach", tags=["coach"])
@@ -21,6 +22,7 @@ def _active_program(db: DBSession, user_id: str) -> Program | None:
 
 
 def _reserve_coach_turn(db: DBSession, profile: Profile, message: str):
+    enforce_rate_limit("coach_chat", profile.user_id, 10, 60)
     decision = assess_safety(profile, message)
     if decision.reply is not None:
         return None

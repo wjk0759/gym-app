@@ -13,6 +13,7 @@ from ..schemas import AgentActionResultIn, AgentChatIn
 from ..services import access
 from ..services.agent import apply_proposal, generate_weekly_review, run_agent
 from ..services.memory import list_memories
+from ..services.rate_limit import enforce as enforce_rate_limit
 from ..services.safety import assess_safety
 from ..services.serializers import serialize_program
 
@@ -70,6 +71,7 @@ async def _agent_chat_inner(
     if cached is not None:
         return cached
 
+    enforce_rate_limit("agent_chat", user_id, 10, 60)
     session: ChatSession | None = None
     if payload.session_id:
         session = db.get(ChatSession, payload.session_id)

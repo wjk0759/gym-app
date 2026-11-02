@@ -22,6 +22,7 @@ from ..services.meal_plans import (
     week_summary,
 )
 from ..services.queries import active_program
+from ..services.rate_limit import enforce as enforce_rate_limit
 
 router = APIRouter(prefix="/diet", tags=["diet"])
 
@@ -220,6 +221,7 @@ async def plan_week(payload: DietWeekIn, user_id: CurrentUser, db: DBSession):
     if profile is None:
         raise HTTPException(status_code=404, detail="请先完成个人档案")
 
+    enforce_rate_limit("meal_plan_generate", user_id, 3, 60)
     access_mode = access.require_meal_plan_generation(db, user_id)
     week_start = week_start_for(payload.week_start or date.today())
     program = active_program(db, user_id)
