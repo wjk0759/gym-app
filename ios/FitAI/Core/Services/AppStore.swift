@@ -1836,6 +1836,8 @@ final class AppStore {
 
     private func resetInMemory() {
         cancelActiveChatRequest()
+        access.clear()
+        access.paywall.dismiss()
         draftPersistWorkItem?.cancel()
         draftPersistWorkItem = nil
         profile = UserProfile()
