@@ -87,7 +87,15 @@ struct ProgressOverviewView: View {
                 trainingCard
                 nutritionCard
                 goalCard(store.profile.goalType)
-                reviewLink
+                if store.hasProAccess {
+                    reviewLink
+                } else {
+                    ProLockedOverlay(feature: .advancedReview) {
+                        store.requestPro(.advancedReview)
+                    }
+                    .frame(height: 190)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
                 disclaimer
             }
             .padding(.horizontal, 20)
