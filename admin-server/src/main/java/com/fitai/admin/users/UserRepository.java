@@ -38,6 +38,7 @@ public class UserRepository {
     public PageResponse<UserDtos.UserListItem> list(
             String query,
             String status,
+            Boolean test,
             boolean includeDeleted,
             int page,
             int size
@@ -46,8 +47,8 @@ public class UserRepository {
         int safeSize = SqlSupport.size(size);
         boolean hasQuery = query != null && !query.isBlank();
         String from = SqlSupport.userSearchFrom("u", hasQuery);
-        String where = where(status, includeDeleted);
-        Map<String, Object> params = params(query, status);
+        String where = where(status, test, includeDeleted);
+        Map<String, Object> params = params(query, status, test);
         long total = jdbc.sql("SELECT COUNT(*) FROM " + from
                         + " LEFT JOIN profiles p ON p.user_id = u.id " + where)
                 .params(params)
@@ -237,7 +238,7 @@ public class UserRepository {
         return jdbc.sql("DELETE FROM users WHERE id = :id").param("id", id).update() > 0;
     }
 
-    private String where(String status, boolean includeDeleted) {
+    private String where(String status, Boolean test, boolean includeDeleted) {
         List<String> clauses = new ArrayList<>();
         if (!includeDeleted) {
             clauses.add("u.deleted_at IS NULL");
@@ -245,16 +246,22 @@ public class UserRepository {
         if (status != null && !status.isBlank()) {
             clauses.add("u.status = :status");
         }
+        if (test != null) {
+            clauses.add("u.is_test = :test");
+        }
         return clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
     }
 
-    private Map<String, Object> params(String query, String status) {
+    private Map<String, Object> params(String query, String status, Boolean test) {
         Map<String, Object> params = new HashMap<>();
         if (query != null && !query.isBlank()) {
             SqlSupport.putSearchParams(params, query);
         }
         if (status != null && !status.isBlank()) {
             params.put("status", status);
+        }
+        if (test != null) {
+            params.put("test", test ? 1 : 0);
         }
         return params;
     }

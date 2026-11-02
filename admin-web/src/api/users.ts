@@ -9,6 +9,7 @@ import type {
 export interface UserQuery {
   q?: string
   status?: string
+  test?: boolean
   includeDeleted?: boolean
   page?: number
   size?: number

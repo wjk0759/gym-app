@@ -22,6 +22,10 @@
           <el-option label="已停用" value="suspended" />
           <el-option label="已删除" value="deleted" />
         </el-select>
+        <el-select v-model="filters.test" clearable placeholder="账号类型" @change="applyFilters">
+          <el-option label="测试账号" :value="true" />
+          <el-option label="普通账号" :value="false" />
+        </el-select>
         <el-checkbox v-model="filters.includeDeleted" @change="applyFilters">包含已删除</el-checkbox>
         <el-button type="primary" @click="applyFilters">查询</el-button>
         <el-button text @click="resetFilters">重置</el-button>
@@ -394,6 +398,7 @@ const grantForm = reactive({
 const filters = reactive({
   q: '',
   status: '',
+  test: '' as boolean | '',
   includeDeleted: false,
 })
 
@@ -403,6 +408,7 @@ async function load(): Promise<void> {
     const result = await usersApi.list({
       q: filters.q.trim() || undefined,
       status: filters.status || undefined,
+      test: filters.test === '' ? undefined : filters.test,
       includeDeleted: filters.includeDeleted || undefined,
       page: page.value,
       size: size.value,
@@ -424,6 +430,7 @@ function applyFilters(): void {
 function resetFilters(): void {
   filters.q = ''
   filters.status = ''
+  filters.test = ''
   filters.includeDeleted = false
   applyFilters()
 }

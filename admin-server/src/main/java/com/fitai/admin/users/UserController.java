@@ -36,11 +36,12 @@ public class UserController {
     public PageResponse<UserDtos.UserListItem> list(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) Boolean test,
             @RequestParam(defaultValue = "false") boolean includeDeleted,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return repository.list(q, status, includeDeleted, page, size);
+        return repository.list(q, status, test, includeDeleted, page, size);
     }
 
     @GetMapping("/{id}")
