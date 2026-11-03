@@ -42,6 +42,62 @@ final class BodyFigureAssetTests: XCTestCase {
         }
     }
 
+    func testCombinedFiguresShareTheCropCanvas() {
+        for sex in [Sex.female, Sex.male] {
+            for type in BodyType.options(for: sex) {
+                for option in BodyFatOption.options(for: sex) {
+                    let name = BodyFigureAsset.comboName(
+                        type: type,
+                        sex: sex,
+                        fatOptionID: option.id
+                    )
+                    guard let name, let image = UIImage(named: name)?.cgImage else {
+                        XCTFail("\(sex) \(type) \(option.id) is missing a figure")
+                        continue
+                    }
+                    XCTAssertEqual(image.width, 400, "\(name) width changed")
+                    XCTAssertEqual(image.height, 667, "\(name) height changed")
+                }
+            }
+        }
+    }
+
+    func testTorsoCropStaysInsideTheCanvas() {
+        let rect = BodyFigureCrop.torso.normalizedRect
+        XCTAssertGreaterThan(rect.width, 0)
+        XCTAssertGreaterThan(rect.height, 0)
+        XCTAssertGreaterThanOrEqual(rect.minX, 0)
+        XCTAssertGreaterThanOrEqual(rect.minY, 0)
+        XCTAssertLessThanOrEqual(rect.maxX, 1)
+        XCTAssertLessThanOrEqual(rect.maxY, 1)
+        XCTAssertGreaterThan(
+            rect.width * 400 / (rect.height * 667),
+            0.75,
+            "The torso crop should not collapse into a narrow sliver"
+        )
+    }
+
+    func testTorsoCropKeepsTheBodyOpaque() {
+        for name in [
+            "BodyFigureMaleInvertedTriangleFat16To20",
+            "BodyFigureFemaleHourglassFat19To22"
+        ] {
+            guard let image = UIImage(named: name),
+                  let map = alphaChannel(of: image) else {
+                XCTFail("\(name) is missing or could not be decoded")
+                continue
+            }
+            let rect = BodyFigureCrop.torso.normalizedRect
+            let x = Int(Double(map.width) * Double(rect.midX))
+            let y = Int(Double(map.height) * Double(rect.midY))
+            XCTAssertGreaterThan(
+                map.alpha[y * map.width + x],
+                200,
+                "\(name) torso crop landed on a transparent pixel"
+            )
+        }
+    }
+
     func testGenderAssetsExist() {
         for name in [
             "GenderMale",

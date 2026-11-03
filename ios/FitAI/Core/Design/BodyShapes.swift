@@ -93,25 +93,77 @@ enum BodyFigureAsset {
     }
 }
 
+/// Selects how much of the shared 400×667 figure canvas is shown.
+enum BodyFigureCrop {
+    case fullBody
+    case torso
+
+    /// Normalized rect inside the shared figure canvas. Kept in sync with the
+    /// asset pipeline: every combo figure is 400×667 with the same pose.
+    var normalizedRect: CGRect {
+        switch self {
+        case .fullBody:
+            return CGRect(x: 0, y: 0, width: 1, height: 1)
+        case .torso:
+            return CGRect(x: 0.215, y: 0.142, width: 0.570, height: 0.398)
+        }
+    }
+}
+
 /// Renders the 3D body figure for a type and, when available, a body-fat band.
 /// Falls back to a neutral SF Symbol if an asset is ever removed.
 struct BodyFigure: View {
     let type: BodyType
     var sex: Sex = .male
     var fatOptionID: String? = nil
+    var crop: BodyFigureCrop = .fullBody
 
     var body: some View {
         if let name = BodyFigureAsset.comboName(type: type, sex: sex, fatOptionID: fatOptionID),
            UIImage(named: name) != nil {
-            Image(name)
-                .resizable()
-                .scaledToFit()
-                .accessibilityHidden(true)
+            switch crop {
+            case .fullBody:
+                Image(name)
+                    .resizable()
+                    .scaledToFit()
+                    .accessibilityHidden(true)
+            case .torso:
+                BodyFigureTorso(name: name)
+                    .accessibilityHidden(true)
+            }
         } else {
             Image(systemName: "figure.stand")
                 .font(.system(size: 54, weight: .light))
                 .foregroundStyle(Theme.tertiaryText)
         }
+    }
+}
+
+/// Crops the shared 400×667 canvas to the shoulders-to-hips torso.
+private struct BodyFigureTorso: View {
+    let name: String
+
+    var body: some View {
+        let rect = BodyFigureCrop.torso.normalizedRect
+        Color.clear
+            .aspectRatio(
+                rect.width * 400 / (rect.height * 667),
+                contentMode: .fit
+            )
+            .overlay {
+                GeometryReader { geo in
+                    let renderedWidth = geo.size.width / rect.width
+                    let renderedHeight = renderedWidth * 667 / 400
+                    Image(name)
+                        .resizable()
+                        .frame(width: renderedWidth, height: renderedHeight)
+                        .offset(
+                            x: -rect.minX * renderedWidth,
+                            y: -rect.minY * renderedHeight
+                        )
+                }
+            }
+            .clipped()
     }
 }
 

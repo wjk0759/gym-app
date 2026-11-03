@@ -55,10 +55,14 @@ struct BodyFatCard: View {
             action()
         } label: {
             VStack(spacing: 8) {
-                BodyFigure(type: type, sex: sex, fatOptionID: option.id)
-                    .frame(height: 170)
-                    .padding(.horizontal, 6)
-                    .shadow(color: Theme.shadow, radius: 8, y: 4)
+                BodyFigure(
+                    type: type,
+                    sex: sex,
+                    fatOptionID: option.id,
+                    crop: .torso
+                )
+                .frame(height: 170)
+                .padding(.horizontal, 6)
 
                 Text("体脂率 \(option.label)")
                     .font(AppType.caption.weight(.semibold))
