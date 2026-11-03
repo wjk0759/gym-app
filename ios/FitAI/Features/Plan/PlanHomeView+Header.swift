@@ -34,7 +34,9 @@ extension PlanHomeView {
                 }
                 if store.plan != nil {
                     Button(role: .destructive) {
-                        showRegenerate = true
+                        if store.requirePro(.trainingPlan) {
+                            showRegenerate = true
+                        }
                     } label: {
                         Label("重新生成计划", systemImage: "arrow.clockwise")
                     }
