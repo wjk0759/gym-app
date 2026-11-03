@@ -102,7 +102,9 @@ extension HomeV2View {
                     .foregroundStyle(Theme.ink)
                 Spacer()
                 Button("刷新") {
-                    store.refreshWeeklyReview(force: true)
+                    if store.requirePro(.advancedReview) {
+                        store.refreshWeeklyReview(force: true)
+                    }
                 }
                 .font(AppType.micro)
                 .foregroundStyle(Theme.cobalt)
