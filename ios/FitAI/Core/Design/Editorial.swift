@@ -3,26 +3,25 @@ import UIKit
 
 // MARK: - Coach identity
 
-/// A small, ownable coach mark. No bitmap asset, no mascot, no gradient gloss:
-/// an ink disc, a lime ring and a single letter. It becomes the visual anchor
-/// for onboarding, the first coach message and the Today hero.
+/// The brand mark used across onboarding, the coach header and Today.
+/// The supplied logo already includes its dark tile; clip it to an iOS-style
+/// rounded square and keep a hairline edge so it stays defined in dark mode.
 struct CoachMark: View {
     var size: CGFloat = 44
-    var letter: String = "L"
 
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(Theme.primary)
-            Circle()
-                .strokeBorder(Theme.inkSolid, lineWidth: max(1.5, size * 0.055))
-            Text(letter)
-                .font(.system(size: size * 0.38, weight: .black, design: .default))
-                .foregroundStyle(Theme.onPrimary)
-                .offset(y: -0.5)
-        }
-        .frame(width: size, height: size)
-        .accessibilityHidden(true)
+        let cornerRadius = size * 0.235
+        Image("BrandLogo")
+            .resizable()
+            .interpolation(.high)
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(Theme.ink.opacity(0.12), lineWidth: 1)
+            }
+            .accessibilityHidden(true)
     }
 }
 
