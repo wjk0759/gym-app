@@ -23,6 +23,7 @@ struct PlanAdjustmentProposal: Identifiable, Equatable {
 
 extension AppStore {
     func requestPlanAdjustment() {
+        guard requirePro(.trainingPlan) else { return }
         selectedTab = 2
         if canUseRemoteAI {
             planAdjustmentRequested = false
@@ -158,6 +159,7 @@ extension AppStore {
     }
 
     func applyPlanAdjustment() {
+        guard requirePro(.trainingPlan) else { return }
         guard let proposal = planAdjustmentProposal else { return }
         if proposal.regeneratePlan {
             var updated = profile

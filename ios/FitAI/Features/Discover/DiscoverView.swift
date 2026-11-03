@@ -272,7 +272,9 @@ struct DiscoverView: View {
             HStack(spacing: 8) {
                 Button {
                     Haptics.tap()
-                    showActionCamera = true
+                    if store.requirePro(.coachAI) {
+                        showActionCamera = true
+                    }
                 } label: {
                     Label("拍一张", systemImage: "camera.fill")
                         .font(AppType.caption.weight(.semibold))
