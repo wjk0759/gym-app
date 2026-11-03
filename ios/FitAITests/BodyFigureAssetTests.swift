@@ -56,6 +56,55 @@ final class BodyFigureAssetTests: XCTestCase {
         }
     }
 
+    func testGenderAssetsHaveTransparentBackground() {
+        // Arm/torso gaps stay transparent instead of showing the source white.
+        let fullFigures: [String: (x: Double, y: Double)] = [
+            "GenderMale": (0.25, 0.633),
+            "GenderFemale": (0.69, 0.633)
+        ]
+
+        for name in [
+            "GenderMale",
+            "GenderFemale",
+            "GenderMalePortrait",
+            "GenderFemalePortrait"
+        ] {
+            guard let image = UIImage(named: name),
+                  let map = alphaChannel(of: image) else {
+                XCTFail("\(name) is missing or could not be decoded")
+                continue
+            }
+
+            let corners = [
+                (2, 2),
+                (map.width - 3, 2),
+                (2, map.height - 3),
+                (map.width - 3, map.height - 3)
+            ]
+            for (x, y) in corners {
+                XCTAssertEqual(
+                    map.alpha[y * map.width + x],
+                    0,
+                    "\(name) has an opaque corner at \(x),\(y)"
+                )
+            }
+
+            guard let gap = fullFigures[name] else { continue }
+            let gapX = Int(Double(map.width) * gap.x)
+            let gapY = Int(Double(map.height) * gap.y)
+            XCTAssertEqual(
+                map.alpha[gapY * map.width + gapX],
+                0,
+                "\(name) still has an opaque background in the arm gap"
+            )
+            XCTAssertGreaterThan(
+                map.alpha[gapY * map.width + map.width / 2],
+                200,
+                "\(name) lost the torso while removing the background"
+            )
+        }
+    }
+
     func testCombinedAssetNameUsesTypeAndFatTokens() {
         XCTAssertEqual(
             BodyFigureAsset.comboName(
@@ -97,5 +146,46 @@ final class BodyFigureAssetTests: XCTestCase {
             BodyFocusArea.displayOrder.count,
             BodyFocusArea.allCases.count
         )
+    }
+
+    /// Renders the image into an RGBA buffer so tests can inspect alpha values.
+    private func alphaChannel(
+        of image: UIImage
+    ) -> (width: Int, height: Int, alpha: [UInt8])? {
+        guard let cgImage = image.cgImage else { return nil }
+
+        let width = cgImage.width
+        let height = cgImage.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        var rendered = false
+
+        pixels.withUnsafeMutableBytes { buffer in
+            guard let context = CGContext(
+                data: buffer.baseAddress,
+                width: width,
+                height: height,
+                bitsPerComponent: 8,
+                bytesPerRow: width * 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ) else { return }
+
+            // Flip so row 0 is the top of the image, matching asset coordinates.
+            context.translateBy(x: 0, y: CGFloat(height))
+            context.scaleBy(x: 1, y: -1)
+            context.draw(
+                cgImage,
+                in: CGRect(x: 0, y: 0, width: width, height: height)
+            )
+            rendered = true
+        }
+
+        guard rendered else { return nil }
+
+        var alpha = [UInt8](repeating: 0, count: width * height)
+        for index in 0..<(width * height) {
+            alpha[index] = pixels[index * 4 + 3]
+        }
+        return (width, height, alpha)
     }
 }
