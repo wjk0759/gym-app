@@ -6,12 +6,52 @@
 
 ---
 
+## 0. Agent 同步频道
+
+> Windows / macOS 两个 agent 的唯一同步入口。每次完成任务后，**先更新这里，再结束回复**。
+> 最新在上。写清楚：日期 / 端 / 提交 / 做了什么 / 验证结果 / 对方需要做什么 / 禁止恢复什么。
+> macOS 拉取后在本节顶部新增一条 `### 日期 · macOS`，写 build/test 结果和失败点。
+
+### 最新状态
+
+- `develop` 代码 HEAD：`7324577`；本文件的最新同步提交见 `git log -1`
+- Windows 已完成：免费教练额度、54 张体型/体脂图、性别页头像 + 大人台、训练重点卡片网格
+- macOS 最近完成：品牌改名「叫练」；历史 iOS 构建/SwiftLint/29 个单测通过
+- 最新后端验证：**174 passed**，Ruff 通过
+- Mac 待办：`git pull` → `cd ios && xcodegen generate` → build/test → 浅色/深色真机检查
+- 仍 BLOCKED：App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 沙盒、真机签名、预发/生产 Flyway
+
+### 2026-11-04 · Windows / OpenCode
+
+- 提交：`a313cf7`（文档）、`7324577`（训练重点）、`f78cf1e`（性别页）、
+  `2ce8ae1`（体型/体脂图）、`4fcf8c4`（免费教练额度）
+- 做了什么：
+  - 免费教练文本改走 `/agent/chat`；额度用尽不再本地回复，聊天页显示内联 Pro 卡
+  - 接入 54 张体型/体脂组合图；onboarding 改为先体型后体脂；报告显示组合图
+  - 性别页改为头像双卡 + 自适应大人台
+  - 训练重点改为器械页同款卡片网格；「均衡练全身」为互斥卡；取消最多 2 个限制
+  - 计划生成不再截断前 2 个重点；全选 7 个按均衡处理
+  - 删除 `BodyFocusMap`、`BodySilhouette`、`BodyType.shoulder/waist/hip` 等旧人体图代码
+- 验证：backend **174 passed** + Ruff 通过；Windows 只做 Swift 语法解析，**没有跑 iOS 构建**
+- Mac 需要做：`xcodegen generate`；重点检查浅色/深色性别页、体型/体脂卡、训练重点 8 张卡、报告组合图
+- 不要恢复：旧轮廓人体组件、`BodyFocusMap`、`BodySilhouette`、`BodyType` 比例参数
+- BLOCKED：同上，外部 Apple/真机/预发环境仍未验证
+
+### 2026-11-03 · macOS
+
+- 品牌改名「叫练」：iOS 显示名、登录/付费墙、法律文档、AI 提示词、后台和文档
+- 运营者：深圳市龙岗区叫练软件开发工作室；技术标识保持不变
+- 验证：iOS 构建成功、SwiftLint 0 violation、29/29 单测、backend 171 + smoke
+- 待 Windows 复核：品牌残留、法律主体、后台旧品牌
+
+---
+
 ## 1. 当前工作区与状态
 
 - Windows 仓库：`E:\Projects\FitAI`
 - macOS 工作区：`/Users/jacobwu/gym-app`
 - 当前分支：`feat/pro-access-followup-2026-11`，基于 `develop`
-- 远端 `develop`：`7324577 feat(onboarding): replace focus body map with card grid`
+- 远端 `develop`：代码 `7324577`；文档提交在其后，见 `git log -1`
 - 正式发布前仍需真实数据库、真机和 App Store Connect 配置
 
 > **2026-11-03 macOS 进展：品牌已改名「叫练」。** 用户可见品牌、法律文档、
@@ -23,20 +63,6 @@
 > 验证：iOS 构建成功，SwiftLint **0 violation**，单元测试 29/29，UI 导航测试通过；
 > backend 171 个测试 + smoke 通过；全仓库 `练途` 已清零。
 > 外部凭据/真机/预发库/App Store Connect 项仍标 BLOCKED。
-
-> **2026-11-04 Windows 进展（已推送 `develop`）**
-> - `4fcf8c4` 免费教练额度：免费文本改走 `/agent/chat`，额度用尽后不再本地回复，
->   聊天页显示内联 Pro 卡；安全消息仍由服务端优先处理。
-> - `2ce8ae1` 体型/体脂：接入 54 张组合图，顺序改为先体型后体脂，报告显示组合图。
-> - `f78cf1e` 性别页：头像双卡 + 自适应大人台；新增 Male/FemalePortrait。
-> - `7324577` 训练重点：改为器械页同款卡片网格；「均衡练全身」为互斥卡；
->   取消最多 2 个限制；删除 `BodyFocusMap`、`BodySilhouette`、`BodyType`
->   比例参数和旧人体图代码。
-> - 计划生成：重点部位不再截断为 2 个；7 个全选按均衡处理。
-> - 验证：backend **174 passed** + Ruff 通过；Windows 只做了 Swift 语法解析，
->   **没有跑 iOS 构建**。Mac 拉取后先 `cd ios && xcodegen generate`，再 build/test；
->   重点检查浅色/深色下的性别页和训练重点卡片。
-> - `BodyShapes.swift` 已从 600+ 行降到约 320 行；不要再恢复旧轮廓人体组件。
 
 历史 CI（改名提交后请以新 CI 结果为准；不要引用旧提交的绿色状态）：
 

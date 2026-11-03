@@ -27,3 +27,15 @@
 - 前端能力层：`ios/FitAI/Features/Coach/CoachChatView.swift` 的能力卡/结果卡，`AppStore.executeAgentAction`
 - 新能力先加 action type + payload schema + 执行 + 回执，再接 UI
 - 纯聊天走 `/coach/chat`；需要执行能力的消息走 `/agent/chat`
+
+## Agent 同步频道
+
+每次开发任务完成后，必须更新 `FitAI-iOS-Agent-交接.md` 顶部的 `## 0. Agent 同步频道`：
+
+- 日期、端（Windows / macOS）、提交 hash
+- 做了什么
+- 验证了什么、没验证什么
+- 对方 agent 需要做什么
+- 禁止恢复的旧代码 / 仍 BLOCKED 的外部条件
+
+最新记录放最上面。不要只写 commit message；Mac 不读 Windows 聊天记录，只读这个文件。
