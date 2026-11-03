@@ -7,40 +7,6 @@ extension CoachOnboardingView {
         EditorialHeader(eyebrow: eyebrow, title: title, subtitle: subtitle)
     }
 
-    func sexCard(_ sex: Sex) -> some View {
-        let selected = draft.sex == sex
-        return Button {
-            Haptics.select()
-            draft.sex = sex
-        } label: {
-            VStack(spacing: 10) {
-                BodySilhouette(
-                    type: .rectangle,
-                    sex: sex,
-                    fill: selected ? Theme.cobalt.opacity(0.16) : Theme.ink.opacity(0.06),
-                    stroke: selected ? Theme.cobalt : Theme.ink.opacity(0.28),
-                    lineWidth: selected ? 2 : 1
-                )
-                .frame(height: 130)
-                .padding(.horizontal, 12)
-
-                Text(sex.label)
-                    .font(AppType.title)
-                    .foregroundStyle(Theme.ink)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(14)
-            .background(selected ? Theme.cobalt.opacity(0.06) : Theme.paper)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .strokeBorder(selected ? Theme.cobalt : Theme.stroke, lineWidth: selected ? 2 : 1)
-            }
-        }
-        .buttonStyle(CardPressStyle(scale: 0.985))
-        .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-
     func valueControl(
         title: String,
         value: String,

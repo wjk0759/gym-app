@@ -42,22 +42,6 @@ extension CoachOnboardingView {
         }
     }
 
-    var sexStep: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            stepTitle(
-                eyebrow: "身体基线",
-                title: "你的性别是？",
-                subtitle: "用于估算基础代谢和训练负荷。"
-            )
-
-            HStack(spacing: 12) {
-                ForEach(Sex.allCases) { sex in
-                    sexCard(sex)
-                }
-            }
-        }
-    }
-
     var ageHeightStep: some View {
         VStack(alignment: .leading, spacing: 18) {
             stepTitle(

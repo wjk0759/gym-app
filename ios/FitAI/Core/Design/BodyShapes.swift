@@ -246,6 +246,14 @@ enum BodyFigureAsset {
         sex == .female ? "female_19_22" : "male_16_20"
     }
 
+    static func representativeType(for sex: Sex) -> BodyType {
+        sex == .female ? .hourglass : .invertedTriangle
+    }
+
+    static func portraitName(for sex: Sex) -> String {
+        sex == .female ? "BodyFigureFemalePortrait" : "BodyFigureMalePortrait"
+    }
+
     static func comboName(
         type: BodyType,
         sex: Sex,
@@ -259,6 +267,25 @@ enum BodyFigureAsset {
         let token = type.rawValue.prefix(1).uppercased() + String(type.rawValue.dropFirst())
         let sexToken = sex == .female ? "Female" : "Male"
         return "BodyFigure\(sexToken)\(token)Fat\(option.assetToken)"
+    }
+}
+
+/// Square head-and-shoulders crop used by the gender cards.
+struct BodyFigurePortrait: View {
+    var sex: Sex
+
+    var body: some View {
+        if UIImage(named: BodyFigureAsset.portraitName(for: sex)) != nil {
+            Image(BodyFigureAsset.portraitName(for: sex))
+                .resizable()
+                .scaledToFill()
+                .accessibilityHidden(true)
+        } else {
+            BodyFigure(
+                type: BodyFigureAsset.representativeType(for: sex),
+                sex: sex
+            )
+        }
     }
 }
 

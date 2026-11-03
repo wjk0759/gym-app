@@ -42,6 +42,21 @@ final class BodyFigureAssetTests: XCTestCase {
         }
     }
 
+    func testEverySexHasPortraitAsset() {
+        for sex in [Sex.female, Sex.male] {
+            let name = BodyFigureAsset.portraitName(for: sex)
+            XCTAssertNotNil(
+                UIImage(named: name),
+                "\(name) is missing from the asset catalog"
+            )
+        }
+    }
+
+    func testRepresentativeTypesMatchTheGenderHeroes() {
+        XCTAssertEqual(BodyFigureAsset.representativeType(for: .female), .hourglass)
+        XCTAssertEqual(BodyFigureAsset.representativeType(for: .male), .invertedTriangle)
+    }
+
     func testCombinedAssetNameUsesTypeAndFatTokens() {
         XCTAssertEqual(
             BodyFigureAsset.comboName(
