@@ -14,12 +14,32 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`8c3ba77`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：免费教练额度、54 张体型/体脂图、性别页插画（白底已清除）、体型/体脂选择器、训练重点卡片网格、欢迎打字减速
+- `develop` 代码 HEAD：`5c906fb`；本文件的最新同步提交见 `git log -1`
+- Windows 已完成：免费教练额度、54 张体型/体脂图、性别页插画（白底已清除）、体型/体脂选择器（体脂卡只显示躯干）、训练重点卡片网格、欢迎打字减速
 - macOS 最近完成：品牌改名「叫练」；历史 iOS 构建/SwiftLint/29 个单测通过
 - 最新后端验证：**174 passed**，Ruff 通过
 - Mac 待办：`git pull` → `cd ios && xcodegen generate` → build/test → 浅色/深色真机检查
 - 仍 BLOCKED：App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 沙盒、真机签名、预发/生产 Flyway
+
+### 2026-11-04 · Windows / OpenCode（体脂卡改躯干图）
+
+- 提交：`5c906fb`
+- 做了什么：
+  - `BodyFigure` 新增 `crop` 参数：`.fullBody`（默认）/ `.torso`
+  - 体脂卡改用 `.torso`：按 400×667 共享画布裁掉头、手和腿，
+    只保留肩颈到胯部，胸腹腰的体脂差异更直观
+  - 裁切矩形 `(0.215, 0.142, 0.570, 0.398)`，运行时按比例裁切，
+    不新增 54 张图片，54 张组合图本身未改动
+  - 去掉体脂卡图片的 shadow，避免沿裁切边缘出现横向阴影
+  - 体型页大图/缩略图和最终报告仍显示全身
+  - 新增测试：组合图必须都是 400×667、裁切矩形在画布内、
+    代表图躯干中心不透明
+- 验证：深色/浅色裁切预览目检通过；Swift 语法解析通过；
+  backend **174 passed** + Ruff 通过；Windows 没有跑 iOS 构建和单测
+- Mac 需要做：`git pull` → `xcodegen generate` → build/test；
+  在浅色/深色下看体脂页，确认 6 张卡只显示躯干、没有头/手/腿，
+  选中边框和标签高度不跳动
+- 不要恢复：体脂卡全身图、体脂卡图片 shadow、`BodyFigureCrop` 之外的硬编码裁切
 
 ### 2026-11-04 · Windows / OpenCode（性别插画白底修复）
 
@@ -91,7 +111,7 @@
 - Windows 仓库：`E:\Projects\FitAI`
 - macOS 工作区：`/Users/jacobwu/gym-app`
 - 当前分支：`feat/pro-access-followup-2026-11`，基于 `develop`
-- 远端 `develop`：代码 `8c3ba77`；文档提交在其后，见 `git log -1`
+- 远端 `develop`：代码 `5c906fb`；文档提交在其后，见 `git log -1`
 - 正式发布前仍需真实数据库、真机和 App Store Connect 配置
 
 > **2026-11-03 macOS 进展：品牌已改名「叫练」。** 用户可见品牌、法律文档、
