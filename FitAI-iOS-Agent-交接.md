@@ -14,12 +14,30 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`5c906fb`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：免费教练额度、54 张体型/体脂图、性别页插画（白底已清除）、体型/体脂选择器（体脂卡只显示躯干）、训练重点卡片网格、欢迎打字减速
+- `develop` 代码 HEAD：`f9633fe`；本文件的最新同步提交见 `git log -1`
+- Windows 已完成：免费教练额度、54 张体型/体脂图、性别页卡通插画、体型/体脂选择器（体脂卡只显示躯干）、训练重点卡片网格、欢迎打字减速
 - macOS 最近完成：品牌改名「叫练」；历史 iOS 构建/SwiftLint/29 个单测通过
 - 最新后端验证：**174 passed**，Ruff 通过
 - Mac 待办：`git pull` → `cd ios && xcodegen generate` → build/test → 浅色/深色真机检查
 - 仍 BLOCKED：App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 沙盒、真机签名、预发/生产 Flyway
+
+### 2026-11-04 · Windows / OpenCode（性别页卡通素材）
+
+- 提交：`f9633fe`
+- 做了什么：
+  - 性别页大人台和双卡头像换成 `性别男-卡通.png` / `性别女-卡通.png`
+  - 男性源图是棋盘格背景（已烤进像素，不是真透明），女性源图是纯白底；
+    两者都重新抠成透明背景
+  - 男性源图底部/右侧有 1px 黑色导出边框，处理前裁掉 2px
+  - 保留女性白色腕带、短裤白色条纹；男性短裤白条也保留
+  - 全身图 `800×1422`，头像 `250×250`；资产名不变，页面代码不变
+  - 测试新增顶部左右两个背景采样点，防止棋盘格/白底残留
+- 验证：深色/浅色合成预览目检通过，手臂/腿间无白条，腕带和白条纹保留；
+  Swift 语法解析通过；backend **174 passed** + Ruff 通过；Windows 没有跑 iOS 构建和单测
+- Mac 需要做：`git pull` → `xcodegen generate` → build/test；
+  浅色/深色看性别页，重点看 52×52 小头像有没有裁到脸、
+  大人台底部渐隐是否自然、头发边缘有没有白边
+- 不要恢复：旧性别插画、棋盘格/白底版本；不要把 `性别男-卡通.png` 原图直接导入
 
 ### 2026-11-04 · Windows / OpenCode（体脂卡改躯干图）
 
@@ -111,7 +129,7 @@
 - Windows 仓库：`E:\Projects\FitAI`
 - macOS 工作区：`/Users/jacobwu/gym-app`
 - 当前分支：`feat/pro-access-followup-2026-11`，基于 `develop`
-- 远端 `develop`：代码 `5c906fb`；文档提交在其后，见 `git log -1`
+- 远端 `develop`：代码 `f9633fe`；文档提交在其后，见 `git log -1`
 - 正式发布前仍需真实数据库、真机和 App Store Connect 配置
 
 > **2026-11-03 macOS 进展：品牌已改名「叫练」。** 用户可见品牌、法律文档、
