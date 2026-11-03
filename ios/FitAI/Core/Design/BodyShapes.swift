@@ -18,7 +18,7 @@ enum BodyType: String, CaseIterable, Identifiable {
         switch self {
         case .apple: return "苹果型"
         case .pear: return "梨型"
-        case .invertedTriangle: return "倒三角"
+        case .invertedTriangle: return "倒三角型"
         case .rectangle: return "直筒型"
         case .hourglass: return "沙漏型"
         case .oval: return "椭圆型"
@@ -77,14 +77,6 @@ enum BodyFigureAsset {
         sex == .female ? "female_19_22" : "male_16_20"
     }
 
-    static func representativeType(for sex: Sex) -> BodyType {
-        sex == .female ? .hourglass : .invertedTriangle
-    }
-
-    static func portraitName(for sex: Sex) -> String {
-        sex == .female ? "BodyFigureFemalePortrait" : "BodyFigureMalePortrait"
-    }
-
     static func comboName(
         type: BodyType,
         sex: Sex,
@@ -101,27 +93,8 @@ enum BodyFigureAsset {
     }
 }
 
-/// Square head-and-shoulders crop used by the gender cards.
-struct BodyFigurePortrait: View {
-    var sex: Sex
-
-    var body: some View {
-        if UIImage(named: BodyFigureAsset.portraitName(for: sex)) != nil {
-            Image(BodyFigureAsset.portraitName(for: sex))
-                .resizable()
-                .scaledToFill()
-                .accessibilityHidden(true)
-        } else {
-            BodyFigure(
-                type: BodyFigureAsset.representativeType(for: sex),
-                sex: sex
-            )
-        }
-    }
-}
-
 /// Renders the 3D body figure for a type and, when available, a body-fat band.
-/// Falls back to the vector silhouette if an asset is ever removed.
+/// Falls back to a neutral SF Symbol if an asset is ever removed.
 struct BodyFigure: View {
     let type: BodyType
     var sex: Sex = .male
@@ -139,59 +112,6 @@ struct BodyFigure: View {
                 .font(.system(size: 54, weight: .light))
                 .foregroundStyle(Theme.tertiaryText)
         }
-    }
-}
-
-// MARK: - Body type picker
-
-struct BodyTypeCard: View {
-    let type: BodyType
-    var sex: Sex = .male
-    let selected: Bool
-    var recommended: Bool = false
-    var action: () -> Void
-
-    var body: some View {
-        Button {
-            Haptics.select()
-            action()
-        } label: {
-            VStack(spacing: 8) {
-                ZStack(alignment: .topTrailing) {
-                    BodyFigure(
-                        type: type,
-                        sex: sex
-                    )
-                    .frame(height: 136)
-                    .padding(.horizontal, 8)
-
-                    if recommended {
-                        RecommendationBadge(text: "建议")
-                    }
-                }
-
-                Text(type.label)
-                    .font(AppType.callout.weight(.bold))
-                    .foregroundStyle(Theme.ink)
-                Text(type.detail)
-                    .font(AppType.micro)
-                    .foregroundStyle(Theme.secondaryText)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(10)
-            .background(selected ? Theme.cobalt.opacity(0.06) : Theme.paper)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(selected ? Theme.cobalt : Theme.stroke, lineWidth: selected ? 2 : 1)
-            }
-        }
-        .buttonStyle(CardPressStyle(scale: 0.985))
-        .accessibilityLabel("\(type.label)，\(type.detail)")
-        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 
@@ -226,53 +146,6 @@ struct BodyFatOption: Identifiable, Equatable {
 
     static func options(for sex: Sex) -> [BodyFatOption] {
         sex == .female ? female : male
-    }
-}
-
-struct BodyFatCard: View {
-    let option: BodyFatOption
-    var type: BodyType = .rectangle
-    var sex: Sex = .male
-    let selected: Bool
-    var action: () -> Void
-
-    var body: some View {
-        Button {
-            Haptics.select()
-            action()
-        } label: {
-            VStack(spacing: 6) {
-                BodyFigure(
-                    type: type,
-                    sex: sex,
-                    fatOptionID: option.id
-                )
-                .frame(height: 104)
-                .padding(.horizontal, 6)
-
-                Text(option.label)
-                    .font(AppType.caption.weight(.bold))
-                    .foregroundStyle(Theme.ink)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                Text(option.note)
-                    .font(AppType.micro)
-                    .foregroundStyle(Theme.secondaryText)
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 9)
-            .padding(.horizontal, 6)
-            .background(selected ? Theme.lime.opacity(0.18) : Theme.paper)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(selected ? Theme.ink : Theme.stroke, lineWidth: selected ? 1.6 : 1)
-            }
-        }
-        .buttonStyle(CardPressStyle(scale: 0.985))
-        .accessibilityLabel("\(type.label)，体脂 \(option.label)，\(option.note)")
-        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 

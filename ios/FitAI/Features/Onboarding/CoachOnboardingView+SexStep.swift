@@ -3,10 +3,9 @@ import SwiftUI
 extension CoachOnboardingView {
     var sexStep: some View {
         VStack(alignment: .leading, spacing: 18) {
-            stepTitle(
+            EditorialHeader(
                 eyebrow: "身体基线",
-                title: "你的性别是？",
-                subtitle: "用于估算基础代谢和训练负荷。"
+                title: "你的性别是？"
             )
 
             HStack(spacing: 10) {
@@ -28,7 +27,9 @@ extension CoachOnboardingView {
             }
         } label: {
             HStack(spacing: 8) {
-                BodyFigurePortrait(sex: sex)
+                Image(genderPortraitName(sex))
+                    .resizable()
+                    .scaledToFill()
                     .frame(width: 52, height: 52)
                     .background(
                         Theme.ink.opacity(0.08),
@@ -96,34 +97,41 @@ extension CoachOnboardingView {
                     )
                 )
 
-            BodyFigure(
-                type: BodyFigureAsset.representativeType(for: draft.sex),
-                sex: draft.sex
-            )
-            .frame(height: 300)
-            .padding(.top, 10)
-            .mask(
-                LinearGradient(
-                    stops: [
-                        .init(color: .black, location: 0),
-                        .init(color: .black, location: 0.82),
-                        .init(color: .clear, location: 1)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
+            Image(genderHeroName(draft.sex))
+                .resizable()
+                .scaledToFit()
+                .frame(height: 340)
+                .padding(.top, 8)
+                .mask(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .black, location: 0),
+                            .init(color: .black, location: 0.82),
+                            .init(color: .clear, location: 1)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
                 )
-            )
-            .shadow(color: Theme.shadow, radius: 18, y: 10)
-            .id(draft.sex)
-            .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                .shadow(color: Theme.shadow, radius: 18, y: 10)
+                .id(draft.sex)
+                .transition(.opacity.combined(with: .scale(scale: 0.98)))
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 320)
+        .frame(height: 360)
         .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 26, style: .continuous)
                 .strokeBorder(Theme.stroke, lineWidth: 1)
         }
         .accessibilityHidden(true)
+    }
+
+    private func genderPortraitName(_ sex: Sex) -> String {
+        sex == .male ? "GenderMalePortrait" : "GenderFemalePortrait"
+    }
+
+    private func genderHeroName(_ sex: Sex) -> String {
+        sex == .male ? "GenderMale" : "GenderFemale"
     }
 }
