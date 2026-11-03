@@ -13,7 +13,7 @@ extension CoachOnboardingView {
             VStack(spacing: 16) {
                 if welcomePhase == 0 {
                     TypewriterText(
-                        text: "您好，\n我是您的私教 L",
+                        text: "您好，\n我是叫练",
                         charDelay: .milliseconds(90),
                         hapticEvery: 5
                     ) {
