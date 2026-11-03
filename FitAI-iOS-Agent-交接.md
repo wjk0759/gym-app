@@ -14,12 +14,21 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`5707370`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：免费教练额度、54 张体型/体脂图、性别页插画、体型/体脂选择器、训练重点卡片网格
+- `develop` 代码 HEAD：`420ea75`；本文件的最新同步提交见 `git log -1`
+- Windows 已完成：免费教练额度、54 张体型/体脂图、性别页插画、体型/体脂选择器、训练重点卡片网格、欢迎打字减速
 - macOS 最近完成：品牌改名「叫练」；历史 iOS 构建/SwiftLint/29 个单测通过
 - 最新后端验证：**174 passed**，Ruff 通过
 - Mac 待办：`git pull` → `cd ios && xcodegen generate` → build/test → 浅色/深色真机检查
 - 仍 BLOCKED：App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 沙盒、真机签名、预发/生产 Flyway
+
+### 2026-11-04 · Windows / OpenCode（欢迎打字速度）
+
+- 提交：`420ea75`
+- 做了什么：欢迎页打字速度第一段 42→90ms/字，第二段 30→70ms/字；
+  标点停顿 160→280ms，新增换行 220ms；触感频率降到 5/7
+- 验证：Swift 语法解析通过；Windows 没有跑 iOS 构建
+- Mac 需要做：build 后看一遍欢迎页，确认能看清、不拖沓；点屏幕仍可立即显示全文
+- 不要恢复：旧的 42/30ms 快速打字参数
 
 ### 2026-11-04 · Windows / OpenCode（性别 / 体型 / 体脂重做）
 
@@ -66,7 +75,7 @@
 - Windows 仓库：`E:\Projects\FitAI`
 - macOS 工作区：`/Users/jacobwu/gym-app`
 - 当前分支：`feat/pro-access-followup-2026-11`，基于 `develop`
-- 远端 `develop`：代码 `5707370`；文档提交在其后，见 `git log -1`
+- 远端 `develop`：代码 `420ea75`；文档提交在其后，见 `git log -1`
 - 正式发布前仍需真实数据库、真机和 App Store Connect 配置
 
 > **2026-11-03 macOS 进展：品牌已改名「叫练」。** 用户可见品牌、法律文档、
