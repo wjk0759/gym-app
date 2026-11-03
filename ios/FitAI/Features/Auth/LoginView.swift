@@ -286,7 +286,7 @@ struct LegalDocumentView: View {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
-                        Text("练途 · 协议与隐私")
+                        Text("叫练 · 协议与隐私")
                             .font(AppType.caption.weight(.semibold))
                             .foregroundStyle(Theme.cobalt)
                         Spacer()

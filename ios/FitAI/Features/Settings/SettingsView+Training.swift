@@ -102,7 +102,7 @@ extension SettingsView {
                             let granted = await weather.requestWeatherAlertPermission()
                             message = granted
                                 ? "天气提醒已开启。"
-                                : "没有获得通知权限，请到系统设置中允许「练途」通知。"
+                                : "没有获得通知权限，请到系统设置中允许「叫练」通知。"
                             showMessage = true
                         }
                     }
@@ -149,7 +149,7 @@ extension SettingsView {
             } else if store.notificationsEnabled {
                 message = "通知权限已开启，但当前还没有训练计划。生成计划后会自动安排提醒。"
             } else {
-                message = "没有获得通知权限。请到「设置 → 通知 → 练途」中开启。"
+                message = "没有获得通知权限。请到「设置 → 通知 → 叫练」中开启。"
             }
             showMessage = true
         }

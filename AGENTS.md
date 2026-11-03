@@ -1,4 +1,4 @@
-# FitAI — Agent Rules
+# 叫练 — Agent Rules
 
 ## 产品原则：AI 教练是统一入口
 

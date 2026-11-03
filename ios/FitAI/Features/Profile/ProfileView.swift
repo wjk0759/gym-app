@@ -122,7 +122,7 @@ struct ProfileView: View {
                         .background(Theme.primary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("练途 Pro")
+                        Text("叫练 Pro")
                             .font(AppType.callout.weight(.semibold))
                             .foregroundStyle(Theme.ink)
                         if let expires = store.accessSnapshot?.proExpiresAt {

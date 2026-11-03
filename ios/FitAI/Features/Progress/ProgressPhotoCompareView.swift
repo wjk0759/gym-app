@@ -124,7 +124,7 @@ struct ProgressPhotoCompareView: View {
         PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
             DispatchQueue.main.async {
                 guard status == .authorized || status == .limited else {
-                    saveMessage = "没有相册权限。请到系统设置里允许 FitAI 添加照片。"
+                    saveMessage = "没有相册权限。请到系统设置里允许叫练添加照片。"
                     showSaveAlert = true
                     return
                 }

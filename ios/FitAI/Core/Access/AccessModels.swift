@@ -79,7 +79,7 @@ enum ProFeature: String, Identifiable, CaseIterable {
         case .videoReview: return "视频动作点评"
         case .advancedReview: return "数据复盘"
         case .equipmentScan: return "器械 AI 识别"
-        case .general: return "练途 Pro"
+        case .general: return "叫练 Pro"
         }
     }
 

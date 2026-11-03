@@ -1,4 +1,6 @@
-# FitAI（中文暂定名：练途）
+# 叫练（原 FitAI）
+
+> 代码仓库、Xcode target/module、Bundle ID 仍保留 `FitAI`，用于兼容现有构建与数据。
 
 > **2026-10 架构更新：** 管理后台已独立为 `admin-web/`（Vue3 + TypeScript + Element Plus）与 `admin-server/`（Spring Boot 3 + JWT/RBAC + Flyway），共享 MySQL 8。详见 [企业级管理后台架构](docs/20-admin-enterprise-architecture.md)。FastAPI 继续负责 iOS/Web App API；旧 `/admin` 数据后台已迁移完成后删除，只保留 Spring + Vue 控制台。
 
@@ -10,6 +12,7 @@
 > **Windows 上先看效果：** 双击 `preview\启动预览.cmd`，浏览器打开 <http://127.0.0.1:5173/>。这是 Web 界面预览，不是 iOS 模拟器；真实模拟器需要 Mac + Xcode。
 
 > 当前版本：`v0.1.0` 基础工程
+> App Store 名称：叫练（副标题待定）
 > 市场：中国大陆优先
 > 形态：SwiftUI 原生 iOS + FastAPI 后端 + Spring 管理控制台 + MySQL 8
 
@@ -64,7 +67,7 @@
 - 器械拍照/选图 → 识别候选（本地 Mock / 远程视觉）→ 动作卡片与视频播放
 - 饮食计划（本地热量与三餐模板 + 食物库/自定义食物记录）
 - Apple 健康：读取体重、写入完成的训练
-- FitAI Pro 订阅页（StoreKit 2，商品 ID 占位）
+- 叫练 Pro 订阅页（StoreKit 2，商品 ID 占位）
 - 设置每周训练日与提醒时间 → 本地通知
 - 档案与训练记录本地持久化
 

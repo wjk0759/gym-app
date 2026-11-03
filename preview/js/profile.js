@@ -32,7 +32,7 @@ function profileScreen() {
         <div class="list-row" style="padding:14px 16px;cursor:pointer;align-items:center" onclick="app.openPaywall()">
           <div class="nutrition-icon" style="color:var(--warning);background:rgba(250,184,77,.12)">${ICONS.crown}</div>
           <div class="grow">
-            <div class="small strong">练途 Pro</div>
+            <div class="small strong">叫练 Pro</div>
             <div class="tiny muted" style="margin-top:2px">${state.pro ? "已订阅 · 所有功能已解锁" : "AI 计划、教练与器械识别"}</div>
           </div>
           <div class="accent small">${state.pro ? "管理会员" : "开通会员"} ›</div>

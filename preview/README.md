@@ -1,6 +1,6 @@
-# FitAI Web 预览
+# 叫练 Web 预览
 
-这是 FitAI 的界面与流程预览，用浏览器打开即可，不需要 iOS 模拟器。
+这是叫练 App 的界面与流程预览，用浏览器打开即可，不需要 iOS 模拟器。
 
 > 它不是真正的 iOS App。真实 App 需要 macOS + Xcode 编译；Windows 无法运行 iOS Simulator。
 

@@ -62,7 +62,7 @@ enum ProgressPhotoExporter {
             )
 
             drawText(
-                "FitAI · 练途 · 照片只保存在本机",
+                "叫练 · 照片只保存在本机",
                 at: CGPoint(x: 60, y: 1392),
                 font: .systemFont(ofSize: 20, weight: .semibold),
                 color: ink.withAlphaComponent(0.45)

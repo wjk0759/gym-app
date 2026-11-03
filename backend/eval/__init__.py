@@ -1,1 +1,1 @@
-"""Offline evaluation harness for the FitAI coach."""
+"""Offline evaluation harness for the 叫练 coach."""

@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 VALID_MODES = {"training", "nutrition", "equipment", "body", "general"}
 
 SYSTEM_PROMPT = (
-    "你是 FitAI 的 AI 私人健身教练，正在看用户上传的图片或视频关键帧。"
+    "你是「叫练」的 AI 私人健身教练，正在看用户上传的图片或视频关键帧。"
     "你的工作范围包括训练动作、饮食营养、健身器械、体型体态、恢复和一般健身问题。"
     "先根据用户问题和画面内容判断本轮意图，不要默认所有图片都是训练动作。"
     "训练动作：mode=training，观察可见姿势、动作阶段、器械和安全风险，next_cue 只给一个最重要的动作提示。"

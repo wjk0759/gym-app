@@ -170,7 +170,7 @@ struct EquipmentRecognitionView: View {
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Button("开通练途 Pro") {
+            Button("开通叫练 Pro") {
                 store.requestPro(.equipmentScan)
             }
             .buttonStyle(PrimaryButtonStyle())

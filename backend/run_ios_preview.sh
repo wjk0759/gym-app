@@ -22,7 +22,7 @@ export MEDIA_ROOT="${MEDIA_ROOT:-media}"
 HOST="${HOST:-0.0.0.0}"
 PORT="${PORT:-8000}"
 
-echo "FitAI API: http://127.0.0.1:${PORT}/api/v1"
+echo "叫练 API: http://127.0.0.1:${PORT}/api/v1"
 echo "Health:    http://127.0.0.1:${PORT}/health"
 echo "LAN:       use http://<this-Mac-LAN-IP>:${PORT}/api/v1 in the iOS Debug server field"
 exec python -m uvicorn app.main:app --host "$HOST" --port "$PORT" --reload

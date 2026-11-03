@@ -507,8 +507,8 @@ data: {"session_id": "uuid", "safety_flag": null}
     "video_url": "https://api.example.com/media/videos/….mp4",
     "poster_url": "https://api.example.com/media/posters/….jpg",
     "duration_seconds": 42,
-    "source": "练途动作库",
-    "license_note": "练途自制，已获教练授权",
+    "source": "叫练动作库",
+    "license_note": "叫练自制，已获教练授权",
     "version": 1,
     "updated_at": "2026-10-25T15:20:12+00:00"
   }

@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>zh_CN</string>
 	<key>CFBundleDisplayName</key>
-	<string>练途</string>
+	<string>叫练</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
+	<string>叫练</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -51,7 +51,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>用于获取你所在城市的实时天气，并在下雨或下雪时提醒你注意出行安全。位置只在你使用 App 时获取，不写入训练记录。</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>用于连接局域网内的 FitAI 开发服务器，进行 Mac 预览与联调。</string>
+	<string>用于连接局域网内的叫练开发服务器，进行 Mac 预览与联调。</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>用于保存训练相关的图片。</string>
 	<key>NSPhotoLibraryUsageDescription</key>

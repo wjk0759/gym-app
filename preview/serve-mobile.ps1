@@ -19,7 +19,7 @@ $ips = Get-NetIPAddress -AddressFamily IPv4 |
     Select-Object -ExpandProperty IPAddress -Unique
 
 Write-Host ""
-Write-Host "FitAI 手机预览已启动" -ForegroundColor Green
+Write-Host "叫练手机预览已启动" -ForegroundColor Green
 Write-Host "手机和电脑需要连接同一个 Wi-Fi。" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "在 iPhone Safari 打开："

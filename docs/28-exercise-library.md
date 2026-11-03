@@ -7,7 +7,7 @@
 | 项目 | 数量 | 说明 |
 |---|---:|---|
 | 训记动作清单 | **1,213** | `tools/db/data/xunji_movements_1213.json` |
-| 原 FitAI 动作 | 80 | 保留在数据库中并标记为 `is_active = FALSE`，只用于历史计划/训练记录解析 |
+| 原 FitAI（现叫练）动作 | 80 | 保留在数据库中并标记为 `is_active = FALSE`，只用于历史计划/训练记录解析 |
 | 当前可新建/可搜索 | **1,213** | iOS 资源 `ios/FitAI/Resources/xunji_movements.json`；API 只返回 `is_active = TRUE` |
 
 训记文件只有三个字段：

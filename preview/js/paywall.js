@@ -3,7 +3,7 @@
 function paywallScreen() {
   return `
     <div class="stack">
-      ${headerBack("练途 Pro")}
+      ${headerBack("叫练 Pro")}
       <div class="card hero center">
         <div class="crown">${ICONS.crown}</div>
         <div class="h2">把 AI 教练带在身边</div>
@@ -23,7 +23,7 @@ function paywallScreen() {
 
       ${state.pro ? `
         <div class="card center">
-          <div class="h3 accent">✓ 已订阅练途 Pro</div>
+          <div class="h3 accent">✓ 已订阅叫练 Pro</div>
           <div class="tiny muted" style="margin-top:5px">所有 Pro 功能已解锁。</div>
         </div>
       ` : `

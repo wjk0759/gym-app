@@ -1,4 +1,4 @@
-# FitAI Backend
+# 叫练 Backend
 
 FastAPI + SQLAlchemy，纯 App 本地开发可用 SQLite；与 Spring 管理后台联调时连接同一 MySQL 8。
 
@@ -97,7 +97,7 @@ cd ..\..\backend
 
 ```powershell
 New-NetFirewallRule `
-  -DisplayName "FitAI backend 8000" `
+  -DisplayName "叫练 backend 8000" `
   -Direction Inbound `
   -Protocol TCP `
   -LocalPort 8000 `

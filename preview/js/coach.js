@@ -180,7 +180,7 @@ function coachScreen() {
       <div class="coach-welcome-head">
         <div class="coach-welcome-avatar">AI</div>
         <div class="grow">
-          <div class="coach-eyebrow">练途 AI</div>
+          <div class="coach-eyebrow">叫练 AI</div>
           <h2>${skill.label}在线</h2>
           <p>${skill.desc}。我会结合你的计划、完成率和训练记录回答，不套模板。</p>
         </div>
@@ -224,7 +224,7 @@ function coachScreen() {
         <div class="coach-identity">
           <div class="coach-avatar-lg">AI</div>
           <div class="grow">
-            <div class="coach-eyebrow">练途 AI</div>
+            <div class="coach-eyebrow">叫练 AI</div>
             <div class="coach-title">${activeAdjustment ? "计划调整教练" : "AI 教练"}</div>
             <div class="coach-status"><i></i>${activeAdjustment ? "正在听你说" : "在线 · 结合你的训练数据"}</div>
           </div>

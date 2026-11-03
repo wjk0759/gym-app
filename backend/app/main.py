@@ -84,7 +84,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="FitAI API",
+    title="叫练 API",
     description="AI 健身教练后端（中国大陆版）",
     version="0.1.0",
     lifespan=lifespan,
@@ -178,7 +178,7 @@ app.mount(
 @app.get("/")
 def root():
     return {
-        "name": "FitAI API",
+        "name": "叫练 API",
         "version": "0.1.0",
         "docs": "/docs",
         "api": API_PREFIX,

@@ -1,4 +1,6 @@
-# FitAI iOS 工程
+# 叫练 iOS 工程
+
+> 代码目录、Xcode target/module 仍为 `FitAI`，用于兼容现有构建。
 
 SwiftUI 原生 App，部署目标 iOS 17.0，使用 XcodeGen 生成工程。
 

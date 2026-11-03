@@ -6,7 +6,7 @@
         <p class="eyebrow">FITAI CONTROL PLANE</p>
         <h1>把训练数据，<br />变成可运营的洞察。</h1>
         <p class="visual-text">
-          企业级 FitAI 管理控制台，覆盖用户、计划、训练、对话、器械、内容与 AI 质量。
+          企业级叫练管理控制台，覆盖用户、计划、训练、对话、器械、内容与 AI 质量。
         </p>
         <div class="visual-points">
           <span>RBAC 权限</span>
@@ -14,7 +14,7 @@
           <span>AI 质量监控</span>
         </div>
       </div>
-      <p class="visual-foot">FitAI · Admin v1.0</p>
+      <p class="visual-foot">叫练 · Admin v1.0</p>
     </section>
 
     <section class="login-panel">

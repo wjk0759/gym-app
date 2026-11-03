@@ -148,7 +148,7 @@ router.beforeEach(async (to) => {
 })
 
 router.afterEach((to) => {
-  document.title = to.meta.title ? `${to.meta.title} · FitAI 管理控制台` : 'FitAI 管理控制台'
+  document.title = to.meta.title ? `${to.meta.title} · 叫练管理控制台` : '叫练管理控制台'
 })
 
 export default router

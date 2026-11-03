@@ -168,7 +168,7 @@ extension CoachChatView {
                     }
                 }
 
-                Text("这些操作只在 FitAI 内执行，不会跨 App，也不涉及付款。")
+                Text("这些操作只在叫练内执行，不会跨 App，也不涉及付款。")
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
 

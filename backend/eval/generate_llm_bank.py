@@ -363,7 +363,7 @@ def _prompt(category: str, count: int) -> str:
             '{"kind":"training_video","summary":"深蹲侧面，底部膝盖轻微内扣",'
             '"observations":["下蹲到大腿平行","脚掌稳定"],"next_cue":"起身时把膝盖对准脚尖。"}。'
         )
-    return f"""你是 FitAI 的测试题库作者。生成 {count} 条“真实学员向 AI 私教提问”的场景，类别：{category}。
+    return f"""你是叫练的测试题库作者。生成 {count} 条“真实学员向 AI 私教提问”的场景，类别：{category}。
 
 要求：
 - 像微信聊天：口语、短句，可有省略、错字、情绪、临时限制、多轮追问。

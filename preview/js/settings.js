@@ -88,7 +88,7 @@ function settingsScreen() {
         <div class="list-row" onclick="app.exportData()"><span class="grow small">导出我的数据</span><span class="faint">›</span></div>
         <div class="list-row" onclick="app.openLegal('ai')"><span class="grow small">生成式 AI 备案信息</span><span class="faint">›</span></div>
         <div class="tiny faint" style="margin-top:8px">本产品不提供医疗诊断。孕期、术后、心血管疾病或关节急性疼痛，请先咨询医生。</div>
-        <div class="tiny faint" style="margin-top:6px">练途 Web Preview · v0.1</div>
+        <div class="tiny faint" style="margin-top:6px">叫练 Web Preview · v0.1</div>
       </div>
 
       <div class="section-kicker">账号操作</div>

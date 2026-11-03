@@ -335,7 +335,7 @@ final class WeatherStore {
 
         var request = URLRequest(url: url)
         request.timeoutInterval = 12
-        request.setValue("FitAI/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue("Jiaolian/1.0", forHTTPHeaderField: "User-Agent")
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {

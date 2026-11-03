@@ -351,7 +351,7 @@ struct WeatherDetailSheet: View {
                             let granted = await weather.requestWeatherAlertPermission()
                             alertMessage = granted
                                 ? "天气提醒已开启。"
-                                : "没有获得通知权限，请到系统设置中允许「练途」通知。"
+                                : "没有获得通知权限，请到系统设置中允许「叫练」通知。"
                         }
                     }
                     .font(AppType.caption.weight(.semibold))
@@ -421,7 +421,7 @@ struct WeatherDetailSheet: View {
             Label("位置与天气隐私", systemImage: "lock.shield.fill")
                 .font(AppType.caption.weight(.semibold))
                 .foregroundStyle(Theme.secondaryText)
-            Text("位置不会写入训练记录，也不会经过 FitAI 服务器。天气请求只把四舍五入到约 1 公里的坐标发送给 Open-Meteo；城市名由 iOS 地理编码服务反查。")
+            Text("位置不会写入训练记录，也不会经过叫练服务器。天气请求只把四舍五入到约 1 公里的坐标发送给 Open-Meteo；城市名由 iOS 地理编码服务反查。")
                 .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)

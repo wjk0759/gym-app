@@ -161,7 +161,7 @@ struct RootView: View {
             )
             .onAppear { splashPulse = true }
 
-            Text("练途")
+            Text("叫练")
                 .font(AppType.title)
                 .tracking(-0.3)
                 .foregroundStyle(Theme.ink)

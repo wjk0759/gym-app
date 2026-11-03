@@ -34,7 +34,7 @@ if (-not (Test-Path $python)) {
     throw "Python venv not found at backend/.venv."
 }
 
-Write-Host "FitAI backend listening on ${ListenHost}:${Port} (MySQL 3307)"
+Write-Host "叫练 backend listening on ${ListenHost}:${Port} (MySQL 3307)"
 Write-Host "Local: http://127.0.0.1:${Port}"
 Get-NetIPAddress -AddressFamily IPv4 |
     Where-Object {

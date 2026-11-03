@@ -233,7 +233,7 @@ final class AppStore {
         do {
             data = try Data(contentsOf: url)
         } catch {
-            NSLog("FitAI state read failed: %@", error.localizedDescription)
+            NSLog("Jiaolian state read failed: %@", error.localizedDescription)
             resetInMemory()
             return
         }
@@ -248,7 +248,7 @@ final class AppStore {
                 "\(url.deletingPathExtension().lastPathComponent)-corrupt-\(Int(Date().timeIntervalSince1970)).json"
             )
             try? FileManager.default.copyItem(at: url, to: backup)
-            NSLog("FitAI state decode failed; backup=%@ error=%@", backup.lastPathComponent, error.localizedDescription)
+            NSLog("Jiaolian state decode failed; backup=%@ error=%@", backup.lastPathComponent, error.localizedDescription)
             resetInMemory()
             return
         }

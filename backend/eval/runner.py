@@ -768,7 +768,7 @@ async def main_async(args: argparse.Namespace) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run FitAI coach evaluation scenarios")
+    parser = argparse.ArgumentParser(description="Run 叫练 coach evaluation scenarios")
     parser.add_argument(
         "--scenarios",
         default=str(Path(__file__).resolve().parent / "scenarios" / "calibration_100.jsonl"),

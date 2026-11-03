@@ -6,7 +6,7 @@
       <div class="sidebar-brand">
         <div class="brand-symbol">F</div>
         <div v-show="!collapsed || isMobile" class="brand-copy">
-          <strong>FitAI</strong>
+          <strong>叫练</strong>
           <span>Admin Control Plane</span>
         </div>
       </div>
@@ -45,7 +45,7 @@
             <el-icon :size="20"><component :is="mobileOpen || !collapsed ? Fold : Expand" /></el-icon>
           </el-button>
           <div class="title-block">
-            <span class="breadcrumb">FitAI / 管理控制台</span>
+            <span class="breadcrumb">叫练 / 管理控制台</span>
             <h2>{{ pageTitle }}</h2>
           </div>
         </div>

@@ -1,6 +1,6 @@
 <template>
   <div class="page-shell">
-    <PageHeader title="运营总览" subtitle="实时掌握 FitAI 用户增长、训练活跃度与 AI 服务质量。">
+    <PageHeader title="运营总览" subtitle="实时掌握叫练用户增长、训练活跃度与 AI 服务质量。">
       <template #actions>
         <el-button :icon="Refresh" :loading="loading" @click="load">刷新数据</el-button>
       </template>

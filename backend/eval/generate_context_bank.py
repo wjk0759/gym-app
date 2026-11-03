@@ -1216,7 +1216,7 @@ def _text_expected(category: str, turns: list[str]) -> dict:
 
 
 def _text_prompt(category: str, count: int, topic: str) -> str:
-    return f"""你是 FitAI 的测试题库作者。生成 {count} 条“真实学员向 AI 私教提问”的场景，类别：{category}。
+    return f"""你是叫练的测试题库作者。生成 {count} 条“真实学员向 AI 私教提问”的场景，类别：{category}。
 
 本批主题聚焦：{topic}。不要 20 条都写同一件事，至少覆盖 6 个不同的小场景。
 

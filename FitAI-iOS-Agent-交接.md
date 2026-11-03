@@ -1,4 +1,4 @@
-# FitAI 交接给 iOS / OpenCode Agent
+# 叫练（原 FitAI）交接给 iOS / OpenCode Agent
 
 > 目标：在 `develop` 的基础上继续完成 Pro、试用、付费墙、滑动会话、防滥用和模块化收尾。
 >
@@ -8,22 +8,27 @@
 
 ## 1. 当前工作区与状态
 
-- 仓库：`E:\Projects\FitAI`
-- 分支：`develop`（`feat/pro-access-trial-2026-11` 已合并）
-- 合并提交：`afd4afc feat(api): serialize agent turns per user`
-- 工作区：干净
-- 已同步 `develop`；正式发布前仍需真实数据库和真机验收
+- Windows 仓库：`E:\Projects\FitAI`
+- macOS 工作区：`/Users/jacobwu/gym-app`
+- 当前分支：`feat/pro-access-followup-2026-11`，基于 `develop`
+- 远端 `develop`：`5923bc8 fix(access): paywall plan regeneration entry`
+- 正式发布前仍需真实数据库、真机和 App Store Connect 配置
 
-> 2026-11-02 本地 Agent 进展：从 `develop` 新建 `feat/pro-access-followup-2026-11`，
-> 未合并回 `develop`。本次完成 App Store Server API 本地实现、拍照幂等缓存、
-> 设备会话兼容/客服文档、SwiftLint CI 与三机型模拟器截图；iOS 单元测试 29 个全部通过，
-> SwiftLint 0 violation。外部凭据/真机项标 BLOCKED。
+> **2026-11-03 macOS 进展：品牌已改名「叫练」。** 用户可见品牌、法律文档、
+> AI 提示词、后台和文档均已同步；运营者为「深圳市龙岗区叫练软件开发工作室」。
+> 技术标识保持不变：Bundle ID `com.wjk.fitai`、IAP `com.fitai.app.pro.*`、
+> URL Scheme `fitai`、Keychain/UserDefaults/本地存储、Xcode target/module
+> `FitAI`、Java 包名和数据库名。图标暂不改。
+>
+> 验证：iOS 构建成功，SwiftLint **0 violation**，单元测试 29/29，UI 导航测试通过；
+> backend 171 个测试 + smoke 通过；全仓库 `练途` 已清零。
+> 外部凭据/真机/预发库/App Store Connect 项仍标 BLOCKED。
 
-最近 CI：
+历史 CI（改名提交后请以新 CI 结果为准；不要引用旧提交的绿色状态）：
 
 - Backend Tests #102：✅ `afd4afc`
-- iOS Build #224：✅ `314cd49`（之后的提交只改后端/文档）
-- Admin CI #27：✅ `296b3eb`（之后的提交只改后端/iOS/文档）
+- iOS Build #224：✅ `314cd49`
+- Admin CI #27：✅ `296b3eb`
 
 当前运行中的开发环境：
 
@@ -85,6 +90,27 @@
 
 ---
 
+### 品牌与工程收尾（2026-11-02/03，已完成，不要重做）
+
+- **品牌改名「叫练」**：iOS 显示名、登录/付费墙/权限/水印、法律文档、AI 提示词、
+  FastAPI 标题、admin-web/admin-server 品牌、README/docs/preview 用户可见文案均已更新。
+- **App Store 名称**先用「叫练」；App Store Connect 名称/副标题/截图/隐私政策 URL 需手工更新。
+- **运营者**：深圳市龙岗区叫练软件开发工作室；法律文档范围「叫练 iOS 内测版」，
+  更新日期 2026-11-03；客服邮箱仍为 `wjk0759@163.com`。
+- **App Store Server API**：`backend/app/services/app_store_api.py`、`POST /iap/app-store/reconcile`、
+  `backend/scripts/reconcile_storekit.py` 和 mock 测试已完成；真实 Apple 请求因缺 Key/Issuer/p8 而 BLOCKED。
+- **拍照幂等**：`feature_result_cache` V21 + `photo_cache`，覆盖体型/饮食/器械/教练视觉；
+  只缓存脱敏 JSON，TTL 300 秒，写入时清理过期行；不落原图。
+- **设备会话**：缺 `X-Device-ID` 兼容放行；刷新 401/403 清 token、发 `.fitaiSessionExpired`
+  回登录页；客服文档见 `docs/46-device-session-support.md`。
+- **模块化**：AppStore/Agent/Sync/Plan/Profile/Workouts/Settings/Export 拆分；
+  PlanHome/CoachOnboarding/WorkoutSession/EquipmentDetail/HomeV2/Login/Settings/
+  CoachChat/Nutrition/Progress/WorkoutHistory 等大 View 已拆；Models 与 APIClient 已分域；
+  代码中已无 `swiftlint:disable file_length type_body_length`，SwiftLint 0 violation。
+- **测试**：backend 171 个测试通过；iOS 单元测试 29/29；UI 导航性能测试通过。
+
+---
+
 ## 3. 用户的质量要求
 
 用户原话：
@@ -120,16 +146,11 @@
 ### P0 收费与外部验收
 
 - [x] **App Store Server API 校验与定期订阅对账（本地实现完成；真实调用 BLOCKED）**
-  - 已实现 `backend/app/services/app_store_api.py`、`POST /iap/app-store/reconcile`、`scripts/reconcile_storekit.py` 与 mock 测试。
+  - 已实现 `backend/app/services/app_store_api.py`、`POST /iap/app-store/reconcile`、
+    `scripts/reconcile_storekit.py` 与 mock 测试。
+  - 已实现 ES256 JWT、订阅查询、Apple JWS 二次校验、幂等台账写入；空/畸形响应会报错，
+    不会伪造成功。
   - 真实 Apple 请求 BLOCKED：缺少 App Store Connect 的 Key ID、Issuer ID、p8 私钥。
-  - 建议新增 `backend/app/services/app_store_api.py`：
-    - 生成 ES256 JWT（`aud=appstoreconnect-v1`，`bid` 为 Bundle ID）
-    - 查询 `/inApps/v1/subscriptions/{transactionId}`
-    - 用现有 `app_store.verify_signed_transaction` 校验返回的 JWS
-    - 写 `user_entitlements`，幂等
-  - 未配置密钥时返回 503 + 明确错误码，不要伪造成功。
-  - 增加后台或定时任务入口做对账；不要把长 HTTP 调用放进数据库事务。
-  - 用 mock HTTP 补测试；真实调用等凭据。
 
 - [ ] **BLOCKED · App Store Connect 配置 Notifications V2 URL**
   - 缺少 App Store Connect 权限和可公网访问的域名/隧道；本地 webhook 代码已存在并有验签测试。
@@ -146,13 +167,18 @@
     - 恢复购买能重新同步
   - 需要真实 Apple 账号和 App Store Connect 商品配置，不能本地伪造。
 
+- [ ] **BLOCKED · App Store Connect 名称与素材**
+  - 代码/桌面显示名已用「叫练」；App Store Connect 名称需手工改为「叫练」，
+    副标题待定。截图、隐私政策 URL、TestFlight 信息也需同步检查。
+  - 名称可用性需在 App Store Connect 确认；如被占用需准备备选。
+
 - [ ] **BLOCKED · 给测试账号 30 天 Pro 真机端到端验证**
   - 真机 `Wu-Tang` 已配对且 DDI 可用，但本机 Xcode 未登录 Apple ID、无开发证书，无法签名安装。
   - 测试账号已设置，见第 1 节。
   - 真机验证免费体验、付费墙、AI 额度、StoreKit 购买、恢复、退款。
 
-- [ ] **BLOCKED · V14–V20 在预发/生产 MySQL 执行并核对回填**
-  - 缺少预发/生产 MySQL 连接与 Flyway 权限；本次只新增了 V21 迁移，未在生产执行。
+- [ ] **BLOCKED · V14–V21 在预发/生产 MySQL 执行并核对回填**
+  - 缺少预发/生产 MySQL 连接与 Flyway 权限；本次新增了 V21 `feature_result_cache`，未在任何 MySQL 执行。
   - 开发库 3307 已完成，不要重复改开发库。
   - 预发/生产只通过 Flyway 执行，不手工改表。
   - 核对 `feature_trials` 与历史 onboarded/meal week 数量。
@@ -162,14 +188,9 @@
 - [x] **拍照分析幂等键**
   - 已实现 `feature_result_cache` V21 + `photo_cache` 服务，覆盖体型、饮食、器械、教练视觉；只缓存脱敏 JSON 文本，TTL 300 秒，不落原图。
   - 客户端在体型/饮食/器械/教练视觉请求带 `Idempotency-Key`；免费用户仍先过 Pro 校验并返回 403。
-  - 服务端已有同用户并发 1 和 5 秒冷却，现在同 key 重试会返回同一份结果。
-  - 如果实现真正幂等：
-    - 不落原图
-    - 只缓存脱敏后的文本结果，TTL 很短（例如 5 分钟）
-    - 同 key 重试不再次调用视觉模型
-    - 免费用户仍然 403
-    - 清理策略和隐私说明要同步更新
-  - 如果决定不做结果缓存，要在文档里明确：并发锁 + 冷却已覆盖防重复扣费，不能假装有幂等回放。
+  - 服务端已有同用户并发 1 和 5 秒冷却；同 key 重试会返回同一份结果。
+  - 过期缓存会在写入新结果时清理；并发写入保留首个幂等结果，不覆盖。
+  - 免费用户仍先过 Pro 校验；原图不落盘。
 
 ### P2 防滥用与成本
 
@@ -179,7 +200,7 @@
   - 建议先设计 challenge/attestation 接口和开关，默认关闭。
 
 - [ ] **BLOCKED · 重复提示词、批量注册的后台筛选与告警看板**
-  - 本机没有 Java/Node/admin 测试数据库，无法运行 admin-server/admin-web；本次未改后台代码。
+  - 风控看板尚未实现；本机仍缺 Java/Node/admin 测试数据库，无法本地运行 admin-server/admin-web 的 CI。
   - 检测而不是直接封禁；家庭共享设备/运营商 NAT 会误报。
   - 后台可按设备、IP、提示词 hash、时间窗筛选。
   - 所有处置必须写审计日志。
@@ -400,3 +421,13 @@ Invoke-WebRequest http://127.0.0.1:5173/admin/
 3. **大文件继续膨胀**：新功能不要继续塞进 `AppStore`、`PlanHomeView`、`CoachChatView`。先抽 service/子 View，再接 UI。
 
 按这个标准做，不要只追求“能跑”。
+
+## 10. Windows OpenCode 同步快照
+
+- 先拉取最新 `develop`，当前改名提交在 `develop` 历史中；本地不要重命名目录。
+- **不要改**：`ios/FitAI/`、`FitAITests/`、`FitAIUITests/`、`FitAIApp.swift`、
+  `FitAI.entitlements`、`FitAI.xcodeproj`、Bundle ID、IAP 商品 ID、URL Scheme、
+  Keychain/UserDefaults key、Java 包名、数据库名。
+- **只改用户可见品牌**：显示名、文案、法律文档、AI 提示词、后台品牌。
+- V21 迁移必须通过 Flyway 执行；后台启动前确认 `feature_result_cache` 存在。
+- App Store 名称/副标题/截图/隐私政策 URL 在 App Store Connect 手工处理，代码里没有 App Store 名称配置。

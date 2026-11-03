@@ -1,4 +1,4 @@
-# FitAI 管理后台部署
+# 叫练管理后台部署
 
 ## 一键启动（Docker Compose）
 

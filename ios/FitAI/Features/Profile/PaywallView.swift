@@ -56,7 +56,7 @@ struct PaywallView: View {
             .safeAreaInset(edge: .bottom) {
                 purchaseBar
             }
-            .navigationTitle("练途 Pro")
+            .navigationTitle("叫练 Pro")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -129,7 +129,7 @@ struct PaywallView: View {
                     .background(Theme.primary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("练途 Pro")
+                    Text("叫练 Pro")
                         .font(AppType.overline)
                         .tracking(1.2)
                         .foregroundStyle(Theme.cobalt)
@@ -186,7 +186,7 @@ struct PaywallView: View {
     private var productsSection: some View {
         if store.hasProAccess {
             VStack(spacing: 10) {
-                Label("已开通练途 Pro", systemImage: "checkmark.seal.fill")
+                Label("已开通叫练 Pro", systemImage: "checkmark.seal.fill")
                     .font(AppType.headline)
                     .foregroundStyle(Theme.cobalt)
                 if let expires = store.accessSnapshot?.proExpiresAt {
@@ -229,7 +229,7 @@ struct PaywallView: View {
             VStack(spacing: 12) {
                 Text("订阅即将开放")
                     .font(AppType.headline)
-                Text("练途 Pro 正在准备中，稍后可以在 App Store 完成订阅。")
+                Text("叫练 Pro 正在准备中，稍后可以在 App Store 完成订阅。")
                     .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
                     .multilineTextAlignment(.center)

@@ -36,7 +36,7 @@ extension LoginView {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("练途")
+                Text("叫练")
                     .font(AppType.title)
                     .foregroundStyle(Theme.ink)
                 Text("AI 健身教练")
@@ -63,7 +63,7 @@ extension LoginView {
 
     func headline(compact: Bool) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("登录练途")
+            Text("登录叫练")
                 .font(.system(size: compact ? 27 : 34, weight: .bold, design: .default))
                 .tracking(-0.5)
                 .foregroundStyle(Theme.ink)

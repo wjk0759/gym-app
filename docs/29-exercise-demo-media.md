@@ -6,7 +6,7 @@
 
 已接入 MoveKit 免费示例的 2 个动作，用于本地评估：
 
-| FitAI 动作 | MoveKit 示例 | 文件 |
+| 叫练动作 | MoveKit 示例 | 文件 |
 |---|---|---|
 | `pullup` / 引体向上 | Pull Ups | `pull-ups.mp4` |
 | `dumbbell_fly` / 哑铃飞鸟 | Dumbbell Chest Fly | `dumbbell-chest-fly.mp4` |
@@ -62,7 +62,7 @@ backend\.venv\Scripts\python.exe tools\media\install_movekit_sample.py --remove
 ## 4. 验收重点
 
 1. 动作起始和结束是否自然，循环播放是否有明显跳帧；
-2. 3D 人体风格是否符合 FitAI 的深色界面；
+2. 3D 人体风格是否符合叫练的深色界面；
 3. 手机弱网下首帧和播放是否流畅；
 4. 视频加载失败时是否回退到动作说明，不影响训练；
 5. 素材授权是否覆盖正式 App、CDN 和未来付费功能。

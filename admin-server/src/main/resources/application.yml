@@ -105,6 +105,6 @@ fitai:
 
 info:
   app:
-    name: FitAI Admin
+    name: 叫练 Admin
     version: 1.0.0
-    description: FitAI 企业级后台管理控制面
+    description: 叫练企业级后台管理控制面

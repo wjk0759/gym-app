@@ -4,7 +4,7 @@
 --   admin-server/src/main/resources/db/migration/V2__admin_console.sql
 
 -- ============================================================
--- FitAI / 练途 · PostgreSQL 16 建表脚本
+-- 叫练 · PostgreSQL 16 建表脚本
 -- 说明：
 --   1. 生产环境使用 PostgreSQL 16 + pgvector
 --   2. 开发环境后端默认使用 SQLite（模型自动建表），本脚本是规范来源

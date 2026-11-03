@@ -312,7 +312,7 @@ def seed_exercises(db: Session) -> None:
     for item in EXERCISES:
         if item["slug"] in existing:
             continue
-        db.add(Exercise(source="self_produced", license="FitAI internal", **item))
+        db.add(Exercise(source="self_produced", license="叫练 internal", **item))
     try:
         db.commit()
     except IntegrityError:

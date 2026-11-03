@@ -44,7 +44,7 @@ tab/equipment (1)
 | `foodCustom` | 手动添加食物 | `foodAdd` | `foodAdd` |
 | `foodPhotoCamera` | 饮食拍照 | `nutrition`、`foodPhoto` | 拍照 / 重拍来源 |
 | `foodPhoto` | 识别结果 | 拍照完成后替换 `foodPhotoCamera` | `nutrition` |
-| `paywall` | 练途 Pro | `tabs/profile`、`tabs/coach` | 原 Tab |
+| `paywall` | 叫练 Pro | `tabs/profile`、`tabs/coach` | 原 Tab |
 | `profileEdit` | 编辑资料 | `tabs/profile` | `tabs/profile` |
 | `settings` | 设置 | `tabs/profile` | `tabs/profile` |
 | `bodyAnalysis` | 体型照片分析 | `tabs/profile` | `tabs/profile` |

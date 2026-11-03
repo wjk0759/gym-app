@@ -1,6 +1,6 @@
 # Common commercial-gym / iron-gym movements.
 # One primary movement per pattern; broad variants are intentionally omitted.
-# Existing FitAI manual seed exercises are always preserved separately.
+# Existing 叫练 manual seed exercises are always preserved separately.
 barbell incline bench press
 dumbbell fly
 lever chest press

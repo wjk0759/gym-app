@@ -39,7 +39,7 @@ MAX_MEMORIES = 80
 
 logger = logging.getLogger(__name__)
 
-MEMORY_PROMPT = """你是 FitAI 的记忆整理器。
+MEMORY_PROMPT = """你是「叫练」的记忆整理器。
 从用户和教练的一轮对话中提取“未来会影响训练安排或教练回答”的稳定事实。
 只输出 JSON，不要 Markdown：
 {"memories":[{"kind":"schedule","key":"weekly_schedule","content":"用户每周二、四、六训练，每次 30 分钟","confidence":0.95}]}

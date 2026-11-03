@@ -1,6 +1,6 @@
 # Exercise dataset notice
 
-The exercise metadata and multilingual instruction text imported into FitAI are
+The exercise metadata and multilingual instruction text imported into 叫练 are
 derived from:
 
 - **hasaneyldrm/exercises-dataset**
@@ -33,7 +33,7 @@ SOFTWARE.
 ## Media
 
 The upstream repository also contains exercise images and GIFs that are
-copyright **Gym visual** and are **not** covered by the MIT license. FitAI does
+copyright **Gym visual** and are **not** covered by the MIT license. 叫练 does
 not import, copy, or redistribute those media files. If media is added later,
 the Gym visual attribution and separate media terms must be reviewed:
 <https://gymvisual.com/content/3-terms-and-conditions-of-use>.
