@@ -11,7 +11,7 @@
 - Windows 仓库：`E:\Projects\FitAI`
 - macOS 工作区：`/Users/jacobwu/gym-app`
 - 当前分支：`feat/pro-access-followup-2026-11`，基于 `develop`
-- 远端 `develop`：`5923bc8 fix(access): paywall plan regeneration entry`
+- 远端 `develop`：`7324577 feat(onboarding): replace focus body map with card grid`
 - 正式发布前仍需真实数据库、真机和 App Store Connect 配置
 
 > **2026-11-03 macOS 进展：品牌已改名「叫练」。** 用户可见品牌、法律文档、
@@ -23,6 +23,20 @@
 > 验证：iOS 构建成功，SwiftLint **0 violation**，单元测试 29/29，UI 导航测试通过；
 > backend 171 个测试 + smoke 通过；全仓库 `练途` 已清零。
 > 外部凭据/真机/预发库/App Store Connect 项仍标 BLOCKED。
+
+> **2026-11-04 Windows 进展（已推送 `develop`）**
+> - `4fcf8c4` 免费教练额度：免费文本改走 `/agent/chat`，额度用尽后不再本地回复，
+>   聊天页显示内联 Pro 卡；安全消息仍由服务端优先处理。
+> - `2ce8ae1` 体型/体脂：接入 54 张组合图，顺序改为先体型后体脂，报告显示组合图。
+> - `f78cf1e` 性别页：头像双卡 + 自适应大人台；新增 Male/FemalePortrait。
+> - `7324577` 训练重点：改为器械页同款卡片网格；「均衡练全身」为互斥卡；
+>   取消最多 2 个限制；删除 `BodyFocusMap`、`BodySilhouette`、`BodyType`
+>   比例参数和旧人体图代码。
+> - 计划生成：重点部位不再截断为 2 个；7 个全选按均衡处理。
+> - 验证：backend **174 passed** + Ruff 通过；Windows 只做了 Swift 语法解析，
+>   **没有跑 iOS 构建**。Mac 拉取后先 `cd ios && xcodegen generate`，再 build/test；
+>   重点检查浅色/深色下的性别页和训练重点卡片。
+> - `BodyShapes.swift` 已从 600+ 行降到约 320 行；不要再恢复旧轮廓人体组件。
 
 历史 CI（改名提交后请以新 CI 结果为准；不要引用旧提交的绿色状态）：
 
@@ -424,7 +438,11 @@ Invoke-WebRequest http://127.0.0.1:5173/admin/
 
 ## 10. Windows OpenCode 同步快照
 
-- 先拉取最新 `develop`，当前改名提交在 `develop` 历史中；本地不要重命名目录。
+- 先拉取最新 `develop`；当前改名提交在 `develop` 历史中；本地不要重命名目录。
+- 最新 Windows 提交：`7324577`（训练重点卡片网格）；之前还有 `f78cf1e`（性别页）、
+  `2ce8ae1`（体型/体脂图）、`4fcf8c4`（免费教练额度）。
+- **不要恢复**：`BodyFocusMap`、`BodySilhouette`、`BodyType.shoulder/waist/hip`
+  等旧轮廓人体组件；用户要求删除。
 - **不要改**：`ios/FitAI/`、`FitAITests/`、`FitAIUITests/`、`FitAIApp.swift`、
   `FitAI.entitlements`、`FitAI.xcodeproj`、Bundle ID、IAP 商品 ID、URL Scheme、
   Keychain/UserDefaults key、Java 包名、数据库名。
