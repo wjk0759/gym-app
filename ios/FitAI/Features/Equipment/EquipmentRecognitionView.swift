@@ -42,8 +42,12 @@ struct EquipmentRecognitionView: View {
         AppScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 header
-                scanHeaderCard
-                matchesSection
+                if store.hasProAccess {
+                    scanHeaderCard
+                    matchesSection
+                } else {
+                    proLockedCard
+                }
             }
             .padding(.horizontal, 20)
             .padding(.top, 8)
@@ -70,6 +74,10 @@ struct EquipmentRecognitionView: View {
             }
         }
         .task {
+            if store.accessSnapshot == nil {
+                await store.refreshAccess()
+            }
+            guard store.hasProAccess else { return }
             guard !didAutoStartCamera, selectedImage == nil else { return }
             didAutoStartCamera = true
             showCamera = true
@@ -143,6 +151,37 @@ struct EquipmentRecognitionView: View {
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    private var proLockedCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Image(systemName: "crown.fill")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(Theme.onPrimary)
+                .frame(width: 42, height: 42)
+                .background(Theme.primary, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+
+            Text("器械识别是 Pro 权益")
+                .font(AppType.headline)
+                .foregroundStyle(Theme.ink)
+
+            Text("开通 Pro 后可以拍器械照片，自动匹配动作库并加入个人器械库。")
+                .font(AppType.caption)
+                .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button("开通练途 Pro") {
+                store.requestPro(.equipmentScan)
+            }
+            .buttonStyle(PrimaryButtonStyle())
+
+            Text("识别结果只用于动作匹配，不会保存原始照片。")
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(Theme.tertiaryText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .editorialCard(accent: Theme.lime)
     }
 
     private var scanHeaderCard: some View {
@@ -347,29 +386,42 @@ struct EquipmentRecognitionView: View {
 
     private func scan() {
         guard let data = imageData else { return }
+        guard store.requirePro(.equipmentScan) else {
+            isScanning = false
+            return
+        }
         isScanning = true
 
         Task { @MainActor in
-            let result = await EquipmentRecognitionService.recognize(
-                imageData: data,
-                preferRemote: store.canUseRemoteAI,
-                idempotencyKey: scanKey
-            )
-            candidates = result.candidates
-            description = result.description
-            recognizedName = result.name
-            notInLibrary = result.notInLibrary
-            customAddedName = ""
-            onRecognized?(result)
-            isScanning = false
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
-            if result.notInLibrary && !didAutoOfferCustom {
-                didAutoOfferCustom = true
-                if showCamera {
-                    pendingCustomOffer = true
-                } else {
-                    showAddCustom = true
+            do {
+                let result = try await EquipmentRecognitionService.recognize(
+                    imageData: data,
+                    preferRemote: store.canUseRemoteAI,
+                    idempotencyKey: scanKey
+                )
+                candidates = result.candidates
+                description = result.description
+                recognizedName = result.name
+                notInLibrary = result.notInLibrary
+                customAddedName = ""
+                onRecognized?(result)
+                isScanning = false
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                if result.notInLibrary && !didAutoOfferCustom {
+                    didAutoOfferCustom = true
+                    if showCamera {
+                        pendingCustomOffer = true
+                    } else {
+                        showAddCustom = true
+                    }
                 }
+            } catch EquipmentRecognitionError.proRequired {
+                isScanning = false
+                await store.refreshAccess()
+                store.requestPro(.equipmentScan)
+            } catch {
+                isScanning = false
+                description = error.localizedDescription
             }
         }
     }

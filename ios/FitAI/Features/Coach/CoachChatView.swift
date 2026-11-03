@@ -176,7 +176,9 @@ struct CoachChatView: View {
             }
             .onChange(of: store.coachEquipmentScanRequested) { _, requested in
                 if requested {
-                    showEquipmentScan = true
+                    if store.requirePro(.equipmentScan) {
+                        showEquipmentScan = true
+                    }
                     store.coachEquipmentScanRequested = false
                 }
             }

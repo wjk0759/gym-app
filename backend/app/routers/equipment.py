@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from ..deps import CurrentUser, DBSession
 from ..models import EquipmentLibraryItem, EquipmentScan, Exercise
 from ..schemas import EquipmentLibraryIn
-from ..services import generation, photo_cache
+from ..services import access, generation, photo_cache
 from ..services.equipment import recognize, refresh_profile_equipment_cache
 
 router = APIRouter(tags=["equipment"])
@@ -23,6 +23,10 @@ async def scan(
         default=None, alias="Idempotency-Key", max_length=64
     ),
 ):
+    # Check entitlement before the cache, generation lock or vision model so a
+    # free account cannot read cached results or burn a cooldown.
+    access.require_feature(db, user_id, access.FEATURE_EQUIPMENT_SCAN)
+
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(
             status_code=415, detail="仅支持 jpeg/png/webp/heic 图片"

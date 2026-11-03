@@ -112,13 +112,13 @@ struct HomeV2View: View {
             .sheet(isPresented: $showCaptureHub) {
                 CaptureHubView { kind in
                     showCaptureHub = false
-                    let feature: ProFeature? = switch kind {
+                    let feature: ProFeature = switch kind {
                     case .food: .foodPhoto
                     case .body: .bodyPhoto
                     case .action: .videoReview
-                    case .equipment: nil
+                    case .equipment: .equipmentScan
                     }
-                    if let feature, !store.requirePro(feature) {
+                    if !store.requirePro(feature) {
                         return
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {

@@ -96,7 +96,9 @@ struct DiscoverView: View {
     private var equipmentHero: some View {
         Button {
             Haptics.tap()
-            showEquipmentScan = true
+            if store.requirePro(.equipmentScan) {
+                showEquipmentScan = true
+            }
         } label: {
             HStack(alignment: .top, spacing: 14) {
                 VStack(alignment: .leading, spacing: 9) {

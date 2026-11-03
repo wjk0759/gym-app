@@ -64,7 +64,6 @@ struct RootView: View {
             isAuthenticated
         }
         .task {
-            store.access.storeKitPro = subscriptions.isPro
             await auth.restoreIfNeeded()
             refreshSession()
         }
@@ -78,7 +77,6 @@ struct RootView: View {
             }
         }
         .onChange(of: subscriptions.isPro) { _, isPro in
-            store.access.storeKitPro = isPro
             if isPro {
                 Task { await store.refreshAccess() }
             }

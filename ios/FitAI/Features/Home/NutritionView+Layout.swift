@@ -179,7 +179,7 @@ extension NutritionView {
                 }
             }
             .buttonStyle(SubtlePressStyle())
-            .disabled(isGeneratingPlan || !store.canUseRemoteAI)
+            .disabled(isGeneratingPlan)
         }
     }
 

@@ -8,6 +8,7 @@ extension CoachChatView {
         let caption = String(input.trimmingCharacters(in: .whitespacesAndNewlines).prefix(500))
 
         if let video = draftVideo {
+            guard store.requirePro(.videoReview) else { return }
             guard draftAttachments.isEmpty else {
                 attachmentError = "图片和视频不能同时发送，请先清空其中一种。"
                 return
@@ -28,7 +29,8 @@ extension CoachChatView {
                 caption: caption,
                 question: question,
                 videoThumbnailData: thumbnailData,
-                videoDurationSeconds: video.durationSeconds
+                videoDurationSeconds: video.durationSeconds,
+                proFeature: .videoReview
             )
             return
         }
@@ -38,6 +40,7 @@ extension CoachChatView {
             return
         }
 
+        guard store.requirePro(.coachAI) else { return }
         let images = draftAttachments.map(\.data)
         guard !images.isEmpty else { return }
 

@@ -8,7 +8,8 @@ extension AppStore {
         caption: String,
         question: String? = nil,
         videoThumbnailData: Data? = nil,
-        videoDurationSeconds: Int? = nil
+        videoDurationSeconds: Int? = nil,
+        proFeature: ProFeature = .coachAI
     ) {
         let trimmed = caption.trimmingCharacters(in: .whitespacesAndNewlines)
         let images = Array(imageData.prefix(CoachAttachmentPolicy.maxImages))
@@ -90,6 +91,9 @@ extension AppStore {
                 )
             } catch is CancellationError {
                 return
+            } catch let error as APIError where error.isProRequired {
+                await self.refreshAccess()
+                self.requestPro(proFeature)
             } catch {
                 guard !Task.isCancelled else { return }
                 self.chat.append(

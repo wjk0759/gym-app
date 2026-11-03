@@ -6,19 +6,24 @@ final class FeaturePolicyTests: XCTestCase {
         try JSONDecoder().decode(AccessSnapshot.self, from: Data(json.utf8))
     }
 
-    func testStoreKitFallbackUnlocksEveryProFeature() {
-        let policy = FeaturePolicy(
-            snapshot: nil,
-            storeKitPro: true,
-            debugForcePro: false
+    func testOnlyServerSnapshotUnlocksProFeatures() throws {
+        let free = try snapshot(
+            """
+            {"is_pro":false,"pro_sources":[],"features":{}}
+            """
+        )
+        let pro = try snapshot(
+            """
+            {"is_pro":true,"pro_sources":["admin"],"features":{}}
+            """
         )
 
-        XCTAssertTrue(policy.isPro)
-        XCTAssertTrue(policy.hasAccess(to: .mealPlan))
-        XCTAssertTrue(policy.canGenerateTrainingPlan)
-        XCTAssertTrue(policy.canGenerateMealPlan)
-        XCTAssertTrue(policy.canSendCoachMessage)
-        XCTAssertNil(policy.coachRemaining)
+        XCTAssertFalse(FeaturePolicy(snapshot: free).isPro)
+        XCTAssertFalse(FeaturePolicy(snapshot: nil).isPro)
+        XCTAssertFalse(FeaturePolicy(snapshot: free).hasAccess(to: .equipmentScan))
+        XCTAssertTrue(FeaturePolicy(snapshot: pro).isPro)
+        XCTAssertTrue(FeaturePolicy(snapshot: pro).hasAccess(to: .mealPlan))
+        XCTAssertTrue(FeaturePolicy(snapshot: pro).hasAccess(to: .equipmentScan))
     }
 
     func testFreeMealPlanOnlyAllowsTheSavedTrial() throws {
@@ -38,11 +43,11 @@ final class FeaturePolicyTests: XCTestCase {
         )
 
         XCTAssertTrue(
-            FeaturePolicy(snapshot: available, storeKitPro: false, debugForcePro: false)
+            FeaturePolicy(snapshot: available)
                 .canGenerateMealPlan
         )
         XCTAssertFalse(
-            FeaturePolicy(snapshot: used, storeKitPro: false, debugForcePro: false)
+            FeaturePolicy(snapshot: used)
                 .canGenerateMealPlan
         )
     }
@@ -55,11 +60,7 @@ final class FeaturePolicyTests: XCTestCase {
             }}
             """
         )
-        let policy = FeaturePolicy(
-            snapshot: snapshot,
-            storeKitPro: false,
-            debugForcePro: false
-        )
+        let policy = FeaturePolicy(snapshot: snapshot)
 
         XCTAssertFalse(policy.canSendCoachMessage)
         XCTAssertEqual(policy.coachRemaining, 0)
@@ -73,11 +74,7 @@ final class FeaturePolicyTests: XCTestCase {
             }}
             """
         )
-        let policy = FeaturePolicy(
-            snapshot: used,
-            storeKitPro: false,
-            debugForcePro: false
-        )
+        let policy = FeaturePolicy(snapshot: used)
 
         XCTAssertFalse(policy.canGenerateTrainingPlan)
         XCTAssertFalse(policy.canGenerateOnboardingPlan)

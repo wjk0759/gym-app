@@ -1,15 +1,14 @@
 import Foundation
 
-/// Pure access decisions derived from the server snapshot plus the StoreKit
-/// fallback. Views and services ask this type instead of re-implementing Pro
+/// Pure access decisions derived from the server snapshot. StoreKit is only a
+/// purchase signal that triggers server sync; it must never unlock features by
+/// itself. Views and services ask this type instead of re-implementing Pro
 /// checks, so a new paywall entry cannot drift from the server rules.
 struct FeaturePolicy: Equatable {
     let snapshot: AccessSnapshot?
-    let storeKitPro: Bool
-    let debugForcePro: Bool
 
     var isPro: Bool {
-        snapshot?.isPro == true || storeKitPro || debugForcePro
+        snapshot?.isPro == true
     }
 
     /// Pro is a single global entitlement, not a per-feature subscription.

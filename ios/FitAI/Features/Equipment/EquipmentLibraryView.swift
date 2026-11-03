@@ -23,6 +23,7 @@ struct EquipmentLibraryView: View {
     @State private var query = ""
     @State private var openRowID: UUID?
     @State private var pendingDelete: EquipmentItem?
+    @State private var showScanner = false
 
     private var pinnedIDs: Set<String> {
         Set(pinnedEquipmentIDsRaw.split(separator: ",").map(String.init))
@@ -90,6 +91,9 @@ struct EquipmentLibraryView: View {
             }
         }
         .keyboardDoneToolbar()
+        .navigationDestination(isPresented: $showScanner) {
+            EquipmentRecognitionView()
+        }
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .manual:
@@ -218,8 +222,11 @@ struct EquipmentLibraryView: View {
                     .stroke(Theme.stroke, lineWidth: 1)
             )
 
-            NavigationLink {
-                EquipmentRecognitionView()
+            Button {
+                Haptics.tap()
+                if store.requirePro(.equipmentScan) {
+                    showScanner = true
+                }
             } label: {
                 Image(systemName: "camera.viewfinder")
                     .font(.system(size: 19, weight: .semibold))
@@ -339,8 +346,11 @@ struct EquipmentLibraryView: View {
                     }
                     .buttonStyle(PrimaryButtonStyle())
 
-                    NavigationLink {
-                        EquipmentRecognitionView()
+                    Button {
+                        Haptics.tap()
+                        if store.requirePro(.equipmentScan) {
+                            showScanner = true
+                        }
                     } label: {
                         Label("拍照识别", systemImage: "camera.fill")
                     }

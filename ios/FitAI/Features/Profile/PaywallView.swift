@@ -15,6 +15,12 @@ struct PaywallView: View {
             ?? manager.products.first
     }
 
+    /// StoreKit has a verified purchase but the server snapshot has not caught
+    /// up yet. Keep the paywall honest: purchased is not the same as active.
+    private var isAwaitingServerEntitlement: Bool {
+        !store.hasProAccess && manager.isPro
+    }
+
     private var annualSaving: Int? {
         guard let monthly = manager.products.first(where: {
             $0.id == SubscriptionManager.ProductID.monthly
@@ -81,7 +87,7 @@ struct PaywallView: View {
 
     @ViewBuilder
     private var purchaseBar: some View {
-        if !store.hasProAccess, let product = effectiveProduct {
+        if !store.hasProAccess, !manager.isPro, let product = effectiveProduct {
             VStack(spacing: 8) {
                 Button {
                     Task { await manager.purchase(product) }
@@ -188,6 +194,25 @@ struct PaywallView: View {
                         .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
+            }
+            .frame(maxWidth: .infinity)
+            .card()
+        } else if isAwaitingServerEntitlement {
+            VStack(spacing: 10) {
+                Label("订阅已购买，正在同步权益", systemImage: "arrow.triangle.2.circlepath")
+                    .font(AppType.headline)
+                    .foregroundStyle(Theme.cobalt)
+                Text("Apple 已确认购买，正在等待服务端开通。通常几秒内完成，不需要重复支付。")
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.secondaryText)
+                    .multilineTextAlignment(.center)
+                Button("重新同步") {
+                    Task {
+                        await manager.refreshEntitlements()
+                        await store.refreshAccess()
+                    }
+                }
+                .buttonStyle(SecondaryButtonStyle())
             }
             .frame(maxWidth: .infinity)
             .card()

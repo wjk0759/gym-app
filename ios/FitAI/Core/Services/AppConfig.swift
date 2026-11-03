@@ -37,13 +37,5 @@ enum AppConfig {
 #endif
     }
 
-    static var debugForceRemoteAI: Bool {
-#if DEBUG
-        true
-#else
-        false
-#endif
-    }
-
     static let appVersion = "0.1.0"
 }

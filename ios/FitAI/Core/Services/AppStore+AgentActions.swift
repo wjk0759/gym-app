@@ -472,6 +472,7 @@ extension AppStore {
                 self.rescheduleNotifications()
                 self.syncPendingUserData()
             } catch let error as APIError where error.isProRequired {
+                await self.refreshAccess()
                 self.requestPro(.trainingPlan)
             } catch {
                 self.chat.append(

@@ -354,7 +354,8 @@ struct WeekDietPlanView: View {
                 errorMessage = "生成太频繁，请稍后再试。"
             }
         } catch let error as APIError
-            where error.isProRequired || (error.statusCode == 403 && error.code == nil) {
+            where error.isProRequired {
+            await store.refreshAccess()
             store.requestPro(.mealPlan)
         } catch {
             errorMessage = "生成失败，请稍后重试。"

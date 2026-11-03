@@ -29,13 +29,9 @@ extension SettingsView {
                 .fixedSize(horizontal: false, vertical: true)
 
 #if DEBUG
-            Toggle("开发模式：跳过 Pro 限制", isOn: Binding(
-                get: { store.debugForceRemoteAI },
-                set: { store.debugForceRemoteAI = $0 }
-            ))
-            .font(AppType.caption)
-            .tint(Theme.primary)
-
+            Text("Debug 构建不会绕过 Pro；请用服务端测试账号验证 Pro。")
+                .font(AppType.caption)
+                .foregroundStyle(Theme.tertiaryText)
 #endif
 
             Text(AppConfig.apiBaseURL.absoluteString)

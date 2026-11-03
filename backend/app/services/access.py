@@ -26,6 +26,7 @@ FEATURE_COACH_AI = "coach_ai"
 FEATURE_FOOD_PHOTO = "food_photo"
 FEATURE_BODY_PHOTO = "body_photo"
 FEATURE_AI_VISION = "ai_vision"
+FEATURE_EQUIPMENT_SCAN = "equipment_scan"
 FEATURE_ADVANCED_REVIEW = "advanced_review"
 COACH_WEEKLY_LIMIT = 3
 
@@ -141,6 +142,10 @@ def access_snapshot(db: Session, user_id: str) -> dict:
                 "remaining": remaining,
                 "reset_at": reset.isoformat(),
                 "can_send": entitlement.active or (remaining or 0) > 0,
+            },
+            FEATURE_EQUIPMENT_SCAN: {
+                "can_scan": entitlement.active,
+                "requires_pro": not entitlement.active,
             },
         },
     }

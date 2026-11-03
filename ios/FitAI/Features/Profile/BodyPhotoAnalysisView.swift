@@ -340,6 +340,7 @@ struct BodyPhotoAnalysisView: View {
 
     private func analyze() {
         guard let imageData, consent else { return }
+        guard store.requirePro(.bodyPhoto) else { return }
         isAnalyzing = true
 
         if store.canUseRemoteAI {
@@ -350,9 +351,16 @@ struct BodyPhotoAnalysisView: View {
                         idempotencyKey: analysisKey
                     )
                     finish(result)
+                } catch let error as APIError where error.isProRequired {
+                    isAnalyzing = false
+                    await store.refreshAccess()
+                    store.requestPro(.bodyPhoto)
+                } catch let error as APIError
+                    where error.statusCode == nil || (error.statusCode ?? 0) >= 500 {
+                    finish(BodyAnalysisService.analyze(imageData: imageData))
                 } catch {
                     isAnalyzing = false
-                    message = "这次照片分析没有完成，请检查网络后重试。照片没有被保存。"
+                    message = error.localizedDescription
                     showAlert = true
                 }
             }

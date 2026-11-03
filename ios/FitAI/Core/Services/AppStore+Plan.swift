@@ -62,14 +62,15 @@ extension AppStore {
                         self.toast = "计划生成太频繁，请稍后再试"
                     }
                     return
-                } catch let error as APIError
-                    where error.isProRequired || (error.statusCode == 403 && error.code == nil) {
+                } catch let error as APIError where error.isProRequired {
                     self.isGenerating = false
-                    if self.hasProAccess {
-                        self.toast = "计划服务暂时不可用，请稍后重试"
-                    } else {
-                        self.requestPro(.trainingPlan)
-                    }
+                    await self.refreshAccess()
+                    self.requestPro(.trainingPlan)
+                    return
+                } catch let error as APIError
+                    where error.statusCode == 403 && error.code == nil {
+                    self.isGenerating = false
+                    self.toast = "计划服务暂时不可用，请稍后重试"
                     return
                 } catch {
                     var fallback = self.planGeneration.generateLocal(

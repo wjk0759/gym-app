@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// Server-authoritative access state plus the local StoreKit/debug fallback.
+/// Server-authoritative access state plus the paywall coordinator.
 ///
 /// AppStore owns one instance for app-wide refresh, but the access rules live
 /// here so AppStore does not become the entitlement store as well as the data
@@ -10,17 +10,11 @@ import Observation
 @Observable
 final class FeatureAccessStore {
     private(set) var snapshot: AccessSnapshot?
-    var storeKitPro = false
-    var debugForcePro = AppConfig.debugForceRemoteAI
 
     let paywall = ProPaywallCoordinator()
 
     var policy: FeaturePolicy {
-        FeaturePolicy(
-            snapshot: snapshot,
-            storeKitPro: storeKitPro,
-            debugForcePro: debugForcePro
-        )
+        FeaturePolicy(snapshot: snapshot)
     }
 
     var isPro: Bool { policy.isPro }

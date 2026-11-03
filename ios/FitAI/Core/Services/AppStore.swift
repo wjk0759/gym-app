@@ -122,11 +122,6 @@ final class AppStore {
     /// 仅用于 Debug 预览 DeepSeek；正式包不会暴露出开关。
     var healthKitEnabled = false
 
-    var debugForceRemoteAI: Bool {
-        get { access.debugForcePro }
-        set { access.debugForcePro = newValue }
-    }
-
     var currentUserID: String? = AuthTokenStore.shared.userID
     // 状态较大时 JSON 编码和原子落盘会阻塞主线程；写入串行放到 utility 队列。
     let planGeneration = PlanGenerationService()
@@ -284,7 +279,6 @@ final class AppStore {
         let debugRemoteMigration = "fitai_debug_remote_default_v2"
         if !UserDefaults.standard.bool(forKey: debugRemoteMigration) {
             useRemoteAI = true
-            debugForceRemoteAI = true
             UserDefaults.standard.set(true, forKey: debugRemoteMigration)
             persistAfterMigration = true
         }

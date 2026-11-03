@@ -281,6 +281,7 @@ struct FoodPhotoAnalysisView: View {
 
     private func analyze() {
         guard let imageData else { return }
+        guard store.requirePro(.foodPhoto) else { return }
         isAnalyzing = true
         items = []
         confidence = 0
@@ -294,8 +295,18 @@ struct FoodPhotoAnalysisView: View {
                         imageData: imageData,
                         idempotencyKey: analysisKey
                     ))
-                } catch {
+                } catch let error as APIError where error.isProRequired {
+                    isAnalyzing = false
+                    await store.refreshAccess()
+                    store.requestPro(.foodPhoto)
+                } catch let error as APIError
+                    where error.statusCode == nil || (error.statusCode ?? 0) >= 500 {
+                    // Only network/5xx failures fall back to the local estimate.
                     finish(FoodVisionService.analyze(imageData: imageData))
+                } catch {
+                    isAnalyzing = false
+                    message = error.localizedDescription
+                    showAlert = true
                 }
             }
             return

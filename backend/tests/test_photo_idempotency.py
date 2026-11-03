@@ -166,6 +166,43 @@ def test_free_user_still_gets_403_even_with_cached_result(db):
     assert exc.value.status_code == 403
 
 
+def test_equipment_scan_requires_pro_before_cache_or_model(db, monkeypatch):
+    db.add(User(id="free-scan-user", phone="13800138012", status="active"))
+    db.commit()
+
+    called = False
+
+    photo_cache.store_cached_result(
+        db,
+        "free-scan-user",
+        "equipment_scan",
+        "free-scan-key",
+        {"scan_id": "cached", "candidates": [], "description": "cached"},
+    )
+
+    async def fake_recognize(*args, **kwargs):
+        nonlocal called
+        called = True
+        return {}
+
+    monkeypatch.setattr(equipment, "recognize", fake_recognize)
+
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(
+            equipment.scan(
+                "free-scan-user",
+                db,
+                _upload(),
+                idempotency_key="free-scan-key",
+            )
+        )
+
+    assert exc.value.status_code == 403
+    assert exc.value.detail["code"] == "PRO_REQUIRED"
+    assert exc.value.detail["feature"] == "equipment_scan"
+    assert called is False
+
+
 def test_equipment_scan_replays_without_creating_duplicate_scan(db, monkeypatch):
     calls = 0
 

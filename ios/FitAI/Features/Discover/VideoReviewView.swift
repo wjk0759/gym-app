@@ -193,6 +193,10 @@ struct VideoReviewView: View {
 
     @MainActor
     private func prepare(_ item: PhotosPickerItem) async {
+        guard store.requirePro(.videoReview) else {
+            videoItem = nil
+            return
+        }
         isProcessing = true
         errorMessage = ""
         contactSheet = nil
@@ -306,6 +310,7 @@ struct VideoReviewView: View {
     }
 
     private func send(_ image: UIImage) {
+        guard store.requirePro(.videoReview) else { return }
         guard let sheetData = image.jpegData(compressionQuality: 0.72) else {
             errorMessage = "视频预览生成失败，换一段视频试试。"
             return
@@ -322,7 +327,8 @@ struct VideoReviewView: View {
             caption: noteText.isEmpty ? "请教练点评这段训练视频的截帧。" : noteText,
             question: question,
             videoThumbnailData: thumbnailData,
-            videoDurationSeconds: Int(duration)
+            videoDurationSeconds: Int(duration),
+            proFeature: .videoReview
         )
         store.selectedTab = 2
         dismiss()

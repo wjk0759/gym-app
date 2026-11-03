@@ -57,6 +57,9 @@ def test_pro_snapshot_unlocks_all_features():
     assert snapshot["features"][access.FEATURE_TRAINING_PLAN]["can_generate"] is True
     assert snapshot["features"][access.FEATURE_MEAL_PLAN]["can_generate"] is True
     assert snapshot["features"][access.FEATURE_COACH_AI]["remaining"] is None
+    equipment = snapshot["features"][access.FEATURE_EQUIPMENT_SCAN]
+    assert equipment["can_scan"] is True
+    assert equipment["requires_pro"] is False
 
 
 def test_scheduled_extension_extends_displayed_expiry():

@@ -92,7 +92,16 @@ struct NutritionView: View {
 
     @MainActor
     func generateAIPlan() async {
-        guard store.canUseRemoteAI, !isGeneratingPlan else { return }
+        guard !isGeneratingPlan else { return }
+        guard store.access.policy.canGenerateMealPlan else {
+            store.requestPro(.mealPlan)
+            return
+        }
+        guard store.useRemoteAI else {
+            message = "已在设置中关闭远程 AI。打开后可以生成 AI 饮食计划。"
+            showAlert = true
+            return
+        }
         isGeneratingPlan = true
         defer { isGeneratingPlan = false }
         let idempotencyKey = pendingPlanGenerationKey ?? UUID().uuidString
@@ -108,6 +117,9 @@ struct NutritionView: View {
                 MealSuggestion(name: $0.name, kcal: $0.kcal, items: $0.items)
             }
             aiPlanNote = plan.note ?? ""
+        } catch let error as APIError where error.isProRequired {
+            await store.refreshAccess()
+            store.requestPro(.mealPlan)
         } catch {
             message = "AI 饮食计划生成失败，先使用本地餐单参考。"
             showAlert = true

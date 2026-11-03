@@ -216,6 +216,7 @@ extension CoachChatView {
                     showDietLibrary = true
                 }
                 CoachQuickActionButton(title: "动作点评", icon: "camera.viewfinder") {
+                    guard store.requirePro(.coachAI) else { return }
                     cameraTitle = "动作点评"
                     cameraHint = "拍全身侧面，光线清楚，尽量包含器械和完整动作。照片只用于本次点评。"
                     showCamera = true
@@ -226,7 +227,9 @@ extension CoachChatView {
                     }
                 }
                 CoachQuickActionButton(title: "器械识别", icon: "dumbbell") {
-                    showEquipmentScan = true
+                    if store.requirePro(.equipmentScan) {
+                        showEquipmentScan = true
+                    }
                 }
                 CoachQuickActionButton(title: "记录", icon: "list.bullet.rectangle") {
                     store.selectedTab = 1
@@ -259,6 +262,7 @@ extension CoachChatView {
             HStack(spacing: 8) {
             Menu {
                 Button {
+                    guard store.requirePro(.coachAI) else { return }
                     Haptics.tap()
                     cameraTitle = "拍照问教练"
                     cameraHint = "尽量拍到完整动作或器械，避免脸和隐私部位。照片只用于本次对话。"
@@ -271,6 +275,7 @@ extension CoachChatView {
                 .disabled(!canAddImageAttachment)
 
                 Button {
+                    guard store.requirePro(.coachAI) else { return }
                     Haptics.tap()
                     focused = false
                     KeyboardDismiss.dismiss()
@@ -281,6 +286,7 @@ extension CoachChatView {
                 .disabled(!canAddImageAttachment)
 
                 Button {
+                    guard store.requirePro(.videoReview) else { return }
                     Haptics.tap()
                     focused = false
                     KeyboardDismiss.dismiss()
