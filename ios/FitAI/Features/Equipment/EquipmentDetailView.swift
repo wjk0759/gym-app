@@ -123,7 +123,7 @@ struct EquipmentItemDetailView: View {
                 }
             }
             .task {
-                guard let slug = item?.slug else { return }
+                guard AppConfig.exerciseVideosEnabled, let slug = item?.slug else { return }
                 if let url = try? await ExerciseVideoService().officialURL(slug: slug) {
                     officialVideoURL = url
                 }
@@ -154,8 +154,10 @@ struct EquipmentItemDetailView: View {
         VStack(spacing: 16) {
             quickActions(for: item, proxy: proxy)
 
-            // Video is the first content block, not the sixth card.
-            videoContent(for: item)
+            // 教学视频素材未上线，入口先隐藏；播放器代码保留在 EquipmentDetailView+Media.swift。
+            if AppConfig.exerciseVideosEnabled {
+                videoContent(for: item)
+            }
 
             hero(for: item)
             detailTabPicker
@@ -234,7 +236,9 @@ struct EquipmentItemDetailView: View {
                 .buttonStyle(.plain)
             }
 
-            Text("出现关节刺痛、麻木或肿胀时请停止动作并咨询专业人士。教学视频和示范素材由官方动作库提供。")
+            Text(AppConfig.exerciseVideosEnabled
+                 ? "出现关节刺痛、麻木或肿胀时请停止动作并咨询专业人士。教学视频和示范素材由官方动作库提供。"
+                 : "出现关节刺痛、麻木或肿胀时请停止动作并咨询专业人士。示范素材由官方动作库提供。")
                 .font(AppType.micro)
                 .foregroundStyle(Theme.tertiaryText)
                 .multilineTextAlignment(.center)

@@ -151,7 +151,9 @@ struct AddEquipmentView: View {
                                         .foregroundStyle(Theme.ink)
                                     Text(selectedExercise.map {
                                         "\($0.muscle.label) · \($0.equipment.label)"
-                                    } ?? "用于匹配计划与教学视频")
+                                    } ?? (AppConfig.exerciseVideosEnabled
+                                          ? "用于匹配计划与教学视频"
+                                          : "用于匹配计划与动作库"))
                                         .font(.system(size: 9.5, weight: .medium))
                                         .foregroundStyle(Theme.secondaryText)
                                 }

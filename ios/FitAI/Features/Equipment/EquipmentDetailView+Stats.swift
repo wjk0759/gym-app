@@ -14,8 +14,12 @@ func statsContent(for item: EquipmentItem) -> some View {
         let oneRepMaxValue = stats.sessions > 0 && stats.best1RM > 0
             ? formattedMetricValue(stats.best1RM, metric: .oneRepMax)
             : "—"
-        let chartValues = stats.points.map { metricValue($0, metric: statsMetric) }
-        let chartCeiling = max(chartValues.max() ?? 0, 1) * 1.12
+        let chartPoints = stats.points.filter {
+            metricValue($0, metric: statsMetric).isFinite
+        }
+        let chartValues = chartPoints.map { metricValue($0, metric: statsMetric) }
+        let finiteMax = chartValues.max() ?? 0
+        let chartCeiling = max(finiteMax, 1) * 1.12
 
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
@@ -118,7 +122,7 @@ func statsContent(for item: EquipmentItem) -> some View {
             }
             .padding(.top, 10)
 
-            if stats.points.isEmpty {
+            if chartPoints.isEmpty {
                 VStack(spacing: 5) {
                     Image(systemName: "chart.bar")
                         .font(.system(size: 16, weight: .medium))
@@ -146,7 +150,7 @@ func statsContent(for item: EquipmentItem) -> some View {
                 )
                 .padding(.top, 10)
             } else {
-                Chart(stats.points) { point in
+                Chart(chartPoints) { point in
                     AreaMark(
                         x: .value("日期", point.date),
                         y: .value(statsMetric.rawValue, metricValue(point, metric: statsMetric))

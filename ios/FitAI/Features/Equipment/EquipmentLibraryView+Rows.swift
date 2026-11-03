@@ -26,15 +26,17 @@ extension EquipmentLibraryView {
                     .accessibilityLabel("已置顶")
             }
 
-            Text(item.videoURL != nil ? "视频" : "准备中")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(item.videoURL != nil ? Theme.cobalt : Theme.tertiaryText)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background(
-                    item.videoURL != nil ? Theme.cobalt.opacity(0.10) : Theme.ink.opacity(0.035),
-                    in: Capsule(style: .continuous)
-                )
+            if AppConfig.exerciseVideosEnabled {
+                Text(item.videoURL != nil ? "视频" : "准备中")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(item.videoURL != nil ? Theme.cobalt : Theme.tertiaryText)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(
+                        item.videoURL != nil ? Theme.cobalt.opacity(0.10) : Theme.ink.opacity(0.035),
+                        in: Capsule(style: .continuous)
+                    )
+            }
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 9.5, weight: .semibold))

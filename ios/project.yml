@@ -35,10 +35,13 @@ targets:
         CODE_SIGN_STYLE: Automatic
         SUPPORTS_MACCATALYST: NO
         ENABLE_PREVIEWS: YES
+        # 上 TestFlight 前必须替换为生产 HTTPS 域名；默认用保留域名避免误连 localhost。
+        FITAI_API_BASE_URL: "https://api.invalid/api/v1"
       configs:
         Debug:
           ENABLE_TESTABILITY: YES
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+          FITAI_API_BASE_URL: "http://127.0.0.1:8000/api/v1"
     scheme:
       gatherCoverageData: false
       testTargets:

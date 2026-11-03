@@ -89,6 +89,7 @@ struct TrainingPlan: Codable, Identifiable, Hashable {
     var weeks: Int = 4
     var split: SplitType? = nil
     var weeklyDays: Int? = nil
+    var generatedBy: String? = nil
     var days: [PlanDay]
 
     enum CodingKeys: String, CodingKey {
@@ -100,6 +101,7 @@ struct TrainingPlan: Codable, Identifiable, Hashable {
         case weeks
         case split
         case weeklyDays
+        case generatedBy = "generated_by"
         case days
     }
 

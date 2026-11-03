@@ -159,7 +159,9 @@ func hero(for item: EquipmentItem) -> some View {
             HStack(spacing: 6) {
                 detailPill(item.muscle?.label ?? "未分类")
                 detailPill(item.equipment?.label ?? "未设置")
-                detailPill(videoURL != nil ? "教学视频" : "视频准备中", accent: videoURL != nil)
+                if AppConfig.exerciseVideosEnabled {
+                    detailPill(videoURL != nil ? "教学视频" : "视频准备中", accent: videoURL != nil)
+                }
             }
             .padding(.top, 12)
         }

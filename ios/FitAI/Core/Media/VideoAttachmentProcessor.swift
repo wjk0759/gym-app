@@ -99,8 +99,7 @@ enum VideoAttachmentProcessor {
         let url = file.url
         defer { try? FileManager.default.removeItem(at: url) }
 
-        let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
-        let bytes = (attributes?[.size] as? NSNumber)?.intValue ?? 0
+        let bytes = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
         guard bytes <= maxVideoBytes else {
             throw VideoAttachmentError.tooLarge
         }

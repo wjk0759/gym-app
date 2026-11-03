@@ -29,7 +29,7 @@ extension AppStore {
         let librarySlugs = equipmentSlugsForPlan
         let focusAreas = planFocusAreas
 
-        if canUseRemoteAI && weeklyWeekdays == nil {
+        if (canUseRemoteAI || onboarding) && weeklyWeekdays == nil {
             let idempotencyKey = pendingPlanIdempotencyKey ?? UUID().uuidString
             pendingPlanIdempotencyKey = idempotencyKey
             Task { @MainActor in
@@ -46,7 +46,9 @@ extension AppStore {
                     self.pendingPlanIdempotencyKey = nil
                     self.archiveCurrentPlan()
                     self.plan = generated
-                    self.toast = "已由 AI 生成计划"
+                    self.toast = generated.generatedBy == "ai"
+                        ? "已由 AI 生成计划"
+                        : "AI 暂不可用，已用规则模板生成"
                     self.lastPlanGeneratedAt = Date()
                     if onboarding {
                         await self.consumeOnboardingTrialIfNeeded()

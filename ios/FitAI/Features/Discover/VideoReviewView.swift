@@ -207,8 +207,7 @@ struct VideoReviewView: View {
                 throw ReviewError("无法读取这个视频")
             }
             tempURL = file.url
-            let attributes = try? FileManager.default.attributesOfItem(atPath: file.url.path)
-            let fileBytes = (attributes?[.size] as? NSNumber)?.intValue ?? 0
+            let fileBytes = (try? file.url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
             guard fileBytes <= 200 * 1024 * 1024 else {
                 throw ReviewError("视频不能超过 200MB，建议截取 5–40 秒的片段")
             }

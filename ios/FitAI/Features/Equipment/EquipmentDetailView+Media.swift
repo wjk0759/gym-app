@@ -1,5 +1,7 @@
 import SwiftUI
 
+// 教学视频入口由 AppConfig.exerciseVideosEnabled 控制；素材上线前保持隐藏。
+// 这里保留播放器和占位实现，不要删除。
 extension EquipmentItemDetailView {
 @ViewBuilder
 func videoContent(for item: EquipmentItem) -> some View {

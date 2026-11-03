@@ -42,7 +42,7 @@ struct EquipmentPickerExerciseCard: View {
             }
             .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
             .overlay(alignment: .topLeading) {
-                if exercise.videoURL != nil {
+                if AppConfig.exerciseVideosEnabled, exercise.videoURL != nil {
                     HStack(spacing: 3) {
                         Image(systemName: "play.fill")
                             .font(.system(size: 6, weight: .bold))

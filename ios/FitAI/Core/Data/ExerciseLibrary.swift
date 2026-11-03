@@ -8,9 +8,10 @@ enum ExerciseLibrary {
     /// Keep them resolvable by slug, but never offer them as new picks.
     private static let legacy: [Exercise] = load(resource: "legacy_exercises")
 
-    private static let index: [String: Exercise] = Dictionary(
-        uniqueKeysWithValues: (all + legacy).map { ($0.slug, $0) }
-    )
+    private static let index: [String: Exercise] = (all + legacy).reduce(into: [:]) { result, exercise in
+        // A bad resource update must not crash the whole app at first access.
+        result[exercise.slug] = exercise
+    }
 
     static func exercise(slug: String) -> Exercise? {
         index[slug]
@@ -38,7 +39,9 @@ enum ExerciseLibrary {
         guard let url = resourceURL(resource),
               let data = try? Data(contentsOf: url),
               let rows = try? JSONDecoder().decode([ResourceExercise].self, from: data) else {
-            assertionFailure("\(resource).json is missing or invalid")
+            // Never trap on a missing/bad bundled resource; the app can still
+            // show an empty library and remain usable.
+            print("ExerciseLibrary: \(resource).json is missing or invalid")
             return []
         }
         return rows.map { row in

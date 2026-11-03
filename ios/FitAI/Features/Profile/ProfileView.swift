@@ -418,7 +418,7 @@ struct ProfileView: View {
                     Text("我的器械库")
                         .font(AppType.headline)
                         .foregroundStyle(Theme.ink)
-                    Text("已录入 \(store.equipmentLibrary.count) 件 · 教学视频与计划")
+                    Text("已录入 \(store.equipmentLibrary.count) 件 · \(AppConfig.exerciseVideosEnabled ? "教学视频与计划" : "动作与计划")")
                         .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
