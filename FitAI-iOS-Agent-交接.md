@@ -14,12 +14,43 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`c79df35`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：免费教练额度、54 张体型/体脂图、性别页卡通插画（透明素材）、体型/体脂选择器（体脂卡只显示躯干）、训练重点卡片网格、欢迎打字减速、App 内/桌面新 Logo、欢迎文案更新
+- `develop` 代码 HEAD：`c133d24`；本文件的最新同步提交见 `git log -1`
+- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、Release API 占位保护、器械详情崩溃加固
 - macOS 最近完成：品牌改名「叫练」；历史 iOS 构建/SwiftLint/29 个单测通过
-- 最新后端验证：**174 passed**，Ruff 通过
-- Mac 待办：`git pull` → `cd ios && xcodegen generate` → build/test → 浅色/深色真机检查
-- 仍 BLOCKED：App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 沙盒、真机签名、预发/生产 Flyway
+- 最新后端验证：**175 passed**，Ruff 通过
+- Mac 待办：把 `ios/project.yml` 的 `FITAI_API_BASE_URL` 换成生产 HTTPS 域名 → `xcodegen generate` → build/test → 器械详情/拍照/计划真机检查
+- 仍 BLOCKED：生产 API 域名、生产 MySQL V14–V21、短信/测试账号、IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、公网隐私政策 URL、Mac 签名上传
+
+### 2026-11-04 · Windows / OpenCode（真实视觉 / AI 计划 / 视频隐藏 / TestFlight 加固）
+
+- 提交：`8b1d57a`、`c133d24`
+- 做了什么：
+  - 视觉默认复用 DeepSeek Flash：`VISION_MODEL` 留空时回退 `LLM_MODEL`，
+    `VISION_BASE_URL`/`VISION_API_KEY` 留空时复用 `LLM_*`
+  - 已用本地图片实测 `deepseek-flash` 的 image_url 输入返回 200，真实视觉可用
+  - 计划生成默认 `LLM_PLAN_ENABLED=true`，reasoning 用 `low`；
+    AI 失败/超时仍走规则模板；iOS 计划 toast 区分 AI / 模板
+  - 首次建档计划也允许走远程 AI，失败再回退本地模板
+  - 教学视频入口全部隐藏：`AppConfig.exerciseVideosEnabled=false`；
+    播放器/占位代码保留在 `EquipmentDetailView+Media.swift`，不要删除
+  - 器械详情加固：
+    - 资源 JSON 缺失/重复不再 `assertionFailure` 崩溃
+    - 图表过滤非有限值，避免 NaN 导致 Charts 异常
+    - 视频请求在开关关闭时不再触发（生产 `PUBLIC_BASE_URL` 为空时该接口会 503）
+  - 补 Sign in with Apple entitlement
+  - Release API 改为从 `Info.plist`/`FITAI_API_BASE_URL` 读取，Debug 才允许 localhost；
+    当前占位 `https://api.invalid/api/v1`，上 TestFlight 前必须替换
+  - `PrivacyInfo.xcprivacy` 补 Device ID / Purchase History / Product Interaction；
+    视频大小检查改用 `resourceValues(forKeys:)`，避开 File Timestamp required-reason API
+  - 后端生产启动校验：缺 JWT/PUBLIC_BASE_URL/Apple/StoreKit/LLM 配置直接启动失败
+  - 新增 `docs/47-testflight-checklist.md`
+- 验证：backend **175 passed** + Ruff 通过；真实视觉调用成功；
+  Swift 语法解析通过；Windows 没有跑 iOS 构建/单测
+- Mac 需要做：`git pull` → 填 `FITAI_API_BASE_URL` → `xcodegen generate` → build/test；
+  重点回归器械详情（之前报错）、计划生成、拍照识别、视频入口是否完全隐藏
+- 如果器械详情仍报错：把 Xcode 控制台第一行或崩溃堆栈发给 Windows agent；
+  本次已修掉最可能的资源初始化、Charts NaN、视频接口三条路径
+- 不要恢复：旧的 Mock 视觉、视频入口、localhost Release API、JSON `assertionFailure`
 
 ### 2026-11-04 · Windows / OpenCode（桌面图标 / 欢迎文案 / 透明性别素材）
 
@@ -165,7 +196,7 @@
 - Windows 仓库：`E:\Projects\FitAI`
 - macOS 工作区：`/Users/jacobwu/gym-app`
 - 当前分支：`feat/pro-access-followup-2026-11`，基于 `develop`
-- 远端 `develop`：代码 `c79df35`；文档提交在其后，见 `git log -1`
+- 远端 `develop`：代码 `c133d24`；文档提交在其后，见 `git log -1`
 - 正式发布前仍需真实数据库、真机和 App Store Connect 配置
 
 > **2026-11-03 macOS 进展：品牌已改名「叫练」。** 用户可见品牌、法律文档、
