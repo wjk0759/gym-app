@@ -14,12 +14,30 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`b1407f6`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：免费教练额度、54 张体型/体脂图、性别页卡通插画、体型/体脂选择器（体脂卡只显示躯干）、训练重点卡片网格、欢迎打字减速、App 内新 Logo
+- `develop` 代码 HEAD：`c79df35`；本文件的最新同步提交见 `git log -1`
+- Windows 已完成：免费教练额度、54 张体型/体脂图、性别页卡通插画（透明素材）、体型/体脂选择器（体脂卡只显示躯干）、训练重点卡片网格、欢迎打字减速、App 内/桌面新 Logo、欢迎文案更新
 - macOS 最近完成：品牌改名「叫练」；历史 iOS 构建/SwiftLint/29 个单测通过
 - 最新后端验证：**174 passed**，Ruff 通过
 - Mac 待办：`git pull` → `cd ios && xcodegen generate` → build/test → 浅色/深色真机检查
 - 仍 BLOCKED：App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 沙盒、真机签名、预发/生产 Flyway
+
+### 2026-11-04 · Windows / OpenCode（桌面图标 / 欢迎文案 / 透明性别素材）
+
+- 提交：`c2c71bc`、`c79df35`
+- 做了什么：
+  - 桌面 `AppIcon` 换成 `logo.png` 的 1024×1024 版本：RGB、无 alpha、不做圆角
+  - 旧哑铃/L 标志全部清理：启动恢复页、登录页头部、器械详情教练卡都改用 `CoachMark`
+  - 欢迎页第一段改成「您好，/ 我是叫练」，打字参数不变
+  - 性别页换用 `性别女-卡通-透明.png` / `性别男-卡通-透明.png`：
+    直接使用自带 alpha，重新生成 800×1422 全身和 250×250 头像
+  - 透明背景、手臂空隙、背景采样测试继续通过
+- 验证：性别页深/浅色预览干净；AppIcon 1024×1024 RGB 无 alpha；
+  Swift 语法解析通过；backend **174 passed** + Ruff 通过；
+  Windows 没有跑 iOS 构建和单测
+- Mac 需要做：`git pull` → `xcodegen generate` → build/test；
+  看桌面图标、启动恢复页、登录页、器械详情教练卡、欢迎文案，
+  以及性别页全身/头像的浅色和深色显示
+- 不要恢复：旧 AppIcon、旧哑铃/L 标志、旧欢迎文案、旧性别素材
 
 ### 2026-11-04 · Windows / OpenCode（App 内新 Logo）
 
@@ -147,7 +165,7 @@
 - Windows 仓库：`E:\Projects\FitAI`
 - macOS 工作区：`/Users/jacobwu/gym-app`
 - 当前分支：`feat/pro-access-followup-2026-11`，基于 `develop`
-- 远端 `develop`：代码 `b1407f6`；文档提交在其后，见 `git log -1`
+- 远端 `develop`：代码 `c79df35`；文档提交在其后，见 `git log -1`
 - 正式发布前仍需真实数据库、真机和 App Store Connect 配置
 
 > **2026-11-03 macOS 进展：品牌已改名「叫练」。** 用户可见品牌、法律文档、
