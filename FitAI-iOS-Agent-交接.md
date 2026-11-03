@@ -14,12 +14,30 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`f9633fe`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：免费教练额度、54 张体型/体脂图、性别页卡通插画、体型/体脂选择器（体脂卡只显示躯干）、训练重点卡片网格、欢迎打字减速
+- `develop` 代码 HEAD：`b1407f6`；本文件的最新同步提交见 `git log -1`
+- Windows 已完成：免费教练额度、54 张体型/体脂图、性别页卡通插画、体型/体脂选择器（体脂卡只显示躯干）、训练重点卡片网格、欢迎打字减速、App 内新 Logo
 - macOS 最近完成：品牌改名「叫练」；历史 iOS 构建/SwiftLint/29 个单测通过
 - 最新后端验证：**174 passed**，Ruff 通过
 - Mac 待办：`git pull` → `cd ios && xcodegen generate` → build/test → 浅色/深色真机检查
 - 仍 BLOCKED：App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 沙盒、真机签名、预发/生产 Flyway
+
+### 2026-11-04 · Windows / OpenCode（App 内新 Logo）
+
+- 提交：`b1407f6`
+- 做了什么：
+  - `CoachMark` 不再画圆底 + L，改用 `BrandLogo` 图片资产
+  - 新增 `BrandLogo.imageset`：由 `logo.png` 缩到 512×512，保持黑底 + 荧光绿图形
+  - 显示时裁成 iOS 风格圆角方形（圆角约 23.5%），加一圈自适应细边，
+    深色模式下也能看出边界
+  - 影响位置：首页右上、教练聊天头部、首页教练笔记、欢迎页、名字页提示
+  - 桌面 AppIcon 未改，仍是旧的哑铃图标
+  - 新增 `BrandAssetTests`，检查 `BrandLogo` 存在、是正方形且不小于 256
+- 验证：76/58/38/34 四档深色/浅色预览目检通过；Swift 语法解析通过；
+  backend **174 passed** + Ruff 通过；Windows 没有跑 iOS 构建和单测
+- Mac 需要做：`git pull` → `xcodegen generate` → build/test；
+  检查首页右上 38、欢迎页 76、聊天头部 58、教练笔记 34 的显示，
+  深色模式下圆角边界和荧光绿是否清楚
+- 不要恢复：旧的 SwiftUI 圆底 + L `CoachMark`；不要把 2048 原图直接塞进 assets
 
 ### 2026-11-04 · Windows / OpenCode（性别页卡通素材）
 
@@ -129,7 +147,7 @@
 - Windows 仓库：`E:\Projects\FitAI`
 - macOS 工作区：`/Users/jacobwu/gym-app`
 - 当前分支：`feat/pro-access-followup-2026-11`，基于 `develop`
-- 远端 `develop`：代码 `f9633fe`；文档提交在其后，见 `git log -1`
+- 远端 `develop`：代码 `b1407f6`；文档提交在其后，见 `git log -1`
 - 正式发布前仍需真实数据库、真机和 App Store Connect 配置
 
 > **2026-11-03 macOS 进展：品牌已改名「叫练」。** 用户可见品牌、法律文档、
