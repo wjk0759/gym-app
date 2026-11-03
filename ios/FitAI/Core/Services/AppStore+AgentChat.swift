@@ -44,6 +44,9 @@ extension AppStore {
                     )
                 } catch is CancellationError {
                     return
+                } catch let error as APIError where error.isProRequired {
+                    await self.refreshAccess()
+                    self.requestPro(.coachAI)
                 } catch {
                     guard !Task.isCancelled else { return }
                     let local = CoachService.reply(
@@ -260,6 +263,10 @@ extension AppStore {
                 return
             } catch let error as APIError where error.isRateLimited || error.statusCode == 429 {
                 self.toast = "请求太频繁，请稍后再试"
+                return
+            } catch let error as APIError where error.isProRequired {
+                await self.refreshAccess()
+                self.requestPro(.coachAI)
                 return
             } catch {
                 guard !Task.isCancelled else { return }
