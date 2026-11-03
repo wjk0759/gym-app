@@ -223,12 +223,7 @@ func coachCard(for item: EquipmentItem) -> some View {
             showCoach = true
         } label: {
             HStack(spacing: 10) {
-                Text("L")
-                    .font(.system(size: 13, weight: .black))
-                    .foregroundStyle(Theme.onPrimary)
-                    .frame(width: 36, height: 36)
-                    .background(Theme.primary, in: Circle())
-                    .overlay(Circle().strokeBorder(Theme.inkSolid, lineWidth: 1.5))
+                CoachMark(size: 36)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("动作细节还不确定？")

@@ -141,25 +141,15 @@ struct RootView: View {
 
     private var splash: some View {
         VStack(spacing: 18) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(Theme.primary)
-                    .frame(width: 72, height: 72)
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .strokeBorder(Theme.inkSolid, lineWidth: 2.5)
-                    .frame(width: 72, height: 72)
-                Image(systemName: "figure.strengthtraining.traditional")
-                    .font(.system(size: 31, weight: .bold))
-                    .foregroundStyle(Theme.onPrimary)
-            }
-            .scaleEffect(splashPulse ? 1.05 : 1)
-            .animation(
-                reduceMotion
-                    ? nil
-                    : .easeInOut(duration: 1.6).repeatForever(autoreverses: true),
-                value: splashPulse
-            )
-            .onAppear { splashPulse = true }
+            CoachMark(size: 72)
+                .scaleEffect(splashPulse ? 1.05 : 1)
+                .animation(
+                    reduceMotion
+                        ? nil
+                        : .easeInOut(duration: 1.6).repeatForever(autoreverses: true),
+                    value: splashPulse
+                )
+                .onAppear { splashPulse = true }
 
             Text("叫练")
                 .font(AppType.title)

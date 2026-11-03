@@ -23,17 +23,7 @@ extension LoginView {
 
     func header(compact: Bool) -> some View {
         HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: compact ? 13 : 15, style: .continuous)
-                    .fill(Theme.primary)
-                    .frame(width: compact ? 42 : 48, height: compact ? 42 : 48)
-                RoundedRectangle(cornerRadius: compact ? 13 : 15, style: .continuous)
-                    .strokeBorder(Theme.inkSolid, lineWidth: 2)
-                    .frame(width: compact ? 42 : 48, height: compact ? 42 : 48)
-                Image(systemName: "figure.strengthtraining.traditional")
-                    .font(.system(size: compact ? 19 : 22, weight: .bold))
-                    .foregroundStyle(Theme.onPrimary)
-            }
+            CoachMark(size: compact ? 42 : 48)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("叫练")
