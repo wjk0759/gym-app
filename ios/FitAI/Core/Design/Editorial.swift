@@ -60,8 +60,10 @@ struct TypewriterText: View {
                 try? await Task.sleep(for: charDelay)
                 count = text.distance(from: text.startIndex, to: index) + 1
 
-                if "，。！？；：".contains(text[index]) {
-                    try? await Task.sleep(for: .milliseconds(160))
+                if text[index] == "\n" {
+                    try? await Task.sleep(for: .milliseconds(220))
+                } else if "，。！？；：".contains(text[index]) {
+                    try? await Task.sleep(for: .milliseconds(280))
                 }
             }
             onComplete?()

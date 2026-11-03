@@ -14,8 +14,8 @@ extension CoachOnboardingView {
                 if welcomePhase == 0 {
                     TypewriterText(
                         text: "您好，\n我是您的私教 L",
-                        charDelay: .milliseconds(42),
-                        hapticEvery: 3
+                        charDelay: .milliseconds(90),
+                        hapticEvery: 5
                     ) {
                         guard welcomePhase == 0 else { return }
                         withAnimation(Motion.smooth) {
@@ -29,8 +29,8 @@ extension CoachOnboardingView {
                 } else {
                     TypewriterText(
                         text: "告诉我你的情况，\n我帮你生成起点报告",
-                        charDelay: .milliseconds(30),
-                        hapticEvery: 4
+                        charDelay: .milliseconds(70),
+                        hapticEvery: 7
                     )
                     .font(AppType.hero)
                     .tracking(-0.8)
