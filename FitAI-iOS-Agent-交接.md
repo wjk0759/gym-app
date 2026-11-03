@@ -14,12 +14,27 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`7324577`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：免费教练额度、54 张体型/体脂图、性别页头像 + 大人台、训练重点卡片网格
+- `develop` 代码 HEAD：`5707370`；本文件的最新同步提交见 `git log -1`
+- Windows 已完成：免费教练额度、54 张体型/体脂图、性别页插画、体型/体脂选择器、训练重点卡片网格
 - macOS 最近完成：品牌改名「叫练」；历史 iOS 构建/SwiftLint/29 个单测通过
 - 最新后端验证：**174 passed**，Ruff 通过
 - Mac 待办：`git pull` → `cd ios && xcodegen generate` → build/test → 浅色/深色真机检查
 - 仍 BLOCKED：App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 沙盒、真机签名、预发/生产 Flyway
+
+### 2026-11-04 · Windows / OpenCode（性别 / 体型 / 体脂重做）
+
+- 提交：`5707370`
+- 做了什么：
+  - 性别页改用 `性别男.png` / `性别女.png` 插画：完整图做大人台，头部裁切做双卡头像
+  - 删除旧的 `BodyFigureMalePortrait` / `BodyFigureFemalePortrait`
+  - 体型页改为「上方大图 + 下方横向缩略图」；默认用第三档体脂预览（女 19–22%，男 16–20%）
+  - 删除体型卡上的「建议」标签和 `BodyTypeCard`
+  - 体脂页改为 2×3 图片网格；选中卡深色边框 + 深色标签条；不再显示备注文案
+  - 新增 `BodySelectionViews.swift`，体型/体脂卡从 `BodyShapes.swift` 拆出
+- 验证：backend **174 passed** + Ruff 通过；Windows 只做 Swift 语法解析，**没有跑 iOS 构建**
+- Mac 需要做：`xcodegen generate`；重点检查性别插画裁切、体型默认第三档、体脂 2×3 网格、浅色/深色选中态
+- 不要恢复：`BodyTypeCard`、`BodyFigureMalePortrait`、`BodyFigureFemalePortrait`、体型卡「建议」标签
+- BLOCKED：同上
 
 ### 2026-11-04 · Windows / OpenCode
 
@@ -51,7 +66,7 @@
 - Windows 仓库：`E:\Projects\FitAI`
 - macOS 工作区：`/Users/jacobwu/gym-app`
 - 当前分支：`feat/pro-access-followup-2026-11`，基于 `develop`
-- 远端 `develop`：代码 `7324577`；文档提交在其后，见 `git log -1`
+- 远端 `develop`：代码 `5707370`；文档提交在其后，见 `git log -1`
 - 正式发布前仍需真实数据库、真机和 App Store Connect 配置
 
 > **2026-11-03 macOS 进展：品牌已改名「叫练」。** 用户可见品牌、法律文档、
