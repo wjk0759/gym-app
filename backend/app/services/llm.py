@@ -199,7 +199,7 @@ async def complete_vision_json(
         },
     ]
     payload = {
-        "model": settings.vision_model,
+        "model": settings.vision_model_name,
         "messages": messages,
         "temperature": 0.2,
         "response_format": {"type": "json_object"},
@@ -256,7 +256,7 @@ async def complete_vision_json(
         try:
             parsed = _parse_json_object(content)
             _record_success(
-                db, user_id, kind, settings.vision_model, started, usage
+                db, user_id, kind, settings.vision_model_name, started, usage
             )
             return parsed
         except LLMError as exc:

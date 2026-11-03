@@ -30,13 +30,10 @@ class Settings(BaseSettings):
     # Agent 每一步工具决策单独控制推理强度；整周取消这类多动作请求
     # 用 max 会额外花几十秒，high 在准确率和延迟之间更稳。
     llm_agent_reasoning_effort: str = "high"
-    # AI 计划生成的 reasoning 强度也单独控制；max 可能让一次计划生成
-    # 接近 100 秒，high 更适合前台等待。
-    llm_plan_reasoning_effort: str = "high"
-    # 计划生成是否走 LLM。当前可用的 DeepSeek 模型都会产出大量 reasoning tokens，
-    # 一次 4 周计划要 20s~200s。默认关闭，改用确定性的规则模板（毫秒级返回）。
-    # 需要 AI 编排时再设 LLM_PLAN_ENABLED=true。
-    llm_plan_enabled: bool = False
+    # AI 计划生成的 reasoning 强度也单独控制；默认 low，追求更高质量可调 high。
+    # 计划生成默认走 AI，再用规则校验；模型失败/超时自动回退模板。
+    llm_plan_enabled: bool = True
+    llm_plan_reasoning_effort: str = "low"
     # 限制单进程同时打到模型服务的请求数，避免把连接池和上游限流打满。
     llm_max_concurrency: int = 8
     llm_timeout_seconds: float = 90.0
@@ -95,12 +92,17 @@ class Settings(BaseSettings):
     cors_origins: str = "*"
 
     @property
+    def vision_model_name(self) -> str:
+        """The vision model actually used: VISION_MODEL, or the LLM model."""
+        return (self.vision_model or self.llm_model or "").strip()
+
+    @property
     def use_mock_llm(self) -> bool:
         return self.llm_provider == "mock" or not self.llm_api_key
 
     @property
     def use_mock_vision(self) -> bool:
-        return not self.vision_model or not (
+        return not self.vision_model_name or not (
             self.vision_api_key or self.llm_api_key
         )
 
@@ -109,6 +111,26 @@ class Settings(BaseSettings):
         if self.cors_origins.strip() == "*":
             return ["*"]
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    def validate_runtime(self) -> None:
+        """Fail fast instead of booting a production server with dev defaults."""
+        if self.app_env not in {"production", "prod"}:
+            return
+        required = {
+            "JWT_SECRET": self.jwt_secret,
+            "PUBLIC_BASE_URL": self.public_base_url,
+            "APPLE_CLIENT_ID": self.apple_client_id,
+            "APP_STORE_BUNDLE_ID": self.app_store_bundle_id,
+            "STOREKIT_PRODUCT_IDS": self.storekit_product_ids,
+            "LLM_API_KEY": self.llm_api_key,
+        }
+        missing = [name for name, value in required.items() if not value.strip()]
+        if missing:
+            raise RuntimeError(
+                "生产环境缺少必要配置：" + ", ".join(sorted(missing))
+            )
+        if self.allow_dev_user_header:
+            raise RuntimeError("生产环境必须设置 ALLOW_DEV_USER_HEADER=false")
 
 
 settings = Settings()

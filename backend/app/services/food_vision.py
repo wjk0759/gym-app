@@ -1,4 +1,4 @@
-"""饮食照片识别：当前为可替换的 Mock。
+"""饮食照片识别：调用配置的视觉模型，失败时回退确定性结果。
 
 隐私原则：
 - 原图不落盘、不入库
@@ -93,7 +93,7 @@ async def analyze(
                     user_id,
                     kind="food_vision",
                     status="fallback",
-                    model=settings.vision_model,
+                    model=settings.vision_model_name,
                     error=str(exc)[:500],
                     usage=usage,
                 )
@@ -165,7 +165,7 @@ def _normalize(data: dict, filename: str) -> dict:
             round(sum(i["confidence"] for i in items) / len(items), 2) if items else 0.0
         ),
         "disclaimer": DISCLAIMER,
-        "model": settings.vision_model,
+        "model": settings.vision_model_name,
         "image_name": filename,
     }
 

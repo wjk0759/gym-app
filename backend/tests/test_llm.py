@@ -1,6 +1,26 @@
 import pytest
 
+from app.config import Settings
 from app.services.llm import LLMError, _merge_usage, _parse_json_object
+
+
+def test_vision_model_falls_back_to_llm_model():
+    configured = Settings(
+        vision_model="",
+        llm_model="deepseek-flash",
+        llm_api_key="test-key",
+        vision_api_key="",
+    )
+    assert configured.vision_model_name == "deepseek-flash"
+    assert configured.use_mock_vision is False
+
+    missing = Settings(
+        vision_model="",
+        llm_model="deepseek-flash",
+        llm_api_key="",
+        vision_api_key="",
+    )
+    assert missing.use_mock_vision is True
 
 
 def test_parse_concatenated_json_objects_uses_last_complete_object():

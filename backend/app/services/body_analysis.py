@@ -1,9 +1,9 @@
-"""体型照片分析：当前为可替换的 Mock，视觉模型接入后保持同一返回结构。
+"""体型照片分析：调用配置的视觉模型，失败时回退规则建议。
 
 隐私原则：
 - 不落盘原图，不写数据库
 - 只返回训练建议，不做体脂/医疗诊断
-- 真实视觉模型上线前需完成敏感个人信息单独同意与内容安全评估
+- 照片分析前必须完成敏感个人信息单独同意
 """
 
 from __future__ import annotations
@@ -103,7 +103,7 @@ async def analyze(
             ],
             "confidence": round(_clamp_confidence(data.get("confidence")), 2),
             "disclaimer": DISCLAIMER,
-            "model": settings.vision_model,
+            "model": settings.vision_model_name,
             "image_name": filename,
         }
     except Exception as exc:  # noqa: BLE001 - 分析失败回退，不阻断流程
@@ -115,7 +115,7 @@ async def analyze(
                     user_id,
                     kind="body_vision",
                     status="fallback",
-                    model=settings.vision_model,
+                    model=settings.vision_model_name,
                     error=str(exc)[:500],
                     usage=usage,
                 )

@@ -233,7 +233,7 @@ async def review_many(
                     user_id,
                     kind="coach_vision",
                     status="fallback",
-                    model=settings.vision_model,
+                    model=settings.vision_model_name,
                     error=str(exc)[:500],
                     usage=usage,
                 )

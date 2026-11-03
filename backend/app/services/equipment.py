@@ -128,7 +128,7 @@ async def recognize(
                 user_id,
                 kind="equipment_scan",
                 status="fallback",
-                model=settings.vision_model,
+                model=settings.vision_model_name,
                 error=str(exc)[:500],
                 usage=usage,
             )
@@ -149,7 +149,7 @@ async def recognize(
             "not_in_library": False,
             "name": name,
             "description": description or "未识别到健身器械",
-            "model": settings.vision_model,
+            "model": settings.vision_model_name,
             "image_name": filename,
         }
 
@@ -170,7 +170,7 @@ async def recognize(
                     else "未能匹配动作库中的器械，请手动添加或反馈。"
                 )
             ),
-            "model": settings.vision_model,
+            "model": settings.vision_model_name,
             "image_name": filename,
         }
 
@@ -198,7 +198,7 @@ async def recognize(
         "not_in_library": False,
         "name": name,
         "description": description or name,
-        "model": settings.vision_model,
+        "model": settings.vision_model_name,
         "image_name": filename,
     }
 

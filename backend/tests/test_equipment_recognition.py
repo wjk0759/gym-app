@@ -16,7 +16,11 @@ def test_unmatched_equipment_returns_custom_add_signal(monkeypatch):
     monkeypatch.setattr(
         equipment,
         "settings",
-        SimpleNamespace(use_mock_vision=False, vision_model="test-vision"),
+        SimpleNamespace(
+            use_mock_vision=False,
+            vision_model="test-vision",
+            vision_model_name="test-vision",
+        ),
     )
     monkeypatch.setattr(equipment.llm, "complete_vision_json", fake_vision)
     monkeypatch.setattr(

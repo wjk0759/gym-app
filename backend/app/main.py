@@ -54,6 +54,7 @@ CODE_BY_STATUS = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    settings.validate_runtime()
     # FastAPI runs synchronous routes in AnyIO's worker pool. Size it to the
     # database pool so bursts of CRUD requests do not queue behind 40 threads.
     try:
@@ -191,7 +192,7 @@ def health():
         "status": "ok",
         "env": settings.app_env,
         "llm": "mock" if settings.use_mock_llm else settings.llm_model,
-        "vision": "mock" if settings.use_mock_vision else settings.vision_model,
+        "vision": "mock" if settings.use_mock_vision else settings.vision_model_name,
     }
 
 
