@@ -14,12 +14,28 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`420ea75`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：免费教练额度、54 张体型/体脂图、性别页插画、体型/体脂选择器、训练重点卡片网格、欢迎打字减速
+- `develop` 代码 HEAD：`8c3ba77`；本文件的最新同步提交见 `git log -1`
+- Windows 已完成：免费教练额度、54 张体型/体脂图、性别页插画（白底已清除）、体型/体脂选择器、训练重点卡片网格、欢迎打字减速
 - macOS 最近完成：品牌改名「叫练」；历史 iOS 构建/SwiftLint/29 个单测通过
 - 最新后端验证：**174 passed**，Ruff 通过
 - Mac 待办：`git pull` → `cd ios && xcodegen generate` → build/test → 浅色/深色真机检查
 - 仍 BLOCKED：App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 沙盒、真机签名、预发/生产 Flyway
+
+### 2026-11-04 · Windows / OpenCode（性别插画白底修复）
+
+- 提交：`8c3ba77`
+- 做了什么：
+  - 重新处理 `性别男.png` / `性别女.png` 的透明通道：不再只从边缘泛洪，
+    改为按连通区域删除封闭白块（手臂与躯干之间、双腿之间）
+  - 覆盖 `GenderMale` / `GenderFemale` 的 `body-figure.png`
+  - `GenderMalePortrait` / `GenderFemalePortrait` 头部裁切无封闭白块，文件未变
+  - 新增 `BodyFigureAssetTests.testGenderAssetsHaveTransparentBackground`：
+    检查四角透明、手臂空隙透明、躯干不透明
+- 验证：深色/浅色合成图目检通过；Swift 语法解析通过；backend **174 passed** + Ruff 通过；
+  Windows 没有跑 iOS 构建和单测
+- Mac 需要做：`git pull` → `xcodegen generate` → build/test；
+  在浅色和深色下看性别页，确认手臂/腿间没有白色竖条，腕带和短裤白条仍在
+- 不要恢复：旧的整图泛洪抠图脚本；不要把白底图片重新导入 `GenderMale` / `GenderFemale`
 
 ### 2026-11-04 · Windows / OpenCode（欢迎打字速度）
 
@@ -75,7 +91,7 @@
 - Windows 仓库：`E:\Projects\FitAI`
 - macOS 工作区：`/Users/jacobwu/gym-app`
 - 当前分支：`feat/pro-access-followup-2026-11`，基于 `develop`
-- 远端 `develop`：代码 `420ea75`；文档提交在其后，见 `git log -1`
+- 远端 `develop`：代码 `8c3ba77`；文档提交在其后，见 `git log -1`
 - 正式发布前仍需真实数据库、真机和 App Store Connect 配置
 
 > **2026-11-03 macOS 进展：品牌已改名「叫练」。** 用户可见品牌、法律文档、
