@@ -113,11 +113,12 @@ final class BodyFigureAssetTests: XCTestCase {
     }
 
     func testGenderAssetsHaveTransparentBackground() {
-        // Arm/torso gaps stay transparent instead of showing the source white.
+        // Arm/torso gaps and the source checkerboard must be transparent.
         let fullFigures: [String: (x: Double, y: Double)] = [
             "GenderMale": (0.25, 0.633),
             "GenderFemale": (0.69, 0.633)
         ]
+        let backgroundProbes = [(0.1, 0.1), (0.9, 0.1)]
 
         for name in [
             "GenderMale",
@@ -142,6 +143,16 @@ final class BodyFigureAssetTests: XCTestCase {
                     map.alpha[y * map.width + x],
                     0,
                     "\(name) has an opaque corner at \(x),\(y)"
+                )
+            }
+
+            for (fractionX, fractionY) in backgroundProbes {
+                let x = Int(Double(map.width) * fractionX)
+                let y = Int(Double(map.height) * fractionY)
+                XCTAssertEqual(
+                    map.alpha[y * map.width + x],
+                    0,
+                    "\(name) has background residue at \(x),\(y)"
                 )
             }
 
