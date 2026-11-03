@@ -160,8 +160,8 @@ extension CoachOnboardingView {
         case 2: sexStep
         case 3: ageHeightStep
         case 4: weightStep
-        case 5: bodyFatStep
-        case 6: bodyTypeStep
+        case 5: bodyTypeStep
+        case 6: bodyFatStep
         case 7: goalStep
         case 8: focusStep
         case 9: injuryStep

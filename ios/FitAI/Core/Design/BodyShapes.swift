@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Body type
 
@@ -86,12 +87,13 @@ enum BodyType: String, CaseIterable, Identifiable {
     }
 
     /// Male and female body-shape vocabularies are intentionally different.
-    /// Apple/pear are female-coded; male users get inverted triangle,
-    /// rectangle, oval and trapezoid so the copy never mislabels them.
+    /// Female users get apple/pear/hourglass; male users get oval/trapezoid
+    /// instead of the female-coded shapes. Inverted triangle and rectangle are
+    /// shared because both reference sets include them.
     static func options(for sex: Sex) -> [BodyType] {
         switch sex {
         case .female:
-            return [.apple, .pear, .hourglass, .rectangle]
+            return [.apple, .pear, .invertedTriangle, .hourglass, .rectangle]
         case .male:
             return [.invertedTriangle, .rectangle, .oval, .trapezoid]
         }
@@ -235,6 +237,66 @@ struct BodySilhouette: View {
     }
 }
 
+// MARK: - Body figure assets
+
+enum BodyFigureAsset {
+    /// The type picker uses a representative mid-range figure so the pose and
+    /// clothing stay consistent with the fat picker/report images.
+    static func representativeFatID(for sex: Sex) -> String {
+        sex == .female ? "female_19_22" : "male_16_20"
+    }
+
+    static func comboName(
+        type: BodyType,
+        sex: Sex,
+        fatOptionID: String?
+    ) -> String? {
+        guard type.isAvailable(for: sex) else { return nil }
+        let fatID = fatOptionID ?? representativeFatID(for: sex)
+        guard let option = BodyFatOption.options(for: sex).first(where: { $0.id == fatID }) else {
+            return nil
+        }
+        let token = type.rawValue.prefix(1).uppercased() + String(type.rawValue.dropFirst())
+        let sexToken = sex == .female ? "Female" : "Male"
+        return "BodyFigure\(sexToken)\(token)Fat\(option.assetToken)"
+    }
+}
+
+/// Renders the 3D body figure for a type and, when available, a body-fat band.
+/// Falls back to the vector silhouette if an asset is ever removed.
+struct BodyFigure: View {
+    let type: BodyType
+    var sex: Sex = .male
+    var fatOptionID: String? = nil
+
+    var body: some View {
+        if let name = BodyFigureAsset.comboName(type: type, sex: sex, fatOptionID: fatOptionID),
+           UIImage(named: name) != nil {
+            Image(name)
+                .resizable()
+                .scaledToFit()
+                .accessibilityHidden(true)
+        } else {
+            BodySilhouette(
+                type: type,
+                sex: sex,
+                fullness: fallbackFullness,
+                fill: Theme.ink.opacity(0.055),
+                stroke: Theme.ink.opacity(0.28),
+                lineWidth: 1
+            )
+        }
+    }
+
+    private var fallbackFullness: CGFloat {
+        guard let fatOptionID,
+              let option = BodyFatOption.options(for: sex).first(where: { $0.id == fatOptionID }) else {
+            return 1
+        }
+        return option.fullness
+    }
+}
+
 // MARK: - Body type picker
 
 struct BodyTypeCard: View {
@@ -251,14 +313,11 @@ struct BodyTypeCard: View {
         } label: {
             VStack(spacing: 8) {
                 ZStack(alignment: .topTrailing) {
-                    BodySilhouette(
+                    BodyFigure(
                         type: type,
-                        sex: sex,
-                        fill: selected ? Theme.cobalt.opacity(0.16) : Theme.ink.opacity(0.055),
-                        stroke: selected ? Theme.cobalt : Theme.ink.opacity(0.32),
-                        lineWidth: selected ? 2 : 1
+                        sex: sex
                     )
-                    .frame(height: 118)
+                    .frame(height: 136)
                     .padding(.horizontal, 8)
 
                     if recommended {
@@ -299,25 +358,26 @@ struct BodyFatOption: Identifiable, Equatable {
     let range: ClosedRange<Double>
     let fullness: CGFloat
     let note: String
+    let assetToken: String
 
     var midpoint: Double { (range.lowerBound + range.upperBound) / 2 }
 
     static let male: [BodyFatOption] = [
-        .init(id: "male_very_low", label: "< 10%", range: 6...10, fullness: 0.84, note: "很精瘦"),
-        .init(id: "male_low", label: "10–14%", range: 10...14, fullness: 0.90, note: "偏瘦有线条"),
-        .init(id: "male_athletic", label: "15–19%", range: 15...19, fullness: 0.98, note: "匀称"),
-        .init(id: "male_average", label: "20–24%", range: 20...24, fullness: 1.06, note: "常见范围"),
-        .init(id: "male_higher", label: "25–29%", range: 25...29, fullness: 1.14, note: "偏丰满"),
-        .init(id: "male_high", label: "≥ 30%", range: 30...40, fullness: 1.22, note: "体脂偏高")
+        .init(id: "male_under_12", label: "< 12%", range: 8...11, fullness: 0.84, note: "很精瘦", assetToken: "Under12"),
+        .init(id: "male_12_15", label: "12–15%", range: 12...15, fullness: 0.90, note: "偏瘦有线条", assetToken: "12To15"),
+        .init(id: "male_16_20", label: "16–20%", range: 16...20, fullness: 0.98, note: "匀称", assetToken: "16To20"),
+        .init(id: "male_21_24", label: "21–24%", range: 21...24, fullness: 1.06, note: "常见范围", assetToken: "21To24"),
+        .init(id: "male_25_29", label: "25–29%", range: 25...29, fullness: 1.14, note: "偏丰满", assetToken: "25To29"),
+        .init(id: "male_over_29", label: "> 29%", range: 30...40, fullness: 1.22, note: "体脂偏高", assetToken: "Over29")
     ]
 
     static let female: [BodyFatOption] = [
-        .init(id: "female_very_low", label: "< 18%", range: 12...18, fullness: 0.86, note: "很精瘦"),
-        .init(id: "female_low", label: "18–24%", range: 18...24, fullness: 0.92, note: "偏瘦有线条"),
-        .init(id: "female_athletic", label: "25–29%", range: 25...29, fullness: 0.98, note: "匀称"),
-        .init(id: "female_average", label: "30–34%", range: 30...34, fullness: 1.06, note: "常见范围"),
-        .init(id: "female_higher", label: "35–39%", range: 35...39, fullness: 1.14, note: "偏丰满"),
-        .init(id: "female_high", label: "≥ 40%", range: 40...50, fullness: 1.22, note: "体脂偏高")
+        .init(id: "female_under_15", label: "< 15%", range: 10...14, fullness: 0.86, note: "很精瘦", assetToken: "Under15"),
+        .init(id: "female_15_18", label: "15–18%", range: 15...18, fullness: 0.92, note: "偏瘦有线条", assetToken: "15To18"),
+        .init(id: "female_19_22", label: "19–22%", range: 19...22, fullness: 0.98, note: "匀称", assetToken: "19To22"),
+        .init(id: "female_23_28", label: "23–28%", range: 23...28, fullness: 1.06, note: "常见范围", assetToken: "23To28"),
+        .init(id: "female_29_34", label: "29–34%", range: 29...34, fullness: 1.14, note: "偏丰满", assetToken: "29To34"),
+        .init(id: "female_over_34", label: "> 34%", range: 35...45, fullness: 1.22, note: "体脂偏高", assetToken: "Over34")
     ]
 
     static func options(for sex: Sex) -> [BodyFatOption] {
@@ -327,6 +387,7 @@ struct BodyFatOption: Identifiable, Equatable {
 
 struct BodyFatCard: View {
     let option: BodyFatOption
+    var type: BodyType = .rectangle
     var sex: Sex = .male
     let selected: Bool
     var action: () -> Void
@@ -337,15 +398,12 @@ struct BodyFatCard: View {
             action()
         } label: {
             VStack(spacing: 6) {
-                BodySilhouette(
-                    type: .rectangle,
+                BodyFigure(
+                    type: type,
                     sex: sex,
-                    fullness: option.fullness,
-                    fill: selected ? Theme.lime.opacity(0.55) : Theme.ink.opacity(0.055),
-                    stroke: selected ? Theme.ink : Theme.ink.opacity(0.28),
-                    lineWidth: selected ? 1.6 : 1
+                    fatOptionID: option.id
                 )
-                .frame(height: 92)
+                .frame(height: 104)
                 .padding(.horizontal, 6)
 
                 Text(option.label)
@@ -369,7 +427,7 @@ struct BodyFatCard: View {
             }
         }
         .buttonStyle(CardPressStyle(scale: 0.985))
-        .accessibilityLabel("体脂 \(option.label)，\(option.note)")
+        .accessibilityLabel("\(type.label)，体脂 \(option.label)，\(option.note)")
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }

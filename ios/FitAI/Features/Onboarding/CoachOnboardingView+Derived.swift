@@ -17,6 +17,11 @@ extension CoachOnboardingView {
         return .recomp
     }
 
+    var selectedBodyFatOption: BodyFatOption? {
+        guard let bodyFatID else { return nil }
+        return BodyFatOption.options(for: draft.sex).first { $0.id == bodyFatID }
+    }
+
     var recommendedBodyType: BodyType {
         if let bodyType, bodyType.isAvailable(for: draft.sex) { return bodyType }
         if draft.bmi >= 27 || draft.bodyFatPCT >= (draft.sex == .female ? 32 : 25) {

@@ -26,14 +26,12 @@ extension CoachOnboardingView {
     var reportIdentityCard: some View {
         HStack(alignment: .center, spacing: 16) {
             if let bodyType {
-                BodySilhouette(
+                BodyFigure(
                     type: bodyType,
                     sex: draft.sex,
-                    fill: Theme.cobalt.opacity(0.12),
-                    stroke: Theme.cobalt,
-                    lineWidth: 1.2
+                    fatOptionID: bodyFatID
                 )
-                .frame(width: 78, height: 150)
+                .frame(width: 92, height: 150)
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -44,9 +42,12 @@ extension CoachOnboardingView {
                     .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
                 if let bodyType {
-                    Text("\(bodyType.label) · \(bodyType.detail)")
+                    Text("\(bodyType.label) · \(selectedBodyFatOption?.label ?? "体脂待选")")
                         .font(AppType.micro)
                         .foregroundStyle(Theme.cobalt)
+                    Text(bodyType.detail)
+                        .font(AppType.micro)
+                        .foregroundStyle(Theme.secondaryText)
                 }
                 Text("\(draft.weeklyDays) 练/周 · \(draft.sessionMinutes) 分钟/次")
                     .font(AppType.micro)
