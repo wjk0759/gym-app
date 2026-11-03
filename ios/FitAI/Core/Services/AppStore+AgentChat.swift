@@ -5,87 +5,21 @@ extension AppStore {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
+        // Free accounts must hit /agent/chat so the server can consume the
+        // weekly quota. Local replies are only for Pro users who explicitly
+        // turned remote AI off.
+        guard CoachChatPolicy.transport(
+            hasPro: hasProAccess,
+            remoteEnabled: useRemoteAI
+        ) == .local else {
+            sendAgentChat(trimmed, skill: skill)
+            return
+        }
+
         cancelActiveChatRequest()
         removeTrailingChatTimeoutNotices()
         lastAgentRetryText = nil
         chat.append(ChatMessage(role: .user, text: trimmed))
-
-        if canUseRemoteAI {
-            let requestID = UUID()
-            legacyChatRequestID = requestID
-            isReplying = true
-            persist()
-
-            let task = Task { @MainActor [weak self] in
-                guard let self else { return }
-                defer {
-                    if self.legacyChatRequestID == requestID {
-                        self.legacyChatRequestID = nil
-                        self.legacyChatTask = nil
-                        self.legacyChatWatchdog?.cancel()
-                        self.legacyChatWatchdog = nil
-                        self.isReplying = false
-                        self.persist()
-                    }
-                }
-                do {
-                    let response = try await APIClient.shared.sendChat(
-                        message: trimmed,
-                        skill: skill,
-                        context: self.coachContextForReply
-                    )
-                    try Task.checkCancellation()
-                    self.chat.append(
-                        ChatMessage(
-                            role: .assistant,
-                            text: response.reply,
-                            isSafety: response.safetyFlag != nil
-                        )
-                    )
-                } catch is CancellationError {
-                    return
-                } catch let error as APIError where error.isProRequired {
-                    await self.refreshAccess()
-                    self.requestPro(.coachAI)
-                } catch {
-                    guard !Task.isCancelled else { return }
-                    let local = CoachService.reply(
-                        to: trimmed,
-                        profile: self.profile,
-                        plan: self.plan,
-                        skill: skill,
-                        period: self.todayPeriod
-                    )
-                    self.toast = "远程 AI 暂时不可用，已使用本地建议"
-                    self.chat.append(
-                        ChatMessage(
-                            role: .assistant,
-                            text: "远程 AI 暂时不可用，先用本地规则回答：\n\n" + local.text,
-                            isSafety: local.isSafety
-                        )
-                    )
-                }
-            }
-            legacyChatTask = task
-            legacyChatWatchdog = Task { @MainActor [weak self] in
-                try? await Task.sleep(nanoseconds: Self.chatRequestTimeoutNanoseconds)
-                guard !Task.isCancelled,
-                      let self,
-                      self.legacyChatRequestID == requestID,
-                      self.isReplying else { return }
-                self.legacyChatRequestID = nil
-                task.cancel()
-                self.legacyChatTask = nil
-                self.legacyChatWatchdog = nil
-                self.isReplying = false
-                self.chat.append(
-                    ChatMessage(role: .assistant, text: Self.legacyTimeoutNotice)
-                )
-                self.persist()
-            }
-            return
-        }
-
         chat.append(
             CoachService.reply(
                 to: trimmed,
@@ -255,11 +189,15 @@ extension AppStore {
                 )
                 self.lastAgentRetryText = nil
                 self.lastAgentRequestID = nil
+                if response.safetyFlag == nil {
+                    self.coachQuotaExhausted = false
+                }
                 Task { await self.refreshAccess() }
             } catch is CancellationError {
                 return
             } catch let error as APIError where error.isCoachQuotaExhausted {
-                self.requestPro(.coachAI)
+                await self.refreshAccess()
+                self.coachQuotaExhausted = true
                 return
             } catch let error as APIError where error.isRateLimited || error.statusCode == 429 {
                 self.toast = "请求太频繁，请稍后再试"
@@ -270,6 +208,10 @@ extension AppStore {
                 return
             } catch {
                 guard !Task.isCancelled else { return }
+                guard !self.shouldShowCoachQuotaCard else {
+                    self.toast = "网络暂时不可用，请稍后重试"
+                    return
+                }
                 self.lastAgentRetryText = trimmed
                 self.lastAgentRetrySkill = skill
                 let local = CoachService.reply(
@@ -340,11 +282,6 @@ extension AppStore {
         coachPhotoTask = nil
         coachPhotoWatchdog?.cancel()
         coachPhotoWatchdog = nil
-        legacyChatRequestID = nil
-        legacyChatTask?.cancel()
-        legacyChatTask = nil
-        legacyChatWatchdog?.cancel()
-        legacyChatWatchdog = nil
         isReplying = false
     }
 

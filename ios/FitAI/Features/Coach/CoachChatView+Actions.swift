@@ -182,8 +182,10 @@ extension CoachChatView {
             // 所有 Skill、所有自然语言都先交给 Agent 理解；不再由本地关键词决定意图。
             store.sendAgentChat(trimmed)
         } else if store.planAdjustmentStage > 0 {
+            guard store.requirePro(.trainingPlan) else { return }
             store.sendPlanAdjustmentMessage(trimmed)
         } else if store.isPlanScheduleRequest(trimmed) {
+            guard store.requirePro(.trainingPlan) else { return }
             store.beginPlanAdjustment()
             store.sendPlanAdjustmentMessage(trimmed)
         } else {

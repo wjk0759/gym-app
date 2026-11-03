@@ -4,6 +4,9 @@ import UIKit
 
 extension CoachChatView {
     var inputPlaceholder: String {
+        if store.shouldShowCoachQuotaCard {
+            return "免费额度已用完，升级 Pro 继续聊"
+        }
         if store.planAdjustmentStage == 1 {
             return "说说最近训练最困扰你的地方…"
         }
@@ -14,6 +17,14 @@ extension CoachChatView {
             return "需要再改可以继续说…"
         }
         return "训练、饮食、恢复、计划都能问…"
+    }
+
+    var coachBadgeText: String {
+        if store.hasProAccess {
+            return store.useRemoteAI ? "远程 AI 已连接" : "本地建议"
+        }
+        guard store.accessSnapshot != nil else { return "正在确认权益" }
+        return store.shouldShowCoachQuotaCard ? "免费额度已用完" : "免费 AI 额度"
     }
 
     var welcome: some View {
@@ -34,7 +45,7 @@ extension CoachChatView {
                     .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 8) {
-                    RecommendationBadge(text: store.canUseRemoteAI ? "远程 AI 已连接" : "本地建议")
+                    RecommendationBadge(text: coachBadgeText)
                     if let remaining = store.access.policy.coachRemaining {
                         Text("本周剩余 \(remaining)/3 条")
                             .font(AppType.micro)
@@ -50,7 +61,9 @@ extension CoachChatView {
             .editorialCard(accent: Theme.lime)
             .staggerIn(0)
 
-            if !store.canUseRemoteAI {
+            if store.accessSnapshot != nil,
+               !store.hasProAccess,
+               !store.shouldShowCoachQuotaCard {
                 Button {
                     store.requestPro(.coachAI)
                 } label: {
@@ -58,10 +71,10 @@ extension CoachChatView {
                         Image(systemName: "sparkles")
                             .foregroundStyle(Theme.cobalt)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("解锁 DeepSeek AI 教练")
+                            Text("升级 Pro · AI 教练不限条数")
                                 .font(AppType.callout.weight(.semibold))
                                 .foregroundStyle(Theme.ink)
-                            Text("当前使用本地规则建议；Pro 会员可使用完整 AI 教练。")
+                            Text("免费用户每周 3 条 AI 教练；Pro 解锁不限条数和完整 AI 能力。")
                                 .font(.system(size: 9.5, weight: .medium))
                                 .foregroundStyle(Theme.secondaryText)
                         }
@@ -244,17 +257,12 @@ extension CoachChatView {
         VStack(spacing: 0) {
             if let remaining = store.access.policy.coachRemaining {
                 HStack(spacing: 8) {
-                    Text("本周免费 AI 教练剩余 \(remaining)/3 条")
+                    Text(remaining == 0
+                         ? "免费 AI 教练额度已用完"
+                         : "本周免费 AI 教练剩余 \(remaining)/3 条")
                         .font(AppType.micro)
                         .foregroundStyle(remaining > 0 ? Theme.secondaryText : Theme.coral)
                     Spacer(minLength: 0)
-                    if remaining == 0 {
-                        Button("升级 Pro") {
-                            store.requestPro(.coachAI)
-                        }
-                        .font(AppType.micro.weight(.semibold))
-                        .foregroundStyle(Theme.cobalt)
-                    }
                 }
                 .padding(.horizontal, 22)
                 .padding(.bottom, 4)

@@ -125,6 +125,15 @@ extension AppStore {
         useRemoteAI && hasProAccess
     }
 
+    /// Free accounts with no weekly coach messages left see the inline Pro card.
+    var shouldShowCoachQuotaCard: Bool {
+        CoachChatPolicy.shouldShowQuotaCard(
+            hasPro: hasProAccess,
+            remaining: access.policy.coachRemaining,
+            exhausted: coachQuotaExhausted
+        )
+    }
+
     var equipmentSlugsForPlan: [String] {
         guard useEquipmentLibraryForPlans else { return [] }
         return equipmentLibrary.compactMap(\.slug)

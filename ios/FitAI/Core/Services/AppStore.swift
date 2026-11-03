@@ -51,6 +51,10 @@ final class AppStore {
     var selectedTab = 0
     var coachContext: String?
     var coachVisualMemory: CoachVisualMemory?
+    /// Set when the server rejects a normal coach turn with
+    /// COACH_QUOTA_EXHAUSTED. It makes the inline Pro card appear immediately,
+    /// before the refreshed /me/access snapshot lands.
+    var coachQuotaExhausted = false
     var planAdjustmentRequested = false
     var planAdjustmentStage = 0
     var planAdjustmentIssue = ""
@@ -84,9 +88,6 @@ final class AppStore {
     @ObservationIgnored var coachPhotoTask: Task<Void, Never>?
     @ObservationIgnored var coachPhotoWatchdog: Task<Void, Never>?
     @ObservationIgnored var coachPhotoRequestID: UUID?
-    @ObservationIgnored var legacyChatTask: Task<Void, Never>?
-    @ObservationIgnored var legacyChatWatchdog: Task<Void, Never>?
-    @ObservationIgnored var legacyChatRequestID: UUID?
     /// 已从本地删除、但服务端 DELETE 尚未成功的训练记录 ID。
     var pendingWorkoutDeletionIDs: [String] = []
     var isAgentWorking = false
@@ -213,6 +214,7 @@ final class AppStore {
         agentProposal = nil
         agentActions = []
         coachVisualMemory = nil
+        coachQuotaExhausted = false
         isExecutingAgentActions = false
         workoutLaunchDayID = nil
         pendingRoute = nil

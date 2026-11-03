@@ -9,7 +9,9 @@ extension SettingsView {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("AI 服务")
                         .font(AppType.headline)
-                    Text(store.useRemoteAI ? "远程模式 · 调用后端模型" : "本地模式 · 规则模板")
+                    Text(store.hasProAccess
+                         ? (store.useRemoteAI ? "远程模式 · 调用后端模型" : "本地模式 · 规则模板")
+                         : "免费额度 · 每周 3 条 AI 教练")
                         .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
@@ -17,13 +19,15 @@ extension SettingsView {
                 Toggle("", isOn: remoteBinding)
                     .labelsHidden()
                     .tint(Theme.primary)
+                    .disabled(!store.hasProAccess)
+                    .opacity(store.hasProAccess ? 1 : 0.45)
             }
 
             Text(store.hasProAccess
                  ? (store.useRemoteAI
                     ? "Pro 已解锁：生成计划、教练对话和视觉识别会请求 DeepSeek/后端；失败时自动回退本地。"
                     : "已开通 Pro，但当前关闭了远程 AI。打开开关后可使用 DeepSeek。")
-                 : "AI 能力为 Pro 会员权益。未开通时使用本地规则建议；开通后可调用 DeepSeek 的 AI 私人健身教练。")
+                 : "免费用户每周 3 条 AI 教练；Pro 解锁不限条数和完整 AI 能力。")
                 .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)

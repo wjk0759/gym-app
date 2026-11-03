@@ -134,6 +134,9 @@ extension AppStore {
     @MainActor
     func refreshAccess() async {
         await access.refresh()
+        if access.policy.isPro || (access.snapshot?.coachRemaining ?? 0) > 0 {
+            coachQuotaExhausted = false
+        }
     }
 
     @MainActor

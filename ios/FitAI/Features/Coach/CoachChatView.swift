@@ -117,6 +117,11 @@ struct CoachChatView: View {
                     }
                 }
 
+                if store.shouldShowCoachQuotaCard {
+                    coachQuotaCard
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+
                 if store.planAdjustmentStage > 0 {
                     if store.planAdjustmentStage == 3, let proposal = store.planAdjustmentProposal {
                         proposalCard(proposal)

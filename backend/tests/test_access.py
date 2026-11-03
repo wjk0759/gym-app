@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -8,6 +9,8 @@ from sqlalchemy.pool import StaticPool
 
 from app.db import Base
 from app.models import User, UserEntitlement
+from app.routers import agent
+from app.schemas import AgentChatIn
 from app.services import access
 
 
@@ -157,3 +160,22 @@ def test_coach_weekly_quota_is_three_for_free_users():
     assert coach["used"] == 3
     assert coach["remaining"] == 0
     assert coach["can_send"] is False
+
+
+def test_agent_chat_rejects_free_user_after_three_messages():
+    db = _session()
+    user_id = "00000000-0000-0000-0000-000000000001"
+    for _ in range(access.COACH_WEEKLY_LIMIT):
+        assert access.reserve_coach_message(db, user_id)
+
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(
+            agent._agent_chat_inner(
+                AgentChatIn(message="今天练什么"),
+                user_id,
+                db,
+            )
+        )
+
+    assert exc.value.status_code == 429
+    assert exc.value.detail["code"] == "COACH_QUOTA_EXHAUSTED"
