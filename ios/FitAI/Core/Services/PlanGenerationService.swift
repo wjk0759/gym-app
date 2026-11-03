@@ -25,7 +25,9 @@ struct PlanGenerationService {
             onboarding: onboarding,
             equipmentSlugs: equipmentSlugs,
             split: profile.split,
-            focus: focusAreas.map(\.rawValue),
+            focus: BodyFocusArea.displayOrder
+                .filter(focusAreas.contains)
+                .map(\.rawValue),
             idempotencyKey: idempotencyKey
         )
     }

@@ -88,4 +88,15 @@ final class BodyFigureAssetTests: XCTestCase {
         XCTAssertEqual(BodyFatOption.female[3].midpoint, 25.5, accuracy: 0.01)
         XCTAssertEqual(BodyFatOption.male[3].midpoint, 22.5, accuracy: 0.01)
     }
+
+    func testFocusDisplayOrderCoversEveryArea() {
+        XCTAssertEqual(
+            Set(BodyFocusArea.displayOrder),
+            Set(BodyFocusArea.allCases)
+        )
+        XCTAssertEqual(
+            BodyFocusArea.displayOrder.count,
+            BodyFocusArea.allCases.count
+        )
+    }
 }

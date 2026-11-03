@@ -181,7 +181,9 @@ enum PlanGenerator {
     // MARK: - 内部规则
 
     private static func focusMuscles(for areas: Set<BodyFocusArea>) -> [MuscleGroup] {
-        BodyFocusArea.allCases
+        guard areas.count < BodyFocusArea.allCases.count else { return [] }
+        var seen = Set<MuscleGroup>()
+        return BodyFocusArea.displayOrder
             .filter { areas.contains($0) }
             .flatMap { area -> [MuscleGroup] in
                 switch area {
@@ -194,9 +196,10 @@ enum PlanGenerator {
                 case .back: return [.back]
                 }
             }
+            .filter { seen.insert($0).inserted }
     }
 
-    /// Add at most two user focus muscles to the front of the day's template.
+    /// Add the user's focus muscles to the front of the day's template.
     /// The split still supplies the skeleton; focus only changes which muscles
     /// get first pick when the session is short.
     private static func biasedFocus(
@@ -205,7 +208,7 @@ enum PlanGenerator {
     ) -> [MuscleGroup] {
         guard !requested.isEmpty else { return base }
         var focus = base
-        for muscle in requested.prefix(2) where !focus.contains(muscle) {
+        for muscle in requested where !focus.contains(muscle) {
             focus.insert(muscle, at: 0)
         }
         return focus

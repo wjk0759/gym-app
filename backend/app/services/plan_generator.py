@@ -118,6 +118,16 @@ def _session_exercise_count(minutes: int) -> int:
     return 7
 
 
+_FOCUS_MUSCLES = ("chest", "back", "legs", "glutes", "shoulders", "arms", "core")
+
+
+def _normalize_focus(focus: list[str] | None) -> list[str]:
+    values = [item for item in (focus or []) if item in _FOCUS_MUSCLES]
+    deduped = list(dict.fromkeys(values))
+    # Selecting every muscle group is the same as balanced training.
+    return [] if len(deduped) >= len(_FOCUS_MUSCLES) else deduped
+
+
 def _allowed_exercises(
     db: Session,
     equipment: list[str] | None,
@@ -271,11 +281,7 @@ def fallback_plan(
     templates = SPLIT_TEMPLATES.get(split or "", SPLITS[weekly_days])
     minutes = max(15, min(180, int(session_minutes or profile.session_minutes or 45)))
     count = min(_session_exercise_count(minutes), 6)
-    requested_focus = [
-        item
-        for item in (focus or [])
-        if item in {"chest", "back", "legs", "glutes", "shoulders", "arms", "core"}
-    ][:2]
+    requested_focus = _normalize_focus(focus)
 
     days = []
     for week_index in range(1, weeks + 1):
@@ -416,6 +422,7 @@ def _user_prompt(
         for item in _candidate_pool(available)
     ]
     split_templates = SPLIT_TEMPLATES.get(split or "", [])
+    normalized_focus = _normalize_focus(focus)
     payload = {
         "user": {
             "sex": profile.sex,
@@ -431,7 +438,7 @@ def _user_prompt(
             "goal": goal,
             "split": split,
             "equipment_library_slugs": equipment_slugs or [],
-            "focus_areas": (focus or [])[:2],
+            "focus_areas": normalized_focus,
         },
         "weeks": weeks,
         "candidates": candidates,
@@ -443,10 +450,10 @@ def _user_prompt(
             "follow_split": bool(split_templates),
             "required_split_titles": [item[0] for item in split_templates],
             "required_split_focus": [item[1] for item in split_templates],
-            "focus_priority": (focus or [])[:2],
+            "focus_priority": normalized_focus,
             "focus_instruction": (
-                f"每天优先安排 1–2 个 {', '.join((focus or [])[:2])} 动作，但不要破坏分化结构。"
-                if focus
+                f"每天优先安排 {', '.join(normalized_focus)} 动作，但不要破坏分化结构。"
+                if normalized_focus
                 else "不额外指定重点部位。"
             ),
             "split_instruction": (

@@ -325,12 +325,15 @@ struct ProfileView: View {
                         .foregroundStyle(Theme.ink)
                     Text(
                         areas.isEmpty
-                            ? "全身均衡 · 点这里选重点部位"
-                            : areas.map(\.label).sorted().joined(separator: "、")
+                            ? "全身均衡"
+                            : BodyFocusArea.displayOrder
+                                .filter(areas.contains)
+                                .map(\.label)
+                                .joined(separator: "、")
                     )
                     .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
-                    .lineLimit(1)
+                    .lineLimit(2)
                 }
 
                 Spacer(minLength: 4)

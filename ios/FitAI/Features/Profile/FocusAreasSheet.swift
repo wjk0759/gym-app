@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Edit the two focus areas that bias plan generation. Stored locally so the
+/// Edit the focus areas that bias plan generation. Stored locally so the
 /// next local or remote plan can use it without a profile schema change.
 struct FocusAreasSheet: View {
     @Environment(AppStore.self) private var store
@@ -17,10 +17,10 @@ struct FocusAreasSheet: View {
                     EditorialHeader(
                         eyebrow: "FOCUS / 训练重点",
                         title: "想让计划多照顾哪里？",
-                        subtitle: "最多选两个。计划会在每一天优先安排对应动作，但不会破坏训练分化。"
+                        subtitle: "可多选。"
                     )
 
-                    BodyFocusMap(selected: $selected, sex: store.profile.sex)
+                    FocusAreaGrid(selected: $selected)
 
                     Toggle(isOn: $regenerate) {
                         VStack(alignment: .leading, spacing: 3) {
@@ -39,11 +39,6 @@ struct FocusAreasSheet: View {
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .strokeBorder(Theme.stroke, lineWidth: 1)
                     }
-
-                    Text("不选就是全身均衡。重点部位只影响动作优先级，不会绕过伤病与安全限制。")
-                        .font(AppType.micro)
-                        .foregroundStyle(Theme.tertiaryText)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .appPagePadding()
                 .padding(.bottom, 24)

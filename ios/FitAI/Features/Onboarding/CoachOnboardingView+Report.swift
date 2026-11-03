@@ -153,7 +153,12 @@ extension CoachOnboardingView {
     }
 
     var reportActionCard: some View {
-        let focusText = focusAreas.isEmpty ? "全身均衡" : focusAreas.map(\.label).joined(separator: "、")
+        let focusText = focusAreas.isEmpty
+            ? "全身均衡"
+            : BodyFocusArea.displayOrder
+                .filter(focusAreas.contains)
+                .map(\.label)
+                .joined(separator: "、")
         let equipmentText = draft.equipment.map(\.label).sorted().joined(separator: "、")
         let safetyText = injuries
             .union(injuryNote.isEmpty ? [String]() : [injuryNote])

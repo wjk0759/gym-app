@@ -142,41 +142,18 @@ extension CoachOnboardingView {
 
     func equipmentCard(_ item: Equipment) -> some View {
         let selected = draft.equipment.contains(item)
-        return Button {
+        return SelectionOptionCard(
+            title: item.label,
+            systemImage: item.symbolName,
+            selected: selected
+        ) {
             Haptics.select()
             if selected {
                 if draft.equipment.count > 1 { draft.equipment.remove(item) }
             } else {
                 draft.equipment.insert(item)
             }
-        } label: {
-            HStack(spacing: 9) {
-                Image(systemName: item.symbolName)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(selected ? Theme.onPrimary : Theme.secondaryText)
-                    .frame(width: 34, height: 34)
-                    .background(selected ? Theme.primary : Theme.ink.opacity(0.035), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                Text(item.label)
-                    .font(AppType.caption.weight(.semibold))
-                    .foregroundStyle(Theme.ink)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-                if selected {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(Theme.ink)
-                }
-            }
-            .padding(10)
-            .background(selected ? Theme.lime.opacity(0.18) : Theme.paper)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(selected ? Theme.ink.opacity(0.65) : Theme.stroke, lineWidth: selected ? 1.4 : 1)
-            }
         }
-        .buttonStyle(CardPressStyle(scale: 0.985))
-        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     func gaugeRow(

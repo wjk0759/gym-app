@@ -126,23 +126,14 @@ extension CoachOnboardingView {
     }
 
     var focusStep: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             stepTitle(
                 eyebrow: "训练重点",
                 title: "想重点改善哪里？",
-                subtitle: "可以多选；不选就是全身均衡。"
+                subtitle: "可多选。"
             )
 
-            BodyFocusMap(selected: $focusAreas, sex: draft.sex, recommended: recommendedFocus)
-
-            Button {
-                focusAreas.removeAll()
-            } label: {
-                Label("均衡练全身", systemImage: "circle.grid.cross")
-                    .font(AppType.caption)
-                    .foregroundStyle(Theme.cobalt)
-            }
-            .buttonStyle(SubtlePressStyle())
+            FocusAreaGrid(selected: $focusAreas)
         }
     }
 

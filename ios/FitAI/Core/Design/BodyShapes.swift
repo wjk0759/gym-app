@@ -38,42 +38,6 @@ enum BodyType: String, CaseIterable, Identifiable {
         }
     }
 
-    var shoulder: CGFloat {
-        switch self {
-        case .apple: return 0.92
-        case .pear: return 0.74
-        case .invertedTriangle: return 1.12
-        case .rectangle: return 0.92
-        case .hourglass: return 1.02
-        case .oval: return 0.90
-        case .trapezoid: return 1.06
-        }
-    }
-
-    var waist: CGFloat {
-        switch self {
-        case .apple: return 1.00
-        case .pear: return 0.82
-        case .invertedTriangle: return 0.78
-        case .rectangle: return 0.90
-        case .hourglass: return 0.64
-        case .oval: return 1.04
-        case .trapezoid: return 0.94
-        }
-    }
-
-    var hip: CGFloat {
-        switch self {
-        case .apple: return 0.94
-        case .pear: return 1.12
-        case .invertedTriangle: return 0.80
-        case .rectangle: return 0.92
-        case .hourglass: return 1.06
-        case .oval: return 0.94
-        case .trapezoid: return 0.92
-        }
-    }
-
     var recommendedGoal: GoalType {
         switch self {
         case .apple: return .recomp
@@ -101,139 +65,6 @@ enum BodyType: String, CaseIterable, Identifiable {
 
     func isAvailable(for sex: Sex) -> Bool {
         Self.options(for: sex).contains(self)
-    }
-}
-
-struct BodySilhouette: View {
-    var type: BodyType = .rectangle
-    var sex: Sex = .male
-    var fullness: CGFloat = 1
-    var fill: Color = Theme.ink.opacity(0.12)
-    var stroke: Color = Theme.ink.opacity(0.38)
-    var lineWidth: CGFloat = 1.2
-
-    var body: some View {
-        GeometryReader { geo in
-            let width = geo.size.width
-            let height = geo.size.height
-            let centerX = width * 0.5
-            let shoulderY = height * 0.22
-            let waistY = height * 0.47
-            let hipY = height * 0.60
-            let shoulderScale: CGFloat = sex == .female ? 0.94 : 1
-            let waistScale: CGFloat = sex == .female ? 0.90 : 1
-            let hipScale: CGFloat = sex == .female ? 1.06 : 1
-            let shoulder = width * 0.5 * type.shoulder * fullness * shoulderScale
-            let waist = width * 0.5 * type.waist * fullness * waistScale
-            let hip = width * 0.5 * type.hip * fullness * hipScale
-
-            ZStack {
-                Circle()
-                    .fill(fill)
-                    .overlay(Circle().stroke(stroke, lineWidth: lineWidth))
-                    .frame(width: width * 0.17, height: width * 0.17)
-                    .position(x: centerX, y: height * 0.10)
-
-                Path { path in
-                    path.move(to: CGPoint(x: centerX - shoulder, y: shoulderY))
-                    path.addQuadCurve(
-                        to: CGPoint(x: centerX - waist, y: waistY),
-                        control: CGPoint(x: centerX - shoulder * 0.80, y: (shoulderY + waistY) * 0.5)
-                    )
-                    path.addQuadCurve(
-                        to: CGPoint(x: centerX - hip, y: hipY),
-                        control: CGPoint(x: centerX - waist * 0.96, y: (waistY + hipY) * 0.5)
-                    )
-                    path.addLine(to: CGPoint(x: centerX + hip, y: hipY))
-                    path.addQuadCurve(
-                        to: CGPoint(x: centerX + waist, y: waistY),
-                        control: CGPoint(x: centerX + waist * 0.96, y: (waistY + hipY) * 0.5)
-                    )
-                    path.addQuadCurve(
-                        to: CGPoint(x: centerX + shoulder, y: shoulderY),
-                        control: CGPoint(x: centerX + shoulder * 0.80, y: (shoulderY + waistY) * 0.5)
-                    )
-                    path.closeSubpath()
-                }
-                .fill(fill)
-                .overlay(
-                    Path { path in
-                        path.move(to: CGPoint(x: centerX - shoulder, y: shoulderY))
-                        path.addQuadCurve(
-                            to: CGPoint(x: centerX - waist, y: waistY),
-                            control: CGPoint(x: centerX - shoulder * 0.80, y: (shoulderY + waistY) * 0.5)
-                        )
-                        path.addQuadCurve(
-                            to: CGPoint(x: centerX - hip, y: hipY),
-                            control: CGPoint(x: centerX - waist * 0.96, y: (waistY + hipY) * 0.5)
-                        )
-                        path.addLine(to: CGPoint(x: centerX + hip, y: hipY))
-                        path.addQuadCurve(
-                            to: CGPoint(x: centerX + waist, y: waistY),
-                            control: CGPoint(x: centerX + waist * 0.96, y: (waistY + hipY) * 0.5)
-                        )
-                        path.addQuadCurve(
-                            to: CGPoint(x: centerX + shoulder, y: shoulderY),
-                            control: CGPoint(x: centerX + shoulder * 0.80, y: (shoulderY + waistY) * 0.5)
-                        )
-                        path.closeSubpath()
-                    }
-                    .stroke(stroke, lineWidth: lineWidth)
-                )
-
-                arm(width: width, height: height, centerX: centerX, shoulder: shoulder, side: -1, fill: fill, stroke: stroke)
-                arm(width: width, height: height, centerX: centerX, shoulder: shoulder, side: 1, fill: fill, stroke: stroke)
-
-                leg(width: width, height: height, centerX: centerX, hip: hip, side: -1, fill: fill, stroke: stroke)
-                leg(width: width, height: height, centerX: centerX, hip: hip, side: 1, fill: fill, stroke: stroke)
-            }
-        }
-        .accessibilityHidden(true)
-    }
-
-    private func arm(
-        width: CGFloat,
-        height: CGFloat,
-        centerX: CGFloat,
-        shoulder: CGFloat,
-        side: CGFloat,
-        fill: Color,
-        stroke: Color
-    ) -> some View {
-        RoundedRectangle(cornerRadius: width * 0.045, style: .continuous)
-            .fill(fill)
-            .overlay(
-                RoundedRectangle(cornerRadius: width * 0.045, style: .continuous)
-                    .stroke(stroke, lineWidth: lineWidth)
-            )
-            .frame(width: width * 0.085, height: height * 0.34)
-            .rotationEffect(.degrees(side * 8))
-            .position(
-                x: centerX + side * (shoulder + width * 0.035),
-                y: height * 0.38
-            )
-    }
-
-    private func leg(
-        width: CGFloat,
-        height: CGFloat,
-        centerX: CGFloat,
-        hip: CGFloat,
-        side: CGFloat,
-        fill: Color,
-        stroke: Color
-    ) -> some View {
-        RoundedRectangle(cornerRadius: width * 0.055, style: .continuous)
-            .fill(fill)
-            .overlay(
-                RoundedRectangle(cornerRadius: width * 0.055, style: .continuous)
-                    .stroke(stroke, lineWidth: lineWidth)
-            )
-            .frame(width: width * 0.115, height: height * 0.43)
-            .position(
-                x: centerX + side * hip * 0.42,
-                y: height * 0.78
-            )
     }
 }
 
@@ -304,23 +135,10 @@ struct BodyFigure: View {
                 .scaledToFit()
                 .accessibilityHidden(true)
         } else {
-            BodySilhouette(
-                type: type,
-                sex: sex,
-                fullness: fallbackFullness,
-                fill: Theme.ink.opacity(0.055),
-                stroke: Theme.ink.opacity(0.28),
-                lineWidth: 1
-            )
+            Image(systemName: "figure.stand")
+                .font(.system(size: 54, weight: .light))
+                .foregroundStyle(Theme.tertiaryText)
         }
-    }
-
-    private var fallbackFullness: CGFloat {
-        guard let fatOptionID,
-              let option = BodyFatOption.options(for: sex).first(where: { $0.id == fatOptionID }) else {
-            return 1
-        }
-        return option.fullness
     }
 }
 
@@ -383,28 +201,27 @@ struct BodyFatOption: Identifiable, Equatable {
     let id: String
     let label: String
     let range: ClosedRange<Double>
-    let fullness: CGFloat
     let note: String
     let assetToken: String
 
     var midpoint: Double { (range.lowerBound + range.upperBound) / 2 }
 
     static let male: [BodyFatOption] = [
-        .init(id: "male_under_12", label: "< 12%", range: 8...11, fullness: 0.84, note: "很精瘦", assetToken: "Under12"),
-        .init(id: "male_12_15", label: "12–15%", range: 12...15, fullness: 0.90, note: "偏瘦有线条", assetToken: "12To15"),
-        .init(id: "male_16_20", label: "16–20%", range: 16...20, fullness: 0.98, note: "匀称", assetToken: "16To20"),
-        .init(id: "male_21_24", label: "21–24%", range: 21...24, fullness: 1.06, note: "常见范围", assetToken: "21To24"),
-        .init(id: "male_25_29", label: "25–29%", range: 25...29, fullness: 1.14, note: "偏丰满", assetToken: "25To29"),
-        .init(id: "male_over_29", label: "> 29%", range: 30...40, fullness: 1.22, note: "体脂偏高", assetToken: "Over29")
+        .init(id: "male_under_12", label: "< 12%", range: 8...11, note: "很精瘦", assetToken: "Under12"),
+        .init(id: "male_12_15", label: "12–15%", range: 12...15, note: "偏瘦有线条", assetToken: "12To15"),
+        .init(id: "male_16_20", label: "16–20%", range: 16...20, note: "匀称", assetToken: "16To20"),
+        .init(id: "male_21_24", label: "21–24%", range: 21...24, note: "常见范围", assetToken: "21To24"),
+        .init(id: "male_25_29", label: "25–29%", range: 25...29, note: "偏丰满", assetToken: "25To29"),
+        .init(id: "male_over_29", label: "> 29%", range: 30...40, note: "体脂偏高", assetToken: "Over29")
     ]
 
     static let female: [BodyFatOption] = [
-        .init(id: "female_under_15", label: "< 15%", range: 10...14, fullness: 0.86, note: "很精瘦", assetToken: "Under15"),
-        .init(id: "female_15_18", label: "15–18%", range: 15...18, fullness: 0.92, note: "偏瘦有线条", assetToken: "15To18"),
-        .init(id: "female_19_22", label: "19–22%", range: 19...22, fullness: 0.98, note: "匀称", assetToken: "19To22"),
-        .init(id: "female_23_28", label: "23–28%", range: 23...28, fullness: 1.06, note: "常见范围", assetToken: "23To28"),
-        .init(id: "female_29_34", label: "29–34%", range: 29...34, fullness: 1.14, note: "偏丰满", assetToken: "29To34"),
-        .init(id: "female_over_34", label: "> 34%", range: 35...45, fullness: 1.22, note: "体脂偏高", assetToken: "Over34")
+        .init(id: "female_under_15", label: "< 15%", range: 10...14, note: "很精瘦", assetToken: "Under15"),
+        .init(id: "female_15_18", label: "15–18%", range: 15...18, note: "偏瘦有线条", assetToken: "15To18"),
+        .init(id: "female_19_22", label: "19–22%", range: 19...22, note: "匀称", assetToken: "19To22"),
+        .init(id: "female_23_28", label: "23–28%", range: 23...28, note: "常见范围", assetToken: "23To28"),
+        .init(id: "female_29_34", label: "29–34%", range: 29...34, note: "偏丰满", assetToken: "29To34"),
+        .init(id: "female_over_34", label: "> 34%", range: 35...45, note: "体脂偏高", assetToken: "Over34")
     ]
 
     static func options(for sex: Sex) -> [BodyFatOption] {
@@ -472,6 +289,10 @@ enum BodyFocusArea: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    static let displayOrder: [BodyFocusArea] = [
+        .shoulders, .chest, .back, .arms, .core, .glutes, .legs
+    ]
+
     var label: String {
         switch self {
         case .shoulders: return "肩部"
@@ -496,95 +317,4 @@ enum BodyFocusArea: String, CaseIterable, Identifiable {
         }
     }
 
-    var position: UnitPoint {
-        switch self {
-        case .shoulders: return UnitPoint(x: 0.50, y: 0.20)
-        case .chest: return UnitPoint(x: 0.50, y: 0.31)
-        case .arms: return UnitPoint(x: 0.18, y: 0.38)
-        case .core: return UnitPoint(x: 0.50, y: 0.47)
-        case .glutes: return UnitPoint(x: 0.50, y: 0.60)
-        case .legs: return UnitPoint(x: 0.50, y: 0.78)
-        case .back: return UnitPoint(x: 0.82, y: 0.32)
-        }
-    }
-}
-
-struct BodyFocusMap: View {
-    @Binding var selected: Set<BodyFocusArea>
-    var sex: Sex = .male
-    var recommended: Set<BodyFocusArea> = []
-    var maxSelection: Int = 2
-
-    var body: some View {
-        VStack(spacing: 12) {
-            GeometryReader { geo in
-                ZStack {
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .fill(Theme.ink.opacity(0.035))
-                    BodySilhouette(
-                        type: .rectangle,
-                        sex: sex,
-                        fill: Theme.ink.opacity(0.08),
-                        stroke: Theme.ink.opacity(0.22),
-                        lineWidth: 1
-                    )
-                    .padding(16)
-
-                    ForEach(BodyFocusArea.allCases) { area in
-                        focusDot(area)
-                            .position(
-                                x: geo.size.width * area.position.x,
-                                y: geo.size.height * area.position.y
-                            )
-                    }
-                }
-            }
-            .frame(height: 310)
-
-            Text("最多选 \(maxSelection) 个，计划会优先安排这些部位")
-                .font(AppType.micro)
-                .foregroundStyle(Theme.tertiaryText)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    private func focusDot(_ area: BodyFocusArea) -> some View {
-        let isSelected = selected.contains(area)
-        let isRecommended = recommended.contains(area) && !isSelected
-        return Button {
-            if isSelected {
-                Haptics.select()
-                selected.remove(area)
-            } else if selected.count < maxSelection {
-                Haptics.select()
-                selected.insert(area)
-            } else {
-                Haptics.warning()
-            }
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: isSelected ? "checkmark" : area.symbol)
-                    .font(.system(size: 9, weight: .bold))
-                Text(area.label)
-                    .font(AppType.micro)
-            }
-            .foregroundStyle(isSelected ? Theme.onAccent : Theme.ink.opacity(0.72))
-            .padding(.horizontal, 7)
-            .padding(.vertical, 5)
-            .background(
-                isSelected ? Theme.lime : (isRecommended ? Theme.lime.opacity(0.30) : Theme.paper),
-                in: Capsule(style: .continuous)
-            )
-            .overlay {
-                Capsule(style: .continuous)
-                    .strokeBorder(
-                        isSelected ? Theme.ink : Theme.ink.opacity(isRecommended ? 0.28 : 0.18),
-                        lineWidth: isSelected ? 1.2 : 0.8
-                    )
-            }
-        }
-        .buttonStyle(SubtlePressStyle(scale: 0.94))
-        .accessibilityLabel(area.label)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
 }
