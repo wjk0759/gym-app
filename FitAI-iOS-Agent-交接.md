@@ -14,12 +14,28 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`a6de43d`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`95e8e5c`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、Release API 占位保护、器械详情崩溃加固
-- macOS 最近完成：品牌改名「叫练」；历史 iOS 构建/SwiftLint/29 个单测通过
+- macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - 最新后端验证：**175 passed**，Ruff 通过
 - Mac 待办：把 `ios/project.yml` 的 `FITAI_API_BASE_URL` 换成生产 HTTPS 域名 → `xcodegen generate` → build/test → 器械详情/拍照/计划真机检查；另外排查 iPhone 14 Pro / iOS 18 真机键盘 5–10 秒卡顿（见下方专项）
 - 仍 BLOCKED：生产 API 域名、生产 MySQL V14–V21、短信/测试账号、IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、公网隐私政策 URL、Mac 签名上传
+
+### 2026-11-04 · macOS
+
+- 提交：`9f138e8` test(ios): fix body figure alpha probe orientation；本同步文档随后提交
+- 做了什么：
+  - 拉取 `95e8e5c`，完成 iOS 构建、SwiftLint、单元测试、UI 导航测试和 backend 测试。
+  - 修复 `BodyFigureAssetTests.alphaChannel` 的测试辅助 bug：`CGImage` 绘制到 bitmap context 后 row 0 已经是顶部，重复做垂直翻转会让 torso 探针读到画布下半区，造成 `testTorsoCropKeepsTheBodyOpaque` 假失败。只改测试，不改 UI/素材。
+- 验证：
+  - iOS build 成功；SwiftLint **0 violation**
+  - iOS unit **44/44**；UI 导航测试通过
+  - backend **175 passed** + Ruff 通过
+- 阻塞：
+  - iPhone 14 Pro 真机 build 被 Sign in with Apple entitlement 阻塞：当前是个人开发团队，个人团队不支持 `com.apple.developer.applesignin`，provisioning profile 也不包含该 capability。键盘 5–10 秒卡顿仍无法按交接流程真机取证，标 **BLOCKED**；没有临时移除 entitlement 或改 UI 来规避。
+  - `FITAI_API_BASE_URL` 仍是 `https://api.invalid/api/v1` 占位，缺生产 HTTPS 域名。
+- Windows 需要提供：
+  - 可用的生产 API 域名；如需继续真机键盘排查，提供支持 Apple 登录 capability 的 Team/描述文件，或明确允许做仅本地测试的临时无 entitlement 构建（不提交发布配置）。
 
 ### 2026-11-04 · Windows / OpenCode（真机键盘卡顿排查请求）
 
