@@ -18,12 +18,12 @@
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、Release API 占位保护、器械详情崩溃加固
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - 最新后端验证：**175 passed**，Ruff 通过
-- Mac 待办：把 `ios/project.yml` 的 `FITAI_API_BASE_URL` 换成生产 HTTPS 域名 → `xcodegen generate` → build/test → 器械详情/拍照/计划真机检查；另外排查 iPhone 14 Pro / iOS 18 真机键盘 5–10 秒卡顿（见下方专项）
+- Mac 待办：把 `ios/project.yml` 的 `FITAI_API_BASE_URL` 换成生产 HTTPS 域名 → `xcodegen generate` → build/test → 器械详情/拍照/计划真机检查；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：生产 API 域名、生产 MySQL V14–V21、短信/测试账号、IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、公网隐私政策 URL、Mac 签名上传
 
 ### 2026-11-04 · macOS
 
-- 提交：`9f138e8` test(ios): fix body figure alpha probe orientation；本同步文档随后提交
+- 提交：`9f138e8`（测试修复）、`a52ca9f`（上一条同步）均未推送；本轮 Debug 签名修复未提交；键盘排查未改产品代码
 - 做了什么：
   - 拉取 `95e8e5c`，完成 iOS 构建、SwiftLint、单元测试、UI 导航测试和 backend 测试。
   - 修复 `BodyFigureAssetTests.alphaChannel` 的测试辅助 bug：`CGImage` 绘制到 bitmap context 后 row 0 已经是顶部，重复做垂直翻转会让 torso 探针读到画布下半区，造成 `testTorsoCropKeepsTheBodyOpaque` 假失败。只改测试，不改 UI/素材。
@@ -31,11 +31,23 @@
   - iOS build 成功；SwiftLint **0 violation**
   - iOS unit **44/44**；UI 导航测试通过
   - backend **175 passed** + Ruff 通过
-- 阻塞：
-  - iPhone 14 Pro 真机 build 被 Sign in with Apple entitlement 阻塞：当前是个人开发团队，个人团队不支持 `com.apple.developer.applesignin`，provisioning profile 也不包含该 capability。键盘 5–10 秒卡顿仍无法按交接流程真机取证，标 **BLOCKED**；没有临时移除 entitlement 或改 UI 来规避。
-  - `FITAI_API_BASE_URL` 仍是 `https://api.invalid/api/v1` 占位，缺生产 HTTPS 域名。
+- Debug 真机签名方案（已实现）：
+  - Debug 使用独立 Bundle ID `com.wjk.fitai.dev` 和 `FitAI-Debug.entitlements`（保留 HealthKit，不含 applesignin）。
+  - Debug 隐藏 Apple 登录入口；Keychain service 使用 `com.fitai.app.auth.debug`，不与 Release 共享登录态。
+  - Release 继续使用 `com.wjk.fitai` + `FitAI.entitlements`，Apple 登录和正式 capability 不变。
+  - Debug 真机构建 **成功**，已安装并启动 `com.wjk.fitai.dev`；模拟器 44 个单测 + UI 测试通过，SwiftLint 0 violation。
+- 键盘首次加载专项（已完成定位，未改产品代码）：
+  - `xctrace` 直接启动 / attach：0 个 >250ms 主线程 hang；主线程 CPU 分别约 3.15s / 2.34s，键盘相关约 0.99s / 0.83s。
+  - Xcode `Start the active scheme`（带 LLDB/诊断）首次键盘：出现 539ms、725ms、1.64s 和 **2.27s/2.33s Severe Hang**。
+  - 临时关闭 Debug executable + Main Thread Checker + Thread Performance Checker 后，用户实测不再卡顿。
+  - 结论：是 Xcode 调试运行环境放大了首次键盘/CoreText 初始化成本，不是 App 业务逻辑或 UI 布局问题。
+  - 诊断用的 scheme 临时改动已通过 `xcodegen generate` 恢复；临时 `TextInputPrewarm` 和键盘计时测试已移除。
+- 仍待处理：
+  - Release 真机/TestFlight 仍需支持 Sign in with Apple capability 的付费团队；`FITAI_API_BASE_URL` 仍是占位域名。
+  - 如 Release 首次键盘仍复现，再继续查系统键盘进程。
 - Windows 需要提供：
-  - 可用的生产 API 域名；如需继续真机键盘排查，提供支持 Apple 登录 capability 的 Team/描述文件，或明确允许做仅本地测试的临时无 entitlement 构建（不提交发布配置）。
+  - 生产 API 域名；Release 真机/TestFlight 的付费 Team/描述文件。
+  - 键盘专项暂不需要 Windows 继续排查；如 Release 仍复现再回传。
 
 ### 2026-11-04 · Windows / OpenCode（真机键盘卡顿排查请求）
 
