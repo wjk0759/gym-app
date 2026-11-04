@@ -52,6 +52,16 @@ enum AppConfig {
 #endif
     }
 
+    /// 免费个人团队不支持 Sign in with Apple。Debug 真机测试隐藏入口，
+    /// Release 仍保留 Apple 登录与正式 entitlement。
+    static var appleSignInEnabled: Bool {
+#if DEBUG
+        false
+#else
+        true
+#endif
+    }
+
     /// 教学视频素材尚未上线，先隐藏所有视频入口。
     /// 接入素材后改回 true；不要删除 EquipmentDetailView+Media.swift 里的播放器/占位代码。
     static let exerciseVideosEnabled = false

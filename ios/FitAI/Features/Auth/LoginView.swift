@@ -67,7 +67,9 @@ struct LoginView: View {
                         header(compact: compact)
                         headline(compact: compact)
                         loginCard(compact: compact)
-                        socialSection(compact: compact)
+                        if AppConfig.appleSignInEnabled {
+                            socialSection(compact: compact)
+                        }
                         consentFooter
                         devServerLink
                             .padding(.top, 2)

@@ -5,7 +5,11 @@ import Security
 final class AuthTokenStore {
     static let shared = AuthTokenStore()
 
+#if DEBUG
+    private let service = "com.fitai.app.auth.debug"
+#else
     private let service = "com.fitai.app.auth"
+#endif
     private let accessKey = "access_token"
     private let refreshKey = "refresh_token"
     private let userKey = "user_id"

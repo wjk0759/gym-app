@@ -42,6 +42,10 @@ targets:
           ENABLE_TESTABILITY: YES
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
           FITAI_API_BASE_URL: "http://127.0.0.1:8000/api/v1"
+          # 免费个人团队不支持 Sign in with Apple；Debug 用独立 App ID 和
+          # 无 applesignin 的 entitlements，Release 仍使用正式配置。
+          PRODUCT_BUNDLE_IDENTIFIER: com.wjk.fitai.dev
+          CODE_SIGN_ENTITLEMENTS: FitAI/Resources/FitAI-Debug.entitlements
     scheme:
       gatherCoverageData: false
       testTargets:
