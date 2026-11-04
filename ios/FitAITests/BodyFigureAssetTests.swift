@@ -237,9 +237,9 @@ final class BodyFigureAssetTests: XCTestCase {
                 bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
             ) else { return }
 
-            // Flip so row 0 is the top of the image, matching asset coordinates.
-            context.translateBy(x: 0, y: CGFloat(height))
-            context.scaleBy(x: 1, y: -1)
+            // CGImage drawing into a bitmap context already puts the top row
+            // at row 0 here; flipping again made torso probes read the wrong
+            // half of the canvas and produced false failures.
             context.draw(
                 cgImage,
                 in: CGRect(x: 0, y: 0, width: width, height: height)
