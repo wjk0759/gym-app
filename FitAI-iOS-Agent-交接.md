@@ -14,12 +14,28 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`95e8e5c`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、Release API 占位保护、器械详情崩溃加固
+- `develop` 代码 HEAD：`483508e`；本文件的最新同步提交见 `git log -1`
+- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、Release API 占位保护、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - 最新后端验证：**175 passed**，Ruff 通过
-- Mac 待办：把 `ios/project.yml` 的 `FITAI_API_BASE_URL` 换成生产 HTTPS 域名 → `xcodegen generate` → build/test → 器械详情/拍照/计划真机检查；键盘问题已定位为 Xcode 调试环境，未改产品代码
+- Mac 待办：把 `ios/project.yml` 的 `FITAI_API_BASE_URL` 换成生产 HTTPS 域名 → `xcodegen generate` → build/test → 器械详情/拍照/计划真机检查；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：生产 API 域名、生产 MySQL V14–V21、短信/测试账号、IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、公网隐私政策 URL、Mac 签名上传
+
+### 2026-11-05 · Windows / OpenCode（男性椭圆/梯形 16–20% 素材）
+
+- 提交：`483508e`
+- 做了什么：
+  - 用新源图 `椭圆型16%-20%.png`、`梯型16%-20%.png` 替换：
+    - `BodyFigureMaleOvalFat16To20`
+    - `BodyFigureMaleTrapezoidFat16To20`
+  - 新源图是 1440×2560、带浅灰纹理背景的 RGB 图，不是纯白底
+  - 用“最大前景连通域 + 填洞 + 轻微边缘羽化”抠图，去掉纹理背景和零星噪点
+  - 输出保持 400×667、14px 边距、透明背景；alpha bbox 与旧图一致 `(38, 14, 362, 653)`
+  - 没有改 UI、枚举、资产名或测试
+- 验证：深色/浅色合成预览干净，无白边/灰底残留；尺寸、四角透明、bbox 正确；
+  Swift 文件未改；Windows 没有跑 iOS 构建
+- Mac 需要做：`git pull` → `xcodegen generate` → build；在浅色/深色下看男性“椭圆型/梯形 + 16–20%”的体型页、体脂卡和报告组合图
+- 不要恢复：旧的两张 16–20% 椭圆/梯形图；不要把新源图原图直接导入
 
 ### 2026-11-04 · macOS
 
@@ -267,7 +283,7 @@
 - Windows 仓库：`E:\Projects\FitAI`
 - macOS 工作区：`/Users/jacobwu/gym-app`
 - 当前分支：`feat/pro-access-followup-2026-11`，基于 `develop`
-- 远端 `develop`：代码 `a6de43d`；文档提交在其后，见 `git log -1`
+- 远端 `develop`：代码 `483508e`；文档提交在其后，见 `git log -1`
 - 正式发布前仍需真实数据库、真机和 App Store Connect 配置
 
 > **2026-11-03 macOS 进展：品牌已改名「叫练」。** 用户可见品牌、法律文档、
