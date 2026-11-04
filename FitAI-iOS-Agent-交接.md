@@ -14,12 +14,55 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`c133d24`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`a6de43d`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、Release API 占位保护、器械详情崩溃加固
 - macOS 最近完成：品牌改名「叫练」；历史 iOS 构建/SwiftLint/29 个单测通过
 - 最新后端验证：**175 passed**，Ruff 通过
-- Mac 待办：把 `ios/project.yml` 的 `FITAI_API_BASE_URL` 换成生产 HTTPS 域名 → `xcodegen generate` → build/test → 器械详情/拍照/计划真机检查
+- Mac 待办：把 `ios/project.yml` 的 `FITAI_API_BASE_URL` 换成生产 HTTPS 域名 → `xcodegen generate` → build/test → 器械详情/拍照/计划真机检查；另外排查 iPhone 14 Pro / iOS 18 真机键盘 5–10 秒卡顿（见下方专项）
 - 仍 BLOCKED：生产 API 域名、生产 MySQL V14–V21、短信/测试账号、IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、公网隐私政策 URL、Mac 签名上传
+
+### 2026-11-04 · Windows / OpenCode（真机键盘卡顿排查请求）
+
+- 提交：暂无代码变更；当前代码 HEAD `a6de43d`
+- 现象：
+  - iPhone 14 Pro / iOS 18 真机
+  - 所有输入框调起系统键盘都卡 5–10 秒，登录页最明显
+  - 空账号也卡
+  - 只用系统键盘，没有第三方输入法
+- Windows 初步判断：
+  - 基本排除第三方键盘
+  - 空账号也卡，持久化 state 不是唯一原因
+  - 优先怀疑 App 级主线程阻塞或 SwiftUI 键盘布局/全屏背景重绘
+- 可能热点（按优先级）：
+  1. `LoginView`：`GeometryReader` + `ScrollView` + `.scrollDismissesKeyboard(.interactively)` + 条件 `.safeAreaInset` 键盘完成栏，键盘出现时布局链较复杂
+  2. `AppBackground` / `GrainTexture`：全屏渐变 + 平铺纹理，每次键盘 safe-area 变化都可能重绘
+  3. `FitAIApp.task` 启动即 `await subscriptions.load()`：StoreKit 首次商品请求可能占用主线程
+  4. `RootView.task` 的 `auth.restoreIfNeeded()`；`AppStore.load()` / `switchUser()` 同步 JSON 读盘解码
+  5. 登录页 `.textContentType(.telephoneNumber/.oneTimeCode)` 触发 AutoFill
+- Mac 需要做（按顺序，先取证再改）：
+  1. `git pull`；分别用 Debug 和 Release 真机测试，确认是否只在 Debug 卡
+  2. 删除 App 重装，不登录，点登录手机号框；仍卡则不是本地 state
+  3. Xcode 控制台搜 `STRESS load`；下载 App container，查看 `Documents/fitai-state*.json` 大小
+  4. Instruments Time Profiler 录 10 秒：启动 → 点手机号输入框；抓主线程最重栈（重点看 JSONDecoder、Data(contentsOf:)、StoreKit、SwiftUI layout、Text/Gradient 绘制）
+  5. 逐项隔离（每项单独测，记录结果）：
+     - 注释 `FitAIApp.task` 里的 `await subscriptions.load()`
+     - 注释 `RootView.task` 里的 `auth.restoreIfNeeded()`
+     - LoginView 临时把 `AppBackground()` 换成 `Theme.background`
+     - 临时去掉 `.safeAreaInset` 的键盘完成栏
+     - 临时去掉 `.scrollDismissesKeyboard(.interactively)`
+     - 临时去掉外层 `GeometryReader`（用固定 compact 值）
+  6. 做一个最小 SwiftUI TextField 页面，逐项加回背景/ScrollView/safeAreaInset/GeometryReader，确认哪一层触发
+  7. 系统设置里关闭 AutoFill Passwords 再试；临时去掉登录页 `textContentType` 再试
+  8. 对比 iOS 18 模拟器和另一台真机；排除系统键盘/AutoFill 问题
+- 回传：
+  - Debug/Release 结果
+  - `STRESS load` 日志、state 文件大小
+  - Time Profiler 截图/最重栈
+  - 哪一项去掉后不卡
+- 不要：
+  - 不要先猜着提交“修复”
+  - 不要删除键盘完成栏/背景组件
+  - 不要用 `DispatchQueue.main.sync` 之类方式掩盖问题
 
 ### 2026-11-04 · Windows / OpenCode（真实视觉 / AI 计划 / 视频隐藏 / TestFlight 加固）
 
@@ -196,7 +239,7 @@
 - Windows 仓库：`E:\Projects\FitAI`
 - macOS 工作区：`/Users/jacobwu/gym-app`
 - 当前分支：`feat/pro-access-followup-2026-11`，基于 `develop`
-- 远端 `develop`：代码 `c133d24`；文档提交在其后，见 `git log -1`
+- 远端 `develop`：代码 `a6de43d`；文档提交在其后，见 `git log -1`
 - 正式发布前仍需真实数据库、真机和 App Store Connect 配置
 
 > **2026-11-03 macOS 进展：品牌已改名「叫练」。** 用户可见品牌、法律文档、
