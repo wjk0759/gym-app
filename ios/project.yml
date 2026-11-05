@@ -36,7 +36,7 @@ targets:
         SUPPORTS_MACCATALYST: NO
         ENABLE_PREVIEWS: YES
         # 上 TestFlight 前必须替换为生产 HTTPS 域名；默认用保留域名避免误连 localhost。
-        FITAI_API_BASE_URL: "https://api.invalid/api/v1"
+        FITAI_API_BASE_URL: "https://hk-api.jiaolianfit.cn/api/v1"
       configs:
         Debug:
           ENABLE_TESTABILITY: YES

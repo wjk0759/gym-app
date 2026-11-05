@@ -14,12 +14,40 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`483508e`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、Release API 占位保护、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新
+- `develop` 代码 HEAD：父提交 `06ab7bd`；本文件的最新同步提交见 `git log -1`
+- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
-- 最新后端验证：**175 passed**，Ruff 通过
-- Mac 待办：把 `ios/project.yml` 的 `FITAI_API_BASE_URL` 换成生产 HTTPS 域名 → `xcodegen generate` → build/test → 器械详情/拍照/计划真机检查；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
-- 仍 BLOCKED：生产 API 域名、生产 MySQL V14–V21、短信/测试账号、IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、公网隐私政策 URL、Mac 签名上传
+- 最新后端验证：**175 passed**，Ruff 通过；香港生产后端 `/health`、`/health/ready` 200，DeepSeek Flash 真实调用 200
+- Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、建档、AI 计划、教练、拍照；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
+- 仍 BLOCKED：短信/测试账号、IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、公网隐私政策 URL、Mac 签名上传
+
+### 2026-11-05 · Windows / OpenCode（香港 TestFlight 后端上线）
+
+- 提交：见 `git log -1`（父提交 `06ab7bd`）
+- 做了什么：
+  - 香港 ECS：2 核 4G / Ubuntu 22.04.5 / Docker 29.9.3 / Compose v5.7.0
+  - 域名 `hk-api.jiaolianfit.cn` → `8.218.205.149`，Caddy 自动申请 Let's Encrypt 证书
+  - MySQL 8.4 容器，Flyway V1–V21 全部 `success=1`
+  - FastAPI 2 worker + Caddy 反代；`fitai-db` / `fitai-api` / `fitai-caddy` 全部 healthy
+  - `ios/project.yml` 的 Release `FITAI_API_BASE_URL` 改为 `https://hk-api.jiaolianfit.cn/api/v1`
+  - 新增 `docs/48-hk-testflight-backend.md`（服务器、命令、备份、迁移说明）
+- 验证：
+  - `https://hk-api.jiaolianfit.cn/health` → `{"status":"ok","env":"production","llm":"deepseek-flash","vision":"deepseek-flash"}`
+  - `https://hk-api.jiaolianfit.cn/health/ready` → `{"status":"ready"}`
+  - `http://` → `308` 跳 HTTPS
+  - DeepSeek `/chat/completions` 真实调用返回 200
+  - MySQL 27 个动作已 seed；当前内存 API 175MB + DB 517MB + Caddy 11MB
+  - Windows 没有跑 iOS 构建
+- Mac 需要做：
+  - `git pull` → `cd ios && xcodegen generate`
+  - Release build 确认 `FitAIAPIBaseURL` 是 `https://hk-api.jiaolianfit.cn/api/v1`
+  - 真机验证：Apple 登录、建档、AI 计划、教练对话、拍照上传、`/me/access`
+  - 注意：当前 `SMS_PROVIDER=dev`，手机验证码不会真实发送，内测先用 Apple 登录
+- 不要恢复：
+  - `ios/project.yml` 里的 `https://api.invalid/api/v1`
+  - 不要把 `/opt/fitai/.env`、MySQL 密码、JWT、DeepSeek Key 提交到仓库
+  - 不要对公网开放 3306 / 8000
+- 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、短信签名/模板、公网隐私政策页、Mac Release 签名上传
 
 ### 2026-11-05 · Windows / OpenCode（男性椭圆/梯形 16–20% 素材）
 
