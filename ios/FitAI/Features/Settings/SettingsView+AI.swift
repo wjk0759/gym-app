@@ -33,10 +33,11 @@ extension SettingsView {
                 .fixedSize(horizontal: false, vertical: true)
 
 #if DEBUG
+            // 测试/诊断入口：仅 Debug 显示；Release 隐藏，不要删除。
+            // 后续真机联调、后端切换和健康检查仍会用到。
             Text("Debug 构建不会绕过 Pro；请用服务端测试账号验证 Pro。")
                 .font(AppType.caption)
                 .foregroundStyle(Theme.tertiaryText)
-#endif
 
             Text(AppConfig.apiBaseURL.absoluteString)
                 .font(.system(size: 9.5, weight: .medium))
@@ -46,6 +47,7 @@ extension SettingsView {
                 testConnection()
             }
             .buttonStyle(SecondaryButtonStyle())
+#endif
         }
         .card()
     }
@@ -60,6 +62,7 @@ extension SettingsView {
         )
     }
 
+    /// 仅 Debug 显示入口；Release 不调用，保留用于联调。
     func testConnection() {
         Task { @MainActor in
             do {

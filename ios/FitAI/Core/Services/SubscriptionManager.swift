@@ -30,7 +30,12 @@ final class SubscriptionManager {
             products = try await Product.products(for: ProductID.all)
             await refreshEntitlements()
             if products.isEmpty {
+                // Debug 保留配置提示；Release 只给用户可理解的提示。
+                #if DEBUG
                 message = "App Store 暂未配置订阅商品。请先在 App Store Connect 创建商品，或使用 StoreKit 本地配置文件测试。"
+                #else
+                message = "订阅暂不可用，请稍后再试。"
+                #endif
             }
         } catch {
             message = "加载订阅失败：\(error.localizedDescription)"

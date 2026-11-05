@@ -66,6 +66,8 @@ iOS Release 的 `FITAI_API_BASE_URL` 已指向：
 https://hk-api.jiaolianfit.cn/api/v1
 ```
 
+Release 构建不需要在 App 内输入后端 IP；登录页「开发服务器」和设置页「测试连接」只在 Debug 显示。相关代码用 `#if DEBUG` 保留，不要删除。
+
 ## 6. 常用命令
 
 ```bash

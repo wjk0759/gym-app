@@ -517,6 +517,8 @@ extension LoginView {
         }
     }
 
+    /// 测试入口：仅 Debug 显示；Release 固定生产域名。
+    /// 不要删除，后续真机联调/切换后端仍需要。
     var devServerLink: some View {
 #if DEBUG
         Button {

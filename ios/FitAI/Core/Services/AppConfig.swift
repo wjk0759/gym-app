@@ -33,6 +33,7 @@ enum AppConfig {
         apiBaseURL.absoluteString
     }
 
+    /// 仅 Debug 使用；Release 不读取 UserDefaults，也不显示入口。
     static func setAPIBaseURL(_ value: String?) {
         let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if trimmed.isEmpty {

@@ -151,9 +151,13 @@ struct APITransport {
         } catch let error as URLError {
             if [.cannotConnectToHost, .notConnectedToInternet, .timedOut, .networkConnectionLost]
                 .contains(error.code) {
-                throw APIError(
-                    message: "无法连接服务端：请确认后端已启动，并在 Debug 构建中填写正确的局域网 API 地址。"
-                )
+                // Release 不暴露开发服务器；保留 Debug 提示用于真机联调。
+                #if DEBUG
+                let message = "无法连接服务端：请确认后端已启动，并在 Debug 构建中填写正确的局域网 API 地址。"
+                #else
+                let message = "无法连接服务端，请检查网络后重试。"
+                #endif
+                throw APIError(message: message)
             }
             throw APIError(message: error.localizedDescription)
         }
