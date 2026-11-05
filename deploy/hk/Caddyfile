@@ -1,0 +1,19 @@
+hk-api.jiaolianfit.cn {
+	encode gzip
+
+	handle /privacy* {
+		root * /srv
+		rewrite * /privacy.html
+		file_server
+	}
+
+	handle /support* {
+		root * /srv
+		rewrite * /support.html
+		file_server
+	}
+
+	handle {
+		reverse_proxy api:8000
+	}
+}

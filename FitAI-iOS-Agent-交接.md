@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：父提交 `06ab7bd`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`f8e085e`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - 最新后端验证：**175 passed**，Ruff 通过；香港生产后端 `/health`、`/health/ready` 200，DeepSeek Flash 真实调用 200
@@ -23,7 +23,7 @@
 
 ### 2026-11-05 · Windows / OpenCode（香港 TestFlight 后端上线）
 
-- 提交：见 `git log -1`（父提交 `06ab7bd`）
+- 提交：`f8e085e`（后端上线）；隐私页与文档见本次提交
 - 做了什么：
   - 香港 ECS：2 核 4G / Ubuntu 22.04.5 / Docker 29.9.3 / Compose v5.7.0
   - 域名 `hk-api.jiaolianfit.cn` → `8.218.205.149`，Caddy 自动申请 Let's Encrypt 证书
@@ -31,11 +31,16 @@
   - FastAPI 2 worker + Caddy 反代；`fitai-db` / `fitai-api` / `fitai-caddy` 全部 healthy
   - `ios/project.yml` 的 Release `FITAI_API_BASE_URL` 改为 `https://hk-api.jiaolianfit.cn/api/v1`
   - 新增 `docs/48-hk-testflight-backend.md`（服务器、命令、备份、迁移说明）
+  - 新增 `deploy/hk/`：Caddyfile、docker-compose、隐私政策/支持页
+  - 隐私政策 `https://hk-api.jiaolianfit.cn/privacy`、支持页 `https://hk-api.jiaolianfit.cn/support`
+  - 创建 App Review 测试账号 `test_reviewer`（`is_test=true`，密码只在 Windows 桌面文件，不入库）
 - 验证：
   - `https://hk-api.jiaolianfit.cn/health` → `{"status":"ok","env":"production","llm":"deepseek-flash","vision":"deepseek-flash"}`
   - `https://hk-api.jiaolianfit.cn/health/ready` → `{"status":"ready"}`
   - `http://` → `308` 跳 HTTPS
   - DeepSeek `/chat/completions` 真实调用返回 200
+  - 账号密码登录 → `/auth/me` → `/me/access` 全链路 200；免费教练额度 3 条/周
+  - `/privacy`、`/support` 返回 200 `text/html`
   - MySQL 27 个动作已 seed；当前内存 API 175MB + DB 517MB + Caddy 11MB
   - Windows 没有跑 iOS 构建
 - Mac 需要做：
@@ -47,7 +52,7 @@
   - `ios/project.yml` 里的 `https://api.invalid/api/v1`
   - 不要把 `/opt/fitai/.env`、MySQL 密码、JWT、DeepSeek Key 提交到仓库
   - 不要对公网开放 3306 / 8000
-- 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、短信签名/模板、公网隐私政策页、Mac Release 签名上传
+- 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、短信签名/模板、TestFlight 外部 Beta 审核、Mac Release 签名上传
 
 ### 2026-11-05 · Windows / OpenCode（男性椭圆/梯形 16–20% 素材）
 

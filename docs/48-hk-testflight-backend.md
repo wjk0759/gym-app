@@ -56,6 +56,8 @@ MySQL 表由 admin-server 的 Flyway 管理，V1–V21 已全部执行成功。
 API：https://hk-api.jiaolianfit.cn/api/v1
 健康检查：https://hk-api.jiaolianfit.cn/health
 就绪检查：https://hk-api.jiaolianfit.cn/health/ready
+隐私政策：https://hk-api.jiaolianfit.cn/privacy
+支持页：https://hk-api.jiaolianfit.cn/support
 ```
 
 iOS Release 的 `FITAI_API_BASE_URL` 已指向：
@@ -118,10 +120,21 @@ docker compose up -d api
 - App Store Server Notifications V2
 - 阿里云短信签名/模板（当前 `SMS_PROVIDER=dev`，手机验证码不会真实发送）
 - 管理后台 admin-web
-- 公网隐私政策页、支持页
 - 生产 MySQL 备份任务
 
 TestFlight 内测期间，登录请使用 **Sign in with Apple**。手机号验证码暂不可用。
+
+## 9.1 App Review 测试账号
+
+```text
+账号：test_reviewer
+登录方式：账号密码
+密码：不写入仓库，保存在 Windows 桌面「叫练-TestFlight测试账号.txt」
+```
+
+- `is_test=true`，不含真实用户数据。
+- 首次登录需要完成建档。
+- 正式上线前删除该账号或修改密码。
 
 ## 10. 额度提醒
 
