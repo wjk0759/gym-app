@@ -30,6 +30,7 @@ from ..models import (
 )
 from .queries import active_goal
 from .serializers import goal_to_dict, profile_to_dict
+from .sms import SmsDeliveryError, send_aliyun_pnvs_code
 
 PASSWORD_ALGORITHM = "scrypt"
 PHONE_LENGTH = 11
@@ -489,6 +490,16 @@ def send_sms_code(
             delivery = "webhook"
         except httpx.HTTPError as exc:
             raise HTTPException(status_code=502, detail="短信发送失败，请稍后再试") from exc
+    elif settings.sms_provider == "aliyun_pnvs":
+        try:
+            send_aliyun_pnvs_code(phone, code)
+        except SmsDeliveryError as exc:
+            masked = f"{phone[:3]}****{phone[-4:]}" if len(phone) >= 7 else "***"
+            logger.warning("aliyun_pnvs_delivery_failed phone=%s", masked)
+            raise HTTPException(status_code=502, detail="短信发送失败，请稍后再试") from exc
+        delivery = "aliyun_pnvs"
+    elif settings.sms_provider != "dev":
+        raise HTTPException(status_code=503, detail="短信服务配置不正确")
 
     result = {
         "ok": True,

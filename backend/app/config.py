@@ -75,10 +75,17 @@ class Settings(BaseSettings):
     # 后台/定时任务调用 /iap/app-store/reconcile 的共享令牌。
     app_store_reconcile_token: str = ""
 
-    # 短信：dev 返回开发验证码；webhook 把验证码 POST 给自定义短信网关。
+    # 短信：dev 返回开发验证码；webhook 把验证码 POST 给自定义短信网关；
+    # aliyun_pnvs 使用阿里云号码认证服务的「短信认证」（免签名/模板，个人可用）。
     sms_provider: str = "dev"
     sms_webhook_url: str = ""
     sms_webhook_token: str = ""
+    aliyun_pnvs_access_key_id: str = ""
+    aliyun_pnvs_access_key_secret: str = ""
+    aliyun_pnvs_sign_name: str = ""
+    aliyun_pnvs_template_code: str = ""
+    aliyun_pnvs_endpoint: str = "dypnsapi.aliyuncs.com"
+    aliyun_pnvs_country_code: str = "86"
 
     # 微信/QQ OAuth。未配置时开发环境提供模拟授权页，生产环境返回未配置。
     wechat_app_id: str = ""
@@ -131,6 +138,20 @@ class Settings(BaseSettings):
             )
         if self.allow_dev_user_header:
             raise RuntimeError("生产环境必须设置 ALLOW_DEV_USER_HEADER=false")
+        if self.sms_provider == "aliyun_pnvs":
+            sms_required = {
+                "ALIYUN_PNVS_ACCESS_KEY_ID": self.aliyun_pnvs_access_key_id,
+                "ALIYUN_PNVS_ACCESS_KEY_SECRET": self.aliyun_pnvs_access_key_secret,
+                "ALIYUN_PNVS_SIGN_NAME": self.aliyun_pnvs_sign_name,
+                "ALIYUN_PNVS_TEMPLATE_CODE": self.aliyun_pnvs_template_code,
+            }
+            sms_missing = [
+                name for name, value in sms_required.items() if not value.strip()
+            ]
+            if sms_missing:
+                raise RuntimeError(
+                    "阿里云短信认证缺少必要配置：" + ", ".join(sorted(sms_missing))
+                )
 
 
 settings = Settings()

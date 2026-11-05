@@ -118,11 +118,11 @@ docker compose up -d api
 
 - App Store Server API Key / Issuer / p8
 - App Store Server Notifications V2
-- 阿里云短信签名/模板（当前 `SMS_PROVIDER=dev`，手机验证码不会真实发送）
+- 阿里云短信认证 AccessKey / 赠送签名 / 模板 CODE（代码已支持 `aliyun_pnvs`，当前仍为 `dev`）
 - 管理后台 admin-web
 - 生产 MySQL 备份任务
 
-TestFlight 内测期间，登录请使用 **Sign in with Apple**。手机号验证码暂不可用。
+配置完成前，TestFlight 登录请使用 **Sign in with Apple** 或账号密码。手机号验证码暂不可用。
 
 ## 9.1 App Review 测试账号
 
@@ -135,6 +135,34 @@ TestFlight 内测期间，登录请使用 **Sign in with Apple**。手机号验�
 - `is_test=true`，不含真实用户数据。
 - 首次登录需要完成建档。
 - 正式上线前删除该账号或修改密码。
+
+## 9.2 阿里云短信认证（PNVS）
+
+代码已支持 `SMS_PROVIDER=aliyun_pnvs`，使用号码认证服务的「短信认证」：
+
+- 个人实名可用，不需要企业资质。
+- 不需要自己申请签名和模板，必须使用控制台的「赠送签名 + 赠送模板」，两者不可混用。
+- 仅支持中国大陆手机号。
+- 验证码仍由叫练生成并校验，PNVS 只负责发送。
+
+需要配置：
+
+```env
+SMS_PROVIDER=aliyun_pnvs
+ALIYUN_PNVS_ACCESS_KEY_ID=
+ALIYUN_PNVS_ACCESS_KEY_SECRET=
+ALIYUN_PNVS_SIGN_NAME=
+ALIYUN_PNVS_TEMPLATE_CODE=
+```
+
+RAM 用户建议只授予 `AliyunDypnsFullAccess`。配置后：
+
+```bash
+cd /opt/fitai
+docker compose restart api
+```
+
+然后用真实手机号调用 `/api/v1/auth/phone/send-code` 验证。
 
 ## 10. 额度提醒
 

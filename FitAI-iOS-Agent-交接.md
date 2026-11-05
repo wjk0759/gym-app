@@ -34,6 +34,7 @@
   - 新增 `deploy/hk/`：Caddyfile、docker-compose、隐私政策/支持页
   - 隐私政策 `https://hk-api.jiaolianfit.cn/privacy`、支持页 `https://hk-api.jiaolianfit.cn/support`
   - 创建 App Review 测试账号 `test_reviewer`（`is_test=true`，密码只在 Windows 桌面文件，不入库）
+  - 新增阿里云 PNVS 短信 provider（`SMS_PROVIDER=aliyun_pnvs`），代码、3 个单测、API 镜像已完成；等待 AccessKey / 赠送签名 / 模板 CODE
 - 验证：
   - `https://hk-api.jiaolianfit.cn/health` → `{"status":"ok","env":"production","llm":"deepseek-flash","vision":"deepseek-flash"}`
   - `https://hk-api.jiaolianfit.cn/health/ready` → `{"status":"ready"}`
@@ -42,6 +43,8 @@
   - 账号密码登录 → `/auth/me` → `/me/access` 全链路 200；免费教练额度 3 条/周
   - `/privacy`、`/support` 返回 200 `text/html`
   - MySQL 27 个动作已 seed；当前内存 API 175MB + DB 517MB + Caddy 11MB
+  - 后端 **178 tests passed**，Ruff（改动文件）通过；`alibabacloud_dypnsapi20170525` 已安装进 API 镜像
+  - 当前仍为 `SMS_PROVIDER=dev`，手机验证码未真实发送
   - Windows 没有跑 iOS 构建
 - Mac 需要做：
   - `git pull` → `cd ios && xcodegen generate`
@@ -52,7 +55,7 @@
   - `ios/project.yml` 里的 `https://api.invalid/api/v1`
   - 不要把 `/opt/fitai/.env`、MySQL 密码、JWT、DeepSeek Key 提交到仓库
   - 不要对公网开放 3306 / 8000
-- 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、短信签名/模板、TestFlight 外部 Beta 审核、Mac Release 签名上传
+- 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、阿里云短信认证 AccessKey/赠送签名/模板、TestFlight 外部 Beta 审核、Mac Release 签名上传
 
 ### 2026-11-05 · Windows / OpenCode（男性椭圆/梯形 16–20% 素材）
 
