@@ -44,7 +44,7 @@ struct LegalDocument {
 enum LegalMeta {
     static let operatorName = "深圳市龙岗区叫练软件开发工作室"
     static let contactEmail = "wjk0759@163.com"
-    static let updatedAt = "2026-11-03"
+    static let updatedAt = "2026-11-06"
     static let scope = "叫练 iOS 内测版"
 }
 
