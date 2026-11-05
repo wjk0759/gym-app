@@ -33,7 +33,7 @@ struct PlanHistoryView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 14)
+                .appPageTopPadding()
                 .padding(.bottom, 24)
             }
             .background(AppBackground())

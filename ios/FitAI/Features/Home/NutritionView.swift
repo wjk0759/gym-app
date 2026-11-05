@@ -155,6 +155,7 @@ struct NutritionView: View {
             }
             .appPagePadding()
             .appReadableContent()
+            .appPageTopPadding()
             .padding(.bottom, 32)
         }
         .background(AppBackground())

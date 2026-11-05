@@ -50,7 +50,7 @@ struct EquipmentRecognitionView: View {
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.top, 8)
+            .appPageTopPadding()
             .padding(.bottom, 28)
         }
         .background(AppBackground())

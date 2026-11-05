@@ -41,7 +41,7 @@ struct AgentMemoryView: View {
                     }
                 }
                 .appPagePadding()
-                .padding(.top, 8)
+                .appPageTopPadding()
                 .padding(.bottom, 24)
             }
             .background(AppBackground())

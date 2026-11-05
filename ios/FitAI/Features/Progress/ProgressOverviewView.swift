@@ -99,7 +99,7 @@ struct ProgressOverviewView: View {
                 disclaimer
             }
             .padding(.horizontal, 20)
-            .padding(.top, 10)
+            .appPageTopPadding()
             .padding(.bottom, 28)
         }
         .background(AppBackground())

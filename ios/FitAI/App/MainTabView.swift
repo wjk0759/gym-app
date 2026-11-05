@@ -36,6 +36,12 @@ struct MainTabView: View {
         @Bindable var store = store
         TabView(selection: $store.selectedTab) {
             HomeV2View(navigationPath: $todayPath)
+                .background {
+                    TabBarReselectObserver {
+                        resetTabPaths()
+                    }
+                    .frame(width: 0, height: 0)
+                }
                 .tag(AppTab.today.rawValue)
                 .tabItem {
                     Label("今日", systemImage: "figure.strengthtraining.traditional")

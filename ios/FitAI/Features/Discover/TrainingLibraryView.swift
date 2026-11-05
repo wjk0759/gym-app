@@ -62,7 +62,7 @@ struct TrainingLibraryView: View {
                     .card(padding: 14)
                 }
                 .appPagePadding()
-                .padding(.top, 8)
+                .appPageTopPadding()
                 .padding(.bottom, 24)
             }
             .background(AppBackground())

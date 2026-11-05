@@ -75,7 +75,7 @@ struct BodyCheckInSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .appPagePadding()
-                .padding(.top, 8)
+                .appPageTopPadding()
                 .padding(.bottom, 24)
             }
             .background(AppBackground())

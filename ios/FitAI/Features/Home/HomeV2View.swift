@@ -73,7 +73,7 @@ struct HomeV2View: View {
                     moreSection
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 8)
+                .appPageTopPadding()
                 .padding(.bottom, 96)
             }
             .background(AppBackground())

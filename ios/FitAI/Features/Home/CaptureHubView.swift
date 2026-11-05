@@ -129,7 +129,7 @@ struct CaptureHubView: View {
                     .padding(.top, 4)
                 }
                 .appPagePadding()
-                .padding(.top, 8)
+                .appPageTopPadding()
                 .padding(.bottom, 24)
             }
             .background(AppBackground())

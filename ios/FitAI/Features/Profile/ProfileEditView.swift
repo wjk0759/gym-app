@@ -22,7 +22,7 @@ struct ProfileEditView: View {
                     .padding(.bottom, 8)
             }
             .appPagePadding()
-            .padding(.top, 12)
+            .appPageTopPadding()
         }
         .background(AppBackground())
         .scrollDismissesKeyboard(.interactively)

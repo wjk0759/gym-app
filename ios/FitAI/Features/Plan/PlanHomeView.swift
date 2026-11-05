@@ -82,7 +82,7 @@ struct PlanHomeView: View {
                     }
                     .appPagePadding()
                     .appReadableContent()
-                    .padding(.top, 2)
+                    .appPageTopPadding()
                     .padding(.bottom, 28)
                 }
                 .background(AppBackground())

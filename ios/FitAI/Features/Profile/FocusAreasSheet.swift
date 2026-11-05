@@ -41,6 +41,7 @@ struct FocusAreasSheet: View {
                     }
                 }
                 .appPagePadding()
+                .appPageTopPadding()
                 .padding(.bottom, 24)
             }
             .background(AppBackground())

@@ -57,7 +57,7 @@ struct CustomExerciseAddSheet: View {
                     .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
                 .appPagePadding()
-                .padding(.top, 8)
+                .appPageTopPadding()
                 .padding(.bottom, 24)
             }
             .background(AppBackground())
