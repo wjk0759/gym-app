@@ -121,6 +121,18 @@ struct PlanHomeView: View {
                         proxy.scrollTo("selected-day", anchor: .top)
                     }
                 }
+                .onChange(of: store.pendingRecordDate) { _, _ in
+                    consumePendingRecordDate()
+                }
+                .onChange(of: store.selectedTab) { _, tab in
+                    guard tab == 0 else { return }
+                    store.pendingRecordDate = nil
+                    selectedDate = calendar.startOfDay(for: Date())
+                    visibleMonth = startOfMonth(Date())
+                }
+                .onAppear {
+                    consumePendingRecordDate()
+                }
             }
         }
     }

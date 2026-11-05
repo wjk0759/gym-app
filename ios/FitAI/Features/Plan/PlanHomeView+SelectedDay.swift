@@ -166,11 +166,16 @@ extension PlanHomeView {
                 Haptics.tap()
                 editingDay = day
             } label: {
-                Label("编辑", systemImage: "slider.horizontal.3")
-                    .font(AppType.micro)
-                    .foregroundStyle(Theme.cobalt)
+                Label("编辑计划", systemImage: "square.and.pencil")
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.onPrimary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(Theme.primary, in: Capsule())
             }
-            .buttonStyle(SubtlePressStyle())
+            .buttonStyle(SubtlePressStyle(scale: 0.97))
+            .accessibilityLabel("编辑计划")
+            .accessibilityHint("编辑这一天的训练安排")
         }
     }
 

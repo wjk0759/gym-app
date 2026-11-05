@@ -49,6 +49,8 @@ final class AppStore {
     var workoutDraft: WorkoutDraft?
     var chat: [ChatMessage] = []
     var selectedTab = 0
+    /// Transient handoff from Today to the Record tab. Not persisted.
+    var pendingRecordDate: Date?
     var coachContext: String?
     var coachVisualMemory: CoachVisualMemory?
     /// Set when the server rejects a normal coach turn with
@@ -217,6 +219,7 @@ final class AppStore {
         coachQuotaExhausted = false
         isExecutingAgentActions = false
         workoutLaunchDayID = nil
+        pendingRecordDate = nil
         pendingRoute = nil
         lastAgentRetryText = nil
         lastAgentRetrySkill = .trainer

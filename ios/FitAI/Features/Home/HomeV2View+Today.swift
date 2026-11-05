@@ -183,7 +183,7 @@ extension HomeV2View {
                 }
             } else {
                 Button("查看这一天的计划") {
-                    store.selectedTab = 1
+                    store.openRecord(for: selectedDate)
                 }
                 .buttonStyle(SecondaryButtonStyle())
             }

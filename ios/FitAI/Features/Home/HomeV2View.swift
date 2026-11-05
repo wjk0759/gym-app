@@ -179,6 +179,10 @@ struct HomeV2View: View {
                 store.workoutLaunchDayID = nil
                 workoutDay = day
             }
+            .onChange(of: store.selectedTab) { _, tab in
+                guard tab == 0 else { return }
+                selectedDate = Calendar.current.startOfDay(for: Date())
+            }
         }
     }
 }

@@ -23,6 +23,20 @@ extension PlanHomeView {
         calendar.date(from: calendar.dateComponents([.year, .month], from: date)) ?? date
     }
 
+    /// Consume the one-shot handoff from Today and focus the matching day.
+    func consumePendingRecordDate() {
+        guard let date = store.pendingRecordDate else { return }
+        store.pendingRecordDate = nil
+        focusOnRecordDate(date)
+    }
+
+    func focusOnRecordDate(_ date: Date) {
+        let day = calendar.startOfDay(for: date)
+        selectedDate = day
+        visibleMonth = startOfMonth(day)
+        dayScrollRequest += 1
+    }
+
     func mondayOfWeek(_ date: Date) -> Date {
         let start = calendar.startOfDay(for: date)
         let weekday = calendar.component(.weekday, from: start)

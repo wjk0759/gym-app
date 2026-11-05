@@ -14,12 +14,34 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：见 `git log -1`（上一提交 `c6e6eb4`）
-- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除
+- `develop` 代码 HEAD：见 `git log -1`（上一提交 `aca46da`）
+- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - 最新后端验证：**184 passed**，Ruff app/tests 通过；香港生产后端 `/health`、`/health/ready` 200，DeepSeek Flash 真实调用 200，手机验证码发送 200，头像上传/替换/移除 200
-- Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
+- Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传
+
+### 2026-11-06 · Windows / OpenCode（今日→记录日期联动 + 编辑按钮）
+
+- 提交：见 `git log -1`
+- 做了什么：
+  - `AppStore.pendingRecordDate` + `openRecord(for:)`，跨 Tab 传日期
+  - Today「查看这一天的计划」带上当前 `selectedDate`
+  - 记录页接收后设置 `selectedDate` / `visibleMonth`，滚动到当天卡片
+  - 返回 Today 时 Today 和记录页都重置到今天
+  - 记录页「编辑」改为荧光绿实心胶囊「编辑计划」+ pencil 图标
+- 验证：
+  - Windows 未编译 iOS；只做代码修改和静态检查
+- Mac 需要做：
+  - `git pull` → `cd ios && xcodegen generate` → build
+  - Today 选 11/5 → 查看这一天的计划 → 记录页选中 11/5，日历在 11 月
+  - 记录页看 11/7 → 点今日 → 再点记录 → 回到今天
+  - Today 直接点记录 → 保留记录页上次日期
+  - 编辑计划按钮明显可点，打开对应日期编辑器
+- 不要恢复：
+  - 不要把「查看这一天的计划」改回只 `selectedTab = 1`
+  - 不要删除 `pendingRecordDate` 和 `onChange` 联动
+  - 不要把编辑按钮改回微型文字
 
 ### 2026-11-06 · Windows / OpenCode（设置页清理 + 移除第三方署名）
 
