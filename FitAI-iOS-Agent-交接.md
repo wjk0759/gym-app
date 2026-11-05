@@ -14,12 +14,36 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`d34b84d`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 10 条/周、饮食份量区间、文案精简
+- `develop` 代码 HEAD：`03eb5ee`；本文件的最新同步提交见 `git log -1`
+- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 10 条/周、饮食份量区间、文案精简、切换 Tab 回根页面
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - 最新后端验证：**196 passed**，Ruff app/tests 通过；V22 `training_stage` 已迁移；`/me/access` 免费教练额度 `weekly_limit=10`；`training_stage=beginner`
-- Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、10 条额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
+- Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、10 条额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证从设置/训练记录/动作教程等二级页切 Tab 后回到各根页面；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传
+
+### 2026-11-06 · Windows / OpenCode（切换 Tab 回根页面）
+
+- 提交：`03eb5ee`
+- 做了什么：
+  - 新增 `AppTab` / `TabRoute` / `appTabDestinations()`，统一五个 Tab 的 tag 和根级 push 目的地
+  - `MainTabView` 为今日 / 记录 / 发现 / 我的各持有一个 `NavigationPath`；切换 Tab 时清空全部 path，只弹掉二级页面，不重建根页面
+  - 根级入口改为 `NavigationLink(value:)`：变化、训练记录、饮食、编辑档案、设置、动作教程、器械库
+  - 设置仍从「我的」工具栏进入，改用 value 路由
+- 验证：
+  - tree-sitter Swift 语法检查 12 个文件，0 error
+  - Windows 未编译 iOS，未在模拟器 / 真机验证
+- Mac 需要做：
+  - `git pull` → `cd ios && xcodegen generate`（新增 `App/TabRoute.swift`，必须重新生成工程）→ build/test
+  - 验证：我的 → 设置 → 切今日 → 回我的 = 我的根
+  - 验证：今日 → 变化 → 切记录 → 回今日 = 今日根
+  - 验证：记录 → 训练记录 → 切今日 → 回记录 = 记录根
+  - 验证：发现 → 动作教程 → 切今日 → 回发现 = 发现根
+  - 确认切 Tab 后各根页面滚动位置、教练输入、记录页选中日期仍保留
+  - 重复点当前 Tab 回根未做（标准 `TabView` 无 reselect 回调），不算本次回归
+- 不要恢复：
+  - 不要用 `.id()` 重建 Tab 根页面
+  - 不要恢复根级 `NavigationLink { destination }`（会绕过 path）
+  - 不要在切 Tab 时清空教练输入或根页面状态
 
 ### 2026-11-06 · Windows / OpenCode（饮食份量区间 + 文案精简）
 
