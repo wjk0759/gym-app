@@ -3,9 +3,7 @@ import UIKit
 
 struct SettingsToolbarButton: View {
     var body: some View {
-        NavigationLink {
-            SettingsView()
-        } label: {
+        NavigationLink(value: TabRoute.settings) {
             Image(systemName: "gearshape")
         }
         .accessibilityLabel("设置")

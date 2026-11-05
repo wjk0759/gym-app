@@ -9,9 +9,7 @@ extension HomeV2View {
                 bodyCheckInManual = true
                 showBodyCheckIn = true
             }
-            NavigationLink {
-                ProgressOverviewView()
-            } label: {
+            NavigationLink(value: TabRoute.progressOverview) {
                 quickTileLabel(title: "变化", symbol: "chart.line.uptrend.xyaxis", accent: Theme.ink, foreground: Theme.onAccent)
             }
             .buttonStyle(CardPressStyle(scale: 0.985))

@@ -6,6 +6,8 @@ import SwiftUI
 struct DiscoverView: View {
     @Environment(AppStore.self) private var store
 
+    @Binding var navigationPath: NavigationPath
+
     @State private var showEquipmentScan = false
     @State private var showBodyAnalysis = false
     @State private var showTrainingLibrary = false
@@ -14,7 +16,7 @@ struct DiscoverView: View {
     @State private var showVideoReview = false
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     header
@@ -31,6 +33,7 @@ struct DiscoverView: View {
             .background(AppBackground())
             .navigationTitle("发现")
             .navigationBarTitleDisplayMode(.inline)
+            .appTabDestinations()
             .sheet(isPresented: $showEquipmentScan) {
                 EquipmentRecognitionView(
                     onSaved: { item in
@@ -150,9 +153,7 @@ struct DiscoverView: View {
             ],
             spacing: 8
         ) {
-            NavigationLink {
-                EquipmentPickerView()
-            } label: {
+            NavigationLink(value: TabRoute.equipmentPicker) {
                 quickEntry(
                     title: "动作教程",
                     subtitle: "按肌群和器械学",
@@ -397,9 +398,7 @@ struct DiscoverView: View {
     // MARK: - Equipment library
 
     private var equipmentLibraryLink: some View {
-        NavigationLink {
-            EquipmentLibraryView()
-        } label: {
+        NavigationLink(value: TabRoute.equipmentLibrary) {
             HStack(spacing: 12) {
                 Image(systemName: "square.stack.3d.up.fill")
                     .font(.system(size: 15, weight: .bold))

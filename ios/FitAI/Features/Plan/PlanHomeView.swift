@@ -9,6 +9,8 @@ import SwiftUI
 struct PlanHomeView: View {
     @Environment(AppStore.self) var store
 
+    @Binding var navigationPath: NavigationPath
+
     @State var selectedDate = Date()
     @State var visibleMonth = Calendar.current.date(
         from: Calendar.current.dateComponents([.year, .month], from: Date())
@@ -49,7 +51,7 @@ struct PlanHomeView: View {
     var calendar: Calendar { Calendar.current }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ScrollViewReader { proxy in
                 AppScrollView {
                     VStack(alignment: .leading, spacing: 16) {
@@ -86,6 +88,7 @@ struct PlanHomeView: View {
                 .background(AppBackground())
                 .navigationTitle("")
                 .navigationBarHidden(true)
+                .appTabDestinations()
                 .sheet(isPresented: $showHistory) {
                     PlanHistoryView()
                 }
@@ -125,7 +128,7 @@ struct PlanHomeView: View {
                     consumePendingRecordDate()
                 }
                 .onChange(of: store.selectedTab) { _, tab in
-                    guard tab == 0 else { return }
+                    guard tab == AppTab.today.rawValue else { return }
                     store.pendingRecordDate = nil
                     selectedDate = calendar.startOfDay(for: Date())
                     visibleMonth = startOfMonth(Date())

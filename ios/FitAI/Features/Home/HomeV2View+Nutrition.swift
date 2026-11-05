@@ -10,9 +10,7 @@ extension HomeV2View {
         let proteinLeft = max(0, targets.protein - Int(consumed.protein))
         let ratio = min(1, consumed.kcal / Double(max(1, targets.kcal)))
 
-        return NavigationLink {
-            NutritionView()
-        } label: {
+        return NavigationLink(value: TabRoute.nutrition(nil)) {
             HStack(spacing: 12) {
                 ProgressRing(progress: ratio, lineWidth: 6, color: Theme.lime)
                     .frame(width: 52, height: 52)

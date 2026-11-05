@@ -9,9 +9,7 @@ extension PlanHomeView {
                 showSchedule = true
             }
 
-            NavigationLink {
-                WorkoutHistoryView()
-            } label: {
+            NavigationLink(value: TabRoute.workoutHistory) {
                 quickActionLabel(
                     title: "训练记录",
                     symbol: "clock.arrow.circlepath",
@@ -21,9 +19,7 @@ extension PlanHomeView {
             }
             .buttonStyle(CardPressStyle(scale: 0.97))
 
-            NavigationLink {
-                ProgressOverviewView()
-            } label: {
+            NavigationLink(value: TabRoute.progressOverview) {
                 quickActionLabel(
                     title: "变化",
                     symbol: "chart.xyaxis.line",

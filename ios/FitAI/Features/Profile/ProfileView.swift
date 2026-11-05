@@ -4,12 +4,14 @@ import SwiftUI
 struct ProfileView: View {
     @Environment(AppStore.self) private var store
 
+    @Binding var navigationPath: NavigationPath
+
     @State private var showBodyAnalysis = false
     @State private var showBodyCheckIn = false
     @State private var showFocusAreas = false
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     header
@@ -27,6 +29,7 @@ struct ProfileView: View {
             .background(AppBackground())
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
+            .appTabDestinations()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     SettingsToolbarButton()
@@ -72,9 +75,7 @@ struct ProfileView: View {
             HStack(spacing: 13) {
                 AvatarEditorButton(initial: store.profile.nickname)
 
-                NavigationLink {
-                    ProfileEditView()
-                } label: {
+                NavigationLink(value: TabRoute.profileEdit) {
                     HStack(spacing: 13) {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(store.profile.nickname)
@@ -399,9 +400,7 @@ struct ProfileView: View {
     // MARK: - Equipment library
 
     private var equipmentLibraryCard: some View {
-        NavigationLink {
-            EquipmentLibraryView()
-        } label: {
+        NavigationLink(value: TabRoute.equipmentLibrary) {
             HStack(spacing: 12) {
                 Image(systemName: "square.stack.3d.up")
                     .font(.system(size: 14, weight: .bold))

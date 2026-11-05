@@ -35,9 +35,7 @@ extension PlanHomeView {
 
                 Spacer(minLength: 4)
 
-                NavigationLink {
-                    WorkoutHistoryView()
-                } label: {
+                NavigationLink(value: TabRoute.workoutHistory) {
                     Text("全部记录 ›")
                         .font(AppType.caption.weight(.semibold))
                         .foregroundStyle(Theme.cobalt)

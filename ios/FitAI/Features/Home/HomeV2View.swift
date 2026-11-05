@@ -10,6 +10,8 @@ struct HomeV2View: View {
     @Environment(AppStore.self) var store
     @Environment(WeatherStore.self) var weather
 
+    @Binding var navigationPath: NavigationPath
+
     @State var selectedDate = Date()
     @State var showCompose = false
     @State var pendingWorkoutDay: PlanDay?
@@ -49,7 +51,7 @@ struct HomeV2View: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     topBar
@@ -77,6 +79,7 @@ struct HomeV2View: View {
             .background(AppBackground())
             .navigationTitle("")
             .navigationBarHidden(true)
+            .appTabDestinations()
             .overlay(alignment: .bottomTrailing) {
                 CaptureFAB {
                     showCaptureHub = true
@@ -180,7 +183,7 @@ struct HomeV2View: View {
                 workoutDay = day
             }
             .onChange(of: store.selectedTab) { _, tab in
-                guard tab == 0 else { return }
+                guard tab == AppTab.today.rawValue else { return }
                 selectedDate = Calendar.current.startOfDay(for: Date())
             }
         }

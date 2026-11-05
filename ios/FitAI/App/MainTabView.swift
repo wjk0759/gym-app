@@ -27,35 +27,40 @@ enum AppRoute: String, Identifiable, Hashable {
 struct MainTabView: View {
     @Environment(AppStore.self) private var store
 
+    @State private var todayPath = NavigationPath()
+    @State private var recordPath = NavigationPath()
+    @State private var discoverPath = NavigationPath()
+    @State private var profilePath = NavigationPath()
+
     var body: some View {
         @Bindable var store = store
         TabView(selection: $store.selectedTab) {
-            HomeV2View()
-                .tag(0)
+            HomeV2View(navigationPath: $todayPath)
+                .tag(AppTab.today.rawValue)
                 .tabItem {
                     Label("今日", systemImage: "figure.strengthtraining.traditional")
                 }
 
-            PlanHomeView()
-                .tag(1)
+            PlanHomeView(navigationPath: $recordPath)
+                .tag(AppTab.record.rawValue)
                 .tabItem {
                     Label("记录", systemImage: "chart.xyaxis.line")
                 }
 
             CoachChatView()
-                .tag(2)
+                .tag(AppTab.coach.rawValue)
                 .tabItem {
                     Label("教练", systemImage: "bubble.left.and.bubble.right.fill")
                 }
 
-            DiscoverView()
-                .tag(3)
+            DiscoverView(navigationPath: $discoverPath)
+                .tag(AppTab.discover.rawValue)
                 .tabItem {
                     Label("发现", systemImage: "square.grid.2x2")
                 }
 
-            ProfileView()
-                .tag(4)
+            ProfileView(navigationPath: $profilePath)
+                .tag(AppTab.profile.rawValue)
                 .tabItem {
                     Label("我的", systemImage: "person.crop.circle")
                 }
@@ -64,9 +69,22 @@ struct MainTabView: View {
         .toolbarBackground(Theme.chrome, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
         .sensoryFeedback(.selection, trigger: store.selectedTab)
+        .onChange(of: store.selectedTab) { _, _ in
+            resetTabPaths()
+        }
         .sheet(item: $store.pendingRoute) { route in
             destination(for: route)
         }
+    }
+
+    /// A tab is a top-level section: switching tabs always returns the target
+    /// section to its root, while keeping each root's own state (scroll
+    /// position, coach draft, selected date) untouched.
+    private func resetTabPaths() {
+        todayPath = NavigationPath()
+        recordPath = NavigationPath()
+        discoverPath = NavigationPath()
+        profilePath = NavigationPath()
     }
 
     @ViewBuilder

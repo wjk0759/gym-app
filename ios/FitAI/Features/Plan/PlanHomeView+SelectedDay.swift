@@ -441,9 +441,7 @@ extension PlanHomeView {
                 }
             }
 
-            NavigationLink {
-                NutritionView(date: selectedDate)
-            } label: {
+            NavigationLink(value: TabRoute.nutrition(selectedDate)) {
                 Text(logs.isEmpty ? "记录这天的饮食" : "查看 / 修改饮食")
             }
             .buttonStyle(SecondaryButtonStyle())
