@@ -14,12 +14,35 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：见 `git log -1`（上一后端提交 `4e1a539`）
+- `develop` 代码 HEAD：`07e6936`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - 最新后端验证：**178 passed**，Ruff（改动文件）通过；香港生产后端 `/health`、`/health/ready` 200，DeepSeek Flash 真实调用 200，手机验证码发送 200
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传
+
+### 2026-11-05 · Windows / OpenCode（Release 隐藏测试入口）
+
+- 提交：`07e6936`
+- 做了什么：
+  - `ios/project.yml` 的 Release `FITAI_API_BASE_URL` 固定为 `https://hk-api.jiaolianfit.cn/api/v1`
+  - 登录页「开发服务器」入口仅 Debug 显示
+  - 设置页 API 地址 + 「测试连接」仅 Debug 显示
+  - `AuthStore` / `APITransport` / `SubscriptionManager` 的 Debug 提示在 Release 改为普通用户提示
+  - 测试代码全部保留，用 `#if DEBUG` + 注释标记，未删除
+- 验证：
+  - Windows 只做代码修改和静态检查，没有 Xcode，**未编译 iOS**
+  - 后端仍在运行，Release API 地址已确认
+- Mac 需要做：
+  - `git pull` → `cd ios && xcodegen generate`
+  - Release build 确认 `FitAIAPIBaseURL` 是 `https://hk-api.jiaolianfit.cn/api/v1`
+  - 确认 Release 登录页没有「开发服务器」、设置页没有「测试连接」/API 地址
+  - 真机验证 Apple 登录、手机验证码、建档、AI 计划、教练对话、拍照上传
+  - 如果编译报错，把报错原文发回
+- 不要恢复：
+  - 不要把测试入口重新暴露到 Release
+  - 不要删除 `#if DEBUG` 里的开发服务器/测试连接/调试提示代码
+  - 不要把 Release 地址改回 `https://api.invalid/api/v1`
 
 ### 2026-11-05 · Windows / OpenCode（香港 TestFlight 后端上线）
 
