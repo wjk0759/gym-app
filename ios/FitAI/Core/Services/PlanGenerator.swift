@@ -64,8 +64,11 @@ enum PlanGenerator {
         dislikedSlugs: Set<String> = [],
         equipmentSlugs: [String] = [],
         weeklyWeekdays: [Int]? = nil,
-        focusAreas: Set<BodyFocusArea> = []
+        focusAreas: Set<BodyFocusArea> = [],
+        sessions: [WorkoutSession] = [],
+        planWeights: [String: Double] = [:]
     ) -> TrainingPlan {
+        let history = LoadProgression.history(from: sessions)
         let available = allowedExercises(
             profile,
             disliked: dislikedSlugs,
@@ -82,8 +85,26 @@ enum PlanGenerator {
             : defaultWeekdays[weeklyDays] ?? Array(1...weeklyDays)
         let templates = templatePool(for: profile.split)
         let requestedFocus = focusMuscles(for: focusAreas)
-        let count = exerciseCount(minutes: profile.sessionMinutes)
+        let stage = profile.trainingStage
+        let stageExerciseCap: Int = switch stage {
+        case .beginner: 4
+        case .intermediate: 5
+        case .advanced: 6
+        }
+        let stageSetCap: Int = switch stage {
+        case .beginner: 3
+        case .intermediate: 4
+        case .advanced: 5
+        }
+        let stageRPECap: Double = switch stage {
+        case .beginner: 7.0
+        case .intermediate: 8.0
+        case .advanced: 9.0
+        }
+        let count = min(exerciseCount(minutes: profile.sessionMinutes), stageExerciseCap)
         let params = goalParams[profile.goalType] ?? goalParams[.recomp]!
+        let sets = min(params.sets, stageSetCap)
+        let rpe = min(params.rpe, stageRPECap)
         let weeks = 4
         let today = FitnessDate.startOfDay(Date())
         let todayWeekday = FitnessDate.weekdayNumber(today)
@@ -105,17 +126,21 @@ enum PlanGenerator {
                 let date = FitnessDate.addingDays((week - 1) * 7, to: firstDate)
 
                 let exercises = picks.enumerated().map { offset, exercise -> PlanExercise in
-                    var weight = suggestedWeight(exercise, experience: profile.experience)
-                    if let base = weight, week > 1 {
-                        weight = ((base * (1 + 0.025 * Double(week - 1))) * 2).rounded() / 2
-                    }
+                    let targetReps = reps(for: exercise, goal: profile.goalType)
                     return PlanExercise(
                         slug: exercise.slug,
-                        sets: params.sets,
-                        reps: reps(for: exercise, goal: profile.goalType),
-                        weightKG: weight,
+                        sets: sets,
+                        reps: targetReps,
+                        weightKG: LoadProgression.targetWeight(
+                            exercise: exercise,
+                            profile: profile,
+                            history: history[exercise.slug],
+                            planWeightKG: planWeights[exercise.slug],
+                            weekIndex: week,
+                            reps: targetReps
+                        ),
                         restSec: params.rest,
-                        rpe: params.rpe
+                        rpe: rpe
                     )
                 }
 
@@ -228,31 +253,6 @@ enum PlanGenerator {
             return "8-12 min"
         }
         return goalParams[goal]?.reps ?? "10"
-    }
-
-    private static func suggestedWeight(
-        _ exercise: Exercise,
-        experience: Experience
-    ) -> Double? {
-        if exercise.equipment == .bodyweight { return nil }
-        let base: Double
-        switch exercise.equipment {
-        case .dumbbell: base = 8
-        case .barbell: base = 20
-        case .machine: base = 15
-        case .cable: base = 10
-        case .band: base = 5
-        case .kettlebell: base = 8
-        case .bodyweight: base = 0
-        }
-        let multiplier: Double
-        switch experience {
-        case .beginner: multiplier = 1.0
-        case .intermediate: multiplier = 1.5
-        case .advanced: multiplier = 2.0
-        }
-        let compoundFactor = exercise.isCompound ? 1.0 : 0.6
-        return ((base * multiplier * compoundFactor) * 2).rounded() / 2
     }
 
     private static func allowedExercises(

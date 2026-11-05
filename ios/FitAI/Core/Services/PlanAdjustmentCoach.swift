@@ -9,7 +9,8 @@ struct PlanAdjustmentProposal: Identifiable, Equatable {
     let summary: String
     let changes: [String]
     let setsDelta: Int
-    let weightMultiplier: Double
+    /// Per-exercise load multiplier keyed by slug. Missing slugs stay unchanged.
+    let weightMultipliers: [String: Double]
     let restDelta: Int
     let maxExercises: Int?
     let maxDaysPerWeek: Int?
@@ -194,15 +195,13 @@ extension AppStore {
                     var item = exercise
                     item.sets = max(2, min(6, item.sets + proposal.setsDelta))
                     item.restSec = max(30, min(180, item.restSec + proposal.restDelta))
-                    if let weight = item.weightKG, weight > 0, proposal.weightMultiplier != 1 {
-                        item.weightKG = (weight * proposal.weightMultiplier * 2).rounded() / 2
+                    let multiplier = proposal.weightMultipliers[item.slug] ?? 1.0
+                    if let weight = item.weightKG, weight > 0, multiplier != 1 {
+                        item.weightKG = (weight * multiplier * 2).rounded() / 2
                     }
                     if let painMuscle = proposal.painMuscle,
                        item.exercise?.muscle == painMuscle {
                         item.sets = min(item.sets, 2)
-                        if let weight = item.weightKG, weight > 0 {
-                            item.weightKG = (weight * 0.9 * 2).rounded() / 2
-                        }
                     }
                     return item
                 }
@@ -405,6 +404,68 @@ extension AppStore {
         return known.filter { text.contains($0.0) }.map { $0.1 }
     }
 
+    private func recentWeightMultipliers(_ multiplier: Double) -> [String: Double] {
+        guard let plan else { return [:] }
+        let history = LoadProgression.history(from: sessions)
+        let cutoff = Calendar.current.date(byAdding: .day, value: -30, to: Date())
+        var result: [String: Double] = [:]
+        for day in plan.days {
+            for item in day.exercises {
+                guard let performance = history[item.slug] else { continue }
+                if let cutoff, performance.lastDate < cutoff { continue }
+                result[item.slug] = multiplier
+            }
+        }
+        return result
+    }
+
+    private func painWeightMultipliers(
+        painMuscle: MuscleGroup?,
+        avoidSlugs: [String]
+    ) -> [String: Double] {
+        guard let plan else { return [:] }
+        var result: [String: Double] = [:]
+        for day in plan.days {
+            for item in day.exercises {
+                if avoidSlugs.contains(item.slug)
+                    || (painMuscle != nil && item.exercise?.muscle == painMuscle) {
+                    result[item.slug] = 0.9
+                }
+            }
+        }
+        if painMuscle == nil, avoidSlugs.isEmpty {
+            for day in plan.days {
+                for item in day.exercises {
+                    result[item.slug] = 0.9
+                }
+            }
+        }
+        return result
+    }
+
+    private func plateauWeightMultipliers() -> [String: Double] {
+        guard let plan else { return [:] }
+        let history = LoadProgression.history(from: sessions)
+        let cutoff = Calendar.current.date(byAdding: .day, value: -30, to: Date())
+        var result: [String: Double] = [:]
+        for day in plan.days {
+            for item in day.exercises {
+                guard let performance = history[item.slug] else { continue }
+                if let cutoff, performance.lastDate < cutoff { continue }
+                let range = LoadProgression.parseRepRange(item.reps)
+                let rpe = performance.lastRPE ?? 0
+                let rpeOK = rpe == 0 || rpe <= LoadProgression.stageRPE(profile.trainingStage)
+                guard performance.lastReps >= range.lowerBound, rpeOK else { continue }
+                let lower = item.exercise?.muscle == .legs
+                    || item.exercise?.muscle == .glutes
+                let upperStep = profile.trainingStage == .advanced ? 0.0125 : 0.025
+                let lowerStep = profile.trainingStage == .advanced ? 0.025 : 0.05
+                result[item.slug] = 1 + (lower ? lowerStep : upperStep)
+            }
+        }
+        return result
+    }
+
     private func makePlanAdjustmentProposal() -> PlanAdjustmentProposal {
         let category = planAdjustmentCategory
         let recent = sessions.filter { $0.date >= Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date() }
@@ -436,7 +497,7 @@ extension AppStore {
         let weekdays = parsedWeekdays.isEmpty ? nil : parsedWeekdays
         let regeneratePlan = weekdays != nil || weeklyDays != nil || sessionMinutes != nil
         var setsDelta = 0
-        var weightMultiplier = 1.0
+        var weightMultipliers: [String: Double] = [:]
         var restDelta = 0
         var maxExercises: Int?
         var maxDaysPerWeek: Int?
@@ -455,9 +516,12 @@ extension AppStore {
                 painMuscle = .arms
             } else {
                 setsDelta = -1
-                weightMultiplier = 0.9
             }
             avoidSlugs = namedSlugs(in: "\(planAdjustmentIssue) \(planAdjustmentDetail)")
+            weightMultipliers = painWeightMultipliers(
+                painMuscle: painMuscle,
+                avoidSlugs: avoidSlugs
+            )
             restDelta = 15
             headline = "先避开疼痛，再谈进步"
             analysis = "先降低可能诱发疼痛的动作负荷，并增加组间休息。"
@@ -484,26 +548,26 @@ extension AppStore {
             ]
         } else if category == "recovery" {
             setsDelta = -1
-            weightMultiplier = 0.95
+            weightMultipliers = recentWeightMultipliers(0.95)
             restDelta = 30
             headline = "先把恢复拉回来，不继续加量"
             analysis = "恢复慢或疲劳时，当前更需要降容量和负荷。"
-            changes = ["每个动作减少 1 组", "负重下调 5%", "组间休息增加 30 秒"]
+            changes = ["每个动作减少 1 组", "有近期训练记录的动作负重下调 5%", "组间休息增加 30 秒"]
         } else if category == "plateau" {
-            weightMultiplier = 1.025
+            weightMultipliers = plateauWeightMultipliers()
             restDelta = 15
             maxExercises = 4
             headline = "换进阶方式，不靠每次拼到力竭"
             analysis = "先减少无效容量，把主项做得更重、更干净。"
-            changes = ["主项负重 +2.5%，保留 1–2 次余力", "每个训练日最多 4 个动作", "组间休息增加 15 秒，连续两周记录同一动作"]
+            changes = ["按动作最近记录单独加负荷：上肢 +2.5% / 下肢 +5%", "每个训练日最多 4 个动作", "组间休息增加 15 秒，连续两周记录同一动作"]
         } else if category == "tooMuch" {
             setsDelta = -1
-            weightMultiplier = 0.95
+            weightMultipliers = recentWeightMultipliers(0.95)
             maxExercises = 4
             restDelta = 15
             headline = "先把完成率做回来"
             analysis = "完成率比单次强度更重要，这版先减量。"
-            changes = ["每个训练日最多 4 个动作", "每个动作减少 1 组，负重下调 5%", "先稳定完成两周，再逐周加量"]
+            changes = ["每个训练日最多 4 个动作", "每个动作减少 1 组；有记录的动作负重下调 5%", "先稳定完成两周，再逐周加量"]
         } else if category == "motivation" {
             setsDelta = -1
             maxExercises = 3
@@ -513,12 +577,12 @@ extension AppStore {
             changes = ["每个训练日压缩到 3 个动作", "每个动作减少 1 组", "连续完成两周后再加量"]
         } else {
             setsDelta = -1
-            weightMultiplier = 0.95
+            weightMultipliers = recentWeightMultipliers(0.95)
             maxExercises = 4
             restDelta = 15
             headline = "先做一版更稳的计划"
             analysis = "信息还不够具体，这版先保守减量。"
-            changes = ["每个训练日最多 4 个动作", "每个动作减少 1 组，负重下调 5%", "两周后根据完成率再决定"]
+            changes = ["每个训练日最多 4 个动作", "每个动作减少 1 组；有记录的动作负重下调 5%", "两周后根据完成率再决定"]
         }
 
         if regeneratePlan {
@@ -542,7 +606,7 @@ extension AppStore {
             summary: "\(evidence)你提到“\(quote)”。\(analysis)",
             changes: changes,
             setsDelta: setsDelta,
-            weightMultiplier: weightMultiplier,
+            weightMultipliers: weightMultipliers,
             restDelta: restDelta,
             maxExercises: maxExercises,
             maxDaysPerWeek: maxDaysPerWeek,

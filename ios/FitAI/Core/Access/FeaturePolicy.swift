@@ -38,4 +38,8 @@ struct FeaturePolicy: Equatable {
     var coachRemaining: Int? {
         isPro ? nil : snapshot?.coachRemaining
     }
+
+    var coachLimit: Int? {
+        isPro ? nil : snapshot?.coachAI?.weeklyLimit
+    }
 }

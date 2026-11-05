@@ -137,6 +137,9 @@ class Profile(Base):
     waist_cm: Mapped[float | None] = mapped_column(Numeric(5, 1, asdecimal=False))
     hip_cm: Mapped[float | None] = mapped_column(Numeric(5, 1, asdecimal=False))
     experience: Mapped[str] = mapped_column(String(20), default="beginner")
+    # Server-owned progression tier derived from completed training days.
+    # experience remains the user's self-reported starting point.
+    training_stage: Mapped[str] = mapped_column(String(20), default="beginner")
     injuries: Mapped[list] = mapped_column(JSON, default=list)
     equipment: Mapped[list] = mapped_column(JSON, default=lambda: ["bodyweight"])
     weekly_days: Mapped[int] = mapped_column(Integer, default=3)

@@ -37,7 +37,7 @@ hk-api.jiaolianfit.cn → 8.218.205.149
 ├── backend/             # FastAPI 代码 + data
 ├── media/               # 动作图片/视频，挂载到 /app/media
 ├── admin/               # fitai-admin-server.jar，仅用于 Flyway 迁移
-└── migration/           # V1–V21 SQL 备份
+└── migration/           # V1–V22 SQL 备份
 ```
 
 ## 4. 服务
@@ -48,7 +48,7 @@ hk-api.jiaolianfit.cn → 8.218.205.149
 | `fitai-api` | 本地构建 | FastAPI，2 worker，内网 8000 |
 | `fitai-caddy` | caddy:2-alpine | 80/443，HTTPS 反代到 api:8000 |
 
-MySQL 表由 admin-server 的 Flyway 管理，V1–V21 已全部执行成功。
+MySQL 表由 admin-server 的 Flyway 管理，V1–V22 已全部执行成功。V22 增加 `profiles.training_stage`。
 
 ## 5. 地址
 
@@ -80,6 +80,20 @@ Release 构建不需要在 App 内输入后端 IP；登录页「开发服务器�
 ```
 
 只保留当前头像，不建历史表。替换或移除时删除旧文件。
+
+### 5.2 训练阶段与负荷
+
+```text
+profiles.training_stage：beginner / intermediate / advanced
+0–59 个完成训练日 → beginner
+60–119 → intermediate
+120+ → advanced
+```
+
+- 训练日按 Asia/Shanghai 去重，只算至少完成 1 组的 session。
+- 阶段只升不降。
+- 计划和每周调整按动作读取最近 12 周 `set_logs`，没有记录时回退到最近计划目标或保守估算。
+- 免费教练额度为每周 10 条。
 
 ## 6. 常用命令
 

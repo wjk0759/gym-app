@@ -13,6 +13,7 @@ final class AuthStore {
     var userID: String?
     var phone: String?
     var avatarURL: URL?
+    var trainingStage: Experience = .beginner
     var onboardingRequired = false
 
     private var didRestore = false
@@ -318,6 +319,7 @@ final class AuthStore {
         )
         userID = response.userID
         avatarURL = AppConfig.resolveMediaURL(response.avatarURL)
+        trainingStage = Experience(rawValue: response.trainingStage ?? "") ?? .beginner
         onboardingRequired = response.onboardingRequired
         isAuthenticated = true
     }
@@ -327,6 +329,7 @@ final class AuthStore {
         userID = nil
         phone = nil
         avatarURL = nil
+        trainingStage = .beginner
         onboardingRequired = false
         isAuthenticated = false
     }
@@ -340,6 +343,7 @@ final class AuthStore {
             self.phone = phone
         }
         avatarURL = AppConfig.resolveMediaURL(response.avatarURL)
+        trainingStage = Experience(rawValue: response.trainingStage ?? "") ?? .beginner
         return response
     }
 
@@ -467,6 +471,7 @@ private struct AuthResponse: Decodable {
     let isNewUser: Bool
     let onboardingRequired: Bool
     let avatarURL: String?
+    let trainingStage: String?
 
     enum CodingKeys: String, CodingKey {
         case userID = "user_id"
@@ -476,6 +481,7 @@ private struct AuthResponse: Decodable {
         case isNewUser = "is_new_user"
         case onboardingRequired = "onboarding_required"
         case avatarURL = "avatar_url"
+        case trainingStage = "training_stage"
     }
 }
 
@@ -495,12 +501,14 @@ private struct MeResponse: Decodable {
     let userID: String
     let phone: String?
     let avatarURL: String?
+    let trainingStage: String?
     let onboardingRequired: Bool
 
     enum CodingKeys: String, CodingKey {
         case userID = "user_id"
         case phone
         case avatarURL = "avatar_url"
+        case trainingStage = "training_stage"
         case onboardingRequired = "onboarding_required"
     }
 }

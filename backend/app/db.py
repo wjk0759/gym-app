@@ -70,6 +70,10 @@ _USER_AUTH_COLUMNS = {
     "last_login_at": "TIMESTAMP",
 }
 
+_PROFILE_COLUMNS = {
+    "training_stage": "VARCHAR(20) DEFAULT 'beginner'",
+}
+
 _AI_MEMORY_COLUMNS = {
     "memory_key": "VARCHAR(80) DEFAULT 'general'",
     "source": "VARCHAR(40) DEFAULT 'agent'",
@@ -231,6 +235,15 @@ def ensure_schema() -> None:
                 "ON users(qq_openid) WHERE qq_openid IS NOT NULL"
             )
         )
+        if "profiles" in tables:
+            profile_columns = {
+                column["name"] for column in inspector.get_columns("profiles")
+            }
+            for name, ddl in _PROFILE_COLUMNS.items():
+                if name not in profile_columns:
+                    connection.execute(
+                        text(f"ALTER TABLE profiles ADD COLUMN {name} {ddl}")
+                    )
         if "ai_memories" in tables:
             memory_columns = {
                 column["name"] for column in inspector.get_columns("ai_memories")

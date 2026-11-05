@@ -14,12 +14,39 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：见 `git log -1`（上一提交 `aca46da`）
-- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动
+- `develop` 代码 HEAD：见 `git log -1`（上一提交 `6ad0c05`）
+- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 10 条/周
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
-- 最新后端验证：**184 passed**，Ruff app/tests 通过；香港生产后端 `/health`、`/health/ready` 200，DeepSeek Flash 真实调用 200，手机验证码发送 200，头像上传/替换/移除 200
-- Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
+- 最新后端验证：**193 passed**，Ruff app/tests 通过；V22 `training_stage` 已迁移；`/me/access` 免费教练额度 `weekly_limit=10`；`training_stage=beginner`
+- Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、10 条额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传
+
+### 2026-11-06 · Windows / OpenCode（训练阶段 + 按动作负荷 + 额度 10）
+
+- 提交：见 `git log -1`
+- 做了什么：
+  - V22 增加 `profiles.training_stage`，0–59 小白 / 60–119 有基础 / 120+ 进阶，按 Asia/Shanghai 完成训练日回填，只升不降
+  - 新增 `training_history` / `load_progression`：读取最近 12 周每个动作的 SetLog，回退最近计划目标，最后才估算
+  - 计划生成不再信任 AI 重量，服务端按动作覆盖 `weight_kg`；模板和本地兜底同一规则
+  - 4 周渐进：小白周 2/4、有基础周 3、进阶周 4；上肢 2.5%、下肢 5%（进阶减半）
+  - 每周 AI 调整改为按动作 RPE/完成情况逐动作乘系数，不再全局 ×1.025
+  - iOS `LoadProgression`、`training_stage` 解码、阶段标签、`PlanAdjustmentCoach` 按动作权重
+  - 免费教练额度 3 → 10；iOS 文案从服务端 `weekly_limit` 读取
+- 验证：
+  - 后端 **193 passed**，Ruff `app/tests` 通过
+  - V22 Flyway `success=1`；生产 `/me/access` 返回 `weekly_limit=10`
+  - `training_stage` 登录/`/auth/me` 返回 `beginner`
+  - Windows 未编译 iOS；后端未做真实计划生成的端到端真机验证
+- Mac 需要做：
+  - `git pull` → `cd ios && xcodegen generate` → build/test
+  - 真机：有历史动作的计划生成应显示基于上次重量的目标；无历史动作显示保守估算
+  - 教练「调整计划」按动作变化，不再所有动作同一个比例
+  - 训练阶段显示在「我的」页；免费教练文案显示 10 条
+- 不要恢复：
+  - 不要恢复全局 `weightMultiplier` 的每周调整
+  - 不要让 AI 输出直接覆盖服务端计算的历史重量
+  - 不要把 `COACH_WEEKLY_LIMIT` 改回 3
+  - 不要删除 V22 或 `training_stage` 回填
 
 ### 2026-11-06 · Windows / OpenCode（今日→记录日期联动 + 编辑按钮）
 
@@ -139,7 +166,7 @@
   - `https://hk-api.jiaolianfit.cn/health/ready` → `{"status":"ready"}`
   - `http://` → `308` 跳 HTTPS
   - DeepSeek `/chat/completions` 真实调用返回 200
-  - 账号密码登录 → `/auth/me` → `/me/access` 全链路 200；免费教练额度 3 条/周
+  - 账号密码登录 → `/auth/me` → `/me/access` 全链路 200；免费教练额度 10 条/周
   - `/privacy`、`/support` 返回 200 `text/html`
   - MySQL 27 个动作已 seed；当前内存 API 175MB + DB 517MB + Caddy 11MB
   - 后端 **178 tests passed**，Ruff（改动文件）通过；`alibabacloud_dypnsapi20170525` 已安装进 API 镜像
@@ -463,7 +490,7 @@
 - `user_entitlements`、`feature_trials`、`feature_usage`
 - 训练计划 onboarding 一次性试用；后续生成/调整/下周期 Pro
 - 饮食周计划和单日计划共用一次免费体验；后续 Pro
-- AI 教练 3 条/周；安全/医疗回复不占额度、不弹付费墙
+- AI 教练 10 条/周；安全/医疗回复不占额度、不弹付费墙
 - 饮食拍照、身材拍照、教练视觉/视频分析 Pro 直拦
 - 高级周复盘 Pro
 - 计划调整、Agent 草案应用、周复盘已补服务端 Pro 拦截

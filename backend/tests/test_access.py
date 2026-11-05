@@ -146,23 +146,22 @@ def test_pro_feature_gate_rejects_free_user():
     access.require_feature(db, user_id, access.FEATURE_FOOD_PHOTO)
 
 
-def test_coach_weekly_quota_is_three_for_free_users():
+def test_coach_weekly_quota_is_ten_for_free_users():
     db = _session()
     user_id = "00000000-0000-0000-0000-000000000001"
 
-    assert access.reserve_coach_message(db, user_id)
-    assert access.reserve_coach_message(db, user_id)
-    assert access.reserve_coach_message(db, user_id)
+    for _ in range(access.COACH_WEEKLY_LIMIT):
+        assert access.reserve_coach_message(db, user_id)
     assert not access.reserve_coach_message(db, user_id)
 
     snapshot = access.access_snapshot(db, user_id)
     coach = snapshot["features"][access.FEATURE_COACH_AI]
-    assert coach["used"] == 3
+    assert coach["used"] == 10
     assert coach["remaining"] == 0
     assert coach["can_send"] is False
 
 
-def test_agent_chat_rejects_free_user_after_three_messages():
+def test_agent_chat_rejects_free_user_after_ten_messages():
     db = _session()
     user_id = "00000000-0000-0000-0000-000000000001"
     for _ in range(access.COACH_WEEKLY_LIMIT):

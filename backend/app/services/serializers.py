@@ -38,6 +38,7 @@ def profile_to_dict(profile: Profile) -> dict:
         "waist_cm": profile.waist_cm,
         "hip_cm": profile.hip_cm,
         "experience": profile.experience,
+        "training_stage": profile.training_stage,
         "injuries": profile.injuries or [],
         "equipment": profile.equipment or [],
         "weekly_days": profile.weekly_days,
@@ -183,6 +184,7 @@ def clone_program(
     source: Program,
     sets_delta: int = 0,
     weight_multiplier: float = 1.0,
+    weight_multipliers: dict[str, float] | None = None,
     title_suffix: str = "",
     generated_by: str = "ai",
 ) -> Program:
@@ -208,8 +210,13 @@ def clone_program(
         )
         for item in day.exercises:
             weight = item.weight_kg
-            if weight is not None and weight_multiplier != 1.0:
-                weight = round(weight * weight_multiplier * 2) / 2
+            multiplier = (
+                weight_multipliers.get(item.exercise_slug, weight_multiplier)
+                if weight_multipliers
+                else weight_multiplier
+            )
+            if weight is not None and multiplier != 1.0:
+                weight = round(weight * multiplier * 2) / 2
             new_day.exercises.append(
                 PlanExercise(
                     exercise_slug=item.exercise_slug,

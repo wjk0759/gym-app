@@ -14,7 +14,9 @@ from ..config import settings
 from ..models import Exercise, Profile
 from . import llm
 from .equipment import available_equipment_types
+from .load_progression import apply_plan_weights
 from .plan_validator import injury_tags, validate_plan
+from .training_stage import refresh_training_stage
 
 PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "plan_system.md"
 
@@ -108,14 +110,19 @@ SPLIT_TEMPLATES: dict[str, list[tuple[str, list[str]]]] = {
 }
 
 
-def _session_exercise_count(minutes: int) -> int:
+def _session_exercise_count(minutes: int, stage: str | None = None) -> int:
     if minutes <= 30:
-        return 4
-    if minutes <= 45:
-        return 5
-    if minutes <= 60:
-        return 6
-    return 7
+        base = 4
+    elif minutes <= 45:
+        base = 5
+    elif minutes <= 60:
+        base = 6
+    else:
+        base = 7
+    cap = {"beginner": 4, "intermediate": 5, "advanced": 6}.get(
+        stage or "beginner", 4
+    )
+    return min(base, cap)
 
 
 _FOCUS_MUSCLES = ("chest", "back", "legs", "glutes", "shoulders", "arms", "core")
@@ -198,25 +205,6 @@ def _pick_for_day(
     return picks[:count]
 
 
-def _suggest_weight(exercise: Exercise, experience: str) -> float | None:
-    if exercise.equipment == "bodyweight":
-        return None
-    base = {
-        "dumbbell": 8.0,
-        "barbell": 20.0,
-        "machine": 15.0,
-        "cable": 10.0,
-        "band": 5.0,
-        "kettlebell": 8.0,
-    }.get(exercise.equipment, 10.0)
-    multiplier = {"beginner": 1.0, "intermediate": 1.5, "advanced": 2.0}.get(
-        experience, 1.0
-    )
-    if not exercise.is_compound:
-        multiplier *= 0.6
-    return round(base * multiplier * 2) / 2
-
-
 def _reps_for(exercise: Exercise, goal_type: str) -> str:
     if exercise.slug == "plank":
         return "30-45s"
@@ -235,20 +223,20 @@ def _build_day(
     goal_type: str,
 ) -> dict:
     params = GOAL_PARAMS.get(goal_type, GOAL_PARAMS["recomp"])
+    stage = getattr(profile, "training_stage", None) or "beginner"
+    sets = min(params["sets"], {"beginner": 3, "intermediate": 4, "advanced": 5}[stage])
+    rpe = min(params["rpe"], {"beginner": 7.0, "intermediate": 8.0, "advanced": 9.0}[stage])
     exercises = []
     for order, exercise in enumerate(picks, start=1):
-        weight = _suggest_weight(exercise, profile.experience)
-        if weight is not None and week_index > 1:
-            weight = round(weight * (1 + 0.025 * (week_index - 1)) * 2) / 2
         exercises.append(
             {
                 "slug": exercise.slug,
                 "order_index": order,
-                "sets": params["sets"],
+                "sets": sets,
                 "reps": _reps_for(exercise, goal_type),
-                "weight_kg": weight,
+                "weight_kg": None,
                 "rest_sec": params["rest"],
-                "rpe": params["rpe"],
+                "rpe": rpe,
             }
         )
     return {
@@ -280,7 +268,10 @@ def fallback_plan(
         weekday_values = DEFAULT_WEEKDAYS[weekly_days]
     templates = SPLIT_TEMPLATES.get(split or "", SPLITS[weekly_days])
     minutes = max(15, min(180, int(session_minutes or profile.session_minutes or 45)))
-    count = min(_session_exercise_count(minutes), 6)
+    count = _session_exercise_count(
+        minutes,
+        getattr(profile, "training_stage", None),
+    )
     requested_focus = _normalize_focus(focus)
 
     days = []
@@ -334,6 +325,7 @@ def build_template_plan(
     focus: list[str] | None = None,
 ) -> dict:
     """Build a deterministic, validated plan for the agent proposal tool."""
+    refresh_training_stage(db, profile.user_id)
     weeks = max(1, min(8, int(weeks)))
     equipment_types = available_equipment_types(
         db, profile.user_id, profile.equipment
@@ -366,6 +358,7 @@ def build_template_plan(
         weekly_days=effective_days,
         weeks=weeks,
     )
+    apply_plan_weights(db, profile, cleaned, by_slug)
     return {
         "plan": cleaned,
         "warnings": warnings,
@@ -430,6 +423,7 @@ def _user_prompt(
             "height_cm": profile.height_cm,
             "weight_kg": profile.weight_kg,
             "experience": profile.experience,
+            "training_stage": getattr(profile, "training_stage", "beginner"),
             "injuries": profile.injuries,
             "equipment": sorted({item.equipment for item in available} | {"bodyweight"}),
             "weekly_days": profile.weekly_days,
@@ -485,6 +479,8 @@ async def generate_plan(
             db, profile, goal_type, weeks=weeks, split=split, focus=focus
         )
 
+    refresh_training_stage(db, profile.user_id)
+    db.commit()
     equipment_types = available_equipment_types(
         db, profile.user_id, profile.equipment
     )
@@ -535,6 +531,7 @@ async def generate_plan(
                 weekly_days=profile.weekly_days,
                 weeks=weeks,
             )
+            apply_plan_weights(db, profile, cleaned, by_slug)
             return {
                 "plan": cleaned,
                 "generated_by": "ai",
@@ -567,6 +564,7 @@ async def generate_plan(
         weekly_days=profile.weekly_days,
         weeks=weeks,
     )
+    apply_plan_weights(db, profile, cleaned, by_slug)
     warnings.extend(fallback_warnings)
     return {
         "plan": cleaned,

@@ -28,7 +28,7 @@ FEATURE_BODY_PHOTO = "body_photo"
 FEATURE_AI_VISION = "ai_vision"
 FEATURE_EQUIPMENT_SCAN = "equipment_scan"
 FEATURE_ADVANCED_REVIEW = "advanced_review"
-COACH_WEEKLY_LIMIT = 3
+COACH_WEEKLY_LIMIT = 10
 
 
 @dataclass(frozen=True)

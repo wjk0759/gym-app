@@ -180,6 +180,9 @@ struct RootView: View {
             syncedUserID = nil
             return
         }
+        if store.profile.trainingStage != auth.trainingStage {
+            store.profile.trainingStage = auth.trainingStage
+        }
         guard syncedUserID != auth.userID else {
             activateWeatherIfNeeded()
             return

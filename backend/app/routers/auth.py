@@ -62,6 +62,7 @@ def _auth_me(db: DBSession, user_id: str) -> dict:
         "phone": user.phone,
         "username": user.username,
         "avatar_url": public_media_url(user.avatar_url),
+        "training_stage": profile.training_stage if profile else "beginner",
         "status": user.status,
         "last_login_at": (
             user.last_login_at.isoformat() if user.last_login_at else None

@@ -5,6 +5,7 @@
 以下列从 `FLOAT` 改为 `DECIMAL`：
 
 - `profiles.height_cm / weight_kg / body_fat_pct / chest_cm / waist_cm / hip_cm`
+- `profiles.training_stage`：按完成训练日自动升级（0–59 小白 / 60–119 有基础 / 120+ 进阶），只升不降
 - `goals.target_weight_kg / target_body_fat_pct / target_waist_cm`
 - `plan_exercises.weight_kg / rpe`
 - `set_logs.weight_kg / rpe`
@@ -121,7 +122,7 @@ V12 增加中文 ngram 全文索引：
 
 - `user_entitlements`：Pro 权益台账。来源 `admin / storekit / promo`，按 `starts_at / expires_at / revoked_at` 判断有效；不在 `users` 上存布尔值。
 - `feature_trials`：一次性体验，唯一键 `(user_id, feature_key)`。训练计划来源 `onboarding`，饮食周计划来源 `first_generation`；老用户已在 V14 回填。
-- `feature_usage`：按自然周（Asia/Shanghai）记录 AI 教练用量，免费用户每周 3 条；安全/医疗回复不计入。
+- `feature_usage`：按自然周（Asia/Shanghai）记录 AI 教练用量，免费用户每周 10 条；安全/医疗回复不计入。
 - `feature_generation_state` V17：计划/饮食周计划的持久冷却、进行中锁和幂等回放。成功后才开始 60 秒冷却；相同 `Idempotency-Key` 在 10 分钟内返回已保存结果。
 - `feature_result_cache` V21：拍照分析（体型/饮食/器械/教练视觉）的短时幂等回放。只存脱敏后的 JSON 文本，不存原图；TTL 默认 300 秒，过期行在写入新结果时批量清理，生产可再加定时清理任务。
 - `rate_limit_buckets` V18：按 `(feature, user)` 的分布式 token bucket，所有 worker 共享同一额度，避免进程内限流被多 worker 绕过。

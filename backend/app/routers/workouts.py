@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 from ..deps import CurrentUser, DBSession
 from ..models import Exercise, Profile, Program, ProgramDay, SetLog, WorkoutSession
 from ..schemas import WorkoutIn
+from ..services.training_stage import refresh_training_stage
 
 router = APIRouter(prefix="/workouts", tags=["workouts"])
 
@@ -111,6 +112,8 @@ def create_workout(payload: WorkoutIn, user_id: CurrentUser, db: DBSession):
         )
 
     db.add(session)
+    db.flush()
+    refresh_training_stage(db, user_id)
     try:
         db.commit()
     except IntegrityError:
@@ -374,6 +377,8 @@ def update_workout(
                 completed=item.completed,
             )
         )
+    db.flush()
+    refresh_training_stage(db, user_id)
     db.commit()
     return {"id": session.id, "duration_min": duration}
 

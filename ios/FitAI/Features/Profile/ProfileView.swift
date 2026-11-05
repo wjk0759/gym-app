@@ -83,7 +83,7 @@ struct ProfileView: View {
                                 .foregroundStyle(Theme.ink)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.8)
-                            Text("\(store.profile.goalType.label) · \(store.profile.experience.label) · 每周 \(store.profile.weeklyDays) 练")
+                            Text("\(store.profile.trainingStage.stageLabel) · \(store.profile.goalType.label) · 每周 \(store.profile.weeklyDays) 练")
                                 .font(AppType.caption)
                                 .foregroundStyle(Theme.secondaryText)
                                 .lineLimit(1)

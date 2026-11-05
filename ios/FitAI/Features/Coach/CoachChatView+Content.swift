@@ -46,8 +46,9 @@ extension CoachChatView {
 
                 HStack(spacing: 8) {
                     RecommendationBadge(text: coachBadgeText)
-                    if let remaining = store.access.policy.coachRemaining {
-                        Text("本周剩余 \(remaining)/3 条")
+                    if let remaining = store.access.policy.coachRemaining,
+                       let limit = store.access.policy.coachLimit {
+                        Text("本周剩余 \(remaining)/\(limit) 条")
                             .font(AppType.micro)
                             .foregroundStyle(Theme.tertiaryText)
                     }
@@ -74,7 +75,7 @@ extension CoachChatView {
                             Text("升级 Pro · AI 教练不限条数")
                                 .font(AppType.callout.weight(.semibold))
                                 .foregroundStyle(Theme.ink)
-                            Text("免费用户每周 3 条 AI 教练；Pro 解锁不限条数和完整 AI 能力。")
+                            Text("免费用户每周 \(store.access.policy.coachLimit ?? 10) 条 AI 教练；Pro 解锁不限条数和完整 AI 能力。")
                                 .font(.system(size: 9.5, weight: .medium))
                                 .foregroundStyle(Theme.secondaryText)
                         }
@@ -255,11 +256,12 @@ extension CoachChatView {
 
     var inputBar: some View {
         VStack(spacing: 0) {
-            if let remaining = store.access.policy.coachRemaining {
+            if let remaining = store.access.policy.coachRemaining,
+               let limit = store.access.policy.coachLimit {
                 HStack(spacing: 8) {
                     Text(remaining == 0
                          ? "免费 AI 教练额度已用完"
-                         : "本周免费 AI 教练剩余 \(remaining)/3 条")
+                         : "本周免费 AI 教练剩余 \(remaining)/\(limit) 条")
                         .font(AppType.micro)
                         .foregroundStyle(remaining > 0 ? Theme.secondaryText : Theme.coral)
                     Spacer(minLength: 0)

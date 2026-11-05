@@ -80,7 +80,9 @@ extension AppStore {
                         dislikedSlugs: self.dislikedSlugs,
                         equipmentSlugs: librarySlugs,
                         weeklyWeekdays: weeklyWeekdays,
-                        focusAreas: focusAreas
+                        focusAreas: focusAreas,
+                        sessions: self.sessions,
+                        planWeights: self.planWeightTargets
                     )
                     fallback.version = (self.plan?.version ?? 0) + 1
                     self.archiveCurrentPlan()
@@ -106,7 +108,9 @@ extension AppStore {
                 dislikedSlugs: self.dislikedSlugs,
                 equipmentSlugs: librarySlugs,
                 weeklyWeekdays: weeklyWeekdays,
-                focusAreas: focusAreas
+                focusAreas: focusAreas,
+                sessions: self.sessions,
+                planWeights: self.planWeightTargets
             )
             generated.version = (self.plan?.version ?? 0) + 1
             self.archiveCurrentPlan()
@@ -122,6 +126,26 @@ extension AppStore {
                 }
             }
         }
+    }
+
+    /// Last manually edited or generated target weight per exercise, used only
+    /// when there is no real workout set to anchor the next plan.
+    var planWeightTargets: [String: Double] {
+        var plans: [TrainingPlan] = []
+        if let plan { plans.append(plan) }
+        plans.append(contentsOf: planHistory)
+        var result: [String: Double] = [:]
+        for plan in plans {
+            for day in plan.days {
+                for exercise in day.exercises {
+                    guard result[exercise.slug] == nil,
+                          let weight = exercise.weightKG,
+                          weight > 0 else { continue }
+                    result[exercise.slug] = weight
+                }
+            }
+        }
+        return result
     }
 
     func requestPro(_ feature: ProFeature) {

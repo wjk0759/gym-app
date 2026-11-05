@@ -2,11 +2,13 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Header, HTTPException
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from ..deps import CurrentUser, DBSession
 from ..models import Exercise, Goal, PlanExercise, Profile, Program, WorkoutSession
 from ..schemas import PlanDayPatch, PlanGenerateIn
 from ..services import access, generation
+from ..services.load_progression import adjustment_multipliers
 from ..services.locking import lock_user
 from ..services.plan_generator import generate_plan
 from ..services.plan_validator import PlanValidationError, injury_tags
@@ -19,6 +21,7 @@ from ..services.serializers import (
     save_plan,
     serialize_program,
 )
+from ..services.training_stage import refresh_training_stage
 
 router = APIRouter(prefix="/plans", tags=["plans"])
 
@@ -228,7 +231,9 @@ def adjust(plan_id: str, user_id: CurrentUser, db: DBSession):
     since = datetime.now(timezone.utc) - timedelta(days=7)
     sessions = (
         db.execute(
-            select(WorkoutSession).where(
+            select(WorkoutSession)
+            .options(selectinload(WorkoutSession.sets))
+            .where(
                 WorkoutSession.user_id == user_id,
                 WorkoutSession.started_at >= since,
             )
@@ -244,7 +249,6 @@ def adjust(plan_id: str, user_id: CurrentUser, db: DBSession):
     completion = len(sessions) / planned
     changes: list[dict] = []
     sets_delta = 0
-    weight_multiplier = 1.0
 
     if not sessions:
         raise HTTPException(
@@ -252,12 +256,21 @@ def adjust(plan_id: str, user_id: CurrentUser, db: DBSession):
             detail="最近 7 天没有训练记录，先完成一次训练再让 AI 调整。",
         )
 
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="请先完成个人档案")
+    refresh_training_stage(db, user_id)
+    weight_multipliers = adjustment_multipliers(
+        program,
+        sessions,
+        profile.training_stage,
+    )
+
     if completion >= 0.8:
-        weight_multiplier = 1.025
         changes.append(
             {
                 "type": "increase_load",
-                "detail": f"最近 7 天完成 {len(sessions)}/{planned} 次训练，主项重量上调 2.5%。",
+                "detail": f"最近 7 天完成 {len(sessions)}/{planned} 次训练，按每个动作的记录单独调整负荷。",
             }
         )
     elif completion >= 0.5:
@@ -276,12 +289,36 @@ def adjust(plan_id: str, user_id: CurrentUser, db: DBSession):
             }
         )
 
+    if weight_multipliers:
+        named: list[str] = []
+        for day in program.days:
+            for item in day.exercises:
+                multiplier = weight_multipliers.get(item.exercise_slug)
+                if multiplier is None:
+                    continue
+                name = item.exercise.name_zh if item.exercise else item.exercise_slug
+                named.append(f"{name} {(multiplier - 1) * 100:+.1f}%")
+        if named:
+            changes.append(
+                {
+                    "type": "load_by_exercise",
+                    "detail": "按动作调整：" + "、".join(dict.fromkeys(named)),
+                }
+            )
+    else:
+        changes.append(
+            {
+                "type": "keep_load",
+                "detail": "没有足够的动作记录，重量保持不变；先把每个动作的次数和 RPE 记录完整。",
+            }
+        )
+
     adjusted = clone_program(
         db,
         user_id,
         program,
         sets_delta=sets_delta,
-        weight_multiplier=weight_multiplier,
+        weight_multipliers=weight_multipliers,
         title_suffix=" · 调整版",
     )
     return {"program": serialize_program(adjusted), "changes": changes}

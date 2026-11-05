@@ -349,6 +349,7 @@ def _issue_session(
         "is_new_user": is_new_user,
         "onboarding_required": profile.onboarded_at is None,
         "avatar_url": public_media_url(user.avatar_url),
+        "training_stage": profile.training_stage,
         "profile": profile_to_dict(profile),
         "goal": goal_to_dict(goal),
     }

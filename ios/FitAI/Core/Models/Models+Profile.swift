@@ -26,6 +26,14 @@ enum Experience: String, Codable, CaseIterable, Identifiable {
         case .advanced: return "进阶"
         }
     }
+
+    var stageLabel: String {
+        switch self {
+        case .beginner: return "小白"
+        case .intermediate: return "有基础"
+        case .advanced: return "进阶"
+        }
+    }
 }
 
 enum GoalType: String, Codable, CaseIterable, Identifiable {
@@ -143,6 +151,8 @@ struct UserProfile: Codable, Equatable {
     var chestCM: Double = 95
     var hipCM: Double = 95
     var experience: Experience = .beginner
+    /// Server-owned progression tier derived from completed training days.
+    var trainingStage: Experience = .beginner
     var equipment: Set<Equipment> = [.bodyweight, .dumbbell]
     var injuries: String = ""
     var weeklyDays: Int = 3
@@ -180,6 +190,7 @@ struct UserProfile: Codable, Equatable {
         chestCM = try container.decodeIfPresent(Double.self, forKey: .chestCM) ?? 95
         hipCM = try container.decodeIfPresent(Double.self, forKey: .hipCM) ?? 95
         experience = try container.decodeIfPresent(Experience.self, forKey: .experience) ?? .beginner
+        trainingStage = try container.decodeIfPresent(Experience.self, forKey: .trainingStage) ?? .beginner
         equipment = try container.decodeIfPresent(Set<Equipment>.self, forKey: .equipment)
             ?? [.bodyweight, .dumbbell]
         injuries = try container.decodeIfPresent(String.self, forKey: .injuries) ?? ""
@@ -215,6 +226,7 @@ struct UserProfile: Codable, Equatable {
         case chestCM
         case hipCM
         case experience
+        case trainingStage = "training_stage"
         case equipment
         case injuries
         case weeklyDays

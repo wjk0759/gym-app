@@ -37,14 +37,18 @@ struct PlanGenerationService {
         dislikedSlugs: Set<String>,
         equipmentSlugs: [String],
         weeklyWeekdays: [Int]?,
-        focusAreas: Set<BodyFocusArea>
+        focusAreas: Set<BodyFocusArea>,
+        sessions: [WorkoutSession],
+        planWeights: [String: Double]
     ) -> TrainingPlan {
         PlanGenerator.generate(
             profile: profile,
             dislikedSlugs: dislikedSlugs,
             equipmentSlugs: equipmentSlugs,
             weeklyWeekdays: weeklyWeekdays,
-            focusAreas: focusAreas
+            focusAreas: focusAreas,
+            sessions: sessions,
+            planWeights: planWeights
         )
     }
 }

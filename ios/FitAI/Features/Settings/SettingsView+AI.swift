@@ -11,7 +11,7 @@ extension SettingsView {
                         .font(AppType.headline)
                     Text(store.hasProAccess
                          ? (store.useRemoteAI ? "远程模式 · 调用后端模型" : "本地模式 · 规则模板")
-                         : "免费额度 · 每周 3 条 AI 教练")
+                         : "免费额度 · 每周 \(store.access.policy.coachLimit ?? 10) 条 AI 教练")
                         .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
@@ -27,7 +27,7 @@ extension SettingsView {
                  ? (store.useRemoteAI
                     ? "Pro 已解锁：生成计划、教练对话和视觉识别会请求 DeepSeek/后端；失败时自动回退本地。"
                     : "已开通 Pro，但当前关闭了远程 AI。打开开关后可使用 DeepSeek。")
-                 : "免费用户每周 3 条 AI 教练；Pro 解锁不限条数和完整 AI 能力。")
+                 : "免费用户每周 \(store.access.policy.coachLimit ?? 10) 条 AI 教练；Pro 解锁不限条数和完整 AI 能力。")
                 .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
                 .fixedSize(horizontal: false, vertical: true)

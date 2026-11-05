@@ -56,7 +56,7 @@ final class FeaturePolicyTests: XCTestCase {
         let snapshot = try snapshot(
             """
             {"is_pro":false,"pro_sources":[],"features":{
-              "coach_ai":{"weekly_limit":3,"used":3,"remaining":0,"can_send":false}
+              "coach_ai":{"weekly_limit":10,"used":10,"remaining":0,"can_send":false}
             }}
             """
         )
@@ -64,6 +64,7 @@ final class FeaturePolicyTests: XCTestCase {
 
         XCTAssertFalse(policy.canSendCoachMessage)
         XCTAssertEqual(policy.coachRemaining, 0)
+        XCTAssertEqual(policy.coachLimit, 10)
     }
 
     func testTrainingTrialIsOnboardingOnly() throws {
