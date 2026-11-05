@@ -18,9 +18,6 @@ struct FoodPhotoAnalysisView: View {
     @State var analysisKey = UUID().uuidString
     @State var meal: MealType = .lunch
     @State var items: [FoodRecognitionItem] = []
-    @State var confidence = 0.0
-    @State var analysisDisclaimer = ""
-    @State var analysisModel = ""
     @State var analysisSummary = ""
     @State var isFood = true
     @State var isAnalyzing = false
@@ -110,7 +107,7 @@ struct FoodPhotoAnalysisView: View {
             ) {
                 PhotoCaptureView(
                     title: "拍摄餐食",
-                    hint: "尽量俯拍，让整餐完整进入画面。",
+                    hint: "俯拍，整餐入镜。",
                     onImage: { picked in
                         apply(picked)
                         showCamera = false
@@ -146,7 +143,7 @@ struct FoodPhotoAnalysisView: View {
                 .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text("照片只用于本次识别，不保存。识别后可以修改份量、勾选实际吃下的食物，再加入今日饮食。")
+            Text("照片不保存；识别后可改份量，再加入今日饮食。")
                 .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
@@ -187,7 +184,7 @@ struct FoodPhotoAnalysisView: View {
                     Text("拍照或选择一张餐食照片")
                         .font(AppType.callout.weight(.medium))
                         .foregroundStyle(Theme.ink)
-                    Text("尽量俯拍，让食物完整进入画面")
+                    Text("俯拍，整餐入镜")
                         .font(AppType.caption)
                         .foregroundStyle(Theme.tertiaryText)
                 }
@@ -253,7 +250,7 @@ struct FoodPhotoAnalysisView: View {
 
 
     private var disclaimer: some View {
-        Text("饮食照片识别只能做估算，不能保证份量、烹饪油和隐藏配料完全准确。对花生、海鲜、乳制品等过敏原，请以包装标签或商家确认为准。")
+        Text("估算值；过敏原以包装标签或商家确认为准。")
             .font(.system(size: 9.5, weight: .medium))
             .foregroundStyle(Theme.tertiaryText)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -284,9 +281,6 @@ struct FoodPhotoAnalysisView: View {
         guard store.requirePro(.foodPhoto) else { return }
         isAnalyzing = true
         items = []
-        confidence = 0
-        analysisDisclaimer = ""
-        analysisModel = ""
 
         if store.canUseRemoteAI {
             Task { @MainActor in
@@ -319,9 +313,6 @@ struct FoodPhotoAnalysisView: View {
 
     private func finish(_ result: FoodRecognitionResult) {
         items = result.items
-        confidence = result.confidence
-        analysisDisclaimer = result.disclaimer
-        analysisModel = result.model
         analysisSummary = result.summary
         isFood = result.isFood
         isAnalyzing = false

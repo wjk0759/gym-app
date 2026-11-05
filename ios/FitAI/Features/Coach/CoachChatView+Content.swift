@@ -39,19 +39,13 @@ extension CoachChatView {
                     }
                 }
 
-                Text("你不需要想好怎么问。把今天的情况、限制或照片丢给我，我来判断下一步。")
+                Text("把今天的情况、限制或照片发给我，我来判断下一步。")
                     .font(AppType.body)
                     .foregroundStyle(Theme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 8) {
                     RecommendationBadge(text: coachBadgeText)
-                    if let remaining = store.access.policy.coachRemaining,
-                       let limit = store.access.policy.coachLimit {
-                        Text("本周剩余 \(remaining)/\(limit) 条")
-                            .font(AppType.micro)
-                            .foregroundStyle(Theme.tertiaryText)
-                    }
                     Spacer()
                     Text("疼痛 / 孕期 / 术后会先拦")
                         .font(AppType.micro)

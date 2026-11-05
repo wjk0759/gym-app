@@ -149,7 +149,7 @@ struct WorkoutTrainingTipCard: View {
                     .foregroundStyle(Theme.tertiaryText)
             }
 
-            Text("保留 1–2 次余力，组间休息 \(exercise.restSec) 秒；动作变形就降重量，不要为了完成次数牺牲动作质量。")
+            Text("保留 1–2 次余力；动作变形就降重量。")
                 .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
@@ -495,7 +495,7 @@ struct WorkoutSessionValueEntrySheet: View {
             WorkoutValueEntrySheet(
                 title: "本组重量",
                 unit: "kg",
-                footnote: "当前 \(WorkoutWeightFormat.text(weight)) kg。输入本组实际使用的重量，保存后完成这一组会按这个重量记录。",
+                footnote: "本组实际重量；0 表示自重。",
                 allowsDecimal: true,
                 range: 0...300
             ) { value in

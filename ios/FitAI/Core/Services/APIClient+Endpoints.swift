@@ -355,7 +355,11 @@ extension APIClient {
                     carbsPer100g: item.carbsPer100g,
                     fatPer100g: item.fatPer100g,
                     fiberPer100g: item.fiberPer100g,
-                    confidence: item.confidence
+                    confidence: item.confidence,
+                    gramsMin: item.gramsMin,
+                    gramsMax: item.gramsMax,
+                    portionConfidence: item.portionConfidence,
+                    portionBasis: item.portionBasis
                 )
             },
             confidence: response.confidence,

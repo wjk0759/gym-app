@@ -14,7 +14,7 @@ struct ProfileEditView: View {
             VStack(alignment: .leading, spacing: 18) {
                 ProfileFormView(draft: $draft)
 
-                Text("修改目标、训练安排、时长或器械后，保存会自动按新设置重排计划；手动改过的训练日会被覆盖。")
+                Text("保存后会按新设置重排计划。")
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
                     .fixedSize(horizontal: false, vertical: true)

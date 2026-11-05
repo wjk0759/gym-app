@@ -14,12 +14,36 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`f9a98b0`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 10 条/周
+- `develop` 代码 HEAD：见 `git log -1`（上一提交 `ac20722`）
+- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 10 条/周、饮食份量区间、文案精简
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
-- 最新后端验证：**193 passed**，Ruff app/tests 通过；V22 `training_stage` 已迁移；`/me/access` 免费教练额度 `weekly_limit=10`；`training_stage=beginner`
+- 最新后端验证：**196 passed**，Ruff app/tests 通过；V22 `training_stage` 已迁移；`/me/access` 免费教练额度 `weekly_limit=10`；`training_stage=beginner`
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、10 条额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传
+
+### 2026-11-06 · Windows / OpenCode（饮食份量区间 + 文案精简）
+
+- 提交：见 `git log -1`
+- 做了什么：
+  - 饮食视觉 prompt 改为先找盘子/碗/勺子/手等自然参照物，再按覆盖面积、高度和密度估算
+  - 输出 `grams_min` / `grams_max` / `portion_confidence` / `portion_basis`，不再只给一个假精确数字
+  - 后端校验热量与宏量营养，偏差过大时按蛋白/碳水/脂肪反推
+  - 免责声明压缩为一行；拍照提示、结果页重复的模型说明和重复免责声明删除
+  - 教练欢迎卡删掉重复的剩余额度，只在输入框上方显示
+  - 训练编排、编辑档案、组间提示、目标重量说明压缩
+- 验证：
+  - 后端 **196 passed**，Ruff 通过
+  - 生产 `/health`、`/health/ready` 200
+  - Windows 未编译 iOS；未用真实餐食照片做端到端验证
+- Mac 需要做：
+  - `git pull` → `xcodegen generate` → build/test
+  - 用真实餐食照片检查份量区间、置信度、Stepper 修改后热量重算
+  - 检查饮食拍照、教练、训练编排、编辑档案没有因删文案出现空洞或截断
+  - 安全、过敏、隐私、支付、注销提示必须仍在
+- 不要恢复：
+  - 不要恢复「结果来自远程识别服务，照片未保存」等重复模型说明
+  - 不要把饮食免责声明重复放在结果卡和页面底部
+  - 不要把教练剩余额度同时放在欢迎卡和输入框
 
 ### 2026-11-06 · Windows / OpenCode（训练阶段 + 按动作负荷 + 额度 10）
 

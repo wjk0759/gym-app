@@ -182,10 +182,10 @@ struct CustomWorkoutBuilderView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(mode == .editPlan
-                 ? "调整动作顺序、组数和负荷；保存后直接写回训练计划。"
+                 ? "保存后写回计划。"
                  : mode == .plan
-                 ? "今天的动作顺序、组数和重量都可以先调整；开始后仍可随时修改本次目标。"
-                 : "动作顺序、组数、次数、重量都可以先改；开始后仍可在训练页临时调整。")
+                 ? "可先调整动作和重量，开始后也能改。"
+                 : "可先调整，开始后也能改。")
                 .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)

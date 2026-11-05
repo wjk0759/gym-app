@@ -10,9 +10,6 @@ extension FoodPhotoAnalysisView {
                         .foregroundStyle(Theme.ink)
                 }
                 Spacer()
-                Text("参考置信度 \(Int(confidence * 100))%")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Theme.cobalt)
             }
 
             ForEach($items) { $item in
@@ -45,6 +42,14 @@ extension FoodPhotoAnalysisView {
                             .font(.system(size: 10, weight: .medium, design: .monospaced))
                             .foregroundStyle(Theme.ink)
                             .frame(width: 58, alignment: .trailing)
+                    }
+
+                    if let min = item.gramsMin,
+                       let max = item.gramsMax,
+                       max > min {
+                        Text("估算 \(Int(min))–\(Int(max)) g · 置信度 \(Int((item.portionConfidence ?? item.confidence) * 100))%")
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundStyle(Theme.tertiaryText)
                     }
 
                     Text("P \(item.protein.formatted(.number.precision(.fractionLength(0))))g · C \(item.carbs.formatted(.number.precision(.fractionLength(0))))g · F \(item.fat.formatted(.number.precision(.fractionLength(0))))g")
@@ -89,19 +94,6 @@ extension FoodPhotoAnalysisView {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .strokeBorder(Theme.stroke, lineWidth: 1)
             }
-
-            if !analysisModel.isEmpty {
-                Text(analysisModel.hasPrefix("local")
-                     ? "当前为本地估算模式，结果仅用于演示流程。"
-                     : "结果来自远程识别服务，照片未保存。")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-
-            Text(analysisDisclaimer)
-                .font(.system(size: 9, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
 
             Button {
                 addToToday()

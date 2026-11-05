@@ -5,7 +5,7 @@ import Foundation
 /// 当前没有接入真实视觉模型时，用图片内容做确定性模拟，保证离线也能演示完整流程。
 /// 接入远程模式后，优先使用后端 `/diet/analyze`，失败时回退到这里。
 enum FoodVisionService {
-    static let disclaimer = "识别结果为估算，热量与营养素可能有偏差。不评价食物好坏，也不要求只吃“健康餐”。过敏原、疾病饮食与特殊人群需求请以包装标签、商家信息或医生/营养师意见为准。"
+    static let disclaimer = "估算值，份量与营养可能有偏差；过敏原以包装标签或商家确认为准。"
 
     private static let combos: [[(String, Double)]] = [
         [("米饭", 150), ("鸡胸肉", 150), ("西兰花", 150)],
@@ -48,7 +48,11 @@ enum FoodVisionService {
                     proteinPer100g: food.protein,
                     carbsPer100g: food.carbs,
                     fatPer100g: food.fat,
-                    confidence: max(0.55, 0.91 - Double(index) * 0.07)
+                    confidence: max(0.55, 0.91 - Double(index) * 0.07),
+                    gramsMin: max(5, grams - max(5, grams * 0.2)),
+                    gramsMax: grams + max(5, grams * 0.2),
+                    portionConfidence: 0.5,
+                    portionBasis: "常见份量估算"
                 )
             )
         }

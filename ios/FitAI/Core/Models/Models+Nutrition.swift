@@ -122,6 +122,10 @@ struct FoodRecognitionItem: Identifiable, Hashable {
     var fatPer100g: Double
     var fiberPer100g: Double? = nil
     var confidence: Double
+    var gramsMin: Double? = nil
+    var gramsMax: Double? = nil
+    var portionConfidence: Double? = nil
+    var portionBasis: String? = nil
     var selected: Bool = true
 
     var kcal: Double { kcalPer100g * grams / 100 }

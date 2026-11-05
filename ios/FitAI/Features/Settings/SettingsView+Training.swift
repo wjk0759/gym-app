@@ -42,8 +42,8 @@ extension SettingsView {
             }
 
             Text(store.notificationsEnabled
-                 ? "已开启：共 \(store.plan?.firstWeek.count ?? 0) 个训练日。修改计划后会自动更新。"
-                 : "未开启。iOS 的静音和专注模式可能影响提醒，请在系统设置中允许通知。")
+                 ? "已开启：共 \(store.plan?.firstWeek.count ?? 0) 个训练日。"
+                 : "未开启；请允许系统通知。")
                 .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
         }

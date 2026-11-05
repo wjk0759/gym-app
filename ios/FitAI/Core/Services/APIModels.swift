@@ -181,6 +181,10 @@ struct FoodAnalysisResponse: Decodable {
         let fatPer100g: Double
         let fiberPer100g: Double?
         let confidence: Double
+        let gramsMin: Double?
+        let gramsMax: Double?
+        let portionConfidence: Double?
+        let portionBasis: String?
 
         enum CodingKeys: String, CodingKey {
             case name
@@ -191,6 +195,10 @@ struct FoodAnalysisResponse: Decodable {
             case fatPer100g = "fat_per_100g"
             case fiberPer100g = "fiber_per_100g"
             case confidence
+            case gramsMin = "grams_min"
+            case gramsMax = "grams_max"
+            case portionConfidence = "portion_confidence"
+            case portionBasis = "portion_basis"
         }
     }
 
