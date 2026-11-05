@@ -1,5 +1,13 @@
 import Foundation
 
+struct AvatarResponse: Decodable {
+    let avatarURL: String?
+
+    enum CodingKeys: String, CodingKey {
+        case avatarURL = "avatar_url"
+    }
+}
+
 struct RemoteWorkoutSet: Decodable {
     let slug: String
     let setIndex: Int

@@ -33,6 +33,28 @@ enum AppConfig {
         apiBaseURL.absoluteString
     }
 
+    /// Resolve a server-relative media path such as `/media/avatars/x.jpg`
+    /// against the configured API host. Absolute OAuth avatar URLs pass through.
+    static func resolveMediaURL(_ raw: String?) -> URL? {
+        guard let raw = raw?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty else {
+            return nil
+        }
+        if let url = URL(string: raw), url.scheme != nil {
+            return url
+        }
+
+        var components = URLComponents(url: apiBaseURL, resolvingAgainstBaseURL: false)
+        var basePath = components?.path ?? ""
+        if basePath.hasSuffix("/api/v1") {
+            basePath.removeLast("/api/v1".count)
+        }
+        components?.path = basePath + (raw.hasPrefix("/") ? raw : "/" + raw)
+        components?.query = nil
+        components?.fragment = nil
+        return components?.url
+    }
+
     /// 仅 Debug 使用；Release 不读取 UserDefaults，也不显示入口。
     static func setAPIBaseURL(_ value: String?) {
         let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""

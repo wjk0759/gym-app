@@ -69,44 +69,39 @@ struct ProfileView: View {
 
     private var accountCard: some View {
         VStack(alignment: .leading, spacing: 13) {
-            NavigationLink {
-                ProfileEditView()
-            } label: {
-                HStack(spacing: 13) {
-                    ZStack {
-                        Circle()
-                            .fill(Theme.primary)
-                        Circle()
-                            .strokeBorder(Theme.inkSolid, lineWidth: 2)
-                        Text(String(store.profile.nickname.prefix(1)))
-                            .font(.system(size: 21, weight: .black))
-                            .foregroundStyle(Theme.onPrimary)
+            HStack(spacing: 13) {
+                AvatarEditorButton(initial: store.profile.nickname)
+
+                NavigationLink {
+                    ProfileEditView()
+                } label: {
+                    HStack(spacing: 13) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(store.profile.nickname)
+                                .font(AppType.title)
+                                .tracking(-0.3)
+                                .foregroundStyle(Theme.ink)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                            Text("\(store.profile.goalType.label) · \(store.profile.experience.label) · 每周 \(store.profile.weeklyDays) 练")
+                                .font(AppType.caption)
+                                .foregroundStyle(Theme.secondaryText)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                        }
+
+                        Spacer(minLength: 6)
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Theme.tertiaryText)
                     }
-                    .frame(width: 52, height: 52)
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(store.profile.nickname)
-                            .font(AppType.title)
-                            .tracking(-0.3)
-                            .foregroundStyle(Theme.ink)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                        Text("\(store.profile.goalType.label) · \(store.profile.experience.label) · 每周 \(store.profile.weeklyDays) 练")
-                            .font(AppType.caption)
-                            .foregroundStyle(Theme.secondaryText)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                    }
-
-                    Spacer(minLength: 6)
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(Theme.tertiaryText)
+                    .contentShape(Rectangle())
                 }
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             InkDivider()
 

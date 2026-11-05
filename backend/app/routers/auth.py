@@ -9,6 +9,7 @@ from sqlalchemy import select
 
 from ..config import settings
 from ..deps import DEMO_USER_ID, CurrentUser, DBSession
+from ..media import public_media_url
 from ..models import AuthEvent, AuthSession, Profile, User
 from ..schemas import (
     AppleLoginIn,
@@ -60,6 +61,7 @@ def _auth_me(db: DBSession, user_id: str) -> dict:
         "user_id": user.id,
         "phone": user.phone,
         "username": user.username,
+        "avatar_url": public_media_url(user.avatar_url),
         "status": user.status,
         "last_login_at": (
             user.last_login_at.isoformat() if user.last_login_at else None

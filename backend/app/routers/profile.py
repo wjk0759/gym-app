@@ -1,10 +1,11 @@
 from datetime import date, timedelta
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from ..deps import CurrentUser, DBSession
+from ..media import public_media_url
 from ..models import (
     AgentActionEvent,
     AIMemory,
@@ -24,6 +25,7 @@ from ..models import (
 )
 from ..schemas import GoalIn, ProfileIn, StoreKitTransactionIn
 from ..services import access, app_store
+from ..services import avatar as avatar_service
 from ..services.locking import lock_user
 from ..services.queries import active_goal
 from ..services.rate_limit import enforce as enforce_rate_limit
@@ -43,13 +45,55 @@ def _active_goal(db: DBSession, user_id: str) -> Goal | None:
 
 @router.get("")
 def get_me(user_id: CurrentUser, db: DBSession):
+    user = db.get(User, user_id)
     profile = db.get(Profile, user_id)
     goal = _active_goal(db, user_id)
     return {
         "user_id": user_id,
+        "avatar_url": public_media_url(user.avatar_url) if user else None,
         "profile": profile_to_dict(profile) if profile else None,
         "goal": goal_to_dict(goal),
     }
+
+
+@router.post("/avatar")
+async def upload_avatar(
+    user_id: CurrentUser,
+    db: DBSession,
+    file: UploadFile = File(...),
+):
+    enforce_rate_limit(db, "avatar_upload", user_id, 10, 3600)
+    data = await avatar_service.read_avatar_upload(file)
+    processed = avatar_service.process_avatar(data)
+    relative = avatar_service.save_avatar_file(user_id, processed)
+
+    user = db.get(User, user_id)
+    if user is None:
+        avatar_service.delete_local_avatar(relative)
+        raise HTTPException(status_code=404, detail="用户不存在")
+
+    previous = user.avatar_url
+    user.avatar_url = relative
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        avatar_service.delete_local_avatar(relative)
+        raise
+    avatar_service.delete_local_avatar(previous)
+    return {"avatar_url": avatar_service.avatar_public_url(relative)}
+
+
+@router.delete("/avatar")
+def delete_avatar(user_id: CurrentUser, db: DBSession):
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    previous = user.avatar_url
+    user.avatar_url = None
+    db.commit()
+    avatar_service.delete_local_avatar(previous)
+    return {"avatar_url": None}
 
 
 @router.get("/access")

@@ -12,6 +12,7 @@ final class AuthStore {
     var errorMessage: String?
     var userID: String?
     var phone: String?
+    var avatarURL: URL?
     var onboardingRequired = false
 
     private var didRestore = false
@@ -316,6 +317,7 @@ final class AuthStore {
             expiresIn: TimeInterval(response.expiresIn)
         )
         userID = response.userID
+        avatarURL = AppConfig.resolveMediaURL(response.avatarURL)
         onboardingRequired = response.onboardingRequired
         isAuthenticated = true
     }
@@ -324,6 +326,7 @@ final class AuthStore {
         AuthTokenStore.shared.clear()
         userID = nil
         phone = nil
+        avatarURL = nil
         onboardingRequired = false
         isAuthenticated = false
     }
@@ -336,6 +339,7 @@ final class AuthStore {
         if let phone = response.phone {
             self.phone = phone
         }
+        avatarURL = AppConfig.resolveMediaURL(response.avatarURL)
         return response
     }
 
@@ -462,6 +466,7 @@ private struct AuthResponse: Decodable {
     let expiresIn: Int
     let isNewUser: Bool
     let onboardingRequired: Bool
+    let avatarURL: String?
 
     enum CodingKeys: String, CodingKey {
         case userID = "user_id"
@@ -470,6 +475,7 @@ private struct AuthResponse: Decodable {
         case expiresIn = "expires_in"
         case isNewUser = "is_new_user"
         case onboardingRequired = "onboarding_required"
+        case avatarURL = "avatar_url"
     }
 }
 
@@ -488,11 +494,13 @@ private struct OAuthStartResponse: Decodable {
 private struct MeResponse: Decodable {
     let userID: String
     let phone: String?
+    let avatarURL: String?
     let onboardingRequired: Bool
 
     enum CodingKeys: String, CodingKey {
         case userID = "user_id"
         case phone
+        case avatarURL = "avatar_url"
         case onboardingRequired = "onboarding_required"
     }
 }

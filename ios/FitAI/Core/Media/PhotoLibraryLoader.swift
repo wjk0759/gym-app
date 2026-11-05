@@ -41,6 +41,30 @@ enum PhotoLibraryLoader {
         }
         return (prepared, jpeg)
     }
+
+    /// Avatars are square and small; re-encoding strips location metadata.
+    static func loadAvatar(_ item: PhotosPickerItem) async throws -> Data {
+        guard let data = try? await item.loadTransferable(type: Data.self),
+              let image = UIImage(data: data) else {
+            throw PhotoLibraryLoadError.unreadable
+        }
+        return try prepareAvatar(image)
+    }
+
+    static func prepareAvatar(
+        _ image: UIImage,
+        maxDimension: CGFloat = 512,
+        maxBytes: Int = 2 * 1024 * 1024
+    ) throws -> Data {
+        let square = image.squareCropped(maxDimension: maxDimension)
+        guard let jpeg = square.jpegData(compressionQuality: 0.86) else {
+            throw PhotoLibraryLoadError.encodeFailed
+        }
+        guard jpeg.count <= maxBytes else {
+            throw PhotoLibraryLoadError.tooLarge
+        }
+        return jpeg
+    }
 }
 
 extension UIImage {
@@ -58,6 +82,27 @@ extension UIImage {
         format.scale = 1
         return UIGraphicsImageRenderer(size: target, format: format).image { _ in
             draw(in: CGRect(origin: .zero, size: target))
+        }
+    }
+
+    func squareCropped(maxDimension: CGFloat) -> UIImage {
+        let side = min(size.width, size.height)
+        guard side > 0 else { return self }
+        let target = min(side, maxDimension)
+        let scale = target / side
+        let drawSize = CGSize(width: size.width * scale, height: size.height * scale)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        return UIGraphicsImageRenderer(
+            size: CGSize(width: target, height: target),
+            format: format
+        ).image { _ in
+            draw(in: CGRect(
+                x: (target - drawSize.width) / 2,
+                y: (target - drawSize.height) / 2,
+                width: drawSize.width,
+                height: drawSize.height
+            ))
         }
     }
 }

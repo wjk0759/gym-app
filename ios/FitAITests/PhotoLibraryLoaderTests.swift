@@ -35,4 +35,18 @@ final class PhotoLibraryLoaderTests: XCTestCase {
         XCTAssertEqual(fitted.size.width, 800, accuracy: 0.5)
         XCTAssertEqual(fitted.size.height, 600, accuracy: 0.5)
     }
+
+    func testSquareCroppedProducesSquareAtTargetSize() {
+        let source = UIGraphicsImageRenderer(
+            size: CGSize(width: 800, height: 400)
+        ).image { context in
+            UIColor.systemTeal.setFill()
+            context.cgContext.fill(CGRect(x: 0, y: 0, width: 800, height: 400))
+        }
+
+        let cropped = source.squareCropped(maxDimension: 512)
+
+        XCTAssertEqual(cropped.size.width, 512, accuracy: 0.5)
+        XCTAssertEqual(cropped.size.height, 512, accuracy: 0.5)
+    }
 }

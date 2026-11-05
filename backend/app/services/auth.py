@@ -19,6 +19,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..config import settings
+from ..media import public_media_url
 from ..models import (
     AuthEvent,
     AuthSession,
@@ -347,6 +348,7 @@ def _issue_session(
         "expires_in": expires_in,
         "is_new_user": is_new_user,
         "onboarding_required": profile.onboarded_at is None,
+        "avatar_url": public_media_url(user.avatar_url),
         "profile": profile_to_dict(profile),
         "goal": goal_to_dict(goal),
     }
