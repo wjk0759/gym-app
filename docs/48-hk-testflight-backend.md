@@ -54,6 +54,8 @@ MySQL 表由 admin-server 的 Flyway 管理，V1–V21 已全部执行成功。
 
 ```text
 API：https://hk-api.jiaolianfit.cn/api/v1
+头像上传：POST https://hk-api.jiaolianfit.cn/api/v1/me/avatar
+头像移除：DELETE https://hk-api.jiaolianfit.cn/api/v1/me/avatar
 健康检查：https://hk-api.jiaolianfit.cn/health
 就绪检查：https://hk-api.jiaolianfit.cn/health/ready
 隐私政策：https://hk-api.jiaolianfit.cn/privacy
@@ -67,6 +69,17 @@ https://hk-api.jiaolianfit.cn/api/v1
 ```
 
 Release 构建不需要在 App 内输入后端 IP；登录页「开发服务器」和设置页「测试连接」只在 Debug 显示。相关代码用 `#if DEBUG` 保留，不要删除。
+
+### 5.1 头像
+
+```text
+数据库：users.avatar_url TEXT NULL（V1 已有，不需要迁移）
+文件：/opt/fitai/media/avatars/{user_id}-{random}.jpg
+处理：服务端中心裁剪 512×512、转 JPEG、去 EXIF，限制 8MB
+返回：/auth/me、/me、登录响应顶层 avatar_url
+```
+
+只保留当前头像，不建历史表。替换或移除时删除旧文件。
 
 ## 6. 常用命令
 

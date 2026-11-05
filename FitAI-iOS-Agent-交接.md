@@ -14,12 +14,40 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`07e6936`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口
+- `develop` 代码 HEAD：`c6e6eb4`；本文件的最新同步提交见 `git log -1`
+- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
-- 最新后端验证：**178 passed**，Ruff（改动文件）通过；香港生产后端 `/health`、`/health/ready` 200，DeepSeek Flash 真实调用 200，手机验证码发送 200
-- Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
+- 最新后端验证：**184 passed**，Ruff app/tests 通过；香港生产后端 `/health`、`/health/ready` 200，DeepSeek Flash 真实调用 200，手机验证码发送 200，头像上传/替换/移除 200
+- Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传
+
+### 2026-11-06 · Windows / OpenCode（头像上传/移除）
+
+- 提交：`c6e6eb4`（代码）；文档见本次提交
+- 做了什么：
+  - 复用 `users.avatar_url TEXT`，不新建表、不新增迁移
+  - 新增 `POST /api/v1/me/avatar`、`DELETE /api/v1/me/avatar`
+  - 服务端 Pillow 校验、中心裁剪 512×512、转 JPEG、去 EXIF，限制 8MB
+  - `/auth/me`、`/me`、登录响应返回顶层 `avatar_url`
+  - iOS `AvatarEditorButton`：相册 + 拍照、昵称首字占位、上传中 spinner、失败提示、移除头像
+  - `AuthStore.avatarURL`、`APIClient+Avatar`、`AppConfig.resolveMediaURL` 支持相对媒体路径
+  - 隐私政策补充头像上传与服务器存储说明
+- 验证：
+  - 后端 **184 passed**，Ruff `app/tests` 通过
+  - 真实上传 200，下载 512×512 RGB；`/auth/me` 返回 `avatar_url`
+  - 换头像后旧文件 404；移除后新文件 404、`avatar_url` 为空
+  - 未登录上传 401；`text/plain` 上传 415
+  - Windows 未编译 iOS
+- Mac 需要做：
+  - `git pull` → `cd ios && xcodegen generate` → build/test
+  - 真机验证：相册选图、拍照、上传、重启后头像保留、移除后回到昵称首字
+  - 确认「我的」页头像 52×52，不挤压昵称和箭头布局
+  - 确认 Release 仍然没有「开发服务器」「测试连接」
+- 不要恢复：
+  - 不要新增 `user_avatars` 历史表；当前头像只放 `users.avatar_url`
+  - 不要把头像字段放进 `profiles` 表
+  - 不要移除 Pillow/EXIF 清理/512 裁剪
+  - 不要删除 `AvatarEditorButton` 或把上传逻辑塞回 `ProfileView`
 
 ### 2026-11-05 · Windows / OpenCode（Release 隐藏测试入口）
 

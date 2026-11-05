@@ -45,7 +45,7 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>用于拍摄器械、体型或饮食照片，进行识别与分析。</string>
+	<string>用于拍摄头像、器械、体型或饮食照片，进行上传、识别与分析。</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>用于读取体重与训练数据，帮助你追踪身体变化。</string>
 	<key>NSHealthUpdateUsageDescription</key>
@@ -57,7 +57,7 @@
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>用于保存训练相关的图片。</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>用于选择器械、体型或饮食照片进行识别与分析。</string>
+	<string>用于选择头像、器械、体型或饮食照片进行上传、识别与分析。</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
