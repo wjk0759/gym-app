@@ -14,12 +14,39 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`b6b0d75`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 10 条/周、饮食份量区间、文案精简、切换 Tab 回根页面
+- `develop` 代码 HEAD：`40f3027`；本文件的最新同步提交见 `git log -1`
+- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 10 条/周、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - 最新后端验证：**196 passed**，Ruff app/tests 通过；V22 `training_stage` 已迁移；`/me/access` 免费教练额度 `weekly_limit=10`；`training_stage=beginner`
-- Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、10 条额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证从设置/训练记录/动作教程等二级页切 Tab 后回到各根页面；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
+- Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、10 条额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传
+
+### 2026-11-06 · Windows / OpenCode（重复点 Tab 回根 + 顶部留白统一）
+
+- 提交：`40f3027`
+- 做了什么：
+  - 新增 `TabBarReselectObserver`：在今日 Tab 的宿主层给底层 `UITabBar` 加非阻塞 tap 识别，重复点当前 Tab 时调用 `resetTabPaths()`
+  - `cancelsTouchesInView = false` + 允许同时识别，普通切 Tab、Tab 栏点击和滑动不受影响
+  - 切换 Tab 与重复点 Tab 共用同一套 path 重置逻辑
+  - 新增 `AppLayout.pageTopPadding = 16` 和 `.appPageTopPadding()`
+  - 所有标准页面滚动容器统一 16pt 顶部留白；修复今日饮食、训练重点等贴住导航栏的页面
+  - 新增 UI 测试 `testTappingCurrentTabReturnsToSectionRoot`
+- 验证：
+  - tree-sitter 语法检查 35 个改动 Swift 文件，0 error
+  - Windows 未编译 iOS；未真机验证 `UITabBar` 手势和 16pt 视觉效果
+- Mac 需要做：
+  - `git pull` → `cd ios && xcodegen generate`（新增 `App/TabBarReselectObserver.swift`，必须重新生成工程）→ build/test
+  - 运行 `testTappingCurrentTabReturnsToSectionRoot`、`testSwitchingTabsReturnsToSectionRoot`
+  - 真机验证：我的 → 设置 → 再点我的 = 我的根
+  - 真机验证：记录 → 训练记录 → 再点记录 = 记录根
+  - 真机验证：今日 → 变化 → 再点今日 = 今日根
+  - 确认普通切 Tab、Tab 栏点击和滑动没有被 observer 拦截
+  - 逐页确认顶部留白：今日饮食、训练重点、设置、变化、训练历史、计划历史、器械识别、饮食记录、体型照片；不能出现 double padding
+- 不要恢复：
+  - 不要用 `.id()` 重建 Tab 根页面
+  - 不要把 observer 改成 `cancelsTouchesInView = true` 或独占手势
+  - 不要恢复各页面 2 / 8 / 10 / 12 / 14 的零散顶部 padding
+  - 不要把 `.appPageTopPadding()` 套到 action bar / sticky footer
 
 ### 2026-11-06 · Windows / OpenCode（切换 Tab 回根页面）
 
@@ -41,7 +68,7 @@
   - 验证：记录 → 训练记录 → 切今日 → 回记录 = 记录根
   - 验证：发现 → 动作教程 → 切今日 → 回发现 = 发现根
   - 确认切 Tab 后各根页面滚动位置、教练输入、记录页选中日期仍保留
-  - 重复点当前 Tab 回根未做（标准 `TabView` 无 reselect 回调），不算本次回归
+  - 重复点当前 Tab 回根已在 `40f3027` 补上
 - 不要恢复：
   - 不要用 `.id()` 重建 Tab 根页面
   - 不要恢复根级 `NavigationLink { destination }`（会绕过 path）
