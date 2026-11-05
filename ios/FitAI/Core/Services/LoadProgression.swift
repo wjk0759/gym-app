@@ -54,7 +54,9 @@ enum LoadProgression {
             }
         }
         for slug in result.keys {
-            result[slug]?.sessionCount = counts[slug] ?? 0
+            guard var performance = result[slug] else { continue }
+            performance.sessionCount = counts[slug] ?? 0
+            result[slug] = performance
         }
         return result
     }
