@@ -14,12 +14,37 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`c6e6eb4`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除
+- `develop` 代码 HEAD：见 `git log -1`（上一提交 `c6e6eb4`）
+- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - 最新后端验证：**184 passed**，Ruff app/tests 通过；香港生产后端 `/health`、`/health/ready` 200，DeepSeek Flash 真实调用 200，手机验证码发送 200，头像上传/替换/移除 200
-- Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
+- Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传
+
+### 2026-11-06 · Windows / OpenCode（设置页清理 + 移除第三方署名）
+
+- 提交：见 `git log -1`
+- 做了什么：
+  - 删除设置页 `动作图：Exercise data by RepDB (repdb.co)` 和 `体型人台：RawPheasant5745 · CC BY 4.0` 两条署名
+  - `legacy_exercises.json` 中 `xj_0011` / `xj_0320` 的 `motion_start_url` / `motion_end_url` 置空，旧本地数据不再加载 RepDB 图
+  - `FrameMotionBoard` 改为通用「双帧示意」，移除 RepDB 角标、链接和无障碍文案；代码保留给自有素材
+  - `tools/db/import_xunji_movements.py` 清空 RepDB 样例，保留空 hook，避免重新导入
+  - Release 隐藏「服务状态」整段；Debug 保留；Release 不再请求 `/health`
+  - 隐私政策移除 RepDB 第三方提及
+- 验证：
+  - `legacy_exercises.json` 解析成功，1293 条；非空 motion URL 为 0
+  - iOS 用户可见文案中已无 RepDB / RawPheasant 署名
+  - 后端无改动
+  - Windows 未编译 iOS
+- Mac 需要做：
+  - `git pull` → `cd ios && xcodegen generate` → build/test
+  - Release 设置页确认没有「服务状态」、没有两条署名
+  - Debug 设置页确认「服务状态」仍在
+  - 打开 `xj_0011` / `xj_0320` 动作详情，确认只显示占位轨迹，不加载 RepDB 图片
+- 不要恢复：
+  - 不要把 RepDB URL 写回 `legacy_exercises.json`
+  - 不要把 RawPheasant / RepDB 署名加回设置页
+  - 不要删除 `#if DEBUG` 里的服务状态代码
 
 ### 2026-11-06 · Windows / OpenCode（头像上传/移除）
 

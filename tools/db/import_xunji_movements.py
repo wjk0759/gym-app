@@ -7,9 +7,9 @@ compound classification and stable slugs are derived locally; nothing is
 invented for instructions. Existing exercises are retained for historical
 plans/workouts but marked inactive so the app only offers the new list.
 
-The two sample RepDB Free frame pairs below are only enabled for local
-evaluation. RepDB's free-tier licence requires visible attribution:
-"Exercise data by RepDB (repdb.co)". Do not redistribute the raw RepDB dataset.
+No third-party frame samples are bundled. SAMPLE_MOTIONS is kept as a hook for
+future self-owned start/peak assets; leave it empty unless the media licence is
+cleared and attribution is restored.
 
 Usage (from repository root):
     backend/.venv/Scripts/python.exe tools/db/import_xunji_movements.py --ios-only
@@ -32,32 +32,20 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 os.chdir(ROOT / "backend")
 
-from sqlalchemy import select, update  # noqa: E402
-from sqlalchemy.orm import Session  # noqa: E402
-
-from app.config import settings  # noqa: E402
-from app.models import Exercise  # noqa: E402
+from app.config import settings
+from app.models import Exercise
+from sqlalchemy import select, update
+from sqlalchemy.orm import Session
 
 DEFAULT_SOURCE = ROOT / "tools" / "db" / "data" / "xunji_movements_1213.json"
 DEFAULT_IOS_OUTPUT = ROOT / "ios" / "FitAI" / "Resources" / "xunji_movements.json"
 SOURCE = "xunji_movements_1213"
 LICENSE = "user-provided action list"
 
-REPDB_BASE = "https://cdn.jsdelivr.net/gh/RepDB/exercise-dataset@main/images/flat"
-# Only these two actions receive local evaluation frames for now. The app shows
-# start/peak as a UI crossfade; no GIF or derived dataset is created.
-SAMPLE_MOTIONS: dict[str, dict[str, str]] = {
-    "器械推胸": {
-        "name_en": "Machine Chest Press",
-        "start": f"{REPDB_BASE}/chest-press-machine-start.webp",
-        "peak": f"{REPDB_BASE}/chest-press-machine-peak.webp",
-    },
-    "腿举": {
-        "name_en": "Leg Press",
-        "start": f"{REPDB_BASE}/leg-press-start.webp",
-        "peak": f"{REPDB_BASE}/leg-press-peak.webp",
-    },
-}
+# Keep the hook for future self-owned start/peak assets. Do not add RepDB or
+# other third-party frames without restoring the required attribution.
+SAMPLE_MOTIONS: dict[str, dict[str, str]] = {}
+NAME_EN = {"器械推胸": "Machine Chest Press", "腿举": "Leg Press"}
 
 PARTITION_MAP = {
     "胸": "chest",
@@ -267,7 +255,7 @@ def build_rows(source_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             {
                 "slug": slug,
                 "name_zh": name,
-                "name_en": (sample or {}).get("name_en"),
+                "name_en": NAME_EN.get(name),
                 "muscle_group": PARTITION_MAP.get(partition, "core"),
                 "equipment": choose_equipment(name),
                 "is_compound": choose_compound(name),

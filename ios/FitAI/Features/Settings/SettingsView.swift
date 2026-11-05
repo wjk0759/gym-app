@@ -44,8 +44,11 @@ struct SettingsView: View {
                 header
                 accountCard
 
+#if DEBUG
+                // 调试用服务状态：Release 隐藏，不要删除。
                 sectionLabel("服务状态")
                 serviceCard
+#endif
 
                 sectionLabel("训练设置")
                 reminderCard
@@ -76,7 +79,9 @@ struct SettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: syncReminder)
         .task {
+#if DEBUG
             await checkService()
+#endif
         }
         .alert("提示", isPresented: $showMessage) {
             Button("知道了", role: .cancel) {}

@@ -1,15 +1,14 @@
 import SwiftUI
 
-/// RepDB Free evaluation surface: alternates the start and peak stills in the
-/// UI. The source images stay separate; no GIF or derived media file is made.
+/// Alternates start and peak stills for the action-path card.
+/// RepDB is no longer used; if it is re-enabled, restore its required
+/// "Exercise data by RepDB (repdb.co)" attribution.
 struct FrameMotionBoard: View {
     let startURL: URL
     let endURL: URL
     let title: String
 
     @State private var showPeak = false
-
-    private let attributionURL = URL(string: "https://repdb.co/")!
 
     var body: some View {
         ZStack {
@@ -27,7 +26,7 @@ struct FrameMotionBoard: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    detailPill("RepDB Free · 双帧")
+                    detailPill("双帧示意")
                     Spacer()
                     Text(showPeak ? "发力" : "起始")
                         .font(.system(size: 10, weight: .bold))
@@ -39,9 +38,6 @@ struct FrameMotionBoard: View {
                 Spacer()
                 Text(title)
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(Theme.ink)
-                Link("Exercise data by RepDB (repdb.co)", destination: attributionURL)
-                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.ink)
             }
             .padding(13)
@@ -62,7 +58,7 @@ struct FrameMotionBoard: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(title)，RepDB 动作双帧示意")
+        .accessibilityLabel("\(title)，动作双帧示意")
     }
 
     @ViewBuilder

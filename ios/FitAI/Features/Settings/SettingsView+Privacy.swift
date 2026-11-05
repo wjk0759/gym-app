@@ -43,40 +43,6 @@ extension SettingsView {
                 legalDocument = .ai
             }
 
-            if let repDBURL = URL(string: "https://repdb.co/") {
-                Link(destination: repDBURL) {
-                    HStack {
-                        Image(systemName: "figure.strengthtraining.traditional")
-                            .foregroundStyle(Theme.cobalt)
-                            .frame(width: 22)
-                        Text("动作图：Exercise data by RepDB (repdb.co)")
-                            .font(.system(size: 9.5, weight: .medium))
-                            .foregroundStyle(Theme.secondaryText)
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(size: 9.5, weight: .medium))
-                            .foregroundStyle(Theme.tertiaryText)
-                    }
-                }
-            }
-
-            if let bodyFigureURL = URL(string: "https://sketchfab.com/RawPheasant5745") {
-                Link(destination: bodyFigureURL) {
-                    HStack {
-                        Image(systemName: "figure.stand")
-                            .foregroundStyle(Theme.cobalt)
-                            .frame(width: 22)
-                        Text("体型人台：RawPheasant5745 · CC BY 4.0")
-                            .font(.system(size: 9.5, weight: .medium))
-                            .foregroundStyle(Theme.secondaryText)
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(size: 9.5, weight: .medium))
-                            .foregroundStyle(Theme.tertiaryText)
-                    }
-                }
-            }
-
             Text("本产品不提供医疗诊断或治疗建议。孕期、术后、心血管疾病或关节急性疼痛，请先咨询医生。")
                 .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)

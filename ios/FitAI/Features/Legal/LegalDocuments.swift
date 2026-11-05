@@ -222,7 +222,7 @@ enum LegalDocuments {
             LegalSection(
                 title: "8. 第三方 SDK 与链接",
                 body: """
-                当前版本未接入广告、统计、崩溃上报或远程推送 SDK。App 可能包含 RepDB、Open-Meteo、Apple 等第三方链接或图片资源；打开后适用其隐私政策。若未来接入新的 SDK，我们会更新本政策并在必要时取得同意。
+                当前版本未接入广告、统计、崩溃上报或远程推送 SDK。App 可能包含 Open-Meteo、Apple 等第三方链接或图片资源；打开后适用其隐私政策。若未来接入新的 SDK，我们会更新本政策并在必要时取得同意。
                 """
             ),
             LegalSection(

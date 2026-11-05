@@ -1148,8 +1148,8 @@
     "is_compound": true,
     "instructions": null,
     "contraindications": [],
-    "motion_start_url": "https://cdn.jsdelivr.net/gh/RepDB/exercise-dataset@main/images/flat/chest-press-machine-start.webp",
-    "motion_end_url": "https://cdn.jsdelivr.net/gh/RepDB/exercise-dataset@main/images/flat/chest-press-machine-peak.webp"
+    "motion_start_url": null,
+    "motion_end_url": null
   },
   {
     "slug": "xj_0012",
@@ -4856,8 +4856,8 @@
     "is_compound": true,
     "instructions": null,
     "contraindications": [],
-    "motion_start_url": "https://cdn.jsdelivr.net/gh/RepDB/exercise-dataset@main/images/flat/leg-press-start.webp",
-    "motion_end_url": "https://cdn.jsdelivr.net/gh/RepDB/exercise-dataset@main/images/flat/leg-press-peak.webp"
+    "motion_start_url": null,
+    "motion_end_url": null
   },
   {
     "slug": "xj_0321",

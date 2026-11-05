@@ -78,6 +78,8 @@ backend\.venv\Scripts\python.exe tools\db\import_xunji_movements.py
 
 ## 5. RepDB Free 双帧示例
 
+> 2026-11-06 起已停用 RepDB：`xj_0011` / `xj_0320` 的 motion URL 已置空，`FrameMotionBoard` 仅保留给自有素材。以下为历史记录。
+
 当前只为两个动作配置了 RepDB Free 的 `start` / `peak` 图片，用于评估：
 
 | 当前动作 | RepDB 动作 | 状态 |

@@ -1,6 +1,8 @@
 # 30 · 动作演示视觉方案对比
 
-## 1. RepDB Free（当前最推荐的低成本方案）
+> 2026-11-06 当前状态：不启用 RepDB；legacy motion URL 已置空，`FrameMotionBoard` 仅保留给自有素材。以下为方案对比历史记录。
+
+## 1. RepDB Free（历史方案）
 
 - 仓库：<https://github.com/RepDB/exercise-dataset>
 - 免费版：701 个动作，512×512 WebP 平面插画

@@ -118,6 +118,7 @@ extension SettingsView {
         return "\(phone.prefix(3))****\(phone.suffix(4))"
     }
 
+    /// 调试用服务状态卡；Release 在 SettingsView 中整段隐藏，不要删除。
     var serviceCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -198,6 +199,7 @@ extension SettingsView {
         .background(Theme.ink.opacity(0.035), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
+    /// 仅 Debug 调用；Release 不请求 /health。
     func checkService() async {
         serviceState = .checking
         do {

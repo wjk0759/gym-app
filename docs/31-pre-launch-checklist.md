@@ -20,7 +20,7 @@
 ### 动作演示
 - [ ] 素材接入（GIF/视频 + 封面 + 懒加载 + 播放器）
 - [ ] 署名页 + 版权元数据（`source` / `license_note`）
-- [ ] 替换/移除 RepDB 双帧样例
+- [x] 已移除 RepDB 双帧样例；`legacy_exercises.json` 的 motion URL 已置空
 
 ### 计划生成
 - [ ] AI 编排异步化或减输出（性能优化）
