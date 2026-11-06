@@ -71,7 +71,6 @@ targets:
           - "FitAIWatch.entitlements"
     dependencies:
       - package: FitAIWorkoutCore
-      - sdk: WatchKit.framework
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.wjk.fitai.watchkitapp

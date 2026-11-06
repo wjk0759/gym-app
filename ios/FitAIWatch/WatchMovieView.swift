@@ -1,58 +1,67 @@
+import AVKit
+import Combine
 import SwiftUI
-import WatchKit
 
-/// Thin SwiftUI bridge for the watchOS inline movie player. The coordinator
-/// prevents every SwiftUI update from restarting the loop or resetting playback.
-struct WatchMovieView: WKInterfaceObjectRepresentable {
+/// watchOS only exposes video through AVKit's `VideoPlayer`; AVPlayerLayer and
+/// AVPlayerItemVideoOutput are unavailable. The player is muted and has hit
+/// testing disabled so the action page stays a passive demo surface.
+struct WatchMovieView: View {
     let url: URL?
     let isPlaying: Bool
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
+    @State private var player: AVPlayer?
+
+    var body: some View {
+        Group {
+            if let player {
+                VideoPlayer(player: player)
+                    .allowsHitTesting(false)
+            } else {
+                Color.black
+            }
+        }
+        .onAppear(perform: makePlayerIfNeeded)
+        .onDisappear {
+            player?.pause()
+            player = nil
+        }
+        .onChange(of: url) { _, _ in
+            makePlayerIfNeeded(force: true)
+        }
+        .onChange(of: isPlaying) { _, playing in
+            if playing {
+                player?.play()
+            } else {
+                player?.pause()
+            }
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: .AVPlayerItemDidPlayToEndTime
+            )
+        ) { notification in
+            guard let item = notification.object as? AVPlayerItem,
+                  item === player?.currentItem else { return }
+            player?.seek(to: .zero)
+            player?.play()
+        }
     }
 
-    func makeWKInterfaceObject(context: Context) -> WKInterfaceInlineMovie {
-        WKInterfaceInlineMovie()
-    }
-
-    func updateWKInterfaceObject(
-        _ movie: WKInterfaceInlineMovie,
-        context: Context
-    ) {
-        guard let url else {
-            movie.pause()
-            context.coordinator.currentURL = nil
-            context.coordinator.isPlaying = false
+    private func makePlayerIfNeeded(force: Bool = false) {
+        guard force || player == nil else {
+            if isPlaying { player?.play() }
             return
         }
-
-        if context.coordinator.currentURL != url {
-            context.coordinator.currentURL = url
-            movie.setMovieURL(url)
-            movie.setLoops(true)
-            movie.setAutoplays(true)
-            movie.playFromBeginning()
-            context.coordinator.isPlaying = true
+        guard let url else {
+            player = nil
+            return
         }
-
-        guard context.coordinator.isPlaying != isPlaying else { return }
-        context.coordinator.isPlaying = isPlaying
+        let next = AVPlayer(url: url)
+        next.isMuted = true
+        next.actionAtItemEnd = .none
+        player = next
         if isPlaying {
-            movie.play()
-        } else {
-            movie.pause()
+            next.play()
         }
-    }
-
-    static func dismantleWKInterfaceObject(
-        _ movie: WKInterfaceInlineMovie,
-        coordinator: Coordinator
-    ) {
-        movie.pause()
-    }
-
-    final class Coordinator {
-        var currentURL: URL?
-        var isPlaying = false
     }
 }
