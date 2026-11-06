@@ -73,6 +73,8 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     ) async {
         guard let session,
               session.activationState == .activated,
+              session.isPaired,
+              session.isWatchAppInstalled,
               !isPreparingBootstrap else { return }
         if !force,
            UserDefaults.standard.string(forKey: lastBootstrapDayKey)
@@ -419,10 +421,31 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
             guard let self else { return }
             self.isReachable = reachable
             self.isWatchAppInstalled = installed
-            if installed, !self.pendingMedia.isEmpty {
-                await self.mediaPreloader.preload(
-                    media: self.pendingMedia,
-                    session: session
+            if installed {
+                NotificationCenter.default.post(
+                    name: .fitaiWatchBecameAvailable,
+                    object: nil
+                )
+                if !self.pendingMedia.isEmpty {
+                    await self.mediaPreloader.preload(
+                        media: self.pendingMedia,
+                        session: session
+                    )
+                }
+            }
+        }
+    }
+
+    nonisolated func sessionWatchStateDidChange(_ session: WCSession) {
+        let installed = session.isWatchAppInstalled
+        let reachable = session.isReachable
+        Task { @MainActor [weak self] in
+            self?.isWatchAppInstalled = installed
+            self?.isReachable = reachable
+            if installed {
+                NotificationCenter.default.post(
+                    name: .fitaiWatchBecameAvailable,
+                    object: nil
                 )
             }
         }
@@ -542,5 +565,8 @@ extension Notification.Name {
     )
     static let fitaiWatchBootstrapRequested = Notification.Name(
         "fitai.watch.bootstrap.requested"
+    )
+    static let fitaiWatchBecameAvailable = Notification.Name(
+        "fitai.watch.became.available"
     )
 }

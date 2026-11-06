@@ -85,7 +85,15 @@ struct WorkoutSessionView: View {
                         WorkoutRestCard(
                             remaining: restRemaining,
                             total: restTotal,
-                            onSkip: { self.restRemaining = nil }
+                            onSkip: {
+                                if isWatchLed {
+                                    let command = WorkoutCommand.skipRest(
+                                        .init(at: Date(), source: .phone)
+                                    )
+                                    guard sendToWatch(command) else { return }
+                                }
+                                self.restRemaining = nil
+                            }
                         )
                         .transition(.move(edge: .top).combined(with: .opacity))
                     }

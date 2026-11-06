@@ -17,9 +17,9 @@ struct WatchLockedView: View {
                 Text("3D 动作动画 · 离线训练 · 语音教练")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                Text("请在 iPhone 上开通 Pro。")
+                Text("在 iPhone 打开今日训练完成预载。Pro 会员可用。")
                     .font(.caption2)
-                Button("已开通，刷新", action: onRefresh)
+                Button("刷新权限", action: onRefresh)
                     .buttonStyle(.bordered)
             }
             .padding(.horizontal, 4)

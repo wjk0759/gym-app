@@ -120,6 +120,13 @@ struct RootView: View {
             ingestPendingWatchSessions()
             preloadTodayForWatch()
         }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: .fitaiWatchBecameAvailable
+            )
+        ) { _ in
+            preloadTodayForWatch(force: true)
+        }
         .onChange(of: auth.isAuthenticated) { _, _ in
             refreshSession()
         }

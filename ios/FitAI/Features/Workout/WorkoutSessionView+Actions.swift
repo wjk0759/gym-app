@@ -37,6 +37,14 @@ extension WorkoutSessionView {
         WatchSyncManager.shared.hasActiveWatchSession(for: day.id)
     }
 
+    var watchIsPaused: Bool {
+        guard isWatchLed,
+              let envelope = WatchSyncManager.shared.lastReceivedEnvelope else {
+            return false
+        }
+        return envelope.snapshot.isPaused
+    }
+
     @discardableResult
     func sendToWatch(_ command: WorkoutCommand) -> Bool {
         if WatchSyncManager.shared.send(command: command) {
@@ -51,6 +59,10 @@ extension WorkoutSessionView {
         let nextIndex = completedSets(for: exercise) + 1
         let isBodyweight = exercise.exercise?.equipment == .bodyweight
         if isWatchLed {
+            if watchIsPaused {
+                store.toast = "手表已暂停，请先在手表继续"
+                return
+            }
             let timed = exercise.reps.contains("秒")
             let command = WorkoutCommand.completeSet(
                 .init(
@@ -86,6 +98,10 @@ extension WorkoutSessionView {
 
     func advance() {
         if isWatchLed {
+            if watchIsPaused {
+                store.toast = "手表已暂停，请先在手表继续"
+                return
+            }
             let command = WorkoutCommand.advanceExercise(
                 .init(at: Date(), source: .phone)
             )

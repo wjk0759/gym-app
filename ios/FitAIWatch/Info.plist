@@ -28,9 +28,9 @@
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>用于连接同一网络下的叫练服务端，同步训练计划与语音教练回复。</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>用于读取体重与训练数据，帮助你追踪身体变化。</string>
+	<string>用于在训练期间读取必要的健康数据，保持训练会话正常运行。</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>用于把完成的训练写入 Apple 健康，作为你的训练记录。</string>
+	<string>用于在训练期间保持手表训练会话活跃；正式训练记录由 iPhone 保存到 Apple 健康。</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>用于把你说的话转成文字，发送给 AI 教练。</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

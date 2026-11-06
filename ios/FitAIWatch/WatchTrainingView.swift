@@ -20,9 +20,12 @@ struct WatchTrainingView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 header
-                if let exercise = snapshot.currentExercise {
+                if snapshot.isFinished {
+                    summary
+                } else if let exercise = snapshot.currentExercise {
                     exerciseCard(exercise)
-                    if let remaining = snapshot.remainingRest(at: now) {
+                    if let remaining = snapshot.remainingRest(at: now),
+                       remaining > 0 {
                         restCard(remaining)
                     }
                     controls(exercise)
@@ -154,10 +157,16 @@ struct WatchTrainingView: View {
             Text("\(snapshot.completedSetCount) 组")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Button("结束训练") {
-                apply(.finish(.init(at: now, source: .watch)))
+            if snapshot.isFinished {
+                Text("已结束，稍后可在 iPhone 查看")
+                    .font(.caption2)
+                    .foregroundStyle(.green)
+            } else {
+                Button("结束训练") {
+                    apply(.finish(.init(at: now, source: .watch)))
+                }
+                .buttonStyle(.borderedProminent)
             }
-            .buttonStyle(.borderedProminent)
         }
     }
 
