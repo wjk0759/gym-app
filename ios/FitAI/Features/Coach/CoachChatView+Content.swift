@@ -5,7 +5,7 @@ import UIKit
 extension CoachChatView {
     var inputPlaceholder: String {
         if store.shouldShowCoachQuotaCard {
-            return "免费额度已用完，升级 Pro 继续聊"
+            return "今天的免费额度已用完，升级 Pro 继续聊"
         }
         if store.planAdjustmentStage == 1 {
             return "说说最近训练最困扰你的地方…"
@@ -39,7 +39,9 @@ extension CoachChatView {
                     }
                 }
 
-                Text("把今天的情况、限制或照片发给我，我来判断下一步。")
+                Text(store.hasProAccess
+                     ? "把今天的情况、限制或照片发给我，我来判断下一步。"
+                     : "把今天的情况或限制发给我，我来判断下一步。")
                     .font(AppType.body)
                     .foregroundStyle(Theme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
@@ -55,35 +57,6 @@ extension CoachChatView {
             .frame(maxWidth: .infinity, alignment: .leading)
             .editorialCard(accent: Theme.lime)
             .staggerIn(0)
-
-            if store.accessSnapshot != nil,
-               !store.hasProAccess,
-               !store.shouldShowCoachQuotaCard {
-                Button {
-                    store.requestPro(.coachAI)
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "sparkles")
-                            .foregroundStyle(Theme.cobalt)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("升级 Pro · AI 教练不限条数")
-                                .font(AppType.callout.weight(.semibold))
-                                .foregroundStyle(Theme.ink)
-                            Text("免费用户每周 \(store.access.policy.coachLimit ?? 10) 条 AI 教练；Pro 解锁不限条数和完整 AI 能力。")
-                                .font(.system(size: 9.5, weight: .medium))
-                                .foregroundStyle(Theme.secondaryText)
-                        }
-                        Spacer(minLength: 4)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 9.5, weight: .medium))
-                            .foregroundStyle(Theme.tertiaryText)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .card(padding: 14)
-                }
-                .buttonStyle(CardPressStyle(scale: 0.985))
-                .staggerIn(1)
-            }
 
             VStack(alignment: .leading, spacing: 10) {
                 Text("快速开始")
@@ -120,10 +93,10 @@ extension CoachChatView {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .staggerIn(2)
+            .staggerIn(1)
 
             weeklyRecap
-                .staggerIn(3)
+                .staggerIn(2)
         }
     }
 
@@ -223,18 +196,27 @@ extension CoachChatView {
                 CoachQuickActionButton(title: "饮食方案", icon: "fork.knife") {
                     showDietLibrary = true
                 }
-                CoachQuickActionButton(title: "动作点评", icon: "camera.viewfinder") {
-                    guard store.requirePro(.coachAI) else { return }
+                CoachQuickActionButton(
+                    title: store.hasProAccess ? "动作点评" : "动作点评 · Pro",
+                    icon: "camera.viewfinder"
+                ) {
+                    guard store.requirePro(.coachVision) else { return }
                     cameraTitle = "动作点评"
                     cameraHint = "拍全身侧面，光线清楚，尽量包含器械和完整动作。照片只用于本次点评。"
                     showCamera = true
                 }
-                CoachQuickActionButton(title: "视频点评", icon: "video.fill") {
+                CoachQuickActionButton(
+                    title: store.hasProAccess ? "视频点评" : "视频点评 · Pro",
+                    icon: "video.fill"
+                ) {
                     if store.requirePro(.videoReview) {
                         showVideoReview = true
                     }
                 }
-                CoachQuickActionButton(title: "器械识别", icon: "dumbbell") {
+                CoachQuickActionButton(
+                    title: store.hasProAccess ? "器械识别" : "器械识别 · Pro",
+                    icon: "dumbbell"
+                ) {
                     if store.requirePro(.equipmentScan) {
                         showEquipmentScan = true
                     }
@@ -254,8 +236,8 @@ extension CoachChatView {
                let limit = store.access.policy.coachLimit {
                 HStack(spacing: 8) {
                     Text(remaining == 0
-                         ? "免费 AI 教练额度已用完"
-                         : "本周免费 AI 教练剩余 \(remaining)/\(limit) 条")
+                         ? "今天的免费 AI 教练额度已用完"
+                         : "今日免费 AI 教练剩余 \(remaining)/\(limit) 条")
                         .font(AppType.micro)
                         .foregroundStyle(remaining > 0 ? Theme.secondaryText : Theme.coral)
                     Spacer(minLength: 0)
@@ -266,7 +248,7 @@ extension CoachChatView {
             HStack(spacing: 8) {
             Menu {
                 Button {
-                    guard store.requirePro(.coachAI) else { return }
+                    guard store.requirePro(.coachVision) else { return }
                     Haptics.tap()
                     cameraTitle = "拍照问教练"
                     cameraHint = "尽量拍到完整动作或器械，避免脸和隐私部位。照片只用于本次对话。"
@@ -274,18 +256,18 @@ extension CoachChatView {
                     KeyboardDismiss.dismiss()
                     showCamera = true
                 } label: {
-                    Label("拍照", systemImage: "camera.fill")
+                    Label(store.hasProAccess ? "拍照" : "拍照 · Pro", systemImage: "camera.fill")
                 }
                 .disabled(!canAddImageAttachment)
 
                 Button {
-                    guard store.requirePro(.coachAI) else { return }
+                    guard store.requirePro(.coachVision) else { return }
                     Haptics.tap()
                     focused = false
                     KeyboardDismiss.dismiss()
                     showPhotoPicker = true
                 } label: {
-                    Label("从相册选照片", systemImage: "photo.on.rectangle")
+                    Label(store.hasProAccess ? "从相册选照片" : "从相册选照片 · Pro", systemImage: "photo.on.rectangle")
                 }
                 .disabled(!canAddImageAttachment)
 
@@ -296,7 +278,7 @@ extension CoachChatView {
                     KeyboardDismiss.dismiss()
                     showVideoPicker = true
                 } label: {
-                    Label("选择视频", systemImage: "video.fill")
+                    Label(store.hasProAccess ? "选择视频" : "选择视频 · Pro", systemImage: "video.fill")
                 }
                 .disabled(!canAddVideoAttachment)
             } label: {

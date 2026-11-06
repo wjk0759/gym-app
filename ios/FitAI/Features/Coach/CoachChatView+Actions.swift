@@ -40,7 +40,7 @@ extension CoachChatView {
             return
         }
 
-        guard store.requirePro(.coachAI) else { return }
+        guard store.requirePro(.coachVision) else { return }
         let images = draftAttachments.map(\.data)
         guard !images.isEmpty else { return }
 
@@ -178,9 +178,10 @@ extension CoachChatView {
         input = ""
         focused = false
         KeyboardDismiss.dismiss()
-        if store.canUseRemoteAI {
-            // 所有 Skill、所有自然语言都先交给 Agent 理解；不再由本地关键词决定意图。
-            store.sendAgentChat(trimmed)
+        if store.canUseRemoteAI || !store.hasProAccess {
+            // 免费用户一律先交给 Agent：文字教练只受每日额度约束，
+            // 不能因为“像计划调整”就在发送前弹订阅。
+            store.sendChat(trimmed)
         } else if store.planAdjustmentStage > 0 {
             guard store.requirePro(.trainingPlan) else { return }
             store.sendPlanAdjustmentMessage(trimmed)

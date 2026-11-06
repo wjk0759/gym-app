@@ -40,6 +40,7 @@ struct FeaturePolicy: Equatable {
     }
 
     var coachLimit: Int? {
-        isPro ? nil : snapshot?.coachAI?.weeklyLimit
+        guard !isPro, let coach = snapshot?.coachAI else { return nil }
+        return coach.dailyLimit ?? coach.weeklyLimit
     }
 }

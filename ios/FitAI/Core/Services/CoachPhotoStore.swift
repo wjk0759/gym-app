@@ -9,7 +9,7 @@ extension AppStore {
         question: String? = nil,
         videoThumbnailData: Data? = nil,
         videoDurationSeconds: Int? = nil,
-        proFeature: ProFeature = .coachAI
+        proFeature: ProFeature = .coachVision
     ) {
         let trimmed = caption.trimmingCharacters(in: .whitespacesAndNewlines)
         let images = Array(imageData.prefix(CoachAttachmentPolicy.maxImages))

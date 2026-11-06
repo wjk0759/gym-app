@@ -6,7 +6,7 @@ extension AppStore {
         guard !trimmed.isEmpty else { return }
 
         // Free accounts must hit /agent/chat so the server can consume the
-        // weekly quota. Local replies are only for Pro users who explicitly
+        // daily quota. Local replies are only for Pro users who explicitly
         // turned remote AI off.
         guard CoachChatPolicy.transport(
             hasPro: hasProAccess,
@@ -204,7 +204,15 @@ extension AppStore {
                 return
             } catch let error as APIError where error.isProRequired {
                 await self.refreshAccess()
-                self.requestPro(.coachAI)
+                if self.hasProAccess || (self.access.policy.coachRemaining ?? 0) > 0 {
+                    // A text coach turn must never open the coach paywall while
+                    // the daily free quota is still available.
+                    self.lastAgentRetryText = trimmed
+                    self.lastAgentRetrySkill = skill
+                    self.toast = "这次请求没有发送成功，请稍后重试"
+                } else {
+                    self.requestPro(.coachAI)
+                }
                 return
             } catch {
                 guard !Task.isCancelled else { return }

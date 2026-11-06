@@ -273,7 +273,7 @@ struct DiscoverView: View {
             HStack(spacing: 8) {
                 Button {
                     Haptics.tap()
-                    if store.requirePro(.coachAI) {
+                    if store.requirePro(.coachVision) {
                         showActionCamera = true
                     }
                 } label: {

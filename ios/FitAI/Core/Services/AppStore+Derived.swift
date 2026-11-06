@@ -125,7 +125,7 @@ extension AppStore {
         useRemoteAI && hasProAccess
     }
 
-    /// Free accounts with no weekly coach messages left see the inline Pro card.
+    /// Free accounts with no daily coach messages left see the inline Pro card.
     var shouldShowCoachQuotaCard: Bool {
         CoachChatPolicy.shouldShowQuotaCard(
             hasPro: hasProAccess,

@@ -1,4 +1,4 @@
-"""Server-side Pro entitlements, one-time trials and weekly usage.
+"""Server-side Pro entitlements, one-time trials and daily usage.
 
 The iOS client only renders this snapshot. All premium decisions are made
 here so a patched client cannot unlock or reset local state.
@@ -28,7 +28,7 @@ FEATURE_BODY_PHOTO = "body_photo"
 FEATURE_AI_VISION = "ai_vision"
 FEATURE_EQUIPMENT_SCAN = "equipment_scan"
 FEATURE_ADVANCED_REVIEW = "advanced_review"
-COACH_WEEKLY_LIMIT = 10
+COACH_DAILY_LIMIT = 3
 
 
 @dataclass(frozen=True)
@@ -85,21 +85,17 @@ def business_today(now: datetime | None = None) -> date:
     return current.astimezone(BUSINESS_TZ).date()
 
 
-def week_start_for(day: date) -> date:
-    return day - timedelta(days=day.weekday())
-
-
 def coach_usage(
     db: Session,
     user_id: str,
     *,
     now: datetime | None = None,
 ) -> tuple[int, date, datetime]:
-    period = week_start_for(business_today(now))
+    period = business_today(now)
     row = db.get(FeatureUsage, (user_id, FEATURE_COACH_AI, period))
     used = row.used_count if row else 0
     reset = datetime.combine(
-        period + timedelta(days=7), datetime.min.time(), tzinfo=BUSINESS_TZ
+        period + timedelta(days=1), datetime.min.time(), tzinfo=BUSINESS_TZ
     )
     return used, period, reset.astimezone(timezone.utc)
 
@@ -110,7 +106,7 @@ def access_snapshot(db: Session, user_id: str) -> dict:
     meal = db.get(FeatureTrial, (user_id, FEATURE_MEAL_PLAN))
     used, _, reset = coach_usage(db, user_id)
     remaining = (
-        None if entitlement.active else max(0, COACH_WEEKLY_LIMIT - used)
+        None if entitlement.active else max(0, COACH_DAILY_LIMIT - used)
     )
     return {
         "is_pro": entitlement.active,
@@ -137,7 +133,10 @@ def access_snapshot(db: Session, user_id: str) -> dict:
                 "requires_pro": not entitlement.active and meal is not None,
             },
             FEATURE_COACH_AI: {
-                "weekly_limit": COACH_WEEKLY_LIMIT,
+                "daily_limit": COACH_DAILY_LIMIT,
+                # Deprecated alias: keep older clients functional until the
+                # daily-quota build is the only supported client.
+                "weekly_limit": COACH_DAILY_LIMIT,
                 "used": used,
                 "remaining": remaining,
                 "reset_at": reset.isoformat(),
@@ -221,17 +220,22 @@ def consume_trial(
         return False
 
 
-def reserve_coach_message(db: Session, user_id: str) -> bool:
-    """Atomically reserve one weekly coach message for a free user."""
+def reserve_coach_message(
+    db: Session,
+    user_id: str,
+    *,
+    period: date | None = None,
+) -> bool:
+    """Atomically reserve one daily coach message for a free user."""
     if has_pro(db, user_id):
         return True
-    period = week_start_for(business_today())
+    usage_period = period or business_today()
     row = db.execute(
         select(FeatureUsage)
         .where(
             FeatureUsage.user_id == user_id,
             FeatureUsage.feature_key == FEATURE_COACH_AI,
-            FeatureUsage.period_start == period,
+            FeatureUsage.period_start == usage_period,
         )
         .with_for_update()
     ).scalar_one_or_none()
@@ -240,11 +244,11 @@ def reserve_coach_message(db: Session, user_id: str) -> bool:
             FeatureUsage(
                 user_id=user_id,
                 feature_key=FEATURE_COACH_AI,
-                period_start=period,
+                period_start=usage_period,
                 used_count=1,
             )
         )
-    elif row.used_count >= COACH_WEEKLY_LIMIT:
+    elif row.used_count >= COACH_DAILY_LIMIT:
         return False
     else:
         row.used_count += 1

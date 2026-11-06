@@ -93,22 +93,22 @@ async def _agent_chat_inner(
     lease = None
     if safety is None or safety.reply is None:
         used, coach_period, reset_at = access.coach_usage(db, user_id)
-        if not access.has_pro(db, user_id) and used >= access.COACH_WEEKLY_LIMIT:
+        if not access.has_pro(db, user_id) and used >= access.COACH_DAILY_LIMIT:
             raise HTTPException(
                 status_code=429,
                 detail={
                     "code": "COACH_QUOTA_EXHAUSTED",
-                    "message": "本周免费 AI 教练额度已用完",
+                    "message": "今日免费 AI 教练额度已用完",
                     "reset_at": reset_at.isoformat(),
                 },
             )
         reserved = True
-        if not access.reserve_coach_message(db, user_id):
+        if not access.reserve_coach_message(db, user_id, period=coach_period):
             raise HTTPException(
                 status_code=429,
                 detail={
                     "code": "COACH_QUOTA_EXHAUSTED",
-                    "message": "本周免费 AI 教练额度已用完",
+                    "message": "今日免费 AI 教练额度已用完",
                 },
             )
         try:

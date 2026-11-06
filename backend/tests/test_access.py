@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 from fastapi import HTTPException
@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.db import Base
-from app.models import User, UserEntitlement
+from app.models import FeatureUsage, User, UserEntitlement
 from app.routers import agent
 from app.schemas import AgentChatIn
 from app.services import access
@@ -146,25 +146,56 @@ def test_pro_feature_gate_rejects_free_user():
     access.require_feature(db, user_id, access.FEATURE_FOOD_PHOTO)
 
 
-def test_coach_weekly_quota_is_ten_for_free_users():
+def test_coach_daily_quota_is_three_for_free_users():
     db = _session()
     user_id = "00000000-0000-0000-0000-000000000001"
 
-    for _ in range(access.COACH_WEEKLY_LIMIT):
+    for _ in range(access.COACH_DAILY_LIMIT):
         assert access.reserve_coach_message(db, user_id)
     assert not access.reserve_coach_message(db, user_id)
 
     snapshot = access.access_snapshot(db, user_id)
     coach = snapshot["features"][access.FEATURE_COACH_AI]
-    assert coach["used"] == 10
+    assert coach["daily_limit"] == 3
+    assert coach["weekly_limit"] == 3
+    assert coach["used"] == 3
     assert coach["remaining"] == 0
     assert coach["can_send"] is False
 
 
-def test_agent_chat_rejects_free_user_after_ten_messages():
+def test_coach_quota_resets_at_next_beijing_day():
     db = _session()
     user_id = "00000000-0000-0000-0000-000000000001"
-    for _ in range(access.COACH_WEEKLY_LIMIT):
+    day = date(2026, 11, 6)
+    db.add(
+        FeatureUsage(
+            user_id=user_id,
+            feature_key=access.FEATURE_COACH_AI,
+            period_start=day,
+            used_count=access.COACH_DAILY_LIMIT,
+        )
+    )
+    db.commit()
+
+    # 23:59 Beijing time: still the same quota day.
+    before = datetime(2026, 11, 6, 15, 59, tzinfo=timezone.utc)
+    used, period, reset = access.coach_usage(db, user_id, now=before)
+    assert used == access.COACH_DAILY_LIMIT
+    assert period == day
+    assert reset == datetime(2026, 11, 6, 16, 0, tzinfo=timezone.utc)
+
+    # 00:01 Beijing time: a new day starts with a fresh quota.
+    after = datetime(2026, 11, 6, 16, 1, tzinfo=timezone.utc)
+    used, period, reset = access.coach_usage(db, user_id, now=after)
+    assert used == 0
+    assert period == date(2026, 11, 7)
+    assert reset == datetime(2026, 11, 7, 16, 0, tzinfo=timezone.utc)
+
+
+def test_agent_chat_rejects_free_user_after_three_messages():
+    db = _session()
+    user_id = "00000000-0000-0000-0000-000000000001"
+    for _ in range(access.COACH_DAILY_LIMIT):
         assert access.reserve_coach_message(db, user_id)
 
     with pytest.raises(HTTPException) as exc:

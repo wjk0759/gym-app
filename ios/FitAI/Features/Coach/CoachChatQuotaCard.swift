@@ -1,7 +1,7 @@
 import SwiftUI
 
 extension CoachChatView {
-    /// Inline paywall shown after the free weekly coach quota is used up.
+    /// Inline paywall shown after the free daily coach quota is used up.
     /// Keeping it outside the message list makes it visible without scrolling
     /// and avoids inserting a fake assistant bubble.
     var coachQuotaCard: some View {
@@ -17,12 +17,15 @@ extension CoachChatView {
                     )
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("免费 AI 教练额度已用完")
+                    Text("今天的免费 AI 教练额度已用完")
                         .font(AppType.callout.weight(.semibold))
                         .foregroundStyle(Theme.ink)
-                    Text("升级 Pro，继续不限条数对话。")
-                        .font(AppType.caption)
-                        .foregroundStyle(Theme.secondaryText)
+                    Text(
+                        "北京时间每天 00:00 恢复 \(store.access.policy.coachLimit ?? 3) 条；"
+                        + "升级 Pro 继续不限条数对话。"
+                    )
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.secondaryText)
                 }
 
                 Spacer(minLength: 8)

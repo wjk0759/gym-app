@@ -10,6 +10,9 @@ struct AccessSnapshot: Decodable, Equatable {
         let trialUsedAt: Date?
         let canGenerate: Bool?
         let requiresPro: Bool?
+        let dailyLimit: Int?
+        /// Deprecated server alias retained for clients that predate the daily
+        /// coach quota. New code must read `dailyLimit` first.
         let weeklyLimit: Int?
         let used: Int?
         let remaining: Int?
@@ -23,6 +26,7 @@ struct AccessSnapshot: Decodable, Equatable {
             case trialUsedAt = "trial_used_at"
             case canGenerate = "can_generate"
             case requiresPro = "requires_pro"
+            case dailyLimit = "daily_limit"
             case weeklyLimit = "weekly_limit"
             case used
             case remaining
@@ -60,6 +64,7 @@ enum ProFeature: String, Identifiable, CaseIterable {
     case trainingPlan = "training_plan"
     case mealPlan = "meal_plan"
     case coachAI = "coach_ai"
+    case coachVision = "ai_vision"
     case foodPhoto = "food_photo"
     case bodyPhoto = "body_photo"
     case videoReview = "video_review"
@@ -74,6 +79,7 @@ enum ProFeature: String, Identifiable, CaseIterable {
         case .trainingPlan: return "训练计划"
         case .mealPlan: return "本周饮食计划"
         case .coachAI: return "AI 教练"
+        case .coachVision: return "拍照问教练"
         case .foodPhoto: return "饮食拍照分析"
         case .bodyPhoto: return "身材拍照分析"
         case .videoReview: return "视频动作点评"
@@ -88,6 +94,7 @@ enum ProFeature: String, Identifiable, CaseIterable {
         case .trainingPlan: return "Pro 解锁重新生成、调整和下周期计划。"
         case .mealPlan: return "Pro 解锁每周重新生成和下周计划。"
         case .coachAI: return "Pro 解锁不限条数的 AI 教练对话。"
+        case .coachVision: return "Pro 解锁照片分析；文字教练仍可用每天免费额度。"
         case .foodPhoto: return "Pro 解锁饮食拍照识别和营养估算。"
         case .bodyPhoto: return "Pro 解锁身材拍照分析和训练重点建议。"
         case .videoReview: return "Pro 解锁视频动作点评和姿态分析。"
@@ -102,6 +109,7 @@ enum ProFeature: String, Identifiable, CaseIterable {
         case .trainingPlan: return "calendar.badge.clock"
         case .mealPlan: return "fork.knife"
         case .coachAI: return "bubble.left.and.bubble.right.fill"
+        case .coachVision: return "camera.viewfinder"
         case .foodPhoto: return "camera.fill"
         case .bodyPhoto: return "figure.arms.open"
         case .videoReview: return "play.rectangle.fill"

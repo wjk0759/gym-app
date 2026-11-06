@@ -26,25 +26,29 @@ def _reserve_coach_turn(db: DBSession, profile: Profile, message: str):
     decision = assess_safety(profile, message)
     if decision.reply is not None:
         return None
-    used, _, reset_at = access.coach_usage(db, profile.user_id)
-    if not access.has_pro(db, profile.user_id) and used >= access.COACH_WEEKLY_LIMIT:
+    used, coach_period, reset_at = access.coach_usage(db, profile.user_id)
+    if not access.has_pro(db, profile.user_id) and used >= access.COACH_DAILY_LIMIT:
         raise HTTPException(
             status_code=429,
             detail={
                 "code": "COACH_QUOTA_EXHAUSTED",
-                "message": "本周免费 AI 教练额度已用完",
+                "message": "今日免费 AI 教练额度已用完",
                 "reset_at": reset_at.isoformat(),
             },
         )
-    if not access.reserve_coach_message(db, profile.user_id):
+    if not access.reserve_coach_message(
+        db,
+        profile.user_id,
+        period=coach_period,
+    ):
         raise HTTPException(
             status_code=429,
             detail={
                 "code": "COACH_QUOTA_EXHAUSTED",
-                "message": "本周免费 AI 教练额度已用完",
+                "message": "今日免费 AI 教练额度已用完",
             },
         )
-    return access.week_start_for(access.business_today())
+    return coach_period
 
 
 def _should_extract_memory(message: str, safety_flag: str | None) -> bool:
