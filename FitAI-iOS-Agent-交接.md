@@ -14,12 +14,51 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`40f3027`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 10 条/周、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一
+- `develop` 代码 HEAD：`ebf5752`；本文件的最新同步提交见 `git log -1`
+- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
-- 最新后端验证：**196 passed**，Ruff app/tests 通过；V22 `training_stage` 已迁移；`/me/access` 免费教练额度 `weekly_limit=10`；`training_stage=beginner`
-- Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、10 条额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
+- 最新后端验证：**197 passed**，Ruff app/tests 通过；V22 `training_stage` 已迁移；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
+- 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
+- Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传
+
+### 2026-11-06 · Windows / OpenCode（免费教练改为每天 3 条 + 提前订阅弹窗修复）
+
+- 提交：`ebf5752`
+- 做了什么：
+  - 免费教练额度从 10 条/周改为 3 条/天，不累计；按北京时间 00:00 在服务端刷新
+  - `/me/access` 新增 `daily_limit=3`，保留 `weekly_limit=3` 兼容旧客户端
+  - `FeatureUsage` 周期改为自然日；`reserve_coach_message` 支持传入 period，避免跨午夜判断不一致
+  - 教练文案改为「今日免费 AI 教练剩余 X/Y 条」「北京时间每天 00:00 恢复 3 条」
+  - 删除教练欢迎页「升级 Pro · AI 教练不限条数」大卡；0 条时才显示额度用完卡
+  - 免费用户文字消息一律先走 Agent，不再因计划类关键词或计划调整阶段提前弹订阅
+  - `sendAgentChat` 的 `PRO_REQUIRED` 增加防御：Pro 或额度 > 0 时不弹教练订阅页
+  - 新增 `ProFeature.coachVision`（拍照问教练）；拍照/相册/动作点评改用它
+  - 拍照/相册/视频/器械/动作点评对免费用户显示「Pro」标识；文案明确文字教练仍有每天免费额度
+  - 免费用户欢迎文案不再邀请「发照片」
+  - 更新 `FeaturePolicyTests`，新增 daily_limit 优先、旧 weekly_limit 兼容测试
+- 验证：
+  - 后端 **197 passed**，Ruff app/tests 通过
+  - 生产已部署；`/health`、`/health/ready` 200
+  - 生产 `/me/access`（test_reviewer）：`daily_limit=3`、`weekly_limit=3`、`remaining=3`、`reset_at=2026-11-06T16:00:00+00:00`（北京时间次日 00:00）
+  - Windows 未编译 iOS；未真机验证每日刷新和订阅弹窗路径
+- Mac 需要做：
+  - `git pull` → `cd ios && xcodegen generate` → build/test
+  - 运行 `FeaturePolicyTests`（daily_limit 优先、weekly_limit 兼容）
+  - 免费账号验证：每天 3 条；第 4 条显示「今天的免费 AI 教练额度已用完」；次日北京时间 00:00 后恢复 3 条
+  - 改手机时间/时区后仍不能刷新余额（服务端时间）
+  - 免费账号发文字：额度 >0 时不弹订阅；问计划问题也不提前弹
+  - 确认欢迎页大升级卡已消失；0 条时额度用完卡正常
+  - 免费账号点「拍照 · Pro / 相册 · Pro / 动作点评 · Pro」：弹「拍照问教练」订阅页，文案应说明文字教练仍有每天免费额度
+  - 视频点评/器械识别显示「Pro」标识
+  - 旧客户端兼容：旧包仍会读 `weekly_limit=3`，但文案可能显示「本周」，服务端实际按天
+- 不要恢复：
+  - 不要把免费教练额度改回 10 条/周
+  - 不要删除 `daily_limit` 或把 `weekly_limit` 设回 10
+  - 不要恢复欢迎页「升级 Pro · AI 教练不限条数」大卡
+  - 不要用 `.coachAI` 作为拍照/相册/动作点评的 Paywall（会再次让人误以为额度用完）
+  - 不要在免费用户文字发送前用 `isPlanScheduleRequest` / `planAdjustmentStage` 拦订阅
+  - 不要用手机本地时间计算额度或重置
 
 ### 2026-11-06 · Windows / OpenCode（重复点 Tab 回根 + 顶部留白统一）
 
