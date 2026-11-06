@@ -17,10 +17,56 @@
 - `develop` 代码 HEAD：`5855d90`；Watch 功能分支 `feature/watch-standalone-workout` HEAD `082ced8`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
+- macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 10/10 测试通过，Watch 训练页/Pro 锁定页/动作占位页已在 Apple Watch Ultra 4 模拟器截图确认；修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
 - 最新后端验证：**197 passed**，Ruff app/tests 通过；V22 `training_stage` 已迁移；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传
+
+### 2026-11-07 · macOS（watch 独立分支构建与模拟器验证）
+
+- 分支：`feature/watch-standalone-workout`
+- 提交：`94f8afa`（本条目为后续 docs 提交）
+- 工作区：独立 worktree `/Users/jacobwu/Documents/gym-app-watch`；未切换、未合并 `develop`，主 `develop` 工作区保持原样
+- 做了什么：
+  - 拉取 `4508de2`，`cd ios && xcodegen generate`
+  - `swift test --package-path FitAIWorkoutCore`：**10/10 通过**
+  - Xcode 27.2 构建 FitAI scheme（iPhone 17 模拟器，Debug），watch target 作为依赖一起构建
+  - 在 Apple Watch Ultra 4 模拟器安装并运行 watch App
+  - 截图确认：训练页（哑铃卧推、1/3 组、8–10 次、60kg、下一个平板支撑、完成一组）、Pro 锁定页、动作占位页（动作演示 / 等待动作素材 / 右滑回到训练）
+- 发现并修复：
+  - **Watch Debug 缺少 `SWIFT_ACTIVE_COMPILATION_CONDITIONS=DEBUG`**：`#if DEBUG` 不成立，`isPro` 走 `false`，所以 Debug 一打开就是 Pro 锁定页。已在 `project.yml` 的 Watch Debug 配置补上；临时把 `isPro` 改 `false` 看锁定页、把默认页改 `.action` 看占位页，截图后均已还原。
+  - **Xcode 27.2 + XcodeGen 2.46 下多平台 framework 生成异常**：
+    - `FitAIWorkoutCore` 生成后 `SDKROOT=auto`、`SUPPORTED_PLATFORMS=""`、没有 Info.plist
+    - App 生成后没有 `SDKROOT`，Xcode 只把 FitAI 识别成 macOS 目标，报 “no destination matching”
+    - framework 安装名是 `/Library/Frameworks/...`，App 也没有 `@executable_path/Frameworks` rpath，运行时 `dyld: Library not loaded`
+  - 已在 `project.yml` 修复（提交 `94f8afa`）：
+    - 项目级 `SDKROOT: iphoneos`
+    - FitAI：`SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"` + `LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks"`
+    - FitAIWatch：`LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks"`
+    - FitAIWorkoutCore：`SUPPORTED_PLATFORMS: "iphoneos iphonesimulator watchos watchsimulator"`、`GENERATE_INFOPLIST_FILE: YES`、`DYLIB_INSTALL_NAME_BASE: "@rpath"`
+    - FitAIWatch Debug：`SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG`
+- 验证结果：
+  - FitAI scheme build：**BUILD SUCCEEDED**
+  - watch App 已嵌入：`FitAI.app/Watch/FitAIWatch.app`
+  - Debug watch bundle：`com.wjk.fitai.dev.watchkitapp`，companion `com.wjk.fitai.dev`
+  - `FitAIWorkoutCore` 测试覆盖完成组、暂停/恢复、撤销、跳过休息、幂等命令
+  - 没有启动本地后端，watch 壳不依赖登录/Pro
+- 没验证 / 不要用这个壳判断：
+  - 左右滑的真实手势：没有触摸注入，代码和页面已确认，需人工在 Device Hub 拖动验证
+  - AVKit 真实播放：`ios/FitAIWatch/sample_loop.mp4` 不存在，当前只显示占位；素材到位后再验
+  - 真实计划同步、真实 Pro 权益、离线队列、HealthKit、语音教练、3D 动画
+  - 真机签名、Watch App ID、HealthKit capability、配对设备
+- Windows 需要做：
+  - 确认 `94f8afa` 的 Xcode 27 兼容配置是否保留/上游；Xcode 16 CI 可能不需要，但不要回退
+  - 保留 Watch Debug 的 DEBUG 编译条件，否则所有 Debug 构建都会落到 Pro 锁定页
+  - 补 `sample_loop.mp4` 或 3D 素材后，重新 `xcodegen generate` 再验 AVKit
+  - 不要把这个分支合并到 `develop`，也不要让 watch 壳依赖后端登录/Pro
+- 不要恢复：
+  - 不要删除 `SDKROOT` / `SUPPORTED_PLATFORMS` / `DYLIB_INSTALL_NAME_BASE` / `LD_RUNPATH_SEARCH_PATHS` / `GENERATE_INFOPLIST_FILE` 这组 Xcode 27 修复
+  - 不要删除 Watch Debug 的 `SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG`
+  - 不要改 Debug/Release watch bundle ID
+  - 不要把 `FitAIWorkoutCore` 改回本地 package 依赖
 
 ### 2026-11-07 · Windows / OpenCode（Watch 壳 + 后端契约 + CI 绿）
 
