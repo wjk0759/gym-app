@@ -34,6 +34,10 @@ jobs:
         working-directory: ios
         run: swiftlint lint --config .swiftlint.yml
 
+      - name: Test shared workout core
+        working-directory: ios
+        run: swift test --package-path FitAIWorkoutCore
+
       - name: Build for simulator
         working-directory: ios
         run: |
