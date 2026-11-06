@@ -75,6 +75,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.wjk.fitai.watchkitapp
         PRODUCT_NAME: FitAIWatch
+        SDKROOT: watchos
+        SUPPORTED_PLATFORMS: "watchos watchsimulator"
         INFOPLIST_FILE: FitAIWatch/Info.plist
         CODE_SIGN_ENTITLEMENTS: FitAIWatch/FitAIWatch.entitlements
         TARGETED_DEVICE_FAMILY: "4"

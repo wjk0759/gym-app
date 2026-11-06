@@ -9,6 +9,7 @@ struct AccessSnapshot: Decodable, Equatable {
         let trialSource: String?
         let trialUsedAt: Date?
         let canGenerate: Bool?
+        let canTrain: Bool?
         let requiresPro: Bool?
         let dailyLimit: Int?
         /// Deprecated server alias retained for clients that predate the daily
@@ -25,6 +26,7 @@ struct AccessSnapshot: Decodable, Equatable {
             case trialSource = "trial_source"
             case trialUsedAt = "trial_used_at"
             case canGenerate = "can_generate"
+            case canTrain = "can_train"
             case requiresPro = "requires_pro"
             case dailyLimit = "daily_limit"
             case weeklyLimit = "weekly_limit"
