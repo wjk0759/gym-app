@@ -4,7 +4,28 @@ import FitAIWorkoutCore
 /// The exercise page stays intentionally clean: a looping demo with no pause
 /// controls. Playback is wired to the real media pipeline in a later step.
 struct WatchActionView: View {
+    private var movieURL: URL? {
+        Bundle.main.url(forResource: "sample_loop", withExtension: "mp4")
+    }
+
     var body: some View {
+        ZStack {
+            if let movieURL {
+                WatchMovieView(url: movieURL, isPlaying: true)
+            } else {
+                placeholder
+            }
+        }
+        .ignoresSafeArea()
+        .overlay(alignment: .bottom) {
+            Text("右滑回到训练")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .padding(.bottom, 4)
+        }
+    }
+
+    private var placeholder: some View {
         ZStack {
             LinearGradient(
                 colors: [.black, .gray.opacity(0.35)],
@@ -17,17 +38,10 @@ struct WatchActionView: View {
                     .foregroundStyle(.white.opacity(0.9))
                 Text("动作演示")
                     .font(.headline)
-                Text("循环播放占位")
+                Text("等待动作素材")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-        }
-        .ignoresSafeArea()
-        .overlay(alignment: .bottom) {
-            Text("右滑回到训练")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 4)
         }
     }
 }

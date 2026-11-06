@@ -7,6 +7,7 @@ from ..models import utcnow
 from ..services import access
 from ..services.queries import active_program
 from ..services.serializers import serialize_program_day
+from ..services.watch import media_for_day
 
 router = APIRouter(prefix="/watch", tags=["watch"])
 
@@ -30,5 +31,5 @@ def bootstrap(day_id: str, user_id: CurrentUser, db: DBSession):
         "server_time": utcnow().isoformat(),
         "access": access.access_snapshot(db, user_id),
         "program_day": serialize_program_day(day),
-        "media": [],
+        "media": media_for_day(db, user_id, day),
     }
