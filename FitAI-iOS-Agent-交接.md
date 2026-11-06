@@ -14,13 +14,49 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`5855d90`；Watch 功能分支 `feature/watch-standalone-workout` HEAD `ca5095e`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`5855d90`；Watch 功能分支 `feature/watch-standalone-workout` HEAD `082ced8`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - 最新后端验证：**197 passed**，Ruff app/tests 通过；V22 `training_stage` 已迁移；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传
+
+### 2026-11-07 · Windows / OpenCode（Watch 壳 + 后端契约 + CI 绿）
+
+- 分支：`feature/watch-standalone-workout`
+- 提交：`082ced8`（上一核心提交 `ca5095e`）
+- 已推送并 CI 通过：
+  - GitHub Actions `iOS Build` **success**：shared framework、watchOS target、App target、package tests 全部构建通过
+  - `swift test --package-path FitAIWorkoutCore` 通过
+  - 后端 `200 passed`（Watch bootstrap/media/Pro gate/每日额度）
+  - admin-server Maven verify 通过；admin-web typecheck 通过
+- 做了什么：
+  - 新增 watchOS target，嵌入 iOS App；Pro 锁定页、训练页、动作页、左右滑分页
+  - 训练页使用 `WorkoutSessionEngine`：完成组、暂停/恢复、撤销、跳过休息、下一个动作
+  - 动作页使用 AVKit `VideoPlayer` + 循环通知；watchOS 不支持 `WatchKit` 模块，已改 AVKit
+  - 新增 `WatchMovieView`，静音、关闭 hit testing
+  - 后端新增 `/watch/bootstrap`（Pro only），返回当天计划、access、media 和 server_time
+  - 新增 `exercise_media_assets` 模型和 `V23__watch_training.sql`（auth/workout 字段 + 媒体表）
+  - 媒体选择：按用户性别优先，unisex 次之，其他性别兜底；未发布媒体忽略
+  - 新增 `watch_training` 权益 key；iOS `ProFeature.watchTraining`、`canTrain` 解码
+  - 修复 `LoadProgression.estimateWeight` 缺参数标签的编译错误
+  - admin server 教练用量从周改为日，admin-web 显示“今日 AI 教练”
+- 验证：
+  - Windows 未真机；未在 Apple Watch 上验证
+  - 未验证：视频循环、左右滑、Pro 锁定、真实手表电量、HealthKit、语音
+  - watch AppIcon 暂未完成，当前关闭 `ASSETCATALOG_COMPILER_APPICON_NAME`；TestFlight 前必须补
+- Mac 需要做：
+  - `git pull` → `git switch feature/watch-standalone-workout` → `cd ios && xcodegen generate`
+  - 真机跑 watch target，确认嵌入、签名、info.plist、HealthKit entitlement
+  - 验证训练页按钮、左右滑、暂停、完成组
+  - 补 watch AppIcon（Icon Composer/Asset Catalog）
+  - 检查 `FitAIWorkoutCore` framework 的 watchOS deployment target 和嵌入
+- 不要恢复：
+  - 不要 `import WatchKit`（watchOS SDK 当前没有该模块）
+  - 不要把 `FitAIWorkoutCore` 改回本地 package 依赖；Xcode 构建使用 framework target
+  - 不要删除 `V23` 或 `exercise_media_assets`
+  - 不要关闭 `/watch/bootstrap` 的 Pro gate
 
 ### 2026-11-07 · Windows / OpenCode（Watch 共享训练核心）
 
