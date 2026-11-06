@@ -27,12 +27,13 @@ struct WatchVoiceView: View {
                 header
                 TextFieldLink(
                     "问教练…",
-                    prompt: Text("听写或手写"),
-                    text: $question
-                ) {
-                    send()
+                    prompt: Text("听写或手写")
+                ) { text in
+                    question = text
+                    send(text)
                 }
                 .font(.caption)
+                .disabled(isLoading)
 
                 Button {
                     send()
@@ -183,8 +184,9 @@ struct WatchVoiceView: View {
         }
     }
 
-    private func send() {
-        let text = question.trimmingCharacters(in: .whitespacesAndNewlines)
+    private func send(_ override: String? = nil) {
+        let text = (override ?? question)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !isLoading else { return }
         lastQuestion = text
         errorMessage = nil
