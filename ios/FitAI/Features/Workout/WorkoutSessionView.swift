@@ -208,12 +208,16 @@ struct WorkoutSessionView: View {
                 prepare(currentExercise)
                 activeStartedAt = Date()
                 WatchSyncManager.shared.activate()
-                WatchSyncManager.shared.sendBootstrap(
-                    day: day,
-                    access: store.accessSnapshot
-                )
+                WatchSyncManager.shared.activeWorkoutDayID = day.id
+                Task {
+                    await syncWatchBootstrap()
+                }
+                drainWatchInbox()
             }
             .onDisappear {
+                if WatchSyncManager.shared.activeWorkoutDayID == day.id {
+                    WatchSyncManager.shared.activeWorkoutDayID = nil
+                }
                 saveDraftIfNeeded(persistImmediately: true)
                 store.flushPersistence()
                 UIApplication.shared.isIdleTimerDisabled = false
@@ -235,10 +239,27 @@ struct WorkoutSessionView: View {
                     for: .fitaiWatchSessionUpdated
                 )
             ) { notification in
-                guard let envelope = notification.object as? WatchSessionEnvelope else {
+                guard let envelope = notification.object as? WatchSessionEnvelope,
+                      envelope.snapshot.programDayID == day.id else {
                     return
                 }
                 applyWatchSnapshot(envelope)
+                WatchSyncManager.shared.acknowledgeInbox(
+                    sessionID: envelope.sessionID,
+                    revision: envelope.snapshot.revision
+                )
+            }
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: .fitaiWatchBootstrapRequested
+                )
+            ) { notification in
+                guard let dayID = notification.object as? UUID, dayID == day.id else {
+                    return
+                }
+                Task {
+                    await syncWatchBootstrap()
+                }
             }
             .confirmationDialog(
                 "暂停或结束训练？",

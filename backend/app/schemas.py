@@ -76,6 +76,11 @@ class VoiceChatIn(BaseModel):
     context: str | None = Field(default=None, max_length=2000)
 
 
+class WatchSessionIn(BaseModel):
+    device_id: str = Field(min_length=8, max_length=64)
+    device_name: str | None = Field(default=None, max_length=120)
+
+
 class PasswordSetIn(BaseModel):
     password: str = Field(min_length=8, max_length=72)
     current_password: str | None = Field(default=None, max_length=72)

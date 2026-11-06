@@ -88,6 +88,35 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .fitaiSessionExpired)) { _ in
             auth.handleSessionExpired()
         }
+        .onReceive(
+            NotificationCenter.default.publisher(for: .fitaiWatchSessionPending)
+        ) { _ in
+            ingestPendingWatchSessions()
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: .fitaiWatchBootstrapRequested
+            )
+        ) { notification in
+            guard let dayID = notification.object as? UUID,
+                  let day = store.plan?.days.first(where: { $0.id == dayID }),
+                  auth.isAuthenticated else {
+                return
+            }
+            Task {
+                await WatchSyncManager.shared.prepareAndSendBootstrap(
+                    day: day,
+                    access: store.accessSnapshot,
+                    force: true
+                )
+            }
+        }
+        .onChange(of: store.access.isPro) { _, _ in
+            preloadTodayForWatch(force: true)
+        }
+        .onChange(of: store.plan?.id) { _, _ in
+            preloadTodayForWatch()
+        }
         .onChange(of: auth.isAuthenticated) { _, _ in
             refreshSession()
         }
@@ -109,6 +138,8 @@ struct RootView: View {
                     store.syncRemoteWorkouts()
                     store.refreshWeeklyReview()
                     store.syncPendingUserData()
+                    ingestPendingWatchSessions()
+                    preloadTodayForWatch()
                     activateWeatherIfNeeded()
                     Task { await store.refreshAccess() }
                     Task { await auth.touchSessionIfNeeded() }
@@ -195,7 +226,31 @@ struct RootView: View {
         store.syncRemoteWorkouts()
         store.refreshWeeklyReview()
         store.syncPendingUserData()
+        ingestPendingWatchSessions()
+        preloadTodayForWatch()
         activateWeatherIfNeeded()
+    }
+
+    private func preloadTodayForWatch(force: Bool = false) {
+        guard auth.isAuthenticated, let day = store.todayDay else { return }
+        Task {
+            await WatchSyncManager.shared.prepareAndSendBootstrap(
+                day: day,
+                access: store.accessSnapshot,
+                force: force
+            )
+        }
+    }
+
+    private func ingestPendingWatchSessions() {
+        guard auth.isAuthenticated else { return }
+        for envelope in WatchSyncManager.shared.pendingEnvelopes() {
+            guard store.ingestWatchEnvelope(envelope) else { continue }
+            WatchSyncManager.shared.acknowledgeInbox(
+                sessionID: envelope.sessionID,
+                revision: envelope.snapshot.revision
+            )
+        }
     }
 
     private func activateWeatherIfNeeded() {

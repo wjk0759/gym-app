@@ -325,6 +325,7 @@ final class AuthStore {
     }
 
     private func clearSession() {
+        WatchSyncManager.shared.resetForLogout()
         AuthTokenStore.shared.clear()
         userID = nil
         phone = nil

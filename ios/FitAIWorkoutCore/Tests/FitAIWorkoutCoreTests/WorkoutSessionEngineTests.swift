@@ -275,13 +275,44 @@ final class WorkoutSessionEngineTests: XCTestCase {
                 )
             ],
             media: [],
-            access: WatchAccess(isPro: true, proExpiresAt: nil, lastVerifiedAt: start)
+            access: WatchAccess(isPro: true, proExpiresAt: nil, lastVerifiedAt: start),
+            userID: "user-1",
+            apiBaseURL: "https://api.example.com/api/v1",
+            auth: WatchAuth(
+                userID: "user-1",
+                deviceID: "watch-1",
+                accessToken: "access",
+                refreshToken: "refresh",
+                expiresAt: start.addingTimeInterval(1_800)
+            )
         )
 
         let data = try JSONEncoder().encode(bootstrap)
         let decoded = try JSONDecoder().decode(WatchBootstrap.self, from: data)
 
         XCTAssertEqual(decoded, bootstrap)
+        XCTAssertEqual(decoded.schemaVersion, 2)
+        XCTAssertEqual(decoded.auth?.deviceID, "watch-1")
+    }
+
+    func testWatchEnvelopeCarriesUserIdentity() throws {
+        let snapshot = WorkoutSessionSnapshot(
+            programDayID: firstExerciseID,
+            dayTitle: "推",
+            startedAt: start,
+            exercises: []
+        )
+        let envelope = WatchSessionEnvelope(
+            sessionID: snapshot.sessionID,
+            snapshot: snapshot,
+            userID: "user-1"
+        )
+
+        let data = try JSONEncoder().encode(envelope)
+        let decoded = try JSONDecoder().decode(WatchSessionEnvelope.self, from: data)
+
+        XCTAssertEqual(decoded, envelope)
+        XCTAssertEqual(decoded.userID, "user-1")
     }
 
     func testCurrentAndNextExerciseDerivedValues() {

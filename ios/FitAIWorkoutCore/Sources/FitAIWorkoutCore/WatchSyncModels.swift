@@ -2,7 +2,7 @@ import Foundation
 
 /// Payload sent from iPhone to Watch before the phone is left behind.
 public struct WatchBootstrap: Codable, Hashable, Sendable {
-    public static let currentSchemaVersion = 1
+    public static let currentSchemaVersion = 2
 
     public var schemaVersion: Int
     public var generatedAt: Date
@@ -12,6 +12,11 @@ public struct WatchBootstrap: Codable, Hashable, Sendable {
     public var exercises: [WorkoutExercise]
     public var media: [WatchMediaAsset]
     public var access: WatchAccess
+    /// Runtime configuration for the standalone watch shell. Optional so old
+    /// cached payloads keep decoding while the field rolls out.
+    public var userID: String?
+    public var apiBaseURL: String?
+    public var auth: WatchAuth?
 
     public init(
         generatedAt: Date = Date(),
@@ -20,7 +25,10 @@ public struct WatchBootstrap: Codable, Hashable, Sendable {
         dayTitle: String,
         exercises: [WorkoutExercise],
         media: [WatchMediaAsset],
-        access: WatchAccess
+        access: WatchAccess,
+        userID: String? = nil,
+        apiBaseURL: String? = nil,
+        auth: WatchAuth? = nil
     ) {
         self.schemaVersion = Self.currentSchemaVersion
         self.generatedAt = generatedAt
@@ -30,6 +38,33 @@ public struct WatchBootstrap: Codable, Hashable, Sendable {
         self.exercises = exercises
         self.media = media
         self.access = access
+        self.userID = userID
+        self.apiBaseURL = apiBaseURL
+        self.auth = auth
+    }
+}
+
+/// Watch-specific login session. It is deliberately separate from the phone
+/// session so refresh-token rotation on one device never logs out the other.
+public struct WatchAuth: Codable, Hashable, Sendable {
+    public var userID: String
+    public var deviceID: String
+    public var accessToken: String
+    public var refreshToken: String
+    public var expiresAt: Date
+
+    public init(
+        userID: String,
+        deviceID: String,
+        accessToken: String,
+        refreshToken: String,
+        expiresAt: Date
+    ) {
+        self.userID = userID
+        self.deviceID = deviceID
+        self.accessToken = accessToken
+        self.refreshToken = refreshToken
+        self.expiresAt = expiresAt
     }
 }
 
@@ -101,14 +136,19 @@ public struct WatchSessionEnvelope: Codable, Hashable, Sendable {
     public var sessionID: UUID
     public var sentAt: Date
     public var snapshot: WorkoutSessionSnapshot
+    /// Prevents a snapshot from a previous account being merged after logout
+    /// or account switching on the phone.
+    public var userID: String?
 
     public init(
         sessionID: UUID,
         sentAt: Date = Date(),
-        snapshot: WorkoutSessionSnapshot
+        snapshot: WorkoutSessionSnapshot,
+        userID: String? = nil
     ) {
         self.sessionID = sessionID
         self.sentAt = sentAt
         self.snapshot = snapshot
+        self.userID = userID
     }
 }

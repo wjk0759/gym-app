@@ -104,9 +104,7 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         SKIP_INSTALL: YES
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-        # The watch icon is added through the App Store/Icon Composer workflow
-        # later; do not fail simulator builds while the artwork is pending.
-        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         FITAI_COMPANION_BUNDLE_ID: com.wjk.fitai
       configs:
         Debug:

@@ -1,15 +1,45 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from ..deps import CurrentUser, DBSession
 from ..models import utcnow
-from ..services import access
+from ..schemas import WatchSessionIn
+from ..services import access, auth
 from ..services.queries import active_program
 from ..services.serializers import serialize_program_day
 from ..services.watch import media_for_day
 
 router = APIRouter(prefix="/watch", tags=["watch"])
+
+
+@router.post("/session")
+def create_session(
+    payload: WatchSessionIn,
+    request: Request,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    """Exchange the phone login for a standalone watch session.
+
+    The watch keeps its own refresh token so token rotation on either device
+    cannot invalidate the other. The endpoint is Pro-gated; a free account can
+    authenticate the watch shell but cannot start training through bootstrap.
+    """
+    access.require_feature(db, user_id, access.FEATURE_WATCH_TRAINING)
+    meta = {
+        "ip": request.client.host if request.client else None,
+        "user_agent": request.headers.get("user-agent"),
+        "device_id": payload.device_id.strip(),
+        "device_name": payload.device_name,
+    }
+    return auth.issue_watch_session(
+        db,
+        user_id,
+        payload.device_id,
+        payload.device_name,
+        meta,
+    )
 
 
 @router.get("/bootstrap")

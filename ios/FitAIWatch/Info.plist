@@ -20,6 +20,13 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>用于连接同一网络下的叫练服务端，同步训练计划与语音教练回复。</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>用于读取体重与训练数据，帮助你追踪身体变化。</string>
 	<key>NSHealthUpdateUsageDescription</key>

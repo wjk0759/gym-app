@@ -18,9 +18,56 @@ final class WatchWorkoutStore {
 
     var snapshot: WorkoutSessionSnapshot { engine.snapshot }
 
+    /// A session that already has work logged may be finished even if the Pro
+    /// entitlement expired or was refunded mid-workout. A merely cached plan
+    /// with no completed set does not unlock the app.
+    var hasUnfinishedWork: Bool {
+        !snapshot.isFinished
+            && !snapshot.exercises.isEmpty
+            && (!snapshot.sets.isEmpty || snapshot.isPaused)
+    }
+
+    var canTrainNow: Bool { isPro || hasUnfinishedWork }
+
+    /// Only return files that were actually received by the watch. A remote
+    /// URL would hang when the phone is in a locker, so the action page falls
+    /// back to the poster or text instead.
     var currentMediaURL: URL? {
         guard let slug = snapshot.currentExercise?.slug else { return nil }
-        return bootstrap?.media.first(where: { $0.exerciseSlug == slug })?.watchURL
+        return WatchMediaStore.shared.videoURL(slug: slug)
+    }
+
+    var currentPosterURL: URL? {
+        guard let slug = snapshot.currentExercise?.slug else { return nil }
+        return WatchMediaStore.shared.posterURL(slug: slug)
+    }
+
+    var currentLoopRange: (start: Double?, end: Double?)? {
+        guard let slug = snapshot.currentExercise?.slug else { return nil }
+        return WatchMediaStore.shared.loopRange(slug: slug)
+    }
+
+    var currentLoopStart: Double? {
+        guard let range = currentLoopRange else { return nil }
+        return range.start
+    }
+
+    var currentLoopEnd: Double? {
+        guard let range = currentLoopRange else { return nil }
+        return range.end
+    }
+
+    var voiceContext: String? {
+        guard let exercise = snapshot.currentExercise else { return nil }
+        let target: String
+        switch exercise.target {
+        case .reps(let min, let max):
+            target = min == max ? "\(min) 次" : "\(min)–\(max) 次"
+        case .time(let seconds):
+            target = "\(seconds) 秒"
+        }
+        return "\(bootstrap?.dayTitle ?? "训练") · \(exercise.name) · "
+            + "\(exercise.sets) 组 · \(target)"
     }
 
     init() {
@@ -39,8 +86,36 @@ final class WatchWorkoutStore {
 
     func applyBootstrap(_ payload: WatchBootstrap) {
         let wasSameDay = bootstrap?.programDayID == payload.programDayID
-        bootstrap = payload
+        let hasUnfinishedWork = !wasSameDay
+            && !engine.snapshot.sets.isEmpty
+            && !engine.snapshot.isFinished
+
+        WatchCredentialStore.shared.apply(
+            apiBaseURL: payload.apiBaseURL,
+            userID: payload.userID,
+            auth: payload.auth
+        )
         isPro = payload.access.canTrain(at: Date())
+
+        // A new day must not erase a watch-led session that has already logged
+        // sets. Keep the old plan until that session is finished or discarded;
+        // only the entitlement/config is refreshed.
+        if hasUnfinishedWork {
+            if var current = bootstrap {
+                current.access = payload.access
+                current.auth = payload.auth ?? current.auth
+                current.apiBaseURL = payload.apiBaseURL ?? current.apiBaseURL
+                current.userID = payload.userID ?? current.userID
+                bootstrap = current
+            }
+            persist()
+            return
+        }
+
+        bootstrap = payload
+        WatchMediaStore.shared.prune(
+            keeping: Set(payload.exercises.map(\.slug))
+        )
         if !wasSameDay || engine.snapshot.isFinished {
             engine = Self.makeEngine(from: payload)
         }
@@ -49,6 +124,43 @@ final class WatchWorkoutStore {
 
     func refreshEntitlement() {
         isPro = bootstrap?.access.canTrain(at: Date()) ?? false
+    }
+
+    /// Logging out on the phone must lock the watch even if an old Pro cache
+    /// is still inside the offline grace window.
+    func lockForLogout() {
+        isPro = false
+        if var payload = bootstrap {
+            payload.access = WatchAccess(
+                isPro: false,
+                proExpiresAt: nil,
+                lastVerifiedAt: Date()
+            )
+            bootstrap = payload
+        }
+        persist()
+    }
+
+    /// Refresh the server entitlement when the watch has its own login. The
+    /// local three-day grace remains the offline fallback.
+    func refreshEntitlementFromServer() async {
+        guard WatchCredentialStore.shared.auth != nil else {
+            refreshEntitlement()
+            return
+        }
+        do {
+            let access = try await WatchAPIClient.shared.refreshAccess()
+            if var payload = bootstrap {
+                payload.access = access
+                bootstrap = payload
+                isPro = access.canTrain(at: Date())
+                persist()
+            }
+        } catch {
+            lastError = (error as? WatchAPIError)?.message
+                ?? "无法刷新 Pro 权益"
+            refreshEntitlement()
+        }
     }
 
     @discardableResult
@@ -113,6 +225,14 @@ final class WatchWorkoutStore {
         bootstrap = state.bootstrap
         engine = WorkoutSessionEngine(snapshot: state.snapshot)
         isPro = state.bootstrap.access.canTrain(at: Date())
+        WatchCredentialStore.shared.apply(
+            apiBaseURL: state.bootstrap.apiBaseURL,
+            userID: state.bootstrap.userID,
+            auth: state.bootstrap.auth
+        )
+        WatchMediaStore.shared.prune(
+            keeping: Set(state.bootstrap.exercises.map(\.slug))
+        )
     }
 
     private func persist() {

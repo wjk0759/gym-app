@@ -4,13 +4,16 @@ import Combine
 import SwiftUI
 
 /// watchOS only exposes video through AVKit's `VideoPlayer`; AVPlayerLayer and
-/// AVPlayerItemVideoOutput are unavailable. The player is muted and has hit
-/// testing disabled so the action page stays a passive demo surface.
+/// AVPlayerItemVideoOutput are unavailable. The player is muted, has hit
+/// testing disabled and loops the authored segment without any controls.
 struct WatchMovieView: View {
     let url: URL?
     let isPlaying: Bool
+    var loopStart: Double? = nil
+    var loopEnd: Double? = nil
 
     @State private var player: AVPlayer?
+    @State private var timeObserver: Any?
 
     var body: some View {
         Group {
@@ -25,8 +28,7 @@ struct WatchMovieView: View {
             makePlayerIfNeeded()
         }
         .onDisappear {
-            player?.pause()
-            player = nil
+            tearDown()
         }
         .onChange(of: url) { _, _ in
             makePlayerIfNeeded(force: true)
@@ -45,7 +47,7 @@ struct WatchMovieView: View {
         ) { notification in
             guard let item = notification.object as? AVPlayerItem,
                   item === player?.currentItem else { return }
-            player?.seek(to: .zero)
+            seekToLoopStart()
             player?.play()
         }
     }
@@ -56,15 +58,58 @@ struct WatchMovieView: View {
             return
         }
         guard let url else {
-            player = nil
+            tearDown()
             return
         }
+        tearDown()
         let next = AVPlayer(url: url)
         next.isMuted = true
         next.actionAtItemEnd = .none
         player = next
+        observeLoop(on: next)
+        seekToLoopStart()
         if isPlaying {
             next.play()
         }
+    }
+
+    private func observeLoop(on player: AVPlayer) {
+        let end = loopEnd
+        let start = loopStart ?? 0
+        guard let end, end > start else { return }
+        let observer = player.addPeriodicTimeObserver(
+            forInterval: CMTime(seconds: 0.25, preferredTimescale: 600),
+            queue: .main
+        ) { time in
+            let seconds = CMTimeGetSeconds(time)
+            if seconds.isFinite, seconds >= end - 0.08 {
+                player.seek(
+                    to: CMTime(seconds: start, preferredTimescale: 600),
+                    toleranceBefore: .zero,
+                    toleranceAfter: .zero
+                )
+            }
+        }
+        timeObserver = observer
+    }
+
+    private func seekToLoopStart() {
+        guard let player else { return }
+        let start = loopStart ?? 0
+        guard start > 0 else { return }
+        player.seek(
+            to: CMTime(seconds: start, preferredTimescale: 600),
+            toleranceBefore: .zero,
+            toleranceAfter: .zero
+        )
+    }
+
+    private func tearDown() {
+        if let timeObserver, let player {
+            player.removeTimeObserver(timeObserver)
+        }
+        timeObserver = nil
+        player?.pause()
+        player = nil
     }
 }

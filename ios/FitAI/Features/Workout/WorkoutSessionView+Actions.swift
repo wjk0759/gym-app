@@ -141,6 +141,8 @@ extension WorkoutSessionView {
         didLoadDraft = true
         logs = snapshot.sets.map { SetLog(record: $0) }
         index = min(snapshot.currentExerciseIndex, activeDay.exercises.count)
+        elapsedSeconds = 0
+        activeStartedAt = snapshot.startedAt
         if let remaining = snapshot.remainingRest(at: Date()), remaining > 0 {
             restTotal = max(1, remaining)
             restRemaining = max(0, Int(remaining.rounded()))
@@ -149,8 +151,59 @@ extension WorkoutSessionView {
         }
         saveDraftIfNeeded()
         if snapshot.status == .finished {
-            finish()
+            finishFromWatch(snapshot)
         }
+    }
+
+    func syncWatchBootstrap() async {
+        await store.refreshAccess()
+        await WatchSyncManager.shared.prepareAndSendBootstrap(
+            day: day,
+            access: store.accessSnapshot,
+            force: true
+        )
+    }
+
+    func drainWatchInbox() {
+        for envelope in WatchSyncManager.shared.pendingEnvelopes(for: day.id) {
+            guard !didFinish else { break }
+            applyWatchSnapshot(envelope)
+            WatchSyncManager.shared.acknowledgeInbox(
+                sessionID: envelope.sessionID,
+                revision: envelope.snapshot.revision
+            )
+        }
+    }
+
+    /// The watch finished the session. Use its client session id so a later
+    /// phone launch cannot record the same workout twice.
+    func finishFromWatch(_ snapshot: WorkoutSessionSnapshot) {
+        guard !logs.isEmpty else {
+            store.clearWorkoutDraft(dayID: day.id)
+            didFinish = true
+            dismiss()
+            return
+        }
+        didFinish = true
+        var sessionDay = day
+        sessionDay.exercises = activeDay.exercises.map(effectiveExercise)
+        let end = snapshot.finishedAt ?? Date()
+        let duration = max(
+            1,
+            Int(end.timeIntervalSince(snapshot.startedAt) / 60)
+        )
+        store.record(
+            day: sessionDay,
+            sets: logs,
+            durationMinutes: duration,
+            feeling: 3,
+            notes: nil,
+            plannedSets: snapshot.plannedSetCount,
+            sessionID: snapshot.sessionID,
+            endedAt: end
+        )
+        store.clearWorkoutDraft(dayID: day.id)
+        dismiss()
     }
 
     func pauseAndExit() {

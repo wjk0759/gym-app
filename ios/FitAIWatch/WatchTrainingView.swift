@@ -6,6 +6,7 @@ import FitAIWorkoutCore
 /// shared engine; no workout rules live in the view.
 struct WatchTrainingView: View {
     let store: WatchWorkoutStore
+    let onVoice: () -> Void
 
     @State private var now = Date()
 
@@ -38,10 +39,15 @@ struct WatchTrainingView: View {
     }
 
     private var header: some View {
-        HStack {
+        HStack(spacing: 5) {
             Text("训练")
                 .font(.headline)
             Spacer()
+            Button(action: onVoice) {
+                Image(systemName: "waveform")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.yellow)
             if snapshot.isPaused {
                 Text("已暂停")
                     .font(.caption2.weight(.semibold))

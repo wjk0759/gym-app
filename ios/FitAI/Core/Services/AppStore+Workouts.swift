@@ -66,10 +66,14 @@ extension AppStore {
         durationMinutes: Int,
         feeling: Int,
         notes: String? = nil,
-        plannedSets: Int? = nil
+        plannedSets: Int? = nil,
+        sessionID: UUID? = nil,
+        endedAt: Date? = nil
     ) {
         let cleanNotes = notes?.trimmingCharacters(in: .whitespacesAndNewlines)
         let session = WorkoutSession(
+            id: sessionID ?? UUID(),
+            date: endedAt ?? Date(),
             dayTitle: day.title,
             durationMinutes: durationMinutes,
             feeling: feeling,
@@ -86,7 +90,7 @@ extension AppStore {
         syncPendingWorkouts()
 
         if healthKitEnabled {
-            let end = Date()
+            let end = endedAt ?? Date()
             let start = end.addingTimeInterval(-Double(durationMinutes * 60))
             Task {
                 try? await HealthKitService.shared.saveStrengthWorkout(
