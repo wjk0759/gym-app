@@ -14,13 +14,40 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`5855d90`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一
+- `develop` 代码 HEAD：`5855d90`；Watch 功能分支 `feature/watch-standalone-workout` HEAD `ca5095e`；本文件的最新同步提交见 `git log -1`
+- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - 最新后端验证：**197 passed**，Ruff app/tests 通过；V22 `training_stage` 已迁移；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传
+
+### 2026-11-07 · Windows / OpenCode（Watch 共享训练核心）
+
+- 分支：`feature/watch-standalone-workout`
+- 提交：`ca5095e`
+- 做了什么：
+  - 新增 `ios/FitAIWorkoutCore` Swift Package，iOS 17 / watchOS 10 共用
+  - 新增确定性 `WorkoutSessionEngine`：完成组、撤销、暂停/恢复、跳过休息、切换动作、结束
+  - 所有命令带 `operationID`；`(exerciseID, setIndex)` 幂等；不读系统时钟，时间由命令携带
+  - Codable/Hashable/Sendable snapshot，支持崩溃恢复和 WatchConnectivity 传输
+  - 新增 `WorkoutCoreAdapter`，把现有 `PlanDay` / `PlanExercise` / `SetLog` 映射到共享模型
+  - `AppConfig.watchWorkoutEnabled = false` 作为后续功能开关
+  - iOS CI 增加 `swift test --package-path FitAIWorkoutCore`
+- 验证：
+  - tree-sitter 语法检查 0 error
+  - 未在 Windows 编译 Swift；未跑 package 单测
+  - GitHub Actions `iOS Build` 会在推送分支时执行 package 单测和 simulator build
+- Mac 需要做：
+  - `git pull` → `git switch feature/watch-standalone-workout`
+  - `cd ios && xcodegen generate`
+  - `swift test --package-path FitAIWorkoutCore`
+  - `xcodebuild ... build`（已有 CI 也会跑）
+  - 确认 XcodeGen 本地 package 依赖正常、FitAITests 能 import `FitAIWorkoutCore`
+- 不要恢复：
+  - 不要把训练状态直接写回 View 的 `@State`
+  - 不要让命令依赖系统时间
+  - 不要用 `(slug, setIndex)` 替代 `(exerciseID, setIndex)` 做去重（自定义动作可能同 slug）
 
 ### 2026-11-06 · Windows / OpenCode（免费教练改为每天 3 条 + 提前订阅弹窗修复）
 
