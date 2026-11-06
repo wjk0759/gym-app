@@ -30,6 +30,8 @@ targets:
         PRODUCT_NAME: FitAIWorkoutCore
         SKIP_INSTALL: YES
         SWIFT_VERSION: "5.9"
+        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+        WATCHOS_DEPLOYMENT_TARGET: "10.0"
 
   FitAI:
     type: application
