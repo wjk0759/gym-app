@@ -30,6 +30,7 @@ from .routers import (
     profile,
     schedule,
     videos,
+    watch,
     workouts,
 )
 from .seed import seed_exercises
@@ -165,7 +166,21 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 
 API_PREFIX = "/api/v1"
-for module in (auth, profile, plans, workouts, coach, agent, equipment, diet, body, videos, schedule, iap):
+for module in (
+    auth,
+    profile,
+    plans,
+    workouts,
+    coach,
+    agent,
+    equipment,
+    diet,
+    body,
+    videos,
+    watch,
+    schedule,
+    iap,
+):
     app.include_router(module.router, prefix=API_PREFIX)
 
 ensure_media_dirs()

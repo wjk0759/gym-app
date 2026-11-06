@@ -265,18 +265,33 @@ def ensure_schema() -> None:
                     "ON ai_memories(memory_key)"
                 )
             )
+        if "auth_sessions" in tables:
+            auth_columns = {
+                column["name"]
+                for column in inspector.get_columns("auth_sessions")
+            }
+            if "client_type" not in auth_columns:
+                connection.execute(
+                    text(
+                        "ALTER TABLE auth_sessions "
+                        "ADD COLUMN client_type VARCHAR(20) DEFAULT 'ios'"
+                    )
+                )
         if "workout_sessions" in tables:
             workout_columns = {
                 column["name"]
                 for column in inspector.get_columns("workout_sessions")
             }
-            if "client_id" not in workout_columns:
-                connection.execute(
-                    text(
-                        "ALTER TABLE workout_sessions "
-                        "ADD COLUMN client_id VARCHAR(36)"
+            for name, ddl in {
+                "client_id": "VARCHAR(36)",
+                "source": "VARCHAR(20) DEFAULT 'phone'",
+                "healthkit_workout_id": "VARCHAR(64)",
+                "revision": "INTEGER DEFAULT 1",
+            }.items():
+                if name not in workout_columns:
+                    connection.execute(
+                        text(f"ALTER TABLE workout_sessions ADD COLUMN {name} {ddl}")
                     )
-                )
             connection.execute(
                 text(
                     "CREATE UNIQUE INDEX IF NOT EXISTS "

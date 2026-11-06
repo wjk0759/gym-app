@@ -17,7 +17,7 @@ import com.fitai.admin.common.persistence.SqlSupport;
 public class UserAccessRepository {
 
     private static final ZoneOffset BUSINESS_OFFSET = ZoneOffset.ofHours(8);
-    private static final int COACH_WEEKLY_LIMIT = 3;
+    private static final int COACH_DAILY_LIMIT = 3;
 
     private final JdbcClient jdbc;
 
@@ -94,9 +94,7 @@ public class UserAccessRepository {
                         SqlSupport.iso(rs.getTimestamp("valid_until"))
                 )).list();
 
-        LocalDate periodStart = LocalDate.now(BUSINESS_OFFSET).minusDays(
-                LocalDate.now(BUSINESS_OFFSET).getDayOfWeek().getValue() - 1L
-        );
+        LocalDate periodStart = LocalDate.now(BUSINESS_OFFSET);
         int used = jdbc.sql("""
                 SELECT used_count FROM feature_usage
                 WHERE user_id = :userId
@@ -109,11 +107,11 @@ public class UserAccessRepository {
                 .optional()
                 .orElse(0);
         UserAccessDtos.CoachUsage coach = new UserAccessDtos.CoachUsage(
-                COACH_WEEKLY_LIMIT,
+                COACH_DAILY_LIMIT,
                 used,
-                Math.max(0, COACH_WEEKLY_LIMIT - used),
+                Math.max(0, COACH_DAILY_LIMIT - used),
                 periodStart.toString(),
-                periodStart.plusDays(7).toString()
+                periodStart.plusDays(1).toString()
         );
 
         return Optional.of(new UserAccessDtos.UserAccess(
