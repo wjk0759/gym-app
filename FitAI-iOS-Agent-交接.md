@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`5855d90`；Watch 功能分支 `feature/watch-standalone-workout` HEAD `082ced8`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`5855d90`；Watch 功能分支 `feature/watch-standalone-workout` HEAD `db8e09e`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 10/10 测试通过，Watch 训练页/Pro 锁定页/动作占位页已在 Apple Watch Ultra 4 模拟器截图确认；修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
@@ -22,6 +22,31 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传
+
+### 2026-11-07 · Windows / OpenCode（手表真实计划预载 + snapshot 回传）
+
+- 分支：`feature/watch-standalone-workout`
+- 提交：`db8e09e`
+- CI：GitHub Actions `iOS Build` **success**（含 framework/watch/app）
+- 做了什么：
+  - `FitAIWorkoutCore` 增加 `WatchBootstrap` / `WatchAccess` / `WatchMediaAsset` / `WatchSessionEnvelope`
+  - iOS 新增 `WatchSyncManager`，在训练开始页把当天计划、Pro 权益、媒体清单发到手表
+  - watch 新增 `WatchWorkoutStore`，本地持久化 bootstrap 和 snapshot，所有操作走共享引擎
+  - watch 新增 `WatchSyncManager`，接收 bootstrap、回传 `WatchSessionEnvelope`
+  - 训练页/动作页改为读取 `WatchWorkoutStore`，不再直接读 mock engine
+  - 3 天离线宽限逻辑进入 `WatchAccess.canTrain`
+- 验证：
+  - iOS CI 构建通过
+  - 未真机验证 WatchConnectivity、真实计划发送、snapshot 回传
+  - iPhone 收到 snapshot 后还未合并到当前训练 UI/服务端
+- Mac 需要做：
+  - 真机或 Simulator 验证 iPhone 打开训练页后手表收到真实动作
+  - 手表完成一组后检查 iPhone 是否收到 `WatchSessionEnvelope`（目前只存内存）
+  - 继续验证左右滑、AVKit 占位、Pro 锁定
+- 不要恢复：
+  - 不要让 watch 直接读 iPhone 的 SwiftUI 状态
+  - 不要绕过 `WorkoutSessionEngine`
+  - 不要把 bootstrap 当成永久授权；手表必须检查 `pro_expires_at` 和 3 天宽限
 
 ### 2026-11-07 · macOS（watch 独立分支构建与模拟器验证）
 
