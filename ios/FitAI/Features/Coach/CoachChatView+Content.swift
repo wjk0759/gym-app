@@ -24,7 +24,7 @@ extension CoachChatView {
             return store.useRemoteAI ? "远程 AI 已连接" : "本地建议"
         }
         guard store.accessSnapshot != nil else { return "正在确认权益" }
-        return store.shouldShowCoachQuotaCard ? "免费额度已用完" : "免费 AI 额度"
+        return store.shouldShowCoachQuotaCard ? "今日额度已用完" : "免费 AI 额度"
     }
 
     var welcome: some View {
