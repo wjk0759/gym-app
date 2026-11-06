@@ -25,8 +25,14 @@ struct WatchVoiceView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 9) {
                 header
-                TextFieldLink("问教练…", text: $question)
-                    .font(.caption)
+                TextFieldLink(
+                    "问教练…",
+                    prompt: Text("听写或手写"),
+                    text: $question
+                ) {
+                    send()
+                }
+                .font(.caption)
 
                 Button {
                     send()
