@@ -28,6 +28,7 @@ FEATURE_BODY_PHOTO = "body_photo"
 FEATURE_AI_VISION = "ai_vision"
 FEATURE_EQUIPMENT_SCAN = "equipment_scan"
 FEATURE_ADVANCED_REVIEW = "advanced_review"
+FEATURE_WATCH_TRAINING = "watch_training"
 COACH_DAILY_LIMIT = 3
 
 
@@ -144,6 +145,10 @@ def access_snapshot(db: Session, user_id: str) -> dict:
             },
             FEATURE_EQUIPMENT_SCAN: {
                 "can_scan": entitlement.active,
+                "requires_pro": not entitlement.active,
+            },
+            FEATURE_WATCH_TRAINING: {
+                "can_train": entitlement.active,
                 "requires_pro": not entitlement.active,
             },
         },

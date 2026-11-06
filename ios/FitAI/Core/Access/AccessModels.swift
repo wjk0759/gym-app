@@ -50,6 +50,7 @@ struct AccessSnapshot: Decodable, Equatable {
     var trainingPlan: Feature? { features[ProFeature.trainingPlan.rawValue] }
     var mealPlan: Feature? { features[ProFeature.mealPlan.rawValue] }
     var coachAI: Feature? { features[ProFeature.coachAI.rawValue] }
+    var watchTraining: Feature? { features[ProFeature.watchTraining.rawValue] }
 
     var mealPlanTrialAvailable: Bool {
         mealPlan?.trialAvailable == true
@@ -70,6 +71,7 @@ enum ProFeature: String, Identifiable, CaseIterable {
     case videoReview = "video_review"
     case advancedReview = "advanced_review"
     case equipmentScan = "equipment_scan"
+    case watchTraining = "watch_training"
     case general = "general"
 
     var id: String { rawValue }
@@ -85,6 +87,7 @@ enum ProFeature: String, Identifiable, CaseIterable {
         case .videoReview: return "视频动作点评"
         case .advancedReview: return "数据复盘"
         case .equipmentScan: return "器械 AI 识别"
+        case .watchTraining: return "Apple Watch 训练"
         case .general: return "叫练 Pro"
         }
     }
@@ -100,6 +103,7 @@ enum ProFeature: String, Identifiable, CaseIterable {
         case .videoReview: return "Pro 解锁视频动作点评和姿态分析。"
         case .advancedReview: return "Pro 解锁周/月/年复盘和高级趋势。"
         case .equipmentScan: return "Pro 解锁器械拍照识别。"
+        case .watchTraining: return "Pro 解锁 Apple Watch 独立训练、3D 动作动画和手表语音教练。"
         case .general: return "Pro 解锁 App 内全部功能。"
         }
     }
@@ -115,6 +119,7 @@ enum ProFeature: String, Identifiable, CaseIterable {
         case .videoReview: return "play.rectangle.fill"
         case .advancedReview: return "chart.xyaxis.line"
         case .equipmentScan: return "viewfinder"
+        case .watchTraining: return "applewatch"
         case .general: return "crown.fill"
         }
     }

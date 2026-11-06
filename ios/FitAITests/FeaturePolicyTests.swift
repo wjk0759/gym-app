@@ -67,6 +67,26 @@ final class FeaturePolicyTests: XCTestCase {
         XCTAssertEqual(policy.coachLimit, 3)
     }
 
+    func testWatchTrainingFollowsServerProState() throws {
+        let free = try snapshot(
+            """
+            {"is_pro":false,"pro_sources":[],"features":{
+              "watch_training":{"can_train":false,"requires_pro":true}
+            }}
+            """
+        )
+        let pro = try snapshot(
+            """
+            {"is_pro":true,"pro_sources":["admin"],"features":{
+              "watch_training":{"can_train":true,"requires_pro":false}
+            }}
+            """
+        )
+
+        XCTAssertFalse(FeaturePolicy(snapshot: free).canUseWatchTraining)
+        XCTAssertTrue(FeaturePolicy(snapshot: pro).canUseWatchTraining)
+    }
+
     func testCoachLimitPrefersDailyAndFallsBackToLegacyWeeklyAlias() throws {
         let both = try snapshot(
             """
