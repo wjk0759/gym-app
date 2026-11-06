@@ -57,7 +57,7 @@ extension WorkoutSessionView {
                     exerciseID: exercise.id,
                     setIndex: nextIndex,
                     weightKG: isBodyweight ? 0 : weight,
-                    reps: timed ? nil : reps,
+                    reps: reps,
                     seconds: timed ? reps : nil,
                     rpe: rpe,
                     at: Date(),

@@ -112,6 +112,7 @@ struct WatchTrainingView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(.green)
+            .disabled(snapshot.isPaused)
 
             HStack(spacing: 6) {
                 Button {
@@ -141,6 +142,7 @@ struct WatchTrainingView: View {
                     apply(.advanceExercise(.init(at: now, source: .watch)))
                 }
                 .buttonStyle(.bordered)
+                .disabled(snapshot.isPaused)
             }
         }
     }
@@ -168,7 +170,7 @@ struct WatchTrainingView: View {
             reps = min
             seconds = nil
         case .time(let value):
-            reps = nil
+            reps = value
             seconds = value
         }
         apply(

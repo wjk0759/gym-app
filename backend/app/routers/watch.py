@@ -74,7 +74,11 @@ def bootstrap(day_id: str, user_id: CurrentUser, db: DBSession):
     program = active_program(db, user_id)
     if program is None:
         raise HTTPException(status_code=404, detail="还没有训练计划")
-    day = next((item for item in program.days if item.id == day_id), None)
+    normalized_day_id = day_id.strip().lower()
+    day = next(
+        (item for item in program.days if item.id.lower() == normalized_day_id),
+        None,
+    )
     if day is None:
         raise HTTPException(status_code=404, detail="训练日不存在")
     return {

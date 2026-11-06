@@ -50,6 +50,7 @@ def _owned_program_day_id(
     """
     if not program_day_id:
         return None
+    program_day_id = program_day_id.strip().lower()
     owned = db.execute(
         select(ProgramDay.id)
         .join(Program, Program.id == ProgramDay.program_id)

@@ -11,7 +11,11 @@ final class WatchWorkoutStore {
     private(set) var engine: WorkoutSessionEngine
     private(set) var isPro: Bool
     private(set) var hasStartedWorkout = false
+    /// Set when the phone logs out. A cached session must not stay unlocked
+    /// until a new Pro bootstrap arrives.
+    private(set) var isAccountLocked = false
     private(set) var lastError: String?
+    private let forceLockKey = "fitai_watch_force_lock"
 
     /// Wired to WatchConnectivity by the app shell. The store never imports
     /// the connectivity framework, keeping the workout state testable.
@@ -28,7 +32,9 @@ final class WatchWorkoutStore {
             && (hasStartedWorkout || !snapshot.sets.isEmpty || snapshot.isPaused)
     }
 
-    var canTrainNow: Bool { isPro || hasUnfinishedWork }
+    var canTrainNow: Bool {
+        !isAccountLocked && (isPro || hasUnfinishedWork)
+    }
 
     /// Only return files that were actually received by the watch. A remote
     /// URL would hang when the phone is in a locker, so the action page falls
@@ -83,6 +89,10 @@ final class WatchWorkoutStore {
         self.isPro = false
         #endif
         loadPersistedState()
+        if UserDefaults.standard.bool(forKey: forceLockKey) {
+            isAccountLocked = true
+            isPro = false
+        }
     }
 
     func applyBootstrap(_ payload: WatchBootstrap) {
@@ -107,6 +117,10 @@ final class WatchWorkoutStore {
             auth: payload.auth
         )
         isPro = access.canTrain(at: Date())
+        if isPro {
+            isAccountLocked = false
+            UserDefaults.standard.set(false, forKey: forceLockKey)
+        }
 
         // A new day must not erase a watch-led session that has already logged
         // sets. Keep the old plan until that session is finished or discarded;
@@ -161,6 +175,8 @@ final class WatchWorkoutStore {
     /// is still inside the offline grace window.
     func lockForLogout() {
         isPro = false
+        isAccountLocked = true
+        UserDefaults.standard.set(true, forKey: forceLockKey)
         if var payload = bootstrap {
             payload.access = WatchAccess(
                 isPro: false,
@@ -186,6 +202,10 @@ final class WatchWorkoutStore {
                 payload.access = access
                 bootstrap = payload
                 isPro = access.canTrain(at: Date())
+                if isPro {
+                    isAccountLocked = false
+                    UserDefaults.standard.set(false, forKey: forceLockKey)
+                }
                 persist()
             }
         } catch {
@@ -248,6 +268,7 @@ final class WatchWorkoutStore {
         var bootstrap: WatchBootstrap
         var snapshot: WorkoutSessionSnapshot
         var hasStarted: Bool?
+        var isAccountLocked: Bool?
     }
 
     private var stateURL: URL {
@@ -271,6 +292,7 @@ final class WatchWorkoutStore {
         engine = WorkoutSessionEngine(snapshot: state.snapshot)
         hasStartedWorkout = state.hasStarted
             ?? (!state.snapshot.sets.isEmpty || state.snapshot.isPaused)
+        isAccountLocked = state.isAccountLocked ?? false
         isPro = state.bootstrap.access.canTrain(at: Date())
         // Keychain may hold a newer token pair than the cached bootstrap.
         WatchCredentialStore.shared.apply(
@@ -291,7 +313,8 @@ final class WatchWorkoutStore {
         let state = PersistedState(
             bootstrap: bootstrap,
             snapshot: engine.snapshot,
-            hasStarted: hasStartedWorkout
+            hasStarted: hasStartedWorkout,
+            isAccountLocked: isAccountLocked
         )
         guard let data = try? JSONEncoder().encode(state) else { return }
         try? data.write(to: stateURL, options: [.atomic])

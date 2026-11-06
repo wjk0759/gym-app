@@ -110,6 +110,7 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     }
 
     private func handleLogout() {
+        UserDefaults.standard.set(true, forKey: "fitai_watch_force_lock")
         store?.lockForLogout()
         WatchCredentialStore.shared.clearAuth()
         outbox.removeAll()

@@ -33,6 +33,16 @@ struct WatchActionView: View {
             }
         }
         .ignoresSafeArea()
+        .overlay(alignment: .topLeading) {
+            if let exercise = store.snapshot.currentExercise {
+                Text(exercise.name)
+                    .font(.caption2.weight(.semibold))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .padding(.top, 4)
+            }
+        }
         .overlay(alignment: .bottom) {
             Text("右滑回到训练")
                 .font(.caption2)

@@ -79,7 +79,9 @@ final class WatchAPIClient {
     }
 
     func voice(message: String, context: String?) async throws -> WatchVoiceReply {
-        var payload: [String: Any] = ["message": message]
+        var payload: [String: Any] = [
+            "message": String(message.prefix(500))
+        ]
         if let context, !context.isEmpty {
             payload["context"] = String(context.prefix(2000))
         }

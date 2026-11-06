@@ -183,7 +183,7 @@ struct WatchSessionCredentials: Decodable {
 extension APIClient {
     func fetchWatchBootstrap(dayID: UUID) async throws -> RemoteWatchBootstrap {
         try await send(
-            path: "watch/bootstrap?day_id=\(dayID.uuidString)",
+            path: "watch/bootstrap?day_id=\(dayID.uuidString.lowercased())",
             method: "GET",
             body: nil,
             timeout: 30

@@ -90,8 +90,17 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         var auth: WatchAuth?
         var freshAccess: AccessSnapshot?
         var freshVerifiedAt: Date?
+        var bootstrapForbidden = false
         if AuthTokenStore.shared.accessToken != nil {
-            remote = try? await APIClient.shared.fetchWatchBootstrap(dayID: day.id)
+            do {
+                remote = try await APIClient.shared.fetchWatchBootstrap(
+                    dayID: day.id
+                )
+            } catch let error as APIError where error.statusCode == 403 {
+                bootstrapForbidden = true
+            } catch {
+                // Network/5xx: keep the watch's cached plan and grace period.
+            }
             if remote == nil,
                let fresh = try? await APIClient.shared.fetchAccess() {
                 // The bootstrap 403s for a free/refunded account. Never fall
@@ -106,14 +115,27 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
             }
         }
 
+        // With no verified snapshot and no explicit server rejection, sending
+        // a free payload would overwrite the watch's valid offline grace after
+        // a cold launch without network. Keep the cached watch state instead.
+        if remote == nil,
+           freshAccess == nil,
+           access == nil,
+           !bootstrapForbidden,
+           AuthTokenStore.shared.accessToken != nil {
+            return
+        }
+
         let media = remote?.media.map {
             $0.asset(resolvingAgainst: AppConfig.apiBaseURL)
         } ?? []
-        let snapshot = remote?.access ?? freshAccess ?? access
+        let snapshot: AccessSnapshot? = bootstrapForbidden && freshAccess == nil
+            ? nil
+            : (remote?.access ?? freshAccess ?? access)
         let verification = remote?.serverTime
             ?? freshVerifiedAt
             ?? verifiedAt
-            ?? Date.distantPast
+            ?? (access != nil ? Date() : Date.distantPast)
         let exercises = remote?.programDay.watchExercises
             ?? day.exercises.map { WorkoutExercise(planExercise: $0) }
         let payload = WatchBootstrap(
@@ -263,8 +285,12 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         guard let data = try? JSONEncoder().encode(envelope) else {
             return false
         }
-        try? data.write(to: url, options: [.atomic])
-        return true
+        do {
+            try data.write(to: url, options: [.atomic])
+            return true
+        } catch {
+            return false
+        }
     }
 
     private func sendAck(sessionID: UUID, revision: Int) {
@@ -476,10 +502,6 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
                 return
             }
             guard storeInbox(envelope) else {
-                sendAck(
-                    sessionID: envelope.sessionID,
-                    revision: envelope.snapshot.revision
-                )
                 return
             }
             sendAck(
