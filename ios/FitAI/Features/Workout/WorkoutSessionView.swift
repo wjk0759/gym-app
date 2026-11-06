@@ -1,4 +1,5 @@
 import Combine
+import FitAIWorkoutCore
 import SwiftUI
 import UIKit
 
@@ -228,6 +229,16 @@ struct WorkoutSessionView: View {
             }
             .onReceive(timer) { _ in
                 tickRest()
+            }
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: .fitaiWatchSessionUpdated
+                )
+            ) { notification in
+                guard let envelope = notification.object as? WatchSessionEnvelope else {
+                    return
+                }
+                applyWatchSnapshot(envelope)
             }
             .confirmationDialog(
                 "暂停或结束训练？",

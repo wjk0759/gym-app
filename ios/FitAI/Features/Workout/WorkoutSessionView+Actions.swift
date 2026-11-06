@@ -1,3 +1,4 @@
+import FitAIWorkoutCore
 import SwiftUI
 
 extension WorkoutSessionView {
@@ -121,6 +122,35 @@ extension WorkoutSessionView {
             ),
             persistImmediately: persistImmediately
         )
+    }
+
+    /// The watch is authoritative during a watch-led session. Apply its
+    /// snapshot to the phone UI and persist the draft before the phone leaves
+    /// the foreground.
+    func applyWatchSnapshot(_ envelope: WatchSessionEnvelope) {
+        guard !didFinish,
+              envelope.snapshot.programDayID == day.id else { return }
+        let snapshot = envelope.snapshot
+        guard snapshot.status != .discarded else {
+            store.clearWorkoutDraft(dayID: day.id)
+            didFinish = true
+            dismiss()
+            return
+        }
+
+        didLoadDraft = true
+        logs = snapshot.sets.map { SetLog(record: $0) }
+        index = min(snapshot.currentExerciseIndex, activeDay.exercises.count)
+        if let remaining = snapshot.remainingRest(at: Date()), remaining > 0 {
+            restTotal = max(1, remaining)
+            restRemaining = max(0, Int(remaining.rounded()))
+        } else {
+            restRemaining = nil
+        }
+        saveDraftIfNeeded()
+        if snapshot.status == .finished {
+            finish()
+        }
     }
 
     func pauseAndExit() {

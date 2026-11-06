@@ -118,5 +118,15 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         lastReceivedEnvelope = envelope
         lastSyncAt = Date()
         onSnapshotReceived?(envelope)
+        NotificationCenter.default.post(
+            name: .fitaiWatchSessionUpdated,
+            object: envelope
+        )
     }
+}
+
+extension Notification.Name {
+    static let fitaiWatchSessionUpdated = Notification.Name(
+        "fitai.watch.session.updated"
+    )
 }
