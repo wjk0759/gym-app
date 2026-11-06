@@ -20,7 +20,9 @@ struct WatchMovieView: View {
                 Color.black
             }
         }
-        .onAppear(perform: makePlayerIfNeeded)
+        .onAppear {
+            makePlayerIfNeeded()
+        }
         .onDisappear {
             player?.pause()
             player = nil
