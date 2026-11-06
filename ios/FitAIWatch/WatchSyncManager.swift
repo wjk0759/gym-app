@@ -42,6 +42,16 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
                 ?? WatchCredentialStore.shared.runtime?.userID
         )
         outbox[snapshot.sessionID.uuidString] = envelope
+        if outbox.count > 20 {
+            let overflow = outbox.count - 20
+            let staleKeys = outbox.values
+                .sorted(by: { $0.sentAt < $1.sentAt })
+                .prefix(overflow)
+                .map { $0.sessionID.uuidString }
+            for key in staleKeys {
+                outbox.removeValue(forKey: key)
+            }
+        }
         pendingCount = outbox.count
         persistOutbox()
         flush()

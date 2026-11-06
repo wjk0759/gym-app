@@ -389,9 +389,15 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         let payload: [String: Any] = ["type": "command", "command": data]
         session.sendMessage(
             payload,
-            replyHandler: nil,
-            errorHandler: nil
-        )
+            replyHandler: nil
+        ) { _ in
+            Task { @MainActor in
+                NotificationCenter.default.post(
+                    name: .fitaiWatchCommandFailed,
+                    object: nil
+                )
+            }
+        }
         return true
     }
 
@@ -568,5 +574,8 @@ extension Notification.Name {
     )
     static let fitaiWatchBecameAvailable = Notification.Name(
         "fitai.watch.became.available"
+    )
+    static let fitaiWatchCommandFailed = Notification.Name(
+        "fitai.watch.command.failed"
     )
 }

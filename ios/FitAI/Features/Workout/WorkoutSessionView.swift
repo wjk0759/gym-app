@@ -266,6 +266,13 @@ struct WorkoutSessionView: View {
             }
             .onReceive(
                 NotificationCenter.default.publisher(
+                    for: .fitaiWatchCommandFailed
+                )
+            ) { _ in
+                store.toast = "手表连接中断，请稍后重试"
+            }
+            .onReceive(
+                NotificationCenter.default.publisher(
                     for: .fitaiWatchBootstrapRequested
                 )
             ) { notification in

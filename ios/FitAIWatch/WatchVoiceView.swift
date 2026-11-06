@@ -107,6 +107,13 @@ struct WatchVoiceView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
         }
     }
 
