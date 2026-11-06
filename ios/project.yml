@@ -29,6 +29,7 @@ targets:
           - "Resources/Info.plist"
     dependencies:
       - package: FitAIWorkoutCore
+        product: FitAIWorkoutCore
       - target: FitAIWatch
         embed: true
     settings:
@@ -71,6 +72,7 @@ targets:
           - "FitAIWatch.entitlements"
     dependencies:
       - package: FitAIWorkoutCore
+        product: FitAIWorkoutCore
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.wjk.fitai.watchkitapp
@@ -104,6 +106,7 @@ targets:
     dependencies:
       - target: FitAI
       - package: FitAIWorkoutCore
+        product: FitAIWorkoutCore
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.wjk.fitai.tests
