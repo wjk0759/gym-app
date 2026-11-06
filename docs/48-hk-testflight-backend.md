@@ -93,7 +93,7 @@ profiles.training_stage：beginner / intermediate / advanced
 - 训练日按 Asia/Shanghai 去重，只算至少完成 1 组的 session。
 - 阶段只升不降。
 - 计划和每周调整按动作读取最近 12 周 `set_logs`，没有记录时回退到最近计划目标或保守估算。
-- 免费教练额度为每周 10 条。
+- 免费教练额度为每天 3 条，按北京时间 00:00 刷新，不累计。
 
 ## 6. 常用命令
 
