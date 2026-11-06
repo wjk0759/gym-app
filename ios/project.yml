@@ -29,6 +29,8 @@ targets:
           - "Resources/Info.plist"
     dependencies:
       - package: FitAIWorkoutCore
+      - target: FitAIWatch
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.wjk.fitai
@@ -57,6 +59,37 @@ targets:
       testTargets:
         - FitAITests
         - FitAIUITests
+
+  FitAIWatch:
+    type: application
+    platform: watchOS
+    deploymentTarget: "10.0"
+    sources:
+      - path: FitAIWatch
+        excludes:
+          - "Info.plist"
+          - "FitAIWatch.entitlements"
+    dependencies:
+      - package: FitAIWorkoutCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.wjk.fitai.watchkitapp
+        PRODUCT_NAME: FitAIWatch
+        INFOPLIST_FILE: FitAIWatch/Info.plist
+        CODE_SIGN_ENTITLEMENTS: FitAIWatch/FitAIWatch.entitlements
+        TARGETED_DEVICE_FAMILY: "4"
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        FITAI_COMPANION_BUNDLE_ID: com.wjk.fitai
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.wjk.fitai.dev.watchkitapp
+          FITAI_COMPANION_BUNDLE_ID: com.wjk.fitai.dev
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: com.wjk.fitai.watchkitapp
+          FITAI_COMPANION_BUNDLE_ID: com.wjk.fitai
 
   FitAITests:
     type: bundle.unit-test
