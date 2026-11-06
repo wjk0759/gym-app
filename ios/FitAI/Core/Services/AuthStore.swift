@@ -276,6 +276,8 @@ final class AuthStore {
 
     func logout() async {
         if let token = AuthTokenStore.shared.accessToken {
+            // Revoke watch sessions while the phone token is still valid.
+            try? await APIClient.shared.revokeWatchSessions()
             let _: EmptyResponse? = try? await request(
                 "/auth/logout",
                 method: "POST",

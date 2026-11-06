@@ -249,8 +249,15 @@ final class WatchAPIClient {
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let text = try container.decode(String.self)
-            if let date = Self.fractional.date(from: text)
-                ?? Self.standard.date(from: text) {
+            let fractional = ISO8601DateFormatter()
+            fractional.formatOptions = [
+                .withInternetDateTime,
+                .withFractionalSeconds
+            ]
+            let standard = ISO8601DateFormatter()
+            standard.formatOptions = [.withInternetDateTime]
+            if let date = fractional.date(from: text)
+                ?? standard.date(from: text) {
                 return date
             }
             throw DecodingError.dataCorruptedError(
@@ -267,16 +274,4 @@ final class WatchAPIClient {
             sessionExpired: true
         )
     }
-
-    private static let fractional: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
-
-    private static let standard: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter
-    }()
 }

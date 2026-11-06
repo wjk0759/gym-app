@@ -6,6 +6,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.db import Base
 from app.models import AuthSession, User
+from app.routers.watch import revoke_watch_sessions
 from app.services.auth import (
     check_access_session,
     decode_access_token,
@@ -72,6 +73,20 @@ def test_watch_session_rejects_bad_or_inactive_devices():
     with pytest.raises(HTTPException) as exc:
         issue_watch_session(db, "watch-user", "watch-22222222")
     assert exc.value.status_code == 403
+
+
+def test_logout_revokes_all_watch_sessions():
+    db = _session()
+    issue_watch_session(db, "watch-user", "watch-55555555")
+    issue_watch_session(db, "watch-user", "watch-66666666")
+
+    result = revoke_watch_sessions("watch-user", db)
+
+    assert result["revoked"] == 2
+    rows = db.execute(
+        select(AuthSession).where(AuthSession.user_id == "watch-user")
+    ).scalars().all()
+    assert all(row.revoked_at is not None for row in rows)
 
 
 def test_watch_refresh_device_mismatch_revokes_only_watch_session():

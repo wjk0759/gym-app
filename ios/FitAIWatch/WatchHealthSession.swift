@@ -13,7 +13,7 @@ final class WatchHealthSession: NSObject, HKWorkoutSessionDelegate {
     private var session: HKWorkoutSession?
     private(set) var isRunning = false
     private(set) var isPaused = false
-    private var hasRequestedAuthorization = false
+    private var authorizationGranted: Bool?
 
     func startIfNeeded() async {
         guard HKHealthStore.isHealthDataAvailable(), !isRunning else { return }
@@ -58,11 +58,10 @@ final class WatchHealthSession: NSObject, HKWorkoutSessionDelegate {
     }
 
     private func requestAuthorizationIfNeeded() async -> Bool {
-        if hasRequestedAuthorization {
-            return true
+        if let authorizationGranted {
+            return authorizationGranted
         }
-        hasRequestedAuthorization = true
-        return await withCheckedContinuation { continuation in
+        let granted = await withCheckedContinuation { continuation in
             healthStore.requestAuthorization(
                 toShare: [HKObjectType.workoutType()],
                 read: []
@@ -70,6 +69,8 @@ final class WatchHealthSession: NSObject, HKWorkoutSessionDelegate {
                 continuation.resume(returning: success)
             }
         }
+        authorizationGranted = granted
+        return granted
     }
 
     nonisolated func workoutSession(

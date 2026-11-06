@@ -146,6 +146,13 @@ struct WorkoutSessionView: View {
                 onEditReps: { valueEditor = .reps },
                 onUndoLast: {
                     guard !logs.isEmpty else { return }
+                    if isWatchLed {
+                        let command = WorkoutCommand.undoLastSet(
+                            .init(at: Date(), source: .phone)
+                        )
+                        _ = sendToWatch(command)
+                        return
+                    }
                     logs.removeLast()
                     restRemaining = nil
                 },

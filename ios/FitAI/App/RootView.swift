@@ -98,23 +98,26 @@ struct RootView: View {
                 for: .fitaiWatchBootstrapRequested
             )
         ) { notification in
-            guard let dayID = notification.object as? UUID,
-                  let day = store.plan?.days.first(where: { $0.id == dayID }),
-                  auth.isAuthenticated else {
-                return
-            }
-            Task {
-                await WatchSyncManager.shared.prepareAndSendBootstrap(
-                    day: day,
-                    access: store.accessSnapshot,
-                    force: true
-                )
+            guard auth.isAuthenticated else { return }
+            if let dayID = notification.object as? UUID,
+               let day = store.plan?.days.first(where: { $0.id == dayID }) {
+                Task {
+                    await WatchSyncManager.shared.prepareAndSendBootstrap(
+                        day: day,
+                        access: store.accessSnapshot,
+                        verifiedAt: store.access.verifiedAt,
+                        force: true
+                    )
+                }
+            } else {
+                preloadTodayForWatch(force: true)
             }
         }
         .onChange(of: store.access.isPro) { _, _ in
             preloadTodayForWatch(force: true)
         }
         .onChange(of: store.plan?.id) { _, _ in
+            ingestPendingWatchSessions()
             preloadTodayForWatch()
         }
         .onChange(of: auth.isAuthenticated) { _, _ in
@@ -237,6 +240,7 @@ struct RootView: View {
             await WatchSyncManager.shared.prepareAndSendBootstrap(
                 day: day,
                 access: store.accessSnapshot,
+                verifiedAt: store.access.verifiedAt,
                 force: force
             )
         }

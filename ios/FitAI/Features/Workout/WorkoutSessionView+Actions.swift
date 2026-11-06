@@ -33,9 +33,41 @@ extension WorkoutSessionView {
         return "\(load) × \(reps) 次"
     }
 
+    var isWatchLed: Bool {
+        WatchSyncManager.shared.hasActiveWatchSession(for: day.id)
+    }
+
+    @discardableResult
+    func sendToWatch(_ command: WorkoutCommand) -> Bool {
+        if WatchSyncManager.shared.send(command: command) {
+            return true
+        }
+        Haptics.warning()
+        store.toast = "手表未连接：本次训练以手表为准，请稍后再操作"
+        return false
+    }
+
     func completeSet(_ exercise: PlanExercise) {
         let nextIndex = completedSets(for: exercise) + 1
         let isBodyweight = exercise.exercise?.equipment == .bodyweight
+        if isWatchLed {
+            let timed = exercise.reps.contains("秒")
+            let command = WorkoutCommand.completeSet(
+                .init(
+                    exerciseID: exercise.id,
+                    setIndex: nextIndex,
+                    weightKG: isBodyweight ? 0 : weight,
+                    reps: timed ? nil : reps,
+                    seconds: timed ? reps : nil,
+                    rpe: rpe,
+                    at: Date(),
+                    source: .phone
+                )
+            )
+            guard sendToWatch(command) else { return }
+            Haptics.success()
+            return
+        }
         logs.append(
             SetLog(
                 slug: exercise.slug,
@@ -53,6 +85,13 @@ extension WorkoutSessionView {
     }
 
     func advance() {
+        if isWatchLed {
+            let command = WorkoutCommand.advanceExercise(
+                .init(at: Date(), source: .phone)
+            )
+            guard sendToWatch(command) else { return }
+            return
+        }
         restRemaining = nil
         if index < activeDay.exercises.count - 1 {
             index += 1
@@ -160,6 +199,7 @@ extension WorkoutSessionView {
         await WatchSyncManager.shared.prepareAndSendBootstrap(
             day: day,
             access: store.accessSnapshot,
+            verifiedAt: store.access.verifiedAt,
             force: true
         )
     }
@@ -207,6 +247,12 @@ extension WorkoutSessionView {
     }
 
     func pauseAndExit() {
+        if isWatchLed {
+            let command = WorkoutCommand.pause(
+                .init(at: Date(), source: .phone)
+            )
+            guard sendToWatch(command) else { return }
+        }
         saveDraftIfNeeded(persistImmediately: true)
         store.flushPersistence()
         dismiss()
@@ -215,6 +261,14 @@ extension WorkoutSessionView {
     func finish() {
         guard !logs.isEmpty else {
             showEmptySaveAlert = true
+            return
+        }
+        if isWatchLed {
+            let command = WorkoutCommand.finish(
+                .init(at: Date(), source: .phone)
+            )
+            guard sendToWatch(command) else { return }
+            store.toast = "已通知手表结束，正在保存"
             return
         }
         didFinish = true
@@ -234,6 +288,10 @@ extension WorkoutSessionView {
     }
 
     func openAdjustSheet(_ exercise: PlanExercise) {
+        if isWatchLed {
+            store.toast = "本次训练以手表为准，请在手表上调整"
+            return
+        }
         adjustExerciseID = exercise.id
         adjustSets = exercise.sets
         adjustReps = WorkoutPickerOptions.normalizedReps(exercise.reps)

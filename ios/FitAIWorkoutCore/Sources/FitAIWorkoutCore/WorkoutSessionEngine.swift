@@ -172,6 +172,18 @@ public enum WorkoutCommand: Codable, Hashable, Sendable {
         case .finish(let value): return value.source
         }
     }
+
+    public var at: Date {
+        switch self {
+        case .completeSet(let value): return value.at
+        case .undoLastSet(let value): return value.at
+        case .pause(let value): return value.at
+        case .resume(let value): return value.at
+        case .skipRest(let value): return value.at
+        case .advanceExercise(let value): return value.at
+        case .finish(let value): return value.at
+        }
+    }
 }
 
 public enum WorkoutEvent: Codable, Hashable, Sendable {

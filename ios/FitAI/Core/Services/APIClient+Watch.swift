@@ -190,6 +190,14 @@ extension APIClient {
         )
     }
 
+    func revokeWatchSessions() async throws {
+        try await sendVoid(
+            path: "watch/session",
+            method: "DELETE",
+            body: nil
+        )
+    }
+
     func createWatchSession(
         deviceID: String,
         deviceName: String = "Apple Watch"

@@ -10,6 +10,7 @@ final class WatchWorkoutStore {
     private(set) var bootstrap: WatchBootstrap?
     private(set) var engine: WorkoutSessionEngine
     private(set) var isPro: Bool
+    private(set) var hasStartedWorkout = false
     private(set) var lastError: String?
 
     /// Wired to WatchConnectivity by the app shell. The store never imports
@@ -24,7 +25,7 @@ final class WatchWorkoutStore {
     var hasUnfinishedWork: Bool {
         !snapshot.isFinished
             && !snapshot.exercises.isEmpty
-            && (!snapshot.sets.isEmpty || snapshot.isPaused)
+            && (hasStartedWorkout || !snapshot.sets.isEmpty || snapshot.isPaused)
     }
 
     var canTrainNow: Bool { isPro || hasUnfinishedWork }
@@ -85,24 +86,34 @@ final class WatchWorkoutStore {
     }
 
     func applyBootstrap(_ payload: WatchBootstrap) {
+        if let current = bootstrap,
+           current.programDayID == payload.programDayID,
+           payload.generatedAt < current.generatedAt {
+            return
+        }
         let wasSameDay = bootstrap?.programDayID == payload.programDayID
-        let hasUnfinishedWork = !wasSameDay
+        let accountChanged = payload.userID != nil
+            && bootstrap?.userID != nil
+            && payload.userID != bootstrap?.userID
+        let hasUnfinishedWork = !accountChanged
+            && !wasSameDay
             && !engine.snapshot.sets.isEmpty
             && !engine.snapshot.isFinished
 
+        let access = mergedAccess(payload.access)
         WatchCredentialStore.shared.apply(
             apiBaseURL: payload.apiBaseURL,
             userID: payload.userID,
             auth: payload.auth
         )
-        isPro = payload.access.canTrain(at: Date())
+        isPro = access.canTrain(at: Date())
 
         // A new day must not erase a watch-led session that has already logged
         // sets. Keep the old plan until that session is finished or discarded;
         // only the entitlement/config is refreshed.
         if hasUnfinishedWork {
             if var current = bootstrap {
-                current.access = payload.access
+                current.access = access
                 current.auth = payload.auth ?? current.auth
                 current.apiBaseURL = payload.apiBaseURL ?? current.apiBaseURL
                 current.userID = payload.userID ?? current.userID
@@ -112,14 +123,34 @@ final class WatchWorkoutStore {
             return
         }
 
-        bootstrap = payload
+        var applied = payload
+        applied.access = access
+        bootstrap = applied
         WatchMediaStore.shared.prune(
             keeping: Set(payload.exercises.map(\.slug))
         )
         if !wasSameDay || engine.snapshot.isFinished {
             engine = Self.makeEngine(from: payload)
+            hasStartedWorkout = false
         }
         persist()
+    }
+
+    /// The watch may have directly refreshed Pro more recently than the phone.
+    /// Do not shorten its offline grace with an older phone timestamp, but do
+    /// apply a server-returned free/refunded state immediately.
+    private func mergedAccess(_ incoming: WatchAccess) -> WatchAccess {
+        guard incoming.isPro,
+              let current = bootstrap?.access,
+              current.isPro,
+              current.lastVerifiedAt > incoming.lastVerifiedAt else {
+            return incoming
+        }
+        return WatchAccess(
+            isPro: true,
+            proExpiresAt: incoming.proExpiresAt ?? current.proExpiresAt,
+            lastVerifiedAt: current.lastVerifiedAt
+        )
     }
 
     func refreshEntitlement() {
@@ -136,6 +167,7 @@ final class WatchWorkoutStore {
                 proExpiresAt: nil,
                 lastVerifiedAt: Date()
             )
+            payload.auth = nil
             bootstrap = payload
         }
         persist()
@@ -166,7 +198,19 @@ final class WatchWorkoutStore {
     @discardableResult
     func apply(_ command: WorkoutCommand) -> WorkoutTransition? {
         do {
+            let startsSession = !hasStartedWorkout
+                && command.startsWorkout
+                && engine.snapshot.sets.isEmpty
+                && !engine.snapshot.isFinished
+            if startsSession {
+                var snapshot = engine.snapshot
+                snapshot.startedAt = command.at
+                engine = WorkoutSessionEngine(snapshot: snapshot)
+            }
             let transition = try engine.apply(command)
+            if startsSession {
+                hasStartedWorkout = true
+            }
             lastError = nil
             persist()
             onSnapshotChange?(transition.snapshot)
@@ -203,6 +247,7 @@ final class WatchWorkoutStore {
     private struct PersistedState: Codable {
         var bootstrap: WatchBootstrap
         var snapshot: WorkoutSessionSnapshot
+        var hasStarted: Bool?
     }
 
     private var stateURL: URL {
@@ -224,11 +269,14 @@ final class WatchWorkoutStore {
         }
         bootstrap = state.bootstrap
         engine = WorkoutSessionEngine(snapshot: state.snapshot)
+        hasStartedWorkout = state.hasStarted
+            ?? (!state.snapshot.sets.isEmpty || state.snapshot.isPaused)
         isPro = state.bootstrap.access.canTrain(at: Date())
+        // Keychain may hold a newer token pair than the cached bootstrap.
         WatchCredentialStore.shared.apply(
             apiBaseURL: state.bootstrap.apiBaseURL,
             userID: state.bootstrap.userID,
-            auth: state.bootstrap.auth
+            auth: WatchCredentialStore.shared.auth ?? state.bootstrap.auth
         )
         WatchMediaStore.shared.prune(
             keeping: Set(state.bootstrap.exercises.map(\.slug))
@@ -236,10 +284,28 @@ final class WatchWorkoutStore {
     }
 
     private func persist() {
-        guard let bootstrap else { return }
-        let state = PersistedState(bootstrap: bootstrap, snapshot: engine.snapshot)
+        guard var bootstrap else { return }
+        // Tokens live only in the Keychain. Keep the crash-recovery file free
+        // of credentials in case the app container is inspected or backed up.
+        bootstrap.auth = nil
+        let state = PersistedState(
+            bootstrap: bootstrap,
+            snapshot: engine.snapshot,
+            hasStarted: hasStartedWorkout
+        )
         guard let data = try? JSONEncoder().encode(state) else { return }
         try? data.write(to: stateURL, options: [.atomic])
+    }
+}
+
+private extension WorkoutCommand {
+    var startsWorkout: Bool {
+        switch self {
+        case .completeSet, .pause, .resume, .advanceExercise, .finish:
+            return true
+        case .undoLastSet, .skipRest:
+            return false
+        }
     }
 }
 

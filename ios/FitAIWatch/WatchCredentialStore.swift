@@ -53,6 +53,14 @@ final class WatchCredentialStore {
             if let data = try? JSONEncoder().encode(auth) {
                 write(authKey, data: data)
             }
+        } else if let userID,
+                  let data = read(authKey),
+                  let current = try? JSONDecoder().decode(
+                      WatchAuth.self,
+                      from: data
+                  ),
+                  current.userID != userID {
+            delete(authKey)
         }
     }
 

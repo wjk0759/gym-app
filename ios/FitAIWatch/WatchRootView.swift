@@ -40,6 +40,9 @@ struct WatchRootView: View {
         .onChange(of: store.snapshot.status) { _, status in
             syncHealthSession(with: status)
         }
+        .onChange(of: store.hasStartedWorkout) { _, _ in
+            syncHealthSession(with: store.snapshot.status)
+        }
         .onChange(of: store.bootstrap?.programDayID) { _, _ in
             syncHealthSession(with: store.snapshot.status)
         }
@@ -82,7 +85,9 @@ struct WatchRootView: View {
     }
 
     private func syncHealthSession(with status: WorkoutSessionStatus) {
-        guard store.canTrainNow, !store.snapshot.exercises.isEmpty else {
+        guard store.canTrainNow,
+              store.hasStartedWorkout,
+              !store.snapshot.exercises.isEmpty else {
             WatchHealthSession.shared.stop()
             return
         }

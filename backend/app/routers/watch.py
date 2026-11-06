@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
+from sqlalchemy import select
 
 from ..deps import CurrentUser, DBSession
-from ..models import utcnow
+from ..models import AuthSession, utcnow
 from ..schemas import WatchSessionIn
 from ..services import access, auth
 from ..services.queries import active_program
@@ -40,6 +41,25 @@ def create_session(
         payload.device_name,
         meta,
     )
+
+
+@router.delete("/session")
+def revoke_watch_sessions(user_id: CurrentUser, db: DBSession):
+    """Revoke every watch session for this account on phone logout."""
+    rows = db.execute(
+        select(AuthSession).where(
+            AuthSession.user_id == user_id,
+            AuthSession.client_type == "watch",
+            AuthSession.revoked_at.is_(None),
+        )
+    ).scalars()
+    now = utcnow()
+    revoked = 0
+    for row in rows:
+        row.revoked_at = now
+        revoked += 1
+    db.commit()
+    return {"ok": True, "revoked": revoked}
 
 
 @router.get("/bootstrap")

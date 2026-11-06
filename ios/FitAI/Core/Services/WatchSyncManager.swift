@@ -17,6 +17,8 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     private(set) var isWatchAppInstalled = false
     private(set) var lastSyncAt: Date?
     private(set) var lastReceivedEnvelope: WatchSessionEnvelope?
+    private(set) var watchSessionDayID: UUID?
+    private var watchSessionID: UUID?
 
     /// Set by `WorkoutSessionView` while the matching day is on screen. When
     /// set, snapshots update the UI directly; otherwise they go to the durable
@@ -33,6 +35,8 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     private let watchDeviceKey = "fitai_watch_session_device_id"
     private let lastBootstrapDayKey = "fitai_watch_last_bootstrap_day"
     private let lastBootstrapAtKey = "fitai_watch_last_bootstrap_at"
+    private let appliedRevisionsKey = "fitai_watch_applied_revisions"
+    private let activeWatchSessionKey = "fitai_watch_active_session"
 
     private var watchDeviceID: String {
         if let value = UserDefaults.standard.string(forKey: watchDeviceKey),
@@ -42,6 +46,11 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         let value = "watch-" + UUID().uuidString.lowercased()
         UserDefaults.standard.set(value, forKey: watchDeviceKey)
         return value
+    }
+
+    override init() {
+        super.init()
+        restoreActiveWatchSession()
     }
 
     func activate() {
@@ -59,9 +68,12 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     func prepareAndSendBootstrap(
         day: PlanDay,
         access: AccessSnapshot?,
+        verifiedAt: Date?,
         force: Bool = false
     ) async {
-        guard let session, !isPreparingBootstrap else { return }
+        guard let session,
+              session.activationState == .activated,
+              !isPreparingBootstrap else { return }
         if !force,
            UserDefaults.standard.string(forKey: lastBootstrapDayKey)
                == day.id.uuidString,
@@ -76,8 +88,17 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
 
         var remote: RemoteWatchBootstrap?
         var auth: WatchAuth?
+        var freshAccess: AccessSnapshot?
+        var freshVerifiedAt: Date?
         if AuthTokenStore.shared.accessToken != nil {
             remote = try? await APIClient.shared.fetchWatchBootstrap(dayID: day.id)
+            if remote == nil,
+               let fresh = try? await APIClient.shared.fetchAccess() {
+                // The bootstrap 403s for a free/refunded account. Never fall
+                // back to a stale local Pro snapshot after a server rejection.
+                freshAccess = fresh
+                freshVerifiedAt = Date()
+            }
             if let credentials = try? await APIClient.shared.createWatchSession(
                 deviceID: watchDeviceID
             ) {
@@ -88,12 +109,15 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         let media = remote?.media.map {
             $0.asset(resolvingAgainst: AppConfig.apiBaseURL)
         } ?? []
-        let snapshot = remote?.access ?? access
-        let verifiedAt = remote?.serverTime ?? Date()
+        let snapshot = remote?.access ?? freshAccess ?? access
+        let verification = remote?.serverTime
+            ?? freshVerifiedAt
+            ?? verifiedAt
+            ?? Date.distantPast
         let exercises = remote?.programDay.watchExercises
             ?? day.exercises.map { WorkoutExercise(planExercise: $0) }
         let payload = WatchBootstrap(
-            serverTime: verifiedAt,
+            serverTime: verification,
             programDayID: remote?.programDay.id ?? day.id,
             dayTitle: remote?.programDay.title ?? day.title,
             exercises: exercises,
@@ -101,13 +125,13 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
             access: WatchAccess(
                 isPro: snapshot?.isPro == true,
                 proExpiresAt: snapshot?.proExpiresAt,
-                lastVerifiedAt: verifiedAt
+                lastVerifiedAt: verification
             ),
             userID: AuthTokenStore.shared.userID,
             apiBaseURL: AppConfig.apiBaseURLString,
             auth: auth
         )
-        sendBootstrap(payload)
+        guard sendBootstrap(payload) else { return }
         pendingMedia = media
         UserDefaults.standard.set(
             day.id.uuidString,
@@ -119,9 +143,12 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         }
     }
 
-    private func sendBootstrap(_ payload: WatchBootstrap) {
+    @discardableResult
+    private func sendBootstrap(_ payload: WatchBootstrap) -> Bool {
         guard let session,
-              let data = try? JSONEncoder().encode(payload) else { return }
+              let data = try? JSONEncoder().encode(payload) else {
+            return false
+        }
         let message: [String: Any] = ["type": "bootstrap", "bootstrap": data]
         try? session.updateApplicationContext(message)
         session.transferUserInfo(message)
@@ -129,6 +156,7 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
             session.sendMessage(message, replyHandler: nil)
         }
         lastSyncAt = Date()
+        return true
     }
 
     // MARK: - Durable inbox
@@ -187,14 +215,40 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
             return
         }
         try? FileManager.default.removeItem(at: url)
+        markApplied(sessionID: sessionID, revision: revision)
         sendAck(sessionID: sessionID, revision: revision)
     }
 
     func clearInbox() {
         try? FileManager.default.removeItem(at: inboxDirectory)
+        UserDefaults.standard.removeObject(forKey: appliedRevisionsKey)
     }
 
-    private func storeInbox(_ envelope: WatchSessionEnvelope) {
+    private func appliedRevision(sessionID: UUID) -> Int {
+        let values = UserDefaults.standard.dictionary(
+            forKey: appliedRevisionsKey
+        ) as? [String: Int]
+        return values?[sessionID.uuidString] ?? 0
+    }
+
+    private func markApplied(sessionID: UUID, revision: Int) {
+        var values = UserDefaults.standard.dictionary(
+            forKey: appliedRevisionsKey
+        ) as? [String: Int] ?? [:]
+        values[sessionID.uuidString] = max(
+            values[sessionID.uuidString] ?? 0,
+            revision
+        )
+        if values.count > 100 {
+            let overflow = values.count - 100
+            for key in values.keys.sorted().prefix(overflow) {
+                values.removeValue(forKey: key)
+            }
+        }
+        UserDefaults.standard.set(values, forKey: appliedRevisionsKey)
+    }
+
+    private func storeInbox(_ envelope: WatchSessionEnvelope) -> Bool {
         let url = inboxDirectory
             .appendingPathComponent(envelope.sessionID.uuidString)
             .appendingPathExtension("json")
@@ -203,11 +257,14 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
                WatchSessionEnvelope.self,
                from: data
            ),
-           existing.snapshot.revision > envelope.snapshot.revision {
-            return
+           existing.snapshot.revision >= envelope.snapshot.revision {
+            return false
         }
-        guard let data = try? JSONEncoder().encode(envelope) else { return }
+        guard let data = try? JSONEncoder().encode(envelope) else {
+            return false
+        }
         try? data.write(to: url, options: [.atomic])
+        return true
     }
 
     private func sendAck(sessionID: UUID, revision: Int) {
@@ -226,9 +283,94 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     /// Stop the watch from using a logged-out account. Cached plan files stay
     /// on the watch so an offline workout can still be completed; only auth
     /// and pending sync state are cleared.
+    func hasActiveWatchSession(for dayID: UUID) -> Bool {
+        guard let saved = loadActiveWatchSession() else {
+            watchSessionDayID = nil
+            watchSessionID = nil
+            return false
+        }
+        if Date().timeIntervalSince(saved.savedAt) > 24 * 60 * 60 {
+            clearActiveWatchSession()
+            return false
+        }
+        return saved.dayID == dayID
+    }
+
+    private struct ActiveWatchSession: Codable {
+        var sessionID: UUID
+        var dayID: UUID
+        var userID: String?
+        var savedAt: Date
+    }
+
+    private func saveActiveWatchSession(
+        sessionID: UUID,
+        dayID: UUID
+    ) {
+        let value = ActiveWatchSession(
+            sessionID: sessionID,
+            dayID: dayID,
+            userID: AuthTokenStore.shared.userID,
+            savedAt: Date()
+        )
+        if let data = try? JSONEncoder().encode(value) {
+            UserDefaults.standard.set(data, forKey: activeWatchSessionKey)
+        }
+    }
+
+    private func loadActiveWatchSession() -> ActiveWatchSession? {
+        guard let data = UserDefaults.standard.data(
+            forKey: activeWatchSessionKey
+        ), let value = try? JSONDecoder().decode(
+            ActiveWatchSession.self,
+            from: data
+        ) else {
+            return nil
+        }
+        if let userID = value.userID,
+           userID != AuthTokenStore.shared.userID {
+            clearActiveWatchSession()
+            return nil
+        }
+        return value
+    }
+
+    private func clearActiveWatchSession() {
+        UserDefaults.standard.removeObject(forKey: activeWatchSessionKey)
+        watchSessionDayID = nil
+        watchSessionID = nil
+    }
+
+    private func restoreActiveWatchSession() {
+        guard let saved = loadActiveWatchSession(),
+              Date().timeIntervalSince(saved.savedAt) < 24 * 60 * 60 else {
+            return
+        }
+        watchSessionID = saved.sessionID
+        watchSessionDayID = saved.dayID
+    }
+
+    /// Phone commands are only accepted while the watch is reachable. Offline
+    /// the phone is a read-only mirror; it must not create a divergent session.
+    @discardableResult
+    func send(command: WorkoutCommand) -> Bool {
+        guard let session, session.isReachable,
+              let data = try? JSONEncoder().encode(command) else {
+            return false
+        }
+        let payload: [String: Any] = ["type": "command", "command": data]
+        session.sendMessage(
+            payload,
+            replyHandler: nil,
+            errorHandler: nil
+        )
+        return true
+    }
+
     func resetForLogout() {
         clearInbox()
         activeWorkoutDayID = nil
+        clearActiveWatchSession()
         guard let session else { return }
         let payload: [String: Any] = ["type": "logout"]
         try? session.updateApplicationContext(payload)
@@ -305,13 +447,12 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     private func receive(_ payload: [String: Any]) {
         switch payload["type"] as? String {
         case "requestBootstrap":
-            if let raw = payload["dayID"] as? String,
-               let dayID = UUID(uuidString: raw) {
-                NotificationCenter.default.post(
-                    name: .fitaiWatchBootstrapRequested,
-                    object: dayID
-                )
-            }
+            let dayID = (payload["dayID"] as? String)
+                .flatMap { UUID(uuidString: $0) }
+            NotificationCenter.default.post(
+                name: .fitaiWatchBootstrapRequested,
+                object: dayID
+            )
         case "session":
             guard let data = payload["session"] as? Data,
                   let envelope = try? JSONDecoder().decode(
@@ -326,11 +467,38 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
             }
             lastReceivedEnvelope = envelope
             lastSyncAt = Date()
-            storeInbox(envelope)
+            if envelope.snapshot.revision
+                <= appliedRevision(sessionID: envelope.sessionID) {
+                sendAck(
+                    sessionID: envelope.sessionID,
+                    revision: envelope.snapshot.revision
+                )
+                return
+            }
+            guard storeInbox(envelope) else {
+                sendAck(
+                    sessionID: envelope.sessionID,
+                    revision: envelope.snapshot.revision
+                )
+                return
+            }
             sendAck(
                 sessionID: envelope.sessionID,
                 revision: envelope.snapshot.revision
             )
+            if envelope.snapshot.isFinished {
+                if watchSessionID == nil
+                    || watchSessionID == envelope.sessionID {
+                    clearActiveWatchSession()
+                }
+            } else {
+                watchSessionID = envelope.sessionID
+                watchSessionDayID = envelope.snapshot.programDayID
+                saveActiveWatchSession(
+                    sessionID: envelope.sessionID,
+                    dayID: envelope.snapshot.programDayID
+                )
+            }
             onSnapshotReceived?(envelope)
             let name: Notification.Name =
                 activeWorkoutDayID == envelope.snapshot.programDayID

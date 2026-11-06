@@ -50,13 +50,11 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     /// Ask the phone for a fresh plan, media list and watch credentials. Called
     /// on launch and when connectivity returns after a reinstall.
     func requestBootstrapFromPhone() {
-        guard let session, let bootstrap = store?.bootstrap else {
-            return
+        guard let session else { return }
+        var payload: [String: Any] = ["type": "requestBootstrap"]
+        if let bootstrap = store?.bootstrap {
+            payload["dayID"] = bootstrap.programDayID.uuidString
         }
-        let payload: [String: Any] = [
-            "type": "requestBootstrap",
-            "dayID": bootstrap.programDayID.uuidString
-        ]
         session.transferUserInfo(payload)
         if session.isReachable {
             session.sendMessage(payload, replyHandler: nil)
@@ -210,6 +208,15 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
                 return
             }
             receiveBootstrap(bootstrap)
+        case "command":
+            guard let data = payload["command"] as? Data,
+                  let command = try? JSONDecoder().decode(
+                      WorkoutCommand.self,
+                      from: data
+                  ) else {
+                return
+            }
+            store?.apply(command)
         case "ack":
             applyAck(payload)
         case "logout":

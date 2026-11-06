@@ -15,4 +15,5 @@ def test_speech_text_strips_markdown_and_limits_length():
 def test_plan_changes_require_phone_confirmation():
     assert _requires_phone_confirmation("帮我把下周改成一周四练")
     assert _requires_phone_confirmation("给我加一组")
+    assert _requires_phone_confirmation("这个动作换一个动作")
     assert not _requires_phone_confirmation("还有几组？")

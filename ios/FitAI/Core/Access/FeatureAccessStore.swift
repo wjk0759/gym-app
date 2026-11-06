@@ -10,6 +10,9 @@ import Observation
 @Observable
 final class FeatureAccessStore {
     private(set) var snapshot: AccessSnapshot?
+    /// Last successful server verification. The watch uses this timestamp for
+    /// its three-day offline grace instead of the local clock.
+    private(set) var verifiedAt: Date?
 
     let paywall = ProPaywallCoordinator()
 
@@ -21,6 +24,7 @@ final class FeatureAccessStore {
 
     func clear() {
         snapshot = nil
+        verifiedAt = nil
     }
 
     @MainActor
@@ -31,6 +35,7 @@ final class FeatureAccessStore {
         }
         if let snapshot = try? await APIClient.shared.fetchAccess() {
             self.snapshot = snapshot
+            verifiedAt = Date()
         }
     }
 
@@ -38,6 +43,7 @@ final class FeatureAccessStore {
     func consumeOnboardingTrial() async {
         if let snapshot = try? await APIClient.shared.consumeOnboardingTrial() {
             self.snapshot = snapshot
+            verifiedAt = Date()
         }
     }
 
