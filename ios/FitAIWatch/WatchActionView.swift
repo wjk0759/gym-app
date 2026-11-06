@@ -1,17 +1,14 @@
 import SwiftUI
-import FitAIWorkoutCore
 
 /// The exercise page stays intentionally clean: a looping demo with no pause
-/// controls. Playback is wired to the real media pipeline in a later step.
+/// controls. The store resolves the current exercise clip from the preload.
 struct WatchActionView: View {
-    private var movieURL: URL? {
-        Bundle.main.url(forResource: "sample_loop", withExtension: "mp4")
-    }
+    let store: WatchWorkoutStore
 
     var body: some View {
         ZStack {
-            if let movieURL {
-                WatchMovieView(url: movieURL, isPlaying: true)
+            if let url = store.currentMediaURL {
+                WatchMovieView(url: url, isPlaying: true)
             } else {
                 placeholder
             }

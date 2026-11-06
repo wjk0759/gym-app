@@ -5,18 +5,23 @@ import FitAIWorkoutCore
 /// Watch-side workout controls. This is intentionally a thin surface over the
 /// shared engine; no workout rules live in the view.
 struct WatchTrainingView: View {
-    @State private var engine = WatchWorkoutPreview.engine
+    let store: WatchWorkoutStore
+
     @State private var now = Date()
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    private var snapshot: WorkoutSessionSnapshot {
+        store.snapshot
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 header
-                if let exercise = engine.snapshot.currentExercise {
+                if let exercise = snapshot.currentExercise {
                     exerciseCard(exercise)
-                    if let remaining = engine.snapshot.remainingRest(at: now) {
+                    if let remaining = snapshot.remainingRest(at: now) {
                         restCard(remaining)
                     }
                     controls(exercise)
@@ -37,12 +42,12 @@ struct WatchTrainingView: View {
             Text("训练")
                 .font(.headline)
             Spacer()
-            if engine.snapshot.isPaused {
+            if snapshot.isPaused {
                 Text("已暂停")
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.orange)
             } else {
-                Text("\(engine.snapshot.completedSetCount)/\(engine.snapshot.plannedSetCount) 组")
+                Text("\(snapshot.completedSetCount)/\(snapshot.plannedSetCount) 组")
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
@@ -55,7 +60,7 @@ struct WatchTrainingView: View {
                 .font(.headline)
                 .lineLimit(2)
             Text(
-                "\(engine.snapshot.currentSetIndex(for: exercise))/\(exercise.sets) 组"
+                "\(snapshot.currentSetIndex(for: exercise))/\(exercise.sets) 组"
                 + " · \(targetText(exercise.target))"
             )
             .font(.caption2)
@@ -65,7 +70,7 @@ struct WatchTrainingView: View {
                     .font(.title3.weight(.bold))
                     .monospacedDigit()
             }
-            if let next = engine.snapshot.nextExercise {
+            if let next = snapshot.nextExercise {
                 Text("下一个：\(next.name)")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -104,15 +109,15 @@ struct WatchTrainingView: View {
 
             HStack(spacing: 6) {
                 Button {
-                    if engine.snapshot.isPaused {
+                    if snapshot.isPaused {
                         apply(.resume(.init(at: now, source: .watch)))
                     } else {
                         apply(.pause(.init(at: now, source: .watch)))
                     }
                 } label: {
                     Label(
-                        engine.snapshot.isPaused ? "继续" : "暂停",
-                        systemImage: engine.snapshot.isPaused ? "play.fill" : "pause.fill"
+                        snapshot.isPaused ? "继续" : "暂停",
+                        systemImage: snapshot.isPaused ? "play.fill" : "pause.fill"
                     )
                 }
                 .buttonStyle(.bordered)
@@ -125,7 +130,7 @@ struct WatchTrainingView: View {
                 .buttonStyle(.bordered)
             }
 
-            if engine.snapshot.isExerciseComplete(exercise) {
+            if snapshot.isExerciseComplete(exercise) {
                 Button("下一个动作") {
                     apply(.advanceExercise(.init(at: now, source: .watch)))
                 }
@@ -138,7 +143,7 @@ struct WatchTrainingView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("训练完成")
                 .font(.headline)
-            Text("\(engine.snapshot.completedSetCount) 组")
+            Text("\(snapshot.completedSetCount) 组")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Button("结束训练") {
@@ -149,7 +154,7 @@ struct WatchTrainingView: View {
     }
 
     private func completeSet(_ exercise: WorkoutExercise) {
-        let setIndex = engine.snapshot.currentSetIndex(for: exercise)
+        let setIndex = snapshot.currentSetIndex(for: exercise)
         let reps: Int?
         let seconds: Int?
         switch exercise.target {
@@ -176,13 +181,8 @@ struct WatchTrainingView: View {
     }
 
     private func apply(_ command: WorkoutCommand) {
-        do {
-            _ = try engine.apply(command)
-            now = Date()
-        } catch {
-            // The production surface will map engine errors to watch haptics
-            // and a short message; keep the preview non-blocking for now.
-        }
+        _ = store.apply(command)
+        now = Date()
     }
 
     private func targetText(_ target: WorkoutExercise.Target) -> String {
@@ -197,39 +197,5 @@ struct WatchTrainingView: View {
     private func format(_ value: TimeInterval) -> String {
         let total = max(0, Int(value.rounded()))
         return String(format: "%02d:%02d", total / 60, total % 60)
-    }
-}
-
-/// A deterministic preview day until the watch bootstrap endpoint is wired.
-enum WatchWorkoutPreview {
-    static var engine: WorkoutSessionEngine {
-        let exercises = [
-            WorkoutExercise(
-                slug: "bench_press",
-                name: "哑铃卧推",
-                target: .reps(min: 8, max: 10),
-                sets: 3,
-                weightKG: 60,
-                restSeconds: 90,
-                equipment: "哑铃"
-            ),
-            WorkoutExercise(
-                slug: "plank",
-                name: "平板支撑",
-                target: .time(seconds: 30),
-                sets: 3,
-                weightKG: nil,
-                restSeconds: 45,
-                isBodyweight: true,
-                equipment: "自重"
-            )
-        ]
-        let snapshot = WorkoutSessionSnapshot(
-            programDayID: UUID(),
-            dayTitle: "推",
-            startedAt: Date(),
-            exercises: exercises
-        )
-        return WorkoutSessionEngine(snapshot: snapshot)
     }
 }

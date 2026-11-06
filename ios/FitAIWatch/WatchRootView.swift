@@ -1,28 +1,28 @@
 import SwiftUI
-import FitAIWorkoutCore
 
-/// The watch has exactly two surfaces: the workout controls and the exercise
-/// demo. The training page is the default; swiping left opens the demo, and
-/// swiping right returns to training.
+/// The watch has exactly two surfaces: workout controls and the exercise demo.
+/// Training is the default page; swiping left opens the demo, swiping right
+/// returns to training.
 struct WatchRootView: View {
-    #if DEBUG
-    @State private var isPro = true
-    #else
-    @State private var isPro = false
-    #endif
-
+    @State private var store = WatchWorkoutStore()
     @State private var page: WatchPage = .training
     @State private var dragOffset: CGFloat = 0
 
     var body: some View {
         Group {
-            if isPro {
+            if store.isPro {
                 pager
             } else {
                 WatchLockedView {
-                    // Entitlement sync is wired in a later step. Keeping this
-                    // action explicit avoids a dead-looking locked screen.
+                    store.refreshEntitlement()
                 }
+            }
+        }
+        .onAppear {
+            WatchSyncManager.shared.store = store
+            WatchSyncManager.shared.activate()
+            store.onSnapshotChange = { snapshot in
+                WatchSyncManager.shared.send(snapshot: snapshot)
             }
         }
     }
@@ -31,9 +31,9 @@ struct WatchRootView: View {
         GeometryReader { proxy in
             let width = max(1, proxy.size.width)
             HStack(spacing: 0) {
-                WatchTrainingView()
+                WatchTrainingView(store: store)
                     .frame(width: width)
-                WatchActionView()
+                WatchActionView(store: store)
                     .frame(width: width)
             }
             .offset(x: -CGFloat(page.rawValue) * width + dragOffset)

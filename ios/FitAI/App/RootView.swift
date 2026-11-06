@@ -64,6 +64,7 @@ struct RootView: View {
             isAuthenticated
         }
         .task {
+            WatchSyncManager.shared.activate()
             await auth.restoreIfNeeded()
             refreshSession()
         }

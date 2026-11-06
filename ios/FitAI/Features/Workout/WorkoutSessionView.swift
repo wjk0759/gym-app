@@ -206,6 +206,11 @@ struct WorkoutSessionView: View {
                 loadDraftIfNeeded()
                 prepare(currentExercise)
                 activeStartedAt = Date()
+                WatchSyncManager.shared.activate()
+                WatchSyncManager.shared.sendBootstrap(
+                    day: day,
+                    access: store.accessSnapshot
+                )
             }
             .onDisappear {
                 saveDraftIfNeeded(persistImmediately: true)

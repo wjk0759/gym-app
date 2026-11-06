@@ -234,6 +234,56 @@ final class WorkoutSessionEngineTests: XCTestCase {
         XCTAssertEqual(decoded.exercises[0].target, .reps(min: 10, max: 12))
     }
 
+    func testWatchAccessHonorsGraceAndHardExpiry() {
+        let now = start
+        let access = WatchAccess(
+            isPro: true,
+            proExpiresAt: now.addingTimeInterval(10 * 24 * 60 * 60),
+            lastVerifiedAt: now
+        )
+
+        XCTAssertTrue(access.canTrain(at: now))
+        XCTAssertTrue(
+            access.canTrain(at: now.addingTimeInterval(2 * 24 * 60 * 60))
+        )
+        XCTAssertFalse(
+            access.canTrain(at: now.addingTimeInterval(4 * 24 * 60 * 60))
+        )
+
+        let short = WatchAccess(
+            isPro: true,
+            proExpiresAt: now.addingTimeInterval(24 * 60 * 60),
+            lastVerifiedAt: now
+        )
+        XCTAssertFalse(
+            short.canTrain(at: now.addingTimeInterval(2 * 24 * 60 * 60))
+        )
+    }
+
+    func testWatchBootstrapRoundTrips() throws {
+        let bootstrap = WatchBootstrap(
+            serverTime: start,
+            programDayID: firstExerciseID,
+            dayTitle: "推",
+            exercises: [
+                WorkoutExercise(
+                    slug: "bench_press",
+                    name: "卧推",
+                    target: .reps(min: 8, max: 10),
+                    sets: 3,
+                    weightKG: 60
+                )
+            ],
+            media: [],
+            access: WatchAccess(isPro: true, proExpiresAt: nil, lastVerifiedAt: start)
+        )
+
+        let data = try JSONEncoder().encode(bootstrap)
+        let decoded = try JSONDecoder().decode(WatchBootstrap.self, from: data)
+
+        XCTAssertEqual(decoded, bootstrap)
+    }
+
     func testCurrentAndNextExerciseDerivedValues() {
         let engine = makeEngine()
         let snapshot = engine.snapshot
