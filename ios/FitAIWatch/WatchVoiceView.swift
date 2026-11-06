@@ -91,6 +91,9 @@ struct WatchVoiceView: View {
         .sheet(isPresented: $showSettings) {
             speechSettings
         }
+        .onDisappear {
+            speech.stop()
+        }
     }
 
     private var header: some View {

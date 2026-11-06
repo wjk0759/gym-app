@@ -33,6 +33,7 @@ struct WorkoutSessionView: View {
     @State var showResumeBanner = false
     @State var showExitConfirm = false
     @State var showEmptySaveAlert = false
+    @State var watchNotice: String?
     @State var adjustedExercises: [UUID: PlanExercise] = [:]
     @State var showAdjustSheet = false
     @State var adjustExerciseID: UUID?
@@ -269,7 +270,7 @@ struct WorkoutSessionView: View {
                     for: .fitaiWatchCommandFailed
                 )
             ) { _ in
-                store.toast = "手表连接中断，请稍后重试"
+                watchNotice = "手表连接中断，请稍后重试"
             }
             .onReceive(
                 NotificationCenter.default.publisher(
@@ -293,6 +294,17 @@ struct WorkoutSessionView: View {
                 Button("继续训练", role: .cancel) {}
             } message: {
                 Text("暂停会保存已完成的 \(logs.count) 组，下次进来接着练；结束并保存会生成训练记录。")
+            }
+            .alert(
+                "手表训练",
+                isPresented: Binding(
+                    get: { watchNotice != nil },
+                    set: { if !$0 { watchNotice = nil } }
+                )
+            ) {
+                Button("知道了", role: .cancel) { watchNotice = nil }
+            } message: {
+                Text(watchNotice ?? "")
             }
             .alert("还没有训练记录", isPresented: $showEmptySaveAlert) {
                 Button("继续训练", role: .cancel) {}

@@ -152,6 +152,7 @@ class WorkoutIn(BaseModel):
     # attempts return the same workout instead of creating duplicates.
     client_id: str | None = Field(default=None, min_length=1, max_length=36)
     program_day_id: str | None = None
+    source: Literal["phone", "watch", "server"] = "phone"
     started_at: str
     finished_at: str | None = None
     feeling: int | None = Field(default=None, ge=1, le=5)

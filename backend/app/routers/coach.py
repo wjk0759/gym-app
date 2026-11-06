@@ -381,10 +381,23 @@ async def voice_chat(payload: VoiceChatIn, user_id: CurrentUser, db: DBSession):
     if profile is None:
         raise HTTPException(status_code=404, detail="请先完成个人档案")
     access.require_feature(db, user_id, access.FEATURE_WATCH_TRAINING)
-    enforce_rate_limit(db, "coach_voice", user_id, 10, 60)
 
     message = payload.message.strip()
-    if _requires_phone_confirmation(message):
+    requires_phone = _requires_phone_confirmation(message)
+
+    # Safety always wins over the read-only plan-change shortcut. A sentence
+    # such as “膝盖疼，帮我把下周改成四练” must surface the injury guidance.
+    safety = assess_safety(profile, message)
+    if safety.reply:
+        return {
+            "reply": safety.reply,
+            "speech_text": _speech_text(safety.reply),
+            "safety_flag": safety.flag,
+            "requires_phone_confirmation": requires_phone,
+            "server_time": utcnow().isoformat(),
+        }
+
+    if requires_phone:
         reply = "这个需要到 iPhone 上确认。"
         return {
             "reply": reply,
@@ -394,6 +407,7 @@ async def voice_chat(payload: VoiceChatIn, user_id: CurrentUser, db: DBSession):
             "server_time": utcnow().isoformat(),
         }
 
+    enforce_rate_limit(db, "coach_voice", user_id, 10, 60)
     result = await coach_reply(
         db,
         profile,

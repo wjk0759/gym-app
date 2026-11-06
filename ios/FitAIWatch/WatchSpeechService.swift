@@ -100,6 +100,7 @@ final class WatchSpeechService: NSObject, ObservableObject,
     }
 
     private func finishSpeaking() {
+        guard !synthesizer.isSpeaking else { return }
         isSpeaking = false
         try? AVAudioSession.sharedInstance().setActive(
             false,

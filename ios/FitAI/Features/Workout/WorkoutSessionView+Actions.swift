@@ -51,7 +51,7 @@ extension WorkoutSessionView {
             return true
         }
         Haptics.warning()
-        store.toast = "手表未连接：本次训练以手表为准，请稍后再操作"
+        watchNotice = "手表未连接：本次训练以手表为准，请稍后再操作"
         return false
     }
 
@@ -60,7 +60,7 @@ extension WorkoutSessionView {
         let isBodyweight = exercise.exercise?.equipment == .bodyweight
         if isWatchLed {
             if watchIsPaused {
-                store.toast = "手表已暂停，请先在手表继续"
+                watchNotice = "手表已暂停，请先在手表继续"
                 return
             }
             let timed = exercise.reps.contains("秒")
@@ -99,7 +99,7 @@ extension WorkoutSessionView {
     func advance() {
         if isWatchLed {
             if watchIsPaused {
-                store.toast = "手表已暂停，请先在手表继续"
+                watchNotice = "手表已暂停，请先在手表继续"
                 return
             }
             let command = WorkoutCommand.advanceExercise(
@@ -256,7 +256,8 @@ extension WorkoutSessionView {
             notes: nil,
             plannedSets: snapshot.plannedSetCount,
             sessionID: snapshot.sessionID,
-            endedAt: end
+            endedAt: end,
+            source: "watch"
         )
         store.clearWorkoutDraft(dayID: day.id)
         dismiss()
@@ -284,7 +285,7 @@ extension WorkoutSessionView {
                 .init(at: Date(), source: .phone)
             )
             guard sendToWatch(command) else { return }
-            store.toast = "已通知手表结束，正在保存"
+            watchNotice = "已通知手表结束，正在保存"
             return
         }
         didFinish = true
@@ -305,7 +306,7 @@ extension WorkoutSessionView {
 
     func openAdjustSheet(_ exercise: PlanExercise) {
         if isWatchLed {
-            store.toast = "本次训练以手表为准，请在手表上调整"
+            watchNotice = "本次训练以手表为准，请在手表上调整"
             return
         }
         adjustExerciseID = exercise.id

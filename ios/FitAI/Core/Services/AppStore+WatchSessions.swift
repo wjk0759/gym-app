@@ -75,7 +75,8 @@ extension AppStore {
                 notes: nil,
                 plannedSets: snapshot.plannedSetCount,
                 sessionID: envelope.sessionID,
-                endedAt: end
+                endedAt: end,
+                source: "watch"
             )
             clearWorkoutDraft(dayID: snapshot.programDayID)
             return true

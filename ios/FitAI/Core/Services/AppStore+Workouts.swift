@@ -68,7 +68,8 @@ extension AppStore {
         notes: String? = nil,
         plannedSets: Int? = nil,
         sessionID: UUID? = nil,
-        endedAt: Date? = nil
+        endedAt: Date? = nil,
+        source: String = "phone"
     ) {
         let cleanNotes = notes?.trimmingCharacters(in: .whitespacesAndNewlines)
         let session = WorkoutSession(
@@ -80,7 +81,8 @@ extension AppStore {
             notes: (cleanNotes?.isEmpty ?? true) ? nil : cleanNotes,
             sets: sets,
             programDayID: day.id.uuidString,
-            plannedSets: plannedSets
+            plannedSets: plannedSets,
+            source: source
         )
         if workoutDraft?.dayID == day.id {
             workoutDraft = nil

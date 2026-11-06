@@ -94,6 +94,7 @@ def create_workout(payload: WorkoutIn, user_id: CurrentUser, db: DBSession):
         user_id=user_id,
         client_id=payload.client_id,
         program_day_id=program_day_id,
+        source=payload.source,
         started_at=started_at,
         finished_at=finished_at,
         duration_min=duration,

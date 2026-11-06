@@ -249,16 +249,22 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     }
 
     private func appliedRevision(sessionID: UUID) -> Int {
-        let values = UserDefaults.standard.dictionary(
-            forKey: appliedRevisionsKey
-        ) as? [String: Int]
-        return values?[sessionID.uuidString] ?? 0
+        appliedRevisions()[sessionID.uuidString] ?? 0
+    }
+
+    private func appliedRevisions() -> [String: Int] {
+        guard let data = UserDefaults.standard.data(forKey: appliedRevisionsKey),
+              let values = try? JSONDecoder().decode(
+                  [String: Int].self,
+                  from: data
+              ) else {
+            return [:]
+        }
+        return values
     }
 
     private func markApplied(sessionID: UUID, revision: Int) {
-        var values = UserDefaults.standard.dictionary(
-            forKey: appliedRevisionsKey
-        ) as? [String: Int] ?? [:]
+        var values = appliedRevisions()
         values[sessionID.uuidString] = max(
             values[sessionID.uuidString] ?? 0,
             revision
@@ -269,7 +275,8 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
                 values.removeValue(forKey: key)
             }
         }
-        UserDefaults.standard.set(values, forKey: appliedRevisionsKey)
+        guard let data = try? JSONEncoder().encode(values) else { return }
+        UserDefaults.standard.set(data, forKey: appliedRevisionsKey)
     }
 
     private func storeInbox(_ envelope: WatchSessionEnvelope) -> Bool {
@@ -308,9 +315,8 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         }
     }
 
-    /// Stop the watch from using a logged-out account. Cached plan files stay
-    /// on the watch so an offline workout can still be completed; only auth
-    /// and pending sync state are cleared.
+    /// A watch-led session makes the phone a controller/mirror until the watch
+    /// finishes it or the 24-hour safety window expires.
     func hasActiveWatchSession(for dayID: UUID) -> Bool {
         guard let saved = loadActiveWatchSession() else {
             watchSessionDayID = nil
@@ -401,10 +407,15 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         return true
     }
 
+    /// Stop the watch from using a logged-out account. Cached plan/media stay
+    /// on the watch so an offline workout can still be completed; auth, inbox
+    /// and active-session ownership are cleared.
     func resetForLogout() {
         clearInbox()
         activeWorkoutDayID = nil
         clearActiveWatchSession()
+        UserDefaults.standard.removeObject(forKey: lastBootstrapDayKey)
+        UserDefaults.standard.removeObject(forKey: lastBootstrapAtKey)
         guard let session else { return }
         let payload: [String: Any] = ["type": "logout"]
         try? session.updateApplicationContext(payload)
