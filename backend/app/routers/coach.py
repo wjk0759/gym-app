@@ -1,12 +1,13 @@
 import asyncio
 import json
+import re
 
 from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 
 from ..deps import CurrentUser, DBSession
-from ..models import ChatMessage, ChatSession, Profile, Program
-from ..schemas import ChatIn
+from ..models import ChatMessage, ChatSession, Profile, Program, utcnow
+from ..schemas import ChatIn, VoiceChatIn
 from ..services import access, coach_vision, generation, photo_cache
 from ..services.coach import coach_reply
 from ..services.memory import schedule_memory_extraction
@@ -336,6 +337,76 @@ async def vision_batch(
         result_ref=session.id,
     )
     return result
+
+
+_PHONE_CONFIRM_MARKERS = (
+    "改计划",
+    "调整计划",
+    "重新生成",
+    "换计划",
+    "加一组",
+    "减一组",
+    "换个动作",
+    "改动作",
+    "改成",
+    "下周计划",
+)
+
+
+def _requires_phone_confirmation(message: str) -> bool:
+    return any(marker in message for marker in _PHONE_CONFIRM_MARKERS)
+
+
+def _speech_text(reply: str) -> str:
+    text = re.sub(r"```.*?```", "", reply, flags=re.DOTALL)
+    text = re.sub(r"[#*_`>\-]", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    if len(text) <= 120:
+        return text
+    return text[:118].rstrip("，。；;、 ") + "…详细内容看手机。"
+
+
+@router.post("/voice")
+async def voice_chat(payload: VoiceChatIn, user_id: CurrentUser, db: DBSession):
+    """Short, read-only coach answer for the Apple Watch.
+
+    The watch never creates plans or actions here. Plan-changing requests are
+    returned to the phone, and nothing is written to long-term memory.
+    """
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="请先完成个人档案")
+    access.require_feature(db, user_id, access.FEATURE_WATCH_TRAINING)
+    enforce_rate_limit(db, "coach_voice", user_id, 10, 60)
+
+    message = payload.message.strip()
+    if _requires_phone_confirmation(message):
+        reply = "这个需要到 iPhone 上确认。"
+        return {
+            "reply": reply,
+            "speech_text": reply,
+            "safety_flag": None,
+            "requires_phone_confirmation": True,
+            "server_time": utcnow().isoformat(),
+        }
+
+    result = await coach_reply(
+        db,
+        profile,
+        _active_program(db, user_id),
+        [],
+        message,
+        "trainer",
+        payload.context,
+    )
+    reply = result["reply"]
+    return {
+        "reply": reply,
+        "speech_text": _speech_text(reply),
+        "safety_flag": result["safety_flag"],
+        "requires_phone_confirmation": False,
+        "server_time": utcnow().isoformat(),
+    }
 
 
 @router.post("/chat")

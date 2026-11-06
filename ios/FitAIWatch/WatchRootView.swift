@@ -25,6 +25,18 @@ struct WatchRootView: View {
                 WatchSyncManager.shared.send(snapshot: snapshot)
             }
         }
+        .task(id: store.isPro) {
+            if store.isPro {
+                await WatchHealthSession.shared.startIfNeeded()
+            } else {
+                WatchHealthSession.shared.stop()
+            }
+        }
+        .onChange(of: store.snapshot.status) { _, status in
+            if status == .finished || status == .discarded {
+                WatchHealthSession.shared.stop()
+            }
+        }
     }
 
     private var pager: some View {

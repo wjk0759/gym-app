@@ -71,6 +71,11 @@ class AppleLoginIn(BaseModel):
     agreed_terms: bool = False
 
 
+class VoiceChatIn(BaseModel):
+    message: str = Field(min_length=1, max_length=500)
+    context: str | None = Field(default=None, max_length=2000)
+
+
 class PasswordSetIn(BaseModel):
     password: str = Field(min_length=8, max_length=72)
     current_password: str | None = Field(default=None, max_length=72)
