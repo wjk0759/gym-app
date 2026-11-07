@@ -133,6 +133,27 @@ def ios_payload(exercise: Exercise) -> dict[str, Any]:
     }
 
 
+def existing_legacy_payload() -> dict[str, dict[str, Any]]:
+    """Keep historical iOS entries that are not present in this database.
+
+    A local/demo database may only contain the old 27 seed rows while the
+    checked-in iOS legacy resource still carries the older 1,293 exercises.
+    Rewriting the resource from the database alone would silently drop those
+    slugs and break old plans/history, so merge by slug instead.
+    """
+    if not IOS_LEGACY.exists():
+        return {}
+    try:
+        rows = json.loads(IOS_LEGACY.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return {}
+    return {
+        row["slug"]: row
+        for row in rows
+        if isinstance(row, dict) and row.get("slug")
+    }
+
+
 def main() -> None:
     args = parse_args()
     engine = create_engine(args.target, pool_pre_ping=True)
@@ -187,15 +208,24 @@ def main() -> None:
             select(Exercise).where(Exercise.is_active.is_(False)).order_by(Exercise.slug)
         ).scalars().all()
 
+    legacy = existing_legacy_payload()
+    for exercise in inactive:
+        legacy[exercise.slug] = ios_payload(exercise)
+
     IOS_ACTIVE.write_text(
         json.dumps([ios_payload(e) for e in active], ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     IOS_LEGACY.write_text(
-        json.dumps([ios_payload(e) for e in inactive], ensure_ascii=False, indent=2) + "\n",
+        json.dumps(
+            [legacy[slug] for slug in sorted(legacy)],
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
-    print(f"active {len(active)}, legacy {len(inactive)}")
+    print(f"active {len(active)}, legacy {len(legacy)}")
     print(f"inserted {inserted}, updated {updated}")
     print(f"wrote {IOS_ACTIVE}")
     print(f"wrote {IOS_LEGACY}")
