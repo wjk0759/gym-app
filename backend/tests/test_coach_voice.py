@@ -16,4 +16,5 @@ def test_plan_changes_require_phone_confirmation():
     assert _requires_phone_confirmation("帮我把下周改成一周四练")
     assert _requires_phone_confirmation("给我加一组")
     assert _requires_phone_confirmation("这个动作换一个动作")
+    assert _requires_phone_confirmation("帮我改一下训练安排")
     assert not _requires_phone_confirmation("还有几组？")

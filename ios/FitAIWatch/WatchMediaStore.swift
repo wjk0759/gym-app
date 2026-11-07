@@ -38,6 +38,10 @@ final class WatchMediaStore {
         if let existing = entries[key], existing.version > version {
             return false
         }
+        let size = (try? fileURL.resourceValues(
+            forKeys: [.fileSizeKey]
+        ))?.fileSize ?? 0
+        guard size > 0 else { return false }
 
         let ext = fileURL.pathExtension.isEmpty
             ? (kind == "video" ? "mp4" : "jpg")
@@ -56,6 +60,12 @@ final class WatchMediaStore {
             return false
         }
 
+        if let previous = entries[key],
+           previous.fileName != fileName {
+            try? FileManager.default.removeItem(
+                at: mediaDirectory.appendingPathComponent(previous.fileName)
+            )
+        }
         entries[key] = Entry(
             slug: slug,
             kind: kind,

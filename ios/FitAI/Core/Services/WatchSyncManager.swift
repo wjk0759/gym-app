@@ -18,6 +18,7 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     private(set) var lastSyncAt: Date?
     private(set) var lastReceivedEnvelope: WatchSessionEnvelope?
     private(set) var watchSessionDayID: UUID?
+    private(set) var isWatchSessionPaused = false
     private var watchSessionID: UUID?
 
     /// Set by `WorkoutSessionView` while the matching day is on screen. When
@@ -29,6 +30,7 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     private var session: WCSession?
     private var isActivated = false
     private var isPreparingBootstrap = false
+    private var authGeneration = 0
     private var pendingMedia: [WatchMediaAsset] = []
     private let mediaPreloader = WatchMediaPreloader()
 
@@ -87,6 +89,8 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         }
         isPreparingBootstrap = true
         defer { isPreparingBootstrap = false }
+        let generation = authGeneration
+        let startingUserID = AuthTokenStore.shared.userID
 
         var remote: RemoteWatchBootstrap?
         var auth: WatchAuth?
@@ -99,7 +103,10 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
                     dayID: day.id
                 )
             } catch let error as APIError where error.statusCode == 403 {
+                // A 403 from the Pro-gated bootstrap is itself an authoritative
+                // free response, even if the follow-up access call fails.
                 bootstrapForbidden = true
+                freshVerifiedAt = Date()
             } catch {
                 // Network/5xx: keep the watch's cached plan and grace period.
             }
@@ -115,6 +122,13 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
             ) {
                 auth = credentials.auth()
             }
+        }
+
+        // The user may log out or switch accounts while the network requests
+        // are in flight. Never let that stale task unlock the watch.
+        guard generation == authGeneration,
+              AuthTokenStore.shared.userID == startingUserID else {
+            return
         }
 
         // With no verified snapshot and no explicit server rejection, sending
@@ -170,6 +184,7 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     @discardableResult
     private func sendBootstrap(_ payload: WatchBootstrap) -> Bool {
         guard let session,
+              session.activationState == .activated,
               let data = try? JSONEncoder().encode(payload) else {
             return false
         }
@@ -315,6 +330,17 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         }
     }
 
+    private func requestWatchState() {
+        guard let session, session.activationState == .activated else {
+            return
+        }
+        let payload: [String: Any] = ["type": "requestState"]
+        session.transferUserInfo(payload)
+        if session.isReachable {
+            session.sendMessage(payload, replyHandler: nil)
+        }
+    }
+
     /// A watch-led session makes the phone a controller/mirror until the watch
     /// finishes it or the 24-hour safety window expires.
     func hasActiveWatchSession(for dayID: UUID) -> Bool {
@@ -327,6 +353,7 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
             clearActiveWatchSession()
             return false
         }
+        isWatchSessionPaused = saved.isPaused ?? false
         return saved.dayID == dayID
     }
 
@@ -335,17 +362,20 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         var dayID: UUID
         var userID: String?
         var savedAt: Date
+        var isPaused: Bool?
     }
 
     private func saveActiveWatchSession(
         sessionID: UUID,
-        dayID: UUID
+        dayID: UUID,
+        isPaused: Bool
     ) {
         let value = ActiveWatchSession(
             sessionID: sessionID,
             dayID: dayID,
             userID: AuthTokenStore.shared.userID,
-            savedAt: Date()
+            savedAt: Date(),
+            isPaused: isPaused
         )
         if let data = try? JSONEncoder().encode(value) {
             UserDefaults.standard.set(data, forKey: activeWatchSessionKey)
@@ -373,6 +403,7 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         UserDefaults.standard.removeObject(forKey: activeWatchSessionKey)
         watchSessionDayID = nil
         watchSessionID = nil
+        isWatchSessionPaused = false
     }
 
     private func restoreActiveWatchSession() {
@@ -382,6 +413,7 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         }
         watchSessionID = saved.sessionID
         watchSessionDayID = saved.dayID
+        isWatchSessionPaused = saved.isPaused ?? false
     }
 
     /// Phone commands are only accepted while the watch is reachable. Offline
@@ -411,9 +443,11 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     /// on the watch so an offline workout can still be completed; auth, inbox
     /// and active-session ownership are cleared.
     func resetForLogout() {
+        authGeneration += 1
         clearInbox()
         activeWorkoutDayID = nil
         clearActiveWatchSession()
+        pendingMedia = []
         UserDefaults.standard.removeObject(forKey: lastBootstrapDayKey)
         UserDefaults.standard.removeObject(forKey: lastBootstrapAtKey)
         guard let session else { return }
@@ -449,6 +483,9 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
                         session: session
                     )
                 }
+                if self.watchSessionDayID != nil {
+                    self.requestWatchState()
+                }
             }
         }
     }
@@ -477,7 +514,11 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
         let reachable = session.isReachable
         Task { @MainActor [weak self] in
-            self?.isReachable = reachable
+            guard let self else { return }
+            self.isReachable = reachable
+            if reachable, self.watchSessionDayID != nil {
+                self.requestWatchState()
+            }
         }
     }
 
@@ -515,9 +556,13 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         case "requestBootstrap":
             let dayID = (payload["dayID"] as? String)
                 .flatMap { UUID(uuidString: $0) }
+            let force = (payload["force"] as? NSNumber)?.boolValue
+                ?? (payload["force"] as? Bool)
+                ?? false
             NotificationCenter.default.post(
                 name: .fitaiWatchBootstrapRequested,
-                object: dayID
+                object: dayID,
+                userInfo: ["force": force]
             )
         case "session":
             guard let data = payload["session"] as? Data,
@@ -556,9 +601,11 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
             } else {
                 watchSessionID = envelope.sessionID
                 watchSessionDayID = envelope.snapshot.programDayID
+                isWatchSessionPaused = envelope.snapshot.isPaused
                 saveActiveWatchSession(
                     sessionID: envelope.sessionID,
-                    dayID: envelope.snapshot.programDayID
+                    dayID: envelope.snapshot.programDayID,
+                    isPaused: envelope.snapshot.isPaused
                 )
             }
             onSnapshotReceived?(envelope)

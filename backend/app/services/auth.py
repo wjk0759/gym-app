@@ -35,6 +35,7 @@ from .sms import SmsDeliveryError, send_aliyun_pnvs_code
 
 PASSWORD_ALGORITHM = "scrypt"
 PHONE_LENGTH = 11
+MAX_WATCH_SESSIONS = 3
 logger = logging.getLogger(__name__)
 _access_rate: dict[str, list[float]] = {}
 _sms_rate: dict[str, list[float]] = {}
@@ -779,6 +780,21 @@ def issue_watch_session(
         )
     ).scalars():
         row.revoked_at = now
+    active_watch_sessions = list(
+        db.execute(
+            select(AuthSession)
+            .where(
+                AuthSession.user_id == user.id,
+                AuthSession.client_type == "watch",
+                AuthSession.revoked_at.is_(None),
+            )
+            .order_by(AuthSession.created_at.asc())
+        ).scalars()
+    )
+    overflow = len(active_watch_sessions) - (MAX_WATCH_SESSIONS - 1)
+    if overflow > 0:
+        for row in active_watch_sessions[:overflow]:
+            row.revoked_at = now
 
     refresh_token = secrets.token_urlsafe(48)
     session = AuthSession(

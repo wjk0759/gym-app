@@ -6,6 +6,7 @@ import SwiftUI
 /// returns to training. Voice lives inside the training page as a sheet so the
 /// two-page model stays intact.
 struct WatchRootView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var store = WatchWorkoutStore()
     @State private var page: WatchPage = .training
     @State private var dragOffset: CGFloat = 0
@@ -21,6 +22,10 @@ struct WatchRootView: View {
                         ? .signedOut
                         : .proRequired
                 ) {
+                    WatchSyncManager.shared.requestBootstrapFromPhone(
+                        force: true,
+                        includeDayID: false
+                    )
                     Task { await store.refreshEntitlementFromServer() }
                 }
             }
@@ -50,6 +55,11 @@ struct WatchRootView: View {
         }
         .onChange(of: store.bootstrap?.programDayID) { _, _ in
             syncHealthSession(with: store.snapshot.status)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                WatchSyncManager.shared.requestBootstrapFromPhone()
+            }
         }
         .sheet(isPresented: $showVoice) {
             NavigationStack {

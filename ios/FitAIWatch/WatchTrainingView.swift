@@ -42,7 +42,12 @@ struct WatchTrainingView: View {
             .padding(.bottom, 6)
         }
         .background(WatchTheme.canvas)
-        .sensoryFeedback(.success, trigger: snapshot.completedSetCount)
+        .sensoryFeedback(
+            .success,
+            trigger: snapshot.completedSetCount
+        ) { oldValue, newValue in
+            newValue > oldValue
+        }
         .onReceive(timer) { value in
             now = value
         }

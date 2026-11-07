@@ -99,6 +99,7 @@ struct RootView: View {
             )
         ) { notification in
             guard auth.isAuthenticated else { return }
+            let force = notification.userInfo?["force"] as? Bool ?? false
             if let dayID = notification.object as? UUID,
                let day = store.plan?.days.first(where: { $0.id == dayID }) {
                 Task {
@@ -106,11 +107,11 @@ struct RootView: View {
                         day: day,
                         access: store.accessSnapshot,
                         verifiedAt: store.access.verifiedAt,
-                        force: true
+                        force: force
                     )
                 }
             } else {
-                preloadTodayForWatch(force: true)
+                preloadTodayForWatch(force: force)
             }
         }
         .onChange(of: store.access.isPro) { _, _ in

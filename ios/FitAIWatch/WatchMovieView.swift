@@ -11,9 +11,11 @@ struct WatchMovieView: View {
     let isPlaying: Bool
     var loopStart: Double? = nil
     var loopEnd: Double? = nil
+    var onFailure: (() -> Void)? = nil
 
     @State private var player: AVPlayer?
     @State private var timeObserver: Any?
+    @State private var statusCancellable: AnyCancellable?
 
     var body: some View {
         Group {
@@ -50,6 +52,15 @@ struct WatchMovieView: View {
             seekToLoopStart()
             player?.play()
         }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: .AVPlayerItemFailedToPlayToEndTime
+            )
+        ) { notification in
+            guard let item = notification.object as? AVPlayerItem,
+                  item === player?.currentItem else { return }
+            onFailure?()
+        }
     }
 
     private func makePlayerIfNeeded(force: Bool = false) {
@@ -62,10 +73,18 @@ struct WatchMovieView: View {
             return
         }
         tearDown()
-        let next = AVPlayer(url: url)
+        let item = AVPlayerItem(url: url)
+        let next = AVPlayer(playerItem: item)
         next.isMuted = true
         next.actionAtItemEnd = .none
         player = next
+        statusCancellable = item.publisher(for: \.status)
+            .receive(on: DispatchQueue.main)
+            .sink { status in
+                if status == .failed {
+                    onFailure?()
+                }
+            }
         observeLoop(on: next)
         seekToLoopStart()
         if isPlaying {
@@ -109,6 +128,8 @@ struct WatchMovieView: View {
             player.removeTimeObserver(timeObserver)
         }
         timeObserver = nil
+        statusCancellable?.cancel()
+        statusCancellable = nil
         player?.pause()
         player = nil
     }

@@ -58,8 +58,8 @@ final class WatchHealthSession: NSObject, HKWorkoutSessionDelegate {
     }
 
     private func requestAuthorizationIfNeeded() async -> Bool {
-        if let authorizationGranted {
-            return authorizationGranted
+        if authorizationGranted == true {
+            return true
         }
         let granted = await withCheckedContinuation { continuation in
             healthStore.requestAuthorization(
@@ -69,7 +69,11 @@ final class WatchHealthSession: NSObject, HKWorkoutSessionDelegate {
                 continuation.resume(returning: success)
             }
         }
-        authorizationGranted = granted
+        // Do not permanently cache denial: the user may enable the permission
+        // in Settings while the app is still running.
+        if granted {
+            authorizationGranted = true
+        }
         return granted
     }
 

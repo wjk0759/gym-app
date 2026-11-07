@@ -8,6 +8,7 @@ from ..models import AuthSession, utcnow
 from ..schemas import WatchSessionIn
 from ..services import access, auth
 from ..services.queries import active_program
+from ..services.rate_limit import enforce as enforce_rate_limit
 from ..services.serializers import serialize_program_day
 from ..services.watch import media_for_day
 
@@ -28,6 +29,7 @@ def create_session(
     authenticate the watch shell but cannot start training through bootstrap.
     """
     access.require_feature(db, user_id, access.FEATURE_WATCH_TRAINING)
+    enforce_rate_limit(db, "watch_session", user_id, 12, 60)
     meta = {
         "ip": request.client.host if request.client else None,
         "user_agent": request.headers.get("user-agent"),

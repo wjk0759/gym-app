@@ -242,6 +242,7 @@ struct WorkoutSessionView: View {
                 if phase == .active {
                     elapsedSeconds = currentElapsed
                     activeStartedAt = Date()
+                    drainWatchInbox()
                 } else {
                     saveDraftIfNeeded(persistImmediately: true)
                     store.flushPersistence()
@@ -272,18 +273,7 @@ struct WorkoutSessionView: View {
             ) { _ in
                 watchNotice = "手表连接中断，请稍后重试"
             }
-            .onReceive(
-                NotificationCenter.default.publisher(
-                    for: .fitaiWatchBootstrapRequested
-                )
-            ) { notification in
-                guard let dayID = notification.object as? UUID, dayID == day.id else {
-                    return
-                }
-                Task {
-                    await syncWatchBootstrap()
-                }
-            }
+
             .confirmationDialog(
                 "暂停或结束训练？",
                 isPresented: $showExitConfirm,

@@ -18,6 +18,7 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
 
     private var session: WCSession?
     private var isActivated = false
+    private var lastBootstrapRequestAt: Date?
     private var outbox: [String: WatchSessionEnvelope] = [:]
 
     override init() {
@@ -59,10 +60,35 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
 
     /// Ask the phone for a fresh plan, media list and watch credentials. Called
     /// on launch and when connectivity returns after a reinstall.
-    func requestBootstrapFromPhone() {
+    func requestBootstrapFromPhone(
+        force: Bool = false,
+        includeDayID: Bool = true
+    ) {
         guard let session else { return }
-        var payload: [String: Any] = ["type": "requestBootstrap"]
-        if let bootstrap = store?.bootstrap {
+        let preservingSession = store?.hasUnfinishedWork == true
+        let stalePlan = !preservingSession
+            && (store?.bootstrap.map {
+                !Calendar.current.isDateInToday($0.generatedAt)
+            } ?? true)
+        let last = lastBootstrapRequestAt
+        if !force, let last, Date().timeIntervalSince(last) < 60 {
+            return
+        }
+        if !force,
+           !stalePlan,
+           let last,
+           Date().timeIntervalSince(last) < 2 * 60 * 60 {
+            return
+        }
+        lastBootstrapRequestAt = Date()
+        var payload: [String: Any] = [
+            "type": "requestBootstrap",
+            "force": force
+        ]
+        if includeDayID,
+           !stalePlan,
+           let bootstrap = store?.bootstrap,
+           store?.snapshot.isFinished != true {
             payload["dayID"] = bootstrap.programDayID.uuidString
         }
         session.transferUserInfo(payload)
@@ -72,7 +98,7 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     }
 
     private func flush() {
-        guard let session else { return }
+        guard let session, session.activationState == .activated else { return }
         let envelopes = outbox.values.sorted { $0.sentAt < $1.sentAt }
         for envelope in envelopes {
             guard let data = try? JSONEncoder().encode(envelope) else {
@@ -91,7 +117,7 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     }
 
     private func receiveBootstrap(_ bootstrap: WatchBootstrap) {
-        store?.applyBootstrap(bootstrap)
+        guard let store, store.applyBootstrap(bootstrap) else { return }
         let currentUser = bootstrap.userID
             ?? WatchCredentialStore.shared.runtime?.userID
         if let currentUser {
@@ -126,6 +152,7 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         outbox.removeAll()
         persistOutbox()
         pendingCount = 0
+        lastBootstrapRequestAt = nil
     }
 
     // MARK: - WCSessionDelegate
@@ -189,9 +216,12 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         // The system deletes this temporary file when the delegate returns, so
         // copy it synchronously before hopping to the main actor.
         let ext = file.fileURL.pathExtension
+        let fallbackExt = (file.metadata?["kind"] as? String) == "poster"
+            ? "jpg"
+            : "mp4"
         let temporary = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
-            .appendingPathExtension(ext.isEmpty ? "mp4" : ext)
+            .appendingPathExtension(ext.isEmpty ? fallbackExt : ext)
         do {
             try? FileManager.default.removeItem(at: temporary)
             try FileManager.default.copyItem(at: file.fileURL, to: temporary)
@@ -228,6 +258,8 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
                 return
             }
             store?.apply(command)
+        case "requestState":
+            store?.publishSnapshot()
         case "ack":
             applyAck(payload)
         case "logout":

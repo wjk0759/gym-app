@@ -95,22 +95,25 @@ final class WatchWorkoutStore {
         }
     }
 
-    func applyBootstrap(_ payload: WatchBootstrap) {
+    @discardableResult
+    func applyBootstrap(_ payload: WatchBootstrap) -> Bool {
+        // Bootstrap messages can be delivered out of order. Never let an older
+        // payload replace a newer day, account or entitlement.
         if let current = bootstrap,
-           current.programDayID == payload.programDayID,
            payload.generatedAt < current.generatedAt {
-            return
+            return false
         }
         let wasSameDay = bootstrap?.programDayID == payload.programDayID
         let accountChanged = payload.userID != nil
             && bootstrap?.userID != nil
             && payload.userID != bootstrap?.userID
-        let hasUnfinishedWork = !accountChanged
+        let preserveCurrentSession = !accountChanged
             && !wasSameDay
-            && !engine.snapshot.sets.isEmpty
-            && !engine.snapshot.isFinished
+            && hasUnfinishedWork
 
-        let access = mergedAccess(payload.access)
+        let access = accountChanged
+            ? payload.access
+            : mergedAccess(payload.access)
         WatchCredentialStore.shared.apply(
             apiBaseURL: payload.apiBaseURL,
             userID: payload.userID,
@@ -122,10 +125,10 @@ final class WatchWorkoutStore {
             UserDefaults.standard.set(false, forKey: forceLockKey)
         }
 
-        // A new day must not erase a watch-led session that has already logged
-        // sets. Keep the old plan until that session is finished or discarded;
-        // only the entitlement/config is refreshed.
-        if hasUnfinishedWork {
+        // A new day must not erase a watch-led session that has started, is
+        // paused or has logged sets. Keep the old plan until that session is
+        // finished or discarded; only entitlement/config is refreshed.
+        if preserveCurrentSession {
             if var current = bootstrap {
                 current.access = access
                 current.auth = payload.auth ?? current.auth
@@ -134,7 +137,7 @@ final class WatchWorkoutStore {
                 bootstrap = current
             }
             persist()
-            return
+            return true
         }
 
         var applied = payload
@@ -143,22 +146,32 @@ final class WatchWorkoutStore {
         WatchMediaStore.shared.prune(
             keeping: Set(payload.exercises.map(\.slug))
         )
-        if !wasSameDay || engine.snapshot.isFinished {
+        if accountChanged
+            || !wasSameDay
+            || engine.snapshot.isFinished {
             engine = Self.makeEngine(from: payload)
             hasStartedWorkout = false
         }
         persist()
+        return true
     }
 
     /// The watch may have directly refreshed Pro more recently than the phone.
     /// Do not shorten its offline grace with an older phone timestamp, but do
     /// apply a server-returned free/refunded state immediately.
     private func mergedAccess(_ incoming: WatchAccess) -> WatchAccess {
-        guard incoming.isPro,
-              let current = bootstrap?.access,
-              current.isPro,
+        guard let current = bootstrap?.access,
               current.lastVerifiedAt > incoming.lastVerifiedAt else {
             return incoming
+        }
+        // A newer direct watch verification wins over an older phone cache,
+        // whether it was Pro or free. A newer server response still applies
+        // because it has the later timestamp.
+        guard current.isPro == incoming.isPro else {
+            return current
+        }
+        guard current.isPro else {
+            return current
         }
         return WatchAccess(
             isPro: true,
@@ -213,6 +226,12 @@ final class WatchWorkoutStore {
                 ?? "无法刷新 Pro 权益"
             refreshEntitlement()
         }
+    }
+
+    /// Re-send the current snapshot when the phone reconnects. Used to
+    /// reconcile pause/finish state after the phone app was suspended.
+    func publishSnapshot() {
+        onSnapshotChange?(engine.snapshot)
     }
 
     @discardableResult

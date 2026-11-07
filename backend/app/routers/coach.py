@@ -353,6 +353,11 @@ _PHONE_CONFIRM_MARKERS = (
     "改动作",
     "改成",
     "换成",
+    "改一下",
+    "调整一下",
+    "帮我改",
+    "重新安排",
+    "修改计划",
     "下周计划",
 )
 
@@ -383,6 +388,8 @@ async def voice_chat(payload: VoiceChatIn, user_id: CurrentUser, db: DBSession):
     access.require_feature(db, user_id, access.FEATURE_WATCH_TRAINING)
 
     message = payload.message.strip()
+    if not message:
+        raise HTTPException(status_code=422, detail="请输入问题")
     requires_phone = _requires_phone_confirmation(message)
 
     # Safety always wins over the read-only plan-change shortcut. A sentence

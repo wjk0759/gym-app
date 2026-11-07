@@ -53,15 +53,23 @@ struct WatchPrimaryButtonStyle: ButtonStyle {
 /// Compact lime capsule for actions that sit inside a card, such as
 /// "next exercise" during the final rest.
 struct WatchCompactPrimaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+        let foreground = isEnabled
+            ? WatchTheme.onPrimary
+            : WatchTheme.secondary
+        let background = isEnabled
+            ? WatchTheme.primary
+            : WatchTheme.surfaceRaised
+        return configuration.label
             .font(.caption.weight(.bold))
-            .foregroundStyle(WatchTheme.onPrimary)
+            .foregroundStyle(foreground)
             .lineLimit(1)
             .minimumScaleFactor(0.75)
             .padding(.horizontal, 10)
             .frame(height: 32)
-            .background(WatchTheme.primary, in: Capsule())
+            .background(background, in: Capsule())
             .opacity(configuration.isPressed ? 0.82 : 1)
     }
 }

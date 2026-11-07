@@ -191,10 +191,11 @@ extension APIClient {
     }
 
     func revokeWatchSessions() async throws {
-        try await sendVoid(
+        _ = try await transport.perform(
             path: "watch/session",
             method: "DELETE",
-            body: nil
+            body: nil,
+            timeout: 8
         )
     }
 

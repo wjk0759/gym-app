@@ -75,6 +75,25 @@ def test_watch_session_rejects_bad_or_inactive_devices():
     assert exc.value.status_code == 403
 
 
+def test_watch_sessions_are_capped_per_account():
+    db = _session()
+    for index in range(5):
+        issue_watch_session(
+            db,
+            "watch-user",
+            f"watch-7777777{index}",
+        )
+
+    rows = db.execute(
+        select(AuthSession).where(
+            AuthSession.user_id == "watch-user",
+            AuthSession.client_type == "watch",
+            AuthSession.revoked_at.is_(None),
+        )
+    ).scalars().all()
+    assert len(rows) == 3
+
+
 def test_logout_revokes_all_watch_sessions():
     db = _session()
     issue_watch_session(db, "watch-user", "watch-55555555")

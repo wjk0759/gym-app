@@ -10,29 +10,33 @@ struct WatchActionView: View {
 
     @State private var mediaStore = WatchMediaStore.shared
     @State private var poster: UIImage?
+    @State private var videoFailed = false
 
     var body: some View {
         let _ = mediaStore.revision
         ZStack {
-            WatchTheme.canvas
-            if let url = store.currentMediaURL {
+            WatchTheme.canvas.ignoresSafeArea()
+            if let url = store.currentMediaURL, !videoFailed {
                 WatchMovieView(
                     url: url,
                     isPlaying: true,
                     loopStart: store.currentLoopStart,
-                    loopEnd: store.currentLoopEnd
+                    loopEnd: store.currentLoopEnd,
+                    onFailure: { videoFailed = true }
                 )
+                .ignoresSafeArea()
             } else if let poster {
                 Image(uiImage: poster)
                     .resizable()
                     .scaledToFill()
                     .clipped()
+                    .ignoresSafeArea()
                 overlayCaption
             } else {
                 placeholder
+                    .ignoresSafeArea()
             }
         }
-        .ignoresSafeArea()
         .overlay(alignment: .top) {
             WatchPageDots(index: 1)
                 .padding(.top, 4)
@@ -73,7 +77,13 @@ struct WatchActionView: View {
             loadPoster()
         }
         .onChange(of: mediaStore.revision) { _, _ in
+            if store.currentMediaURL != nil {
+                videoFailed = false
+            }
             loadPoster()
+        }
+        .onChange(of: store.currentMediaURL) { _, _ in
+            videoFailed = false
         }
     }
 
@@ -104,9 +114,14 @@ struct WatchActionView: View {
                 Text(targetText)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(WatchTheme.ink)
-                Label("等待 iPhone 预载", systemImage: "arrow.down.circle")
-                    .font(.caption2)
-                    .foregroundStyle(WatchTheme.secondary)
+                Label(
+                    videoFailed ? "视频不可用，按文字提示训练" : "等待 iPhone 预载",
+                    systemImage: videoFailed
+                        ? "exclamationmark.triangle"
+                        : "arrow.down.circle"
+                )
+                .font(.caption2)
+                .foregroundStyle(WatchTheme.secondary)
             }
             .padding(.bottom, 42)
         }

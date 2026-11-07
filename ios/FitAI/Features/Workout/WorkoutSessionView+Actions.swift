@@ -38,11 +38,7 @@ extension WorkoutSessionView {
     }
 
     var watchIsPaused: Bool {
-        guard isWatchLed,
-              let envelope = WatchSyncManager.shared.lastReceivedEnvelope else {
-            return false
-        }
-        return envelope.snapshot.isPaused
+        isWatchLed && WatchSyncManager.shared.isWatchSessionPaused
     }
 
     @discardableResult
