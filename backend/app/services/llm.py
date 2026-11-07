@@ -427,6 +427,8 @@ async def complete_text(
     db: Session | None = None,
     user_id: str | None = None,
     kind: str = "llm",
+    max_tokens: int | None = None,
+    reasoning_effort: str | None = None,
 ) -> str:
     if settings.use_mock_llm:
         raise LLMError("mock mode: no LLM key configured")
@@ -437,8 +439,12 @@ async def complete_text(
         "model": settings.llm_model,
         "messages": messages,
         "temperature": temperature,
-        "reasoning_effort": settings.llm_reasoning_effort,
+        "reasoning_effort": (
+            reasoning_effort or settings.llm_reasoning_effort
+        ),
     }
+    if max_tokens is not None:
+        payload["max_tokens"] = max(1, max_tokens)
     for attempt in range(2):
         try:
             response = await _post(payload)

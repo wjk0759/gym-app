@@ -9,7 +9,10 @@ from ..deps import CurrentUser, DBSession
 from ..models import ChatMessage, ChatSession, Profile, Program, utcnow
 from ..schemas import ChatIn, VoiceChatIn
 from ..services import access, coach_vision, generation, photo_cache
-from ..services.coach import coach_reply
+from ..services.coach import coach_reply, watch_voice_reply
+from ..services.coach_core import (
+    requires_phone_confirmation as _requires_phone_confirmation,
+)
 from ..services.memory import schedule_memory_extraction
 from ..services.queries import active_program
 from ..services.rate_limit import enforce as enforce_rate_limit
@@ -339,33 +342,6 @@ async def vision_batch(
     return result
 
 
-_PHONE_CONFIRM_MARKERS = (
-    "改计划",
-    "调整计划",
-    "重新生成",
-    "换计划",
-    "加一组",
-    "减一组",
-    "加个动作",
-    "减个动作",
-    "换个动作",
-    "换一个动作",
-    "改动作",
-    "改成",
-    "换成",
-    "改一下",
-    "调整一下",
-    "帮我改",
-    "重新安排",
-    "修改计划",
-    "下周计划",
-)
-
-
-def _requires_phone_confirmation(message: str) -> bool:
-    return any(marker in message for marker in _PHONE_CONFIRM_MARKERS)
-
-
 def _speech_text(reply: str) -> str:
     text = re.sub(r"```.*?```", "", reply, flags=re.DOTALL)
     text = re.sub(r"[#*_`>\-]", "", text)
@@ -417,21 +393,22 @@ async def voice_chat(payload: VoiceChatIn, user_id: CurrentUser, db: DBSession):
         }
 
     enforce_rate_limit(db, "coach_voice", user_id, 10, 60)
-    result = await coach_reply(
+    result = await watch_voice_reply(
         db,
         profile,
         _active_program(db, user_id),
-        [],
         message,
-        "trainer",
         payload.context,
+        safety_checked=True,
     )
     reply = result["reply"]
     return {
         "reply": reply,
         "speech_text": _speech_text(reply),
         "safety_flag": result["safety_flag"],
-        "requires_phone_confirmation": False,
+        "requires_phone_confirmation": result[
+            "requires_phone_confirmation"
+        ],
         "server_time": utcnow().isoformat(),
     }
 
