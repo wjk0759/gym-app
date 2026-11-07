@@ -337,6 +337,7 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     private func requestWatchState() {
         guard let session,
               session.activationState == .activated,
+              session.isPaired,
               session.isWatchAppInstalled else {
             return
         }
@@ -457,7 +458,10 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         UserDefaults.standard.removeObject(forKey: lastBootstrapDayKey)
         UserDefaults.standard.removeObject(forKey: lastBootstrapAtKey)
         guard let session else { return }
-        let payload: [String: Any] = ["type": "logout"]
+        let payload: [String: Any] = [
+            "type": "logout",
+            "at": Date()
+        ]
         try? session.updateApplicationContext(payload)
         session.transferUserInfo(payload)
         if session.isReachable {
@@ -489,9 +493,7 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
                         session: session
                     )
                 }
-                if self.watchSessionDayID != nil {
-                    self.requestWatchState()
-                }
+                self.requestWatchState()
             }
         }
     }
@@ -507,6 +509,7 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
                     name: .fitaiWatchBecameAvailable,
                     object: nil
                 )
+                self?.requestWatchState()
             }
         }
     }
@@ -522,7 +525,7 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         Task { @MainActor [weak self] in
             guard let self else { return }
             self.isReachable = reachable
-            if reachable, self.watchSessionDayID != nil {
+            if reachable {
                 self.requestWatchState()
             }
         }
@@ -570,6 +573,8 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
                 object: dayID,
                 userInfo: ["force": force]
             )
+        case "emptyState":
+            clearActiveWatchSession()
         case "session":
             guard let data = payload["session"] as? Data,
                   let envelope = try? JSONDecoder().decode(
@@ -578,14 +583,27 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
                   ) else {
                 return
             }
-            if let userID = envelope.userID,
-               userID != AuthTokenStore.shared.userID {
+            guard let currentUserID = AuthTokenStore.shared.userID else {
+                return
+            }
+            if let userID = envelope.userID, userID != currentUserID {
                 return
             }
             lastReceivedEnvelope = envelope
             lastSyncAt = Date()
             if envelope.snapshot.revision
                 <= appliedRevision(sessionID: envelope.sessionID) {
+                sendAck(
+                    sessionID: envelope.sessionID,
+                    revision: envelope.snapshot.revision
+                )
+                return
+            }
+            if envelope.snapshot.exercises.isEmpty,
+               envelope.snapshot.sets.isEmpty {
+                // The watch lost its preload or was reinstalled. Do not let an
+                // empty state keep the phone locked into watch-led mode.
+                clearActiveWatchSession()
                 sendAck(
                     sessionID: envelope.sessionID,
                     revision: envelope.snapshot.revision

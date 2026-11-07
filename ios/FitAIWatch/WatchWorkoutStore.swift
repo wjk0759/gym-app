@@ -2,6 +2,10 @@ import Foundation
 import Observation
 import FitAIWorkoutCore
 
+enum WatchLockState {
+    static let blockedBootstrapDateKey = "fitai_watch_blocked_bootstrap_date"
+}
+
 /// Watch-local source of truth for a preloaded workout. The store owns the
 /// snapshot file and delegates all workout mutations to `WorkoutSessionEngine`.
 @MainActor
@@ -33,7 +37,11 @@ final class WatchWorkoutStore {
     }
 
     var canTrainNow: Bool {
-        !isAccountLocked && (isPro || hasUnfinishedWork)
+        !isAccountLocked && (
+            isPro
+                || hasUnfinishedWork
+                || (hasStartedWorkout && snapshot.isFinished)
+        )
     }
 
     /// Only return files that were actually received by the watch. A remote
@@ -65,7 +73,9 @@ final class WatchWorkoutStore {
     }
 
     var voiceContext: String? {
-        guard let exercise = snapshot.currentExercise else { return nil }
+        guard let exercise = snapshot.currentExercise else {
+            return bootstrap?.dayTitle
+        }
         let target: String
         switch exercise.target {
         case .reps(let min, let max):
@@ -98,7 +108,14 @@ final class WatchWorkoutStore {
     @discardableResult
     func applyBootstrap(_ payload: WatchBootstrap) -> Bool {
         // Bootstrap messages can be delivered out of order. Never let an older
-        // payload replace a newer day, account or entitlement.
+        // payload replace a newer day, account or entitlement, and never let a
+        // pre-logout payload re-unlock the watch after the logout arrives.
+        if let blocked = UserDefaults.standard.object(
+            forKey: WatchLockState.blockedBootstrapDateKey
+        ) as? Date,
+           payload.generatedAt <= blocked {
+            return false
+        }
         if let current = bootstrap,
            payload.generatedAt < current.generatedAt {
             return false
@@ -121,6 +138,9 @@ final class WatchWorkoutStore {
         if isPro {
             isAccountLocked = false
             UserDefaults.standard.set(false, forKey: forceLockKey)
+            UserDefaults.standard.removeObject(
+                forKey: WatchLockState.blockedBootstrapDateKey
+            )
         }
 
         // A started/paused session must not be replaced mid-workout, and its

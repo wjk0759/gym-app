@@ -145,7 +145,17 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         lastSyncAt = Date()
     }
 
-    private func handleLogout() {
+    private func handleLogout(_ payload: [String: Any]? = nil) {
+        let logoutAt = payload?["at"] as? Date ?? Date()
+        // A delayed logout can arrive after a newer login bootstrap. Do not
+        // lock a watch that already proved a newer authenticated preload.
+        if let latest = store?.bootstrap?.generatedAt, latest > logoutAt {
+            return
+        }
+        UserDefaults.standard.set(
+            logoutAt,
+            forKey: WatchLockState.blockedBootstrapDateKey
+        )
         UserDefaults.standard.set(true, forKey: "fitai_watch_force_lock")
         store?.lockForLogout()
         WatchCredentialStore.shared.clearAuth()
@@ -259,11 +269,21 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
             }
             store?.apply(command)
         case "requestState":
-            store?.publishSnapshot()
+            if let store,
+               !store.snapshot.exercises.isEmpty
+                   || !store.snapshot.sets.isEmpty {
+                store.publishSnapshot()
+            } else if let session {
+                let payload: [String: Any] = ["type": "emptyState"]
+                session.transferUserInfo(payload)
+                if session.isReachable {
+                    session.sendMessage(payload, replyHandler: nil)
+                }
+            }
         case "ack":
             applyAck(payload)
         case "logout":
-            handleLogout()
+            handleLogout(payload)
         default:
             break
         }
