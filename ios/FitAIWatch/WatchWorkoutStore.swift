@@ -359,7 +359,7 @@ private extension WorkoutCommand {
         switch self {
         case .completeSet, .pause, .advanceExercise, .finish:
             return true
-        case .undoLastSet, .skipRest:
+        case .undoLastSet, .skipRest, .resume:
             return false
         }
     }
