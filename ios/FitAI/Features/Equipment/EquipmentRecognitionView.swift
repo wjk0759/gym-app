@@ -305,6 +305,7 @@ struct EquipmentRecognitionView: View {
 
                         if imageData != nil {
                             Button {
+                                scanKey = UUID().uuidString
                                 scan()
                             } label: {
                                 Label("重新识别", systemImage: "arrow.clockwise")

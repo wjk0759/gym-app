@@ -1,7 +1,9 @@
 import asyncio
+import json
+from pathlib import Path
 from types import SimpleNamespace
 
-from app.services import equipment
+from app.services import equipment, equipment_catalog
 
 
 def _vision_result(**overrides):
@@ -118,3 +120,19 @@ def test_vision_failure_never_returns_random_candidates(monkeypatch):
     assert result["status"] == "unavailable"
     assert result["candidates"] == []
     assert result["warning"]
+
+
+def test_catalog_actions_exist_in_active_library():
+    library = Path(__file__).resolve().parents[2] / "ios" / "FitAI" / "Resources"
+    rows = json.loads(
+        (library / "xunji_movements.json").read_text(encoding="utf-8-sig")
+    )
+    active = {row["slug"] for row in rows}
+    missing = {
+        slug
+        for item in equipment_catalog.CATALOG
+        for slug in item.exercise_slugs
+        if slug not in active
+    }
+
+    assert not missing, sorted(missing)
