@@ -14,16 +14,56 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`5855d90`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `1eb3fdd`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`5855d90`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `ca7f24d`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 13/13 测试通过；完成 Watch UI 重设计（训练/动作/语音/锁定页）、单主按钮流程（`2d5dea0`），并完成 40/42/49mm 小表盘响应式适配（`1eb3fdd`）；此前修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
-- Windows 最新完成（2026-11-07）：保留 macOS Watch UI 重设计，并完成全链路自检：账号切换隔离、bootstrap 防乱序、预载/已开始区分、进行中计划与媒体保护、重连状态对账、logout/login 竞态、视频失败海报回退、watch session 上限/限流、Paywall Watch 权益；CI `iOS Build` 在 `588af76` **success**
+- Windows 最新完成（2026-11-07）：拉取并保留 macOS 40/42/49mm 响应式布局；完成教练内核统一（Agent 与 Watch voice 共用 `coach_core`/上下文/安全规则，Watch 只读无工具无记忆）；生产已部署 V23 + `/watch/*` + `/coach/voice`；`test_reviewer` 已授 Pro 到 2027-02-05。CI 后端在 `ca7f24d`、iOS 在 `8d560e7` **success**
 - Windows 前一轮完成（2026-11-07）：手表独立语音教练、watch 专用登录会话、媒体预载/本地缓存、离线 outbox/ack、手机 inbox 回灌、手机→手表指令、3 天 Pro 宽限与中途到期继续结束、HealthKit 保活/手机单写者、Watch AppIcon 恢复、Watch 隐私清单、训练来源 `phone/watch`
-- 最新后端验证：**209 passed**，Ruff app/tests 通过；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source` 已接入测试；V22 `training_stage` 已迁移；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
+- 最新后端验证：**210 passed**，Ruff app/tests 通过；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source` 已接入测试；生产 Flyway 已到 **V23**；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
-- 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、Watch 3D 动作素材、真实 Watch App ID/HealthKit capability、V23 生产迁移与 `/watch/*` 部署
+- 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、Watch 3D 动作素材、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-07 · Windows / OpenCode（教练同源只读 + 生产部署）
+
+- 分支：`feature/watch-standalone-workout`
+- 代码提交：`ca7f24d`（本条文档提交见 `git log -1`）
+- CI：`Backend Tests` **success** @ `ca7f24d`；`iOS Build` **success** @ `8d560e7`
+- 本地验证：后端 **210 passed**，Ruff 通过
+- 教练统一：
+  - 新增 `backend/app/services/coach_core.py`：共享教练人格、语气、安全红线、手机确认标记、Watch 只读指令
+  - iPhone Agent 的 `SYSTEM_PROMPT` 改为「共享 core + Agent 工具指令」；Watch voice 使用「共享 core + Watch 只读指令」
+  - `/coach/voice` 内部改走 `watch_voice_reply`，复用同一份 `build_coach_context`，但无工具、无历史、无 ChatMessage/长期记忆/AgentRun
+  - Watch voice 使用低 reasoning、`max_tokens=600`、1–3 句短答；计划类问题仍回 iPhone
+- 生产部署（2026-11-07 20:50 UTC+8）：
+  - 数据库备份：`/opt/fitai/backups/fitai-pre-v23-20261107-205027.sql.gz`（23K，gzip 校验通过）
+  - 后端备份：`/opt/fitai/backups/backend-pre-v23-20261107-205027.tar.gz`（553K）
+  - Flyway：V23 `watch training` 成功，schema version **23**
+  - 后端包：`backend-20261107-205027.tar.gz`，`docker compose build api && up -d api`，健康检查 ready
+  - 管理 jar 已替换为含 V23 的版本，旧包保留为 `admin/fitai-admin-server-pre-v23.jar`
+  - `test_reviewer` 已授 Pro 90 天：`2026-11-07 12:51:59` → `2027-02-05 12:51:59`，source `admin`
+- 生产烟测：
+  - 未登录 `/coach/voice`、`/watch/bootstrap`、`/watch/session` 均返回 **401**
+  - `test_reviewer` `/me/access`：`is_pro=true`、`watch_training.can_train=true`
+  - 改计划语音：200，`requires_phone_confirmation=true`
+  - 正常语音：200，87 字，DeepSeek `deepseek-flash`，AIJob `coach_watch_voice` **ok**，延迟 1770ms
+  - Watch voice 前后：`chat_sessions=0`、`chat_messages=0`、`agent_runs=0`、`ai_memories=0`
+  - `/watch/session` 签发/撤销均 200
+  - iPhone `/agent/chat` 烟测：200、`completed`、回答 78 字、无意外 action
+- Mac 需要做：
+  - 继续保留 40/42/49mm 响应式阈值和单主按钮流程
+  - 真机装 iPhone + Watch，验证系统听写/TTS/耳机、WatchConnectivity 预载、HealthKit、logout/login、视频回退
+  - Release Archive + Watch App ID/HealthKit capability + TestFlight 上传
+  - 3D 素材到位后验证 loop/poster/流量电量
+- 回滚：
+  - DB：用上述 `.sql.gz` 恢复
+  - 后端：解压 `backend-pre-v23-...tar.gz` 回 `/opt/fitai`，重新 build/up api
+  - 注意：回滚 API 代码不要回滚 V23 schema（列/表保留是安全的）
+- 不要恢复：
+  - 不要拆回 iPhone Agent 和 Watch 两套独立教练 prompt
+  - 不要让 Watch voice 调工具、写聊天记录或长期记忆
+  - 不要删除 `coach_core.py` 或响应式布局
 
 ### 2026-11-07 · macOS（40/42/49mm 小表盘适配）
 
@@ -590,7 +630,7 @@
   - `ios/project.yml` 里的 `https://api.invalid/api/v1`
   - 不要把 `/opt/fitai/.env`、MySQL 密码、JWT、DeepSeek Key 提交到仓库
   - 不要对公网开放 3306 / 8000
-- 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、Watch 3D 动作素材、真实 Watch App ID/HealthKit capability、V23 生产迁移与 `/watch/*` 部署
+- 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、Watch 3D 动作素材、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
 
 ### 2026-11-05 · Windows / OpenCode（男性椭圆/梯形 16–20% 素材）
 
