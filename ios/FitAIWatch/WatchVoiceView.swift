@@ -35,17 +35,7 @@ struct WatchVoiceView: View {
                                 .lineLimit(2)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        TextFieldLink(
-                            "问教练…",
-                            prompt: Text("听写或手写")
-                        ) { text in
-                            question = text
-                            send(text)
-                        }
-                        .font(.caption)
-                        .disabled(isLoading)
-
-                        sendButton
+                        inputRow
 
                         if !lastQuestion.isEmpty {
                             questionCard
@@ -119,22 +109,29 @@ struct WatchVoiceView: View {
         }
     }
 
-    private var sendButton: some View {
-        Button {
-            send()
-        } label: {
-            Label(
-                isLoading ? "思考中…" : "发送",
-                systemImage: isLoading ? "ellipsis" : "paperplane.fill"
-            )
+    private var inputRow: some View {
+        HStack(spacing: 6) {
+            TextFieldLink(
+                "问教练…",
+                prompt: Text("听写或手写")
+            ) { text in
+                question = text
+                lastQuestion = text
+            }
+            .font(.caption)
+            .disabled(isLoading)
             .frame(maxWidth: .infinity)
+
+            Button(isLoading ? "…" : "发送") {
+                send()
+            }
+            .buttonStyle(WatchCompactPrimaryButtonStyle(height: 44))
+            .disabled(
+                isLoading
+                    || question.trimmingCharacters(in: .whitespacesAndNewlines)
+                        .isEmpty
+            )
         }
-        .buttonStyle(WatchPrimaryButtonStyle())
-        .disabled(
-            isLoading
-                || question.trimmingCharacters(in: .whitespacesAndNewlines)
-                    .isEmpty
-        )
     }
 
     private var questionCard: some View {

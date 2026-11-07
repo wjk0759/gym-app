@@ -55,6 +55,8 @@ struct WatchPrimaryButtonStyle: ButtonStyle {
 /// Compact lime capsule for actions that sit inside a card, such as
 /// "next exercise" during the final rest.
 struct WatchCompactPrimaryButtonStyle: ButtonStyle {
+    var height: CGFloat = 32
+
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
@@ -70,7 +72,7 @@ struct WatchCompactPrimaryButtonStyle: ButtonStyle {
             .lineLimit(1)
             .minimumScaleFactor(0.75)
             .padding(.horizontal, 10)
-            .frame(height: 32)
+            .frame(height: height)
             .background(background, in: Capsule())
             .opacity(configuration.isPressed ? 0.82 : 1)
     }
