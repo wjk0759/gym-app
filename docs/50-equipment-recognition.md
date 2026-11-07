@@ -206,12 +206,37 @@ CHEST PRESS 标签    → chest_press_machine    0.93
 
 这条链路不增加模型成本，对带标签的器械提升明显；没有标签的器械仍依赖视觉模型。
 
+## 4.3 生产视觉模型切换：Qwen3-VL-Plus（2026-11-08）
+
+生产视觉识别已从 `deepseek-flash` 切到 **Qwen3-VL-Plus**，文本教练/计划仍用
+DeepSeek：
+
+```env
+VISION_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+VISION_MODEL=qwen3-vl-plus
+VISION_API_KEY=仅写入服务器 /opt/fitai/.env，不入库
+LLM_MODEL=deepseek-flash
+```
+
+- 阿里云百炼控制台可能把 `qwen3-vl-plus` 收进历史模型/不展示，但 API 的
+  `/compatible-mode/v1/models` 仍返回该模型，实际可调用。
+- 生产 `/health` 返回 `vision: qwen3-vl-plus`。
+- 生产烟测：
+  - 数据集推肩机图 + `SHOULDER PRESS` → `shoulder_press_machine` 0.95
+  - 数据集推胸机图 + `CHEST PRESS` → `chest_press_machine` 0.95
+- 低分辨率 contact-sheet 缩略图（360px）测试结果不稳定，例如椭圆机/腿举、
+  哈克/髋外展会互相混淆；这些缩略图不能代表手机原图，需用高分辨率实拍复测。
+- 价格：北京地域 0–32K 输入约 1 元/百万 token、输出 10 元/百万 token；
+  一次扫描约 2.3k 输入 + 130 输出，约 0.004 元。
+- 下一步：用 30–50 张高分辨率真实照片做 A/B，确认 top-1/top-3；如果 Qwen
+  仍不够，再考虑 `qwen3.8-max` / `qwen3.7-plus` 或专用检测器。
+
 ## 5. 仍未完成
 
 - iOS CI 编译已通过（`iOS Build` success @ `23e41c8`）；真机相机/相册 HEIC/大图/
   弱网仍需 Mac 验证。
-- 更强视觉模型：当前 `deepseek-flash` 在 18 张多品牌实拍上约 10/18；
-  Qwen-VL / Doubao Vision / GPT-4o 级模型需要 API Key 和同一批评测对比。
+- 更强视觉模型：`qwen3-vl-plus` 已接入生产；`qwen3.8-max` / `qwen3.7-plus`
+  作为高精度备选，需用同一批高分辨率照片 A/B。
 - 真实数据闭环：建议每类收集 100+ 张真实健身房照片，训练检测器/分类器；
   公开产品图数据集（HF `suc1dalspinach/Gym_machines_Image_dataset`，MIT）
   与真实场景差异较大，直接线性探针效果差。
