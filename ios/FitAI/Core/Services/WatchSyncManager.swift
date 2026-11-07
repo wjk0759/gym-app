@@ -213,6 +213,10 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
             at: directory,
             withIntermediateDirectories: true
         )
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        var mutable = directory
+        try? mutable.setResourceValues(values)
         return directory
     }
 
@@ -331,7 +335,9 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
     }
 
     private func requestWatchState() {
-        guard let session, session.activationState == .activated else {
+        guard let session,
+              session.activationState == .activated,
+              session.isWatchAppInstalled else {
             return
         }
         let payload: [String: Any] = ["type": "requestState"]

@@ -107,9 +107,7 @@ final class WatchWorkoutStore {
         let accountChanged = payload.userID != nil
             && bootstrap?.userID != nil
             && payload.userID != bootstrap?.userID
-        let preserveCurrentSession = !accountChanged
-            && !wasSameDay
-            && hasUnfinishedWork
+        let keepCurrentWorkout = !accountChanged && hasUnfinishedWork
 
         let access = accountChanged
             ? payload.access
@@ -125,11 +123,14 @@ final class WatchWorkoutStore {
             UserDefaults.standard.set(false, forKey: forceLockKey)
         }
 
-        // A new day must not erase a watch-led session that has started, is
-        // paused or has logged sets. Keep the old plan until that session is
-        // finished or discarded; only entitlement/config is refreshed.
-        if preserveCurrentSession {
-            if var current = bootstrap {
+        // A started/paused session must not be replaced mid-workout, and its
+        // media must not be pruned when the next day's prescription arrives.
+        if keepCurrentWorkout {
+            if wasSameDay {
+                var applied = payload
+                applied.access = access
+                bootstrap = applied
+            } else if var current = bootstrap {
                 current.access = access
                 current.auth = payload.auth ?? current.auth
                 current.apiBaseURL = payload.apiBaseURL ?? current.apiBaseURL
@@ -146,12 +147,8 @@ final class WatchWorkoutStore {
         WatchMediaStore.shared.prune(
             keeping: Set(payload.exercises.map(\.slug))
         )
-        if accountChanged
-            || !wasSameDay
-            || engine.snapshot.isFinished {
-            engine = Self.makeEngine(from: payload)
-            hasStartedWorkout = false
-        }
+        engine = Self.makeEngine(from: payload)
+        hasStartedWorkout = false
         persist()
         return true
     }
@@ -314,14 +311,27 @@ final class WatchWorkoutStore {
         isAccountLocked = state.isAccountLocked ?? false
         isPro = state.bootstrap.access.canTrain(at: Date())
         // Keychain may hold a newer token pair than the cached bootstrap.
-        WatchCredentialStore.shared.apply(
-            apiBaseURL: state.bootstrap.apiBaseURL,
-            userID: state.bootstrap.userID,
-            auth: WatchCredentialStore.shared.auth ?? state.bootstrap.auth
-        )
-        WatchMediaStore.shared.prune(
-            keeping: Set(state.bootstrap.exercises.map(\.slug))
-        )
+        // After logout, never resurrect credentials from the cached file.
+        let forceLocked = UserDefaults.standard.bool(forKey: forceLockKey)
+        if forceLocked {
+            WatchCredentialStore.shared.clearAuth()
+        } else {
+            WatchCredentialStore.shared.apply(
+                apiBaseURL: state.bootstrap.apiBaseURL,
+                userID: state.bootstrap.userID,
+                auth: WatchCredentialStore.shared.auth ?? state.bootstrap.auth
+            )
+        }
+        let preservingWorkout = !state.snapshot.isFinished
+            && !state.snapshot.exercises.isEmpty
+            && (hasStartedWorkout
+                || !state.snapshot.sets.isEmpty
+                || state.snapshot.isPaused)
+        if !preservingWorkout {
+            WatchMediaStore.shared.prune(
+                keeping: Set(state.bootstrap.exercises.map(\.slug))
+            )
+        }
     }
 
     private func persist() {
@@ -337,13 +347,17 @@ final class WatchWorkoutStore {
         )
         guard let data = try? JSONEncoder().encode(state) else { return }
         try? data.write(to: stateURL, options: [.atomic])
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        var url = stateURL
+        try? url.setResourceValues(values)
     }
 }
 
 private extension WorkoutCommand {
     var startsWorkout: Bool {
         switch self {
-        case .completeSet, .pause, .resume, .advanceExercise, .finish:
+        case .completeSet, .pause, .advanceExercise, .finish:
             return true
         case .undoLastSet, .skipRest:
             return false

@@ -121,6 +121,11 @@ struct RootView: View {
             ingestPendingWatchSessions()
             preloadTodayForWatch()
         }
+        .onChange(of: store.plan?.version) { _, _ in
+            // Plan adjustments (sets, weights, exercise swaps) bump version;
+            // the watch must not keep training on the previous prescription.
+            preloadTodayForWatch(force: true)
+        }
         .onReceive(
             NotificationCenter.default.publisher(
                 for: .fitaiWatchBecameAvailable

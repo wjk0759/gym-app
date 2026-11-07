@@ -10,6 +10,7 @@ def test_speech_text_strips_markdown_and_limits_length():
     long = _speech_text("第一句。" * 80)
     assert len(long) <= 130
     assert long.endswith("详细内容看手机。")
+    assert _speech_text("##") == "详细内容看手机。"
 
 
 def test_plan_changes_require_phone_confirmation():

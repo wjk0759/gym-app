@@ -32,11 +32,11 @@ struct WatchRootView: View {
         }
         .background(WatchTheme.canvas)
         .onAppear {
-            WatchSyncManager.shared.store = store
-            WatchSyncManager.shared.activate()
             store.onSnapshotChange = { snapshot in
                 WatchSyncManager.shared.send(snapshot: snapshot)
             }
+            WatchSyncManager.shared.store = store
+            WatchSyncManager.shared.activate()
             Task {
                 await store.refreshEntitlementFromServer()
                 syncHealthSession(with: store.snapshot.status)

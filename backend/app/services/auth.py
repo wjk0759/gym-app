@@ -773,11 +773,13 @@ def issue_watch_session(
         raise HTTPException(status_code=403, detail="账号已被停用")
     now = datetime.now(timezone.utc)
     for row in db.execute(
-        select(AuthSession).where(
+        select(AuthSession)
+        .where(
             AuthSession.user_id == user.id,
             AuthSession.device_id == device_id,
             AuthSession.revoked_at.is_(None),
         )
+        .with_for_update()
     ).scalars():
         row.revoked_at = now
     active_watch_sessions = list(
@@ -789,6 +791,7 @@ def issue_watch_session(
                 AuthSession.revoked_at.is_(None),
             )
             .order_by(AuthSession.created_at.asc())
+            .with_for_update()
         ).scalars()
     )
     overflow = len(active_watch_sessions) - (MAX_WATCH_SESSIONS - 1)

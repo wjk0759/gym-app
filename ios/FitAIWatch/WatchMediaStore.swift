@@ -56,6 +56,10 @@ final class WatchMediaStore {
         do {
             try? FileManager.default.removeItem(at: destination)
             try FileManager.default.copyItem(at: fileURL, to: destination)
+            var values = URLResourceValues()
+            values.isExcludedFromBackup = true
+            var mutable = destination
+            try? mutable.setResourceValues(values)
         } catch {
             return false
         }

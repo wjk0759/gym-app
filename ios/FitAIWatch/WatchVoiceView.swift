@@ -24,60 +24,69 @@ struct WatchVoiceView: View {
     var body: some View {
         ZStack {
             WatchTheme.canvas.ignoresSafeArea()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 6) {
-                    contextRow
-                    if let context, !context.isEmpty {
-                        Text(context)
-                            .font(.caption2)
-                            .foregroundStyle(WatchTheme.secondary)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    TextFieldLink(
-                        "问教练…",
-                        prompt: Text("听写或手写")
-                    ) { text in
-                        question = text
-                        send(text)
-                    }
-                    .font(.caption)
-                    .disabled(isLoading)
-
-                    sendButton
-
-                    if !lastQuestion.isEmpty {
-                        questionCard
-                    }
-
-                    if isLoading {
-                        HStack(spacing: 6) {
-                            ProgressView()
-                                .tint(WatchTheme.primary)
-                            Text("教练正在看你的训练")
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 6) {
+                        contextRow
+                        if let context, !context.isEmpty {
+                            Text(context)
                                 .font(.caption2)
                                 .foregroundStyle(WatchTheme.secondary)
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                    }
+                        TextFieldLink(
+                            "问教练…",
+                            prompt: Text("听写或手写")
+                        ) { text in
+                            question = text
+                            send(text)
+                        }
+                        .font(.caption)
+                        .disabled(isLoading)
 
-                    if let errorMessage {
-                        Text(errorMessage)
+                        sendButton
+
+                        if !lastQuestion.isEmpty {
+                            questionCard
+                        }
+
+                        if isLoading {
+                            HStack(spacing: 6) {
+                                ProgressView()
+                                    .tint(WatchTheme.primary)
+                                Text("教练正在看你的训练")
+                                    .font(.caption2)
+                                    .foregroundStyle(WatchTheme.secondary)
+                            }
+                        }
+
+                        if let errorMessage {
+                            Text(errorMessage)
+                                .font(.caption2)
+                                .foregroundStyle(WatchTheme.warning)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        if let reply {
+                            answer(reply)
+                                .id("watch-voice-answer")
+                        }
+
+                        Text("只读回答 · 改计划去 iPhone")
                             .font(.caption2)
-                            .foregroundStyle(WatchTheme.warning)
+                            .foregroundStyle(WatchTheme.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-
-                    if let reply {
-                        answer(reply)
-                    }
-
-                    Text("只读回答 · 改计划去 iPhone")
-                        .font(.caption2)
-                        .foregroundStyle(WatchTheme.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 2)
+                    .padding(.vertical, 2)
                 }
-                .padding(.horizontal, 2)
-                .padding(.vertical, 2)
+                .onChange(of: isLoading) { _, loading in
+                    guard !loading, reply != nil else { return }
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        proxy.scrollTo("watch-voice-answer", anchor: .top)
+                    }
+                }
             }
         }
         .navigationTitle("语音教练")

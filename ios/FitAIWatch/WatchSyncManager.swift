@@ -307,5 +307,9 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
         let stored = StoredOutbox(envelopes: outbox)
         guard let data = try? JSONEncoder().encode(stored) else { return }
         try? data.write(to: outboxURL, options: [.atomic])
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        var url = outboxURL
+        try? url.setResourceValues(values)
     }
 }

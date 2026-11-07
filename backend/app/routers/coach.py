@@ -370,6 +370,8 @@ def _speech_text(reply: str) -> str:
     text = re.sub(r"```.*?```", "", reply, flags=re.DOTALL)
     text = re.sub(r"[#*_`>\-]", "", text)
     text = re.sub(r"\s+", " ", text).strip()
+    if not text:
+        return "详细内容看手机。"
     if len(text) <= 120:
         return text
     return text[:118].rstrip("，。；;、 ") + "…详细内容看手机。"
