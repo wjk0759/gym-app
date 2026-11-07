@@ -163,7 +163,7 @@ cm_crunch         <- crunch
 
 ## 5. 仍未完成
 
-- iOS CI 编译已通过（`iOS Build` success @ `ab25859`）；真机相机/相册 HEIC/大图/
+- iOS CI 编译已通过（`iOS Build` success @ `5bf99a1`）；真机相机/相册 HEIC/大图/
   弱网仍需 Mac 验证。
 - 更细的器械分类：史密斯机 vs 普通深蹲架、蝴蝶机 vs 反式蝴蝶机、
   不同品牌的腿举/哈克一体机。
