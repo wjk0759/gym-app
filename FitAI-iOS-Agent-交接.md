@@ -14,11 +14,11 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`5855d90`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `341981f`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`5855d90`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `2b4d00f`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 13/13 测试通过；完成 Watch UI 重设计（训练/动作/语音/锁定页）、单主按钮流程（`2d5dea0`）、40/42/49mm 响应式适配（`1eb3fdd`），并把语音输入与发送合并为一行（`9a833b1`）；此前修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
-- Windows 最新完成（2026-11-07）：拉取并保留 macOS 单行语音输入（`9a833b1`）；完成教练内核统一并部署生产；`test_reviewer` 已授 Pro、补齐基础档案和 3 分化计划；生产 Watch 预载/登录/刷新/语音/撤销全链路烟测通过；iPhone 训练页动作循环动画 PoC、`/exercise-media` 批量接口、11 条 sample 媒体已上生产（`341981f`）；器械识别修复：图片归一化、禁止随机 mock、37 类器械目录、生产导入 57 条训记动作、4 张真实照片 + 1 张负例烟测 5/5 命中（本轮代码提交见下）。CI 后端 `341981f`、iOS `341981f` **success**
+- Windows 最新完成（2026-11-07）：拉取并保留 macOS 单行语音输入（`9a833b1`）；完成教练内核统一并部署生产；`test_reviewer` 已授 Pro、补齐基础档案和 3 分化计划；生产 Watch 预载/登录/刷新/语音/撤销全链路烟测通过；iPhone 训练页动作循环动画 PoC、`/exercise-media` 批量接口、11 条 sample 媒体已上生产（`341981f`）；器械识别修复：图片归一化、禁止随机 mock、37 类器械目录、生产导入 57 条训记动作、4 张真实照片 + 1 张负例烟测 5/5 命中（`ab25859`）。CI 后端 `de8e967`、iOS `ab25859` **success**
 - Windows 前一轮完成（2026-11-07）：手表独立语音教练、watch 专用登录会话、媒体预载/本地缓存、离线 outbox/ack、手机 inbox 回灌、手机→手表指令、3 天 Pro 宽限与中途到期继续结束、HealthKit 保活/手机单写者、Watch AppIcon 恢复、Watch 隐私清单、训练来源 `phone/watch`
 - 最新后端验证：**211 passed**，Ruff app/tests 通过；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source`、`/exercise-media` 已接入测试；生产 Flyway 已到 **V23**；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
@@ -40,13 +40,13 @@
   - 生产部署新 API + `pillow-heif`，Flyway 不变（仍 V23）
 - 验证：
   - 本地后端 **217 passed**，Ruff app/tests 通过
+  - GitHub Actions：`Backend Tests` **success** @ `de8e967`；`iOS Build` **success** @ `ab25859`
   - 生产 `/health`、`/health/ready` 正常
   - 生产器械识别真实照片 4 张 + 负例 1 张：腿举/哈克 0.94、椭圆机 0.93、跑步机 0.93、龙门架 0.93、截图 `not_gym_equipment`，**5/5 主判断正确**
   - 龙门架返回 3 个动作候选：绳索夹胸 0.93 / 绳索下压 0.79 / 坐姿划船 0.65
   - `/exercise-media?slugs=cm_squat,cm_leg_press,cm_crunch` 返回 200
   - 生产 `exercises` active=57
 - 未验证：
-  - iOS CI 编译结果（本轮代码推送后跑）
   - 真机相册 HEIC、相机大图、弱网、失败重试 UI
   - 真机身体/饮食拍照（后端已统一归一化，但 iPad/HEIC 组合仍需真机）
   - 更多器械类型（史密斯 vs 深蹲架、不同品牌腿举/哈克一体机）
