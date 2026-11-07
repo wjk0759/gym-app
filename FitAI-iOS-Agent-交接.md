@@ -14,15 +14,42 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`5855d90`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `2d5dea0`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`5855d90`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `a073ce6`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 13/13 测试通过；完成 Watch UI 重设计（训练/动作/语音/锁定页），并修正「完成一组 + 下一个动作」双按钮流程（`2d5dea0`）；此前修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
-- Windows 最新完成（2026-11-07）：手表独立语音教练、watch 专用登录会话、媒体预载/本地缓存、离线 outbox/ack、手机 inbox 回灌、手机→手表指令、3 天 Pro 宽限与中途到期继续结束、HealthKit 保活/手机单写者、Watch AppIcon 恢复、Watch 隐私清单、训练来源 `phone/watch`；CI `iOS Build` 在 `919288b` **success**
+- Windows 最新完成（2026-11-07）：已 review 并保留 macOS 的 Watch UI 重设计；修复动作页页码点、休息中暂停/撤销不可达、暂停时休息按钮仍可跳过；Mac UI 提交 `2d5dea0` + Windows 修复 `a073ce6`；CI `iOS Build` 在 `a073ce6` **success**
+- Windows 前一轮完成（2026-11-07）：手表独立语音教练、watch 专用登录会话、媒体预载/本地缓存、离线 outbox/ack、手机 inbox 回灌、手机→手表指令、3 天 Pro 宽限与中途到期继续结束、HealthKit 保活/手机单写者、Watch AppIcon 恢复、Watch 隐私清单、训练来源 `phone/watch`
 - 最新后端验证：**208 passed**，Ruff app/tests 通过；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source` 已接入测试；V22 `training_stage` 已迁移；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、Watch 3D 动作素材、真实 Watch App ID/HealthKit capability、V23 生产迁移与 `/watch/*` 部署
+
+### 2026-11-07 · Windows / OpenCode（Review macOS Watch UI + 交互回归修复）
+
+- 分支：`feature/watch-standalone-workout`
+- 代码提交：`a073ce6`（本条文档提交见 `git log -1`）
+- CI：GitHub Actions `iOS Build` **success** @ `a073ce6`（含 iOS、Watch、共享 framework）
+- 做了什么：
+  - 完整 review 并保留 macOS `2d5dea0` 的 `WatchTheme`、暗色品牌配色、单主按钮流程、语音页/锁定页重设计
+  - 页码点从 Root 全局 overlay 移入各页：训练页 header + 动作页顶部；修复动作页看不到页码点
+  - 训练页 rest 期间仍保留暂停/撤销；暂停时隐藏主操作，避免仅剩“下一个动作”而没有“继续”
+  - 休息卡按钮在暂停时禁用，避免绕过暂停；最后一组休息卡文案改为“查看总结”
+  - 动作页动作名下移，避免 41mm 长动作名与页码点相撞
+- 已验证：
+  - iOS CI 编译通过；Swift 语法检查 96 文件 0 error
+  - 未做模拟器截图（Windows 无 Xcode）；41mm/45mm 实际布局仍要 Mac 看
+- Mac 需要做：
+  - `git pull` → `cd ios && xcodegen generate`
+  - 复核 41mm/45mm：训练页三按钮、页码点、锁定页底部 CTA、语音页底部说明
+  - 复核休息中暂停/继续/撤销；最后休息卡“查看总结”
+  - 继续保持单主按钮流程，不要恢复“完成一组 + 下一个动作”双按钮
+- 不要恢复：
+  - 不要删除 `WatchTheme.swift` 或 Watch AccentColor 品牌色
+  - 不要把页码点改回 Root 全局 overlay
+  - 不要把暂停/撤销从休息状态移除
+  - 不要把语音页重复关闭按钮/半透明背景加回
+  - 不要把锁定页 CTA 放回滚动区域
 
 ### 2026-11-07 · macOS（Watch UI 重设计 + 动作完成流程）
 
