@@ -240,7 +240,9 @@ async def complete_vision_json(
             logger.warning(
                 "vision HTTP %s: %s", response.status_code, response.text[:300]
             )
-            raise LLMError(f"vision HTTP {response.status_code}")
+            raise LLMError(
+                f"vision HTTP {response.status_code}: {response.text[:300]}"
+            )
 
         try:
             data = response.json()

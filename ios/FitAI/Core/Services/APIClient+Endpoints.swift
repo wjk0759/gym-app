@@ -296,7 +296,12 @@ extension APIClient {
             candidates: candidates,
             description: response.description ?? "",
             name: response.name ?? "",
-            notInLibrary: response.notInLibrary ?? false
+            notInLibrary: response.notInLibrary
+                ?? (!response.candidates.isEmpty && candidates.isEmpty),
+            warning: response.warning,
+            status: response.status ?? "ok",
+            equipmentName: response.equipmentName,
+            confidence: response.confidence
         )
     }
 

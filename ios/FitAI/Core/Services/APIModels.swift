@@ -134,12 +134,22 @@ struct EquipmentScanResponse: Decodable {
     let description: String?
     let name: String?
     let notInLibrary: Bool?
+    let warning: String?
+    let status: String?
+    let equipmentSlug: String?
+    let equipmentName: String?
+    let confidence: Double?
 
     enum CodingKeys: String, CodingKey {
         case candidates
         case description
         case name
         case notInLibrary = "not_in_library"
+        case warning
+        case status
+        case equipmentSlug = "equipment_slug"
+        case equipmentName = "equipment_name"
+        case confidence
     }
 }
 

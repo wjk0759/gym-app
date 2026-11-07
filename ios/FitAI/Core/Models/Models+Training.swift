@@ -273,4 +273,8 @@ struct EquipmentScanResult {
     var description: String
     var name: String
     var notInLibrary: Bool
+    var warning: String? = nil
+    var status: String = "ok"
+    var equipmentName: String? = nil
+    var confidence: Double? = nil
 }

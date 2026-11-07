@@ -33,6 +33,9 @@ struct EquipmentRecognitionView: View {
     @State var savedSlugs: Set<String> = []
     @State var recognizedName = ""
     @State var notInLibrary = false
+    @State var warning = ""
+    @State var scanStatus = "ok"
+    @State var equipmentName = ""
     @State var showAddCustom = false
     @State var didAutoOfferCustom = false
     @State var pendingCustomOffer = false
@@ -288,6 +291,57 @@ struct EquipmentRecognitionView: View {
                             .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                             .fixedSize(horizontal: false, vertical: true)
+                    } else if scanStatus == "unavailable" {
+                        Text("识别服务暂时不可用")
+                            .font(AppType.callout.weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+
+                        Text(warning.isEmpty
+                             ? "请检查网络后重试；也可以手动搜索动作或添加器械。"
+                             : warning)
+                            .font(AppType.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        if imageData != nil {
+                            Button {
+                                scan()
+                            } label: {
+                                Label("重新识别", systemImage: "arrow.clockwise")
+                            }
+                            .buttonStyle(PrimaryButtonStyle())
+                        }
+                    } else if scanStatus == "not_gym_equipment" {
+                        Text("这张照片里没有识别到健身器械")
+                            .font(AppType.callout.weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+                        Text(description.isEmpty
+                             ? "请让器械完整进入画面，避免只拍局部或文字。"
+                             : description)
+                            .font(AppType.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else if notInLibrary {
+                        Text(equipmentName.isEmpty
+                             ? "识别到器械，但动作库暂未收录"
+                             : "识别到「\(equipmentName)」，动作库暂未收录")
+                            .font(AppType.callout.weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        if !description.isEmpty {
+                            Text(description)
+                                .font(AppType.caption)
+                                .foregroundStyle(Theme.secondaryText)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        Button {
+                            showAddCustom = true
+                        } label: {
+                            Label("补全器械信息", systemImage: "plus.circle.fill")
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
                     } else {
                         Text(selectedImage == nil
                              ? "先拍摄或选择一张器械照片。"
@@ -299,17 +353,8 @@ struct EquipmentRecognitionView: View {
                         if !description.isEmpty {
                             Text(description)
                                 .font(AppType.caption)
-                                .foregroundStyle(Theme.coral)
+                                .foregroundStyle(Theme.secondaryText)
                                 .fixedSize(horizontal: false, vertical: true)
-                        }
-
-                        if notInLibrary {
-                            Button {
-                                showAddCustom = true
-                            } label: {
-                                Label("补全器械信息", systemImage: "plus.circle.fill")
-                            }
-                            .buttonStyle(PrimaryButtonStyle())
                         }
                     }
 
@@ -322,6 +367,15 @@ struct EquipmentRecognitionView: View {
                 }
                 .padding(.vertical, 4)
             } else {
+                if !equipmentName.isEmpty {
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark.seal.fill")
+                            .foregroundStyle(Theme.cobalt)
+                        Text("识别到 \(equipmentName)")
+                            .font(AppType.caption.weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+                    }
+                }
                 resultSection
             }
         }
@@ -357,7 +411,7 @@ struct EquipmentRecognitionView: View {
               let image = UIImage(data: data) else {
             return
         }
-        imageData = data
+        imageData = ImageJPEGNormalizer.data(from: image)
         selectedImage = image
         scanKey = UUID().uuidString
         candidates = []
@@ -365,6 +419,9 @@ struct EquipmentRecognitionView: View {
         photoItem = nil
         recognizedName = ""
         notInLibrary = false
+        warning = ""
+        scanStatus = "ok"
+        equipmentName = ""
         customAddedName = ""
         didAutoOfferCustom = false
         pendingCustomOffer = false
@@ -373,12 +430,15 @@ struct EquipmentRecognitionView: View {
 
     private func apply(_ image: UIImage) {
         selectedImage = image
-        imageData = image.jpegData(compressionQuality: 0.8)
+        imageData = ImageJPEGNormalizer.data(from: image)
         scanKey = UUID().uuidString
         candidates = []
         description = ""
         recognizedName = ""
         notInLibrary = false
+        warning = ""
+        scanStatus = "ok"
+        equipmentName = ""
         customAddedName = ""
         didAutoOfferCustom = false
         pendingCustomOffer = false
@@ -403,6 +463,9 @@ struct EquipmentRecognitionView: View {
                 description = result.description
                 recognizedName = result.name
                 notInLibrary = result.notInLibrary
+                warning = result.warning ?? ""
+                scanStatus = result.status
+                equipmentName = result.equipmentName ?? ""
                 customAddedName = ""
                 onRecognized?(result)
                 isScanning = false
@@ -419,9 +482,16 @@ struct EquipmentRecognitionView: View {
                 isScanning = false
                 await store.refreshAccess()
                 store.requestPro(.equipmentScan)
+            } catch EquipmentRecognitionError.unavailable(let message) {
+                isScanning = false
+                warning = message
+                description = message
+                scanStatus = "unavailable"
             } catch {
                 isScanning = false
+                warning = error.localizedDescription
                 description = error.localizedDescription
+                scanStatus = "unavailable"
             }
         }
     }

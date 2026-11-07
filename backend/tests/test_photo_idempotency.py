@@ -44,9 +44,17 @@ def db():
         engine.dispose()
 
 
-def _upload(data: bytes = b"image-bytes", name: str = "photo.jpg") -> UploadFile:
+def _jpeg_bytes() -> bytes:
+    from PIL import Image
+
+    output = io.BytesIO()
+    Image.new("RGB", (32, 32), (120, 120, 120)).save(output, format="JPEG")
+    return output.getvalue()
+
+
+def _upload(data: bytes | None = None, name: str = "photo.jpg") -> UploadFile:
     return UploadFile(
-        file=io.BytesIO(data),
+        file=io.BytesIO(_jpeg_bytes() if data is None else data),
         filename=name,
         headers={"content-type": "image/jpeg"},
     )
