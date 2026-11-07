@@ -95,7 +95,7 @@ struct EquipmentRecognitionView: View {
         }) {
             PhotoCaptureView(
                 title: "拍摄器械",
-                hint: "让器械完整进入画面，避免只拍到局部或边缘。",
+                hint: "让器械完整进入画面，有品牌/动作标签时一起拍进去，识别更准。",
                 onImage: { image in
                     apply(image)
                     showCamera = false
@@ -360,7 +360,7 @@ struct EquipmentRecognitionView: View {
                     }
 
                     if selectedImage != nil && customAddedName.isEmpty {
-                        Text("拍摄建议：让器械完整进入画面，避免只露出边缘；暗光、遮挡或只拍局部都会降低识别率。")
+                        Text("拍摄建议：让器械完整进入画面，并尽量把品牌/动作标签拍清楚；暗光、遮挡或只拍局部都会降低识别率。")
                             .font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(Theme.secondaryText)
                             .fixedSize(horizontal: false, vertical: true)
@@ -455,9 +455,13 @@ struct EquipmentRecognitionView: View {
 
         Task { @MainActor in
             do {
+                let ocrText = await ImageTextRecognizer.recognize(
+                    image: selectedImage ?? UIImage(data: data) ?? UIImage()
+                )
                 let result = try await EquipmentRecognitionService.recognize(
                     imageData: data,
                     preferRemote: store.canUseRemoteAI,
+                    ocrText: ocrText,
                     idempotencyKey: scanKey
                 )
                 candidates = result.candidates

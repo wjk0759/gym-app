@@ -277,12 +277,19 @@ extension APIClient {
 
     func scanEquipment(
         imageData: Data,
+        ocrText: String = "",
         idempotencyKey: String? = nil
     ) async throws -> EquipmentScanResult {
+        var fields: [String: String] = [:]
+        let trimmedText = ocrText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedText.isEmpty {
+            fields["ocr_text"] = String(trimmedText.prefix(300))
+        }
         let data = try await upload(
             path: "equipment/scan",
             imageData: imageData,
             filename: "photo.jpg",
+            fields: fields,
             headers: idempotencyHeaders(idempotencyKey)
         )
         let response = try decode(EquipmentScanResponse.self, from: data)

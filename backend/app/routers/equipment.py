@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, Header, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, Form, Header, HTTPException, Query, UploadFile
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
@@ -20,6 +20,7 @@ async def scan(
     user_id: CurrentUser,
     db: DBSession,
     file: UploadFile = File(...),
+    ocr_text: str = Form(default="", max_length=500),
     idempotency_key: str | None = Header(
         default=None, alias="Idempotency-Key", max_length=64
     ),
@@ -67,6 +68,7 @@ async def scan(
             data,
             file.filename or "image",
             user_id=user_id,
+            ocr_text=ocr_text.strip() if isinstance(ocr_text, str) else "",
         )
 
         record = EquipmentScan(

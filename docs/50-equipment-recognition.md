@@ -161,16 +161,65 @@ cm_crunch         <- crunch
 
 结果：**5/5 主判断正确**。图片仅用于本地/生产烟测，未提交到仓库。
 
+## 4.1 准确率实验（2026-11-08，18 张多品牌实拍）
+
+用 18 张不同健身房/品牌的实拍图（Hammer Strength、Life Fitness、Inspiration、
+SHUA、Precor 等）做评测，人工校正标签后对比几种方案：
+
+| 方案 | top-1 | top-3 | 结论 |
+|---|---|---|---|
+| 当前 `deepseek-flash` + 37 类目录 | ~10/18 | ~11/18 | 可用但不稳定 |
+| Prompt 短名单 + 标签读数 | ~10/18 | ~11/18 | 提升有限 |
+| 参考图网格 few-shot | 7/18 | 7/18 | 不采用 |
+| 公开数据集 MobileNet 线性探针 | 2/18 | 4/18 | 产品图与真实健身房差异太大，不采用 |
+| CLIP 线性探针（每类 10 张） | 0/18 | 4/18 | 数据太少，不采用 |
+
+主要失败类型：
+
+- 推胸机 / 推肩机 / 蝴蝶机 / 侧平举机互相混淆
+- 龙门架前方有训练凳或背景器械时，模型看错主体
+- 椭圆机 / 健身车 / 爬楼机混淆
+- 山羊挺身 / 高位下拉 / 坐姿划船混淆
+
+结论：**`deepseek-flash` 是当前准确率上限**。继续调 prompt 的收益已经很小，
+下一档提升需要换更强的视觉模型（Qwen-VL / Doubao Vision / GPT-4o 级）或
+用真实健身房照片重新训练专用分类器/检测器。
+
+## 4.2 已落地的补充：设备端 OCR 标签
+
+很多机器有 `SHOULDER PRESS`、`LATERAL RAISE`、`推胸训练器`、
+`大腿外展训练器` 等标签。iOS 现在用 Vision OCR 先读图上的文字，随图片一起
+上传；后端把它作为强证据放进视觉 prompt：
+
+```text
+OCR 在图片上读到的文字：SHOULDER PRESS Life Fitness
+OCR 匹配提示：shoulder_press_machine（推肩机）
+如果文字属于画面主体器械，优先考虑；如果属于背景器械，忽略。
+```
+
+生产烟测：
+
+```text
+SHOULDER PRESS 标签 → shoulder_press_machine 0.92
+CHEST PRESS 标签    → chest_press_machine    0.93
+```
+
+这条链路不增加模型成本，对带标签的器械提升明显；没有标签的器械仍依赖视觉模型。
+
 ## 5. 仍未完成
 
 - iOS CI 编译已通过（`iOS Build` success @ `5bf99a1`）；真机相机/相册 HEIC/大图/
   弱网仍需 Mac 验证。
+- 更强视觉模型：当前 `deepseek-flash` 在 18 张多品牌实拍上约 10/18；
+  Qwen-VL / Doubao Vision / GPT-4o 级模型需要 API Key 和同一批评测对比。
+- 真实数据闭环：建议每类收集 100+ 张真实健身房照片，训练检测器/分类器；
+  公开产品图数据集（HF `suc1dalspinach/Gym_machines_Image_dataset`，MIT）
+  与真实场景差异较大，直接线性探针效果差。
 - 更细的器械分类：史密斯机 vs 普通深蹲架、蝴蝶机 vs 反式蝴蝶机、
   不同品牌的腿举/哈克一体机。
+- 多候选确认：当 top-2 接近时，UI 应显示“最可能 A / 也可能是 B”，让用户选。
+- 评测集：继续补充多品牌真实照片，记录 top-1/top-3/未识别率。
 - 更多动作库：当前 57 条覆盖常见商业健身房；1,213 / 1,500 条全量仍需映射。
-- 评测集：建议用 GymBro/GymGuide 23 类数据集（6,620 张，代码 MIT，数据集 license
-  需在 Roboflow 页面核实）做 few-shot 参考和 30–50 张真实照片评测。
-- 如果 top-3 仍低于 90%，再训练轻量分类器或 CLIP/SigLIP 检索；不要一上来就训练。
 
 ## 6. 验收
 

@@ -13,6 +13,7 @@ enum EquipmentRecognitionService {
     static func recognize(
         imageData: Data,
         preferRemote: Bool,
+        ocrText: String = "",
         idempotencyKey: String? = nil
     ) async throws -> EquipmentScanResult {
         guard preferRemote else {
@@ -24,6 +25,7 @@ enum EquipmentRecognitionService {
         do {
             return try await APIClient.shared.scanEquipment(
                 imageData: imageData,
+                ocrText: ocrText,
                 idempotencyKey: idempotencyKey
             )
         } catch let error as APIError where error.isProRequired {

@@ -32,10 +32,24 @@ _SYSTEM_PROMPT = """你是叫练的健身器械识别助手。你只判断图片
 5. 只输出一个 JSON 对象，不要解释。"""
 
 
-def _user_prompt() -> str:
+def _user_prompt(ocr_text: str = "") -> str:
+    ocr_block = ""
+    if ocr_text:
+        hint = equipment_catalog.match_name(ocr_text)
+        hint_line = (
+            f"\nOCR 匹配提示：{hint.slug}（{hint.name_zh}）"
+            if hint is not None
+            else ""
+        )
+        ocr_block = (
+            f"\nOCR 在图片上读到的文字：{ocr_text}\n"
+            "如果这段文字明确是画面主体器械的品牌/型号/动作名，把它作为强证据；"
+            "如果文字属于背景里的另一台器械，忽略它。"
+            f"{hint_line}\n"
+        )
     return f"""器械目录：
 {equipment_catalog.prompt_catalog()}
-
+{ocr_block}
 识别这张照片，严格输出 JSON：
 {{
   "is_gym_equipment": true,
@@ -105,6 +119,7 @@ async def recognize(
     filename: str,
     *,
     user_id: str | None = None,
+    ocr_text: str = "",
 ) -> dict:
     if settings.use_mock_vision:
         return _unavailable(
@@ -116,7 +131,7 @@ async def recognize(
     try:
         result = await llm.complete_vision_json(
             _SYSTEM_PROMPT,
-            _user_prompt(),
+            _user_prompt(ocr_text),
             base64.b64encode(image_bytes).decode(),
             usage=usage,
             db=db,

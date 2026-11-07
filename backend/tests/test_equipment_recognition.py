@@ -122,6 +122,34 @@ def test_vision_failure_never_returns_random_candidates(monkeypatch):
     assert result["warning"]
 
 
+def test_ocr_text_is_included_and_matched_to_catalog(monkeypatch):
+    captured = {}
+
+    async def fake_vision(system, user, image, mime="image/jpeg", **kwargs):
+        captured["user"] = user
+        return _vision_result()
+
+    monkeypatch.setattr(equipment, "settings", _settings())
+    monkeypatch.setattr(equipment.llm, "complete_vision_json", fake_vision)
+    monkeypatch.setattr(
+        equipment,
+        "_active_exercises",
+        lambda db: [_exercise("cm_leg_press", "腿举")],
+    )
+
+    asyncio.run(
+        equipment.recognize(
+            None,
+            b"not-a-real-image",
+            "x.jpg",
+            ocr_text="HAMMER STRENGTH SHOULDER PRESS",
+        )
+    )
+
+    assert "HAMMER STRENGTH SHOULDER PRESS" in captured["user"]
+    assert "shoulder_press_machine" in captured["user"]
+
+
 def test_catalog_actions_exist_in_active_library():
     library = Path(__file__).resolve().parents[2] / "ios" / "FitAI" / "Resources"
     rows = json.loads(
