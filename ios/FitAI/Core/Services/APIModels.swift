@@ -130,6 +130,20 @@ struct EquipmentScanResponse: Decodable {
         let confidence: Double
     }
 
+    struct EquipmentOption: Decodable {
+        let slug: String
+        let nameZh: String
+        let confidence: Double
+        let candidates: [Candidate]
+
+        enum CodingKeys: String, CodingKey {
+            case slug
+            case nameZh = "name_zh"
+            case confidence
+            case candidates
+        }
+    }
+
     let candidates: [Candidate]
     let description: String?
     let name: String?
@@ -139,6 +153,7 @@ struct EquipmentScanResponse: Decodable {
     let equipmentSlug: String?
     let equipmentName: String?
     let confidence: Double?
+    let equipmentCandidates: [EquipmentOption]?
 
     enum CodingKeys: String, CodingKey {
         case candidates
@@ -150,6 +165,7 @@ struct EquipmentScanResponse: Decodable {
         case equipmentSlug = "equipment_slug"
         case equipmentName = "equipment_name"
         case confidence
+        case equipmentCandidates = "equipment_candidates"
     }
 }
 

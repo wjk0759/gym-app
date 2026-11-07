@@ -122,6 +122,41 @@ def test_vision_failure_never_returns_random_candidates(monkeypatch):
     assert result["warning"]
 
 
+def test_two_close_equipment_candidates_are_returned(monkeypatch):
+    async def fake_vision(system, user, image, mime="image/jpeg", **kwargs):
+        return _vision_result(
+            equipment_slug="chest_press_machine",
+            equipment_name="坐姿推胸机",
+            confidence=0.78,
+            equipment_candidates=[
+                {"slug": "chest_press_machine", "confidence": 0.78},
+                {"slug": "shoulder_press_machine", "confidence": 0.66},
+            ],
+            exercise_slugs=["cm_machine_chest_press"],
+        )
+
+    monkeypatch.setattr(equipment, "settings", _settings())
+    monkeypatch.setattr(equipment.llm, "complete_vision_json", fake_vision)
+    monkeypatch.setattr(
+        equipment,
+        "_active_exercises",
+        lambda db: [
+            _exercise("cm_machine_chest_press", "器械推胸"),
+            _exercise("cm_machine_shoulder_press", "器械推举"),
+        ],
+    )
+
+    result = asyncio.run(
+        equipment.recognize(None, b"not-a-real-image", "x.jpg")
+    )
+
+    assert result["status"] == "ok"
+    assert len(result["equipment_candidates"]) == 2
+    assert result["equipment_candidates"][0]["slug"] == "chest_press_machine"
+    assert result["equipment_candidates"][1]["slug"] == "shoulder_press_machine"
+    assert result["needs_confirmation"] is True
+
+
 def test_ocr_text_is_included_and_matched_to_catalog(monkeypatch):
     captured = {}
 

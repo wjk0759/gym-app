@@ -36,6 +36,8 @@ struct EquipmentRecognitionView: View {
     @State var warning = ""
     @State var scanStatus = "ok"
     @State var equipmentName = ""
+    @State var equipmentOptions: [EquipmentMatchOption] = []
+    @State var selectedEquipmentSlug: String?
     @State var showAddCustom = false
     @State var didAutoOfferCustom = false
     @State var pendingCustomOffer = false
@@ -368,7 +370,51 @@ struct EquipmentRecognitionView: View {
                 }
                 .padding(.vertical, 4)
             } else {
-                if !equipmentName.isEmpty {
+                if equipmentOptions.count > 1 {
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text("最可能是")
+                            .font(AppType.overline)
+                            .tracking(0.8)
+                            .foregroundStyle(Theme.tertiaryText)
+
+                        HStack(spacing: 8) {
+                            ForEach(equipmentOptions) { option in
+                                Button {
+                                    selectEquipment(option)
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(option.name)
+                                            .font(AppType.caption.weight(.semibold))
+                                        Text("\(Int(option.confidence * 100))%")
+                                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                    }
+                                    .foregroundStyle(
+                                        selectedEquipmentSlug == option.slug
+                                            ? Theme.onPrimary
+                                            : Theme.ink
+                                    )
+                                    .padding(.horizontal, 11)
+                                    .padding(.vertical, 7)
+                                    .background(
+                                        selectedEquipmentSlug == option.slug
+                                            ? Theme.primary
+                                            : Theme.paper,
+                                        in: Capsule(style: .continuous)
+                                    )
+                                    .overlay {
+                                        Capsule(style: .continuous)
+                                            .strokeBorder(Theme.stroke, lineWidth: 1)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+
+                        Text("不确定时点另一个候选，动作会跟着切换。")
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundStyle(Theme.secondaryText)
+                    }
+                } else if !equipmentName.isEmpty {
                     HStack(spacing: 6) {
                         Image(systemName: "checkmark.seal.fill")
                             .foregroundStyle(Theme.cobalt)
@@ -384,6 +430,13 @@ struct EquipmentRecognitionView: View {
     }
 
 
+
+    func selectEquipment(_ option: EquipmentMatchOption) {
+        selectedEquipmentSlug = option.slug
+        equipmentName = option.name
+        candidates = option.candidates
+        notInLibrary = false
+    }
 
     func isSaved(_ candidate: EquipmentCandidate) -> Bool {
         savedSlugs.contains(candidate.exercise.slug)
@@ -423,6 +476,8 @@ struct EquipmentRecognitionView: View {
         warning = ""
         scanStatus = "ok"
         equipmentName = ""
+        equipmentOptions = []
+        selectedEquipmentSlug = nil
         customAddedName = ""
         didAutoOfferCustom = false
         pendingCustomOffer = false
@@ -440,6 +495,8 @@ struct EquipmentRecognitionView: View {
         warning = ""
         scanStatus = "ok"
         equipmentName = ""
+        equipmentOptions = []
+        selectedEquipmentSlug = nil
         customAddedName = ""
         didAutoOfferCustom = false
         pendingCustomOffer = false
@@ -470,7 +527,16 @@ struct EquipmentRecognitionView: View {
                 notInLibrary = result.notInLibrary
                 warning = result.warning ?? ""
                 scanStatus = result.status
-                equipmentName = result.equipmentName ?? ""
+                equipmentOptions = result.equipmentOptions
+                if let first = result.equipmentOptions.first {
+                    selectedEquipmentSlug = first.slug
+                    equipmentName = first.name
+                    candidates = first.candidates
+                    notInLibrary = false
+                } else {
+                    selectedEquipmentSlug = nil
+                    equipmentName = result.equipmentName ?? ""
+                }
                 customAddedName = ""
                 onRecognized?(result)
                 isScanning = false

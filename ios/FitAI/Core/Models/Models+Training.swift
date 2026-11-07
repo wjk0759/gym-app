@@ -268,6 +268,15 @@ struct EquipmentCandidate: Identifiable, Hashable {
     let confidence: Double
 }
 
+struct EquipmentMatchOption: Identifiable, Equatable {
+    let slug: String
+    let name: String
+    let confidence: Double
+    let candidates: [EquipmentCandidate]
+
+    var id: String { slug }
+}
+
 struct EquipmentScanResult {
     var candidates: [EquipmentCandidate]
     var description: String
@@ -277,4 +286,5 @@ struct EquipmentScanResult {
     var status: String = "ok"
     var equipmentName: String? = nil
     var confidence: Double? = nil
+    var equipmentOptions: [EquipmentMatchOption] = []
 }

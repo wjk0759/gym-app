@@ -293,12 +293,33 @@ extension APIClient {
             headers: idempotencyHeaders(idempotencyKey)
         )
         let response = try decode(EquipmentScanResponse.self, from: data)
-        let candidates = response.candidates.compactMap { candidate -> EquipmentCandidate? in
-            guard let exercise = ExerciseLibrary.exercise(slug: candidate.slug) else {
-                return nil
+
+        func resolve(
+            _ candidates: [EquipmentScanResponse.Candidate]
+        ) -> [EquipmentCandidate] {
+            candidates.compactMap { candidate -> EquipmentCandidate? in
+                guard let exercise = ExerciseLibrary.exercise(slug: candidate.slug) else {
+                    return nil
+                }
+                return EquipmentCandidate(
+                    exercise: exercise,
+                    confidence: candidate.confidence
+                )
             }
-            return EquipmentCandidate(exercise: exercise, confidence: candidate.confidence)
         }
+
+        let options = (response.equipmentCandidates ?? []).compactMap {
+            option -> EquipmentMatchOption? in
+            let actions = resolve(option.candidates)
+            guard !actions.isEmpty else { return nil }
+            return EquipmentMatchOption(
+                slug: option.slug,
+                name: option.nameZh,
+                confidence: option.confidence,
+                candidates: actions
+            )
+        }
+        let candidates = resolve(response.candidates)
         return EquipmentScanResult(
             candidates: candidates,
             description: response.description ?? "",
@@ -308,7 +329,8 @@ extension APIClient {
             warning: response.warning,
             status: response.status ?? "ok",
             equipmentName: response.equipmentName,
-            confidence: response.confidence
+            confidence: response.confidence,
+            equipmentOptions: options
         )
     }
 

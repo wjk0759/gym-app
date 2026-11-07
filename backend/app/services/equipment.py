@@ -56,11 +56,16 @@ def _user_prompt(ocr_text: str = "") -> str:
   "equipment_slug": "目录里的 slug 或 unknown",
   "equipment_name": "中文名",
   "confidence": 0.0,
+  "equipment_candidates": [
+    {{"slug": "最可能的目录 slug", "confidence": 0.0}},
+    {{"slug": "第二可能的目录 slug", "confidence": 0.0}}
+  ],
   "visible_features": ["看到的 2-4 个结构特征"],
   "exercise_slugs": ["最多 3 个目录里给该器械的动作 slug"],
   "description": "一句话说明"
 }}
-如果不是健身器械：equipment_slug 用 "unknown"，exercise_slugs 输出 []，description 如实说明。"""
+如果不是健身器械：equipment_slug 用 "unknown"，equipment_candidates 和 exercise_slugs 输出 []，description 如实说明。
+如果只能确定一个，equipment_candidates 只输出一个；不确定时输出两个最接近的。"""
 
 
 def available_equipment_types(
@@ -111,6 +116,58 @@ def _active_exercises(db: Session) -> list[Exercise]:
         .scalars()
         .all()
     )
+
+
+def _build_option(
+    db: Session,
+    catalog: equipment_catalog.EquipmentType,
+    confidence: float,
+    requested_slugs,
+) -> dict | None:
+    rows = {
+        item.slug: item
+        for item in _active_exercises(db)
+        if item.slug in set(catalog.exercise_slugs)
+    }
+    requested = [
+        str(item).strip()
+        for item in (
+            requested_slugs if isinstance(requested_slugs, list) else []
+        )
+        if str(item).strip() in catalog.exercise_slugs
+    ]
+    ordered = requested + [
+        slug for slug in catalog.exercise_slugs if slug not in requested
+    ]
+
+    candidates: list[dict] = []
+    for index, slug in enumerate(ordered):
+        exercise = rows.get(slug)
+        if exercise is None:
+            continue
+        candidates.append(
+            {
+                "slug": exercise.slug,
+                "name_zh": exercise.name_zh,
+                "muscle_group": exercise.muscle_group,
+                "equipment": exercise.equipment,
+                "confidence": round(
+                    max(0.30, confidence - index * 0.14), 2
+                ),
+                "video_url": exercise.video_url,
+            }
+        )
+        if len(candidates) == 3:
+            break
+
+    if not candidates:
+        return None
+    return {
+        "slug": catalog.slug,
+        "name_zh": catalog.name_zh,
+        "confidence": round(confidence, 2),
+        "candidates": candidates,
+    }
 
 
 async def recognize(
@@ -207,48 +264,68 @@ def _map_result(db: Session, result: dict, filename: str) -> dict:
             "status": "unknown_equipment",
         }
 
-    rows = {
-        item.slug: item
-        for item in _active_exercises(db)
-        if item.slug in set(catalog.exercise_slugs)
-    }
-    requested = [
-        str(item).strip()
-        for item in (
-            result.get("exercise_slugs")
-            if isinstance(result.get("exercise_slugs"), list)
-            else []
-        )
-        if str(item).strip() in catalog.exercise_slugs
-    ]
-    ordered = requested + [
-        slug for slug in catalog.exercise_slugs if slug not in requested
-    ]
+    raw_options = result.get("equipment_candidates")
+    if not isinstance(raw_options, list) or not raw_options:
+        raw_options = [{"slug": equipment_slug, "confidence": confidence}]
 
-    candidates: list[dict] = []
-    for index, slug in enumerate(ordered):
-        exercise = rows.get(slug)
-        if exercise is None:
+    options: list[dict] = []
+    seen: set[str] = set()
+    for raw in raw_options[:2]:
+        if not isinstance(raw, dict):
             continue
-        candidates.append(
-            {
-                "slug": exercise.slug,
-                "name_zh": exercise.name_zh,
-                "muscle_group": exercise.muscle_group,
-                "equipment": exercise.equipment,
-                "confidence": round(
-                    max(0.30, confidence - index * 0.14), 2
-                ),
-                "video_url": exercise.video_url,
-            }
+        raw_slug = str(raw.get("slug") or "").strip().lower()
+        raw_confidence = _clamp_confidence(raw.get("confidence", confidence))
+        option_catalog = equipment_catalog.get(raw_slug)
+        if option_catalog is None or option_catalog.slug in seen:
+            continue
+        seen.add(option_catalog.slug)
+        option = _build_option(
+            db,
+            option_catalog,
+            raw_confidence,
+            result.get("exercise_slugs")
+            if option_catalog.slug == catalog.slug
+            else [],
         )
-        if len(candidates) == 3:
-            break
+        if option is not None:
+            options.append(option)
 
-    if not candidates:
+    if not options:
+        top_option = _build_option(
+            db,
+            catalog,
+            confidence,
+            result.get("exercise_slugs"),
+        )
+        if top_option is not None:
+            options.append(top_option)
+
+    if len(options) > 1:
+        top_confidence = options[0]["confidence"]
+        if options[1]["confidence"] < max(0.35, top_confidence - 0.35):
+            options = options[:1]
+
+    if len(options) == 1:
+        top_confidence = options[0]["confidence"]
+        for alt_slug in equipment_catalog.confusables(options[0]["slug"]):
+            alternative = equipment_catalog.get(alt_slug)
+            if alternative is None:
+                continue
+            alternative_option = _build_option(
+                db,
+                alternative,
+                max(0.35, top_confidence - 0.35),
+                [],
+            )
+            if alternative_option is not None:
+                options.append(alternative_option)
+                break
+
+    if not options:
         return {
             "scan_id": str(uuid.uuid4()),
             "candidates": [],
+            "equipment_candidates": [],
             "needs_confirmation": True,
             "not_in_library": True,
             "name": catalog.name_zh,
@@ -263,16 +340,24 @@ def _map_result(db: Session, result: dict, filename: str) -> dict:
             "status": "no_actions",
         }
 
+    top = options[0]
+    second = options[1] if len(options) > 1 else None
+    needs_confirmation = top["confidence"] < 0.6 or (
+        second is not None
+        and second["confidence"] >= top["confidence"] - 0.2
+    )
+
     return {
         "scan_id": str(uuid.uuid4()),
-        "candidates": candidates,
-        "needs_confirmation": confidence < 0.6,
+        "candidates": top["candidates"],
+        "equipment_candidates": options,
+        "needs_confirmation": needs_confirmation,
         "not_in_library": False,
-        "name": catalog.name_zh,
-        "description": description or f"识别到「{catalog.name_zh}」。",
-        "equipment_slug": catalog.slug,
-        "equipment_name": catalog.name_zh,
-        "confidence": confidence,
+        "name": top["name_zh"],
+        "description": description or f"识别到「{top['name_zh']}」。",
+        "equipment_slug": top["slug"],
+        "equipment_name": top["name_zh"],
+        "confidence": top["confidence"],
         "visible_features": features,
         "model": settings.vision_model_name,
         "image_name": filename,

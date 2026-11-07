@@ -371,6 +371,62 @@ CATALOG: tuple[EquipmentType, ...] = (
 
 _BY_SLUG = {item.slug: item for item in CATALOG}
 
+# Observed confusion pairs from real gym photos. When the vision model only
+# returns one class, the API offers the first compatible alternative so the UI
+# can ask "也可能是这个?" instead of forcing a wrong single answer.
+CONFUSABLES: dict[str, tuple[str, ...]] = {
+    "bench_press": ("squat_rack", "smith_machine"),
+    "squat_rack": ("bench_press", "smith_machine"),
+    "chest_press_machine": (
+        "shoulder_press_machine",
+        "pec_deck",
+        "leg_press",
+    ),
+    "shoulder_press_machine": (
+        "chest_press_machine",
+        "pec_deck",
+        "lateral_raise_machine",
+    ),
+    "pec_deck": (
+        "chest_press_machine",
+        "lateral_raise_machine",
+        "shoulder_press_machine",
+    ),
+    "lateral_raise_machine": (
+        "pec_deck",
+        "shoulder_press_machine",
+        "chest_press_machine",
+    ),
+    "leg_press": (
+        "hack_squat",
+        "hip_abduction",
+        "chest_press_machine",
+        "back_extension",
+    ),
+    "hack_squat": (
+        "leg_press",
+        "hip_abduction",
+        "chest_press_machine",
+        "shoulder_press_machine",
+    ),
+    "hip_abduction": ("hip_adduction", "leg_press", "hack_squat"),
+    "hip_adduction": ("hip_abduction", "leg_press", "hack_squat"),
+    "back_extension": ("seated_row", "lat_pulldown", "leg_press"),
+    "seated_row": ("back_extension", "lat_pulldown", "cable_station"),
+    "lat_pulldown": ("seated_row", "back_extension", "cable_station"),
+    "cable_station": ("seated_row", "lat_pulldown", "back_extension"),
+    "stationary_bike": ("rowing_machine", "elliptical", "stair_climber"),
+    "rowing_machine": ("stationary_bike", "seated_row", "elliptical"),
+    "elliptical": ("stationary_bike", "treadmill", "stair_climber"),
+    "treadmill": ("elliptical", "stair_climber", "stationary_bike"),
+    "stair_climber": ("treadmill", "elliptical", "stationary_bike"),
+}
+
+
+def confusables(slug: str) -> tuple[str, ...]:
+    return CONFUSABLES.get(slug, ())
+
+
 
 def get(slug: str | None) -> EquipmentType | None:
     if not slug:
