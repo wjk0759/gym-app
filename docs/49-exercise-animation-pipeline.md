@@ -157,10 +157,11 @@ backend/media/exercises/vital/insert.sql
 - `/watch/bootstrap` 已返回 `crunch` 媒体。
 - 媒体 HTTP 支持 Range，返回 206，可渐进播放/循环。
 - 后端：211 tests passed，Ruff 通过。
+- GitHub Actions：`Backend Tests` success @ `341981f`；`iOS Build` success @
+  `341981f`。
 
 未验证：
 
-- iOS CI 编译（本轮代码推送后跑）。
 - 真机 iPhone 内嵌循环、全屏、Reduce Motion、音乐不中断。
 - 真机 Watch 下载/播放/排队。
 - 弱网、离线、切后台/回前台。
