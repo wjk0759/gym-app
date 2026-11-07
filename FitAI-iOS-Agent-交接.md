@@ -14,16 +14,38 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`5855d90`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `a073ce6`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`5855d90`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `588af76`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 13/13 测试通过；完成 Watch UI 重设计（训练/动作/语音/锁定页），并修正「完成一组 + 下一个动作」双按钮流程（`2d5dea0`）；此前修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
-- Windows 最新完成（2026-11-07）：已 review 并保留 macOS 的 Watch UI 重设计；修复动作页页码点、休息中暂停/撤销不可达、暂停时休息按钮仍可跳过；Mac UI 提交 `2d5dea0` + Windows 修复 `a073ce6`；CI `iOS Build` 在 `a073ce6` **success**
+- Windows 最新完成（2026-11-07）：保留 macOS Watch UI 重设计，并完成全链路自检：账号切换隔离、bootstrap 防乱序、预载/已开始区分、进行中计划与媒体保护、重连状态对账、logout/login 竞态、视频失败海报回退、watch session 上限/限流、Paywall Watch 权益；CI `iOS Build` 在 `588af76` **success**
 - Windows 前一轮完成（2026-11-07）：手表独立语音教练、watch 专用登录会话、媒体预载/本地缓存、离线 outbox/ack、手机 inbox 回灌、手机→手表指令、3 天 Pro 宽限与中途到期继续结束、HealthKit 保活/手机单写者、Watch AppIcon 恢复、Watch 隐私清单、训练来源 `phone/watch`
-- 最新后端验证：**208 passed**，Ruff app/tests 通过；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source` 已接入测试；V22 `training_stage` 已迁移；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
+- 最新后端验证：**209 passed**，Ruff app/tests 通过；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source` 已接入测试；V22 `training_stage` 已迁移；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、Watch 3D 动作素材、真实 Watch App ID/HealthKit capability、V23 生产迁移与 `/watch/*` 部署
+
+### 2026-11-07 · Windows / OpenCode（Watch 全链路自检 + 并发/账号/媒体加固）
+
+- 分支：`feature/watch-standalone-workout`
+- 代码提交：`588af76`（本条文档提交见 `git log -1`）
+- CI：`iOS Build` **success** @ `588af76`；`Backend Tests` **success** @ `a79f3db`（后端未再改）
+- 本地验证：后端 **209 passed**，Ruff 通过；Swift 语法树 96 文件 0 error
+- 做了什么（保留 macOS UI 重设计）：
+  - 账号切换：同一天换账号会强制重建 Watch 引擎，不再把旧账号动作/组数带到新账号；媒体按新计划清理
+  - Bootstrap 防乱序：任何比当前更旧的 bootstrap 都忽略；跨天旧 payload 不再覆盖新计划
+  - 预载 ≠ 已开始：手机不再把「手表只预载未开始」误判为 Watch 主导；只有用户第一次动作后才进入 watch-led
+  - 进行中训练保护：手机改计划/换日时，Watch 保留已开始会话的旧动作与媒体，结束后再加载新计划；重启 App 也不删当前训练媒体
+  - 恢复与对账：手机启动/重连会请求 Watch 当前状态；手机持久化 watch-led 暂停状态；空状态不会污染 outbox
+  - 退出登录竞态：logout 带时间戳；早于 logout 的延迟 bootstrap 不能重新解锁；晚到的旧 logout 不能覆盖新登录
+  - 媒体：视频解码失败/损坏回退海报；媒体/训练文件标记不备份；替换版本时删除旧文件
+  - 服务端：watch session 每账号最多 3 个活跃会话、12 次/分钟限流；voice 空消息校验；`_speech_text` 空文本兜底
+  - 其他：Paywall 增加 Apple Watch 权益；Watch voice 回答自动滚到结果；`canTrainNow` 允许 Pro 过期后查看已完成总结
+- 未验证 / 仍需真机：
+  - Mac 侧 41mm/45mm 布局、动作页页码点、休息中暂停/撤销、视频失败海报回退
+  - 真实 WatchConnectivity 状态对账、logout/login 快速切换
+  - 真实媒体循环/TTS/耳机路由、HealthKit 授权与单写者、真机签名
+- 仍 BLOCKED：3D 素材、V23 生产迁移与 `/watch/*` 部署、App Store 协议/IAP/API Key、TestFlight 外部审核、`test_reviewer` Pro 授权、真实 Watch 签名/HealthKit capability
 
 ### 2026-11-07 · Windows / OpenCode（Review macOS Watch UI + 交互回归修复）
 
