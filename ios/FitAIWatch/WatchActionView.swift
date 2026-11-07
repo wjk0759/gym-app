@@ -33,6 +33,10 @@ struct WatchActionView: View {
             }
         }
         .ignoresSafeArea()
+        .overlay(alignment: .top) {
+            WatchPageDots(index: 1)
+                .padding(.top, 4)
+        }
         .overlay(alignment: .topLeading) {
             if let exercise = store.snapshot.currentExercise {
                 Text(exercise.name)
@@ -48,7 +52,7 @@ struct WatchActionView: View {
                         Capsule()
                             .strokeBorder(WatchTheme.stroke, lineWidth: 1)
                     }
-                    .padding(.top, 4)
+                    .padding(.top, 16)
                     .padding(.leading, 2)
             }
         }

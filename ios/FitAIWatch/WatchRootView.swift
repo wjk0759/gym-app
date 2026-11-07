@@ -26,12 +26,6 @@ struct WatchRootView: View {
             }
         }
         .background(WatchTheme.canvas)
-        .overlay(alignment: .top) {
-            if store.canTrainNow {
-                WatchPageDots(index: page.rawValue)
-                    .padding(.top, 2)
-            }
-        }
         .onAppear {
             WatchSyncManager.shared.store = store
             WatchSyncManager.shared.activate()

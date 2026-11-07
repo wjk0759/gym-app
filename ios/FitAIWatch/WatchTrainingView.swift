@@ -53,6 +53,8 @@ struct WatchTrainingView: View {
             Text("训练")
                 .font(.headline)
                 .foregroundStyle(WatchTheme.ink)
+            WatchPageDots(index: 0)
+                .padding(.leading, 2)
             Spacer(minLength: 4)
             Button(action: onVoice) {
                 Image(systemName: "waveform")
@@ -143,11 +145,12 @@ struct WatchTrainingView: View {
                 .foregroundStyle(WatchTheme.ink)
             Spacer(minLength: 4)
             if isComplete {
-                Button("下一个动作") {
+                Button(snapshot.nextExercise == nil ? "查看总结" : "下一个动作") {
                     apply(.skipRest(.init(at: now, source: .watch)))
                     apply(.advanceExercise(.init(at: now, source: .watch)))
                 }
                 .buttonStyle(WatchCompactPrimaryButtonStyle())
+                .disabled(snapshot.isPaused)
             } else {
                 Button("跳过") {
                     apply(.skipRest(.init(at: now, source: .watch)))
@@ -155,6 +158,7 @@ struct WatchTrainingView: View {
                 .buttonStyle(.bordered)
                 .tint(WatchTheme.primary)
                 .controlSize(.small)
+                .disabled(snapshot.isPaused)
             }
         }
         .padding(.horizontal, 9)
@@ -172,58 +176,68 @@ struct WatchTrainingView: View {
         let isComplete = snapshot.isExerciseComplete(exercise)
         let isLast = snapshot.nextExercise == nil
         let isResting = (snapshot.remainingRest(at: now) ?? 0) > 0
+        let showsPrimary = !(isComplete && isResting)
 
-        return Group {
-            if !(isComplete && isResting) {
-                HStack(spacing: 6) {
-                    Button {
-                        if isComplete {
-                            apply(.advanceExercise(.init(at: now, source: .watch)))
-                        } else {
-                            completeSet(exercise)
-                        }
-                    } label: {
-                        Label(
-                            isComplete
-                                ? (isLast ? "查看总结" : "下一个动作")
-                                : "完成一组",
-                            systemImage: isComplete ? "arrow.right" : "checkmark"
-                        )
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
-                        .frame(maxWidth: .infinity)
+        return HStack(spacing: 6) {
+            if showsPrimary {
+                Button {
+                    if isComplete {
+                        apply(.advanceExercise(.init(at: now, source: .watch)))
+                    } else {
+                        completeSet(exercise)
                     }
-                    .buttonStyle(WatchPrimaryButtonStyle())
-                    .disabled(snapshot.isPaused)
-
-                    Button {
-                        if snapshot.isPaused {
-                            apply(.resume(.init(at: now, source: .watch)))
-                        } else {
-                            apply(.pause(.init(at: now, source: .watch)))
-                        }
-                    } label: {
-                        Image(
-                            systemName: snapshot.isPaused
-                                ? "play.fill"
-                                : "pause.fill"
-                        )
-                    }
-                    .buttonStyle(WatchIconButtonStyle())
-                    .accessibilityLabel(
-                        snapshot.isPaused ? "继续训练" : "暂停训练"
+                } label: {
+                    Label(
+                        isComplete
+                            ? (isLast ? "查看总结" : "下一个动作")
+                            : "完成一组",
+                        systemImage: isComplete ? "arrow.right" : "checkmark"
                     )
-
-                    Button {
-                        apply(.undoLastSet(.init(at: now, source: .watch)))
-                    } label: {
-                        Image(systemName: "arrow.uturn.backward")
-                    }
-                    .buttonStyle(WatchIconButtonStyle())
-                    .accessibilityLabel("撤销上一组")
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(WatchPrimaryButtonStyle())
+                .disabled(snapshot.isPaused)
+            }
+
+            // Pause and undo stay reachable during rest. The rest card owns
+            // the only "next" action while the current exercise is complete.
+            if !showsPrimary {
+                Spacer(minLength: 0)
+            }
+
+            Button {
+                if snapshot.isPaused {
+                    apply(.resume(.init(at: now, source: .watch)))
+                } else {
+                    apply(.pause(.init(at: now, source: .watch)))
+                }
+            } label: {
+                Image(
+                    systemName: snapshot.isPaused
+                        ? "play.fill"
+                        : "pause.fill"
+                )
+            }
+            .buttonStyle(WatchIconButtonStyle())
+            .accessibilityLabel(
+                snapshot.isPaused ? "继续训练" : "暂停训练"
+            )
+
+            Button {
+                apply(.undoLastSet(.init(at: now, source: .watch)))
+            } label: {
+                Image(systemName: "arrow.uturn.backward")
+            }
+            .buttonStyle(WatchIconButtonStyle())
+            .accessibilityLabel("撤销上一组")
+
+            if !showsPrimary {
+                Spacer(minLength: 0)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 
     private var summary: some View {
