@@ -14,16 +14,43 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`5855d90`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `588af76`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`5855d90`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `1eb3fdd`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
-- macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 13/13 测试通过；完成 Watch UI 重设计（训练/动作/语音/锁定页），并修正「完成一组 + 下一个动作」双按钮流程（`2d5dea0`）；此前修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
+- macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 13/13 测试通过；完成 Watch UI 重设计（训练/动作/语音/锁定页）、单主按钮流程（`2d5dea0`），并完成 40/42/49mm 小表盘响应式适配（`1eb3fdd`）；此前修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
 - Windows 最新完成（2026-11-07）：保留 macOS Watch UI 重设计，并完成全链路自检：账号切换隔离、bootstrap 防乱序、预载/已开始区分、进行中计划与媒体保护、重连状态对账、logout/login 竞态、视频失败海报回退、watch session 上限/限流、Paywall Watch 权益；CI `iOS Build` 在 `588af76` **success**
 - Windows 前一轮完成（2026-11-07）：手表独立语音教练、watch 专用登录会话、媒体预载/本地缓存、离线 outbox/ack、手机 inbox 回灌、手机→手表指令、3 天 Pro 宽限与中途到期继续结束、HealthKit 保活/手机单写者、Watch AppIcon 恢复、Watch 隐私清单、训练来源 `phone/watch`
 - 最新后端验证：**209 passed**，Ruff app/tests 通过；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source` 已接入测试；V22 `training_stage` 已迁移；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、Watch 3D 动作素材、真实 Watch App ID/HealthKit capability、V23 生产迁移与 `/watch/*` 部署
+
+### 2026-11-07 · macOS（40/42/49mm 小表盘适配）
+
+- 分支：`feature/watch-standalone-workout`
+- 代码提交：`1eb3fdd`（本条目为后续 docs 提交）
+- 做了什么：
+  - 拉取 Windows `588af76` / `6373a9e`，保留其页码点、休息期暂停/撤销、暂停隐藏主操作、最后一组「查看总结」等改动
+  - 在 40mm（SE 3）、42mm（Series 12）、49mm（Ultra 4）模拟器实测训练页
+  - 发现 42mm 主按钮横向被挤出屏幕、40mm 三个操作底部被截断
+  - 训练页控制区改为响应式：
+    - 宽度 ≥ 195：完整文字（完成一组 / 下一个动作）+ 40pt 图标
+    - 宽度 168–195：短文案（完成 / 下一个 / 总结）+ 34pt 图标
+    - 宽度 < 168：图标按钮（荧光绿圆形主按钮 + 暂停 + 撤销）
+    - 高度 < 210：隐藏进度条、缩小卡片内边距、按钮高度 42→38、底部留白收紧
+  - `WatchPrimaryButtonStyle` / `WatchRoundPrimaryButtonStyle` 增加 `height` 参数；`WatchIconButtonStyle` 增加 `size` 参数
+- 验证：
+  - `xcodegen generate`；`FitAIWorkoutCore` **13/13**；Xcode 27.2 构建 **BUILD SUCCEEDED**
+  - 40/42/49 训练页截图：三个操作都在首屏；40mm 使用图标按钮，42mm 使用「完成」短文案，49mm 保持「完成一组」
+  - 未验证：40/42 休息态的暂停/继续/撤销 +「查看总结」、锁定页 CTA、语音页底部说明、动作页页码点、真机
+- Windows 需要做：
+  - 保留响应式阈值，不要按 49mm 写死尺寸
+  - 继续检查 41/45 的休息态、锁定页、语音页；40mm 图标按钮是有意降级
+  - 如果产品要求 40mm 也显示文字，需要单独的 40mm 布局，不要直接拉大按钮
+- 不要恢复：
+  - 不要删除响应式分支和按钮尺寸参数
+  - 不要恢复 Root 全局页码点或「完成一组 + 下一个动作」双按钮
+  - 不要把休息期暂停/撤销移除
 
 ### 2026-11-07 · Windows / OpenCode（Watch 全链路自检 + 并发/账号/媒体加固）
 
