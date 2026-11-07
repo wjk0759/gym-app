@@ -19,6 +19,8 @@ enum WatchTheme {
 /// Full-width lime action button. Black label on lime is the same contrast
 /// pair used by the iPhone primary button.
 struct WatchPrimaryButtonStyle: ButtonStyle {
+    var height: CGFloat = 42
+
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
@@ -33,7 +35,7 @@ struct WatchPrimaryButtonStyle: ButtonStyle {
             .font(.headline)
             .foregroundStyle(foreground)
             .frame(maxWidth: .infinity)
-            .frame(height: 44)
+            .frame(height: height)
             .background(
                 background,
                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -76,17 +78,19 @@ struct WatchCompactPrimaryButtonStyle: ButtonStyle {
 
 /// Square graphite icon control for pause and undo.
 struct WatchIconButtonStyle: ButtonStyle {
+    var size: CGFloat = 40
+
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 14, weight: .bold))
+            .font(.system(size: size * 0.35, weight: .bold))
             .foregroundStyle(
                 isEnabled
                     ? WatchTheme.ink
                     : WatchTheme.secondary.opacity(0.5)
             )
-            .frame(width: 40, height: 40)
+            .frame(width: size, height: size)
             .background(
                 WatchTheme.surfaceRaised,
                 in: RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -96,6 +100,20 @@ struct WatchIconButtonStyle: ButtonStyle {
                     .strokeBorder(WatchTheme.stroke, lineWidth: 1)
             }
             .opacity(configuration.isPressed ? 0.7 : 1)
+    }
+}
+
+/// Round lime primary action used when the screen is too narrow for a label.
+struct WatchRoundPrimaryButtonStyle: ButtonStyle {
+    var height: CGFloat = 42
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: height * 0.4, weight: .bold))
+            .foregroundStyle(WatchTheme.onPrimary)
+            .frame(width: height, height: height)
+            .background(WatchTheme.primary, in: Circle())
+            .opacity(configuration.isPressed ? 0.82 : 1)
     }
 }
 
@@ -136,7 +154,7 @@ struct WatchProgressBar: View {
                     .frame(width: proxy.size.width * CGFloat(ratio))
             }
         }
-        .frame(height: 3)
+        .frame(height: 2)
         .accessibilityHidden(true)
     }
 }

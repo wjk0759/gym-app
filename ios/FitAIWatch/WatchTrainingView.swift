@@ -17,29 +17,37 @@ struct WatchTrainingView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                header
-                WatchProgressBar(
-                    completed: snapshot.completedSetCount,
-                    planned: snapshot.plannedSetCount
-                )
-                if snapshot.isFinished {
-                    summary
-                } else if let exercise = snapshot.currentExercise {
-                    exerciseCard(exercise)
-                    if let remaining = snapshot.remainingRest(at: now),
-                       remaining > 0 {
-                        restCard(remaining)
+        GeometryReader { proxy in
+            let isShort = proxy.size.height < 210
+            ScrollView {
+                VStack(
+                    alignment: .leading,
+                    spacing: isShort ? 4 : 6
+                ) {
+                    header(isShort: isShort)
+                    if !isShort {
+                        WatchProgressBar(
+                            completed: snapshot.completedSetCount,
+                            planned: snapshot.plannedSetCount
+                        )
                     }
-                    controls(exercise)
-                } else {
-                    summary
+                    if snapshot.isFinished {
+                        summary
+                    } else if let exercise = snapshot.currentExercise {
+                        exerciseCard(exercise, compact: isShort)
+                        if let remaining = snapshot.remainingRest(at: now),
+                           remaining > 0 {
+                            restCard(remaining, compact: isShort)
+                        }
+                        controls(exercise, isShort: isShort)
+                    } else {
+                        summary
+                    }
                 }
+                .padding(.horizontal, 4)
+                .padding(.top, 2)
+                .padding(.bottom, isShort ? 2 : 4)
             }
-            .padding(.horizontal, 4)
-            .padding(.top, 2)
-            .padding(.bottom, 6)
         }
         .background(WatchTheme.canvas)
         .sensoryFeedback(
@@ -53,7 +61,7 @@ struct WatchTrainingView: View {
         }
     }
 
-    private var header: some View {
+    private func header(isShort: Bool) -> some View {
         HStack(spacing: 6) {
             Text("训练")
                 .font(.headline)
@@ -65,7 +73,10 @@ struct WatchTrainingView: View {
                 Image(systemName: "waveform")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(WatchTheme.onPrimary)
-                    .frame(width: 28, height: 28)
+                    .frame(
+                        width: isShort ? 24 : 26,
+                        height: isShort ? 24 : 26
+                    )
                     .background(WatchTheme.primary, in: Circle())
             }
             .buttonStyle(.plain)
@@ -83,10 +94,13 @@ struct WatchTrainingView: View {
         }
     }
 
-    private func exerciseCard(_ exercise: WorkoutExercise) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+    private func exerciseCard(
+        _ exercise: WorkoutExercise,
+        compact: Bool
+    ) -> some View {
+        VStack(alignment: .leading, spacing: compact ? 1 : 2) {
             Text(exercise.name)
-                .font(.headline)
+                .font(compact ? .subheadline : .headline)
                 .foregroundStyle(WatchTheme.ink)
                 .lineLimit(2)
 
@@ -104,7 +118,11 @@ struct WatchTrainingView: View {
                             .number.precision(.fractionLength(0...1))
                         )
                     )
-                    .font(.system(.title3, design: .rounded).weight(.bold))
+                    .font(
+                        compact
+                            ? .system(.body, design: .rounded).weight(.bold)
+                            : .system(.title3, design: .rounded).weight(.bold)
+                    )
                     .monospacedDigit()
                     .foregroundStyle(WatchTheme.ink)
                     Text("kg")
@@ -122,7 +140,7 @@ struct WatchTrainingView: View {
             }
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 7)
+        .padding(.vertical, compact ? 4 : 6)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             WatchTheme.surface,
@@ -132,12 +150,15 @@ struct WatchTrainingView: View {
             Capsule()
                 .fill(WatchTheme.primary)
                 .frame(width: 3)
-                .padding(.vertical, 7)
+                .padding(.vertical, compact ? 4 : 6)
                 .padding(.leading, 1)
         }
     }
 
-    private func restCard(_ remaining: TimeInterval) -> some View {
+    private func restCard(
+        _ remaining: TimeInterval,
+        compact: Bool
+    ) -> some View {
         let exercise = snapshot.currentExercise
         let isComplete = exercise.map { snapshot.isExerciseComplete($0) } ?? false
 
@@ -145,7 +166,11 @@ struct WatchTrainingView: View {
             Image(systemName: "timer")
                 .foregroundStyle(WatchTheme.primary)
             Text(format(remaining))
-                .font(.system(.title3, design: .rounded).weight(.bold))
+                .font(
+                    compact
+                        ? .system(.body, design: .rounded).weight(.bold)
+                        : .system(.title3, design: .rounded).weight(.bold)
+                )
                 .monospacedDigit()
                 .foregroundStyle(WatchTheme.ink)
             Spacer(minLength: 4)
@@ -167,82 +192,230 @@ struct WatchTrainingView: View {
             }
         }
         .padding(.horizontal, 9)
-        .padding(.vertical, 7)
+        .padding(.vertical, compact ? 5 : 7)
         .background(
             WatchTheme.surface,
             in: RoundedRectangle(cornerRadius: 12, style: .continuous)
         )
     }
 
-    private func controls(_ exercise: WorkoutExercise) -> some View {
+    private func controls(
+        _ exercise: WorkoutExercise,
+        isShort: Bool
+    ) -> some View {
         // Match the iPhone action bar: the primary button is the next step,
         // not a second button beside "完成一组". During the final rest, the
         // rest card owns the "next exercise" action so it stays on screen.
+        // Smaller watches switch to a shorter label or icon-only row.
         let isComplete = snapshot.isExerciseComplete(exercise)
         let isLast = snapshot.nextExercise == nil
         let isResting = (snapshot.remainingRest(at: now) ?? 0) > 0
-        let showsPrimary = !(isComplete && isResting)
+        let showsPrimary = !(isComplete && isResting) && !snapshot.isPaused
 
-        return HStack(spacing: 6) {
+        return GeometryReader { proxy in
+            if proxy.size.width < 168 {
+                iconControls(
+                    exercise,
+                    isComplete: isComplete,
+                    isLast: isLast,
+                    showsPrimary: showsPrimary,
+                    isShort: isShort
+                )
+            } else if proxy.size.width < 195 {
+                compactControls(
+                    exercise,
+                    isComplete: isComplete,
+                    isLast: isLast,
+                    showsPrimary: showsPrimary,
+                    isShort: isShort
+                )
+            } else {
+                fullControls(
+                    exercise,
+                    isComplete: isComplete,
+                    isLast: isLast,
+                    showsPrimary: showsPrimary,
+                    isShort: isShort
+                )
+            }
+        }
+        .frame(height: isShort ? 38 : 42)
+    }
+
+    private func fullControls(
+        _ exercise: WorkoutExercise,
+        isComplete: Bool,
+        isLast: Bool,
+        showsPrimary: Bool,
+        isShort: Bool
+    ) -> some View {
+        HStack(spacing: 6) {
             if showsPrimary {
                 Button {
-                    if isComplete {
-                        apply(.advanceExercise(.init(at: now, source: .watch)))
-                    } else {
-                        completeSet(exercise)
-                    }
+                    performPrimary(exercise, isComplete: isComplete)
                 } label: {
                     Label(
-                        isComplete
-                            ? (isLast ? "查看总结" : "下一个动作")
-                            : "完成一组",
-                        systemImage: isComplete ? "arrow.right" : "checkmark"
+                        primaryTitle(
+                            isComplete: isComplete,
+                            isLast: isLast,
+                            compact: false
+                        ),
+                        systemImage: primaryIcon(
+                            isComplete: isComplete,
+                            isLast: isLast
+                        )
                     )
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                     .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(WatchPrimaryButtonStyle())
-                .disabled(snapshot.isPaused)
-            }
-
-            // Pause and undo stay reachable during rest. The rest card owns
-            // the only "next" action while the current exercise is complete.
-            if !showsPrimary {
-                Spacer(minLength: 0)
-            }
-
-            Button {
-                if snapshot.isPaused {
-                    apply(.resume(.init(at: now, source: .watch)))
-                } else {
-                    apply(.pause(.init(at: now, source: .watch)))
-                }
-            } label: {
-                Image(
-                    systemName: snapshot.isPaused
-                        ? "play.fill"
-                        : "pause.fill"
+                .buttonStyle(
+                    WatchPrimaryButtonStyle(height: isShort ? 38 : 42)
                 )
             }
-            .buttonStyle(WatchIconButtonStyle())
-            .accessibilityLabel(
-                snapshot.isPaused ? "继续训练" : "暂停训练"
-            )
-
-            Button {
-                apply(.undoLastSet(.init(at: now, source: .watch)))
-            } label: {
-                Image(systemName: "arrow.uturn.backward")
-            }
-            .buttonStyle(WatchIconButtonStyle())
-            .accessibilityLabel("撤销上一组")
-
-            if !showsPrimary {
-                Spacer(minLength: 0)
-            }
+            if !showsPrimary { Spacer(minLength: 0) }
+            pauseButton(size: isShort ? 36 : 40)
+            undoButton(size: isShort ? 36 : 40)
+            if !showsPrimary { Spacer(minLength: 0) }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private func compactControls(
+        _ exercise: WorkoutExercise,
+        isComplete: Bool,
+        isLast: Bool,
+        showsPrimary: Bool,
+        isShort: Bool
+    ) -> some View {
+        HStack(spacing: 4) {
+            if showsPrimary {
+                Button {
+                    performPrimary(exercise, isComplete: isComplete)
+                } label: {
+                    Label(
+                        primaryTitle(
+                            isComplete: isComplete,
+                            isLast: isLast,
+                            compact: true
+                        ),
+                        systemImage: primaryIcon(
+                            isComplete: isComplete,
+                            isLast: isLast
+                        )
+                    )
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(
+                    WatchPrimaryButtonStyle(height: isShort ? 38 : 42)
+                )
+            }
+            if !showsPrimary { Spacer(minLength: 0) }
+            pauseButton(size: isShort ? 32 : 34)
+            undoButton(size: isShort ? 32 : 34)
+            if !showsPrimary { Spacer(minLength: 0) }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func iconControls(
+        _ exercise: WorkoutExercise,
+        isComplete: Bool,
+        isLast: Bool,
+        showsPrimary: Bool,
+        isShort: Bool
+    ) -> some View {
+        HStack(spacing: 8) {
+            Spacer(minLength: 0)
+            if showsPrimary {
+                Button {
+                    performPrimary(exercise, isComplete: isComplete)
+                } label: {
+                    Image(
+                        systemName: primaryIcon(
+                            isComplete: isComplete,
+                            isLast: isLast
+                        )
+                    )
+                }
+                .buttonStyle(
+                    WatchRoundPrimaryButtonStyle(
+                        height: isShort ? 38 : 42
+                    )
+                )
+                .accessibilityLabel(
+                    primaryTitle(
+                        isComplete: isComplete,
+                        isLast: isLast,
+                        compact: true
+                    )
+                )
+            }
+            pauseButton(size: isShort ? 32 : 36)
+            undoButton(size: isShort ? 32 : 36)
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func pauseButton(size: CGFloat) -> some View {
+        Button {
+            if snapshot.isPaused {
+                apply(.resume(.init(at: now, source: .watch)))
+            } else {
+                apply(.pause(.init(at: now, source: .watch)))
+            }
+        } label: {
+            Image(
+                systemName: snapshot.isPaused
+                    ? "play.fill"
+                    : "pause.fill"
+            )
+        }
+        .buttonStyle(WatchIconButtonStyle(size: size))
+        .accessibilityLabel(
+            snapshot.isPaused ? "继续训练" : "暂停训练"
+        )
+    }
+
+    private func undoButton(size: CGFloat) -> some View {
+        Button {
+            apply(.undoLastSet(.init(at: now, source: .watch)))
+        } label: {
+            Image(systemName: "arrow.uturn.backward")
+        }
+        .buttonStyle(WatchIconButtonStyle(size: size))
+        .accessibilityLabel("撤销上一组")
+    }
+
+    private func performPrimary(
+        _ exercise: WorkoutExercise,
+        isComplete: Bool
+    ) {
+        if isComplete {
+            apply(.advanceExercise(.init(at: now, source: .watch)))
+        } else {
+            completeSet(exercise)
+        }
+    }
+
+    private func primaryTitle(
+        isComplete: Bool,
+        isLast: Bool,
+        compact: Bool
+    ) -> String {
+        if isComplete {
+            if isLast { return compact ? "总结" : "查看总结" }
+            return compact ? "下一个" : "下一个动作"
+        }
+        return compact ? "完成" : "完成一组"
+    }
+
+    private func primaryIcon(isComplete: Bool, isLast: Bool) -> String {
+        guard isComplete else { return "checkmark" }
+        return isLast ? "flag.checkered" : "arrow.right"
     }
 
     private var summary: some View {
