@@ -208,7 +208,7 @@ CHEST PRESS 标签    → chest_press_machine    0.93
 
 ## 5. 仍未完成
 
-- iOS CI 编译已通过（`iOS Build` success @ `5bf99a1`）；真机相机/相册 HEIC/大图/
+- iOS CI 编译已通过（`iOS Build` success @ `23e41c8`）；真机相机/相册 HEIC/大图/
   弱网仍需 Mac 验证。
 - 更强视觉模型：当前 `deepseek-flash` 在 18 张多品牌实拍上约 10/18；
   Qwen-VL / Doubao Vision / GPT-4o 级模型需要 API Key 和同一批评测对比。
