@@ -9,6 +9,15 @@ _SEX_FALLBACK = {"male": 2, "female": 2, "unisex": 1}
 
 
 def media_for_day(db: Session, user_id: str, day: ProgramDay) -> list[dict]:
+    """Resolve the best published derivative per exercise for a plan day."""
+    return media_for_slugs(
+        db,
+        user_id,
+        [item.exercise_slug for item in day.exercises],
+    )
+
+
+def media_for_slugs(db: Session, user_id: str, slugs: list[str]) -> list[dict]:
     """Resolve the best published derivative per exercise.
 
     Exact sex wins, then unisex, then the other sex as a last visual fallback.
@@ -16,7 +25,7 @@ def media_for_day(db: Session, user_id: str, day: ProgramDay) -> list[dict]:
     """
     profile = db.get(Profile, user_id)
     preferred = (profile.sex if profile else None) or "unisex"
-    slugs = [item.exercise_slug for item in day.exercises]
+    slugs = list(dict.fromkeys(item for item in slugs if item))[:20]
     if not slugs:
         return []
 

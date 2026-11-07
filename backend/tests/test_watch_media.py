@@ -1,12 +1,15 @@
 from types import SimpleNamespace
 
+import pytest
+from fastapi import HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.db import Base
 from app.models import ExerciseMediaAsset, Profile, User
-from app.services.watch import media_for_day
+from app.routers.videos import exercise_media
+from app.services.watch import media_for_day, media_for_slugs
 
 
 def _session() -> Session:
@@ -71,3 +74,36 @@ def test_media_ignores_unpublished_rows():
     day = SimpleNamespace(exercises=[SimpleNamespace(exercise_slug="bench")])
 
     assert media_for_day(db, "missing-profile", day) == []
+
+
+def test_batch_media_resolves_and_deduplicates_slugs():
+    db = _session()
+    db.add_all(
+        [
+            User(id="male-user", status="active"),
+            Profile(user_id="male-user", sex="male"),
+            _asset("bench", "unisex"),
+            _asset("row", "male"),
+        ]
+    )
+    db.commit()
+
+    items = media_for_slugs(
+        db,
+        "male-user",
+        ["bench", "bench", "row", "missing"],
+    )
+
+    assert [item["exercise_slug"] for item in items] == ["bench", "row"]
+    assert items[0]["phone_url"].endswith("phone.mp4")
+    assert items[0]["poster_url"].endswith(".jpg")
+
+
+def test_batch_media_endpoint_rejects_too_many_slugs():
+    db = _session()
+    slugs = ",".join(f"exercise-{index}" for index in range(21))
+
+    with pytest.raises(HTTPException) as error:
+        exercise_media(slugs, "male-user", db)
+
+    assert error.value.status_code == 400

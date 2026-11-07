@@ -43,6 +43,7 @@ struct WorkoutSessionView: View {
     @State var adjustRest = 60
     @State var weightStep = 2.5
     @State var valueEditor: WorkoutValueEditor?
+    @State var mediaStore = ExerciseMediaStore()
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -141,6 +142,9 @@ struct WorkoutSessionView: View {
                 exerciseCount: activeDay.exercises.count,
                 periodMode: periodMode
             )
+            if let media = mediaStore.item(for: exercise.slug) {
+                ExerciseAnimationCard(exercise: exercise, media: media)
+            }
             WorkoutSetCard(
                 exercise: exercise,
                 done: completedSets(for: exercise),
@@ -221,6 +225,7 @@ struct WorkoutSessionView: View {
             .onAppear {
                 UIApplication.shared.isIdleTimerDisabled = true
                 loadDraftIfNeeded()
+                prefetchExerciseMedia()
                 prepare(currentExercise)
                 activeStartedAt = Date()
                 WatchSyncManager.shared.activate()
@@ -229,6 +234,9 @@ struct WorkoutSessionView: View {
                     await syncWatchBootstrap()
                 }
                 drainWatchInbox()
+            }
+            .onChange(of: index) { _, _ in
+                prefetchExerciseMedia()
             }
             .onDisappear {
                 if WatchSyncManager.shared.activeWorkoutDayID == day.id {
@@ -242,6 +250,7 @@ struct WorkoutSessionView: View {
                 if phase == .active {
                     elapsedSeconds = currentElapsed
                     activeStartedAt = Date()
+                    prefetchExerciseMedia()
                     drainWatchInbox()
                 } else {
                     saveDraftIfNeeded(persistImmediately: true)
@@ -324,6 +333,14 @@ struct WorkoutSessionView: View {
     var currentExercise: PlanExercise? {
         guard activeDay.exercises.indices.contains(index) else { return nil }
         return effectiveExercise(activeDay.exercises[index])
+    }
+
+    /// One batch request covers the whole day; switching exercises then reads
+    /// from the in-memory cache instead of hitting the network again.
+    func prefetchExerciseMedia() {
+        let slugs = activeDay.exercises.map(\.slug)
+        guard !slugs.isEmpty else { return }
+        Task { await mediaStore.prefetch(slugs: slugs) }
     }
 
     /// 恢复草稿时使用草稿里的动作列表，避免用户自定义过的训练顺序被计划原顺序覆盖。

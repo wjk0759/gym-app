@@ -4,8 +4,9 @@ from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy import select
 
 from ..config import settings
-from ..deps import DBSession
+from ..deps import CurrentUser, DBSession
 from ..models import Exercise, ExerciseVideo
+from ..services.watch import media_for_slugs
 
 router = APIRouter(tags=["videos"])
 
@@ -19,6 +20,23 @@ def _absolute_url(request: Request, url: str | None) -> str | None:
             raise HTTPException(status_code=503, detail="媒体公网地址未配置")
         base = str(request.base_url).rstrip("/")
     return base + url
+
+
+@router.get("/exercise-media")
+def exercise_media(
+    slugs: str,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    """Batch demo media for the iPhone workout screen.
+
+    The client asks once for the current day, then caches the response. Exact
+    sex wins, with unisex/other-sex fallback handled by the resolver.
+    """
+    values = [item.strip() for item in slugs.split(",") if item.strip()]
+    if len(values) > 20:
+        raise HTTPException(status_code=400, detail="一次最多查询 20 个动作")
+    return {"items": media_for_slugs(db, user_id, values)}
 
 
 @router.get("/videos/{exercise_slug}")
