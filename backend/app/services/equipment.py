@@ -341,11 +341,7 @@ def _map_result(db: Session, result: dict, filename: str) -> dict:
         }
 
     top = options[0]
-    second = options[1] if len(options) > 1 else None
-    needs_confirmation = top["confidence"] < 0.6 or (
-        second is not None
-        and second["confidence"] >= top["confidence"] - 0.2
-    )
+    needs_confirmation = len(options) > 1 or top["confidence"] < 0.6
 
     return {
         "scan_id": str(uuid.uuid4()),
