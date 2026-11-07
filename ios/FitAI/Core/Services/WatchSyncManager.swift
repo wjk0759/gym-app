@@ -574,6 +574,11 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
                 userInfo: ["force": force]
             )
         case "emptyState":
+            if let at = payload["at"] as? Date,
+               let last = lastReceivedEnvelope,
+               last.sentAt > at {
+                return
+            }
             clearActiveWatchSession()
         case "session":
             guard let data = payload["session"] as? Data,

@@ -270,11 +270,16 @@ final class WatchSyncManager: NSObject, WCSessionDelegate {
             store?.apply(command)
         case "requestState":
             if let store,
-               !store.snapshot.exercises.isEmpty
-                   || !store.snapshot.sets.isEmpty {
+               store.hasStartedWorkout
+                   || !store.snapshot.sets.isEmpty
+                   || store.snapshot.isPaused
+                   || store.snapshot.isFinished {
                 store.publishSnapshot()
             } else if let session {
-                let payload: [String: Any] = ["type": "emptyState"]
+                let payload: [String: Any] = [
+                    "type": "emptyState",
+                    "at": Date()
+                ]
                 session.transferUserInfo(payload)
                 if session.isReachable {
                     session.sendMessage(payload, replyHandler: nil)
