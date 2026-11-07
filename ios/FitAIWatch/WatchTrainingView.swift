@@ -18,8 +18,12 @@ struct WatchTrainingView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 8) {
                 header
+                WatchProgressBar(
+                    completed: snapshot.completedSetCount,
+                    planned: snapshot.plannedSetCount
+                )
                 if snapshot.isFinished {
                     summary
                 } else if let exercise = snapshot.currentExercise {
@@ -34,118 +38,190 @@ struct WatchTrainingView: View {
                 }
             }
             .padding(.horizontal, 4)
-            .padding(.vertical, 6)
+            .padding(.top, 2)
+            .padding(.bottom, 6)
         }
+        .background(WatchTheme.canvas)
+        .sensoryFeedback(.success, trigger: snapshot.completedSetCount)
         .onReceive(timer) { value in
             now = value
         }
     }
 
     private var header: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 6) {
             Text("训练")
                 .font(.headline)
-            Spacer()
+                .foregroundStyle(WatchTheme.ink)
+            Spacer(minLength: 4)
             Button(action: onVoice) {
                 Image(systemName: "waveform")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(WatchTheme.onPrimary)
+                    .frame(width: 28, height: 28)
+                    .background(WatchTheme.primary, in: Circle())
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.yellow)
+            .accessibilityLabel("语音教练")
+
             if snapshot.isPaused {
                 Text("已暂停")
                     .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(WatchTheme.warning)
             } else {
                 Text("\(snapshot.completedSetCount)/\(snapshot.plannedSetCount) 组")
                     .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(WatchTheme.secondary)
             }
         }
     }
 
     private func exerciseCard(_ exercise: WorkoutExercise) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(exercise.name)
                 .font(.headline)
+                .foregroundStyle(WatchTheme.ink)
                 .lineLimit(2)
+
             Text(
                 "\(snapshot.currentSetIndex(for: exercise))/\(exercise.sets) 组"
                 + " · \(targetText(exercise.target))"
             )
             .font(.caption2)
-            .foregroundStyle(.secondary)
-            if let weight = exercise.weightKG, weight > 0 {
-                Text("\(weight.formatted(.number.precision(.fractionLength(0...1)))) kg")
-                    .font(.title3.weight(.bold))
+            .foregroundStyle(WatchTheme.secondary)
+
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                if let weight = exercise.weightKG, weight > 0 {
+                    Text(
+                        weight.formatted(
+                            .number.precision(.fractionLength(0...1))
+                        )
+                    )
+                    .font(.system(.title3, design: .rounded).weight(.bold))
                     .monospacedDigit()
-            }
-            if let next = snapshot.nextExercise {
-                Text("下一个：\(next.name)")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .foregroundStyle(WatchTheme.ink)
+                    Text("kg")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(WatchTheme.secondary)
+                }
+                Spacer(minLength: 4)
+                if let next = snapshot.nextExercise {
+                    Text("下一个 \(next.name)")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(WatchTheme.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
             }
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            WatchTheme.surface,
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        )
+        .overlay(alignment: .leading) {
+            Capsule()
+                .fill(WatchTheme.primary)
+                .frame(width: 3)
+                .padding(.vertical, 7)
+                .padding(.leading, 1)
+        }
     }
 
     private func restCard(_ remaining: TimeInterval) -> some View {
-        HStack {
+        let exercise = snapshot.currentExercise
+        let isComplete = exercise.map { snapshot.isExerciseComplete($0) } ?? false
+
+        return HStack(spacing: 6) {
             Image(systemName: "timer")
+                .foregroundStyle(WatchTheme.primary)
             Text(format(remaining))
-                .font(.title3.weight(.bold))
+                .font(.system(.title3, design: .rounded).weight(.bold))
                 .monospacedDigit()
-            Spacer()
-            Button("跳过") {
-                apply(.skipRest(.init(at: now, source: .watch)))
+                .foregroundStyle(WatchTheme.ink)
+            Spacer(minLength: 4)
+            if isComplete {
+                Button("下一个动作") {
+                    apply(.skipRest(.init(at: now, source: .watch)))
+                    apply(.advanceExercise(.init(at: now, source: .watch)))
+                }
+                .buttonStyle(WatchCompactPrimaryButtonStyle())
+            } else {
+                Button("跳过") {
+                    apply(.skipRest(.init(at: now, source: .watch)))
+                }
+                .buttonStyle(.bordered)
+                .tint(WatchTheme.primary)
+                .controlSize(.small)
             }
-            .buttonStyle(.bordered)
         }
-        .padding(8)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 9)
+        .padding(.vertical, 7)
+        .background(
+            WatchTheme.surface,
+            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+        )
     }
 
     private func controls(_ exercise: WorkoutExercise) -> some View {
-        VStack(spacing: 6) {
-            Button {
-                completeSet(exercise)
-            } label: {
-                Label("完成一组", systemImage: "checkmark.circle.fill")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.green)
-            .disabled(snapshot.isPaused)
+        // Match the iPhone action bar: the primary button is the next step,
+        // not a second button beside "完成一组". During the final rest, the
+        // rest card owns the "next exercise" action so it stays on screen.
+        let isComplete = snapshot.isExerciseComplete(exercise)
+        let isLast = snapshot.nextExercise == nil
+        let isResting = (snapshot.remainingRest(at: now) ?? 0) > 0
 
-            HStack(spacing: 6) {
-                Button {
-                    if snapshot.isPaused {
-                        apply(.resume(.init(at: now, source: .watch)))
-                    } else {
-                        apply(.pause(.init(at: now, source: .watch)))
+        return Group {
+            if !(isComplete && isResting) {
+                HStack(spacing: 6) {
+                    Button {
+                        if isComplete {
+                            apply(.advanceExercise(.init(at: now, source: .watch)))
+                        } else {
+                            completeSet(exercise)
+                        }
+                    } label: {
+                        Label(
+                            isComplete
+                                ? (isLast ? "查看总结" : "下一个动作")
+                                : "完成一组",
+                            systemImage: isComplete ? "arrow.right" : "checkmark"
+                        )
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .frame(maxWidth: .infinity)
                     }
-                } label: {
-                    Label(
-                        snapshot.isPaused ? "继续" : "暂停",
-                        systemImage: snapshot.isPaused ? "play.fill" : "pause.fill"
+                    .buttonStyle(WatchPrimaryButtonStyle())
+                    .disabled(snapshot.isPaused)
+
+                    Button {
+                        if snapshot.isPaused {
+                            apply(.resume(.init(at: now, source: .watch)))
+                        } else {
+                            apply(.pause(.init(at: now, source: .watch)))
+                        }
+                    } label: {
+                        Image(
+                            systemName: snapshot.isPaused
+                                ? "play.fill"
+                                : "pause.fill"
+                        )
+                    }
+                    .buttonStyle(WatchIconButtonStyle())
+                    .accessibilityLabel(
+                        snapshot.isPaused ? "继续训练" : "暂停训练"
                     )
-                }
-                .buttonStyle(.bordered)
 
-                Button {
-                    apply(.undoLastSet(.init(at: now, source: .watch)))
-                } label: {
-                    Label("撤销", systemImage: "arrow.uturn.backward")
+                    Button {
+                        apply(.undoLastSet(.init(at: now, source: .watch)))
+                    } label: {
+                        Image(systemName: "arrow.uturn.backward")
+                    }
+                    .buttonStyle(WatchIconButtonStyle())
+                    .accessibilityLabel("撤销上一组")
                 }
-                .buttonStyle(.bordered)
-            }
-
-            if snapshot.isExerciseComplete(exercise) {
-                Button("下一个动作") {
-                    apply(.advanceExercise(.init(at: now, source: .watch)))
-                }
-                .buttonStyle(.bordered)
-                .disabled(snapshot.isPaused)
             }
         }
     }
@@ -154,20 +230,27 @@ struct WatchTrainingView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("训练完成")
                 .font(.headline)
+                .foregroundStyle(WatchTheme.ink)
             Text("\(snapshot.completedSetCount) 组")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(WatchTheme.secondary)
             if snapshot.isFinished {
                 Text("已结束，稍后可在 iPhone 查看")
                     .font(.caption2)
-                    .foregroundStyle(.green)
+                    .foregroundStyle(WatchTheme.primary)
             } else {
                 Button("结束训练") {
                     apply(.finish(.init(at: now, source: .watch)))
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(WatchPrimaryButtonStyle())
             }
         }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            WatchTheme.surface,
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        )
     }
 
     private func completeSet(_ exercise: WorkoutExercise) {

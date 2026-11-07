@@ -22,72 +22,75 @@ struct WatchVoiceView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 9) {
-                header
-                TextFieldLink(
-                    "问教练…",
-                    prompt: Text("听写或手写")
-                ) { text in
-                    question = text
-                    send(text)
-                }
-                .font(.caption)
-                .disabled(isLoading)
-
-                Button {
-                    send()
-                } label: {
-                    Label(
-                        isLoading ? "思考中…" : "发送",
-                        systemImage: isLoading ? "ellipsis" : "paperplane.fill"
-                    )
-                    .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(isLoading || question.trimmingCharacters(
-                    in: .whitespacesAndNewlines
-                ).isEmpty)
-
-                if !lastQuestion.isEmpty {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("你问")
+        ZStack {
+            WatchTheme.canvas.ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 6) {
+                    contextRow
+                    if let context, !context.isEmpty {
+                        Text(context)
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
-                        Text(lastQuestion)
-                            .font(.caption)
+                            .foregroundStyle(WatchTheme.secondary)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                }
+                    TextFieldLink(
+                        "问教练…",
+                        prompt: Text("听写或手写")
+                    ) { text in
+                        question = text
+                        send(text)
+                    }
+                    .font(.caption)
+                    .disabled(isLoading)
 
-                if isLoading {
-                    HStack(spacing: 6) {
-                        ProgressView()
-                        Text("教练正在看你的训练")
+                    sendButton
+
+                    if !lastQuestion.isEmpty {
+                        questionCard
+                    }
+
+                    if isLoading {
+                        HStack(spacing: 6) {
+                            ProgressView()
+                                .tint(WatchTheme.primary)
+                            Text("教练正在看你的训练")
+                                .font(.caption2)
+                                .foregroundStyle(WatchTheme.secondary)
+                        }
+                    }
+
+                    if let errorMessage {
+                        Text(errorMessage)
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(WatchTheme.warning)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                }
 
-                if let errorMessage {
-                    Text(errorMessage)
+                    if let reply {
+                        answer(reply)
+                    }
+
+                    Text("只读回答 · 改计划去 iPhone")
                         .font(.caption2)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(WatchTheme.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-
-                if let reply {
-                    answer(reply)
-                }
-
-                Text("只读回答。改计划、加减组数请到 iPhone 确认。")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.tertiary)
-                    .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 2)
+                .padding(.vertical, 2)
             }
-            .padding(.horizontal, 2)
-            .padding(.vertical, 4)
         }
         .navigationTitle("语音教练")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showSettings = true
+                } label: {
+                    Image(systemName: "speaker.wave.2")
+                }
+                .accessibilityLabel("朗读设置")
+            }
+        }
         .sheet(isPresented: $showSettings) {
             speechSettings
         }
@@ -96,28 +99,50 @@ struct WatchVoiceView: View {
         }
     }
 
-    private var header: some View {
+    private var contextRow: some View {
         HStack(spacing: 5) {
             Image(systemName: "waveform")
-                .foregroundStyle(.yellow)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(WatchTheme.primary)
             Text("叫练 · 训练中")
-                .font(.caption.weight(.semibold))
-            Spacer()
-            Button {
-                showSettings = true
-            } label: {
-                Image(systemName: "speaker.wave.2")
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(WatchTheme.ink)
         }
+    }
+
+    private var sendButton: some View {
+        Button {
+            send()
+        } label: {
+            Label(
+                isLoading ? "思考中…" : "发送",
+                systemImage: isLoading ? "ellipsis" : "paperplane.fill"
+            )
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(WatchPrimaryButtonStyle())
+        .disabled(
+            isLoading
+                || question.trimmingCharacters(in: .whitespacesAndNewlines)
+                    .isEmpty
+        )
+    }
+
+    private var questionCard: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text("你问")
+                .font(.caption2)
+                .foregroundStyle(WatchTheme.secondary)
+            Text(lastQuestion)
+                .font(.caption)
+                .foregroundStyle(WatchTheme.ink)
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            WatchTheme.surface,
+            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+        )
     }
 
     private func answer(_ reply: WatchVoiceReply) -> some View {
@@ -125,15 +150,19 @@ struct WatchVoiceView: View {
             if reply.requiresPhoneConfirmation {
                 Label("需要 iPhone 确认", systemImage: "iphone")
                     .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(WatchTheme.warning)
             }
             if reply.safetyFlag != nil {
-                Label("先看安全提示", systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.orange)
+                Label(
+                    "先看安全提示",
+                    systemImage: "exclamationmark.triangle.fill"
+                )
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(WatchTheme.warning)
             }
             Text(reply.reply)
                 .font(.body)
+                .foregroundStyle(WatchTheme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 8) {
                 Button {
@@ -151,46 +180,63 @@ struct WatchVoiceView: View {
                     )
                 }
                 .buttonStyle(.bordered)
+                .tint(WatchTheme.primary)
                 .font(.caption2)
                 Spacer()
             }
         }
-        .padding(8)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .padding(9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            WatchTheme.surface,
+            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+        )
+        .overlay(alignment: .leading) {
+            Capsule()
+                .fill(WatchTheme.primary)
+                .frame(width: 3)
+                .padding(.vertical, 9)
+                .padding(.leading, 1)
+        }
     }
 
     private var speechSettings: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("朗读方式")
-                    .font(.headline)
-                ForEach(WatchSpeechMode.allCases) { mode in
-                    Button {
-                        speechModeRaw = mode.rawValue
-                    } label: {
-                        HStack {
-                            Text(mode.title)
-                                .font(.caption)
-                            Spacer()
-                            if speechMode == mode {
-                                Image(systemName: "checkmark")
-                                    .foregroundStyle(.yellow)
+        ZStack {
+            WatchTheme.canvas.ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("朗读方式")
+                        .font(.headline)
+                        .foregroundStyle(WatchTheme.ink)
+                    ForEach(WatchSpeechMode.allCases) { mode in
+                        Button {
+                            speechModeRaw = mode.rawValue
+                        } label: {
+                            HStack {
+                                Text(mode.title)
+                                    .font(.caption)
+                                    .foregroundStyle(WatchTheme.ink)
+                                Spacer()
+                                if speechMode == mode {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(WatchTheme.primary)
+                                }
                             }
                         }
+                        .buttonStyle(.plain)
+                        .padding(.vertical, 3)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.vertical, 3)
+                    Text("默认静音。点“朗读”始终可用；耳机模式只在连接耳机时自动读。")
+                        .font(.caption2)
+                        .foregroundStyle(WatchTheme.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button("完成") {
+                        showSettings = false
+                    }
+                    .buttonStyle(WatchPrimaryButtonStyle())
                 }
-                Text("默认静音。点“朗读”始终可用；耳机模式只在连接耳机时自动读。")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Button("完成") {
-                    showSettings = false
-                }
-                .buttonStyle(.bordered)
+                .padding(.horizontal, 2)
             }
-            .padding(.horizontal, 2)
         }
     }
 

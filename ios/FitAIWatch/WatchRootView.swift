@@ -16,9 +16,20 @@ struct WatchRootView: View {
             if store.canTrainNow {
                 pager
             } else {
-                WatchLockedView {
+                WatchLockedView(
+                    reason: store.isAccountLocked
+                        ? .signedOut
+                        : .proRequired
+                ) {
                     Task { await store.refreshEntitlementFromServer() }
                 }
+            }
+        }
+        .background(WatchTheme.canvas)
+        .overlay(alignment: .top) {
+            if store.canTrainNow {
+                WatchPageDots(index: page.rawValue)
+                    .padding(.top, 2)
             }
         }
         .onAppear {

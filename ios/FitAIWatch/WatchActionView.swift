@@ -14,7 +14,7 @@ struct WatchActionView: View {
     var body: some View {
         let _ = mediaStore.revision
         ZStack {
-            Color.black
+            WatchTheme.canvas
             if let url = store.currentMediaURL {
                 WatchMovieView(
                     url: url,
@@ -37,17 +37,33 @@ struct WatchActionView: View {
             if let exercise = store.snapshot.currentExercise {
                 Text(exercise.name)
                     .font(.caption2.weight(.semibold))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(.ultraThinMaterial, in: Capsule())
+                    .foregroundStyle(WatchTheme.ink)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        WatchTheme.surface.opacity(0.92),
+                        in: Capsule()
+                    )
+                    .overlay {
+                        Capsule()
+                            .strokeBorder(WatchTheme.stroke, lineWidth: 1)
+                    }
                     .padding(.top, 4)
+                    .padding(.leading, 2)
             }
         }
         .overlay(alignment: .bottom) {
-            Text("右滑回到训练")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 4)
+            HStack(spacing: 4) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 8, weight: .bold))
+                Text("右滑回到训练")
+            }
+            .font(.caption2.weight(.medium))
+            .foregroundStyle(WatchTheme.ink.opacity(0.82))
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
+            .background(WatchTheme.surface.opacity(0.88), in: Capsule())
+            .padding(.bottom, 14)
         }
         .task(id: store.currentPosterURL) {
             loadPoster()
@@ -60,37 +76,35 @@ struct WatchActionView: View {
     private var overlayCaption: some View {
         VStack {
             Spacer()
-            VStack(spacing: 3) {
-                Text(store.snapshot.currentExercise?.name ?? "动作演示")
-                    .font(.headline)
-                Text(targetText)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.bottom, 56)
+            Text(targetText)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(WatchTheme.ink)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(WatchTheme.surface.opacity(0.82), in: Capsule())
+                .padding(.bottom, 58)
         }
     }
 
     private var placeholder: some View {
         ZStack {
             LinearGradient(
-                colors: [.black, .gray.opacity(0.35)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+                colors: [WatchTheme.surface, WatchTheme.canvas],
+                startPoint: .top,
+                endPoint: .bottom
             )
             VStack(spacing: 8) {
                 Image(systemName: "figure.strengthtraining.traditional")
-                    .font(.system(size: 48, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.9))
-                Text(store.snapshot.currentExercise?.name ?? "动作演示")
-                    .font(.headline)
+                    .font(.system(size: 46, weight: .semibold))
+                    .foregroundStyle(WatchTheme.primary)
                 Text(targetText)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(WatchTheme.ink)
+                Label("等待 iPhone 预载", systemImage: "arrow.down.circle")
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
-                Text(store.currentMediaURL == nil ? "视频预载中" : "")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(WatchTheme.secondary)
             }
+            .padding(.bottom, 42)
         }
     }
 
@@ -100,7 +114,9 @@ struct WatchActionView: View {
         }
         switch exercise.target {
         case .reps(let min, let max):
-            return min == max ? "\(exercise.sets) 组 × \(min) 次" : "\(exercise.sets) 组 × \(min)–\(max) 次"
+            return min == max
+                ? "\(exercise.sets) 组 × \(min) 次"
+                : "\(exercise.sets) 组 × \(min)–\(max) 次"
         case .time(let seconds):
             return "\(exercise.sets) 组 × \(seconds) 秒"
         }
