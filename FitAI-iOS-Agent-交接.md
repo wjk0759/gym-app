@@ -18,12 +18,60 @@
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 13/13 测试通过；完成 Watch UI 重设计（训练/动作/语音/锁定页）、单主按钮流程（`2d5dea0`）、40/42/49mm 响应式适配（`1eb3fdd`），并把语音输入与发送合并为一行（`9a833b1`）；此前修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
-- Windows 最新完成（2026-11-07）：拉取并保留 macOS 40/42/49mm 响应式布局；完成教练内核统一（Agent 与 Watch voice 共用 `coach_core`/上下文/安全规则，Watch 只读无工具无记忆）；生产已部署 V23 + `/watch/*` + `/coach/voice`；`test_reviewer` 已授 Pro 到 2027-02-05。CI 后端在 `ca7f24d`、iOS 在 `8d560e7` **success**
+- Windows 最新完成（2026-11-07）：拉取并保留 macOS 单行语音输入（`9a833b1`）；完成教练内核统一并部署生产；`test_reviewer` 已授 Pro、补齐基础档案和 3 分化计划；生产 Watch 预载/登录/刷新/语音/撤销全链路烟测通过。CI 后端 `ca7f24d`、iOS `0aaf2ce` **success**
 - Windows 前一轮完成（2026-11-07）：手表独立语音教练、watch 专用登录会话、媒体预载/本地缓存、离线 outbox/ack、手机 inbox 回灌、手机→手表指令、3 天 Pro 宽限与中途到期继续结束、HealthKit 保活/手机单写者、Watch AppIcon 恢复、Watch 隐私清单、训练来源 `phone/watch`
 - 最新后端验证：**210 passed**，Ruff app/tests 通过；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source` 已接入测试；生产 Flyway 已到 **V23**；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、Watch 3D 动作素材、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-07 · Windows / OpenCode（Watch 生产链路复核）
+
+- 分支：`feature/watch-standalone-workout`
+- 代码 HEAD：`9a833b1`；文档 HEAD 见 `git log -1`
+- CI：`iOS Build` **success** @ `0aaf2ce`；`Backend Tests` **success** @ `ca7f24d`
+- 已拉取并保留：
+  - macOS 40/42/49mm 响应式训练控件（`1eb3fdd`）
+  - 语音输入与发送同一行（`9a833b1`）
+  - 不恢复自动发送、不拆成上下两行
+- 生产环境状态：
+  - `https://hk-api.jiaolianfit.cn/health` → ok
+  - `/health/ready` → ready
+  - Flyway schema version **23**
+  - API/Caddy/MySQL 容器 healthy
+- `test_reviewer` 生产状态：
+  - Pro 有效到 `2027-02-05 12:51:59 UTC`
+  - 已补齐档案：男、178cm、75kg、体脂 18%、每周 3 练、45 分钟
+  - 已生成 4 周 3 分化计划，12 个训练日，首日 4 个动作
+- 生产 Watch E2E 烟测（真实 HTTP，不使用模拟器）：
+  - `/watch/bootstrap?day_id=...` → 200，day title 正常，4 个动作，`media=0`
+  - `/watch/session` → 200，30 分钟 access token + refresh token
+  - Watch access token `/me/access` → 200，`is_pro=true`，`watch_can_train=true`
+  - Watch access token `/coach/voice`（改计划）→ 200，`requires_phone_confirmation=true`
+  - Watch refresh token `/auth/refresh` → 200，token 已轮换
+  - 刷新后的 access token `/me/access` → 200
+  - `DELETE /watch/session` → 200，撤销 1 个会话
+  - Watch voice 前后 `chat_sessions/chat_messages/agent_runs/ai_memories` 均为 0
+  - iPhone `/agent/chat` 烟测仍为 `completed`
+- 未跑通 / 未验证：
+  - 真实 iPhone ↔ Apple Watch 的 WatchConnectivity 预载、快照回传、文件传输
+  - 真机听写/手写、TTS、耳机自动朗读、Watch 直连网络
+  - HealthKit 保活、单写者、手表锁屏/后台
+  - 真实媒体（生产 `exercise_media_assets=0`）
+  - 41/45mm 休息态/锁定页/语音页视觉
+  - 真机签名、Watch App ID/HealthKit capability、TestFlight 安装
+- Mac 下一步：
+  - `git pull` → `xcodegen generate`
+  - 用 `test_reviewer` 真机/TestFlight 走完 Watch 安装和训练
+  - 验证 Watch voice 听写/发送/TTS/耳机
+  - 验证 HealthKit 与离线 outbox
+  - 上传 TestFlight，确认 Watch 安装入口
+- 不要恢复：
+  - 不要拆分语音输入/发送行
+  - 不要恢复提交即自动发送
+  - 不要拆回两套教练 prompt
+  - 不要让 Watch voice 写聊天/记忆
+  - 不要删除生产 V23 schema
 
 ### 2026-11-07 · macOS（语音教练输入行并排）
 
