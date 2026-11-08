@@ -51,6 +51,10 @@ targets:
       - target: FitAIWorkoutCore
       - target: FitAIWatch
         embed: true
+        # Re-sign the embedded Watch app with the parent app identity/profile.
+        # XcodeGen defaults codeSign to false for embedded executable targets,
+        # which causes "integrity could not be verified" on watchOS.
+        codeSign: true
     settings:
       base:
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks"

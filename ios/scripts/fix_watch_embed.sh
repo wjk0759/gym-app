@@ -36,4 +36,10 @@ if [ "$after" -ne 0 ]; then
   exit 1
 fi
 
+if grep -q 'CodeSignOnCopy' "$PBX"; then
+  echo "watch embed fix: CodeSignOnCopy present"
+else
+  echo "watch embed fix: WARNING CodeSignOnCopy missing; check project.yml codeSign: true" >&2
+fi
+
 echo "watch embed fix: moved Watch app to PlugIns/ (patched $before copy phase)"
