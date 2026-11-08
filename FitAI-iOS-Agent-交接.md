@@ -20,10 +20,35 @@
 - macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 13/13 测试通过；完成 Watch UI 重设计（训练/动作/语音/锁定页）、单主按钮流程（`2d5dea0`）、40/42/49mm 响应式适配（`1eb3fdd`），并把语音输入与发送合并为一行（`9a833b1`）；此前修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
 - Windows 最新完成（2026-11-07）：拉取并保留 macOS 单行语音输入（`9a833b1`）；完成教练内核统一并部署生产；`test_reviewer` 已授 Pro、补齐基础档案和 3 分化计划；生产 Watch 预载/登录/刷新/语音/撤销全链路烟测通过；iPhone 训练页动作循环动画 PoC、`/exercise-media` 批量接口、11 条 sample 媒体已上生产（`341981f`）；器械识别修复：图片归一化、禁止随机 mock、37 类器械目录、生产导入 57 条训记动作、4 张真实照片 + 1 张负例烟测 5/5 命中（`5bf99a1`）；2026-11-08 增加 Vision OCR 标签提示、18 张多品牌评测和准确率实验（`23e41c8`）；生产视觉切 **Qwen3-VL-Plus**；器械识别加 **top-2 候选 + 混淆兜底**，18 张缩略图 top-1 61%、top-2 83%（`0d63191`）；已合并到 `develop`（`48ad5f0`），develop CI 全绿
 - Windows 前一轮完成（2026-11-07）：手表独立语音教练、watch 专用登录会话、媒体预载/本地缓存、离线 outbox/ack、手机 inbox 回灌、手机→手表指令、3 天 Pro 宽限与中途到期继续结束、HealthKit 保活/手机单写者、Watch AppIcon 恢复、Watch 隐私清单、训练来源 `phone/watch`
+- 本地后台（2026-11-08）：FastAPI `8000`、admin-server `8080`、admin-web `5173/admin`、MySQL `3307` V23；真机 API `http://192.168.1.4:8000/api/v1`
 - 最新后端验证：**220 passed**，Ruff app/tests 通过；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source`、`/exercise-media`、器械目录识别、器械 top-2 已接入测试；生产 Flyway 已到 **V23**；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-08 · Windows / OpenCode（本地后台已启动）
+
+- 本机 Docker MySQL 3307：`fitai-admin-mysql-1` healthy
+- Flyway 已从 V21 迁到 **V23**，`exercise_media_assets` 表已创建
+- FastAPI 后台：
+  - `http://127.0.0.1:8000`
+  - `http://192.168.1.4:8000/api/v1`（同一局域网真机可用）
+  - `/health` → `{"status":"ok","env":"dev","llm":"deepseek-flash","vision":"qwen3-vl-plus"}`
+- 管理后台：
+  - Spring admin-server：`http://127.0.0.1:8080`
+  - Vue 开发服务器：`http://127.0.0.1:5173/admin/`
+  - 登录账号/密码在 `deploy/admin/.env` 的 `FITAI_BOOTSTRAP_*`
+- 说明：
+  - Docker 构建 admin-server/admin-web 时 Docker Hub 拉取失败，所以管理后台用本地 jar + Vite dev 跑，不用 Docker 镜像
+  - 本地 `exercise_media_assets` 目前为空，动作动画/Watch 媒体需要另行导入；器械识别和 admin 后台不受影响
+  - 不要把 `.env`、API Key、MySQL 密码提交到 Git
+- 验证：
+  - 本地 `/equipment/scan`（Pro 测试用户）Qwen3-VL-Plus 返回 top-2
+  - admin 登录成功（admin / boss）
+  - admin web 通过 Vite proxy 登录成功
+- 未验证：
+  - 真机 iPhone 走 `192.168.1.4:8000` 的完整登录/计划/训练链路
+  - 本地 Watch bootstrap 媒体（表为空）
 
 ### 2026-11-08 · Windows / OpenCode（合并到 develop）
 
