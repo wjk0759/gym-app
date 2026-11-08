@@ -35,6 +35,7 @@ from .sms import SmsDeliveryError, send_aliyun_pnvs_code
 
 PASSWORD_ALGORITHM = "scrypt"
 PHONE_LENGTH = 11
+MAX_WATCH_SESSIONS = 3
 logger = logging.getLogger(__name__)
 _access_rate: dict[str, list[float]] = {}
 _sms_rate: dict[str, list[float]] = {}
@@ -745,6 +746,88 @@ def refresh_session(
         "user_id": user.id,
         "access_token": access_token,
         "refresh_token": new_refresh,
+        "token_type": "bearer",
+        "expires_in": expires_in,
+    }
+
+
+def issue_watch_session(
+    db: Session,
+    user_id: str,
+    device_id: str,
+    device_name: str | None = None,
+    request_meta: dict | None = None,
+) -> dict:
+    """Mint an independent session for the Apple Watch.
+
+    The watch must not reuse the phone refresh token: rotation on either device
+    would invalidate the other. One session per watch device is kept, so a
+    repeated preload replaces the previous tokens instead of accumulating
+    sessions.
+    """
+    device_id = device_id.strip()
+    if not device_id.startswith("watch-") or len(device_id) > 64:
+        raise HTTPException(status_code=400, detail="手表设备标识不正确")
+    user = db.get(User, user_id)
+    if user is None or user.deleted_at is not None or user.status != "active":
+        raise HTTPException(status_code=403, detail="账号已被停用")
+    now = datetime.now(timezone.utc)
+    for row in db.execute(
+        select(AuthSession)
+        .where(
+            AuthSession.user_id == user.id,
+            AuthSession.device_id == device_id,
+            AuthSession.revoked_at.is_(None),
+        )
+        .with_for_update()
+    ).scalars():
+        row.revoked_at = now
+    active_watch_sessions = list(
+        db.execute(
+            select(AuthSession)
+            .where(
+                AuthSession.user_id == user.id,
+                AuthSession.client_type == "watch",
+                AuthSession.revoked_at.is_(None),
+            )
+            .order_by(AuthSession.created_at.asc())
+            .with_for_update()
+        ).scalars()
+    )
+    overflow = len(active_watch_sessions) - (MAX_WATCH_SESSIONS - 1)
+    if overflow > 0:
+        for row in active_watch_sessions[:overflow]:
+            row.revoked_at = now
+
+    refresh_token = secrets.token_urlsafe(48)
+    session = AuthSession(
+        user_id=user.id,
+        refresh_token_hash=_refresh_hash(refresh_token),
+        device_name=device_name or "Apple Watch",
+        device_id=device_id,
+        client_type="watch",
+        ip_address=(request_meta or {}).get("ip"),
+        user_agent=(request_meta or {}).get("user_agent"),
+        last_touched_at=now,
+        expires_at=now + timedelta(days=max(1, settings.refresh_token_days)),
+    )
+    db.add(session)
+    db.flush()
+    access_token, expires_in = _access_token(user.id, session.id)
+    _event(
+        db,
+        user.id,
+        "watch_session",
+        "watch",
+        request_meta=request_meta,
+        detail={"deviceId": device_id},
+    )
+    db.commit()
+    return {
+        "user_id": user.id,
+        "device_id": device_id,
+        "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
         "expires_in": expires_in,
     }

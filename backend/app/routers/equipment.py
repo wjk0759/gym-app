@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, Header, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, Form, Header, HTTPException, Query, UploadFile
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
@@ -7,6 +7,7 @@ from ..models import EquipmentLibraryItem, EquipmentScan, Exercise
 from ..schemas import EquipmentLibraryIn
 from ..services import access, generation, photo_cache
 from ..services.equipment import recognize, refresh_profile_equipment_cache
+from ..services.image_input import InvalidImageError, normalize_image_bytes
 
 router = APIRouter(tags=["equipment"])
 
@@ -19,6 +20,7 @@ async def scan(
     user_id: CurrentUser,
     db: DBSession,
     file: UploadFile = File(...),
+    ocr_text: str = Form(default="", max_length=500),
     idempotency_key: str | None = Header(
         default=None, alias="Idempotency-Key", max_length=64
     ),
@@ -37,6 +39,13 @@ async def scan(
         raise HTTPException(status_code=400, detail="图片为空")
     if len(data) > MAX_IMAGE_BYTES:
         raise HTTPException(status_code=413, detail="图片不能超过 8MB")
+    try:
+        data = normalize_image_bytes(data)
+    except InvalidImageError as error:
+        raise HTTPException(
+            status_code=422,
+            detail="图片格式不支持或已损坏，请重新拍照或换一张图片",
+        ) from error
 
     feature_key = "equipment_scan"
     key = photo_cache.normalize_key(idempotency_key)
@@ -59,11 +68,12 @@ async def scan(
             data,
             file.filename or "image",
             user_id=user_id,
+            ocr_text=ocr_text.strip() if isinstance(ocr_text, str) else "",
         )
 
         record = EquipmentScan(
             user_id=user_id,
-            status="succeeded",
+            status=str(result.get("status") or "succeeded")[:20],
             result=result["candidates"],
             model=result["model"],
             image_url=None,  # 生产环境写入 OSS 签名 URL；当前不落原图

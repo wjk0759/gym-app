@@ -14,6 +14,7 @@ from ..services.body_metrics import (
     delete_metric,
     upsert_metric,
 )
+from ..services.image_input import InvalidImageError, normalize_image_bytes
 from ..services.rate_limit import enforce as enforce_rate_limit
 
 router = APIRouter(prefix="/body", tags=["body"])
@@ -41,6 +42,13 @@ async def analyze_body(
         raise HTTPException(status_code=400, detail="图片为空")
     if len(data) > MAX_IMAGE_BYTES:
         raise HTTPException(status_code=413, detail="图片不能超过 8MB")
+    try:
+        data = normalize_image_bytes(data)
+    except InvalidImageError as error:
+        raise HTTPException(
+            status_code=422,
+            detail="图片格式不支持或已损坏，请换一张图片",
+        ) from error
 
     feature_key = access.FEATURE_BODY_PHOTO
     key = photo_cache.normalize_key(idempotency_key)

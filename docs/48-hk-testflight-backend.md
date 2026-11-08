@@ -37,7 +37,7 @@ hk-api.jiaolianfit.cn → 8.218.205.149
 ├── backend/             # FastAPI 代码 + data
 ├── media/               # 动作图片/视频，挂载到 /app/media
 ├── admin/               # fitai-admin-server.jar，仅用于 Flyway 迁移
-└── migration/           # V1–V22 SQL 备份
+└── migration/           # V1–V23 SQL 备份
 ```
 
 ## 4. 服务
@@ -48,7 +48,7 @@ hk-api.jiaolianfit.cn → 8.218.205.149
 | `fitai-api` | 本地构建 | FastAPI，2 worker，内网 8000 |
 | `fitai-caddy` | caddy:2-alpine | 80/443，HTTPS 反代到 api:8000 |
 
-MySQL 表由 admin-server 的 Flyway 管理，V1–V22 已全部执行成功。V22 增加 `profiles.training_stage`。
+MySQL 表由 admin-server 的 Flyway 管理，V1–V23 已全部执行成功。V22 增加 `profiles.training_stage`；V23 增加 Watch 训练会话字段和 `exercise_media_assets` 表。
 
 ## 5. 地址
 
@@ -56,6 +56,9 @@ MySQL 表由 admin-server 的 Flyway 管理，V1–V22 已全部执行成功。V
 API：https://hk-api.jiaolianfit.cn/api/v1
 头像上传：POST https://hk-api.jiaolianfit.cn/api/v1/me/avatar
 头像移除：DELETE https://hk-api.jiaolianfit.cn/api/v1/me/avatar
+Watch 预载：GET https://hk-api.jiaolianfit.cn/api/v1/watch/bootstrap
+Watch 登录：POST/DELETE https://hk-api.jiaolianfit.cn/api/v1/watch/session
+Watch 语音：POST https://hk-api.jiaolianfit.cn/api/v1/coach/voice
 健康检查：https://hk-api.jiaolianfit.cn/health
 就绪检查：https://hk-api.jiaolianfit.cn/health/ready
 隐私政策：https://hk-api.jiaolianfit.cn/privacy
@@ -93,7 +96,7 @@ profiles.training_stage：beginner / intermediate / advanced
 - 训练日按 Asia/Shanghai 去重，只算至少完成 1 组的 session。
 - 阶段只升不降。
 - 计划和每周调整按动作读取最近 12 周 `set_logs`，没有记录时回退到最近计划目标或保守估算。
-- 免费教练额度为每周 10 条。
+- 免费教练额度为每天 3 条，按北京时间 00:00 刷新，不累计。
 
 ## 6. 常用命令
 
@@ -162,7 +165,8 @@ docker compose up -d api
 ```
 
 - `is_test=true`，不含真实用户数据。
-- 首次登录需要完成建档。
+- 已预置基础档案和 4 周 3 分化计划，可直接测试训练和 Watch；如需测试建档流程，请使用其他账号或重置该账号。
+- 已授予 Pro 90 天：2026-11-07 → 2027-02-05，source `admin`。
 - 正式上线前删除该账号或修改密码。
 
 ## 9.2 阿里云短信认证（PNVS）

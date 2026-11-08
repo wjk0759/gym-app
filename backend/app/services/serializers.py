@@ -61,39 +61,38 @@ def goal_to_dict(goal: Goal | None) -> dict | None:
     }
 
 
+def serialize_plan_exercise(item: PlanExercise) -> dict:
+    exercise: Exercise | None = item.exercise
+    return {
+        "id": item.id,
+        "slug": item.exercise_slug,
+        "name_zh": exercise.name_zh if exercise else item.exercise_slug,
+        "muscle_group": exercise.muscle_group if exercise else None,
+        "equipment": exercise.equipment if exercise else None,
+        "video_url": exercise.video_url if exercise else None,
+        "order_index": item.order_index,
+        "sets": item.sets,
+        "reps": item.reps,
+        "weight_kg": item.weight_kg,
+        "rest_sec": item.rest_sec,
+        "rpe": item.rpe,
+        "notes": item.notes,
+    }
+
+
+def serialize_program_day(day: ProgramDay) -> dict:
+    return {
+        "id": day.id,
+        "week_index": day.week_index,
+        "weekday": day.weekday,
+        "title": day.title,
+        "focus": day.focus or [],
+        "exercises": [serialize_plan_exercise(item) for item in day.exercises],
+    }
+
+
 def serialize_program(program: Program) -> dict:
-    days = []
-    for day in program.days:
-        exercises = []
-        for item in day.exercises:
-            exercise: Exercise | None = item.exercise
-            exercises.append(
-                {
-                    "id": item.id,
-                    "slug": item.exercise_slug,
-                    "name_zh": exercise.name_zh if exercise else item.exercise_slug,
-                    "muscle_group": exercise.muscle_group if exercise else None,
-                    "equipment": exercise.equipment if exercise else None,
-                    "video_url": exercise.video_url if exercise else None,
-                    "order_index": item.order_index,
-                    "sets": item.sets,
-                    "reps": item.reps,
-                    "weight_kg": item.weight_kg,
-                    "rest_sec": item.rest_sec,
-                    "rpe": item.rpe,
-                    "notes": item.notes,
-                }
-            )
-        days.append(
-            {
-                "id": day.id,
-                "week_index": day.week_index,
-                "weekday": day.weekday,
-                "title": day.title,
-                "focus": day.focus or [],
-                "exercises": exercises,
-            }
-        )
+    days = [serialize_program_day(day) for day in program.days]
     return {
         "id": program.id,
         "title": program.title,

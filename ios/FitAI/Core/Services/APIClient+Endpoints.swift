@@ -277,26 +277,60 @@ extension APIClient {
 
     func scanEquipment(
         imageData: Data,
+        ocrText: String = "",
         idempotencyKey: String? = nil
     ) async throws -> EquipmentScanResult {
+        var fields: [String: String] = [:]
+        let trimmedText = ocrText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedText.isEmpty {
+            fields["ocr_text"] = String(trimmedText.prefix(300))
+        }
         let data = try await upload(
             path: "equipment/scan",
             imageData: imageData,
             filename: "photo.jpg",
+            fields: fields,
             headers: idempotencyHeaders(idempotencyKey)
         )
         let response = try decode(EquipmentScanResponse.self, from: data)
-        let candidates = response.candidates.compactMap { candidate -> EquipmentCandidate? in
-            guard let exercise = ExerciseLibrary.exercise(slug: candidate.slug) else {
-                return nil
+
+        func resolve(
+            _ candidates: [EquipmentScanResponse.Candidate]
+        ) -> [EquipmentCandidate] {
+            candidates.compactMap { candidate -> EquipmentCandidate? in
+                guard let exercise = ExerciseLibrary.exercise(slug: candidate.slug) else {
+                    return nil
+                }
+                return EquipmentCandidate(
+                    exercise: exercise,
+                    confidence: candidate.confidence
+                )
             }
-            return EquipmentCandidate(exercise: exercise, confidence: candidate.confidence)
         }
+
+        let options = (response.equipmentCandidates ?? []).compactMap {
+            option -> EquipmentMatchOption? in
+            let actions = resolve(option.candidates)
+            guard !actions.isEmpty else { return nil }
+            return EquipmentMatchOption(
+                slug: option.slug,
+                name: option.nameZh,
+                confidence: option.confidence,
+                candidates: actions
+            )
+        }
+        let candidates = resolve(response.candidates)
         return EquipmentScanResult(
             candidates: candidates,
             description: response.description ?? "",
             name: response.name ?? "",
-            notInLibrary: response.notInLibrary ?? false
+            notInLibrary: response.notInLibrary
+                ?? (!response.candidates.isEmpty && candidates.isEmpty),
+            warning: response.warning,
+            status: response.status ?? "ok",
+            equipmentName: response.equipmentName,
+            confidence: response.confidence,
+            equipmentOptions: options
         )
     }
 

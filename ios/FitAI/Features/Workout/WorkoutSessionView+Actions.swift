@@ -1,3 +1,4 @@
+import FitAIWorkoutCore
 import SwiftUI
 
 extension WorkoutSessionView {
@@ -32,9 +33,49 @@ extension WorkoutSessionView {
         return "\(load) × \(reps) 次"
     }
 
+    var isWatchLed: Bool {
+        WatchSyncManager.shared.hasActiveWatchSession(for: day.id)
+    }
+
+    var watchIsPaused: Bool {
+        isWatchLed && WatchSyncManager.shared.isWatchSessionPaused
+    }
+
+    @discardableResult
+    func sendToWatch(_ command: WorkoutCommand) -> Bool {
+        if WatchSyncManager.shared.send(command: command) {
+            return true
+        }
+        Haptics.warning()
+        watchNotice = "手表未连接：本次训练以手表为准，请稍后再操作"
+        return false
+    }
+
     func completeSet(_ exercise: PlanExercise) {
         let nextIndex = completedSets(for: exercise) + 1
         let isBodyweight = exercise.exercise?.equipment == .bodyweight
+        if isWatchLed {
+            if watchIsPaused {
+                watchNotice = "手表已暂停，请先在手表继续"
+                return
+            }
+            let timed = exercise.reps.contains("秒")
+            let command = WorkoutCommand.completeSet(
+                .init(
+                    exerciseID: exercise.id,
+                    setIndex: nextIndex,
+                    weightKG: isBodyweight ? 0 : weight,
+                    reps: reps,
+                    seconds: timed ? reps : nil,
+                    rpe: rpe,
+                    at: Date(),
+                    source: .phone
+                )
+            )
+            guard sendToWatch(command) else { return }
+            Haptics.success()
+            return
+        }
         logs.append(
             SetLog(
                 slug: exercise.slug,
@@ -52,6 +93,17 @@ extension WorkoutSessionView {
     }
 
     func advance() {
+        if isWatchLed {
+            if watchIsPaused {
+                watchNotice = "手表已暂停，请先在手表继续"
+                return
+            }
+            let command = WorkoutCommand.advanceExercise(
+                .init(at: Date(), source: .phone)
+            )
+            guard sendToWatch(command) else { return }
+            return
+        }
         restRemaining = nil
         if index < activeDay.exercises.count - 1 {
             index += 1
@@ -123,7 +175,97 @@ extension WorkoutSessionView {
         )
     }
 
+    /// The watch is authoritative during a watch-led session. Apply its
+    /// snapshot to the phone UI and persist the draft before the phone leaves
+    /// the foreground.
+    func applyWatchSnapshot(_ envelope: WatchSessionEnvelope) {
+        guard !didFinish,
+              envelope.snapshot.programDayID == day.id else { return }
+        let snapshot = envelope.snapshot
+        guard snapshot.status != .discarded else {
+            store.clearWorkoutDraft(dayID: day.id)
+            didFinish = true
+            dismiss()
+            return
+        }
+
+        didLoadDraft = true
+        logs = snapshot.sets.map { SetLog(record: $0) }
+        index = min(snapshot.currentExerciseIndex, activeDay.exercises.count)
+        elapsedSeconds = 0
+        activeStartedAt = snapshot.startedAt
+        if let remaining = snapshot.remainingRest(at: Date()), remaining > 0 {
+            restTotal = max(1, remaining)
+            restRemaining = max(0, Int(remaining.rounded()))
+        } else {
+            restRemaining = nil
+        }
+        saveDraftIfNeeded()
+        if snapshot.status == .finished {
+            finishFromWatch(snapshot)
+        }
+    }
+
+    func syncWatchBootstrap() async {
+        await store.refreshAccess()
+        await WatchSyncManager.shared.prepareAndSendBootstrap(
+            day: day,
+            access: store.accessSnapshot,
+            verifiedAt: store.access.verifiedAt,
+            force: true
+        )
+    }
+
+    func drainWatchInbox() {
+        for envelope in WatchSyncManager.shared.pendingEnvelopes(for: day.id) {
+            guard !didFinish else { break }
+            applyWatchSnapshot(envelope)
+            WatchSyncManager.shared.acknowledgeInbox(
+                sessionID: envelope.sessionID,
+                revision: envelope.snapshot.revision
+            )
+        }
+    }
+
+    /// The watch finished the session. Use its client session id so a later
+    /// phone launch cannot record the same workout twice.
+    func finishFromWatch(_ snapshot: WorkoutSessionSnapshot) {
+        guard !logs.isEmpty else {
+            store.clearWorkoutDraft(dayID: day.id)
+            didFinish = true
+            dismiss()
+            return
+        }
+        didFinish = true
+        var sessionDay = day
+        sessionDay.exercises = activeDay.exercises.map(effectiveExercise)
+        let end = snapshot.finishedAt ?? Date()
+        let duration = max(
+            1,
+            Int(end.timeIntervalSince(snapshot.startedAt) / 60)
+        )
+        store.record(
+            day: sessionDay,
+            sets: logs,
+            durationMinutes: duration,
+            feeling: 3,
+            notes: nil,
+            plannedSets: snapshot.plannedSetCount,
+            sessionID: snapshot.sessionID,
+            endedAt: end,
+            source: "watch"
+        )
+        store.clearWorkoutDraft(dayID: day.id)
+        dismiss()
+    }
+
     func pauseAndExit() {
+        if isWatchLed {
+            let command = WorkoutCommand.pause(
+                .init(at: Date(), source: .phone)
+            )
+            guard sendToWatch(command) else { return }
+        }
         saveDraftIfNeeded(persistImmediately: true)
         store.flushPersistence()
         dismiss()
@@ -132,6 +274,14 @@ extension WorkoutSessionView {
     func finish() {
         guard !logs.isEmpty else {
             showEmptySaveAlert = true
+            return
+        }
+        if isWatchLed {
+            let command = WorkoutCommand.finish(
+                .init(at: Date(), source: .phone)
+            )
+            guard sendToWatch(command) else { return }
+            watchNotice = "已通知手表结束，正在保存"
             return
         }
         didFinish = true
@@ -151,6 +301,10 @@ extension WorkoutSessionView {
     }
 
     func openAdjustSheet(_ exercise: PlanExercise) {
+        if isWatchLed {
+            watchNotice = "本次训练以手表为准，请在手表上调整"
+            return
+        }
         adjustExerciseID = exercise.id
         adjustSets = exercise.sets
         adjustReps = WorkoutPickerOptions.normalizedReps(exercise.reps)

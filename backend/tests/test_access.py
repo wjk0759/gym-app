@@ -146,6 +146,22 @@ def test_pro_feature_gate_rejects_free_user():
     access.require_feature(db, user_id, access.FEATURE_FOOD_PHOTO)
 
 
+def test_watch_training_is_pro_only():
+    db = _session()
+    user_id = "00000000-0000-0000-0000-000000000001"
+
+    free = access.access_snapshot(db, user_id)
+    watch = free["features"][access.FEATURE_WATCH_TRAINING]
+    assert watch["can_train"] is False
+    assert watch["requires_pro"] is True
+
+    _grant_pro(db)
+    pro = access.access_snapshot(db, user_id)
+    watch = pro["features"][access.FEATURE_WATCH_TRAINING]
+    assert watch["can_train"] is True
+    assert watch["requires_pro"] is False
+
+
 def test_coach_daily_quota_is_three_for_free_users():
     db = _session()
     user_id = "00000000-0000-0000-0000-000000000001"

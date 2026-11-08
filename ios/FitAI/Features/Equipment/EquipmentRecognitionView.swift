@@ -33,6 +33,11 @@ struct EquipmentRecognitionView: View {
     @State var savedSlugs: Set<String> = []
     @State var recognizedName = ""
     @State var notInLibrary = false
+    @State var warning = ""
+    @State var scanStatus = "ok"
+    @State var equipmentName = ""
+    @State var equipmentOptions: [EquipmentMatchOption] = []
+    @State var selectedEquipmentSlug: String?
     @State var showAddCustom = false
     @State var didAutoOfferCustom = false
     @State var pendingCustomOffer = false
@@ -92,7 +97,7 @@ struct EquipmentRecognitionView: View {
         }) {
             PhotoCaptureView(
                 title: "拍摄器械",
-                hint: "让器械完整进入画面，避免只拍到局部或边缘。",
+                hint: "让器械完整进入画面，有品牌/动作标签时一起拍进去，识别更准。",
                 onImage: { image in
                     apply(image)
                     showCamera = false
@@ -288,6 +293,58 @@ struct EquipmentRecognitionView: View {
                             .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                             .fixedSize(horizontal: false, vertical: true)
+                    } else if scanStatus == "unavailable" {
+                        Text("识别服务暂时不可用")
+                            .font(AppType.callout.weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+
+                        Text(warning.isEmpty
+                             ? "请检查网络后重试；也可以手动搜索动作或添加器械。"
+                             : warning)
+                            .font(AppType.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        if imageData != nil {
+                            Button {
+                                scanKey = UUID().uuidString
+                                scan()
+                            } label: {
+                                Label("重新识别", systemImage: "arrow.clockwise")
+                            }
+                            .buttonStyle(PrimaryButtonStyle())
+                        }
+                    } else if scanStatus == "not_gym_equipment" {
+                        Text("这张照片里没有识别到健身器械")
+                            .font(AppType.callout.weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+                        Text(description.isEmpty
+                             ? "请让器械完整进入画面，避免只拍局部或文字。"
+                             : description)
+                            .font(AppType.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else if notInLibrary {
+                        Text(equipmentName.isEmpty
+                             ? "识别到器械，但动作库暂未收录"
+                             : "识别到「\(equipmentName)」，动作库暂未收录")
+                            .font(AppType.callout.weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        if !description.isEmpty {
+                            Text(description)
+                                .font(AppType.caption)
+                                .foregroundStyle(Theme.secondaryText)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        Button {
+                            showAddCustom = true
+                        } label: {
+                            Label("补全器械信息", systemImage: "plus.circle.fill")
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
                     } else {
                         Text(selectedImage == nil
                              ? "先拍摄或选择一张器械照片。"
@@ -299,22 +356,13 @@ struct EquipmentRecognitionView: View {
                         if !description.isEmpty {
                             Text(description)
                                 .font(AppType.caption)
-                                .foregroundStyle(Theme.coral)
+                                .foregroundStyle(Theme.secondaryText)
                                 .fixedSize(horizontal: false, vertical: true)
-                        }
-
-                        if notInLibrary {
-                            Button {
-                                showAddCustom = true
-                            } label: {
-                                Label("补全器械信息", systemImage: "plus.circle.fill")
-                            }
-                            .buttonStyle(PrimaryButtonStyle())
                         }
                     }
 
                     if selectedImage != nil && customAddedName.isEmpty {
-                        Text("拍摄建议：让器械完整进入画面，避免只露出边缘；暗光、遮挡或只拍局部都会降低识别率。")
+                        Text("拍摄建议：让器械完整进入画面，并尽量把品牌/动作标签拍清楚；暗光、遮挡或只拍局部都会降低识别率。")
                             .font(.system(size: 9.5, weight: .medium))
                             .foregroundStyle(Theme.secondaryText)
                             .fixedSize(horizontal: false, vertical: true)
@@ -322,6 +370,59 @@ struct EquipmentRecognitionView: View {
                 }
                 .padding(.vertical, 4)
             } else {
+                if equipmentOptions.count > 1 {
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text("最可能是")
+                            .font(AppType.overline)
+                            .tracking(0.8)
+                            .foregroundStyle(Theme.tertiaryText)
+
+                        HStack(spacing: 8) {
+                            ForEach(equipmentOptions) { option in
+                                Button {
+                                    selectEquipment(option)
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(option.name)
+                                            .font(AppType.caption.weight(.semibold))
+                                        Text("\(Int(option.confidence * 100))%")
+                                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                    }
+                                    .foregroundStyle(
+                                        selectedEquipmentSlug == option.slug
+                                            ? Theme.onPrimary
+                                            : Theme.ink
+                                    )
+                                    .padding(.horizontal, 11)
+                                    .padding(.vertical, 7)
+                                    .background(
+                                        selectedEquipmentSlug == option.slug
+                                            ? Theme.primary
+                                            : Theme.paper,
+                                        in: Capsule(style: .continuous)
+                                    )
+                                    .overlay {
+                                        Capsule(style: .continuous)
+                                            .strokeBorder(Theme.stroke, lineWidth: 1)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+
+                        Text("不确定时点另一个候选，动作会跟着切换。")
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundStyle(Theme.secondaryText)
+                    }
+                } else if !equipmentName.isEmpty {
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark.seal.fill")
+                            .foregroundStyle(Theme.cobalt)
+                        Text("识别到 \(equipmentName)")
+                            .font(AppType.caption.weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+                    }
+                }
                 resultSection
             }
         }
@@ -329,6 +430,13 @@ struct EquipmentRecognitionView: View {
     }
 
 
+
+    func selectEquipment(_ option: EquipmentMatchOption) {
+        selectedEquipmentSlug = option.slug
+        equipmentName = option.name
+        candidates = option.candidates
+        notInLibrary = false
+    }
 
     func isSaved(_ candidate: EquipmentCandidate) -> Bool {
         savedSlugs.contains(candidate.exercise.slug)
@@ -357,7 +465,7 @@ struct EquipmentRecognitionView: View {
               let image = UIImage(data: data) else {
             return
         }
-        imageData = data
+        imageData = ImageJPEGNormalizer.data(from: image)
         selectedImage = image
         scanKey = UUID().uuidString
         candidates = []
@@ -365,6 +473,11 @@ struct EquipmentRecognitionView: View {
         photoItem = nil
         recognizedName = ""
         notInLibrary = false
+        warning = ""
+        scanStatus = "ok"
+        equipmentName = ""
+        equipmentOptions = []
+        selectedEquipmentSlug = nil
         customAddedName = ""
         didAutoOfferCustom = false
         pendingCustomOffer = false
@@ -373,12 +486,17 @@ struct EquipmentRecognitionView: View {
 
     private func apply(_ image: UIImage) {
         selectedImage = image
-        imageData = image.jpegData(compressionQuality: 0.8)
+        imageData = ImageJPEGNormalizer.data(from: image)
         scanKey = UUID().uuidString
         candidates = []
         description = ""
         recognizedName = ""
         notInLibrary = false
+        warning = ""
+        scanStatus = "ok"
+        equipmentName = ""
+        equipmentOptions = []
+        selectedEquipmentSlug = nil
         customAddedName = ""
         didAutoOfferCustom = false
         pendingCustomOffer = false
@@ -394,15 +512,31 @@ struct EquipmentRecognitionView: View {
 
         Task { @MainActor in
             do {
+                let ocrText = await ImageTextRecognizer.recognize(
+                    image: selectedImage ?? UIImage(data: data) ?? UIImage()
+                )
                 let result = try await EquipmentRecognitionService.recognize(
                     imageData: data,
                     preferRemote: store.canUseRemoteAI,
+                    ocrText: ocrText,
                     idempotencyKey: scanKey
                 )
                 candidates = result.candidates
                 description = result.description
                 recognizedName = result.name
                 notInLibrary = result.notInLibrary
+                warning = result.warning ?? ""
+                scanStatus = result.status
+                equipmentOptions = result.equipmentOptions
+                if let first = result.equipmentOptions.first {
+                    selectedEquipmentSlug = first.slug
+                    equipmentName = first.name
+                    candidates = first.candidates
+                    notInLibrary = false
+                } else {
+                    selectedEquipmentSlug = nil
+                    equipmentName = result.equipmentName ?? ""
+                }
                 customAddedName = ""
                 onRecognized?(result)
                 isScanning = false
@@ -419,9 +553,16 @@ struct EquipmentRecognitionView: View {
                 isScanning = false
                 await store.refreshAccess()
                 store.requestPro(.equipmentScan)
+            } catch EquipmentRecognitionError.unavailable(let message) {
+                isScanning = false
+                warning = message
+                description = message
+                scanStatus = "unavailable"
             } catch {
                 isScanning = false
+                warning = error.localizedDescription
                 description = error.localizedDescription
+                scanStatus = "unavailable"
             }
         }
     }

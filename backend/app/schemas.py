@@ -71,6 +71,16 @@ class AppleLoginIn(BaseModel):
     agreed_terms: bool = False
 
 
+class VoiceChatIn(BaseModel):
+    message: str = Field(min_length=1, max_length=500)
+    context: str | None = Field(default=None, max_length=2000)
+
+
+class WatchSessionIn(BaseModel):
+    device_id: str = Field(min_length=8, max_length=64)
+    device_name: str | None = Field(default=None, max_length=120)
+
+
 class PasswordSetIn(BaseModel):
     password: str = Field(min_length=8, max_length=72)
     current_password: str | None = Field(default=None, max_length=72)
@@ -142,6 +152,7 @@ class WorkoutIn(BaseModel):
     # attempts return the same workout instead of creating duplicates.
     client_id: str | None = Field(default=None, min_length=1, max_length=36)
     program_day_id: str | None = None
+    source: Literal["phone", "watch", "server"] = "phone"
     started_at: str
     finished_at: str | None = None
     feeling: int | None = Field(default=None, ge=1, le=5)

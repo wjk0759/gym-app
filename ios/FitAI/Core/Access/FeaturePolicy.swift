@@ -29,6 +29,12 @@ struct FeaturePolicy: Equatable {
         isPro || snapshot?.mealPlanTrialAvailable == true
     }
 
+    /// Apple Watch training is a global Pro entitlement. The server feature is
+    /// preferred so older/newer snapshots can be rolled out independently.
+    var canUseWatchTraining: Bool {
+        snapshot?.watchTraining?.canTrain ?? isPro
+    }
+
     var canSendCoachMessage: Bool {
         if isPro { return true }
         guard let coach = snapshot?.coachAI else { return true }

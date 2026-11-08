@@ -14,13 +14,583 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`5855d90`；本文件的最新同步提交见 `git log -1`
-- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一
+- `develop` 代码 HEAD：`5855d90`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `aa17a19`；本文件的最新同步提交见 `git log -1`
+- Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
-- 最新后端验证：**197 passed**，Ruff app/tests 通过；V22 `training_stage` 已迁移；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
+- macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 13/13 测试通过；完成 Watch UI 重设计（训练/动作/语音/锁定页）、单主按钮流程（`2d5dea0`）、40/42/49mm 响应式适配（`1eb3fdd`），并把语音输入与发送合并为一行（`9a833b1`）；此前修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
+- Windows 最新完成（2026-11-07）：拉取并保留 macOS 单行语音输入（`9a833b1`）；完成教练内核统一并部署生产；`test_reviewer` 已授 Pro、补齐基础档案和 3 分化计划；生产 Watch 预载/登录/刷新/语音/撤销全链路烟测通过；iPhone 训练页动作循环动画 PoC、`/exercise-media` 批量接口、11 条 sample 媒体已上生产（`341981f`）；器械识别修复：图片归一化、禁止随机 mock、37 类器械目录、生产导入 57 条训记动作、4 张真实照片 + 1 张负例烟测 5/5 命中（`5bf99a1`）；2026-11-08 增加 Vision OCR 标签提示、18 张多品牌评测和准确率实验（`23e41c8`）；生产视觉切 **Qwen3-VL-Plus**；器械识别加 **top-2 候选 + 混淆兜底**，18 张缩略图 top-1 61%、top-2 83%（`0d63191`）。CI 后端 `aa17a19`、iOS `0d63191` **success**
+- Windows 前一轮完成（2026-11-07）：手表独立语音教练、watch 专用登录会话、媒体预载/本地缓存、离线 outbox/ack、手机 inbox 回灌、手机→手表指令、3 天 Pro 宽限与中途到期继续结束、HealthKit 保活/手机单写者、Watch AppIcon 恢复、Watch 隐私清单、训练来源 `phone/watch`
+- 最新后端验证：**217 passed**，Ruff app/tests 通过；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source`、`/exercise-media`、器械目录识别已接入测试；生产 Flyway 已到 **V23**；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
-- Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码
-- 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传
+- Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
+- 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-08 · Windows / OpenCode（器械 top-2 候选 + 混淆兜底）
+
+- 分支：`feature/watch-standalone-workout`
+- 做了什么：
+  - 后端 prompt 要求模型返回 `equipment_candidates` 前两个
+  - 模型只给一个时，按真实照片观察到的混淆对补一个“也可能是”（`equipment_catalog.CONFUSABLES`）
+  - API 返回 `equipment_candidates`，每个候选带自己的动作列表
+  - iOS 识别结果页显示“最可能是 [A] [B]”，点 B 会切换动作列表
+  - `needs_confirmation` 在出现多个候选时为 true
+  - 生产后端已重新构建部署，`vision=qwen3-vl-plus`
+- 验证：
+  - 本地后端 **220 passed**，Ruff 通过
+  - GitHub Actions：`Backend Tests` **success** @ `aa17a19`；`iOS Build` **success** @ `0d63191`
+  - 18 张用户图（360px 副本 + OCR）：
+    - top-1 **11/18 = 61%**
+    - top-2 **15/18 = 83%**
+  - 生产 `/equipment/scan` 推肩/推胸图返回两个候选，`needs_confirmation=true`
+- 未验证：
+  - 真机点第二个候选切换动作
+  - 高分辨率原图 top-1/top-2
+- Mac 下一步：
+  - `git pull` → `xcodegen generate` → 构建
+  - 真机拍带标签/不带标签的器械，确认两个候选和切换动作
+  - 如果第二个候选仍然不对，把照片和两个候选一起发回来
+- 不要做：
+  - 不要把第二候选说成“模型确定结果”；它只是混淆兜底
+  - 不要删除 `CONFUSABLES`，否则 top-2 会退回 61%
+
+### 2026-11-08 · Windows / OpenCode（生产视觉切 Qwen3-VL-Plus）
+
+- 分支：`feature/watch-standalone-workout`
+- 做了什么：
+  - 生产视觉识别从 `deepseek-flash` 切到 **Qwen3-VL-Plus**（阿里云百炼/DashScope 中国站）
+  - 文本教练/计划继续用 DeepSeek，不换
+  - `VISION_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1`
+  - `VISION_MODEL=qwen3-vl-plus`
+  - Key 只写入本机 `backend/.env` 和服务器 `/opt/fitai/.env`，未入库；旧 `.env` 备份权限 600
+- 验证：
+  - 生产 `/health` 返回 `vision: qwen3-vl-plus`
+  - 生产 `/equipment/scan`：`SHOULDER PRESS` → `shoulder_press_machine` 0.95；`CHEST PRESS` → `chest_press_machine` 0.95
+  - 本地 `equipment.recognize` 用 Qwen 跑数据集推肩/推胸/椭圆/哈克，结果正常
+  - 低分辨率 360px 缩略图不稳定（椭圆/腿举、哈克/髋外展会混），不代表手机原图
+- 未验证：
+  - 高分辨率真实手机照片的 top-1/top-3
+  - 生产 Qwen 的限流/超时/长图
+  - 真机 OCR + Qwen 组合
+- Mac 下一步：
+  - 用 30–50 张高分辨率真实照片跑 A/B（Qwen3-VL-Plus vs qwen3.8-max / qwen3.7-plus）
+  - 重点确认推胸/推肩、椭圆/健身车、龙门架/背景器械
+  - 真机测试 OCR 标签 + Qwen
+- 不要做：
+  - 不要把 API Key 提交到 Git 或写进文档
+  - 不要删除 `VISION_*` 配置；旧客户端不传 OCR 仍要兼容
+- 成本：约 1 元/百万输入、10 元/百万输出；单次扫描约 0.004 元
+- 仍 BLOCKED：
+  - 高分辨率真实评测集
+  - 专用检测器/分类器的真实数据
+
+### 2026-11-08 · Windows / OpenCode（器械识别准确率实验 + OCR 标签）
+
+- 分支：`feature/watch-standalone-workout`
+- 做了什么：
+  - 用 18 张多品牌真实健身房照片做评测（Hammer Strength / Life Fitness / Inspiration / SHUA / Precor）
+  - 对比：当前 prompt、类目短名单、参考图网格、HF 公开数据集 MobileNet 线性探针、CLIP 线性探针
+  - 结论：`deepseek-flash` 是当前准确率上限；短名单/参考图收益有限，公开产品图训练的分类器在真实场景不泛化，未接入
+  - iOS 新增 `ImageTextRecognizer`（Vision OCR），把机器上的品牌/动作标签随图片上传
+  - 后端 `/equipment/scan` 接受 `ocr_text`，匹配目录后作为强证据写入视觉 prompt
+  - 拍摄提示改为“把品牌/动作标签一起拍进去”
+- 验证：
+  - 本地后端 **219 passed**，Ruff 通过
+  - GitHub Actions：`Backend Tests` **success** @ `23e41c8`；`iOS Build` **success** @ `23e41c8`
+  - 生产 OCR 烟测：`SHOULDER PRESS` → `shoulder_press_machine` 0.92；`CHEST PRESS` → `chest_press_machine` 0.93
+  - 生产 `/health`、`/health/ready` 正常
+- 未验证：
+  - 真机 Vision OCR 中文/英文标签、低光/反光、标签在背景时的误用
+- Mac 下一步：
+  - `git pull` → `xcodegen generate` → 构建
+  - 真机拍带 `SHOULDER PRESS` / `LATERAL RAISE` / `推胸训练器` / `大腿外展训练器` 标签的器械，验证 OCR 是否被正确采用
+  - 拍不带标签的器械，确认会回退到视觉模型，不会因 OCR 空字符串报错
+- 不要恢复：
+  - 不要删除 OCR 字段；旧客户端不传时后端必须兼容（已用 `Form(default="")`）
+  - 不要把 OCR 文本直接当唯一结果；它只是强证据，背景标签要忽略
+- 仍 BLOCKED：
+  - 更强视觉模型（Qwen-VL / Doubao / GPT-4o 级）和 API Key
+  - 每类 100+ 张真实健身房照片的检测/分类训练集
+
+### 2026-11-07 · Windows / OpenCode（器械识别修复 + 生产动作库 57 条）
+
+- 分支：`feature/watch-standalone-workout`
+- 做了什么：
+  - 定位本地 `smoke.db`：`equipment_scan` 实际是 `fallback`，`vision HTTP 400` 后返回 `model=mock` 的随机 3 个动作
+  - iOS 新增 `ImageJPEGNormalizer`：相册/相机统一转 JPEG、最长边 1280、修正方向；不再把 HEIC 原始数据当 JPEG 上传
+  - 后端新增 `image_input.normalize_image_bytes`：Pillow + pillow-heif，支持 HEIC/PNG/WebP/JPEG，坏图 422；器械/身体/饮食三个接口共用
+  - 后端新增 `equipment_catalog.py`：37 类常见器械 + 中英文别名 + 可做动作 slug
+  - 视觉 prompt 改为“从目录选 `equipment_slug` + 1–3 个动作”，不再自由发挥中文动作名
+  - 视觉失败返回 `status=unavailable`、`candidates=[]`、`warning`；删除随机 mock；iOS 显示重试/手动添加
+  - iOS 新增 `warning/status/equipmentName` 解析；空态区分“服务不可用 / 不是器械 / 动作库未收录 / 通用”
+  - 生产导入当前 57 条训记动作（旧 27 条保留 inactive）；给示例动画补 `cm_*` 媒体别名
+  - 生产部署新 API + `pillow-heif`，Flyway 不变（仍 V23）
+- 验证：
+  - 本地后端 **217 passed**，Ruff app/tests 通过
+  - GitHub Actions：`Backend Tests` **success** @ `5bf99a1`；`iOS Build` **success** @ `5bf99a1`
+  - 生产 `/health`、`/health/ready` 正常
+  - 生产器械识别真实照片 4 张 + 负例 1 张：腿举/哈克 0.94、椭圆机 0.93、跑步机 0.93、龙门架 0.93、截图 `not_gym_equipment`，**5/5 主判断正确**
+  - 龙门架返回 3 个动作候选：绳索夹胸 0.93 / 绳索下压 0.79 / 坐姿划船 0.65
+  - `/exercise-media?slugs=cm_squat,cm_leg_press,cm_crunch` 返回 200
+  - 生产 `exercises` active=57
+- 未验证：
+  - 真机相册 HEIC、相机大图、弱网、失败重试 UI
+  - 真机身体/饮食拍照（后端已统一归一化，但 iPad/HEIC 组合仍需真机）
+  - 更多器械类型（史密斯 vs 深蹲架、不同品牌腿举/哈克一体机）
+- Mac 下一步：
+  - `git pull` → `xcodegen generate` → 构建/测试
+  - 用 Debug/真机分别测试相机、相册 HEIC、大图、非器械截图
+  - 验证失败时显示“识别服务暂时不可用 / 重新识别”，不再出现随机动作
+  - 验证龙门架返回多个动作候选，腿举/哈克返回腿举/哈克候选
+  - 如果 top-3 仍不够，再用 GymBro/GymGuide 23 类数据集做 few-shot/评测；数据集 license 先在 Roboflow 页面核实
+- 不要恢复：
+  - 不要恢复 `_mock_recognize` 随机候选或 iOS `EquipmentService.recognize` 本地随机匹配
+  - 不要把 HEIC 原始数据直接当 JPEG 上传
+  - 不要再只靠中文名包含匹配动作
+  - 不要把 `active=0` 的旧动作删除；历史计划和媒体仍引用
+- 仍 BLOCKED：
+  - 1,213 / 1,500 动作全量映射与素材采购
+  - 更细的器械分类和真实评测集
+  - IAP / App Store API / TestFlight 外部审核等外部项
+
+### 2026-11-07 · Windows / OpenCode（iPhone 动作循环动画 PoC）
+
+- 分支：`feature/watch-standalone-workout`
+- 代码提交：`341981f`
+- 做了什么：
+  - 后端新增 `GET /exercise-media?slugs=...`：认证用户批量取当天动作媒体，最多 20 个，按 `profiles.sex` 优先同性别、再 `unisex`、最后异性回退
+  - 抽出 `media_for_slugs`，`/watch/bootstrap` 继续复用同一 resolver
+  - iOS 新增 `ExerciseMediaItem`、`APIClient.fetchExerciseMedia`、`ExerciseMediaStore`、`SilentLoopingVideoPlayer`、`ExerciseAnimationCard`
+  - 训练页在当前动作标题下、组数输入上插入静音循环动画卡；点击进全屏；Reduce Motion/非 active 显示海报；失败回退海报；音频会话 `.ambient + .mixWithOthers`
+  - 训练开始按当天 slug 一次批量预取，切动作读内存缓存；前台恢复会重试失败项
+  - 新增 `tools/media/build_vital_sample.py`：720p phone、480p watch、720p poster、manifest、生产 SQL
+  - 用 VitalAnimations 免费 sample 发布 11 条映射：squat / hip_thrust / romanian_deadlift / goblet_squat / leg_press / rowing_machine / triceps_pushdown / treadmill_walk / shoulder_press / lateral_raise（male）+ crunch（female）
+  - 所有 sample 文件已上传 `/opt/fitai/media/exercises/vital/`，生产 `exercise_media_assets` 已写入 11 条 `published`
+  - 生产 API 已重建并部署 `/exercise-media`
+- 验证：
+  - 本地后端 **211 passed**，Ruff app/tests 通过
+  - GitHub Actions：`Backend Tests` **success** @ `341981f`；`iOS Build` **success** @ `341981f`
+  - 生产未登录 `/exercise-media` → **401**；21 个 slug → **400**
+  - `test_reviewer` `/exercise-media?slugs=squat,hip_thrust,leg_press,crunch,missing` → **200**，返回 4 条，缺省项被忽略
+  - 生产媒体 URL → **200**，Range 请求 → **206**，`video/mp4` / `image/jpeg` 正确
+  - `test_reviewer` `/watch/bootstrap` → **200**，`media` 包含 `crunch`
+  - 素材首帧/末帧比对：squat、leg_press、crunch 循环无明显跳帧
+- 未验证：
+  - 真机 iPhone 内嵌循环/全屏/Reduce Motion/音乐不中断/切后台暂停
+  - 真机 Watch 下载、播放、离线缓存
+  - 弱网和离线回退
+  - `test_reviewer` 当前计划只有 `crunch` 命中；squat/leg_press 等需要含器械动作的计划或另一个测试账号
+- Mac 下一步：
+  - `git pull` → `xcodegen generate` → 构建/测试
+  - 用 `test_reviewer` 或新账号生成含 squat / leg_press / hip_thrust 的计划，真机看内嵌动画和全屏
+  - 验证 Watch 动作页播放 `watch_url`，确认和 iPhone 同一素材
+  - 检查白底素材在深色模式下的观感（当前媒体面板固定白底）
+- 不要恢复/不要做：
+  - 不要在素材缺失时显示假动画；没有媒体就不出动画卡
+  - 不要把循环视频换成带系统控件的 `VideoPlayer`
+  - 不要把 `advance`/播放器改成自动全屏
+  - 不要提交原始 MP4/转码文件到 git
+  - 不要破坏 `/watch/bootstrap` 的媒体字段
+- 仍 BLOCKED：
+  - 正式 1,500 动作 × 男女两套素材采购、授权确认、映射与转码
+  - 生产 `exercises` 只有 27 个旧 seed 动作，iOS 训记 57 条未导入；铺全量媒体前要先定动作库同步方案
+
+### 2026-11-07 · Windows / OpenCode（Watch 生产链路复核）
+
+- 分支：`feature/watch-standalone-workout`
+- 代码 HEAD：`9a833b1`；文档 HEAD 见 `git log -1`
+- CI：`iOS Build` **success** @ `0aaf2ce`；`Backend Tests` **success** @ `ca7f24d`
+- 已拉取并保留：
+  - macOS 40/42/49mm 响应式训练控件（`1eb3fdd`）
+  - 语音输入与发送同一行（`9a833b1`）
+  - 不恢复自动发送、不拆成上下两行
+- 生产环境状态：
+  - `https://hk-api.jiaolianfit.cn/health` → ok
+  - `/health/ready` → ready
+  - Flyway schema version **23**
+  - API/Caddy/MySQL 容器 healthy
+- `test_reviewer` 生产状态：
+  - Pro 有效到 `2027-02-05 12:51:59 UTC`
+  - 已补齐档案：男、178cm、75kg、体脂 18%、每周 3 练、45 分钟
+  - 已生成 4 周 3 分化计划，12 个训练日，首日 4 个动作
+- 生产 Watch E2E 烟测（真实 HTTP，不使用模拟器）：
+  - `/watch/bootstrap?day_id=...` → 200，day title 正常，4 个动作，`media=0`
+  - `/watch/session` → 200，30 分钟 access token + refresh token
+  - Watch access token `/me/access` → 200，`is_pro=true`，`watch_can_train=true`
+  - Watch access token `/coach/voice`（改计划）→ 200，`requires_phone_confirmation=true`
+  - Watch refresh token `/auth/refresh` → 200，token 已轮换
+  - 刷新后的 access token `/me/access` → 200
+  - `DELETE /watch/session` → 200，撤销 1 个会话
+  - Watch voice 前后 `chat_sessions/chat_messages/agent_runs/ai_memories` 均为 0
+  - iPhone `/agent/chat` 烟测仍为 `completed`
+- 未跑通 / 未验证：
+  - 真实 iPhone ↔ Apple Watch 的 WatchConnectivity 预载、快照回传、文件传输
+  - 真机听写/手写、TTS、耳机自动朗读、Watch 直连网络
+  - HealthKit 保活、单写者、手表锁屏/后台
+  - 真实媒体（生产 `exercise_media_assets=0`）
+  - 41/45mm 休息态/锁定页/语音页视觉
+  - 真机签名、Watch App ID/HealthKit capability、TestFlight 安装
+- Mac 下一步：
+  - `git pull` → `xcodegen generate`
+  - 用 `test_reviewer` 真机/TestFlight 走完 Watch 安装和训练
+  - 验证 Watch voice 听写/发送/TTS/耳机
+  - 验证 HealthKit 与离线 outbox
+  - 上传 TestFlight，确认 Watch 安装入口
+- 不要恢复：
+  - 不要拆分语音输入/发送行
+  - 不要恢复提交即自动发送
+  - 不要拆回两套教练 prompt
+  - 不要让 Watch voice 写聊天/记忆
+  - 不要删除生产 V23 schema
+
+### 2026-11-07 · macOS（语音教练输入行并排）
+
+- 分支：`feature/watch-standalone-workout`
+- 代码提交：`9a833b1`（本条目为后续 docs 提交）
+- 做了什么：
+  - 语音页原来是 `TextFieldLink` 整行 + 发送按钮整行，改成同一行：左侧「问教练…」输入，右侧 44pt 荧光绿「发送」胶囊
+  - 取消 `TextFieldLink` 提交后自动发送：提交后先显示「你问」卡片，点发送才真正发给教练
+  - 发送按钮在问题为空或加载中禁用；有内容后变荧光绿
+  - `WatchCompactPrimaryButtonStyle` 增加 `height` 参数，发送按钮 44pt 与输入框对齐
+- 验证：
+  - Xcode 27.2 构建 **BUILD SUCCEEDED**
+  - 40mm / 49mm 截图：输入与发送并排；40mm 底部说明换行但控件完整
+  - 未验证：真实听写/手写、TTS、耳机、网络发送；40mm 提交后「你问」卡片和回答卡布局
+- Windows 需要做：
+  - 保留单行输入 + 发送；不要恢复自动发送和整行发送按钮
+  - 真机验证听写/手写提交后「你问」卡片、发送按钮启用态
+  - 检查 41/45mm 下输入行和底部说明
+- 不要恢复：
+  - 不要把 `TextFieldLink` 和发送按钮拆成上下两行
+  - 不要恢复提交即发送
+
+### 2026-11-07 · Windows / OpenCode（教练同源只读 + 生产部署）
+
+- 分支：`feature/watch-standalone-workout`
+- 代码提交：`ca7f24d`（本条文档提交见 `git log -1`）
+- CI：`Backend Tests` **success** @ `ca7f24d`；`iOS Build` **success** @ `8d560e7`
+- 本地验证：后端 **210 passed**，Ruff 通过
+- 教练统一：
+  - 新增 `backend/app/services/coach_core.py`：共享教练人格、语气、安全红线、手机确认标记、Watch 只读指令
+  - iPhone Agent 的 `SYSTEM_PROMPT` 改为「共享 core + Agent 工具指令」；Watch voice 使用「共享 core + Watch 只读指令」
+  - `/coach/voice` 内部改走 `watch_voice_reply`，复用同一份 `build_coach_context`，但无工具、无历史、无 ChatMessage/长期记忆/AgentRun
+  - Watch voice 使用低 reasoning、`max_tokens=600`、1–3 句短答；计划类问题仍回 iPhone
+- 生产部署（2026-11-07 20:50 UTC+8）：
+  - 数据库备份：`/opt/fitai/backups/fitai-pre-v23-20261107-205027.sql.gz`（23K，gzip 校验通过）
+  - 后端备份：`/opt/fitai/backups/backend-pre-v23-20261107-205027.tar.gz`（553K）
+  - Flyway：V23 `watch training` 成功，schema version **23**
+  - 后端包：`backend-20261107-205027.tar.gz`，`docker compose build api && up -d api`，健康检查 ready
+  - 管理 jar 已替换为含 V23 的版本，旧包保留为 `admin/fitai-admin-server-pre-v23.jar`
+  - `test_reviewer` 已授 Pro 90 天：`2026-11-07 12:51:59` → `2027-02-05 12:51:59`，source `admin`
+- 生产烟测：
+  - 未登录 `/coach/voice`、`/watch/bootstrap`、`/watch/session` 均返回 **401**
+  - `test_reviewer` `/me/access`：`is_pro=true`、`watch_training.can_train=true`
+  - 改计划语音：200，`requires_phone_confirmation=true`
+  - 正常语音：200，87 字，DeepSeek `deepseek-flash`，AIJob `coach_watch_voice` **ok**，延迟 1770ms
+  - Watch voice 前后：`chat_sessions=0`、`chat_messages=0`、`agent_runs=0`、`ai_memories=0`
+  - `/watch/session` 签发/撤销均 200
+  - iPhone `/agent/chat` 烟测：200、`completed`、回答 78 字、无意外 action
+- Mac 需要做：
+  - 继续保留 40/42/49mm 响应式阈值和单主按钮流程
+  - 真机装 iPhone + Watch，验证系统听写/TTS/耳机、WatchConnectivity 预载、HealthKit、logout/login、视频回退
+  - Release Archive + Watch App ID/HealthKit capability + TestFlight 上传
+  - 3D 素材到位后验证 loop/poster/流量电量
+- 回滚：
+  - DB：用上述 `.sql.gz` 恢复
+  - 后端：解压 `backend-pre-v23-...tar.gz` 回 `/opt/fitai`，重新 build/up api
+  - 注意：回滚 API 代码不要回滚 V23 schema（列/表保留是安全的）
+- 不要恢复：
+  - 不要拆回 iPhone Agent 和 Watch 两套独立教练 prompt
+  - 不要让 Watch voice 调工具、写聊天记录或长期记忆
+  - 不要删除 `coach_core.py` 或响应式布局
+
+### 2026-11-07 · macOS（40/42/49mm 小表盘适配）
+
+- 分支：`feature/watch-standalone-workout`
+- 代码提交：`1eb3fdd`（本条目为后续 docs 提交）
+- 做了什么：
+  - 拉取 Windows `588af76` / `6373a9e`，保留其页码点、休息期暂停/撤销、暂停隐藏主操作、最后一组「查看总结」等改动
+  - 在 40mm（SE 3）、42mm（Series 12）、49mm（Ultra 4）模拟器实测训练页
+  - 发现 42mm 主按钮横向被挤出屏幕、40mm 三个操作底部被截断
+  - 训练页控制区改为响应式：
+    - 宽度 ≥ 195：完整文字（完成一组 / 下一个动作）+ 40pt 图标
+    - 宽度 168–195：短文案（完成 / 下一个 / 总结）+ 34pt 图标
+    - 宽度 < 168：图标按钮（荧光绿圆形主按钮 + 暂停 + 撤销）
+    - 高度 < 210：隐藏进度条、缩小卡片内边距、按钮高度 42→38、底部留白收紧
+  - `WatchPrimaryButtonStyle` / `WatchRoundPrimaryButtonStyle` 增加 `height` 参数；`WatchIconButtonStyle` 增加 `size` 参数
+- 验证：
+  - `xcodegen generate`；`FitAIWorkoutCore` **13/13**；Xcode 27.2 构建 **BUILD SUCCEEDED**
+  - 40/42/49 训练页截图：三个操作都在首屏；40mm 使用图标按钮，42mm 使用「完成」短文案，49mm 保持「完成一组」
+  - 未验证：40/42 休息态的暂停/继续/撤销 +「查看总结」、锁定页 CTA、语音页底部说明、动作页页码点、真机
+- Windows 需要做：
+  - 保留响应式阈值，不要按 49mm 写死尺寸
+  - 继续检查 41/45 的休息态、锁定页、语音页；40mm 图标按钮是有意降级
+  - 如果产品要求 40mm 也显示文字，需要单独的 40mm 布局，不要直接拉大按钮
+- 不要恢复：
+  - 不要删除响应式分支和按钮尺寸参数
+  - 不要恢复 Root 全局页码点或「完成一组 + 下一个动作」双按钮
+  - 不要把休息期暂停/撤销移除
+
+### 2026-11-07 · Windows / OpenCode（Watch 全链路自检 + 并发/账号/媒体加固）
+
+- 分支：`feature/watch-standalone-workout`
+- 代码提交：`588af76`（本条文档提交见 `git log -1`）
+- CI：`iOS Build` **success** @ `588af76`；`Backend Tests` **success** @ `a79f3db`（后端未再改）
+- 本地验证：后端 **209 passed**，Ruff 通过；Swift 语法树 96 文件 0 error
+- 做了什么（保留 macOS UI 重设计）：
+  - 账号切换：同一天换账号会强制重建 Watch 引擎，不再把旧账号动作/组数带到新账号；媒体按新计划清理
+  - Bootstrap 防乱序：任何比当前更旧的 bootstrap 都忽略；跨天旧 payload 不再覆盖新计划
+  - 预载 ≠ 已开始：手机不再把「手表只预载未开始」误判为 Watch 主导；只有用户第一次动作后才进入 watch-led
+  - 进行中训练保护：手机改计划/换日时，Watch 保留已开始会话的旧动作与媒体，结束后再加载新计划；重启 App 也不删当前训练媒体
+  - 恢复与对账：手机启动/重连会请求 Watch 当前状态；手机持久化 watch-led 暂停状态；空状态不会污染 outbox
+  - 退出登录竞态：logout 带时间戳；早于 logout 的延迟 bootstrap 不能重新解锁；晚到的旧 logout 不能覆盖新登录
+  - 媒体：视频解码失败/损坏回退海报；媒体/训练文件标记不备份；替换版本时删除旧文件
+  - 服务端：watch session 每账号最多 3 个活跃会话、12 次/分钟限流；voice 空消息校验；`_speech_text` 空文本兜底
+  - 其他：Paywall 增加 Apple Watch 权益；Watch voice 回答自动滚到结果；`canTrainNow` 允许 Pro 过期后查看已完成总结
+- 未验证 / 仍需真机：
+  - Mac 侧 41mm/45mm 布局、动作页页码点、休息中暂停/撤销、视频失败海报回退
+  - 真实 WatchConnectivity 状态对账、logout/login 快速切换
+  - 真实媒体循环/TTS/耳机路由、HealthKit 授权与单写者、真机签名
+- 仍 BLOCKED：3D 素材、V23 生产迁移与 `/watch/*` 部署、App Store 协议/IAP/API Key、TestFlight 外部审核、`test_reviewer` Pro 授权、真实 Watch 签名/HealthKit capability
+
+### 2026-11-07 · Windows / OpenCode（Review macOS Watch UI + 交互回归修复）
+
+- 分支：`feature/watch-standalone-workout`
+- 代码提交：`a073ce6`（本条文档提交见 `git log -1`）
+- CI：GitHub Actions `iOS Build` **success** @ `a073ce6`（含 iOS、Watch、共享 framework）
+- 做了什么：
+  - 完整 review 并保留 macOS `2d5dea0` 的 `WatchTheme`、暗色品牌配色、单主按钮流程、语音页/锁定页重设计
+  - 页码点从 Root 全局 overlay 移入各页：训练页 header + 动作页顶部；修复动作页看不到页码点
+  - 训练页 rest 期间仍保留暂停/撤销；暂停时隐藏主操作，避免仅剩“下一个动作”而没有“继续”
+  - 休息卡按钮在暂停时禁用，避免绕过暂停；最后一组休息卡文案改为“查看总结”
+  - 动作页动作名下移，避免 41mm 长动作名与页码点相撞
+- 已验证：
+  - iOS CI 编译通过；Swift 语法检查 96 文件 0 error
+  - 未做模拟器截图（Windows 无 Xcode）；41mm/45mm 实际布局仍要 Mac 看
+- Mac 需要做：
+  - `git pull` → `cd ios && xcodegen generate`
+  - 复核 41mm/45mm：训练页三按钮、页码点、锁定页底部 CTA、语音页底部说明
+  - 复核休息中暂停/继续/撤销；最后休息卡“查看总结”
+  - 继续保持单主按钮流程，不要恢复“完成一组 + 下一个动作”双按钮
+- 不要恢复：
+  - 不要删除 `WatchTheme.swift` 或 Watch AccentColor 品牌色
+  - 不要把页码点改回 Root 全局 overlay
+  - 不要把暂停/撤销从休息状态移除
+  - 不要把语音页重复关闭按钮/半透明背景加回
+  - 不要把锁定页 CTA 放回滚动区域
+
+### 2026-11-07 · macOS（Watch UI 重设计 + 动作完成流程）
+
+- 分支：`feature/watch-standalone-workout`
+- 代码提交：`2d5dea0`（本条目为后续 docs 提交）
+- 做了什么：
+  - 新增 `WatchTheme`：沿用 iPhone 四色体系的暗色版（近黑画布、荧光绿主色、暖白文字、石墨卡片）；Watch `AccentColor` 从原来的橙棕改为品牌荧光绿
+  - 训练页重排：紧凑动作卡 + 左侧荧光绿竖条 + 3pt 进度条 + 页码点 + 荧光绿语音按钮；完成一组、暂停、撤销全部进入首屏
+  - 动作完成流程：主按钮从「完成一组」切换为「下一个动作」/「查看总结」，与 iPhone `WorkoutSessionActionBar` 一致；最后一组休息期间休息卡只保留一个「下一个动作」，点击 = 跳过休息 + 进入下一动作；正常组间休息仍是「跳过」
+  - 动作页：去掉重复动作名，荧光绿动作图标占位，增加「等待 iPhone 预载」，右滑提示改为胶囊
+  - 语音页：去掉重复关闭/标题，只保留系统 X + 荧光绿导航标题；不透明黑背景，不再透出训练页绿色按钮；显示当前训练上下文；发送按钮品牌化且禁用态清晰；底部说明改一行
+  - Pro 锁定页：品牌行 + PRO 胶囊，按 `signedOut` / `proRequired` 区分文案；刷新按钮固定底部；移除未上线的「3D 动作动画」宣传
+- 验证：
+  - Xcode 27.2 + iPhone 17 模拟器构建：**BUILD SUCCEEDED**
+  - Watch App 在 Apple Watch Ultra 4 模拟器安装并运行
+  - `FitAIWorkoutCore`：**13/13** 通过（UI 改动前）
+  - 截图确认：训练页、完成 3/3 组后的休息页、动作占位页、语音页、Pro 锁定页
+  - 未验证：真实视频/媒体、真实 Pro/登录、真实左右滑手势注入、41mm/45mm 小表盘、语音网络/TTS、真机签名
+- Windows 需要做：
+  - Review 并保留 `WatchTheme` 和单主按钮流程；不要恢复「完成一组 + 下一个动作」两个同时出现的按钮
+  - 如果产品希望休息倒计时结束自动进入下一动作，可在 `WatchTrainingView` 增加 rest 结束自动 `advanceExercise`；当前为与 iPhone 一致，需要用户点一下
+  - 检查 41mm/45mm：训练页首屏三按钮、锁定页 CTA、语音页底部说明是否仍完整
+  - 动作页顶部页码点在当前实现里没有显示（训练页正常）；可把页码点移到各页内部或统一放到安全区
+  - 真实素材到位后验证 AVKit loop、占位回退、语音 TTS
+- 不要恢复：
+  - 不要删除 `WatchTheme.swift` / Watch AccentColor 品牌绿
+  - 不要把训练页主按钮拆回两个
+  - 不要把语音页重复关闭按钮/半透明背景加回来
+  - 不要把锁定页 CTA 放回可滚动区域导致截断
+
+### 2026-11-07 · Windows / OpenCode（手表独立语音、媒体、离线同步、手机指令、HealthKit）
+
+- 分支：`feature/watch-standalone-workout`
+- 代码提交：`919288b`（本条文档提交见 `git log -1`）
+- CI：GitHub Actions `iOS Build` **success** @ `919288b`；`Backend Tests` **success** @ `919288b`
+- 本地验证：后端 `pytest` **208 passed**，Ruff app/tests 通过；`FitAIWorkoutCore` **13/13** 通过；Swift 语法树检查 95 个文件 0 error
+- 做了什么：
+  - 后端新增 `POST /watch/session`（手表独立 refresh token，避免轮换顶掉手机）、`DELETE /watch/session`（手机退出时撤销全部手表会话）、`POST /coach/voice`（Pro 只读语音回答，不写 ChatMessage、不触发长期记忆，改计划类问题要求回 iPhone 确认）
+  - Watch 新增 Keychain 凭据、`WatchAPIClient`（直连 `/coach/voice`、`/me/access`、`/auth/refresh`）、`WatchVoiceView`（`TextFieldLink` 系统听写/手写、文字必显、静音默认、点按朗读、耳机自动朗读、安全提示、iPhone 确认提示）
+  - Watch 媒体：手机从 `/watch/bootstrap` 拉当天动作和媒体清单，下载 watch 视频/海报后通过 `WCSession.transferFile` 预载；手表 `WatchMediaStore` 落 Application Support，动作页本地播放、按 loop_start/end 循环、无暂停控件；缺视频显示海报/文字
+  - 离线：watch 持久化 outbox（每会话只保留最新快照，最多 20 条），手机按 revision 去重并持久化 inbox，收取后 ack；手机 App 启动/回前台/后台唤醒时回灌为本地训练记录，复用现有 `syncPendingWorkouts` 补传服务端
+  - 手机→手表：watch 主导时手机完成组/撤销/跳动作/跳过休息/暂停/结束都发 `WorkoutCommand`；手表不可达时手机只读并在训练页内提示，不制造第二份训练
+  - 开始时机：预载不再开始计时/HealthKit，第一次用户动作才写 `startedAt` 并启动 `HKWorkoutSession`；Watch 只保活，iPhone 仍是 HealthKit 唯一写入方
+  - 训练来源：`WorkoutSession.source` 写入 `watch`/`phone` 并随 `/workouts` 上传，数据库 V23 `source` 列可追溯；Watch voice 先过安全护栏再做只读/改计划分流
+  - Pro：3 天宽限用服务端验证时间；手机离线且无已验证券时不再用“免费”覆盖手表缓存；Pro 中途到期/退款但有已开始会话仍可练完；手机退出后手表强制锁定
+  - 恢复 Watch `AppIcon`；增加 Watch `PrivacyInfo.xcprivacy`（UserDefaults required-reason + Health/Fitness/UserID/DeviceID/OtherUserContent）；只有已配对且已安装 Watch App 才自动预载，Watch App 安装/变为可用时重新预载；手表日 ID 统一小写，后端也做兼容
+- 已验证：
+  - iOS CI 编译通过（含 FitAIWatch、FitAIWorkoutCore、iOS App）
+  - 后端单测、Ruff、共享核心单测通过
+  - Swift 语法检查通过
+- 未验证（必须 Mac/真机）：
+  - 真实 WatchConnectivity 预载/文件传输/ack/手机指令
+  - 真实 Apple Watch 上 `TextFieldLink` 听写/手写、TTS、耳机路由、手表直连网络
+  - HealthKit 授权、`HKWorkoutSession` 保活、手表锁屏/后台、iPhone 单写者是否产生重复训练
+  - 真实视频循环（目前无 `sample_loop.mp4`/3D 素材）、海报回退、流量/电量
+  - Watch AppIcon 在真机/TestFlight 显示
+  - 真机签名、Watch App ID、HealthKit capability
+- Mac 需要做：
+  - `git pull` → `cd ios && xcodegen generate`
+  - Release/Debug 真机安装 iPhone + Watch App；确认 iPhone 训练页打开后 Watch 收到真实动作和媒体
+  - 免费账号：Watch 锁定；Pro 账号：解锁。退出登录后 Watch 强制锁定
+  - 手表断网/离开手机：完成组、休息、暂停、结束，再连回手机，确认手机生成同一 `sessionID` 的训练记录，重启手机 App 不重复
+  - 手机与手表同时在线：手机完成组/撤销/跳动作/结束，确认由手表执行并回传；手机断连时显示只读提示
+  - 手表语音：听写/手写各问一次；默认不自动朗读；点“朗读”出声；连耳机后“耳机自动”模式自动读；说“帮我把下周改成四练”应返回“需要 iPhone 确认”；确认 iPhone 聊天记录和长期记忆没有新增
+  - 修改设备时间/服务端验证时间验证 3 天宽限；Pro 中途到期仍能结束当前会话
+  - HealthKit：首次动作才出现授权/训练会话；结束只在 iPhone 健康里出现一条训练，Watch 不单独保存
+  - 有素材后验证 loop_start/loop_end、左右滑、动作页无暂停控件、训练页暂停
+  - 检查 Watch AppIcon、Watch App ID、HealthKit capability 与 TestFlight 签名
+- 上线前外部阻塞：
+  - 3D 动作素材/VitalAnimations 采购与转码（`watch_url`/`poster_url`/loop 元数据）仍未提供
+  - V23 迁移与 `/watch/*`、`/coach/voice` 尚未部署生产
+  - App Store Connect 协议/IAP、Server API Key、外部 Beta 审核
+  - `test_reviewer` 仍需生产 Pro 授权
+- 不要恢复：
+  - 不要 `import WatchKit`；watchOS 视频用 AVKit `VideoPlayer`
+  - 不要回退 `SDKROOT`/`SUPPORTED_PLATFORMS`/`@rpath`/rpath/Watch DEBUG 条件
+  - 不要把共享 framework 换成本地 package 链接
+  - 不要让 watch 本地解锁 Pro，不要让 watch voice 写聊天/长期记忆
+  - 不要在 watch 主导时让手机本地追加组数；手机离线必须只读
+  - 不要把 auth token 写进 `watch-workout.json`（只放 Keychain）
+  - 不要用手机本地未验证的自由权益覆盖手表缓存
+
+### 2026-11-07 · Windows / OpenCode（手表真实计划预载 + snapshot 回传）
+
+- 分支：`feature/watch-standalone-workout`
+- 提交：`db8e09e`
+- CI：GitHub Actions `iOS Build` **success**（含 framework/watch/app）
+- 做了什么：
+  - `FitAIWorkoutCore` 增加 `WatchBootstrap` / `WatchAccess` / `WatchMediaAsset` / `WatchSessionEnvelope`
+  - iOS 新增 `WatchSyncManager`，在训练开始页把当天计划、Pro 权益、媒体清单发到手表
+  - watch 新增 `WatchWorkoutStore`，本地持久化 bootstrap 和 snapshot，所有操作走共享引擎
+  - watch 新增 `WatchSyncManager`，接收 bootstrap、回传 `WatchSessionEnvelope`
+  - 训练页/动作页改为读取 `WatchWorkoutStore`，不再直接读 mock engine
+  - 3 天离线宽限逻辑进入 `WatchAccess.canTrain`
+- 验证：
+  - iOS CI 构建通过
+  - 未真机验证 WatchConnectivity、真实计划发送、snapshot 回传
+  - iPhone 收到 snapshot 后还未合并到当前训练 UI/服务端
+- Mac 需要做：
+  - 真机或 Simulator 验证 iPhone 打开训练页后手表收到真实动作
+  - 手表完成一组后检查 iPhone 是否收到 `WatchSessionEnvelope`（目前只存内存）
+  - 继续验证左右滑、AVKit 占位、Pro 锁定
+- 不要恢复：
+  - 不要让 watch 直接读 iPhone 的 SwiftUI 状态
+  - 不要绕过 `WorkoutSessionEngine`
+  - 不要把 bootstrap 当成永久授权；手表必须检查 `pro_expires_at` 和 3 天宽限
+
+### 2026-11-07 · macOS（watch 独立分支构建与模拟器验证）
+
+- 分支：`feature/watch-standalone-workout`
+- 提交：`94f8afa`（本条目为后续 docs 提交）
+- 工作区：独立 worktree `/Users/jacobwu/Documents/gym-app-watch`；未切换、未合并 `develop`，主 `develop` 工作区保持原样
+- 做了什么：
+  - 拉取 `4508de2`，`cd ios && xcodegen generate`
+  - `swift test --package-path FitAIWorkoutCore`：**10/10 通过**
+  - Xcode 27.2 构建 FitAI scheme（iPhone 17 模拟器，Debug），watch target 作为依赖一起构建
+  - 在 Apple Watch Ultra 4 模拟器安装并运行 watch App
+  - 截图确认：训练页（哑铃卧推、1/3 组、8–10 次、60kg、下一个平板支撑、完成一组）、Pro 锁定页、动作占位页（动作演示 / 等待动作素材 / 右滑回到训练）
+- 发现并修复：
+  - **Watch Debug 缺少 `SWIFT_ACTIVE_COMPILATION_CONDITIONS=DEBUG`**：`#if DEBUG` 不成立，`isPro` 走 `false`，所以 Debug 一打开就是 Pro 锁定页。已在 `project.yml` 的 Watch Debug 配置补上；临时把 `isPro` 改 `false` 看锁定页、把默认页改 `.action` 看占位页，截图后均已还原。
+  - **Xcode 27.2 + XcodeGen 2.46 下多平台 framework 生成异常**：
+    - `FitAIWorkoutCore` 生成后 `SDKROOT=auto`、`SUPPORTED_PLATFORMS=""`、没有 Info.plist
+    - App 生成后没有 `SDKROOT`，Xcode 只把 FitAI 识别成 macOS 目标，报 “no destination matching”
+    - framework 安装名是 `/Library/Frameworks/...`，App 也没有 `@executable_path/Frameworks` rpath，运行时 `dyld: Library not loaded`
+  - 已在 `project.yml` 修复（提交 `94f8afa`）：
+    - 项目级 `SDKROOT: iphoneos`
+    - FitAI：`SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"` + `LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks"`
+    - FitAIWatch：`LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks"`
+    - FitAIWorkoutCore：`SUPPORTED_PLATFORMS: "iphoneos iphonesimulator watchos watchsimulator"`、`GENERATE_INFOPLIST_FILE: YES`、`DYLIB_INSTALL_NAME_BASE: "@rpath"`
+    - FitAIWatch Debug：`SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG`
+- 验证结果：
+  - FitAI scheme build：**BUILD SUCCEEDED**
+  - watch App 已嵌入：`FitAI.app/Watch/FitAIWatch.app`
+  - Debug watch bundle：`com.wjk.fitai.dev.watchkitapp`，companion `com.wjk.fitai.dev`
+  - `FitAIWorkoutCore` 测试覆盖完成组、暂停/恢复、撤销、跳过休息、幂等命令
+  - 没有启动本地后端，watch 壳不依赖登录/Pro
+- 没验证 / 不要用这个壳判断：
+  - 左右滑的真实手势：没有触摸注入，代码和页面已确认，需人工在 Device Hub 拖动验证
+  - AVKit 真实播放：`ios/FitAIWatch/sample_loop.mp4` 不存在，当前只显示占位；素材到位后再验
+  - 真实计划同步、真实 Pro 权益、离线队列、HealthKit、语音教练、3D 动画
+  - 真机签名、Watch App ID、HealthKit capability、配对设备
+- Windows 需要做：
+  - 确认 `94f8afa` 的 Xcode 27 兼容配置是否保留/上游；Xcode 16 CI 可能不需要，但不要回退
+  - 保留 Watch Debug 的 DEBUG 编译条件，否则所有 Debug 构建都会落到 Pro 锁定页
+  - 补 `sample_loop.mp4` 或 3D 素材后，重新 `xcodegen generate` 再验 AVKit
+  - 不要把这个分支合并到 `develop`，也不要让 watch 壳依赖后端登录/Pro
+- 不要恢复：
+  - 不要删除 `SDKROOT` / `SUPPORTED_PLATFORMS` / `DYLIB_INSTALL_NAME_BASE` / `LD_RUNPATH_SEARCH_PATHS` / `GENERATE_INFOPLIST_FILE` 这组 Xcode 27 修复
+  - 不要删除 Watch Debug 的 `SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG`
+  - 不要改 Debug/Release watch bundle ID
+  - 不要把 `FitAIWorkoutCore` 改回本地 package 依赖
+
+### 2026-11-07 · Windows / OpenCode（Watch 壳 + 后端契约 + CI 绿）
+
+- 分支：`feature/watch-standalone-workout`
+- 提交：`082ced8`（上一核心提交 `ca5095e`）
+- 已推送并 CI 通过：
+  - GitHub Actions `iOS Build` **success**：shared framework、watchOS target、App target、package tests 全部构建通过
+  - `swift test --package-path FitAIWorkoutCore` 通过
+  - 后端 `200 passed`（Watch bootstrap/media/Pro gate/每日额度）
+  - admin-server Maven verify 通过；admin-web typecheck 通过
+- 做了什么：
+  - 新增 watchOS target，嵌入 iOS App；Pro 锁定页、训练页、动作页、左右滑分页
+  - 训练页使用 `WorkoutSessionEngine`：完成组、暂停/恢复、撤销、跳过休息、下一个动作
+  - 动作页使用 AVKit `VideoPlayer` + 循环通知；watchOS 不支持 `WatchKit` 模块，已改 AVKit
+  - 新增 `WatchMovieView`，静音、关闭 hit testing
+  - 后端新增 `/watch/bootstrap`（Pro only），返回当天计划、access、media 和 server_time
+  - 新增 `exercise_media_assets` 模型和 `V23__watch_training.sql`（auth/workout 字段 + 媒体表）
+  - 媒体选择：按用户性别优先，unisex 次之，其他性别兜底；未发布媒体忽略
+  - 新增 `watch_training` 权益 key；iOS `ProFeature.watchTraining`、`canTrain` 解码
+  - 修复 `LoadProgression.estimateWeight` 缺参数标签的编译错误
+  - admin server 教练用量从周改为日，admin-web 显示“今日 AI 教练”
+- 验证：
+  - Windows 未真机；未在 Apple Watch 上验证
+  - 未验证：视频循环、左右滑、Pro 锁定、真实手表电量、HealthKit、语音
+  - watch AppIcon 暂未完成，当前关闭 `ASSETCATALOG_COMPILER_APPICON_NAME`；TestFlight 前必须补
+- Mac 需要做：
+  - `git pull` → `git switch feature/watch-standalone-workout` → `cd ios && xcodegen generate`
+  - 真机跑 watch target，确认嵌入、签名、info.plist、HealthKit entitlement
+  - 验证训练页按钮、左右滑、暂停、完成组
+  - 补 watch AppIcon（Icon Composer/Asset Catalog）
+  - 检查 `FitAIWorkoutCore` framework 的 watchOS deployment target 和嵌入
+- 不要恢复：
+  - 不要 `import WatchKit`（watchOS SDK 当前没有该模块）
+  - 不要把 `FitAIWorkoutCore` 改回本地 package 依赖；Xcode 构建使用 framework target
+  - 不要删除 `V23` 或 `exercise_media_assets`
+  - 不要关闭 `/watch/bootstrap` 的 Pro gate
+
+### 2026-11-07 · Windows / OpenCode（Watch 共享训练核心）
+
+- 分支：`feature/watch-standalone-workout`
+- 提交：`ca5095e`
+- 做了什么：
+  - 新增 `ios/FitAIWorkoutCore` Swift Package，iOS 17 / watchOS 10 共用
+  - 新增确定性 `WorkoutSessionEngine`：完成组、撤销、暂停/恢复、跳过休息、切换动作、结束
+  - 所有命令带 `operationID`；`(exerciseID, setIndex)` 幂等；不读系统时钟，时间由命令携带
+  - Codable/Hashable/Sendable snapshot，支持崩溃恢复和 WatchConnectivity 传输
+  - 新增 `WorkoutCoreAdapter`，把现有 `PlanDay` / `PlanExercise` / `SetLog` 映射到共享模型
+  - `AppConfig.watchWorkoutEnabled = false` 作为后续功能开关
+  - iOS CI 增加 `swift test --package-path FitAIWorkoutCore`
+- 验证：
+  - tree-sitter 语法检查 0 error
+  - 未在 Windows 编译 Swift；未跑 package 单测
+  - GitHub Actions `iOS Build` 会在推送分支时执行 package 单测和 simulator build
+- Mac 需要做：
+  - `git pull` → `git switch feature/watch-standalone-workout`
+  - `cd ios && xcodegen generate`
+  - `swift test --package-path FitAIWorkoutCore`
+  - `xcodebuild ... build`（已有 CI 也会跑）
+  - 确认 XcodeGen 本地 package 依赖正常、FitAITests 能 import `FitAIWorkoutCore`
+- 不要恢复：
+  - 不要把训练状态直接写回 View 的 `@State`
+  - 不要让命令依赖系统时间
+  - 不要用 `(slug, setIndex)` 替代 `(exerciseID, setIndex)` 做去重（自定义动作可能同 slug）
 
 ### 2026-11-06 · Windows / OpenCode（免费教练改为每天 3 条 + 提前订阅弹窗修复）
 
@@ -298,7 +868,7 @@
   - `ios/project.yml` 里的 `https://api.invalid/api/v1`
   - 不要把 `/opt/fitai/.env`、MySQL 密码、JWT、DeepSeek Key 提交到仓库
   - 不要对公网开放 3306 / 8000
-- 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传
+- 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、Watch 3D 动作素材、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
 
 ### 2026-11-05 · Windows / OpenCode（男性椭圆/梯形 16–20% 素材）
 

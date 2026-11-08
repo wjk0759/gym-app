@@ -50,6 +50,7 @@ def _owned_program_day_id(
     """
     if not program_day_id:
         return None
+    program_day_id = program_day_id.strip().lower()
     owned = db.execute(
         select(ProgramDay.id)
         .join(Program, Program.id == ProgramDay.program_id)
@@ -93,6 +94,7 @@ def create_workout(payload: WorkoutIn, user_id: CurrentUser, db: DBSession):
         user_id=user_id,
         client_id=payload.client_id,
         program_day_id=program_day_id,
+        source=payload.source,
         started_at=started_at,
         finished_at=finished_at,
         duration_min=duration,

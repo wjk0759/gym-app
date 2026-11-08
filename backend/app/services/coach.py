@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import time
-from pathlib import Path
 from typing import Literal
 
 from sqlalchemy import select
@@ -13,14 +12,13 @@ from ..config import settings
 from ..models import ChatMessage, Exercise, Profile, Program
 from . import llm
 from .coach_context import build_coach_context, context_as_text
+from .coach_core import (
+    coach_core_prompt,
+    requires_phone_confirmation,
+    watch_voice_system_prompt,
+)
 from .safety import assess_safety
 
-PROMPT_DIR = Path(__file__).resolve().parent.parent / "prompts"
-PROMPT_FILES = {
-    "trainer": PROMPT_DIR / "coach_system.md",
-    "rehab": PROMPT_DIR / "coach_rehab.md",
-    "nutrition": PROMPT_DIR / "coach_nutrition.md",
-}
 CoachSkill = Literal["trainer", "rehab", "nutrition"]
 
 def _input_strategy(message: str) -> str | None:
@@ -78,11 +76,10 @@ def _input_strategy(message: str) -> str | None:
     return None
 
 
-def _system_prompt(skill: CoachSkill = "trainer") -> str:
-    path = PROMPT_FILES.get(skill, PROMPT_FILES["trainer"])
-    if path.exists():
-        return path.read_text(encoding="utf-8")
-    return "你是严谨的健身教练，不做医疗诊断。回答简洁、可执行，涉及疼痛时建议就医。"
+def _system_prompt(_skill: CoachSkill = "trainer") -> str:
+    # The product now has one coach persona. The skill argument remains for
+    # old clients, but all text/voice paths share the same core prompt.
+    return coach_core_prompt()
 
 
 def _context(db: Session, profile: Profile, program: Program | None) -> str:
@@ -280,3 +277,112 @@ async def coach_reply(
 
     reply, citations = _mock_reply(message, profile, program, db, skill)
     return {"reply": reply, "safety_flag": None, "citations": citations}
+
+
+async def watch_voice_reply(
+    db: Session,
+    profile: Profile,
+    program: Program | None,
+    message: str,
+    context: str | None = None,
+    *,
+    safety_checked: bool = False,
+) -> dict:
+    """One-shot, read-only coach answer for Apple Watch.
+
+    This shares the coach core prompt and deterministic context with the iPhone
+    agent, but deliberately has no tools, history or persistence. Safety and
+    plan-change routing run before any model call unless the route already
+    performed them.
+    """
+    decision = assess_safety(profile, message)
+    if decision.reply:
+        return {
+            "reply": decision.reply,
+            "safety_flag": decision.flag,
+            "requires_phone_confirmation": requires_phone_confirmation(
+                message
+            ),
+            "citations": [],
+        }
+
+    if not safety_checked and requires_phone_confirmation(message):
+        return {
+            "reply": "这个需要到 iPhone 上确认。",
+            "safety_flag": None,
+            "requires_phone_confirmation": True,
+            "citations": [],
+        }
+
+    citations: list[dict] = []
+    if not settings.use_mock_llm:
+        messages = [
+            {"role": "system", "content": watch_voice_system_prompt()},
+            {"role": "system", "content": _context(db, profile, program)},
+        ]
+        if context:
+            messages.append(
+                {
+                    "role": "system",
+                    "content": "当前训练上下文（只读）：\n" + context,
+                }
+            )
+        if decision.caution:
+            messages.append(
+                {
+                    "role": "system",
+                    "content": "安全上下文（必须遵守）：" + decision.caution,
+                }
+            )
+        strategy = _input_strategy(message)
+        if strategy:
+            messages.append(
+                {"role": "system", "content": "本轮输入处理策略：" + strategy}
+            )
+        messages.append({"role": "user", "content": message})
+
+        started = time.perf_counter()
+        usage: dict[str, int] = {}
+        try:
+            db.commit()
+            reply = await llm.complete_text(
+                messages,
+                temperature=0.4,
+                usage=usage,
+                db=db,
+                user_id=getattr(profile, "user_id", None),
+                kind="coach_watch_voice",
+                max_tokens=600,
+                reasoning_effort="low",
+            )
+            return {
+                "reply": reply,
+                "safety_flag": None,
+                "requires_phone_confirmation": False,
+                "citations": [],
+            }
+        except llm.LLMError as exc:
+            llm.record_job(
+                db,
+                getattr(profile, "user_id", None),
+                kind="coach_watch_voice",
+                status="fallback",
+                model=settings.llm_model,
+                latency_ms=int((time.perf_counter() - started) * 1000),
+                error=str(exc),
+                usage=usage,
+            )
+
+    reply, citations = _mock_reply(
+        message,
+        profile,
+        program,
+        db,
+        "trainer",
+    )
+    return {
+        "reply": reply,
+        "safety_flag": None,
+        "requires_phone_confirmation": False,
+        "citations": citations,
+    }

@@ -89,5 +89,8 @@ enum AppConfig {
     /// 接入素材后改回 true；不要删除 EquipmentDetailView+Media.swift 里的播放器/占位代码。
     static let exerciseVideosEnabled = false
 
+    /// The watch target, Pro gate, preload and offline flows ship together.
+    static let watchWorkoutEnabled = true
+
     static let appVersion = "0.1.0"
 }

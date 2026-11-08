@@ -67,6 +67,7 @@ class AuthSession(Base):
     refresh_token_hash: Mapped[str] = mapped_column(String(128), unique=True, index=True)
     device_name: Mapped[str | None] = mapped_column(String(120))
     device_id: Mapped[str | None] = mapped_column(String(64))
+    client_type: Mapped[str] = mapped_column(String(20), default="ios")
     ip_address: Mapped[str | None] = mapped_column(String(64))
     user_agent: Mapped[str | None] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
@@ -233,6 +234,48 @@ class ExerciseVideo(Base):
     )
 
 
+class ExerciseMediaAsset(Base):
+    """Watch/phone derivatives of a 3D exercise animation.
+
+    The raw 1080p source is never stored in MySQL; only URLs and metadata are
+    persisted. One row represents one active derivative for an exercise/sex.
+    """
+
+    __tablename__ = "exercise_media_assets"
+    __table_args__ = (
+        UniqueConstraint(
+            "exercise_slug",
+            "sex",
+            "version",
+            name="uq_exercise_media_variant",
+        ),
+        Index("ix_exercise_media_slug_status", "exercise_slug", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    exercise_slug: Mapped[str] = mapped_column(
+        String(60), ForeignKey("exercises.slug", ondelete="CASCADE"), index=True
+    )
+    sex: Mapped[str] = mapped_column(String(10), default="unisex")
+    source: Mapped[str] = mapped_column(String(40))
+    phone_url: Mapped[str] = mapped_column(Text)
+    watch_url: Mapped[str] = mapped_column(Text)
+    poster_url: Mapped[str | None] = mapped_column(Text)
+    duration_seconds: Mapped[int | None] = mapped_column(Integer)
+    loop_start_ms: Mapped[int | None] = mapped_column(Integer)
+    loop_end_ms: Mapped[int | None] = mapped_column(Integer)
+    watch_sha256: Mapped[str | None] = mapped_column(String(64))
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    status: Mapped[str] = mapped_column(String(20), default="draft", index=True)
+    license_note: Mapped[str | None] = mapped_column(String(200))
+    license_expires_at: Mapped[date | None] = mapped_column(Date)
+    purchase_ref: Mapped[str | None] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
 class Program(Base):
     __tablename__ = "programs"
     __table_args__ = (
@@ -335,6 +378,9 @@ class WorkoutSession(Base):
     program_day_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("program_days.id", ondelete="SET NULL"), index=True
     )
+    source: Mapped[str] = mapped_column(String(20), default="phone")
+    healthkit_workout_id: Mapped[str | None] = mapped_column(String(64))
+    revision: Mapped[int] = mapped_column(Integer, default=1)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     duration_min: Mapped[int | None] = mapped_column(Integer)

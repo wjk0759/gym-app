@@ -280,7 +280,7 @@
                   </div>
                   <div class="detail-item"><span>到期时间</span><span>{{ display(access?.proExpiresAt) }}</span></div>
                   <div class="detail-item"><span>来源</span><span>{{ access?.sources?.join('、') || '—' }}</span></div>
-                  <div class="detail-item"><span>本周 AI 教练</span><span>{{ access ? `${access.coach.used}/${access.coach.weeklyLimit}` : '—' }}</span></div>
+                  <div class="detail-item"><span>今日 AI 教练</span><span>{{ access ? `${access.coach.used}/${access.coach.dailyLimit}` : '—' }}</span></div>
                 </div>
                 <div class="chip-row">
                   <el-button v-if="canManageAccess" type="primary" size="small" @click="openGrant">设置 Pro 时长</el-button>

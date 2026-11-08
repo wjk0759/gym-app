@@ -172,6 +172,8 @@ struct WorkoutSession: Codable, Identifiable, Hashable {
     /// 这次训练实际计划的组数；用于区分“练了一半”和“完成整个训练日”。
     /// 旧记录为空时回退到计划动作的组数。
     var plannedSets: Int? = nil
+    /// 训练入口：phone / watch。旧记录为空时按 phone 处理。
+    var source: String? = nil
     /// 已同步到服务端的远端记录 ID；旧本地记录为空。
     var remoteID: String? = nil
     var syncedAt: Date? = nil
@@ -266,9 +268,23 @@ struct EquipmentCandidate: Identifiable, Hashable {
     let confidence: Double
 }
 
+struct EquipmentMatchOption: Identifiable, Equatable {
+    let slug: String
+    let name: String
+    let confidence: Double
+    let candidates: [EquipmentCandidate]
+
+    var id: String { slug }
+}
+
 struct EquipmentScanResult {
     var candidates: [EquipmentCandidate]
     var description: String
     var name: String
     var notInLibrary: Bool
+    var warning: String? = nil
+    var status: String = "ok"
+    var equipmentName: String? = nil
+    var confidence: Double? = nil
+    var equipmentOptions: [EquipmentMatchOption] = []
 }

@@ -16,6 +16,7 @@ from ..services.diet import (
     list_diet_strategies,
 )
 from ..services.food_vision import analyze as analyze_food_photo
+from ..services.image_input import InvalidImageError, normalize_image_bytes
 from ..services.meal_plans import (
     get_day,
     list_week,
@@ -58,6 +59,13 @@ async def analyze_meal(
         raise HTTPException(status_code=400, detail="图片为空")
     if len(data) > MAX_IMAGE_BYTES:
         raise HTTPException(status_code=413, detail="图片不能超过 8MB")
+    try:
+        data = normalize_image_bytes(data)
+    except InvalidImageError as error:
+        raise HTTPException(
+            status_code=422,
+            detail="图片格式不支持或已损坏，请换一张图片",
+        ) from error
 
     feature_key = access.FEATURE_FOOD_PHOTO
     key = photo_cache.normalize_key(idempotency_key)

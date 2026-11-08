@@ -108,7 +108,7 @@
 - 服务端是唯一权限来源：`user_entitlements`、`feature_trials`、`feature_usage`；客户端只渲染 `/me/access` 快照。
 - Pro 是全局权益：一个 Pro 解锁全部付费功能，不做功能拆分订阅；锁定 UI 不等于服务端授权。
 - 一次性体验必须由服务端唯一键保证；成功后才消耗，失败不扣；老用户由迁移回填。
-- AI 教练周额度按自然周计算；安全/医疗回复不占额度；429 统一返回 `COACH_QUOTA_EXHAUSTED` 或 `RATE_LIMITED`。
+- AI 教练免费额度按北京时间自然日计算，每天 3 条且不累计；安全/医疗回复不占额度；429 统一返回 `COACH_QUOTA_EXHAUSTED` 或 `RATE_LIMITED`。
 - 付费墙统一组件：`ProPaywallSheet`、`ProUpsellCard`、`ProLockedOverlay`；页面不得各自维护 `showPaywall`。
 - 退款、撤销、过期后服务端立即失效；客户端缓存只用于展示，不得作为授权依据。
 - StoreKit 只接受服务端验签后的交易 JWS；客户端 StoreKit 布尔值不能直接当作授权。退款/撤销由 App Store Server Notifications 更新台账。

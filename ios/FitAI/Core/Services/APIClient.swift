@@ -100,6 +100,7 @@ struct APIClient {
             "started_at": APIDateCoding.iso8601WithFractionalSeconds.string(from: startedAt),
             "finished_at": APIDateCoding.iso8601WithFractionalSeconds.string(from: finishedAt),
             "feeling": min(5, max(1, session.feeling)),
+            "source": session.source ?? "phone",
             "sets": session.sets.map { log in
                 var value: [String: Any] = [
                     "slug": log.slug,

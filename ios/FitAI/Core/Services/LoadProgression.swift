@@ -97,7 +97,7 @@ enum LoadProgression {
         }
 
         guard let anchor else {
-            return estimateWeight(exercise, profile: profile)
+            return estimateWeight(exercise: exercise, profile: profile)
         }
         let multiplier = weekMultiplier(
             stage: stage,

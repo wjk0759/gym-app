@@ -64,6 +64,7 @@ struct RootView: View {
             isAuthenticated
         }
         .task {
+            WatchSyncManager.shared.activate()
             await auth.restoreIfNeeded()
             refreshSession()
         }
@@ -87,6 +88,51 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .fitaiSessionExpired)) { _ in
             auth.handleSessionExpired()
         }
+        .onReceive(
+            NotificationCenter.default.publisher(for: .fitaiWatchSessionPending)
+        ) { _ in
+            ingestPendingWatchSessions()
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: .fitaiWatchBootstrapRequested
+            )
+        ) { notification in
+            guard auth.isAuthenticated else { return }
+            let force = notification.userInfo?["force"] as? Bool ?? false
+            if let dayID = notification.object as? UUID,
+               let day = store.plan?.days.first(where: { $0.id == dayID }) {
+                Task {
+                    await WatchSyncManager.shared.prepareAndSendBootstrap(
+                        day: day,
+                        access: store.accessSnapshot,
+                        verifiedAt: store.access.verifiedAt,
+                        force: force
+                    )
+                }
+            } else {
+                preloadTodayForWatch(force: force)
+            }
+        }
+        .onChange(of: store.access.isPro) { _, _ in
+            preloadTodayForWatch(force: true)
+        }
+        .onChange(of: store.plan?.id) { _, _ in
+            ingestPendingWatchSessions()
+            preloadTodayForWatch()
+        }
+        .onChange(of: store.plan?.version) { _, _ in
+            // Plan adjustments (sets, weights, exercise swaps) bump version;
+            // the watch must not keep training on the previous prescription.
+            preloadTodayForWatch(force: true)
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: .fitaiWatchBecameAvailable
+            )
+        ) { _ in
+            preloadTodayForWatch(force: true)
+        }
         .onChange(of: auth.isAuthenticated) { _, _ in
             refreshSession()
         }
@@ -108,6 +154,8 @@ struct RootView: View {
                     store.syncRemoteWorkouts()
                     store.refreshWeeklyReview()
                     store.syncPendingUserData()
+                    ingestPendingWatchSessions()
+                    preloadTodayForWatch()
                     activateWeatherIfNeeded()
                     Task { await store.refreshAccess() }
                     Task { await auth.touchSessionIfNeeded() }
@@ -194,7 +242,32 @@ struct RootView: View {
         store.syncRemoteWorkouts()
         store.refreshWeeklyReview()
         store.syncPendingUserData()
+        ingestPendingWatchSessions()
+        preloadTodayForWatch()
         activateWeatherIfNeeded()
+    }
+
+    private func preloadTodayForWatch(force: Bool = false) {
+        guard auth.isAuthenticated, let day = store.todayDay else { return }
+        Task {
+            await WatchSyncManager.shared.prepareAndSendBootstrap(
+                day: day,
+                access: store.accessSnapshot,
+                verifiedAt: store.access.verifiedAt,
+                force: force
+            )
+        }
+    }
+
+    private func ingestPendingWatchSessions() {
+        guard auth.isAuthenticated else { return }
+        for envelope in WatchSyncManager.shared.pendingEnvelopes() {
+            guard store.ingestWatchEnvelope(envelope) else { continue }
+            WatchSyncManager.shared.acknowledgeInbox(
+                sessionID: envelope.sessionID,
+                revision: envelope.snapshot.revision
+            )
+        }
     }
 
     private func activateWeatherIfNeeded() {

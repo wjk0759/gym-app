@@ -1,4 +1,5 @@
 import Combine
+import FitAIWorkoutCore
 import SwiftUI
 import UIKit
 
@@ -32,6 +33,7 @@ struct WorkoutSessionView: View {
     @State var showResumeBanner = false
     @State var showExitConfirm = false
     @State var showEmptySaveAlert = false
+    @State var watchNotice: String?
     @State var adjustedExercises: [UUID: PlanExercise] = [:]
     @State var showAdjustSheet = false
     @State var adjustExerciseID: UUID?
@@ -41,6 +43,7 @@ struct WorkoutSessionView: View {
     @State var adjustRest = 60
     @State var weightStep = 2.5
     @State var valueEditor: WorkoutValueEditor?
+    @State var mediaStore = ExerciseMediaStore()
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -84,7 +87,15 @@ struct WorkoutSessionView: View {
                         WorkoutRestCard(
                             remaining: restRemaining,
                             total: restTotal,
-                            onSkip: { self.restRemaining = nil }
+                            onSkip: {
+                                if isWatchLed {
+                                    let command = WorkoutCommand.skipRest(
+                                        .init(at: Date(), source: .phone)
+                                    )
+                                    guard sendToWatch(command) else { return }
+                                }
+                                self.restRemaining = nil
+                            }
                         )
                         .transition(.move(edge: .top).combined(with: .opacity))
                     }
@@ -131,6 +142,9 @@ struct WorkoutSessionView: View {
                 exerciseCount: activeDay.exercises.count,
                 periodMode: periodMode
             )
+            if let media = mediaStore.item(for: exercise.slug) {
+                ExerciseAnimationCard(exercise: exercise, media: media)
+            }
             WorkoutSetCard(
                 exercise: exercise,
                 done: completedSets(for: exercise),
@@ -145,6 +159,13 @@ struct WorkoutSessionView: View {
                 onEditReps: { valueEditor = .reps },
                 onUndoLast: {
                     guard !logs.isEmpty else { return }
+                    if isWatchLed {
+                        let command = WorkoutCommand.undoLastSet(
+                            .init(at: Date(), source: .phone)
+                        )
+                        _ = sendToWatch(command)
+                        return
+                    }
                     logs.removeLast()
                     restRemaining = nil
                 },
@@ -204,10 +225,23 @@ struct WorkoutSessionView: View {
             .onAppear {
                 UIApplication.shared.isIdleTimerDisabled = true
                 loadDraftIfNeeded()
+                prefetchExerciseMedia()
                 prepare(currentExercise)
                 activeStartedAt = Date()
+                WatchSyncManager.shared.activate()
+                WatchSyncManager.shared.activeWorkoutDayID = day.id
+                Task {
+                    await syncWatchBootstrap()
+                }
+                drainWatchInbox()
+            }
+            .onChange(of: index) { _, _ in
+                prefetchExerciseMedia()
             }
             .onDisappear {
+                if WatchSyncManager.shared.activeWorkoutDayID == day.id {
+                    WatchSyncManager.shared.activeWorkoutDayID = nil
+                }
                 saveDraftIfNeeded(persistImmediately: true)
                 store.flushPersistence()
                 UIApplication.shared.isIdleTimerDisabled = false
@@ -216,6 +250,8 @@ struct WorkoutSessionView: View {
                 if phase == .active {
                     elapsedSeconds = currentElapsed
                     activeStartedAt = Date()
+                    prefetchExerciseMedia()
+                    drainWatchInbox()
                 } else {
                     saveDraftIfNeeded(persistImmediately: true)
                     store.flushPersistence()
@@ -224,6 +260,29 @@ struct WorkoutSessionView: View {
             .onReceive(timer) { _ in
                 tickRest()
             }
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: .fitaiWatchSessionUpdated
+                )
+            ) { notification in
+                guard let envelope = notification.object as? WatchSessionEnvelope,
+                      envelope.snapshot.programDayID == day.id else {
+                    return
+                }
+                applyWatchSnapshot(envelope)
+                WatchSyncManager.shared.acknowledgeInbox(
+                    sessionID: envelope.sessionID,
+                    revision: envelope.snapshot.revision
+                )
+            }
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: .fitaiWatchCommandFailed
+                )
+            ) { _ in
+                watchNotice = "手表连接中断，请稍后重试"
+            }
+
             .confirmationDialog(
                 "暂停或结束训练？",
                 isPresented: $showExitConfirm,
@@ -234,6 +293,17 @@ struct WorkoutSessionView: View {
                 Button("继续训练", role: .cancel) {}
             } message: {
                 Text("暂停会保存已完成的 \(logs.count) 组，下次进来接着练；结束并保存会生成训练记录。")
+            }
+            .alert(
+                "手表训练",
+                isPresented: Binding(
+                    get: { watchNotice != nil },
+                    set: { if !$0 { watchNotice = nil } }
+                )
+            ) {
+                Button("知道了", role: .cancel) { watchNotice = nil }
+            } message: {
+                Text(watchNotice ?? "")
             }
             .alert("还没有训练记录", isPresented: $showEmptySaveAlert) {
                 Button("继续训练", role: .cancel) {}
@@ -263,6 +333,14 @@ struct WorkoutSessionView: View {
     var currentExercise: PlanExercise? {
         guard activeDay.exercises.indices.contains(index) else { return nil }
         return effectiveExercise(activeDay.exercises[index])
+    }
+
+    /// One batch request covers the whole day; switching exercises then reads
+    /// from the in-memory cache instead of hitting the network again.
+    func prefetchExerciseMedia() {
+        let slugs = activeDay.exercises.map(\.slug)
+        guard !slugs.isEmpty else { return }
+        Task { await mediaStore.prefetch(slugs: slugs) }
     }
 
     /// 恢复草稿时使用草稿里的动作列表，避免用户自定义过的训练顺序被计划原顺序覆盖。

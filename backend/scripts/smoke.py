@@ -313,8 +313,24 @@ def main() -> None:
         )
         assert response.status_code == 200, response.text
         scan = response.json()
-        assert scan["candidates"], scan
-        print("scan:", scan["candidates"][0]["name_zh"], scan["needs_confirmation"])
+        if scan.get("status") in {
+            "unavailable",
+            "not_gym_equipment",
+            "no_actions",
+        }:
+            # CI runs without a vision key and the smoke fixture is a blank
+            # PNG. Either way the API must be honest, never return the old
+            # random mock candidates.
+            assert scan["candidates"] == [], scan
+            assert (
+                scan.get("warning")
+                or scan.get("description")
+                or scan.get("equipment_name")
+            ), scan
+            print("scan:", scan.get("status"))
+        else:
+            assert scan["candidates"], scan
+            print("scan:", scan["candidates"][0]["name_zh"], scan["needs_confirmation"])
 
         response = client.post(
             "/api/v1/body/analyze",
@@ -323,8 +339,11 @@ def main() -> None:
         )
         assert response.status_code == 200, response.text
         body = response.json()
-        assert body["focus_areas"], body
-        print("body analysis:", body["summary"][:30], body["focus_areas"])
+        assert body.get("summary"), body
+        if body.get("focus_areas"):
+            print("body analysis:", body["summary"][:30], body["focus_areas"])
+        else:
+            print("body analysis: no visible body (blank smoke image)")
 
         now = datetime.now(timezone.utc)
         for client_id, days_ago, weight in (
@@ -370,14 +389,18 @@ def main() -> None:
         )
         assert response.status_code == 200, response.text
         meal = response.json()
-        assert meal["items"], meal
-        print(
-            "food analysis:",
-            len(meal["items"]),
-            "items",
-            meal["total_kcal"],
-            "kcal",
-        )
+        if meal.get("is_food") is False:
+            assert meal["items"] == [], meal
+            print("food analysis: no food (blank smoke image)")
+        else:
+            assert meal["items"], meal
+            print(
+                "food analysis:",
+                len(meal["items"]),
+                "items",
+                meal["total_kcal"],
+                "kcal",
+            )
 
         response = client.post(
             "/api/v1/plans/generate",

@@ -214,7 +214,7 @@ export interface UserTrialItem {
 }
 
 export interface UserCoachUsage {
-  weeklyLimit: number
+  dailyLimit: number
   used: number
   remaining: number
   periodStart: string

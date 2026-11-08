@@ -161,6 +161,7 @@ struct PaywallView: View {
             benefit("DeepSeek AI 计划生成与调整", icon: "wand.and.stars")
             benefit("一个 AI 私人健身教练，训练、饮食、恢复都能问", icon: "person.fill")
             benefit("周复盘、训练偏好记忆与动作替代", icon: "bubble.left.and.bubble.right")
+            benefit("Apple Watch 独立训练、动作动画与手表语音教练", icon: "applewatch")
             benefit("器械拍照识别与饮食记录", icon: "camera.viewfinder")
         }
         .frame(maxWidth: .infinity, alignment: .leading)

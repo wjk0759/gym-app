@@ -44,7 +44,7 @@ public final class UserAccessDtos {
     }
 
     public record CoachUsage(
-            int weeklyLimit,
+            int dailyLimit,
             int used,
             int remaining,
             String periodStart,
