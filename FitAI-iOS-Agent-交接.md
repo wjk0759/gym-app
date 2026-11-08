@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`386bb21`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `aa17a19`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`cece359`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `aa17a19`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 13/13 测试通过；完成 Watch UI 重设计（训练/动作/语音/锁定页）、单主按钮流程（`2d5dea0`）、40/42/49mm 响应式适配（`1eb3fdd`），并把语音输入与发送合并为一行（`9a833b1`）；此前修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
@@ -25,6 +25,36 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-08 · Windows / OpenCode（Watch 安装失败修复）
+
+- 提交：`cece359`
+- 现象：iPhone Watch App「可用 APP」里能看到「叫练」，点安装报：
+  `This app could not be installed at this time. Could not install at this time.`
+- 最可能原因：**Xcode 26+ 要求 Watch 伴生 App 放在父 App 的 `PlugIns/`**；XcodeGen 2.45.x 仍生成旧版 `Watch/` 目录，导致系统能识别图标但安装失败
+- 修复：
+  - `ios/project.yml` 增加 `options.postGenCommand: bash scripts/fix_watch_embed.sh`
+  - 新增 `ios/scripts/fix_watch_embed.sh`：生成项目后把
+    - `dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";` → `dstPath = "";`
+    - `dstSubfolderSpec = 16;` → `dstSubfolderSpec = 13;`
+    - 已可重复执行；若 XcodeGen 新版本已直接生成 `PlugIns/` 则 no-op
+- Mac 侧需要做：
+  1. `git pull`
+  2. `cd ios && xcodegen generate`
+  3. 确认 `FitAI.xcodeproj/project.pbxproj` 里有 `dstSubfolderSpec = 13;`，且没有 `CONTENTS_FOLDER_PATH)/Watch`
+  4. Xcode `Product > Clean Build Folder`，重新 Archive/安装 iPhone App
+  5. 打开 iPhone Watch App → 可用 APP → 叫练 → 安装
+  6. 如果发 TestFlight：必须重新上传包含该修复的 build，旧 build 不会自动修
+- 如果仍然失败，按顺序查：
+  - Xcode Debug 安装：Watch 需要 Developer Mode；用 USB 连 iPhone，Xcode → Window → Devices and Simulators → 选配对 Watch → Enable Developer Mode（或 Xcode 提示 Prepare for Development）
+  - TestFlight 安装：不需要 Developer Mode；确认 build 里 `FitAI.app/PlugIns/FitAIWatch.app` 存在
+  - Apple Developer 后台给 `com.wjk.fitai.watchkitapp`（以及 Debug 的 `com.wjk.fitai.dev.watchkitapp`）开启 **HealthKit** capability，重新生成 provisioning profile
+  - Watch 解锁、靠近 iPhone、在充电、存储充足；必要时重启/重新配对
+  - Mac Console.app 过滤 `installd` / Watch 相关日志，拿具体错误码
+- 禁止恢复：
+  - 不要把 Watch App 再嵌回 `Watch/`
+  - 不要为了让安装通过盲目把 `SKIP_INSTALL` 改成 NO；先确认 `PlugIns/FitAIWatch.app` 和签名
+- 未验证：Windows 无法跑 Xcode/真机安装；需 Mac agent 在 S6 watchOS 11.5 上验证
 
 ### 2026-11-08 · Windows / OpenCode（后台样式与生产数据修复）
 
