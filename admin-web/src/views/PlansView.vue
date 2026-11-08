@@ -43,7 +43,7 @@
           <template #default="{ row }"><StatusTag :status="row.status" /></template>
         </el-table-column>
         <el-table-column prop="version" label="版本" width="68" align="center" />
-        <el-table-column label="编排" width="116" align="center">
+        <el-table-column label="编排" width="132" align="center">
           <template #default="{ row }">{{ row.dayCount }} 天 / {{ row.exerciseCount }} 动作</template>
         </el-table-column>
         <el-table-column label="开始日期" width="110">

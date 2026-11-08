@@ -397,8 +397,8 @@ onBeforeUnmount(() => window.removeEventListener('resize', resize))
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #526178;
-  font-size: 10px;
+  color: #64748b;
+  font-size: 11px;
   white-space: nowrap;
 }
 

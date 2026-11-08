@@ -10,7 +10,7 @@
       </template>
     </PageHeader>
 
-    <section v-loading="summaryLoading" class="metric-grid">
+    <section v-loading="summaryLoading" class="metric-grid five">
       <MetricCard
         label="有效 Pro 用户"
         :value="formatNumber(summary?.activeProUsers)"
@@ -113,7 +113,11 @@
           </template>
         </el-table-column>
         <el-table-column label="状态" width="104">
-          <template #default="{ row }"><StatusTag :status="row.status" /></template>
+          <template #default="{ row }">
+            <el-tag :type="membershipStatusType(row.status)" effect="plain" size="small">
+              {{ membershipStatusLabel(row.status) }}
+            </el-tag>
+          </template>
         </el-table-column>
         <el-table-column label="原因 / 引用" min-width="180">
           <template #default="{ row }">
@@ -198,7 +202,6 @@ import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'elem
 import { Plus, Refresh, Search } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
-import StatusTag from '@/components/StatusTag.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import { membershipsApi } from '@/api/memberships'
 import { usersApi } from '@/api/users'
@@ -378,6 +381,21 @@ function sourceLabel(source: string): string {
   if (source === 'promo') return '活动 / 兑换码'
   if (source === 'trial') return '试用'
   return source
+}
+
+function membershipStatusLabel(status: string): string {
+  if (status === 'active') return '有效'
+  if (status === 'expiring') return '即将到期'
+  if (status === 'expired') return '已过期'
+  if (status === 'revoked') return '已撤销'
+  return status
+}
+
+function membershipStatusType(status: string): 'success' | 'warning' | 'danger' | 'info' {
+  if (status === 'active') return 'success'
+  if (status === 'expiring') return 'warning'
+  if (status === 'revoked') return 'danger'
+  return 'info'
 }
 
 function userOptionLabel(item: UserListItem): string {

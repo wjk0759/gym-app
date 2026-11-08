@@ -76,7 +76,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="96">
+        <el-table-column label="状态" width="112">
           <template #default="{ row }"><StatusTag :status="row.status" /></template>
         </el-table-column>
         <el-table-column label="识别数量" width="100" align="center">

@@ -44,7 +44,7 @@
         <el-table-column label="开始时间" width="158">
           <template #default="{ row }">{{ formatDateTime(row.startedAt) }}</template>
         </el-table-column>
-        <el-table-column label="时长" width="100">
+        <el-table-column label="时长" width="124">
           <template #default="{ row }">{{ formatDuration(row.durationMin) }}</template>
         </el-table-column>
         <el-table-column label="动作 / 组数" width="120" align="center">

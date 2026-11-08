@@ -149,10 +149,10 @@
                   <div class="detail-item"><span>体重</span><span>{{ displayWithUnit(detail.profile.weightKg, 'kg') }}</span></div>
                   <div class="detail-item"><span>体脂率</span><span>{{ displayWithUnit(detail.profile.bodyFatPct, '%') }}</span></div>
                   <div class="detail-item"><span>腰围</span><span>{{ displayWithUnit(detail.profile.waistCm, 'cm') }}</span></div>
-                  <div class="detail-item"><span>经验</span><span>{{ display(detail.profile.experience) }}</span></div>
+                  <div class="detail-item"><span>经验</span><span>{{ experienceLabel(detail.profile.experience) }}</span></div>
                   <div class="detail-item"><span>训练频率</span><span>{{ displayWithUnit(detail.profile.weeklyDays, '天/周') }}</span></div>
                   <div class="detail-item"><span>单次时长</span><span>{{ displayWithUnit(detail.profile.sessionMinutes, '分钟') }}</span></div>
-                  <div class="detail-item"><span>完成引导</span><span>{{ display(detail.profile.onboardedAt) }}</span></div>
+                  <div class="detail-item"><span>完成引导</span><span>{{ formatDateTime(asString(detail.profile.onboardedAt)) }}</span></div>
                 </div>
               </div>
               <div class="drawer-section">
@@ -169,7 +169,7 @@
               <div class="drawer-section">
                 <h4 class="section-title">可用器械</h4>
                 <div class="chip-row">
-                  <el-tag v-for="item in asArray(detail.profile.equipment)" :key="item" effect="plain">{{ item }}</el-tag>
+                  <el-tag v-for="item in asArray(detail.profile.equipment)" :key="item" effect="plain">{{ equipmentLabel(item) }}</el-tag>
                   <span v-if="!asArray(detail.profile.equipment).length" class="muted">未配置</span>
                 </div>
               </div>
@@ -183,6 +183,7 @@
                   :labels="bodyChart.labels"
                   :series="bodyChart.series"
                   height="220px"
+                  scale-y
                 />
                 <span v-else class="muted">暂无体重记录</span>
               </div>
@@ -920,6 +921,30 @@ function sexLabel(value: unknown): string {
   if (value === 'male') return '男'
   if (value === 'female') return '女'
   return display(value)
+}
+
+function experienceLabel(value: unknown): string {
+  if (value === 'beginner') return '新手'
+  if (value === 'intermediate') return '进阶'
+  if (value === 'advanced') return '高级'
+  return display(value)
+}
+
+function equipmentLabel(value: unknown): string {
+  const labels: Record<string, string> = {
+    bodyweight: '自重',
+    barbell: '杠铃',
+    dumbbell: '哑铃',
+    machine: '固定器械',
+    cable: '绳索',
+    kettlebell: '壶铃',
+    band: '弹力带',
+    smith: '史密斯',
+    bench: '训练凳',
+    cardio: '有氧器械',
+  }
+  const key = String(value)
+  return labels[key] ?? key
 }
 
 function onRowClick(row: UserListItem, _column: unknown, event: MouseEvent): void {

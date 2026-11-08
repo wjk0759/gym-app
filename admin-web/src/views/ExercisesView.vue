@@ -163,6 +163,7 @@ const muscleOptions = [
   { value: 'shoulders', label: '肩部' },
   { value: 'arms', label: '手臂' },
   { value: 'core', label: '核心' },
+  { value: 'cardio', label: '有氧' },
   { value: 'full_body', label: '全身' },
 ]
 

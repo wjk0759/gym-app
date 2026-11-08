@@ -12,7 +12,7 @@
       </template>
     </PageHeader>
 
-    <section v-loading="coverageLoading" class="metric-grid">
+    <section v-loading="coverageLoading" class="metric-grid three media-metrics">
       <MetricCard
         label="启用动作"
         :value="formatNumber(coverage?.activeExercises)"
@@ -51,64 +51,77 @@
       />
     </section>
 
-    <section class="panel coverage-panel">
+    <section class="panel table-panel coverage-panel">
       <div class="panel-heading">
         <div>
           <h3>覆盖缺口</h3>
-          <p>按启用动作统计；中性素材同时计入男版和女版。点击动作可快速筛选。</p>
+          <p>按启用动作统计；中性素材同时计入男版和女版。点击动作行可快速筛选下方媒体列表。</p>
         </div>
+        <span v-if="coverage" class="faint">
+          已覆盖 {{ coverage.exercisesWithAnyMedia }} / {{ coverage.activeExercises }}
+        </span>
       </div>
-      <el-tabs v-model="coverageTab">
-        <el-tab-pane :label="`女版缺口 · ${coverage?.missingFemaleCount ?? 0}`" name="female">
-          <div v-if="coverage?.missingFemale?.length" class="chip-row gap-row">
-            <el-tag
-              v-for="item in coverage.missingFemale"
-              :key="item.slug"
-              class="gap-tag"
-              effect="plain"
-              @click="filterBySlug(item.slug)"
-            >
-              {{ item.nameZh }}
-              <span class="faint">{{ item.muscleGroup }}</span>
-            </el-tag>
-          </div>
-          <span v-else class="muted">女版覆盖完整</span>
-        </el-tab-pane>
-        <el-tab-pane :label="`男版缺口 · ${coverage?.missingMaleCount ?? 0}`" name="male">
-          <div v-if="coverage?.missingMale?.length" class="chip-row gap-row">
-            <el-tag
-              v-for="item in coverage.missingMale"
-              :key="item.slug"
-              class="gap-tag"
-              effect="plain"
-              @click="filterBySlug(item.slug)"
-            >
-              {{ item.nameZh }}
-              <span class="faint">{{ item.muscleGroup }}</span>
-            </el-tag>
-          </div>
-          <span v-else class="muted">男版覆盖完整</span>
-        </el-tab-pane>
-        <el-tab-pane :label="`完全缺失 · ${coverage?.missingAnyCount ?? 0}`" name="any">
-          <div v-if="coverage?.missingAny?.length" class="chip-row gap-row">
-            <el-tag
-              v-for="item in coverage.missingAny"
-              :key="item.slug"
-              class="gap-tag"
-              type="warning"
-              effect="plain"
-              @click="filterBySlug(item.slug)"
-            >
-              {{ item.nameZh }}
-              <span class="faint">{{ item.muscleGroup }}</span>
-            </el-tag>
-          </div>
-          <span v-else class="muted">所有启用动作都有媒体</span>
-        </el-tab-pane>
-      </el-tabs>
+
+      <div class="coverage-switch">
+        <button
+          v-for="tab in gapTabs"
+          :key="tab.key"
+          type="button"
+          class="coverage-stat"
+          :class="{ active: coverageTab === tab.key }"
+          @click="coverageTab = tab.key"
+        >
+          <span>{{ tab.label }}</span>
+          <strong>{{ tab.count }}</strong>
+          <small>{{ tab.hint }}</small>
+        </button>
+      </div>
+
+      <div class="coverage-toolbar">
+        <el-input
+          v-model="gapQuery"
+          clearable
+          placeholder="搜索动作名称、slug 或部位"
+          :prefix-icon="Search"
+        />
+        <span class="faint">{{ filteredGapRows.length }} / {{ gapRows.length }} 条</span>
+        <el-button text :icon="DocumentCopy" @click="copyGapList">复制清单</el-button>
+      </div>
+
+      <el-table
+        :data="filteredGapRows"
+        size="small"
+        max-height="300"
+        @row-click="(row: MediaCoverageMissing) => filterBySlug(row.slug)"
+      >
+        <el-table-column label="动作" min-width="190">
+          <template #default="{ row }">
+            <div class="cell-stack">
+              <strong>{{ row.nameZh }}</strong>
+              <span class="mono faint">{{ row.slug }}</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="部位" width="100">
+          <template #default="{ row }">
+            <el-tag effect="plain" size="small">{{ muscleLabel(row.muscleGroup) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="" width="86" align="right">
+          <template #default>
+            <el-button link type="primary">筛选</el-button>
+          </template>
+        </el-table-column>
+        <template #empty>
+          <el-empty :description="gapEmptyText" :image-size="60" />
+        </template>
+      </el-table>
+      <p v-if="gapRows.length >= 100" class="faint coverage-note">
+        仅显示前 100 个动作，完整数量见上方统计。
+      </p>
     </section>
 
-    <section class="panel table-panel">
+    <section class="panel table-panel media-table-panel">
       <div class="filter-bar">
         <el-input
           v-model="filters.q"
@@ -139,14 +152,14 @@
         <el-button text @click="resetFilters">重置</el-button>
       </div>
 
-      <el-table v-loading="loading" :data="rows" row-key="id" @row-dblclick="openEdit">
-        <el-table-column label="封面" width="78">
+      <el-table v-loading="loading" :data="rows" row-key="id" class="media-table" @row-dblclick="openEdit">
+        <el-table-column label="封面" width="64">
           <template #default="{ row }">
             <el-image v-if="row.posterUrl" :src="row.posterUrl" fit="cover" class="poster" />
             <div v-else class="poster poster-placeholder">无</div>
           </template>
         </el-table-column>
-        <el-table-column label="动作" min-width="210">
+        <el-table-column label="动作" min-width="190">
           <template #default="{ row }">
             <div class="cell-stack">
               <strong>{{ row.exerciseName }}</strong>
@@ -154,12 +167,12 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="版本" width="88">
+        <el-table-column label="版本" width="80">
           <template #default="{ row }">
             <el-tag :type="sexTagType(row.sex)" effect="plain" size="small">{{ sexLabel(row.sex) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="媒体" min-width="220">
+        <el-table-column label="媒体" width="170">
           <template #default="{ row }">
             <div class="mini-tags">
               <el-tag :type="row.phoneUrl ? 'success' : 'info'" effect="plain" size="small">iPhone</el-tag>
@@ -168,7 +181,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="时长 / 循环" width="130">
+        <el-table-column label="时长 / 循环" width="112">
           <template #default="{ row }">
             <div class="cell-stack">
               <span>{{ durationLabel(row.durationSeconds) }}</span>
@@ -176,21 +189,66 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="授权" min-width="170">
+        <el-table-column label="授权" min-width="150">
           <template #default="{ row }">
             <div class="cell-stack">
-              <span>{{ row.licenseNote || '未填写' }}</span>
+              <span class="truncate">{{ row.licenseNote || '未填写' }}</span>
               <span :class="expiringSoon(row.licenseExpiresAt) ? 'text-warning' : 'faint'">
                 {{ row.licenseExpiresAt ? `到期 ${formatDate(row.licenseExpiresAt)}` : '无到期日' }}
               </span>
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="92">
+        <el-table-column label="状态" width="82">
           <template #default="{ row }"><StatusTag :status="row.status" /></template>
         </el-table-column>
-        <el-table-column label="操作" width="210">
+        <el-table-column label="操作" width="92">
           <template #default="{ row }">
+            <el-dropdown trigger="click" @command="handleRowAction($event, row)">
+              <el-button link type="primary">
+                操作<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="preview">预览</el-dropdown-item>
+                  <el-dropdown-item command="edit">{{ canWrite ? '编辑' : '查看' }}</el-dropdown-item>
+                  <el-dropdown-item v-if="canWrite && row.status !== 'published'" command="publish">
+                    发布
+                  </el-dropdown-item>
+                  <el-dropdown-item v-if="canWrite && row.status === 'published'" command="unpublish">
+                    下架
+                  </el-dropdown-item>
+                  <el-dropdown-item v-if="canWrite" command="delete" divided>删除</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </template>
+        </el-table-column>
+        <template #empty><el-empty description="没有匹配的动作媒体" :image-size="80" /></template>
+      </el-table>
+
+      <div class="media-mobile-list">
+        <article v-for="row in rows" :key="row.id" class="media-mobile-card">
+          <div class="media-mobile-head">
+            <el-image v-if="row.posterUrl" :src="row.posterUrl" fit="cover" class="poster" />
+            <div v-else class="poster poster-placeholder">无</div>
+            <div class="cell-stack">
+              <strong>{{ row.exerciseName }}</strong>
+              <span class="mono">{{ row.exerciseSlug }}</span>
+            </div>
+            <StatusTag :status="row.status" />
+          </div>
+          <div class="mini-tags">
+            <el-tag :type="sexTagType(row.sex)" effect="plain" size="small">{{ sexLabel(row.sex) }}</el-tag>
+            <el-tag :type="row.phoneUrl ? 'success' : 'info'" effect="plain" size="small">iPhone</el-tag>
+            <el-tag :type="row.watchUrl ? 'success' : 'info'" effect="plain" size="small">Watch</el-tag>
+            <el-tag :type="row.posterUrl ? 'success' : 'warning'" effect="plain" size="small">海报</el-tag>
+          </div>
+          <div class="media-mobile-meta">
+            {{ durationLabel(row.durationSeconds) }} · {{ loopLabel(row) }}
+            <span class="faint"> · {{ row.licenseExpiresAt ? `授权至 ${formatDate(row.licenseExpiresAt)}` : '无授权到期日' }}</span>
+          </div>
+          <div class="media-mobile-actions">
             <el-button link type="primary" @click="openPreview(row)">预览</el-button>
             <el-button link type="primary" @click="openEdit(row)">{{ canWrite ? '编辑' : '查看' }}</el-button>
             <el-button
@@ -206,10 +264,10 @@
               @click="unpublish(row)"
             >下架</el-button>
             <el-button v-if="canWrite" link type="danger" @click="remove(row)">删除</el-button>
-          </template>
-        </el-table-column>
-        <template #empty><el-empty description="没有匹配的动作媒体" :image-size="80" /></template>
-      </el-table>
+          </div>
+        </article>
+        <el-empty v-if="!rows.length" description="没有匹配的动作媒体" :image-size="70" />
+      </div>
 
       <PaginationBar
         :page="page"
@@ -428,10 +486,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type UploadFile, type UploadRequestOptions } from 'element-plus'
-import { Document, Picture, Plus, Refresh, Search, Upload } from '@element-plus/icons-vue'
+import { ArrowDown, Document, DocumentCopy, Picture, Plus, Refresh, Search, Upload } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
 import StatusTag from '@/components/StatusTag.vue'
@@ -445,6 +503,7 @@ import type {
   ExerciseItem,
   MediaAssetItem,
   MediaCoverage,
+  MediaCoverageMissing,
   MediaImportResult,
   UpdateMediaAssetPayload,
 } from '@/api/types'
@@ -462,8 +521,52 @@ const loading = ref(false)
 const coverage = ref<MediaCoverage | null>(null)
 const coverageLoading = ref(false)
 const uploadEnabled = ref(true)
-const coverageTab = ref('female')
+const coverageTab = ref<'female' | 'male' | 'any'>('female')
+const gapQuery = ref('')
 const filters = reactive({ q: '', sex: '', status: '', coverage: '' })
+
+const gapTabs = computed(() => [
+  {
+    key: 'female' as const,
+    label: '女版缺口',
+    count: coverage.value?.missingFemaleCount ?? 0,
+    hint: '缺 female / unisex',
+  },
+  {
+    key: 'male' as const,
+    label: '男版缺口',
+    count: coverage.value?.missingMaleCount ?? 0,
+    hint: '缺 male / unisex',
+  },
+  {
+    key: 'any' as const,
+    label: '完全缺失',
+    count: coverage.value?.missingAnyCount ?? 0,
+    hint: '没有任何已发布媒体',
+  },
+])
+
+const gapRows = computed<MediaCoverageMissing[]>(() => {
+  if (coverageTab.value === 'male') return coverage.value?.missingMale ?? []
+  if (coverageTab.value === 'any') return coverage.value?.missingAny ?? []
+  return coverage.value?.missingFemale ?? []
+})
+
+const filteredGapRows = computed(() => {
+  const query = gapQuery.value.trim().toLowerCase()
+  if (!query) return gapRows.value
+  return gapRows.value.filter((item) =>
+    item.nameZh.toLowerCase().includes(query)
+    || item.slug.toLowerCase().includes(query)
+    || item.muscleGroup.toLowerCase().includes(query),
+  )
+})
+
+const gapEmptyText = computed(() => {
+  if (coverageTab.value === 'female') return '女版覆盖完整'
+  if (coverageTab.value === 'male') return '男版覆盖完整'
+  return '所有启用动作都有媒体'
+})
 
 const dialogVisible = ref(false)
 const editingId = ref<string | null>(null)
@@ -583,11 +686,42 @@ function resetFilters(): void {
   applyFilters()
 }
 
-function filterBySlug(slug: string): void {
+async function filterBySlug(slug: string): Promise<void> {
   filters.q = slug
   filters.coverage = ''
   page.value = 1
-  void load()
+  await load()
+  document.querySelector('.media-table-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function muscleLabel(value: string): string {
+  const labels: Record<string, string> = {
+    chest: '胸',
+    back: '背',
+    legs: '腿',
+    shoulders: '肩',
+    arms: '手臂',
+    core: '核心',
+    glutes: '臀',
+    cardio: '有氧',
+  }
+  return labels[value] ?? value
+}
+
+async function copyGapList(): Promise<void> {
+  if (!filteredGapRows.value.length) {
+    ElMessage.warning('当前没有可复制的缺口')
+    return
+  }
+  const text = filteredGapRows.value
+    .map((item) => `${item.nameZh}\t${item.slug}\t${muscleLabel(item.muscleGroup)}`)
+    .join('\n')
+  try {
+    await navigator.clipboard.writeText(text)
+    ElMessage.success(`已复制 ${filteredGapRows.value.length} 条缺口`)
+  } catch {
+    ElMessage.error('复制失败，请检查浏览器剪贴板权限')
+  }
 }
 
 function onPageChange(value: number): void {
@@ -649,6 +783,20 @@ function openEdit(row: MediaAssetItem): void {
 function openPreview(row: MediaAssetItem): void {
   preview.value = row
   previewVisible.value = true
+}
+
+function handleRowAction(command: string, row: MediaAssetItem): void {
+  if (command === 'preview') {
+    openPreview(row)
+  } else if (command === 'edit') {
+    openEdit(row)
+  } else if (command === 'publish') {
+    void publish(row)
+  } else if (command === 'unpublish') {
+    void unpublish(row)
+  } else if (command === 'delete') {
+    void remove(row)
+  }
 }
 
 function openImport(): void {
@@ -876,18 +1024,82 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
-.gap-row {
-  max-height: 150px;
-  overflow: auto;
-  padding-right: 4px;
+.coverage-switch {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px 16px 0;
 }
 
-.gap-tag {
+.coverage-stat {
+  display: flex;
+  min-height: 86px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--fitai-border);
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.03);
+  color: var(--fitai-text);
   cursor: pointer;
+  text-align: left;
+  transition: border-color 0.18s ease, background 0.18s ease;
 }
 
-.gap-tag .faint {
-  margin-left: 4px;
+.coverage-stat:hover {
+  border-color: var(--fitai-border-strong);
+  background: rgba(91, 140, 255, 0.05);
+}
+
+.coverage-stat.active {
+  border-color: rgba(91, 140, 255, 0.55);
+  background: rgba(91, 140, 255, 0.09);
+}
+
+.coverage-stat span {
+  color: var(--fitai-text-muted);
+  font-size: 12px;
+}
+
+.coverage-stat strong {
+  font-size: 24px;
+  letter-spacing: -0.02em;
+}
+
+.coverage-stat small {
+  color: var(--fitai-text-faint);
+  font-size: 11px;
+}
+
+.coverage-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--fitai-border);
+}
+
+.coverage-toolbar .el-input {
+  max-width: 320px;
+}
+
+.coverage-note {
+  margin: 0;
+  padding: 0 16px 14px;
+  font-size: 11px;
+}
+
+@media (max-width: 720px) {
+  .coverage-switch {
+    grid-template-columns: 1fr;
+  }
+
+  .coverage-toolbar .el-input {
+    max-width: none;
+    width: 100%;
+  }
 }
 
 .poster {
@@ -986,6 +1198,60 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   margin: 14px 0;
+}
+
+.media-mobile-list {
+  display: none;
+}
+
+.media-mobile-card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid var(--fitai-border);
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.03);
+}
+
+.media-mobile-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.media-mobile-head .cell-stack {
+  flex: 1;
+}
+
+.media-mobile-meta {
+  color: var(--fitai-text-muted);
+  font-size: 11px;
+}
+
+.media-mobile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .media-table {
+    display: none;
+  }
+
+  .media-mobile-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 430px) {
+  .metric-grid.media-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {

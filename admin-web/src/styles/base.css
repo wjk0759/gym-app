@@ -137,6 +137,82 @@ a {
   padding: 18px;
 }
 
+.panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--fitai-border);
+}
+
+.panel-heading h3 {
+  margin: 0;
+  color: var(--fitai-text);
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.panel-heading p {
+  margin: 4px 0 0;
+  color: var(--fitai-text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.panel-heading .panel-link {
+  flex: 0 0 auto;
+  color: var(--fitai-primary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.dist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 18px;
+}
+
+.dist-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.dist-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--fitai-text-muted);
+  font-size: 12px;
+}
+
+.dist-meta strong {
+  color: var(--fitai-text);
+}
+
+.dist-track {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.dist-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #5b8cff, #3ddc97);
+}
+
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -197,6 +273,10 @@ a {
 
 .metric-grid.three {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.metric-grid.five {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .metric-card {
@@ -391,7 +471,8 @@ a {
 }
 
 @media (max-width: 1100px) {
-  .metric-grid {
+  .metric-grid,
+  .metric-grid.five {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

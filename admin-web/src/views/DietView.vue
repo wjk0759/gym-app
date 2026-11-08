@@ -37,7 +37,8 @@
         />
       </section>
 
-      <section class="dashboard-grid">
+      <template v-if="hasDietData">
+      <section class="two-col-grid">
         <div class="panel insight-panel">
           <div class="panel-heading">
             <div>
@@ -139,6 +140,14 @@
           <template #empty><el-empty description="暂无饮食记录" :image-size="70" /></template>
         </el-table>
       </section>
+      </template>
+
+      <section v-else class="panel empty-panel">
+        <el-empty
+          description="还没有饮食数据；用户生成餐单或记录饮食后，这里会出现策略分布和最近记录。"
+          :image-size="90"
+        />
+      </section>
     </div>
   </div>
 </template>
@@ -159,6 +168,10 @@ const summary = ref<DietSummary | null>(null)
 
 const strategyMax = computed(() =>
   Math.max(1, ...(summary.value?.strategies ?? []).map((item) => item.count)),
+)
+
+const hasDietData = computed(() =>
+  (summary.value?.mealPlansTotal ?? 0) + (summary.value?.foodLogsTotal ?? 0) > 0,
 )
 
 async function load(): Promise<void> {
@@ -206,9 +219,26 @@ onMounted(load)
   gap: 16px;
 }
 
+.two-col-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+  gap: 16px;
+}
+
+.empty-panel {
+  min-height: 180px;
+}
+
 .chip-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  padding: 18px;
+}
+
+@media (max-width: 1100px) {
+  .two-col-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

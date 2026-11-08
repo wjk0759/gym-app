@@ -17,6 +17,7 @@ const STATUS_LABELS: Record<string, string> = {
   success: '成功',
   failed: '失败',
   unknown_equipment: '未识别到器械',
+  not_gym_equipment: '非健身器械',
   no_actions: '动作库未收录',
   unavailable: '视觉不可用',
   running: '运行中',
@@ -34,10 +35,13 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const GOAL_LABELS: Record<string, string> = {
+  lose_fat: '减脂',
+  build_muscle: '增肌',
+  recomp: '重塑',
+  endurance: '耐力',
   fat_loss: '减脂',
   muscle_gain: '增肌',
   strength: '力量',
-  endurance: '体能',
   rehab: '康复',
   general: '综合',
 }
@@ -131,7 +135,7 @@ export function statusTagType(status: string | null | undefined):
   if (status === 'active' || status === 'published' || status === 'ok' || status === 'succeeded' || status === 'success' || status === 'completed' || status === 'applied') return 'success'
   if (status === 'suspended' || status === 'pending' || status === 'processing' || status === 'fallback' || status === 'running' || status === 'needs_confirmation' || status === 'expiring' || status === 'unknown_equipment' || status === 'no_actions') return 'warning'
   if (status === 'deleted' || status === 'disabled' || status === 'error' || status === 'failed' || status === 'rejected' || status === 'revoked' || status === 'unavailable') return 'danger'
-  if (status === 'draft' || status === 'superseded' || status === 'expired' || status === 'archived') return 'info'
+  if (status === 'draft' || status === 'superseded' || status === 'expired' || status === 'archived' || status === 'not_gym_equipment') return 'info'
   return 'info'
 }
 

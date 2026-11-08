@@ -22,8 +22,10 @@ const props = withDefaults(defineProps<{
   labels: string[]
   series: TrendSeries[]
   height?: string
+  scaleY?: boolean
 }>(), {
   height: '280px',
+  scaleY: false,
 })
 
 const chartRef = ref<HTMLDivElement | null>(null)
@@ -35,7 +37,7 @@ function render(): void {
   chart.setOption({
     backgroundColor: 'transparent',
     color: props.series.map((item) => item.color ?? '#5b8cff'),
-    grid: { top: 36, right: 18, bottom: 30, left: 44 },
+    grid: { top: 36, right: 36, bottom: 30, left: 44 },
     tooltip: {
       trigger: 'axis',
       backgroundColor: 'rgba(17, 25, 37, 0.96)',
@@ -58,6 +60,7 @@ function render(): void {
     yAxis: {
       type: 'value',
       minInterval: 1,
+      scale: props.scaleY,
       splitLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.08)' } },
       axisLabel: { color: '#64748b', fontSize: 11 },
     },
