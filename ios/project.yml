@@ -6,6 +6,9 @@ options:
   developmentLanguage: zh-Hans
   xcodeVersion: "16.0"
   createIntermediateGroups: true
+  # Xcode 26+ installs a Watch companion from PlugIns/, not Watch/.
+  # XcodeGen <= 2.45 still emits the legacy Watch/ destination.
+  postGenCommand: bash scripts/fix_watch_embed.sh
 
 settings:
   base:
