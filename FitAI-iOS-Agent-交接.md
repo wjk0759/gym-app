@@ -14,17 +14,60 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`48ad5f0`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `aa17a19`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`c8d7812`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `aa17a19`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 13/13 测试通过；完成 Watch UI 重设计（训练/动作/语音/锁定页）、单主按钮流程（`2d5dea0`）、40/42/49mm 响应式适配（`1eb3fdd`），并把语音输入与发送合并为一行（`9a833b1`）；此前修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
 - Windows 最新完成（2026-11-07）：拉取并保留 macOS 单行语音输入（`9a833b1`）；完成教练内核统一并部署生产；`test_reviewer` 已授 Pro、补齐基础档案和 3 分化计划；生产 Watch 预载/登录/刷新/语音/撤销全链路烟测通过；iPhone 训练页动作循环动画 PoC、`/exercise-media` 批量接口、11 条 sample 媒体已上生产（`341981f`）；器械识别修复：图片归一化、禁止随机 mock、37 类器械目录、生产导入 57 条训记动作、4 张真实照片 + 1 张负例烟测 5/5 命中（`5bf99a1`）；2026-11-08 增加 Vision OCR 标签提示、18 张多品牌评测和准确率实验（`23e41c8`）；生产视觉切 **Qwen3-VL-Plus**；器械识别加 **top-2 候选 + 混淆兜底**，18 张缩略图 top-1 61%、top-2 83%（`0d63191`）；已合并到 `develop`（`48ad5f0`），develop CI 全绿
 - Windows 前一轮完成（2026-11-07）：手表独立语音教练、watch 专用登录会话、媒体预载/本地缓存、离线 outbox/ack、手机 inbox 回灌、手机→手表指令、3 天 Pro 宽限与中途到期继续结束、HealthKit 保活/手机单写者、Watch AppIcon 恢复、Watch 隐私清单、训练来源 `phone/watch`
-- 本地后台（2026-11-08）：FastAPI `8000`、admin-server `8080`、admin-web `5173/admin`、MySQL `3307` V23；真机 API `http://192.168.1.4:8000/api/v1`
-- 最新后端验证：**220 passed**，Ruff app/tests 通过；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source`、`/exercise-media`、器械目录识别、器械 top-2 已接入测试；生产 Flyway 已到 **V23**；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
+- 本地后台（2026-11-08）：FastAPI `8000`、admin-server `8080`、admin-web `5173/admin`、MySQL `3307` V24；真机 API `http://192.168.1.4:8000/api/v1`
+- 最新后端验证：**220 passed**，Ruff app/tests 通过；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source`、`/exercise-media`、器械目录识别、器械 top-2 已接入测试；生产 Flyway 已到 **V24**；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-08 · Windows / OpenCode（后台第一批功能）
+
+- 提交：`c8d7812`（admin-server + admin-web）；前一提交 `1666cfe` 记录生产 viewer
+- 做了：
+  - **动作媒体库**：`MediaView.vue` + `/api/admin/v1/media-assets`
+    - 列表/筛选/封面预览/草稿/发布/下架/删除；上传 iPhone 视频、Watch 视频、海报
+    - 覆盖率：启用动作、已覆盖、男版/女版/中性、Watch/海报/iPhone 就绪、30 天授权到期
+    - 覆盖缺口按「女版 / 男版 / 完全缺失」列出，点击动作可筛选
+    - 生产现状：启用动作 57，有媒体 10（男 9 / 女 1），Watch/海报 10
+  - **用户 360**：`GET /api/admin/v1/users/{id}/insights`
+    - 用户详情新增：身体数据趋势 + 记录、饮食餐单 + 饮食记录、排期、Watch 会话/训练、AI 记忆、个人器械库
+  - **会员运营**：`MembershipsView.vue` + `/api/admin/v1/memberships`、`/memberships/summary`
+    - 全局 Pro 用户、7/30 天到期、来源拆分、7 天新增、30 天撤销
+    - 续期/撤销复用 `users/{id}/entitlements`，写审计
+  - **菜单收敛**：
+    - 新增「会员运营」「动作媒体」
+    - 「排期状态」并入「训练计划」入口
+    - 「教学视频」降为「动作媒体 → 旧版讲解视频」
+    - 「Agent 运行」+「Agent 动作」合并为「Agent 审计」
+  - **权限**：Flyway `V24__content_operator_role.sql` 新增 `CONTENT_OPERATOR`
+    - 所有 `*:read` + `video:write` + `user:entitlement:write`
+    - 不含 `user:write`、`exercise:write`、`plan:write`、`settings:manage`
+    - 生产 `ops_viewer` 已从 `AUDITOR` 改为 `CONTENT_OPERATOR`
+- 验证：
+  - `mvn -q -DskipTests compile/package` 通过；本地/生产 Flyway 均已到 **V24**
+  - `mvn test`：单元测试通过；`AdminApiIntegrationTest` 3 个用例被 Testcontainers 跳过（本机 Docker 29 + TC 1.20.6 provider 400），新增的集成测试未实际执行
+  - 本地 8081 手工冒烟：media create/update/publish/coverage/unpublish/delete、`/users/{id}/insights`、`/memberships` list/summary 全部 200
+  - `npm run typecheck`、`npm run build` 通过
+  - 生产 viewer 登录 `ops_viewer` → `CONTENT_OPERATOR`；`/media-assets`、`/memberships`、`/users/{id}/insights` 读取成功
+- 未验证 / 未做：
+  - 浏览器逐页点击（媒体表单、上传、图表、会员赠送弹窗）只做了编译 + API 冒烟
+  - 未实际在生产赠送/撤销 Pro，未改生产媒体
+  - CSV 批量导入、IAP 对账、识别质量看板、安全事件队列留到下一轮
+- 对方需要：
+  - `git pull`；启动 admin-server 会自动应用 V24
+  - 生产 viewer 仍依赖 SSH 隧道 `13307`、admin-server `8080`、Vite `5173`；看完删除或改密 `ops_viewer`
+- 禁止恢复：
+  - 不要把 `ops_viewer` 改回 `AUDITOR` 后还指望赠送 Pro 或编辑媒体
+  - 不要删除/回滚 V24 迁移
+- 仍 BLOCKED：
+  - 1,500 动作 × 男女素材采购、许可证确认与映射
+  - Testcontainers 集成测试需修 Docker provider 或改 CI
 
 ### 2026-11-08 · Windows / OpenCode（生产数据只读后台）
 
@@ -33,13 +76,14 @@
   - SSH 隧道：`ssh -N -L 13307:172.18.0.2:3306 root@8.218.205.149`（生产 MySQL → 本机 13307）
   - 本机 admin-server `8080` 以 `prod` profile 连 `127.0.0.1:13307`（生产库），**不是**本机 3307
   - Vue dev `http://127.0.0.1:5173/admin/` 代理到 8080
-- 账号：生产库中临时创建 `ops_viewer`，角色 **AUDITOR**（只读）；密码不写入仓库，只在会话/密码管理器里
+- 账号：生产库中临时创建 `ops_viewer`，角色 **CONTENT_OPERATOR**（读全量 + `video:write` + `user:entitlement:write`，无 `user:write`/`settings:manage`）；密码不写入仓库，只在会话/密码管理器里
 - 验证：
-  - admin 登录 `ops_viewer` 成功，role=AUDITOR
+  - admin 登录 `ops_viewer` 成功，role=CONTENT_OPERATOR
   - `/api/admin/v1/users` 返回生产 3 个用户（wjk / test_reviewer / demo）
+  - `/media-assets` 返回生产 21 条媒体；`/memberships` 返回生产 Pro 记录
   - 5173 代理登录 200
 - 风险/注意：
-  - admin UI 本身可写，AUDITOR 只是权限层兜底；只点“查看”，不要改数据
+  - admin UI 本身可写，CONTENT_OPERATOR 只放开媒体和 Pro 权益；仍不要点用户/计划/动作库的编辑按钮
   - 依赖三个进程同时存活：SSH 隧道、admin-server(8080)、Vite(5173)
   - 查看结束后必须：删除生产 `ops_viewer`（或改密），并关掉隧道/8080/Vite
   - 生产 `.env`、生产 MySQL 密码不要落盘到仓库；启动脚本只放在本机 temp
