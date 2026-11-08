@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`cece359`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `aa17a19`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`dd083be`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `aa17a19`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 13/13 测试通过；完成 Watch UI 重设计（训练/动作/语音/锁定页）、单主按钮流程（`2d5dea0`）、40/42/49mm 响应式适配（`1eb3fdd`），并把语音输入与发送合并为一行（`9a833b1`）；此前修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
@@ -38,13 +38,15 @@
     - `dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";` → `dstPath = "";`
     - `dstSubfolderSpec = 16;` → `dstSubfolderSpec = 13;`
     - 已可重复执行；若 XcodeGen 新版本已直接生成 `PlugIns/` 则 no-op
+  - **`FitAI` → `FitAIWatch` 依赖增加 `codeSign: true`**：XcodeGen 对嵌入的 executable target 默认不设 `CodeSignOnCopy`，Watch App 被复制进主 App 后签名不完整，会报「无法验证其完整性」
 - Mac 侧需要做：
   1. `git pull`
   2. `cd ios && xcodegen generate`
   3. 确认 `FitAI.xcodeproj/project.pbxproj` 里有 `dstSubfolderSpec = 13;`，且没有 `CONTENTS_FOLDER_PATH)/Watch`
-  4. Xcode `Product > Clean Build Folder`，重新 Archive/安装 iPhone App
-  5. 打开 iPhone Watch App → 可用 APP → 叫练 → 安装
-  6. 如果发 TestFlight：必须重新上传包含该修复的 build，旧 build 不会自动修
+  4. 确认 `Embed Watch Content` 的 `FitAIWatch.app` build file 带 `CodeSignOnCopy`
+  5. Xcode `Product > Clean Build Folder`，重新 Archive/安装 iPhone App
+  6. 打开 iPhone Watch App → 可用 APP → 叫练 → 安装
+  7. 如果发 TestFlight：必须重新上传包含该修复的 build，旧 build 不会自动修
 - 如果仍然失败，按顺序查：
   - Xcode Debug 安装：Watch 需要 Developer Mode；用 USB 连 iPhone，Xcode → Window → Devices and Simulators → 选配对 Watch → Enable Developer Mode（或 Xcode 提示 Prepare for Development）
   - TestFlight 安装：不需要 Developer Mode；确认 build 里 `FitAI.app/PlugIns/FitAIWatch.app` 存在
