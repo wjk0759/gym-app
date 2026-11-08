@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`c8d7812`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `aa17a19`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`99cbe33`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `aa17a19`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 13/13 测试通过；完成 Watch UI 重设计（训练/动作/语音/锁定页）、单主按钮流程（`2d5dea0`）、40/42/49mm 响应式适配（`1eb3fdd`），并把语音输入与发送合并为一行（`9a833b1`）；此前修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
@@ -25,6 +25,48 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-08 · Windows / OpenCode（后台第二批功能）
+
+- 提交：`99cbe33`
+- 做了：
+  - **动作媒体批量导入**：`POST /api/admin/v1/media-assets/import`
+    - CSV 表头：`exercise_slug, sex, source, phone_url, watch_url, poster_url, duration_seconds, loop_start_ms, loop_end_ms, watch_sha256, license_note, license_expires_at, purchase_ref, status`
+    - 逐行校验，返回行号错误；单次最多 500 行；前端「动作媒体 → 批量导入」支持选文件、下载模板、查看失败行
+  - **饮食运营页**：`/diet` + `/api/admin/v1/diet/summary`
+    - 餐单总数/近 7 天、饮食记录、近 7 天饮食活跃、30 天平均目标热量
+    - 策略分布、生成来源、最近餐单、最近饮食记录
+  - **识别质量 + 个人器械库**：`/scans/summary` + `/equipment-library`
+    - 识别总数、近 7 天、零候选率、平均候选数、模型分布、14 天趋势
+    - 器械识别页新增「识别记录 / 个人器械库」两个 tab
+    - 修正识别状态筛选值为真实状态：`ok / succeeded / unknown_equipment / no_actions / unavailable`
+  - **训练来源**：`/workouts?source=phone|watch`
+    - 训练记录页新增来源筛选和 Watch/iPhone 标签
+  - **运营总览**：新增 Pro 会员、动作媒体覆盖率、Watch 训练 7 天、饮食记录 7 天卡片
+  - **会员运营**：已有来源筛选可直接看 `storekit` 权益
+- 验证：
+  - `mvn -q -DskipTests compile/package` 通过
+  - 本地 8081 手工冒烟：
+    - `/scans/summary` → 13 条、零候选 3、平均候选 1.6
+    - `/diet/summary` → 28 份餐单、2517 条饮食记录、平均 2522 kcal
+    - `/equipment-library` → 15 条
+    - CSV 导入 2 行 → 成功 1、失败 1（错误行号正确），测试记录已删除
+    - `/dashboard/summary` 新字段正常
+  - `npm run typecheck`、`npm run build` 通过
+  - 生产 viewer（`ops_viewer` / CONTENT_OPERATOR）读取：`scans=15`、`dietPlans=0`、`pro=2`、`media=10`
+  - 生产 API 未改动：`production / deepseek-flash / qwen3-vl-plus`
+- 未做 / 限制：
+  - 真实器械 top-1/top-2 命中率仍需要 App 回传用户最终选择；当前只展示候选质量
+  - IAP 通知/对账没有后台入口；会员页只能按 `storekit` 来源筛选
+  - Watch 没有独立运营页，只有 Dashboard 卡片 + 训练来源筛选 + 用户详情 Watch tab
+  - 生产 viewer 的媒体上传仍写本机 `backend/media`，不会同步生产
+- 对方需要：
+  - `git pull`；无新增 Flyway（仍 V24）
+  - 生产 viewer 依赖 SSH 隧道 `13307`、admin-server `8080`、Vite `5173`
+  - 看完生产数据后删除/改密 `ops_viewer`
+- 禁止恢复：
+  - 不要把识别状态筛选改回 `pending/done/failed`，真实状态是 `ok/succeeded/unknown_equipment/no_actions/unavailable`
+  - 不要回滚 V24
 
 ### 2026-11-08 · Windows / OpenCode（后台第一批功能）
 
