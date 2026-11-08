@@ -6,6 +6,7 @@
     >
       <template #actions>
         <el-button :icon="Refresh" :loading="loading" @click="load">刷新</el-button>
+        <el-button @click="$router.push('/plans')">训练计划</el-button>
       </template>
     </PageHeader>
 

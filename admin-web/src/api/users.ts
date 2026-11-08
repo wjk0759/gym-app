@@ -3,6 +3,7 @@ import type {
   PageResponse,
   UserAccess,
   UserDetail,
+  UserInsights,
   UserListItem,
 } from './types'
 
@@ -22,6 +23,10 @@ export const usersApi = {
 
   async detail(id: string): Promise<UserDetail> {
     return apiGet<UserDetail>(`/users/${encodeURIComponent(id)}`)
+  },
+
+  async insights(id: string): Promise<UserInsights> {
+    return apiGet<UserInsights>(`/users/${encodeURIComponent(id)}/insights`)
   },
 
   async setStatus(id: string, status: 'active' | 'suspended'): Promise<void> {

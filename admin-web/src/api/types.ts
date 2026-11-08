@@ -194,6 +194,111 @@ export interface UserDetail {
   aiJobs: UserAiJobBrief[]
 }
 
+export interface UserBodyMetric {
+  id: string
+  measuredAt: string | null
+  weightKg: number | null
+  bodyFatPct: number | null
+  waistCm: number | null
+  armCm: number | null
+  thighCm: number | null
+  createdAt: string | null
+}
+
+export interface UserMealPlan {
+  id: string
+  planDate: string | null
+  weekStart: string | null
+  strategy: string
+  generatedBy: string
+  modelName: string | null
+  targetKcal: number | null
+  targetProteinG: number | null
+  targetCarbG: number | null
+  targetFatG: number | null
+  plan: unknown
+  createdAt: string | null
+  updatedAt: string | null
+}
+
+export interface UserFoodLog {
+  id: string
+  loggedAt: string | null
+  meal: string
+  foodName: string
+  grams: number | null
+  kcal: number | null
+  protein: number | null
+  carbs: number | null
+  fat: number | null
+  fiber: number | null
+}
+
+export interface UserScheduleItem {
+  planId: string
+  dayId: string
+  planVersion: number | null
+  assignedDate: string | null
+  skippedAt: string | null
+  clientUpdatedAt: string | null
+  updatedAt: string | null
+}
+
+export interface UserWatchSession {
+  id: string
+  deviceName: string | null
+  deviceId: string | null
+  createdAt: string | null
+  lastUsedAt: string | null
+  lastTouchedAt: string | null
+  expiresAt: string | null
+  revokedAt: string | null
+}
+
+export interface UserWatchWorkout {
+  id: string
+  startedAt: string | null
+  durationMin: number | null
+  feeling: number | null
+  healthkitWorkoutId: string | null
+}
+
+export interface UserMemory {
+  id: string
+  kind: string
+  content: string
+  memoryKey: string
+  source: string
+  confidence: number | null
+  active: boolean
+  createdAt: string | null
+  updatedAt: string | null
+  lastUsedAt: string | null
+}
+
+export interface UserEquipment {
+  id: string
+  name: string
+  slug: string | null
+  muscle: string | null
+  equipment: string | null
+  notes: string
+  source: string
+  createdAt: string | null
+  updatedAt: string | null
+}
+
+export interface UserInsights {
+  bodyMetrics: UserBodyMetric[]
+  mealPlans: UserMealPlan[]
+  foodLogs: UserFoodLog[]
+  schedule: UserScheduleItem[]
+  watchSessions: UserWatchSession[]
+  watchWorkouts: UserWatchWorkout[]
+  memories: UserMemory[]
+  equipment: UserEquipment[]
+}
+
 export interface UserEntitlementItem {
   id: string
   planCode: string
@@ -402,6 +507,117 @@ export interface MediaUpload {
   originalName: string
   size: number
   contentType: string | null
+}
+
+export interface MediaAssetItem {
+  id: string
+  exerciseSlug: string
+  exerciseName: string
+  sex: string
+  source: string
+  phoneUrl: string
+  watchUrl: string
+  posterUrl: string | null
+  durationSeconds: number | null
+  loopStartMs: number | null
+  loopEndMs: number | null
+  watchSha256: string | null
+  version: number
+  status: string
+  licenseNote: string | null
+  licenseExpiresAt: string | null
+  purchaseRef: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MediaCoverageMissing {
+  slug: string
+  nameZh: string
+  muscleGroup: string
+}
+
+export interface MediaCoverage {
+  activeExercises: number
+  exercisesWithAnyMedia: number
+  exercisesWithMale: number
+  exercisesWithFemale: number
+  exercisesWithUnisex: number
+  phoneReady: number
+  watchReady: number
+  posterReady: number
+  licenseExpiring30d: number
+  missingAnyCount: number
+  missingMaleCount: number
+  missingFemaleCount: number
+  missingAny: MediaCoverageMissing[]
+  missingMale: MediaCoverageMissing[]
+  missingFemale: MediaCoverageMissing[]
+}
+
+export interface CreateMediaAssetPayload {
+  exerciseSlug: string
+  sex: 'male' | 'female' | 'unisex'
+  source: string
+  phoneUrl: string
+  watchUrl: string
+  posterUrl?: string | null
+  durationSeconds?: number | null
+  loopStartMs?: number | null
+  loopEndMs?: number | null
+  watchSha256?: string | null
+  licenseNote?: string | null
+  licenseExpiresAt?: string | null
+  purchaseRef?: string | null
+  status?: 'draft' | 'published'
+}
+
+export interface UpdateMediaAssetPayload {
+  source?: string
+  phoneUrl?: string
+  watchUrl?: string
+  posterUrl?: string | null
+  durationSeconds?: number | null
+  loopStartMs?: number | null
+  loopEndMs?: number | null
+  watchSha256?: string | null
+  licenseNote?: string | null
+  licenseExpiresAt?: string | null
+  purchaseRef?: string | null
+}
+
+export interface MembershipItem {
+  entitlementId: string
+  userId: string
+  userLabel: string
+  phone: string | null
+  nickname: string | null
+  planCode: string
+  source: string
+  sourceRef: string | null
+  startsAt: string | null
+  expiresAt: string | null
+  revokedAt: string | null
+  status: string
+  daysLeft: number | null
+  grantedBy: string | null
+  reason: string | null
+  createdAt: string | null
+}
+
+export interface MembershipSourceCount {
+  source: string
+  count: number
+}
+
+export interface MembershipSummary {
+  activeProUsers: number
+  activeEntitlements: number
+  expiring7d: number
+  expiring30d: number
+  newGrants7d: number
+  revoked30d: number
+  sources: MembershipSourceCount[]
 }
 
 export interface CreateVideoPayload {

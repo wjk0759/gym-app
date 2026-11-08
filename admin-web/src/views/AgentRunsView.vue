@@ -1,11 +1,12 @@
 <template>
   <div class="page-shell">
     <PageHeader
-      title="Agent 运行"
+      title="Agent 审计 · 运行"
       subtitle="查看教练 Agent 的意图、工具调用、计划草案和失败原因。"
     >
       <template #actions>
         <el-button :icon="Refresh" :loading="loading" @click="load">刷新</el-button>
+        <el-button @click="$router.push('/agent-actions')">动作记录</el-button>
       </template>
     </PageHeader>
 

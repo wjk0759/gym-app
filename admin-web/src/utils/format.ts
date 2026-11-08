@@ -21,9 +21,12 @@ const STATUS_LABELS: Record<string, string> = {
   applied: '已应用',
   superseded: '已替代',
   expired: '已过期',
+  expiring: '即将到期',
+  revoked: '已撤销',
   rejected: '已拒绝',
   male: '男',
   female: '女',
+  unisex: '中性',
 }
 
 const GOAL_LABELS: Record<string, string> = {
@@ -39,6 +42,7 @@ const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: '超级管理员',
   OPERATOR: '运营管理员',
   AUDITOR: '审计员',
+  CONTENT_OPERATOR: '内容运营',
 }
 
 const ACTION_LABELS: Record<string, string> = {
@@ -121,9 +125,9 @@ export function actionLabel(action: string): string {
 export function statusTagType(status: string | null | undefined):
   'success' | 'warning' | 'danger' | 'info' | 'primary' {
   if (status === 'active' || status === 'published' || status === 'ok' || status === 'success' || status === 'completed' || status === 'applied') return 'success'
-  if (status === 'suspended' || status === 'pending' || status === 'processing' || status === 'fallback' || status === 'running' || status === 'needs_confirmation') return 'warning'
-  if (status === 'deleted' || status === 'disabled' || status === 'error' || status === 'failed' || status === 'rejected') return 'danger'
-  if (status === 'draft' || status === 'superseded' || status === 'expired') return 'info'
+  if (status === 'suspended' || status === 'pending' || status === 'processing' || status === 'fallback' || status === 'running' || status === 'needs_confirmation' || status === 'expiring') return 'warning'
+  if (status === 'deleted' || status === 'disabled' || status === 'error' || status === 'failed' || status === 'rejected' || status === 'revoked') return 'danger'
+  if (status === 'draft' || status === 'superseded' || status === 'expired' || status === 'archived') return 'info'
   return 'info'
 }
 

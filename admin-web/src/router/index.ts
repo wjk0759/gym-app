@@ -34,6 +34,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '用户管理', permission: 'user:read' },
       },
       {
+        path: 'memberships',
+        name: 'memberships',
+        component: () => import('@/views/MembershipsView.vue'),
+        meta: { title: '会员运营', permission: 'user:read' },
+      },
+      {
         path: 'plans',
         name: 'plans',
         component: () => import('@/views/PlansView.vue'),
@@ -73,7 +79,13 @@ const routes: RouteRecordRaw[] = [
         path: 'videos',
         name: 'videos',
         component: () => import('@/views/VideosView.vue'),
-        meta: { title: '教学视频', permission: 'video:read' },
+        meta: { title: '旧版讲解视频', permission: 'video:read' },
+      },
+      {
+        path: 'media',
+        name: 'media',
+        component: () => import('@/views/MediaView.vue'),
+        meta: { title: '动作媒体', permission: 'video:read' },
       },
       {
         path: 'ai',

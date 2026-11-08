@@ -1,11 +1,12 @@
 <template>
   <div class="page-shell">
     <PageHeader
-      title="Agent 动作"
+      title="Agent 审计 · 动作"
       subtitle="用户确认后由 App 执行的动作结果、撤销与失败审计"
     >
       <template #actions>
         <el-button :icon="Refresh" :loading="loading" @click="load">刷新</el-button>
+        <el-button @click="$router.push('/agent-runs')">运行记录</el-button>
       </template>
     </PageHeader>
 

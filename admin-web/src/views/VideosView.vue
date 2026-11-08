@@ -1,8 +1,9 @@
 <template>
   <div class="page-shell">
-    <PageHeader title="教学视频" subtitle="维护动作示范视频、封面与授权信息；发布后自动同步到动作库。">
+    <PageHeader title="旧版讲解视频" subtitle="器械详情页使用的讲解视频；训练页与 Watch 的循环动画请到「动作媒体」维护。">
       <template #actions>
         <el-button :icon="Refresh" :loading="loading" @click="load">刷新</el-button>
+        <el-button @click="$router.push('/media')">动作媒体</el-button>
         <el-button v-if="canWrite" type="primary" :icon="Plus" @click="openCreate">新建视频</el-button>
       </template>
     </PageHeader>

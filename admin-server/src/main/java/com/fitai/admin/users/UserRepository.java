@@ -199,6 +199,160 @@ public class UserRepository {
         ));
     }
 
+    public UserDtos.UserInsights insights(String userId) {
+        List<UserDtos.BodyMetricItem> bodyMetrics = jdbc.sql("""
+                SELECT id, measured_at, weight_kg, body_fat_pct, waist_cm, arm_cm, thigh_cm, created_at
+                FROM body_metrics
+                WHERE user_id = :id
+                ORDER BY measured_at DESC
+                LIMIT 50
+                """).param("id", userId).query((rs, rowNum) -> new UserDtos.BodyMetricItem(
+                rs.getString("id"),
+                SqlSupport.iso(rs.getTimestamp("measured_at")),
+                (Double) number(rs.getObject("weight_kg")),
+                (Double) number(rs.getObject("body_fat_pct")),
+                (Double) number(rs.getObject("waist_cm")),
+                (Double) number(rs.getObject("arm_cm")),
+                (Double) number(rs.getObject("thigh_cm")),
+                SqlSupport.iso(rs.getTimestamp("created_at"))
+        )).list();
+
+        List<UserDtos.MealPlanItem> mealPlans = jdbc.sql("""
+                SELECT id, plan_date, week_start, strategy, generated_by, model_name,
+                       target_kcal, target_protein_g, target_carb_g, target_fat_g,
+                       plan, created_at, updated_at
+                FROM meal_plans
+                WHERE user_id = :id
+                ORDER BY plan_date DESC
+                LIMIT 20
+                """).param("id", userId).query((rs, rowNum) -> new UserDtos.MealPlanItem(
+                rs.getString("id"),
+                SqlSupport.iso(rs.getDate("plan_date")),
+                SqlSupport.iso(rs.getDate("week_start")),
+                rs.getString("strategy"),
+                rs.getString("generated_by"),
+                rs.getString("model_name"),
+                (Integer) rs.getObject("target_kcal"),
+                (Double) number(rs.getObject("target_protein_g")),
+                (Double) number(rs.getObject("target_carb_g")),
+                (Double) number(rs.getObject("target_fat_g")),
+                jsonCodec.parse(rs.getObject("plan")),
+                SqlSupport.iso(rs.getTimestamp("created_at")),
+                SqlSupport.iso(rs.getTimestamp("updated_at"))
+        )).list();
+
+        List<UserDtos.FoodLogItem> foodLogs = jdbc.sql("""
+                SELECT id, logged_at, meal, food_name, grams, kcal, protein, carbs, fat, fiber
+                FROM food_logs
+                WHERE user_id = :id
+                ORDER BY logged_at DESC
+                LIMIT 100
+                """).param("id", userId).query((rs, rowNum) -> new UserDtos.FoodLogItem(
+                rs.getString("id"),
+                SqlSupport.iso(rs.getTimestamp("logged_at")),
+                rs.getString("meal"),
+                rs.getString("food_name"),
+                (Double) number(rs.getObject("grams")),
+                (Double) number(rs.getObject("kcal")),
+                (Double) number(rs.getObject("protein")),
+                (Double) number(rs.getObject("carbs")),
+                (Double) number(rs.getObject("fat")),
+                (Double) number(rs.getObject("fiber"))
+        )).list();
+
+        List<UserDtos.ScheduleItem> schedule = jdbc.sql("""
+                SELECT plan_id, day_id, plan_version, assigned_date, skipped_at,
+                       client_updated_at, updated_at
+                FROM plan_day_states
+                WHERE user_id = :id
+                ORDER BY updated_at DESC
+                LIMIT 100
+                """).param("id", userId).query((rs, rowNum) -> new UserDtos.ScheduleItem(
+                rs.getString("plan_id"),
+                rs.getString("day_id"),
+                (Integer) rs.getObject("plan_version"),
+                SqlSupport.iso(rs.getDate("assigned_date")),
+                SqlSupport.iso(rs.getTimestamp("skipped_at")),
+                SqlSupport.iso(rs.getTimestamp("client_updated_at")),
+                SqlSupport.iso(rs.getTimestamp("updated_at"))
+        )).list();
+
+        List<UserDtos.WatchSessionItem> watchSessions = jdbc.sql("""
+                SELECT id, device_name, device_id, created_at, last_used_at,
+                       last_touched_at, expires_at, revoked_at
+                FROM auth_sessions
+                WHERE user_id = :id AND client_type = 'watch'
+                ORDER BY last_used_at DESC
+                LIMIT 20
+                """).param("id", userId).query((rs, rowNum) -> new UserDtos.WatchSessionItem(
+                rs.getString("id"),
+                rs.getString("device_name"),
+                rs.getString("device_id"),
+                SqlSupport.iso(rs.getTimestamp("created_at")),
+                SqlSupport.iso(rs.getTimestamp("last_used_at")),
+                SqlSupport.iso(rs.getTimestamp("last_touched_at")),
+                SqlSupport.iso(rs.getTimestamp("expires_at")),
+                SqlSupport.iso(rs.getTimestamp("revoked_at"))
+        )).list();
+
+        List<UserDtos.WatchWorkoutItem> watchWorkouts = jdbc.sql("""
+                SELECT id, started_at, duration_min, feeling, healthkit_workout_id
+                FROM workout_sessions
+                WHERE user_id = :id AND source = 'watch'
+                ORDER BY started_at DESC
+                LIMIT 30
+                """).param("id", userId).query((rs, rowNum) -> new UserDtos.WatchWorkoutItem(
+                rs.getString("id"),
+                SqlSupport.iso(rs.getTimestamp("started_at")),
+                (Integer) rs.getObject("duration_min"),
+                (Integer) rs.getObject("feeling"),
+                rs.getString("healthkit_workout_id")
+        )).list();
+
+        List<UserDtos.MemoryItem> memories = jdbc.sql("""
+                SELECT id, kind, content, memory_key, source, confidence, active,
+                       created_at, updated_at, last_used_at
+                FROM ai_memories
+                WHERE user_id = :id
+                ORDER BY created_at DESC
+                LIMIT 50
+                """).param("id", userId).query((rs, rowNum) -> new UserDtos.MemoryItem(
+                rs.getString("id"),
+                rs.getString("kind"),
+                rs.getString("content"),
+                rs.getString("memory_key"),
+                rs.getString("source"),
+                rs.getObject("confidence") == null ? null : rs.getDouble("confidence"),
+                rs.getBoolean("active"),
+                SqlSupport.iso(rs.getTimestamp("created_at")),
+                SqlSupport.iso(rs.getTimestamp("updated_at")),
+                SqlSupport.iso(rs.getTimestamp("last_used_at"))
+        )).list();
+
+        List<UserDtos.EquipmentItem> equipment = jdbc.sql("""
+                SELECT id, name, slug, muscle, equipment, notes, source, created_at, updated_at
+                FROM equipment_library
+                WHERE user_id = :id
+                ORDER BY created_at DESC
+                LIMIT 50
+                """).param("id", userId).query((rs, rowNum) -> new UserDtos.EquipmentItem(
+                rs.getString("id"),
+                rs.getString("name"),
+                rs.getString("slug"),
+                rs.getString("muscle"),
+                rs.getString("equipment"),
+                rs.getString("notes"),
+                rs.getString("source"),
+                SqlSupport.iso(rs.getTimestamp("created_at")),
+                SqlSupport.iso(rs.getTimestamp("updated_at"))
+        )).list();
+
+        return new UserDtos.UserInsights(
+                bodyMetrics, mealPlans, foodLogs, schedule,
+                watchSessions, watchWorkouts, memories, equipment
+        );
+    }
+
     public boolean exists(String id) {
         return jdbc.sql("SELECT COUNT(*) FROM users WHERE id = :id").param("id", id)
                 .query(Long.class).optional().orElse(0L) > 0;

@@ -60,6 +60,15 @@ public class UserController {
                 .body(service.export(id));
     }
 
+    @GetMapping("/{id}/insights")
+    @PreAuthorize("hasAuthority('user:read')")
+    public UserDtos.UserInsights insights(@PathVariable String id) {
+        if (!repository.exists(id)) {
+            throw com.fitai.admin.common.api.ApiException.notFound("USER_NOT_FOUND", "用户不存在");
+        }
+        return repository.insights(id);
+    }
+
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<Void> status(

@@ -3,6 +3,7 @@
     <PageHeader title="训练计划" subtitle="审核 AI 生成的训练计划，处理启用与归档，查看每日动作编排。">
       <template #actions>
         <el-button :icon="Refresh" :loading="loading" @click="load">刷新</el-button>
+        <el-button @click="$router.push('/schedule')">排期状态</el-button>
       </template>
     </PageHeader>
 

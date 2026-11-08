@@ -175,6 +175,43 @@
               </div>
             </el-tab-pane>
 
+            <el-tab-pane :label="`身体数据 · ${insights?.bodyMetrics.length ?? 0}`" name="body">
+              <div v-loading="insightsLoading" class="drawer-section">
+                <h4 class="section-title">体重趋势</h4>
+                <TrendChart
+                  v-if="bodyChart.labels.length"
+                  :labels="bodyChart.labels"
+                  :series="bodyChart.series"
+                  height="220px"
+                />
+                <span v-else class="muted">暂无体重记录</span>
+              </div>
+              <div class="drawer-section">
+                <h4 class="section-title">身体记录</h4>
+                <el-table :data="insights?.bodyMetrics || []" size="small">
+                  <el-table-column label="测量时间" width="150">
+                    <template #default="{ row }">{{ formatDateTime(row.measuredAt) }}</template>
+                  </el-table-column>
+                  <el-table-column label="体重" width="80" align="right">
+                    <template #default="{ row }">{{ row.weightKg ?? '—' }}</template>
+                  </el-table-column>
+                  <el-table-column label="体脂 %" width="80" align="right">
+                    <template #default="{ row }">{{ row.bodyFatPct ?? '—' }}</template>
+                  </el-table-column>
+                  <el-table-column label="腰围" width="80" align="right">
+                    <template #default="{ row }">{{ row.waistCm ?? '—' }}</template>
+                  </el-table-column>
+                  <el-table-column label="臂围" width="80" align="right">
+                    <template #default="{ row }">{{ row.armCm ?? '—' }}</template>
+                  </el-table-column>
+                  <el-table-column label="腿围" width="80" align="right">
+                    <template #default="{ row }">{{ row.thighCm ?? '—' }}</template>
+                  </el-table-column>
+                  <template #empty><el-empty description="暂无身体数据" :image-size="70" /></template>
+                </el-table>
+              </div>
+            </el-tab-pane>
+
             <el-tab-pane :label="`训练计划 · ${detail.programs.length}`" name="plans">
               <el-table :data="detail.programs" size="small">
                 <el-table-column prop="title" label="计划" min-width="180" />
@@ -236,17 +273,63 @@
               </el-table>
             </el-tab-pane>
 
-            <el-tab-pane :label="`饮食计划 · ${detail.meals.length}`" name="meals">
-              <el-table :data="detail.meals" size="small">
-                <el-table-column prop="planDate" label="日期" width="120" />
-                <el-table-column label="目标热量" width="110" align="right">
-                  <template #default="{ row }">{{ row.targetKcal ? `${row.targetKcal} kcal` : '—' }}</template>
-                </el-table-column>
-                <el-table-column label="创建时间" width="160">
-                  <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
-                </el-table-column>
-                <template #empty><el-empty description="暂无饮食计划" :image-size="70" /></template>
-              </el-table>
+            <el-tab-pane :label="`饮食 · ${insights?.mealPlans.length ?? 0}`" name="meals">
+              <div v-loading="insightsLoading" class="drawer-section">
+                <h4 class="section-title">餐单</h4>
+                <el-table :data="insights?.mealPlans || []" size="small">
+                  <el-table-column label="日期" width="110">
+                    <template #default="{ row }">{{ formatDate(row.planDate) }}</template>
+                  </el-table-column>
+                  <el-table-column label="周起始" width="110">
+                    <template #default="{ row }">{{ formatDate(row.weekStart) }}</template>
+                  </el-table-column>
+                  <el-table-column label="策略" width="100">
+                    <template #default="{ row }">{{ row.strategy }}</template>
+                  </el-table-column>
+                  <el-table-column label="目标热量" width="100" align="right">
+                    <template #default="{ row }">{{ row.targetKcal ? `${row.targetKcal} kcal` : '—' }}</template>
+                  </el-table-column>
+                  <el-table-column label="蛋白 / 碳水 / 脂肪" min-width="150">
+                    <template #default="{ row }">
+                      {{ row.targetProteinG ?? '—' }} / {{ row.targetCarbG ?? '—' }} / {{ row.targetFatG ?? '—' }} g
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="生成" width="100">
+                    <template #default="{ row }">{{ row.generatedBy }}</template>
+                  </el-table-column>
+                  <el-table-column label="创建时间" width="150">
+                    <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+                  </el-table-column>
+                  <template #empty><el-empty description="暂无饮食计划" :image-size="70" /></template>
+                </el-table>
+              </div>
+
+              <div class="drawer-section">
+                <h4 class="section-title">饮食记录 · {{ insights?.foodLogs.length ?? 0 }}</h4>
+                <el-table :data="insights?.foodLogs || []" size="small">
+                  <el-table-column label="时间" width="150">
+                    <template #default="{ row }">{{ formatDateTime(row.loggedAt) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="meal" label="餐次" width="76" />
+                  <el-table-column prop="foodName" label="食物" min-width="140" />
+                  <el-table-column label="克数" width="76" align="right">
+                    <template #default="{ row }">{{ row.grams ?? '—' }}</template>
+                  </el-table-column>
+                  <el-table-column label="热量" width="78" align="right">
+                    <template #default="{ row }">{{ row.kcal ?? '—' }}</template>
+                  </el-table-column>
+                  <el-table-column label="蛋白" width="70" align="right">
+                    <template #default="{ row }">{{ row.protein ?? '—' }}</template>
+                  </el-table-column>
+                  <el-table-column label="碳水" width="70" align="right">
+                    <template #default="{ row }">{{ row.carbs ?? '—' }}</template>
+                  </el-table-column>
+                  <el-table-column label="脂肪" width="70" align="right">
+                    <template #default="{ row }">{{ row.fat ?? '—' }}</template>
+                  </el-table-column>
+                  <template #empty><el-empty description="暂无饮食记录" :image-size="70" /></template>
+                </el-table>
+              </div>
             </el-tab-pane>
 
             <el-tab-pane :label="`AI 任务 · ${detail.aiJobs.length}`" name="aiJobs">
@@ -332,6 +415,128 @@
                 </el-table>
               </div>
             </el-tab-pane>
+
+            <el-tab-pane :label="`排期 · ${insights?.schedule.length ?? 0}`" name="schedule">
+              <div v-loading="insightsLoading" class="drawer-section">
+                <h4 class="section-title">训练排期</h4>
+                <el-table :data="insights?.schedule || []" size="small">
+                  <el-table-column label="计划" min-width="130">
+                    <template #default="{ row }">
+                      <span class="mono">{{ shortId(row.planId) }}</span>
+                      <span class="faint"> v{{ row.planVersion ?? '—' }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="训练日" min-width="120">
+                    <template #default="{ row }"><span class="mono">{{ shortId(row.dayId) }}</span></template>
+                  </el-table-column>
+                  <el-table-column label="安排日期" width="110">
+                    <template #default="{ row }">{{ row.assignedDate || '未安排' }}</template>
+                  </el-table-column>
+                  <el-table-column label="状态" width="96">
+                    <template #default="{ row }">
+                      <el-tag v-if="row.skippedAt" type="warning" effect="plain" size="small">已跳过</el-tag>
+                      <el-tag v-else type="success" effect="plain" size="small">正常</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="客户端更新" width="150">
+                    <template #default="{ row }">{{ formatDateTime(row.clientUpdatedAt) }}</template>
+                  </el-table-column>
+                  <el-table-column label="服务端写入" width="150">
+                    <template #default="{ row }">{{ formatDateTime(row.updatedAt) }}</template>
+                  </el-table-column>
+                  <template #empty><el-empty description="暂无排期状态" :image-size="70" /></template>
+                </el-table>
+              </div>
+            </el-tab-pane>
+
+            <el-tab-pane :label="`Watch · ${insights?.watchSessions.length ?? 0}`" name="watch">
+              <div v-loading="insightsLoading" class="drawer-section">
+                <h4 class="section-title">Watch 登录会话</h4>
+                <el-table :data="insights?.watchSessions || []" size="small">
+                  <el-table-column label="设备" min-width="150">
+                    <template #default="{ row }">
+                      <div class="cell-stack">
+                        <strong>{{ row.deviceName || 'Apple Watch' }}</strong>
+                        <span class="mono">{{ shortId(row.deviceId) }}</span>
+                      </div>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="创建" width="150">
+                    <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+                  </el-table-column>
+                  <el-table-column label="最近使用" width="150">
+                    <template #default="{ row }">{{ formatDateTime(row.lastUsedAt) }}</template>
+                  </el-table-column>
+                  <el-table-column label="到期" width="150">
+                    <template #default="{ row }">{{ formatDateTime(row.expiresAt) }}</template>
+                  </el-table-column>
+                  <el-table-column label="状态" width="96">
+                    <template #default="{ row }">
+                      <el-tag :type="row.revokedAt ? 'danger' : 'success'" effect="plain" size="small">
+                        {{ row.revokedAt ? '已撤销' : '有效' }}
+                      </el-tag>
+                    </template>
+                  </el-table-column>
+                  <template #empty><el-empty description="没有 Watch 会话" :image-size="70" /></template>
+                </el-table>
+              </div>
+
+              <div class="drawer-section">
+                <h4 class="section-title">Watch 训练 · {{ insights?.watchWorkouts.length ?? 0 }}</h4>
+                <el-table :data="insights?.watchWorkouts || []" size="small">
+                  <el-table-column label="开始" width="150">
+                    <template #default="{ row }">{{ formatDateTime(row.startedAt) }}</template>
+                  </el-table-column>
+                  <el-table-column label="时长" width="100" align="right">
+                    <template #default="{ row }">{{ row.durationMin ? `${row.durationMin} 分钟` : '—' }}</template>
+                  </el-table-column>
+                  <el-table-column label="感受" width="80" align="center">
+                    <template #default="{ row }">{{ row.feeling ?? '—' }}</template>
+                  </el-table-column>
+                  <el-table-column label="HealthKit ID" min-width="160">
+                    <template #default="{ row }"><span class="mono">{{ row.healthkitWorkoutId || '—' }}</span></template>
+                  </el-table-column>
+                  <template #empty><el-empty description="暂无 Watch 训练" :image-size="70" /></template>
+                </el-table>
+              </div>
+            </el-tab-pane>
+
+            <el-tab-pane :label="`记忆与器械 · ${insights?.memories.length ?? 0}`" name="memory">
+              <div v-loading="insightsLoading" class="drawer-section">
+                <h4 class="section-title">AI 记忆</h4>
+                <el-table :data="insights?.memories || []" size="small">
+                  <el-table-column prop="kind" label="类型" width="100" />
+                  <el-table-column prop="content" label="内容" min-width="240" show-overflow-tooltip />
+                  <el-table-column prop="memoryKey" label="Key" width="120" show-overflow-tooltip />
+                  <el-table-column label="状态" width="80">
+                    <template #default="{ row }">
+                      <el-tag :type="row.active ? 'success' : 'info'" effect="plain" size="small">
+                        {{ row.active ? '生效' : '停用' }}
+                      </el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="创建" width="150">
+                    <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+                  </el-table-column>
+                  <template #empty><el-empty description="暂无 AI 记忆" :image-size="70" /></template>
+                </el-table>
+              </div>
+
+              <div class="drawer-section">
+                <h4 class="section-title">个人器械库 · {{ insights?.equipment.length ?? 0 }}</h4>
+                <el-table :data="insights?.equipment || []" size="small">
+                  <el-table-column prop="name" label="名称" min-width="160" />
+                  <el-table-column prop="muscle" label="部位" width="100" />
+                  <el-table-column prop="equipment" label="器械" width="100" />
+                  <el-table-column prop="source" label="来源" width="90" />
+                  <el-table-column prop="notes" label="备注" min-width="160" show-overflow-tooltip />
+                  <el-table-column label="创建" width="150">
+                    <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+                  </el-table-column>
+                  <template #empty><el-empty description="暂无个人器械" :image-size="70" /></template>
+                </el-table>
+              </div>
+            </el-tab-pane>
           </el-tabs>
         </template>
       </div>
@@ -356,17 +561,19 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Search, ArrowDown } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
 import StatusTag from '@/components/StatusTag.vue'
+import TrendChart from '@/components/TrendChart.vue'
 import { usersApi } from '@/api/users'
 import { errorMessage } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
-import type { UserAccess, UserDetail, UserListItem } from '@/api/types'
+import type { UserAccess, UserDetail, UserInsights, UserListItem } from '@/api/types'
 import {
+  formatDate,
   formatDateTime,
   formatDuration,
   formatNumber,
@@ -388,6 +595,8 @@ const detail = ref<UserDetail | null>(null)
 const detailTab = ref('profile')
 const access = ref<UserAccess | null>(null)
 const accessLoading = ref(false)
+const insights = ref<UserInsights | null>(null)
+const insightsLoading = ref(false)
 const grantDialogVisible = ref(false)
 const granting = ref(false)
 const grantForm = reactive({
@@ -451,9 +660,10 @@ async function openDetail(row: UserListItem): Promise<void> {
   detailLoading.value = true
   detailTab.value = 'profile'
   access.value = null
+  insights.value = null
   try {
     detail.value = await usersApi.detail(row.id)
-    await loadAccess(row.id)
+    await Promise.all([loadAccess(row.id), loadInsights(row.id)])
   } catch (reason) {
     ElMessage.error(errorMessage(reason))
     drawerVisible.value = false
@@ -472,6 +682,29 @@ async function loadAccess(userId: string): Promise<void> {
     accessLoading.value = false
   }
 }
+
+async function loadInsights(userId: string): Promise<void> {
+  insightsLoading.value = true
+  try {
+    insights.value = await usersApi.insights(userId)
+  } catch (reason) {
+    ElMessage.error(errorMessage(reason))
+  } finally {
+    insightsLoading.value = false
+  }
+}
+
+const bodyChart = computed(() => {
+  const items = [...(insights.value?.bodyMetrics ?? [])]
+    .reverse()
+    .filter((item) => item.weightKg !== null)
+  return {
+    labels: items.map((item) => formatDate(item.measuredAt)),
+    series: items.length
+      ? [{ name: '体重 (kg)', data: items.map((item) => item.weightKg as number), color: '#5b8cff' }]
+      : [],
+  }
+})
 
 function trialLabel(featureKey: string): string {
   const trial = access.value?.trials.find((item) => item.featureKey === featureKey)
@@ -756,6 +989,30 @@ onMounted(load)
 
 .drawer-body {
   min-height: 280px;
+}
+
+.cell-stack {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cell-stack strong {
+  overflow: hidden;
+  color: #dfe8f6;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-stack span {
+  overflow: hidden;
+  color: #687890;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .profile-hero {
