@@ -150,4 +150,7 @@ public final class MediaAssetDtos {
             String message
     ) {
     }
+
+    public record MediaConfig(boolean uploadEnabled) {
+    }
 }

@@ -266,7 +266,7 @@
           <div class="upload-row">
             <el-input v-model="form.phoneUrl" placeholder="/media/videos/... 或 https://..." />
             <el-upload
-              v-if="canWrite"
+              v-if="canWrite && uploadEnabled"
               :show-file-list="false"
               accept="video/mp4,video/quicktime,video/webm"
               :http-request="uploadPhone"
@@ -280,7 +280,7 @@
           <div class="upload-row">
             <el-input v-model="form.watchUrl" placeholder="/media/videos/... 或 https://..." />
             <el-upload
-              v-if="canWrite"
+              v-if="canWrite && uploadEnabled"
               :show-file-list="false"
               accept="video/mp4,video/quicktime,video/webm"
               :http-request="uploadWatch"
@@ -294,7 +294,7 @@
           <div class="upload-row">
             <el-input v-model="form.posterUrl" placeholder="/media/posters/... 或 https://..." />
             <el-upload
-              v-if="canWrite"
+              v-if="canWrite && uploadEnabled"
               :show-file-list="false"
               accept="image/jpeg,image/png,image/webp"
               :http-request="uploadPoster"
@@ -344,6 +344,14 @@
           show-icon
           title="同一动作 + 性别的已发布版本会自动归档；Watch 缺失时 App 会回退到静态海报，不显示假动画。"
         />
+        <el-alert
+          v-if="!uploadEnabled"
+          type="warning"
+          :closable="false"
+          show-icon
+          style="margin-top: 10px"
+          title="当前后台未启用媒体上传：请填写生产可访问的 URL，或在生产机运行 admin-server。"
+        />
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -357,6 +365,14 @@
         :closable="false"
         show-icon
         title="CSV 表头：exercise_slug, sex, source, phone_url, watch_url, poster_url, duration_seconds, loop_start_ms, loop_end_ms, watch_sha256, license_note, license_expires_at, purchase_ref, status"
+      />
+      <el-alert
+        v-if="!uploadEnabled"
+        type="warning"
+        :closable="false"
+        show-icon
+        style="margin-top: 8px"
+        title="当前后台不接收文件上传；CSV 里的 phone_url / watch_url / poster_url 必须是生产可访问的 URL。"
       />
       <div class="import-row">
         <el-upload
@@ -445,6 +461,7 @@ const size = ref(20)
 const loading = ref(false)
 const coverage = ref<MediaCoverage | null>(null)
 const coverageLoading = ref(false)
+const uploadEnabled = ref(true)
 const coverageTab = ref('female')
 const filters = reactive({ q: '', sex: '', status: '', coverage: '' })
 
@@ -522,9 +539,19 @@ async function loadCoverage(): Promise<void> {
   }
 }
 
+async function loadConfig(): Promise<void> {
+  try {
+    const config = await mediaAssetsApi.config()
+    uploadEnabled.value = config.uploadEnabled
+  } catch {
+    uploadEnabled.value = true
+  }
+}
+
 function refresh(): void {
   void load()
   void loadCoverage()
+  void loadConfig()
 }
 
 async function loadExercises(query = ''): Promise<void> {

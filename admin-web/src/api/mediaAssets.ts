@@ -2,6 +2,7 @@ import { apiDelete, apiGet, apiPatch, apiPost, http } from './client'
 import type {
   CreateMediaAssetPayload,
   MediaAssetItem,
+  MediaConfig,
   MediaCoverage,
   MediaImportResult,
   MediaUpload,
@@ -24,6 +25,9 @@ export const mediaAssetsApi = {
   },
   async coverage(): Promise<MediaCoverage> {
     return apiGet<MediaCoverage>('/media-assets/coverage')
+  },
+  async config(): Promise<MediaConfig> {
+    return apiGet<MediaConfig>('/media-assets/config')
   },
   async get(id: string): Promise<MediaAssetItem> {
     return apiGet<MediaAssetItem>(`/media-assets/${encodeURIComponent(id)}`)

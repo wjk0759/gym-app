@@ -154,7 +154,11 @@ public class UserAccessRepository {
                 .optional()
                 .orElse(null);
         Instant base = activeExpiry == null ? now : activeExpiry.toInstant();
-        Timestamp startsAt = Timestamp.from(base);
+        // New grants start one second in the past so the immediate access()
+        // response cannot race MySQL's second-precision UTC_TIMESTAMP().
+        Timestamp startsAt = Timestamp.from(
+                activeExpiry == null ? base.minusSeconds(1) : base
+        );
         Timestamp expiresAt = Timestamp.from(base.plus(durationDays, ChronoUnit.DAYS));
         jdbc.sql("""
                 INSERT INTO user_entitlements

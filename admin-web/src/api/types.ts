@@ -647,6 +647,10 @@ export interface MediaImportResult {
   errors: MediaImportError[]
 }
 
+export interface MediaConfig {
+  uploadEnabled: boolean
+}
+
 export interface MembershipItem {
   entitlementId: string
   userId: string

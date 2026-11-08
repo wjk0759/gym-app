@@ -56,6 +56,12 @@ public class MediaAssetController {
         return service.coverage();
     }
 
+    @GetMapping("/config")
+    @PreAuthorize("hasAuthority('video:read')")
+    public MediaAssetDtos.MediaConfig config() {
+        return new MediaAssetDtos.MediaConfig(mediaService.uploadEnabled());
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('video:read')")
     public MediaAssetDtos.MediaAssetItem get(@PathVariable String id) {

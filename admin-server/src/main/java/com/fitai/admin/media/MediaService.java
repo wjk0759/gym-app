@@ -33,6 +33,12 @@ public class MediaService {
     }
 
     public MediaUpload store(MultipartFile file, String kind) {
+        if (!properties.uploadEnabled()) {
+            throw ApiException.badRequest(
+                    "MEDIA_UPLOAD_DISABLED",
+                    "当前后台未启用媒体上传；请填写生产可访问的 URL，或在生产机运行 admin-server"
+            );
+        }
         String normalizedKind = normalizeKind(kind);
         if (file == null || file.isEmpty() || file.getOriginalFilename() == null) {
             throw ApiException.badRequest("EMPTY_FILE", "请选择要上传的文件");
@@ -67,8 +73,11 @@ public class MediaService {
                 file.getOriginalFilename(), file.getSize(), file.getContentType());
     }
 
-    public void deleteByUrl(String url) {
-        if (url == null || !url.startsWith("/media/")) {
+    public boolean uploadEnabled() {
+        return properties.uploadEnabled();
+    }
+
+    public void deleteByUrl(String url) {        if (url == null || !url.startsWith("/media/")) {
             return;
         }
         Path root = Path.of(properties.root()).toAbsolutePath().normalize();

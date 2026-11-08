@@ -90,6 +90,7 @@ fitai:
     media:
       root: ${FITAI_MEDIA_ROOT:../backend/media}
       max-video-mb: ${FITAI_MAX_VIDEO_MB:100}
+      upload-enabled: ${FITAI_MEDIA_UPLOAD_ENABLED:true}
     bootstrap:
       enabled: ${FITAI_BOOTSTRAP_ENABLED:true}
       username: ${FITAI_BOOTSTRAP_USERNAME:admin}
