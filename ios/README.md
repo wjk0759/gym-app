@@ -8,6 +8,9 @@ SwiftUI 原生 App，部署目标 iOS 17.0，使用 XcodeGen 生成工程。
 
 ## 生成并运行
 
+> Xcode 26+ 要求 Watch 伴生 App 放在 `PlugIns/`，XcodeGen 旧版本默认放到 `Watch/`，会导致 Watch 显示「安装」但报 `Could not install at this time`。
+> `xcodegen generate` 会自动执行 `scripts/fix_watch_embed.sh` 修正；如果仍然失败，先检查生成后的 `project.pbxproj` 里是否有 `dstSubfolderSpec = 13;`，且没有 `CONTENTS_FOLDER_PATH)/Watch`。
+
 ```bash
 brew install xcodegen
 cd ios
