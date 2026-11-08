@@ -106,4 +106,10 @@ public class MediaAssetController {
     ) {
         return mediaService.store(file, kind);
     }
+
+    @PostMapping("/import")
+    @PreAuthorize("hasAuthority('video:write')")
+    public MediaAssetDtos.ImportResult importCsv(@RequestPart("file") MultipartFile file) {
+        return service.importCsv(file);
+    }
 }

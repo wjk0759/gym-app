@@ -56,6 +56,30 @@
           :foot="`${formatNumber(summary?.videosPublished)} / ${formatNumber(summary?.exercisesTotal)} 动作视频已发布`"
           glow="rgba(248, 196, 92, 0.18)"
         />
+        <MetricCard
+          label="Pro 会员"
+          :value="formatNumber(summary?.proUsers)"
+          foot="当前有效 Pro 用户"
+          glow="rgba(61, 220, 151, 0.2)"
+        />
+        <MetricCard
+          label="动作媒体覆盖"
+          :value="mediaCoverageRate"
+          :foot="`${formatNumber(summary?.mediaCoveredExercises)} / ${formatNumber(summary?.activeExercises)} 启用动作有媒体`"
+          glow="rgba(91, 140, 255, 0.22)"
+        />
+        <MetricCard
+          label="Watch 训练"
+          :value="formatNumber(summary?.watchWorkouts7d)"
+          foot="近 7 天 source=watch"
+          glow="rgba(148, 163, 184, 0.2)"
+        />
+        <MetricCard
+          label="饮食记录"
+          :value="formatNumber(summary?.foodLogs7d)"
+          :foot="`近 7 天 · 餐单 ${formatNumber(summary?.mealPlans7d)} 份`"
+          glow="rgba(248, 196, 92, 0.16)"
+        />
       </section>
 
       <section class="dashboard-grid">
@@ -245,6 +269,11 @@ const publishedRate = computed(() => {
   const total = summary.value?.exercisesTotal ?? 0
   const published = summary.value?.videosPublished ?? 0
   return total ? `${Math.round((published / total) * 100)}%` : '0%'
+})
+const mediaCoverageRate = computed(() => {
+  const total = summary.value?.activeExercises ?? 0
+  const covered = summary.value?.mediaCoveredExercises ?? 0
+  return total ? `${Math.round((covered / total) * 100)}%` : '0%'
 })
 const maxKind = computed(() => Math.max(1, ...(summary.value?.aiKinds ?? []).map((item) => item.count)))
 const goalMax = computed(() => Math.max(1, ...(summary.value?.goals ?? []).map((item) => item.count)))

@@ -450,7 +450,7 @@ public class MediaAssetRepository {
                 case "missing_watch" -> clauses.add("(m.watch_url IS NULL OR m.watch_url = '')");
                 case "missing_poster" -> clauses.add("(m.poster_url IS NULL OR m.poster_url = '')");
                 case "expiring" -> clauses.add(
-                        "m.license_expires_at BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)");
+                        "m.status = 'published' AND m.license_expires_at BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)");
                 default -> {
                 }
             }

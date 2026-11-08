@@ -3,6 +3,7 @@ import type { PageResponse, WorkoutDetail, WorkoutListItem } from './types'
 
 export interface WorkoutQuery {
   q?: string
+  source?: string
   page?: number
   size?: number
 }

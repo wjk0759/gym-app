@@ -27,10 +27,11 @@ public class WorkoutController {
     @PreAuthorize("hasAuthority('workout:read')")
     public PageResponse<WorkoutDtos.WorkoutListItem> list(
             @RequestParam(required = false) String q,
+            @RequestParam(required = false) String source,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return repository.list(q, page, size);
+        return repository.list(q, source, page, size);
     }
 
     @GetMapping("/{id}")

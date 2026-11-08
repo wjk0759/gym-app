@@ -21,15 +21,20 @@ public class WorkoutRepository {
         this.jdbc = jdbc;
     }
 
-    public PageResponse<WorkoutDtos.WorkoutListItem> list(String query, int page, int size) {
+    public PageResponse<WorkoutDtos.WorkoutListItem> list(
+            String query,
+            String source,
+            int page,
+            int size
+    ) {
         int safePage = SqlSupport.page(page);
         int safeSize = SqlSupport.size(size);
         boolean hasQuery = query != null && !query.isBlank();
         String from = SqlSupport.userOwnedFrom(
                 "workout_sessions", "w", "user_id", hasQuery
         );
-        String where = "";
-        Map<String, Object> params = params(query);
+        String where = where(source);
+        Map<String, Object> params = params(query, source);
         long total = jdbc.sql("""
                 SELECT COUNT(*)
                 FROM """ + from + """
@@ -38,6 +43,7 @@ public class WorkoutRepository {
                 """ + where).params(params).query(Long.class).optional().orElse(0L);
         List<WorkoutDtos.WorkoutListItem> items = jdbc.sql("""
                 SELECT w.id, w.user_id, w.started_at, w.finished_at, w.duration_min, w.feeling,
+                       w.source,
                        COALESCE(NULLIF(p.nickname, ''), u.phone, u.username, w.user_id) AS user_label,
                        (SELECT COUNT(DISTINCT s.exercise_slug) FROM set_logs s WHERE s.session_id = w.id) AS exercise_count,
                        (SELECT COUNT(*) FROM set_logs s WHERE s.session_id = w.id) AS set_count,
@@ -60,6 +66,7 @@ public class WorkoutRepository {
     public Optional<WorkoutDtos.WorkoutDetail> detail(String id) {
         Optional<WorkoutDtos.WorkoutListItem> workout = jdbc.sql("""
                 SELECT w.id, w.user_id, w.started_at, w.finished_at, w.duration_min, w.feeling,
+                       w.source,
                        COALESCE(NULLIF(p.nickname, ''), u.phone, u.username, w.user_id) AS user_label,
                        (SELECT COUNT(DISTINCT s.exercise_slug) FROM set_logs s WHERE s.session_id = w.id) AS exercise_count,
                        (SELECT COUNT(*) FROM set_logs s WHERE s.session_id = w.id) AS set_count,
@@ -98,12 +105,23 @@ public class WorkoutRepository {
         return jdbc.sql("DELETE FROM workout_sessions WHERE id = :id").param("id", id).update() > 0;
     }
 
-    private Map<String, Object> params(String query) {
+    private Map<String, Object> params(String query, String source) {
         Map<String, Object> params = new HashMap<>();
         if (query != null && !query.isBlank()) {
             SqlSupport.putSearchParams(params, query);
         }
+        if (source != null && !source.isBlank()) {
+            params.put("source", source);
+        }
         return params;
+    }
+
+    private String where(String source) {
+        List<String> clauses = new ArrayList<>();
+        if (source != null && !source.isBlank()) {
+            clauses.add("w.source = :source");
+        }
+        return clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses) + " ";
     }
 
     private WorkoutDtos.WorkoutListItem mapWorkout(java.sql.ResultSet rs) throws java.sql.SQLException {
@@ -111,6 +129,7 @@ public class WorkoutRepository {
                 rs.getString("id"),
                 rs.getString("user_id"),
                 rs.getString("user_label"),
+                rs.getString("source"),
                 SqlSupport.iso(rs.getTimestamp("started_at")),
                 SqlSupport.iso(rs.getTimestamp("finished_at")),
                 (Integer) rs.getObject("duration_min"),

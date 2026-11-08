@@ -17,6 +17,10 @@
           @keyup.enter="applyFilters"
           @clear="applyFilters"
         />
+        <el-select v-model="filters.source" clearable placeholder="训练来源" @change="applyFilters">
+          <el-option label="iPhone" value="phone" />
+          <el-option label="Apple Watch" value="watch" />
+        </el-select>
         <el-button type="primary" @click="applyFilters">查询</el-button>
         <el-button text @click="resetFilters">重置</el-button>
       </div>
@@ -28,6 +32,13 @@
               <strong>{{ row.userLabel }}</strong>
               <span class="mono">{{ shortId(row.userId) }}</span>
             </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="来源" width="96">
+          <template #default="{ row }">
+            <el-tag :type="row.source === 'watch' ? 'warning' : 'primary'" effect="plain" size="small">
+              {{ row.source === 'watch' ? 'Watch' : 'iPhone' }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="开始时间" width="158">
@@ -166,13 +177,14 @@ const loading = ref(false)
 const drawerVisible = ref(false)
 const detailLoading = ref(false)
 const detail = ref<WorkoutDetail | null>(null)
-const filters = reactive({ q: '' })
+const filters = reactive({ q: '', source: '' })
 
 async function load(): Promise<void> {
   loading.value = true
   try {
     const result = await workoutsApi.list({
       q: filters.q.trim() || undefined,
+      source: filters.source || undefined,
       page: page.value,
       size: size.value,
     })
@@ -192,6 +204,7 @@ function applyFilters(): void {
 
 function resetFilters(): void {
   filters.q = ''
+  filters.source = ''
   applyFilters()
 }
 

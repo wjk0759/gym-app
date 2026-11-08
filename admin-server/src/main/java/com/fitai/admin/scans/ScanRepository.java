@@ -1,5 +1,7 @@
 package com.fitai.admin.scans;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -80,6 +82,71 @@ public class ScanRepository {
 
     public boolean delete(String id) {
         return jdbc.sql("DELETE FROM equipment_scans WHERE id = :id").param("id", id).update() > 0;
+    }
+
+    public ScanDtos.ScanSummary summary() {
+        long total = count("SELECT COUNT(*) FROM equipment_scans");
+        long last7d = count("""
+                SELECT COUNT(*) FROM equipment_scans
+                WHERE created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
+                """);
+        long zeroCandidate = count("""
+                SELECT COUNT(*) FROM equipment_scans
+                WHERE COALESCE(JSON_LENGTH(result), 0) = 0
+                """);
+        long unavailable = count("""
+                SELECT COUNT(*) FROM equipment_scans WHERE status = 'unavailable'
+                """);
+        double avgCandidates = jdbc.sql("""
+                SELECT COALESCE(AVG(COALESCE(JSON_LENGTH(result), 0)), 0)
+                FROM equipment_scans
+                """).query(Double.class).optional().orElse(0.0);
+        List<ScanDtos.ModelCount> models = jdbc.sql("""
+                SELECT COALESCE(NULLIF(model, ''), 'unknown') AS model, COUNT(*) AS total
+                FROM equipment_scans
+                GROUP BY COALESCE(NULLIF(model, ''), 'unknown')
+                ORDER BY total DESC
+                """).query((rs, rowNum) -> new ScanDtos.ModelCount(
+                rs.getString("model"),
+                rs.getLong("total")
+        )).list();
+        List<ScanDtos.StatusCount> statuses = jdbc.sql("""
+                SELECT status, COUNT(*) AS total
+                FROM equipment_scans
+                GROUP BY status
+                ORDER BY total DESC
+                """).query((rs, rowNum) -> new ScanDtos.StatusCount(
+                rs.getString("status"),
+                rs.getLong("total")
+        )).list();
+        Map<LocalDate, Long> raw = new HashMap<>();
+        jdbc.sql("""
+                SELECT DATE(created_at) AS day, COUNT(*) AS total
+                FROM equipment_scans
+                WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 13 DAY)
+                GROUP BY DATE(created_at)
+                """).query((rs, rowNum) -> {
+            raw.put(rs.getDate("day").toLocalDate(), rs.getLong("total"));
+            return null;
+        }).list();
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        List<ScanDtos.DailyPoint> daily = new ArrayList<>();
+        for (int i = 13; i >= 0; i--) {
+            LocalDate day = today.minusDays(i);
+            daily.add(new ScanDtos.DailyPoint(
+                    day.toString(),
+                    raw.getOrDefault(day, 0L)
+            ));
+        }
+        double zeroRate = total == 0 ? 0 : (double) zeroCandidate / total;
+        return new ScanDtos.ScanSummary(
+                total, last7d, zeroCandidate, zeroRate, avgCandidates,
+                unavailable, models, statuses, daily
+        );
+    }
+
+    private long count(String sql) {
+        return jdbc.sql(sql).query(Long.class).optional().orElse(0L);
     }
 
     private String where(String status) {

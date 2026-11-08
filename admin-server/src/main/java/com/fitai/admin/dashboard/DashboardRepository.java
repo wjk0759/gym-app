@@ -63,6 +63,21 @@ public class DashboardRepository {
                     (SELECT COUNT(*) FROM exercises) AS exercises_total,
                     (SELECT COUNT(*) FROM exercise_videos WHERE status = 'published') AS videos_published,
                     (SELECT COUNT(*) FROM meal_plans) AS meal_plans_total,
+                    (SELECT COUNT(DISTINCT user_id) FROM user_entitlements
+                     WHERE plan_code = 'pro' AND revoked_at IS NULL
+                       AND starts_at <= UTC_TIMESTAMP() AND expires_at > UTC_TIMESTAMP()) AS pro_users,
+                    (SELECT COUNT(*) FROM exercises WHERE is_active = 1) AS active_exercises,
+                    (SELECT COUNT(DISTINCT e.slug) FROM exercises e
+                     WHERE e.is_active = 1
+                       AND EXISTS (SELECT 1 FROM exercise_media_assets m
+                                   WHERE m.exercise_slug = e.slug AND m.status = 'published')) AS media_covered,
+                    (SELECT COUNT(*) FROM workout_sessions
+                     WHERE source = 'watch'
+                       AND started_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)) AS watch_workouts_7d,
+                    (SELECT COUNT(*) FROM meal_plans
+                     WHERE created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)) AS meal_plans_7d,
+                    (SELECT COUNT(*) FROM food_logs
+                     WHERE logged_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)) AS food_logs_7d,
                     (SELECT COUNT(*) FROM ai_jobs WHERE status <> 'ok') AS ai_errors
                 """).query((rs, rowNum) -> new Totals(
                 rs.getLong("users_total"),
@@ -81,6 +96,12 @@ public class DashboardRepository {
                 rs.getLong("exercises_total"),
                 rs.getLong("videos_published"),
                 rs.getLong("meal_plans_total"),
+                rs.getLong("pro_users"),
+                rs.getLong("active_exercises"),
+                rs.getLong("media_covered"),
+                rs.getLong("watch_workouts_7d"),
+                rs.getLong("meal_plans_7d"),
+                rs.getLong("food_logs_7d"),
                 rs.getLong("ai_errors")
         )).list().getFirst();
 
@@ -212,7 +233,10 @@ public class DashboardRepository {
                 totals.sessions7d(), totals.programsActive(), totals.programsTotal(),
                 totals.chatsTotal(), totals.messagesTotal(), totals.safetyFlags(),
                 totals.scansTotal(), totals.exercisesTotal(), totals.videosPublished(),
-                totals.mealPlansTotal(), totals.aiErrors(), daily, aiKinds,
+                totals.mealPlansTotal(), totals.proUsers(), totals.activeExercises(),
+                totals.mediaCoveredExercises(), totals.watchWorkouts7d(),
+                totals.mealPlans7d(), totals.foodLogs7d(), totals.aiErrors(),
+                daily, aiKinds,
                 goals, equipment, recentUsers, recentWorkouts, recentSafety
         );
     }
@@ -234,6 +258,12 @@ public class DashboardRepository {
             long exercisesTotal,
             long videosPublished,
             long mealPlansTotal,
+            long proUsers,
+            long activeExercises,
+            long mediaCoveredExercises,
+            long watchWorkouts7d,
+            long mealPlans7d,
+            long foodLogs7d,
             long aiErrors
     ) {
     }

@@ -1,5 +1,7 @@
 package com.fitai.admin.scans;
 
+import java.util.List;
+
 public final class ScanDtos {
 
     private ScanDtos() {
@@ -19,5 +21,27 @@ public final class ScanDtos {
     }
 
     public record ScanDetail(ScanListItem scan, Object result) {
+    }
+
+    public record ScanSummary(
+            long total,
+            long last7d,
+            long zeroCandidate,
+            double zeroCandidateRate,
+            double avgCandidates,
+            long unavailable,
+            List<ModelCount> models,
+            List<StatusCount> statuses,
+            List<DailyPoint> daily
+    ) {
+    }
+
+    public record ModelCount(String model, long count) {
+    }
+
+    public record StatusCount(String status, long count) {
+    }
+
+    public record DailyPoint(String date, long count) {
     }
 }

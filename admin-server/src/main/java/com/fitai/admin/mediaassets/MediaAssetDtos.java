@@ -136,4 +136,18 @@ public final class MediaAssetDtos {
             String muscleGroup
     ) {
     }
+
+    public record ImportResult(
+            int total,
+            int created,
+            int failed,
+            List<ImportError> errors
+    ) {
+    }
+
+    public record ImportError(
+            int line,
+            String message
+    ) {
+    }
 }

@@ -1,5 +1,5 @@
 import { apiDelete, apiGet } from './client'
-import type { PageResponse, ScanDetail, ScanListItem } from './types'
+import type { PageResponse, ScanDetail, ScanListItem, ScanSummary } from './types'
 
 export interface ScanQuery {
   q?: string
@@ -14,6 +14,9 @@ export const scansApi = {
   },
   async detail(id: string): Promise<ScanDetail> {
     return apiGet<ScanDetail>(`/scans/${encodeURIComponent(id)}`)
+  },
+  async summary(): Promise<ScanSummary> {
+    return apiGet<ScanSummary>('/scans/summary')
   },
   async remove(id: string): Promise<void> {
     await apiDelete(`/scans/${encodeURIComponent(id)}`)

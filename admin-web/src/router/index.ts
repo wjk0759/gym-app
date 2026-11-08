@@ -46,6 +46,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '训练计划', permission: 'plan:read' },
       },
       {
+        path: 'diet',
+        name: 'diet',
+        component: () => import('@/views/DietView.vue'),
+        meta: { title: '饮食运营', permission: 'user:read' },
+      },
+      {
         path: 'schedule',
         name: 'schedule',
         component: () => import('@/views/ScheduleView.vue'),

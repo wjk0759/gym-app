@@ -11,6 +11,7 @@ public final class WorkoutDtos {
             String id,
             String userId,
             String userLabel,
+            String source,
             String startedAt,
             String finishedAt,
             Integer durationMin,

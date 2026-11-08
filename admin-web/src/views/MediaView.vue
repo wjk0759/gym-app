@@ -7,6 +7,7 @@
       <template #actions>
         <el-button :icon="Refresh" :loading="loading" @click="refresh">刷新</el-button>
         <el-button @click="goLegacy">旧版讲解视频</el-button>
+        <el-button v-if="canWrite" :icon="Upload" @click="openImport">批量导入</el-button>
         <el-button v-if="canWrite" type="primary" :icon="Plus" @click="openCreate">新建媒体</el-button>
       </template>
     </PageHeader>
@@ -350,6 +351,44 @@
       </template>
     </el-dialog>
 
+    <el-dialog v-model="importVisible" title="批量导入动作媒体" width="min(680px, calc(100vw - 28px))" destroy-on-close>
+      <el-alert
+        type="info"
+        :closable="false"
+        show-icon
+        title="CSV 表头：exercise_slug, sex, source, phone_url, watch_url, poster_url, duration_seconds, loop_start_ms, loop_end_ms, watch_sha256, license_note, license_expires_at, purchase_ref, status"
+      />
+      <div class="import-row">
+        <el-upload
+          :auto-upload="false"
+          :show-file-list="false"
+          accept=".csv,text/csv"
+          :on-change="onImportChange"
+        >
+          <el-button :icon="Document">选择 CSV</el-button>
+        </el-upload>
+        <span class="muted">{{ importFile ? importFile.name : '未选择文件' }}</span>
+        <el-button text @click="downloadTemplate">下载模板</el-button>
+      </div>
+      <el-alert
+        v-if="importResult"
+        :type="importResult.failed ? 'warning' : 'success'"
+        :closable="false"
+        show-icon
+        :title="`共 ${importResult.total} 行，成功 ${importResult.created} 行，失败 ${importResult.failed} 行`"
+      />
+      <el-table v-if="importResult?.errors?.length" :data="importResult.errors" size="small" max-height="240">
+        <el-table-column prop="line" label="行号" width="80" />
+        <el-table-column prop="message" label="错误" min-width="240" show-overflow-tooltip />
+      </el-table>
+      <template #footer>
+        <el-button @click="importVisible = false">关闭</el-button>
+        <el-button type="primary" :loading="importing" :disabled="!importFile" @click="submitImport">
+          开始导入
+        </el-button>
+      </template>
+    </el-dialog>
+
     <el-dialog v-model="previewVisible" title="媒体预览" width="min(760px, calc(100vw - 28px))" destroy-on-close>
       <div v-if="preview" class="preview-grid">
         <div>
@@ -375,8 +414,8 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type UploadRequestOptions } from 'element-plus'
-import { Picture, Plus, Refresh, Search, Upload } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type UploadFile, type UploadRequestOptions } from 'element-plus'
+import { Document, Picture, Plus, Refresh, Search, Upload } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
 import StatusTag from '@/components/StatusTag.vue'
@@ -390,6 +429,7 @@ import type {
   ExerciseItem,
   MediaAssetItem,
   MediaCoverage,
+  MediaImportResult,
   UpdateMediaAssetPayload,
 } from '@/api/types'
 import { formatDate, formatNumber, percent } from '@/utils/format'
@@ -420,6 +460,11 @@ const exerciseLoading = ref(false)
 
 const previewVisible = ref(false)
 const preview = ref<MediaAssetItem | null>(null)
+
+const importVisible = ref(false)
+const importing = ref(false)
+const importFile = ref<File | null>(null)
+const importResult = ref<MediaImportResult | null>(null)
 
 const form = reactive({
   exerciseSlug: '',
@@ -577,6 +622,45 @@ function openEdit(row: MediaAssetItem): void {
 function openPreview(row: MediaAssetItem): void {
   preview.value = row
   previewVisible.value = true
+}
+
+function openImport(): void {
+  importFile.value = null
+  importResult.value = null
+  importVisible.value = true
+}
+
+function onImportChange(file: UploadFile): void {
+  importFile.value = file.raw ?? null
+  importResult.value = null
+}
+
+async function submitImport(): Promise<void> {
+  if (!importFile.value) return
+  importing.value = true
+  try {
+    importResult.value = await mediaAssetsApi.importCsv(importFile.value)
+    ElMessage.success(`导入完成：成功 ${importResult.value.created} 行`)
+    if (importResult.value.created > 0) refresh()
+  } catch (reason) {
+    ElMessage.error(errorMessage(reason))
+  } finally {
+    importing.value = false
+  }
+}
+
+function downloadTemplate(): void {
+  const csv = [
+    'exercise_slug,sex,source,phone_url,watch_url,poster_url,duration_seconds,loop_start_ms,loop_end_ms,watch_sha256,license_note,license_expires_at,purchase_ref,status',
+    'cm_squat,male,purchased,/media/videos/cm_squat_male.mp4,/media/videos/cm_squat_male_watch.mp4,/media/posters/cm_squat_male.jpg,6,0,6000,,示例授权,2027-12-31,PO-001,draft',
+  ].join('\n')
+  const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = 'fitai-media-template.csv'
+  anchor.click()
+  URL.revokeObjectURL(url)
 }
 
 async function uploadMedia(options: UploadRequestOptions, target: 'phone' | 'watch'): Promise<void> {
@@ -868,6 +952,13 @@ onMounted(() => {
   width: 100%;
   max-height: 320px;
   border-radius: 8px;
+}
+
+.import-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0;
 }
 
 @media (max-width: 760px) {

@@ -34,6 +34,12 @@ public class ScanController {
         return repository.list(q, status, page, size);
     }
 
+    @GetMapping("/summary")
+    @PreAuthorize("hasAuthority('scan:read')")
+    public ScanDtos.ScanSummary summary() {
+        return repository.summary();
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('scan:read')")
     public ScanDtos.ScanDetail detail(@PathVariable String id) {

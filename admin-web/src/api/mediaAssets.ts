@@ -3,6 +3,7 @@ import type {
   CreateMediaAssetPayload,
   MediaAssetItem,
   MediaCoverage,
+  MediaImportResult,
   MediaUpload,
   PageResponse,
   UpdateMediaAssetPayload,
@@ -47,6 +48,14 @@ export const mediaAssetsApi = {
     data.append('file', file)
     data.append('kind', kind)
     const response = await http.post<MediaUpload>('/media-assets/upload', data, {
+      timeout: 120_000,
+    })
+    return response.data
+  },
+  async importCsv(file: File): Promise<MediaImportResult> {
+    const data = new FormData()
+    data.append('file', file)
+    const response = await http.post<MediaImportResult>('/media-assets/import', data, {
       timeout: 120_000,
     })
     return response.data

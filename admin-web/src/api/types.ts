@@ -58,6 +58,12 @@ export interface DashboardSummary {
   exercisesTotal: number
   videosPublished: number
   mealPlansTotal: number
+  proUsers: number
+  activeExercises: number
+  mediaCoveredExercises: number
+  watchWorkouts7d: number
+  mealPlans7d: number
+  foodLogs7d: number
   aiErrors: number
   daily: DashboardDailyPoint[]
   aiKinds: DashboardKindPoint[]
@@ -382,6 +388,7 @@ export interface WorkoutListItem {
   id: string
   userId: string
   userLabel: string
+  source: string
   startedAt: string
   finishedAt: string | null
   durationMin: number | null
@@ -449,6 +456,48 @@ export interface ScanListItem {
 export interface ScanDetail {
   scan: ScanListItem
   result: unknown
+}
+
+export interface ScanModelCount {
+  model: string
+  count: number
+}
+
+export interface ScanStatusCount {
+  status: string
+  count: number
+}
+
+export interface ScanDailyPoint {
+  date: string
+  count: number
+}
+
+export interface ScanSummary {
+  total: number
+  last7d: number
+  zeroCandidate: number
+  zeroCandidateRate: number
+  avgCandidates: number
+  unavailable: number
+  models: ScanModelCount[]
+  statuses: ScanStatusCount[]
+  daily: ScanDailyPoint[]
+}
+
+export interface EquipmentLibraryItem {
+  id: string
+  userId: string
+  phone: string | null
+  username: string | null
+  clientId: string
+  name: string
+  slug: string | null
+  muscle: string | null
+  equipment: string | null
+  notes: string
+  source: string
+  createdAt: string | null
 }
 
 export interface ExerciseItem {
@@ -586,6 +635,18 @@ export interface UpdateMediaAssetPayload {
   purchaseRef?: string | null
 }
 
+export interface MediaImportError {
+  line: number
+  message: string
+}
+
+export interface MediaImportResult {
+  total: number
+  created: number
+  failed: number
+  errors: MediaImportError[]
+}
+
 export interface MembershipItem {
   entitlementId: string
   userId: string
@@ -618,6 +679,55 @@ export interface MembershipSummary {
   newGrants7d: number
   revoked30d: number
   sources: MembershipSourceCount[]
+}
+
+export interface DietStrategyCount {
+  strategy: string
+  count: number
+}
+
+export interface DietGeneratedByCount {
+  generatedBy: string
+  count: number
+}
+
+export interface DietRecentPlan {
+  id: string
+  userId: string
+  userLabel: string
+  planDate: string | null
+  weekStart: string | null
+  strategy: string
+  generatedBy: string
+  targetKcal: number | null
+  createdAt: string | null
+}
+
+export interface DietRecentLog {
+  id: string
+  userId: string
+  userLabel: string
+  loggedAt: string | null
+  meal: string
+  foodName: string
+  grams: number | null
+  kcal: number | null
+  protein: number | null
+  carbs: number | null
+  fat: number | null
+}
+
+export interface DietSummary {
+  mealPlansTotal: number
+  mealPlans7d: number
+  foodLogsTotal: number
+  foodLogs7d: number
+  activeUsers7d: number
+  avgTargetKcal: number | null
+  strategies: DietStrategyCount[]
+  generatedBy: DietGeneratedByCount[]
+  recentPlans: DietRecentPlan[]
+  recentLogs: DietRecentLog[]
 }
 
 export interface CreateVideoPayload {
