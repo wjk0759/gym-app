@@ -38,6 +38,7 @@
   - Spring admin-server：`http://127.0.0.1:8080`
   - Vue 开发服务器：`http://127.0.0.1:5173/admin/`
   - 登录账号/密码在 `deploy/admin/.env` 的 `FITAI_BOOTSTRAP_*`
+  - 本机 admin-server 的 `FITAI_CORS_ORIGINS` 已加入 `http://127.0.0.1:5173` 和 `http://localhost:5173`；否则浏览器登录会 403（仅本地开发配置）
 - 说明：
   - Docker 构建 admin-server/admin-web 时 Docker Hub 拉取失败，所以管理后台用本地 jar + Vite dev 跑，不用 Docker 镜像
   - 本地 `exercise_media_assets` 目前为空，动作动画/Watch 媒体需要另行导入；器械识别和 admin 后台不受影响
