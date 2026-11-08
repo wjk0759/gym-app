@@ -17,6 +17,7 @@
           :key="item.path"
           :to="item.path"
           class="nav-item"
+          :class="{ 'router-link-active': activePath === item.path }"
           :title="item.label"
           @click="mobileOpen = false"
         >
@@ -174,6 +175,12 @@ const allMenuItems: MenuItem[] = [
 ]
 
 const menuItems = computed(() => allMenuItems.filter((item) => auth.hasPermission(item.permission)))
+const activePath = computed(() => {
+  if (route.path.startsWith('/schedule')) return '/plans'
+  if (route.path.startsWith('/videos')) return '/media'
+  if (route.path.startsWith('/agent-actions')) return '/agent-runs'
+  return route.path
+})
 const pageTitle = computed(() => route.meta.title ?? '管理控制台')
 const roleText = computed(() => (auth.user?.roles ?? []).map(roleLabel).join(' / ') || '管理员')
 const initials = computed(() => {
