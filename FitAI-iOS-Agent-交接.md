@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`2a98690`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `aa17a19`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`f083177`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `aa17a19`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 13/13 测试通过；完成 Watch UI 重设计（训练/动作/语音/锁定页）、单主按钮流程（`2d5dea0`）、40/42/49mm 响应式适配（`1eb3fdd`），并把语音输入与发送合并为一行（`9a833b1`）；此前修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
@@ -25,6 +25,28 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-10 · Windows / OpenCode（Vital 全库接入 iOS + 媒体缓存/图库/分页）
+
+- 提交：`f083177`（iOS）+ `bd215fc`（后端 V25）
+- 做了：
+  - 后端 `V25__exercise_media_variants.sql`：`exercise_media_assets` 加 `variant_key/source_pack/visual_style/visual_priority`，唯一约束改 `(exercise_slug, variant_key, version)`
+  - `media_for_slugs` 支持 `all_variants`：手机 `all=true` 返回全部 variant（按 visual_priority 排序 + `is_primary_for_watch`），Watch 默认只返回 primary；`/exercise-media` 加 `all` 参数
+  - `tools/media/import_vital_catalog.py`：生成 `exercises_insert.sql`（1,396 条）+ `media_manifest.json`（1,572 条）；`--transcode` 模式做 1080/360/poster 转码 + `media_insert.sql`
+  - iOS `Equipment` 枚举加 `.other`（47 个药球/TRX/VIPR/战绳等动作）
+  - iOS 动作库换成 Vital 全库：`ExerciseLibrary.all` 读 `vital_exercises.json`（1,396 条），`xunji_movements`/`legacy_exercises` 降级为旧 slug 解析；`ResourceExercise` 加 `aliases/slug_aliases`
+  - `Exercise` 加 `aliases/slugAliases/searchKey`；`ExerciseLibrary.search` 用 `searchKey`
+  - `EquipmentPickerView`：搜索用 `searchKey`，上拉加载（`visibleLimit` 60/次，筛选项变化重置）
+  - `ExerciseMediaItem` 加 `media_id/visual_style/visual_priority/is_primary_for_watch`；`id = media_id ?? exerciseSlug`
+  - `ExerciseMediaStore` 改多 variant（`itemsBySlug: [String: [ExerciseMediaItem]]`，primary 排序在前）
+  - 新增 `ExerciseMediaCache`（Caches/ExerciseMedia，256MB 软上限，LRU 淘汰）：训练页视频先落盘，重复看不再重复下载
+  - `ExerciseAnimationCard`：视频走缓存（`.task` 下载后换本地 URL）；全屏加横向缩略图 gallery，点缩略图切换，只自动加载 primary（懒加载）
+  - `APIClient+ExerciseMedia` 请求加 `&all=true`
+- 产物：`ios/FitAI/Resources/vital_exercises.json`（984KB，1,396 条，由 `scripts/vital/build_ios_catalog.py` 生成）
+- 未验证：**iOS 代码是盲写，没在 Mac 上 build**；需要 Mac 编译 + 单测 + SwiftLint
+- 依赖/阻塞：iOS 现在用 `vital-*` slug 生成计划，但后端还没导入 1,396 动作和媒体；**在转码+导入+上传完成前，训练页会回退 poster/文字（无视频）**。TestFlight 前必须完成 Step 2/3（转码 1,702 条 → 上传 HK `/media` → 导入 exercises+media）
+- Mac 待办：`git pull` → `xcodegen generate` → build；重点验证 `ExerciseAnimationCard` 图库、`ExerciseMediaCache`、`EquipmentPickerView` 分页、`ExerciseLibrary` 全库加载（1,396 条解码 + 唯一 slug 单测）
+- 禁止：不要把 `vital_exercises.json` 换成训记旧库；`Equipment` 的 `.other` 已在 `LoadProgression` 加 case，不要再删
 
 ### 2026-11-09 · Windows / OpenCode（Vital 动作库合并 + 视觉优先级）
 
