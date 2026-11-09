@@ -46,6 +46,9 @@ enum ExerciseLibrary {
         visibleCategoryTree.first { $0.l1 == l1 }?.l2 ?? []
     }
 
+    /// Catch-all category stays searchable but is not a browse destination.
+    private static let hiddenBrowseCategories: Set<String> = ["other"]
+
     /// Category tree with empty branches removed, for the library browser.
     /// Empty L1 (e.g. 前锯肌) and empty L2 (e.g. 背/大圆肌) are hidden until
     /// content exists, so users never land on a dead-end filter.
@@ -60,7 +63,10 @@ enum ExerciseLibrary {
             }
         }
         return categoryTree.compactMap { entry in
-            guard l1s.contains(entry.l1) else { return nil }
+            guard l1s.contains(entry.l1),
+                  !hiddenBrowseCategories.contains(entry.l1) else {
+                return nil
+            }
             let subs = entry.l2.filter { l2ByL1[entry.l1]?.contains($0) == true }
             return ExerciseCategory(entry.l1, subs)
         }
