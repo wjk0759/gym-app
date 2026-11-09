@@ -41,6 +41,15 @@ final class ExerciseMediaCache {
         return await download(remote, for: media, kind: "video")
     }
 
+    /// Returns the local poster URL, downloading it first if needed.
+    func ensurePosterCached(_ media: ExerciseMediaItem) async -> URL? {
+        if let cached = cachedPosterURL(for: media) {
+            return cached
+        }
+        guard let remote = media.posterURL else { return nil }
+        return await download(remote, for: media, kind: "poster")
+    }
+
     private func localURL(for media: ExerciseMediaItem, kind: String) -> URL? {
         let url = fileURL(for: media, kind: kind)
         guard fileManager.fileExists(atPath: url.path) else { return nil }

@@ -4,6 +4,10 @@ enum ExerciseLibrary {
     /// Active library shown in search, plan generation and onboarding.
     static let all: [Exercise] = load(resource: "vital_exercises")
 
+    /// Curated "common actions" whitelist for plan generation. The user's
+    /// self-selected library is unioned on top at generation time.
+    static let planEligible: [Exercise] = all.filter { $0.planEligible }
+
     /// Previous curated libraries kept resolvable by slug for old plans and
     /// history, but never offered as new picks.
     private static let xunji: [Exercise] = load(resource: "xunji_movements")
@@ -72,7 +76,8 @@ enum ExerciseLibrary {
                 motionStartURL: row.motionStartURL.flatMap { URL(string: $0) },
                 motionEndURL: row.motionEndURL.flatMap { URL(string: $0) },
                 aliases: row.aliases ?? [],
-                slugAliases: row.slugAliases ?? []
+                slugAliases: row.slugAliases ?? [],
+                planEligible: row.planEligible ?? true
             )
         }
     }
@@ -105,6 +110,7 @@ private struct ResourceExercise: Decodable {
     let motionEndURL: String?
     let aliases: [String]?
     let slugAliases: [String]?
+    let planEligible: Bool?
 
     enum CodingKeys: String, CodingKey {
         case slug
@@ -119,5 +125,6 @@ private struct ResourceExercise: Decodable {
         case motionEndURL = "motion_end_url"
         case aliases
         case slugAliases = "slug_aliases"
+        case planEligible = "plan_eligible"
     }
 }

@@ -898,8 +898,8 @@ vital-barbell-bulgarian-split-squat,杠铃保加利亚蹲,杠铃保加利亚蹲,
 vital-barbell-bent-over-row,杠铃俯身提拉,杠铃俯身提拉,vital-barbell-bent-over-row,barbell,back,False,1,
 vital-ab-roll-workout,杠铃健腹轮训练,杠铃健腹轮训练,vital-ab-roll-workout,barbell,core,False,1,
 vital-barbell-row,杠铃划船,杠铃划船,vital-barbell-row,barbell,back,False,1,
-vital-barbell-bench-press-flat,杠铃卧推,杠铃卧推,vital-barbell-bench-press-flat,barbell,chest,False,1,
-vital-close-grip-bench-press-barbell,窄握杠铃卧推,杠铃卧推,vital-close-grip-bench-press-barbell,barbell,chest,False,1,原英文标 close-grip，但实际是正常杠铃卧推
+vital-barbell-bench-press-flat,杠铃卧推,杠铃卧推,vital-barbell-bench-press-flat,barbell,chest,True,1,flat + close-grip（实际是正常卧推）合并为同一条杠铃卧推
+vital-close-grip-bench-press-barbell,窄握杠铃卧推,杠铃卧推,vital-barbell-bench-press-flat,barbell,chest,True,1,flat + close-grip（实际是正常卧推）合并为同一条杠铃卧推
 vital-barbell-march,杠铃原地踏步,杠铃原地踏步,vital-barbell-march,barbell,legs,False,1,
 vital-barbell-reverse-lunge-press,杠铃后撤弓步推举,杠铃后撤弓步推举,vital-barbell-reverse-lunge-press,barbell,legs,False,1,
 vital-barbell-reverse-lunges,杠铃后撤弓步蹲,杠铃后撤弓步蹲,vital-barbell-reverse-lunges,barbell,legs,False,2,

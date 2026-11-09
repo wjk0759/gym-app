@@ -100,9 +100,14 @@ ACTIONS = [
     ),
     # --- 卧推 ---
     dict(name="窄握杠铃卧推", slugs=["vital-close-grip-barbell-bench-press"], equipment="barbell", muscle="chest"),
-    dict(name="杠铃卧推", slugs=["vital-close-grip-bench-press-barbell"], equipment="barbell", muscle="chest",
-         name_en="barbell bench press",
-         note="原英文标 close-grip，但实际是正常杠铃卧推"),
+    dict(
+        name="杠铃卧推",
+        slugs=["vital-barbell-bench-press-flat", "vital-close-grip-bench-press-barbell"],
+        equipment="barbell",
+        muscle="chest",
+        name_en="barbell bench press",
+        note="flat + close-grip（实际是正常卧推）合并为同一条杠铃卧推",
+    ),
     dict(
         name="上斜杠铃卧推",
         slugs=["vital-incline-barbell-bench-press", "vital-incline-bench-press-barbell"],
@@ -570,6 +575,9 @@ def main() -> None:
                     "note": "EXCLUDE: " + reason,
                 }
             )
+
+    # Drop explicitly excluded slugs from the catalog (not just from decisions).
+    out_actions = [a for a in out_actions if a["slug"] not in EXCLUDE]
 
     # Sort each action's media by visual priority, mark Watch primary.
     for a in out_actions:

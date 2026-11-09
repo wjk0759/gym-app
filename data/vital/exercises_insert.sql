@@ -1455,11 +1455,6 @@ INSERT INTO exercises (slug, name_zh, name_en, muscle_group, equipment, is_compo
 轻柔落地并立即向另一方向蹬回。
 全程保持快速、连续的滑步节奏。
 持续目标时间。', '[]', 1, 'vital_animations', 'Vital Animations EULA 2026.1', NOW()) ON DUPLICATE KEY UPDATE name_zh=VALUES(name_zh), name_en=VALUES(name_en), muscle_group=VALUES(muscle_group), equipment=VALUES(equipment), is_compound=VALUES(is_compound), difficulty=VALUES(difficulty), instructions=VALUES(instructions), source=VALUES(source), license=VALUES(license);
-INSERT INTO exercises (slug, name_zh, name_en, muscle_group, equipment, is_compound, difficulty, instructions, contraindications, is_active, source, license, created_at) VALUES ('vital-sprint-interval-fast-running', '冲刺间歇跑', 'sprint interval fast running', 'cardio', 'bodyweight', 1, 2, '从站立或慢跑热身开始，然后过渡到全速冲刺。
-向前驱动膝盖并有力摆臂，以最大化跑速。
-在规定的冲刺时长内保持最大努力，通常为10-30秒。
-减速为慢跑或步行，进行规定的恢复期。
-重复冲刺和恢复间歇至目标轮数。', '[]', 1, 'vital_animations', 'Vital Animations EULA 2026.1', NOW()) ON DUPLICATE KEY UPDATE name_zh=VALUES(name_zh), name_en=VALUES(name_en), muscle_group=VALUES(muscle_group), equipment=VALUES(equipment), is_compound=VALUES(is_compound), difficulty=VALUES(difficulty), instructions=VALUES(instructions), source=VALUES(source), license=VALUES(license);
 INSERT INTO exercises (slug, name_zh, name_en, muscle_group, equipment, is_compound, difficulty, instructions, contraindications, is_active, source, license, created_at) VALUES ('vital-sprint-intervals-fast-running', '冲刺间歇跑', 'sprint intervals fast running', 'cardio', 'bodyweight', 1, 3, '以轻度慢跑开始热身肌肉。
 加速至最大冲刺，专注于有力摆臂和高抬膝。
 在规定的间歇时长内保持冲刺，通常为15-30秒。
@@ -2013,16 +2008,11 @@ INSERT INTO exercises (slug, name_zh, name_en, muscle_group, equipment, is_compo
 控制杠铃下放至上胸。
 伸直手臂将杠铃推回起始位置。
 重复所需次数。', '[]', 1, 'vital_animations', 'Vital Animations EULA 2026.1', NOW()) ON DUPLICATE KEY UPDATE name_zh=VALUES(name_zh), name_en=VALUES(name_en), muscle_group=VALUES(muscle_group), equipment=VALUES(equipment), is_compound=VALUES(is_compound), difficulty=VALUES(difficulty), instructions=VALUES(instructions), source=VALUES(source), license=VALUES(license);
-INSERT INTO exercises (slug, name_zh, name_en, muscle_group, equipment, is_compound, difficulty, instructions, contraindications, is_active, source, license, created_at) VALUES ('vital-barbell-bench-press-flat', '杠铃卧推', 'barbell bench press flat', 'chest', 'barbell', 1, 2, '平躺在长凳上，双手略宽于肩握住杠铃。
+INSERT INTO exercises (slug, name_zh, name_en, muscle_group, equipment, is_compound, difficulty, instructions, contraindications, is_active, source, license, created_at) VALUES ('vital-barbell-bench-press-flat', '杠铃卧推', 'barbell bench press', 'chest', 'barbell', 1, 2, '平躺在长凳上，双手略宽于肩握住杠铃。
 取下杠铃，双臂完全伸直将杠铃保持在胸部正上方。
 屈肘约45度，将杠铃下放至胸部中部。
 伸直手臂将杠铃推回起始位置。
 按目标次数重复。', '[]', 1, 'vital_animations', 'Vital Animations EULA 2026.1', NOW()) ON DUPLICATE KEY UPDATE name_zh=VALUES(name_zh), name_en=VALUES(name_en), muscle_group=VALUES(muscle_group), equipment=VALUES(equipment), is_compound=VALUES(is_compound), difficulty=VALUES(difficulty), instructions=VALUES(instructions), source=VALUES(source), license=VALUES(license);
-INSERT INTO exercises (slug, name_zh, name_en, muscle_group, equipment, is_compound, difficulty, instructions, contraindications, is_active, source, license, created_at) VALUES ('vital-close-grip-bench-press-barbell', '杠铃卧推', 'barbell bench press', 'chest', 'barbell', 1, 2, '平躺在卧推凳上，双手约与肩同宽或略窄握杠铃。
-取下杠铃，双臂完全伸直将杠铃保持在胸部正上方。
-屈肘将杠铃下放至下胸部，肘部贴近身体两侧。
-伸臂将杠铃推回起始位置。
-重复至目标次数。', '[]', 1, 'vital_animations', 'Vital Animations EULA 2026.1', NOW()) ON DUPLICATE KEY UPDATE name_zh=VALUES(name_zh), name_en=VALUES(name_en), muscle_group=VALUES(muscle_group), equipment=VALUES(equipment), is_compound=VALUES(is_compound), difficulty=VALUES(difficulty), instructions=VALUES(instructions), source=VALUES(source), license=VALUES(license);
 INSERT INTO exercises (slug, name_zh, name_en, muscle_group, equipment, is_compound, difficulty, instructions, contraindications, is_active, source, license, created_at) VALUES ('vital-barbell-close-grip-bench-press', '杠铃窄握卧推', 'barbell close grip bench press', 'chest', 'barbell', 1, 2, '平躺在长凳上，以与肩同宽或略窄的握距握住杠铃。
 取下杠铃，双臂完全伸直将杠铃保持在胸部正上方。
 缓慢将杠铃下放至下胸部，保持肘部贴近身体两侧。

@@ -16839,67 +16839,6 @@
   "excluded_from_library": false
  },
  {
-  "slug": "vital-sprint-interval-fast-running",
-  "slug_aliases": [
-   "vital-sprint-interval-fast-running"
-  ],
-  "name_zh": "冲刺间歇跑",
-  "name_en": "sprint interval fast running",
-  "source_name_en": "sprint interval fast running",
-  "aliases": [
-   "sprint interval fast running",
-   "冲刺跑",
-   "间歇冲刺"
-  ],
-  "equipment": "bodyweight",
-  "muscle_group": "cardio",
-  "body_part": "cardio",
-  "target": "quads",
-  "secondary_muscles": [
-   "hamstrings",
-   "glutes",
-   "lower legs"
-  ],
-  "category": "cardio",
-  "difficulty": 2,
-  "is_compound": true,
-  "instructions_zh": [
-   "从站立或慢跑热身开始，然后过渡到全速冲刺。",
-   "向前驱动膝盖并有力摆臂，以最大化跑速。",
-   "在规定的冲刺时长内保持最大努力，通常为10-30秒。",
-   "减速为慢跑或步行，进行规定的恢复期。",
-   "重复冲刺和恢复间歇至目标轮数。"
-  ],
-  "instructions_needs_review": 1,
-  "name_zh_source": "manual_v2",
-  "old_names_zh": "冲刺间歇跑",
-  "review_note": "",
-  "sex_variants": [
-   "male"
-  ],
-  "media": [
-   {
-    "pack": "100",
-    "sex": "male",
-    "video_id": "1190",
-    "source_file": "Gym-workouts-20261109T110001Z-1-002/Gym-workouts/100 Workouts/100 Workouts/1190.mp4",
-    "size_bytes": 2512700,
-    "visual_priority": 1,
-    "visual_style": "灰T恤3D",
-    "primary_for_watch": true
-   }
-  ],
-  "media_count": 1,
-  "source": "vital_animations",
-  "license": "Vital Animations EULA 2026.1",
-  "primary_media": {
-   "source_file": "Gym-workouts-20261109T110001Z-1-002/Gym-workouts/100 Workouts/100 Workouts/1190.mp4",
-   "visual_style": "灰T恤3D",
-   "visual_priority": 1
-  },
-  "excluded_from_library": false
- },
- {
   "slug": "vital-sprint-intervals-fast-running",
   "slug_aliases": [
    "vital-sprint-intervals-fast-running"
@@ -23603,14 +23542,18 @@
  {
   "slug": "vital-barbell-bench-press-flat",
   "slug_aliases": [
-   "vital-barbell-bench-press-flat"
+   "vital-barbell-bench-press-flat",
+   "vital-close-grip-bench-press-barbell"
   ],
   "name_zh": "杠铃卧推",
-  "name_en": "barbell bench press flat",
+  "name_en": "barbell bench press",
   "source_name_en": "barbell bench press flat",
   "aliases": [
+   "barbell bench press",
    "barbell bench press flat",
-   "卧推"
+   "close-grip bench press barbell",
+   "卧推",
+   "窄握杠铃卧推"
   ],
   "equipment": "barbell",
   "muscle_group": "chest",
@@ -23632,67 +23575,8 @@
   ],
   "instructions_needs_review": 1,
   "name_zh_source": "manual_v2",
-  "old_names_zh": "杠铃卧推",
-  "review_note": "",
-  "sex_variants": [
-   "male"
-  ],
-  "media": [
-   {
-    "pack": "100gym",
-    "sex": "male",
-    "video_id": "0042",
-    "source_file": "Gym-workouts-20261109T110001Z-1-002/Gym-workouts/100 Gym Workouts/100gymworkouts/0042.mp4",
-    "size_bytes": 3172483,
-    "visual_priority": 1,
-    "visual_style": "灰T恤3D",
-    "primary_for_watch": true
-   }
-  ],
-  "media_count": 1,
-  "source": "vital_animations",
-  "license": "Vital Animations EULA 2026.1",
-  "primary_media": {
-   "source_file": "Gym-workouts-20261109T110001Z-1-002/Gym-workouts/100 Gym Workouts/100gymworkouts/0042.mp4",
-   "visual_style": "灰T恤3D",
-   "visual_priority": 1
-  },
-  "excluded_from_library": false
- },
- {
-  "slug": "vital-close-grip-bench-press-barbell",
-  "slug_aliases": [
-   "vital-close-grip-bench-press-barbell"
-  ],
-  "name_zh": "杠铃卧推",
-  "name_en": "barbell bench press",
-  "source_name_en": "close-grip bench press barbell",
-  "aliases": [
-   "barbell bench press",
-   "卧推"
-  ],
-  "equipment": "barbell",
-  "muscle_group": "chest",
-  "body_part": "upper arms",
-  "target": "triceps",
-  "secondary_muscles": [
-   "chest",
-   "shoulders"
-  ],
-  "category": "strength",
-  "difficulty": 2,
-  "is_compound": true,
-  "instructions_zh": [
-   "平躺在卧推凳上，双手约与肩同宽或略窄握杠铃。",
-   "取下杠铃，双臂完全伸直将杠铃保持在胸部正上方。",
-   "屈肘将杠铃下放至下胸部，肘部贴近身体两侧。",
-   "伸臂将杠铃推回起始位置。",
-   "重复至目标次数。"
-  ],
-  "instructions_needs_review": 1,
-  "name_zh_source": "manual_v2",
-  "old_names_zh": "窄握杠铃卧推",
-  "review_note": "原英文标 close-grip，但实际是正常杠铃卧推",
+  "old_names_zh": "杠铃卧推 / 窄握杠铃卧推",
+  "review_note": "flat + close-grip（实际是正常卧推）合并为同一条杠铃卧推",
   "sex_variants": [
    "male"
   ],
@@ -23706,9 +23590,18 @@
     "visual_priority": 1,
     "visual_style": "灰T恤3D",
     "primary_for_watch": true
+   },
+   {
+    "pack": "100gym",
+    "sex": "male",
+    "video_id": "0042",
+    "source_file": "Gym-workouts-20261109T110001Z-1-002/Gym-workouts/100 Gym Workouts/100gymworkouts/0042.mp4",
+    "size_bytes": 3172483,
+    "visual_priority": 1,
+    "visual_style": "灰T恤3D"
    }
   ],
-  "media_count": 1,
+  "media_count": 2,
   "source": "vital_animations",
   "license": "Vital Animations EULA 2026.1",
   "primary_media": {

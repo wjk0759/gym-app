@@ -4043,19 +4043,6 @@
   "note": null
  },
  {
-  "slug": "vital-sprint-interval-fast-running",
-  "name_zh": "冲刺间歇跑",
-  "variant_key": "100-1190",
-  "source_pack": "100",
-  "sex": "male",
-  "visual_style": "灰T恤3D",
-  "visual_priority": 1,
-  "is_primary_for_watch": true,
-  "source_file": "Gym-workouts-20261109T110001Z-1-002/Gym-workouts/100 Workouts/100 Workouts/1190.mp4",
-  "size_bytes": 2512700,
-  "note": null
- },
- {
   "slug": "vital-sprint-intervals-fast-running",
   "name_zh": "冲刺间歇跑",
   "variant_key": "100-1191",
@@ -5813,19 +5800,6 @@
  {
   "slug": "vital-barbell-bench-press-flat",
   "name_zh": "杠铃卧推",
-  "variant_key": "100gym-0042",
-  "source_pack": "100gym",
-  "sex": "male",
-  "visual_style": "灰T恤3D",
-  "visual_priority": 1,
-  "is_primary_for_watch": true,
-  "source_file": "Gym-workouts-20261109T110001Z-1-002/Gym-workouts/100 Gym Workouts/100gymworkouts/0042.mp4",
-  "size_bytes": 3172483,
-  "note": null
- },
- {
-  "slug": "vital-close-grip-bench-press-barbell",
-  "name_zh": "杠铃卧推",
   "variant_key": "100gym-0013",
   "source_pack": "100gym",
   "sex": "male",
@@ -5834,6 +5808,19 @@
   "is_primary_for_watch": true,
   "source_file": "Gym-workouts-20261109T110001Z-1-001/Gym-workouts/100 Gym Workouts/100gymworkouts/0013.mp4",
   "size_bytes": 2678794,
+  "note": null
+ },
+ {
+  "slug": "vital-barbell-bench-press-flat",
+  "name_zh": "杠铃卧推",
+  "variant_key": "100gym-0042",
+  "source_pack": "100gym",
+  "sex": "male",
+  "visual_style": "灰T恤3D",
+  "visual_priority": 1,
+  "is_primary_for_watch": false,
+  "source_file": "Gym-workouts-20261109T110001Z-1-002/Gym-workouts/100 Gym Workouts/100gymworkouts/0042.mp4",
+  "size_bytes": 3172483,
   "note": null
  },
  {

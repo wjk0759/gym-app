@@ -15,11 +15,36 @@ ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "data" / "vital" / "vital_actions_v2.json"
 DST = ROOT / "ios" / "FitAI" / "Resources" / "vital_exercises.json"
 
+# 计划白名单（常用动作）排除规则：器械/肌群/来源包/动作名四类。
+# 其余动作仍可搜索、可看详情，但不进 AI 计划池。
+PLAN_EXCLUDE_EQUIPMENT = {"other"}
+PLAN_EXCLUDE_MUSCLE = {"cardio"}
+PLAN_EXCLUDE_PACKS = {"yoga"}
+NON_PLAN_KEYWORDS = (
+    "拉伸", "放松", "呼吸", "冥想", "绕环", "热身", "舒展", "按摩",
+    "康复", "矫正", "普拉提", "瑜伽", "平衡", "活动度",
+)
+
+
+def is_plan_eligible(a: dict) -> bool:
+    if a.get("equipment") in PLAN_EXCLUDE_EQUIPMENT:
+        return False
+    if a.get("muscle_group") in PLAN_EXCLUDE_MUSCLE:
+        return False
+    packs = {md.get("pack") for md in a.get("media", [])}
+    if packs & PLAN_EXCLUDE_PACKS:
+        return False
+    name = a.get("name_zh") or ""
+    return not any(k in name for k in NON_PLAN_KEYWORDS)
+
 
 def main() -> None:
     actions = json.loads(SRC.read_text(encoding="utf-8"))
     rows = []
+    eligible = 0
     for a in actions:
+        plan_ok = is_plan_eligible(a)
+        eligible += 1 if plan_ok else 0
         steps = a.get("instructions_zh") or []
         instructions = "\n".join(str(s) for s in steps) if steps else None
         rows.append(
@@ -35,6 +60,7 @@ def main() -> None:
                 "contraindications": [],
                 "aliases": sorted(a.get("aliases") or []),
                 "slug_aliases": sorted(a.get("slug_aliases") or []),
+                "plan_eligible": plan_ok,
             }
         )
     rows.sort(key=lambda r: r["name_zh"])
@@ -42,7 +68,7 @@ def main() -> None:
         json.dumps(rows, ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
     )
     size = DST.stat().st_size
-    print(f"actions={len(rows)} bytes={size}")
+    print(f"actions={len(rows)} plan_eligible={eligible} bytes={size}")
     print(f"wrote {DST}")
 
 

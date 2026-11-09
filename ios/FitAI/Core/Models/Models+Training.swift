@@ -234,16 +234,15 @@ struct Exercise: Identifiable, Hashable {
     let motionEndURL: URL?
     let aliases: [String]
     let slugAliases: [String]
+    /// Whether this action may enter the AI plan pool (common actions + the
+    /// user's self-selected library). Excluded: yoga/stretch/cardio/"other".
+    let planEligible: Bool
+    /// Lowercased bag of everything a user might type to find this action.
+    /// Precomputed once so search never re-allocates strings per keystroke.
+    let searchKey: String
 
     var videoURL: URL? {
         VideoCatalog.url(for: slug)
-    }
-
-    /// Lowercased bag of everything a user might type to find this action.
-    var searchKey: String {
-        ([nameZH, nameEN] + aliases + [muscle.label, equipment.label])
-            .joined(separator: " ")
-            .lowercased()
     }
 
     init(
@@ -258,7 +257,8 @@ struct Exercise: Identifiable, Hashable {
         motionStartURL: URL? = nil,
         motionEndURL: URL? = nil,
         aliases: [String] = [],
-        slugAliases: [String] = []
+        slugAliases: [String] = [],
+        planEligible: Bool = true
     ) {
         self.slug = slug
         self.nameZH = nameZH
@@ -272,6 +272,10 @@ struct Exercise: Identifiable, Hashable {
         self.motionEndURL = motionEndURL
         self.aliases = aliases
         self.slugAliases = slugAliases
+        self.planEligible = planEligible
+        self.searchKey = ([nameZH, nameEN] + aliases + [muscle.label, equipment.label])
+            .joined(separator: " ")
+            .lowercased()
     }
 }
 

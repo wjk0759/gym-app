@@ -23,6 +23,7 @@ struct ExerciseAnimationCard: View {
     @State private var showFullScreen = false
     @State private var videoFailed = false
     @State private var resolvedVideoURL: URL?
+    @State private var posterLocalURL: URL?
 
     private var media: ExerciseMediaItem { medias[0] }
 
@@ -96,8 +97,12 @@ struct ExerciseAnimationCard: View {
         }
         .task(id: media.id) {
             resolvedVideoURL = media.phoneURL
+            posterLocalURL = media.posterURL
             if let cached = await ExerciseMediaCache.shared.ensureVideoCached(media) {
                 resolvedVideoURL = cached
+            }
+            if let cached = await ExerciseMediaCache.shared.ensurePosterCached(media) {
+                posterLocalURL = cached
             }
         }
         .fullScreenCover(isPresented: $showFullScreen) {
@@ -107,7 +112,7 @@ struct ExerciseAnimationCard: View {
 
     @ViewBuilder
     private var posterContent: some View {
-        if let posterURL = media.posterURL {
+        if let posterURL = posterLocalURL ?? media.posterURL {
             AsyncImage(url: posterURL) { phase in
                 switch phase {
                 case .success(let image):
@@ -155,6 +160,7 @@ private struct ExerciseAnimationFullScreen: View {
     @State private var videoFailed = false
     @State private var selectedIndex = 0
     @State private var resolvedVideoURL: URL?
+    @State private var posterLocalURL: URL?
 
     private var media: ExerciseMediaItem { medias[selectedIndex] }
 
@@ -208,7 +214,7 @@ private struct ExerciseAnimationFullScreen: View {
                                 )
                                 .aspectRatio(1, contentMode: .fit)
                                 .padding(8)
-                            } else if let posterURL = media.posterURL {
+                            } else if let posterURL = posterLocalURL ?? media.posterURL {
                                 AsyncImage(url: posterURL) { phase in
                                     switch phase {
                                     case .success(let image):
@@ -305,11 +311,16 @@ private struct ExerciseAnimationFullScreen: View {
         .onChange(of: selectedIndex) { _, _ in
             videoFailed = false
             resolvedVideoURL = nil
+            posterLocalURL = nil
         }
         .task(id: media.id) {
             resolvedVideoURL = media.phoneURL
+            posterLocalURL = media.posterURL
             if let cached = await ExerciseMediaCache.shared.ensureVideoCached(media) {
                 resolvedVideoURL = cached
+            }
+            if let cached = await ExerciseMediaCache.shared.ensurePosterCached(media) {
+                posterLocalURL = cached
             }
         }
         .preferredColorScheme(.light)

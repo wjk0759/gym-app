@@ -267,23 +267,27 @@ enum PlanGenerator {
                 equipment.insert(exercise.equipment)
             }
         }
-        let eligible = ExerciseLibrary.all.filter { exercise in
+        // Base pool = "常用动作" whitelist, filtered by equipment + injury.
+        var pool = ExerciseLibrary.planEligible.filter { exercise in
             let equipmentOK = equipment.contains(exercise.equipment)
             let injuryOK = banned.isDisjoint(with: Set(exercise.contraindications))
-            return equipmentOK && injuryOK && exercise.muscle != .cardio
+            return equipmentOK && injuryOK
         }
-
-        var libraryNarrowed = eligible
-        if !equipmentSlugs.isEmpty {
-            let preferred = Set(equipmentSlugs)
-            let narrowed = eligible.filter { preferred.contains($0.slug) }
-            if narrowed.count >= 8 {
-                libraryNarrowed = narrowed
+        // Union the user's self-selected library. They explicitly chose these,
+        // so keep them regardless of the equipment whitelist (injury still
+        // applies).
+        var seen = Set(pool.map(\.slug))
+        for slug in equipmentSlugs {
+            guard let exercise = ExerciseLibrary.exercise(slug: slug),
+                  seen.insert(exercise.slug).inserted,
+                  banned.isDisjoint(with: Set(exercise.contraindications)) else {
+                continue
             }
+            pool.append(exercise)
         }
 
-        let preferred = libraryNarrowed.filter { !disliked.contains($0.slug) }
-        return preferred.count >= 8 ? preferred : libraryNarrowed
+        let preferred = pool.filter { !disliked.contains($0.slug) }
+        return preferred.count >= 8 ? preferred : pool
     }
 
     private static func injuryTags(_ text: String) -> Set<String> {
