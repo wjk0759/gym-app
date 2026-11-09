@@ -115,9 +115,8 @@ vital-alternate-leg-curl,交替腿弯举,交替腿弯举,vital-alternate-leg-cur
 vital-spider-curl,蜘蛛弯举,交替蜘蛛弯举,vital-spider-curl,dumbbell,arms,False,1,女版实为交替弯举，改为交替蜘蛛弯举
 vital-lying-leg-raise-up-stretch,仰卧举腿拉伸,仰卧举腿拉伸,vital-lying-leg-raise-up-stretch,bodyweight,legs,False,1,
 vital-lying-leg-raise,仰卧举腿收腹,仰卧举腿收腹,vital-lying-leg-raise,bodyweight,core,False,1,
-vital-lying-leg-raises-bent-knee,仰卧屈膝举腿,仰卧举腿（微屈膝）,vital-lying-leg-raises-bent-knee,bodyweight,core,False,1,原名仰卧屈膝举腿，实为直腿/微屈膝举腿，名字待视频确认
-vital-flutter,仰卧打水,仰卧交叉打水,vital-flutter,bodyweight,core,True,1,交叉打水，非仰卧打水
-vital-flutter-kick,仰卧打水,仰卧交叉打水,vital-flutter,bodyweight,core,True,1,交叉打水，非仰卧打水
+vital-flutter,仰卧打水,仰卧交叉打水,vital-flutter,bodyweight,core,True,1,两个女版，交叉打水
+vital-flutter-kicks,仰卧打水,仰卧交叉打水,vital-flutter,bodyweight,core,True,1,两个女版，交叉打水
 vital-lying-flutter-kick,仰卧交替踢腿,仰卧交替踢腿,vital-lying-flutter-kick,bodyweight,core,False,1,
 vital-lying-adductor-stretch-supine-inner-thigh-stretch,仰卧内收肌拉伸,仰卧内收肌拉伸,vital-lying-adductor-stretch-supine-inner-thigh-stretch,bodyweight,legs,False,1,
 vital-lying-adductor-stretch-feet-elevated,仰卧内收肌拉伸-脚抬高,仰卧内收肌拉伸-脚抬高,vital-lying-adductor-stretch-feet-elevated,bodyweight,legs,False,1,
@@ -145,7 +144,7 @@ vital-dumbbell-pullover,仰卧屈臂上抬,仰卧屈臂上抬,vital-dumbbell-pul
 vital-lying-flutter-kick-fast,仰卧快速交替踢腿,仰卧快速交替踢腿,vital-lying-flutter-kick-fast,bodyweight,core,False,1,
 vital-supine-recovery-breathing,仰卧恢复呼吸,仰卧恢复呼吸,vital-supine-recovery-breathing,bodyweight,core,False,1,
 vital-air-bike-sit-on-hand-support-floor,仰卧手撑空中单车,仰卧手撑空中单车,vital-air-bike-sit-on-hand-support-floor,bodyweight,core,False,1,
-vital-flutter-kicks,仰卧打水,仰卧打水,vital-flutter-kicks,bodyweight,core,False,1,
+vital-flutter-kick,仰卧打水,仰卧打水,vital-flutter-kick,bodyweight,core,False,1,红色 3D 男版
 vital-lying-leg-lift-up,仰卧抬腿,仰卧抬腿,vital-lying-leg-lift-up,bodyweight,core,False,1,
 vital-supine-legs-lift-toe-touch,仰卧抬腿触脚尖,仰卧抬腿触脚尖,vital-supine-legs-lift-toe-touch,bodyweight,core,False,1,
 vital-lying-with-holding-her-straight-raise-leg,仰卧抱直腿拉伸,仰卧抱直腿拉伸,vital-lying-with-holding-her-straight-raise-leg,bodyweight,legs,False,1,
@@ -235,7 +234,7 @@ vital-split-squat-jump,分腿蹲跳,分腿蹲跳,vital-split-squat-jump,bodyweig
 vital-boating,划船式,划船式,vital-boating,bodyweight,cardio,False,1,
 vital-rowing-machine,划船机,划船机,vital-rowing-machine,machine,cardio,False,1,
 vital-jump-for-beginners,初学者跳跃,初学者跳跃,vital-jump-for-beginners,bodyweight,cardio,False,1,
-vital-lateral-shuffle-1,侧向滑步,前后交替滑步,vital-lateral-shuffle-1,bodyweight,cardio,False,1,原英文标 lateral，实为前后交替，名字待视频确认
+vital-lateral-shuffle-1,侧向滑步,前后交替滑步,vital-lateral-shuffle-1,bodyweight,cardio,False,1,原英文标 lateral，实为前后交替
 vital-leg-swing-front-to-back,前后摆腿,前后摆腿,vital-leg-swing-front-to-back,bodyweight,legs,False,1,
 vital-dumbbell-front-raise,前平举,前平举,vital-dumbbell-front-raise,dumbbell,shoulders,False,1,
 vital-hand-raise-front-jumping-jack,前平举开合跳,前平举开合跳,vital-hand-raise-front-jumping-jack,bodyweight,cardio,False,1,
@@ -459,7 +458,6 @@ vital-lateral-raise-machine,器械侧平举,器械侧平举,vital-lateral-raise-
 vital-leg-press-machine,器械倒蹬,器械倒蹬,vital-leg-press-machine,machine,legs,False,2,
 vital-cable-crunch,器械卷腹,器械卷腹,vital-cable-crunch,cable,core,False,2,
 vital-cable-kickback,器械后踢,器械后踢,vital-cable-kickback,cable,legs,False,1,
-vital-seated-machine-row,器械坐姿划船,器械坐姿划船,vital-seated-machine-row,machine,back,False,1,
 vital-rear-delt-fly-machine,器械坐姿反向飞鸟,器械坐姿反向飞鸟,vital-rear-delt-fly-machine,machine,shoulders,False,1,
 vital-seated-shoulder-press-machine,器械坐姿推举,器械坐姿推举,vital-seated-shoulder-press-machine,machine,shoulders,False,1,
 vital-seated-machine-chest-press,器械推胸,器械推胸,vital-seated-machine-chest-press,machine,chest,False,1,
@@ -494,9 +492,6 @@ vital-seated-forward-bend-paschimottanasana,坐姿体前屈（Paschimottanasana�
 vital-seated-side-reach-stretch,坐姿侧伸拉伸,坐姿侧伸拉伸,vital-seated-side-reach-stretch,bodyweight,core,False,1,
 vital-seated-side-stretch,坐姿侧屈拉伸,坐姿侧屈拉伸,vital-seated-side-stretch,bodyweight,core,False,1,
 vital-rear-flyes,后束飞鸟,坐姿俯身后束飞鸟,vital-rear-flyes,dumbbell,back,False,1,
-vital-seated-row,坐姿划船,坐姿划船,vital-seated-row,cable,back,False,1,
-vital-machine-seated-row,坐姿划船机,坐姿划船机,vital-machine-seated-row,machine,back,True,1,两条都属于器械类，合并
-vital-seated-row-machine,坐姿划船机,坐姿划船机,vital-machine-seated-row,machine,back,True,1,两条都属于器械类，合并
 vital-gentle-fold-seated-forward-fold,坐姿前屈,坐姿前屈,vital-gentle-fold-seated-forward-fold,bodyweight,legs,False,1,
 vital-seated-dynamic-stretch,坐姿动态拉伸,坐姿动态拉伸,vital-seated-dynamic-stretch,bodyweight,back,False,1,
 vital-seated-dynamic-chest-stretch,坐姿动态胸部拉伸,坐姿动态胸部拉伸,vital-seated-dynamic-chest-stretch,bodyweight,chest,False,1,
@@ -509,6 +504,10 @@ vital-seated-overhead-dumbbell-extension,坐姿哑铃三头肌伸展,坐姿哑�
 vital-seated-lateral-raise,坐姿哑铃侧平举,坐姿哑铃侧平举,vital-seated-lateral-raise,dumbbell,shoulders,False,1,
 vital-dumbbell-concentration-bicep-curl,哑铃集中弯举,坐姿哑铃弯举,vital-dumbbell-concentration-bicep-curl,dumbbell,arms,False,1,
 vital-seated-dumbbell-press,坐姿哑铃推举,坐姿哑铃推举,vital-seated-dumbbell-press,dumbbell,shoulders,False,1,
+vital-machine-seated-row,坐姿划船机,坐姿器械划船,vital-machine-seated-row,machine,back,True,1,machine 4 条合并；1620 为可移动凳版本
+vital-seated-machine-row,器械坐姿划船,坐姿器械划船,vital-machine-seated-row,machine,back,True,1,machine 4 条合并；1620 为可移动凳版本
+vital-seated-row,坐姿划船,坐姿器械划船,vital-machine-seated-row,machine,back,True,1,machine 4 条合并；1620 为可移动凳版本
+vital-seated-row-machine,坐姿划船机,坐姿器械划船,vital-machine-seated-row,machine,back,True,1,machine 4 条合并；1620 为可移动凳版本
 vital-seated-calf-raise,坐姿器械提踵,坐姿器械提踵,vital-seated-calf-raise,machine,legs,False,1,
 vital-seated-abductor-hip-lift,坐姿外展抬髋,坐姿外展抬髋,vital-seated-abductor-hip-lift,bodyweight,legs,False,1,
 vital-external-thigh-out-seated-floor,坐姿大腿外展,坐姿大腿外展,vital-external-thigh-out-seated-floor,bodyweight,legs,False,1,
@@ -554,7 +553,7 @@ vital-seated-forward-over-crossed-legs,坐姿盘腿前屈,坐姿盘腿前屈,vit
 vital-seated-relax-with-folded-leg,坐姿盘腿放松,坐姿盘腿放松,vital-seated-relax-with-folded-leg,bodyweight,legs,False,1,
 vital-seated-straight-leg-hold-towel-assist,坐姿直腿保持毛巾辅助,坐姿直腿保持毛巾辅助,vital-seated-straight-leg-hold-towel-assist,bodyweight,legs,False,1,
 vital-seated-leg-raise-straight,坐姿直腿抬高,坐姿直腿抬高,vital-seated-leg-raise-straight,bodyweight,legs,False,1,
-vital-seated-cable-row,坐姿绳索划船,坐姿绳索划船,vital-seated-cable-row,cable,back,False,1,
+vital-seated-cable-row,坐姿绳索划船,坐姿绳索划船机,vital-seated-cable-row,cable,back,False,1,
 vital-seated-shoulder-shurg,坐姿耸肩,坐姿耸肩,vital-seated-shoulder-shurg,bodyweight,shoulders,False,1,
 vital-seated-shoulder-rolls-up-down,坐姿耸肩绕环,坐姿耸肩绕环,vital-seated-shoulder-rolls-up-down,bodyweight,shoulders,False,1,
 vital-seated-scapular-squeeze,坐姿肩胛后缩,坐姿肩胛后缩,vital-seated-scapular-squeeze,bodyweight,back,False,1,
@@ -945,11 +944,10 @@ vital-barbell-overhead-press,杠铃过头推举,杠铃过头推举,vital-barbell
 vital-barbell-hold,杠铃静力握持,杠铃静力握持,vital-barbell-hold,barbell,arms,False,1,
 vital-barbell-static-lunges,杠铃静态弓步蹲,杠铃静态弓步蹲,vital-barbell-static-lunges,barbell,legs,False,1,
 vital-jefferson-squat,杰弗森深蹲,杰弗森深蹲,vital-jefferson-squat,barbell,legs,False,1,
-vital-close-push-ups,窄距俯卧撑,标准俯卧撑,vital-standard-push-up,bodyweight,chest,True,2,标准俯卧撑 + 俯卧撑 + 女版标准俯卧撑合并
-vital-push-up,俯卧撑,标准俯卧撑,vital-standard-push-up,bodyweight,chest,True,1,标准俯卧撑 + 俯卧撑 + 女版标准俯卧撑合并
-vital-push-ups,俯卧撑,标准俯卧撑,vital-standard-push-up,bodyweight,chest,True,2,标准俯卧撑 + 俯卧撑 + 女版标准俯卧撑合并
-vital-standard-push-up,标准俯卧撑,标准俯卧撑,vital-standard-push-up,bodyweight,chest,True,2,标准俯卧撑 + 俯卧撑 + 女版标准俯卧撑合并
-vital-standard-push-ups,标准俯卧撑,标准俯卧撑,vital-standard-push-up,bodyweight,chest,True,1,标准俯卧撑 + 俯卧撑 + 女版标准俯卧撑合并
+vital-push-up,俯卧撑,标准俯卧撑,vital-standard-push-up,bodyweight,chest,True,1,标准俯卧撑 + 俯卧撑合并
+vital-push-ups,俯卧撑,标准俯卧撑,vital-standard-push-up,bodyweight,chest,True,2,标准俯卧撑 + 俯卧撑合并
+vital-standard-push-up,标准俯卧撑,标准俯卧撑,vital-standard-push-up,bodyweight,chest,True,2,标准俯卧撑 + 俯卧撑合并
+vital-standard-push-ups,标准俯卧撑,标准俯卧撑,vital-standard-push-up,bodyweight,chest,True,1,标准俯卧撑 + 俯卧撑合并
 vital-standard-crunch,标准卷腹,标准卷腹,vital-standard-crunch,bodyweight,core,False,1,
 vital-standard-plank,标准平板支撑,标准平板支撑,vital-standard-plank,bodyweight,core,False,1,
 vital-tree-pose-vrikshasana,树式,树式,vital-tree-pose-vrikshasana,bodyweight,legs,False,1,
@@ -1110,7 +1108,8 @@ vital-close-grip-barbell-bench-press,窄握杠铃卧推,窄握杠铃卧推,vital
 vital-close-grip-triceps-push-up,窄距三头俯卧撑,窄距三头俯卧撑,vital-close-grip-triceps-push-up,bodyweight,chest,False,1,
 vital-incline-push-up-close,窄距上斜俯卧撑,窄距上斜俯卧撑,vital-incline-push-up-close,bodyweight,arms,False,1,
 vital-close-grip-lat-pull-down,窄距下拉,窄距下拉,vital-close-grip-lat-pull-down,cable,back,False,1,
-vital-close-grip-push-ups,窄距俯卧撑,窄距俯卧撑,vital-close-grip-push-ups,bodyweight,chest,False,1,
+vital-close-grip-push-ups,窄距俯卧撑,窄距俯卧撑,vital-close-grip-push-ups,bodyweight,chest,True,1,close grip push ups + Close Push Ups（女版）合并
+vital-close-push-ups,窄距俯卧撑,窄距俯卧撑,vital-close-grip-push-ups,bodyweight,chest,True,2,close grip push ups + Close Push Ups（女版）合并
 vital-close-push-ups-advanced-nose-touch-on-floor,窄距俯卧撑进阶（鼻触地）,窄距俯卧撑进阶（鼻触地）,vital-close-push-ups-advanced-nose-touch-on-floor,bodyweight,arms,False,1,
 vital-close-half-push-ups,窄距半程俯卧撑,窄距半程俯卧撑,vital-close-half-push-ups,bodyweight,chest,False,1,
 vital-narrow-grip-hack-squat,窄距哈克深蹲,窄距哈克深蹲,vital-narrow-grip-hack-squat,machine,legs,False,1,
@@ -1361,6 +1360,7 @@ vital-kneeling-single-arm-arnold-shoulder-press,跪姿单臂阿诺德肩推,跪�
 vital-kneeling-kettlebell-around-the-world,跪姿壶铃绕头,跪姿壶铃绕头,vital-kneeling-kettlebell-around-the-world,kettlebell,shoulders,False,1,
 vital-knee-plank-hold,跪姿平板支撑,跪姿平板支撑,vital-knee-plank-hold,bodyweight,core,False,1,
 vital-seated-on-knee-lunges,跪姿弓步,跪姿弓步,vital-seated-on-knee-lunges,bodyweight,legs,False,1,
+vital-lying-leg-raises-bent-knee,仰卧屈膝举腿,跪姿弹力带髋外展,vital-lying-leg-raises-bent-knee,band,glutes,False,1,原英文 lying leg raises (bent knee) 错，实为跪姿、双手撑地、大腿绑弹力带做髋外展；instructions 需重写
 vital-kneeling-landmine-oblique-twist,跪姿杠铃斜劈转体,跪姿杠铃斜劈转体,vital-kneeling-landmine-oblique-twist,barbell,core,False,1,
 vital-kneeling-ball-slam,跪姿砸球,跪姿砸球,vital-kneeling-ball-slam,other,shoulders,False,1,
 vital-kneeling-cable-crunch,跪姿绳索卷腹,跪姿绳索卷腹,vital-kneeling-cable-crunch,cable,core,False,1,

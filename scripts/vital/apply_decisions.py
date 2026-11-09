@@ -27,15 +27,20 @@ ACTIONS = [
         slugs=[
             "vital-standard-push-up",
             "vital-standard-push-ups",
-            "vital-close-push-ups",  # 女版标准俯卧撑
             "vital-push-up",
             "vital-push-ups",
         ],
         equipment="bodyweight",
         muscle="chest",
-        note="标准俯卧撑 + 俯卧撑 + 女版标准俯卧撑合并",
+        note="标准俯卧撑 + 俯卧撑合并",
     ),
-    dict(name="窄距俯卧撑", slugs=["vital-close-grip-push-ups"], equipment="bodyweight", muscle="chest"),
+    dict(
+        name="窄距俯卧撑",
+        slugs=["vital-close-grip-push-ups", "vital-close-push-ups"],
+        equipment="bodyweight",
+        muscle="chest",
+        note="close grip push ups + Close Push Ups（女版）合并",
+    ),
     dict(
         name="上斜俯卧撑",
         slugs=["vital-incline-push-up", "vital-incline-push-ups", "vital-incline-pushup"],
@@ -76,6 +81,7 @@ ACTIONS = [
     # --- 卧推 ---
     dict(name="窄握杠铃卧推", slugs=["vital-close-grip-barbell-bench-press"], equipment="barbell", muscle="chest"),
     dict(name="杠铃卧推", slugs=["vital-close-grip-bench-press-barbell"], equipment="barbell", muscle="chest",
+         name_en="barbell bench press",
          note="原英文标 close-grip，但实际是正常杠铃卧推"),
     dict(
         name="上斜杠铃卧推",
@@ -129,6 +135,7 @@ ACTIONS = [
     dict(name="单腿倒蹬", slugs=["vital-single-leg-leg-press"], equipment="machine", muscle="legs",
          note="原名单腿腿举，改为单腿倒蹬"),
     dict(name="弹力带箭步蹲", slugs=["vital-single-leg-press"], equipment="band", muscle="legs",
+         name_en="band lunge",
          note="原名单腿腿举/单腿 press，实为弹力带箭步蹲；instructions 需按视频重写"),
     dict(
         name="靠墙单腿站立（侧向扶墙）",
@@ -165,8 +172,10 @@ ACTIONS = [
     ),
     # --- 后束 / 肩 ---
     dict(name="蝴蝶机后束飞鸟", slugs=["vital-rear-delt-fly"], equipment="machine", muscle="shoulders",
+         name_en="reverse pec deck fly",
          note="原标 dumbbell，实为反向蝴蝶机"),
-    dict(name="坐姿俯身后束飞鸟", slugs=["vital-rear-flyes"], equipment="dumbbell", muscle="back"),
+    dict(name="坐姿俯身后束飞鸟", slugs=["vital-rear-flyes"], equipment="dumbbell", muscle="back",
+         name_en="seated bent-over rear delt fly"),
     dict(
         name="哑铃俯身后束飞鸟",
         slugs=["vital-rear-delt-dumbbell-fly", "vital-rear-delt-fly-with-dumbbell"],
@@ -182,6 +191,7 @@ ACTIONS = [
         note="男女两版（龙门架）合并",
     ),
     dict(name="哑铃肩外旋", slugs=["vital-dumb-waiter-dumbbell"], equipment="dumbbell", muscle="shoulders",
+         name_en="dumbbell shoulder external rotation",
          note="原哑铃侍者弯举，实为肩外旋"),
     dict(
         name="杠铃片前平举",
@@ -204,10 +214,13 @@ ACTIONS = [
     ),
     dict(name="蜘蛛弯举", slugs=["vital-dumbbell-spider-curl"], equipment="dumbbell", muscle="arms"),
     dict(name="交替蜘蛛弯举", slugs=["vital-spider-curl"], equipment="dumbbell", muscle="arms",
+         name_en="alternating spider curl",
          note="女版实为交替弯举，改为交替蜘蛛弯举"),
     dict(name="哑铃侍者弯举", slugs=["vital-dumbbell-waiter-curl"], equipment="dumbbell", muscle="arms"),
-    dict(name="坐姿哑铃弯举", slugs=["vital-dumbbell-concentration-bicep-curl"], equipment="dumbbell", muscle="arms"),
+    dict(name="坐姿哑铃弯举", slugs=["vital-dumbbell-concentration-bicep-curl"], equipment="dumbbell", muscle="arms",
+         name_en="seated dumbbell curl"),
     dict(name="哑铃集中弯举", slugs=["vital-dumbbell-concentration-biceps-curl"], equipment="dumbbell", muscle="arms",
+         name_en="dumbbell concentration curl",
          note="借助凳子支撑的集中弯举"),
     # --- 三头 ---
     dict(name="哑铃仰卧臂屈伸", slugs=["vital-dumbbell-skull-crusher"], equipment="dumbbell", muscle="arms"),
@@ -215,16 +228,28 @@ ACTIONS = [
     # --- 核心 ---
     dict(name="卷腹", slugs=["vital-crunch", "vital-crunches"], equipment="bodyweight", muscle="core"),
     dict(
-        name="仰卧交叉打水",
-        slugs=["vital-flutter", "vital-flutter-kick"],
+        name="仰卧打水",
+        slugs=["vital-flutter-kick"],
         equipment="bodyweight",
         muscle="core",
-        note="交叉打水，非仰卧打水",
+        note="红色 3D 男版",
     ),
-    dict(name="仰卧打水", slugs=["vital-flutter-kicks"], equipment="bodyweight", muscle="core"),
+    dict(
+        name="仰卧交叉打水",
+        slugs=["vital-flutter", "vital-flutter-kicks"],
+        equipment="bodyweight",
+        muscle="core",
+        note="两个女版，交叉打水",
+    ),
     dict(name="仰卧屈膝举腿", slugs=["vital-lying-leg-raise-bent-knees"], equipment="bodyweight", muscle="core"),
-    dict(name="仰卧举腿（微屈膝）", slugs=["vital-lying-leg-raises-bent-knee"], equipment="bodyweight", muscle="core",
-         note="原名仰卧屈膝举腿，实为直腿/微屈膝举腿，名字待视频确认"),
+    dict(
+        name="跪姿弹力带髋外展",
+        slugs=["vital-lying-leg-raises-bent-knee"],
+        equipment="band",
+        muscle="glutes",
+        name_en="kneeling band hip abduction",
+        note="原英文 lying leg raises (bent knee) 错，实为跪姿、双手撑地、大腿绑弹力带做髋外展；instructions 需重写",
+    ),
     dict(
         name="平板支撑对侧手脚抬起",
         slugs=[
@@ -302,11 +327,23 @@ ACTIONS = [
     # --- 背 ---
     dict(name="引体向上", slugs=["vital-pull-up", "vital-pull-ups"], equipment="bodyweight", muscle="back"),
     dict(
-        name="坐姿划船机",
-        slugs=["vital-machine-seated-row", "vital-seated-row-machine"],
+        name="坐姿器械划船",
+        slugs=[
+            "vital-machine-seated-row",
+            "vital-seated-row-machine",
+            "vital-seated-machine-row",
+            "vital-seated-row",
+        ],
         equipment="machine",
         muscle="back",
-        note="两条都属于器械类，合并",
+        note="machine 4 条合并；1620 为可移动凳版本",
+    ),
+    dict(
+        name="坐姿绳索划船机",
+        slugs=["vital-seated-cable-row"],
+        equipment="cable",
+        muscle="back",
+        name_en="seated cable row",
     ),
     dict(
         name="弹力带划船接臂屈伸",
@@ -318,7 +355,8 @@ ACTIONS = [
     # --- 有氧 / 步法 ---
     dict(name="侧向滑步", slugs=["vital-lateral-shuffle"], equipment="bodyweight", muscle="cardio"),
     dict(name="前后交替滑步", slugs=["vital-lateral-shuffle-1"], equipment="bodyweight", muscle="cardio",
-         note="原英文标 lateral，实为前后交替，名字待视频确认"),
+         name_en="forward-back shuffle",
+         note="原英文标 lateral，实为前后交替"),
     dict(name="跑步机跑步", slugs=["vital-run-on-treadmill", "vital-treadmill-run"], equipment="machine", muscle="cardio"),
     dict(name="冲刺间歇跑", slugs=["vital-sprint-intervals-fast-running"], equipment="bodyweight", muscle="cardio",
          note="用户要求只用慢速；默认保留 plural 条为慢速，请确认"),
@@ -337,8 +375,8 @@ EXCLUDE = {
 }
 
 SYNONYMS = {
-    "标准俯卧撑": ["俯卧撑", "女版俯卧撑", "跪姿俯卧撑"],
-    "窄距俯卧撑": ["窄握俯卧撑"],
+    "标准俯卧撑": ["俯卧撑"],
+    "窄距俯卧撑": ["窄握俯卧撑", "女版俯卧撑"],
     "单腿倒蹬": ["单腿腿举", "倒蹬"],
     "弹力带箭步蹲": ["弹力带弓步蹲", "弹力带箭步蹲"],
     "哑铃肩外旋": ["哑铃侍者式", "肩外旋"],
@@ -363,7 +401,9 @@ SYNONYMS = {
     "杠铃片前平举": ["杠铃片前举", "铃片前平举"],
     "六角杠硬拉": ["六角杠铃硬拉", "trap bar 硬拉"],
     "哑铃侍者弯举": ["侍者弯举"],
-    "坐姿划船机": ["坐姿划船", "器械划船"],
+    "坐姿器械划船": ["坐姿划船机", "器械坐姿划船", "坐姿划船"],
+    "坐姿绳索划船机": ["坐姿绳索划船", "绳索坐姿划船", "坐姿划船（绳索）"],
+    "跪姿弹力带髋外展": ["弹力带髋外展", "跪姿髋外展", "弹力带跪姿髋外展"],
     "平板支撑下犬式": ["平板接下犬式"],
     "乌鸦式": ["鹤式"],
     "团身跳": ["收膝跳", "抱膝跳"],
@@ -413,11 +453,13 @@ def main() -> None:
             equipment = spec.get("equipment") or first["equipment"]
             muscle = spec.get("muscle") or first["muscle_group"]
             note = spec.get("note", "")
+            name_en = spec.get("name_en") or first["name_en"]
         else:
             final_name = first["name_zh"]
             equipment = first["equipment"]
             muscle = first["muscle_group"]
             note = ""
+            name_en = first["name_en"]
 
         # Collect media, dedupe by source_file.
         media = []
@@ -427,7 +469,10 @@ def main() -> None:
                 src = md.get("source_file")
                 if src and src not in seen:
                     seen.add(src)
-                    media.append(md)
+                    item = dict(md)
+                    if Path(src).stem == "1620":
+                        item["note"] = "可移动凳版本"
+                    media.append(item)
 
         aliases = set()
         for m in members:
@@ -447,7 +492,8 @@ def main() -> None:
                 "slug": canon,
                 "slug_aliases": sorted({m["slug"] for m in members}),
                 "name_zh": final_name,
-                "name_en": first["name_en"],
+                "name_en": name_en,
+                "source_name_en": first["name_en"],
                 "aliases": sorted(aliases),
                 "equipment": equipment,
                 "muscle_group": muscle,
