@@ -154,6 +154,26 @@ static let apiBaseURL = URL(string: "http://192.168.1.20:8000/api/v1")!
 - 生产环境建议 HLS + 签名 URL + 防盗链
 - 「动作轨迹」目前对 `器械推胸` / `腿举` 使用 RepDB Free 的 start/peak 双帧，由 `FrameMotionBoard` 在客户端交替显示；不是 GIF，也不分发 RepDB 数据集。免费版需保留 `Exercise data by RepDB (repdb.co)` 署名。
 
+## 仅手机 Release（Watch 签名未就绪时）
+
+Watch App 需要 watchOS 描述文件。个人团队或尚未在 Xcode 注册手表时，嵌入的
+Watch App 会让 iOS 判定整个 App 签名无效，主 App 无法启动。
+
+在 Watch 签名解决前，用：
+
+```bash
+ios/scripts/build_phone_only.sh Wu-Tang
+```
+
+脚本会：
+
+1. 生成工程并构建 Release
+2. 移除 `PlugIns/FitAIWatch.app`
+3. 重新签名主 App
+4. 安装并启动到指定设备
+
+这个包不包含 Watch App；Watch 签名可用后应恢复普通 Release 构建。
+
 ## 下一步改哪里
 
 - **想改计划逻辑**：`Core/Services/PlanGenerator.swift`（本地兜底）或后端 `app/services/plan_generator.py`
