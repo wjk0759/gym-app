@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`be5c2e5`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `aa17a19`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`2a98690`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `aa17a19`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 13/13 测试通过；完成 Watch UI 重设计（训练/动作/语音/锁定页）、单主按钮流程（`2d5dea0`）、40/42/49mm 响应式适配（`1eb3fdd`），并把语音输入与发送合并为一行（`9a833b1`）；此前修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
@@ -25,6 +25,48 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-09 · Windows / OpenCode（Vital 动作库合并 + 视觉优先级）
+
+- 提交：`a61c681`、`2a98690`
+- 做了：
+  - 按用户逐条人工判断，对 1,577 个 Vital 动作做了合并/改名/拆分
+  - **最终动作库 `vital_actions_v2.json`：1,396 个动作 / 1,572 条媒体**
+  - **face/office 预留给第二版：`vital_face_office_v2.json` 130 个动作，不进主库**
+  - 每条媒体加了 `visual_style` + `visual_priority`，动作内按优先级排序，标了 `primary_for_watch` 和 `primary_media`
+  - 视觉优先级（用户指定）：
+    1 灰T恤3D（pack 100/100gym/430m）
+    2 金发真人女（430f1/homepilates/yoga）
+    3 黑背心真人女（women400）
+    4 红背心3D男（200）
+    5 肉色背心3D女（430f2/wallpilates）
+    6 黑背心3D肌肉建模女（home130）
+  - 关键改名（用户确认）：
+    - 单腿腿举 → 单腿倒蹬 / 弹力带箭步蹲
+    - 哑铃侍者弯举 → 哑铃肩外旋 / 哑铃侍者弯举
+    - 后束飞鸟 → 蝴蝶机后束飞鸟 / 坐姿俯身后束飞鸟 / 哑铃俯身后束飞鸟 / 绳索后束飞鸟
+    - 坐姿划船 → 坐姿器械划船（含 1620 可移动凳）/ 坐姿绳索划船机
+    - 仰卧打水 → 仰卧打水（flutter kick，男）/ 仰卧交叉打水（flutter+flutter kicks，女）
+    - 船长椅举腿 → 船长椅屈膝举腿 / 船长椅直腿举腿
+    - 蜘蛛弯举 → 蜘蛛弯举 / 交替蜘蛛弯举
+    - 侧平板支撑 → 侧平板支撑 / 瑜伽侧板式
+    - 仰卧举腿（微屈膝）→ 跪姿弹力带髋外展（band/glutes，英文 kneeling band hip abduction）
+  - 产物：
+    - `data/vital/vital_actions_v2.json`（主库）
+    - `data/vital/vital_face_office_v2.json`（第二版预留）
+    - `data/vital/vital_merge_decisions.csv`（逐条决策）
+    - `data/vital/duplicates_review_v2.html`（带视频复核）
+    - `scripts/vital/apply_decisions.py`（可复现，改 ACTIONS 表再跑）
+- 验证：脚本重跑幂等；媒体排序/优先级/primary_for_watch 抽查通过（标准俯卧撑 6 媒体、坐姿器械划船 4 媒体主条=1620 灰T恤3D）
+- 未做：
+  - 没有接入 iOS/后端/生产库，没转码、没上 OSS
+  - 误标视频的英文 instructions 还没重写（弹力带箭步蹲、跪姿弹力带髋外展等，已标 instructions_needs_review=1）
+  - 冲刺间歇跑：默认 plural 条当慢速保留、singular 条排除，用户尚未最终确认哪条是慢速
+  - 别名/SYNONYMS 是基础版，正式上线前再补全搜索别名
+- 对方需要做（Mac）：
+  - 等 media 转码 + OSS 后，再谈 iOS 接入；当前 v2 JSON 只是数据草稿，不要直接进包
+  - 手机端动作详情要做「主播放区 + 全部视频缩略图切换」，Watch 只下载 primary
+- 禁止：不要把 base 训记候选当正式中文名；不要覆盖原 1500 JSON；face/office 别在 v1 上架进动作库
 
 ### 2026-11-09 · Windows / OpenCode（Vital 1500 双语动作库草稿）
 
