@@ -5,6 +5,11 @@ struct ExerciseCategory: Identifiable {
     let l1: String
     let l2: [String]
     var id: String { l1 }
+
+    init(_ l1: String, _ l2: [String]) {
+        self.l1 = l1
+        self.l2 = l2
+    }
 }
 
 enum ExerciseLibrary {
