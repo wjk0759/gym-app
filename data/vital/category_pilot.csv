@@ -34,7 +34,7 @@ vital-dumbbell-calf-raise,哑铃提踵,dumbbell calf raise,calves,soleus,strengt
 vital-dumbbell-forearms-curl,哑铃前臂弯举,dumbbell forearms curl,forearms,biceps,strength,前臂,,0.9,target=forearms,0
 vital-single-leg-glute-raise-holds-with-dumbbell-chest-press,单腿臀推保持+哑铃卧推,single leg glute raise holds with dumbbell chest press,glutes,pectorals/hamstrings/triceps/core,strength,臀部,下臀,0.85,target=glutes,0
 vital-reach-to-w,W字后伸,reach to w,rhomboids,traps/delts/lower back,rehabilitation,功能性,,0.55,category=rehabilitation,1
-vital-plank-single-arm-dumbbell-triceps,平板支撑单臂哑铃臂屈伸,plank single arm dumbbell triceps,triceps,abs/shoulders/core,strength,核心,,0.85,name=支撑,0
+vital-l-sit-hold,L坐支撑,l-sit hold,abs,hip flexors/upper arms/shoulders,strength,核心,,0.85,name=支撑,0
 vital-cable-wood-chop,站姿绳索转体,cable wood chop,obliques,abs/shoulders/upper legs,strength,腹部,侧腹,0.9,target=obliques,0
 vital-warm-up-wiper,热身雨刷式,warm up wiper,obliques,abs/lower back/hip flexors,mobility,热身动作,下背,0.8,name=热身,0
 vital-reverse-prayer,反祈祷式,Reverse Prayer,forearms,shoulders/chest,stretching,拉伸,肩膀,0.8,category=stretching,0

@@ -10,7 +10,8 @@ struct EquipmentPickerView: View {
     private let allowedEquipment: Set<Equipment>?
 
     @State var selectedExercises: [Exercise] = []
-    @State var selectedMuscle: MuscleGroup?
+    @State var selectedCategory: String?
+    @State var selectedSubcategory: String?
     @State var selectedEquipment: Equipment?
     @State var savedOnly = false
     @State var query = ""
@@ -48,17 +49,13 @@ struct EquipmentPickerView: View {
         GridItem(.flexible(), spacing: 9)
     ]
 
-    let muscleOrder: [MuscleGroup] = [
-        .chest, .back, .legs, .glutes, .shoulders, .arms, .core, .cardio
-    ]
-
     var isSearching: Bool {
         !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     /// 变化即重置上拉加载的筛选组合键。
     private var filterKey: String {
-        "\(query)|\(selectedMuscle?.rawValue ?? "")|\(selectedEquipment?.rawValue ?? "")|\(savedOnly)"
+        "\(query)|\(selectedCategory ?? "")|\(selectedSubcategory ?? "")|\(selectedEquipment?.rawValue ?? "")|\(savedOnly)"
     }
 
     /// 每次筛选只构建一次 Set，避免在 filter/sort 里反复线性查库。
@@ -87,10 +84,11 @@ struct EquipmentPickerView: View {
                     return exercise.searchKey.contains(lowered)
                 }
 
-                let muscleMatch = selectedMuscle == nil || exercise.muscle == selectedMuscle
+                let categoryMatch = selectedCategory == nil || exercise.categoryL1 == selectedCategory
+                let subcategoryMatch = selectedSubcategory == nil || exercise.categoryL2 == selectedSubcategory
                 let equipmentMatch = selectedEquipment == nil || exercise.equipment == selectedEquipment
                 let savedMatch = !savedOnly || saved.contains(exercise.slug)
-                return muscleMatch && equipmentMatch && savedMatch
+                return categoryMatch && subcategoryMatch && equipmentMatch && savedMatch
             }
             .sorted { left, right in
                 let leftSaved = saved.contains(left.slug)
@@ -109,7 +107,7 @@ struct EquipmentPickerView: View {
             libraryHeader
 
             HStack(alignment: .top, spacing: 9) {
-                muscleSidebar
+                categorySidebar
 
                 AppScrollView {
                     exerciseGrid

@@ -45,7 +45,7 @@ vital-concentration-curl-seated,坐姿集中弯举,concentration curl (seated),b
 vital-wide-grip-barbell-curl,宽握杠铃弯举,wide grip barbell curl,biceps,forearms/shoulders,strength,手臂,二头,0.95,target=biceps,0
 vital-wide-dumbbell-push-up,宽距哑铃俯卧撑,wide dumbbell push up,chest,triceps/shoulders/abs,strength,胸,中下胸,0.9,target=chest,0
 vital-dumbbell-skullcrusher,屈腿哑铃仰卧臂屈伸,dumbbell skullcrusher,triceps,shoulders/forearms,strength,手臂,三头,0.95,target=triceps,0
-vital-plank-single-arm-dumbbell-triceps,平板支撑单臂哑铃臂屈伸,plank single arm dumbbell triceps,triceps,abs/shoulders/core,strength,核心,,0.85,name=支撑,0
+vital-plank-single-arm-dumbbell-triceps,平板支撑单臂哑铃臂屈伸,plank single arm dumbbell triceps,triceps,abs/shoulders/core,strength,手臂,三头,0.95,target=triceps,0
 vital-bench-dips-high,平板臂屈伸-高难度,Bench Dips High,triceps,chest/shoulders,strength,手臂,三头,0.95,target=triceps,0
 vital-lunges-alternate-biceps-curl,弓步交替弯举,lunges alternate biceps curl,biceps,quads/glutes/hamstrings,strength,手臂,二头,0.95,target=biceps,0
 vital-resistance-band-overhead-triceps-extension,弹力带-过头臂屈伸,resistance band overhead triceps extension,triceps,shoulders/forearms,strength,手臂,三头,0.95,target=triceps,0
@@ -251,7 +251,7 @@ vital-superman-hold,超人式保持,superman hold,lower back,glutes/hamstrings/s
 vital-wall-upper-body-bent-back-stretch,靠墙上半身前屈后伸拉伸,wall upper body bent back stretch,lower back,upper back/shoulders/hamstrings,stretching,拉伸,下背,0.8,category=stretching,0
 vital-wall-upper-back-and-hips-stretch,靠墙上背与髋部拉伸,wall upper back and hips stretch,upper back,hip flexors/lower back/shoulders,stretching,拉伸,肩膀,0.8,category=stretching,0
 vital-wall-upper-back-reverse-bent-squat,靠墙上背反屈深蹲,wall upper back reverse bent squat,upper back,quads/glutes/shoulders,strength,背,背阔肌,0.75,target=upper back,1
-vital-wall-support-squat-hand-raise,靠墙支撑深蹲抬手,wall support squat hand raise,quads,glutes/hamstrings/lower back,strength,核心,,0.85,name=支撑,0
+vital-wall-support-squat-hand-raise,靠墙支撑深蹲抬手,wall support squat hand raise,quads,glutes/hamstrings/lower back,strength,腿,股四头,0.95,target=quads,0
 vital-wall-slide-pilate,靠墙普拉提滑臂,wall slide pilate,lower back,shoulders/traps/abs,mobility,功能性,髋,0.7,category=mobility,1
 vital-wall-standing-upper-body-bent-stretch,靠墙站姿上半身前屈拉伸,wall standing upper body bent stretch,lower back,upper back/hamstrings/shoulders,stretching,拉伸,下背,0.8,category=stretching,0
 vital-wall-standing-upper-back-stretch-version-1,靠墙站姿上背拉伸式一,wall standing upper back stretch version 1,upper back,shoulders/lower back,stretching,拉伸,肩膀,0.8,category=stretching,0
@@ -396,7 +396,7 @@ vital-standing-chest-opener-backbend,站姿开胸后弯,Standing Chest Opener Ba
 vital-cable-crossover,绳索十字夹胸,cable crossover,pectorals,shoulders/triceps,strength,胸,中下胸,0.9,target=pectorals,0
 vital-cable-standing-chest-press,绳索站姿推胸,cable standing chest press,pectorals,triceps/shoulders/abs,strength,胸,中下胸,0.9,target=pectorals,0
 vital-high-to-low-cable-crossover,绳索高位下拉夹胸,high to low cable crossover,lower chest,front delts/triceps,strength,胸,中下胸,0.9,target=lower chest,0
-vital-elbow-plank-to-push-ups,肘撑平板撑起俯卧撑,elbow plank to push ups,chest,triceps/delts/abs,strength,核心,,0.85,name=支撑,0
+vital-elbow-plank-to-push-ups,肘撑平板撑起俯卧撑,elbow plank to push ups,chest,triceps/delts/abs,strength,胸,中下胸,0.9,target=chest,0
 vital-interlaced-fingers-folded-behind-back-stretch,背后交叉手指合掌拉伸,Interlaced Fingers Folded Behind Back Stretch,pectorals,shoulders/lower back,stretching,拉伸,胸,0.8,category=stretching,0
 vital-interlaced-fingers-behind-back-stretch,背后交叉手指拉伸,Interlaced Fingers Behind Back Stretch,pectorals,shoulders/back,stretching,拉伸,胸,0.8,category=stretching,0
 vital-interlock-hand-in-front-of-chest-hold,胸前交叉握掌保持,interlock hand in front of chest hold,chest,delts/traps,strength,胸,中下胸,0.9,target=chest,0
@@ -1336,7 +1336,7 @@ vital-arm-raise-front-stretch,手臂前举拉伸,Arm Raise Front Stretch,delts,c
 vital-arm-stretch,手臂拉伸,arm stretch,delts,traps/upper arms,stretching,拉伸,上背,0.8,category=stretching,0
 vital-arm-circle-stretch-1,手臂绕环拉伸1,Arm Circle Stretch 1,delts,traps/upper arms,stretching,拉伸,上背,0.8,category=stretching,0
 vital-pike-push-ups,折体俯卧撑,pike push ups,delts,upper arms/traps/chest,strength,肩,前束,0.6,target=delts默认,1
-vital-pike-plank-hold,折体平板支撑,Pike Plank Hold,delts,traps/waist/upper arms,strength,核心,,0.85,name=支撑,0
+vital-pike-plank-hold,折体平板支撑,Pike Plank Hold,delts,traps/waist/upper arms,strength,肩,前束,0.6,target=delts默认,1
 vital-controlled-kick-forearm-stand-flow,控腿前臂倒立流,controlled kick forearm stand flow,delts,abs/upper arms/traps,balance,功能性,髋,0.7,category=balance,1
 vital-front-raise-weighted-plate,杠铃片前平举,front raise (weighted plate),delts,chest/traps,strength,肩,前束,0.8,target=delts+前,0
 vital-barbell-upright-row,杠铃直立划船,barbell upright row,delts,traps/biceps,strength,肩,前束,0.6,target=delts默认,1

@@ -139,7 +139,10 @@ def classify(a: dict) -> tuple[str, str | None, float, str]:
         if _has(name, "罗马尼亚", "直腿"):
             return "腿", "腘绳肌", 0.75, "name=罗马尼亚硬拉"
         return "背", "竖脊肌", 0.7, "name=硬拉"
-    if any(k in name for k in ("平板支撑", "侧平板", "反向平板", "肘撑平板", "L坐支撑", "坐姿支撑", "靠墙支撑")):
+    # 核心支撑类：只当源目标是核心肌群时才归核心，避免把
+    # “平板支撑+臂屈伸/划船”这类复合动作误判成核心。
+    if any(k in name for k in ("平板支撑", "侧平板", "反向平板", "肘撑平板", "L坐支撑", "坐姿支撑", "靠墙支撑")) \
+            and target in ("abs", "obliques", "glutes", "lower back", "waist", "hip flexors", ""):
         return "核心", None, 0.85, "name=支撑"
 
     # --- 肌肉分类 ---

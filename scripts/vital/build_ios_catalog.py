@@ -9,11 +9,15 @@ ios/FitAI/Resources/vital_exercises.json in the exact shape the iOS
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "data" / "vital" / "vital_actions_v2.json"
 DST = ROOT / "ios" / "FitAI" / "Resources" / "vital_exercises.json"
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from classify_categories import classify  # noqa: E402
 
 # 计划白名单（常用动作）排除规则：器械/肌群/来源包/动作名四类。
 # 其余动作仍可搜索、可看详情，但不进 AI 计划池。
@@ -64,6 +68,7 @@ def main() -> None:
     for a in actions:
         plan_ok = is_plan_eligible(a)
         eligible += 1 if plan_ok else 0
+        l1, l2, conf, _reason = classify(a)
         steps = a.get("instructions_zh") or []
         instructions = "\n".join(str(s) for s in steps) if steps else None
         rows.append(
@@ -80,6 +85,9 @@ def main() -> None:
                 "aliases": sorted(a.get("aliases") or []),
                 "slug_aliases": sorted(a.get("slug_aliases") or []),
                 "plan_eligible": plan_ok,
+                "category_l1": l1,
+                "category_l2": l2 or None,
+                "category_confidence": conf,
             }
         )
     rows.sort(key=lambda r: r["name_zh"])

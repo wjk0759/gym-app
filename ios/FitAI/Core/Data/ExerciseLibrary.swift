@@ -1,5 +1,12 @@
 import Foundation
 
+/// One first-level category and its ordered second-level children.
+struct ExerciseCategory: Identifiable {
+    let l1: String
+    let l2: [String]
+    var id: String { l1 }
+}
+
 enum ExerciseLibrary {
     /// Active library shown in search, plan generation and onboarding.
     static let all: [Exercise] = load(resource: "vital_exercises")
@@ -7,6 +14,32 @@ enum ExerciseLibrary {
     /// Curated "common actions" whitelist for plan generation. The user's
     /// self-selected library is unioned on top at generation time.
     static let planEligible: [Exercise] = all.filter { $0.planEligible }
+
+    /// Two-level category tree for the library browser, in display order.
+    static let categoryTree: [ExerciseCategory] = [
+        ExerciseCategory("胸", ["上胸", "中下胸"]),
+        ExerciseCategory("背", ["背阔肌", "大圆肌", "菱形肌", "中下斜方", "上斜方", "竖脊肌"]),
+        ExerciseCategory("腿", ["股四头", "腘绳肌"]),
+        ExerciseCategory("肩", ["前束", "中束", "后束"]),
+        ExerciseCategory("前锯肌", []),
+        ExerciseCategory("斜方肌", []),
+        ExerciseCategory("手臂", ["二头", "三头"]),
+        ExerciseCategory("小腿", []),
+        ExerciseCategory("前臂", []),
+        ExerciseCategory("臀部", ["上臀", "下臀"]),
+        ExerciseCategory("功能性", ["髋", "膝关节", "肩关节"]),
+        ExerciseCategory("核心", []),
+        ExerciseCategory("腹部", ["腹直肌", "侧腹"]),
+        ExerciseCategory("热身动作", ["胸", "上背", "下背", "腘绳肌", "大腿", "臀部", "肩膀"]),
+        ExerciseCategory("拉伸", ["胸", "上背", "下背", "腘绳肌", "大腿", "臀部", "肩膀"]),
+        ExerciseCategory("有氧", []),
+        ExerciseCategory("全身", []),
+        ExerciseCategory("other", []),
+    ]
+
+    static func subcategories(for l1: String) -> [String] {
+        categoryTree.first { $0.l1 == l1 }?.l2 ?? []
+    }
 
     /// Previous curated libraries kept resolvable by slug for old plans and
     /// history, but never offered as new picks.
@@ -77,6 +110,8 @@ enum ExerciseLibrary {
                 motionEndURL: row.motionEndURL.flatMap { URL(string: $0) },
                 aliases: row.aliases ?? [],
                 slugAliases: row.slugAliases ?? [],
+                categoryL1: row.categoryL1,
+                categoryL2: row.categoryL2,
                 planEligible: row.planEligible ?? true
             )
         }
@@ -111,6 +146,8 @@ private struct ResourceExercise: Decodable {
     let aliases: [String]?
     let slugAliases: [String]?
     let planEligible: Bool?
+    let categoryL1: String?
+    let categoryL2: String?
 
     enum CodingKeys: String, CodingKey {
         case slug
@@ -126,5 +163,7 @@ private struct ResourceExercise: Decodable {
         case aliases
         case slugAliases = "slug_aliases"
         case planEligible = "plan_eligible"
+        case categoryL1 = "category_l1"
+        case categoryL2 = "category_l2"
     }
 }

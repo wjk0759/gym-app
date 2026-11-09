@@ -9,6 +9,11 @@ extension EquipmentPickerView {
                 searchScopeHint
             }
 
+            if let category = selectedCategory,
+               !ExerciseLibrary.subcategories(for: category).isEmpty {
+                categorySubChips
+            }
+
             equipmentFilters
         }
         .padding(.horizontal, 16)
@@ -217,16 +222,18 @@ extension EquipmentPickerView {
         )
     }
 
-    var muscleSidebar: some View {
-        VStack(spacing: 1) {
-            muscleSideButton(nil, title: "全部")
-            ForEach(muscleOrder) { muscle in
-                muscleSideButton(muscle, title: muscle.label)
+    var categorySidebar: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 1) {
+                categorySideButton(nil, title: "全部")
+                ForEach(ExerciseLibrary.categoryTree) { entry in
+                    categorySideButton(entry.l1, title: entry.l1)
+                }
             }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 5)
         }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 5)
-        .frame(width: 56)
+        .frame(width: 72)
         .background(
             Theme.paper,
             in: RoundedRectangle(cornerRadius: 15, style: .continuous)
@@ -237,22 +244,25 @@ extension EquipmentPickerView {
         )
     }
 
-    func muscleSideButton(_ muscle: MuscleGroup?, title: String) -> some View {
-        let active = selectedMuscle == muscle && !isSearching
+    func categorySideButton(_ category: String?, title: String) -> some View {
+        let active = selectedCategory == category && !isSearching
 
         return Button {
             Haptics.select()
             withAnimation(Motion.quick) {
-                selectedMuscle = muscle
+                selectedCategory = (selectedCategory == category) ? nil : category
+                selectedSubcategory = nil
                 if isSearching {
                     query = ""
                 }
             }
         } label: {
             Text(title)
-                .font(.system(size: 11.5, weight: active ? .bold : .medium))
+                .font(.system(size: 11, weight: active ? .bold : .medium))
                 .foregroundStyle(active ? Theme.onPrimary : Theme.secondaryText.opacity(0.86))
                 .multilineTextAlignment(.center)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 6.5)
                 .background(
@@ -269,8 +279,23 @@ extension EquipmentPickerView {
                 .animation(Motion.quick, value: active)
         }
         .buttonStyle(SubtlePressStyle(scale: 0.95))
-        .accessibilityLabel("\(title)肌群")
+        .accessibilityLabel("\(title)分类")
         .accessibilityAddTraits(active ? .isSelected : [])
+    }
+
+    var categorySubChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                filterChip("全部", selected: selectedSubcategory == nil) {
+                    selectedSubcategory = nil
+                }
+                ForEach(ExerciseLibrary.subcategories(for: selectedCategory ?? ""), id: \.self) { sub in
+                    filterChip(sub, selected: selectedSubcategory == sub) {
+                        selectedSubcategory = sub
+                    }
+                }
+            }
+        }
     }
 
     var equipmentFilters: some View {

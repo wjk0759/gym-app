@@ -234,6 +234,9 @@ struct Exercise: Identifiable, Hashable {
     let motionEndURL: URL?
     let aliases: [String]
     let slugAliases: [String]
+    /// Two-level category for library browsing (e.g. 胸/上胸, 背/背阔肌).
+    let categoryL1: String?
+    let categoryL2: String?
     /// Whether this action may enter the AI plan pool (common actions + the
     /// user's self-selected library). Excluded: yoga/stretch/cardio/"other".
     let planEligible: Bool
@@ -258,6 +261,8 @@ struct Exercise: Identifiable, Hashable {
         motionEndURL: URL? = nil,
         aliases: [String] = [],
         slugAliases: [String] = [],
+        categoryL1: String? = nil,
+        categoryL2: String? = nil,
         planEligible: Bool = true
     ) {
         self.slug = slug
@@ -272,6 +277,8 @@ struct Exercise: Identifiable, Hashable {
         self.motionEndURL = motionEndURL
         self.aliases = aliases
         self.slugAliases = slugAliases
+        self.categoryL1 = categoryL1
+        self.categoryL2 = categoryL2
         self.planEligible = planEligible
         self.searchKey = ([nameZH, nameEN] + aliases + [muscle.label, equipment.label])
             .joined(separator: " ")
