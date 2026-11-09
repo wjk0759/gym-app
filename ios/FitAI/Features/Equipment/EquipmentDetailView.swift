@@ -76,7 +76,9 @@ struct EquipmentItemDetailView: View {
     }
 
     var videoURL: URL? {
-        officialVideoURL ?? item?.videoURL.flatMap(URL.init(string:))
+        officialVideoURL
+            ?? item?.exercise?.demoVideoURL
+            ?? item?.videoURL.flatMap(URL.init(string:))
     }
 
     var pinnedIDs: Set<String> {

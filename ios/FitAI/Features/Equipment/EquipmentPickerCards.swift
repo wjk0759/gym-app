@@ -20,6 +20,26 @@ struct EquipmentPickerExerciseCard: View {
     let selected: Bool
     let isPickingForSession: Bool
 
+    private var musclePlaceholder: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .fill(Theme.ink.opacity(0.04))
+            Circle()
+                .fill(Theme.cobalt.opacity(0.06))
+                .overlay(
+                    Circle()
+                        .stroke(Theme.cobalt.opacity(0.12), lineWidth: 1)
+                )
+                .frame(width: 54, height: 54)
+                .overlay(
+                    Image(systemName: EquipmentPickerSymbols.muscle(exercise.muscle))
+                        .font(.system(size: 29, weight: .light))
+                        .foregroundStyle(Theme.cobalt.opacity(0.9))
+                )
+        }
+        .frame(height: 102)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ZStack {
@@ -27,22 +47,30 @@ struct EquipmentPickerExerciseCard: View {
                     .fill(Theme.ink.opacity(0.04))
                     .frame(height: 102)
 
-                Circle()
-                    .fill(Theme.cobalt.opacity(0.06))
-                    .overlay(
-                        Circle()
-                            .stroke(Theme.cobalt.opacity(0.12), lineWidth: 1)
-                    )
-                    .frame(width: 54, height: 54)
-                    .overlay(
-                        Image(systemName: EquipmentPickerSymbols.muscle(exercise.muscle))
-                            .font(.system(size: 29, weight: .light))
-                            .foregroundStyle(Theme.cobalt.opacity(0.9))
-                    )
+                if let thumbnail = exercise.thumbnailURL {
+                    AsyncImage(url: thumbnail) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        case .failure:
+                            musclePlaceholder
+                        case .empty:
+                            musclePlaceholder
+                        @unknown default:
+                            musclePlaceholder
+                        }
+                    }
+                    .frame(height: 102)
+                    .clipped()
+                } else {
+                    musclePlaceholder
+                }
             }
             .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
             .overlay(alignment: .topLeading) {
-                if AppConfig.exerciseVideosEnabled, exercise.videoURL != nil {
+                if AppConfig.exerciseVideosEnabled, exercise.demoVideoURL != nil {
                     HStack(spacing: 3) {
                         Image(systemName: "play.fill")
                             .font(.system(size: 6, weight: .bold))

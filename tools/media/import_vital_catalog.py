@@ -151,7 +151,9 @@ def transcode(
     result = run([
         ffmpeg, "-y", "-hide_banner", "-loglevel", "error",
         "-i", str(source),
-        "-vf", f"scale={size}:{size}:flags=lanczos",
+        "-vf",
+        f"scale={size}:{size}:force_original_aspect_ratio=decrease,"
+        f"pad={size}:{size}:(ow-iw)/2:(oh-ih)/2:color=white",
         "-c:v", "libx264", "-preset", preset, "-crf", str(crf),
         "-pix_fmt", "yuv420p", "-r", str(fps), "-an",
         "-movflags", "+faststart", str(target),
@@ -164,7 +166,10 @@ def poster(ffmpeg: str, source: Path, target: Path, size: int) -> None:
     result = run([
         ffmpeg, "-y", "-hide_banner", "-loglevel", "error",
         "-ss", "0.4", "-i", str(source),
-        "-frames:v", "1", "-vf", f"scale={size}:{size}:flags=lanczos",
+        "-frames:v", "1",
+        "-vf",
+        f"scale={size}:{size}:force_original_aspect_ratio=decrease,"
+        f"pad={size}:{size}:(ow-iw)/2:(oh-ih)/2:color=white",
         "-q:v", "4", "-update", "1", str(target),
     ])
     if result.returncode != 0:

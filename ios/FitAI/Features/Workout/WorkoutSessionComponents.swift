@@ -118,14 +118,6 @@ struct WorkoutSessionExerciseCard: View {
                     .foregroundStyle(Theme.cycle)
                     .fixedSize(horizontal: false, vertical: true)
             }
-
-            if let instructions = exercise.exercise?.instructions {
-                Text(instructions)
-                    .font(AppType.callout)
-                    .foregroundStyle(Theme.secondaryText)
-                    .lineSpacing(2)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .editorialCard(accent: Theme.lime)

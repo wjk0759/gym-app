@@ -44,6 +44,7 @@ struct WorkoutSessionView: View {
     @State var weightStep = 2.5
     @State var valueEditor: WorkoutValueEditor?
     @State var mediaStore = ExerciseMediaStore()
+    @State var showInstructions = false
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -120,6 +121,7 @@ struct WorkoutSessionView: View {
                 .motionAnimation(Motion.quick, value: restRemaining != nil)
             }
             .onChange(of: index) { _, _ in
+                showInstructions = false
                 withAnimation(Motion.smooth) {
                     proxy.scrollTo("session-top", anchor: .top)
                 }
@@ -136,16 +138,16 @@ struct WorkoutSessionView: View {
     @ViewBuilder
     private var sessionCards: some View {
         if let exercise = currentExercise {
+            let medias = mediaStore.items(for: exercise.slug)
+            if !medias.isEmpty {
+                ExerciseAnimationCard(exercise: exercise, medias: medias)
+            }
             WorkoutSessionExerciseCard(
                 exercise: exercise,
                 index: index,
                 exerciseCount: activeDay.exercises.count,
                 periodMode: periodMode
             )
-            let medias = mediaStore.items(for: exercise.slug)
-            if !medias.isEmpty {
-                ExerciseAnimationCard(exercise: exercise, medias: medias)
-            }
             WorkoutSetCard(
                 exercise: exercise,
                 done: completedSets(for: exercise),
@@ -175,6 +177,48 @@ struct WorkoutSessionView: View {
                     return last.slug == exercise.slug
                 }()
             )
+            if let instructions = exercise.exercise?.instructions,
+               !instructions.isEmpty {
+                Button {
+                    Haptics.select()
+                    withAnimation(Motion.quick) {
+                        showInstructions.toggle()
+                    }
+                } label: {
+                    HStack {
+                        Label("动作要点", systemImage: "list.bullet")
+                            .font(AppType.caption.weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+                        Spacer()
+                        Image(systemName: showInstructions ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                    .padding(14)
+                    .background(Theme.paper, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(Theme.stroke, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+
+                if showInstructions {
+                    Text(instructions)
+                        .font(AppType.callout)
+                        .foregroundStyle(Theme.secondaryText)
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(14)
+                        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(Theme.stroke, lineWidth: 1)
+                        )
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
             WorkoutTrainingTipCard(
                 exercise: exercise,
                 lastSet: store.lastSet(for: exercise.slug)

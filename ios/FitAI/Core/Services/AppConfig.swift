@@ -85,9 +85,8 @@ enum AppConfig {
 #endif
     }
 
-    /// 教学视频素材尚未上线，先隐藏所有视频入口。
-    /// 接入素材后改回 true；不要删除 EquipmentDetailView+Media.swift 里的播放器/占位代码。
-    static let exerciseVideosEnabled = false
+    /// 教学视频素材已上线；展示视频入口与缩略图。
+    static let exerciseVideosEnabled = true
 
     /// The watch target, Pro gate, preload and offline flows ship together.
     static let watchWorkoutEnabled = true

@@ -67,6 +67,23 @@ def is_plan_eligible(a: dict, category_l1: str | None) -> bool:
     return not any(k in name for k in NON_PLAN_KEYWORDS)
 
 
+def variant_key_for(md: dict) -> str:
+    vid = str(md.get("video_id") or "").strip()
+    stem = Path(md.get("source_file", "")).stem
+    return f"{md.get('pack', '')}-{vid or stem}"
+
+
+def media_urls(a: dict) -> tuple[str | None, str | None]:
+    """主变体的 poster / phone 视频相对路径（无媒体时返回 None）。"""
+    media = a.get("media") or []
+    if not media:
+        return None, None
+    primary = next((m for m in media if m.get("primary_for_watch")), media[0])
+    key = variant_key_for(primary)
+    base = f"/media/exercises/vital/{a['slug']}/{key}/v1"
+    return f"{base}/poster.jpg", f"{base}/iphone.mp4"
+
+
 def main() -> None:
     actions = json.loads(SRC.read_text(encoding="utf-8"))
     rows = []
@@ -75,6 +92,7 @@ def main() -> None:
         l1, l2, conf, _reason = classify(a)
         plan_ok = is_plan_eligible(a, l1)
         eligible += 1 if plan_ok else 0
+        thumbnail_url, video_url = media_urls(a)
         steps = a.get("instructions_zh") or []
         instructions = "\n".join(str(s) for s in steps) if steps else None
         rows.append(
@@ -94,6 +112,8 @@ def main() -> None:
                 "category_l1": l1,
                 "category_l2": l2 or None,
                 "category_confidence": conf,
+                "thumbnail_url": thumbnail_url,
+                "video_url": video_url,
             }
         )
     rows.sort(key=lambda r: r["name_zh"])

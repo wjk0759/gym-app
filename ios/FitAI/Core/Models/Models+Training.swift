@@ -232,6 +232,9 @@ struct Exercise: Identifiable, Hashable {
     let contraindications: [String]
     let motionStartURL: URL?
     let motionEndURL: URL?
+    /// Primary variant's poster (library thumbnail) and phone demo video.
+    let thumbnailURL: URL?
+    let demoVideoURL: URL?
     let aliases: [String]
     let slugAliases: [String]
     /// Two-level category for library browsing (e.g. 胸/上胸, 背/背阔肌).
@@ -259,6 +262,8 @@ struct Exercise: Identifiable, Hashable {
         contraindications: [String] = [],
         motionStartURL: URL? = nil,
         motionEndURL: URL? = nil,
+        thumbnailURL: URL? = nil,
+        demoVideoURL: URL? = nil,
         aliases: [String] = [],
         slugAliases: [String] = [],
         categoryL1: String? = nil,
@@ -275,6 +280,8 @@ struct Exercise: Identifiable, Hashable {
         self.contraindications = contraindications
         self.motionStartURL = motionStartURL
         self.motionEndURL = motionEndURL
+        self.thumbnailURL = thumbnailURL
+        self.demoVideoURL = demoVideoURL
         self.aliases = aliases
         self.slugAliases = slugAliases
         self.categoryL1 = categoryL1

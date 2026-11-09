@@ -174,7 +174,7 @@ private struct ExerciseAnimationFullScreen: View {
 
     var body: some View {
         ZStack {
-            Color.white.ignoresSafeArea()
+            Theme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 HStack {
@@ -280,15 +280,15 @@ private struct ExerciseAnimationFullScreen: View {
                         VStack(alignment: .leading, spacing: 5) {
                             Text(exercise.displayName)
                                 .font(AppType.title)
-                                .foregroundStyle(Theme.inkSolid)
+                                .foregroundStyle(Theme.ink)
                             Text(exercise.targetText)
                                 .font(AppType.caption.weight(.semibold))
-                                .foregroundStyle(DemoPanelStyle.secondaryText)
+                                .foregroundStyle(Theme.secondaryText)
                             if let instructions = exercise.exercise?.instructions,
                                !instructions.isEmpty {
                                 Text(instructions)
                                     .font(AppType.callout)
-                                    .foregroundStyle(DemoPanelStyle.secondaryText)
+                                    .foregroundStyle(Theme.secondaryText)
                                     .lineSpacing(2)
                                     .fixedSize(
                                         horizontal: false,
@@ -323,7 +323,6 @@ private struct ExerciseAnimationFullScreen: View {
                 posterLocalURL = cached
             }
         }
-        .preferredColorScheme(.light)
     }
 
     @ViewBuilder

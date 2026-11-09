@@ -139,6 +139,8 @@ enum ExerciseLibrary {
                 contraindications: row.contraindications ?? [],
                 motionStartURL: row.motionStartURL.flatMap { URL(string: $0) },
                 motionEndURL: row.motionEndURL.flatMap { URL(string: $0) },
+                thumbnailURL: AppConfig.resolveMediaURL(row.thumbnailURL),
+                demoVideoURL: AppConfig.resolveMediaURL(row.videoURL),
                 aliases: row.aliases ?? [],
                 slugAliases: row.slugAliases ?? [],
                 categoryL1: row.categoryL1,
@@ -174,6 +176,8 @@ private struct ResourceExercise: Decodable {
     let contraindications: [String]?
     let motionStartURL: String?
     let motionEndURL: String?
+    let thumbnailURL: String?
+    let videoURL: String?
     let aliases: [String]?
     let slugAliases: [String]?
     let planEligible: Bool?
@@ -191,6 +195,8 @@ private struct ResourceExercise: Decodable {
         case contraindications
         case motionStartURL = "motion_start_url"
         case motionEndURL = "motion_end_url"
+        case thumbnailURL = "thumbnail_url"
+        case videoURL = "video_url"
         case aliases
         case slugAliases = "slug_aliases"
         case planEligible = "plan_eligible"

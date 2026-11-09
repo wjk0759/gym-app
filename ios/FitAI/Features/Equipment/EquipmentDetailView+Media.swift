@@ -73,10 +73,18 @@ func videoContent(for item: EquipmentItem) -> some View {
 
 @ViewBuilder
 func motionBoard(for item: EquipmentItem) -> some View {
-        if let exercise = item.exercise,
-           let startURL = exercise.motionStartURL,
-           let endURL = exercise.motionEndURL {
-            FrameMotionBoard(startURL: startURL, endURL: endURL, title: item.name)
+        if let exercise = item.exercise, let videoURL = exercise.demoVideoURL {
+            ZStack(alignment: .topLeading) {
+                LoopingVideoPlayer(url: videoURL)
+                detailBadge("动作轨迹", accent: true)
+                    .padding(10)
+            }
+            .frame(height: 232)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(Theme.stroke, lineWidth: 1)
+            }
         } else {
             placeholderMotionBoard(for: item)
         }
