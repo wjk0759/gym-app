@@ -141,6 +141,7 @@ enum LoadProgression {
         case .band: 5
         case .kettlebell: 8
         case .bodyweight: 0
+        case .other: 0
         }
         let compoundFactor = exercise.isCompound ? 1.0 : 0.6
         return roundWeight(base * factor * compoundFactor)

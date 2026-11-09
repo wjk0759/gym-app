@@ -1,8 +1,11 @@
 import Foundation
 
 /// One sex-matched exercise demo clip returned by the media service.
+/// An exercise can now have several variants (different models / visual styles);
+/// each carries its own `media_id` and visual priority.
 struct ExerciseMediaItem: Decodable, Equatable, Identifiable {
     let exerciseSlug: String
+    let mediaID: String?
     let sex: String
     let phoneURL: URL?
     let posterURL: URL?
@@ -11,11 +14,15 @@ struct ExerciseMediaItem: Decodable, Equatable, Identifiable {
     let loopStartMS: Int?
     let loopEndMS: Int?
     let version: Int
+    let visualStyle: String?
+    let visualPriority: Int?
+    let isPrimaryForWatch: Bool
 
-    var id: String { exerciseSlug }
+    var id: String { mediaID ?? exerciseSlug }
 
     enum CodingKeys: String, CodingKey {
         case exerciseSlug = "exercise_slug"
+        case mediaID = "media_id"
         case sex
         case phoneURL = "phone_url"
         case posterURL = "poster_url"
@@ -24,11 +31,15 @@ struct ExerciseMediaItem: Decodable, Equatable, Identifiable {
         case loopStartMS = "loop_start_ms"
         case loopEndMS = "loop_end_ms"
         case version
+        case visualStyle = "visual_style"
+        case visualPriority = "visual_priority"
+        case isPrimaryForWatch = "is_primary_for_watch"
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         exerciseSlug = try container.decode(String.self, forKey: .exerciseSlug)
+        mediaID = try container.decodeIfPresent(String.self, forKey: .mediaID)
         sex = try container.decodeIfPresent(String.self, forKey: .sex) ?? "unisex"
         phoneURL = AppConfig.resolveMediaURL(
             try container.decodeIfPresent(String.self, forKey: .phoneURL)
@@ -55,6 +66,18 @@ struct ExerciseMediaItem: Decodable, Equatable, Identifiable {
             Int.self,
             forKey: .version
         ) ?? 1
+        visualStyle = try container.decodeIfPresent(
+            String.self,
+            forKey: .visualStyle
+        )
+        visualPriority = try container.decodeIfPresent(
+            Int.self,
+            forKey: .visualPriority
+        )
+        isPrimaryForWatch = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .isPrimaryForWatch
+        ) ?? false
     }
 }
 

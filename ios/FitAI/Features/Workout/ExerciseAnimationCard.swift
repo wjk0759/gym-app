@@ -15,16 +15,23 @@ private enum DemoPanelStyle {
 /// ink/lime system instead of forcing a black surface.
 struct ExerciseAnimationCard: View {
     let exercise: PlanExercise
-    let media: ExerciseMediaItem
+    let medias: [ExerciseMediaItem]
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var showFullScreen = false
     @State private var videoFailed = false
+    @State private var resolvedVideoURL: URL?
+
+    private var media: ExerciseMediaItem { medias[0] }
 
     private var canPlayVideo: Bool {
         media.phoneURL != nil && !reduceMotion && !videoFailed
+    }
+
+    private var playURL: URL? {
+        resolvedVideoURL ?? media.phoneURL
     }
 
     var body: some View {
@@ -34,7 +41,7 @@ struct ExerciseAnimationCard: View {
             ZStack {
                 Color.white
 
-                if canPlayVideo, let url = media.phoneURL {
+                if canPlayVideo, let url = playURL {
                     SilentLoopingVideoPlayer(
                         url: url,
                         isPlaying: scenePhase == .active && !showFullScreen,
@@ -87,11 +94,14 @@ struct ExerciseAnimationCard: View {
         .onChange(of: exercise.id) { _, _ in
             videoFailed = false
         }
+        .task(id: media.id) {
+            resolvedVideoURL = media.phoneURL
+            if let cached = await ExerciseMediaCache.shared.ensureVideoCached(media) {
+                resolvedVideoURL = cached
+            }
+        }
         .fullScreenCover(isPresented: $showFullScreen) {
-            ExerciseAnimationFullScreen(
-                exercise: exercise,
-                media: media
-            )
+            ExerciseAnimationFullScreen(exercise: exercise, medias: medias)
         }
     }
 
@@ -135,7 +145,7 @@ struct ExerciseAnimationCard: View {
 
 private struct ExerciseAnimationFullScreen: View {
     let exercise: PlanExercise
-    let media: ExerciseMediaItem
+    let medias: [ExerciseMediaItem]
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -143,9 +153,17 @@ private struct ExerciseAnimationFullScreen: View {
 
     @State private var isPlaying = true
     @State private var videoFailed = false
+    @State private var selectedIndex = 0
+    @State private var resolvedVideoURL: URL?
+
+    private var media: ExerciseMediaItem { medias[selectedIndex] }
 
     private var canPlayVideo: Bool {
         media.phoneURL != nil && !reduceMotion && !videoFailed
+    }
+
+    private var playURL: URL? {
+        resolvedVideoURL ?? media.phoneURL
     }
 
     var body: some View {
@@ -181,7 +199,7 @@ private struct ExerciseAnimationFullScreen: View {
                         ZStack {
                             Color.white
 
-                            if canPlayVideo, let url = media.phoneURL {
+                            if canPlayVideo, let url = playURL {
                                 SilentLoopingVideoPlayer(
                                     url: url,
                                     isPlaying: isPlaying
@@ -223,6 +241,10 @@ private struct ExerciseAnimationFullScreen: View {
                                 DemoPanelStyle.border,
                                 lineWidth: 1
                             )
+                        }
+
+                        if medias.count > 1 {
+                            galleryStrip
                         }
 
                         if canPlayVideo {
@@ -280,7 +302,82 @@ private struct ExerciseAnimationFullScreen: View {
                 isPlaying = false
             }
         }
+        .onChange(of: selectedIndex) { _, _ in
+            videoFailed = false
+            resolvedVideoURL = nil
+        }
+        .task(id: media.id) {
+            resolvedVideoURL = media.phoneURL
+            if let cached = await ExerciseMediaCache.shared.ensureVideoCached(media) {
+                resolvedVideoURL = cached
+            }
+        }
         .preferredColorScheme(.light)
+    }
+
+    @ViewBuilder
+    private var galleryStrip: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(Array(medias.enumerated()), id: \.element.id) { index, variant in
+                    Button {
+                        selectedIndex = index
+                    } label: {
+                        ZStack(alignment: .bottom) {
+                            thumbnail(for: variant)
+                            if index == selectedIndex {
+                                Capsule()
+                                    .fill(Theme.primary)
+                                    .frame(width: 24, height: 3)
+                                    .padding(.bottom, 6)
+                            }
+                        }
+                        .frame(width: 72, height: 72)
+                        .clipShape(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        )
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .strokeBorder(
+                                    index == selectedIndex
+                                        ? Theme.primary
+                                        : DemoPanelStyle.border,
+                                    lineWidth: index == selectedIndex ? 2 : 1
+                                )
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("第\(index + 1)个示范")
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func thumbnail(for variant: ExerciseMediaItem) -> some View {
+        if let posterURL = variant.posterURL {
+            AsyncImage(url: posterURL) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                default:
+                    thumbnailPlaceholder
+                }
+            }
+        } else {
+            thumbnailPlaceholder
+        }
+    }
+
+    private var thumbnailPlaceholder: some View {
+        ZStack {
+            DemoPanelStyle.border
+            Image(systemName: "play.circle")
+                .font(.system(size: 20, weight: .light))
+                .foregroundStyle(DemoPanelStyle.placeholder)
+        }
     }
 
     private var fullScreenPlaceholder: some View {

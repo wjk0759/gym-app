@@ -22,6 +22,7 @@ struct EquipmentPickerView: View {
     @State var detailExercise: Exercise?
     @State var composePayload: ComposePayload?
     @State var pendingComposeDay: PlanDay?
+    @State var visibleLimit = 60
 
     struct ComposePayload: Identifiable {
         let id = UUID()
@@ -55,15 +56,26 @@ struct EquipmentPickerView: View {
         !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    /// 变化即重置上拉加载的筛选组合键。
+    private var filterKey: String {
+        "\(query)|\(selectedMuscle?.rawValue ?? "")|\(selectedEquipment?.rawValue ?? "")|\(savedOnly)"
+    }
+
     /// 每次筛选只构建一次 Set，避免在 filter/sort 里反复线性查库。
     var savedSlugs: Set<String> {
         Set(store.equipmentLibrary.compactMap(\.slug))
+    }
+
+    /// 当前筛选后的前 `visibleLimit` 条，用于上拉加载。
+    var displayedExercises: [Exercise] {
+        Array(filteredExercises.prefix(visibleLimit))
     }
 
     var filteredExercises: [Exercise] {
         let text = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let isSearching = !text.isEmpty
         let saved = savedSlugs
+        let lowered = text.lowercased()
 
         return ExerciseLibrary.all
             .filter { exercise in
@@ -72,10 +84,7 @@ struct EquipmentPickerView: View {
                 }
                 // 一旦输入搜索词，就搜索全部动作，不再受当前肌群 / 器械分类限制。
                 if isSearching {
-                    return exercise.nameZH.localizedCaseInsensitiveContains(text)
-                        || exercise.nameEN.localizedCaseInsensitiveContains(text)
-                        || exercise.muscle.label.localizedCaseInsensitiveContains(text)
-                        || exercise.equipment.label.localizedCaseInsensitiveContains(text)
+                    return exercise.searchKey.contains(lowered)
                 }
 
                 let muscleMatch = selectedMuscle == nil || exercise.muscle == selectedMuscle
@@ -172,6 +181,9 @@ struct EquipmentPickerView: View {
                 showSelectionButton = true
             }
         }
+        .onChange(of: filterKey) { _, _ in
+            visibleLimit = 60
+        }
         .onDisappear {
             showSelectionButton = false
         }
@@ -200,7 +212,7 @@ struct EquipmentPickerView: View {
             .padding(.top, 8)
         } else {
             LazyVGrid(columns: gridColumns, spacing: 9) {
-                ForEach(filteredExercises) { exercise in
+                ForEach(Array(displayedExercises.enumerated()), id: \.element.id) { index, exercise in
                     ZStack(alignment: .topTrailing) {
                         Button {
                             if let onSelectExercise {
@@ -230,6 +242,11 @@ struct EquipmentPickerView: View {
                             }
                             .buttonStyle(.plain)
                             .padding(7)
+                        }
+                    }
+                    .onAppear {
+                        if index >= displayedExercises.count - 6 {
+                            visibleLimit += 60
                         }
                     }
                 }

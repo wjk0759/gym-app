@@ -2,16 +2,14 @@ import Foundation
 
 enum ExerciseLibrary {
     /// Active library shown in search, plan generation and onboarding.
-    static let all: [Exercise] = load(resource: "xunji_movements")
+    static let all: [Exercise] = load(resource: "vital_exercises")
 
-    /// Existing plans/history may still reference the previous 80 exercises.
-    /// Keep them resolvable by slug, but never offer them as new picks.
+    /// Previous curated libraries kept resolvable by slug for old plans and
+    /// history, but never offered as new picks.
+    private static let xunji: [Exercise] = load(resource: "xunji_movements")
     private static let legacy: [Exercise] = load(resource: "legacy_exercises")
 
-    private static let index: [String: Exercise] = (all + legacy).reduce(into: [:]) { result, exercise in
-        // A bad resource update must not crash the whole app at first access.
-        result[exercise.slug] = exercise
-    }
+    private static let index: [String: Exercise] = buildIndex()
 
     static func exercise(slug: String) -> Exercise? {
         index[slug]
@@ -30,9 +28,26 @@ enum ExerciseLibrary {
 
     static func search(_ text: String) -> [Exercise] {
         guard !text.isEmpty else { return all }
-        return all.filter {
-            $0.nameZH.contains(text) || $0.nameEN.localizedCaseInsensitiveContains(text)
+        let query = text.lowercased()
+        return all.filter { $0.searchKey.contains(query) }
+    }
+
+    private static func buildIndex() -> [String: Exercise] {
+        var result: [String: Exercise] = [:]
+        for exercise in all {
+            result[exercise.slug] = exercise
+            for alias in exercise.slugAliases {
+                result[alias] = exercise
+            }
         }
+        // Old plans/history resolve to the previous libraries if the slug is
+        // no longer present in the Vital catalog.
+        for exercise in xunji + legacy {
+            if result[exercise.slug] == nil {
+                result[exercise.slug] = exercise
+            }
+        }
+        return result
     }
 
     private static func load(resource: String) -> [Exercise] {
@@ -55,7 +70,9 @@ enum ExerciseLibrary {
                 instructions: row.instructions ?? "",
                 contraindications: row.contraindications ?? [],
                 motionStartURL: row.motionStartURL.flatMap { URL(string: $0) },
-                motionEndURL: row.motionEndURL.flatMap { URL(string: $0) }
+                motionEndURL: row.motionEndURL.flatMap { URL(string: $0) },
+                aliases: row.aliases ?? [],
+                slugAliases: row.slugAliases ?? []
             )
         }
     }
@@ -86,6 +103,8 @@ private struct ResourceExercise: Decodable {
     let contraindications: [String]?
     let motionStartURL: String?
     let motionEndURL: String?
+    let aliases: [String]?
+    let slugAliases: [String]?
 
     enum CodingKeys: String, CodingKey {
         case slug
@@ -98,5 +117,7 @@ private struct ResourceExercise: Decodable {
         case contraindications
         case motionStartURL = "motion_start_url"
         case motionEndURL = "motion_end_url"
+        case aliases
+        case slugAliases = "slug_aliases"
     }
 }

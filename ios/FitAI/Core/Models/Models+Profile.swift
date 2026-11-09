@@ -71,6 +71,7 @@ enum Equipment: String, Codable, CaseIterable, Identifiable {
     case cable
     case band
     case kettlebell
+    case other
 
     var id: String { rawValue }
 
@@ -83,6 +84,7 @@ enum Equipment: String, Codable, CaseIterable, Identifiable {
         case .cable: return "绳索"
         case .band: return "弹力带"
         case .kettlebell: return "壶铃"
+        case .other: return "其他"
         }
     }
 
@@ -95,6 +97,7 @@ enum Equipment: String, Codable, CaseIterable, Identifiable {
         case .cable: return "point.3.connected.trianglepath.dotted"
         case .band: return "link"
         case .kettlebell: return "figure.cross.training"
+        case .other: return "square.dashed"
         }
     }
 }

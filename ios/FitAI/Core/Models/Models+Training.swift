@@ -232,9 +232,18 @@ struct Exercise: Identifiable, Hashable {
     let contraindications: [String]
     let motionStartURL: URL?
     let motionEndURL: URL?
+    let aliases: [String]
+    let slugAliases: [String]
 
     var videoURL: URL? {
         VideoCatalog.url(for: slug)
+    }
+
+    /// Lowercased bag of everything a user might type to find this action.
+    var searchKey: String {
+        ([nameZH, nameEN] + aliases + [muscle.label, equipment.label])
+            .joined(separator: " ")
+            .lowercased()
     }
 
     init(
@@ -247,7 +256,9 @@ struct Exercise: Identifiable, Hashable {
         instructions: String,
         contraindications: [String] = [],
         motionStartURL: URL? = nil,
-        motionEndURL: URL? = nil
+        motionEndURL: URL? = nil,
+        aliases: [String] = [],
+        slugAliases: [String] = []
     ) {
         self.slug = slug
         self.nameZH = nameZH
@@ -259,6 +270,8 @@ struct Exercise: Identifiable, Hashable {
         self.contraindications = contraindications
         self.motionStartURL = motionStartURL
         self.motionEndURL = motionEndURL
+        self.aliases = aliases
+        self.slugAliases = slugAliases
     }
 }
 

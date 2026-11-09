@@ -7,14 +7,20 @@ import Observation
 @MainActor
 @Observable
 final class ExerciseMediaStore {
-    private(set) var itemsBySlug: [String: ExerciseMediaItem] = [:]
+    private(set) var itemsBySlug: [String: [ExerciseMediaItem]] = [:]
     private(set) var isLoading = false
     private(set) var lastError: String?
 
     private var requested = Set<String>()
 
+    /// Primary (first) variant for the workout loop.
     func item(for slug: String) -> ExerciseMediaItem? {
-        itemsBySlug[slug]
+        itemsBySlug[slug]?.first
+    }
+
+    /// All variants, already ordered primary-first by the resolver.
+    func items(for slug: String) -> [ExerciseMediaItem] {
+        itemsBySlug[slug] ?? []
     }
 
     func prefetch(slugs: [String]) async {
@@ -38,7 +44,15 @@ final class ExerciseMediaStore {
                 slugs: missing
             )
             for item in items {
-                itemsBySlug[item.exerciseSlug] = item
+                itemsBySlug[item.exerciseSlug, default: []].append(item)
+            }
+            for (slug, variants) in itemsBySlug {
+                itemsBySlug[slug] = variants.sorted { lhs, rhs in
+                    if lhs.isPrimaryForWatch != rhs.isPrimaryForWatch {
+                        return lhs.isPrimaryForWatch
+                    }
+                    return (lhs.visualPriority ?? 99) < (rhs.visualPriority ?? 99)
+                }
             }
             lastError = nil
         } catch {

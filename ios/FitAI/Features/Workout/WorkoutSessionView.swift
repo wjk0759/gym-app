@@ -142,8 +142,9 @@ struct WorkoutSessionView: View {
                 exerciseCount: activeDay.exercises.count,
                 periodMode: periodMode
             )
-            if let media = mediaStore.item(for: exercise.slug) {
-                ExerciseAnimationCard(exercise: exercise, media: media)
+            let medias = mediaStore.items(for: exercise.slug)
+            if !medias.isEmpty {
+                ExerciseAnimationCard(exercise: exercise, medias: medias)
             }
             WorkoutSetCard(
                 exercise: exercise,

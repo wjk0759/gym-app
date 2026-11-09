@@ -16,7 +16,7 @@ extension APIClient {
             withAllowedCharacters: .urlQueryAllowed
         ) ?? raw
         let response: ExerciseMediaList = try await send(
-            path: "exercise-media?slugs=\(encoded)",
+            path: "exercise-media?slugs=\(encoded)&all=true",
             method: "GET",
             body: nil,
             timeout: 30
