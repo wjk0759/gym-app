@@ -26,6 +26,21 @@
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
 
+### 2026-11-10 · Windows / OpenCode（生产部署：媒体转码 + 上传 + V25 + 导入）
+
+- 提交：`96235aa`（并行转码器）
+- 做了（生产 HK 服务器）：
+  - 转码 1,572 条源视频 → iPhone 1080（1.06G）/ Watch 360（112M）/ poster（52M），共 1.23G，`missing=0`
+  - 上传到 `/opt/fitai/media/exercises/vital/`（1.3G，3,166 个 mp4）
+  - 应用 V25 迁移（手动 DDL + flyway_schema_history 记 `checksum=NULL`）
+  - 导入 `exercises_insert.sql`（exercises 84→1,480）+ `media_insert.sql`（media 21→1,593）
+  - 部署后端新代码（models.py/watch.py/videos.py → docker build + up）
+  - 烟测：`media_for_slugs(all_variants=True)` 返回多 variant 按 priority 排序 + `is_primary_for_watch`；`/media/.../iphone.mp4` 返回 200
+- 验证：`curl /health` → env=production；`/media/exercises/vital/vital-back-squat/100gym-0054/v1/iphone.mp4` → 200 679260 字节
+- 注意：V25 是手动 DDL + 手工记 history（checksum=NULL），下次跑 admin-server Flyway 不会校验 V25，正常
+- 服务器临时文件已清理；`/opt/fitai/V25.sql`、`exercises_insert.sql`、`media_insert.sql` 保留作参考
+- Mac 待办：`git pull` → build；iOS 代码仍是盲写，需要 Mac 编译验证（ExerciseAnimationCard 图库 / ExerciseMediaCache / EquipmentPickerView 分页 / ExerciseLibrary 全库解码）
+
 ### 2026-11-10 · Windows / OpenCode（Vital 全库接入 iOS + 媒体缓存/图库/分页）
 
 - 提交：`f083177`（iOS）+ `bd215fc`（后端 V25）
@@ -44,7 +59,7 @@
   - `APIClient+ExerciseMedia` 请求加 `&all=true`
 - 产物：`ios/FitAI/Resources/vital_exercises.json`（984KB，1,396 条，由 `scripts/vital/build_ios_catalog.py` 生成）
 - 未验证：**iOS 代码是盲写，没在 Mac 上 build**；需要 Mac 编译 + 单测 + SwiftLint
-- 依赖/阻塞：iOS 现在用 `vital-*` slug 生成计划，但后端还没导入 1,396 动作和媒体；**在转码+导入+上传完成前，训练页会回退 poster/文字（无视频）**。TestFlight 前必须完成 Step 2/3（转码 1,702 条 → 上传 HK `/media` → 导入 exercises+media）
+- 依赖/阻塞：已解决。生产已部署 V25 + 导入 1,396 动作 / 1,572 媒体 + 上传 1.3G 媒体 + 后端多 variant 服务，烟测通过（`vital-back-squat` 返回 3 条 variant 按 visual_priority 排序、`is_primary_for_watch` 正确）
 - Mac 待办：`git pull` → `xcodegen generate` → build；重点验证 `ExerciseAnimationCard` 图库、`ExerciseMediaCache`、`EquipmentPickerView` 分页、`ExerciseLibrary` 全库加载（1,396 条解码 + 唯一 slug 单测）
 - 禁止：不要把 `vital_exercises.json` 换成训记旧库；`Equipment` 的 `.other` 已在 `LoadProgression` 加 case，不要再删
 
