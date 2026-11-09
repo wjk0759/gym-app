@@ -24,6 +24,10 @@ from classify_categories import classify  # noqa: E402
 PLAN_EXCLUDE_EQUIPMENT = {"other"}
 PLAN_EXCLUDE_MUSCLE = {"cardio"}
 PLAN_EXCLUDE_PACKS = {"yoga", "wallpilates", "homepilates"}
+# The default plan pool is strength-only. Mobility, cardio warm-ups and the
+# catch-all "other" branch stay searchable, but must not be auto-selected;
+# users can still add them explicitly through their equipment library.
+PLAN_EXCLUDE_CATEGORIES = {"拉伸", "有氧", "热身动作", "other"}
 NON_PLAN_KEYWORDS = (
     # 拉伸 / 康复 / 放松 / 呼吸 / 冥想 / 热身 / 舒展 / 按摩 / 矫正 / 活动度
     "拉伸", "放松", "呼吸", "冥想", "绕环", "热身", "舒展", "按摩", "康复", "矫正", "活动度",
@@ -49,7 +53,9 @@ NON_PLAN_KEYWORDS = (
 )
 
 
-def is_plan_eligible(a: dict) -> bool:
+def is_plan_eligible(a: dict, category_l1: str | None) -> bool:
+    if category_l1 in PLAN_EXCLUDE_CATEGORIES:
+        return False
     if a.get("equipment") in PLAN_EXCLUDE_EQUIPMENT:
         return False
     if a.get("muscle_group") in PLAN_EXCLUDE_MUSCLE:
@@ -66,9 +72,9 @@ def main() -> None:
     rows = []
     eligible = 0
     for a in actions:
-        plan_ok = is_plan_eligible(a)
-        eligible += 1 if plan_ok else 0
         l1, l2, conf, _reason = classify(a)
+        plan_ok = is_plan_eligible(a, l1)
+        eligible += 1 if plan_ok else 0
         steps = a.get("instructions_zh") or []
         instructions = "\n".join(str(s) for s in steps) if steps else None
         rows.append(
