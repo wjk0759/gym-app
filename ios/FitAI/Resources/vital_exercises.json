@@ -570,7 +570,7 @@
   "slug_aliases": [
    "vital-triceps-bench-dip"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-triceps-cable-pushdown-straight-bar-attachment",
@@ -626,7 +626,7 @@
   "slug_aliases": [
    "vital-triceps-dips"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-tripod-base-headstand",
@@ -644,7 +644,7 @@
   "slug_aliases": [
    "vital-tripod-base-headstand"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-triangle-pose-trikonasana",
@@ -681,7 +681,7 @@
   "slug_aliases": [
    "vital-reach-hinge-triangle-pose-detail"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-over-under",
@@ -1203,7 +1203,7 @@
   "slug_aliases": [
    "vital-lower-body-lifted"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-standing-chin-to-chest",
@@ -1511,7 +1511,7 @@
   "slug_aliases": [
    "vital-decline-elbow-plank-knee-drive-leg-on-table"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-decline-elbow-plank-hip-dips",
@@ -1605,7 +1605,7 @@
   "slug_aliases": [
    "vital-downward-dog-hold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-squat-down-bottle-hold",
@@ -1623,7 +1623,7 @@
   "slug_aliases": [
    "vital-squat-down-bottle-hold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-leg-lift-progression-headstand-preparation",
@@ -1642,7 +1642,7 @@
   "slug_aliases": [
    "vital-leg-lift-progression-headstand-preparation"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-zig-zag-walk",
@@ -1717,7 +1717,7 @@
   "slug_aliases": [
    "vital-criss-cross"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-crossbody-arm-swing",
@@ -1735,7 +1735,7 @@
   "slug_aliases": [
    "vital-crossbody-arm-swing"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-cross-body-mountain-climbers",
@@ -2061,7 +2061,7 @@
   "slug_aliases": [
    "vital-side-lying-single-leg-up"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-lying-single-bent-knee-hold-stretch",
@@ -2125,7 +2125,7 @@
   "slug_aliases": [
    "vital-lying-double-leg-bent"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-lying-reverse-bike",
@@ -2544,7 +2544,7 @@
   "slug_aliases": [
    "vital-supine-legs-lift-toe-touch"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-lying-with-holding-her-straight-raise-leg",
@@ -2605,7 +2605,7 @@
   "slug_aliases": [
    "vital-supine-toe-tap"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-lying-straight-leg-up-hold-stretch",
@@ -2810,7 +2810,7 @@
   "slug_aliases": [
    "vital-lying-leg-cycle"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-conventional-deadlift",
@@ -2903,7 +2903,7 @@
   "slug_aliases": [
    "vital-side-lying-double-legs-up"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-side-lying-leg-raise",
@@ -2941,7 +2941,7 @@
   "slug_aliases": [
    "vital-bicycle-side-lying"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-lateral-sprint-shuffles",
@@ -3033,7 +3033,7 @@
   "slug_aliases": [
    "vital-stepper-lateral-shuffle"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-lateral-bear-crawl",
@@ -3702,7 +3702,7 @@
   "slug_aliases": [
    "vital-handstand-close-pushups"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-ab-wheel-workout",
@@ -3961,7 +3961,7 @@
   "slug_aliases": [
    "vital-bench-abs-crunch"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-bench-dips-upper-arms",
@@ -3979,7 +3979,7 @@
   "slug_aliases": [
    "vital-bench-dips-upper-arms"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-clap-push-up",
@@ -4688,7 +4688,7 @@
   "slug_aliases": [
    "vital-ardha-matsyendrasana-seated-spinal-twist"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-half-pigeon-pose-ardha-kapotasana",
@@ -4726,7 +4726,7 @@
   "slug_aliases": [
    "vital-coordination"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-single-arm-lat-pulldown",
@@ -4789,7 +4789,7 @@
   "slug_aliases": [
    "vital-neck-press-with-one-hands"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-eka-pada-galavasana",
@@ -4851,7 +4851,7 @@
   "slug_aliases": [
    "vital-forward-bent-with-one-leg"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-single-leg-balance-with-front-hand",
@@ -5140,7 +5140,7 @@
   "slug_aliases": [
    "vital-single-leg-hip-thrust-table"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-single-leg-glute-raise-holds-and-single-arm-dumbbell",
@@ -5267,7 +5267,7 @@
   "slug_aliases": [
    "vital-single-leg-head-touch-knee-forward-fold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-single-leg-hop-jump",
@@ -5545,7 +5545,7 @@
   "slug_aliases": [
    "vital-bench-barbell-squat"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-bench-frog-barbell-glute",
@@ -5564,7 +5564,7 @@
   "slug_aliases": [
    "vital-bench-frog-barbell-glute"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-bench-frog-kick-band",
@@ -5584,7 +5584,7 @@
   "slug_aliases": [
    "vital-bench-frog-kick-band"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-hindu-push-ups",
@@ -5620,7 +5620,7 @@
   "slug_aliases": [
    "vital-imprint-and-release"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-crunch",
@@ -5770,7 +5770,7 @@
   "slug_aliases": [
    "vital-bodyweight-squats-with-water-bottle-hold-both-hands"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-hand-behind-interlock-high-knee-cardio",
@@ -5806,7 +5806,7 @@
   "slug_aliases": [
    "vital-neck-press-with-hands"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-parallettes-push-up",
@@ -5883,7 +5883,7 @@
   "slug_aliases": [
    "vital-double-leg-scissor"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-double-straight-leg-stretch",
@@ -5920,7 +5920,7 @@
   "slug_aliases": [
    "vital-arms-raise"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-reverse-push-ups",
@@ -5961,7 +5961,7 @@
   "slug_aliases": [
    "vital-reverse-single-leg-march"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-reverse-crunch",
@@ -6259,7 +6259,7 @@
   "slug_aliases": [
    "vital-reverse-prayer-forward-fold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-reverse-prayer",
@@ -6278,7 +6278,7 @@
   "slug_aliases": [
    "vital-reverse-prayer"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-one-leg-deadlift-smith-machine",
@@ -6562,7 +6562,7 @@
   "slug_aliases": [
    "vital-reverse-lunges-slider-lateral-raise"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-butt-kick",
@@ -8283,7 +8283,7 @@
   "slug_aliases": [
    "vital-prisoner-standing-upper-body-bent"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-prisoner-hip-stretch",
@@ -8337,7 +8337,7 @@
   "slug_aliases": [
    "vital-chaturanga-to-upward-dog"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-quadruped-knee-lifts",
@@ -8553,7 +8553,7 @@
   "slug_aliases": [
    "vital-seated-upper-body-bent"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-seated-flutter-kick-1",
@@ -8593,7 +8593,7 @@
   "slug_aliases": [
    "vital-seated-flutter-kicks-chair-version"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-seated-forward-fold",
@@ -8613,7 +8613,7 @@
   "slug_aliases": [
    "vital-seated-forward-fold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-seated-forward-bend-paschimottanasana",
@@ -8692,7 +8692,7 @@
   "slug_aliases": [
    "vital-gentle-fold-seated-forward-fold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-seated-half-squat",
@@ -9020,7 +9020,7 @@
   "slug_aliases": [
    "vital-seated-forward-fold-with-bent-knees"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-seated-bent-knee-forward-fold-glutes",
@@ -9061,7 +9061,7 @@
   "slug_aliases": [
    "vital-seated-bent-knee-forward-fold-head-to-floor"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-seated-chest-opener-chair-cardio",
@@ -9081,7 +9081,7 @@
   "slug_aliases": [
    "vital-seated-chest-opener-chair-cardio"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-banded-seated-abduction",
@@ -9338,7 +9338,7 @@
   "slug_aliases": [
    "vital-seated-chair-twist-upper-back"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-seated-chair-forward-fold-leg-touch-hips-up",
@@ -9357,7 +9357,7 @@
   "slug_aliases": [
    "vital-seated-chair-forward-fold-leg-touch-hips-up"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-seated-chair-punch",
@@ -9376,7 +9376,7 @@
   "slug_aliases": [
    "vital-seated-chair-punch"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-seated-chair-leg-bent-hold",
@@ -9396,7 +9396,7 @@
   "slug_aliases": [
    "vital-seated-chair-leg-bent-hold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-seated-fast-toe-taps-chair",
@@ -9415,7 +9415,7 @@
   "slug_aliases": [
    "vital-seated-fast-toe-taps-chair"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-seated-arm-stretch-chair",
@@ -9491,7 +9491,7 @@
   "slug_aliases": [
    "vital-seated-forward-over-crossed-legs"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-seated-relax-with-folded-leg",
@@ -9531,7 +9531,7 @@
   "slug_aliases": [
    "vital-seated-straight-leg-hold-towel-assist"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-seated-cable-row",
@@ -9668,7 +9668,7 @@
   "slug_aliases": [
    "vital-spine-twist-seated"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-seated-spinal",
@@ -9725,7 +9725,7 @@
   "slug_aliases": [
    "vital-seated-tva-activation"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-seated-calf-raise-leg-press",
@@ -10141,7 +10141,7 @@
   "slug_aliases": [
    "vital-elevated-skii-jumps-with-booty-bands"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-heel-elevated-cyclist-squat",
@@ -10195,7 +10195,7 @@
   "slug_aliases": [
    "vital-wall-slide"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-pilates-double-leg-stretch-new",
@@ -10622,7 +10622,7 @@
   "slug_aliases": [
    "vital-outer-thigh-lift"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-abduction-kick",
@@ -10890,7 +10890,7 @@
   "slug_aliases": [
    "vital-child-pose"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-child-pose-upper-back-slightly-bent-stretch",
@@ -10965,7 +10965,7 @@
   "slug_aliases": [
    "vital-full-wheel-entry-wheel-prep-bridge"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wide-grip-pull-up",
@@ -11046,7 +11046,7 @@
   "slug_aliases": [
    "vital-wide-leg-forward-fold-with-hand-slide"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wide-leg-bent-forward-fold",
@@ -11065,7 +11065,7 @@
   "slug_aliases": [
    "vital-wide-leg-bent-forward-fold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wide-leg-half-forward-fold",
@@ -11084,7 +11084,7 @@
   "slug_aliases": [
    "vital-wide-leg-half-forward-fold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-glute-bridge-wide-leg",
@@ -11383,7 +11383,7 @@
   "slug_aliases": [
    "vital-inch-worm"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-jackknife-beginners",
@@ -11401,7 +11401,7 @@
   "slug_aliases": [
    "vital-jackknife-beginners"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-l-sit-hold-with-leg-bent-close",
@@ -11576,7 +11576,7 @@
   "slug_aliases": [
    "vital-mountain-pose-mountain-to-forward-fold-flow"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-mountain-pose-tadasana",
@@ -11795,7 +11795,7 @@
    "vital-plank-downward-dog",
    "vital-plank-to-downward-dog"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-shoulder-tap-plank",
@@ -12010,7 +12010,7 @@
   "slug_aliases": [
    "vital-plank-leg-open"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-plank-ball-slap",
@@ -12307,7 +12307,7 @@
   "slug_aliases": [
    "vital-open-chest-triangle-pose-detail"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-leg-open-with-hand-on-chest-cross-stretch",
@@ -12361,7 +12361,7 @@
   "slug_aliases": [
    "vital-rocker-with-open-legs"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-bow-pose-dhanurasana",
@@ -12752,7 +12752,7 @@
   "slug_aliases": [
    "vital-banded-bench-kickback"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-banded-row",
@@ -13104,7 +13104,7 @@
   "slug_aliases": [
    "vital-single-leg-press"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-resistance-band-shoulder-roll",
@@ -13124,7 +13124,7 @@
   "slug_aliases": [
    "vital-resistance-band-shoulder-roll"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-resistance-band-chest-press",
@@ -13435,7 +13435,7 @@
   "slug_aliases": [
    "vital-fast-punches-shadow-boxing"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-fast-punches-shadow-boxing-advanced",
@@ -13456,7 +13456,7 @@
   "slug_aliases": [
    "vital-fast-punches-shadow-boxing-advanced"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-fast-feet-sprint-low-stance",
@@ -13641,7 +13641,7 @@
   "slug_aliases": [
    "vital-crunch-with-slow-upward"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-cossack-squat-slow",
@@ -13659,7 +13659,7 @@
   "slug_aliases": [
    "vital-cossack-squat-slow"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-slow-prisoner-marching-knee-lifts",
@@ -13677,7 +13677,7 @@
   "slug_aliases": [
    "vital-slow-prisoner-marching-knee-lifts"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-slow-eccentric-slider-hamstring-curl",
@@ -13695,7 +13695,7 @@
   "slug_aliases": [
    "vital-slow-eccentric-slider-hamstring-curl"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-warrior-i-virabhadrasana-i",
@@ -13732,7 +13732,7 @@
   "slug_aliases": [
    "vital-warrior-1-alignment"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-warrior-ii-virabhadrasana-ii",
@@ -13975,7 +13975,7 @@
   "slug_aliases": [
    "vital-wrist-circle"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-arm-up-down-stretch",
@@ -14200,7 +14200,7 @@
   "slug_aliases": [
    "vital-hip-thrust-with-hand-on-table"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-pike-push-ups",
@@ -14310,7 +14310,7 @@
   "slug_aliases": [
    "vital-hug-a-tree"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-knee-to-chest-apanasana",
@@ -14404,7 +14404,7 @@
   "slug_aliases": [
    "vital-boxing"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-boxing-beginners",
@@ -14423,7 +14423,7 @@
   "slug_aliases": [
    "vital-boxing-beginners"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-knuckle-push-ups",
@@ -14463,7 +14463,7 @@
    "vital-bodyweight-squat-with-bottles-hand",
    "vital-bodyweight-squats-with-bottle"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-controlled-kick-forearm-stand-flow",
@@ -14481,7 +14481,7 @@
   "slug_aliases": [
    "vital-controlled-kick-forearm-stand-flow"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-knee-lift-crunch",
@@ -14721,7 +14721,7 @@
   "slug_aliases": [
    "vital-icky-shuffle-ladder-drill"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-agility-ladder-squat-jump-in-out",
@@ -14739,7 +14739,7 @@
   "slug_aliases": [
    "vital-agility-ladder-squat-jump-in-out"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-svend-press-chest",
@@ -15987,7 +15987,7 @@
   "slug_aliases": [
    "vital-tabletop-start-thoracic-bridge"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-bridge-pose-setu-bandhasana",
@@ -16025,7 +16025,7 @@
   "slug_aliases": [
    "vital-bridge-pose-wheel-prep-bridge"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-meadows-row",
@@ -16079,7 +16079,7 @@
   "slug_aliases": [
    "vital-chair-seated-bike"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-chair-neck-extension",
@@ -16097,7 +16097,7 @@
   "slug_aliases": [
    "vital-chair-neck-extension"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-chair-full-neck-circle-up-down",
@@ -16115,7 +16115,7 @@
   "slug_aliases": [
    "vital-chair-full-neck-circle-up-down"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-bench-dips",
@@ -16136,7 +16136,7 @@
   "slug_aliases": [
    "vital-bench-dips"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-chair-arm-stretch",
@@ -16359,7 +16359,7 @@
   "slug_aliases": [
    "vital-towel-biceps-curl"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-bodyweight-half-standing-row-with-towel",
@@ -16380,7 +16380,7 @@
   "slug_aliases": [
    "vital-bodyweight-half-standing-row-with-towel"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-bodyweight-squatting-with-towel",
@@ -16400,7 +16400,7 @@
   "slug_aliases": [
    "vital-bodyweight-squatting-with-towel"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-bodyweight-squatting-with-towel-version-ii",
@@ -16420,7 +16420,7 @@
   "slug_aliases": [
    "vital-bodyweight-squatting-with-towel-version-ii"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-towel-neck-stretch",
@@ -16456,7 +16456,7 @@
   "slug_aliases": [
    "vital-inchworm-walkout"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-hips-thrust-on-bench-with-bottle",
@@ -16475,7 +16475,7 @@
   "slug_aliases": [
    "vital-hips-thrust-on-bench-with-bottle"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-arm-butterfly-with-bottle-stretch",
@@ -16939,7 +16939,7 @@
   "slug_aliases": [
    "vital-squat-bottle-curl"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-squat-bottle-shoulder-press-1",
@@ -16957,7 +16957,7 @@
   "slug_aliases": [
    "vital-squat-bottle-shoulder-press-1"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-squats-ii",
@@ -16993,7 +16993,7 @@
   "slug_aliases": [
    "vital-squat-with-arm-reach"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-squat-bottle-hold",
@@ -17011,7 +17011,7 @@
   "slug_aliases": [
    "vital-squat-bottle-hold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-squat-machine",
@@ -17087,7 +17087,7 @@
   "slug_aliases": [
    "vital-swim-dive"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-swimming-pilate",
@@ -17123,7 +17123,7 @@
   "slug_aliases": [
    "vital-skater-jump"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-skater-hops",
@@ -17141,7 +17141,7 @@
   "slug_aliases": [
    "vital-skater-hops"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-slider-split",
@@ -17159,7 +17159,7 @@
   "slug_aliases": [
    "vital-slider-split"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-slider-upright-row",
@@ -17177,7 +17177,7 @@
   "slug_aliases": [
    "vital-slider-upright-row"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-pendlay-row",
@@ -17546,7 +17546,7 @@
   "slug_aliases": [
    "vital-cat-pose-upper-back"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-cat-pose-upper-back-1",
@@ -17564,7 +17564,7 @@
   "slug_aliases": [
    "vital-cat-pose-upper-back-1"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-cat-pose-upper-back-advanced",
@@ -17582,7 +17582,7 @@
   "slug_aliases": [
    "vital-cat-pose-upper-back-advanced"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-cat-pose-stretch",
@@ -17600,7 +17600,7 @@
   "slug_aliases": [
    "vital-cat-pose-stretch"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-cat-pose-to-forward-fold",
@@ -17618,7 +17618,7 @@
   "slug_aliases": [
    "vital-cat-pose-to-forward-fold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-cat-pose-stretching",
@@ -17672,7 +17672,7 @@
   "slug_aliases": [
    "vital-cat-pose-version-1"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-cat-cow-stretch",
@@ -17784,7 +17784,7 @@
   "slug_aliases": [
    "vital-mountain-climber"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-mountain-climber-hold",
@@ -17820,7 +17820,7 @@
   "slug_aliases": [
    "vital-the-hundred"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-straight-barbell-curl",
@@ -17896,7 +17896,7 @@
   "slug_aliases": [
    "vital-tall-spine-seated-forward-fold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-reverse-crunch-with-straight-leg",
@@ -18033,7 +18033,7 @@
   "slug_aliases": [
    "vital-ab-to-adduction-slide-straight-arms"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-plank-reach",
@@ -18165,7 +18165,7 @@
   "slug_aliases": [
    "vital-cobra-push-ups"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-slam-ball-hurdle-squat",
@@ -18258,7 +18258,7 @@
   "slug_aliases": [
    "vital-prayer-forward-fold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-prayer-stretch",
@@ -18459,7 +18459,7 @@
   "slug_aliases": [
    "vital-hollow-hold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-hollow-hold-1",
@@ -18477,7 +18477,7 @@
   "slug_aliases": [
    "vital-hollow-hold-1"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-hollow-body-hold",
@@ -18495,7 +18495,7 @@
   "slug_aliases": [
    "vital-hollow-body-hold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-close-grip-barbell-bench-press",
@@ -18914,7 +18914,7 @@
   "slug_aliases": [
    "vital-standing-forward-half-bent"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-standing-single-leg-upper-body-bent-hold",
@@ -18936,7 +18936,7 @@
   "slug_aliases": [
    "vital-standing-single-leg-upper-body-bent-hold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-standing-single-leg-forward-fold",
@@ -18959,7 +18959,7 @@
   "slug_aliases": [
    "vital-standing-single-leg-forward-fold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-standing-single-leg-forward-fold-one-leg-up",
@@ -18983,7 +18983,7 @@
   "slug_aliases": [
    "vital-standing-single-leg-forward-fold-one-leg-up"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-standing-single-leg-forward-fold-leg-up-bent",
@@ -19007,7 +19007,7 @@
   "slug_aliases": [
    "vital-standing-single-leg-forward-fold-leg-up-bent"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-standing-single-arm-overhead-extension",
@@ -19354,7 +19354,7 @@
   "slug_aliases": [
    "vital-standing-cat-cow-spine-wave"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-standing-cat-cow-spine-wave-1",
@@ -19377,7 +19377,7 @@
   "slug_aliases": [
    "vital-standing-cat-cow-spine-wave-1"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-standing-arm-straight-stretch",
@@ -19418,7 +19418,7 @@
   "slug_aliases": [
    "vital-standing-shoulder-rolls"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-standing-cable-row",
@@ -19878,7 +19878,7 @@
   "slug_aliases": [
    "vital-standing-neck-rotate-up-down"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-standing-neck-extension-look-up-back-stretch",
@@ -19978,7 +19978,7 @@
   "slug_aliases": [
    "vital-uttanasana-standing-forward-fold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-arms-circle",
@@ -19996,7 +19996,7 @@
   "slug_aliases": [
    "vital-arms-circle"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-isometric-front-neck-press",
@@ -20554,7 +20554,7 @@
   "slug_aliases": [
    "vital-roll-over"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-yates-row",
@@ -20812,7 +20812,7 @@
   "slug_aliases": [
    "vital-shoulder-bridge-kick"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-shoulder-circle",
@@ -20830,7 +20830,7 @@
   "slug_aliases": [
    "vital-shoulder-circle"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-shoulder-landmine-press",
@@ -20904,7 +20904,7 @@
   "slug_aliases": [
    "vital-shoulder-roll"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-shoulder-car",
@@ -21090,7 +21090,7 @@
   "slug_aliases": [
    "vital-chest-extension"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-pulse-sumo-squat",
@@ -21145,7 +21145,7 @@
   "slug_aliases": [
    "vital-heel-beat"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-heel-slides",
@@ -21163,7 +21163,7 @@
   "slug_aliases": [
    "vital-heel-slides"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-heel-tap",
@@ -21218,7 +21218,7 @@
   "slug_aliases": [
    "vital-tva-activation-drawing-in"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-ab-wheel-rollout",
@@ -21331,7 +21331,7 @@
   "slug_aliases": [
    "vital-leg-scissor"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-legs-flutter",
@@ -21349,7 +21349,7 @@
   "slug_aliases": [
    "vital-legs-flutter"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-leg-circle",
@@ -21367,7 +21367,7 @@
   "slug_aliases": [
    "vital-leg-circle"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-under-knee-ab-crunch",
@@ -21571,7 +21571,7 @@
   "slug_aliases": [
    "vital-handstand-push-up"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-bicycle-crunches",
@@ -21708,7 +21708,7 @@
   "slug_aliases": [
    "vital-boat"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-boat-pose-navasana-both-hands-front-raise",
@@ -21745,7 +21745,7 @@
   "slug_aliases": [
    "vital-boat-rocking"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-boat-hold-with-hand-clapping",
@@ -21763,7 +21763,7 @@
   "slug_aliases": [
    "vital-boat-hold-with-hand-clapping"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-boat-pose-navasana",
@@ -22118,7 +22118,7 @@
   "slug_aliases": [
    "vital-clamshell-single-leg-raise"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-clamshell-legs-up",
@@ -22136,7 +22136,7 @@
   "slug_aliases": [
    "vital-clamshell-legs-up"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-clamshell-leg-bent",
@@ -22173,7 +22173,7 @@
   "slug_aliases": [
    "vital-clamshell"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-clamshell-leg-raise",
@@ -22821,7 +22821,7 @@
   "slug_aliases": [
    "vital-foot-arch-squeeze"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-running",
@@ -22952,7 +22952,7 @@
   "slug_aliases": [
    "vital-sit-on-ankle"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-sit-on-ankle-ii",
@@ -22970,7 +22970,7 @@
   "slug_aliases": [
    "vital-sit-on-ankle-ii"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-side-plank-kneeling",
@@ -23072,7 +23072,7 @@
    "vital-knee-push-up",
    "vital-knee-push-ups"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-ab-wheel-rollout-kneeling",
@@ -23111,7 +23111,7 @@
   "slug_aliases": [
    "vital-head-down-on-ground-with-knee-bent"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-kneeling-single-arm-arnold-shoulder-press",
@@ -23426,7 +23426,7 @@
   "slug_aliases": [
    "vital-box-lateral-shuffle"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-jump-box-beginners",
@@ -23592,7 +23592,7 @@
   "slug_aliases": [
    "vital-butt-kick-jog-cardio"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-butt-kick-low-impact",
@@ -23611,7 +23611,7 @@
   "slug_aliases": [
    "vital-butt-kick-low-impact"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-twist-sit-ups",
@@ -23726,7 +23726,7 @@
   "slug_aliases": [
    "vital-hollow-hold-advanced"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-heel-beat-advanced",
@@ -23745,7 +23745,7 @@
   "slug_aliases": [
    "vital-heel-beat-advanced"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-advanced-frog-side-shift-version",
@@ -23914,7 +23914,7 @@
   "slug_aliases": [
    "vital-diamond-cobra-push-up"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-diamond-push-ups-close",
@@ -24117,7 +24117,7 @@
   "slug_aliases": [
    "vital-wall-upper-body-side-bent-hand-overhead"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-upper-body-bent-back-stretch",
@@ -24189,7 +24189,7 @@
   "slug_aliases": [
    "vital-wall-upper-back-reverse-bent-squat"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-decline-elbow-plank-hold",
@@ -24207,7 +24207,7 @@
   "slug_aliases": [
    "vital-wall-decline-elbow-plank-hold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-bent-leg-reverse-lying",
@@ -24228,7 +24228,7 @@
   "slug_aliases": [
    "vital-wall-bent-leg-reverse-lying"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-lying-leg-straight-lower-body-slide-up",
@@ -24249,7 +24249,7 @@
   "slug_aliases": [
    "vital-wall-lying-leg-straight-lower-body-slide-up"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-lying-straight-leg-on-wall-hold",
@@ -24270,7 +24270,7 @@
   "slug_aliases": [
    "vital-wall-lying-straight-leg-on-wall-hold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-lying-leg-and-hips-lift-up",
@@ -24290,7 +24290,7 @@
   "slug_aliases": [
    "vital-wall-lying-leg-and-hips-lift-up"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-push-up-with-step-up-leg",
@@ -24309,7 +24309,7 @@
   "slug_aliases": [
    "vital-wall-push-up-with-step-up-leg"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-push-up-leg-on-wall",
@@ -24329,7 +24329,7 @@
   "slug_aliases": [
    "vital-wall-push-up-leg-on-wall"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-handstand-wall-support-hold",
@@ -24348,7 +24348,7 @@
   "slug_aliases": [
    "vital-handstand-wall-support-hold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-forward-lunges",
@@ -24408,7 +24408,7 @@
   "slug_aliases": [
    "vital-wall-single-leg-bent-stand-straight-hold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-one-leg-squat",
@@ -24450,7 +24450,7 @@
   "slug_aliases": [
    "vital-wall-single-leg-stand-hold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-single-leg-standing-hold",
@@ -24470,7 +24470,7 @@
   "slug_aliases": [
    "vital-wall-single-leg-standing-hold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-single-leg-hamstring-stretch",
@@ -24510,7 +24510,7 @@
   "slug_aliases": [
    "vital-wall-single-leg-glute"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-single-leg-glute-twist",
@@ -24530,7 +24530,7 @@
   "slug_aliases": [
    "vital-wall-single-leg-glute-twist"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-sit-on-one-leg-forward-fold-stretch",
@@ -24568,7 +24568,7 @@
   "slug_aliases": [
    "vital-wall-reverse-crunch"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-reverse-leg-touch-on-wall",
@@ -24586,7 +24586,7 @@
   "slug_aliases": [
    "vital-wall-reverse-leg-touch-on-wall"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-reverse-hand-squat",
@@ -24604,7 +24604,7 @@
   "slug_aliases": [
    "vital-wall-reverse-hand-squat"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-wide-leg-open-bent-stretch",
@@ -24660,7 +24660,7 @@
   "slug_aliases": [
    "vital-wall-donkey-kick-leg-bent"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-bent-hamstring-stretch",
@@ -24697,7 +24697,7 @@
   "slug_aliases": [
    "vital-wall-plank-hold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-plank-one-leg-up-down",
@@ -24735,7 +24735,7 @@
   "slug_aliases": [
    "vital-wall-lunges"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-arm-stretch",
@@ -24789,7 +24789,7 @@
   "slug_aliases": [
    "vital-wall-hand-touch-forward-lunges-version-1"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-marching-hand-on-wall",
@@ -24807,7 +24807,7 @@
   "slug_aliases": [
    "vital-wall-marching-hand-on-wall"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-legs-up-the-wall-viparita-karani",
@@ -24844,7 +24844,7 @@
   "slug_aliases": [
    "vital-wall-donkey-kick-leg-up"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-support-plank-leg-on-wall",
@@ -24880,7 +24880,7 @@
   "slug_aliases": [
    "vital-wall-support-squat-hand-raise"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-slide-pilate",
@@ -24934,7 +24934,7 @@
   "slug_aliases": [
    "vital-wall-standard-plank-hold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-squat",
@@ -25026,7 +25026,7 @@
   "slug_aliases": [
    "vital-wall-squat-pose-hold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-squats-knee-touch-on-wall",
@@ -25063,7 +25063,7 @@
   "slug_aliases": [
    "vital-wall-slide-hips-out"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-sliding",
@@ -25081,7 +25081,7 @@
   "slug_aliases": [
    "vital-wall-sliding"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-sliding-hip-thrust",
@@ -25100,7 +25100,7 @@
   "slug_aliases": [
    "vital-wall-sliding-hip-thrust"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-dog-kick-hold-leg-raise",
@@ -25118,7 +25118,7 @@
   "slug_aliases": [
    "vital-wall-dog-kick-hold-leg-raise"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-hundred-pilate",
@@ -25216,7 +25216,7 @@
   "slug_aliases": [
    "vital-wall-standing-leg-raise"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-standing-hamstring-stretch-single-leg-hand",
@@ -25320,7 +25320,7 @@
   "slug_aliases": [
    "vital-wall-standing-leg-lift-up"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-standing-calf-raise-hold",
@@ -25341,7 +25341,7 @@
   "slug_aliases": [
    "vital-wall-standing-calf-raise-hold"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-standing-calf-raise-stretch",
@@ -25382,7 +25382,7 @@
   "slug_aliases": [
    "vital-wall-standing-squat"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-standing-cat-pose-stretch",
@@ -25482,7 +25482,7 @@
   "slug_aliases": [
    "vital-wall-standing-glute-bride-hold-hand-folded"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-standing-glute-stretch-advanced",
@@ -25578,7 +25578,7 @@
   "slug_aliases": [
    "vital-wall-elbow-pike-hold-plank"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-elbow-plank-mountain-climber",
@@ -25596,7 +25596,7 @@
   "slug_aliases": [
    "vital-wall-elbow-plank-mountain-climber"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-elbow-plank-elevated-step-up",
@@ -25651,7 +25651,7 @@
   "slug_aliases": [
    "vital-wall-glute-bridge"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-glute-bridge-hand-folded",
@@ -25669,7 +25669,7 @@
   "slug_aliases": [
    "vital-wall-glute-bridge-hand-folded"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-glute-bridge-no-hands-support",
@@ -25687,7 +25687,7 @@
   "slug_aliases": [
    "vital-wall-glute-bridge-no-hands-support"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-wall-glute-stretch-hand-raise-front",
@@ -25996,7 +25996,7 @@
   "slug_aliases": [
    "vital-neck-press-hands-on-behind-head"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-neck-pull",
@@ -26014,7 +26014,7 @@
   "slug_aliases": [
    "vital-neck-pull"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-seated-neck-side-stretch",
@@ -26032,7 +26032,7 @@
   "slug_aliases": [
    "vital-seated-neck-side-stretch"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-neck-half-circle",
@@ -26050,7 +26050,7 @@
   "slug_aliases": [
    "vital-neck-half-circle"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-airplane-pose-dekasana",
@@ -26196,7 +26196,7 @@
   "slug_aliases": [
    "vital-pelvic-tilt"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-pelvic-curl-glute-bridge",
@@ -26215,7 +26215,7 @@
   "slug_aliases": [
    "vital-pelvic-curl-glute-bridge"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-hip-circle",
@@ -26615,7 +26615,7 @@
   "slug_aliases": [
    "vital-bird-dog"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-bird-dog-leg-lift",
@@ -26725,7 +26725,7 @@
   "slug_aliases": [
    "vital-dragon-flag"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  },
  {
   "slug": "vital-dragon-flags-core-mastery",
@@ -26744,6 +26744,6 @@
   "slug_aliases": [
    "vital-dragon-flags-core-mastery"
   ],
-  "plan_eligible": true
+  "plan_eligible": false
  }
 ]
