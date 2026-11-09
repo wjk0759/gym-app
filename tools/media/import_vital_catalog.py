@@ -144,13 +144,15 @@ def probe_duration(ffmpeg: str, video: Path) -> float:
     return int(h) * 3600 + int(m) * 60 + float(s)
 
 
-def transcode(ffmpeg: str, source: Path, target: Path, size: int, crf: int, fps: int) -> None:
+def transcode(
+    ffmpeg: str, source: Path, target: Path, size: int, crf: int, fps: int, preset: str
+) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     result = run([
         ffmpeg, "-y", "-hide_banner", "-loglevel", "error",
         "-i", str(source),
         "-vf", f"scale={size}:{size}:flags=lanczos",
-        "-c:v", "libx264", "-preset", "slow", "-crf", str(crf),
+        "-c:v", "libx264", "-preset", preset, "-crf", str(crf),
         "-pix_fmt", "yuv420p", "-r", str(fps), "-an",
         "-movflags", "+faststart", str(target),
     ])
@@ -180,6 +182,8 @@ def sha256(path: Path) -> str:
 def write_media_sql(rows: list[dict], out: Path) -> None:
     statements = []
     for r in rows:
+        if not r.get("phone_url"):
+            continue
         asset_id = str(uuid.uuid4())
         statements.append(
             "INSERT INTO exercise_media_assets "
@@ -225,6 +229,9 @@ def main() -> int:
     parser.add_argument("--ffmpeg", default="")
     parser.add_argument("--phone-size", type=int, default=PHONE_SIZE)
     parser.add_argument("--watch-size", type=int, default=WATCH_SIZE)
+    parser.add_argument("--preset", default="medium")
+    parser.add_argument("--jobs", type=int, default=4)
+    parser.add_argument("--limit", type=int, default=0, help="只处理前 N 条（测试用）")
     args = parser.parse_args()
 
     actions = load_actions(Path(args.catalog))
@@ -245,23 +252,30 @@ def main() -> int:
     output_root = Path(args.output).expanduser().resolve()
     output_root.mkdir(parents=True, exist_ok=True)
 
-    by_slug: dict[str, list[dict]] = {}
-    for a in actions:
-        by_slug[a["slug"]] = a
+    work = rows if args.limit <= 0 else rows[: args.limit]
 
-    for r in rows:
+    from concurrent.futures import ThreadPoolExecutor
+    import threading
+
+    print_lock = threading.Lock()
+    missing = 0
+
+    def process(r: dict) -> None:
+        nonlocal missing
         src = source_root / r["source_file"].replace("/", "\\")
         if not src.is_file():
-            print(f"MISSING {r['source_file']}")
-            continue
+            with print_lock:
+                missing += 1
+                print(f"MISSING {r['source_file']}")
+            return
         slug = r["slug"]
         folder = output_root / slug / r["variant_key"] / "v1"
         phone_path = folder / "iphone.mp4"
         watch_path = folder / "watch.mp4"
         poster_path = folder / "poster.jpg"
         duration = probe_duration(ffmpeg, src)
-        transcode(ffmpeg, src, phone_path, args.phone_size, crf=23, fps=30)
-        transcode(ffmpeg, src, watch_path, args.watch_size, crf=26, fps=24)
+        transcode(ffmpeg, src, phone_path, args.phone_size, crf=23, fps=30, preset=args.preset)
+        transcode(ffmpeg, src, watch_path, args.watch_size, crf=26, fps=24, preset=args.preset)
         poster(ffmpeg, src, poster_path, args.phone_size)
         rel = Path("exercises") / "vital" / slug / r["variant_key"] / "v1"
         r["phone_url"] = f"/media/{rel.as_posix()}/iphone.mp4"
@@ -271,7 +285,17 @@ def main() -> int:
         r["loop_start_ms"] = 0
         r["loop_end_ms"] = int(round(duration * 1000))
         r["sha256"] = sha256(watch_path)
-        print(f"{slug:36s} {r['variant_key']:22s} phone={phone_path.stat().st_size // 1024}KB watch={watch_path.stat().st_size // 1024}KB")
+        with print_lock:
+            print(
+                f"{slug:36s} {r['variant_key']:22s} "
+                f"phone={phone_path.stat().st_size // 1024}KB "
+                f"watch={watch_path.stat().st_size // 1024}KB"
+            )
+
+    with ThreadPoolExecutor(max_workers=args.jobs) as pool:
+        list(pool.map(process, work))
+
+    print(f"missing={missing} processed={len(work) - missing}")
 
     write_media_sql(rows, Path(args.media_sql))
     print(f"wrote {args.media_sql}")
