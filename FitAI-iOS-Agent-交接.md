@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`4af3bcb`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`9ce7a63`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-10）：`develop` 编译修复（`6e95feb`）、头像 512（`fa9d3c8`）、动作库别名 + 计划白名单 + 隐藏 `other`（`fc8634c`/`bc183ae`）、媒体 coverage 校验（`d890a53`）、phone-only Release 构建脚本（`4af3bcb`）；Debug build **BUILD SUCCEEDED**，`FitAITests` **61/61** 通过，catalog validator 通过，Wu-Tang 真机 phone-only 包已安装并启动；此前完成 Watch UI 重设计、单主按钮流程、40/42/49mm 响应式适配和语音输入单行（`2d5dea0`/`1eb3fdd`/`9a833b1`）
@@ -25,6 +25,29 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-10 · Windows（动作详情多视频切换 + 媒体重转码重传）
+
+- 分支：`develop`
+- 代码提交：`9ce7a63`
+- 做了什么：
+  - 动作详情「动作轨迹」支持多视频切换：iOS catalog 每个动作打进**全部变体**（`media` 数组含 `poster_url`/`video_url`/`visual_style`/`visual_priority`，按视觉优先级排序），详情页 `MotionBoardGallery` 横向缩略图 strip 点选切换循环视频；仅多变体时才显示缩略图
+  - 重转码 1,571 条媒体：修复竖屏 720×1072 被拉伸的问题 → 统一 1080×1080 保持原始比例 + 白边填充（`force_original_aspect_ratio`）
+  - 清理本地/服务器旧 PoC 占位媒体（crunch/squat/goblet_squat 等 11 目录 + 2 孤儿目录 `vital-close-grip-bench-press-barbell`、`vital-sprint-interval-fast-running`）
+  - 清理服务器 `exercise_media_assets` 21 条非 `vital-` 死链（`cm_*` 10 条 + 无前缀 11 条，指向已删除的占位文件）
+  - 重新上传媒体 1,124MB / 4,713 文件到 `/opt/fitai/media/exercises/vital/`，重新导入 `data/vital/media_insert.sql` 更新 watch_sha256（重编码后内容变了）
+- 验证：
+  - 转码 `missing=0 processed=1571`；抽查视频统一 1080×1080
+  - SQL watch_sha256 与本地新文件一致（`8999e744…`）；服务器 media 表 **1571 条 / 1394 动作**，与本地 catalog 一致
+  - 媒体 URL `HEAD` 返回 **200**（`/media/exercises/vital/vital-ez-bar-biceps-curl/200-0154/v1/iphone.mp4`，613KB）
+- macOS 需要做：
+  - `git pull` → `xcodegen` → 编译验证动作详情「动作轨迹」多视频缩略图切换、选中高亮
+  - 真机验证视频/缩略图加载（服务器已是最新 1080×1080 视频，旧缓存需清）
+- 不要恢复：
+  - 不要恢复旧 PoC 占位媒体（crunch/squat/male-phone.mp4 等 11 目录）
+  - 不要恢复 21 条非 `vital-` media 死链
+- 遗留（单独任务，本次未处理）：
+  - `exercises` 表仍有 80+ 条旧占位动作（`cm_*` 60+ 条 + 无前缀 20+ 条，`name_zh` 多为乱码），可能被旧计划/器械候选引用，需评估外键后再清理
 
 ### 2026-11-10 · macOS（phone-only Release 构建）
 
