@@ -289,6 +289,37 @@ def main():
     (base / "vital_actions_zh_draft.json").write_text(
         json.dumps(actions, ensure_ascii=False, indent=1), encoding="utf-8"
     )
+    with (base / "vital_actions_zh_draft.csv").open(
+        "w", encoding="utf-8-sig", newline=""
+    ) as handle:
+        writer = csv.writer(handle)
+        writer.writerow(
+            [
+                "slug",
+                "name_zh",
+                "name_en",
+                "name_zh_source",
+                "review_priority",
+                "equipment",
+                "muscle_group",
+                "media_count",
+                "instruction_count",
+            ]
+        )
+        for action in actions:
+            writer.writerow(
+                [
+                    action["slug"],
+                    action["name_zh"],
+                    action["name_en"],
+                    action["name_zh_source"],
+                    action["review_priority"],
+                    action["equipment"],
+                    action["muscle_group"],
+                    len(action["media"]),
+                    len(action.get("instructions_zh") or []),
+                ]
+            )
 
     mapping_counts = Counter(row["match_type"] for row in mapping_rows)
     source_counts = Counter(action["name_zh_source"] for action in actions)
