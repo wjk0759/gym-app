@@ -245,7 +245,7 @@ class ExerciseMediaAsset(Base):
     __table_args__ = (
         UniqueConstraint(
             "exercise_slug",
-            "sex",
+            "variant_key",
             "version",
             name="uq_exercise_media_variant",
         ),
@@ -257,6 +257,10 @@ class ExerciseMediaAsset(Base):
         String(60), ForeignKey("exercises.slug", ondelete="CASCADE"), index=True
     )
     sex: Mapped[str] = mapped_column(String(10), default="unisex")
+    variant_key: Mapped[str | None] = mapped_column(String(80))
+    source_pack: Mapped[str | None] = mapped_column(String(20))
+    visual_style: Mapped[str | None] = mapped_column(String(30))
+    visual_priority: Mapped[int] = mapped_column(Integer, default=1)
     source: Mapped[str] = mapped_column(String(40))
     phone_url: Mapped[str] = mapped_column(Text)
     watch_url: Mapped[str] = mapped_column(Text)

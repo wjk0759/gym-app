@@ -27,16 +27,18 @@ def exercise_media(
     slugs: str,
     user_id: CurrentUser,
     db: DBSession,
+    all: bool = False,
 ):
     """Batch demo media for the iPhone workout screen.
 
-    The client asks once for the current day, then caches the response. Exact
-    sex wins, with unisex/other-sex fallback handled by the resolver.
+    The client asks once for the current day, then caches the response.
+    ``all=true`` returns every visual variant (sorted by visual_priority);
+    the default returns only the primary per exercise (Watch path).
     """
     values = [item.strip() for item in slugs.split(",") if item.strip()]
     if len(values) > 20:
         raise HTTPException(status_code=400, detail="一次最多查询 20 个动作")
-    return {"items": media_for_slugs(db, user_id, values)}
+    return {"items": media_for_slugs(db, user_id, values, all_variants=all)}
 
 
 @router.get("/videos/{exercise_slug}")
