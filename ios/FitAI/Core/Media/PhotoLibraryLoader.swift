@@ -88,7 +88,10 @@ extension UIImage {
     func squareCropped(maxDimension: CGFloat) -> UIImage {
         let side = min(size.width, size.height)
         guard side > 0 else { return self }
-        let target = min(side, maxDimension)
+        // Avatars are normalized to exactly 512×512; the server stores the
+        // same size, so a small source image is upscaled rather than left at
+        // its short side.
+        let target = maxDimension
         let scale = target / side
         let drawSize = CGSize(width: size.width * scale, height: size.height * scale)
         let format = UIGraphicsImageRendererFormat()
