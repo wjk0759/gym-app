@@ -49,6 +49,10 @@ backend/backup/
 backend/uvicorn*.log*
 backend/admin_video_test.db
 
+# Vital 素材分析产物（可再生成）
+data/vital/contact_sheets/
+data/vital/visual_contact_sheet.html
+
 # IDE
 .vscode/
 .idea/
