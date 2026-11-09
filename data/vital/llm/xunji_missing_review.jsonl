@@ -1,0 +1,120 @@
+{"i": 90, "zh": "跑跳接半蹲跳", "match": "NO"}
+{"i": 91, "zh": "跑步接单腿跳", "match": "NO"}
+{"i": 92, "zh": "站姿踝关节环绕", "match": "NO"}
+{"i": 93, "zh": "站姿膝关节环绕", "match": "NO"}
+{"i": 94, "zh": "滑雪", "match": "NO"}
+{"i": 95, "zh": "单手抱头侧身", "match": "NO"}
+{"i": 96, "zh": "单手拉杆", "match": "NO"}
+{"i": 97, "zh": "坐姿腘绳肌与臀部泡沫轴放松", "match": "NO"}
+{"i": 98, "zh": "仰卧髋外旋肌与髋伸肌泡沫轴放松", "match": "NO"}
+{"i": 99, "zh": "分腿侧蹲泡沫轴放松_大腿", "match": "NO"}
+{"i": 100, "zh": "肩胛伸展泡沫轴松解", "match": "NO"}
+{"i": 101, "zh": "侧卧背阔肌泡沫轴放松", "match": "NO"}
+{"i": 102, "zh": "侧卧肱三头肌泡沫轴放松", "match": "NO"}
+{"i": 103, "zh": "仰卧胸腰椎泡沫轴放松_背部训练", "match": "NO"}
+{"i": 104, "zh": "仰卧颈部减压泡沫轴放松_版本2", "match": "NO"}
+{"i": 105, "zh": "俯卧胸肩前侧泡沫轴放松", "match": "NO"}
+{"i": 106, "zh": "全身环绕滚动放松", "match": "NO"}
+{"i": 107, "zh": "仰卧竖脊肌泡沫轴放松", "match": "NO"}
+{"i": 108, "zh": "侧卧上背部泡沫轴放松", "match": "NO"}
+{"i": 109, "zh": "侧卧下背部泡沫轴放松", "match": "NO"}
+{"i": 110, "zh": "坐姿臀部泡沫轴放松", "match": "NO"}
+{"i": 111, "zh": "仰卧肩部后旋泡沫轴放松", "match": "NO"}
+{"i": 112, "zh": "菱形肌泡沫轴放松", "match": "NO"}
+{"i": 113, "zh": "站姿双臂环抱后展拉伸", "match": "NO"}
+{"i": 114, "zh": "游泳", "match": "NO"}
+{"i": 115, "zh": "滑雪机", "match": "NO"}
+{"i": 116, "zh": "上肢手摇健身车", "match": "NO"}
+{"i": 117, "zh": "滑雪-Tabata", "match": "NO"}
+{"i": 118, "zh": "滑雪摇荡-tabata", "match": "NO"}
+{"i": 119, "zh": "哑铃甩-tabata", "match": "NO"}
+{"i": 30, "zh": "TRX-三头臂屈伸（负重）", "match": "Bench Dips"}
+{"i": 31, "zh": "侧卧泡沫轴肱三头肌放松", "match": "NO"}
+{"i": 32, "zh": "凳上臂屈伸", "match": "Bench Dips"}
+{"i": 33, "zh": "史密斯反向提踵", "match": "standing calf raise"}
+{"i": 34, "zh": "腓骨肌拉伸", "match": "NO"}
+{"i": 35, "zh": "泡沫轴足底放松", "match": "NO"}
+{"i": 36, "zh": "泡沫轴小腿放松", "match": "NO"}
+{"i": 37, "zh": "侧卧单腿腓骨肌群滚动放松", "match": "NO"}
+{"i": 38, "zh": "侧卧腓骨肌群滚动放松", "match": "NO"}
+{"i": 39, "zh": "俯卧单腿胫骨前肌泡沫轴滚动放松", "match": "NO"}
+{"i": 40, "zh": "足踝旋转拉伸", "match": "NO"}
+{"i": 41, "zh": "足踝侧向拉伸", "match": "NO"}
+{"i": 42, "zh": "正手杠铃手腕弯举", "match": "NO"}
+{"i": 43, "zh": "正手杠铃手腕弯举（平板）", "match": "NO"}
+{"i": 44, "zh": "正手杠铃手腕弯举_平板v2", "match": "NO"}
+{"i": 45, "zh": "背身杠铃手腕弯举", "match": "NO"}
+{"i": 46, "zh": "绳索手腕弯举", "match": "NO"}
+{"i": 47, "zh": "单手哑铃手腕弯举（反手）", "match": "NO"}
+{"i": 48, "zh": "单手哑铃手腕弯举（正手）", "match": "NO"}
+{"i": 49, "zh": "垂式哑铃手腕弯举", "match": "NO"}
+{"i": 50, "zh": "杠铃片正手弯举", "match": "NO"}
+{"i": 51, "zh": "哑铃过凳腕弯举", "match": "NO"}
+{"i": 52, "zh": "背后哑铃指弯举", "match": "NO"}
+{"i": 53, "zh": "杠铃腕弯举_版本2", "match": "NO"}
+{"i": 54, "zh": "坐姿下巴回收", "match": "NO"}
+{"i": 55, "zh": "上斜负重头后仰", "match": "NO"}
+{"i": 56, "zh": "上斜负重颈弯举", "match": "NO"}
+{"i": 57, "zh": "坐姿负重头后仰", "match": "NO"}
+{"i": 58, "zh": "平躺头后仰", "match": "NO"}
+{"i": 59, "zh": "抱头后仰", "match": "NO"}
+{"i": 0, "zh": "反手俯卧撑", "match": "Reverse Push-Ups"}
+{"i": 1, "zh": "反手俯卧撑（负重）", "match": "Reverse Push-Ups"}
+{"i": 2, "zh": "臂屈伸式俯卧撑", "match": "Close Push Ups"}
+{"i": 3, "zh": "臂屈伸式俯卧撑（负重）", "match": "Close Push Ups"}
+{"i": 4, "zh": "派克俯卧撑", "match": "Pike Push Up"}
+{"i": 5, "zh": "单手俯卧撑", "match": "One Hand Push Ups"}
+{"i": 6, "zh": "上斜触肩俯卧撑", "match": "Shoulder Tap Push Ups"}
+{"i": 7, "zh": "凳上派克式俯卧撑_版本2", "match": "Pike Push Up"}
+{"i": 8, "zh": "派克转眼镜蛇俯卧撑", "match": "Pike Push Up"}
+{"i": 9, "zh": "吊环反身俯卧撑", "match": "Reverse Push-Ups"}
+{"i": 10, "zh": "椅子双臂臂屈伸", "match": "Bench Dips"}
+{"i": 11, "zh": "伪俄式挺身俯卧撑", "match": "Pike Push Up"}
+{"i": 12, "zh": "下斜凳交替触肩俯卧撑", "match": "Shoulder Tap Push Ups"}
+{"i": 13, "zh": "背部胸肌拉伸", "match": "Chest and Arm Stretch"}
+{"i": 14, "zh": "脊柱拉伸", "match": "Back Stretch"}
+{"i": 15, "zh": "肩胛屈伸", "match": "Standing Scapular W Stretch"}
+{"i": 16, "zh": "高翻", "match": "NO"}
+{"i": 17, "zh": "抓举", "match": "NO"}
+{"i": 18, "zh": "杠铃火箭推", "match": "NO"}
+{"i": 19, "zh": "上斜哑铃T字举", "match": "NO"}
+{"i": 20, "zh": "俯卧哑铃W字举", "match": "Standing Y-T-W Stretch Series"}
+{"i": 21, "zh": "杠铃前平举", "match": "NO"}
+{"i": 22, "zh": "壶铃土耳其起身", "match": "NO"}
+{"i": 23, "zh": "俯卧泡沫轴肱二头肌放松", "match": "NO"}
+{"i": 24, "zh": "平板臂屈伸", "match": "Plank To Push-Ups"}
+{"i": 25, "zh": "平板臂屈伸-高难度", "match": "Plank To Push-Ups"}
+{"i": 26, "zh": "平板三头推", "match": "Plank To Push-Ups"}
+{"i": 27, "zh": "平板臂屈伸_屈腿", "match": "Plank To Push-Ups"}
+{"i": 28, "zh": "TRX-三头臂屈伸", "match": "Bench Dips"}
+{"i": 29, "zh": "TRX-三头臂屈伸（中难度）", "match": "Bench Dips"}
+{"i": 60, "zh": "站姿负重头后仰", "match": "NO"}
+{"i": 61, "zh": "绳索头后仰", "match": "NO"}
+{"i": 62, "zh": "绳索颈弯举", "match": "NO"}
+{"i": 63, "zh": "负重颈弯举", "match": "NO"}
+{"i": 64, "zh": "跪姿头后仰", "match": "NO"}
+{"i": 65, "zh": "负重坐姿颈部后伸", "match": "NO"}
+{"i": 66, "zh": "负重仰卧颈部屈曲", "match": "NO"}
+{"i": 67, "zh": "器械颈部伸展_配重片式", "match": "NO"}
+{"i": 68, "zh": "器械颈部右侧屈", "match": "seated neck side stretch"}
+{"i": 69, "zh": "颈部侧伸展", "match": "seated neck side stretch"}
+{"i": 70, "zh": "仰卧泡沫轴颈部减压放松", "match": "NO"}
+{"i": 71, "zh": "坐姿颈部屈伸", "match": "seated neck stretch"}
+{"i": 72, "zh": "哑铃臀冲", "match": "dumbbell glute bridge chest press"}
+{"i": 73, "zh": "哑铃硬拉", "match": "NO"}
+{"i": 74, "zh": "跪姿臀冲", "match": "hip thrust"}
+{"i": 75, "zh": "壶铃土耳其起身_深蹲式", "match": "kettlebell swing"}
+{"i": 76, "zh": "平板支撑触脚尖", "match": "plank with reach"}
+{"i": 77, "zh": "平板交替手肘支撑", "match": "NO"}
+{"i": 78, "zh": "单腿抬升俯卧撑", "match": "NO"}
+{"i": 79, "zh": "侧平板抬腿", "match": "NO"}
+{"i": 80, "zh": "跪姿平板支撑", "match": "NO"}
+{"i": 81, "zh": "蜘蛛式爬行俯卧撑", "match": "NO"}
+{"i": 82, "zh": "坐姿短足训练", "match": "NO"}
+{"i": 83, "zh": "肩胛骨上回旋灵活性", "match": "NO"}
+{"i": 84, "zh": "肩胛骨下回旋灵活性", "match": "NO"}
+{"i": 85, "zh": "平躺曲腿旋转", "match": "90-90 rotation"}
+{"i": 86, "zh": "单臂侧转", "match": "cable wood chop"}
+{"i": 87, "zh": "跪姿前伸手", "match": "NO"}
+{"i": 88, "zh": "抱肘侧屈体", "match": "NO"}
+{"i": 89, "zh": "跑步接半蹲", "match": "air squat"}

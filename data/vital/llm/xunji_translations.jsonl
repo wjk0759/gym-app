@@ -1,0 +1,1213 @@
+{"i": 120, "zh": "吊环夹胸", "en": "Ring Chest Fly"}
+{"i": 121, "zh": "吊环俯卧撑转侧平板", "en": "Ring Push-Up to Side Plank"}
+{"i": 122, "zh": "吊环下斜俯卧撑", "en": "Ring Decline Push-Up"}
+{"i": 123, "zh": "哑铃低位飞鸟", "en": "Dumbbell Low Fly"}
+{"i": 124, "zh": "椅子双臂臂屈伸", "en": "Chair Dip"}
+{"i": 125, "zh": "靠墙下斜俯卧撑", "en": "Wall Decline Push-Up"}
+{"i": 126, "zh": "跪姿旋转俯卧撑", "en": "Kneeling Rotational Push-Up"}
+{"i": 127, "zh": "眼镜蛇俯卧撑", "en": "Cobra Push-Up"}
+{"i": 128, "zh": "箱上跪姿下斜俯卧撑", "en": "Box Kneeling Decline Push-Up"}
+{"i": 129, "zh": "跪姿俯卧撑划船", "en": "Kneeling Push-Up Row"}
+{"i": 130, "zh": "杠杆式上斜推胸", "en": "Leverage Incline Chest Press"}
+{"i": 131, "zh": "伪俄式挺身俯卧撑", "en": "Pseudo Planche Push-Up"}
+{"i": 132, "zh": "下斜凳交替触肩俯卧撑", "en": "Decline Bench Alternating Shoulder Tap Push-Up"}
+{"i": 133, "zh": "哑铃靠背屈臂上拉", "en": "Dumbbell Bench Pullover"}
+{"i": 134, "zh": "45度罗马椅反向挺身", "en": "45-Degree Roman Chair Reverse Hyperextension"}
+{"i": 135, "zh": "上斜凳反向挺身", "en": "Incline Bench Reverse Hyperextension"}
+{"i": 136, "zh": "弹力带上斜凳反向挺身", "en": "Banded Incline Bench Reverse Hyperextension"}
+{"i": 137, "zh": "宽距高位下拉", "en": "Wide-Grip Lat Pulldown"}
+{"i": 138, "zh": "窄距下拉", "en": "Close-Grip Lat Pulldown"}
+{"i": 139, "zh": "杠铃划船", "en": "Barbell Row"}
+{"i": 140, "zh": "反手杠铃划船", "en": "Underhand Barbell Row"}
+{"i": 141, "zh": "地雷杆单手划船", "en": "Landmine Single-Arm Row"}
+{"i": 142, "zh": "潘德雷划船", "en": "Pendlay Row"}
+{"i": 143, "zh": "半程硬拉", "en": "Partial Deadlift"}
+{"i": 144, "zh": "绳索直臂下压", "en": "Cable Straight-Arm Pulldown"}
+{"i": 145, "zh": "悍马机划船(v1)", "en": "Hammer Strength Row"}
+{"i": 146, "zh": "器械下拉（版本2）", "en": "Machine Lat Pulldown"}
+{"i": 147, "zh": "器械下拉", "en": "Machine Lat Pulldown"}
+{"i": 148, "zh": "分动式高位划船", "en": "Independent High Row"}
+{"i": 149, "zh": "坐姿划船", "en": "Seated Row"}
+{"i": 150, "zh": "拉杆坐姿划船(宽握)", "en": "Wide-Grip Seated Cable Row"}
+{"i": 151, "zh": "拉杆坐姿划船(窄握)", "en": "Close-Grip Seated Cable Row"}
+{"i": 152, "zh": "哑铃划船", "en": "Dumbbell Row"}
+{"i": 153, "zh": "站姿哑铃划船", "en": "Standing Dumbbell Row"}
+{"i": 154, "zh": "站姿旋转划船", "en": "Standing Rotational Row"}
+{"i": 155, "zh": "平躺哑铃过头拉", "en": "Lying Dumbbell Pullover"}
+{"i": 156, "zh": "俯卧杠铃划船", "en": "Prone Barbell Row"}
+{"i": 157, "zh": "俯卧哑铃划船（锤式）", "en": "Prone Hammer-Grip Dumbbell Row"}
+{"i": 158, "zh": "俯卧哑铃划船", "en": "Prone Dumbbell Row"}
+{"i": 159, "zh": "T杆划船（宽）", "en": "Wide-Grip T-Bar Row"}
+{"i": 40, "zh": "平板绳索夹胸", "en": "Flat Cable Fly"}
+{"i": 41, "zh": "上斜绳索夹胸", "en": "Incline Cable Fly"}
+{"i": 42, "zh": "下斜绳索夹胸", "en": "Decline Cable Fly"}
+{"i": 43, "zh": "上斜俯卧撑", "en": "Incline Push-Up"}
+{"i": 44, "zh": "下斜俯卧撑", "en": "Decline Push-Up"}
+{"i": 45, "zh": "下斜俯卧撑（负重）", "en": "Weighted Decline Push-Up"}
+{"i": 46, "zh": "仰卧旋转屈臂上拉", "en": "Lying Rotational Bent-Arm Pullover"}
+{"i": 47, "zh": "上斜哑铃飞鸟（锤式）", "en": "Incline Hammer-Grip Dumbbell Fly"}
+{"i": 48, "zh": "上斜哑铃飞鸟", "en": "Incline Dumbbell Fly"}
+{"i": 49, "zh": "反手上斜哑铃卧推", "en": "Incline Reverse-Grip Dumbbell Bench Press"}
+{"i": 50, "zh": "反手哑铃卧推", "en": "Reverse-Grip Dumbbell Bench Press"}
+{"i": 51, "zh": "地板反手哑铃卧推", "en": "Floor Reverse-Grip Dumbbell Bench Press"}
+{"i": 52, "zh": "地板哑铃卧推（锤式）", "en": "Floor Hammer-Grip Dumbbell Bench Press"}
+{"i": 53, "zh": "哑铃卧推（锤式）", "en": "Hammer-Grip Dumbbell Bench Press"}
+{"i": 54, "zh": "俯卧撑_支撑球", "en": "Stability Ball Push-Up"}
+{"i": 55, "zh": "单手俯卧撑", "en": "One-Arm Push-Up"}
+{"i": 56, "zh": "杠铃片夹胸", "en": "Weight Plate Chest Press"}
+{"i": 57, "zh": "悍马机卧推", "en": "Hammer Strength Bench Press"}
+{"i": 58, "zh": "鼓掌俯卧撑", "en": "Clap Push-Up"}
+{"i": 59, "zh": "弹力绳-高位飞鸟", "en": "Resistance Band High Fly"}
+{"i": 60, "zh": "弹力绳-低位飞鸟", "en": "Resistance Band Low Fly"}
+{"i": 61, "zh": "弹力绳-十字飞鸟", "en": "Resistance Band Crossover Fly"}
+{"i": 62, "zh": "弹力绳-阻力俯卧撑", "en": "Band-Resisted Push-Up"}
+{"i": 63, "zh": "弹力绳-前推", "en": "Resistance Band Chest Press"}
+{"i": 64, "zh": "弹力绳-上推", "en": "Resistance Band Upward Press"}
+{"i": 65, "zh": "弹力绳-卧推", "en": "Resistance Band Bench Press"}
+{"i": 66, "zh": "弹力带-坐姿前推", "en": "Seated Resistance Band Chest Press"}
+{"i": 67, "zh": "抬腿杠铃卧推", "en": "Legs-Up Barbell Bench Press"}
+{"i": 68, "zh": "下斜悍马机推胸", "en": "Decline Hammer Strength Chest Press"}
+{"i": 69, "zh": "器械坐姿下夹胸", "en": "Seated Machine Downward Chest Fly"}
+{"i": 70, "zh": "站姿器械下夹", "en": "Standing Machine Downward Chest Fly"}
+{"i": 71, "zh": "上斜悍马机飞鸟", "en": "Incline Hammer Strength Fly"}
+{"i": 72, "zh": "侧身单边悍马机推胸", "en": "Sideways Single-Arm Hammer Strength Chest Press"}
+{"i": 73, "zh": "单边悍马机推胸", "en": "Single-Arm Hammer Strength Chest Press"}
+{"i": 74, "zh": "器械推胸（版本2）", "en": "Machine Chest Press"}
+{"i": 75, "zh": "器械推胸（版本3）", "en": "Machine Chest Press"}
+{"i": 76, "zh": "下斜悍马机推胸（版本2）", "en": "Decline Hammer Strength Chest Press"}
+{"i": 77, "zh": "对握式器械推胸", "en": "Neutral-Grip Machine Chest Press"}
+{"i": 78, "zh": "悍马机推胸（版本3）", "en": "Hammer Strength Chest Press"}
+{"i": 79, "zh": "器械推胸（版本4）", "en": "Machine Chest Press"}
+{"i": 80, "zh": "悍马机推胸（版本2）", "en": "Hammer Strength Chest Press"}
+{"i": 81, "zh": "蝴蝶机夹胸（版本2）", "en": "Pec Deck Fly"}
+{"i": 82, "zh": "直立器械推胸(版本2)", "en": "Upright Machine Chest Press"}
+{"i": 83, "zh": "直立器械推胸", "en": "Upright Machine Chest Press"}
+{"i": 84, "zh": "塔式平板卧推", "en": "Tower Flat Bench Press"}
+{"i": 85, "zh": "塔式上斜卧推", "en": "Tower Incline Bench Press"}
+{"i": 86, "zh": "悍马多连杆卧推", "en": "Hammer Strength Multi-Link Bench Press"}
+{"i": 87, "zh": "上斜器械推胸", "en": "Incline Machine Chest Press"}
+{"i": 88, "zh": "弹力带pallor推", "en": "Resistance Band Pallof Press"}
+{"i": 89, "zh": "宽距俯卧撑", "en": "Wide-Grip Push-Up"}
+{"i": 90, "zh": "上斜悍马机推胸2", "en": "Incline Hammer Strength Chest Press"}
+{"i": 91, "zh": "弹力带站姿高位飞鸟", "en": "Standing High Resistance Band Fly"}
+{"i": 92, "zh": "侧姿俯卧撑", "en": "Side Push-Up"}
+{"i": 93, "zh": "墙式俯卧撑_进阶版", "en": "Wall Push-Up"}
+{"i": 94, "zh": "钻石俯卧撑", "en": "Diamond Push-Up"}
+{"i": 95, "zh": "上斜哑铃锤式推举", "en": "Incline Hammer-Grip Dumbbell Press"}
+{"i": 96, "zh": "射手俯卧撑", "en": "Archer Push-Up"}
+{"i": 97, "zh": "单侧射手俯卧撑", "en": "Unilateral Archer Push-Up"}
+{"i": 98, "zh": "掌心向内上斜哑铃卧推", "en": "Incline Neutral-Grip Dumbbell Bench Press"}
+{"i": 99, "zh": "器械单臂胸推", "en": "Single-Arm Machine Chest Press"}
+{"i": 100, "zh": "器械上斜单臂胸部推举", "en": "Incline Single-Arm Machine Chest Press"}
+{"i": 101, "zh": "器械胸部推举", "en": "Machine Chest Press"}
+{"i": 102, "zh": "深度俯卧撑", "en": "Deep Push-Up"}
+{"i": 103, "zh": "健身球哑铃飞鸟", "en": "Stability Ball Dumbbell Fly"}
+{"i": 104, "zh": "健身球上斜哑铃飞鸟", "en": "Stability Ball Incline Dumbbell Fly"}
+{"i": 105, "zh": "仰卧哑铃锤式卧推_版本2", "en": "Lying Hammer-Grip Dumbbell Press"}
+{"i": 106, "zh": "仰卧泡沫轴开胸放松", "en": "Supine Foam Roller Chest Opener"}
+{"i": 107, "zh": "哑铃窄距卧推", "en": "Close-Grip Dumbbell Bench Press"}
+{"i": 108, "zh": "窄距跪姿俯卧撑", "en": "Close-Grip Kneeling Push-Up"}
+{"i": 109, "zh": "哑铃下斜扭转飞鸟", "en": "Decline Dumbbell Twisting Fly"}
+{"i": 110, "zh": "绳索下斜飞鸟", "en": "Decline Cable Fly"}
+{"i": 111, "zh": "上斜触肩俯卧撑", "en": "Incline Shoulder Tap Push-Up"}
+{"i": 112, "zh": "凳上派克式俯卧撑_版本2", "en": "Bench Pike Push-Up"}
+{"i": 113, "zh": "杠杆夹胸", "en": "Lever Chest Fly"}
+{"i": 114, "zh": "跪姿俯卧撑接婴儿式", "en": "Kneeling Push-Up to Child's Pose"}
+{"i": 115, "zh": "俯卧撑进阶推展_胸部训练", "en": "Push-Up Plus"}
+{"i": 116, "zh": "哑铃挤压式卧推", "en": "Dumbbell Squeeze Press"}
+{"i": 117, "zh": "派克转眼镜蛇俯卧撑", "en": "Pike to Cobra Push-Up"}
+{"i": 118, "zh": "吊环双杠臂屈伸", "en": "Ring Dip"}
+{"i": 119, "zh": "吊环反身俯卧撑", "en": "Ring Reverse Push-Up"}
+{"i": 0, "zh": "杠铃卧推", "en": "Barbell Bench Press"}
+{"i": 1, "zh": "暂停卧推", "en": "Paused Bench Press"}
+{"i": 2, "zh": "宽距杠铃卧推", "en": "Wide-Grip Barbell Bench Press"}
+{"i": 3, "zh": "上斜杠铃卧推", "en": "Incline Barbell Bench Press"}
+{"i": 4, "zh": "下斜杠铃卧推", "en": "Decline Barbell Bench Press"}
+{"i": 5, "zh": "哑铃卧推", "en": "Dumbbell Bench Press"}
+{"i": 6, "zh": "平躺哑铃卧推", "en": "Flat Dumbbell Bench Press"}
+{"i": 7, "zh": "上斜哑铃卧推", "en": "Incline Dumbbell Bench Press"}
+{"i": 8, "zh": "下斜哑铃卧推", "en": "Decline Dumbbell Bench Press"}
+{"i": 9, "zh": "窄距哑铃卧推", "en": "Close-Grip Dumbbell Bench Press"}
+{"i": 10, "zh": "器械推胸", "en": "Machine Chest Press"}
+{"i": 11, "zh": "悍马机推胸", "en": "Hammer Strength Chest Press"}
+{"i": 12, "zh": "上斜悍马机推胸", "en": "Incline Hammer Strength Chest Press"}
+{"i": 13, "zh": "史密斯机卧推", "en": "Smith Machine Bench Press"}
+{"i": 14, "zh": "下斜史密斯机卧推", "en": "Decline Smith Machine Bench Press"}
+{"i": 15, "zh": "上斜史密斯机卧推", "en": "Incline Smith Machine Bench Press"}
+{"i": 16, "zh": "史密斯 V-bar 卧推", "en": "Smith Machine V-Bar Bench Press"}
+{"i": 17, "zh": "哑铃飞鸟", "en": "Dumbbell Fly"}
+{"i": 18, "zh": "平躺哑铃飞鸟", "en": "Flat Dumbbell Fly"}
+{"i": 19, "zh": "把手式蝴蝶机飞鸟", "en": "Pec Deck Fly (Handles)"}
+{"i": 20, "zh": "蝴蝶机飞鸟", "en": "Pec Deck Fly"}
+{"i": 21, "zh": "绳索十字夹胸", "en": "Cable Crossover"}
+{"i": 22, "zh": "绳索夹胸", "en": "Cable Fly"}
+{"i": 23, "zh": "仰卧屈臂上抬", "en": "Lying Triceps Extension"}
+{"i": 24, "zh": "双杠臂屈伸", "en": "Chest Dip"}
+{"i": 25, "zh": "双杠臂屈伸（负重）", "en": "Weighted Chest Dip"}
+{"i": 26, "zh": "俯卧撑", "en": "Push-Up"}
+{"i": 27, "zh": "上台阶俯卧撑", "en": "Step-Up Push-Up"}
+{"i": 28, "zh": "跪姿俯卧撑", "en": "Knee Push-Up"}
+{"i": 29, "zh": "俯卧撑（负重）", "en": "Weighted Push-Up"}
+{"i": 30, "zh": "反手俯卧撑", "en": "Reverse Grip Push-Up"}
+{"i": 31, "zh": "反手俯卧撑（负重）", "en": "Weighted Reverse Grip Push-Up"}
+{"i": 32, "zh": "臂屈伸式俯卧撑", "en": "Triceps Push-Up"}
+{"i": 33, "zh": "臂屈伸式俯卧撑（负重）", "en": "Weighted Triceps Push-Up"}
+{"i": 34, "zh": "地板飞鸟", "en": "Floor Fly"}
+{"i": 35, "zh": "地板飞鸟（中难度）", "en": "Floor Fly (Intermediate)"}
+{"i": 36, "zh": "地板飞鸟（负重）", "en": "Floor Fly (Weighted)"}
+{"i": 37, "zh": "派克俯卧撑", "en": "Pike Push-Up"}
+{"i": 38, "zh": "俯卧撑-把柄", "en": "Push-Up (Handles)"}
+{"i": 39, "zh": "双杠臂屈伸（辅助）", "en": "Assisted Chest Dip"}
+{"i": 160, "zh": "T杆划船（窄）", "en": "Narrow-Grip T-Bar Row"}
+{"i": 161, "zh": "引体向上", "en": "Pull-Up"}
+{"i": 162, "zh": "引体向上(负重)", "en": "Weighted Pull-Up"}
+{"i": 163, "zh": "反手引体向上", "en": "Chin-Up"}
+{"i": 164, "zh": "反手引体向上（负重）", "en": "Weighted Chin-Up"}
+{"i": 165, "zh": "引体向上（辅助）", "en": "Assisted Pull-Up"}
+{"i": 166, "zh": "窄距引体向上（辅助）", "en": "Assisted Close-Grip Pull-Up"}
+{"i": 167, "zh": "颈后下拉", "en": "Behind-the-Neck Lat Pulldown"}
+{"i": 168, "zh": "V-bar下拉", "en": "V-Bar Lat Pulldown"}
+{"i": 169, "zh": "绳索坐姿划船（单手）", "en": "Seated Single-Arm Cable Row"}
+{"i": 170, "zh": "铁杆直臂下压", "en": "Straight-Bar Straight-Arm Pulldown"}
+{"i": 171, "zh": "宽握反手下拉", "en": "Wide-Grip Underhand Lat Pulldown"}
+{"i": 172, "zh": "澳式引体", "en": "Australian Pull-Up"}
+{"i": 173, "zh": "史密斯反手划船", "en": "Smith Machine Underhand Row"}
+{"i": 174, "zh": "山羊挺身", "en": "Back Extension"}
+{"i": 175, "zh": "弹跳引体", "en": "Kipping Pull-Up"}
+{"i": 176, "zh": "单手下拉", "en": "Single-Arm Lat Pulldown"}
+{"i": 177, "zh": "坐地单手反握下拉", "en": "Floor-Seated Single-Arm Underhand Pulldown"}
+{"i": 178, "zh": "坐姿单手划船", "en": "Seated Single-Arm Row"}
+{"i": 179, "zh": "哑铃划船（手扶）", "en": "Supported Single-Arm Dumbbell Row"}
+{"i": 180, "zh": "绳索站姿旋转划船", "en": "Standing Cable Rotational Row"}
+{"i": 181, "zh": "俯卧反手哑铃划船", "en": "Prone Underhand Dumbbell Row"}
+{"i": 182, "zh": "悍马机划船", "en": "Hammer Strength Row"}
+{"i": 183, "zh": "悍马机正手下拉", "en": "Hammer Strength Overhand Lat Pulldown"}
+{"i": 184, "zh": "V-bar划船", "en": "V-Bar Row"}
+{"i": 185, "zh": "俯卧T-bar划船", "en": "Prone T-Bar Row"}
+{"i": 186, "zh": "平板手肘撑", "en": "Forearm Plank"}
+{"i": 187, "zh": "TRX-坐姿下拉", "en": "TRX Seated Pulldown"}
+{"i": 188, "zh": "TRX-坐姿下拉（负重）", "en": "Weighted TRX Seated Pulldown"}
+{"i": 189, "zh": "TRX-水平划船", "en": "TRX Horizontal Row"}
+{"i": 190, "zh": "TRX-水平划船（中难度）", "en": "TRX Horizontal Row"}
+{"i": 191, "zh": "TRX-水平划船（负重）", "en": "Weighted TRX Horizontal Row"}
+{"i": 192, "zh": "弹力绳-俯身划船", "en": "Band Bent-Over Row"}
+{"i": 193, "zh": "弹力绳-坐姿划船", "en": "Band Seated Row"}
+{"i": 194, "zh": "弹力绳-单手下拉", "en": "Band Single-Arm Pulldown"}
+{"i": 195, "zh": "弹力绳-单手划船", "en": "Band Single-Arm Row"}
+{"i": 196, "zh": "弹力绳-反向早安", "en": "Band Reverse Good Morning"}
+{"i": 197, "zh": "弹力绳-跪姿下拉", "en": "Band Kneeling Pulldown"}
+{"i": 198, "zh": "弹力绳-直臂下拉", "en": "Band Straight-Arm Pulldown"}
+{"i": 199, "zh": "弹力绳-坐姿直立划船", "en": "Band Seated Upright Row"}
+{"i": 280, "zh": "椅间屈膝反向划船", "en": "Between-Chair Bent-Knee Inverted Row"}
+{"i": 281, "zh": "椅间屈膝窄握反向引体", "en": "Between-Chair Bent-Knee Close-Grip Inverted Pull-Up"}
+{"i": 282, "zh": "坐姿毛巾划船", "en": "Seated Towel Row"}
+{"i": 283, "zh": "哑铃俯卧撑划船", "en": "Dumbbell Push-Up Row"}
+{"i": 284, "zh": "俯身毛巾划船", "en": "Bent-Over Towel Row"}
+{"i": 285, "zh": "杠杆式坐姿划船", "en": "Lever Seated Row"}
+{"i": 286, "zh": "俯卧脉冲俯身划船", "en": "Prone Pulse Bent-Over Row"}
+{"i": 287, "zh": "窄距正手下拉", "en": "Close-Grip Overhand Lat Pulldown"}
+{"i": 288, "zh": "反向哈克早安", "en": "Reverse Hack Good Morning"}
+{"i": 289, "zh": "杠铃深蹲", "en": "Barbell Squat"}
+{"i": 290, "zh": "泽奇深蹲", "en": "Zercher Squat"}
+{"i": 291, "zh": "杠铃哈克深蹲", "en": "Barbell Hack Squat"}
+{"i": 292, "zh": "哑铃二头弯举深蹲", "en": "Dumbbell Biceps Curl Squat"}
+{"i": 293, "zh": "前蹲", "en": "Front Squat"}
+{"i": 294, "zh": "硬拉", "en": "Deadlift"}
+{"i": 295, "zh": "相扑硬拉", "en": "Sumo Deadlift"}
+{"i": 296, "zh": "杠铃罗马尼亚硬拉", "en": "Barbell Romanian Deadlift"}
+{"i": 297, "zh": "高翻", "en": "Power Clean"}
+{"i": 298, "zh": "罗马尼亚硬拉", "en": "Romanian Deadlift"}
+{"i": 299, "zh": "哈克机深蹲", "en": "Machine Hack Squat"}
+{"i": 300, "zh": "杰弗森深蹲", "en": "Jefferson Squat"}
+{"i": 301, "zh": "史密斯机深蹲", "en": "Smith Machine Squat"}
+{"i": 302, "zh": "史密斯机箭步蹲", "en": "Smith Machine Lunge"}
+{"i": 303, "zh": "绳索辅助反向腿弯举", "en": "Cable-Assisted Reverse Leg Curl"}
+{"i": 304, "zh": "史密斯机保加利亚蹲", "en": "Smith Machine Bulgarian Split Squat"}
+{"i": 305, "zh": "史密斯机坐蹲", "en": "Smith Machine Sit Squat"}
+{"i": 306, "zh": "史密斯机直腿硬拉", "en": "Smith Machine Stiff-Leg Deadlift"}
+{"i": 307, "zh": "六角杠硬拉", "en": "Trap Bar Deadlift"}
+{"i": 308, "zh": "硬拉器硬拉", "en": "Machine Deadlift"}
+{"i": 309, "zh": "杠铃直腿硬拉", "en": "Barbell Stiff-Leg Deadlift"}
+{"i": 310, "zh": "哑铃深蹲", "en": "Dumbbell Squat"}
+{"i": 311, "zh": "哑铃酒杯深蹲", "en": "Dumbbell Goblet Squat"}
+{"i": 312, "zh": "哑铃前蹲", "en": "Dumbbell Front Squat"}
+{"i": 313, "zh": "俯卧哑铃腿弯举", "en": "Prone Dumbbell Leg Curl"}
+{"i": 314, "zh": "哑铃直腿硬拉", "en": "Dumbbell Stiff-Leg Deadlift"}
+{"i": 315, "zh": "腿弯举", "en": "Leg Curl"}
+{"i": 316, "zh": "坐姿腿弯举", "en": "Seated Leg Curl"}
+{"i": 317, "zh": "单边腿弯举（器械）", "en": "Single-Leg Machine Leg Curl"}
+{"i": 318, "zh": "坐姿腿屈伸", "en": "Seated Leg Extension"}
+{"i": 319, "zh": "腿举", "en": "Leg Press"}
+{"i": 240, "zh": "弹力带单臂扭转坐姿划船", "en": "Resistance Band Single-Arm Seated Twist Row"}
+{"i": 241, "zh": "猫式伸展", "en": "Cat Stretch"}
+{"i": 242, "zh": "双杠架锤式握法引体向上", "en": "Parallel Bar Hammer-Grip Pull-Up"}
+{"i": 243, "zh": "上斜俯卧划船", "en": "Incline Prone Row"}
+{"i": 244, "zh": "肩宽握引体向上_中握距", "en": "Shoulder-Width Grip Pull-Up"}
+{"i": 245, "zh": "背部胸肌拉伸", "en": "Back and Chest Stretch"}
+{"i": 246, "zh": "器械高位划船", "en": "Machine High Row"}
+{"i": 247, "zh": "器械坐姿划船", "en": "Seated Machine Row"}
+{"i": 248, "zh": "脊柱拉伸", "en": "Spinal Stretch"}
+{"i": 249, "zh": "跪姿背阔肌拉伸", "en": "Kneeling Lat Stretch"}
+{"i": 250, "zh": "俯卧杠铃反手划船", "en": "Prone Reverse-Grip Barbell Row"}
+{"i": 251, "zh": "绳索直臂下拉II", "en": "Cable Straight-Arm Pulldown"}
+{"i": 252, "zh": "T杆划船", "en": "T-Bar Row"}
+{"i": 253, "zh": "站姿绳索高位下拉", "en": "Standing Cable High Pulldown"}
+{"i": 254, "zh": "窄距引体向上", "en": "Close-Grip Pull-Up"}
+{"i": 255, "zh": "哑铃反握划船", "en": "Dumbbell Reverse-Grip Row"}
+{"i": 256, "zh": "仰卧下背拉伸", "en": "Supine Lower Back Stretch"}
+{"i": 257, "zh": "仰卧下背拉伸_屈膝", "en": "Bent-Knee Supine Lower Back Stretch"}
+{"i": 258, "zh": "反向T杆划船", "en": "Reverse T-Bar Row"}
+{"i": 259, "zh": "弹力带辅助引体向上", "en": "Band-Assisted Pull-Up"}
+{"i": 260, "zh": "肩胛屈伸", "en": "Scapular Flexion-Extension"}
+{"i": 261, "zh": "凳上辅助引体向上", "en": "Bench-Assisted Pull-Up"}
+{"i": 262, "zh": "哑铃俯身划船_平板支撑式", "en": "Dumbbell Plank Row"}
+{"i": 263, "zh": "宽握颈后引体向上", "en": "Wide-Grip Behind-the-Neck Pull-Up"}
+{"i": 264, "zh": "吊环膝触划船", "en": "Ring Knee-Touch Row"}
+{"i": 265, "zh": "吊环高位划船", "en": "Ring High Row"}
+{"i": 266, "zh": "吊环反向飞鸟", "en": "Ring Reverse Fly"}
+{"i": 267, "zh": "吊环引体向上", "en": "Ring Pull-Up"}
+{"i": 268, "zh": "吊环宽握反身划船", "en": "Ring Wide-Grip Inverted Row"}
+{"i": 269, "zh": "反手吊环引体向上", "en": "Reverse-Grip Ring Pull-Up"}
+{"i": 270, "zh": "吊环屈膝反身划船", "en": "Ring Bent-Knee Inverted Row"}
+{"i": 271, "zh": "椅子反身划船", "en": "Chair Inverted Row"}
+{"i": 272, "zh": "反握器械高位下拉", "en": "Reverse-Grip Machine High Pulldown"}
+{"i": 273, "zh": "窄距平行握引体向上_V把", "en": "Close-Grip Neutral-Grip V-Bar Pull-Up"}
+{"i": 274, "zh": "毛巾超人划船", "en": "Towel Superman Row"}
+{"i": 275, "zh": "正手绳索俯身划船", "en": "Overhand Cable Bent-Over Row"}
+{"i": 276, "zh": "毛巾滑动地面下拉", "en": "Towel Sliding Floor Pulldown"}
+{"i": 277, "zh": "屈膝仰卧地板划船", "en": "Bent-Knee Supine Floor Row"}
+{"i": 278, "zh": "反手绳索俯身划船", "en": "Reverse-Grip Cable Bent-Over Row"}
+{"i": 279, "zh": "自主辅助反向过顶拉伸", "en": "Self-Assisted Reverse Overhead Stretch"}
+{"i": 200, "zh": "弹力绳-站姿直立划船", "en": "Band Standing Upright Row"}
+{"i": 201, "zh": "弹力绳-反手下拉", "en": "Band Reverse-Grip Pulldown"}
+{"i": 202, "zh": "弹力绳-高位下拉", "en": "Band Lat Pulldown"}
+{"i": 203, "zh": "竖直坐姿绳索划船", "en": "Upright Seated Cable Row"}
+{"i": 204, "zh": "器械划船1", "en": "Machine Row"}
+{"i": 205, "zh": "器械划船2", "en": "Machine Row"}
+{"i": 206, "zh": "海豹器械划船", "en": "Machine Seal Row"}
+{"i": 207, "zh": "海豹杠铃划船", "en": "Barbell Seal Row"}
+{"i": 208, "zh": "坐姿绳索双边下拉", "en": "Seated Cable Bilateral Pulldown"}
+{"i": 209, "zh": "对握引体向上", "en": "Neutral-Grip Pull-Up"}
+{"i": 210, "zh": "坐姿器械背屈伸", "en": "Seated Machine Back Extension"}
+{"i": 211, "zh": "器械大剪刀", "en": "Machine High Row"}
+{"i": 212, "zh": "悍马机大剪刀", "en": "Hammer Strength High Row"}
+{"i": 213, "zh": "悍马机-鹦鹉螺", "en": "Hammer Strength Pullover"}
+{"i": 214, "zh": "轨道划船器划船", "en": "Rowing Machine Row"}
+{"i": 215, "zh": "分动式高位划船2", "en": "Iso-Lateral High Row"}
+{"i": 216, "zh": "分动式高位划船3", "en": "Iso-Lateral High Row"}
+{"i": 217, "zh": "单手坐姿悍马机划船", "en": "Single-Arm Seated Hammer Strength Row"}
+{"i": 218, "zh": "单手悍马机下拉", "en": "Single-Arm Hammer Strength Pulldown"}
+{"i": 219, "zh": "单手悍马机划船", "en": "Single-Arm Hammer Strength Row"}
+{"i": 220, "zh": "单手支撑式悍马俯身划船", "en": "Single-Arm Supported Hammer Strength Bent-Over Row"}
+{"i": 221, "zh": "单边大剪刀划船", "en": "Single-Arm High Row"}
+{"i": 222, "zh": "反握式悍马划船", "en": "Reverse-Grip Hammer Strength Row"}
+{"i": 223, "zh": "器械绳索划船", "en": "Machine Cable Row"}
+{"i": 224, "zh": "悍马机下拉（版本2）", "en": "Hammer Strength Pulldown"}
+{"i": 225, "zh": "悍马机划船（版本2）", "en": "Hammer Strength Row"}
+{"i": 226, "zh": "悍马俯身划船", "en": "Hammer Strength Bent-Over Row"}
+{"i": 227, "zh": "支撑式悍马俯身划船", "en": "Supported Hammer Strength Bent-Over Row"}
+{"i": 228, "zh": "窄握把手下拉", "en": "Narrow-Grip Handle Pulldown"}
+{"i": 229, "zh": "对握高位下拉", "en": "Neutral-Grip Lat Pulldown"}
+{"i": 230, "zh": "挂片器划船", "en": "Plate-Loaded Row"}
+{"i": 231, "zh": "绳索单边俯身划船", "en": "Cable Single-Arm Bent-Over Row"}
+{"i": 232, "zh": "坐姿等长引体", "en": "Seated Isometric Pull-Up"}
+{"i": 233, "zh": "跪姿弹力带划船", "en": "Kneeling Band Row"}
+{"i": 234, "zh": "弹力带坐姿划船", "en": "Band Seated Row"}
+{"i": 235, "zh": "壶铃单臂划船", "en": "Kettlebell Single-Arm Row"}
+{"i": 236, "zh": "悬带反握划船", "en": "Suspension Reverse-Grip Row"}
+{"i": 237, "zh": "哑铃上斜仰卧耸肩", "en": "Dumbbell Incline Supine Shrug"}
+{"i": 238, "zh": "绳索高位下拉", "en": "Cable Lat Pulldown"}
+{"i": 239, "zh": "绳索直背坐姿划船", "en": "Cable Straight-Back Seated Row"}
+{"i": 360, "zh": "哑铃火箭推", "en": "Dumbbell Thruster"}
+{"i": 361, "zh": "杠铃火箭推", "en": "Barbell Thruster"}
+{"i": 362, "zh": "ssb深蹲", "en": "Safety Squat Bar Squat"}
+{"i": 363, "zh": "钟摆深蹲", "en": "Pendulum Squat"}
+{"i": 364, "zh": "六角杠深蹲", "en": "Trap Bar Squat"}
+{"i": 365, "zh": "器械单腿腿屈伸", "en": "Machine Single-Leg Leg Extension"}
+{"i": 366, "zh": "挂片器单腿屈伸", "en": "Plate-Loaded Single-Leg Leg Extension"}
+{"i": 367, "zh": "后弓步踢腿", "en": "Reverse Lunge Kick"}
+{"i": 368, "zh": "跳跃深蹲", "en": "Jump Squat"}
+{"i": 369, "zh": "跳跃式上步", "en": "Jump Step-Up"}
+{"i": 370, "zh": "高抬腿深蹲", "en": "High-Knee Squat"}
+{"i": 371, "zh": "俯卧哑铃腘绳肌弯举", "en": "Prone Dumbbell Hamstring Curl"}
+{"i": 372, "zh": "跪姿杠铃深蹲", "en": "Kneeling Barbell Squat"}
+{"i": 373, "zh": "杠铃站姿提踵", "en": "Barbell Standing Calf Raise"}
+{"i": 374, "zh": "相扑深蹲", "en": "Sumo Squat"}
+{"i": 375, "zh": "交替抬腿", "en": "Alternating Leg Raise"}
+{"i": 376, "zh": "单腿四分之一深蹲", "en": "Single-Leg Quarter Squat"}
+{"i": 377, "zh": "自重后弓步", "en": "Bodyweight Reverse Lunge"}
+{"i": 378, "zh": "器械坐姿深蹲", "en": "Machine Seated Squat"}
+{"i": 379, "zh": "连动式仰卧腿举_版本2", "en": "Continuous Supine Leg Press"}
+{"i": 380, "zh": "连动式仰卧腿举", "en": "Continuous Supine Leg Press"}
+{"i": 381, "zh": "悍马式高位深蹲", "en": "Hammer Strength High Squat"}
+{"i": 382, "zh": "史密斯单腿箭步蹲", "en": "Smith Machine Single-Leg Lunge"}
+{"i": 383, "zh": "壶铃前蹲", "en": "Kettlebell Front Squat"}
+{"i": 384, "zh": "哑铃俯卧腿弯举", "en": "Dumbbell Prone Leg Curl"}
+{"i": 385, "zh": "哥萨克深蹲", "en": "Cossack Squat"}
+{"i": 386, "zh": "单腿水平倒蹬", "en": "Single-Leg Horizontal Leg Press"}
+{"i": 387, "zh": "哑铃锤式相扑深蹲", "en": "Dumbbell Hammer-Grip Sumo Squat"}
+{"i": 388, "zh": "滑冰式跳跃", "en": "Skater Jump"}
+{"i": 389, "zh": "壶铃硬拉", "en": "Kettlebell Deadlift"}
+{"i": 390, "zh": "壶铃土耳其起身", "en": "Kettlebell Turkish Get-Up"}
+{"i": 391, "zh": "站立提膝", "en": "Standing Knee Raise"}
+{"i": 392, "zh": "原地箭步蹲", "en": "Stationary Lunge"}
+{"i": 393, "zh": "哑铃单腿台阶上步", "en": "Dumbbell Single-Leg Step-Up"}
+{"i": 394, "zh": "负重拉伸箭步蹲", "en": "Weighted Lunge Stretch"}
+{"i": 395, "zh": "吊环腿弯举", "en": "Ring Leg Curl"}
+{"i": 396, "zh": "吊环分腿深蹲", "en": "Ring Split Squat"}
+{"i": 397, "zh": "杠杆坐姿腿屈伸", "en": "Lever Seated Leg Extension"}
+{"i": 398, "zh": "垫高窄距深蹲", "en": "Elevated Narrow-Stance Squat"}
+{"i": 399, "zh": "哑铃前架箭步蹲", "en": "Dumbbell Front Rack Lunge"}
+{"i": 320, "zh": "器械倒蹬", "en": "Machine Leg Press"}
+{"i": 321, "zh": "器械倒蹬(版本2)", "en": "Machine Leg Press"}
+{"i": 322, "zh": "杠铃保加利亚蹲", "en": "Barbell Bulgarian Split Squat"}
+{"i": 323, "zh": "杠铃箭步蹲", "en": "Barbell Lunge"}
+{"i": 324, "zh": "哑铃箭步蹲", "en": "Dumbbell Lunge"}
+{"i": 325, "zh": "哑铃箭步蹲_反向", "en": "Dumbbell Reverse Lunge"}
+{"i": 326, "zh": "哑铃保加利亚蹲", "en": "Dumbbell Bulgarian Split Squat"}
+{"i": 327, "zh": "哑铃相扑蹲", "en": "Dumbbell Sumo Squat"}
+{"i": 328, "zh": "深蹲跳", "en": "Jump Squat"}
+{"i": 329, "zh": "毛巾腿弯举", "en": "Towel Leg Curl"}
+{"i": 330, "zh": "毛巾腿弯举（高难度）", "en": "Towel Leg Curl"}
+{"i": 331, "zh": "自重深蹲", "en": "Bodyweight Squat"}
+{"i": 332, "zh": "箭步踢腿", "en": "Lunge Kick"}
+{"i": 333, "zh": "自重保加利亚蹲", "en": "Bodyweight Bulgarian Split Squat"}
+{"i": 334, "zh": "保加利亚蹲（负重）", "en": "Weighted Bulgarian Split Squat"}
+{"i": 335, "zh": "手枪深蹲", "en": "Pistol Squat"}
+{"i": 336, "zh": "悍马机深蹲", "en": "Hammer Strength Squat"}
+{"i": 337, "zh": "自重腿弯举", "en": "Bodyweight Leg Curl"}
+{"i": 338, "zh": "箭步跳", "en": "Jumping Lunge"}
+{"i": 339, "zh": "TRX-手枪深蹲（手辅助）", "en": "TRX Hand-Assisted Pistol Squat"}
+{"i": 340, "zh": "TRX-手枪深蹲（中难度）", "en": "TRX Pistol Squat"}
+{"i": 341, "zh": "TRX-手枪深蹲（负重）", "en": "Weighted TRX Pistol Squat"}
+{"i": 342, "zh": "弹力带-提腿", "en": "Band Leg Raise"}
+{"i": 343, "zh": "弹力带-箭步蹲", "en": "Band Lunge"}
+{"i": 344, "zh": "弹力带-平躺腿弯举", "en": "Band Lying Leg Curl"}
+{"i": 345, "zh": "弹力带-站姿踢腿", "en": "Band Standing Leg Kick"}
+{"i": 346, "zh": "弹力带-站姿单腿内收", "en": "Band Standing Single-Leg Adduction"}
+{"i": 347, "zh": "弹力带-站姿单腿外展", "en": "Band Standing Single-Leg Abduction"}
+{"i": 348, "zh": "弹力带-登山者", "en": "Band Mountain Climber"}
+{"i": 349, "zh": "弹力带-仰卧登山者", "en": "Band Supine Mountain Climber"}
+{"i": 350, "zh": "弹力带-站姿腿弯举", "en": "Band Standing Leg Curl"}
+{"i": 351, "zh": "弹力带-箭步走", "en": "Band Walking Lunge"}
+{"i": 352, "zh": "弹力带-深蹲", "en": "Band Squat"}
+{"i": 353, "zh": "弹力带-单腿深蹲", "en": "Band Single-Leg Squat"}
+{"i": 354, "zh": "弹力带-腿外展", "en": "Band Leg Abduction"}
+{"i": 355, "zh": "弹力带-螃式走", "en": "Band Crab Walk"}
+{"i": 356, "zh": "弹力带-仰卧腿外展", "en": "Band Supine Leg Abduction"}
+{"i": 357, "zh": "弹力带-鸭式前行", "en": "Band Duck Walk"}
+{"i": 358, "zh": "犀牛腰带机深蹲", "en": "Rhino Belt Squat"}
+{"i": 359, "zh": "抓举", "en": "Snatch"}
+{"i": 400, "zh": "髋部屈伸拉伸", "en": "Hip Flexion-Extension Stretch"}
+{"i": 401, "zh": "滑地屈膝后蹬", "en": "Sliding Leg Curl"}
+{"i": 402, "zh": "杠铃前架弓步蹲", "en": "Barbell Front Rack Lunge"}
+{"i": 403, "zh": "椅子登阶", "en": "Chair Step-Up"}
+{"i": 404, "zh": "史密斯机仰卧腿举", "en": "Smith Machine Supine Leg Press"}
+{"i": 405, "zh": "窄距腿举", "en": "Narrow-Stance Leg Press"}
+{"i": 406, "zh": "哑铃侧弓步", "en": "Dumbbell Lateral Lunge"}
+{"i": 407, "zh": "箭步走", "en": "Walking Lunge"}
+{"i": 408, "zh": "哑铃单腿深蹲", "en": "Dumbbell Single-Leg Squat"}
+{"i": 409, "zh": "坐姿弹力带腿屈伸", "en": "Seated Band Leg Extension"}
+{"i": 410, "zh": "单腿触踵深蹲", "en": "Single-Leg Heel-Touch Squat"}
+{"i": 411, "zh": "冲刺弓步", "en": "Sprint Lunge"}
+{"i": 412, "zh": "单腿低箱深蹲", "en": "Single-Leg Low Box Squat"}
+{"i": 413, "zh": "踮脚尖相扑深蹲", "en": "Calf-Raised Sumo Squat"}
+{"i": 414, "zh": "自重单腿硬拉", "en": "Bodyweight Single-Leg Deadlift"}
+{"i": 415, "zh": "窄距 45 度倒蹬机", "en": "Narrow-Stance 45-Degree Leg Press"}
+{"i": 416, "zh": "宽距腿举", "en": "Wide-Stance Leg Press"}
+{"i": 417, "zh": "仰卧深蹲", "en": "Supine Squat"}
+{"i": 418, "zh": "俯卧反向哈克深蹲", "en": "Prone Reverse Hack Squat"}
+{"i": 419, "zh": "地雷杆推肩", "en": "Landmine Shoulder Press"}
+{"i": 420, "zh": "仰卧绳索曲杆提拉", "en": "Supine Cable EZ-Bar Pullover"}
+{"i": 421, "zh": "上斜凳俯卧哑铃Y字上举", "en": "Incline Bench Prone Dumbbell Y-Raise"}
+{"i": 422, "zh": "上斜哑铃T字举", "en": "Incline Dumbbell T-Raise"}
+{"i": 423, "zh": "哑铃单边Y字举", "en": "Single-Arm Dumbbell Y-Raise"}
+{"i": 424, "zh": "俯卧哑铃W字举", "en": "Prone Dumbbell W-Raise"}
+{"i": 425, "zh": "绳索直立划船", "en": "Cable Upright Row"}
+{"i": 426, "zh": "单边绳索侧拉", "en": "Single-Arm Cable Side Pull"}
+{"i": 427, "zh": "绳索单边侧拉_手扶", "en": "Hand-Supported Single-Arm Cable Side Pull"}
+{"i": 428, "zh": "哑铃单边侧外旋", "en": "Single-Arm Dumbbell Lateral External Rotation"}
+{"i": 429, "zh": "哑铃单边肩外旋", "en": "Single-Arm Dumbbell Shoulder External Rotation"}
+{"i": 430, "zh": "坐姿哑铃侧外旋", "en": "Seated Dumbbell Lateral External Rotation"}
+{"i": 431, "zh": "坐姿单臂哑铃外旋", "en": "Seated Single-Arm Dumbbell External Rotation"}
+{"i": 432, "zh": "坐姿锤式推举", "en": "Seated Hammer Shoulder Press"}
+{"i": 433, "zh": "侧卧单臂哑铃后束飞鸟", "en": "Side-Lying Single-Arm Dumbbell Rear Delt Fly"}
+{"i": 434, "zh": "上斜凳俯卧哑铃反向上举", "en": "Incline Bench Prone Dumbbell Reverse Raise"}
+{"i": 435, "zh": "哑铃推肩", "en": "Dumbbell Shoulder Press"}
+{"i": 436, "zh": "斯科特推举", "en": "Scott Press"}
+{"i": 437, "zh": "古巴推举", "en": "Cuban Press"}
+{"i": 438, "zh": "阿诺德推肩", "en": "Arnold Press"}
+{"i": 439, "zh": "站姿哑铃推举", "en": "Standing Dumbbell Shoulder Press"}
+{"i": 480, "zh": "毛巾侧平举", "en": "Towel Lateral Raise"}
+{"i": 481, "zh": "毛巾侧平举（高难度）", "en": "Towel Lateral Raise"}
+{"i": 482, "zh": "靠墙倒立撑", "en": "Wall Handstand Push-Up"}
+{"i": 483, "zh": "自由倒立撑", "en": "Free Handstand Push-Up"}
+{"i": 484, "zh": "哑铃直立划船", "en": "Dumbbell Upright Row"}
+{"i": 485, "zh": "器械把手侧平举", "en": "Machine Handle Lateral Raise"}
+{"i": 486, "zh": "悍马机侧平举", "en": "Hammer Strength Lateral Raise"}
+{"i": 487, "zh": "悍马机半俯身侧平举", "en": "Hammer Strength Half Bent-Over Lateral Raise"}
+{"i": 488, "zh": "绳索交叉后束飞鸟", "en": "Cable Crossover Rear Delt Fly"}
+{"i": 489, "zh": "站姿器械侧平举", "en": "Standing Machine Lateral Raise"}
+{"i": 490, "zh": "单手开肘悍马俯身划船", "en": "Single-Arm Elbow-Out Hammer Strength Bent-Over Row"}
+{"i": 491, "zh": "开肘悍马俯身划船", "en": "Elbow-Out Hammer Strength Bent-Over Row"}
+{"i": 492, "zh": "Y字绳索侧平举", "en": "Cable Y Lateral Raise"}
+{"i": 493, "zh": "弹力带_绳索_站姿侧平举", "en": "Band/Cable Standing Lateral Raise"}
+{"i": 494, "zh": "弹力带俯身肩后束飞鸟", "en": "Band Bent-Over Rear Delt Fly"}
+{"i": 495, "zh": "弹力带站姿面拉", "en": "Band Standing Face Pull"}
+{"i": 496, "zh": "壶铃阿诺德推举", "en": "Kettlebell Arnold Press"}
+{"i": 497, "zh": "单臂哑铃侧平举", "en": "Single-Arm Dumbbell Lateral Raise"}
+{"i": 498, "zh": "坐姿哑铃前平举", "en": "Seated Dumbbell Front Raise"}
+{"i": 499, "zh": "哑铃上斜俯身侧平举", "en": "Dumbbell Incline Bent-Over Lateral Raise"}
+{"i": 500, "zh": "肘关节环绕臂部运动", "en": "Elbow Circles"}
+{"i": 501, "zh": "手臂画圈肩部拉伸", "en": "Arm Circles Shoulder Stretch"}
+{"i": 502, "zh": "坐姿杠铃肩推", "en": "Seated Barbell Shoulder Press"}
+{"i": 503, "zh": "站姿弹力带后束划船", "en": "Standing Band Rear Delt Row"}
+{"i": 504, "zh": "悍马式站姿维京推举", "en": "Standing Hammer Strength Viking Press"}
+{"i": 505, "zh": "器械坐姿单臂后束飞鸟", "en": "Machine Seated Single-Arm Rear Delt Fly"}
+{"i": 506, "zh": "悬挂带反向飞鸟", "en": "Suspension Trainer Reverse Fly"}
+{"i": 507, "zh": "杠铃提拉", "en": "Barbell High Pull"}
+{"i": 508, "zh": "杠铃直立划船", "en": "Barbell Upright Row"}
+{"i": 509, "zh": "器械坐姿反向飞鸟", "en": "Machine Seated Reverse Fly"}
+{"i": 510, "zh": "站姿单臂绳索前平举", "en": "Standing Single-Arm Cable Front Raise"}
+{"i": 511, "zh": "杠铃俯身三角肌后束上举", "en": "Barbell Bent-Over Rear Delt Raise"}
+{"i": 512, "zh": "坐姿杠铃颈后推举", "en": "Seated Barbell Behind-the-Neck Press"}
+{"i": 513, "zh": "绳索交叉反向飞鸟", "en": "Cable Crossover Reverse Fly"}
+{"i": 514, "zh": "坐姿哑铃侧平举", "en": "Seated Dumbbell Lateral Raise"}
+{"i": 515, "zh": "站姿哑铃肩部环绕", "en": "Standing Dumbbell Shoulder Circles"}
+{"i": 516, "zh": "哑铃弯举上推", "en": "Dumbbell Curl to Press"}
+{"i": 517, "zh": "站立交替手臂画圈", "en": "Standing Alternating Arm Circles"}
+{"i": 518, "zh": "站立双臂甩动", "en": "Standing Arm Swings"}
+{"i": 519, "zh": "站立双臂画圈", "en": "Standing Arm Circles"}
+{"i": 440, "zh": "侧平举", "en": "Lateral Raise"}
+{"i": 441, "zh": "哑铃过头侧平举", "en": "Dumbbell Overhead Lateral Raise"}
+{"i": 442, "zh": "平板上斜侧平举", "en": "Incline Bench Lateral Raise"}
+{"i": 443, "zh": "半俯身侧平举", "en": "Half Bent-Over Lateral Raise"}
+{"i": 444, "zh": "器械侧平举", "en": "Machine Lateral Raise"}
+{"i": 445, "zh": "前平举", "en": "Front Raise"}
+{"i": 446, "zh": "俯身飞鸟", "en": "Bent-Over Reverse Fly"}
+{"i": 447, "zh": "杠铃前平举", "en": "Barbell Front Raise"}
+{"i": 448, "zh": "杠铃片旋转", "en": "Weight Plate Rotation"}
+{"i": 449, "zh": "杠铃片前平举", "en": "Weight Plate Front Raise"}
+{"i": 450, "zh": "站姿杠铃推举", "en": "Standing Barbell Overhead Press"}
+{"i": 451, "zh": "站姿布拉德福德推举", "en": "Standing Bradford Press"}
+{"i": 452, "zh": "史密斯机推举", "en": "Smith Machine Shoulder Press"}
+{"i": 453, "zh": "坐姿杠铃推举", "en": "Seated Barbell Shoulder Press"}
+{"i": 454, "zh": "器械坐姿推举", "en": "Seated Machine Shoulder Press"}
+{"i": 455, "zh": "悍马机坐姿推举", "en": "Hammer Strength Seated Shoulder Press"}
+{"i": 456, "zh": "蝴蝶机反向飞鸟", "en": "Reverse Pec Deck Fly"}
+{"i": 457, "zh": "俯身绳索飞鸟", "en": "Bent-Over Cable Reverse Fly"}
+{"i": 458, "zh": "绳索胯裆前平举", "en": "Cable Between-Legs Front Raise"}
+{"i": 459, "zh": "俯身绳索飞鸟（坐姿）", "en": "Seated Bent-Over Cable Reverse Fly"}
+{"i": 460, "zh": "绳索侧平举", "en": "Cable Lateral Raise"}
+{"i": 461, "zh": "绳索侧平举（单边）", "en": "Single-Arm Cable Lateral Raise"}
+{"i": 462, "zh": "杠铃俯身提拉", "en": "Barbell Bent-Over Row"}
+{"i": 463, "zh": "哑铃俯身提拉", "en": "Dumbbell Bent-Over Row"}
+{"i": 464, "zh": "哑铃俯卧提拉", "en": "Dumbbell Prone Row"}
+{"i": 465, "zh": "平板哑铃提拉", "en": "Flat Bench Dumbbell Row"}
+{"i": 466, "zh": "面拉", "en": "Face Pull"}
+{"i": 467, "zh": "TRX-面拉", "en": "TRX Face Pull"}
+{"i": 468, "zh": "弹力带-面拉", "en": "Band Face Pull"}
+{"i": 469, "zh": "弹力带-坐姿推举", "en": "Seated Band Shoulder Press"}
+{"i": 470, "zh": "弹力带-站姿推举", "en": "Standing Band Shoulder Press"}
+{"i": 471, "zh": "弹力带-前平举", "en": "Band Front Raise"}
+{"i": 472, "zh": "弹力带-侧平举", "en": "Band Lateral Raise"}
+{"i": 473, "zh": "弹力带-提拉", "en": "Band Upright Row"}
+{"i": 474, "zh": "弹力带-侧拉", "en": "Band Lateral Pull"}
+{"i": 475, "zh": "弹力带-俯身后束飞鸟", "en": "Band Bent-Over Rear Delt Fly"}
+{"i": 476, "zh": "TRX-后束飞鸟", "en": "TRX Rear Delt Fly"}
+{"i": 477, "zh": "V-俯卧撑", "en": "V Push-Up"}
+{"i": 478, "zh": "V-俯卧撑（中难度）", "en": "V Push-Up"}
+{"i": 479, "zh": "V-俯卧撑（高难度）", "en": "V Push-Up"}
+{"i": 520, "zh": "站立单臂画圈", "en": "Standing Single-Arm Arm Circle"}
+{"i": 521, "zh": "坐姿锤式握法器械肩推", "en": "Seated Hammer-Grip Machine Shoulder Press"}
+{"i": 522, "zh": "史密斯机提拉", "en": "Smith Machine Upright Row"}
+{"i": 523, "zh": "吊环 Y 字上举", "en": "Ring Y Raise"}
+{"i": 524, "zh": "吊环分臂飞鸟", "en": "Ring Reverse Fly"}
+{"i": 525, "zh": "吊环前平举", "en": "Ring Front Raise"}
+{"i": 526, "zh": "吊环面拉", "en": "Ring Face Pull"}
+{"i": 527, "zh": "吊环单臂后束划船", "en": "Ring Single-Arm Rear Delt Row"}
+{"i": 528, "zh": "吊环后束划船", "en": "Ring Rear Delt Row"}
+{"i": 529, "zh": "EZ曲杆反重力推举", "en": "EZ-Bar Anti-Gravity Press"}
+{"i": 530, "zh": "哑铃十字伸展", "en": "Dumbbell Cross Extension"}
+{"i": 531, "zh": "站姿绳索Y字", "en": "Standing Cable Y Raise"}
+{"i": 532, "zh": "空握旋腕站姿侧平举", "en": "Standing False-Grip Wrist Rotation Lateral Raise"}
+{"i": 533, "zh": "俯卧环绕飞鸟", "en": "Prone Around-the-World Fly"}
+{"i": 534, "zh": "平行把手绳索后束飞鸟划船", "en": "Parallel-Handle Cable Rear Delt Fly Row"}
+{"i": 535, "zh": "杠铃耸肩", "en": "Barbell Shrug"}
+{"i": 536, "zh": "绳索耸肩", "en": "Cable Shrug"}
+{"i": 537, "zh": "哑铃上斜俯卧耸肩", "en": "Incline Prone Dumbbell Shrug"}
+{"i": 538, "zh": "哑铃耸肩", "en": "Dumbbell Shrug"}
+{"i": 539, "zh": "器械耸肩", "en": "Machine Shrug"}
+{"i": 540, "zh": "硬拉器耸肩", "en": "Trap Bar Shrug"}
+{"i": 541, "zh": "史密斯耸肩", "en": "Smith Machine Shrug"}
+{"i": 542, "zh": "史密斯背后耸肩", "en": "Smith Machine Behind-the-Back Shrug"}
+{"i": 543, "zh": "弹力带-弹力带耸肩", "en": "Band Shrug"}
+{"i": 544, "zh": "耸肩器耸肩", "en": "Shrug Machine Shrug"}
+{"i": 545, "zh": "杠铃过头耸肩", "en": "Barbell Overhead Shrug"}
+{"i": 546, "zh": "哑铃弯举", "en": "Dumbbell Curl"}
+{"i": 547, "zh": "单手牧师凳弯举", "en": "Single-Arm Preacher Curl"}
+{"i": 548, "zh": "坐姿单手牧师凳弯举", "en": "Seated Single-Arm Preacher Curl"}
+{"i": 549, "zh": "哑铃轮换弯举", "en": "Alternating Dumbbell Curl"}
+{"i": 550, "zh": "坐姿哑铃弯举", "en": "Seated Dumbbell Curl"}
+{"i": 551, "zh": "牧师凳弯举", "en": "Preacher Curl"}
+{"i": 552, "zh": "蜘蛛弯举", "en": "Spider Curl"}
+{"i": 553, "zh": "牧师凳锤式弯举", "en": "Preacher Hammer Curl"}
+{"i": 554, "zh": "牧师凳佐特曼弯举", "en": "Preacher Zottman Curl"}
+{"i": 555, "zh": "杠铃弯举", "en": "Barbell Curl"}
+{"i": 556, "zh": "锤式弯举", "en": "Hammer Curl"}
+{"i": 557, "zh": "绳索弯举", "en": "Cable Curl"}
+{"i": 558, "zh": "直杆正手绳索弯举", "en": "Straight-Bar Reverse-Grip Cable Curl"}
+{"i": 559, "zh": "直杆绳索弯举", "en": "Straight-Bar Cable Curl"}
+{"i": 560, "zh": "坐姿绳索铁杆弯举", "en": "Seated Cable Bar Curl"}
+{"i": 561, "zh": "集中弯举", "en": "Concentration Curl"}
+{"i": 562, "zh": "上斜哑铃弯举", "en": "Incline Dumbbell Curl"}
+{"i": 563, "zh": "上斜锤式弯举", "en": "Incline Hammer Curl"}
+{"i": 564, "zh": "器械弯举", "en": "Machine Curl"}
+{"i": 565, "zh": "牧师器弯举", "en": "Preacher Curl"}
+{"i": 566, "zh": "卧姿弯举", "en": "Lying Curl"}
+{"i": 567, "zh": "杠铃集中弯举", "en": "Barbell Concentration Curl"}
+{"i": 568, "zh": "毛巾二头弯举", "en": "Towel Biceps Curl"}
+{"i": 569, "zh": "毛巾二头弯举（困难）", "en": "Towel Biceps Curl"}
+{"i": 570, "zh": "TRX-二头弯举", "en": "TRX Biceps Curl"}
+{"i": 571, "zh": "TRX-二头弯举（中难度）", "en": "TRX Biceps Curl"}
+{"i": 572, "zh": "TRX-二头弯举（负重）", "en": "Weighted TRX Biceps Curl"}
+{"i": 573, "zh": "弹力绳-站姿二头弯举", "en": "Standing Resistance Band Biceps Curl"}
+{"i": 574, "zh": "弹力绳-站姿轮换弯举", "en": "Standing Resistance Band Alternating Biceps Curl"}
+{"i": 575, "zh": "弹力绳-集中弯举", "en": "Resistance Band Concentration Curl"}
+{"i": 576, "zh": "弹力绳-锤式弯举", "en": "Resistance Band Hammer Curl"}
+{"i": 577, "zh": "弹力绳-坐姿弯举", "en": "Seated Resistance Band Curl"}
+{"i": 578, "zh": "背后二头单边弯举", "en": "Behind-the-Back Single-Arm Biceps Curl"}
+{"i": 579, "zh": "EZ杆二头弯举", "en": "EZ-Bar Biceps Curl"}
+{"i": 580, "zh": "坐姿器械二头弯举", "en": "Seated Machine Biceps Curl"}
+{"i": 581, "zh": "上举式器械弯举", "en": "Upward Machine Curl"}
+{"i": 582, "zh": "哑铃环抱弯举", "en": "Dumbbell Hug Curl"}
+{"i": 583, "zh": "上斜哑铃弯举_变式2", "en": "Incline Dumbbell Curl"}
+{"i": 584, "zh": "健身球牧师哑铃弯举", "en": "Stability Ball Preacher Dumbbell Curl"}
+{"i": 585, "zh": "俯卧上斜哑铃锤式弯举", "en": "Prone Incline Dumbbell Hammer Curl"}
+{"i": 586, "zh": "单臂佐特曼牧师凳弯举", "en": "Single-Arm Zottman Preacher Curl"}
+{"i": 587, "zh": "单腿集中弯举", "en": "Single-Leg Concentration Curl"}
+{"i": 588, "zh": "哑铃交叉锤式弯举_版本2", "en": "Dumbbell Cross-Body Hammer Curl"}
+{"i": 589, "zh": "绳索过顶弯举", "en": "Cable Overhead Curl"}
+{"i": 590, "zh": "悬挂带手臂弯举至耳侧", "en": "Suspension Strap Curl to Ear"}
+{"i": 591, "zh": "哑铃交替弯举", "en": "Alternating Dumbbell Curl"}
+{"i": 592, "zh": "器械牧师凳弯举_版本2", "en": "Machine Preacher Curl"}
+{"i": 593, "zh": "俯卧泡沫轴肱二头肌放松", "en": "Prone Foam Roller Biceps Release"}
+{"i": 594, "zh": "绳索单臂弯举", "en": "Single-Arm Cable Curl"}
+{"i": 595, "zh": "绳索站姿内旋弯举", "en": "Standing Cable Internal Rotation Curl"}
+{"i": 596, "zh": "俯卧上斜杠铃弯举", "en": "Prone Incline Barbell Curl"}
+{"i": 597, "zh": "哑铃锤式交替弯举", "en": "Alternating Dumbbell Hammer Curl"}
+{"i": 598, "zh": "俯卧上斜哑铃弯举", "en": "Prone Incline Dumbbell Curl"}
+{"i": 599, "zh": "杠铃拖式弯举", "en": "Barbell Drag Curl"}
+{"i": 600, "zh": "吊环弯举", "en": "Ring Biceps Curl"}
+{"i": 601, "zh": "吊环单臂二头肌弯举", "en": "Single-Arm Ring Biceps Curl"}
+{"i": 602, "zh": "仰卧哑铃弯举", "en": "Lying Dumbbell Biceps Curl"}
+{"i": 603, "zh": "椅间屈膝反向引体弯举", "en": "Between-Chair Bent-Knee Inverted Row Curl"}
+{"i": 604, "zh": "仰卧双腿毛巾锤式弯举", "en": "Lying Double-Leg Towel Hammer Curl"}
+{"i": 605, "zh": "绳索EZ杠二头弯举", "en": "Cable EZ-Bar Biceps Curl"}
+{"i": 606, "zh": "EZ 杠窄握牧师凳弯举", "en": "EZ-Bar Close-Grip Preacher Curl"}
+{"i": 607, "zh": "哑铃过头臂屈伸", "en": "Dumbbell Overhead Triceps Extension"}
+{"i": 608, "zh": "哑铃过头臂屈伸（单手）", "en": "Single-Arm Dumbbell Overhead Triceps Extension"}
+{"i": 609, "zh": "坐姿杠铃过头臂屈伸", "en": "Seated Barbell Overhead Triceps Extension"}
+{"i": 610, "zh": "仰卧杠铃臂屈伸", "en": "Lying Barbell Triceps Extension"}
+{"i": 611, "zh": "绳索臂屈伸", "en": "Cable Triceps Extension"}
+{"i": 612, "zh": "跪姿绳索臂屈伸", "en": "Kneeling Cable Triceps Extension"}
+{"i": 613, "zh": "绳索过头臂屈伸", "en": "Cable Overhead Triceps Extension"}
+{"i": 614, "zh": "绳索过头臂屈伸(跪姿)", "en": "Kneeling Cable Overhead Triceps Extension"}
+{"i": 615, "zh": "悍马机三头下压", "en": "Hammer Strength Triceps Pushdown"}
+{"i": 616, "zh": "器械三头下压（正向）", "en": "Machine Triceps Pushdown (Forward)"}
+{"i": 617, "zh": "器械臂屈伸", "en": "Machine Triceps Extension"}
+{"i": 618, "zh": "器械臂屈伸（版本2）", "en": "Machine Triceps Extension"}
+{"i": 619, "zh": "碎颅者", "en": "Skull Crusher"}
+{"i": 620, "zh": "地板哑铃碎颅者", "en": "Dumbbell Floor Skull Crusher"}
+{"i": 621, "zh": "V-Bar 绳索下压", "en": "V-Bar Cable Pushdown"}
+{"i": 622, "zh": "直杆绳索下压", "en": "Straight-Bar Cable Pushdown"}
+{"i": 623, "zh": "绳索臂屈伸（单）", "en": "Single-Arm Cable Triceps Extension"}
+{"i": 624, "zh": "哑铃臂屈伸", "en": "Dumbbell Triceps Extension"}
+{"i": 625, "zh": "平板哑铃臂屈伸（单）", "en": "Single-Arm Flat-Bench Dumbbell Triceps Extension"}
+{"i": 626, "zh": "窄距卧推(敞开式)", "en": "Close-Grip Bench Press (Elbows Out)"}
+{"i": 627, "zh": "窄距卧推(靠近式)", "en": "Close-Grip Bench Press (Elbows In)"}
+{"i": 628, "zh": "反手三头臂屈伸", "en": "Reverse-Grip Triceps Extension"}
+{"i": 629, "zh": "绳索高位前拉", "en": "High Cable Front Pull"}
+{"i": 630, "zh": "窄距俯卧撑", "en": "Close-Grip Push-Up"}
+{"i": 631, "zh": "平板臂屈伸", "en": "Bench Dip"}
+{"i": 632, "zh": "平板臂屈伸-高难度", "en": "Advanced Bench Dip"}
+{"i": 633, "zh": "平板三头推", "en": "Bench Triceps Push-Up"}
+{"i": 634, "zh": "平板臂屈伸_屈腿", "en": "Bent-Knee Bench Dip"}
+{"i": 635, "zh": "TRX-三头臂屈伸", "en": "TRX Triceps Extension"}
+{"i": 636, "zh": "TRX-三头臂屈伸（中难度）", "en": "TRX Triceps Extension (Medium)"}
+{"i": 637, "zh": "TRX-三头臂屈伸（负重）", "en": "Weighted TRX Triceps Extension"}
+{"i": 638, "zh": "弹力带-碎颅者", "en": "Resistance Band Skull Crusher"}
+{"i": 639, "zh": "弹力带-过头臂屈伸", "en": "Resistance Band Overhead Triceps Extension"}
+{"i": 640, "zh": "弹力带-单手臂屈伸", "en": "Band Single-Arm Triceps Extension"}
+{"i": 641, "zh": "弹力带-三头压拉", "en": "Band Triceps Pushdown"}
+{"i": 642, "zh": "单手绳索臂屈伸", "en": "Single-Arm Cable Triceps Extension"}
+{"i": 643, "zh": "弹力带站姿臂屈伸", "en": "Standing Band Triceps Extension"}
+{"i": 644, "zh": "弹力带颈后三头肌伸展", "en": "Band Behind-the-Neck Triceps Extension"}
+{"i": 645, "zh": "上斜哑铃三头伸展", "en": "Incline Dumbbell Triceps Extension"}
+{"i": 646, "zh": "仰卧单臂旋后握距肱三头肌伸展", "en": "Lying Single-Arm Supinated-Grip Triceps Extension"}
+{"i": 647, "zh": "仰卧哑铃旋前握肱三头肌伸展", "en": "Lying Dumbbell Pronated-Grip Triceps Extension"}
+{"i": 648, "zh": "绳索低位过头臂屈伸", "en": "Low Cable Overhead Triceps Extension"}
+{"i": 649, "zh": "跪姿肱三头肌伸展", "en": "Kneeling Triceps Extension"}
+{"i": 650, "zh": "仰卧哑铃交替臂屈伸", "en": "Lying Dumbbell Alternating Triceps Extension"}
+{"i": 651, "zh": "绳索高位过顶肱三头肌屈伸", "en": "High Cable Overhead Triceps Extension"}
+{"i": 652, "zh": "绳索三头下压_SZ杆", "en": "EZ-Bar Cable Triceps Pushdown"}
+{"i": 653, "zh": "弹力带三头下压", "en": "Band Triceps Pushdown"}
+{"i": 654, "zh": "绳索俯身过顶三头肌伸展", "en": "Bent-Over Cable Overhead Triceps Extension"}
+{"i": 655, "zh": "坐姿哑铃三头肌伸展", "en": "Seated Dumbbell Triceps Extension"}
+{"i": 656, "zh": "器械三头伸展_版本 2", "en": "Machine Triceps Extension"}
+{"i": 657, "zh": "侧卧泡沫轴肱三头肌放松", "en": "Side-Lying Foam Roller Triceps Release"}
+{"i": 658, "zh": "站姿单臂绳索肱三头肌伸展", "en": "Standing Single-Arm Cable Triceps Extension"}
+{"i": 659, "zh": "坐姿单臂哑铃颈后臂屈伸", "en": "Seated Single-Arm Dumbbell Overhead Triceps Extension"}
+{"i": 660, "zh": "仰卧哑铃臂屈伸", "en": "Lying Dumbbell Triceps Extension"}
+{"i": 661, "zh": "凳上臂屈伸", "en": "Bench Dip"}
+{"i": 662, "zh": "坐姿哑铃臂屈伸_变式2", "en": "Seated Dumbbell Triceps Extension"}
+{"i": 663, "zh": "坐姿杠杆臂屈伸", "en": "Seated Lever Triceps Extension"}
+{"i": 664, "zh": "器械过顶三头肌伸展", "en": "Machine Overhead Triceps Extension"}
+{"i": 665, "zh": "站姿绳索反握弯举_直杆", "en": "Standing Straight-Bar Cable Reverse Curl"}
+{"i": 666, "zh": "辅助器下压", "en": "Assisted Triceps Pushdown"}
+{"i": 667, "zh": "仰卧EZ杆臂屈伸", "en": "Lying EZ-Bar Triceps Extension"}
+{"i": 668, "zh": "吊环肱三头肌伸展", "en": "Ring Triceps Extension"}
+{"i": 669, "zh": "哑铃坐姿臂屈伸", "en": "Seated Dumbbell Triceps Extension"}
+{"i": 670, "zh": "正握牧师器弯举", "en": "Overhand-Grip Preacher Curl"}
+{"i": 671, "zh": "反握曲杆绳索三头下压", "en": "Reverse-Grip EZ-Bar Cable Triceps Pushdown"}
+{"i": 672, "zh": "单臂侧姿绳索下压", "en": "Single-Arm Side Cable Triceps Pushdown"}
+{"i": 673, "zh": "器械三头伸展_版本1", "en": "Machine Triceps Extension"}
+{"i": 674, "zh": "坐姿杠铃提踵", "en": "Seated Barbell Calf Raise"}
+{"i": 675, "zh": "站姿哑铃提踵", "en": "Standing Dumbbell Calf Raise"}
+{"i": 676, "zh": "坐姿器械提踵", "en": "Seated Machine Calf Raise"}
+{"i": 677, "zh": "坐姿器械提踵(版本2)", "en": "Seated Machine Calf Raise"}
+{"i": 678, "zh": "站姿器械提踵", "en": "Standing Machine Calf Raise"}
+{"i": 679, "zh": "腿举机提踵", "en": "Leg Press Calf Raise"}
+{"i": 720, "zh": "背后哑铃指弯举", "en": "Behind-the-Back Dumbbell Finger Curl"}
+{"i": 721, "zh": "手腕环绕", "en": "Wrist Circles"}
+{"i": 722, "zh": "双杠臂屈伸_直上直下版", "en": "Parallel Bar Dip (Straight Up and Down)"}
+{"i": 723, "zh": "杠铃腕弯举_版本2", "en": "Barbell Wrist Curl"}
+{"i": 724, "zh": "仰卧单腿反向毛巾弯举", "en": "Supine Single-Leg Reverse Towel Leg Curl"}
+{"i": 725, "zh": "坐姿下巴回收", "en": "Seated Chin Tuck"}
+{"i": 726, "zh": "上斜负重头后仰", "en": "Incline Weighted Neck Extension"}
+{"i": 727, "zh": "上斜负重颈弯举", "en": "Incline Weighted Neck Curl"}
+{"i": 728, "zh": "坐姿负重头后仰", "en": "Seated Weighted Neck Extension"}
+{"i": 729, "zh": "平躺头后仰", "en": "Supine Neck Extension"}
+{"i": 730, "zh": "抱头后仰", "en": "Hands-Behind-Head Neck Extension"}
+{"i": 731, "zh": "站姿负重头后仰", "en": "Standing Weighted Neck Extension"}
+{"i": 732, "zh": "绳索头后仰", "en": "Cable Neck Extension"}
+{"i": 733, "zh": "绳索颈弯举", "en": "Cable Neck Curl"}
+{"i": 734, "zh": "负重颈弯举", "en": "Weighted Neck Curl"}
+{"i": 735, "zh": "跪姿头后仰", "en": "Kneeling Neck Extension"}
+{"i": 736, "zh": "负重坐姿颈部后伸", "en": "Seated Weighted Neck Extension"}
+{"i": 737, "zh": "负重仰卧颈部屈曲", "en": "Weighted Supine Neck Flexion"}
+{"i": 738, "zh": "器械颈部伸展_配重片式", "en": "Plate-Loaded Machine Neck Extension"}
+{"i": 739, "zh": "器械颈部右侧屈", "en": "Machine Neck Lateral Flexion (Right)"}
+{"i": 740, "zh": "颈部侧伸展", "en": "Neck Side Stretch"}
+{"i": 741, "zh": "仰卧泡沫轴颈部减压放松", "en": "Supine Foam Roller Neck Release"}
+{"i": 742, "zh": "坐姿颈部屈伸", "en": "Seated Neck Flexion and Extension"}
+{"i": 743, "zh": "坐姿髋外展", "en": "Seated Hip Abduction"}
+{"i": 744, "zh": "坐姿髋内收", "en": "Seated Hip Adduction"}
+{"i": 745, "zh": "哈克机反向深蹲", "en": "Reverse Hack Squat"}
+{"i": 746, "zh": "器械后踢V2", "en": "Machine Glute Kickback"}
+{"i": 747, "zh": "早安", "en": "Good Morning"}
+{"i": 748, "zh": "杠铃臀冲", "en": "Barbell Hip Thrust"}
+{"i": 749, "zh": "史密斯臀冲", "en": "Smith Machine Hip Thrust"}
+{"i": 750, "zh": "哑铃臀冲", "en": "Dumbbell Hip Thrust"}
+{"i": 751, "zh": "单腿哑铃臀冲", "en": "Single-Leg Dumbbell Hip Thrust"}
+{"i": 752, "zh": "单腿哑铃硬拉", "en": "Single-Leg Dumbbell Deadlift"}
+{"i": 753, "zh": "器械后踢", "en": "Machine Glute Kickback"}
+{"i": 754, "zh": "后踢", "en": "Glute Kickback"}
+{"i": 755, "zh": "史密斯后踢", "en": "Smith Machine Glute Kickback"}
+{"i": 756, "zh": "绳索直腿硬拉", "en": "Cable Straight-Leg Deadlift"}
+{"i": 757, "zh": "杠铃臀桥", "en": "Barbell Glute Bridge"}
+{"i": 758, "zh": "弹力绳-跪姿腿屈伸", "en": "Band Kneeling Leg Extension"}
+{"i": 759, "zh": "水平山羊挺身", "en": "Horizontal Back Extension"}
+{"i": 680, "zh": "史密斯机提踵", "en": "Smith Machine Calf Raise"}
+{"i": 681, "zh": "训练器前弯举", "en": "Machine Front Curl"}
+{"i": 682, "zh": "驴式提踵", "en": "Donkey Calf Raise"}
+{"i": 683, "zh": "哑铃单腿提踵_变式", "en": "Dumbbell Single-Leg Calf Raise"}
+{"i": 684, "zh": "哑铃单腿提踵", "en": "Dumbbell Single-Leg Calf Raise"}
+{"i": 685, "zh": "站姿自重提踵", "en": "Standing Bodyweight Calf Raise"}
+{"i": 686, "zh": "站姿弹力带双腿提踵_版本2", "en": "Standing Banded Double-Leg Calf Raise"}
+{"i": 687, "zh": "单腿地面提踵", "en": "Single-Leg Floor Calf Raise"}
+{"i": 688, "zh": "坐姿哑铃提踵", "en": "Seated Dumbbell Calf Raise"}
+{"i": 689, "zh": "站姿杠铃提踵", "en": "Standing Barbell Calf Raise"}
+{"i": 690, "zh": "史密斯反向提踵", "en": "Smith Machine Reverse Calf Raise"}
+{"i": 691, "zh": "坐姿小腿拉伸", "en": "Seated Calf Stretch"}
+{"i": 692, "zh": "弹力绳小腿拉伸", "en": "Resistance Band Calf Stretch"}
+{"i": 693, "zh": "腓骨肌拉伸", "en": "Peroneal Stretch"}
+{"i": 694, "zh": "泡沫轴足底放松", "en": "Foam Roller Plantar Fascia Release"}
+{"i": 695, "zh": "泡沫轴小腿放松", "en": "Foam Roller Calf Release"}
+{"i": 696, "zh": "侧卧单腿腓骨肌群滚动放松", "en": "Side-Lying Single-Leg Peroneal Foam Roll"}
+{"i": 697, "zh": "侧卧腓骨肌群滚动放松", "en": "Side-Lying Peroneal Foam Roll"}
+{"i": 698, "zh": "俯卧单腿胫骨前肌泡沫轴滚动放松", "en": "Prone Single-Leg Tibialis Anterior Foam Roll"}
+{"i": 699, "zh": "单腿站姿提踵", "en": "Standing Single-Leg Calf Raise"}
+{"i": 700, "zh": "器械坐姿踮脚", "en": "Seated Machine Calf Raise"}
+{"i": 701, "zh": "足踝旋转拉伸", "en": "Ankle Rotation Stretch"}
+{"i": 702, "zh": "足踝拉伸_小腿训练", "en": "Ankle Stretch"}
+{"i": 703, "zh": "足踝侧向拉伸", "en": "Lateral Ankle Stretch"}
+{"i": 704, "zh": "垫高站姿提踵_椅子辅助", "en": "Chair-Assisted Elevated Standing Calf Raise"}
+{"i": 705, "zh": "坐姿深蹲提踵", "en": "Seated Squat Calf Raise"}
+{"i": 706, "zh": "腿举机提踵_低脚位", "en": "Leg Press Calf Raise (Low Foot Position)"}
+{"i": 707, "zh": "正手杠铃手腕弯举", "en": "Barbell Reverse Wrist Curl"}
+{"i": 708, "zh": "正手杠铃弯举", "en": "Barbell Reverse Curl"}
+{"i": 709, "zh": "EZ正手杠铃弯举", "en": "EZ-Bar Reverse Curl"}
+{"i": 710, "zh": "正手杠铃手腕弯举（平板）", "en": "Flat-Bench Barbell Reverse Wrist Curl"}
+{"i": 711, "zh": "正手杠铃手腕弯举_平板v2", "en": "Flat-Bench Barbell Reverse Wrist Curl"}
+{"i": 712, "zh": "背身杠铃手腕弯举", "en": "Behind-the-Back Barbell Wrist Curl"}
+{"i": 713, "zh": "绳索手腕弯举", "en": "Cable Wrist Curl"}
+{"i": 714, "zh": "单手哑铃手腕弯举（反手）", "en": "Single-Arm Dumbbell Wrist Curl"}
+{"i": 715, "zh": "单手哑铃手腕弯举（正手）", "en": "Single-Arm Dumbbell Reverse Wrist Curl"}
+{"i": 716, "zh": "垂式哑铃手腕弯举", "en": "Neutral-Grip Dumbbell Wrist Curl"}
+{"i": 717, "zh": "杠铃片正手弯举", "en": "Weight Plate Reverse Curl"}
+{"i": 718, "zh": "哑铃过凳腕弯举", "en": "Dumbbell Over-Bench Wrist Curl"}
+{"i": 719, "zh": "杠铃仰卧臂屈伸_颅骨粉碎者", "en": "Barbell Lying Triceps Extension"}
+{"i": 760, "zh": "弹力绳-站姿后踢", "en": "Band Standing Kickback"}
+{"i": 761, "zh": "弹力绳-直腿硬拉", "en": "Band Stiff-Leg Deadlift"}
+{"i": 762, "zh": "俯身驴踢", "en": "Bent-Over Donkey Kick"}
+{"i": 763, "zh": "史密斯机早安", "en": "Smith Machine Good Morning"}
+{"i": 764, "zh": "史密斯罗马尼亚硬拉", "en": "Smith Machine Romanian Deadlift"}
+{"i": 765, "zh": "器械臀冲", "en": "Machine Hip Thrust"}
+{"i": 766, "zh": "器械驴踢", "en": "Machine Donkey Kick"}
+{"i": 767, "zh": "地雷杆硬拉", "en": "Landmine Deadlift"}
+{"i": 768, "zh": "地雷杆罗马尼亚硬拉", "en": "Landmine Romanian Deadlift"}
+{"i": 769, "zh": "悍马机臀冲", "en": "Hammer Strength Hip Thrust"}
+{"i": 770, "zh": "站姿驴踢", "en": "Standing Donkey Kick"}
+{"i": 771, "zh": "弹力带侧躺腿外展", "en": "Band Side-Lying Hip Abduction"}
+{"i": 772, "zh": "器械侧踢", "en": "Machine Side Kick"}
+{"i": 773, "zh": "绳索侧踢", "en": "Cable Side Kick"}
+{"i": 774, "zh": "绳索内收", "en": "Cable Hip Adduction"}
+{"i": 775, "zh": "哑铃上凳", "en": "Dumbbell Step-Up"}
+{"i": 776, "zh": "杠铃上凳", "en": "Barbell Step-Up"}
+{"i": 777, "zh": "悍马机外展", "en": "Hammer Strength Hip Abduction"}
+{"i": 778, "zh": "哈克机早安", "en": "Hack Squat Machine Good Morning"}
+{"i": 779, "zh": "分腿硬拉", "en": "Split-Stance Deadlift"}
+{"i": 780, "zh": "单手分腿硬拉", "en": "Single-Arm Split-Stance Deadlift"}
+{"i": 781, "zh": "史密斯机青蛙后蹬", "en": "Smith Machine Frog Kickback"}
+{"i": 782, "zh": "哑铃甩", "en": "Dumbbell Swing"}
+{"i": 783, "zh": "器械后蹬腿", "en": "Machine Glute Kickback"}
+{"i": 784, "zh": "坐姿弹力带外展", "en": "Seated Band Hip Abduction"}
+{"i": 785, "zh": "垫高自重臀冲", "en": "Elevated Bodyweight Hip Thrust"}
+{"i": 786, "zh": "壶铃甩", "en": "Kettlebell Swing"}
+{"i": 787, "zh": "弹力带早安", "en": "Band Good Morning"}
+{"i": 788, "zh": "弹力带蚌式开合", "en": "Band Clamshell"}
+{"i": 789, "zh": "弹力带螃蟹行走", "en": "Band Crab Walk"}
+{"i": 790, "zh": "弹力带跪姿臀冲", "en": "Band Kneeling Hip Thrust"}
+{"i": 791, "zh": "弹力带髋外展", "en": "Band Hip Abduction"}
+{"i": 792, "zh": "挂片后摆腿", "en": "Plate-Loaded Rear Leg Raise"}
+{"i": 793, "zh": "挂片式罗马尼亚硬拉", "en": "Plate-Loaded Romanian Deadlift"}
+{"i": 794, "zh": "挂片站姿臀冲", "en": "Plate-Loaded Standing Hip Thrust"}
+{"i": 795, "zh": "直腿内收", "en": "Straight-Leg Hip Adduction"}
+{"i": 796, "zh": "直腿髋外展", "en": "Straight-Leg Hip Abduction"}
+{"i": 797, "zh": "站姿髋外展", "en": "Standing Hip Abduction"}
+{"i": 798, "zh": "绳索站姿臀冲", "en": "Cable Standing Hip Thrust"}
+{"i": 799, "zh": "器械后蹬", "en": "Machine Glute Kickback"}
+{"i": 800, "zh": "臀冲架臀冲", "en": "Machine Hip Thrust"}
+{"i": 801, "zh": "弹力带臀冲", "en": "Banded Hip Thrust"}
+{"i": 802, "zh": "站姿髋外展（版本2）", "en": "Standing Hip Abduction"}
+{"i": 803, "zh": "坐姿哑铃早安", "en": "Seated Dumbbell Good Morning"}
+{"i": 804, "zh": "弹力带单腿硬拉", "en": "Banded Single-Leg Deadlift"}
+{"i": 805, "zh": "臀桥交替手臂伸展", "en": "Glute Bridge Alternating Arm Extension"}
+{"i": 806, "zh": "弹力带单腿站姿髋内收", "en": "Banded Single-Leg Standing Hip Adduction"}
+{"i": 807, "zh": "弹力带单腿髋伸展", "en": "Banded Single-Leg Hip Extension"}
+{"i": 808, "zh": "弹力带髋内收", "en": "Banded Hip Adduction"}
+{"i": 809, "zh": "弹力带站姿髋外展", "en": "Banded Standing Hip Abduction"}
+{"i": 810, "zh": "平板支撑抬腿_单侧", "en": "Plank Single-Leg Lift"}
+{"i": 811, "zh": "侧桥髋外展", "en": "Side Plank Hip Abduction"}
+{"i": 812, "zh": "后倾臀桥", "en": "Posterior Pelvic Tilt Glute Bridge"}
+{"i": 813, "zh": "哑铃硬拉", "en": "Dumbbell Deadlift"}
+{"i": 814, "zh": "弹力带髋部拉动_拉力带穿越", "en": "Banded Hip Pull-Through"}
+{"i": 815, "zh": "杠铃单腿臀推", "en": "Barbell Single-Leg Hip Thrust"}
+{"i": 816, "zh": "单腿壶铃硬拉", "en": "Single-Leg Kettlebell Deadlift"}
+{"i": 817, "zh": "跪姿屈腿侧踢", "en": "Kneeling Bent-Leg Side Kick"}
+{"i": 818, "zh": "单腿深蹲", "en": "Single-Leg Squat"}
+{"i": 819, "zh": "杠铃侧弓步", "en": "Barbell Lateral Lunge"}
+{"i": 820, "zh": "45 度斜蹬机单腿腿举", "en": "Single-Leg 45-Degree Leg Press"}
+{"i": 821, "zh": "深蹲侧踢", "en": "Squat Side Kick"}
+{"i": 822, "zh": "绳索窄距椅式起身", "en": "Cable Narrow-Stance Chair Rise"}
+{"i": 823, "zh": "泡沫轴臀推", "en": "Foam Roller Hip Thrust"}
+{"i": 824, "zh": "分腿蹲", "en": "Split Squat"}
+{"i": 825, "zh": "俯卧地板挺身", "en": "Prone Floor Back Extension"}
+{"i": 826, "zh": "踏板箱绳索直腿硬拉", "en": "Cable Step-Box Straight-Leg Deadlift"}
+{"i": 827, "zh": "弹力带俯身单腿后踢", "en": "Banded Bent-Over Single-Leg Kickback"}
+{"i": 828, "zh": "泳式踢腿_臀部训练", "en": "Swimmer Kicks"}
+{"i": 829, "zh": "杠杆反向挺身_片式负重", "en": "Plate-Loaded Lever Reverse Hyperextension"}
+{"i": 830, "zh": "跪姿弹力带髋推", "en": "Kneeling Banded Hip Thrust"}
+{"i": 831, "zh": "弹力带拉穿", "en": "Banded Pull-Through"}
+{"i": 832, "zh": "侧卧髋内收", "en": "Side-Lying Hip Adduction"}
+{"i": 833, "zh": "腰带机早安", "en": "Belt Machine Good Morning"}
+{"i": 834, "zh": "单腿伸展桥式", "en": "Single-Leg Extended Glute Bridge"}
+{"i": 835, "zh": "腰带机硬拉_V杆", "en": "V-Bar Belt Machine Deadlift"}
+{"i": 836, "zh": "腰带机硬拉", "en": "Belt Machine Deadlift"}
+{"i": 837, "zh": "站姿器械后踢", "en": "Standing Machine Glute Kickback"}
+{"i": 838, "zh": "吊环臀桥", "en": "Ring Glute Bridge"}
+{"i": 839, "zh": "吊环直腿臀腿弯举", "en": "Ring Straight-Leg Glute-Ham Raise"}
+{"i": 840, "zh": "吊环侧蹲", "en": "Ring Side Squat"}
+{"i": 841, "zh": "杠铃单腿硬拉", "en": "Barbell Single-Leg Deadlift"}
+{"i": 842, "zh": "哑铃摆荡", "en": "Dumbbell Swing"}
+{"i": 843, "zh": "站姿侧抬腿", "en": "Standing Side Leg Raise"}
+{"i": 844, "zh": "侧卧画圈抬腿", "en": "Side-Lying Leg Circles"}
+{"i": 845, "zh": "哑铃俯身屈髋硬拉", "en": "Dumbbell Bent-Over Hip Hinge Deadlift"}
+{"i": 846, "zh": "俯卧毛巾抗阻超伸", "en": "Prone Towel-Resisted Back Extension"}
+{"i": 847, "zh": "弹力带末端膝盖伸展", "en": "Banded Terminal Knee Extension"}
+{"i": 848, "zh": "靠墙静蹲", "en": "Wall Sit"}
+{"i": 849, "zh": "弹力带侧拉弓箭步（原地）", "en": "Banded Side Pull Lunge (In Place)"}
+{"i": 850, "zh": "弹力带膝盖末端单腿硬拉", "en": "Banded Terminal Knee Single-Leg Deadlift"}
+{"i": 851, "zh": "单腿跨步侧压", "en": "Single-Leg Lateral Step Press"}
+{"i": 852, "zh": "直腿跨越", "en": "Straight-Leg Cross-Over"}
+{"i": 853, "zh": "动态蝴蝶式", "en": "Dynamic Butterfly"}
+{"i": 854, "zh": "蹲姿转髋", "en": "Squat Hip Rotation"}
+{"i": 855, "zh": "青蛙趴抬腿", "en": "Frog Pose Leg Lift"}
+{"i": 856, "zh": "动态天鹅式", "en": "Dynamic Swan"}
+{"i": 857, "zh": "坐姿单腿画圆", "en": "Seated Single-Leg Circle"}
+{"i": 858, "zh": "跪姿侧跨越", "en": "Kneeling Side Cross-Over"}
+{"i": 859, "zh": "下犬式", "en": "Downward-Facing Dog"}
+{"i": 860, "zh": "单腿跨步后压", "en": "Single-Leg Backward Step Press"}
+{"i": 861, "zh": "跪姿膝盖画圈", "en": "Kneeling Knee Circles"}
+{"i": 862, "zh": "9090旋转", "en": "90/90 Hip Rotation"}
+{"i": 863, "zh": "绳索肩外旋", "en": "Cable Shoulder External Rotation"}
+{"i": 864, "zh": "肘绕圈", "en": "Elbow Circles"}
+{"i": 865, "zh": "肩绕圈", "en": "Shoulder Circles"}
+{"i": 866, "zh": "平躺大字开合", "en": "Supine Snow Angel"}
+{"i": 867, "zh": "平躺式臀冲", "en": "Supine Hip Thrust"}
+{"i": 868, "zh": "平躺蝴蝶飞", "en": "Supine Butterfly"}
+{"i": 869, "zh": "抬腿开合", "en": "Supine Leg Open-Close"}
+{"i": 870, "zh": "盆骨旋转", "en": "Pelvic Rotation"}
+{"i": 871, "zh": "臀冲开合", "en": "Hip Thrust Open-Close"}
+{"i": 872, "zh": "臀桥行进", "en": "Glute Bridge March"}
+{"i": 873, "zh": "蛙式仰卧起坐", "en": "Frog Sit-Up"}
+{"i": 874, "zh": "跪姿臀冲", "en": "Kneeling Hip Thrust"}
+{"i": 875, "zh": "青蛙式后屈伸", "en": "Frog Hip Extension"}
+{"i": 876, "zh": "顶桌臀桥", "en": "Tabletop Glute Bridge"}
+{"i": 877, "zh": "顶胯开合", "en": "Tabletop Hip Open-Close"}
+{"i": 878, "zh": "弓步", "en": "Lunge"}
+{"i": 879, "zh": "壶铃土耳其起身_深蹲式", "en": "Kettlebell Turkish Get-Up (Squat Style)"}
+{"i": 960, "zh": "蜘蛛式爬行俯卧撑", "en": "Spider Crawl Push-Up"}
+{"i": 961, "zh": "站姿髋部环绕", "en": "Standing Hip Circles"}
+{"i": 962, "zh": "俯卧游泳式交替抬腿摆臂", "en": "Prone Swimming"}
+{"i": 963, "zh": "凳上卷腹", "en": "Bench Crunch"}
+{"i": 964, "zh": "交替侧蹲触脚跟", "en": "Alternating Lateral Squat to Heel Touch"}
+{"i": 965, "zh": "仰卧直腿行进", "en": "Supine Straight-Leg March"}
+{"i": 966, "zh": "跪姿眼镜蛇俯卧撑", "en": "Kneeling Cobra Push-Up"}
+{"i": 967, "zh": "环绕式超人保持", "en": "Superman Hold with Circles"}
+{"i": 968, "zh": "肘触膝仰卧起坐", "en": "Elbow-to-Knee Sit-Up"}
+{"i": 969, "zh": "平板支撑开合跳", "en": "Plank Jacks"}
+{"i": 970, "zh": "站姿风车转体", "en": "Standing Windmill Rotation"}
+{"i": 971, "zh": "直拳组合", "en": "Straight Punch Combo"}
+{"i": 972, "zh": "四点支撑对角抬手抬腿", "en": "Bird Dog"}
+{"i": 973, "zh": "平板支撑侧平举", "en": "Plank Lateral Raise"}
+{"i": 974, "zh": "跪姿器械转腰", "en": "Kneeling Machine Torso Rotation"}
+{"i": 975, "zh": "反向山羊挺身", "en": "Reverse Back Extension"}
+{"i": 976, "zh": "3/4 仰卧起坐", "en": "3/4 Sit-Up"}
+{"i": 977, "zh": "死虫", "en": "Dead Bug"}
+{"i": 978, "zh": "俄罗斯转体", "en": "Russian Twist"}
+{"i": 979, "zh": "水瓶俄罗斯转体", "en": "Water Bottle Russian Twist"}
+{"i": 980, "zh": "负重仰卧起坐", "en": "Weighted Sit-Up"}
+{"i": 981, "zh": "仰卧抬腿", "en": "Supine Leg Raise"}
+{"i": 982, "zh": "抬腿", "en": "Leg Raise"}
+{"i": 983, "zh": "蝴蝶收腹", "en": "Butterfly Crunch"}
+{"i": 984, "zh": "平板蝴蝶收腹", "en": "Plank Butterfly Crunch"}
+{"i": 985, "zh": "转体抬腿", "en": "Rotational Leg Raise"}
+{"i": 986, "zh": "器械卷腹", "en": "Machine Crunch"}
+{"i": 987, "zh": "器械侧卷腹", "en": "Machine Side Crunch"}
+{"i": 988, "zh": "空中单车", "en": "Air Bike"}
+{"i": 989, "zh": "空中单车(高难度版)", "en": "Air Bike"}
+{"i": 990, "zh": "绳索跪姿卷腹", "en": "Kneeling Cable Crunch"}
+{"i": 991, "zh": "平躺跪姿转体", "en": "Lying Kneeling Twist"}
+{"i": 992, "zh": "保护式卷腹", "en": "Assisted Crunch"}
+{"i": 993, "zh": "平躺抬腿", "en": "Flat Lying Leg Raise"}
+{"i": 994, "zh": "站姿绳索转体", "en": "Standing Cable Rotation"}
+{"i": 995, "zh": "站姿绳索转体(版本2)", "en": "Standing Cable Rotation"}
+{"i": 996, "zh": "腹肌轮收", "en": "Ab Wheel Rollout"}
+{"i": 997, "zh": "悬挂抬腿", "en": "Hanging Leg Raise"}
+{"i": 998, "zh": "负重悬挂抬腿", "en": "Weighted Hanging Leg Raise"}
+{"i": 999, "zh": "上斜卷腹转体", "en": "Incline Crunch with Twist"}
+{"i": 880, "zh": "壶铃单腿深蹲", "en": "Kettlebell Single-Leg Squat"}
+{"i": 881, "zh": "壶铃单臂挺举", "en": "Kettlebell Single-Arm Jerk"}
+{"i": 882, "zh": "壶铃杯式深蹲", "en": "Kettlebell Goblet Squat"}
+{"i": 883, "zh": "壶铃悬挂高翻", "en": "Kettlebell Hang Power Clean"}
+{"i": 884, "zh": "壶铃单臂侧式军事推举", "en": "Kettlebell Single-Arm Side Military Press"}
+{"i": 885, "zh": "上斜直腿髋部上抬", "en": "Incline Straight-Leg Hip Raise"}
+{"i": 886, "zh": "蛙式臀推", "en": "Frog Hip Thrust"}
+{"i": 887, "zh": "动感单车间歇骑行_进阶版3", "en": "Spin Bike Interval Ride"}
+{"i": 888, "zh": "平板支撑触脚尖", "en": "Plank Toe Taps"}
+{"i": 889, "zh": "站立臂侧屈（屈臂）", "en": "Standing Side Bend (Bent Arm)"}
+{"i": 890, "zh": "哑铃翻举", "en": "Dumbbell Clean"}
+{"i": 891, "zh": "分腿冲刺高弓步", "en": "Split-Stance Sprint High Lunge"}
+{"i": 892, "zh": "分腿冲刺低弓步", "en": "Split-Stance Sprint Low Lunge"}
+{"i": 893, "zh": "固定轨迹椭圆机", "en": "Fixed-Path Elliptical"}
+{"i": 894, "zh": "卧式健身车", "en": "Recumbent Exercise Bike"}
+{"i": 895, "zh": "弓步单腿抬膝跳", "en": "Lunge Jump with Single-Leg Knee Raise"}
+{"i": 896, "zh": "静态侧卧支撑", "en": "Static Side Plank"}
+{"i": 897, "zh": "地雷杆甩", "en": "Landmine Swing"}
+{"i": 898, "zh": "平板支撑交替摆腿", "en": "Plank Alternating Leg Lifts"}
+{"i": 899, "zh": "固定熊爬", "en": "Stationary Bear Crawl"}
+{"i": 900, "zh": "跪姿转体", "en": "Kneeling Rotation"}
+{"i": 901, "zh": "猎鸟狗", "en": "Bird Dog"}
+{"i": 902, "zh": "反向支撑交叉腿", "en": "Reverse Plank with Crossed Legs"}
+{"i": 903, "zh": "左右摸脚踝", "en": "Alternating Ankle Touches"}
+{"i": 904, "zh": "平板交替手肘支撑", "en": "Plank Up-Downs"}
+{"i": 905, "zh": "弹力带站姿转体拉拽", "en": "Resistance Band Standing Rotational Pull"}
+{"i": 906, "zh": "超人式", "en": "Superman"}
+{"i": 907, "zh": "反向平板支撑", "en": "Reverse Plank"}
+{"i": 908, "zh": "巫师扭转_腰部", "en": "Wizard Twist"}
+{"i": 909, "zh": "单腿抬升俯卧撑", "en": "Single-Leg Push-Up"}
+{"i": 910, "zh": "奥蒂斯起身", "en": "Otis Up"}
+{"i": 911, "zh": "滚动桥式", "en": "Rolling Bridge"}
+{"i": 912, "zh": "壶铃风车", "en": "Kettlebell Windmill"}
+{"i": 913, "zh": "仰卧直腿髋上抬", "en": "Supine Straight-Leg Hip Raise"}
+{"i": 914, "zh": "扭转前平板支撑", "en": "Twisting Front Plank"}
+{"i": 915, "zh": "时钟俯卧撑", "en": "Clock Push-Up"}
+{"i": 916, "zh": "屈腿直臂仰卧起坐", "en": "Bent-Knee Straight-Arm Sit-Up"}
+{"i": 917, "zh": "单腿臀桥外旋", "en": "Single-Leg Glute Bridge with External Rotation"}
+{"i": 918, "zh": "单腿直腿臀桥保持", "en": "Single-Leg Straight-Leg Glute Bridge Hold"}
+{"i": 919, "zh": "弹力带下斜仰卧起坐", "en": "Resistance Band Decline Sit-Up"}
+{"i": 1040, "zh": "吊环悬垂直腿提髋", "en": "Ring Hanging Straight-Leg Hip Raise"}
+{"i": 1041, "zh": "吊环悬垂膝碰肘", "en": "Ring Hanging Knee-to-Elbow"}
+{"i": 1042, "zh": "瑞士球卷腹抬腿", "en": "Swiss Ball Crunch with Leg Raise"}
+{"i": 1043, "zh": "V 字上举", "en": "V-Up"}
+{"i": 1044, "zh": "直臂转体卷腹", "en": "Straight-Arm Twist Crunch"}
+{"i": 1045, "zh": "悬垂直腿举髋", "en": "Hanging Straight-Leg Hip Raise"}
+{"i": 1046, "zh": "站姿屈臂侧弯", "en": "Standing Bent-Arm Side Bend"}
+{"i": 1047, "zh": "肘碰膝侧平板支撑卷腹", "en": "Side Plank Elbow-to-Knee Crunch"}
+{"i": 1048, "zh": "蟹式扭转触足卷腹", "en": "Crab Twist Toe-Touch Crunch"}
+{"i": 1049, "zh": "器械坐姿转体", "en": "Seated Machine Torso Rotation"}
+{"i": 1050, "zh": "坐姿短足训练", "en": "Seated Short Foot Exercise"}
+{"i": 1051, "zh": "肩胛骨后缩灵活性", "en": "Scapular Retraction Mobility"}
+{"i": 1052, "zh": "肩胛骨上回旋灵活性", "en": "Scapular Upward Rotation Mobility"}
+{"i": 1053, "zh": "肩胛骨下回旋灵活性", "en": "Scapular Downward Rotation Mobility"}
+{"i": 1054, "zh": "胸椎拉伸和打开", "en": "Thoracic Spine Stretch and Opening"}
+{"i": 1055, "zh": "自重臀冲", "en": "Bodyweight Hip Thrust"}
+{"i": 1056, "zh": "平躺曲腿旋转", "en": "Supine Bent-Knee Rotation"}
+{"i": 1057, "zh": "贴地俯卧撑转体", "en": "Floor Push-Up with Rotation"}
+{"i": 1058, "zh": "肩内外旋动态拉伸", "en": "Dynamic Shoulder Internal/External Rotation Stretch"}
+{"i": 1059, "zh": "扩胸开合", "en": "Open-Close Chest Expansion"}
+{"i": 1060, "zh": "单臂侧转", "en": "Single-Arm Side Rotation"}
+{"i": 1061, "zh": "跪姿前伸手", "en": "Kneeling Forward Reach"}
+{"i": 1062, "zh": "斜凳胸背扩", "en": "Incline Bench Chest and Back Opener"}
+{"i": 1063, "zh": "抱肘侧屈体", "en": "Elbow-Hold Side Bend"}
+{"i": 1064, "zh": "跑步_有氧训练", "en": "Running Aerobic Training"}
+{"i": 1065, "zh": "跑步接半蹲", "en": "Running to Half Squat"}
+{"i": 1066, "zh": "跑跳接半蹲跳", "en": "Running Jump to Half-Squat Jump"}
+{"i": 1067, "zh": "跑步接单腿跳", "en": "Running to Single-Leg Hop"}
+{"i": 1068, "zh": "跑步开合跳", "en": "Running Jumping Jack"}
+{"i": 1069, "zh": "墙天使", "en": "Wall Angel"}
+{"i": 1070, "zh": "站姿踝关节环绕", "en": "Standing Ankle Circles"}
+{"i": 1071, "zh": "站姿膝关节环绕", "en": "Standing Knee Circles"}
+{"i": 1072, "zh": "婴儿式伸展", "en": "Child's Pose Stretch"}
+{"i": 1073, "zh": "过头三头拉伸", "en": "Overhead Triceps Stretch"}
+{"i": 1074, "zh": "滑雪", "en": "Skiing"}
+{"i": 1075, "zh": "三角肌后束拉伸", "en": "Rear Delt Stretch"}
+{"i": 1076, "zh": "坐姿腿拉伸", "en": "Seated Leg Stretch"}
+{"i": 1077, "zh": "直腿弯腰", "en": "Standing Straight-Leg Forward Bend"}
+{"i": 1078, "zh": "单手抱头侧身", "en": "Single-Arm Head-Hold Side Bend"}
+{"i": 1079, "zh": "单手拉杆", "en": "Single-Arm Lat Pulldown"}
+{"i": 1000, "zh": "站姿绳索卷腹", "en": "Standing Cable Crunch"}
+{"i": 1001, "zh": "史密斯上踢", "en": "Smith Machine Kickback"}
+{"i": 1002, "zh": "卷腹", "en": "Crunch"}
+{"i": 1003, "zh": "平板支撑", "en": "Plank"}
+{"i": 1004, "zh": "弹力带-跪姿卷腹", "en": "Band Kneeling Crunch"}
+{"i": 1005, "zh": "弹力带-仰卧卷腹", "en": "Band Lying Crunch"}
+{"i": 1006, "zh": "弹力带-下上转体", "en": "Band Low-to-High Twist"}
+{"i": 1007, "zh": "弹力带-上下转体", "en": "Band High-to-Low Twist"}
+{"i": 1008, "zh": "弹力带-十字转体", "en": "Band Cross-Body Twist"}
+{"i": 1009, "zh": "滑轮器卷腹", "en": "Cable Crunch"}
+{"i": 1010, "zh": "双头仰卧起", "en": "Double Crunch"}
+{"i": 1011, "zh": "坐姿器械卷腹", "en": "Seated Machine Crunch"}
+{"i": 1012, "zh": "器械抬腿", "en": "Machine Leg Raise"}
+{"i": 1013, "zh": "弹力带仰卧交替卷腹", "en": "Band Lying Alternating Crunch"}
+{"i": 1014, "zh": "仰卧交替剪刀腿", "en": "Lying Alternating Scissor Kick"}
+{"i": 1015, "zh": "悍马机卷腹", "en": "Hammer Strength Machine Crunch"}
+{"i": 1016, "zh": "弹力带站姿转体推举", "en": "Band Standing Rotational Press"}
+{"i": 1017, "zh": "负重俄罗斯转体_腿部上抬版", "en": "Weighted Russian Twist with Leg Raise"}
+{"i": 1018, "zh": "屈膝卷腹", "en": "Bent-Knee Crunch"}
+{"i": 1019, "zh": "器械卧姿屈膝抬腿", "en": "Machine Lying Bent-Knee Leg Raise"}
+{"i": 1020, "zh": "站姿健腹轮前推", "en": "Standing Ab Wheel Rollout"}
+{"i": 1021, "zh": "扭转深蹲", "en": "Twisting Squat"}
+{"i": 1022, "zh": "反向卷腹", "en": "Reverse Crunch"}
+{"i": 1023, "zh": "斜腹肌仰卧卷腹_地面版", "en": "Lying Oblique Crunch"}
+{"i": 1024, "zh": "地板卷腹", "en": "Floor Crunch"}
+{"i": 1025, "zh": "直腿上举卷腹", "en": "Straight-Leg Raise Crunch"}
+{"i": 1026, "zh": "健身球卷腹", "en": "Stability Ball Crunch"}
+{"i": 1027, "zh": "屈膝仰卧扭转", "en": "Bent-Knee Lying Twist"}
+{"i": 1028, "zh": "交叉登山者_桥式", "en": "Bridge Cross-Body Mountain Climber"}
+{"i": 1029, "zh": "交替触脚跟", "en": "Alternating Heel Touch"}
+{"i": 1030, "zh": "站姿弹力带侧屈", "en": "Standing Band Side Bend"}
+{"i": 1031, "zh": "弹力带站姿卷腹", "en": "Band Standing Crunch"}
+{"i": 1032, "zh": "波速球卷腹", "en": "BOSU Ball Crunch"}
+{"i": 1033, "zh": "绳索扭转_上下版2", "en": "Cable High-to-Low Twist"}
+{"i": 1034, "zh": "泡沫轴反向卷腹", "en": "Foam Roller Reverse Crunch"}
+{"i": 1035, "zh": "45 度侧屈卷腹", "en": "45-Degree Side Crunch"}
+{"i": 1036, "zh": "四分之一仰卧起坐", "en": "Quarter Sit-Up"}
+{"i": 1037, "zh": "仰卧抱臂卷腹", "en": "Lying Crossed-Arm Crunch"}
+{"i": 1038, "zh": "触膝卷腹", "en": "Knee-Touch Crunch"}
+{"i": 1039, "zh": "吊环悬垂举腿提髋", "en": "Ring Hanging Leg Raise with Hip Lift"}
+{"i": 920, "zh": "绳索Pallof推", "en": "Cable Pallof Press"}
+{"i": 921, "zh": "器械坐姿卷腹", "en": "Machine Seated Crunch"}
+{"i": 922, "zh": "平板支撑手臂上抬", "en": "Plank Arm Raise"}
+{"i": 923, "zh": "器械腹部摆动", "en": "Machine Ab Swing"}
+{"i": 924, "zh": "尺蠖式", "en": "Inchworm"}
+{"i": 925, "zh": "哥本哈根屈膝侧平板支撑", "en": "Copenhagen Bent-Knee Side Plank"}
+{"i": 926, "zh": "哥本哈根侧平板支撑", "en": "Copenhagen Side Plank"}
+{"i": 927, "zh": "单腿拉伸_屈膝版", "en": "Single-Leg Stretch (Bent Knee)"}
+{"i": 928, "zh": "仰卧交替抬腿_版本3", "en": "Lying Alternating Leg Raise"}
+{"i": 929, "zh": "单腿直腿拉伸", "en": "Single Straight-Leg Stretch"}
+{"i": 930, "zh": "剪刀式踢腿", "en": "Scissor Kicks"}
+{"i": 931, "zh": "跪姿健腹轮前推", "en": "Kneeling Ab Wheel Rollout"}
+{"i": 932, "zh": "哑铃体侧屈", "en": "Dumbbell Side Bend"}
+{"i": 933, "zh": "左右摆腿", "en": "Side-to-Side Leg Swings"}
+{"i": 934, "zh": "悬垂直腿上举", "en": "Hanging Straight-Leg Raise"}
+{"i": 935, "zh": "青蛙卷腹", "en": "Frog Crunch"}
+{"i": 936, "zh": "俄罗斯转体_徒手", "en": "Bodyweight Russian Twist"}
+{"i": 937, "zh": "仰卧举腿收腹", "en": "Lying Leg Raise Crunch"}
+{"i": 938, "zh": "罗马椅仰卧起坐", "en": "Roman Chair Sit-Up"}
+{"i": 939, "zh": "腹斜肌仰卧卷腹_直腿版", "en": "Lying Oblique Crunch (Straight Leg)"}
+{"i": 940, "zh": "侧卧抬腿", "en": "Side-Lying Leg Lift"}
+{"i": 941, "zh": "仰卧单腿上举", "en": "Lying Single-Leg Raise"}
+{"i": 942, "zh": "侧卧全幅度抬腿", "en": "Side-Lying Full-Range Leg Lift"}
+{"i": 943, "zh": "肘部俯卧撑", "en": "Elbow Push-Up"}
+{"i": 944, "zh": "仰卧抬腿侧摆", "en": "Lying Leg Raise Side Swing"}
+{"i": 945, "zh": "侧平板抬腿", "en": "Side Plank Leg Raise"}
+{"i": 946, "zh": "站立双侧屈", "en": "Standing Bilateral Side Bend"}
+{"i": 947, "zh": "跪姿平板支撑", "en": "Kneeling Plank"}
+{"i": 948, "zh": "鸟狗式", "en": "Bird Dog"}
+{"i": 949, "zh": "詹达仰卧起坐", "en": "Janda Sit-Up"}
+{"i": 950, "zh": "双杠垂直举腿_进阶版", "en": "Parallel Bar Vertical Leg Raise"}
+{"i": 951, "zh": "吊环反向腹肌滚轮", "en": "Ring Reverse Ab Roller"}
+{"i": 952, "zh": "吊环腹肌前倒", "en": "Ring Ab Fallout"}
+{"i": 953, "zh": "吊环屈体腰部练习", "en": "Ring Pike Waist Exercise"}
+{"i": 954, "zh": "吊环仰卧卷腹", "en": "Ring Lying Crunch"}
+{"i": 955, "zh": "吊环登山跑", "en": "Ring Mountain Climbers"}
+{"i": 956, "zh": "吊环侧支撑", "en": "Ring Side Plank"}
+{"i": 957, "zh": "仰卧抬腿髋部上举", "en": "Lying Leg Raise Hip Lift"}
+{"i": 958, "zh": "俯身转体", "en": "Bent-Over Twist"}
+{"i": 959, "zh": "椅子辅助仰卧起坐", "en": "Chair-Assisted Sit-Up"}
+{"i": 1120, "zh": "头顶胸部拉伸", "en": "Overhead Chest Stretch"}
+{"i": 1121, "zh": "站姿腘绳肌与小腿拉伸", "en": "Standing Hamstring and Calf Stretch"}
+{"i": 1122, "zh": "跑者拉伸", "en": "Runner's Stretch"}
+{"i": 1123, "zh": "坐姿宽角式拉伸", "en": "Seated Wide-Angle Stretch"}
+{"i": 1124, "zh": "四足深蹲式拉伸", "en": "Quadruped Deep Squat Stretch"}
+{"i": 1125, "zh": "进阶髋屈肌与股四头肌拉伸", "en": "Advanced Hip Flexor and Quadriceps Stretch"}
+{"i": 1126, "zh": "腘绳肌拉伸", "en": "Hamstring Stretch"}
+{"i": 1127, "zh": "蝴蝶式瑜伽拉伸", "en": "Butterfly Yoga Stretch"}
+{"i": 1128, "zh": "站姿腓肠肌拉伸", "en": "Standing Gastrocnemius Stretch"}
+{"i": 1129, "zh": "悬垂拉伸", "en": "Hanging Stretch"}
+{"i": 1130, "zh": "脊柱前屈拉伸", "en": "Spinal Flexion Stretch"}
+{"i": 1131, "zh": "泡沫轴腓肠肌松解", "en": "Foam Roller Gastrocnemius Release"}
+{"i": 1132, "zh": "泡沫轴股内侧肌肉拉伸", "en": "Foam Roller Medial Thigh Release"}
+{"i": 1133, "zh": "泡沫轴胸肌放松滚动", "en": "Foam Roller Pectoral Release"}
+{"i": 1134, "zh": "大腿外侧强化松解", "en": "Lateral Thigh Release"}
+{"i": 1135, "zh": "泡沫轴上背部放松滚动", "en": "Foam Roller Upper Back Release"}
+{"i": 1136, "zh": "泡沫轴髂胫束_ITB_松解", "en": "Foam Roller IT Band Release"}
+{"i": 1137, "zh": "泡沫轴腘绳肌松解", "en": "Foam Roller Hamstring Release"}
+{"i": 1138, "zh": "颈部旋转滚动放松", "en": "Neck Rotation Foam Roller Release"}
+{"i": 1139, "zh": "仰卧臀部扭转泡沫轴放松", "en": "Supine Glute Twist Foam Roller Release"}
+{"i": 1140, "zh": "坐姿腘绳肌与臀部泡沫轴放松", "en": "Seated Hamstring and Glute Foam Roller Release"}
+{"i": 1141, "zh": "仰卧髋外旋肌与髋伸肌泡沫轴放松", "en": "Supine Hip External Rotator and Hip Extensor Foam Roller Release"}
+{"i": 1142, "zh": "筋膜球梨状肌松解", "en": "Massage Ball Piriformis Release"}
+{"i": 1143, "zh": "分腿侧蹲泡沫轴放松_大腿", "en": "Split-Stance Side Squat Foam Roller Thigh Release"}
+{"i": 1144, "zh": "肩胛伸展泡沫轴松解", "en": "Scapular Extension Foam Roller Release"}
+{"i": 1145, "zh": "侧卧背阔肌泡沫轴放松", "en": "Side-Lying Lat Foam Roller Release"}
+{"i": 1146, "zh": "侧卧肱三头肌泡沫轴放松", "en": "Side-Lying Triceps Foam Roller Release"}
+{"i": 1147, "zh": "仰卧胸腰椎泡沫轴放松_背部训练", "en": "Supine Thoracolumbar Foam Roller Release"}
+{"i": 1148, "zh": "仰卧颈部减压泡沫轴放松_版本2", "en": "Supine Cervical Decompression Foam Roller Release"}
+{"i": 1149, "zh": "俯卧胸肩前侧泡沫轴放松", "en": "Prone Anterior Chest and Shoulder Foam Roller Release"}
+{"i": 1150, "zh": "全身环绕滚动放松", "en": "Full-Body Foam Roller Release"}
+{"i": 1151, "zh": "仰卧竖脊肌泡沫轴放松", "en": "Supine Erector Spinae Foam Roller Release"}
+{"i": 1152, "zh": "侧卧上背部泡沫轴放松", "en": "Side-Lying Upper Back Foam Roller Release"}
+{"i": 1153, "zh": "侧卧下背部泡沫轴放松", "en": "Side-Lying Lower Back Foam Roller Release"}
+{"i": 1154, "zh": "坐姿臀部泡沫轴放松", "en": "Seated Glute Foam Roller Release"}
+{"i": 1155, "zh": "仰卧肩部后旋泡沫轴放松", "en": "Supine Shoulder External Rotation Foam Roller Release"}
+{"i": 1156, "zh": "菱形肌泡沫轴放松", "en": "Rhomboid Foam Roller Release"}
+{"i": 1157, "zh": "站姿单臂胸部伸展", "en": "Standing Single-Arm Chest Stretch"}
+{"i": 1158, "zh": "站姿腹部转体拉伸", "en": "Standing Abdominal Twist Stretch"}
+{"i": 1159, "zh": "旋转式腹部拉伸", "en": "Rotational Abdominal Stretch"}
+{"i": 1160, "zh": "站姿髋屈肌拉伸", "en": "Standing hip flexor stretch"}
+{"i": 1161, "zh": "铁人交叉式拉伸", "en": "Iron Cross stretch"}
+{"i": 1162, "zh": "站姿体前屈_动态", "en": "Dynamic standing forward fold"}
+{"i": 1163, "zh": "站姿体前屈伸展", "en": "Standing forward fold stretch"}
+{"i": 1164, "zh": "腹部拉伸", "en": "Abdominal stretch"}
+{"i": 1165, "zh": "基础触趾", "en": "Basic toe touch"}
+{"i": 1166, "zh": "站姿双臂环抱后展拉伸", "en": "Standing clasped-hands back extension stretch"}
+{"i": 1167, "zh": "颈部环绕伸展", "en": "Neck circles"}
+{"i": 1168, "zh": "椭圆机", "en": "Elliptical"}
+{"i": 1169, "zh": "爬楼梯", "en": "Stair climbing"}
+{"i": 1170, "zh": "跑步（有氧）", "en": "Running (cardio)"}
+{"i": 1171, "zh": "动感单车（有氧）", "en": "Indoor cycling (cardio)"}
+{"i": 1172, "zh": "划船机", "en": "Rowing machine"}
+{"i": 1173, "zh": "游泳", "en": "Swimming"}
+{"i": 1174, "zh": "跳绳", "en": "Jump rope"}
+{"i": 1175, "zh": "滑雪机", "en": "Ski erg"}
+{"i": 1176, "zh": "爬坡走", "en": "Incline walking"}
+{"i": 1177, "zh": "波比跳", "en": "Burpee"}
+{"i": 1178, "zh": "后踢腿跑", "en": "Butt kicks"}
+{"i": 1179, "zh": "六角杠农夫行走", "en": "Trap bar farmer's walk"}
+{"i": 1180, "zh": "壶铃农夫行走", "en": "Kettlebell farmer's walk"}
+{"i": 1181, "zh": "哑铃农夫行走", "en": "Dumbbell farmer's walk"}
+{"i": 1182, "zh": "跑步机步行", "en": "Treadmill walking"}
+{"i": 1183, "zh": "划船机训练", "en": "Rowing machine workout"}
+{"i": 1184, "zh": "高抬腿跳", "en": "High-knee jumps"}
+{"i": 1185, "zh": "快走", "en": "Brisk walking"}
+{"i": 1186, "zh": "漫步机", "en": "Air walker"}
+{"i": 1187, "zh": "上肢手摇健身车", "en": "Arm ergometer"}
+{"i": 1188, "zh": "平板支撑_计时", "en": "Plank (timed)"}
+{"i": 1189, "zh": "椭圆机(计时)", "en": "Elliptical (timed)"}
+{"i": 1190, "zh": "跑步(计时)", "en": "Running (timed)"}
+{"i": 1191, "zh": "动感单车（计时）", "en": "Indoor cycling (timed)"}
+{"i": 1192, "zh": "战绳", "en": "Battle ropes"}
+{"i": 1193, "zh": "高抬腿-Tabata", "en": "High knees Tabata"}
+{"i": 1194, "zh": "上台阶-Tabata", "en": "Step-ups Tabata"}
+{"i": 1195, "zh": "登山者-Tabata", "en": "Mountain climbers Tabata"}
+{"i": 1196, "zh": "开合跳-Tabata", "en": "Jumping jacks Tabata"}
+{"i": 1197, "zh": "左右跳-Tabata", "en": "Lateral jumps Tabata"}
+{"i": 1198, "zh": "砸药球-Tabata", "en": "Medicine ball slam Tabata"}
+{"i": 1199, "zh": "原地跑-Tabata", "en": "Running in place Tabata"}
+{"i": 1200, "zh": "箭步走侧转体-Tabata", "en": "Walking Lunge with Twist - Tabata"}
+{"i": 1201, "zh": "滑雪-Tabata", "en": "SkiErg - Tabata"}
+{"i": 1202, "zh": "爬楼梯-Tabata", "en": "Stair Climber - Tabata"}
+{"i": 1203, "zh": "动感单车-Tabata", "en": "Spin Bike - Tabata"}
+{"i": 1204, "zh": "战绳-Tabata", "en": "Battle Ropes - Tabata"}
+{"i": 1205, "zh": "滑雪摇荡-tabata", "en": "Ski Swings - Tabata"}
+{"i": 1206, "zh": "坐姿拳击-tabata", "en": "Seated Boxing - Tabata"}
+{"i": 1207, "zh": "哑铃甩-tabata", "en": "Dumbbell Swing - Tabata"}
+{"i": 1208, "zh": "壶铃甩-tabata", "en": "Kettlebell Swing - Tabata"}
+{"i": 1209, "zh": "波比跳-tabata", "en": "Burpee - Tabata"}
+{"i": 1210, "zh": "椭圆机-Tabata", "en": "Elliptical - Tabata"}
+{"i": 1211, "zh": "深蹲跳-Tabata", "en": "Squat Jump - Tabata"}
+{"i": 1212, "zh": "箭步跳-Tabata", "en": "Jumping Lunge - Tabata"}
+{"i": 1080, "zh": "箭步蹲拉伸", "en": "Lunge Stretch"}
+{"i": 1081, "zh": "单手扶墙拉伸", "en": "One-Hand Wall Stretch"}
+{"i": 1082, "zh": "单手扶墙腿拉伸", "en": "One-Hand Wall Leg Stretch"}
+{"i": 1083, "zh": "杆扩胸", "en": "Stick Chest Expansion"}
+{"i": 1084, "zh": "辅助胸拉伸", "en": "Assisted Chest Stretch"}
+{"i": 1085, "zh": "胸背拉伸", "en": "Chest and Back Stretch"}
+{"i": 1086, "zh": "后背正反手拉伸", "en": "Behind-the-Back Overhand/Underhand Stretch"}
+{"i": 1087, "zh": "仰卧抬腿拉伸", "en": "Lying Leg Raise Stretch"}
+{"i": 1088, "zh": "站姿腿拉伸", "en": "Standing Leg Stretch"}
+{"i": 1089, "zh": "手臂交叉拉伸", "en": "Cross-Body Arm Stretch"}
+{"i": 1090, "zh": "泡沫轴臀冲", "en": "Foam Roller Hip Thrust"}
+{"i": 1091, "zh": "俯身猫式", "en": "Bent-Over Cat Stretch"}
+{"i": 1092, "zh": "滚轮腿交叉", "en": "Foam Roller Leg Cross"}
+{"i": 1093, "zh": "台阶式小腿拉伸", "en": "Step Calf Stretch"}
+{"i": 1094, "zh": "单腿跪姿股四头肌拉伸", "en": "Single-Leg Kneeling Quad Stretch"}
+{"i": 1095, "zh": "前臂拉伸", "en": "Forearm Stretch"}
+{"i": 1096, "zh": "站姿侧弓步拉伸", "en": "Standing Side Lunge Stretch"}
+{"i": 1097, "zh": "坐姿单腿腘绳肌拉伸", "en": "Seated Single-Leg Hamstring Stretch"}
+{"i": 1098, "zh": "坐姿下背部拉伸", "en": "Seated Lower Back Stretch"}
+{"i": 1099, "zh": "爆发式侧弓步拉伸", "en": "Explosive Side Lunge Stretch"}
+{"i": 1100, "zh": "交叉跪姿髋屈肌拉伸", "en": "Crossed-Knee Kneeling Hip Flexor Stretch"}
+{"i": 1101, "zh": "膝关节环绕拉伸", "en": "Knee Circle Stretch"}
+{"i": 1102, "zh": "下巴触胸腹部拉伸", "en": "Chin-to-Chest Abdominal Stretch"}
+{"i": 1103, "zh": "仰头看天大腿拉伸", "en": "Look-Up Thigh Stretch"}
+{"i": 1104, "zh": "船式拉伸", "en": "Boat Pose Stretch"}
+{"i": 1105, "zh": "固定杆背部伸展", "en": "Fixed-Bar Back Extension"}
+{"i": 1106, "zh": "仰卧臀部伸展", "en": "Lying Glute Extension"}
+{"i": 1107, "zh": "坐姿宽腿内收肌拉伸", "en": "Seated Wide-Leg Adductor Stretch"}
+{"i": 1108, "zh": "仰卧交叉膝下拉伸展", "en": "Lying Cross-Knee Lower Back Stretch"}
+{"i": 1109, "zh": "弹力带肩部热身拉伸", "en": "Resistance-Band Shoulder Warm-Up Stretch"}
+{"i": 1110, "zh": "髋关节环绕拉伸", "en": "Hip Circle Stretch"}
+{"i": 1111, "zh": "弓步拉伸", "en": "Lunge Stretch"}
+{"i": 1112, "zh": "坐姿猫牛式拉伸", "en": "Seated Cat-Cow Stretch"}
+{"i": 1113, "zh": "眼镜蛇式瑜伽体式_腰部拉伸", "en": "Cobra Pose Waist Stretch"}
+{"i": 1114, "zh": "双鸽式拉伸", "en": "Double Pigeon Stretch"}
+{"i": 1115, "zh": "最伟大拉伸", "en": "World's Greatest Stretch"}
+{"i": 1116, "zh": "站姿背部扭转拉伸", "en": "Standing Back Twist Stretch"}
+{"i": 1117, "zh": "站姿上举背部扭转拉伸", "en": "Standing Overhead Back Twist Stretch"}
+{"i": 1118, "zh": "跪姿背部扭转拉伸", "en": "Kneeling Back Twist Stretch"}
+{"i": 1119, "zh": "坐姿俯身背部拉伸", "en": "Seated Forward-Bend Back Stretch"}
