@@ -9,6 +9,26 @@ from pathlib import Path
 DATA = Path("data/vital")
 DRAFT = DATA / "vital_actions_zh_draft.json"
 
+# 视觉分类：pack -> 优先级（1 最高，Watch 与手机首条用它）
+PACK_STYLE = {
+    "100": 1, "100gym": 1, "430m": 1,      # 灰T恤3D
+    "430f1": 2, "homepilates": 2, "yoga": 2,  # 金发真人女
+    "women400": 3,                          # 黑背心真人女
+    "200": 4,                               # 红背心3D男
+    "430f2": 5, "wallpilates": 5,           # 肉色背心3D女
+    "home130": 6,                           # 黑背心3D肌肉建模女
+}
+STYLE_LABEL = {
+    1: "灰T恤3D",
+    2: "金发真人女",
+    3: "黑背心真人女",
+    4: "红背心3D男",
+    5: "肉色背心3D女",
+    6: "黑背心3D肌肉建模女",
+}
+# 第二版再加入动作库的 pack
+EXCLUDED_PACKS = {"face", "office"}
+
 
 def load_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
@@ -472,6 +492,9 @@ def main() -> None:
                     item = dict(md)
                     if Path(src).stem == "1620":
                         item["note"] = "可移动凳版本"
+                    prio = PACK_STYLE.get(item.get("pack"))
+                    item["visual_priority"] = prio if prio is not None else 99
+                    item["visual_style"] = STYLE_LABEL.get(prio, "未知")
                     media.append(item)
 
         aliases = set()
@@ -508,7 +531,7 @@ def main() -> None:
                 "name_zh_source": "manual_v2",
                 "old_names_zh": old_names,
                 "review_note": note,
-                "sex_variants": sorted({m.get("sex") or "unknown" for m in members for _ in [0]}),
+                "sex_variants": sorted({md.get("sex") for md in media if md.get("sex")}),
                 "media": media,
                 "media_count": len(media),
                 "source": "vital_animations",
@@ -549,11 +572,35 @@ def main() -> None:
                 }
             )
 
-    out_actions.sort(key=lambda a: (a["muscle_group"], a["name_zh"]))
+    # Sort each action's media by visual priority, mark Watch primary.
+    for a in out_actions:
+        a["media"].sort(key=lambda md: (md.get("visual_priority", 99), md.get("source_file", "")))
+        if a["media"]:
+            a["media"][0]["primary_for_watch"] = True
+            pm = a["media"][0]
+            a["primary_media"] = {
+                "source_file": pm["source_file"],
+                "visual_style": pm.get("visual_style"),
+                "visual_priority": pm.get("visual_priority"),
+            }
+        else:
+            a["primary_media"] = None
+        packs = {md.get("pack") for md in a["media"]}
+        a["excluded_from_library"] = bool(packs) and packs <= EXCLUDED_PACKS
 
-    # Write JSON.
+    main_actions = [a for a in out_actions if not a["excluded_from_library"]]
+    face_office = [a for a in out_actions if a["excluded_from_library"]]
+
+    out_actions.sort(key=lambda a: (a["muscle_group"], a["name_zh"]))
+    main_actions.sort(key=lambda a: (a["muscle_group"], a["name_zh"]))
+    face_office.sort(key=lambda a: (a["muscle_group"], a["name_zh"]))
+
+    # Write JSON（主库不含 face/office）。
     (DATA / "vital_actions_v2.json").write_text(
-        json.dumps(out_actions, ensure_ascii=False, indent=1), encoding="utf-8"
+        json.dumps(main_actions, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
+    (DATA / "vital_face_office_v2.json").write_text(
+        json.dumps(face_office, ensure_ascii=False, indent=1), encoding="utf-8"
     )
 
     # Write decisions CSV.
@@ -632,10 +679,12 @@ def main() -> None:
     parts.append("</body>")
     (DATA / "duplicates_review_v2.html").write_text("\n".join(parts), encoding="utf-8")
 
-    print("actions before", len(actions), "after", len(out_actions))
+    print("actions before", len(actions), "after(merged)", len(out_actions))
+    print("main library", len(main_actions), "face/office(预留)", len(face_office))
     print("changed", len(changed), "excluded", len(EXCLUDE))
-    print("media total", sum(a["media_count"] for a in out_actions))
+    print("media total", sum(a["media_count"] for a in main_actions))
     print("wrote", DATA / "vital_actions_v2.json")
+    print("wrote", DATA / "vital_face_office_v2.json")
     print("wrote", DATA / "vital_merge_decisions.csv")
     print("wrote", DATA / "duplicates_review_v2.html")
 

@@ -1,0 +1,7547 @@
+[
+ {
+  "slug": "vital-seated-arms-stretch",
+  "slug_aliases": [
+   "vital-seated-arms-stretch"
+  ],
+  "name_zh": "坐姿手臂拉伸",
+  "name_en": "seated arms stretch",
+  "source_name_en": "seated arms stretch",
+  "aliases": [
+   "seated arms stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "arms",
+  "body_part": "upper arms",
+  "target": "triceps",
+  "secondary_muscles": [
+   "delts",
+   "traps"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放于地面。",
+   "双臂举过头顶，屈肘，双手置于脑后。",
+   "用一只手轻压对侧肘部向下向后，加深肱三头肌拉伸。",
+   "保持拉伸姿势20-30秒，脊柱挺直，头部中立。",
+   "换臂，另一侧重复。按所需次数继续。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿手臂拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0708",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0708.mp4",
+    "size_bytes": 4967041,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0708.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-overhead-hand",
+  "slug_aliases": [
+   "vital-seated-overhead-hand"
+  ],
+  "name_zh": "坐姿过头徒手伸展",
+  "name_en": "seated overhead hand",
+  "source_name_en": "seated overhead hand",
+  "aliases": [
+   "seated overhead hand"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "arms",
+  "body_part": "upper arms",
+  "target": "triceps",
+  "secondary_muscles": [
+   "delts",
+   "traps"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "在椅子上坐直，双脚平放于地面。",
+   "将一侧手臂举过头顶并弯曲肘部，使手朝同侧肩后方下放。",
+   "用对侧手轻压抬起侧的肘部向后下方，加深肱三头肌拉伸。",
+   "保持拉伸姿势20-30秒，脊柱保持挺直，头部保持中立。",
+   "放松后换臂，在另一侧重复拉伸至目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿过头徒手伸展",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0730",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0730.mp4",
+    "size_bytes": 2269099,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0730.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-desk-wrist-stretch",
+  "slug_aliases": [
+   "vital-desk-wrist-stretch"
+  ],
+  "name_zh": "桌边手腕拉伸",
+  "name_en": "desk wrist stretch",
+  "source_name_en": "desk wrist stretch",
+  "aliases": [
+   "desk wrist stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "arms",
+  "body_part": "lower arms",
+  "target": "forearms",
+  "secondary_muscles": [],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "站在或坐在桌前，向前伸直一只手臂，掌心朝上。",
+   "用另一只手轻轻将伸直手的手指往后拉，使手腕向下弯曲。",
+   "保持拉伸15-20秒，感受前臂下方的张力。",
+   "翻转手掌使掌心朝下，轻轻将手指压向地面做反向拉伸。",
+   "保持15-20秒，然后换另一只手重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "桌边手腕拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0759",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Desk/0759.mp4",
+    "size_bytes": 1697099,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Desk/0759.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-desk-palm-of-hands-stretch",
+  "slug_aliases": [
+   "vital-desk-palm-of-hands-stretch"
+  ],
+  "name_zh": "桌边掌心拉伸",
+  "name_en": "desk palm of hands stretch",
+  "source_name_en": "desk palm of hands stretch",
+  "aliases": [
+   "desk palm of hands stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "arms",
+  "body_part": "lower arms",
+  "target": "forearms",
+  "secondary_muscles": [],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "站在或坐在桌前，双掌平放在桌面上，手指朝向身体。",
+   "身体轻轻前倾，手掌向下按压，感受前臂内侧和手腕的拉伸。",
+   "保持拉伸姿势20-30秒，深呼吸。",
+   "要变换拉伸，将手旋转使手指朝外，重复轻轻前倾。",
+   "放松并甩甩手，然后按需重复所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "桌边掌心拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0752",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Desk/0752.mp4",
+    "size_bytes": 5872873,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Desk/0752.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-desk-close-grip-push-ups",
+  "slug_aliases": [
+   "vital-desk-close-grip-push-ups"
+  ],
+  "name_zh": "桌边窄距俯卧撑",
+  "name_en": "desk close grip push ups",
+  "source_name_en": "desk close grip push ups",
+  "aliases": [
+   "desk close grip push ups"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "arms",
+  "body_part": "upper arms",
+  "target": "triceps",
+  "secondary_muscles": [
+   "pectorals",
+   "delts"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "面向桌子或稳固表面站立，双手放在边缘，间距窄于肩宽，手指朝前。",
+   "双脚向后走，直到身体从头到脚跟呈一条斜直线，并收紧核心。",
+   "弯曲肘部，将胸部向桌子方向下放，整个动作中肘部紧贴身体两侧。",
+   "当胸部几乎接触桌面时稍作停顿，然后完全伸直手臂推回起始位置。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "桌边窄距俯卧撑",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0749",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Desk/0749.mp4",
+    "size_bytes": 2069860,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Desk/0749.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-upper-body-side-to-side-stretch",
+  "slug_aliases": [
+   "vital-seated-upper-body-side-to-side-stretch"
+  ],
+  "name_zh": "坐姿上体左右拉伸",
+  "name_en": "seated upper body side to side stretch",
+  "source_name_en": "seated upper body side to side stretch",
+  "aliases": [
+   "seated upper body side to side stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "lower back",
+  "secondary_muscles": [
+   "obliques",
+   "delts"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直于椅子上，双脚平放地面，双臂自然垂于体侧。",
+   "一只手放在髋部，另一侧手臂伸直举过头顶。",
+   "躯干轻轻向放在髋部的手那一侧倾斜，感受上半身的侧向拉伸。",
+   "保持拉伸20-30秒，向拉长的一侧呼吸。",
+   "回到直立位置，换另一侧重复。持续交替完成目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿上体左右拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0748",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0748.mp4",
+    "size_bytes": 1473401,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0748.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-upper-back-stretch",
+  "slug_aliases": [
+   "vital-seated-upper-back-stretch"
+  ],
+  "name_zh": "坐姿上背拉伸",
+  "name_en": "seated upper back stretch",
+  "source_name_en": "seated upper back stretch",
+  "aliases": [
+   "seated upper back stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "rhomboids",
+  "secondary_muscles": [
+   "traps",
+   "delts"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面。",
+   "双臂环抱躯干呈自我拥抱姿势，抓住对侧肩膀。",
+   "弓起上背部，轻轻将肩膀向前拉，感受肩胛骨之间及周围的拉伸。",
+   "保持拉伸姿势20-30秒，均匀呼吸。",
+   "放松回到直立起始位置，重复完成目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿上背拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0747",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0747.mp4",
+    "size_bytes": 9439491,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0747.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-upper-back-stretch-version-1",
+  "slug_aliases": [
+   "vital-seated-upper-back-stretch-version-1"
+  ],
+  "name_zh": "坐姿上背拉伸式一",
+  "name_en": "seated upper back stretch version 1",
+  "source_name_en": "seated upper back stretch version 1",
+  "aliases": [
+   "seated upper back stretch version 1"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "rhomboids",
+  "secondary_muscles": [
+   "traps",
+   "delts"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面，脊柱挺直。",
+   "双臂向前伸至胸部高度，手指交叉，掌心朝前。",
+   "双手向前推，同时弓起上背部，分开肩胛骨。",
+   "下巴略微向胸部收低，为动作增加轻柔的颈部拉伸。",
+   "保持20-30秒，然后回到起始位置，重复完成目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿上背拉伸式一",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0746",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0746.mp4",
+    "size_bytes": 1466036,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0746.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-upper-back-and-shoulder-stretch",
+  "slug_aliases": [
+   "vital-seated-upper-back-and-shoulder-stretch"
+  ],
+  "name_zh": "坐姿上背肩部拉伸",
+  "name_en": "seated upper back and shoulder stretch",
+  "source_name_en": "seated upper back and shoulder stretch",
+  "aliases": [
+   "seated upper back and shoulder stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "rhomboids",
+  "secondary_muscles": [
+   "delts",
+   "traps"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面。",
+   "双臂向前伸直与肩同高，双手交扣，掌心朝外。",
+   "弓起上背部，将交扣的双手向前推，尽量分开肩胛骨。",
+   "同时让肩膀略微向前弓起，加深上背部的拉伸。",
+   "保持20-30秒，深呼吸，然后放松并重复完成目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿上背肩部拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0745",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0745.mp4",
+    "size_bytes": 2861844,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0745.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-forward-fold-hips-lift",
+  "slug_aliases": [
+   "vital-seated-forward-fold-hips-lift"
+  ],
+  "name_zh": "坐姿体前屈抬髋",
+  "name_en": "seated forward fold hips lift",
+  "source_name_en": "seated forward fold hips lift",
+  "aliases": [
+   "seated forward fold hips lift"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "lower back",
+  "secondary_muscles": [
+   "glutes",
+   "hamstrings"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐在椅子边缘，双脚平放地面，间距略宽于髋部。",
+   "从髋部向前折叠，躯干向大腿方向下压，双手伸向地面。",
+   "从折叠位置收紧臀肌，通过双脚发力将髋部稍微抬离座面。",
+   "保持抬起位置片刻，感受下背部和腘绳肌的拉伸。",
+   "将髋部放回座面，缓慢坐直，重复所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿体前屈抬髋",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0718",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0718.mp4",
+    "size_bytes": 10772191,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0718.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-dynamic-stretch",
+  "slug_aliases": [
+   "vital-seated-dynamic-stretch"
+  ],
+  "name_zh": "坐姿动态拉伸",
+  "name_en": "seated dynamic stretch",
+  "source_name_en": "seated dynamic stretch",
+  "aliases": [
+   "seated dynamic stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "lower back",
+  "secondary_muscles": [
+   "abs",
+   "delts"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐在椅子上，背部挺直，双脚平放地面，双手放在膝盖上。",
+   "吸气，拉长脊柱，尽量坐高。",
+   "呼气，缓慢弓背，肩膀向前收，肚脐向脊柱方向收。",
+   "再次吸气，回到坐高的姿势，头顶向上延伸。",
+   "配合呼吸继续此动态动作至目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿动态拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0715",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0715.mp4",
+    "size_bytes": 1367957,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0715.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-chair-forward-fold",
+  "slug_aliases": [
+   "vital-seated-chair-forward-fold"
+  ],
+  "name_zh": "坐姿椅上体前屈",
+  "name_en": "seated chair forward fold",
+  "source_name_en": "seated chair forward fold",
+  "aliases": [
+   "seated chair forward fold"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "lower back",
+  "secondary_muscles": [
+   "hamstrings",
+   "glutes"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐在椅子前缘，双脚平放地面，略宽于髋。",
+   "吸气延展脊柱，呼气从髋部缓慢前屈，躯干向大腿下放。",
+   "双手垂向地面或轻放小腿上。",
+   "放松头颈，上身自然下垂，感受下背深度拉伸。",
+   "保持20-30秒，深呼吸，然后缓慢卷起回到坐姿。按需重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿椅上体前屈",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0711",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0711.mp4",
+    "size_bytes": 5096957,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0711.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-cat-cow-stretch",
+  "slug_aliases": [
+   "vital-seated-cat-cow-stretch"
+  ],
+  "name_zh": "坐姿猫牛式拉伸",
+  "name_en": "seated cat cow stretch",
+  "source_name_en": "seated cat cow stretch",
+  "aliases": [
+   "seated cat cow stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "lower back",
+  "secondary_muscles": [
+   "abs",
+   "neck"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐椅上，双脚平放地面，双手放在膝上。",
+   "深吸气，下背拱起，胸部前推，头部微抬，进入牛式。",
+   "呼气，脊柱拱圆，下巴收向胸部，肚脐收向脊柱，进入猫式。",
+   "配合呼吸在两姿势间缓慢有控制地流动。",
+   "重复8-10个循环或目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿猫牛式拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0710",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0710.mp4",
+    "size_bytes": 2577878,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0710.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-scapular-squeeze",
+  "slug_aliases": [
+   "vital-seated-scapular-squeeze"
+  ],
+  "name_zh": "坐姿肩胛后缩",
+  "name_en": "seated scapular squeeze",
+  "source_name_en": "seated scapular squeeze",
+  "aliases": [
+   "seated scapular squeeze",
+   "肩胛骨后缩灵活性"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "rhomboids",
+  "secondary_muscles": [
+   "traps",
+   "delts"
+  ],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "在椅子上坐直，双脚平放于地面，双臂在身体两侧弯曲90度。",
+   "尽可能用力将肩胛骨向彼此靠拢，如同试图在它们之间夹住一支铅笔。",
+   "保持收缩5-10秒，胸部抬起并收紧核心。",
+   "完全放松挤压，让肩胛骨回到休息位置。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿肩胛后缩",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0731",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0731.mp4",
+    "size_bytes": 1160428,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0731.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-shoulder-blade-clock",
+  "slug_aliases": [
+   "vital-seated-shoulder-blade-clock"
+  ],
+  "name_zh": "坐姿肩胛时钟",
+  "name_en": "seated shoulder blade clock",
+  "source_name_en": "seated shoulder blade clock",
+  "aliases": [
+   "seated shoulder blade clock"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "rhomboids",
+  "secondary_muscles": [
+   "traps",
+   "delts"
+  ],
+  "category": "mobility",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面，双臂自然垂于体侧。",
+   "收紧核心，开始缓慢地以圆周方向移动肩胛骨，如同在钟面上画圈。",
+   "双侧肩胛骨向上移至12点方向，再向外至3点方向，向下至6点方向，再经过9点方向回到起点。",
+   "缓慢而有控制地完成整圈动作，全程感受肩胛骨周围肌肉的发力。",
+   "反方向重复钟面运动，按目标次数进行。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿肩胛时钟",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0706",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Back/0706.mp4",
+    "size_bytes": 1252352,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Back/0706.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-interlaced-back",
+  "slug_aliases": [
+   "vital-seated-interlaced-back"
+  ],
+  "name_zh": "坐姿背后交叉",
+  "name_en": "seated interlaced back",
+  "source_name_en": "seated interlaced back",
+  "aliases": [
+   "seated interlaced back"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "rhomboids",
+  "secondary_muscles": [
+   "traps",
+   "delts"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面，背部挺直。",
+   "双手手指交叉，双臂向前伸直与肩同高，掌心朝外。",
+   "上背部拱起，掌根向前推，肩胛骨分开，感受背部中段的拉伸。",
+   "保持拉伸姿势20-30秒，深呼吸。",
+   "放松回到直立起始姿势。按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿背后交叉",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0702",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Back/0702.mp4",
+    "size_bytes": 1954040,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Back/0702.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-interlaced-fingers-behind-back-1",
+  "slug_aliases": [
+   "vital-seated-interlaced-fingers-behind-back-1"
+  ],
+  "name_zh": "坐姿背后十指交叉1",
+  "name_en": "seated interlaced fingers behind back 1",
+  "source_name_en": "seated interlaced fingers behind back 1",
+  "aliases": [
+   "seated interlaced fingers behind back 1"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "rhomboids",
+  "secondary_muscles": [
+   "pectorals",
+   "delts"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面。",
+   "双臂伸向背后，手指交叉，掌心朝内。",
+   "双手轻轻向下拉并稍远离背部，挺胸，肩胛骨向内收紧。",
+   "保持姿势20-30秒，平稳呼吸，感受胸部和上背部的拉伸。",
+   "松开双手回到起始姿势。按需重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿背后十指交叉1",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0703",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Back/0703.mp4",
+    "size_bytes": 1363171,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Back/0703.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-interlaced-fingers-behind-back-version-1",
+  "slug_aliases": [
+   "vital-seated-interlaced-fingers-behind-back-version-1"
+  ],
+  "name_zh": "坐姿背后十指交叉式1",
+  "name_en": "seated interlaced fingers behind back version 1",
+  "source_name_en": "seated interlaced fingers behind back version 1",
+  "aliases": [
+   "seated interlaced fingers behind back version 1"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "rhomboids",
+  "secondary_muscles": [
+   "pectorals",
+   "delts"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，脊柱挺直，双脚平放地面。",
+   "双手在腰后相扣，手指交叉，掌心相对。",
+   "双臂完全伸直，指节轻轻向下压，同时胸骨向上提起。",
+   "头部稍向后仰以加深胸腔打开，保持20-30秒。",
+   "下巴收回，松开双手回到起始姿势。按需重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿背后十指交叉式1",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0705",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Back/0705.mp4",
+    "size_bytes": 3598176,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Back/0705.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-interlaced-fingers-behind-back-stretch",
+  "slug_aliases": [
+   "vital-seated-interlaced-fingers-behind-back-stretch"
+  ],
+  "name_zh": "坐姿背后十指交叉拉伸",
+  "name_en": "seated interlaced fingers behind back stretch",
+  "source_name_en": "seated interlaced fingers behind back stretch",
+  "aliases": [
+   "seated interlaced fingers behind back stretch",
+   "后背正反手拉伸"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "rhomboids",
+  "secondary_muscles": [
+   "pectorals",
+   "traps"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，核心收紧，双脚平放地面。",
+   "双臂放到背后，手指交叉，掌心朝内。",
+   "双臂完全伸直，轻轻向下拉，同时肩胛骨用力向内收紧，胸部向上提起。",
+   "保持拉伸20-30秒，深呼吸至胸腔。",
+   "松开双手放松回到起始姿势。按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿背后十指交叉拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0704",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Back/0704.mp4",
+    "size_bytes": 3077814,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Back/0704.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-thoracic-twist",
+  "slug_aliases": [
+   "vital-seated-thoracic-twist"
+  ],
+  "name_zh": "坐姿胸椎扭转",
+  "name_en": "seated thoracic twist",
+  "source_name_en": "seated thoracic twist",
+  "aliases": [
+   "seated thoracic twist",
+   "站姿背部扭转拉伸"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "lower back",
+  "secondary_muscles": [
+   "obliques",
+   "traps"
+  ],
+  "category": "mobility",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐在椅子上，保持上身直立，双脚平放在地板上。",
+   "双臂交叉放在胸前，每只手放在对侧肩膀上。",
+   "收紧核心，缓慢将上半身向右旋转到舒适的最大幅度，保持髋部朝前。",
+   "保持扭转姿势2-3秒，然后转回中间，继续转向左侧。",
+   "以可控的动作持续左右交替，重复所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿胸椎扭转",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0741",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0741.mp4",
+    "size_bytes": 2001148,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0741.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-thoracic-twist-version-1",
+  "slug_aliases": [
+   "vital-seated-thoracic-twist-version-1"
+  ],
+  "name_zh": "坐姿胸椎扭转式一",
+  "name_en": "seated thoracic twist version 1",
+  "source_name_en": "seated thoracic twist version 1",
+  "aliases": [
+   "seated thoracic twist version 1"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "lower back",
+  "secondary_muscles": [
+   "obliques",
+   "traps"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐在椅子上，保持上身直立，双脚平放在地板上，双手抱在脑后。",
+   "收紧核心，缓慢将上半身向右旋转，将右肘向后带到舒适的最大幅度。",
+   "保持扭转姿势2-3秒，感受胸椎的拉伸。",
+   "回到中间，然后重复向左侧旋转。",
+   "持续左右交替，重复所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿胸椎扭转式一",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0740",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0740.mp4",
+    "size_bytes": 1804698,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0740.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-spine-rocking",
+  "slug_aliases": [
+   "vital-seated-spine-rocking"
+  ],
+  "name_zh": "坐姿脊柱摇摆",
+  "name_en": "seated spine rocking",
+  "source_name_en": "seated spine rocking",
+  "aliases": [
+   "seated spine rocking"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "lower back",
+  "secondary_muscles": [
+   "abs",
+   "glutes"
+  ],
+  "category": "mobility",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐在椅子边缘，保持上身直立，双脚平放在地板上，双手放在膝盖上。",
+   "首先将骨盆向前倾，下背部微微拱起，坐得非常高。",
+   "然后将骨盆向后倾，下背部弯曲，尾骨内收。",
+   "以缓慢、有节奏的动作，通过骨盆持续前后摇摆。",
+   "重复10-15个摇摆循环或所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿脊柱摇摆",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0739",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0739.mp4",
+    "size_bytes": 1009701,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0739.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-self-hug",
+  "slug_aliases": [
+   "vital-seated-self-hug"
+  ],
+  "name_zh": "坐姿自我抱肩",
+  "name_en": "seated self hug",
+  "source_name_en": "seated self hug",
+  "aliases": [
+   "seated self hug"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "rhomboids",
+  "secondary_muscles": [
+   "delts",
+   "traps"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面，背部挺直。",
+   "双臂交叉抱于胸前，双手分别放在对侧肩膀上，如同拥抱自己。",
+   "轻轻向内收拢双臂，上背部微微弓起，感受肩胛骨之间的拉伸。",
+   "保持抱姿20-30秒，深呼吸，让上背部放松。",
+   "松开双臂回到起始位置。按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿自我抱肩",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0732",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0732.mp4",
+    "size_bytes": 1264471,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0732.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-torso-stretch",
+  "slug_aliases": [
+   "vital-seated-torso-stretch"
+  ],
+  "name_zh": "坐姿躯干拉伸",
+  "name_en": "seated torso stretch",
+  "source_name_en": "seated torso stretch",
+  "aliases": [
+   "seated torso stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "lower back",
+  "secondary_muscles": [
+   "abs",
+   "obliques"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐在椅子上，保持上身直立，双脚平放在地板上，双手放在大腿上。",
+   "吸气，拉长脊柱，尽可能坐高。",
+   "呼气，双臂与肩同高向前伸，弯曲上背部和下背部。",
+   "保持拉伸姿势20-30秒，感受整个背部的拉伸。",
+   "回到直立姿势，重复所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿躯干拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0743",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0743.mp4",
+    "size_bytes": 1817619,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0743.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-supported-hip-hinge",
+  "slug_aliases": [
+   "vital-supported-hip-hinge"
+  ],
+  "name_zh": "支撑髋铰链",
+  "name_en": "supported hip hinge",
+  "source_name_en": "supported hip hinge",
+  "aliases": [
+   "supported hip hinge"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "lower back",
+  "secondary_muscles": [
+   "glutes",
+   "hamstrings"
+  ],
+  "category": "mobility",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "双脚与髋同宽站在桌前，轻扶桌面以保持平衡。",
+   "收紧核心，膝盖微微放松。",
+   "以髋部为轴向前俯身，臀部向后推，保持背部平直、脊柱中立。",
+   "下放躯干直至接近与地面平行，感受腘绳肌和臀肌的拉伸。",
+   "通过髋部发力回到站立位，在顶部收紧臀肌。重复所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "支撑髋铰链",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0762",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Support/0762.mp4",
+    "size_bytes": 2237487,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Support/0762.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-desk-upper-body-and-arms-stretch",
+  "slug_aliases": [
+   "vital-desk-upper-body-and-arms-stretch"
+  ],
+  "name_zh": "桌边上身及手臂拉伸",
+  "name_en": "desk upper body and arms stretch",
+  "source_name_en": "desk upper body and arms stretch",
+  "aliases": [
+   "desk upper body and arms stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "rhomboids",
+  "secondary_muscles": [
+   "delts",
+   "triceps"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "面向桌子站立，双臂向前伸，双手平放在桌面上。",
+   "双脚向后走，将胸部降到桌面以下，让手臂向前拉伸。",
+   "拱起上背部，主动将髋部拉离桌子，感受上背部和手臂的拉伸。",
+   "保持20-30秒，深呼吸，让肩膀放松。",
+   "双脚向前走回到站立。按需重复所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "桌边上身及手臂拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0757",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Desk/0757.mp4",
+    "size_bytes": 5683894,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Desk/0757.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-desk-upper-body-bent-hands-on-desk",
+  "slug_aliases": [
+   "vital-desk-upper-body-bent-hands-on-desk"
+  ],
+  "name_zh": "桌边上身屈臂压桌",
+  "name_en": "desk upper body bent hands on desk",
+  "source_name_en": "desk upper body bent hands on desk",
+  "aliases": [
+   "desk upper body bent hands on desk"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "lower back",
+  "secondary_muscles": [
+   "hamstrings",
+   "delts"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "站在离桌子约一臂远的地方，双脚与髋同宽。",
+   "从髋部前倾，双掌平放在桌面上，让上半身与双腿约成90度角。",
+   "保持背部平直、手臂伸直、膝盖微屈。",
+   "保持这个姿势20-30秒，深呼吸，让下背部减压。",
+   "收紧核心慢慢站起，回到直立位置。按需重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "桌边上身屈臂压桌",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0758",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Desk/0758.mp4",
+    "size_bytes": 1875521,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Desk/0758.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-desk-half-bent-with-straight-hands-raise-stretch",
+  "slug_aliases": [
+   "vital-desk-half-bent-with-straight-hands-raise-stretch"
+  ],
+  "name_zh": "桌边半屈直臂上拉拉伸",
+  "name_en": "desk half bent with straight hands raise stretch",
+  "source_name_en": "desk half bent with straight hands raise stretch",
+  "aliases": [
+   "desk half bent with straight hands raise stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "lower back",
+  "secondary_muscles": [
+   "hamstrings",
+   "delts"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "站在离桌子约一臂距离处，双脚与髋同宽。",
+   "以髋部为轴向前俯身，直到躯干大致与地面平行，双手轻放在桌面上。",
+   "保持背部平直、手臂伸直，头部保持中立并与脊柱对齐。",
+   "从这个位置，将双手稍微抬离桌面，保持手臂伸直向前抬起。",
+   "保持抬起姿势10-20秒，然后将双手放回桌面。按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "桌边半屈直臂上拉拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0750",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Desk/0750.mp4",
+    "size_bytes": 3987176,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Desk/0750.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-desk-standing-back-stretch",
+  "slug_aliases": [
+   "vital-desk-standing-back-stretch"
+  ],
+  "name_zh": "桌边站姿背部拉伸",
+  "name_en": "desk standing back stretch",
+  "source_name_en": "desk standing back stretch",
+  "aliases": [
+   "desk standing back stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "back",
+  "body_part": "back",
+  "target": "lower back",
+  "secondary_muscles": [
+   "traps",
+   "delts"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "面向桌子站立，双脚与髋同宽，手臂与肩同高向前伸展。",
+   "双掌平放在桌面上，双脚向后走，直到手臂伸直、躯干大致与地面平行。",
+   "让头部垂在双臂之间，让重力拉长脊柱，感受背部的深度拉伸。",
+   "保持这个姿势20-30秒，深呼吸，每次呼气时进一步放松。",
+   "双脚向前走，慢慢卷起回到站立。按需重复所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "桌边站姿背部拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0755",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Desk/0755.mp4",
+    "size_bytes": 4637319,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Desk/0755.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-dynamic-chest-stretch",
+  "slug_aliases": [
+   "vital-seated-dynamic-chest-stretch"
+  ],
+  "name_zh": "坐姿动态胸部拉伸",
+  "name_en": "seated dynamic chest stretch",
+  "source_name_en": "seated dynamic chest stretch",
+  "aliases": [
+   "seated dynamic chest stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "chest",
+  "body_part": "chest",
+  "target": "pectorals",
+  "secondary_muscles": [
+   "delts",
+   "traps"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐在椅子上，背部挺直，双脚平放地面，核心收紧。",
+   "双臂向两侧伸展至肩高，掌心朝前。",
+   "双臂向前扫过，在胸前交叉做拥抱动作。",
+   "再扫回起始位置，打开胸腔时挤压肩胛骨。",
+   "以可控方式持续做动态扫臂动作至目标次数，全程保持背部挺直。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿动态胸部拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0714",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0714.mp4",
+    "size_bytes": 1263112,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0714.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-chest-opener",
+  "slug_aliases": [
+   "vital-seated-chest-opener"
+  ],
+  "name_zh": "坐姿开胸",
+  "name_en": "seated chest opener",
+  "source_name_en": "seated chest opener",
+  "aliases": [
+   "seated chest opener",
+   "仰卧泡沫轴开胸放松"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "chest",
+  "body_part": "chest",
+  "target": "pectorals",
+  "secondary_muscles": [
+   "delts",
+   "rhomboids"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐在椅子边缘，背部挺直，双脚平放地面，脊柱向上延伸。",
+   "双手在背后相扣，或在腰后十指交叉。",
+   "轻轻将肩胛骨向中间收拢，胸口向上提起，感受胸前打开的感觉。",
+   "保持此姿势20-30秒，深呼吸扩张胸腔。",
+   "松开双手回到起始姿势，重复至目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿开胸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0712",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0712.mp4",
+    "size_bytes": 4212132,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0712.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-desk-push-ups",
+  "slug_aliases": [
+   "vital-desk-push-ups"
+  ],
+  "name_zh": "桌边俯卧撑",
+  "name_en": "desk push ups",
+  "source_name_en": "desk push ups",
+  "aliases": [
+   "desk push ups"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "chest",
+  "body_part": "chest",
+  "target": "pectorals",
+  "secondary_muscles": [
+   "triceps",
+   "delts"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "面向桌子站立，双手放在桌边，略宽于肩。",
+   "双脚向后迈，形成舒适的倾斜角度，身体从头到脚跟保持笔直。",
+   "收紧核心，弯曲肘部将胸部向桌面下压，保持身体成一条直线。",
+   "伸直手臂完全推回起始位置。",
+   "按需重复所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "桌边俯卧撑",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0754",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Desk/0754.mp4",
+    "size_bytes": 1485325,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Desk/0754.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-desk-push-ups-standard",
+  "slug_aliases": [
+   "vital-desk-push-ups-standard"
+  ],
+  "name_zh": "桌边标准俯卧撑",
+  "name_en": "desk push ups standard",
+  "source_name_en": "desk push ups standard",
+  "aliases": [
+   "desk push ups standard"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "chest",
+  "body_part": "chest",
+  "target": "pectorals",
+  "secondary_muscles": [
+   "triceps",
+   "delts"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "面向桌子站立，双手与肩同宽放在桌边，手指朝前。",
+   "双脚向后走，直到身体从头到脚跟形成一条直线斜线。",
+   "弯曲肘部，有控制地将胸部向桌面下压，保持核心收紧、身体笔直。",
+   "胸部接近桌面时暂停，然后完全伸直手臂推回。",
+   "按需重复所需次数，全程保持身体成直线。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "桌边标准俯卧撑",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0753",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Desk/0753.mp4",
+    "size_bytes": 2321312,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Desk/0753.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-side-stretch",
+  "slug_aliases": [
+   "vital-seated-side-stretch"
+  ],
+  "name_zh": "坐姿侧屈拉伸",
+  "name_en": "seated side stretch",
+  "source_name_en": "seated side stretch",
+  "aliases": [
+   "seated side stretch",
+   "站姿弹力带侧屈"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "core",
+  "body_part": "waist",
+  "target": "obliques",
+  "secondary_muscles": [
+   "lower back",
+   "abs"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面，脊柱向上延展。",
+   "一只手放在椅面一侧以稳定身体，另一只手臂伸直举过头顶。",
+   "躯干缓慢向支撑手一侧倾斜，举起的手臂向上划弧伸展。",
+   "在拉伸位置保持20-30秒，向拉长的一侧深呼吸。",
+   "回到直立位置，换另一侧重复。按目标次数继续交替。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿侧屈拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0737",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0737.mp4",
+    "size_bytes": 4966457,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0737.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-side-to-side-toe-touch",
+  "slug_aliases": [
+   "vital-seated-side-to-side-toe-touch"
+  ],
+  "name_zh": "坐姿左右触脚",
+  "name_en": "seated side to side toe touch",
+  "source_name_en": "seated side to side toe touch",
+  "aliases": [
+   "seated side to side toe touch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "core",
+  "body_part": "waist",
+  "target": "obliques",
+  "secondary_muscles": [
+   "hamstrings",
+   "abs"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面，双臂向两侧伸直至肩高。",
+   "躯干向右旋转，左手向下伸向右脚或脚踝。",
+   "短暂保持，感受左侧腹斜肌和右腿后侧的拉伸。",
+   "回到起始位置，换另一侧重复，向左旋转并用右手伸向左脚。",
+   "按目标次数继续交替两侧。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿左右触脚",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0738",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0738.mp4",
+    "size_bytes": 4509244,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0738.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-deep-breath-relax",
+  "slug_aliases": [
+   "vital-seated-deep-breath-relax"
+  ],
+  "name_zh": "坐姿深呼吸放松",
+  "name_en": "seated deep breath relax",
+  "source_name_en": "seated deep breath relax",
+  "aliases": [
+   "seated deep breath relax"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "core",
+  "body_part": "waist",
+  "target": "abs",
+  "secondary_muscles": [],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "舒适地坐在椅子上，双脚平放地面，双手放在大腿上。",
+   "闭上眼睛，将注意力集中在自然的呼吸节奏上。",
+   "用鼻子缓慢吸气，数四下，让腹部充分向外扩张。",
+   "吸气顶端稍作停顿，再用嘴缓慢呼气，数六下，释放全身紧张。",
+   "继续此深呼吸模式5-10次，每次呼气时让身体逐渐放松。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿深呼吸放松",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0713",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0713.mp4",
+    "size_bytes": 5291097,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0713.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-torso-twist",
+  "slug_aliases": [
+   "vital-seated-torso-twist"
+  ],
+  "name_zh": "坐姿躯干扭转",
+  "name_en": "seated torso twist",
+  "source_name_en": "seated torso twist",
+  "aliases": [
+   "seated torso twist",
+   "俯身转体"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "core",
+  "body_part": "waist",
+  "target": "obliques",
+  "secondary_muscles": [
+   "lower back",
+   "abs"
+  ],
+  "category": "mobility",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面，双臂向前伸直与肩同高。",
+   "收紧核心，慢慢将躯干向右侧旋转，双臂随之移向右侧。",
+   "保持旋转姿势2-3秒，髋部保持正对前方。",
+   "回到中间位置，然后向左侧旋转。",
+   "以可控的动作继续左右交替，完成目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿躯干扭转",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0744",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0744.mp4",
+    "size_bytes": 1686675,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0744.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-eyes-close-deep-breath",
+  "slug_aliases": [
+   "vital-seated-eyes-close-deep-breath"
+  ],
+  "name_zh": "坐姿闭眼深呼吸",
+  "name_en": "seated eyes close deep breath",
+  "source_name_en": "seated eyes close deep breath",
+  "aliases": [
+   "seated eyes close deep breath"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "core",
+  "body_part": "waist",
+  "target": "abs",
+  "secondary_muscles": [],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "坐在椅子上，背部有支撑，双脚平放地面，保持舒适。",
+   "轻轻闭上眼睛，双手放在腹部，感受呼吸的起伏。",
+   "用鼻子缓慢吸气，让腹部向外扩张顶住双手，数四下。",
+   "用鼻子或嘴巴轻柔呼气，数六下，让腹部内收，释放所有紧张。",
+   "持续以这种方式呼吸5-10个循环，将注意力完全集中在每次呼吸的感觉上。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿闭眼深呼吸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0716",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0716.mp4",
+    "size_bytes": 11879951,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0716.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-desk-incline-plank-hold",
+  "slug_aliases": [
+   "vital-desk-incline-plank-hold"
+  ],
+  "name_zh": "桌边斜板保持",
+  "name_en": "desk incline plank hold",
+  "source_name_en": "desk incline plank hold",
+  "aliases": [
+   "desk incline plank hold"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "core",
+  "body_part": "waist",
+  "target": "abs",
+  "secondary_muscles": [
+   "delts",
+   "lower back"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "面向桌子站立，双手与肩同宽放在桌边。",
+   "双脚向后走，直到身体从头到脚跟形成一条直线斜线。",
+   "收紧核心，夹紧臀部，确保髋部与身体对齐，既不下沉也不抬起。",
+   "保持这个斜板姿势所需时间，全程平稳呼吸。",
+   "双脚向前走回到起始位置。休息并按需重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "桌边斜板保持",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0751",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Desk/0751.mp4",
+    "size_bytes": 4645925,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Desk/0751.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-knee-extension",
+  "slug_aliases": [
+   "vital-seated-knee-extension"
+  ],
+  "name_zh": "坐姿伸膝",
+  "name_en": "seated knee extension",
+  "source_name_en": "seated knee extension",
+  "aliases": [
+   "seated knee extension",
+   "弹力带末端膝盖伸展"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "quads",
+  "secondary_muscles": [
+   "hamstrings"
+  ],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面，背部挺直。",
+   "核心收紧，缓慢抬起一只脚离开地面，腿向前伸直。",
+   "保持伸展姿势2-3秒，在顶端用力收紧股四头肌。",
+   "缓慢放下脚靠近地面，组间不要完全落地。",
+   "按目标次数重复，然后换腿。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿伸膝",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0720",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0720.mp4",
+    "size_bytes": 2249424,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0720.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-lift-both-legs",
+  "slug_aliases": [
+   "vital-seated-lift-both-legs"
+  ],
+  "name_zh": "坐姿双腿抬起",
+  "name_en": "seated lift both legs",
+  "source_name_en": "seated lift both legs",
+  "aliases": [
+   "seated lift both legs"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "hip flexors",
+  "secondary_muscles": [
+   "abs",
+   "quads"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面，双手抓住座位两侧。",
+   "收紧核心，双手向下按压以保持稳定。",
+   "同时抬起双脚离地，膝盖弯曲约90度。",
+   "保持双腿抬起2-5秒，背部挺直，核心收紧。",
+   "缓慢将双脚放回地面，重复所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿双腿抬起",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0723",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0723.mp4",
+    "size_bytes": 1293157,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0723.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-glute-squeeze",
+  "slug_aliases": [
+   "vital-seated-glute-squeeze"
+  ],
+  "name_zh": "坐姿夹臀",
+  "name_en": "seated glute squeeze",
+  "source_name_en": "seated glute squeeze",
+  "aliases": [
+   "seated glute squeeze"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "glutes",
+  "secondary_muscles": [],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "坐在椅子上保持直立，双脚平放地面，背部挺直。",
+   "双手轻放大腿上，收紧核心。",
+   "尽可能用力挤压两侧臀部肌肉，保持收缩5-10秒。",
+   "完全放松挤压并短暂休息，再进行下一次重复。",
+   "按目标次数重复，每次挤压注重强力收缩。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿夹臀",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0719",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0719.mp4",
+    "size_bytes": 866601,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0719.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-fast-leg-swing",
+  "slug_aliases": [
+   "vital-seated-fast-leg-swing"
+  ],
+  "name_zh": "坐姿快速摆腿",
+  "name_en": "seated fast leg swing",
+  "source_name_en": "seated fast leg swing",
+  "aliases": [
+   "seated fast leg swing"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "hip flexors",
+  "secondary_muscles": [
+   "quads",
+   "hamstrings"
+  ],
+  "category": "mobility",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐在椅子边缘，背部挺直，核心轻微收紧。",
+   "双手放在椅子座面两侧以保持稳定。",
+   "一条腿以受控但轻快的动作前后摆动，膝盖保持放松。",
+   "让髋关节在其活动范围内自由运动，稍微加快速度同时保持控制。",
+   "持续所需次数后，换另一条腿重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿快速摆腿",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0717",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0717.mp4",
+    "size_bytes": 661222,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0717.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-toe-raise",
+  "slug_aliases": [
+   "vital-seated-toe-raise"
+  ],
+  "name_zh": "坐姿提踵",
+  "name_en": "seated toe raise",
+  "source_name_en": "seated toe raise",
+  "aliases": [
+   "seated toe raise"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "lower legs",
+  "target": "tibialis anterior",
+  "secondary_muscles": [],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "坐在椅子上，保持上身直立，双脚平放在地板上，背部挺直。",
+   "保持脚跟牢牢踩在地面上，将双脚前部尽可能向上抬起。",
+   "保持抬起姿势2-3秒，感受小腿前侧肌肉的收缩。",
+   "缓慢将双脚放回地板。",
+   "重复所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿提踵",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0742",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0742.mp4",
+    "size_bytes": 1196437,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0742.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-leg-swing",
+  "slug_aliases": [
+   "vital-seated-leg-swing"
+  ],
+  "name_zh": "坐姿摆腿",
+  "name_en": "seated leg swing",
+  "source_name_en": "seated leg swing",
+  "aliases": [
+   "seated leg swing"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "hip flexors",
+  "secondary_muscles": [
+   "quads",
+   "hamstrings"
+  ],
+  "category": "mobility",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐在椅子边缘，背部挺直，双手放在座位两侧支撑。",
+   "让一条腿自然下垂，膝盖微屈，脚部放松。",
+   "像钟摆一样轻轻前后摆动腿部，保持动作缓慢可控。",
+   "每次摆动时让髋关节在自然活动范围内自由运动。",
+   "持续所需次数后，换另一条腿重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿摆腿",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0722",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0722.mp4",
+    "size_bytes": 1344174,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0722.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-leg-raise-straight",
+  "slug_aliases": [
+   "vital-seated-leg-raise-straight"
+  ],
+  "name_zh": "坐姿直腿抬高",
+  "name_en": "seated leg raise straight",
+  "source_name_en": "seated leg raise straight",
+  "aliases": [
+   "seated leg raise straight"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "quads",
+  "secondary_muscles": [
+   "hip flexors",
+   "abs"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面，双手放在大腿上。",
+   "收紧核心，伸直一条腿，抬起至约与地面平行。",
+   "保持抬起姿势2-3秒，脚背勾起，股四头肌收紧。",
+   "缓慢将腿放回地面，但不要完全放下。",
+   "按目标次数重复后换另一条腿。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿直腿抬高",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0721",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0721.mp4",
+    "size_bytes": 1618657,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0721.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-march",
+  "slug_aliases": [
+   "vital-seated-march"
+  ],
+  "name_zh": "坐姿踏步",
+  "name_en": "seated march",
+  "source_name_en": "seated march",
+  "aliases": [
+   "seated march"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "hip flexors",
+  "secondary_muscles": [
+   "quads",
+   "abs"
+  ],
+  "category": "cardio",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面，背部挺直。",
+   "收紧核心，开始将右膝向上抬向胸部，做踏步动作。",
+   "将右脚放回地面，同时将左膝抬至相同高度。",
+   "以轻快的踏步节奏交替抬腿，保持背部挺直，动作可控。",
+   "踏步至所需时间或每条腿所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿踏步",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0724",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0724.mp4",
+    "size_bytes": 3886520,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0724.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-supported-side-leg-raise",
+  "slug_aliases": [
+   "vital-supported-side-leg-raise"
+  ],
+  "name_zh": "支撑侧抬腿",
+  "name_en": "supported side leg raise",
+  "source_name_en": "supported side leg raise",
+  "aliases": [
+   "supported side leg raise"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "abductors",
+  "secondary_muscles": [
+   "glutes",
+   "hip flexors"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "站在桌子或椅子旁，单手扶住支撑。",
+   "重心移至内侧腿，收紧核心。",
+   "外侧腿伸直，缓慢向侧方抬起至舒适高度，保持身体直立。",
+   "在抬起位置保持1-2秒，然后缓慢放下回到起始位。",
+   "按目标次数重复，然后换边。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "支撑侧抬腿",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0766",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Support/0766.mp4",
+    "size_bytes": 3057772,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Support/0766.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-supported-side-leg-stretch",
+  "slug_aliases": [
+   "vital-supported-side-leg-stretch"
+  ],
+  "name_zh": "支撑侧腿拉伸",
+  "name_en": "supported side leg stretch",
+  "source_name_en": "supported side leg stretch",
+  "aliases": [
+   "supported side leg stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "abductors",
+  "secondary_muscles": [
+   "hip flexors",
+   "glutes"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "站在桌子或椅子旁，单手扶住支撑。",
+   "外侧腿交叉放在支撑腿前方，轻触地面。",
+   "髋部向远离桌子方向偏移，向支撑侧倾斜，感受外侧髋部和大腿的拉伸。",
+   "保持拉伸20-30秒，深呼吸。",
+   "回到起始位，换另一侧按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "支撑侧腿拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0767",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Support/0767.mp4",
+    "size_bytes": 3109421,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Support/0767.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-supported-single-leg-balance",
+  "slug_aliases": [
+   "vital-supported-single-leg-balance"
+  ],
+  "name_zh": "支撑单腿平衡",
+  "name_en": "supported single-leg balance",
+  "source_name_en": "supported single-leg balance",
+  "aliases": [
+   "supported single-leg balance"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "lower legs",
+  "target": "calves",
+  "secondary_muscles": [
+   "glutes",
+   "abs"
+  ],
+  "category": "balance",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "站在桌子或椅子后方，双手轻扶以获得初始稳定。",
+   "重心移至一只脚，缓慢将另一只脚抬离地面，膝盖微屈。",
+   "逐渐减少对支撑的依赖，直至主要依靠支撑腿保持平衡。",
+   "单腿保持平衡20-30秒，注视前方固定点以维持稳定。",
+   "双脚回到地面，稍作休息，然后换腿重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "支撑单腿平衡",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0768",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Support/0768.mp4",
+    "size_bytes": 2880014,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Support/0768.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-supported-place-jog-running",
+  "slug_aliases": [
+   "vital-supported-place-jog-running"
+  ],
+  "name_zh": "支撑原地慢跑",
+  "name_en": "supported place jog running",
+  "source_name_en": "supported place jog running",
+  "aliases": [
+   "supported place jog running"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "hip flexors",
+  "secondary_muscles": [
+   "quads",
+   "calves"
+  ],
+  "category": "cardio",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "站在桌子或椅子后方，双手轻扶支撑。",
+   "开始原地慢跑，交替抬膝，保持舒适节奏。",
+   "前脚掌轻柔落地，动作轻快可控。",
+   "逐渐加快节奏，保持正确姿势并收紧核心。",
+   "持续目标时间，然后逐渐减速直至完全停下。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "支撑原地慢跑",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0764",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Support/0764.mp4",
+    "size_bytes": 752144,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Support/0764.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-supported-standing-march",
+  "slug_aliases": [
+   "vital-supported-standing-march"
+  ],
+  "name_zh": "支撑原地踏步",
+  "name_en": "supported standing march",
+  "source_name_en": "supported standing march",
+  "aliases": [
+   "supported standing march"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "hip flexors",
+  "secondary_muscles": [
+   "quads",
+   "abs"
+  ],
+  "category": "cardio",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "站在桌子或椅子后方，双脚并拢，双手扶住支撑面。",
+   "收紧核心，站直，重心均匀分布。",
+   "以可控的踏步动作将右膝抬至髋部高度。",
+   "放下右脚，立即将左膝抬至相同高度。",
+   "以稳定的踏步节奏交替双腿，持续目标时间或次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "支撑原地踏步",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0770",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Support/0770.mp4",
+    "size_bytes": 1087923,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Support/0770.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-supported-wide-leg-mini-squat",
+  "slug_aliases": [
+   "vital-supported-wide-leg-mini-squat"
+  ],
+  "name_zh": "支撑宽距迷你深蹲",
+  "name_en": "supported wide leg mini squat",
+  "source_name_en": "supported wide leg mini squat",
+  "aliases": [
+   "supported wide leg mini squat"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "quads",
+  "secondary_muscles": [
+   "glutes",
+   "adductors"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "面向桌子或椅子站立，双脚间距宽于肩，脚尖略微朝外。",
+   "轻扶支撑面，收紧核心。",
+   "双膝向外沿脚尖方向弯曲，缓慢下蹲至膝盖弯曲不超过45度。",
+   "在最低点稍作停顿，然后脚跟发力回到起始位置。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "支撑宽距迷你深蹲",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0771",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Support/0771.mp4",
+    "size_bytes": 1184307,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Support/0771.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-supported-slightly-jump-squat",
+  "slug_aliases": [
+   "vital-supported-slightly-jump-squat"
+  ],
+  "name_zh": "支撑微跳深蹲",
+  "name_en": "supported slightly jump squat",
+  "source_name_en": "supported slightly jump squat",
+  "aliases": [
+   "supported slightly jump squat"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "quads",
+  "secondary_muscles": [
+   "glutes",
+   "calves"
+  ],
+  "category": "plyometrics",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "面向桌子或椅子站立，双脚与肩同宽，轻扶支撑面。",
+   "收紧核心，屈膝下蹲至约45度的浅蹲位。",
+   "从蹲位双脚爆发发力，做一个小幅可控的向上跳跃。",
+   "前脚掌轻柔落地，屈膝缓冲回到蹲位。",
+   "按目标次数重复，保持控制，必要时使用支撑。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "支撑微跳深蹲",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0769",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Support/0769.mp4",
+    "size_bytes": 1297710,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Support/0769.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-supported-quad-stretch",
+  "slug_aliases": [
+   "vital-supported-quad-stretch"
+  ],
+  "name_zh": "支撑股四头肌拉伸",
+  "name_en": "supported quad stretch",
+  "source_name_en": "supported quad stretch",
+  "aliases": [
+   "supported quad stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "quads",
+  "secondary_muscles": [
+   "hip flexors"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "站在桌子或椅子旁，单手扶住保持平衡。",
+   "重心移至左脚，屈右膝，将右脚跟拉向右侧臀部。",
+   "右手握住右脚踝，轻轻将脚跟拉近身体。",
+   "双膝并拢，支撑腿微屈，躯干保持直立。",
+   "保持拉伸20-30秒，然后换腿重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "支撑股四头肌拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0765",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Support/0765.mp4",
+    "size_bytes": 1614669,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Support/0765.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-supported-hamstring-curl",
+  "slug_aliases": [
+   "vital-supported-hamstring-curl"
+  ],
+  "name_zh": "支撑腿弯举",
+  "name_en": "supported hamstring curl",
+  "source_name_en": "supported hamstring curl",
+  "aliases": [
+   "supported hamstring curl"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "hamstrings",
+  "secondary_muscles": [
+   "glutes"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "站在桌子或椅子后方，双手轻扶以保持平衡。",
+   "将重心移到左腿，膝盖保持微屈。",
+   "弯曲右膝，将右脚跟向上卷向臀部，尽可能舒适地抬高。",
+   "在卷曲位置保持1-2秒，在顶部收紧腘绳肌。",
+   "缓慢将右脚放回地面。重复所需次数，然后换腿。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "支撑腿弯举",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0761",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Support/0761.mp4",
+    "size_bytes": 1781242,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Support/0761.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-supported-glute-kickback",
+  "slug_aliases": [
+   "vital-supported-glute-kickback"
+  ],
+  "name_zh": "支撑臀踢",
+  "name_en": "supported glute kickback",
+  "source_name_en": "supported glute kickback",
+  "aliases": [
+   "supported glute kickback"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "glutes",
+  "secondary_muscles": [
+   "hamstrings",
+   "lower back"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "站在桌子或椅子后方，双手扶住以支撑。",
+   "将重心移到左腿，收紧核心。",
+   "保持右膝微屈，将右腿向后上方摆动，在动作顶部用力收紧臀肌。",
+   "在抬起位置短暂保持，然后缓慢将右脚放回地面。",
+   "右腿重复所需次数，然后换左腿。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "支撑臀踢",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0760",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Support/0760.mp4",
+    "size_bytes": 1426325,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Support/0760.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-supported-mini-squats",
+  "slug_aliases": [
+   "vital-supported-mini-squats"
+  ],
+  "name_zh": "支撑迷你深蹲",
+  "name_en": "supported mini squats",
+  "source_name_en": "supported mini squats",
+  "aliases": [
+   "supported mini squats"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "quads",
+  "secondary_muscles": [
+   "glutes",
+   "hamstrings"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "面向桌子或椅子站立，双脚与肩同宽，轻扶支撑面。",
+   "收紧核心，挺胸直背。",
+   "缓慢屈膝下蹲，臀部后坐，膝盖弯曲不超过45度。",
+   "在底部稍作停顿，然后脚跟发力回到站立位。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "支撑迷你深蹲",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0763",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Support/0763.mp4",
+    "size_bytes": 1614735,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Support/0763.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-desk-standing-leg-stretch",
+  "slug_aliases": [
+   "vital-desk-standing-leg-stretch"
+  ],
+  "name_zh": "桌边站姿腿部拉伸",
+  "name_en": "desk standing leg stretch",
+  "source_name_en": "desk standing leg stretch",
+  "aliases": [
+   "desk standing leg stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "legs",
+  "body_part": "upper legs",
+  "target": "hamstrings",
+  "secondary_muscles": [
+   "glutes",
+   "lower back"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "面向桌子站立，一条腿伸直，脚跟放在桌面上。",
+   "站直，另一只脚平放在地面上，双手扶桌支撑。",
+   "从髋部轻轻向抬起的腿方向前倾，保持背部平直、胸部抬起。",
+   "保持拉伸20-30秒，感受抬起腿后侧的拉伸。",
+   "小心放下腿，换另一侧重复。按需继续所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "桌边站姿腿部拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0756",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Desk/0756.mp4",
+    "size_bytes": 1745091,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Desk/0756.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-lower-lip-lift",
+  "slug_aliases": [
+   "vital-lower-lip-lift"
+  ],
+  "name_zh": "下唇提升",
+  "name_en": "lower lip lift",
+  "source_name_en": "lower lip lift",
+  "aliases": [
+   "lower lip lift"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "orbicularis oris",
+   "mentalis"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，面部放松。",
+   "保持上唇不动，将下唇尽可能向上推向上唇。",
+   "保持上抬姿势5秒，收紧下巴和下唇肌肉。",
+   "慢慢将下唇恢复到休息位置。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "下唇提升",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0948",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0948.mp4",
+    "size_bytes": 2124203,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0948.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-chin-lift-jawline",
+  "slug_aliases": [
+   "vital-chin-lift-jawline"
+  ],
+  "name_zh": "下巴提升下颌线",
+  "name_en": "chin lift jawline",
+  "source_name_en": "chin lift jawline",
+  "aliases": [
+   "chin lift jawline"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "neck",
+  "secondary_muscles": [
+   "platysma",
+   "facial muscles"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直或站直，双肩放松。",
+   "慢慢将头向后仰，目光朝向天花板。",
+   "撅起嘴唇，像亲吻天花板一样，下巴向上伸展。",
+   "保持5秒，感受下巴和颈部的拉伸。",
+   "慢慢将头回到中立位置。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "下巴提升下颌线",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0921",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0921.mp4",
+    "size_bytes": 1302461,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0921.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-lower-eyelid-tightener",
+  "slug_aliases": [
+   "vital-lower-eyelid-tightener"
+  ],
+  "name_zh": "下眼睑收紧",
+  "name_en": "lower eyelid tightener",
+  "source_name_en": "lower eyelid tightener",
+  "aliases": [
+   "lower eyelid tightener"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "orbicularis oculi"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "坐直，面部放松，眼睛睁开。",
+   "直视前方，保持上眼睑不动。",
+   "慢慢将下眼睑向上抬向虹膜，如同从下方眯眼。",
+   "保持该姿势3秒。",
+   "慢慢放松，恢复自然表情。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "下眼睑收紧",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0947",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0947.mp4",
+    "size_bytes": 7049239,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0947.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-jaw-and-tongue-stretch",
+  "slug_aliases": [
+   "vital-jaw-and-tongue-stretch"
+  ],
+  "name_zh": "下颌与舌拉伸",
+  "name_en": "jaw & tongue stretch",
+  "source_name_en": "jaw & tongue stretch",
+  "aliases": [
+   "jaw & tongue stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "neck",
+   "jaw"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，闭嘴，面部放松。",
+   "张大嘴，将舌头尽可能舒适地向下伸向下巴。",
+   "同时将头略微向上倾斜，以增强下颌和颈部的拉伸。",
+   "保持拉伸姿势5秒。",
+   "缓慢闭嘴回到中立位置。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "下颌与舌拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0934",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0934.mp4",
+    "size_bytes": 8451311,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0934.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-jaw-and-platysma-stretch",
+  "slug_aliases": [
+   "vital-jaw-and-platysma-stretch"
+  ],
+  "name_zh": "下颌与颈阔肌拉伸",
+  "name_en": "jaw & platysma stretch",
+  "source_name_en": "jaw & platysma stretch",
+  "aliases": [
+   "jaw & platysma stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "neck",
+  "secondary_muscles": [
+   "platysma",
+   "facial muscles"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，脊柱挺直，肩膀放松。",
+   "轻轻向后仰头，直到看向天花板。",
+   "将嘴角向下向外拉，激活颈部两侧的颈阔肌。",
+   "保持拉伸姿势5–10秒。",
+   "缓慢将头回到中立位置并放松。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "下颌与颈阔肌拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0933",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0933.mp4",
+    "size_bytes": 2552555,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0933.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-jaw-protrusion",
+  "slug_aliases": [
+   "vital-jaw-protrusion"
+  ],
+  "name_zh": "下颌前伸",
+  "name_en": "jaw protrusion",
+  "source_name_en": "jaw protrusion",
+  "aliases": [
+   "jaw protrusion"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "masseter",
+   "platysma"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直或站直，保持脊柱挺直。",
+   "轻轻闭上嘴，放松下颌。",
+   "慢慢将下颌向前推至舒适范围，使下牙位于上牙前方。",
+   "保持前伸姿势5秒，感受下颌和颈部的拉伸。",
+   "慢慢将下颌恢复到中立位置。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "下颌前伸",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0936",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0936.mp4",
+    "size_bytes": 1101827,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0936.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-jaw-sculpt-hold",
+  "slug_aliases": [
+   "vital-jaw-sculpt-hold"
+  ],
+  "name_zh": "下颌塑形保持",
+  "name_en": "jaw sculpt hold",
+  "source_name_en": "jaw sculpt hold",
+  "aliases": [
+   "jaw sculpt hold"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "masseter",
+   "platysma"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，嘴微微张开。",
+   "将下颌稍微向前推，下巴向上倾斜45度。",
+   "轻轻咬紧牙齿，保持姿势5–10秒。",
+   "慢慢放松下颌，恢复到中立位置。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "下颌塑形保持",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0938",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0938.mp4",
+    "size_bytes": 1365588,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0938.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-jaw-resistance-open-close",
+  "slug_aliases": [
+   "vital-jaw-resistance-open-close"
+  ],
+  "name_zh": "下颌抗阻开合",
+  "name_en": "jaw resistance open-close",
+  "source_name_en": "jaw resistance open-close",
+  "aliases": [
+   "jaw resistance open-close"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "masseter",
+   "temporalis"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，将拳头放在下巴下方。",
+   "用拳头向上施压，同时慢慢张嘴对抗阻力。",
+   "将嘴张至舒适的最大幅度，全程保持阻力。",
+   "慢慢闭嘴，同时继续用拳头轻轻施压。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "下颌抗阻开合",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0937",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0937.mp4",
+    "size_bytes": 1635470,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0937.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-jaw-squeeze",
+  "slug_aliases": [
+   "vital-jaw-squeeze"
+  ],
+  "name_zh": "下颌挤压",
+  "name_en": "jaw squeeze",
+  "source_name_en": "jaw squeeze",
+  "aliases": [
+   "jaw squeeze"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "masseter"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "坐直，嘴轻轻闭上。",
+   "咧嘴微笑，保持双唇闭合。",
+   "用力咬紧后磨牙，同时保持微笑。",
+   "保持咬紧5秒。",
+   "慢慢松开咬合，放松下颌。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "下颌挤压",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0939",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0939.mp4",
+    "size_bytes": 9687604,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0939.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-jawline-stretch",
+  "slug_aliases": [
+   "vital-jawline-stretch"
+  ],
+  "name_zh": "下颌线拉伸",
+  "name_en": "jawline stretch",
+  "source_name_en": "jawline stretch",
+  "aliases": [
+   "jawline stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "neck",
+  "secondary_muscles": [
+   "platysma",
+   "masseter"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，背部挺直，肩膀放松。",
+   "将头轻轻向右侧肩膀方向倾斜。",
+   "将下颌向前并稍微向上移动，感受下颌和颈部左侧的拉伸。",
+   "保持拉伸10–15秒。",
+   "恢复到中立位置，换另一侧重复。",
+   "继续交替两侧，按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "下颌线拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0941",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0941.mp4",
+    "size_bytes": 5229192,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0941.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-jawline-lift",
+  "slug_aliases": [
+   "vital-jawline-lift"
+  ],
+  "name_zh": "下颌线提升",
+  "name_en": "jawline lift",
+  "source_name_en": "jawline lift",
+  "aliases": [
+   "jawline lift"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "neck",
+  "secondary_muscles": [
+   "platysma",
+   "facial muscles"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，肩膀放松，脊柱挺直。",
+   "将头向后仰，直到看向天花板。",
+   "闭上嘴，将下颌稍微向前推。",
+   "保持此姿势5–10秒，感受下巴下方的拉伸。",
+   "慢慢将头恢复到中立位置。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "下颌线提升",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0940",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0940.mp4",
+    "size_bytes": 6063110,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0940.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-say-vowels",
+  "slug_aliases": [
+   "vital-say-vowels"
+  ],
+  "name_zh": "元音发音",
+  "name_en": "say vowels",
+  "source_name_en": "say vowels",
+  "aliases": [
+   "say vowels"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "orbicularis oris",
+   "cheeks",
+   "jaw"
+  ],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，面部放松。",
+   "张大嘴，缓慢夸张地依次说出每个元音：A、E、I、O、U。",
+   "夸张每个发音的唇部和下颌动作，充分激活面部肌肉。",
+   "每个元音之间短暂停顿，感受肌肉发力。",
+   "重复元音序列，完成目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "元音发音",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0960",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0960.mp4",
+    "size_bytes": 8010993,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0960.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-full-face-stretch",
+  "slug_aliases": [
+   "vital-full-face-stretch"
+  ],
+  "name_zh": "全脸拉伸",
+  "name_en": "full face stretch",
+  "source_name_en": "full face stretch",
+  "aliases": [
+   "full face stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "neck",
+   "jaw"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐姿或站姿，肩膀放松。",
+   "嘴巴尽量张大，同时眼睛尽量睁大。",
+   "舌头尽量向下伸展至舒适范围。",
+   "保持完全伸展的姿势5秒。",
+   "缓慢放松所有肌肉，恢复中性放松的表情。",
+   "重复完成目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "全脸拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0929",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0929.mp4",
+    "size_bytes": 7638323,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0929.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-upward-neck-kiss",
+  "slug_aliases": [
+   "vital-upward-neck-kiss"
+  ],
+  "name_zh": "向上颈部亲吻",
+  "name_en": "upward neck kiss",
+  "source_name_en": "upward neck kiss",
+  "aliases": [
+   "upward neck kiss"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "neck",
+  "secondary_muscles": [
+   "platysma",
+   "orbicularis oris"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，肩膀放松。",
+   "慢慢向后仰头，直到看向天花板。",
+   "撅起嘴唇，好像向上朝天花板亲吻。",
+   "保持亲吻姿势5秒，感受下巴下方和颈部沿线的收缩。",
+   "慢慢回到中立位置。",
+   "重复所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "向上颈部亲吻",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0970",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0970.mp4",
+    "size_bytes": 18760172,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0970.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-jaw-clench-release",
+  "slug_aliases": [
+   "vital-jaw-clench-release"
+  ],
+  "name_zh": "咬紧下颌放松",
+  "name_en": "jaw clench release",
+  "source_name_en": "jaw clench release",
+  "aliases": [
+   "jaw clench release"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "masseter",
+   "temporalis"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，轻轻闭嘴。",
+   "缓慢用力咬紧牙齿，激活下颌两侧的咬肌。",
+   "保持咬紧姿势3–5秒。",
+   "缓慢放松，让下颌完全松弛。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "咬紧下颌放松",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0935",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0935.mp4",
+    "size_bytes": 1635044,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0935.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-lips-stretch",
+  "slug_aliases": [
+   "vital-lips-stretch"
+  ],
+  "name_zh": "唇部拉伸",
+  "name_en": "lips stretch",
+  "source_name_en": "lips stretch",
+  "aliases": [
+   "lips stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "orbicularis oris"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "坐直，面部保持放松自然。",
+   "微微张嘴，将嘴唇尽可能向两侧拉伸，如同发“eee”音。",
+   "保持拉伸姿势5秒。",
+   "慢慢放松，恢复自然表情。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "唇部拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0946",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0946.mp4",
+    "size_bytes": 4836777,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0946.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-lip-press",
+  "slug_aliases": [
+   "vital-lip-press"
+  ],
+  "name_zh": "嘴唇按压",
+  "name_en": "lip press",
+  "source_name_en": "lip press",
+  "aliases": [
+   "lip press"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "orbicularis oris"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "坐直，面部放松。",
+   "双唇用力闭合，但不要咬紧牙齿。",
+   "保持紧闭姿势5秒，收紧嘴部周围肌肉。",
+   "缓慢释放紧张，放松双唇。",
+   "重复目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "嘴唇按压",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0943",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0943.mp4",
+    "size_bytes": 3392182,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0943.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-lip-corner-lift",
+  "slug_aliases": [
+   "vital-lip-corner-lift"
+  ],
+  "name_zh": "嘴角提升",
+  "name_en": "lip corner lift",
+  "source_name_en": "lip corner lift",
+  "aliases": [
+   "lip corner lift"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "zygomaticus",
+   "orbicularis oris"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，面部保持中立放松。",
+   "将食指放在嘴角外侧。",
+   "用面部肌肉将嘴角向上提成轻柔的微笑。",
+   "保持上提姿势5秒。",
+   "缓慢放松，恢复中立表情。",
+   "重复目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "嘴角提升",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0942",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0942.mp4",
+    "size_bytes": 3931397,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0942.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-chewing-gum-jawline",
+  "slug_aliases": [
+   "vital-chewing-gum-jawline"
+  ],
+  "name_zh": "嚼口香糖下颌线",
+  "name_en": "chewing gum jawline",
+  "source_name_en": "chewing gum jawline",
+  "aliases": [
+   "chewing gum jawline"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "masseter",
+   "temporalis"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直或站直，保持脊柱挺直。",
+   "闭上嘴，夸张地上下移动下颌，模拟咀嚼动作。",
+   "夸张每一次咀嚼动作，充分激活下颌肌肉。",
+   "持续咀嚼30-60秒。",
+   "稍作休息，然后按所需组数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "嚼口香糖下颌线",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0922",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0922.mp4",
+    "size_bytes": 1729990,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0922.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-arms-up-down-stretch",
+  "slug_aliases": [
+   "vital-seated-arms-up-down-stretch"
+  ],
+  "name_zh": "坐姿手臂上下拉伸",
+  "name_en": "seated arms up down stretch",
+  "source_name_en": "seated arms up down stretch",
+  "aliases": [
+   "seated arms up down stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "shoulders",
+  "target": "delts",
+  "secondary_muscles": [
+   "traps",
+   "triceps"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放于地面，核心收紧。",
+   "双臂伸直举过头顶，尽量向上伸展，感受身体两侧充分拉伸。",
+   "短暂保持上举姿势，然后缓慢将双臂放回体侧。",
+   "在放下位置，双臂向下并稍向后髋方向轻压，感受肩前侧拉伸。",
+   "以流畅可控的动作重复上下运动，完成所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿手臂上下拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0709",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0709.mp4",
+    "size_bytes": 1310889,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0709.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-shoulder-shurg",
+  "slug_aliases": [
+   "vital-seated-shoulder-shurg"
+  ],
+  "name_zh": "坐姿耸肩",
+  "name_en": "seated shoulder shurg",
+  "source_name_en": "seated shoulder shurg",
+  "aliases": [
+   "seated shoulder shurg"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "shoulders",
+  "target": "traps",
+  "secondary_muscles": [
+   "delts",
+   "neck"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面，双臂自然垂于身体两侧。",
+   "收紧核心，同时将双肩尽可能向耳朵方向耸起。",
+   "在最高位置保持2-3秒，收紧上斜方肌。",
+   "缓慢放松，将双肩降回起始位置。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿耸肩",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0736",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0736.mp4",
+    "size_bytes": 870250,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0736.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-shoulder-rolls-up-down",
+  "slug_aliases": [
+   "vital-seated-shoulder-rolls-up-down"
+  ],
+  "name_zh": "坐姿耸肩绕环",
+  "name_en": "seated shoulder rolls up down",
+  "source_name_en": "seated shoulder rolls up down",
+  "aliases": [
+   "seated shoulder rolls up down"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "shoulders",
+  "target": "traps",
+  "secondary_muscles": [
+   "delts",
+   "neck"
+  ],
+  "category": "mobility",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面，双臂自然垂于体侧。",
+   "缓慢将双肩尽量向上提至耳旁，感受耸肩般的收缩。",
+   "在提起位置稍作停顿，然后肩部向后滚动并用力向下压。",
+   "在下降位置停顿，感受肌肉发力后再开始下一次重复。",
+   "缓慢、全幅度地按目标次数持续进行。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿耸肩绕环",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0734",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0734.mp4",
+    "size_bytes": 1593922,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0734.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-shoulder-rotate",
+  "slug_aliases": [
+   "vital-seated-shoulder-rotate"
+  ],
+  "name_zh": "坐姿肩部旋转",
+  "name_en": "seated shoulder rotate",
+  "source_name_en": "seated shoulder rotate",
+  "aliases": [
+   "seated shoulder rotate"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "shoulders",
+  "target": "delts",
+  "secondary_muscles": [
+   "traps",
+   "rotator cuff"
+  ],
+  "category": "mobility",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面，双臂向两侧伸展至肩高。",
+   "保持手臂伸直，向前做小幅度画圈旋转，逐渐增大旋转幅度。",
+   "向前旋转10-15次后，反向向后旋转手臂。",
+   "整个动作过程中保持核心收紧、姿态挺拔。",
+   "每个方向按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿肩部旋转",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0735",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0735.mp4",
+    "size_bytes": 2266816,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0735.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-shoulder-circle",
+  "slug_aliases": [
+   "vital-seated-shoulder-circle"
+  ],
+  "name_zh": "坐姿肩部绕环",
+  "name_en": "seated shoulder circle",
+  "source_name_en": "seated shoulder circle",
+  "aliases": [
+   "seated shoulder circle"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "shoulders",
+  "target": "delts",
+  "secondary_muscles": [
+   "traps",
+   "neck"
+  ],
+  "category": "mobility",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面，双臂自然垂于体侧。",
+   "双肩同时开始向前画圆，向上提至耳旁，再向前向下滚动。",
+   "缓慢有控制地完成5-8次向前绕环，感受每次画圈的完整活动范围。",
+   "反方向进行5-8次向后绕环，肩部向后向下滚动。",
+   "按目标组数重复，全程保持放松挺直的姿态。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿肩部绕环",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0733",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0733.mp4",
+    "size_bytes": 1785329,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0733.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-shoulder-butterfly-stretch",
+  "slug_aliases": [
+   "vital-seated-shoulder-butterfly-stretch"
+  ],
+  "name_zh": "坐姿肩部蝴蝶拉伸",
+  "name_en": "seated shoulder butterfly stretch",
+  "source_name_en": "seated shoulder butterfly stretch",
+  "aliases": [
+   "seated shoulder butterfly stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "shoulders",
+  "target": "delts",
+  "secondary_muscles": [
+   "pectorals",
+   "rhomboids"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面。",
+   "指尖放在肩膀上，肘部向外打开至与肩同高。",
+   "缓慢将双肘在胸前靠拢，上背部微微弓起。",
+   "然后将双肘向后向外打开，挤压肩胛骨，展开胸腔。",
+   "以流畅可控的动作在收拢与打开之间交替，按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿肩部蝴蝶拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0707",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Back/0707.mp4",
+    "size_bytes": 1631301,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Back/0707.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-overhead-arms-stretch",
+  "slug_aliases": [
+   "vital-seated-overhead-arms-stretch"
+  ],
+  "name_zh": "坐姿过头臂拉伸",
+  "name_en": "seated overhead arms stretch",
+  "source_name_en": "seated overhead arms stretch",
+  "aliases": [
+   "seated overhead arms stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "shoulders",
+  "target": "delts",
+  "secondary_muscles": [
+   "traps",
+   "triceps"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐椅上，双脚平放地面，核心收紧。",
+   "双臂伸直上举过头，掌心相对，手指伸展。",
+   "尽量向上伸展，感受手臂、肩部和躯干两侧的充分拉伸。",
+   "保持拉伸20-30秒，深呼吸，每次吸气延展脊柱。",
+   "缓慢放下双臂回到体侧，按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿过头臂拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0729",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0729.mp4",
+    "size_bytes": 3066664,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0729.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-neck-and-back-stretch",
+  "slug_aliases": [
+   "vital-seated-neck-and-back-stretch"
+  ],
+  "name_zh": "坐姿颈背拉伸",
+  "name_en": "seated neck and back stretch",
+  "source_name_en": "seated neck and back stretch",
+  "aliases": [
+   "seated neck and back stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "neck",
+  "secondary_muscles": [
+   "traps",
+   "lower back"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面，双手放在大腿上。",
+   "缓慢将下巴低向胸部，感受颈后拉伸。",
+   "从这个位置轻轻弓起整个上背部，加深颈部和背部的联合拉伸。",
+   "保持20-30秒，深呼吸，每次呼气时让重力加深拉伸。",
+   "缓慢抬起头回到直立位置。重复所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿颈背拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0725",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0725.mp4",
+    "size_bytes": 1535054,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0725.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-neck-lift-up-down",
+  "slug_aliases": [
+   "vital-seated-neck-lift-up-down"
+  ],
+  "name_zh": "坐姿颈部上下抬",
+  "name_en": "seated neck lift up down",
+  "source_name_en": "seated neck lift up down",
+  "aliases": [
+   "seated neck lift up down"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "neck",
+  "secondary_muscles": [
+   "traps"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "端坐在椅子上，双脚平放地面，肩膀放松。",
+   "缓慢将下巴低向胸部，感受颈后轻柔拉伸。",
+   "保持低头位置片刻，然后缓慢抬头并轻轻后仰，看向天花板。",
+   "保持后仰位置片刻，然后将头回到中立起始位置。",
+   "重复上下运动至所需次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿颈部上下抬",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0726",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0726.mp4",
+    "size_bytes": 1608220,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0726.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-neck-side-to-side-rotate",
+  "slug_aliases": [
+   "vital-seated-neck-side-to-side-rotate"
+  ],
+  "name_zh": "坐姿颈部左右旋转",
+  "name_en": "seated neck side to side rotate",
+  "source_name_en": "seated neck side to side rotate",
+  "aliases": [
+   "seated neck side to side rotate"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "neck",
+  "secondary_muscles": [
+   "traps",
+   "delts"
+  ],
+  "category": "mobility",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐椅上，双肩放松，双脚平放地面。",
+   "缓慢向右转头，下巴尽量靠近右肩，以舒适为度。",
+   "稍作停留，再缓慢向左转头，下巴靠近左肩。",
+   "以缓慢可控的方式继续左右转动，不要强行扩大活动范围。",
+   "每侧按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿颈部左右旋转",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0727",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0727.mp4",
+    "size_bytes": 4287181,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Office/Office/Chair/0727.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-seated-neck-stretch",
+  "slug_aliases": [
+   "vital-seated-neck-stretch"
+  ],
+  "name_zh": "坐姿颈部拉伸",
+  "name_en": "seated neck stretch",
+  "source_name_en": "seated neck stretch",
+  "aliases": [
+   "seated neck stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "neck",
+  "secondary_muscles": [
+   "traps",
+   "delts"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐椅上，双脚平放地面，背部挺直。",
+   "将头向右侧倾斜，右耳靠近右肩。",
+   "可用右手轻放头部左侧施加轻压，加深拉伸。",
+   "保持拉伸20-30秒，感受颈部左侧的牵拉感。",
+   "头部回到正中，换左侧重复，按目标次数交替进行。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "坐姿颈部拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "male"
+  ],
+  "media": [
+   {
+    "pack": "office",
+    "sex": "male",
+    "video_id": "0728",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0728.mp4",
+    "size_bytes": 1252841,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Office/Office/Chair/0728.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-vertical-forehead-lift",
+  "slug_aliases": [
+   "vital-vertical-forehead-lift"
+  ],
+  "name_zh": "垂直前额上提",
+  "name_en": "vertical forehead lift",
+  "source_name_en": "vertical forehead lift",
+  "aliases": [
+   "vertical forehead lift"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "frontalis"
+  ],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "坐直，面部放松。",
+   "将双手食指竖直放在两眉之间，轻轻向内施压。",
+   "用额肌对抗手指阻力，尝试将眉毛向两侧和上方推开。",
+   "保持上提姿势5秒。",
+   "缓慢放松前额。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "垂直前额上提",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0971",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0971.mp4",
+    "size_bytes": 9657298,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0971.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-temple-press",
+  "slug_aliases": [
+   "vital-temple-press"
+  ],
+  "name_zh": "太阳穴按压",
+  "name_en": "temple press",
+  "source_name_en": "temple press",
+  "aliases": [
+   "temple press"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "temporalis"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "坐直，面部放松。",
+   "将双手指尖放在太阳穴上，轻轻施压。",
+   "慢慢咬紧后牙，激活指尖下的颞肌。",
+   "保持咬紧状态5秒。",
+   "慢慢松开咬合，放松肌肉。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "太阳穴按压",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0964",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0964.mp4",
+    "size_bytes": 6579934,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0964.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-scalp-massage",
+  "slug_aliases": [
+   "vital-scalp-massage"
+  ],
+  "name_zh": "头皮按摩",
+  "name_en": "scalp massage",
+  "source_name_en": "scalp massage",
+  "aliases": [
+   "scalp massage"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "frontalis"
+  ],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "舒适坐好，脊柱挺直。",
+   "将所有指尖放在头皮上，施加轻柔但稳定的压力。",
+   "指尖在头皮上做小圆周运动，从发际线开始向头顶移动。",
+   "继续在头皮两侧和后部做圆周按摩。",
+   "重复完整一圈，持续30–60秒。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "头皮按摩",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0961",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0961.mp4",
+    "size_bytes": 10969462,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0961.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-wide-eye-opener",
+  "slug_aliases": [
+   "vital-wide-eye-opener"
+  ],
+  "name_zh": "宽距开眼式",
+  "name_en": "wide eye opener",
+  "source_name_en": "wide eye opener",
+  "aliases": [
+   "wide eye opener"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "orbicularis oculi",
+   "frontalis"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，面部放松，眼睛处于中立位置。",
+   "不要抬眉，仅用眼周肌肉将眼睛尽量睁大。",
+   "保持睁大状态5秒。",
+   "慢慢放松眼部肌肉回到正常位置。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "宽距开眼式",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0972",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0972.mp4",
+    "size_bytes": 1267529,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0972.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-lip-stretch-smile",
+  "slug_aliases": [
+   "vital-lip-stretch-smile"
+  ],
+  "name_zh": "微笑唇拉伸",
+  "name_en": "lip stretch smile",
+  "source_name_en": "lip stretch smile",
+  "aliases": [
+   "lip stretch smile"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "zygomaticus",
+   "orbicularis oris"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，面部放松。",
+   "双唇闭合，尽可能宽地微笑。",
+   "保持宽笑5秒，感受嘴唇和面颊的拉伸。",
+   "慢慢放松，恢复自然表情。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "微笑唇拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0945",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0945.mp4",
+    "size_bytes": 1569440,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0945.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-smile-resistance-hold",
+  "slug_aliases": [
+   "vital-smile-resistance-hold"
+  ],
+  "name_zh": "微笑抗阻保持",
+  "name_en": "smile resistance hold",
+  "source_name_en": "smile resistance hold",
+  "aliases": [
+   "smile resistance hold"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "zygomaticus",
+   "cheeks"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，面部放松。",
+   "将食指放在嘴角外侧。",
+   "尽可能宽地微笑，同时指尖向内施压抵抗该动作。",
+   "对抗阻力保持微笑5秒。",
+   "缓慢放松回到中性表情。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "微笑抗阻保持",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0962",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0962.mp4",
+    "size_bytes": 2310298,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0962.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-move-jaw-fastly",
+  "slug_aliases": [
+   "vital-move-jaw-fastly"
+  ],
+  "name_zh": "快速活动下颌",
+  "name_en": "move jaw fastly",
+  "source_name_en": "move jaw fastly",
+  "aliases": [
+   "move jaw fastly"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "masseter",
+   "temporalis"
+  ],
+  "category": "cardio",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，脊柱挺直，肩部放松。",
+   "微微张开嘴，开始以快速、可控的动作左右移动下颌。",
+   "保持动作幅度小而快速，每次重复都激活下颌肌肉。",
+   "持续20-30秒。",
+   "短暂休息，然后重复至目标组数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "快速活动下颌",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0949",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0949.mp4",
+    "size_bytes": 1646208,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0949.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-surprise-look-wide-eyes-lift",
+  "slug_aliases": [
+   "vital-surprise-look-wide-eyes-lift"
+  ],
+  "name_zh": "惊讶表情（睁眼抬眉）",
+  "name_en": "surprise look (wide eyes lift)",
+  "source_name_en": "surprise look (wide eyes lift)",
+  "aliases": [
+   "surprise look (wide eyes lift)"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "frontalis",
+   "orbicularis oculi"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，面部保持自然放松。",
+   "尽量睁大眼睛，同时抬高眉毛。",
+   "保持睁大眼睛的表情5秒，不要皱额头。",
+   "缓慢放松眼睛和眉毛回到自然位置。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "惊讶表情（睁眼抬眉）",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0963",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0963.mp4",
+    "size_bytes": 5669037,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0963.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-brow-lift",
+  "slug_aliases": [
+   "vital-brow-lift"
+  ],
+  "name_zh": "抬眉",
+  "name_en": "brow lift",
+  "source_name_en": "brow lift",
+  "aliases": [
+   "brow lift"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "frontalis",
+   "orbicularis oculi"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直或站直，面部保持中立放松。",
+   "将食指放在眉毛正上方，轻轻向下施压。",
+   "用额肌对抗手指阻力，将眉毛向上抬起。",
+   "在抬起位置保持5秒，然后缓慢将眉毛放回起始位置。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "抬眉",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0916",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0916.mp4",
+    "size_bytes": 9291712,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0916.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-lip-pucker-kiss-face",
+  "slug_aliases": [
+   "vital-lip-pucker-kiss-face"
+  ],
+  "name_zh": "撅嘴",
+  "name_en": "lip pucker (kiss face)",
+  "source_name_en": "lip pucker (kiss face)",
+  "aliases": [
+   "lip pucker (kiss face)"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "orbicularis oris",
+   "cheeks"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直或站直，保持脊柱挺直。",
+   "闭上嘴，将嘴唇向外撅起，如同准备亲吻。",
+   "保持撅嘴姿势5秒，用力收紧唇部肌肉。",
+   "放松，恢复自然表情。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "撅嘴",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0944",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0944.mp4",
+    "size_bytes": 1481962,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0944.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-horizontal-forehead",
+  "slug_aliases": [
+   "vital-horizontal-forehead"
+  ],
+  "name_zh": "水平前额",
+  "name_en": "horizontal forehead",
+  "source_name_en": "horizontal forehead",
+  "aliases": [
+   "horizontal forehead"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "frontalis"
+  ],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "坐直，面部放松，眼睛睁开。",
+   "将双手食指横向放在额头上，位于眉毛上方。",
+   "用手指轻压，同时尝试向上皱起额头对抗阻力。",
+   "保持收缩5秒。",
+   "缓慢放松额头肌肉。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "水平前额",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0932",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0932.mp4",
+    "size_bytes": 15535202,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0932.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-blinking-resistance",
+  "slug_aliases": [
+   "vital-blinking-resistance"
+  ],
+  "name_zh": "眨眼抗阻",
+  "name_en": "blinking resistance",
+  "source_name_en": "blinking resistance",
+  "aliases": [
+   "blinking resistance"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "orbicularis oculi"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "坐直，面部放松，双眼睁开。",
+   "将食指轻放在外眼角处，施加轻微阻力。",
+   "对抗手指阻力缓慢闭眼，用力挤紧眼睑。",
+   "保持闭眼2-3秒，然后缓慢睁开眼睛。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "眨眼抗阻",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0915",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0915.mp4",
+    "size_bytes": 425635,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0915.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-eye-socket-massage",
+  "slug_aliases": [
+   "vital-eye-socket-massage"
+  ],
+  "name_zh": "眼窝按摩",
+  "name_en": "eye socket massage",
+  "source_name_en": "eye socket massage",
+  "aliases": [
+   "eye socket massage"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "orbicularis oculi"
+  ],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "舒适坐好，背部挺直，面部放松。",
+   "将食指指尖放在眉毛内侧。",
+   "以轻柔的圆周压力沿眉骨向外眼角方向移动。",
+   "继续在眼睛下方沿眶下骨向鼻子的方向做圆周按摩。",
+   "重复整个循环30-60秒。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "眼窝按摩",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0925",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0925.mp4",
+    "size_bytes": 13092549,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0925.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-hollow-cheeks",
+  "slug_aliases": [
+   "vital-hollow-cheeks"
+  ],
+  "name_zh": "空颊",
+  "name_en": "hollow cheeks",
+  "source_name_en": "hollow cheeks",
+  "aliases": [
+   "hollow cheeks"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "masseter",
+   "buccinator"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，闭嘴，面部放松。",
+   "尽可能用力将双颊向内吸向牙齿。",
+   "保持凹陷姿势5–10秒，同时用鼻子呼吸。",
+   "缓慢放松，恢复中性表情。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "空颊",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0931",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0931.mp4",
+    "size_bytes": 2464234,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0931.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-tongue-stretch-forward",
+  "slug_aliases": [
+   "vital-tongue-stretch-forward"
+  ],
+  "name_zh": "舌头前伸拉伸",
+  "name_en": "tongue stretch forward",
+  "source_name_en": "tongue stretch forward",
+  "aliases": [
+   "tongue stretch forward"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "jaw",
+   "neck"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，保持脊柱挺直。",
+   "张大嘴，将舌头尽可能向外下方伸向下巴。",
+   "保持完全伸展姿势5秒。",
+   "慢慢收回舌头并闭上嘴。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "舌头前伸拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0967",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0967.mp4",
+    "size_bytes": 1789798,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0967.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-tongue-rotate-side-to-side-stretch",
+  "slug_aliases": [
+   "vital-tongue-rotate-side-to-side-stretch"
+  ],
+  "name_zh": "舌头左右旋转拉伸",
+  "name_en": "tongue rotate side to side stretch",
+  "source_name_en": "tongue rotate side to side stretch",
+  "aliases": [
+   "tongue rotate side to side stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "jaw",
+   "cheeks"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，嘴巴微张。",
+   "将舌头伸出嘴外。",
+   "缓慢将舌头移向右侧嘴角，再横向移至左侧嘴角。",
+   "保持动作受控且有意识，感受舌头和面颊肌肉的拉伸。",
+   "继续左右交替至目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "舌头左右旋转拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0966",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0966.mp4",
+    "size_bytes": 1841587,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0966.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-tongue-circle",
+  "slug_aliases": [
+   "vital-tongue-circle"
+  ],
+  "name_zh": "舌头绕圈",
+  "name_en": "tongue circle",
+  "source_name_en": "tongue circle",
+  "aliases": [
+   "tongue circle"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "jaw",
+   "cheeks"
+  ],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，嘴巴闭合。",
+   "舌头抵住内侧脸颊，缓慢做圆周运动。",
+   "沿上唇内侧、上排牙齿、对侧脸颊内侧完成一整圈后返回。",
+   "一个方向做5圈，然后反向。",
+   "重复至目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "舌头绕圈",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0965",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0965.mp4",
+    "size_bytes": 1947487,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0965.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-tongue-to-roof",
+  "slug_aliases": [
+   "vital-tongue-to-roof"
+  ],
+  "name_zh": "舌抵上颚",
+  "name_en": "tongue to roof",
+  "source_name_en": "tongue to roof",
+  "aliases": [
+   "tongue to roof"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "jaw"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "坐直，轻轻闭口。",
+   "将舌尖紧贴上颚，位于上前牙后方。",
+   "用舌头尽可能向上施压。",
+   "保持5–10秒。",
+   "放松舌头。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "舌抵上颚",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0968",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0968.mp4",
+    "size_bytes": 2006649,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0968.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-tongue-touch-to-hard-palate",
+  "slug_aliases": [
+   "vital-tongue-touch-to-hard-palate"
+  ],
+  "name_zh": "舌触硬腭",
+  "name_en": "tongue touch to hard palate",
+  "source_name_en": "tongue touch to hard palate",
+  "aliases": [
+   "tongue touch to hard palate"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "jaw",
+   "facial muscles"
+  ],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，背部挺直，轻轻闭口。",
+   "微微张嘴，将舌头平贴在上颚硬腭处。",
+   "用整个舌面均匀用力按压。",
+   "保持5秒。",
+   "放松舌头。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "舌触硬腭",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0969",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0969.mp4",
+    "size_bytes": 1235094,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0969.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-apple-cheek-lift",
+  "slug_aliases": [
+   "vital-apple-cheek-lift"
+  ],
+  "name_zh": "苹果肌提升",
+  "name_en": "apple cheek lift",
+  "source_name_en": "apple cheek lift",
+  "aliases": [
+   "apple cheek lift"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "cheeks",
+   "orbicularis oris"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐姿或站姿，脊柱挺直，肩膀放松。",
+   "闭嘴微笑，用面部肌肉将脸颊肉向上推向眼睛方向。",
+   "保持上提位置5秒，感受面颊肌肉紧张。",
+   "缓慢放松，恢复中性表情。",
+   "重复至目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "苹果肌提升",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0913",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0913.mp4",
+    "size_bytes": 2276980,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0913.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-giraffe-neck-stretch",
+  "slug_aliases": [
+   "vital-giraffe-neck-stretch"
+  ],
+  "name_zh": "长颈鹿颈部拉伸",
+  "name_en": "giraffe neck stretch",
+  "source_name_en": "giraffe neck stretch",
+  "aliases": [
+   "giraffe neck stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "neck",
+  "secondary_muscles": [
+   "traps",
+   "platysma"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，肩膀向后收并放松。",
+   "将指尖放在锁骨上，轻轻向下拉皮肤。",
+   "慢慢向后仰头，下巴朝向天花板。",
+   "保持拉伸5–10秒，感受颈部前侧的拉长。",
+   "慢慢将头回到中立位置。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "长颈鹿颈部拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0930",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0930.mp4",
+    "size_bytes": 4679878,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0930.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-cheek-sculptor",
+  "slug_aliases": [
+   "vital-cheek-sculptor"
+  ],
+  "name_zh": "面颊塑形",
+  "name_en": "cheek sculptor",
+  "source_name_en": "cheek sculptor",
+  "aliases": [
+   "cheek sculptor"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "cheeks",
+   "masseter"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐，闭嘴，面部放松。",
+   "将双颊向内吸向牙齿，形成凹陷表情。",
+   "保持凹陷姿势5–10秒，收紧面颊肌肉。",
+   "慢慢放松，恢复中性表情。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "面颊塑形",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0919",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0919.mp4",
+    "size_bytes": 1913054,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0919.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-cheek-lifter",
+  "slug_aliases": [
+   "vital-cheek-lifter"
+  ],
+  "name_zh": "面颊提升",
+  "name_en": "cheek lifter",
+  "source_name_en": "cheek lifter",
+  "aliases": [
+   "cheek lifter"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "orbicularis oris",
+   "zygomaticus"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐姿或站姿，脊柱挺直，肩膀放松。",
+   "微微张嘴，双唇呈“O”形。",
+   "保持“O”形的同时微笑，将面颊肌肉向上提向眼睛。",
+   "指尖轻放在面颊上方，感受上提。",
+   "保持5秒，然后放松回到起始位置。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "面颊提升",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0918",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0918.mp4",
+    "size_bytes": 1279031,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0918.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-cheek-firming-press",
+  "slug_aliases": [
+   "vital-cheek-firming-press"
+  ],
+  "name_zh": "面颊紧致按压",
+  "name_en": "cheek firming press",
+  "source_name_en": "cheek firming press",
+  "aliases": [
+   "cheek firming press"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "cheeks",
+   "orbicularis oris"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "端坐，闭嘴，面部放松。",
+   "将手掌平贴双颊，轻轻施压。",
+   "尽量大幅度微笑，同时双颊向内对抗手掌。",
+   "保持5秒，感受面颊肌肉收缩。",
+   "放松，恢复中性表情。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "面颊紧致按压",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0917",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0917.mp4",
+    "size_bytes": 3163127,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0917.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-neck-lift",
+  "slug_aliases": [
+   "vital-neck-lift"
+  ],
+  "name_zh": "颈部上抬",
+  "name_en": "neck lift",
+  "source_name_en": "neck lift",
+  "aliases": [
+   "neck lift"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "neck",
+  "secondary_muscles": [
+   "sternocleidomastoid",
+   "platysma"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "仰卧在垫子上，双腿伸直。",
+   "双臂平放在身体两侧。",
+   "慢慢将头抬离垫子，下巴靠近胸口。",
+   "保持抬起姿势5秒，收紧颈部肌肉。",
+   "慢慢将头放回垫子。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "颈部上抬",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0952",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0952.mp4",
+    "size_bytes": 4019555,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0952.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-neck-jaw-stretch",
+  "slug_aliases": [
+   "vital-neck-jaw-stretch"
+  ],
+  "name_zh": "颈部下颌拉伸",
+  "name_en": "neck jaw stretch",
+  "source_name_en": "neck jaw stretch",
+  "aliases": [
+   "neck jaw stretch"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "neck",
+  "secondary_muscles": [
+   "masseter",
+   "sternocleidomastoid"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，背部挺直，肩膀放松。",
+   "头向右侧倾斜，右耳靠近右肩。",
+   "轻轻将下颌向前并略微向上推，感受左侧颈部和下颌的拉伸。",
+   "保持拉伸10–15秒。",
+   "回到中立位，换另一侧重复。",
+   "交替两侧至目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "颈部下颌拉伸",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0951",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0951.mp4",
+    "size_bytes": 10342734,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0951.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-neck-tilt-hold",
+  "slug_aliases": [
+   "vital-neck-tilt-hold"
+  ],
+  "name_zh": "颈部侧倾保持",
+  "name_en": "neck tilt hold",
+  "source_name_en": "neck tilt hold",
+  "aliases": [
+   "neck tilt hold"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "neck",
+  "secondary_muscles": [
+   "traps",
+   "sternocleidomastoid"
+  ],
+  "category": "stretching",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，肩膀放松，脊柱挺直。",
+   "缓慢将头向右侧倾斜，使右耳靠近右肩。",
+   "保持倾斜姿势15–20秒，感受颈部左侧的拉伸。",
+   "缓慢回到中立位置。",
+   "在另一侧重复。",
+   "继续交替进行，按目标次数完成。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "颈部侧倾保持",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0955",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0955.mp4",
+    "size_bytes": 12572646,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0955.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-neck-resistance-press",
+  "slug_aliases": [
+   "vital-neck-resistance-press"
+  ],
+  "name_zh": "颈部抗阻推",
+  "name_en": "neck resistance press",
+  "source_name_en": "neck resistance press",
+  "aliases": [
+   "neck resistance press"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "neck",
+  "secondary_muscles": [
+   "sternocleidomastoid",
+   "traps"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，背部挺直，肩膀放松。",
+   "将手掌平放在额头上。",
+   "头部向前压向手掌，同时用手抵抗该动作。",
+   "保持等长收缩5–10秒。",
+   "放松后重复，交替将手放在后脑勺和两侧。",
+   "每个方向按目标次数完成。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "颈部抗阻推",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0953",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0953.mp4",
+    "size_bytes": 7604309,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0953.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-neck-tightener",
+  "slug_aliases": [
+   "vital-neck-tightener"
+  ],
+  "name_zh": "颈部收紧",
+  "name_en": "neck tightener",
+  "source_name_en": "neck tightener",
+  "aliases": [
+   "neck tightener"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "neck",
+  "secondary_muscles": [
+   "platysma",
+   "sternocleidomastoid"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，背部挺直。",
+   "将头向后仰，直到看向天花板。",
+   "在该位置做张嘴闭嘴的咀嚼动作，收紧颈部和下巴肌肉。",
+   "持续20–30秒。",
+   "将头回到中立位置，短暂休息。",
+   "按目标组数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "颈部收紧",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0954",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0954.mp4",
+    "size_bytes": 4709352,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0954.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-neck-circle",
+  "slug_aliases": [
+   "vital-neck-circle"
+  ],
+  "name_zh": "颈部环绕伸展",
+  "name_en": "neck circle",
+  "source_name_en": "neck circle",
+  "aliases": [
+   "neck circle"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "neck",
+  "secondary_muscles": [
+   "traps",
+   "sternocleidomastoid"
+  ],
+  "category": "mobility",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直或站直，肩膀放松。",
+   "慢慢低头，下巴靠近胸口。",
+   "轻柔地做头部全圈环绕，依次转向右肩、后方、左肩，再回到胸前。",
+   "整个环绕过程保持缓慢可控。",
+   "反方向重复环绕。",
+   "按目标次数继续。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "颈部环绕伸展",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0950",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0950.mp4",
+    "size_bytes": 11889607,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0950.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-platysma-lift",
+  "slug_aliases": [
+   "vital-platysma-lift"
+  ],
+  "name_zh": "颈阔肌提拉",
+  "name_en": "platysma lift",
+  "source_name_en": "platysma lift",
+  "aliases": [
+   "platysma lift"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "neck",
+  "secondary_muscles": [
+   "platysma",
+   "sternocleidomastoid"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，脊柱挺直，肩膀向后收。",
+   "头部稍微后仰，嘴角向下向外拉。",
+   "收紧颈部前侧肌肉，使颈阔肌条带显现。",
+   "保持紧张5秒。",
+   "缓慢放松并回到中立位置。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "颈阔肌提拉",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0958",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0958.mp4",
+    "size_bytes": 2852875,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0958.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-forehead-wrinkle-eraser",
+  "slug_aliases": [
+   "vital-forehead-wrinkle-eraser"
+  ],
+  "name_zh": "额头皱纹消除",
+  "name_en": "forehead wrinkle eraser",
+  "source_name_en": "forehead wrinkle eraser",
+  "aliases": [
+   "forehead wrinkle eraser"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "frontalis",
+   "corrugator supercilii"
+  ],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，面部完全放松。",
+   "将指尖横向放在额头上，施加轻压。",
+   "缓慢将眉毛尽量抬高，同时指尖抵抗向上的动作。",
+   "在顶部保持3-5秒。",
+   "轻轻将眉毛放回起始位置。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "额头皱纹消除",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0928",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0928.mp4",
+    "size_bytes": 8208639,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0928.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-forehead-smoother",
+  "slug_aliases": [
+   "vital-forehead-smoother"
+  ],
+  "name_zh": "额头舒展",
+  "name_en": "forehead smoother",
+  "source_name_en": "forehead smoother",
+  "aliases": [
+   "forehead smoother"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "frontalis"
+  ],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "坐直，双掌平放在额头上，手指相对。",
+   "手掌对额头施加轻柔的向下压力。",
+   "保持压力的同时，尝试向上抬起眉毛，对抗双手的阻力。",
+   "保持抬起位置5秒。",
+   "缓慢放下并放松眉毛。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "额头舒展",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0927",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0927.mp4",
+    "size_bytes": 15158450,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0927.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-cheekbone-lift",
+  "slug_aliases": [
+   "vital-cheekbone-lift"
+  ],
+  "name_zh": "颧骨提升",
+  "name_en": "cheekbone lift",
+  "source_name_en": "cheekbone lift",
+  "aliases": [
+   "cheekbone lift"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "zygomaticus",
+   "cheeks"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，面部完全放松。",
+   "将食指和中指放在颧骨上方、外眼角下方。",
+   "尽量大幅度微笑，将面颊肌肉向上推向手指。",
+   "保持上扬的微笑5秒。",
+   "慢慢放松，回到中立位置。",
+   "按所需次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "颧骨提升",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0920",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0920.mp4",
+    "size_bytes": 2310908,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0920.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-fish-face",
+  "slug_aliases": [
+   "vital-fish-face"
+  ],
+  "name_zh": "鱼嘴式",
+  "name_en": "fish face",
+  "source_name_en": "fish face",
+  "aliases": [
+   "fish face"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "cheeks",
+   "orbicularis oris"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐姿或站姿，保持脊柱挺直。",
+   "将脸颊向内吸，嘴唇收拢，做出鱼脸表情。",
+   "保持吸颊姿势的同时尝试微笑。",
+   "保持表情5秒，感受面颊肌肉的紧张感。",
+   "放松，恢复自然表情。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "鱼嘴式",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0926",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0926.mp4",
+    "size_bytes": 8988952,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0926.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-crow-s-feet-smoother",
+  "slug_aliases": [
+   "vital-crow-s-feet-smoother"
+  ],
+  "name_zh": "鱼尾纹舒展",
+  "name_en": "crow's feet smoother",
+  "source_name_en": "crow's feet smoother",
+  "aliases": [
+   "crow's feet smoother"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "orbicularis oculi"
+  ],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "坐直，面部放松。",
+   "将食指放在每只眼睛的外眼角处，施加非常轻的压力。",
+   "慢慢眯眼，轻轻将下眼睑向上抬，同时保持额头不动。",
+   "保持眯眼3秒，然后慢慢放松。",
+   "按所需次数重复该动作。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "鱼尾纹舒展",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0923",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0923.mp4",
+    "size_bytes": 5224721,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0923.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-duck-face-hold",
+  "slug_aliases": [
+   "vital-duck-face-hold"
+  ],
+  "name_zh": "鸭嘴保持",
+  "name_en": "duck face hold",
+  "source_name_en": "duck face hold",
+  "aliases": [
+   "duck face hold"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "orbicularis oris",
+   "cheeks"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐姿或站姿，保持脊柱挺直。",
+   "将嘴唇尽量向外撅起，做出“鸭子嘴”表情。",
+   "保持撅嘴姿势5-10秒，收紧嘴部周围肌肉。",
+   "缓慢放松，嘴唇回到中性位置。",
+   "重复至目标次数。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "鸭嘴保持",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0924",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0924.mp4",
+    "size_bytes": 9868170,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0924.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-balloon-cheek",
+  "slug_aliases": [
+   "vital-balloon-cheek"
+  ],
+  "name_zh": "鼓腮",
+  "name_en": "balloon cheek",
+  "source_name_en": "balloon cheek",
+  "aliases": [
+   "balloon cheek"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "orbicularis oris",
+   "cheeks"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直或站直，闭嘴。",
+   "用鼻子深吸气，将空气充满双颊，如同吹气球。",
+   "保持鼓腮5-10秒。",
+   "通过嘴唇小口缓慢放气。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "鼓腮",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0914",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0914.mp4",
+    "size_bytes": 1079423,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0914.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-puffy-cheeks-hold",
+  "slug_aliases": [
+   "vital-puffy-cheeks-hold"
+  ],
+  "name_zh": "鼓腮保持",
+  "name_en": "puffy cheeks hold",
+  "source_name_en": "puffy cheeks hold",
+  "aliases": [
+   "puffy cheeks hold"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "cheeks",
+   "orbicularis oris"
+  ],
+  "category": "strength",
+  "difficulty": 1,
+  "is_compound": true,
+  "instructions_zh": [
+   "坐直，闭上嘴。",
+   "用鼻子深吸气，将双颊充满空气。",
+   "保持鼓起的脸颊含气10秒，不要漏气。",
+   "按压一侧脸颊向内，将空气从一侧脸颊转移到另一侧。",
+   "每侧保持3秒后释放。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "鼓腮保持",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0959",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0959.mp4",
+    "size_bytes": 8520602,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0959.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-nostril-flare-control",
+  "slug_aliases": [
+   "vital-nostril-flare-control"
+  ],
+  "name_zh": "鼻孔扩张控制",
+  "name_en": "nostril flare control",
+  "source_name_en": "nostril flare control",
+  "aliases": [
+   "nostril flare control"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "nasalis"
+  ],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "坐直，面部放松，正常呼吸。",
+   "专注于鼻孔周围的肌肉，尝试将鼻孔向外扩张。",
+   "保持扩张姿势3–5秒。",
+   "缓慢将鼻孔尽可能向内收缩。",
+   "保持收缩姿势3–5秒。",
+   "按目标次数重复扩张和收缩循环。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "鼻孔扩张控制",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0957",
+    "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0957.mp4",
+    "size_bytes": 7707495,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-001/homeworkouts/Face Exercise/Face Exercise/0957.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ },
+ {
+  "slug": "vital-nose-shortening",
+  "slug_aliases": [
+   "vital-nose-shortening"
+  ],
+  "name_zh": "鼻部缩短",
+  "name_en": "nose shortening",
+  "source_name_en": "nose shortening",
+  "aliases": [
+   "nose shortening"
+  ],
+  "equipment": "bodyweight",
+  "muscle_group": "shoulders",
+  "body_part": "neck",
+  "target": "facial muscles",
+  "secondary_muscles": [
+   "nasalis"
+  ],
+  "category": "rehabilitation",
+  "difficulty": 1,
+  "is_compound": false,
+  "instructions_zh": [
+   "坐直，面部放松。",
+   "将食指放在鼻尖上，施加非常轻微向上的压力。",
+   "用上唇上方的肌肉将鼻子向下皱起，对抗手指。",
+   "保持收缩姿势3–5秒。",
+   "放松并回到中立位置。",
+   "按目标次数重复。"
+  ],
+  "instructions_needs_review": 1,
+  "name_zh_source": "manual_v2",
+  "old_names_zh": "鼻部缩短",
+  "review_note": "",
+  "sex_variants": [
+   "female"
+  ],
+  "media": [
+   {
+    "pack": "face",
+    "sex": "female",
+    "video_id": "0956",
+    "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0956.mp4",
+    "size_bytes": 1975409,
+    "visual_priority": 99,
+    "visual_style": "未知",
+    "primary_for_watch": true
+   }
+  ],
+  "media_count": 1,
+  "source": "vital_animations",
+  "license": "Vital Animations EULA 2026.1",
+  "primary_media": {
+   "source_file": "homeworkouts-20261109T110013Z-1-002/homeworkouts/Face Exercise/Face Exercise/0956.mp4",
+   "visual_style": "未知",
+   "visual_priority": 99
+  },
+  "excluded_from_library": true
+ }
+]
