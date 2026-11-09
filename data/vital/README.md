@@ -31,6 +31,17 @@
   - 人工复核队列
   - 建议先看 `review_high.csv`（243 条），再看 medium
 
+## 复核文件
+
+- `review_high_videos.csv` / `review_high_videos.html`
+  - 243 条高优先级复核，**包含源视频绝对路径**
+  - HTML 可直接点开播放
+- `review_medium_videos.csv`
+- `review_low_videos.csv`
+- `vital_actions_review_videos.csv`
+  - 全部 1,577 条，包含 `primary_video_path` / `all_video_paths`
+- 早期 `review_high.csv` / `review_medium.csv` / `review_low.csv` 没有视频路径，仅保留作对照
+
 ## 重要规则
 
 1. `base` 映射只做候选，不自动写中文名。
