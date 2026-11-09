@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`632e9a0`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `aa17a19`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`a3e2761`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `aa17a19`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 13/13 测试通过；完成 Watch UI 重设计（训练/动作/语音/锁定页）、单主按钮流程（`2d5dea0`）、40/42/49mm 响应式适配（`1eb3fdd`），并把语音输入与发送合并为一行（`9a833b1`）；此前修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
@@ -25,6 +25,73 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-10 · Windows / OpenCode（Mac 构建/验证清单）
+
+- 本轮 iOS 全部是 **盲写**（Windows 无法编译），Mac 拿到后必须按下面清单验证。相关提交：`607eecd`（两级目录 + iOS）、`a3e2761`（隐藏空目录）、`632e9a0`（计划白名单/缓存/搜索）。
+
+**一、构建步骤**
+
+```bash
+git pull
+cd ios && xcodegen generate        # 会跑 postGenCommand（fix_watch_embed.sh）
+# Release build；FITAI_API_BASE_URL 应仍是 https://hk-api.jiaolianfit.cn/api/v1
+# SwiftLint + 单测（44+，重点 ExerciseLibraryTests 现在要解码 1,394 条）
+```
+
+**二、重点编译风险（盲写，可能报错）**
+
+```text
+ExerciseLibrary.swift   ExerciseCategory 结构体 / categoryTree / visibleCategoryTree
+Exercise.swift          categoryL1/L2、planEligible、searchKey(改 let)
+ExerciseMedia.swift     media_id / visual_style / visual_priority / is_primary_for_watch
+ExerciseMediaStore.swift  多 variant（itemsBySlug: [String:[ExerciseMediaItem]]）
+ExerciseMediaCache.swift  新增（video+poster 磁盘缓存）
+ExerciseAnimationCard.swift  medias 数组 + 图库 gallery + .task 缓存
+EquipmentPickerView.swift   分类筛选 + 上拉分页
+EquipmentPickerView+Filters.swift  categorySidebar / categorySubChips
+Equipment.swift          加了 .other 枚举
+LoadProgression.swift    加了 .other case
+PlanGenerator.swift      用 planEligible ∪ 用户自选
+```
+
+**三、功能验证清单**
+
+1. **动作库两级目录**
+   - 侧栏显示 16 个有内容的一级（前锯肌/大圆肌/中下斜方不显示）
+   - 点「胸」→ 出现二级 chips 上胸/中下胸；点「背」→ 背阔肌/菱形肌/上斜方/竖脊肌
+   - 无二级的一级（核心/有氧/全身/other）不显示 chips
+   - 滚到底自动上拉加载（60/次）
+2. **搜索（别名）**
+   - 搜「双杠抬腿」→ 船长椅屈膝举腿；搜「臀冲」→ 杠铃臀推；搜「B站姿」→ B字步系列；搜「EZ杆」→ EZ杠弯举；搜英文「bench press」→ 卧推系列
+3. **计划生成（白名单）**
+   - 只用 810 常用动作 + 用户自选；新手计划不出现 瑜伽体式/拉伸/康复 动作
+   - 用户器械库自选的动作能进计划
+4. **训练页视频**
+   - 首次播放下载→缓存，退出重进不重复下载（断网重开仍能播本地缓存）
+   - 多视频动作显示缩略图 gallery，点切换，只自动加载 primary
+   - Reduce Motion 回退 poster
+5. **Watch**
+   - bootstrap 每个动作只返回 primary（后端已改，`all=false` 默认）
+   - 离线能播
+6. **器械筛选**
+   - 新增「其他」分类（药球/TRX/战绳/雪橇/波速球）
+
+**四、后端已就绪（真机直连生产即可）**
+
+```text
+V25 迁移已应用、1,394 动作 / 1,572 媒体已导入、媒体 1.3G 已上传
+/exercise-media?slugs=...&all=true  返回多 variant（按 visual_priority 排序 + is_primary_for_watch）
+/watch/bootstrap                      只返回 primary
+烟测：vital-back-squat 3 条 variant、vital-cable-rear-delt-fly 2 条、媒体 URL 200
+```
+
+**五、遗留（不阻塞 Mac build）**
+
+```text
+分类 needs_review 235 条（data/vital/category_classification.csv），可后续人工复核
+硬拉/内收肌/颈部/康复 等边界分类先按默认值，等复核再改
+```
 
 ### 2026-11-10 · Windows / OpenCode（修复重复 + 计划白名单 + 性能）
 
