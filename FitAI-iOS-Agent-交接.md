@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`b63d12e`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `aa17a19`；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`be5c2e5`；Watch 功能分支 `feature/watch-standalone-workout` 代码 HEAD `aa17a19`；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-07）：独立 worktree 验证 `feature/watch-standalone-workout`；Xcode 27.2 构建通过，`FitAIWorkoutCore` 13/13 测试通过；完成 Watch UI 重设计（训练/动作/语音/锁定页）、单主按钮流程（`2d5dea0`）、40/42/49mm 响应式适配（`1eb3fdd`），并把语音输入与发送合并为一行（`9a833b1`）；此前修复 XcodeGen 多平台配置和 Watch DEBUG 条件（`94f8afa`）
@@ -43,9 +43,11 @@
     - **base 候选不自动写入正式中文名**，避免「反手俯卧撑 → Bench Dips」这类错配
   - 中文 instructions：1,577 个动作全部生成，全部标记 `instructions_needs_review=1`
   - 人工复核队列：
-    - `review_high.csv` 243 条（优先看）
-    - `review_medium.csv` 1,107 条
-    - `review_low.csv` 227 条
+    - `review_high_videos.csv` / `review_high_videos.html` 243 条（优先看，**含源视频绝对路径，HTML 可直接播放**）
+    - `review_medium_videos.csv` 1,107 条
+    - `review_low_videos.csv` 227 条
+    - `vital_actions_review_videos.csv` 全部 1,577 条（含 `primary_video_path` / `all_video_paths`）
+  - 早期无路径的 `review_*.csv` 保留作对照
   - 原始 1500 JSON 没有覆盖；English 原名和 instructions 保留
 - 关键事实：
   - 1500 的健身房部分和 800 完全重复（831/831 哈希一致），400 也是子集
