@@ -38,8 +38,28 @@ enum ExerciseLibrary {
     ]
 
     static func subcategories(for l1: String) -> [String] {
-        categoryTree.first { $0.l1 == l1 }?.l2 ?? []
+        visibleCategoryTree.first { $0.l1 == l1 }?.l2 ?? []
     }
+
+    /// Category tree with empty branches removed, for the library browser.
+    /// Empty L1 (e.g. 前锯肌) and empty L2 (e.g. 背/大圆肌) are hidden until
+    /// content exists, so users never land on a dead-end filter.
+    static let visibleCategoryTree: [ExerciseCategory] = {
+        var l1s = Set<String>()
+        var l2ByL1: [String: Set<String>] = [:]
+        for exercise in all {
+            guard let l1 = exercise.categoryL1 else { continue }
+            l1s.insert(l1)
+            if let l2 = exercise.categoryL2 {
+                l2ByL1[l1, default: []].insert(l2)
+            }
+        }
+        return categoryTree.compactMap { entry in
+            guard l1s.contains(entry.l1) else { return nil }
+            let subs = entry.l2.filter { l2ByL1[entry.l1]?.contains($0) == true }
+            return ExerciseCategory(entry.l1, subs)
+        }
+    }()
 
     /// Previous curated libraries kept resolvable by slug for old plans and
     /// history, but never offered as new picks.

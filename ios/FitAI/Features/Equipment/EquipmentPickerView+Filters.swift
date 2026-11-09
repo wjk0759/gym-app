@@ -226,7 +226,7 @@ extension EquipmentPickerView {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 1) {
                 categorySideButton(nil, title: "全部")
-                ForEach(ExerciseLibrary.categoryTree) { entry in
+                ForEach(ExerciseLibrary.visibleCategoryTree) { entry in
                     categorySideButton(entry.l1, title: entry.l1)
                 }
             }
