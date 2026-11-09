@@ -235,6 +235,8 @@ struct Exercise: Identifiable, Hashable {
     /// Primary variant's poster (library thumbnail) and phone demo video.
     let thumbnailURL: URL?
     let demoVideoURL: URL?
+    /// All visual variants (for the detail-page gallery).
+    let mediaVariants: [ExerciseMediaVariant]
     let aliases: [String]
     let slugAliases: [String]
     /// Two-level category for library browsing (e.g. 胸/上胸, 背/背阔肌).
@@ -264,6 +266,7 @@ struct Exercise: Identifiable, Hashable {
         motionEndURL: URL? = nil,
         thumbnailURL: URL? = nil,
         demoVideoURL: URL? = nil,
+        mediaVariants: [ExerciseMediaVariant] = [],
         aliases: [String] = [],
         slugAliases: [String] = [],
         categoryL1: String? = nil,
@@ -282,6 +285,7 @@ struct Exercise: Identifiable, Hashable {
         self.motionEndURL = motionEndURL
         self.thumbnailURL = thumbnailURL
         self.demoVideoURL = demoVideoURL
+        self.mediaVariants = mediaVariants
         self.aliases = aliases
         self.slugAliases = slugAliases
         self.categoryL1 = categoryL1
@@ -290,6 +294,16 @@ struct Exercise: Identifiable, Hashable {
         self.searchKey = ([nameZH, nameEN] + aliases + [muscle.label, equipment.label])
             .joined(separator: " ")
             .lowercased()
+    }
+}
+
+struct ExerciseMediaVariant: Identifiable, Hashable {
+    let posterURL: URL?
+    let videoURL: URL?
+    let visualStyle: String?
+
+    var id: String {
+        videoURL?.absoluteString ?? posterURL?.absoluteString ?? visualStyle ?? ""
     }
 }
 

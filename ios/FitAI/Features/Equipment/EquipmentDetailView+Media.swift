@@ -73,10 +73,35 @@ func videoContent(for item: EquipmentItem) -> some View {
 
 @ViewBuilder
 func motionBoard(for item: EquipmentItem) -> some View {
-        if let exercise = item.exercise, let videoURL = exercise.demoVideoURL {
+        if let exercise = item.exercise, !exercise.mediaVariants.isEmpty {
+            MotionBoardGallery(exercise: exercise)
+        } else {
+            placeholderMotionBoard(for: item)
+        }
+    }
+
+struct MotionBoardGallery: View {
+    let exercise: Exercise
+
+    @State private var selectedIndex = 0
+
+    private var variants: [ExerciseMediaVariant] { exercise.mediaVariants }
+
+    var body: some View {
+        VStack(spacing: 10) {
             ZStack(alignment: .topLeading) {
-                LoopingVideoPlayer(url: videoURL)
-                detailBadge("动作轨迹", accent: true)
+                if let url = variants[selectedIndex].videoURL {
+                    LoopingVideoPlayer(url: url)
+                } else {
+                    Color.clear
+                }
+
+                Text("动作轨迹")
+                    .font(.system(size: 9.5, weight: .bold))
+                    .foregroundStyle(Theme.onAccent)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5)
+                    .background(Theme.cobalt.opacity(0.92), in: Capsule())
                     .padding(10)
             }
             .frame(height: 232)
@@ -85,10 +110,44 @@ func motionBoard(for item: EquipmentItem) -> some View {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .strokeBorder(Theme.stroke, lineWidth: 1)
             }
-        } else {
-            placeholderMotionBoard(for: item)
+
+            if variants.count > 1 {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(variants.enumerated()), id: \.element.id) { index, variant in
+                            Button {
+                                selectedIndex = index
+                            } label: {
+                                ZStack {
+                                    if let poster = variant.posterURL {
+                                        AsyncImage(url: poster) { phase in
+                                            switch phase {
+                                            case .success(let image):
+                                                image.resizable().scaledToFill()
+                                            default:
+                                                Color.gray.opacity(0.2)
+                                            }
+                                        }
+                                    } else {
+                                        Color.gray.opacity(0.2)
+                                    }
+
+                                    if index == selectedIndex {
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .strokeBorder(Theme.primary, lineWidth: 2)
+                                    }
+                                }
+                                .frame(width: 56, height: 56)
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
         }
     }
+}
 
 func placeholderMotionBoard(for item: EquipmentItem) -> some View {
         ZStack {

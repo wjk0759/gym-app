@@ -84,6 +84,28 @@ def media_urls(a: dict) -> tuple[str | None, str | None]:
     return f"{base}/poster.jpg", f"{base}/iphone.mp4"
 
 
+def variant_media(a: dict) -> list[dict]:
+    """全部变体的 poster / phone 视频，按视觉优先级排序。"""
+    media = a.get("media") or []
+    ordered = sorted(
+        media,
+        key=lambda m: (m.get("visual_priority") or 99, m.get("source_file") or ""),
+    )
+    result = []
+    for m in ordered:
+        key = variant_key_for(m)
+        base = f"/media/exercises/vital/{a['slug']}/{key}/v1"
+        result.append(
+            {
+                "poster_url": f"{base}/poster.jpg",
+                "video_url": f"{base}/iphone.mp4",
+                "visual_style": m.get("visual_style"),
+                "visual_priority": m.get("visual_priority"),
+            }
+        )
+    return result
+
+
 def main() -> None:
     actions = json.loads(SRC.read_text(encoding="utf-8"))
     rows = []
@@ -114,6 +136,7 @@ def main() -> None:
                 "category_confidence": conf,
                 "thumbnail_url": thumbnail_url,
                 "video_url": video_url,
+                "media": variant_media(a),
             }
         )
     rows.sort(key=lambda r: r["name_zh"])

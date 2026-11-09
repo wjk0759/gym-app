@@ -141,6 +141,13 @@ enum ExerciseLibrary {
                 motionEndURL: row.motionEndURL.flatMap { URL(string: $0) },
                 thumbnailURL: AppConfig.resolveMediaURL(row.thumbnailURL),
                 demoVideoURL: AppConfig.resolveMediaURL(row.videoURL),
+                mediaVariants: (row.media ?? []).map { variant in
+                    ExerciseMediaVariant(
+                        posterURL: AppConfig.resolveMediaURL(variant.posterURL),
+                        videoURL: AppConfig.resolveMediaURL(variant.videoURL),
+                        visualStyle: variant.visualStyle
+                    )
+                },
                 aliases: row.aliases ?? [],
                 slugAliases: row.slugAliases ?? [],
                 categoryL1: row.categoryL1,
@@ -165,6 +172,18 @@ enum ExerciseLibrary {
 
 private final class ResourceBundleToken {}
 
+private struct ResourceMediaVariant: Decodable {
+    let posterURL: String?
+    let videoURL: String?
+    let visualStyle: String?
+
+    enum CodingKeys: String, CodingKey {
+        case posterURL = "poster_url"
+        case videoURL = "video_url"
+        case visualStyle = "visual_style"
+    }
+}
+
 private struct ResourceExercise: Decodable {
     let slug: String
     let nameZH: String
@@ -178,6 +197,7 @@ private struct ResourceExercise: Decodable {
     let motionEndURL: String?
     let thumbnailURL: String?
     let videoURL: String?
+    let media: [ResourceMediaVariant]?
     let aliases: [String]?
     let slugAliases: [String]?
     let planEligible: Bool?
@@ -197,6 +217,7 @@ private struct ResourceExercise: Decodable {
         case motionEndURL = "motion_end_url"
         case thumbnailURL = "thumbnail_url"
         case videoURL = "video_url"
+        case media
         case aliases
         case slugAliases = "slug_aliases"
         case planEligible = "plan_eligible"
