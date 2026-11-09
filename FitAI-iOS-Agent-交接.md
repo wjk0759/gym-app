@@ -46,8 +46,12 @@
 - 不要恢复：
   - 不要恢复旧 PoC 占位媒体（crunch/squat/male-phone.mp4 等 11 目录）
   - 不要恢复 21 条非 `vital-` media 死链
-- 遗留（单独任务，本次未处理）：
-  - `exercises` 表仍有 80+ 条旧占位动作（`cm_*` 60+ 条 + 无前缀 20+ 条，`name_zh` 多为乱码），可能被旧计划/器械候选引用，需评估外键后再清理
+- 旧占位动作清理（本次已删除）：
+  - `exercises` 表 84 条非 `vital-` 旧动作（`cm_*` + 无前缀，`name_zh` 乱码）已删除；级联删除 `plan_exercises` 182 行 + `set_logs` 12 行（引用旧 slug 的失效数据）
+  - 归属：`test_reviewer`（is_test=1）48 行计划 + `13428104171`（is_test=0，2026-11-05 注册、仅当天登录）134 行计划 + 12 行日志
+  - 外键 `plan_exercises.exercise_slug`/`set_logs.exercise_slug` 是 NO ACTION（非 CASCADE），先删子表行再删父表
+  - 备份表保留在生产库：`_bak_exercises_stale`(84)、`_bak_plan_exercises_stale`(182)、`_bak_set_logs_stale`(12)，确认无误后可 `DROP TABLE`
+  - 副作用：`test_reviewer` 的旧 3 分化计划动作被清空（plan_exercises 现 0 行），需用新 vital 动作库重新生成演示计划
 
 ### 2026-11-10 · macOS（媒体图库 + 训练页视频验证）
 
