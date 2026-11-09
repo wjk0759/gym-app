@@ -5,10 +5,14 @@ on:
   push:
     paths:
       - "ios/**"
+      - "data/vital/**"
+      - "scripts/vital/**"
       - ".github/workflows/ios-build.yml"
   pull_request:
     paths:
       - "ios/**"
+      - "data/vital/**"
+      - "scripts/vital/**"
       - ".github/workflows/ios-build.yml"
 
 jobs:
@@ -19,6 +23,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate catalog data
+        run: python3 scripts/vital/validate_catalog.py
 
       - name: Install XcodeGen
         run: brew install xcodegen
