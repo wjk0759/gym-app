@@ -62,7 +62,7 @@
   - 没有接入 iOS/后端/生产库，没转码、没上 OSS
   - 误标视频的英文 instructions 还没重写（弹力带箭步蹲、跪姿弹力带髋外展等，已标 instructions_needs_review=1）
   - 冲刺间歇跑：默认 plural 条当慢速保留、singular 条排除，用户尚未最终确认哪条是慢速
-  - 别名/SYNONYMS 是基础版，正式上线前再补全搜索别名
+  - 别名已补全（`scripts/vital/enrich_aliases.py`：训记精确名 + 中文术语替换 + 英文变体 + 逐动作别名；主库 avg 2.1/条）
 - 对方需要做（Mac）：
   - 等 media 转码 + OSS 后，再谈 iOS 接入；当前 v2 JSON 只是数据草稿，不要直接进包
   - 手机端动作详情要做「主播放区 + 全部视频缩略图切换」，Watch 只下载 primary

@@ -498,13 +498,12 @@ def main() -> None:
                     media.append(item)
 
         aliases = set()
-        for m in members:
-            if m["name_en"]:
-                aliases.add(m["name_en"])
-            if m.get("name_zh"):
-                aliases.add(m["name_zh"])
-            if m.get("xunji_candidate"):
-                aliases.add(m["xunji_candidate"])
+        if len(members) > 1:
+            for m in members:
+                if m.get("name_en"):
+                    aliases.add(m["name_en"])
+                if m.get("name_zh"):
+                    aliases.add(m["name_zh"])
         aliases.update(SYNONYMS.get(final_name, []))
         aliases.discard(final_name)
 

@@ -8,7 +8,8 @@
   "name_en": "seated arms stretch",
   "source_name_en": "seated arms stretch",
   "aliases": [
-   "seated arms stretch"
+   "seated arms stretch",
+   "坐式手臂拉伸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "arms",
@@ -66,7 +67,10 @@
   "name_en": "seated overhead hand",
   "source_name_en": "seated overhead hand",
   "aliases": [
-   "seated overhead hand"
+   "seated overhead hand",
+   "坐姿过头自重伸展",
+   "坐姿过头身体自重伸展",
+   "坐式过头徒手伸展"
   ],
   "equipment": "bodyweight",
   "muscle_group": "arms",
@@ -234,7 +238,8 @@
   "name_en": "desk close grip push ups",
   "source_name_en": "desk close grip push ups",
   "aliases": [
-   "desk close grip push ups"
+   "desk close grip push ups",
+   "桌边窄握俯卧撑"
   ],
   "equipment": "bodyweight",
   "muscle_group": "arms",
@@ -292,7 +297,8 @@
   "name_en": "seated upper body side to side stretch",
   "source_name_en": "seated upper body side to side stretch",
   "aliases": [
-   "seated upper body side to side stretch"
+   "seated upper body side to side stretch",
+   "坐式上体左右拉伸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -350,7 +356,8 @@
   "name_en": "seated upper back stretch",
   "source_name_en": "seated upper back stretch",
   "aliases": [
-   "seated upper back stretch"
+   "seated upper back stretch",
+   "坐式上背拉伸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -408,7 +415,8 @@
   "name_en": "seated upper back stretch version 1",
   "source_name_en": "seated upper back stretch version 1",
   "aliases": [
-   "seated upper back stretch version 1"
+   "seated upper back stretch version 1",
+   "坐式上背拉伸式一"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -466,7 +474,8 @@
   "name_en": "seated upper back and shoulder stretch",
   "source_name_en": "seated upper back and shoulder stretch",
   "aliases": [
-   "seated upper back and shoulder stretch"
+   "seated upper back and shoulder stretch",
+   "坐式上背肩部拉伸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -524,7 +533,8 @@
   "name_en": "seated forward fold hips lift",
   "source_name_en": "seated forward fold hips lift",
   "aliases": [
-   "seated forward fold hips lift"
+   "seated forward fold hips lift",
+   "坐式体前屈抬髋"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -582,7 +592,8 @@
   "name_en": "seated dynamic stretch",
   "source_name_en": "seated dynamic stretch",
   "aliases": [
-   "seated dynamic stretch"
+   "seated dynamic stretch",
+   "坐式动态拉伸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -640,7 +651,8 @@
   "name_en": "seated chair forward fold",
   "source_name_en": "seated chair forward fold",
   "aliases": [
-   "seated chair forward fold"
+   "seated chair forward fold",
+   "坐式椅上体前屈"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -698,7 +710,8 @@
   "name_en": "seated cat cow stretch",
   "source_name_en": "seated cat cow stretch",
   "aliases": [
-   "seated cat cow stretch"
+   "seated cat cow stretch",
+   "坐式猫牛式拉伸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -757,7 +770,7 @@
   "source_name_en": "seated scapular squeeze",
   "aliases": [
    "seated scapular squeeze",
-   "肩胛骨后缩灵活性"
+   "坐式肩胛后缩"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -815,7 +828,8 @@
   "name_en": "seated shoulder blade clock",
   "source_name_en": "seated shoulder blade clock",
   "aliases": [
-   "seated shoulder blade clock"
+   "seated shoulder blade clock",
+   "坐式肩胛时钟"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -873,7 +887,8 @@
   "name_en": "seated interlaced back",
   "source_name_en": "seated interlaced back",
   "aliases": [
-   "seated interlaced back"
+   "seated interlaced back",
+   "坐式背后交叉"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -931,7 +946,8 @@
   "name_en": "seated interlaced fingers behind back 1",
   "source_name_en": "seated interlaced fingers behind back 1",
   "aliases": [
-   "seated interlaced fingers behind back 1"
+   "seated interlaced fingers behind back 1",
+   "坐式背后十指交叉1"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -989,7 +1005,8 @@
   "name_en": "seated interlaced fingers behind back version 1",
   "source_name_en": "seated interlaced fingers behind back version 1",
   "aliases": [
-   "seated interlaced fingers behind back version 1"
+   "seated interlaced fingers behind back version 1",
+   "坐式背后十指交叉式1"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -1048,7 +1065,7 @@
   "source_name_en": "seated interlaced fingers behind back stretch",
   "aliases": [
    "seated interlaced fingers behind back stretch",
-   "后背正反手拉伸"
+   "坐式背后十指交叉拉伸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -1107,7 +1124,7 @@
   "source_name_en": "seated thoracic twist",
   "aliases": [
    "seated thoracic twist",
-   "站姿背部扭转拉伸"
+   "坐式胸椎扭转"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -1165,7 +1182,8 @@
   "name_en": "seated thoracic twist version 1",
   "source_name_en": "seated thoracic twist version 1",
   "aliases": [
-   "seated thoracic twist version 1"
+   "seated thoracic twist version 1",
+   "坐式胸椎扭转式一"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -1223,7 +1241,8 @@
   "name_en": "seated spine rocking",
   "source_name_en": "seated spine rocking",
   "aliases": [
-   "seated spine rocking"
+   "seated spine rocking",
+   "坐式脊柱摇摆"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -1281,7 +1300,8 @@
   "name_en": "seated self hug",
   "source_name_en": "seated self hug",
   "aliases": [
-   "seated self hug"
+   "seated self hug",
+   "坐式自我抱肩"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -1339,7 +1359,8 @@
   "name_en": "seated torso stretch",
   "source_name_en": "seated torso stretch",
   "aliases": [
-   "seated torso stretch"
+   "seated torso stretch",
+   "坐式躯干拉伸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -1629,7 +1650,9 @@
   "name_en": "desk standing back stretch",
   "source_name_en": "desk standing back stretch",
   "aliases": [
-   "desk standing back stretch"
+   "desk standing back stretch",
+   "桌边站式背部拉伸",
+   "桌边站立背部拉伸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "back",
@@ -1687,7 +1710,8 @@
   "name_en": "seated dynamic chest stretch",
   "source_name_en": "seated dynamic chest stretch",
   "aliases": [
-   "seated dynamic chest stretch"
+   "seated dynamic chest stretch",
+   "坐式动态胸部拉伸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "chest",
@@ -1746,7 +1770,7 @@
   "source_name_en": "seated chest opener",
   "aliases": [
    "seated chest opener",
-   "仰卧泡沫轴开胸放松"
+   "坐式开胸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "chest",
@@ -1921,7 +1945,7 @@
   "source_name_en": "seated side stretch",
   "aliases": [
    "seated side stretch",
-   "站姿弹力带侧屈"
+   "坐式侧屈拉伸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "core",
@@ -1979,7 +2003,8 @@
   "name_en": "seated side to side toe touch",
   "source_name_en": "seated side to side toe touch",
   "aliases": [
-   "seated side to side toe touch"
+   "seated side to side toe touch",
+   "坐式左右触脚"
   ],
   "equipment": "bodyweight",
   "muscle_group": "core",
@@ -2037,7 +2062,8 @@
   "name_en": "seated deep breath relax",
   "source_name_en": "seated deep breath relax",
   "aliases": [
-   "seated deep breath relax"
+   "seated deep breath relax",
+   "坐式深呼吸放松"
   ],
   "equipment": "bodyweight",
   "muscle_group": "core",
@@ -2093,7 +2119,7 @@
   "source_name_en": "seated torso twist",
   "aliases": [
    "seated torso twist",
-   "俯身转体"
+   "坐式躯干扭转"
   ],
   "equipment": "bodyweight",
   "muscle_group": "core",
@@ -2151,7 +2177,8 @@
   "name_en": "seated eyes close deep breath",
   "source_name_en": "seated eyes close deep breath",
   "aliases": [
-   "seated eyes close deep breath"
+   "seated eyes close deep breath",
+   "坐式闭眼深呼吸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "core",
@@ -2265,7 +2292,7 @@
   "source_name_en": "seated knee extension",
   "aliases": [
    "seated knee extension",
-   "弹力带末端膝盖伸展"
+   "坐式伸膝"
   ],
   "equipment": "bodyweight",
   "muscle_group": "legs",
@@ -2322,7 +2349,8 @@
   "name_en": "seated lift both legs",
   "source_name_en": "seated lift both legs",
   "aliases": [
-   "seated lift both legs"
+   "seated lift both legs",
+   "坐式双腿抬起"
   ],
   "equipment": "bodyweight",
   "muscle_group": "legs",
@@ -2380,7 +2408,8 @@
   "name_en": "seated glute squeeze",
   "source_name_en": "seated glute squeeze",
   "aliases": [
-   "seated glute squeeze"
+   "seated glute squeeze",
+   "坐式夹臀"
   ],
   "equipment": "bodyweight",
   "muscle_group": "legs",
@@ -2435,7 +2464,8 @@
   "name_en": "seated fast leg swing",
   "source_name_en": "seated fast leg swing",
   "aliases": [
-   "seated fast leg swing"
+   "seated fast leg swing",
+   "坐式快速摆腿"
   ],
   "equipment": "bodyweight",
   "muscle_group": "legs",
@@ -2493,7 +2523,9 @@
   "name_en": "seated toe raise",
   "source_name_en": "seated toe raise",
   "aliases": [
-   "seated toe raise"
+   "seated toe raise",
+   "坐姿踮脚",
+   "坐式提踵"
   ],
   "equipment": "bodyweight",
   "muscle_group": "legs",
@@ -2548,7 +2580,8 @@
   "name_en": "seated leg swing",
   "source_name_en": "seated leg swing",
   "aliases": [
-   "seated leg swing"
+   "seated leg swing",
+   "坐式摆腿"
   ],
   "equipment": "bodyweight",
   "muscle_group": "legs",
@@ -2606,7 +2639,9 @@
   "name_en": "seated leg raise straight",
   "source_name_en": "seated leg raise straight",
   "aliases": [
-   "seated leg raise straight"
+   "seated leg raise straight",
+   "坐姿伸直腿抬高",
+   "坐式直腿抬高"
   ],
   "equipment": "bodyweight",
   "muscle_group": "legs",
@@ -2664,7 +2699,8 @@
   "name_en": "seated march",
   "source_name_en": "seated march",
   "aliases": [
-   "seated march"
+   "seated march",
+   "坐式踏步"
   ],
   "equipment": "bodyweight",
   "muscle_group": "legs",
@@ -2838,7 +2874,10 @@
   "name_en": "supported single-leg balance",
   "source_name_en": "supported single-leg balance",
   "aliases": [
-   "supported single-leg balance"
+   "supported single leg balance",
+   "supported single-leg balance",
+   "支撑单侧腿平衡",
+   "支撑单脚平衡"
   ],
   "equipment": "bodyweight",
   "muscle_group": "legs",
@@ -3012,7 +3051,8 @@
   "name_en": "supported wide leg mini squat",
   "source_name_en": "supported wide leg mini squat",
   "aliases": [
-   "supported wide leg mini squat"
+   "supported wide leg mini squat",
+   "支撑宽握迷你深蹲"
   ],
   "equipment": "bodyweight",
   "muscle_group": "legs",
@@ -3358,7 +3398,9 @@
   "name_en": "desk standing leg stretch",
   "source_name_en": "desk standing leg stretch",
   "aliases": [
-   "desk standing leg stretch"
+   "desk standing leg stretch",
+   "桌边站式腿部拉伸",
+   "桌边站立腿部拉伸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "legs",
@@ -3826,6 +3868,7 @@
   "name_en": "jaw resistance open-close",
   "source_name_en": "jaw resistance open-close",
   "aliases": [
+   "jaw resistance open close",
    "jaw resistance open-close"
   ],
   "equipment": "bodyweight",
@@ -4526,7 +4569,8 @@
   "name_en": "seated arms up down stretch",
   "source_name_en": "seated arms up down stretch",
   "aliases": [
-   "seated arms up down stretch"
+   "seated arms up down stretch",
+   "坐式手臂上下拉伸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "shoulders",
@@ -4584,7 +4628,8 @@
   "name_en": "seated shoulder shurg",
   "source_name_en": "seated shoulder shurg",
   "aliases": [
-   "seated shoulder shurg"
+   "seated shoulder shurg",
+   "坐式耸肩"
   ],
   "equipment": "bodyweight",
   "muscle_group": "shoulders",
@@ -4642,7 +4687,8 @@
   "name_en": "seated shoulder rolls up down",
   "source_name_en": "seated shoulder rolls up down",
   "aliases": [
-   "seated shoulder rolls up down"
+   "seated shoulder rolls up down",
+   "坐式耸肩绕环"
   ],
   "equipment": "bodyweight",
   "muscle_group": "shoulders",
@@ -4700,7 +4746,8 @@
   "name_en": "seated shoulder rotate",
   "source_name_en": "seated shoulder rotate",
   "aliases": [
-   "seated shoulder rotate"
+   "seated shoulder rotate",
+   "坐式肩部旋转"
   ],
   "equipment": "bodyweight",
   "muscle_group": "shoulders",
@@ -4758,7 +4805,8 @@
   "name_en": "seated shoulder circle",
   "source_name_en": "seated shoulder circle",
   "aliases": [
-   "seated shoulder circle"
+   "seated shoulder circle",
+   "坐式肩部绕环"
   ],
   "equipment": "bodyweight",
   "muscle_group": "shoulders",
@@ -4816,7 +4864,8 @@
   "name_en": "seated shoulder butterfly stretch",
   "source_name_en": "seated shoulder butterfly stretch",
   "aliases": [
-   "seated shoulder butterfly stretch"
+   "seated shoulder butterfly stretch",
+   "坐式肩部蝴蝶拉伸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "shoulders",
@@ -4874,7 +4923,8 @@
   "name_en": "seated overhead arms stretch",
   "source_name_en": "seated overhead arms stretch",
   "aliases": [
-   "seated overhead arms stretch"
+   "seated overhead arms stretch",
+   "坐式过头臂拉伸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "shoulders",
@@ -4932,7 +4982,8 @@
   "name_en": "seated neck and back stretch",
   "source_name_en": "seated neck and back stretch",
   "aliases": [
-   "seated neck and back stretch"
+   "seated neck and back stretch",
+   "坐式颈背拉伸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "shoulders",
@@ -4990,7 +5041,8 @@
   "name_en": "seated neck lift up down",
   "source_name_en": "seated neck lift up down",
   "aliases": [
-   "seated neck lift up down"
+   "seated neck lift up down",
+   "坐式颈部上下抬"
   ],
   "equipment": "bodyweight",
   "muscle_group": "shoulders",
@@ -5047,7 +5099,8 @@
   "name_en": "seated neck side to side rotate",
   "source_name_en": "seated neck side to side rotate",
   "aliases": [
-   "seated neck side to side rotate"
+   "seated neck side to side rotate",
+   "坐式颈部左右旋转"
   ],
   "equipment": "bodyweight",
   "muscle_group": "shoulders",
@@ -5105,7 +5158,8 @@
   "name_en": "seated neck stretch",
   "source_name_en": "seated neck stretch",
   "aliases": [
-   "seated neck stretch"
+   "seated neck stretch",
+   "坐式颈部拉伸"
   ],
   "equipment": "bodyweight",
   "muscle_group": "shoulders",
@@ -5336,7 +5390,8 @@
   "name_en": "wide eye opener",
   "source_name_en": "wide eye opener",
   "aliases": [
-   "wide eye opener"
+   "wide eye opener",
+   "宽握开眼式"
   ],
   "equipment": "bodyweight",
   "muscle_group": "shoulders",
@@ -5569,6 +5624,7 @@
   "name_en": "surprise look (wide eyes lift)",
   "source_name_en": "surprise look (wide eyes lift)",
   "aliases": [
+   "surprise look",
    "surprise look (wide eyes lift)"
   ],
   "equipment": "bodyweight",
@@ -5685,6 +5741,7 @@
   "name_en": "lip pucker (kiss face)",
   "source_name_en": "lip pucker (kiss face)",
   "aliases": [
+   "lip pucker",
    "lip pucker (kiss face)"
   ],
   "equipment": "bodyweight",
