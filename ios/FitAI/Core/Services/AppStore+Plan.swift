@@ -27,6 +27,7 @@ extension AppStore {
         isGenerating = true
         let snapshot = profile
         let librarySlugs = equipmentSlugsForPlan
+        let strictEquipment = strictEquipmentMode
         let focusAreas = planFocusAreas
 
         if (canUseRemoteAI || onboarding) && weeklyWeekdays == nil {
@@ -37,6 +38,7 @@ extension AppStore {
                     var generated = try await self.planGeneration.generateRemote(
                         profile: snapshot,
                         equipmentSlugs: librarySlugs,
+                        strictEquipment: strictEquipment,
                         focusAreas: focusAreas,
                         force: force,
                         onboarding: onboarding,
@@ -79,6 +81,7 @@ extension AppStore {
                         profile: snapshot,
                         dislikedSlugs: self.dislikedSlugs,
                         equipmentSlugs: librarySlugs,
+                        strictEquipment: strictEquipment,
                         weeklyWeekdays: weeklyWeekdays,
                         focusAreas: focusAreas,
                         sessions: self.sessions,
@@ -107,6 +110,7 @@ extension AppStore {
                 profile: snapshot,
                 dislikedSlugs: self.dislikedSlugs,
                 equipmentSlugs: librarySlugs,
+                strictEquipment: strictEquipment,
                 weeklyWeekdays: weeklyWeekdays,
                 focusAreas: focusAreas,
                 sessions: self.sessions,

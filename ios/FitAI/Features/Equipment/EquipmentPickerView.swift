@@ -66,7 +66,7 @@ struct EquipmentPickerView: View {
 
     /// 每次筛选只构建一次 Set，避免在 filter/sort 里反复线性查库。
     var savedSlugs: Set<String> {
-        Set(store.personalExerciseSlugs)
+        Set(store.enabledExerciseSlugs)
     }
 
     /// 当前筛选后的前 `visibleLimit` 条，用于上拉加载。
@@ -307,8 +307,8 @@ struct EquipmentPickerView: View {
     }
 
     func addSelectedToLibrary() {
-        guard !selectedExercises.isEmpty else { return }
-        let added = store.addExercisesToEquipmentLibrary(selectedExercises)
+        // 器械库只存器械，动作不再写入器械库。
+        let added = 0
         if added > 0 {
             Haptics.success()
         } else {
@@ -316,9 +316,5 @@ struct EquipmentPickerView: View {
         }
         selectedExercises.removeAll()
         showSelectionPanel = false
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
-            feedback = added > 0 ? "已加入器械库 \(added) 个动作" : "这些动作已经在器械库"
-        }
     }
-
 }

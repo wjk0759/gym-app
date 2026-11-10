@@ -11,6 +11,7 @@ struct PlanGenerationService {
     func generateRemote(
         profile: UserProfile,
         equipmentSlugs: [String],
+        strictEquipment: Bool,
         focusAreas: Set<BodyFocusArea>,
         force: Bool,
         onboarding: Bool,
@@ -24,6 +25,7 @@ struct PlanGenerationService {
             force: force,
             onboarding: onboarding,
             equipmentSlugs: equipmentSlugs,
+            strictEquipment: strictEquipment,
             split: profile.split,
             focus: BodyFocusArea.displayOrder
                 .filter(focusAreas.contains)
@@ -36,6 +38,7 @@ struct PlanGenerationService {
         profile: UserProfile,
         dislikedSlugs: Set<String>,
         equipmentSlugs: [String],
+        strictEquipment: Bool,
         weeklyWeekdays: [Int]?,
         focusAreas: Set<BodyFocusArea>,
         sessions: [WorkoutSession],
@@ -45,6 +48,7 @@ struct PlanGenerationService {
             profile: profile,
             dislikedSlugs: dislikedSlugs,
             equipmentSlugs: equipmentSlugs,
+            strictEquipment: strictEquipment,
             weeklyWeekdays: weeklyWeekdays,
             focusAreas: focusAreas,
             sessions: sessions,

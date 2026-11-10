@@ -444,25 +444,24 @@ struct EquipmentRecognitionView: View {
         }
     }
 
-    /// 保存识别到的器械，并把它的可练动作默认全选加入个人动作库。
+    /// 保存识别到的器械，并把它的可练动作默认全选启用。
     func saveEquipmentAndExercises() {
         guard !isEquipmentSaved else { return }
         let name = equipmentName.isEmpty ? "未命名器械" : equipmentName
+        let eligible = candidates.map(\.exercise).filter(\.planEligible)
         let item = store.addEquipment(
             equipmentType: selectedEquipmentSlug,
             name: name,
             category: candidates.first?.exercise.equipment.rawValue,
             photoData: selectedImage?.jpegData(compressionQuality: 0.5) ?? imageData,
+            enabledExerciseSlugs: eligible.map(\.slug),
             source: "recognition"
         )
         onSaved?(item)
-        let eligible = candidates.map(\.exercise).filter(\.planEligible)
-        let added = store.addExercisesToPersonalLibrary(
-            eligible,
-            equipmentType: selectedEquipmentSlug
-        )
         recognizedName = name
-        customAddedName = added > 0 ? "\(name) + \(added) 个动作" : name
+        customAddedName = eligible.isEmpty
+            ? name
+            : "\(name) + \(eligible.count) 个动作"
         notInLibrary = false
         description = ""
     }

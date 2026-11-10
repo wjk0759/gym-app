@@ -11,14 +11,51 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..config import settings
-from ..models import Exercise, Profile
-from . import llm
+from ..models import (
+    Exercise,
+    Profile,
+    UserEquipmentExercise,
+    UserUniversalEquipment,
+)
+from . import equipment_catalog_v2, llm
 from .equipment import available_equipment_types
 from .load_progression import apply_plan_weights
 from .plan_validator import injury_tags, validate_plan
 from .training_stage import refresh_training_stage
 
 PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "plan_system.md"
+
+
+def user_plan_pool_slugs(db: Session, user_id: str) -> list[str]:
+    """Build the equipment plan pool from the DB.
+
+    Union of fixed-machine enabled exercises and the checked universal
+    equipment groups. Used by the coach/agent path, where iOS cannot pass the
+    client-computed pool.
+    """
+    fixed = (
+        db.execute(
+            select(UserEquipmentExercise.exercise_slug).where(
+                UserEquipmentExercise.user_id == user_id
+            )
+        )
+        .scalars()
+        .all()
+    )
+    groups = (
+        db.execute(
+            select(UserUniversalEquipment.equipment_slug).where(
+                UserUniversalEquipment.user_id == user_id,
+                UserUniversalEquipment.enabled.is_(True),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    slugs = set(fixed)
+    for group in groups:
+        slugs.update(equipment_catalog_v2.EXERCISE_MAP.get(group, []))
+    return sorted(slugs)
 
 GOAL_LABELS = {
     "lose_fat": "减脂",
@@ -140,7 +177,8 @@ def _allowed_exercises(
     equipment: list[str] | None,
     injuries: list[str] | None,
     preferred_slugs: list[str] | None = None,
-    exercise_library_slugs: list[str] | None = None,
+    plan_pool_slugs: list[str] | None = None,
+    strict_equipment: bool = False,
 ) -> list[Exercise]:
     allowed_equipment = set(equipment or ["bodyweight"])
     allowed_equipment.add("bodyweight")
@@ -152,15 +190,16 @@ def _allowed_exercises(
         .all()
     )
 
-    # 个人动作库：用户显式选择，>=8 条时作为严格计划池（仍过滤伤病）。
-    library = set(exercise_library_slugs or [])
-    if library:
+    # 器械计划池：固定器械启用动作 + 通用器械动作（iOS 计算后传入）。
+    # >=8 条默认严格使用；strict_equipment 时不论多少都严格使用，不回退白名单。
+    pool = set(plan_pool_slugs or [])
+    if pool:
         picked = [
             e for e in rows
-            if e.slug in library
+            if e.slug in pool
             and not (banned & set(e.contraindications or []))
         ]
-        if len(picked) >= 8:
+        if strict_equipment or len(picked) >= 8:
             return picked
 
     result: list[Exercise] = []
@@ -336,7 +375,8 @@ def build_template_plan(
     session_minutes: int | None = None,
     weekdays: list[int] | None = None,
     focus: list[str] | None = None,
-    exercise_library_slugs: list[str] | None = None,
+    plan_pool_slugs: list[str] | None = None,
+    strict_equipment: bool = False,
 ) -> dict:
     """Build a deterministic, validated plan for the agent proposal tool."""
     refresh_training_stage(db, profile.user_id)
@@ -345,7 +385,12 @@ def build_template_plan(
         db, profile.user_id, profile.equipment
     )
     available = _allowed_exercises(
-        db, equipment_types, profile.injuries, None, exercise_library_slugs
+        db,
+        equipment_types,
+        profile.injuries,
+        None,
+        plan_pool_slugs,
+        strict_equipment,
     )
     if not available:
         raise ValueError("当前器械或伤病条件下没有可用动作")
@@ -484,14 +529,22 @@ async def generate_plan(
     equipment_slugs: list[str] | None = None,
     split: str | None = None,
     focus: list[str] | None = None,
-    exercise_library_slugs: list[str] | None = None,
+    plan_pool_slugs: list[str] | None = None,
+    strict_equipment: bool = False,
 ) -> dict:
     # Fast path: the reasoning LLM is far too slow for plan generation (see
     # ai_jobs: plan=64s). The deterministic template is instant and already
     # validated, and matches the iOS local generator.
     if not settings.llm_plan_enabled:
         return build_template_plan(
-            db, profile, goal_type, weeks=weeks, split=split, focus=focus
+            db,
+            profile,
+            goal_type,
+            weeks=weeks,
+            split=split,
+            focus=focus,
+            plan_pool_slugs=plan_pool_slugs,
+            strict_equipment=strict_equipment,
         )
 
     refresh_training_stage(db, profile.user_id)
@@ -500,7 +553,12 @@ async def generate_plan(
         db, profile.user_id, profile.equipment
     )
     available = _allowed_exercises(
-        db, equipment_types, profile.injuries, equipment_slugs, exercise_library_slugs
+        db,
+        equipment_types,
+        profile.injuries,
+        equipment_slugs,
+        plan_pool_slugs,
+        strict_equipment,
     )
     if not available:
         available = (

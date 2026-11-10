@@ -25,16 +25,15 @@ indirect enum AgentUndoState {
         previousProfile: UserProfile
     )
     case profile(UserProfile)
-    /// 一次 Agent 动作卡可能包含多天操作，撤销时要一起恢复。
-    case batch([AgentUndoState])
+    /// 一�?Agent 动作卡可能包含多天操作，撤销时要一起恢复�?    case batch([AgentUndoState])
 }
 
 @Observable
 final class AppStore {
     static let chatRequestTimeoutNanoseconds: UInt64 = 45_000_000_000
-    static let agentTimeoutNotice = "这次回复等待太久了，可能是网络或模型服务较慢。问题已保留，可以点重试。"
-    static let legacyTimeoutNotice = "这次回复等待太久了，可能是网络或模型服务较慢。可以稍后再试。"
-    static let photoTimeoutNotice = "这张照片的分析等待太久了，可能是网络或视觉服务较慢。可以重新拍一张，或先用文字描述动作和不舒服的位置。"
+    static let agentTimeoutNotice = "这次回复等待太久了，可能是网络或模型服务较慢。问题已保留，可以点重试�?
+    static let legacyTimeoutNotice = "这次回复等待太久了，可能是网络或模型服务较慢。可以稍后再试�?
+    static let photoTimeoutNotice = "这张照片的分析等待太久了，可能是网络或视觉服务较慢。可以重新拍一张，或先用文字描述动作和不舒服的位置�?
     static let chatTimeoutNotices: Set<String> = [
         agentTimeoutNotice,
         legacyTimeoutNotice,
@@ -45,8 +44,7 @@ final class AppStore {
     var plan: TrainingPlan?
     var planHistory: [TrainingPlan] = []
     var sessions: [WorkoutSession] = []
-    /// 当前训练中的本地草稿；只保留一个，避免同一天出现多份进度。
-    var workoutDraft: WorkoutDraft?
+    /// 当前训练中的本地草稿；只保留一个，避免同一天出现多份进度�?    var workoutDraft: WorkoutDraft?
     var chat: [ChatMessage] = []
     var selectedTab = 0
     /// Transient handoff from Today to the Record tab. Not persisted.
@@ -67,8 +65,8 @@ final class AppStore {
     var customFoods: [FoodItem] = []
     var dislikedSlugs: Set<String> = []
     var equipmentLibrary: [EquipmentItem] = []
-    /// 个人动作库：用户从器械可练动作里选中的动作 slug，计划优先使用它。
-    var personalExerciseSlugs: [String] = []
+    /// 通用器械勾选（徒手/哑铃/杠铃...）�?    var selectedUniversalSlugs: [String] = ["bodyweight"]
+    /// 计划模式：true = 只用我的器械；false = 优先我的器械，不足回退�?    var strictEquipmentMode = false
     var bodyAnalyses: [BodyAnalysis] = []
     var bodyMetrics: [BodyMetric] = []
     var bodyCheckInFrequency: BodyCheckInFrequency = .off
@@ -76,7 +74,6 @@ final class AppStore {
     var bodyCheckInDay = 1
     var bodyCheckInAnchor = Date()
     var bodyCheckInDismissedDate: String? = nil
-    var useEquipmentLibraryForPlans = true
     var isGenerating = false
     var isReplying = false
     @ObservationIgnored var lastPlanGeneratedAt: Date?
@@ -92,8 +89,7 @@ final class AppStore {
     @ObservationIgnored var coachPhotoTask: Task<Void, Never>?
     @ObservationIgnored var coachPhotoWatchdog: Task<Void, Never>?
     @ObservationIgnored var coachPhotoRequestID: UUID?
-    /// 已从本地删除、但服务端 DELETE 尚未成功的训练记录 ID。
-    var pendingWorkoutDeletionIDs: [String] = []
+    /// 已从本地删除、但服务�?DELETE 尚未成功的训练记�?ID�?    var pendingWorkoutDeletionIDs: [String] = []
     var isAgentWorking = false
     var agentSessionID: UUID?
     var agentRunID: String?
@@ -102,8 +98,7 @@ final class AppStore {
     var dietWeekPlan: RemoteDietWeek?
     var coachEquipmentScanRequested = false
     var coachBodyAnalysisRequested = false
-    /// 从发现页/相机入口带回教练页的待发送图片；不直接发送。
-    var pendingCoachAttachmentData: [Data] = []
+    /// 从发现页/相机入口带回教练页的待发送图片；不直接发送�?    var pendingCoachAttachmentData: [Data] = []
     var coachEquipmentResult: EquipmentScanResult?
     var isExecutingAgentActions = false
     var workoutLaunchDayID: UUID?
@@ -124,12 +119,10 @@ final class AppStore {
     /// Server snapshot, StoreKit fallback and paywall coordinator live here so
     /// AppStore stays a data/sync store instead of the entitlement source.
     @ObservationIgnored let access = FeatureAccessStore()
-    /// 仅用于 Debug 预览 DeepSeek；正式包不会暴露出开关。
-    var healthKitEnabled = false
+    /// 仅用�?Debug 预览 DeepSeek；正式包不会暴露出开关�?    var healthKitEnabled = false
 
     var currentUserID: String? = AuthTokenStore.shared.userID
-    // 状态较大时 JSON 编码和原子落盘会阻塞主线程；写入串行放到 utility 队列。
-    let planGeneration = PlanGenerationService()
+    // 状态较大时 JSON 编码和原子落盘会阻塞主线程；写入串行放到 utility 队列�?    let planGeneration = PlanGenerationService()
     let workoutSync = WorkoutSyncService()
     let nutrition = NutritionService()
 
@@ -156,8 +149,7 @@ final class AppStore {
         seedBodyMetricsIfNeeded()
     }
 
-    // MARK: - 建档与计划
-
+    // MARK: - 建档与计�?
     func resetAll() {
         flushPersistence()
         try? FileManager.default.removeItem(at: fileURL)
@@ -165,8 +157,7 @@ final class AppStore {
         NotificationScheduler.shared.cancelAll()
     }
 
-    /// 登录账号切换时使用独立本地数据文件，避免 A 账号看到 B 账号数据。
-    func switchUser(_ userID: String?) {
+    /// 登录账号切换时使用独立本地数据文件，避免 A 账号看到 B 账号数据�?    func switchUser(_ userID: String?) {
         guard userID != currentUserID else { return }
         persist()
         flushPersistence()
@@ -195,7 +186,8 @@ final class AppStore {
         useRemoteAI = AppConfig.useRemoteAI
         healthKitEnabled = false
         equipmentLibrary = []
-        personalExerciseSlugs = []
+        selectedUniversalSlugs = ["bodyweight"]
+        strictEquipmentMode = false
         bodyAnalyses = []
         bodyMetrics = []
         bodyCheckInFrequency = .off
@@ -210,7 +202,6 @@ final class AppStore {
         isReviewingWeekly = false
         reviewRefreshQueued = false
         reviewNotifyQueued = false
-        useEquipmentLibraryForPlans = true
         reminderHour = 19
         reminderMinute = 0
         isAgentWorking = false
@@ -293,7 +284,8 @@ final class AppStore {
 #endif
         healthKitEnabled = state.healthKitEnabled ?? false
         equipmentLibrary = state.equipmentLibrary ?? []
-        personalExerciseSlugs = state.personalExerciseSlugs ?? []
+        selectedUniversalSlugs = state.selectedUniversalSlugs ?? ["bodyweight"]
+        strictEquipmentMode = state.strictEquipmentMode ?? false
         bodyAnalyses = state.bodyAnalyses ?? []
         bodyMetrics = state.bodyMetrics ?? []
         bodyCheckInFrequency = state.bodyCheckInFrequency ?? .off
@@ -304,7 +296,6 @@ final class AppStore {
         pendingWorkoutDeletionIDs = state.pendingWorkoutDeletionIDs ?? []
         weeklyReview = state.weeklyReview
         coachVisualMemory = state.coachVisualMemory
-        useEquipmentLibraryForPlans = state.useEquipmentLibraryForPlans ?? true
         if persistAfterMigration {
             persist()
         }
@@ -329,9 +320,9 @@ final class AppStore {
             useRemoteAI: useRemoteAI,
             healthKitEnabled: healthKitEnabled,
             equipmentLibrary: equipmentLibrary,
-            personalExerciseSlugs: personalExerciseSlugs,
+            selectedUniversalSlugs: selectedUniversalSlugs,
+            strictEquipmentMode: strictEquipmentMode,
             bodyAnalyses: bodyAnalyses,
-            useEquipmentLibraryForPlans: useEquipmentLibraryForPlans,
             bodyMetrics: bodyMetrics,
             bodyCheckInFrequency: bodyCheckInFrequency,
             bodyCheckInWeekday: bodyCheckInWeekday,
@@ -344,9 +335,7 @@ final class AppStore {
         )
         let url = fileURL
 
-        // 连续交互（滑杆、滚轮、打卡）会高频调用 persist。
-        // 只保留最新快照，后台队列合并成一次编码 + 一次落盘。
-        persistenceLock.lock()
+        // 连续交互（滑杆、滚轮、打卡）会高频调�?persist�?        // 只保留最新快照，后台队列合并成一次编�?+ 一次落盘�?        persistenceLock.lock()
         pendingPersistedState = state
         pendingPersistedURL = url
         let shouldSchedule = !persistenceDrainScheduled
@@ -394,8 +383,7 @@ final class AppStore {
         }
     }
 
-    /// 进入后台或切换账号前调用，确保已排队的写入完成。
-    func flushPersistence() {
+    /// 进入后台或切换账号前调用，确保已排队的写入完成�?    func flushPersistence() {
         if draftPersistWorkItem != nil {
             draftPersistWorkItem?.cancel()
             draftPersistWorkItem = nil
@@ -433,9 +421,9 @@ final class AppStore {
         var useRemoteAI: Bool?
         var healthKitEnabled: Bool?
         var equipmentLibrary: [EquipmentItem]?
-        var personalExerciseSlugs: [String]?
+        var selectedUniversalSlugs: [String]?
+        var strictEquipmentMode: Bool?
         var bodyAnalyses: [BodyAnalysis]?
-        var useEquipmentLibraryForPlans: Bool?
         var bodyMetrics: [BodyMetric]?
         var bodyCheckInFrequency: BodyCheckInFrequency?
         var bodyCheckInWeekday: Int?

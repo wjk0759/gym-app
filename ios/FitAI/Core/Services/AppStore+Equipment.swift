@@ -1,6 +1,39 @@
 import Foundation
 
 extension AppStore {
+    // MARK: - 计划池
+
+    /// 所有固定器械启用的动作并集（去重）。
+    var enabledExerciseSlugs: [String] {
+        var seen = Set<String>()
+        var result: [String] = []
+        for item in equipmentLibrary {
+            for slug in (item.enabledExerciseSlugs ?? []) where seen.insert(slug).inserted {
+                result.append(slug)
+            }
+        }
+        return result
+    }
+
+    /// 计划池 = 固定器械启用动作 + 已勾选通用器械的动作（去重）。
+    var planPoolSlugs: [String] {
+        var seen = Set(enabledExerciseSlugs)
+        var result = enabledExerciseSlugs
+        for group in selectedUniversalSlugs {
+            for exercise in ExerciseLibrary.universalExercises[group] ?? [] {
+                if seen.insert(exercise.slug).inserted {
+                    result.append(exercise.slug)
+                }
+            }
+        }
+        return result
+    }
+
+    /// 计划池覆盖的部位。
+    var planPoolBodyParts: Set<String> {
+        Set(planPoolSlugs.compactMap { ExerciseLibrary.exercise(slug: $0)?.bodyPart })
+    }
+
     // MARK: - 器械库（物理器械）
 
     func addEquipment(_ item: EquipmentItem) {
@@ -16,6 +49,7 @@ extension AppStore {
         name: String,
         category: String? = nil,
         photoData: Data? = nil,
+        enabledExerciseSlugs: [String] = [],
         source: String = "manual"
     ) -> EquipmentItem {
         let item = EquipmentItem(
@@ -23,6 +57,7 @@ extension AppStore {
             equipmentType: equipmentType,
             category: category,
             photoURL: nil,
+            enabledExerciseSlugs: enabledExerciseSlugs,
             slug: nil,
             muscle: nil,
             equipment: nil,
@@ -45,59 +80,51 @@ extension AppStore {
         }
     }
 
-    // MARK: - 个人动作库
+    // MARK: - 固定器械动作选择
 
-    /// 把动作加入个人动作库（默认全选器械可练动作后调用）。
-    @discardableResult
-    func addExercisesToPersonalLibrary(
-        _ exercises: [Exercise],
-        equipmentType: String? = nil
-    ) -> Int {
-        var existing = Set(personalExerciseSlugs)
-        var added = 0
-        for exercise in exercises where !existing.contains(exercise.slug) {
-            personalExerciseSlugs.append(exercise.slug)
-            existing.insert(exercise.slug)
-            added += 1
+    func toggleEquipmentExercise(_ itemID: UUID, slug: String) {
+        guard let index = equipmentLibrary.firstIndex(where: { $0.id == itemID }) else {
+            return
         }
-        guard added > 0 else { return 0 }
+        var slugs = equipmentLibrary[index].enabledExerciseSlugs ?? []
+        if let pos = slugs.firstIndex(of: slug) {
+            slugs.remove(at: pos)
+        } else {
+            slugs.append(slug)
+        }
+        equipmentLibrary[index].enabledExerciseSlugs = slugs
+        equipmentLibrary[index].syncedAt = nil
         persist()
-        Task {
-            try? await APIClient.shared.addExerciseLibrary(
-                slugs: exercises.map(\.slug),
-                equipmentType: equipmentType
-            )
-        }
-        return added
+        syncPendingUserData()
     }
 
-    func removeFromPersonalLibrary(_ slug: String) {
-        personalExerciseSlugs.removeAll { $0 == slug }
-        persist()
-        Task {
-            try? await APIClient.shared.deleteExerciseLibrary(slug: slug)
+    func replaceEquipmentExercises(_ itemID: UUID, slugs: [String]) {
+        guard let index = equipmentLibrary.firstIndex(where: { $0.id == itemID }) else {
+            return
         }
+        equipmentLibrary[index].enabledExerciseSlugs = slugs
+        equipmentLibrary[index].syncedAt = nil
+        persist()
+        syncPendingUserData()
     }
 
-    /// 批量移除（器械详情页「全部移除」）。
-    func removeExercisesFromPersonalLibrary(_ slugs: [String]) {
-        guard !slugs.isEmpty else { return }
-        let set = Set(slugs)
-        personalExerciseSlugs.removeAll { set.contains($0) }
+    // MARK: - 通用器械勾选
+
+    func setUniversalEquipment(_ slugs: [String]) {
+        selectedUniversalSlugs = slugs
         persist()
         Task {
-            for slug in slugs {
-                try? await APIClient.shared.deleteExerciseLibrary(slug: slug)
-            }
+            try? await APIClient.shared.replaceUniversalEquipment(slugs: slugs)
         }
     }
 
-    /// 兼容旧调用：原来「加入器械库」实际是收藏动作，现在转成个人动作库。
-    @discardableResult
-    func addExercisesToEquipmentLibrary(
-        _ exercises: [Exercise],
-        note: String = ""
-    ) -> Int {
-        addExercisesToPersonalLibrary(exercises)
+    func toggleUniversalEquipment(_ slug: String) {
+        var slugs = selectedUniversalSlugs
+        if let pos = slugs.firstIndex(of: slug) {
+            slugs.remove(at: pos)
+        } else {
+            slugs.append(slug)
+        }
+        setUniversalEquipment(slugs)
     }
 }

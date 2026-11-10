@@ -135,7 +135,6 @@ extension AppStore {
     }
 
     var equipmentSlugsForPlan: [String] {
-        guard useEquipmentLibraryForPlans else { return [] }
-        return personalExerciseSlugs
+        planPoolSlugs
     }
 }

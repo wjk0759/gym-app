@@ -1,23 +1,13 @@
 import SwiftUI
 
-/// 器械页已选动作气泡：集中展示本次挑好的动作，并提供两条明确出口。
+/// 器械页已选动作气泡：集中展示本次挑好的动作，并进入训练编排。
 struct EquipmentSelectionPanelView: View {
-    @Environment(AppStore.self) private var store
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     let exercises: [Exercise]
     let onRemove: (Exercise) -> Void
     let onClear: () -> Void
     let onMakePlan: () -> Void
-    let onAddToLibrary: () -> Void
-
-    private var savedSlugs: Set<String> {
-        Set(store.personalExerciseSlugs)
-    }
-
-    private var unsavedCount: Int {
-        exercises.filter { !savedSlugs.contains($0.slug) }.count
-    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,7 +38,7 @@ struct EquipmentSelectionPanelView: View {
                         .font(AppType.caption.weight(.bold))
                         .foregroundStyle(Theme.cobalt)
                 }
-                Text(exercises.isEmpty ? "还没有选择动作" : "选好后先安排顺序和负荷，再存入器械库")
+                Text(exercises.isEmpty ? "还没有选择动作" : "选好后先安排顺序和负荷，再开始训练")
                     .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
@@ -79,7 +69,7 @@ struct EquipmentSelectionPanelView: View {
             Text("还没有选择动作")
                 .font(AppType.callout.weight(.semibold))
                 .foregroundStyle(Theme.ink)
-            Text("在下面点选动作，再决定生成训练或存入器械库。")
+            Text("在下面点选动作，再制作训练计划。")
                 .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
                 .multilineTextAlignment(.center)
@@ -102,9 +92,7 @@ struct EquipmentSelectionPanelView: View {
     }
 
     private func exerciseRow(_ exercise: Exercise) -> some View {
-        let saved = savedSlugs.contains(exercise.slug)
-
-        return HStack(spacing: 11) {
+        HStack(spacing: 11) {
             Image(systemName: exercise.equipment.symbolName)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Theme.cobalt)
@@ -117,21 +105,10 @@ struct EquipmentSelectionPanelView: View {
                     .foregroundStyle(Theme.ink)
                     .lineLimit(1)
 
-                HStack(spacing: 6) {
-                    Text("\(exercise.muscle.label) · \(exercise.equipment.label)")
-                        .font(.system(size: 9.5, weight: .medium))
-                        .foregroundStyle(Theme.secondaryText)
-                        .lineLimit(1)
-
-                    if saved {
-                        Text("已在库")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(Theme.cobalt)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Theme.cobalt.opacity(0.12), in: Capsule())
-                    }
-                }
+                Text("\(exercise.muscle.label) · \(exercise.equipment.label)")
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(Theme.secondaryText)
+                    .lineLimit(1)
             }
 
             Spacer(minLength: 4)
@@ -159,43 +136,20 @@ struct EquipmentSelectionPanelView: View {
     }
 
     private var actionSection: some View {
-        VStack(spacing: 9) {
-            actionButton(
-                title: "制作训练计划",
-                subtitle: "先排顺序和负荷，再开始训练",
-                icon: "bolt.fill",
-                primary: true,
-                disabled: exercises.isEmpty,
-                action: onMakePlan
-            )
-
-            actionButton(
-                title: "加入我的器械库",
-                subtitle: librarySubtitle,
-                icon: "archivebox.fill",
-                primary: false,
-                disabled: exercises.isEmpty || unsavedCount == 0,
-                action: onAddToLibrary
-            )
-        }
+        actionButton(
+            title: "制作训练计划",
+            subtitle: "先排顺序和负荷，再开始训练",
+            icon: "bolt.fill",
+            disabled: exercises.isEmpty,
+            action: onMakePlan
+        )
         .padding(14)
-    }
-
-    private var librarySubtitle: String {
-        if exercises.isEmpty {
-            return "先选择动作"
-        }
-        if unsavedCount == 0 {
-            return "所选动作都在器械库里"
-        }
-        return "把 \(unsavedCount) 个动作存入器械库"
     }
 
     private func actionButton(
         title: String,
         subtitle: String,
         icon: String,
-        primary: Bool,
         disabled: Bool,
         action: @escaping () -> Void
     ) -> some View {
@@ -203,12 +157,9 @@ struct EquipmentSelectionPanelView: View {
             HStack(spacing: 11) {
                 Image(systemName: icon)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(primary ? Theme.onAccent : Theme.cobalt)
+                    .foregroundStyle(Theme.onAccent)
                     .frame(width: 34, height: 34)
-                    .background(
-                        primary ? Theme.onAccent.opacity(0.16) : Theme.cobalt.opacity(0.10),
-                        in: Circle()
-                    )
+                    .background(Theme.onAccent.opacity(0.16), in: Circle())
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
@@ -225,18 +176,15 @@ struct EquipmentSelectionPanelView: View {
                     .font(AppType.caption.weight(.bold))
                     .opacity(0.55)
             }
-            .foregroundStyle(primary ? Theme.onAccent : Theme.ink)
+            .foregroundStyle(Theme.onAccent)
             .padding(12)
             .background {
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .fill(primary ? Theme.cobalt : Theme.paper)
+                    .fill(Theme.cobalt)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .strokeBorder(
-                        primary ? Theme.ink.opacity(0.18) : Theme.stroke,
-                        lineWidth: 1
-                    )
+                    .strokeBorder(Theme.ink.opacity(0.18), lineWidth: 1)
             }
         }
         .buttonStyle(.plain)

@@ -63,6 +63,7 @@ enum PlanGenerator {
         profile: UserProfile,
         dislikedSlugs: Set<String> = [],
         equipmentSlugs: [String] = [],
+        strictEquipment: Bool = false,
         weeklyWeekdays: [Int]? = nil,
         focusAreas: Set<BodyFocusArea> = [],
         sessions: [WorkoutSession] = [],
@@ -72,7 +73,8 @@ enum PlanGenerator {
         let available = allowedExercises(
             profile,
             disliked: dislikedSlugs,
-            equipmentSlugs: equipmentSlugs
+            equipmentSlugs: equipmentSlugs,
+            strictEquipment: strictEquipment
         )
         let requestedWeekdays = (weeklyWeekdays ?? [])
             .filter { (1...7).contains($0) }
@@ -258,15 +260,16 @@ enum PlanGenerator {
     private static func allowedExercises(
         _ profile: UserProfile,
         disliked: Set<String>,
-        equipmentSlugs: [String]
+        equipmentSlugs: [String],
+        strictEquipment: Bool
     ) -> [Exercise] {
         let banned = injuryTags(profile.injuries)
-        // 个人动作库 >=8 条时作为严格计划池（仍过滤伤病）。
-        let library = equipmentSlugs
+        // 器械计划池：>=8 条或严格模式时直接使用（仍过滤伤病）。
+        let pool = equipmentSlugs
             .compactMap { ExerciseLibrary.exercise(slug: $0) }
             .filter { banned.isDisjoint(with: Set($0.contraindications)) }
-        if library.count >= 8 {
-            return library
+        if strictEquipment || pool.count >= 8 {
+            return pool
         }
         var equipment = profile.equipment
         for slug in equipmentSlugs {

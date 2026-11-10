@@ -34,31 +34,46 @@ def _exercise(slug, equipment="dumbbell", contraindications=None):
     )
 
 
-def test_personal_library_wins_when_it_has_enough():
-    rows = [_exercise(f"lib-{i}") for i in range(10)] + [_exercise("other-x")]
+def test_plan_pool_wins_when_it_has_enough():
+    rows = [_exercise(f"pool-{i}") for i in range(10)] + [_exercise("other-x")]
     picked = _allowed_exercises(
-        _FakeDB(rows), ["machine"], [], None, [f"lib-{i}" for i in range(10)]
+        _FakeDB(rows), ["machine"], [], None, [f"pool-{i}" for i in range(10)]
     )
-    assert {e.slug for e in picked} == {f"lib-{i}" for i in range(10)}
+    assert {e.slug for e in picked} == {f"pool-{i}" for i in range(10)}
 
 
-def test_personal_library_falls_back_when_too_small():
-    rows = [_exercise(f"lib-{i}") for i in range(3)] + [
+def test_plan_pool_falls_back_when_too_small():
+    rows = [_exercise(f"pool-{i}") for i in range(3)] + [
         _exercise("machine-1", "machine")
     ]
     picked = _allowed_exercises(
-        _FakeDB(rows), ["machine"], [], None, [f"lib-{i}" for i in range(3)]
+        _FakeDB(rows), ["machine"], [], None, [f"pool-{i}" for i in range(3)]
     )
     assert "machine-1" in {e.slug for e in picked}
 
 
-def test_personal_library_respects_injuries():
+def test_strict_equipment_keeps_small_pool_without_fallback():
+    rows = [_exercise(f"pool-{i}") for i in range(3)] + [
+        _exercise("machine-1", "machine")
+    ]
+    picked = _allowed_exercises(
+        _FakeDB(rows),
+        ["machine"],
+        [],
+        None,
+        [f"pool-{i}" for i in range(3)],
+        True,
+    )
+    assert {e.slug for e in picked} == {f"pool-{i}" for i in range(3)}
+
+
+def test_plan_pool_respects_injuries():
     rows = [
-        _exercise(f"lib-{i}", contraindications=(["knee_pain"] if i == 0 else []))
+        _exercise(f"pool-{i}", contraindications=(["knee_pain"] if i == 0 else []))
         for i in range(10)
     ]
     picked = _allowed_exercises(
-        _FakeDB(rows), ["machine"], ["膝"], None, [f"lib-{i}" for i in range(10)]
+        _FakeDB(rows), ["machine"], ["膝"], None, [f"pool-{i}" for i in range(10)]
     )
-    assert "lib-0" not in {e.slug for e in picked}
+    assert "pool-0" not in {e.slug for e in picked}
     assert len(picked) == 9

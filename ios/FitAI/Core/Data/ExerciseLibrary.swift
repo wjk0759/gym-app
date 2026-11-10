@@ -12,6 +12,14 @@ struct ExerciseCategory: Identifiable {
     }
 }
 
+/// 通用器械（个人器械库勾选）。
+struct UniversalEquipment: Identifiable {
+    let slug: String
+    let name: String
+    let defaultOn: Bool
+    var id: String { slug }
+}
+
 enum ExerciseLibrary {
     /// Active library shown in search, plan generation and onboarding.
     static let all: [Exercise] = load(resource: "vital_exercises")
@@ -22,6 +30,31 @@ enum ExerciseLibrary {
 
     /// 训练类型（动作库一级 Tab）。
     static let trainingTypes: [String] = ["力量", "拉伸", "有氧", "瑜伽", "普拉提", "灵活性"]
+
+    /// 通用器械（个人器械库勾选）。徒手默认勾选。
+    static let universalEquipment: [UniversalEquipment] = [
+        UniversalEquipment(slug: "bodyweight", name: "徒手", defaultOn: true),
+        UniversalEquipment(slug: "dumbbell", name: "哑铃", defaultOn: false),
+        UniversalEquipment(slug: "barbell", name: "杠铃", defaultOn: false),
+        UniversalEquipment(slug: "kettlebell", name: "壶铃", defaultOn: false),
+        UniversalEquipment(slug: "band", name: "弹力带", defaultOn: false),
+        UniversalEquipment(slug: "pullup", name: "单杠", defaultOn: false),
+        UniversalEquipment(slug: "dip", name: "双杠", defaultOn: false),
+        UniversalEquipment(slug: "battle_rope", name: "战绳", defaultOn: false),
+        UniversalEquipment(slug: "medicine_ball", name: "药球", defaultOn: false),
+        UniversalEquipment(slug: "sled", name: "雪橇", defaultOn: false),
+    ]
+
+    /// 通用器械 slug -> 可练力量动作（预计算，避免每次生成计划全库扫描）。
+    static let universalExercises: [String: [Exercise]] = {
+        var result: [String: [Exercise]] = [:]
+        for item in universalEquipment {
+            result[item.slug] = all.filter {
+                $0.planEligible && $0.equipmentTypes.contains(item.slug)
+            }
+        }
+        return result
+    }()
 
     /// Two-level category tree for the library browser, in display order.
     /// L1 = 部位, L2 = 主肌群 (matches the taxonomy v1 classification).

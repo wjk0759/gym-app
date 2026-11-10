@@ -28,6 +28,7 @@ extension APIClient {
         force: Bool = true,
         onboarding: Bool = false,
         equipmentSlugs: [String] = [],
+        strictEquipment: Bool = false,
         split: SplitType,
         focus: [String] = [],
         idempotencyKey: String? = nil
@@ -35,7 +36,8 @@ extension APIClient {
         let body = try JSONSerialization.data(withJSONObject: [
             "force": force,
             "onboarding": onboarding,
-            "exercise_library_slugs": equipmentSlugs,
+            "plan_pool_slugs": equipmentSlugs,
+            "strict_equipment": strictEquipment,
             "split": split.rawValue,
             "focus": focus
         ])
@@ -246,7 +248,8 @@ extension APIClient {
         var payload: [String: Any] = [
             "client_id": item.id.uuidString,
             "name": item.name,
-            "notes": item.notes
+            "notes": item.notes,
+            "enabled_exercise_slugs": item.enabledExerciseSlugs ?? []
         ]
         if let equipmentType = item.equipmentType { payload["equipment_type"] = equipmentType }
         if let category = item.category { payload["category"] = category }
@@ -259,34 +262,22 @@ extension APIClient {
         try await sendVoid(path: "equipment/items", method: "POST", body: body)
     }
 
-    // MARK: - 个人动作库
+    // MARK: - 通用器械
 
-    func addExerciseLibrary(slugs: [String], equipmentType: String? = nil) async throws {
-        guard !slugs.isEmpty else { return }
-        var payload: [String: Any] = [
-            "exercise_slugs": slugs,
-            "source": "equipment"
-        ]
-        if let equipmentType { payload["equipment_type"] = equipmentType }
-        let body = try JSONSerialization.data(withJSONObject: payload)
-        try await sendVoid(path: "me/exercise-library", method: "POST", body: body)
-    }
-
-    func fetchExerciseLibrary() async throws -> [RemoteExerciseLibraryItem] {
-        let response: RemoteExerciseLibraryResponse = try await send(
-            path: "me/exercise-library",
+    func fetchUniversalEquipment() async throws -> [RemoteUniversalEquipmentItem] {
+        let response: RemoteUniversalEquipmentResponse = try await send(
+            path: "equipment/universal",
             method: "GET",
             body: nil
         )
         return response.items
     }
 
-    func deleteExerciseLibrary(slug: String) async throws {
-        try await sendVoid(
-            path: "me/exercise-library/\(slug)",
-            method: "DELETE",
-            body: nil
+    func replaceUniversalEquipment(slugs: [String]) async throws {
+        let body = try JSONSerialization.data(
+            withJSONObject: ["enabled_slugs": slugs]
         )
+        try await sendVoid(path: "equipment/universal", method: "PUT", body: body)
     }
 
     func deleteEquipmentItem(id: UUID) async throws {

@@ -10,6 +10,8 @@ struct EquipmentItem: Codable, Identifiable, Hashable {
     /// 由 equipmentType 派生的大类（machine / cable / free_weight / cardio ...）
     var category: String? = nil
     var photoURL: String? = nil
+    /// 这件器械当前启用的动作 slug（固定器械用；通用器械不用）。
+    var enabledExerciseSlugs: [String]? = nil
     var slug: String? = nil
     var muscle: MuscleGroup? = nil
     var equipment: Equipment? = nil

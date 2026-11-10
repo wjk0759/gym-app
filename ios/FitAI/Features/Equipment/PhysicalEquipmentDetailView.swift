@@ -27,7 +27,7 @@ struct PhysicalEquipmentDetailView: View {
     }
 
     private var selectedSlugs: Set<String> {
-        Set(store.personalExerciseSlugs)
+        Set(item?.enabledExerciseSlugs ?? [])
     }
 
     private var eligibleTrainable: [Exercise] {
@@ -330,9 +330,9 @@ struct PhysicalEquipmentDetailView: View {
         HStack(spacing: 10) {
             Button {
                 Haptics.success()
-                store.addExercisesToPersonalLibrary(
-                    eligibleTrainable,
-                    equipmentType: item?.equipmentType
+                store.replaceEquipmentExercises(
+                    equipmentID,
+                    slugs: eligibleTrainable.map(\.slug)
                 )
             } label: {
                 Text("全部加入")
@@ -341,9 +341,7 @@ struct PhysicalEquipmentDetailView: View {
 
             Button {
                 Haptics.tap()
-                store.removeExercisesFromPersonalLibrary(
-                    eligibleTrainable.map(\.slug)
-                )
+                store.replaceEquipmentExercises(equipmentID, slugs: [])
             } label: {
                 Text("全部移除")
             }
@@ -439,14 +437,7 @@ struct PhysicalEquipmentDetailView: View {
     // MARK: - Helpers
 
     private func toggle(_ exercise: Exercise) {
-        if selectedSlugs.contains(exercise.slug) {
-            store.removeFromPersonalLibrary(exercise.slug)
-        } else {
-            store.addExercisesToPersonalLibrary(
-                [exercise],
-                equipmentType: item?.equipmentType
-            )
-        }
+        store.toggleEquipmentExercise(equipmentID, slug: exercise.slug)
     }
 
     private func symbol(for item: EquipmentItem) -> String {

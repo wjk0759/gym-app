@@ -113,6 +113,9 @@ GROUP_KEYWORDS = {
     "tibialis": (["tibialis"], None),
     "cable": ([], {"cable"}),
     "multi": (["__no_match__"], None),
+    # universal equipment (checkbox groups)
+    "bodyweight": ([], {"bodyweight"}),
+    "medicine_ball": (["med-ball", "medicine-ball", "med ball", "medicine ball", "药球"], None),
     # non-fixed-machine types (kept from the original catalog)
     "dumbbell": ([], {"dumbbell"}),
     "barbell": ([], {"barbell"}),

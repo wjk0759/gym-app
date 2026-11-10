@@ -141,8 +141,7 @@ extension EquipmentPickerView {
                 onClear: {
                     selectedExercises.removeAll()
                 },
-                onMakePlan: makeTrainingPlanFromSelection,
-                onAddToLibrary: addSelectedToLibrary
+                onMakePlan: makeTrainingPlanFromSelection
             )
             .presentationCompactAdaptation(.popover)
             .presentationBackground(Theme.background)

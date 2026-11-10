@@ -49,11 +49,11 @@ struct EquipmentLibraryView: View {
         }.map(\.element)
     }
 
-    private var useLibraryBinding: Binding<Bool> {
+    private var strictModeBinding: Binding<Bool> {
         Binding(
-            get: { store.useEquipmentLibraryForPlans },
+            get: { store.strictEquipmentMode },
             set: {
-                store.useEquipmentLibraryForPlans = $0
+                store.strictEquipmentMode = $0
                 store.persist()
             }
         )
@@ -66,7 +66,7 @@ struct EquipmentLibraryView: View {
         return AppScrollView {
             VStack(spacing: 16) {
                 overviewCard
-                personalLibraryLink
+                universalEquipmentCard
                 libraryTools
                 librarySectionHeader(count: items.count)
 
@@ -169,64 +169,99 @@ struct EquipmentLibraryView: View {
                 .frame(height: 1)
                 .padding(.vertical, 14)
 
-            Toggle(isOn: useLibraryBinding) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("计划优先使用")
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("计划池")
                         .font(AppType.callout.weight(.semibold))
                         .foregroundStyle(Theme.ink)
-                    Text(store.useEquipmentLibraryForPlans
-                         ? "生成计划时优先匹配我的器械"
-                         : "已关闭，按档案器械生成")
+                    Spacer()
+                    Text("\(store.planPoolSlugs.count) 个动作")
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Theme.cobalt)
+                }
+                Text(coveredPartsText)
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(Theme.tertiaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Toggle(isOn: strictModeBinding) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("只用我的器械")
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                    Text(store.strictEquipmentMode
+                         ? "缺的部位用已勾选的通用器械补"
+                         : "优先我的器械，不足自动补常用动作")
                         .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.tertiaryText)
                 }
             }
             .tint(Theme.primary)
+            .padding(.top, 8)
         }
         .card(padding: 18)
     }
 
-    private var personalLibraryLink: some View {
-        NavigationLink {
-            PersonalExerciseLibraryView()
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "square.stack.3d.up")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Theme.cobalt)
-                    .frame(width: 42, height: 42)
-                    .background(
-                        Theme.cobalt.opacity(0.10),
-                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    )
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("个人动作库")
-                        .font(AppType.callout.weight(.semibold))
-                        .foregroundStyle(Theme.ink)
-                    Text("\(store.personalExerciseSlugs.count) 个动作 · 生成计划优先使用")
-                        .font(.system(size: 9.5, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-
+    private var universalEquipmentCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("通用器械")
+                    .font(AppType.callout.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
                 Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                Text("\(store.selectedUniversalSlugs.count) 项")
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
-            .padding(14)
+
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 72), spacing: 8)],
+                spacing: 8
+            ) {
+                ForEach(ExerciseLibrary.universalEquipment, id: \.slug) { item in
+                    universalChip(item)
+                }
+            }
+        }
+        .card(padding: 16)
+    }
+
+    private func universalChip(_ item: UniversalEquipment) -> some View {
+        let on = store.selectedUniversalSlugs.contains(item.slug)
+        return Button {
+            Haptics.select()
+            store.toggleUniversalEquipment(item.slug)
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: on ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 12, weight: .semibold))
+                Text(item.name)
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            .foregroundStyle(on ? Theme.onPrimary : Theme.secondaryText)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 7)
+            .frame(maxWidth: .infinity)
             .background(
-                Theme.paper,
-                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+                on ? Theme.primary : Theme.paper,
+                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
             )
             .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .strokeBorder(Theme.stroke, lineWidth: 1)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(on ? Theme.ink.opacity(0.12) : Theme.stroke, lineWidth: 1)
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("打开个人动作库")
+        .accessibilityLabel("\(item.name)\(on ? "已勾选" : "未勾选")")
+    }
+
+    private var coveredPartsText: String {
+        let all = ["胸", "背", "肩", "臂", "腿", "臀", "核心"]
+        let covered = store.planPoolBodyParts
+        let text = all.map { covered.contains($0) ? "\($0)✓" : "\($0)–" }
+            .joined(separator: "  ")
+        return "覆盖：\(text)"
     }
 
     private var libraryTools: some View {
@@ -380,8 +415,8 @@ struct EquipmentLibraryView: View {
                 .foregroundStyle(Theme.ink)
 
             Text(store.equipmentLibrary.isEmpty
-                 ? "从动作库选第一件器械，生成计划时会优先使用它。"
-                 : "换个名称、肌群或器械类型试试。")
+                 ? "拍照识别或手动添加第一件器械，它关联的动作会进入计划池。"
+                 : "换个名称试试。")
                 .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
                 .multilineTextAlignment(.center)
@@ -389,10 +424,11 @@ struct EquipmentLibraryView: View {
 
             if store.equipmentLibrary.isEmpty {
                 VStack(spacing: 8) {
-                    NavigationLink {
-                        EquipmentPickerView()
+                    Button {
+                        Haptics.tap()
+                        activeSheet = .manual
                     } label: {
-                        Text("从动作库选择")
+                        Text("手动添加器械")
                     }
                     .buttonStyle(PrimaryButtonStyle())
 

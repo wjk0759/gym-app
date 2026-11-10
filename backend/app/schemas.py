@@ -121,7 +121,8 @@ class PlanGenerateIn(BaseModel):
     force: bool = False
     onboarding: bool = False
     equipment_slugs: list[str] = Field(default_factory=list, max_length=50)
-    exercise_library_slugs: list[str] = Field(default_factory=list, max_length=500)
+    plan_pool_slugs: list[str] = Field(default_factory=list, max_length=500)
+    strict_equipment: bool = False
     split: str | None = Field(default=None, max_length=20)
     focus: list[str] = Field(default_factory=list, max_length=20)
 
@@ -271,6 +272,7 @@ class EquipmentLibraryIn(BaseModel):
     equipment_type: str | None = Field(default=None, max_length=40)
     category: str | None = Field(default=None, max_length=20)
     photo_url: str | None = Field(default=None, max_length=2000)
+    enabled_exercise_slugs: list[str] | None = Field(default=None, max_length=500)
     slug: str | None = Field(default=None, max_length=80)
     muscle: str | None = Field(default=None, max_length=30)
     equipment: str | None = Field(default=None, max_length=30)
@@ -278,7 +280,9 @@ class EquipmentLibraryIn(BaseModel):
     source: str = Field(default="manual", max_length=20)
 
 
-class ExerciseLibraryIn(BaseModel):
-    exercise_slugs: list[str] = Field(min_length=1, max_length=500)
-    equipment_type: str | None = Field(default=None, max_length=40)
-    source: str = Field(default="manual", max_length=20)
+class EquipmentExercisesIn(BaseModel):
+    exercise_slugs: list[str] = Field(default_factory=list, max_length=500)
+
+
+class UniversalEquipmentIn(BaseModel):
+    enabled_slugs: list[str] = Field(default_factory=list, max_length=20)

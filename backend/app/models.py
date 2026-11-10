@@ -767,26 +767,51 @@ class EquipmentLibraryItem(Base):
     )
 
 
-class UserExerciseLibraryItem(Base):
-    """Personal exercise library: the exercises a user chose for plan generation."""
+class UserEquipmentExercise(Base):
+    """Per-equipment enabled exercises (fixed machines)."""
 
-    __tablename__ = "user_exercise_library"
+    __tablename__ = "user_equipment_exercise"
     __table_args__ = (
-        UniqueConstraint("user_id", "exercise_slug", name="uq_user_exercise_library"),
-        Index("ix_user_exercise_library_user", "user_id"),
+        UniqueConstraint(
+            "user_id", "equipment_id", "exercise_slug",
+            name="uq_user_equipment_exercise",
+        ),
+        Index("ix_user_equipment_exercise_user", "user_id"),
+        Index("ix_user_equipment_exercise_equipment", "equipment_id"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     user_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
+    equipment_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("equipment_library.id", ondelete="CASCADE")
+    )
     exercise_slug: Mapped[str] = mapped_column(
         String(80), ForeignKey("exercises.slug", ondelete="CASCADE")
     )
-    # 来源器械类型（可空：手动加入）
-    equipment_type: Mapped[str | None] = mapped_column(String(40))
-    source: Mapped[str] = mapped_column(String(20), default="manual")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class UserUniversalEquipment(Base):
+    """Universal equipment checkboxes (dumbbell / barbell / bodyweight ...)."""
+
+    __tablename__ = "user_universal_equipment"
+    __table_args__ = (
+        UniqueConstraint("user_id", "equipment_slug", name="uq_user_universal_equipment"),
+        Index("ix_user_universal_equipment_user", "user_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    equipment_slug: Mapped[str] = mapped_column(String(40))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
 
 
 class MealPlan(Base):
