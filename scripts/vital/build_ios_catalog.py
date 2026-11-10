@@ -9,62 +9,25 @@ ios/FitAI/Resources/vital_exercises.json in the exact shape the iOS
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "data" / "vital" / "vital_actions_v2.json"
+TAXONOMY = ROOT / "data" / "vital" / "taxonomy_v1.json"
+EMAP = ROOT / "data" / "vital" / "equipment_exercise_map.json"
 DST = ROOT / "ios" / "FitAI" / "Resources" / "vital_exercises.json"
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from classify_categories import classify  # noqa: E402
-
-# 计划白名单（常用动作）排除规则：器械/肌群/来源包/动作名四类。
-# 其余动作仍可搜索、可看详情，但不进 AI 计划池。
-PLAN_EXCLUDE_EQUIPMENT = {"other"}
-PLAN_EXCLUDE_MUSCLE = {"cardio"}
-PLAN_EXCLUDE_PACKS = {"yoga", "wallpilates", "homepilates"}
-# The default plan pool is strength-only. Mobility, cardio warm-ups and the
-# catch-all "other" branch stay searchable, but must not be auto-selected;
-# users can still add them explicitly through their equipment library.
-PLAN_EXCLUDE_CATEGORIES = {"拉伸", "有氧", "热身动作", "other"}
-NON_PLAN_KEYWORDS = (
-    # 拉伸 / 康复 / 放松 / 呼吸 / 冥想 / 热身 / 舒展 / 按摩 / 矫正 / 活动度
-    "拉伸", "放松", "呼吸", "冥想", "绕环", "热身", "舒展", "按摩", "康复", "矫正", "活动度",
-    # 普拉提 / 瑜伽 / 平衡
-    "普拉提", "瑜伽", "平衡",
-    # 居家器械变式（水瓶 / 毛巾 / 椅子 / 凳 / 桌）
-    "水瓶", "持瓶", "毛巾", "椅上", "椅子", "凳上", "卧凳", "桌",
-    # 瑜伽体式名
-    "猫式", "猫牛", "婴儿式", "祈祷", "轮式", "三角式", "战士", "山式", "下犬", "上犬",
-    "船式", "鱼王", "眼镜蛇", "蝗虫", "鸽子", "骆驼", "侧板式",
-    # 倒立 / 杂技 / 高级核心
-    "倒立", "空心", "龙旗", "尺蠖", "毛毛虫",
-    # 颈部
-    "颈部", "颈推",
-    # 骨盆 / 腹横肌（康复激活）
-    "骨盆", "腹横肌",
-    # 坐姿前屈 / 盘腿 / 跪坐 / 足弓 / 踝
-    "体前屈", "前屈", "盘腿", "跪坐", "足弓", "踝",
-    # 拳击 / 灵活性 / 摆动 / 环绕
-    "拳击", "出拳", "绕肩", "摆臂", "墙天使", "手腕", "环绕", "肩绕",
-    # 步法 / 敏捷 / 滑 / 慢速 / 低冲击
-    "梯", "滑", "碎步", "踢臀", "敏捷", "慢速", "低冲击",
+# 计划白名单：只允许「力量」训练类型，再排除居家变式/颈部等不适合进通用计划的动作。
+HOME_VARIANT_KEYWORDS = (
+    "水瓶", "持瓶", "毛巾", "椅上", "椅子", "凳上", "卧凳", "桌", "颈部", "颈推",
 )
 
 
-def is_plan_eligible(a: dict, category_l1: str | None) -> bool:
-    if category_l1 in PLAN_EXCLUDE_CATEGORIES:
-        return False
-    if a.get("equipment") in PLAN_EXCLUDE_EQUIPMENT:
-        return False
-    if a.get("muscle_group") in PLAN_EXCLUDE_MUSCLE:
-        return False
-    packs = {md.get("pack") for md in a.get("media", [])}
-    if packs & PLAN_EXCLUDE_PACKS:
+def is_plan_eligible(a: dict, training_type: str) -> bool:
+    if training_type != "力量":
         return False
     name = a.get("name_zh") or ""
-    return not any(k in name for k in NON_PLAN_KEYWORDS)
+    return not any(k in name for k in HOME_VARIANT_KEYWORDS)
 
 
 def variant_key_for(md: dict) -> str:
@@ -108,11 +71,22 @@ def variant_media(a: dict) -> list[dict]:
 
 def main() -> None:
     actions = json.loads(SRC.read_text(encoding="utf-8"))
+    tax = json.loads(TAXONOMY.read_text(encoding="utf-8"))
+    tax_by = {e["slug"]: e for e in tax["exercises"]}
+    emap = json.loads(EMAP.read_text(encoding="utf-8"))["mapping"]
+    eq_by: dict[str, list[str]] = {}
+    for group, slugs in emap.items():
+        for s in slugs:
+            eq_by.setdefault(s, []).append(group)
+
     rows = []
     eligible = 0
     for a in actions:
-        l1, l2, conf, _reason = classify(a)
-        plan_ok = is_plan_eligible(a, l1)
+        t = tax_by.get(a["slug"], {})
+        training_type = t.get("training_type") or "力量"
+        body_part = t.get("body_part")
+        muscle_primary = t.get("muscle_primary")
+        plan_ok = is_plan_eligible(a, training_type)
         eligible += 1 if plan_ok else 0
         thumbnail_url, video_url = media_urls(a)
         steps = a.get("instructions_zh") or []
@@ -131,9 +105,16 @@ def main() -> None:
                 "aliases": sorted(a.get("aliases") or []),
                 "slug_aliases": sorted(a.get("slug_aliases") or []),
                 "plan_eligible": plan_ok,
-                "category_l1": l1,
-                "category_l2": l2 or None,
-                "category_confidence": conf,
+                # 新分类维度
+                "training_type": training_type,
+                "body_part": body_part,
+                "muscle_primary": muscle_primary,
+                "muscle_secondary": t.get("muscle_secondary") or [],
+                "movement_pattern": t.get("movement_pattern"),
+                "equipment_types": sorted(eq_by.get(a["slug"], [])),
+                # 桥接字段：现有两级侧栏直接复用部位/主肌群
+                "category_l1": body_part,
+                "category_l2": muscle_primary or None,
                 "thumbnail_url": thumbnail_url,
                 "video_url": video_url,
                 "media": variant_media(a),

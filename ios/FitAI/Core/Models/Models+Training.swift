@@ -242,6 +242,17 @@ struct Exercise: Identifiable, Hashable {
     /// Two-level category for library browsing (e.g. 胸/上胸, 背/背阔肌).
     let categoryL1: String?
     let categoryL2: String?
+    /// 训练类型：力量 / 拉伸 / 有氧 / 瑜伽 / 普拉提 / 灵活性
+    let trainingType: String
+    /// 部位：胸 / 背 / 肩 / 臂 / 腿 / 臀 / 核心 / 全身
+    let bodyPart: String?
+    /// 主肌群 / 次肌群
+    let musclePrimary: String?
+    let muscleSecondary: [String]
+    /// 动作模式：推 / 拉 / 蹲 / 髋铰链 / 弓步 / 旋转 / 提携 / 孤立 / 等长
+    let movementPattern: String?
+    /// 所需器械类型（多值，来自器械→动作映射）
+    let equipmentTypes: [String]
     /// Whether this action may enter the AI plan pool (common actions + the
     /// user's self-selected library). Excluded: yoga/stretch/cardio/"other".
     let planEligible: Bool
@@ -271,6 +282,12 @@ struct Exercise: Identifiable, Hashable {
         slugAliases: [String] = [],
         categoryL1: String? = nil,
         categoryL2: String? = nil,
+        trainingType: String = "力量",
+        bodyPart: String? = nil,
+        musclePrimary: String? = nil,
+        muscleSecondary: [String] = [],
+        movementPattern: String? = nil,
+        equipmentTypes: [String] = [],
         planEligible: Bool = true
     ) {
         self.slug = slug
@@ -290,10 +307,20 @@ struct Exercise: Identifiable, Hashable {
         self.slugAliases = slugAliases
         self.categoryL1 = categoryL1
         self.categoryL2 = categoryL2
+        self.trainingType = trainingType
+        self.bodyPart = bodyPart
+        self.musclePrimary = musclePrimary
+        self.muscleSecondary = muscleSecondary
+        self.movementPattern = movementPattern
+        self.equipmentTypes = equipmentTypes
         self.planEligible = planEligible
-        self.searchKey = ([nameZH, nameEN] + aliases + [muscle.label, equipment.label])
-            .joined(separator: " ")
-            .lowercased()
+        var parts: [String] = [nameZH, nameEN, trainingType, muscle.label, equipment.label]
+        parts.append(contentsOf: aliases)
+        parts.append(contentsOf: muscleSecondary)
+        parts.append(contentsOf: equipmentTypes)
+        if let bp = bodyPart { parts.append(bp) }
+        if let mp = musclePrimary { parts.append(mp) }
+        self.searchKey = parts.joined(separator: " ").lowercased()
     }
 }
 

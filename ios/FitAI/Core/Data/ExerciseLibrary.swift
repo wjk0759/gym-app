@@ -152,6 +152,12 @@ enum ExerciseLibrary {
                 slugAliases: row.slugAliases ?? [],
                 categoryL1: row.categoryL1,
                 categoryL2: row.categoryL2,
+                trainingType: row.trainingType ?? "力量",
+                bodyPart: row.bodyPart,
+                musclePrimary: row.musclePrimary,
+                muscleSecondary: row.muscleSecondary ?? [],
+                movementPattern: row.movementPattern,
+                equipmentTypes: row.equipmentTypes ?? [],
                 planEligible: row.planEligible ?? true
             )
         }
@@ -203,6 +209,12 @@ private struct ResourceExercise: Decodable {
     let planEligible: Bool?
     let categoryL1: String?
     let categoryL2: String?
+    let trainingType: String?
+    let bodyPart: String?
+    let musclePrimary: String?
+    let muscleSecondary: [String]?
+    let movementPattern: String?
+    let equipmentTypes: [String]?
 
     enum CodingKeys: String, CodingKey {
         case slug
@@ -223,5 +235,11 @@ private struct ResourceExercise: Decodable {
         case planEligible = "plan_eligible"
         case categoryL1 = "category_l1"
         case categoryL2 = "category_l2"
+        case trainingType = "training_type"
+        case bodyPart = "body_part"
+        case musclePrimary = "muscle_primary"
+        case muscleSecondary = "muscle_secondary"
+        case movementPattern = "movement_pattern"
+        case equipmentTypes = "equipment_types"
     }
 }
