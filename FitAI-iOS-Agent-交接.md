@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`90b5973`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`e5847a1`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试对齐（`827ea94`）；修复 `AppStore.swift` 非法 UTF-8、`PlanGenerator` 器械池重名；`FitAITests` **62/62** 通过，phone-only Release 已安装并启动 Wu-Tang；此前完成动作库别名/计划白名单/隐藏 `other`、媒体 coverage 校验、phone-only 构建脚本、媒体图库验证、Watch UI 重设计（`fc8634c`/`bc183ae`/`d890a53`/`4af3bcb`/`2d5dea0`）
@@ -44,6 +44,27 @@
   - 不要恢复 `useEquipmentLibraryForPlans`
   - 不要恢复旧的 16 个一级分类测试或旧 L2 名称
   - 不要用非 UTF-8 编码覆盖 `AppStore.swift`
+### 2026-11-11 · Windows（生产自测 + 器械分类映射修复）
+
+- 分支：`develop`
+- 代码提交：`e5847a1`
+- 自测发现：
+  - `available_equipment_types` 返回的是器械分类（multi/free_weight），但动作的 `equipment` 是 machine/dumbbell，计划验证对不上
+  - 严格池计划只生成了 3 个动作、重复 4 天
+- 修复：
+  - 器械分类 → 动作 equipment 映射：machine/cable/multi→machine，free_weight→按类型，cardio→bodyweight，accessory→other
+  - 通用器械勾选也计入可用器械
+  - 有 `plan_pool_slugs` 时，用池内动作的 equipment 作为验证允许集合，避免被裁掉
+  - 通用器械 `PUT /equipment/universal` 后刷新 profile 缓存
+- 生产自测（真实 token）：
+  - `equipment/items` 200、创建器械 201、`universal` PUT/GET 200
+  - `exercise-media` 200：3 个 variant，poster/phone 都有
+  - `plans/generate` strict 池：12 天 × 4 动作 = 48，0 个池外动作
+  - 计划池：bodyweight+dumbbell+smith = 1073
+- 注意：
+  - 生产 `user_equipment` 里有 Mac 测试加的腿屈伸机（user 13428104171），保留
+  - `exercises.video_url` 全为 NULL；`/videos/{slug}` 返回空，iOS 走 catalog 的 `demoVideoURL`，不是回归
+
 ### 2026-11-11 · Windows（生产部署 + V29 清理）
 
 - 分支：`develop`
