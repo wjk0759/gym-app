@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`b059569`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`2895db2`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-10）：`develop` 编译修复（`6e95feb`）、头像 512（`fa9d3c8`）、动作库别名 + 计划白名单 + 隐藏 `other`（`fc8634c`/`bc183ae`）、媒体 coverage 校验（`d890a53`）、phone-only Release 构建脚本（`4af3bcb`）、媒体图库/训练页视频验证（`8dfc008`/`9ce7a63`）；Debug build **BUILD SUCCEEDED**，`FitAITests` **61/61** 通过，catalog validator 通过，Wu-Tang 真机 phone-only 包已安装并启动；此前完成 Watch UI 重设计、单主按钮流程、40/42/49mm 响应式适配和语音输入单行（`2d5dea0`/`1eb3fdd`/`9a833b1`）
@@ -25,6 +25,33 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-11 · Windows（计划池改为器械内动作 + 通用器械勾选）
+
+- 分支：`develop`
+- 代码提交：`2895db2`
+- 做了什么：
+  - **删除扁平「个人动作库」**：`user_exercise_library` 表、`/me/exercise-library` 接口、`PersonalExerciseLibraryView`、`personalExerciseSlugs` 全部移除
+  - **后端 V27**：新增 `user_equipment_exercise`（固定器械×动作）和 `user_universal_equipment`（通用器械勾选）；生产已应用并记录 flyway V27
+  - **通用器械**：10 个勾选（徒手默认），`GET/PUT /equipment/universal`；器械库首页可勾选/取消
+  - **固定器械**：`EquipmentItem.enabledExerciseSlugs` 按器械维护；详情页逐动作开关 + 全部加入/移除
+  - **计划池**：固定器械启用动作 + 已勾选通用器械动作；器械库首页显示数量与覆盖部位
+  - **两种模式**：关闭「只用我的器械」= 计划池 ≥8 用池、不足回退白名单；打开 = 只用计划池（缺部位用已勾选通用器械补），不足不回退
+  - **后端计划**：`plan_pool_slugs` + `strict_equipment`；agent 路径从 DB 构建计划池（`user_plan_pool_slugs`）
+  - **通用器械映射**：新增 `bodyweight` / `medicine_ball` 动作组，重新生成器械映射与 iOS catalog
+- 验证：
+  - 后端 **224 passed**，Ruff 通过
+  - 生产 V27 已应用：`user_equipment_exercise` + `user_universal_equipment`，`user_exercise_library` 已删
+  - 通用映射：徒手 942 / 哑铃 126 / 杠铃 89 / 壶铃 26 / 弹力带 50 / 单杠 7 / 双杠 14 / 战绳 6 / 药球 13 / 雪橇 1
+- macOS 需要做：
+  - `git pull` → `xcodegen` → 编译验证通用器械勾选、固定器械动作开关、计划池覆盖、两种计划模式
+  - 真机走：新增器械默认全选 → 详情页取消几个 → 打开/关闭「只用我的器械」各生成一次计划
+- 不要恢复：
+  - 不要恢复扁平个人动作库（`user_exercise_library` / `personalExerciseSlugs` / `PersonalExerciseLibraryView`）
+  - 不要把动作写进器械库；器械库只存器械
+- 遗留：
+  - 器械照片跨设备同步
+  - 教练 tool：加器械 / 勾选动作 / 切换计划模式
 
 ### 2026-11-10 · Windows（器械库 v2 + 个人动作库）
 
