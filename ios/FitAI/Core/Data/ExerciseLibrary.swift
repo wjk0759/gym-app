@@ -20,26 +20,20 @@ enum ExerciseLibrary {
     /// self-selected library is unioned on top at generation time.
     static let planEligible: [Exercise] = all.filter { $0.planEligible }
 
+    /// 训练类型（动作库一级 Tab）。
+    static let trainingTypes: [String] = ["力量", "拉伸", "有氧", "瑜伽", "普拉提", "灵活性"]
+
     /// Two-level category tree for the library browser, in display order.
+    /// L1 = 部位, L2 = 主肌群 (matches the taxonomy v1 classification).
     static let categoryTree: [ExerciseCategory] = [
-        ExerciseCategory("胸", ["上胸", "中下胸"]),
-        ExerciseCategory("背", ["背阔肌", "大圆肌", "菱形肌", "中下斜方", "上斜方", "竖脊肌"]),
-        ExerciseCategory("腿", ["股四头", "腘绳肌"]),
-        ExerciseCategory("肩", ["前束", "中束", "后束"]),
-        ExerciseCategory("前锯肌", []),
-        ExerciseCategory("斜方肌", []),
-        ExerciseCategory("手臂", ["二头", "三头"]),
-        ExerciseCategory("小腿", []),
-        ExerciseCategory("前臂", []),
-        ExerciseCategory("臀部", ["上臀", "下臀"]),
-        ExerciseCategory("功能性", ["髋", "膝关节", "肩关节"]),
-        ExerciseCategory("核心", []),
-        ExerciseCategory("腹部", ["腹直肌", "侧腹"]),
-        ExerciseCategory("热身动作", ["胸", "上背", "下背", "腘绳肌", "大腿", "臀部", "肩膀"]),
-        ExerciseCategory("拉伸", ["胸", "上背", "下背", "腘绳肌", "大腿", "臀部", "肩膀"]),
-        ExerciseCategory("有氧", []),
+        ExerciseCategory("胸", ["胸大肌", "下胸"]),
+        ExerciseCategory("背", ["背阔肌", "上背", "斜方肌", "菱形肌"]),
+        ExerciseCategory("肩", ["三角肌", "中束", "颈"]),
+        ExerciseCategory("臂", ["三头", "二头", "前臂"]),
+        ExerciseCategory("腿", ["股四头", "腘绳肌", "内收肌", "髋屈肌", "小腿"]),
+        ExerciseCategory("臀", ["臀大肌", "髋外展"]),
+        ExerciseCategory("核心", ["腹直肌", "下背", "侧腹"]),
         ExerciseCategory("全身", []),
-        ExerciseCategory("other", []),
     ]
 
     static func subcategories(for l1: String) -> [String] {

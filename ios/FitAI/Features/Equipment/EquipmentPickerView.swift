@@ -10,6 +10,7 @@ struct EquipmentPickerView: View {
     private let allowedEquipment: Set<Equipment>?
 
     @State var selectedExercises: [Exercise] = []
+    @State var selectedTrainingType: String = "力量"
     @State var selectedCategory: String?
     @State var selectedSubcategory: String?
     @State var selectedEquipment: Equipment?
@@ -53,9 +54,14 @@ struct EquipmentPickerView: View {
         !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    /// 力量/拉伸/灵活性 按部位分组；瑜伽/普拉提/有氧 用各自二级维度，不显示部位侧栏。
+    var showsBodyPartSidebar: Bool {
+        ["力量", "拉伸", "灵活性"].contains(selectedTrainingType)
+    }
+
     /// 变化即重置上拉加载的筛选组合键。
     private var filterKey: String {
-        "\(query)|\(selectedCategory ?? "")|\(selectedSubcategory ?? "")|\(selectedEquipment?.rawValue ?? "")|\(savedOnly)"
+        "\(query)|\(selectedTrainingType)|\(selectedCategory ?? "")|\(selectedSubcategory ?? "")|\(selectedEquipment?.rawValue ?? "")|\(savedOnly)"
     }
 
     /// 每次筛选只构建一次 Set，避免在 filter/sort 里反复线性查库。
@@ -84,11 +90,12 @@ struct EquipmentPickerView: View {
                     return exercise.searchKey.contains(lowered)
                 }
 
+                let trainingTypeMatch = exercise.trainingType == selectedTrainingType
                 let categoryMatch = selectedCategory == nil || exercise.categoryL1 == selectedCategory
                 let subcategoryMatch = selectedSubcategory == nil || exercise.categoryL2 == selectedSubcategory
                 let equipmentMatch = selectedEquipment == nil || exercise.equipment == selectedEquipment
                 let savedMatch = !savedOnly || saved.contains(exercise.slug)
-                return categoryMatch && subcategoryMatch && equipmentMatch && savedMatch
+                return trainingTypeMatch && categoryMatch && subcategoryMatch && equipmentMatch && savedMatch
             }
             .sorted { left, right in
                 let leftSaved = saved.contains(left.slug)
@@ -104,10 +111,14 @@ struct EquipmentPickerView: View {
         VStack(spacing: 0) {
             equipmentTools
 
+            trainingTypeTabs
+
             libraryHeader
 
             HStack(alignment: .top, spacing: 9) {
-                categorySidebar
+                if showsBodyPartSidebar {
+                    categorySidebar
+                }
 
                 AppScrollView {
                     exerciseGrid

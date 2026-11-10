@@ -38,6 +38,24 @@ extension EquipmentPickerView {
         }
     }
 
+    var trainingTypeTabs: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(ExerciseLibrary.trainingTypes, id: \.self) { type in
+                    filterChip(type, selected: selectedTrainingType == type && !isSearching) {
+                        selectedTrainingType = type
+                        selectedCategory = nil
+                        selectedSubcategory = nil
+                        query = ""
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+        .padding(.top, 8)
+        .padding(.bottom, 6)
+    }
+
     var libraryHeader: some View {
         HStack(spacing: 6) {
             Text("动作库")
