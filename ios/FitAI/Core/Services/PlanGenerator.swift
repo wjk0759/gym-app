@@ -265,11 +265,11 @@ enum PlanGenerator {
     ) -> [Exercise] {
         let banned = injuryTags(profile.injuries)
         // 器械计划池：>=8 条或严格模式时直接使用（仍过滤伤病）。
-        let pool = equipmentSlugs
+        let equipmentPool = equipmentSlugs
             .compactMap { ExerciseLibrary.exercise(slug: $0) }
             .filter { banned.isDisjoint(with: Set($0.contraindications)) }
-        if strictEquipment || pool.count >= 8 {
-            return pool
+        if strictEquipment || equipmentPool.count >= 8 {
+            return equipmentPool
         }
         var equipment = profile.equipment
         for slug in equipmentSlugs {
