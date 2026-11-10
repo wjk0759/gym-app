@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`e3d8d9d`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`b059569`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-10）：`develop` 编译修复（`6e95feb`）、头像 512（`fa9d3c8`）、动作库别名 + 计划白名单 + 隐藏 `other`（`fc8634c`/`bc183ae`）、媒体 coverage 校验（`d890a53`）、phone-only Release 构建脚本（`4af3bcb`）、媒体图库/训练页视频验证（`8dfc008`/`9ce7a63`）；Debug build **BUILD SUCCEEDED**，`FitAITests` **61/61** 通过，catalog validator 通过，Wu-Tang 真机 phone-only 包已安装并启动；此前完成 Watch UI 重设计、单主按钮流程、40/42/49mm 响应式适配和语音输入单行（`2d5dea0`/`1eb3fdd`/`9a833b1`）
@@ -29,12 +29,13 @@
 ### 2026-11-10 · Windows（器械库 v2 + 个人动作库）
 
 - 分支：`develop`
-- 代码提交：`e0cf57a`（后端 V26 + 个人库）、`e3d8d9d`（iOS 器械库/个人动作库）
+- 代码提交：`e0cf57a`（后端 V26 + 个人库）、`e3d8d9d`（iOS 器械库/个人动作库）、`b059569`（器械详情页）
 - 做了什么：
   - **后端 V26**：`equipment_library` 增加 `equipment_type`/`category`/`photo_url`；新增 `user_exercise_library` 表；生产已手动应用并记录 flyway V26
   - **接口**：`GET/POST/DELETE /me/exercise-library`；`/equipment/items` 支持新字段；`/plans/generate` 接受 `exercise_library_slugs`
   - **计划生成**：个人动作库 ≥8 条时严格只用它（仍过滤伤病），不足回退器械池；本地生成同规则
   - **iOS**：`EquipmentItem` 改成物理器械（equipmentType/category/photoURL + trainableExercises）；识别结果改为保存「器械」并把可练动作默认全选加入个人动作库；新增 `PersonalExerciseLibraryView`；器械库行显示「N 个可练动作」；`AppStore.personalExerciseSlugs` 本地持久化 + 云端同步
+  - **器械详情页**（`PhysicalEquipmentDetailView`）：Hero + 个人库进度 + 训练类型 Tab + 按部位分组的动作开关 + 全部加入/移除 + 用这件器械生成计划；非力量动作灰标「仅参考」；自定义/0 动作器械有诚实空态
 - 验证：
   - 后端 **223 passed**（新增 3 个个人动作库计划池测试），Ruff 通过
   - 生产 V26 已应用：`equipment_library` 新字段 + `user_exercise_library` 表
@@ -45,7 +46,6 @@
   - 不要恢复「识别结果保存为动作」的旧逻辑
   - 不要恢复 `equipmentLibrary.compactMap(\.slug)` 作为计划来源
 - 遗留：
-  - 器械详情页还没展示「可练动作」列表（识别结果页和个人动作库页已有）；需要补 `EquipmentDetailView` 的分组动作区
   - 器械照片目前只本地保存，跨设备同步需要上传接口
   - 教练 tool 还没接 `equipment.add`/`exercise_library.add`
 
