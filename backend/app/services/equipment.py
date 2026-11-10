@@ -1,10 +1,9 @@
 """Equipment recognition: catalog-constrained vision, honest failures.
 
-The vision model never invents exercise names. It picks one equipment type
-from ``equipment_catalog`` and the backend maps that type to actions that
-already exist in the active library. If vision fails, the API returns an
-explicit ``unavailable`` result instead of pretending that random exercises
-are real matches.
+The vision model picks one fixed-machine type from the 79-class catalog; the
+backend maps that type to exercises via ``equipment_catalog_v2.exercises_for``.
+If vision fails, the API returns an explicit ``unavailable`` result instead of
+pretending that random exercises are real matches.
 """
 
 from __future__ import annotations
@@ -19,17 +18,17 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..models import EquipmentLibraryItem, Exercise, Profile
-from . import equipment_catalog, llm
+from . import equipment_catalog_v2 as equipment_catalog
+from . import llm
 
 logger = logging.getLogger(__name__)
 
-_SYSTEM_PROMPT = """你是叫练的健身器械识别助手。你只判断图片中的健身器械类型，并从给定目录中选择。
+_SYSTEM_PROMPT = """你是叫练的健身器械识别助手。你只判断图片中的固定器械类型，并从给定目录中选择。
 规则：
-1. 只能选择目录中存在的 equipment_slug；看不清或不是健身器械时用 unknown。
+1. 只能选择目录中存在的 equipment_slug；看不清或不是固定器械时用 unknown。
 2. 图片里有多台器械时，选择占据画面主体、最靠近镜头的那一台。
 3. 不要靠品牌或颜色猜；优先看结构：座椅、靠背、脚踏板、配重片、滑轮、把手、轨道、绳索。
-4. 同一台器械可做多个动作时，最多列 3 个目录里给该器械的动作 slug。
-5. 只输出一个 JSON 对象，不要解释。"""
+4. 只输出一个 JSON 对象，不要解释。"""
 
 
 def _user_prompt(ocr_text: str = "") -> str:
@@ -37,7 +36,7 @@ def _user_prompt(ocr_text: str = "") -> str:
     if ocr_text:
         hint = equipment_catalog.match_name(ocr_text)
         hint_line = (
-            f"\nOCR 匹配提示：{hint.slug}（{hint.name_zh}）"
+            f"\nOCR 匹配提示：{hint['slug']}（{hint['name_zh']}）"
             if hint is not None
             else ""
         )
@@ -47,7 +46,7 @@ def _user_prompt(ocr_text: str = "") -> str:
             "如果文字属于背景里的另一台器械，忽略它。"
             f"{hint_line}\n"
         )
-    return f"""器械目录：
+    return f"""器械目录（79 类固定器械）：
 {equipment_catalog.prompt_catalog()}
 {ocr_block}
 识别这张照片，严格输出 JSON：
@@ -61,11 +60,10 @@ def _user_prompt(ocr_text: str = "") -> str:
     {{"slug": "第二可能的目录 slug", "confidence": 0.0}}
   ],
   "visible_features": ["看到的 2-4 个结构特征"],
-  "exercise_slugs": ["最多 3 个目录里给该器械的动作 slug"],
   "description": "一句话说明"
 }}
-如果不是健身器械：equipment_slug 用 "unknown"，equipment_candidates 和 exercise_slugs 输出 []，description 如实说明。
-如果只能确定一个，equipment_candidates 只输出一个；不确定时输出两个最接近的。"""
+如果不是固定器械：equipment_slug 用 "unknown"，equipment_candidates 输出 []，description 如实说明。
+不确定时输出两个最接近的候选。"""
 
 
 def available_equipment_types(
@@ -118,27 +116,18 @@ def _active_exercises(db: Session) -> list[Exercise]:
     )
 
 
-def _build_option(
-    db: Session,
-    catalog: equipment_catalog.EquipmentType,
-    confidence: float,
-    requested_slugs,
-) -> dict | None:
+def _build_option(db: Session, item: dict, confidence: float) -> dict | None:
+    slugs = equipment_catalog.exercises_for(item["slug"])
     rows = {
-        item.slug: item
-        for item in _active_exercises(db)
-        if item.slug in set(catalog.exercise_slugs)
+        e.slug: e
+        for e in _active_exercises(db)
+        if e.slug in set(slugs)
     }
-    requested = [
-        str(item).strip()
-        for item in (
-            requested_slugs if isinstance(requested_slugs, list) else []
-        )
-        if str(item).strip() in catalog.exercise_slugs
-    ]
-    ordered = requested + [
-        slug for slug in catalog.exercise_slugs if slug not in requested
-    ]
+    # compound-first so the most representative exercises lead the list.
+    ordered = sorted(
+        slugs,
+        key=lambda s: (not rows[s].is_compound if s in rows else True, s),
+    )
 
     candidates: list[dict] = []
     for index, slug in enumerate(ordered):
@@ -151,20 +140,18 @@ def _build_option(
                 "name_zh": exercise.name_zh,
                 "muscle_group": exercise.muscle_group,
                 "equipment": exercise.equipment,
-                "confidence": round(
-                    max(0.30, confidence - index * 0.14), 2
-                ),
+                "confidence": round(max(0.30, confidence - index * 0.05), 2),
                 "video_url": exercise.video_url,
             }
         )
-        if len(candidates) == 3:
+        if len(candidates) == 6:
             break
 
     if not candidates:
         return None
     return {
-        "slug": catalog.slug,
-        "name_zh": catalog.name_zh,
+        "slug": item["slug"],
+        "name_zh": item["name_zh"],
         "confidence": round(confidence, 2),
         "candidates": candidates,
     }
@@ -231,7 +218,7 @@ def _map_result(db: Session, result: dict, filename: str) -> dict:
             "needs_confirmation": True,
             "not_in_library": False,
             "name": equipment_name or "未知",
-            "description": description or "未识别到健身器械。",
+            "description": description or "未识别到固定器械。",
             "equipment_slug": "unknown",
             "equipment_name": equipment_name,
             "confidence": confidence,
@@ -241,12 +228,12 @@ def _map_result(db: Session, result: dict, filename: str) -> dict:
             "status": "not_gym_equipment",
         }
 
-    catalog = (
+    item = (
         equipment_catalog.get(equipment_slug)
         or equipment_catalog.match_name(equipment_name)
         or equipment_catalog.match_name(str(result.get("name") or ""))
     )
-    if catalog is None:
+    if item is None:
         return {
             "scan_id": str(uuid.uuid4()),
             "candidates": [],
@@ -254,7 +241,7 @@ def _map_result(db: Session, result: dict, filename: str) -> dict:
             "not_in_library": True,
             "name": equipment_name or "未收录器械",
             "description": description
-            or f"识别到「{equipment_name or '器械'}」，但当前动作库未收录。",
+            or f"识别到「{equipment_name or '器械'}」，但当前目录未收录。",
             "equipment_slug": equipment_slug or "unknown",
             "equipment_name": equipment_name,
             "confidence": confidence,
@@ -275,28 +262,16 @@ def _map_result(db: Session, result: dict, filename: str) -> dict:
             continue
         raw_slug = str(raw.get("slug") or "").strip().lower()
         raw_confidence = _clamp_confidence(raw.get("confidence", confidence))
-        option_catalog = equipment_catalog.get(raw_slug)
-        if option_catalog is None or option_catalog.slug in seen:
+        option_item = equipment_catalog.get(raw_slug)
+        if option_item is None or option_item["slug"] in seen:
             continue
-        seen.add(option_catalog.slug)
-        option = _build_option(
-            db,
-            option_catalog,
-            raw_confidence,
-            result.get("exercise_slugs")
-            if option_catalog.slug == catalog.slug
-            else [],
-        )
+        seen.add(option_item["slug"])
+        option = _build_option(db, option_item, raw_confidence)
         if option is not None:
             options.append(option)
 
     if not options:
-        top_option = _build_option(
-            db,
-            catalog,
-            confidence,
-            result.get("exercise_slugs"),
-        )
+        top_option = _build_option(db, item, confidence)
         if top_option is not None:
             options.append(top_option)
 
@@ -312,10 +287,7 @@ def _map_result(db: Session, result: dict, filename: str) -> dict:
             if alternative is None:
                 continue
             alternative_option = _build_option(
-                db,
-                alternative,
-                max(0.35, top_confidence - 0.35),
-                [],
+                db, alternative, max(0.35, top_confidence - 0.35)
             )
             if alternative_option is not None:
                 options.append(alternative_option)
@@ -328,11 +300,11 @@ def _map_result(db: Session, result: dict, filename: str) -> dict:
             "equipment_candidates": [],
             "needs_confirmation": True,
             "not_in_library": True,
-            "name": catalog.name_zh,
+            "name": item["name_zh"],
             "description": description
-            or f"识别到「{catalog.name_zh}」，但当前动作库未收录。",
-            "equipment_slug": catalog.slug,
-            "equipment_name": catalog.name_zh,
+            or f"识别到「{item['name_zh']}」，但动作库暂未收录其示范动作。",
+            "equipment_slug": item["slug"],
+            "equipment_name": item["name_zh"],
             "confidence": confidence,
             "visible_features": features,
             "model": settings.vision_model_name,

@@ -3,7 +3,8 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
-from app.services import equipment, equipment_catalog
+from app.services import equipment
+from app.services import equipment_catalog_v2 as equipment_catalog
 
 
 def _vision_result(**overrides):
@@ -13,7 +14,6 @@ def _vision_result(**overrides):
         "equipment_name": "腿举机",
         "confidence": 0.92,
         "visible_features": ["斜靠背", "脚踏板", "挂片杆"],
-        "exercise_slugs": ["cm_leg_press"],
         "description": "一台挂片式线性腿举机。",
     }
     result.update(overrides)
@@ -28,13 +28,14 @@ def _settings():
     )
 
 
-def _exercise(slug: str, name_zh: str):
+def _exercise(slug: str, name_zh: str, is_compound: bool = True):
     return SimpleNamespace(
         slug=slug,
         name_zh=name_zh,
         muscle_group="legs",
         equipment="machine",
         difficulty=2,
+        is_compound=is_compound,
         video_url=None,
     )
 
@@ -48,7 +49,7 @@ def test_catalog_equipment_maps_to_active_exercises(monkeypatch):
     monkeypatch.setattr(
         equipment,
         "_active_exercises",
-        lambda db: [_exercise("cm_leg_press", "腿举")],
+        lambda db: [_exercise("vital-leg-press", "腿举")],
     )
 
     result = asyncio.run(
@@ -58,7 +59,7 @@ def test_catalog_equipment_maps_to_active_exercises(monkeypatch):
     assert result["status"] == "ok"
     assert result["equipment_slug"] == "leg_press"
     assert result["equipment_name"] == "腿举机"
-    assert result["candidates"][0]["slug"] == "cm_leg_press"
+    assert result["candidates"][0]["slug"] == "vital-leg-press"
     assert result["not_in_library"] is False
 
 
@@ -68,7 +69,6 @@ def test_unknown_equipment_returns_custom_add_signal(monkeypatch):
             is_gym_equipment=False,
             equipment_slug="unknown",
             equipment_name="未知",
-            exercise_slugs=[],
             description="这不是健身器械。",
         )
 
@@ -87,9 +87,8 @@ def test_unknown_equipment_returns_custom_add_signal(monkeypatch):
 def test_catalog_equipment_without_actions_is_not_in_library(monkeypatch):
     async def fake_vision(system, user, image, mime="image/jpeg", **kwargs):
         return _vision_result(
-            equipment_slug="torso_rotation",
-            equipment_name="转体机",
-            exercise_slugs=[],
+            equipment_slug="tibialis",
+            equipment_name="胫骨前肌训练机",
         )
 
     monkeypatch.setattr(equipment, "settings", _settings())
@@ -103,7 +102,7 @@ def test_catalog_equipment_without_actions_is_not_in_library(monkeypatch):
     assert result["status"] == "no_actions"
     assert result["not_in_library"] is True
     assert result["candidates"] == []
-    assert result["name"] == "转体机"
+    assert result["name"] == "胫骨前肌训练机"
 
 
 def test_vision_failure_never_returns_random_candidates(monkeypatch):
@@ -125,14 +124,13 @@ def test_vision_failure_never_returns_random_candidates(monkeypatch):
 def test_two_close_equipment_candidates_are_returned(monkeypatch):
     async def fake_vision(system, user, image, mime="image/jpeg", **kwargs):
         return _vision_result(
-            equipment_slug="chest_press_machine",
+            equipment_slug="chest_press_seated",
             equipment_name="坐姿推胸机",
             confidence=0.78,
             equipment_candidates=[
-                {"slug": "chest_press_machine", "confidence": 0.78},
-                {"slug": "shoulder_press_machine", "confidence": 0.66},
+                {"slug": "chest_press_seated", "confidence": 0.78},
+                {"slug": "shoulder_press", "confidence": 0.66},
             ],
-            exercise_slugs=["cm_machine_chest_press"],
         )
 
     monkeypatch.setattr(equipment, "settings", _settings())
@@ -141,8 +139,8 @@ def test_two_close_equipment_candidates_are_returned(monkeypatch):
         equipment,
         "_active_exercises",
         lambda db: [
-            _exercise("cm_machine_chest_press", "器械推胸"),
-            _exercise("cm_machine_shoulder_press", "器械推举"),
+            _exercise("vital-seated-machine-chest-press", "器械推胸"),
+            _exercise("vital-seated-shoulder-press-machine", "器械推举"),
         ],
     )
 
@@ -152,8 +150,8 @@ def test_two_close_equipment_candidates_are_returned(monkeypatch):
 
     assert result["status"] == "ok"
     assert len(result["equipment_candidates"]) == 2
-    assert result["equipment_candidates"][0]["slug"] == "chest_press_machine"
-    assert result["equipment_candidates"][1]["slug"] == "shoulder_press_machine"
+    assert result["equipment_candidates"][0]["slug"] == "chest_press_seated"
+    assert result["equipment_candidates"][1]["slug"] == "shoulder_press"
     assert result["needs_confirmation"] is True
 
 
@@ -169,7 +167,7 @@ def test_ocr_text_is_included_and_matched_to_catalog(monkeypatch):
     monkeypatch.setattr(
         equipment,
         "_active_exercises",
-        lambda db: [_exercise("cm_leg_press", "腿举")],
+        lambda db: [_exercise("vital-leg-press", "腿举")],
     )
 
     asyncio.run(
@@ -182,19 +180,19 @@ def test_ocr_text_is_included_and_matched_to_catalog(monkeypatch):
     )
 
     assert "HAMMER STRENGTH SHOULDER PRESS" in captured["user"]
-    assert "shoulder_press_machine" in captured["user"]
+    assert "shoulder_press" in captured["user"]
 
 
 def test_catalog_actions_exist_in_active_library():
     library = Path(__file__).resolve().parents[2] / "ios" / "FitAI" / "Resources"
     rows = json.loads(
-        (library / "xunji_movements.json").read_text(encoding="utf-8-sig")
+        (library / "vital_exercises.json").read_text(encoding="utf-8")
     )
     active = {row["slug"] for row in rows}
     missing = {
         slug
-        for item in equipment_catalog.CATALOG
-        for slug in item.exercise_slugs
+        for slugs in equipment_catalog.EXERCISE_MAP.values()
+        for slug in slugs
         if slug not in active
     }
 
