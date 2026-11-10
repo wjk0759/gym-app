@@ -2,7 +2,9 @@ import SwiftUI
 
 extension EquipmentItemDetailView {
 func equipmentInfoSection(for item: EquipmentItem) -> some View {
-        detailSection(
+        let matches = matchingEquipment(for: item)
+
+        return detailSection(
             index: "01",
             title: "所需器械",
             lead: "确认器械、握法和可替代方案，再开始动作。"
@@ -18,11 +20,73 @@ func equipmentInfoSection(for item: EquipmentItem) -> some View {
                     value: item.muscle?.label ?? "全身",
                     symbol: "figure.strengthtraining.functional"
                 )
-                equipmentInfoRow(
-                    title: "动作来源",
-                    value: item.slug ?? "未记录",
-                    symbol: "book.closed.fill"
-                )
+
+                if matches.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("你还没有对应器械")
+                            .font(AppType.caption.weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+                        Text("去器械库添加后，这个动作会进入你的计划池。")
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundStyle(Theme.tertiaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button {
+                            showEquipmentLibrary = true
+                        } label: {
+                            Label("去器械库添加", systemImage: "plus.circle")
+                        }
+                        .buttonStyle(SecondaryButtonStyle())
+                    }
+                    .padding(11)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        Theme.ink.opacity(0.035),
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    )
+                } else {
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text("你已有")
+                            .font(.system(size: 9.5, weight: .bold))
+                            .foregroundStyle(Theme.tertiaryText)
+
+                        ForEach(matches) { match in
+                            HStack(spacing: 9) {
+                                Image(systemName: equipmentSymbol(match))
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(Theme.cobalt)
+                                    .frame(width: 28, height: 28)
+                                    .background(
+                                        Theme.cobalt.opacity(0.08),
+                                        in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    )
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(match.name)
+                                        .font(AppType.caption.weight(.semibold))
+                                        .foregroundStyle(Theme.ink)
+                                    Text("\(match.trainableExercises.count) 个可练动作")
+                                        .font(.system(size: 9, weight: .medium))
+                                        .foregroundStyle(Theme.tertiaryText)
+                                }
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.vertical, 3)
+                        }
+
+                        Button {
+                            showEquipmentLibrary = true
+                        } label: {
+                            Label("去器械库", systemImage: "chevron.right")
+                        }
+                        .buttonStyle(SecondaryButtonStyle())
+                    }
+                    .padding(11)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        Theme.cobalt.opacity(0.06),
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    )
+                }
+
                 if !item.notes.isEmpty {
                     Text(item.notes)
                         .font(AppType.caption)
@@ -37,6 +101,17 @@ func equipmentInfoSection(for item: EquipmentItem) -> some View {
                     .foregroundStyle(Theme.tertiaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        }
+    }
+
+func matchingEquipment(for item: EquipmentItem) -> [EquipmentItem] {
+        guard let exercise = item.exercise else { return [] }
+        let groups = Set(exercise.equipmentTypes)
+        return store.equipmentLibrary.filter { equipment in
+            guard let group = EquipmentCatalog.group(for: equipment.equipmentType) else {
+                return false
+            }
+            return groups.contains(group)
         }
     }
 
@@ -149,13 +224,6 @@ func hero(for item: EquipmentItem) -> some View {
                 .foregroundStyle(Theme.ink)
                 .padding(.top, 5)
 
-            Text(heroDescription(for: item))
-                .font(AppType.body)
-                .foregroundStyle(Theme.secondaryText)
-                .lineSpacing(3)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 8)
-
             HStack(spacing: 6) {
                 detailPill(item.muscle?.label ?? "未分类")
                 detailPill(item.equipment?.label ?? "未设置")
@@ -204,16 +272,6 @@ func detailSection<Content: View>(
                 .strokeBorder(Theme.stroke, lineWidth: 1)
         }
         .id(index)
-    }
-
-func heroDescription(for item: EquipmentItem) -> String {
-        if let instructions = item.exercise?.instructions, !instructions.isEmpty {
-            return instructions
-        }
-        if !item.notes.isEmpty {
-            return item.notes
-        }
-        return "先用稳定、可控的轨迹完成动作，再逐步增加重量和训练量。"
     }
 
 func coachCard(for item: EquipmentItem) -> some View {

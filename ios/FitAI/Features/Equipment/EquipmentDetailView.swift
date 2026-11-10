@@ -14,6 +14,7 @@ struct EquipmentItemDetailView: View {
 
     @State var showDelete = false
     @State var showCoach = false
+    @State var showEquipmentLibrary = false
     @State var officialVideoURL: URL?
     @State var detailTab: DetailTab = .points
 
@@ -26,7 +27,7 @@ struct EquipmentItemDetailView: View {
 
         var title: String {
             switch self {
-            case .points: return "注意事项"
+            case .points: return "动作要点"
             case .muscles: return "目标肌群"
             case .equipment: return "所需器械"
             }
@@ -149,6 +150,11 @@ struct EquipmentItemDetailView: View {
                 CoachChatView()
                     .presentationDragIndicator(.visible)
             }
+            .sheet(isPresented: $showEquipmentLibrary) {
+                NavigationStack {
+                    EquipmentLibraryView()
+                }
+            }
         }
     }
 
@@ -176,21 +182,15 @@ struct EquipmentItemDetailView: View {
                             pointsContent(for: item)
                         }
 
-                        detailSection(
-                            index: "02",
-                            title: "动作轨迹",
-                            lead: "先用轨迹示意建立动作路径，再在训练中把速度放慢。"
-                        ) {
-                            motionBoard(for: item)
-                        }
-
-                        detailSection(
-                            index: "03",
-                            title: "多角度示范",
-                            lead: "示范素材准备中。先用要点确认起始位置和身体角度。"
-                        ) {
-                            angleGrid(for: item)
-                        }
+                        // 动作轨迹与教学视频重复，已移除。
+                        // 多角度示范暂隐藏，素材补齐后恢复：
+                        // detailSection(
+                        //     index: "02",
+                        //     title: "多角度示范",
+                        //     lead: "示范素材准备中。先用要点确认起始位置和身体角度。"
+                        // ) {
+                        //     angleGrid(for: item)
+                        // }
                     }
                 case .muscles:
                     detailSection(
