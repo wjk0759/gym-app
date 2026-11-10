@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`9ce7a63`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`d85de7f`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-10）：`develop` 编译修复（`6e95feb`）、头像 512（`fa9d3c8`）、动作库别名 + 计划白名单 + 隐藏 `other`（`fc8634c`/`bc183ae`）、媒体 coverage 校验（`d890a53`）、phone-only Release 构建脚本（`4af3bcb`）、媒体图库/训练页视频验证（`8dfc008`/`9ce7a63`）；Debug build **BUILD SUCCEEDED**，`FitAITests` **61/61** 通过，catalog validator 通过，Wu-Tang 真机 phone-only 包已安装并启动；此前完成 Watch UI 重设计、单主按钮流程、40/42/49mm 响应式适配和语音输入单行（`2d5dea0`/`1eb3fdd`/`9a833b1`）
@@ -25,6 +25,34 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-10 · Windows（动作库分类重做 + 器械目录/映射 + 识别修复）
+
+- 分支：`develop`
+- 代码提交：`e655e6a`（taxonomy）、`58e5f2c`（器械映射）、`82b066b`（iOS 接线）、`4eb3fee`（训练类型 Tab）、`d85de7f`（识别修复）
+- 做了什么：
+  - **动作库分类重做**（`build_taxonomy.py`）：从 1,394 条导出正交维度，替换掉原来混在一棵树里的乱分类
+    - 训练类型 6 类：力量 835 / 拉伸 202 / 普拉提 133 / 有氧 88 / 瑜伽 70 / 灵活性 66；瑜伽/普拉提按 pack 独立，不再掺进力量/拉伸
+    - 部位 8 类：腿 436 / 核心 350 / 臀 158 / 肩 125 / 背 110 / 臂 96 / 胸 82 / 全身 37（0 条未定）
+    - 动作模式：孤立/推/蹲/髋铰链/等长/拉/弓步/旋转/提携（draft，非力量类置空）
+  - **器械目录 v2 + 器械→动作映射**（`build_equipment_mapping.py`）：79 类固定器械（来自 E:\opencode\fixed_machines_dataset）+ 15 类自由重量/有氧/小工具 = 94 类；42 个动作组 keyword 映射到 vital 动作；`tibialis`/`multi` 诚实 0 动作
+  - **iOS 接线**：catalog 新增 `training_type`/`body_part`/`muscle_primary`/`muscle_secondary`/`movement_pattern`/`equipment_types`；`category_l1`=部位、`category_l2`=主肌群（桥接现有侧栏）；`plan_eligible` 改为「力量 only」（809）；Exercise 模型 + ResourceExercise 解码器加新字段；动作库顶部加训练类型 Tab（力量/拉伸/灵活性按部位侧栏，瑜伽/普拉提/有氧平铺）
+  - **识别修复**：删 `equipment_catalog.py`（cm_* 死映射），生成 `equipment_catalog_v2.py`，`equipment.py` 用 `exercises_for()` 映射 vital 动作
+  - **废数据清理**：删 `category_classification.csv`（旧乱分类）+ 合并流水线中间产物 4 个 + 空壳 `EquipmentService.swift`；删生产 `_bak_*` 三张表；删旧 `equipment_catalog.py`
+- 验证：
+  - 后端 **220 passed**，Ruff 通过
+  - 抽查：下犬式→瑜伽、战士→瑜伽、百次拍击→普拉提、卧推→力量/胸/推、深蹲→力量/腿/蹲、硬拉→力量/腿/髋铰链
+  - 器械映射抽查：腿举 11 / 史密斯 11 / 龙门架 47 / 哑铃 126 / 跑步机 5
+- 复核队列（待定默认值）：
+  - 下背 55 条 → 默认「核心」（可改「背」）；颈 16 → 肩、斜方肌 14 → 背；混包瑜伽 6 条（平板支撑/反向平板/乌鸦式等）→ 默认瑜伽
+  - `data/vital/taxonomy_review.csv`（90 条）+ `equipment_mapping_review.csv`（2 条空组）
+- macOS 需要做：
+  - `git pull` → `xcodegen` → 编译验证训练类型 Tab、部位侧栏、Exercise 新字段
+  - 真机验证动作库按训练类型/部位分类正确、瑜伽/普拉提不掺
+- 不要恢复：
+  - 不要恢复旧乱分类（`category_classification.csv`、cm_* 映射、`equipment_catalog.py`）
+  - 不要恢复 `EquipmentService.swift` 空壳、生产 `_bak_*` 表
+- 遗留（下一步）：器械库 UI 改成「物理器械」（照片+类型+可练动作）、识别结果存器械而非动作、个人动作库（user_exercise_library 表 + 视图）、器械照片跨设备同步
 
 ### 2026-11-10 · Windows（动作详情多视频切换 + 媒体重转码重传）
 
