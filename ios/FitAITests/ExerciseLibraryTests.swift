@@ -17,24 +17,21 @@ final class ExerciseLibraryTests: XCTestCase {
         let tree = ExerciseLibrary.visibleCategoryTree
         let l1 = tree.map(\.l1)
 
-        XCTAssertEqual(tree.count, 16)
-        XCTAssertFalse(l1.contains("前锯肌"))
+        XCTAssertEqual(tree.count, 8)
         XCTAssertFalse(l1.contains("other"))
         XCTAssertEqual(
             ExerciseLibrary.subcategories(for: "胸"),
-            ["上胸", "中下胸"]
+            ["胸大肌", "下胸"]
         )
         XCTAssertEqual(
             Set(ExerciseLibrary.subcategories(for: "背")),
-            ["背阔肌", "菱形肌", "上斜方", "竖脊肌"]
+            ["背阔肌", "上背", "斜方肌", "菱形肌"]
         )
-        XCTAssertFalse(
-            ExerciseLibrary.subcategories(for: "背").contains("大圆肌")
+        XCTAssertEqual(
+            Set(ExerciseLibrary.subcategories(for: "核心")),
+            ["腹直肌", "下背", "侧腹"]
         )
-        XCTAssertFalse(
-            ExerciseLibrary.subcategories(for: "背").contains("中下斜方")
-        )
-        XCTAssertTrue(ExerciseLibrary.subcategories(for: "核心").isEmpty)
+        XCTAssertTrue(ExerciseLibrary.subcategories(for: "全身").isEmpty)
     }
 
     func testAliasSearchFindsCommonNames() {
@@ -66,7 +63,19 @@ final class ExerciseLibraryTests: XCTestCase {
                 excludedCategories.contains(exercise.categoryL1 ?? ""),
                 "\(exercise.nameZH) should not be in the default plan pool"
             )
-            XCTAssertNotEqual(exercise.equipment, .other)
         }
+    }
+
+    func testUniversalEquipmentDefaultsAndPools() {
+        let defaults = Dictionary(
+            uniqueKeysWithValues: ExerciseLibrary.universalEquipment.map {
+                ($0.slug, $0.defaultOn)
+            }
+        )
+        XCTAssertEqual(defaults["bodyweight"], true)
+        XCTAssertEqual(defaults["dumbbell"], false)
+        XCTAssertFalse(
+            ExerciseLibrary.universalExercises["bodyweight", default: []].isEmpty
+        )
     }
 }
