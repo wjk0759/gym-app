@@ -22,10 +22,39 @@ from ..models import (
     EquipmentTypeExercise,
     Exercise,
     Profile,
+    UserUniversalEquipment,
 )
 from . import llm
 
 logger = logging.getLogger(__name__)
+
+_TYPE_TO_EQUIPMENT = {
+    "dumbbell": "dumbbell",
+    "barbell": "barbell",
+    "kettlebell": "kettlebell",
+    "band": "band",
+    "bodyweight": "bodyweight",
+}
+_CATEGORY_TO_EQUIPMENT = {
+    "machine": "machine",
+    "multi": "machine",
+    "cable": "cable",
+    "cardio": "bodyweight",
+    "accessory": "other",
+    "bodyweight": "bodyweight",
+}
+_UNIVERSAL_TO_EQUIPMENT = {
+    "bodyweight": "bodyweight",
+    "dumbbell": "dumbbell",
+    "barbell": "barbell",
+    "kettlebell": "kettlebell",
+    "band": "band",
+    "pullup": "bodyweight",
+    "dip": "bodyweight",
+    "battle_rope": "other",
+    "medicine_ball": "other",
+    "sled": "other",
+}
 
 _SYSTEM_PROMPT = """你是叫练的健身器械识别助手。你只判断图片中的固定器械类型，并从给定目录中选择。
 规则：
@@ -131,25 +160,48 @@ def available_equipment_types(
     user_id: str,
     profile_equipment: list[str] | None,
 ) -> list[str]:
-    """Equipment types the user can actually use.
+    """Exercise-equipment categories the user can actually use.
 
-    The personal equipment library is authoritative; the profile list remains a
-    compatibility fallback for users who have not added library items yet.
-    Bodyweight is always available.
+    ``user_equipment`` stores the equipment-type category (machine/cable/multi/
+    free_weight/...), while ``exercises.equipment`` uses the exercise category
+    (machine/cable/dumbbell/barbell/...). This maps the former to the latter so
+    plan validation and fallback use the same vocabulary.
     """
     rows = (
         db.execute(
-            select(EquipmentLibraryItem.category, EquipmentLibraryItem.equipment).where(
-                EquipmentLibraryItem.user_id == user_id,
-            )
+            select(
+                EquipmentLibraryItem.equipment_type,
+                EquipmentLibraryItem.category,
+                EquipmentLibraryItem.equipment,
+            ).where(EquipmentLibraryItem.user_id == user_id)
         )
         .all()
     )
-    types = {
-        str(category or equipment).strip()
-        for category, equipment in rows
-        if (category or equipment)
-    }
+    types: set[str] = set()
+    for type_slug, category, equipment in rows:
+        mapped = _TYPE_TO_EQUIPMENT.get(str(type_slug or ""))
+        if mapped is None:
+            mapped = _CATEGORY_TO_EQUIPMENT.get(str(category or ""))
+        if mapped is None and equipment:
+            mapped = str(equipment)
+        if mapped:
+            types.add(mapped)
+
+    universal = (
+        db.execute(
+            select(UserUniversalEquipment.equipment_slug).where(
+                UserUniversalEquipment.user_id == user_id,
+                UserUniversalEquipment.enabled.is_(True),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    for slug in universal:
+        mapped = _UNIVERSAL_TO_EQUIPMENT.get(str(slug))
+        if mapped:
+            types.add(mapped)
+
     if types:
         types.add("bodyweight")
         return sorted(types)

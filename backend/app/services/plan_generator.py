@@ -398,6 +398,8 @@ def build_template_plan(
         plan_pool_slugs,
         strict_equipment,
     )
+    if plan_pool_slugs and available:
+        equipment_types = sorted({item.equipment for item in available})
     if not available:
         raise ValueError("当前器械或伤病条件下没有可用动作")
     raw = fallback_plan(
@@ -568,6 +570,8 @@ async def generate_plan(
         plan_pool_slugs,
         strict_equipment,
     )
+    if plan_pool_slugs and available:
+        equipment_types = sorted({item.equipment for item in available})
     if not available:
         available = (
             db.execute(select(Exercise).where(Exercise.is_active.is_(True)))

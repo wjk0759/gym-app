@@ -403,5 +403,6 @@ def replace_universal_equipment(
                 enabled=True,
             )
         )
+    refresh_profile_equipment_cache(db, user_id)
     db.commit()
     return {"enabled_slugs": slugs}
