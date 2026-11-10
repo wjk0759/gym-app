@@ -102,12 +102,12 @@ struct AddEquipmentView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var name = ""
-    @State private var selectedExercise: Exercise?
+    @State private var selectedType: EquipmentTypeInfo?
     @State private var notes = ""
     @State private var photoData: Data?
     @State private var photoItem: PhotosPickerItem?
     @State private var showCamera = false
-    @State private var showExercisePicker = false
+    @State private var showTypePicker = false
     @State private var message = ""
     @State private var showAlert = false
 
@@ -138,24 +138,24 @@ struct AddEquipmentView: View {
                     .card()
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("对应动作")
+                        Text("器械类型")
                             .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                         Button {
-                            showExercisePicker = true
+                            showTypePicker = true
                         } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 3) {
-                                    Text(selectedExercise?.nameZH ?? "选择动作")
+                                    Text(selectedType?.nameZH ?? "自定义器械")
                                         .font(AppType.callout)
                                         .foregroundStyle(Theme.ink)
-                                    Text(selectedExercise.map {
-                                        "\($0.muscle.label) · \($0.equipment.label)"
-                                    } ?? (AppConfig.exerciseVideosEnabled
-                                          ? "用于匹配计划与教学视频"
-                                          : "用于匹配计划与动作库"))
-                                        .font(.system(size: 9.5, weight: .medium))
-                                        .foregroundStyle(Theme.secondaryText)
+                                    Text(
+                                        selectedType.map {
+                                            "\($0.categoryLabel) · \(trainableCount(for: $0)) 个动作"
+                                        } ?? "不关联标准类型，保存后可手动添加动作"
+                                    )
+                                    .font(.system(size: 9.5, weight: .medium))
+                                    .foregroundStyle(Theme.secondaryText)
                                 }
                                 Spacer()
                                 Image(systemName: "chevron.right")
@@ -204,11 +204,12 @@ struct AddEquipmentView: View {
                     Button("取消") { dismiss() }
                 }
             }
-            .sheet(isPresented: $showExercisePicker) {
-                ExercisePickerView(equipment: store.profile.availableEquipment) { exercise in
-                    selectedExercise = exercise
-                    if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        name = exercise.nameZH
+            .sheet(isPresented: $showTypePicker) {
+                EquipmentTypePickerView { type in
+                    selectedType = type
+                    if let type,
+                       name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        name = type.nameZH
                     }
                 }
             }
@@ -277,23 +278,32 @@ struct AddEquipmentView: View {
     private func save() {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            message = "先填一个器械名称，或选择对应动作。"
+            message = "先填一个器械名称。"
             showAlert = true
             return
         }
 
-        let exercise = selectedExercise
-        let item = EquipmentItem(
+        let enabled = selectedType.map { type in
+            ExerciseLibrary.all
+                .filter { $0.planEligible && $0.equipmentTypes.contains(type.exerciseGroup) }
+                .map(\.slug)
+        } ?? []
+        _ = store.addEquipment(
+            equipmentType: selectedType?.slug,
             name: trimmed,
-            slug: exercise?.slug,
-            muscle: exercise?.muscle,
-            equipment: exercise?.equipment,
-            videoURL: exercise?.videoURL?.absoluteString,
+            category: selectedType?.category,
+            photoData: photoData,
+            enabledExerciseSlugs: enabled,
             notes: notes.trimmingCharacters(in: .whitespacesAndNewlines),
-            photoData: photoData
+            source: "manual"
         )
-        store.addEquipment(item)
         dismiss()
+    }
+
+    private func trainableCount(for type: EquipmentTypeInfo) -> Int {
+        ExerciseLibrary.all.filter {
+            $0.planEligible && $0.equipmentTypes.contains(type.exerciseGroup)
+        }.count
     }
 
     @MainActor

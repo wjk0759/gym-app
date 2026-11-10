@@ -14,7 +14,7 @@ extension HomeV2View {
             NavigationStack {
                 EquipmentRecognitionView(
                     onSaved: { item in
-                        store.toast = "已加入个人动作库：\(item.name)"
+                        store.toast = "已加入器械库：\(item.name)"
                     },
                     onRecognized: { result in
                         store.coachEquipmentResult = result

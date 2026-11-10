@@ -50,6 +50,7 @@ extension AppStore {
         category: String? = nil,
         photoData: Data? = nil,
         enabledExerciseSlugs: [String] = [],
+        notes: String = "",
         source: String = "manual"
     ) -> EquipmentItem {
         let item = EquipmentItem(
@@ -62,7 +63,7 @@ extension AppStore {
             muscle: nil,
             equipment: nil,
             videoURL: nil,
-            notes: "",
+            notes: notes,
             photoData: photoData,
             source: source
         )

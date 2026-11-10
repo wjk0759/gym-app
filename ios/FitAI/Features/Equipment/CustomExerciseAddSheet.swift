@@ -51,7 +51,7 @@ struct CustomExerciseAddSheet: View {
                     Button {
                         add()
                     } label: {
-                        Label("加入个人动作库", systemImage: "plus.circle.fill")
+                        Label("保存到器械库", systemImage: "plus.circle.fill")
                     }
                     .buttonStyle(PrimaryButtonStyle())
                     .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -80,7 +80,7 @@ struct CustomExerciseAddSheet: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("CUSTOM / 动作库")
+            Text("CUSTOM / 器械")
                 .font(AppType.overline)
                 .tracking(1.5)
                 .foregroundStyle(Theme.cobalt)
@@ -100,7 +100,7 @@ struct CustomExerciseAddSheet: View {
 
     private var nameCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("动作名称")
+            Text("器械名称")
                 .font(.system(size: 9.5, weight: .semibold))
                 .foregroundStyle(Theme.secondaryText)
             TextField("例如：髋外展机", text: $name)

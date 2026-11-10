@@ -9,13 +9,11 @@ struct EquipmentLibraryView: View {
 
     private enum EquipmentSheet: Identifiable {
         case manual
-        case detail(UUID)
         case physical(UUID)
 
         var id: String {
             switch self {
             case .manual: return "manual"
-            case .detail(let id): return "detail-\(id.uuidString)"
             case .physical(let id): return "physical-\(id.uuidString)"
             }
         }
@@ -119,8 +117,6 @@ struct EquipmentLibraryView: View {
             switch sheet {
             case .manual:
                 AddEquipmentView()
-            case .detail(let id):
-                EquipmentItemDetailView(itemID: id)
             case .physical(let id):
                 PhysicalEquipmentDetailView(equipmentID: id)
             }
@@ -378,10 +374,8 @@ struct EquipmentLibraryView: View {
                     onTap: {
                         if openRowID == item.id {
                             openRowID = nil
-                        } else if item.equipmentType != nil {
-                            activeSheet = .physical(item.id)
                         } else {
-                            activeSheet = .detail(item.id)
+                            activeSheet = .physical(item.id)
                         }
                     },
                     onDelete: {

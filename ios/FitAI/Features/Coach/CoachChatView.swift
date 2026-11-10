@@ -190,7 +190,7 @@ struct CoachChatView: View {
             .sheet(isPresented: $showEquipmentScan) {
                 EquipmentRecognitionView(
                     onSaved: { item in
-                        store.appendCoachNotice("已加入个人动作库：\(item.name)")
+                        store.appendCoachNotice("已加入器械库：\(item.name)")
                     },
                     onRecognized: { result in
                         store.coachEquipmentResult = result

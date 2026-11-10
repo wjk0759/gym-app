@@ -1,9 +1,10 @@
 import SwiftUI
 import UIKit
 
-/// 物理器械详情：展示这件器械能练的动作，并维护个人动作库。
+/// 物理器械详情：展示这件器械能练的动作，并维护这件器械启用的动作。
 ///
-/// 个人动作库是扁平的：这里的「取消」= 从个人动作库移除（全局），不会删除器械。
+/// 标准器械按目录类型推导动作；自定义器械只展示用户手动关联的动作。
+/// 这里的「取消」只是停用这件器械的动作，不会删除器械。
 struct PhysicalEquipmentDetailView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -11,6 +12,7 @@ struct PhysicalEquipmentDetailView: View {
     let equipmentID: UUID
 
     @State private var selectedTrainingType: String = "力量"
+    @State private var showExercisePicker = false
 
     private struct ExerciseGroup: Identifiable {
         let part: String
@@ -26,16 +28,25 @@ struct PhysicalEquipmentDetailView: View {
         item?.trainableExercises ?? []
     }
 
+    private var customExercises: [Exercise] {
+        guard item?.equipmentType == nil else { return [] }
+        return (item?.enabledExerciseSlugs ?? [])
+            .compactMap { ExerciseLibrary.exercise(slug: $0) }
+            .sorted { $0.nameZH < $1.nameZH }
+    }
+
     private var selectedSlugs: Set<String> {
         Set(item?.enabledExerciseSlugs ?? [])
     }
 
     private var eligibleTrainable: [Exercise] {
-        trainable.filter(\.planEligible)
+        if item?.equipmentType == nil { return customExercises }
+        return trainable.filter(\.planEligible)
     }
 
     private var selectedEligibleCount: Int {
-        eligibleTrainable.filter { selectedSlugs.contains($0.slug) }.count
+        if item?.equipmentType == nil { return customExercises.count }
+        return eligibleTrainable.filter { selectedSlugs.contains($0.slug) }.count
     }
 
     private var availableTypes: [String] {
@@ -89,24 +100,30 @@ struct PhysicalEquipmentDetailView: View {
                     Button("关闭") { dismiss() }
                 }
             }
+            .sheet(isPresented: $showExercisePicker) {
+                EquipmentExercisePickerView(equipmentID: equipmentID)
+            }
         }
     }
 
     private func content(_ item: EquipmentItem) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             hero(item)
-            overview(item)
 
             if item.equipmentType == nil {
                 customEquipmentCard
-            } else if trainable.isEmpty {
-                noExercisesCard
             } else {
-                trainingTypeTabs
-                exerciseGroups
+                overview(item)
 
-                if !eligibleTrainable.isEmpty {
-                    bulkActions
+                if trainable.isEmpty {
+                    noExercisesCard
+                } else {
+                    trainingTypeTabs
+                    exerciseGroups
+
+                    if !eligibleTrainable.isEmpty {
+                        bulkActions
+                    }
                 }
             }
 
@@ -158,7 +175,7 @@ struct PhysicalEquipmentDetailView: View {
                     .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
 
-                Text(trainable.isEmpty ? "暂无关联动作" : "可练 \(trainable.count) 个动作")
+                Text(heroExerciseSummary(item))
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
@@ -174,10 +191,10 @@ struct PhysicalEquipmentDetailView: View {
         VStack(alignment: .leading, spacing: 9) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("个人动作库")
+                    Text("已启用动作")
                         .font(AppType.caption.weight(.semibold))
                         .foregroundStyle(Theme.secondaryText)
-                    Text("力量动作 \(selectedEligibleCount) / \(eligibleTrainable.count)")
+                    Text(overviewCountText(item))
                         .font(.system(size: 13, weight: .bold, design: .monospaced))
                         .foregroundStyle(Theme.ink)
                 }
@@ -320,7 +337,7 @@ struct PhysicalEquipmentDetailView: View {
                         .foregroundStyle(added ? Theme.cobalt : Theme.tertiaryText)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(added ? "从个人动作库移除\(exercise.nameZH)" : "加入个人动作库\(exercise.nameZH)")
+                .accessibilityLabel(added ? "停用动作\(exercise.nameZH)" : "启用动作\(exercise.nameZH)")
             } else {
                 Text("仅参考")
                     .font(.system(size: 9, weight: .semibold))
@@ -374,34 +391,84 @@ struct PhysicalEquipmentDetailView: View {
     // MARK: - Empty states
 
     private var customEquipmentCard: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "square.dashed")
-                .font(.system(size: 26, weight: .light))
-                .foregroundStyle(Theme.cobalt)
-                .frame(width: 50, height: 50)
-                .background(
-                    Theme.cobalt.opacity(0.10),
-                    in: RoundedRectangle(cornerRadius: 15, style: .continuous)
-                )
-            Text("自定义器械")
-                .font(AppType.callout.weight(.semibold))
-                .foregroundStyle(Theme.ink)
-            Text("这件器械没有关联到标准器械类型。可以从动作库手动添加动作到个人动作库。")
-                .font(AppType.caption)
-                .foregroundStyle(Theme.secondaryText)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("自定义器械")
+                    .font(AppType.callout.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                Spacer()
+                Text("\(customExercises.count) 个动作")
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
 
-            NavigationLink {
-                EquipmentPickerView()
+            if customExercises.isEmpty {
+                Text("还没有关联动作。添加后，这些动作会进入计划池。")
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(customExercises.enumerated()), id: \.element.id) { index, exercise in
+                        HStack(spacing: 10) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(exercise.nameZH)
+                                    .font(AppType.callout.weight(.semibold))
+                                    .foregroundStyle(Theme.ink)
+                                Text("\(exercise.muscle.label) · \(exercise.equipment.label)")
+                                    .font(.system(size: 9.5, weight: .medium))
+                                    .foregroundStyle(Theme.secondaryText)
+                            }
+                            Spacer(minLength: 6)
+                            Button {
+                                Haptics.tap()
+                                store.replaceEquipmentExercises(
+                                    equipmentID,
+                                    slugs: (item?.enabledExerciseSlugs ?? []).filter {
+                                        $0 != exercise.slug
+                                    }
+                                )
+                            } label: {
+                                Image(systemName: "minus.circle")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundStyle(Theme.coral)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 9)
+
+                        if index < customExercises.count - 1 {
+                            Rectangle()
+                                .fill(Theme.stroke.opacity(0.7))
+                                .frame(height: 1)
+                                .padding(.leading, 12)
+                        }
+                    }
+                }
+                .background(
+                    Theme.paper,
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Theme.stroke, lineWidth: 1)
+                }
+            }
+
+            Button {
+                Haptics.tap()
+                showExercisePicker = true
             } label: {
-                Label("从动作库添加", systemImage: "plus.circle")
+                Label(
+                    customExercises.isEmpty ? "添加动作" : "继续添加动作",
+                    systemImage: "plus.circle"
+                )
             }
             .buttonStyle(SecondaryButtonStyle())
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 22)
-        .padding(.horizontal, 18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
         .background(
             Theme.paper,
             in: RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -450,7 +517,23 @@ struct PhysicalEquipmentDetailView: View {
         store.toggleEquipmentExercise(equipmentID, slug: exercise.slug)
     }
 
+    private func heroExerciseSummary(_ item: EquipmentItem) -> String {
+        let count = item.equipmentType == nil ? customExercises.count : trainable.count
+        return count == 0 ? "暂无关联动作" : "可练 \(count) 个动作"
+    }
+
+    private func overviewCountText(_ item: EquipmentItem) -> String {
+        if item.equipmentType == nil {
+            return "\(customExercises.count) 个动作"
+        }
+        return "力量动作 \(selectedEligibleCount) / \(eligibleTrainable.count)"
+    }
+
     private func symbol(for item: EquipmentItem) -> String {
+        if item.equipmentType == nil { return "square.dashed" }
+        if let type = EquipmentCatalog.type(for: item.equipmentType) {
+            return type.symbolName
+        }
         switch item.category {
         case "cardio": return "figure.run"
         case "free_weight": return "dumbbell"
@@ -461,9 +544,14 @@ struct PhysicalEquipmentDetailView: View {
     }
 
     private func categoryLabel(_ item: EquipmentItem) -> String {
+        if item.equipmentType == nil { return "自定义器械" }
+        if let type = EquipmentCatalog.type(for: item.equipmentType) {
+            return type.categoryLabel
+        }
         switch item.category {
         case "machine": return "固定器械"
         case "cable": return "绳索器械"
+        case "multi": return "综合器械"
         case "free_weight": return "自由重量"
         case "cardio": return "有氧器械"
         case "accessory": return "小工具"

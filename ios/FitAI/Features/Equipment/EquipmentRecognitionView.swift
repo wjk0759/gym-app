@@ -283,12 +283,12 @@ struct EquipmentRecognitionView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "checkmark.seal.fill")
                                 .foregroundStyle(Theme.cobalt)
-                            Text("已加入个人动作库：\(customAddedName)")
+                            Text("已加入器械库：\(customAddedName)")
                                 .font(AppType.callout.weight(.semibold))
                                 .foregroundStyle(Theme.ink)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        Text("可在「我的器械库」查看；生成计划仍只使用动作库内已收录的标准动作。")
+                        Text("可在「我的器械库」查看并关联动作；关联后会进入计划池。")
                             .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                             .fixedSize(horizontal: false, vertical: true)
