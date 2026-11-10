@@ -1,0 +1,1249 @@
+[
+ {
+  "slug": "lat_pulldown",
+  "name_zh": "高位下拉机",
+  "name_en": "Lat Pulldown",
+  "category": "machine",
+  "muscle_category": "back",
+  "exercise_group": "lat_pulldown",
+  "universal": false,
+  "aliases": [
+   "高拉背",
+   "下拉器",
+   "高位下拉训练器",
+   "Lat Pulldown Machine"
+  ]
+ },
+ {
+  "slug": "chest_press_seated",
+  "name_zh": "坐姿推胸机",
+  "name_en": "Seated Chest Press",
+  "category": "machine",
+  "muscle_category": "chest",
+  "exercise_group": "chest_press",
+  "universal": false,
+  "aliases": [
+   "推胸机",
+   "坐姿推胸",
+   "坐姿胸推",
+   "Chest Press Machine"
+  ]
+ },
+ {
+  "slug": "leg_extension",
+  "name_zh": "腿屈伸机",
+  "name_en": "Leg Extension",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "leg_extension",
+  "universal": false,
+  "aliases": [
+   "腿屈伸",
+   "伸腿器",
+   "Leg Extension Machine"
+  ]
+ },
+ {
+  "slug": "seated_row",
+  "name_zh": "坐姿划船机",
+  "name_en": "Seated Row",
+  "category": "machine",
+  "muscle_category": "back",
+  "exercise_group": "seated_row",
+  "universal": false,
+  "aliases": [
+   "坐姿划船",
+   "坐姿划船器",
+   "Seated Row Machine"
+  ]
+ },
+ {
+  "slug": "ab_crunch",
+  "name_zh": "腹肌训练机",
+  "name_en": "Ab Crunch Machine",
+  "category": "machine",
+  "muscle_category": "core",
+  "exercise_group": "ab",
+  "universal": false,
+  "aliases": [
+   "卷腹机",
+   "腹肌机",
+   "Ab Crunch Machine"
+  ]
+ },
+ {
+  "slug": "leg_curl_seated",
+  "name_zh": "坐姿腿弯举机",
+  "name_en": "Seated Leg Curl",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "leg_curl",
+  "universal": false,
+  "aliases": [
+   "坐姿腿弯举",
+   "Seated Leg Curl"
+  ]
+ },
+ {
+  "slug": "back_extension",
+  "name_zh": "山羊挺身 / 背伸展机",
+  "name_en": "Back Extension",
+  "category": "machine",
+  "muscle_category": "back",
+  "exercise_group": "back_extension",
+  "universal": false,
+  "aliases": [
+   "山羊挺身",
+   "罗马椅",
+   "背伸展器",
+   "Back Extension Machine"
+  ]
+ },
+ {
+  "slug": "leg_press",
+  "name_zh": "腿举机",
+  "name_en": "Leg Press",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "leg_press",
+  "universal": false,
+  "aliases": [
+   "蹬腿器",
+   "腿举",
+   "Leg Press Machine"
+  ]
+ },
+ {
+  "slug": "bicep_curl",
+  "name_zh": "二头肌弯举机",
+  "name_en": "Biceps Curl Machine",
+  "category": "machine",
+  "muscle_category": "arms",
+  "exercise_group": "bicep",
+  "universal": false,
+  "aliases": [
+   "二头弯举",
+   "臂弯举机",
+   "Biceps Curl Machine"
+  ]
+ },
+ {
+  "slug": "pec_deck",
+  "name_zh": "蝴蝶机 / 夹胸机",
+  "name_en": "Pec Deck",
+  "category": "machine",
+  "muscle_category": "chest",
+  "exercise_group": "pec_deck",
+  "universal": false,
+  "aliases": [
+   "夹胸机",
+   "蝴蝶机",
+   "Pec Fly",
+   "Butterfly"
+  ]
+ },
+ {
+  "slug": "shoulder_press",
+  "name_zh": "坐姿推肩机",
+  "name_en": "Seated Shoulder Press",
+  "category": "machine",
+  "muscle_category": "shoulder",
+  "exercise_group": "shoulder_press",
+  "universal": false,
+  "aliases": [
+   "推肩机",
+   "肩推机",
+   "Shoulder Press Machine"
+  ]
+ },
+ {
+  "slug": "tricep_extension",
+  "name_zh": "三头肌伸展机",
+  "name_en": "Triceps Extension Machine",
+  "category": "machine",
+  "muscle_category": "arms",
+  "exercise_group": "tricep",
+  "universal": false,
+  "aliases": [
+   "三头伸展",
+   "臂屈伸机",
+   "Triceps Extension"
+  ]
+ },
+ {
+  "slug": "hip_thrust",
+  "name_zh": "臀推机",
+  "name_en": "Hip Thrust Machine",
+  "category": "machine",
+  "muscle_category": "glutes",
+  "exercise_group": "hip_thrust",
+  "universal": false,
+  "aliases": [
+   "臀桥机",
+   "臀推",
+   "Hip Thrust Machine"
+  ]
+ },
+ {
+  "slug": "lateral_raise",
+  "name_zh": "侧平举机",
+  "name_en": "Lateral Raise Machine",
+  "category": "machine",
+  "muscle_category": "shoulder",
+  "exercise_group": "lateral_raise",
+  "universal": false,
+  "aliases": [
+   "侧平举",
+   "侧肩训练器",
+   "Lateral Raise Machine"
+  ]
+ },
+ {
+  "slug": "chest_press_incline",
+  "name_zh": "上斜推胸机",
+  "name_en": "Incline Chest Press",
+  "category": "machine",
+  "muscle_category": "chest",
+  "exercise_group": "chest_press",
+  "universal": false,
+  "aliases": [
+   "上斜推胸",
+   "上斜卧推机",
+   "Incline Press Machine"
+  ]
+ },
+ {
+  "slug": "dip_machine",
+  "name_zh": "双杠臂屈伸机",
+  "name_en": "Dip Machine",
+  "category": "machine",
+  "muscle_category": "arms",
+  "exercise_group": "dip",
+  "universal": false,
+  "aliases": [
+   "臂屈伸机",
+   "双杠机",
+   "Dip Machine"
+  ]
+ },
+ {
+  "slug": "inner_outer_thigh",
+  "name_zh": "大腿内外侧机",
+  "name_en": "Inner / Outer Thigh",
+  "category": "machine",
+  "muscle_category": "glutes",
+  "exercise_group": "hip_adduction",
+  "universal": false,
+  "aliases": [
+   "大腿内外侧",
+   "内外收",
+   "Inner Outer Thigh"
+  ]
+ },
+ {
+  "slug": "seated_calf",
+  "name_zh": "坐姿提踵机",
+  "name_en": "Seated Calf Raise",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "calf_raise",
+  "universal": false,
+  "aliases": [
+   "坐姿提踵",
+   "Seated Calf Raise"
+  ]
+ },
+ {
+  "slug": "cable_crossover",
+  "name_zh": "龙门架 / 小飞鸟",
+  "name_en": "Cable Crossover",
+  "category": "cable",
+  "muscle_category": "cable",
+  "exercise_group": "cable",
+  "universal": false,
+  "aliases": [
+   "龙门架",
+   "小飞鸟",
+   "Cable Crossover",
+   "Functional Trainer"
+  ]
+ },
+ {
+  "slug": "hip_abduction",
+  "name_zh": "髋外展机",
+  "name_en": "Hip Abduction Machine",
+  "category": "machine",
+  "muscle_category": "glutes",
+  "exercise_group": "hip_abduction",
+  "universal": false,
+  "aliases": [
+   "外展机",
+   "髋外展",
+   "Hip Abduction Machine"
+  ]
+ },
+ {
+  "slug": "leg_curl_lying",
+  "name_zh": "俯卧腿弯举机",
+  "name_en": "Lying Leg Curl",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "leg_curl",
+  "universal": false,
+  "aliases": [
+   "俯卧腿弯举",
+   "卧式腿弯举",
+   "Lying Leg Curl"
+  ]
+ },
+ {
+  "slug": "seated_row_low",
+  "name_zh": "低位划船机",
+  "name_en": "Low Row",
+  "category": "machine",
+  "muscle_category": "back",
+  "exercise_group": "seated_row",
+  "universal": false,
+  "aliases": [
+   "低位划船",
+   "低拉划船",
+   "Low Row Machine"
+  ]
+ },
+ {
+  "slug": "standing_calf",
+  "name_zh": "站姿提踵机",
+  "name_en": "Standing Calf Raise",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "calf_raise",
+  "universal": false,
+  "aliases": [
+   "站姿提踵",
+   "提踵机",
+   "Standing Calf Raise"
+  ]
+ },
+ {
+  "slug": "arm_curl_extension",
+  "name_zh": "二头 / 三头双功能机",
+  "name_en": "Biceps & Triceps Combo",
+  "category": "machine",
+  "muscle_category": "arms",
+  "exercise_group": "tricep",
+  "universal": false,
+  "aliases": [
+   "二头三头一体机",
+   "Arm Combo"
+  ]
+ },
+ {
+  "slug": "hack_squat",
+  "name_zh": "哈克深蹲机",
+  "name_en": "Hack Squat",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "hack_squat",
+  "universal": false,
+  "aliases": [
+   "哈克机",
+   "Hack Squat Machine"
+  ]
+ },
+ {
+  "slug": "hip_adduction",
+  "name_zh": "髋内收机",
+  "name_en": "Hip Adduction Machine",
+  "category": "machine",
+  "muscle_category": "glutes",
+  "exercise_group": "hip_adduction",
+  "universal": false,
+  "aliases": [
+   "内收机",
+   "髋内收",
+   "Hip Adduction Machine"
+  ]
+ },
+ {
+  "slug": "row_combo",
+  "name_zh": "划船 / 下拉双功能机",
+  "name_en": "Row & Pulldown Combo",
+  "category": "machine",
+  "muscle_category": "back",
+  "exercise_group": "seated_row",
+  "universal": false,
+  "aliases": [
+   "划船下拉一体机",
+   "Row Pulldown Combo"
+  ]
+ },
+ {
+  "slug": "chest_press_flat",
+  "name_zh": "平板卧推机",
+  "name_en": "Flat Bench Press Machine",
+  "category": "machine",
+  "muscle_category": "chest",
+  "exercise_group": "chest_press",
+  "universal": false,
+  "aliases": [
+   "平卧推胸机",
+   "卧推机",
+   "Flat Press Machine"
+  ]
+ },
+ {
+  "slug": "seated_row_high",
+  "name_zh": "高位划船机",
+  "name_en": "High Row",
+  "category": "machine",
+  "muscle_category": "back",
+  "exercise_group": "seated_row",
+  "universal": false,
+  "aliases": [
+   "高位划船",
+   "高拉划船",
+   "High Row Machine"
+  ]
+ },
+ {
+  "slug": "chest_press_combo",
+  "name_zh": "推胸 / 飞鸟双功能机",
+  "name_en": "Chest Press & Fly Combo",
+  "category": "machine",
+  "muscle_category": "chest",
+  "exercise_group": "chest_press",
+  "universal": false,
+  "aliases": [
+   "推胸飞鸟一体机",
+   "Chest Press Fly Combo"
+  ]
+ },
+ {
+  "slug": "chest_press_decline",
+  "name_zh": "下斜推胸机",
+  "name_en": "Decline Chest Press",
+  "category": "machine",
+  "muscle_category": "chest",
+  "exercise_group": "chest_press",
+  "universal": false,
+  "aliases": [
+   "下斜推胸",
+   "下胸推胸",
+   "Decline Press Machine"
+  ]
+ },
+ {
+  "slug": "glute_drive",
+  "name_zh": "臀驱机",
+  "name_en": "Glute Drive",
+  "category": "machine",
+  "muscle_category": "glutes",
+  "exercise_group": "hip_thrust",
+  "universal": false,
+  "aliases": [
+   "臀驱",
+   "Glute Drive Machine"
+  ]
+ },
+ {
+  "slug": "glute_kickback",
+  "name_zh": "后踢腿机",
+  "name_en": "Glute Kickback Machine",
+  "category": "machine",
+  "muscle_category": "glutes",
+  "exercise_group": "glute_kickback",
+  "universal": false,
+  "aliases": [
+   "后踢腿",
+   "臀踢机",
+   "Glute Kickback Machine"
+  ]
+ },
+ {
+  "slug": "leg_extension_curl_combo",
+  "name_zh": "腿屈伸 / 腿弯举双功能机",
+  "name_en": "Leg Extension & Curl Combo",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "leg_curl",
+  "universal": false,
+  "aliases": [
+   "腿屈伸腿弯举一体机",
+   "Leg Extension Curl Combo"
+  ]
+ },
+ {
+  "slug": "multi_station",
+  "name_zh": "综合训练器",
+  "name_en": "Multi-Station Gym",
+  "category": "multi",
+  "muscle_category": "multi",
+  "exercise_group": "multi",
+  "universal": false,
+  "aliases": [
+   "综合训练器",
+   "多功能站",
+   "Multi Station"
+  ]
+ },
+ {
+  "slug": "smith_machine",
+  "name_zh": "史密斯机",
+  "name_en": "Smith Machine",
+  "category": "multi",
+  "muscle_category": "multi",
+  "exercise_group": "smith",
+  "universal": false,
+  "aliases": [
+   "史密斯架",
+   "Smith Machine",
+   "导轨杠铃"
+  ]
+ },
+ {
+  "slug": "torso_rotation",
+  "name_zh": "躯干旋转机",
+  "name_en": "Torso Rotation Machine",
+  "category": "machine",
+  "muscle_category": "core",
+  "exercise_group": "ab",
+  "universal": false,
+  "aliases": [
+   "转体机",
+   "躯干旋转",
+   "Torso Rotation"
+  ]
+ },
+ {
+  "slug": "dual_pulley",
+  "name_zh": "双滑轮训练器",
+  "name_en": "Dual Adjustable Pulley",
+  "category": "cable",
+  "muscle_category": "cable",
+  "exercise_group": "cable",
+  "universal": false,
+  "aliases": [
+   "双滑轮",
+   "可调双滑轮",
+   "Dual Pulley"
+  ]
+ },
+ {
+  "slug": "glute_ham",
+  "name_zh": "臀腿挺身机 / GHD",
+  "name_en": "Glute Ham Developer",
+  "category": "machine",
+  "muscle_category": "back",
+  "exercise_group": "back_extension",
+  "universal": false,
+  "aliases": [
+   "臀腿挺身",
+   "GHD",
+   "Glute Ham",
+   "臀腿训练器"
+  ]
+ },
+ {
+  "slug": "glute_ham_raise",
+  "name_zh": "臀腿弯举机",
+  "name_en": "Glute Ham Raise",
+  "category": "machine",
+  "muscle_category": "glutes",
+  "exercise_group": "back_extension",
+  "universal": false,
+  "aliases": [
+   "臀腿弯举",
+   "Glute Ham Raise"
+  ]
+ },
+ {
+  "slug": "lat_pulldown_iso",
+  "name_zh": "分动式高位下拉机",
+  "name_en": "Iso-Lateral Lat Pulldown",
+  "category": "machine",
+  "muscle_category": "back",
+  "exercise_group": "lat_pulldown",
+  "universal": false,
+  "aliases": [
+   "独立臂高位下拉",
+   "分动下拉",
+   "Iso Pulldown"
+  ]
+ },
+ {
+  "slug": "reverse_fly",
+  "name_zh": "反向飞鸟机",
+  "name_en": "Reverse Fly / Rear Delt",
+  "category": "machine",
+  "muscle_category": "chest",
+  "exercise_group": "pec_deck",
+  "universal": false,
+  "aliases": [
+   "反向飞鸟",
+   "后束飞鸟",
+   "Rear Delt Fly"
+  ]
+ },
+ {
+  "slug": "shrug",
+  "name_zh": "耸肩机",
+  "name_en": "Shrug Machine",
+  "category": "machine",
+  "muscle_category": "shoulder",
+  "exercise_group": "shrug",
+  "universal": false,
+  "aliases": [
+   "耸肩器",
+   "Shrug Machine"
+  ]
+ },
+ {
+  "slug": "squat_press",
+  "name_zh": "深蹲腿举器",
+  "name_en": "Squat Press",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "leg_press",
+  "universal": false,
+  "aliases": [
+   "蹲推机",
+   "坐姿腿举",
+   "Squat Press Machine"
+  ]
+ },
+ {
+  "slug": "t_bar_row",
+  "name_zh": "T 杠划船机",
+  "name_en": "T-Bar Row",
+  "category": "machine",
+  "muscle_category": "back",
+  "exercise_group": "seated_row",
+  "universal": false,
+  "aliases": [
+   "T杠划船",
+   "T把划船",
+   "T Bar Row Machine"
+  ]
+ },
+ {
+  "slug": "assisted_pullup",
+  "name_zh": "助力引体向上机",
+  "name_en": "Assisted Pull-Up Machine",
+  "category": "machine",
+  "muscle_category": "back",
+  "exercise_group": "pullup",
+  "universal": false,
+  "aliases": [
+   "助力引体",
+   "引体助力机",
+   "Assisted Pull-Up"
+  ]
+ },
+ {
+  "slug": "belt_squat",
+  "name_zh": "腰带深蹲机",
+  "name_en": "Belt Squat",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "hack_squat",
+  "universal": false,
+  "aliases": [
+   "腰带深蹲",
+   "Belt Squat Machine"
+  ]
+ },
+ {
+  "slug": "cable_row",
+  "name_zh": "绳索划船站",
+  "name_en": "Cable Row Station",
+  "category": "cable",
+  "muscle_category": "cable",
+  "exercise_group": "cable",
+  "universal": false,
+  "aliases": [
+   "绳索划船",
+   "Cable Row"
+  ]
+ },
+ {
+  "slug": "chest_press_iso",
+  "name_zh": "分动式推胸机",
+  "name_en": "Iso-Lateral Chest Press",
+  "category": "machine",
+  "muscle_category": "chest",
+  "exercise_group": "chest_press",
+  "universal": false,
+  "aliases": [
+   "独立臂推胸",
+   "分动推胸",
+   "Iso Chest Press"
+  ]
+ },
+ {
+  "slug": "chest_supported_row",
+  "name_zh": "胸垫划船机",
+  "name_en": "Chest-Supported Row",
+  "category": "machine",
+  "muscle_category": "back",
+  "exercise_group": "seated_row",
+  "universal": false,
+  "aliases": [
+   "胸垫划船",
+   "支撑划船",
+   "Chest Supported Row"
+  ]
+ },
+ {
+  "slug": "hip_extension",
+  "name_zh": "髋伸展机",
+  "name_en": "Hip Extension Machine",
+  "category": "machine",
+  "muscle_category": "glutes",
+  "exercise_group": "glute_kickback",
+  "universal": false,
+  "aliases": [
+   "髋伸展",
+   "Hip Extension Machine"
+  ]
+ },
+ {
+  "slug": "leg_curl_standing",
+  "name_zh": "站姿腿弯举机",
+  "name_en": "Standing Leg Curl",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "leg_curl",
+  "universal": false,
+  "aliases": [
+   "站姿腿弯举",
+   "单腿弯举",
+   "Standing Leg Curl"
+  ]
+ },
+ {
+  "slug": "leg_press_45",
+  "name_zh": "45° 倒蹬机",
+  "name_en": "45-Degree Leg Press",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "leg_press",
+  "universal": false,
+  "aliases": [
+   "45度倒蹬",
+   "斜蹬机",
+   "45 Degree Leg Press"
+  ]
+ },
+ {
+  "slug": "leg_press_horizontal",
+  "name_zh": "卧式倒蹬机",
+  "name_en": "Horizontal Leg Press",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "leg_press",
+  "universal": false,
+  "aliases": [
+   "卧式倒蹬",
+   "水平腿举",
+   "Horizontal Leg Press"
+  ]
+ },
+ {
+  "slug": "leverage_row",
+  "name_zh": "杠杆划船机",
+  "name_en": "Leverage Row",
+  "category": "machine",
+  "muscle_category": "back",
+  "exercise_group": "seated_row",
+  "universal": false,
+  "aliases": [
+   "杠杆划船",
+   "Leverage Row Machine"
+  ]
+ },
+ {
+  "slug": "preacher_curl",
+  "name_zh": "牧师凳弯举机",
+  "name_en": "Preacher Curl Machine",
+  "category": "machine",
+  "muscle_category": "arms",
+  "exercise_group": "bicep",
+  "universal": false,
+  "aliases": [
+   "牧师凳",
+   "牧师椅",
+   "Preacher Curl"
+  ]
+ },
+ {
+  "slug": "pullover",
+  "name_zh": "鹦鹉螺 / 背部下拉机",
+  "name_en": "Pullover / Nautilus Back Machine",
+  "category": "machine",
+  "muscle_category": "back",
+  "exercise_group": "lat_pulldown",
+  "universal": false,
+  "aliases": [
+   "鹦鹉螺",
+   "背部下拉",
+   "Pullover Machine",
+   "Nautilus Pullover"
+  ]
+ },
+ {
+  "slug": "pullup_dip_station",
+  "name_zh": "引体 / 双杠架",
+  "name_en": "Pull-Up & Dip Station",
+  "category": "machine",
+  "muscle_category": "back",
+  "exercise_group": "pullup",
+  "universal": false,
+  "aliases": [
+   "单双杠",
+   "引体架",
+   "Power Tower",
+   "Pull-Up Dip Station"
+  ]
+ },
+ {
+  "slug": "rear_delt",
+  "name_zh": "后束训练机",
+  "name_en": "Rear Delt Machine",
+  "category": "machine",
+  "muscle_category": "shoulder",
+  "exercise_group": "pec_deck",
+  "universal": false,
+  "aliases": [
+   "后束飞鸟",
+   "反向飞鸟机",
+   "Rear Delt Machine"
+  ]
+ },
+ {
+  "slug": "rotary_torso",
+  "name_zh": "旋转躯干机",
+  "name_en": "Rotary Torso",
+  "category": "machine",
+  "muscle_category": "core",
+  "exercise_group": "ab",
+  "universal": false,
+  "aliases": [
+   "旋转躯干",
+   "Rotary Torso Machine"
+  ]
+ },
+ {
+  "slug": "shoulder_press_iso",
+  "name_zh": "分动式推肩机",
+  "name_en": "Iso-Lateral Shoulder Press",
+  "category": "machine",
+  "muscle_category": "shoulder",
+  "exercise_group": "shoulder_press",
+  "universal": false,
+  "aliases": [
+   "独立臂推肩",
+   "分动推肩",
+   "Iso Shoulder Press"
+  ]
+ },
+ {
+  "slug": "sissy_squat",
+  "name_zh": "西斯深蹲机",
+  "name_en": "Sissy Squat Machine",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "hack_squat",
+  "universal": false,
+  "aliases": [
+   "西斯深蹲",
+   "Sissy Squat"
+  ]
+ },
+ {
+  "slug": "tricep_pushdown",
+  "name_zh": "三头肌下压机",
+  "name_en": "Triceps Pushdown Machine",
+  "category": "machine",
+  "muscle_category": "arms",
+  "exercise_group": "tricep",
+  "universal": false,
+  "aliases": [
+   "三头下压",
+   "绳索下压",
+   "Triceps Pushdown"
+  ]
+ },
+ {
+  "slug": "abduction_standing",
+  "name_zh": "站姿髋外展机",
+  "name_en": "Standing Hip Abduction",
+  "category": "machine",
+  "muscle_category": "glutes",
+  "exercise_group": "hip_abduction",
+  "universal": false,
+  "aliases": [
+   "站姿外展",
+   "Standing Hip Abduction"
+  ]
+ },
+ {
+  "slug": "assisted_dip",
+  "name_zh": "助力双杠臂屈伸机",
+  "name_en": "Assisted Dip Machine",
+  "category": "machine",
+  "muscle_category": "chest",
+  "exercise_group": "dip",
+  "universal": false,
+  "aliases": [
+   "助力臂屈伸",
+   "助力双杠",
+   "Assisted Dip"
+  ]
+ },
+ {
+  "slug": "bicep_iso",
+  "name_zh": "分动式二头弯举机",
+  "name_en": "Iso-Lateral Biceps Curl",
+  "category": "machine",
+  "muscle_category": "arms",
+  "exercise_group": "bicep",
+  "universal": false,
+  "aliases": [
+   "独立臂二头",
+   "分动弯举",
+   "Iso Biceps Curl"
+  ]
+ },
+ {
+  "slug": "glute_combo",
+  "name_zh": "臀腿综合机",
+  "name_en": "Glute Combo Machine",
+  "category": "machine",
+  "muscle_category": "glutes",
+  "exercise_group": "hip_thrust",
+  "universal": false,
+  "aliases": [
+   "臀腿一体机",
+   "Glute Combo"
+  ]
+ },
+ {
+  "slug": "neck_machine",
+  "name_zh": "颈部训练机",
+  "name_en": "Neck Machine",
+  "category": "machine",
+  "muscle_category": "core",
+  "exercise_group": "neck",
+  "universal": false,
+  "aliases": [
+   "颈部训练",
+   "Neck Machine"
+  ]
+ },
+ {
+  "slug": "reverse_hyper",
+  "name_zh": "反向超伸机",
+  "name_en": "Reverse Hyperextension",
+  "category": "machine",
+  "muscle_category": "glutes",
+  "exercise_group": "back_extension",
+  "universal": false,
+  "aliases": [
+   "反向超伸",
+   "Reverse Hyper"
+  ]
+ },
+ {
+  "slug": "upright_row",
+  "name_zh": "直立划船机",
+  "name_en": "Upright Row Machine",
+  "category": "machine",
+  "muscle_category": "shoulder",
+  "exercise_group": "seated_row",
+  "universal": false,
+  "aliases": [
+   "直立划船",
+   "Upright Row Machine"
+  ]
+ },
+ {
+  "slug": "ab_coaster",
+  "name_zh": "腹肌滑轨机",
+  "name_en": "Ab Coaster",
+  "category": "machine",
+  "muscle_category": "core",
+  "exercise_group": "ab",
+  "universal": false,
+  "aliases": [
+   "腹肌滑轨",
+   "Ab Coaster"
+  ]
+ },
+ {
+  "slug": "ab_crunch_iso",
+  "name_zh": "分动式腹肌机",
+  "name_en": "Iso-Lateral Ab Crunch",
+  "category": "machine",
+  "muscle_category": "core",
+  "exercise_group": "ab",
+  "universal": false,
+  "aliases": [
+   "独立臂卷腹",
+   "分动腹肌",
+   "Iso Ab Crunch"
+  ]
+ },
+ {
+  "slug": "captain_chair",
+  "name_zh": "悬垂举腿架",
+  "name_en": "Captain's Chair",
+  "category": "machine",
+  "muscle_category": "core",
+  "exercise_group": "ab",
+  "universal": false,
+  "aliases": [
+   "悬垂举腿",
+   "举腿架",
+   "Captain's Chair"
+  ]
+ },
+ {
+  "slug": "donkey_calf",
+  "name_zh": "驴式提踵机",
+  "name_en": "Donkey Calf Raise",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "calf_raise",
+  "universal": false,
+  "aliases": [
+   "驴式提踵",
+   "Donkey Calf Raise"
+  ]
+ },
+ {
+  "slug": "forearm_trainer",
+  "name_zh": "前臂训练机",
+  "name_en": "Forearm Trainer",
+  "category": "machine",
+  "muscle_category": "arms",
+  "exercise_group": "forearm",
+  "universal": false,
+  "aliases": [
+   "前臂训练",
+   "Forearm Trainer"
+  ]
+ },
+ {
+  "slug": "pendulum_squat",
+  "name_zh": "钟摆深蹲机",
+  "name_en": "Pendulum Squat",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "hack_squat",
+  "universal": false,
+  "aliases": [
+   "钟摆深蹲",
+   "Pendulum Squat Machine"
+  ]
+ },
+ {
+  "slug": "tibialis_raise",
+  "name_zh": "胫骨前肌训练机",
+  "name_en": "Tibialis Raise Machine",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "tibialis",
+  "universal": false,
+  "aliases": [
+   "胫骨前肌",
+   "Tibialis Raise"
+  ]
+ },
+ {
+  "slug": "v_squat",
+  "name_zh": "V 型深蹲机",
+  "name_en": "V-Squat",
+  "category": "machine",
+  "muscle_category": "legs",
+  "exercise_group": "hack_squat",
+  "universal": false,
+  "aliases": [
+   "V型深蹲",
+   "V Squat Machine"
+  ]
+ },
+ {
+  "slug": "wrist_curl",
+  "name_zh": "腕弯举机",
+  "name_en": "Wrist Curl Machine",
+  "category": "machine",
+  "muscle_category": "arms",
+  "exercise_group": "forearm",
+  "universal": false,
+  "aliases": [
+   "腕弯举",
+   "前臂训练器",
+   "Wrist Curl Machine"
+  ]
+ },
+ {
+  "slug": "dumbbell",
+  "name_zh": "哑铃",
+  "name_en": "Dumbbell",
+  "category": "free_weight",
+  "muscle_category": "",
+  "exercise_group": "dumbbell",
+  "universal": true,
+  "aliases": []
+ },
+ {
+  "slug": "barbell",
+  "name_zh": "杠铃",
+  "name_en": "Barbell",
+  "category": "free_weight",
+  "muscle_category": "",
+  "exercise_group": "barbell",
+  "universal": true,
+  "aliases": []
+ },
+ {
+  "slug": "kettlebell",
+  "name_zh": "壶铃",
+  "name_en": "Kettlebell",
+  "category": "free_weight",
+  "muscle_category": "",
+  "exercise_group": "kettlebell",
+  "universal": true,
+  "aliases": []
+ },
+ {
+  "slug": "band",
+  "name_zh": "弹力带",
+  "name_en": "Resistance Band",
+  "category": "accessory",
+  "muscle_category": "",
+  "exercise_group": "band",
+  "universal": true,
+  "aliases": []
+ },
+ {
+  "slug": "bench_press",
+  "name_zh": "平凳 / 卧推凳",
+  "name_en": "Flat Bench",
+  "category": "free_weight",
+  "muscle_category": "",
+  "exercise_group": "bench_press",
+  "universal": false,
+  "aliases": []
+ },
+ {
+  "slug": "incline_bench",
+  "name_zh": "上斜凳",
+  "name_en": "Incline Bench",
+  "category": "free_weight",
+  "muscle_category": "",
+  "exercise_group": "incline_bench",
+  "universal": false,
+  "aliases": []
+ },
+ {
+  "slug": "squat_rack",
+  "name_zh": "深蹲架 / 龙门架",
+  "name_en": "Squat Rack",
+  "category": "free_weight",
+  "muscle_category": "",
+  "exercise_group": "squat_rack",
+  "universal": false,
+  "aliases": []
+ },
+ {
+  "slug": "treadmill",
+  "name_zh": "跑步机",
+  "name_en": "Treadmill",
+  "category": "cardio",
+  "muscle_category": "",
+  "exercise_group": "treadmill",
+  "universal": false,
+  "aliases": []
+ },
+ {
+  "slug": "elliptical",
+  "name_zh": "椭圆机",
+  "name_en": "Elliptical",
+  "category": "cardio",
+  "muscle_category": "",
+  "exercise_group": "elliptical",
+  "universal": false,
+  "aliases": []
+ },
+ {
+  "slug": "rowing_machine",
+  "name_zh": "划船机",
+  "name_en": "Rowing Machine",
+  "category": "cardio",
+  "muscle_category": "",
+  "exercise_group": "rowing_machine",
+  "universal": false,
+  "aliases": []
+ },
+ {
+  "slug": "stationary_bike",
+  "name_zh": "动感单车",
+  "name_en": "Stationary Bike",
+  "category": "cardio",
+  "muscle_category": "",
+  "exercise_group": "stationary_bike",
+  "universal": false,
+  "aliases": []
+ },
+ {
+  "slug": "stair_climber",
+  "name_zh": "爬楼机",
+  "name_en": "Stair Climber",
+  "category": "cardio",
+  "muscle_category": "",
+  "exercise_group": "stair_climber",
+  "universal": false,
+  "aliases": []
+ },
+ {
+  "slug": "battle_rope",
+  "name_zh": "战绳",
+  "name_en": "Battle Rope",
+  "category": "accessory",
+  "muscle_category": "",
+  "exercise_group": "battle_rope",
+  "universal": true,
+  "aliases": []
+ },
+ {
+  "slug": "medicine_ball",
+  "name_zh": "药球",
+  "name_en": "Medicine Ball",
+  "category": "accessory",
+  "muscle_category": "",
+  "exercise_group": "medicine_ball",
+  "universal": true,
+  "aliases": []
+ },
+ {
+  "slug": "sled",
+  "name_zh": "雪橇",
+  "name_en": "Sled",
+  "category": "accessory",
+  "muscle_category": "",
+  "exercise_group": "sled",
+  "universal": true,
+  "aliases": []
+ },
+ {
+  "slug": "bodyweight",
+  "name_zh": "自重",
+  "name_en": "Bodyweight",
+  "category": "bodyweight",
+  "muscle_category": "",
+  "exercise_group": "bodyweight",
+  "universal": true,
+  "aliases": []
+ }
+]

@@ -148,6 +148,7 @@ EXTRAS = {
     "stationary_bike": ("动感单车", "Stationary Bike", "cardio", "有氧"),
     "stair_climber": ("爬楼机", "Stair Climber", "cardio", "有氧"),
     "battle_rope": ("战绳", "Battle Rope", "accessory", "小工具"),
+    "medicine_ball": ("药球", "Medicine Ball", "accessory", "小工具"),
     "sled": ("雪橇", "Sled", "accessory", "小工具"),
     "bodyweight": ("自重", "Bodyweight", "bodyweight", "自重"),
 }
@@ -170,11 +171,18 @@ def main() -> None:
     catalog: list[dict] = []
     for c in class_map:
         t = tax_rows.get(c["type_id"], {})
+        raw_cat = (t.get("category") or "").lower()
+        equip_cat = (
+            "cable" if raw_cat == "cable"
+            else "multi" if raw_cat == "multi"
+            else "machine"
+        )
         catalog.append({
             "slug": c["type_id"],
             "name_zh": t.get("name_zh", c.get("name_zh", "")),
             "name_en": c.get("name_en", ""),
-            "category": t.get("category", ""),
+            "category": equip_cat,
+            "muscle_category": raw_cat,
             "subcategory": t.get("subcategory", ""),
             "movement_pattern": t.get("movement_pattern", ""),
             "target_muscles": (t.get("target_muscles") or "").split("|"),
@@ -186,8 +194,9 @@ def main() -> None:
     for slug, (zh, en, cat, cat_zh) in EXTRAS.items():
         catalog.append({
             "slug": slug, "name_zh": zh, "name_en": en, "category": cat,
-            "subcategory": "", "movement_pattern": "", "target_muscles": [],
-            "aliases": [], "exercise_group": slug, "images": 0, "recognition_class": None,
+            "muscle_category": "", "subcategory": "", "movement_pattern": "",
+            "target_muscles": [], "aliases": [], "exercise_group": slug,
+            "images": 0, "recognition_class": None,
         })
 
     # exercise mapping

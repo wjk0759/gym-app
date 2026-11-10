@@ -26,10 +26,10 @@ struct EquipmentItem: Codable, Identifiable, Hashable {
         slug.flatMap { ExerciseLibrary.exercise(slug: $0) }
     }
 
-    /// 这件器械能练的动作（来自全局器械→动作映射，编译进 catalog）。
+    /// 这件器械能练的动作（class slug -> exercise_group -> 动作）。
     var trainableExercises: [Exercise] {
-        guard let equipmentType else { return [] }
-        return ExerciseLibrary.all.filter { $0.equipmentTypes.contains(equipmentType) }
+        guard let group = EquipmentCatalog.group(for: equipmentType) else { return [] }
+        return ExerciseLibrary.all.filter { $0.equipmentTypes.contains(group) }
     }
 }
 

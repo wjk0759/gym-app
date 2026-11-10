@@ -15,7 +15,14 @@ ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "data" / "vital" / "vital_actions_v2.json"
 TAXONOMY = ROOT / "data" / "vital" / "taxonomy_v1.json"
 EMAP = ROOT / "data" / "vital" / "equipment_exercise_map.json"
+EQUIPMENT = ROOT / "data" / "vital" / "equipment_catalog_v2.json"
 DST = ROOT / "ios" / "FitAI" / "Resources" / "vital_exercises.json"
+EQUIPMENT_DST = ROOT / "ios" / "FitAI" / "Resources" / "equipment_catalog.json"
+
+UNIVERSAL_SLUGS = {
+    "bodyweight", "dumbbell", "barbell", "kettlebell", "band",
+    "pullup", "dip", "battle_rope", "medicine_ball", "sled",
+}
 
 # 计划白名单：只允许「力量」训练类型，再排除居家变式/颈部等不适合进通用计划的动作。
 HOME_VARIANT_KEYWORDS = (
@@ -127,6 +134,25 @@ def main() -> None:
     size = DST.stat().st_size
     print(f"actions={len(rows)} plan_eligible={eligible} bytes={size}")
     print(f"wrote {DST}")
+
+    equipment = json.loads(EQUIPMENT.read_text(encoding="utf-8"))["equipment"]
+    compact = [
+        {
+            "slug": item["slug"],
+            "name_zh": item["name_zh"],
+            "name_en": item.get("name_en") or None,
+            "category": item.get("category") or "",
+            "muscle_category": item.get("muscle_category") or "",
+            "exercise_group": item.get("exercise_group") or item["slug"],
+            "universal": item["slug"] in UNIVERSAL_SLUGS,
+            "aliases": item.get("aliases") or [],
+        }
+        for item in equipment
+    ]
+    EQUIPMENT_DST.write_text(
+        json.dumps(compact, ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
+    )
+    print(f"equipment={len(compact)} wrote {EQUIPMENT_DST.name}")
 
 
 if __name__ == "__main__":

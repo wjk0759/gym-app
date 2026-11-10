@@ -26,6 +26,7 @@ struct EquipmentLibraryView: View {
     @State private var openRowID: UUID?
     @State private var pendingDelete: EquipmentItem?
     @State private var showScanner = false
+    @State private var showCatalog = false
 
     private var pinnedIDs: Set<String> {
         Set(pinnedEquipmentIDsRaw.split(separator: ",").map(String.init))
@@ -85,12 +86,29 @@ struct EquipmentLibraryView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    activeSheet = .manual
+                Menu {
+                    Button {
+                        showCatalog = true
+                    } label: {
+                        Label("从器械库添加", systemImage: "list.bullet")
+                    }
+                    Button {
+                        activeSheet = .manual
+                    } label: {
+                        Label("手动添加", systemImage: "square.and.pencil")
+                    }
+                    Button {
+                        Haptics.tap()
+                        if store.requirePro(.equipmentScan) {
+                            showScanner = true
+                        }
+                    } label: {
+                        Label("拍照识别", systemImage: "camera")
+                    }
                 } label: {
                     Image(systemName: "plus")
                 }
-                .accessibilityLabel("手动添加器械")
+                .accessibilityLabel("添加器械")
             }
         }
         .keyboardDoneToolbar()
@@ -106,6 +124,9 @@ struct EquipmentLibraryView: View {
             case .physical(let id):
                 PhysicalEquipmentDetailView(equipmentID: id)
             }
+        }
+        .sheet(isPresented: $showCatalog) {
+            EquipmentCatalogView()
         }
         .confirmationDialog(
             "从器械库删除？",
@@ -426,9 +447,9 @@ struct EquipmentLibraryView: View {
                 VStack(spacing: 8) {
                     Button {
                         Haptics.tap()
-                        activeSheet = .manual
+                        showCatalog = true
                     } label: {
-                        Text("手动添加器械")
+                        Text("从器械库添加")
                     }
                     .buttonStyle(PrimaryButtonStyle())
 
