@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`827ea94`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`e1fb47f`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试对齐（`827ea94`）；修复 `AppStore.swift` 非法 UTF-8、`PlanGenerator` 器械池重名；`FitAITests` **62/62** 通过，phone-only Release 已安装并启动 Wu-Tang；此前完成动作库别名/计划白名单/隐藏 `other`、媒体 coverage 校验、phone-only 构建脚本、媒体图库验证、Watch UI 重设计（`fc8634c`/`bc183ae`/`d890a53`/`4af3bcb`/`2d5dea0`）
@@ -44,6 +44,29 @@
   - 不要恢复 `useEquipmentLibraryForPlans`
   - 不要恢复旧的 16 个一级分类测试或旧 L2 名称
   - 不要用非 UTF-8 编码覆盖 `AppStore.swift`
+### 2026-11-11 · Windows（发现页重排 + 器械库浏览 + 动作详情清理）
+
+- 分支：`develop`
+- 代码提交：`23f92d9`（发现页）、`22ab8d9`（器械库浏览 + class→group）、`e1fb47f`（动作详情）
+- 做了什么：
+  - **发现页重排**：我的器械库提到 hero（已录入/计划池/覆盖部位/模式）；核心四宫格（动作库/训练方案/饮食方案/体型分析）；工具区（拍照识别/动作点评）；删掉重复的训练分化列表和底部器械库链接
+  - **器械库浏览页**（`EquipmentCatalogView`）：复用动作库的搜索/分类 chips/网格卡片；95 类器械（含药球）；固定器械点添加 = 创建实例并默认启用全部力量动作；通用器械点添加 = 勾选
+  - **class→group 匹配修复**：iOS 打包 `equipment_catalog.json`，`EquipmentCatalog.group(for:)` 把 94 类 slug 映射到 42 个动作组；`trainableExercises` 改用 group；修复固定器械 0 动作的 bug
+  - **器械目录 category 修正**：后端 `category` 从肌肉分类（back/chest）改为器械分类（machine/cable/multi/free_weight/cardio/accessory/bodyweight）
+  - **动作详情清理**：Hero 只留标题/名称/pills；删除「动作轨迹」（与教学视频重复）；「多角度示范」注释隐藏；「所需器械」删除「动作来源」，改为显示「你已有」匹配器械 + 去器械库；points tab 改名「动作要点」
+- 验证：
+  - 后端 **224 passed**，Ruff 通过
+  - class→group 抽查：smith_machine→11、leg_press_45→11、chest_press_seated→11、dumbbell→126、barbell→89、bodyweight→387 eligible
+- macOS 需要做：
+  - `git pull` → `xcodegen` → 编译验证发现页、器械库浏览、动作详情
+  - 真机：发现页 → 器械库 → 从器械库添加（搜索/分类/添加）→ 器械详情动作数正确
+  - 动作详情：Hero 无重复正文、无动作轨迹、所需器械显示「你已有」
+- 不要恢复：
+  - 不要恢复发现页的大「AI 器械识别」hero 和训练分化列表
+  - 不要恢复动作详情的 hero 正文 / 动作轨迹 / 动作来源
+- 遗留：
+  - 器械照片跨设备同步
+  - 教练 tool
 
 ### 2026-11-11 · Windows（计划池改为器械内动作 + 通用器械勾选）
 
