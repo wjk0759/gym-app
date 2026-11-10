@@ -39,6 +39,7 @@
   - **两种模式**：关闭「只用我的器械」= 计划池 ≥8 用池、不足回退白名单；打开 = 只用计划池（缺部位用已勾选通用器械补），不足不回退
   - **后端计划**：`plan_pool_slugs` + `strict_equipment`；agent 路径从 DB 构建计划池（`user_plan_pool_slugs`）
   - **通用器械映射**：新增 `bodyweight` / `medicine_ball` 动作组，重新生成器械映射与 iOS catalog
+  - **分类切换回到顶部**：动作库切换训练类型/部位、器械详情切换训练类型时，列表自动滚回顶部
 - 验证：
   - 后端 **224 passed**，Ruff 通过
   - 生产 V27 已应用：`user_equipment_exercise` + `user_universal_equipment`，`user_exercise_library` 已删

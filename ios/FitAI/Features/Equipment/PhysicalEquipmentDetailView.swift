@@ -59,16 +59,26 @@ struct PhysicalEquipmentDetailView: View {
 
     var body: some View {
         NavigationStack {
-            AppScrollView {
-                if let item {
-                    content(item)
-                } else {
-                    EmptyStateView(
-                        icon: "dumbbell",
-                        title: "器械不存在",
-                        message: "它可能已经被删除。"
-                    )
-                    .padding(20)
+            ScrollViewReader { proxy in
+                AppScrollView {
+                    Group {
+                        if let item {
+                            content(item)
+                        } else {
+                            EmptyStateView(
+                                icon: "dumbbell",
+                                title: "器械不存在",
+                                message: "它可能已经被删除。"
+                            )
+                            .padding(20)
+                        }
+                    }
+                    .id("detail-top")
+                }
+                .onChange(of: selectedTrainingType) { _, _ in
+                    withAnimation(.easeOut(duration: 0.18)) {
+                        proxy.scrollTo("detail-top", anchor: .top)
+                    }
                 }
             }
             .background(AppBackground())

@@ -120,11 +120,19 @@ struct EquipmentPickerView: View {
                     categorySidebar
                 }
 
-                AppScrollView {
-                    exerciseGrid
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 1)
-                        .padding(.bottom, 28)
+                ScrollViewReader { proxy in
+                    AppScrollView {
+                        exerciseGrid
+                            .id("library-top")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 1)
+                            .padding(.bottom, 28)
+                    }
+                    .onChange(of: filterKey) { _, _ in
+                        withAnimation(.easeOut(duration: 0.18)) {
+                            proxy.scrollTo("library-top", anchor: .top)
+                        }
+                    }
                 }
             }
             .padding(.horizontal, 16)
