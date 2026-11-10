@@ -456,8 +456,9 @@ struct EquipmentRecognitionView: View {
             source: "recognition"
         )
         onSaved?(item)
+        let eligible = candidates.map(\.exercise).filter(\.planEligible)
         let added = store.addExercisesToPersonalLibrary(
-            candidates.map(\.exercise),
+            eligible,
             equipmentType: selectedEquipmentSlug
         )
         recognizedName = name

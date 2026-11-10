@@ -79,6 +79,19 @@ extension AppStore {
         }
     }
 
+    /// 批量移除（器械详情页「全部移除」）。
+    func removeExercisesFromPersonalLibrary(_ slugs: [String]) {
+        guard !slugs.isEmpty else { return }
+        let set = Set(slugs)
+        personalExerciseSlugs.removeAll { set.contains($0) }
+        persist()
+        Task {
+            for slug in slugs {
+                try? await APIClient.shared.deleteExerciseLibrary(slug: slug)
+            }
+        }
+    }
+
     /// 兼容旧调用：原来「加入器械库」实际是收藏动作，现在转成个人动作库。
     @discardableResult
     func addExercisesToEquipmentLibrary(
