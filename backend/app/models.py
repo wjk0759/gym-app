@@ -751,6 +751,11 @@ class EquipmentLibraryItem(Base):
     )
     client_id: Mapped[str] = mapped_column(String(36))
     name: Mapped[str] = mapped_column(String(120))
+    # 物理器械：94 类目录 slug（smith_machine / leg_press / dumbbell / treadmill ...）
+    equipment_type: Mapped[str | None] = mapped_column(String(40))
+    # 由 equipment_type 派生的大类（machine / cable / free_weight / cardio ...）
+    category: Mapped[str | None] = mapped_column(String(20))
+    photo_url: Mapped[str | None] = mapped_column(Text)
     slug: Mapped[str | None] = mapped_column(String(80))
     muscle: Mapped[str | None] = mapped_column(String(30))
     equipment: Mapped[str | None] = mapped_column(String(30))
@@ -760,6 +765,28 @@ class EquipmentLibraryItem(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
     )
+
+
+class UserExerciseLibraryItem(Base):
+    """Personal exercise library: the exercises a user chose for plan generation."""
+
+    __tablename__ = "user_exercise_library"
+    __table_args__ = (
+        UniqueConstraint("user_id", "exercise_slug", name="uq_user_exercise_library"),
+        Index("ix_user_exercise_library_user", "user_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    exercise_slug: Mapped[str] = mapped_column(
+        String(80), ForeignKey("exercises.slug", ondelete="CASCADE")
+    )
+    # 来源器械类型（可空：手动加入）
+    equipment_type: Mapped[str | None] = mapped_column(String(40))
+    source: Mapped[str] = mapped_column(String(20), default="manual")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 class MealPlan(Base):

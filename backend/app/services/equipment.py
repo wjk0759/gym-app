@@ -79,15 +79,17 @@ def available_equipment_types(
     """
     rows = (
         db.execute(
-            select(EquipmentLibraryItem.equipment).where(
+            select(EquipmentLibraryItem.category, EquipmentLibraryItem.equipment).where(
                 EquipmentLibraryItem.user_id == user_id,
-                EquipmentLibraryItem.equipment.is_not(None),
             )
         )
-        .scalars()
         .all()
     )
-    types = {str(value).strip() for value in rows if value and str(value).strip()}
+    types = {
+        str(category or equipment).strip()
+        for category, equipment in rows
+        if (category or equipment)
+    }
     if types:
         types.add("bodyweight")
         return sorted(types)

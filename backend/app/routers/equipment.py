@@ -3,10 +3,16 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from ..deps import CurrentUser, DBSession
-from ..models import EquipmentLibraryItem, EquipmentScan, Exercise
-from ..schemas import EquipmentLibraryIn
+from ..models import (
+    EquipmentLibraryItem,
+    EquipmentScan,
+    Exercise,
+    UserExerciseLibraryItem,
+)
+from ..schemas import EquipmentLibraryIn, ExerciseLibraryIn
 from ..services import access, generation, photo_cache
 from ..services.equipment import recognize, refresh_profile_equipment_cache
+from ..services.equipment_catalog_v2 import get as get_equipment_type
 from ..services.image_input import InvalidImageError, normalize_image_bytes
 
 router = APIRouter(tags=["equipment"])
@@ -137,6 +143,9 @@ def _equipment_item_dict(item: EquipmentLibraryItem) -> dict:
     return {
         "client_id": item.client_id,
         "name": item.name,
+        "equipment_type": item.equipment_type,
+        "category": item.category,
+        "photo_url": item.photo_url,
         "slug": item.slug,
         "muscle": item.muscle,
         "equipment": item.equipment,
@@ -148,9 +157,13 @@ def _equipment_item_dict(item: EquipmentLibraryItem) -> dict:
 
 def _apply_equipment_item(item: EquipmentLibraryItem, payload: EquipmentLibraryIn) -> None:
     item.name = payload.name
+    item.equipment_type = payload.equipment_type
+    catalog = get_equipment_type(payload.equipment_type) if payload.equipment_type else None
+    item.category = payload.category or (catalog or {}).get("category")
+    item.photo_url = payload.photo_url
     item.slug = payload.slug
     item.muscle = payload.muscle
-    item.equipment = payload.equipment
+    item.equipment = payload.equipment or item.category
     item.notes = payload.notes
     item.source = payload.source or "manual"
 
@@ -226,3 +239,98 @@ def delete_equipment_item(
     refresh_profile_equipment_cache(db, user_id)
     db.commit()
     return {"status": "deleted", "client_id": client_id}
+
+
+def _exercise_library_dict(item: UserExerciseLibraryItem) -> dict:
+    return {
+        "exercise_slug": item.exercise_slug,
+        "equipment_type": item.equipment_type,
+        "source": item.source,
+        "created_at": item.created_at.isoformat(),
+    }
+
+
+@router.get("/me/exercise-library")
+def list_exercise_library(user_id: CurrentUser, db: DBSession):
+    rows = (
+        db.execute(
+            select(UserExerciseLibraryItem)
+            .where(UserExerciseLibraryItem.user_id == user_id)
+            .order_by(UserExerciseLibraryItem.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+    return {"items": [_exercise_library_dict(r) for r in rows]}
+
+
+@router.post("/me/exercise-library", status_code=201)
+def add_exercise_library(
+    payload: ExerciseLibraryIn,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    # Only accept slugs that exist in the active exercise catalog.
+    valid = set(
+        db.execute(
+            select(Exercise.slug).where(
+                Exercise.slug.in_(payload.exercise_slugs),
+                Exercise.is_active.is_(True),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    added = 0
+    for slug in payload.exercise_slugs:
+        if slug not in valid:
+            continue
+        existing = db.execute(
+            select(UserExerciseLibraryItem).where(
+                UserExerciseLibraryItem.user_id == user_id,
+                UserExerciseLibraryItem.exercise_slug == slug,
+            )
+        ).scalar_one_or_none()
+        if existing is not None:
+            if payload.equipment_type and not existing.equipment_type:
+                existing.equipment_type = payload.equipment_type
+            continue
+        db.add(
+            UserExerciseLibraryItem(
+                user_id=user_id,
+                exercise_slug=slug,
+                equipment_type=payload.equipment_type,
+                source=payload.source or "manual",
+            )
+        )
+        added += 1
+    db.commit()
+    total = len(
+        db.execute(
+            select(UserExerciseLibraryItem).where(
+                UserExerciseLibraryItem.user_id == user_id
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return {"added": added, "total": total}
+
+
+@router.delete("/me/exercise-library/{exercise_slug}")
+def delete_exercise_library(
+    exercise_slug: str,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    row = db.execute(
+        select(UserExerciseLibraryItem).where(
+            UserExerciseLibraryItem.user_id == user_id,
+            UserExerciseLibraryItem.exercise_slug == exercise_slug,
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail="动作不在个人动作库")
+    db.delete(row)
+    db.commit()
+    return {"status": "deleted", "exercise_slug": exercise_slug}

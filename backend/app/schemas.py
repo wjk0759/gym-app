@@ -121,6 +121,7 @@ class PlanGenerateIn(BaseModel):
     force: bool = False
     onboarding: bool = False
     equipment_slugs: list[str] = Field(default_factory=list, max_length=50)
+    exercise_library_slugs: list[str] = Field(default_factory=list, max_length=500)
     split: str | None = Field(default=None, max_length=20)
     focus: list[str] = Field(default_factory=list, max_length=20)
 
@@ -267,8 +268,17 @@ class BodyMetricIn(BaseModel):
 class EquipmentLibraryIn(BaseModel):
     client_id: str = Field(min_length=1, max_length=36)
     name: str = Field(min_length=1, max_length=120)
+    equipment_type: str | None = Field(default=None, max_length=40)
+    category: str | None = Field(default=None, max_length=20)
+    photo_url: str | None = Field(default=None, max_length=2000)
     slug: str | None = Field(default=None, max_length=80)
     muscle: str | None = Field(default=None, max_length=30)
     equipment: str | None = Field(default=None, max_length=30)
     notes: str = Field(default="", max_length=1000)
+    source: str = Field(default="manual", max_length=20)
+
+
+class ExerciseLibraryIn(BaseModel):
+    exercise_slugs: list[str] = Field(min_length=1, max_length=500)
+    equipment_type: str | None = Field(default=None, max_length=40)
     source: str = Field(default="manual", max_length=20)

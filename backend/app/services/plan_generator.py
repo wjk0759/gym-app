@@ -140,6 +140,7 @@ def _allowed_exercises(
     equipment: list[str] | None,
     injuries: list[str] | None,
     preferred_slugs: list[str] | None = None,
+    exercise_library_slugs: list[str] | None = None,
 ) -> list[Exercise]:
     allowed_equipment = set(equipment or ["bodyweight"])
     allowed_equipment.add("bodyweight")
@@ -150,6 +151,18 @@ def _allowed_exercises(
         .scalars()
         .all()
     )
+
+    # 个人动作库：用户显式选择，>=8 条时作为严格计划池（仍过滤伤病）。
+    library = set(exercise_library_slugs or [])
+    if library:
+        picked = [
+            e for e in rows
+            if e.slug in library
+            and not (banned & set(e.contraindications or []))
+        ]
+        if len(picked) >= 8:
+            return picked
+
     result: list[Exercise] = []
     for exercise in rows:
         if exercise.equipment not in allowed_equipment:
@@ -323,6 +336,7 @@ def build_template_plan(
     session_minutes: int | None = None,
     weekdays: list[int] | None = None,
     focus: list[str] | None = None,
+    exercise_library_slugs: list[str] | None = None,
 ) -> dict:
     """Build a deterministic, validated plan for the agent proposal tool."""
     refresh_training_stage(db, profile.user_id)
@@ -331,7 +345,7 @@ def build_template_plan(
         db, profile.user_id, profile.equipment
     )
     available = _allowed_exercises(
-        db, equipment_types, profile.injuries, None
+        db, equipment_types, profile.injuries, None, exercise_library_slugs
     )
     if not available:
         raise ValueError("当前器械或伤病条件下没有可用动作")
@@ -470,6 +484,7 @@ async def generate_plan(
     equipment_slugs: list[str] | None = None,
     split: str | None = None,
     focus: list[str] | None = None,
+    exercise_library_slugs: list[str] | None = None,
 ) -> dict:
     # Fast path: the reasoning LLM is far too slow for plan generation (see
     # ai_jobs: plan=64s). The deterministic template is instant and already
@@ -485,7 +500,7 @@ async def generate_plan(
         db, profile.user_id, profile.equipment
     )
     available = _allowed_exercises(
-        db, equipment_types, profile.injuries, equipment_slugs
+        db, equipment_types, profile.injuries, equipment_slugs, exercise_library_slugs
     )
     if not available:
         available = (

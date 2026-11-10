@@ -109,6 +109,7 @@ async def generate(
             equipment_slugs=payload.equipment_slugs,
             split=payload.split,
             focus=payload.focus,
+            exercise_library_slugs=payload.exercise_library_slugs,
         )
         program = save_plan(
             db,
