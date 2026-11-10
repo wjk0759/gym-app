@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`e1fb47f`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`301f19f`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试对齐（`827ea94`）；修复 `AppStore.swift` 非法 UTF-8、`PlanGenerator` 器械池重名；`FitAITests` **62/62** 通过，phone-only Release 已安装并启动 Wu-Tang；此前完成动作库别名/计划白名单/隐藏 `other`、媒体 coverage 校验、phone-only 构建脚本、媒体图库验证、Watch UI 重设计（`fc8634c`/`bc183ae`/`d890a53`/`4af3bcb`/`2d5dea0`）
@@ -44,6 +44,34 @@
   - 不要恢复 `useEquipmentLibraryForPlans`
   - 不要恢复旧的 16 个一级分类测试或旧 L2 名称
   - 不要用非 UTF-8 编码覆盖 `AppStore.swift`
+### 2026-11-11 · Windows（数据库整理 V28：分类/动作/器械入 DB）
+
+- 分支：`develop`
+- 代码提交：`301f19f`
+- 做了什么：
+  - **V28 表结构**：`taxonomy_terms`（68 个分类词）、`equipment_types`（95 类器械）、`equipment_type_exercises`（2648 条映射）
+  - **exercises 加分类列**：`training_type_code` / `body_part_code` / `muscle_primary_code` / `muscle_secondary_codes` / `movement_pattern_code` / `plan_eligible` / `content_version`
+  - **回填**：1,394 条动作 100% 有训练类型/部位/主肌群；`plan_eligible=1` 共 835 条
+  - **清理**：`equipment_library` 改名 `user_equipment`；删除 1 条乱码测试器械；`DROP exercise_videos`；保留旧列一版兼容
+  - **后端改为读 DB**：器械识别读 `equipment_types` / `equipment_type_exercises`；计划回退池用 `plan_eligible`；agent 池读 DB 映射；`/videos/{slug}` 改用 `exercises.video_url`
+  - **种子脚本**：`scripts/vital/build_taxonomy_db_seed.py` + `data/vital/v28_ddl.sql`，可复现生成 V28
+- 生产状态：
+  - V28 已应用并记录 flyway `28`
+  - **临时兼容视图** `equipment_library` → `user_equipment`：旧后端容器还在跑旧代码，等新后端部署后再 `DROP VIEW equipment_library`
+- 验证：
+  - 后端 **224 passed**，Ruff 通过
+  - 分类：training_type 6 / body_part 8 / muscle 45 / movement_pattern 9
+  - 动作：1394 条，分类覆盖 100%，plan_eligible 835
+  - 器械：95 类；映射 2648 条，0 死 slug
+  - 外键 `user_equipment_exercise.equipment_id` 已随改名指向 `user_equipment`
+- macOS / 部署需要做：
+  - 部署新后端代码后 `DROP VIEW equipment_library`
+  - iOS 本次无代码改动；拉取后确认 catalog 正常
+- 不要恢复：
+  - 不要恢复 `exercise_videos`
+  - 不要把 `equipment_library` 当真实表（只是临时视图）
+  - 不要恢复旧的 1 条乱码器械数据
+
 ### 2026-11-11 · Windows（发现页重排 + 器械库浏览 + 动作详情清理）
 
 - 分支：`develop`
