@@ -242,7 +242,7 @@ extension EquipmentPickerView {
                     VStack(spacing: 1) {
                         categorySideButton(entry.l1, title: entry.l1)
 
-                        if selectedCategory == entry.l1 && !isSearching {
+                        if selectedCategory == entry.l1 && !isSearching && !entry.l2.isEmpty {
                             VStack(spacing: 1) {
                                 ForEach(entry.l2, id: \.self) { sub in
                                     categorySubButton(sub, parent: entry.l1)
