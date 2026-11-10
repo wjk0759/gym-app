@@ -67,6 +67,8 @@ final class AppStore {
     var customFoods: [FoodItem] = []
     var dislikedSlugs: Set<String> = []
     var equipmentLibrary: [EquipmentItem] = []
+    /// 个人动作库：用户从器械可练动作里选中的动作 slug，计划优先使用它。
+    var personalExerciseSlugs: [String] = []
     var bodyAnalyses: [BodyAnalysis] = []
     var bodyMetrics: [BodyMetric] = []
     var bodyCheckInFrequency: BodyCheckInFrequency = .off
@@ -193,6 +195,7 @@ final class AppStore {
         useRemoteAI = AppConfig.useRemoteAI
         healthKitEnabled = false
         equipmentLibrary = []
+        personalExerciseSlugs = []
         bodyAnalyses = []
         bodyMetrics = []
         bodyCheckInFrequency = .off
@@ -290,6 +293,7 @@ final class AppStore {
 #endif
         healthKitEnabled = state.healthKitEnabled ?? false
         equipmentLibrary = state.equipmentLibrary ?? []
+        personalExerciseSlugs = state.personalExerciseSlugs ?? []
         bodyAnalyses = state.bodyAnalyses ?? []
         bodyMetrics = state.bodyMetrics ?? []
         bodyCheckInFrequency = state.bodyCheckInFrequency ?? .off
@@ -325,6 +329,7 @@ final class AppStore {
             useRemoteAI: useRemoteAI,
             healthKitEnabled: healthKitEnabled,
             equipmentLibrary: equipmentLibrary,
+            personalExerciseSlugs: personalExerciseSlugs,
             bodyAnalyses: bodyAnalyses,
             useEquipmentLibraryForPlans: useEquipmentLibraryForPlans,
             bodyMetrics: bodyMetrics,
@@ -428,6 +433,7 @@ final class AppStore {
         var useRemoteAI: Bool?
         var healthKitEnabled: Bool?
         var equipmentLibrary: [EquipmentItem]?
+        var personalExerciseSlugs: [String]?
         var bodyAnalyses: [BodyAnalysis]?
         var useEquipmentLibraryForPlans: Bool?
         var bodyMetrics: [BodyMetric]?

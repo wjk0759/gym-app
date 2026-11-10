@@ -11,7 +11,7 @@ extension EquipmentLibraryView {
                     .font(AppType.callout.weight(.semibold))
                     .foregroundStyle(Theme.ink)
                     .lineLimit(1)
-                Text("\(item.muscle?.label ?? "未分类") · \(item.equipment?.label ?? "未设置")")
+                Text(equipmentSubtitle(item))
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.secondaryText)
                     .lineLimit(1)
@@ -45,6 +45,13 @@ extension EquipmentLibraryView {
         .padding(.horizontal, 13)
         .padding(.vertical, 11)
         .contentShape(Rectangle())
+    }
+
+    func equipmentSubtitle(_ item: EquipmentItem) -> String {
+        if item.equipmentType != nil {
+            return "\(item.trainableExercises.count) 个可练动作"
+        }
+        return "\(item.muscle?.label ?? "未分类") · \(item.equipment?.label ?? "未设置")"
     }
 
     func libraryThumbnail(_ item: EquipmentItem) -> some View {

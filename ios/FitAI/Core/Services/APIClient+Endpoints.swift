@@ -35,7 +35,7 @@ extension APIClient {
         let body = try JSONSerialization.data(withJSONObject: [
             "force": force,
             "onboarding": onboarding,
-            "equipment_slugs": equipmentSlugs,
+            "exercise_library_slugs": equipmentSlugs,
             "split": split.rawValue,
             "focus": focus
         ])
@@ -248,12 +248,45 @@ extension APIClient {
             "name": item.name,
             "notes": item.notes
         ]
+        if let equipmentType = item.equipmentType { payload["equipment_type"] = equipmentType }
+        if let category = item.category { payload["category"] = category }
+        if let photoURL = item.photoURL { payload["photo_url"] = photoURL }
         if let slug = item.slug { payload["slug"] = slug }
         if let muscle = item.muscle { payload["muscle"] = muscle.rawValue }
         if let equipment = item.equipment { payload["equipment"] = equipment.rawValue }
         if let source = item.source { payload["source"] = source }
         let body = try JSONSerialization.data(withJSONObject: payload)
         try await sendVoid(path: "equipment/items", method: "POST", body: body)
+    }
+
+    // MARK: - 个人动作库
+
+    func addExerciseLibrary(slugs: [String], equipmentType: String? = nil) async throws {
+        guard !slugs.isEmpty else { return }
+        var payload: [String: Any] = [
+            "exercise_slugs": slugs,
+            "source": "equipment"
+        ]
+        if let equipmentType { payload["equipment_type"] = equipmentType }
+        let body = try JSONSerialization.data(withJSONObject: payload)
+        try await sendVoid(path: "me/exercise-library", method: "POST", body: body)
+    }
+
+    func fetchExerciseLibrary() async throws -> [RemoteExerciseLibraryItem] {
+        let response: RemoteExerciseLibraryResponse = try await send(
+            path: "me/exercise-library",
+            method: "GET",
+            body: nil
+        )
+        return response.items
+    }
+
+    func deleteExerciseLibrary(slug: String) async throws {
+        try await sendVoid(
+            path: "me/exercise-library/\(slug)",
+            method: "DELETE",
+            body: nil
+        )
     }
 
     func deleteEquipmentItem(id: UUID) async throws {

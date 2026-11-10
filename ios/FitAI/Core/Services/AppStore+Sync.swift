@@ -343,6 +343,9 @@ extension AppStore {
                 let value = EquipmentItem(
                     id: id,
                     name: item.name,
+                    equipmentType: item.equipmentType,
+                    category: item.category,
+                    photoURL: item.photoURL,
                     slug: item.slug,
                     muscle: item.muscle.flatMap { MuscleGroup(rawValue: $0) },
                     equipment: item.equipment.flatMap { Equipment(rawValue: $0) },
@@ -357,6 +360,13 @@ extension AppStore {
                 } else {
                     equipmentLibrary.append(value)
                 }
+            }
+        }
+        if let remote = try? await APIClient.shared.fetchExerciseLibrary() {
+            var existing = Set(personalExerciseSlugs)
+            for item in remote where !existing.contains(item.exerciseSlug) {
+                personalExerciseSlugs.append(item.exerciseSlug)
+                existing.insert(item.exerciseSlug)
             }
         }
     }

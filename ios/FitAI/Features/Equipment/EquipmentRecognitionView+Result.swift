@@ -10,85 +10,15 @@ extension EquipmentRecognitionView {
                 }
             )
 
-            ForEach(candidates) { candidate in
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(candidate.exercise.nameZH)
-                                .font(AppType.callout.weight(.semibold))
-                                .foregroundStyle(Theme.ink)
-                            Text("\(candidate.exercise.muscle.label) · \(candidate.exercise.equipment.label)")
-                                .font(.system(size: 9.5, weight: .medium))
-                                .foregroundStyle(Theme.secondaryText)
-                        }
-                        Spacer()
-                        Text("\(Int(candidate.confidence * 100))%")
-                            .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .foregroundStyle(Theme.ink)
-                    }
+            equipmentCard
 
-                    ProgressView(value: candidate.confidence)
-                        .tint(candidate.confidence >= 0.6 ? Theme.primary : Theme.secondary)
+            if !candidates.isEmpty {
+                Text("可练动作 \(candidates.count)")
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .foregroundStyle(Theme.secondaryText)
 
-                    if candidate.confidence < 0.6 {
-                        Text("需要确认：这张图可能不是这个器械")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundStyle(Theme.coral)
-                    }
-
-                    HStack {
-                        Button {
-                            saveToLibrary(candidate)
-                        } label: {
-                            Label(
-                                isSaved(candidate) ? "已保存" : "保存到器械库",
-                                systemImage: isSaved(candidate) ? "checkmark.circle.fill" : "plus.circle"
-                            )
-                            .font(.system(size: 9.5, weight: .semibold))
-                            .foregroundStyle(isSaved(candidate) ? Theme.tertiaryText : Theme.cobalt)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(isSaved(candidate))
-
-                        Spacer()
-
-                        if let onSelect {
-                            Button {
-                                onSelect(candidate.exercise)
-                                dismiss()
-                            } label: {
-                                Label("加入已选", systemImage: "checkmark.circle.fill")
-                                    .font(.system(size: 9.5, weight: .semibold))
-                                    .foregroundStyle(Theme.cobalt)
-                            }
-                            .buttonStyle(.plain)
-                        }
-
-                        Spacer()
-
-                        Button {
-                            selectedExercise = candidate.exercise
-                        } label: {
-                            Text("查看动作 ›")
-                                .font(.system(size: 9.5, weight: .semibold))
-                                .foregroundStyle(Theme.secondaryText)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.top, 2)
-                }
-                .padding(12)
-                .background(
-                    Theme.paper,
-                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(Theme.stroke, lineWidth: 1)
-                }
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    selectedExercise = candidate.exercise
+                ForEach(candidates) { candidate in
+                    exerciseRow(candidate)
                 }
             }
 
@@ -107,6 +37,99 @@ extension EquipmentRecognitionView {
                     }
             }
             .buttonStyle(SubtlePressStyle(scale: 0.98))
+        }
+    }
+
+    /// 器械卡：保存的是「器械」，不是单个动作。
+    private var equipmentCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(equipmentName.isEmpty ? "识别到的器械" : equipmentName)
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("可练 \(candidates.count) 个动作")
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(Theme.secondaryText)
+                }
+                Spacer()
+                if let confidence = equipmentOptions.first?.confidence {
+                    Text("\(Int(confidence * 100))%")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Theme.ink)
+                }
+            }
+
+            Button {
+                saveEquipmentAndExercises()
+            } label: {
+                Label(
+                    isEquipmentSaved ? "已加入器械库" : "加入我的器械库",
+                    systemImage: isEquipmentSaved ? "checkmark.circle.fill" : "plus.circle"
+                )
+                .font(.system(size: 10.5, weight: .semibold))
+                .foregroundStyle(isEquipmentSaved ? Theme.tertiaryText : Theme.cobalt)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 9)
+                .background(
+                    (isEquipmentSaved ? Theme.ink.opacity(0.04) : Theme.cobalt.opacity(0.10)),
+                    in: Capsule(style: .continuous)
+                )
+                .overlay {
+                    Capsule(style: .continuous)
+                        .strokeBorder(
+                            isEquipmentSaved ? Theme.stroke : Theme.cobalt.opacity(0.20),
+                            lineWidth: 1
+                        )
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(isEquipmentSaved)
+        }
+        .padding(12)
+        .background(
+            Theme.paper,
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Theme.stroke, lineWidth: 1)
+        }
+    }
+
+    private func exerciseRow(_ candidate: EquipmentCandidate) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(candidate.exercise.nameZH)
+                    .font(AppType.callout.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                Text("\(candidate.exercise.muscle.label) · \(candidate.exercise.equipment.label)")
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(Theme.secondaryText)
+            }
+            Spacer()
+            Button {
+                selectedExercise = candidate.exercise
+            } label: {
+                Text("查看动作 ›")
+                    .font(.system(size: 9.5, weight: .semibold))
+                    .foregroundStyle(Theme.secondaryText)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(12)
+        .background(
+            Theme.paper,
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Theme.stroke, lineWidth: 1)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            selectedExercise = candidate.exercise
         }
     }
 }

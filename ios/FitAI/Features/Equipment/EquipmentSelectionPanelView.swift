@@ -12,7 +12,7 @@ struct EquipmentSelectionPanelView: View {
     let onAddToLibrary: () -> Void
 
     private var savedSlugs: Set<String> {
-        Set(store.equipmentLibrary.compactMap(\.slug))
+        Set(store.personalExerciseSlugs)
     }
 
     private var unsavedCount: Int {

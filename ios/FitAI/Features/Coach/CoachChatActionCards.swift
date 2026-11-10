@@ -362,7 +362,7 @@ extension CoachChatView {
     }
 
     func isEquipmentSaved(_ candidate: EquipmentCandidate) -> Bool {
-        store.equipmentLibrary.contains { $0.slug == candidate.exercise.slug }
+        store.personalExerciseSlugs.contains(candidate.exercise.slug)
     }
 
     func agentProposalCard(_ proposal: AgentPlanProposal) -> some View {

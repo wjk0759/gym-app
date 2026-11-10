@@ -66,7 +66,7 @@ struct EquipmentPickerView: View {
 
     /// 每次筛选只构建一次 Set，避免在 filter/sort 里反复线性查库。
     var savedSlugs: Set<String> {
-        Set(store.equipmentLibrary.compactMap(\.slug))
+        Set(store.personalExerciseSlugs)
     }
 
     /// 当前筛选后的前 `visibleLimit` 条，用于上拉加载。

@@ -502,6 +502,9 @@ struct RemoteBodyMetricResponse: Decodable {
 struct RemoteEquipmentItem: Decodable {
     let clientID: String
     let name: String
+    let equipmentType: String?
+    let category: String?
+    let photoURL: String?
     let slug: String?
     let muscle: String?
     let equipment: String?
@@ -511,6 +514,9 @@ struct RemoteEquipmentItem: Decodable {
     enum CodingKeys: String, CodingKey {
         case clientID = "client_id"
         case name
+        case equipmentType = "equipment_type"
+        case category
+        case photoURL = "photo_url"
         case slug
         case muscle
         case equipment
@@ -521,6 +527,24 @@ struct RemoteEquipmentItem: Decodable {
 
 struct RemoteEquipmentItemResponse: Decodable {
     let items: [RemoteEquipmentItem]
+}
+
+struct RemoteExerciseLibraryItem: Decodable {
+    let exerciseSlug: String
+    let equipmentType: String?
+    let source: String
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case exerciseSlug = "exercise_slug"
+        case equipmentType = "equipment_type"
+        case source
+        case createdAt = "created_at"
+    }
+}
+
+struct RemoteExerciseLibraryResponse: Decodable {
+    let items: [RemoteExerciseLibraryItem]
 }
 struct TokenRefreshResponse: Decodable {
     let accessToken: String

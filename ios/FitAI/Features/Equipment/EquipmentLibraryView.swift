@@ -64,6 +64,7 @@ struct EquipmentLibraryView: View {
         return AppScrollView {
             VStack(spacing: 16) {
                 overviewCard
+                personalLibraryLink
                 libraryTools
                 librarySectionHeader(count: items.count)
 
@@ -179,6 +180,49 @@ struct EquipmentLibraryView: View {
             .tint(Theme.primary)
         }
         .card(padding: 18)
+    }
+
+    private var personalLibraryLink: some View {
+        NavigationLink {
+            PersonalExerciseLibraryView()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "square.stack.3d.up")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Theme.cobalt)
+                    .frame(width: 42, height: 42)
+                    .background(
+                        Theme.cobalt.opacity(0.10),
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("个人动作库")
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                    Text("\(store.personalExerciseSlugs.count) 个动作 · 生成计划优先使用")
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            .padding(14)
+            .background(
+                Theme.paper,
+                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(Theme.stroke, lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("打开个人动作库")
     }
 
     private var libraryTools: some View {

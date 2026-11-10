@@ -30,7 +30,6 @@ struct EquipmentRecognitionView: View {
     @State var isScanning = false
     @State var showCamera = false
     @State var didAutoStartCamera = false
-    @State var savedSlugs: Set<String> = []
     @State var recognizedName = ""
     @State var notInLibrary = false
     @State var warning = ""
@@ -438,25 +437,33 @@ struct EquipmentRecognitionView: View {
         notInLibrary = false
     }
 
-    func isSaved(_ candidate: EquipmentCandidate) -> Bool {
-        savedSlugs.contains(candidate.exercise.slug)
-            || store.equipmentLibrary.contains { $0.slug == candidate.exercise.slug }
+    var isEquipmentSaved: Bool {
+        guard let selectedEquipmentSlug, !equipmentName.isEmpty else { return false }
+        return store.equipmentLibrary.contains {
+            $0.equipmentType == selectedEquipmentSlug && $0.name == equipmentName
+        }
     }
 
-    func saveToLibrary(_ candidate: EquipmentCandidate) {
-        guard !isSaved(candidate) else { return }
-        let item = EquipmentItem(
-            name: candidate.exercise.nameZH,
-            slug: candidate.exercise.slug,
-            muscle: candidate.exercise.muscle,
-            equipment: candidate.exercise.equipment,
-            videoURL: candidate.exercise.videoURL?.absoluteString,
-            notes: "来自拍照识别",
-            photoData: selectedImage?.jpegData(compressionQuality: 0.5) ?? imageData
+    /// 保存识别到的器械，并把它的可练动作默认全选加入个人动作库。
+    func saveEquipmentAndExercises() {
+        guard !isEquipmentSaved else { return }
+        let name = equipmentName.isEmpty ? "未命名器械" : equipmentName
+        let item = store.addEquipment(
+            equipmentType: selectedEquipmentSlug,
+            name: name,
+            category: candidates.first?.exercise.equipment.rawValue,
+            photoData: selectedImage?.jpegData(compressionQuality: 0.5) ?? imageData,
+            source: "recognition"
         )
-        store.addEquipment(item)
         onSaved?(item)
-        savedSlugs.insert(candidate.exercise.slug)
+        let added = store.addExercisesToPersonalLibrary(
+            candidates.map(\.exercise),
+            equipmentType: selectedEquipmentSlug
+        )
+        recognizedName = name
+        customAddedName = added > 0 ? "\(name) + \(added) 个动作" : name
+        notInLibrary = false
+        description = ""
     }
 
     @MainActor
