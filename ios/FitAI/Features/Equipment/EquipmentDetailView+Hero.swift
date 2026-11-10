@@ -3,6 +3,7 @@ import SwiftUI
 extension EquipmentItemDetailView {
 func equipmentInfoSection(for item: EquipmentItem) -> some View {
         let matches = matchingEquipment(for: item)
+        let universalNames = matchingUniversalNames(for: item)
 
         return detailSection(
             index: "01",
@@ -21,7 +22,7 @@ func equipmentInfoSection(for item: EquipmentItem) -> some View {
                     symbol: "figure.strengthtraining.functional"
                 )
 
-                if matches.isEmpty {
+                if matches.isEmpty && universalNames.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("你还没有对应器械")
                             .font(AppType.caption.weight(.semibold))
@@ -45,31 +46,39 @@ func equipmentInfoSection(for item: EquipmentItem) -> some View {
                     )
                 } else {
                     VStack(alignment: .leading, spacing: 7) {
-                        Text("你已有")
-                            .font(.system(size: 9.5, weight: .bold))
-                            .foregroundStyle(Theme.tertiaryText)
+                        if !universalNames.isEmpty {
+                            Text("你已勾选：\(universalNames.joined(separator: "、"))")
+                                .font(.system(size: 9.5, weight: .semibold))
+                                .foregroundStyle(Theme.cobalt)
+                        }
 
-                        ForEach(matches) { match in
-                            HStack(spacing: 9) {
-                                Image(systemName: equipmentSymbol(match))
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(Theme.cobalt)
-                                    .frame(width: 28, height: 28)
-                                    .background(
-                                        Theme.cobalt.opacity(0.08),
-                                        in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    )
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(match.name)
-                                        .font(AppType.caption.weight(.semibold))
-                                        .foregroundStyle(Theme.ink)
-                                    Text("\(match.trainableExercises.count) 个可练动作")
-                                        .font(.system(size: 9, weight: .medium))
-                                        .foregroundStyle(Theme.tertiaryText)
+                        if !matches.isEmpty {
+                            Text("你已有")
+                                .font(.system(size: 9.5, weight: .bold))
+                                .foregroundStyle(Theme.tertiaryText)
+
+                            ForEach(matches) { match in
+                                HStack(spacing: 9) {
+                                    Image(systemName: equipmentSymbol(match))
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(Theme.cobalt)
+                                        .frame(width: 28, height: 28)
+                                        .background(
+                                            Theme.cobalt.opacity(0.08),
+                                            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        )
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(match.name)
+                                            .font(AppType.caption.weight(.semibold))
+                                            .foregroundStyle(Theme.ink)
+                                        Text("\(match.trainableExercises.count) 个可练动作")
+                                            .font(.system(size: 9, weight: .medium))
+                                            .foregroundStyle(Theme.tertiaryText)
+                                    }
+                                    Spacer(minLength: 0)
                                 }
-                                Spacer(minLength: 0)
+                                .padding(.vertical, 3)
                             }
-                            .padding(.vertical, 3)
                         }
 
                         Button {
@@ -113,6 +122,17 @@ func matchingEquipment(for item: EquipmentItem) -> [EquipmentItem] {
             }
             return groups.contains(group)
         }
+    }
+
+func matchingUniversalNames(for item: EquipmentItem) -> [String] {
+        guard let exercise = item.exercise else { return [] }
+        let groups = Set(exercise.equipmentTypes)
+        return ExerciseLibrary.universalEquipment
+            .filter {
+                groups.contains($0.slug)
+                    && store.selectedUniversalSlugs.contains($0.slug)
+            }
+            .map(\.name)
     }
 
 func equipmentInfoRow(title: String, value: String, symbol: String) -> some View {
