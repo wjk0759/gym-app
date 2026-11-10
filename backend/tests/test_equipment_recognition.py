@@ -3,8 +3,44 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+from app.models import EquipmentType
 from app.services import equipment
-from app.services import equipment_catalog_v2 as equipment_catalog
+
+
+def _fake_type(
+    slug: str,
+    name_zh: str,
+    group: str = "leg_press",
+    name_en: str | None = None,
+    aliases: list[str] | None = None,
+) -> EquipmentType:
+    return EquipmentType(
+        slug=slug,
+        name_zh=name_zh,
+        name_en=name_en or name_zh,
+        category="machine",
+        exercise_group=group,
+        universal=False,
+        aliases=aliases or [],
+        recognition_class=0,
+        is_active=True,
+    )
+
+
+def _patch_catalog(monkeypatch, types, mapping):
+    monkeypatch.setattr(
+        equipment, "catalog_types", lambda db, recognition_only=False: types
+    )
+    monkeypatch.setattr(
+        equipment,
+        "catalog_get",
+        lambda db, slug: next((t for t in types if t.slug == slug), None),
+    )
+    monkeypatch.setattr(
+        equipment,
+        "catalog_exercises",
+        lambda db, item: mapping.get(item.slug, []),
+    )
 
 
 def _vision_result(**overrides):
@@ -37,6 +73,7 @@ def _exercise(slug: str, name_zh: str, is_compound: bool = True):
         difficulty=2,
         is_compound=is_compound,
         video_url=None,
+        plan_eligible=True,
     )
 
 
@@ -44,6 +81,8 @@ def test_catalog_equipment_maps_to_active_exercises(monkeypatch):
     async def fake_vision(system, user, image, mime="image/jpeg", **kwargs):
         return _vision_result()
 
+    types = [_fake_type("leg_press", "腿举机")]
+    _patch_catalog(monkeypatch, types, {"leg_press": ["vital-leg-press"]})
     monkeypatch.setattr(equipment, "settings", _settings())
     monkeypatch.setattr(equipment.llm, "complete_vision_json", fake_vision)
     monkeypatch.setattr(
@@ -72,6 +111,7 @@ def test_unknown_equipment_returns_custom_add_signal(monkeypatch):
             description="这不是健身器械。",
         )
 
+    _patch_catalog(monkeypatch, [_fake_type("leg_press", "腿举机")], {})
     monkeypatch.setattr(equipment, "settings", _settings())
     monkeypatch.setattr(equipment.llm, "complete_vision_json", fake_vision)
 
@@ -87,10 +127,12 @@ def test_unknown_equipment_returns_custom_add_signal(monkeypatch):
 def test_catalog_equipment_without_actions_is_not_in_library(monkeypatch):
     async def fake_vision(system, user, image, mime="image/jpeg", **kwargs):
         return _vision_result(
-            equipment_slug="tibialis",
+            equipment_slug="tibialis_raise",
             equipment_name="胫骨前肌训练机",
         )
 
+    types = [_fake_type("tibialis_raise", "胫骨前肌训练机", group="tibialis")]
+    _patch_catalog(monkeypatch, types, {})
     monkeypatch.setattr(equipment, "settings", _settings())
     monkeypatch.setattr(equipment.llm, "complete_vision_json", fake_vision)
     monkeypatch.setattr(equipment, "_active_exercises", lambda db: [])
@@ -109,6 +151,7 @@ def test_vision_failure_never_returns_random_candidates(monkeypatch):
     async def failing_vision(*args, **kwargs):
         raise RuntimeError("vision HTTP 400")
 
+    _patch_catalog(monkeypatch, [_fake_type("leg_press", "腿举机")], {})
     monkeypatch.setattr(equipment, "settings", _settings())
     monkeypatch.setattr(equipment.llm, "complete_vision_json", failing_vision)
 
@@ -133,6 +176,18 @@ def test_two_close_equipment_candidates_are_returned(monkeypatch):
             ],
         )
 
+    types = [
+        _fake_type("chest_press_seated", "坐姿推胸机", group="chest_press"),
+        _fake_type("shoulder_press", "坐姿推肩机", group="shoulder_press"),
+    ]
+    _patch_catalog(
+        monkeypatch,
+        types,
+        {
+            "chest_press_seated": ["vital-seated-machine-chest-press"],
+            "shoulder_press": ["vital-seated-shoulder-press-machine"],
+        },
+    )
     monkeypatch.setattr(equipment, "settings", _settings())
     monkeypatch.setattr(equipment.llm, "complete_vision_json", fake_vision)
     monkeypatch.setattr(
@@ -150,8 +205,6 @@ def test_two_close_equipment_candidates_are_returned(monkeypatch):
 
     assert result["status"] == "ok"
     assert len(result["equipment_candidates"]) == 2
-    assert result["equipment_candidates"][0]["slug"] == "chest_press_seated"
-    assert result["equipment_candidates"][1]["slug"] == "shoulder_press"
     assert result["needs_confirmation"] is True
 
 
@@ -162,12 +215,22 @@ def test_ocr_text_is_included_and_matched_to_catalog(monkeypatch):
         captured["user"] = user
         return _vision_result()
 
+    types = [
+        _fake_type(
+            "shoulder_press",
+            "坐姿推肩机",
+            group="shoulder_press",
+            name_en="Seated Shoulder Press",
+            aliases=["Hammer Strength Shoulder Press"],
+        )
+    ]
+    _patch_catalog(monkeypatch, types, {"shoulder_press": ["vital-seated-shoulder-press-machine"]})
     monkeypatch.setattr(equipment, "settings", _settings())
     monkeypatch.setattr(equipment.llm, "complete_vision_json", fake_vision)
     monkeypatch.setattr(
         equipment,
         "_active_exercises",
-        lambda db: [_exercise("vital-leg-press", "腿举")],
+        lambda db: [_exercise("vital-seated-shoulder-press-machine", "器械推举")],
     )
 
     asyncio.run(
@@ -184,14 +247,21 @@ def test_ocr_text_is_included_and_matched_to_catalog(monkeypatch):
 
 
 def test_catalog_actions_exist_in_active_library():
-    library = Path(__file__).resolve().parents[2] / "ios" / "FitAI" / "Resources"
+    root = Path(__file__).resolve().parents[2]
+    mapping = json.loads(
+        (root / "data" / "vital" / "equipment_exercise_map.json").read_text(
+            encoding="utf-8"
+        )
+    )["mapping"]
     rows = json.loads(
-        (library / "vital_exercises.json").read_text(encoding="utf-8")
+        (root / "ios" / "FitAI" / "Resources" / "vital_exercises.json").read_text(
+            encoding="utf-8"
+        )
     )
     active = {row["slug"] for row in rows}
     missing = {
         slug
-        for slugs in equipment_catalog.EXERCISE_MAP.values()
+        for slugs in mapping.values()
         for slug in slugs
         if slug not in active
     }

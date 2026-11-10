@@ -1,9 +1,8 @@
 """Equipment recognition: catalog-constrained vision, honest failures.
 
-The vision model picks one fixed-machine type from the 79-class catalog; the
-backend maps that type to exercises via ``equipment_catalog_v2.exercises_for``.
-If vision fails, the API returns an explicit ``unavailable`` result instead of
-pretending that random exercises are real matches.
+The catalog and the equipment->exercise mapping now live in the database
+(``equipment_types`` / ``equipment_type_exercises``). The vision model picks one
+fixed-machine type; the backend maps it to exercises from the DB.
 """
 
 from __future__ import annotations
@@ -17,8 +16,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..config import settings
-from ..models import EquipmentLibraryItem, Exercise, Profile
-from . import equipment_catalog_v2 as equipment_catalog
+from ..models import (
+    EquipmentLibraryItem,
+    EquipmentType,
+    EquipmentTypeExercise,
+    Exercise,
+    Profile,
+)
 from . import llm
 
 logger = logging.getLogger(__name__)
@@ -31,12 +35,68 @@ _SYSTEM_PROMPT = """你是叫练的健身器械识别助手。你只判断图片
 4. 只输出一个 JSON 对象，不要解释。"""
 
 
-def _user_prompt(ocr_text: str = "") -> str:
+def catalog_types(db: Session, recognition_only: bool = False) -> list[EquipmentType]:
+    query = select(EquipmentType).where(EquipmentType.is_active.is_(True))
+    if recognition_only:
+        query = query.where(EquipmentType.recognition_class.is_not(None))
+    return list(db.execute(query).scalars().all())
+
+
+def prompt_catalog(db: Session) -> str:
+    lines = []
+    for item in sorted(
+        catalog_types(db, recognition_only=True),
+        key=lambda row: row.recognition_class if row.recognition_class is not None else 999,
+    ):
+        aliases = " / ".join((item.aliases or [])[:3])
+        lines.append(
+            f"- {item.slug}（{item.name_zh}）"
+            + (f"，也叫 {aliases}" if aliases else "")
+        )
+    return "\n".join(lines)
+
+
+def match_name(db: Session, name: str | None) -> EquipmentType | None:
+    if not name:
+        return None
+    text = name.strip().lower()
+    if not text:
+        return None
+    for item in catalog_types(db):
+        if text in item.name_zh.lower() or text in (item.name_en or "").lower():
+            return item
+        for alias in item.aliases or []:
+            if text in str(alias).lower():
+                return item
+    return None
+
+
+def catalog_get(db: Session, slug: str | None) -> EquipmentType | None:
+    if not slug:
+        return None
+    return db.execute(
+        select(EquipmentType).where(EquipmentType.slug == slug)
+    ).scalar_one_or_none()
+
+
+def catalog_exercises(db: Session, item: EquipmentType) -> list[str]:
+    return list(
+        db.execute(
+            select(EquipmentTypeExercise.exercise_slug).where(
+                EquipmentTypeExercise.equipment_type_slug == item.slug
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+
+def _user_prompt(db: Session, ocr_text: str = "") -> str:
     ocr_block = ""
     if ocr_text:
-        hint = equipment_catalog.match_name(ocr_text)
+        hint = match_name(db, ocr_text)
         hint_line = (
-            f"\nOCR 匹配提示：{hint['slug']}（{hint['name_zh']}）"
+            f"\nOCR 匹配提示：{hint.slug}（{hint.name_zh}）"
             if hint is not None
             else ""
         )
@@ -47,7 +107,7 @@ def _user_prompt(ocr_text: str = "") -> str:
             f"{hint_line}\n"
         )
     return f"""器械目录（79 类固定器械）：
-{equipment_catalog.prompt_catalog()}
+{prompt_catalog(db)}
 {ocr_block}
 识别这张照片，严格输出 JSON：
 {{
@@ -118,14 +178,13 @@ def _active_exercises(db: Session) -> list[Exercise]:
     )
 
 
-def _build_option(db: Session, item: dict, confidence: float) -> dict | None:
-    slugs = equipment_catalog.exercises_for(item["slug"])
+def _build_option(db: Session, item: EquipmentType, confidence: float) -> dict | None:
+    slugs = catalog_exercises(db, item)
     rows = {
         e.slug: e
         for e in _active_exercises(db)
         if e.slug in set(slugs)
     }
-    # compound-first so the most representative exercises lead the list.
     ordered = sorted(
         slugs,
         key=lambda s: (not rows[s].is_compound if s in rows else True, s),
@@ -152,8 +211,8 @@ def _build_option(db: Session, item: dict, confidence: float) -> dict | None:
     if not candidates:
         return None
     return {
-        "slug": item["slug"],
-        "name_zh": item["name_zh"],
+        "slug": item.slug,
+        "name_zh": item.name_zh,
         "confidence": round(confidence, 2),
         "candidates": candidates,
     }
@@ -177,7 +236,7 @@ async def recognize(
     try:
         result = await llm.complete_vision_json(
             _SYSTEM_PROMPT,
-            _user_prompt(ocr_text),
+            _user_prompt(db, ocr_text),
             base64.b64encode(image_bytes).decode(),
             usage=usage,
             db=db,
@@ -231,9 +290,9 @@ def _map_result(db: Session, result: dict, filename: str) -> dict:
         }
 
     item = (
-        equipment_catalog.get(equipment_slug)
-        or equipment_catalog.match_name(equipment_name)
-        or equipment_catalog.match_name(str(result.get("name") or ""))
+        catalog_get(db, equipment_slug)
+        or match_name(db, equipment_name)
+        or match_name(db, str(result.get("name") or ""))
     )
     if item is None:
         return {
@@ -264,10 +323,10 @@ def _map_result(db: Session, result: dict, filename: str) -> dict:
             continue
         raw_slug = str(raw.get("slug") or "").strip().lower()
         raw_confidence = _clamp_confidence(raw.get("confidence", confidence))
-        option_item = equipment_catalog.get(raw_slug)
-        if option_item is None or option_item["slug"] in seen:
+        option_item = catalog_get(db, raw_slug)
+        if option_item is None or option_item.slug in seen:
             continue
-        seen.add(option_item["slug"])
+        seen.add(option_item.slug)
         option = _build_option(db, option_item, raw_confidence)
         if option is not None:
             options.append(option)
@@ -282,19 +341,6 @@ def _map_result(db: Session, result: dict, filename: str) -> dict:
         if options[1]["confidence"] < max(0.35, top_confidence - 0.35):
             options = options[:1]
 
-    if len(options) == 1:
-        top_confidence = options[0]["confidence"]
-        for alt_slug in equipment_catalog.confusables(options[0]["slug"]):
-            alternative = equipment_catalog.get(alt_slug)
-            if alternative is None:
-                continue
-            alternative_option = _build_option(
-                db, alternative, max(0.35, top_confidence - 0.35)
-            )
-            if alternative_option is not None:
-                options.append(alternative_option)
-                break
-
     if not options:
         return {
             "scan_id": str(uuid.uuid4()),
@@ -302,11 +348,11 @@ def _map_result(db: Session, result: dict, filename: str) -> dict:
             "equipment_candidates": [],
             "needs_confirmation": True,
             "not_in_library": True,
-            "name": item["name_zh"],
+            "name": item.name_zh,
             "description": description
-            or f"识别到「{item['name_zh']}」，但动作库暂未收录其示范动作。",
-            "equipment_slug": item["slug"],
-            "equipment_name": item["name_zh"],
+            or f"识别到「{item.name_zh}」，但动作库暂未收录其示范动作。",
+            "equipment_slug": item.slug,
+            "equipment_name": item.name_zh,
             "confidence": confidence,
             "visible_features": features,
             "model": settings.vision_model_name,

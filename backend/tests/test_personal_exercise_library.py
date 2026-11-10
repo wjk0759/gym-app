@@ -31,6 +31,7 @@ def _exercise(slug, equipment="dumbbell", contraindications=None):
         difficulty=1,
         contraindications=contraindications or [],
         is_active=True,
+        plan_eligible=True,
     )
 
 

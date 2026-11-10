@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
-from sqlalchemy import select
 
 from ..config import settings
 from ..deps import CurrentUser, DBSession
-from ..models import Exercise, ExerciseVideo
+from ..models import Exercise
 from ..services.watch import media_for_slugs
 
 router = APIRouter(tags=["videos"])
@@ -44,35 +43,6 @@ def exercise_media(
 @router.get("/videos/{exercise_slug}")
 def exercise_video(exercise_slug: str, request: Request, db: DBSession):
     exercise = db.get(Exercise, exercise_slug)
-    video = (
-        db.execute(
-            select(ExerciseVideo)
-            .where(
-                ExerciseVideo.exercise_slug == exercise_slug,
-                ExerciseVideo.status == "published",
-            )
-            .order_by(ExerciseVideo.updated_at.desc())
-        )
-        .scalars()
-        .first()
-    )
-    if video:
-        return {
-            "exercise_slug": exercise_slug,
-            "exercise_name": exercise.name_zh if exercise else None,
-            "video": {
-                "id": video.id,
-                "title": video.title,
-                "description": video.description,
-                "video_url": _absolute_url(request, video.video_url),
-                "poster_url": _absolute_url(request, video.poster_url),
-                "duration_seconds": video.duration_seconds,
-                "source": video.source,
-                "license_note": video.license_note,
-                "version": video.version,
-                "updated_at": video.updated_at.isoformat(),
-            },
-        }
 
     if exercise and exercise.video_url:
         return {

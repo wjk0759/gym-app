@@ -12,12 +12,13 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..models import (
+    EquipmentTypeExercise,
     Exercise,
     Profile,
     UserEquipmentExercise,
     UserUniversalEquipment,
 )
-from . import equipment_catalog_v2, llm
+from . import llm
 from .equipment import available_equipment_types
 from .load_progression import apply_plan_weights
 from .plan_validator import injury_tags, validate_plan
@@ -30,8 +31,8 @@ def user_plan_pool_slugs(db: Session, user_id: str) -> list[str]:
     """Build the equipment plan pool from the DB.
 
     Union of fixed-machine enabled exercises and the checked universal
-    equipment groups. Used by the coach/agent path, where iOS cannot pass the
-    client-computed pool.
+    equipment mappings. Used by the coach/agent path and as the backend
+    fallback when the client does not send a pool.
     """
     fixed = (
         db.execute(
@@ -42,7 +43,7 @@ def user_plan_pool_slugs(db: Session, user_id: str) -> list[str]:
         .scalars()
         .all()
     )
-    groups = (
+    universal = (
         db.execute(
             select(UserUniversalEquipment.equipment_slug).where(
                 UserUniversalEquipment.user_id == user_id,
@@ -53,8 +54,18 @@ def user_plan_pool_slugs(db: Session, user_id: str) -> list[str]:
         .all()
     )
     slugs = set(fixed)
-    for group in groups:
-        slugs.update(equipment_catalog_v2.EXERCISE_MAP.get(group, []))
+    for group in universal:
+        type_slug = "pullup_dip_station" if group in {"pullup", "dip"} else group
+        rows = (
+            db.execute(
+                select(EquipmentTypeExercise.exercise_slug).where(
+                    EquipmentTypeExercise.equipment_type_slug == type_slug
+                )
+            )
+            .scalars()
+            .all()
+        )
+        slugs.update(rows)
     return sorted(slugs)
 
 GOAL_LABELS = {
@@ -180,8 +191,6 @@ def _allowed_exercises(
     plan_pool_slugs: list[str] | None = None,
     strict_equipment: bool = False,
 ) -> list[Exercise]:
-    allowed_equipment = set(equipment or ["bodyweight"])
-    allowed_equipment.add("bodyweight")
     banned = injury_tags(injuries)
 
     rows = (
@@ -190,7 +199,7 @@ def _allowed_exercises(
         .all()
     )
 
-    # 器械计划池：固定器械启用动作 + 通用器械动作（iOS 计算后传入）。
+    # 器械计划池：固定器械启用动作 + 通用器械动作。
     # >=8 条默认严格使用；strict_equipment 时不论多少都严格使用，不回退白名单。
     pool = set(plan_pool_slugs or [])
     if pool:
@@ -202,21 +211,16 @@ def _allowed_exercises(
         if strict_equipment or len(picked) >= 8:
             return picked
 
-    result: list[Exercise] = []
-    for exercise in rows:
-        if exercise.equipment not in allowed_equipment:
-            continue
-        if banned & set(exercise.contraindications or []):
-            continue
-        result.append(exercise)
+    # 回退：只用「可进计划」的力量动作 + 伤病过滤。
+    result: list[Exercise] = [
+        e for e in rows
+        if e.plan_eligible
+        and not (banned & set(e.contraindications or []))
+    ]
 
     if preferred_slugs:
         preferred = set(preferred_slugs)
-        narrowed = [
-            item
-            for item in result
-            if item.slug in preferred or item.equipment == "bodyweight"
-        ]
+        narrowed = [item for item in result if item.slug in preferred]
         # 器械库太少时不强行限制，避免生成不出完整计划
         if len(narrowed) >= 8:
             result = narrowed
@@ -384,6 +388,8 @@ def build_template_plan(
     equipment_types = available_equipment_types(
         db, profile.user_id, profile.equipment
     )
+    if not plan_pool_slugs:
+        plan_pool_slugs = user_plan_pool_slugs(db, profile.user_id)
     available = _allowed_exercises(
         db,
         equipment_types,
@@ -552,6 +558,8 @@ async def generate_plan(
     equipment_types = available_equipment_types(
         db, profile.user_id, profile.equipment
     )
+    if not plan_pool_slugs:
+        plan_pool_slugs = user_plan_pool_slugs(db, profile.user_id)
     available = _allowed_exercises(
         db,
         equipment_types,

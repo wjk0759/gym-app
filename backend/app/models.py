@@ -193,6 +193,14 @@ class Exercise(Base):
     name_en: Mapped[str | None] = mapped_column(String(120))
     muscle_group: Mapped[str] = mapped_column(String(20), index=True)
     equipment: Mapped[str] = mapped_column(String(20), index=True)
+    # 分类维度（code，映射 taxonomy_terms）
+    training_type_code: Mapped[str | None] = mapped_column(String(20), index=True)
+    body_part_code: Mapped[str | None] = mapped_column(String(20), index=True)
+    muscle_primary_code: Mapped[str | None] = mapped_column(String(30))
+    muscle_secondary_codes: Mapped[list] = mapped_column(JSON, default=list)
+    movement_pattern_code: Mapped[str | None] = mapped_column(String(20))
+    plan_eligible: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    content_version: Mapped[str | None] = mapped_column(String(20))
     is_compound: Mapped[bool] = mapped_column(Boolean, default=False)
     difficulty: Mapped[int] = mapped_column(Integer, default=1)
     instructions: Mapped[str | None] = mapped_column(Text)
@@ -204,6 +212,57 @@ class Exercise(Base):
     contraindications: Mapped[list] = mapped_column(JSON, default=list)
     source: Mapped[str | None] = mapped_column(String(40))
     license: Mapped[str | None] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class TaxonomyTerm(Base):
+    __tablename__ = "taxonomy_terms"
+    __table_args__ = (
+        UniqueConstraint("dimension", "code", name="uq_taxonomy_terms"),
+        Index("ix_taxonomy_terms_dimension", "dimension"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    dimension: Mapped[str] = mapped_column(String(30))
+    code: Mapped[str] = mapped_column(String(40))
+    name_zh: Mapped[str] = mapped_column(String(40))
+    parent_code: Mapped[str | None] = mapped_column(String(40))
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class EquipmentType(Base):
+    __tablename__ = "equipment_types"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    slug: Mapped[str] = mapped_column(String(60), unique=True, index=True)
+    name_zh: Mapped[str] = mapped_column(String(60))
+    name_en: Mapped[str | None] = mapped_column(String(120))
+    category: Mapped[str] = mapped_column(String(20), index=True)
+    exercise_group: Mapped[str] = mapped_column(String(40), index=True)
+    universal: Mapped[bool] = mapped_column(Boolean, default=False)
+    aliases: Mapped[list] = mapped_column(JSON, default=list)
+    recognition_class: Mapped[int | None] = mapped_column(Integer)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
+class EquipmentTypeExercise(Base):
+    __tablename__ = "equipment_type_exercises"
+
+    equipment_type_slug: Mapped[str] = mapped_column(
+        String(60),
+        ForeignKey("equipment_types.slug", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    exercise_slug: Mapped[str] = mapped_column(
+        String(60),
+        ForeignKey("exercises.slug", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
@@ -739,7 +798,7 @@ class BodyMetric(Base):
 
 
 class EquipmentLibraryItem(Base):
-    __tablename__ = "equipment_library"
+    __tablename__ = "user_equipment"
     __table_args__ = (
         UniqueConstraint("user_id", "client_id", name="uq_equipment_library_user_client"),
         Index("ix_equipment_library_user_created", "user_id", "created_at"),
@@ -785,7 +844,7 @@ class UserEquipmentExercise(Base):
         String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     equipment_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("equipment_library.id", ondelete="CASCADE")
+        String(36), ForeignKey("user_equipment.id", ondelete="CASCADE")
     )
     exercise_slug: Mapped[str] = mapped_column(
         String(80), ForeignKey("exercises.slug", ondelete="CASCADE")
