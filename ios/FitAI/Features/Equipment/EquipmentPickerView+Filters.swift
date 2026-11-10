@@ -9,11 +9,6 @@ extension EquipmentPickerView {
                 searchScopeHint
             }
 
-            if let category = selectedCategory,
-               !ExerciseLibrary.subcategories(for: category).isEmpty {
-                categorySubChips
-            }
-
             equipmentFilters
         }
         .padding(.horizontal, 16)
@@ -244,13 +239,30 @@ extension EquipmentPickerView {
             VStack(spacing: 1) {
                 categorySideButton(nil, title: "全部")
                 ForEach(ExerciseLibrary.visibleCategoryTree) { entry in
-                    categorySideButton(entry.l1, title: entry.l1)
+                    VStack(spacing: 1) {
+                        categorySideButton(entry.l1, title: entry.l1)
+
+                        if selectedCategory == entry.l1 && !isSearching {
+                            VStack(spacing: 1) {
+                                ForEach(entry.l2, id: \.self) { sub in
+                                    categorySubButton(sub, parent: entry.l1)
+                                }
+                            }
+                            .padding(.leading, 6)
+                            .overlay(alignment: .leading) {
+                                Capsule()
+                                    .fill(Theme.cobalt.opacity(0.22))
+                                    .frame(width: 1.5)
+                                    .padding(.vertical, 2)
+                            }
+                        }
+                    }
                 }
             }
             .padding(.horizontal, 4)
             .padding(.vertical, 5)
         }
-        .frame(width: 72)
+        .frame(width: 80)
         .background(
             Theme.paper,
             in: RoundedRectangle(cornerRadius: 15, style: .continuous)
@@ -267,7 +279,7 @@ extension EquipmentPickerView {
         return Button {
             Haptics.select()
             withAnimation(Motion.quick) {
-                selectedCategory = (selectedCategory == category) ? nil : category
+                selectedCategory = active ? nil : category
                 selectedSubcategory = nil
                 if isSearching {
                     query = ""
@@ -300,19 +312,44 @@ extension EquipmentPickerView {
         .accessibilityAddTraits(active ? .isSelected : [])
     }
 
-    var categorySubChips: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                filterChip("全部", selected: selectedSubcategory == nil) {
-                    selectedSubcategory = nil
-                }
-                ForEach(ExerciseLibrary.subcategories(for: selectedCategory ?? ""), id: \.self) { sub in
-                    filterChip(sub, selected: selectedSubcategory == sub) {
-                        selectedSubcategory = sub
-                    }
+    func categorySubButton(_ subcategory: String, parent: String) -> some View {
+        let active = selectedCategory == parent && selectedSubcategory == subcategory && !isSearching
+
+        return Button {
+            Haptics.select()
+            withAnimation(Motion.quick) {
+                selectedCategory = parent
+                selectedSubcategory = (selectedSubcategory == subcategory) ? nil : subcategory
+                if isSearching {
+                    query = ""
                 }
             }
+        } label: {
+            Text(subcategory)
+                .font(.system(size: 10, weight: active ? .bold : .medium))
+                .foregroundStyle(active ? Theme.cobalt : Theme.secondaryText.opacity(0.82))
+                .multilineTextAlignment(.center)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 5.5)
+                .padding(.leading, 5)
+                .background(
+                    active ? Theme.cobalt.opacity(0.10) : Color.clear,
+                    in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .stroke(
+                            active ? Theme.cobalt.opacity(0.16) : Color.clear,
+                            lineWidth: 1
+                        )
+                )
+                .animation(Motion.quick, value: active)
         }
+        .buttonStyle(SubtlePressStyle(scale: 0.95))
+        .accessibilityLabel("\(subcategory)肌群")
+        .accessibilityAddTraits(active ? .isSelected : [])
     }
 
     var equipmentFilters: some View {
