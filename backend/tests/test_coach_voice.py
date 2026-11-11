@@ -1,5 +1,7 @@
+from app.models import Profile
 from app.routers.coach import _requires_phone_confirmation, _speech_text
 from app.services.agent import SYSTEM_PROMPT as AGENT_SYSTEM_PROMPT
+from app.services.coach import _mock_reply
 from app.services.coach_core import (
     coach_core_prompt,
     watch_voice_system_prompt,
@@ -33,3 +35,21 @@ def test_watch_voice_and_agent_share_the_coach_core():
     assert core[:40] in watch
     assert "不调用工具" in watch
     assert "这个需要到 iPhone 上确认" in watch
+
+
+def test_coach_core_sets_warm_professional_tone():
+    core = coach_core_prompt()
+    assert "# 温度" in core
+    for word in ("亲切", "热情", "专业", "接住"):
+        assert word in core
+    assert "不能只给克数" in core
+    assert "宝子" in core
+    assert "emoji" in core
+
+
+def test_mock_nutrition_reply_names_real_foods():
+    profile = Profile(user_id="user-1", weight_kg=70)
+    text, _ = _mock_reply("蛋白还差 40g 怎么补", profile, None, None)
+    assert "鸡胸 100g" in text
+    assert "鸡蛋 2 个" in text
+    assert "牛奶" in text

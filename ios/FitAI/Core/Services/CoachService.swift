@@ -62,7 +62,8 @@ enum CoachService {
             }
             return ChatMessage(
                 role: .assistant,
-                text: "你还没有生成计划。先在「计划」页生成一份，我再按你的器械和时间帮你安排。"
+                text: "还没生成计划，正常。先去「计划」页生成一份，"
+                    + "我拿到你的器械和时间后，帮你把第一周排顺。"
             )
         }
 
@@ -80,13 +81,17 @@ enum CoachService {
                 .candidates(muscle: muscle, equipment: profile.availableEquipment)
                 .prefix(4)
             if candidates.isEmpty {
-                return ChatMessage(role: .assistant, text: "你的器械清单里暂时没有这个肌群的动作，可以到「我的」里补充器械。")
+                return ChatMessage(
+                    role: .assistant,
+                    text: "你的器械清单里暂时没有这个肌群的动作。"
+                        + "去「我的」补两件常用器械，或者拍张照，我帮你认。"
+                )
             }
-            var lines = ["可以试试这些\(muscle.label)部替代动作："]
+            var lines = ["可以，先换动作，不用硬等。给你几个\(muscle.label)部替代："]
             for item in candidates {
                 lines.append("· \(item.nameZH)（\(item.equipment.label)）")
             }
-            lines.append("选择能稳定完成 8–12 次的重量，动作变形就降重量。")
+            lines.append("选一个能稳定做 8–12 次的重量，动作变形就降。要我现在帮你换进今天训练吗？")
             return ChatMessage(role: .assistant, text: lines.joined(separator: "\n"))
         }
 
@@ -94,14 +99,19 @@ enum CoachService {
             let protein = Int((profile.weightKG * 1.8).rounded())
             return ChatMessage(
                 role: .assistant,
-                text: "按你的体重，每天蛋白质建议在 \(protein)g 左右，分 3–4 餐摄入；训练后 1–2 小时内吃到 20–30g 蛋白质即可。如果目标是减脂，先保证蛋白质和蔬菜，再控制主食分量。疾病相关饮食请咨询营养科医生。"
+                text: "按你的体重，每天蛋白大约 \(protein)g，分 3–4 餐吃。"
+                    + "每餐先放一掌心蛋白：鸡胸 100g、鱼 100g、虾 100g、牛肉 100g，"
+                    + "或者鸡蛋 2 个加一杯牛奶。今天差多少？告诉我，我给你补法。"
+                    + "有肾病、糖尿病或孕期，先问医生。"
             )
         }
 
         if message.contains("酸") || message.contains("疼") || message.contains("痛") {
             return ChatMessage(
                 role: .assistant,
-                text: "训练后的延迟性酸痛通常 24–72 小时缓解，可以低强度活动、拉伸、保证睡眠。如果是关节刺痛、肿胀或影响走路，先停止训练并找医生评估。"
+                text: "练完一两天酸，正常。今天可以散步、拉伸、早点睡；"
+                    + "但如果是关节刺痛、麻木、肿胀，或者疼到影响走路，"
+                    + "先停训练，尽快找医生看一下。"
             )
         }
 
@@ -109,27 +119,32 @@ enum CoachService {
             let protein = Int((profile.weightKG * 1.8).rounded())
             return ChatMessage(
                 role: .assistant,
-                text: "营养师模式下，我先给一个保守区间：每天蛋白质约 \(protein)g，分 3–4 餐摄入；每餐先安排蛋白质和蔬菜，再根据训练量调整主食。如果有糖尿病、肾病、孕期或进食障碍，请先咨询医生或注册营养师。"
+                text: "先给你一个保守范围：每天蛋白约 \(protein)g，分 3–4 餐吃。"
+                    + "每餐一掌心蛋白加两拳蔬菜，主食按训练量调。"
+                    + "有糖尿病、肾病、孕期或进食障碍，先问医生或注册营养师。"
             )
         }
 
         if skill == .rehab {
             return ChatMessage(
                 role: .assistant,
-                text: "康复师模式下，我不会在未评估的情况下给你诊断或加练。请先告诉我疼痛位置、持续多久、疼痛 0–10 分，以及是否有肿胀、麻木或无力。如果有明显肿胀、无法承重或神经症状，请先线下就医。"
+                text: "我先不给你诊断。告诉我疼在哪、多久了、0–10 分有多疼，"
+                    + "有没有肿胀、麻木或无力。"
+                    + "要是有明显肿胀、无法承重或神经症状，先线下就医，别硬练。"
             )
         }
 
         if let plan {
             return ChatMessage(
                 role: .assistant,
-                text: "我记住了。你可以具体问：今天练什么、某个动作怎么替代，或者把训练感受告诉我。当前计划「\(plan.title)」已记录，下次调整会参考你的完成率。"
+                text: "我在。你可以直接问：今天练什么、这个动作怎么换、蛋白还差多少怎么补。"
+                    + "当前计划「\(plan.title)」我记着，下次调整会看你的完成率。"
             )
         }
 
         return ChatMessage(
             role: .assistant,
-            text: "先完成建档并生成计划，我就能结合你的器械、目标和历史记录给出更具体的建议。"
+            text: "先把建档和计划补上，我就能结合你的器械、目标和历史，给你更具体的安排。"
         )
     }
 }
