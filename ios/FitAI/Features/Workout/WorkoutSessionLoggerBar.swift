@@ -81,7 +81,7 @@ struct WorkoutSessionLoggerBar: View {
         VStack(spacing: 4) {
             topRow(exercise)
             steppers
-            completionButton(exercise)
+            completionButton()
         }
     }
 
@@ -292,7 +292,7 @@ struct WorkoutSessionLoggerBar: View {
         .accessibilityLabel("调整步进")
     }
 
-    private func completionButton(_ exercise: PlanExercise) -> some View {
+    private func completionButton() -> some View {
         Button {
             onComplete()
         } label: {
