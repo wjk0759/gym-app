@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`d5292f0`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`dd59304`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试对齐（`827ea94`）；修复 `AppStore.swift` 非法 UTF-8、`PlanGenerator` 器械池重名；`FitAITests` **62/62** 通过，phone-only Release 已安装并启动 Wu-Tang；此前完成动作库别名/计划白名单/隐藏 `other`、媒体 coverage 校验、phone-only 构建脚本、媒体图库验证、Watch UI 重设计（`fc8634c`/`bc183ae`/`d890a53`/`4af3bcb`/`2d5dea0`）
@@ -29,7 +29,7 @@
 ### 2026-11-11 · Windows（器械目录 v3：70 类图片目录）
 
 - 分支：`develop`
-- 代码提交：`d5292f0`
+- 代码提交：`d5292f0`、`3cfe563`（手动添加使用目录动作覆盖）、`dd59304`（Browser 标题/分页样式）
 - 做了什么：
   - 以 `E:\Projects\无水印光板健身器械图` 为唯一来源，生成 **70 类物理器械**目录；旧 95 类从 App 目录移除
   - 81 张图 → 70 个名称（8 组多图），压缩到最长边 1000 / JPEG 82，上传到 `/media/equipment-catalog/`
@@ -40,6 +40,7 @@
   - 通用器械 10 个仍在「我的器械库」勾选；Browser 不显示通用器械
   - 「我的器械库」列表/详情在用户没传照片时回退显示目录器械图片
   - 70 份 guide 生成到 `equipment_guides.json`；对深蹲架、绳索划船、腹部器械、腿屈伸/弯举组合、GHD 等补了显式动作映射
+  - 手动添加表单也使用目录的显式动作映射，避免深蹲架/腹部器械默认启用整组动作
   - 新脚本 `scripts/vital/build_equipment_v3.py`；`build_ios_catalog.py` 不再覆盖器械目录
 - 数据自测：
   - catalog 70 / guides 70 / iOS catalog 70，slug 集合一致
