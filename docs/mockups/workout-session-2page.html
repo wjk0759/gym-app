@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>叫练 · 训练页 2 页横滑结构预览</title>
+<link rel="stylesheet" href="workout-mockup.css">
+</head>
+<body>
+
+<header class="page-head">
+  <div class="eyebrow">Jiaolian / Workout UX</div>
+  <h1>训练页 · 2 页横滑结构</h1>
+  <p>左边是记录页：重量和次数固定在上半屏，不再滚动寻找输入。右边是演示页：视频独占一页，不再和输入抢空间。点击页签或左右拖动屏幕切换。</p>
+</header>
+
+<main class="stage">
+  <!-- ============ 记录页 ============ -->
+  <section class="device-wrap">
+    <div class="device-label"><span class="dot"></span>记录页 · 输入固定</div>
+    <div class="device-shell">
+      <div class="device-scale">
+        <div class="screen" data-page="0">
+          <div class="statusbar">
+            <span>9:41</span>
+            <span class="status-icons">
+              <svg width="17" height="11" viewBox="0 0 17 11" fill="none" aria-hidden="true">
+                <rect x="0" y="7" width="3" height="4" rx="1" fill="#0A0A0A"/>
+                <rect x="4.5" y="5" width="3" height="6" rx="1" fill="#0A0A0A"/>
+                <rect x="9" y="2.5" width="3" height="8.5" rx="1" fill="#0A0A0A"/>
+                <rect x="13.5" y="0" width="3" height="11" rx="1" fill="#0A0A0A"/>
+              </svg>
+              <svg width="15" height="11" viewBox="0 0 15 11" fill="none" aria-hidden="true">
+                <path d="M1 4.2C2.7 2.7 4.8 1.9 7.5 1.9S12.3 2.7 14 4.2" stroke="#0A0A0A" stroke-width="1.6" stroke-linecap="round"/>
+                <path d="M3.5 6.6C4.6 5.6 5.9 5.1 7.5 5.1S10.4 5.6 11.5 6.6" stroke="#0A0A0A" stroke-width="1.6" stroke-linecap="round"/>
+                <circle cx="7.5" cy="9.2" r="1.1" fill="#0A0A0A"/>
+              </svg>
+              <svg width="23" height="11" viewBox="0 0 23 11" fill="none" aria-hidden="true">
+                <rect x="0.6" y="0.8" width="18" height="9.4" rx="2.4" stroke="#0A0A0A" stroke-opacity=".4" stroke-width="1.2"/>
+                <rect x="2" y="2.2" width="12" height="6.6" rx="1.4" fill="#0A0A0A"/>
+                <path d="M20.5 3.3V7.7C21.4 7.4 21.9 6.6 21.9 5.5C21.9 4.4 21.4 3.6 20.5 3.3Z" fill="#0A0A0A" fill-opacity=".45"/>
+              </svg>
+            </span>
+            <div class="island"></div>
+          </div>
+
+          <div class="navbar">
+            <span class="side">暂停</span>
+            <span class="title">训练中</span>
+            <span class="side right"></span>
+          </div>
+
+          <div class="fixed-head">
+            <div class="progress-top">
+              <div>
+                <div class="overline">Session / 训练进度</div>
+                <div class="day-title">推 · 胸肩三头</div>
+              </div>
+              <div class="progress-stats">
+                <div class="sets">5/12 组</div>
+                <div class="exercises">2/5 动作</div>
+              </div>
+            </div>
+            <div class="track"><i></i></div>
+            <div class="exercise-head">
+              <div>
+                <div class="exercise-name">深蹲</div>
+                <div class="exercise-meta">
+                  <span class="chip">固定器械</span>
+                  <span>4 组 × 8–10 次 · RPE 7.5</span>
+                </div>
+              </div>
+              <button class="adjust-link" type="button">调整</button>
+            </div>
+            <div class="tabs">
+              <button class="tab active" type="button" data-action="tab" data-target="0">
+                <span class="tab-dot"></span>记录
+              </button>
+              <button class="tab" type="button" data-action="tab" data-target="1">
+                <span class="tab-dot"></span>演示
+              </button>
+            </div>
+          </div>
+
+          <div class="pager-viewport">
+            <div class="pager-track">
+              <div class="page log-page">
+                <div class="primary-card">
+                  <div class="set-top">
+                    <div>
+                      <span class="set-title">第 3 组</span>
+                      <span class="set-total">共 4 组</span>
+                    </div>
+                  </div>
+
+                  <div class="last-row">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                      <path d="M6 2.2A3.8 3.8 0 1 1 2.2 6" stroke="#6B6B73" stroke-width="1.3" stroke-linecap="round"/>
+                      <path d="M6 1.2V3.4L7.6 4.6" stroke="#6B6B73" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M2.2 2.2V4.4H4.4" stroke="#6B6B73" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="grow">上次 40 kg × 10</span>
+                    <button class="use-last" type="button" data-action="use-last">用上次</button>
+                  </div>
+
+                  <div class="control">
+                    <div class="control-head">
+                      <span class="control-label">本组重量</span>
+                      <button class="step-btn" type="button" data-action="step-cycle">步进 <span data-step-value>2.5</span> kg ⌄</button>
+                    </div>
+                    <div class="stepper">
+                      <button class="step" type="button" data-action="weight-minus" aria-label="减少重量">−</button>
+                      <div class="value-box">
+                        <span class="value" data-weight-value>40</span>
+                        <span class="unit">kg</span>
+                        <svg class="pencil" width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                          <path d="M7.6 1.5 9.5 3.4 3.7 9.2 1.3 9.7l.5-2.4 5.8-5.8Z" stroke="#0A0A0A" stroke-width="1.1" stroke-linejoin="round"/>
+                        </svg>
+                      </div>
+                      <button class="step" type="button" data-action="weight-plus" aria-label="增加重量">+</button>
+                    </div>
+                  </div>
+
+                  <div class="control">
+                    <div class="control-head">
+                      <span class="control-label">实际次数</span>
+                      <span class="control-hint">目标 8–10 次</span>
+                    </div>
+                    <div class="stepper">
+                      <button class="step" type="button" data-action="reps-minus" aria-label="减少次数">−</button>
+                      <div class="value-box">
+                        <span class="value" data-reps-value>10</span>
+                        <span class="unit">次</span>
+                        <svg class="pencil" width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                          <path d="M7.6 1.5 9.5 3.4 3.7 9.2 1.3 9.7l.5-2.4 5.8-5.8Z" stroke="#0A0A0A" stroke-width="1.1" stroke-linejoin="round"/>
+                        </svg>
+                      </div>
+                      <button class="step" type="button" data-action="reps-plus" aria-label="增加次数">+</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="secondary">
+                  <div class="best-row">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                      <path d="M2.2 1.6h7.6v3.1c0 2.1-1.7 3.8-3.8 3.8S2.2 6.8 2.2 4.7V1.6Z" stroke="#6B6B73" stroke-width="1.1"/>
+                      <path d="M2.2 2.5H.9v1.1c0 1.1.9 1.9 1.9 1.9M9.8 2.5h1.3v1.1c0 1.1-.9 1.9-1.9 1.9M6 8.5v1.8M4.2 10.4h3.6" stroke="#6B6B73" stroke-width="1.1" stroke-linecap="round"/>
+                    </svg>
+                    <span>历史最佳 45 kg × 8</span>
+                  </div>
+
+                  <div class="mini-card">
+                    <div class="rpe-head">
+                      <span class="rpe-title">主观强度 RPE</span>
+                      <span class="rpe-hint">8 = 还能做 2 次</span>
+                    </div>
+                    <div class="rpe-controls">
+                      <button class="mini-step" type="button" data-action="rpe-minus" aria-label="降低 RPE">−</button>
+                      <span class="rpe-value" data-rpe-value>7.5</span>
+                      <button class="mini-step" type="button" data-action="rpe-plus" aria-label="提高 RPE">+</button>
+                    </div>
+                  </div>
+
+                  <button class="link-row" type="button">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                      <path d="M2 4.2h7.1M6.6 1.7l2.5 2.5-2.5 2.5M11 8.8H3.9M6.4 11.3 3.9 8.8l2.5-2.5" stroke="#6B6B73" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    器械被占了？换一个
+                    <svg class="chev" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                      <path d="m3.4 1.8 3.2 3.2-3.2 3.2" stroke="#0A0A0A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+
+                  <button class="undo-row" type="button">
+                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                      <path d="M3.1 2.4 1.2 4.3l1.9 1.9M1.5 4.3h4.2a3.1 3.1 0 0 1 0 6.2H4.1" stroke="#6B6B73" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    撤销上一组
+                  </button>
+                </div>
+              </div>
+
+              <!-- ---------- demo page in same track ---------- -->
+              <div class="page demo-page">
+                <div class="media-stage">
+                  <div class="clip">
+                    <span class="clip-tag">原生比例</span>
+                    <svg class="figure" width="118" height="150" viewBox="0 0 118 150" fill="none" aria-hidden="true">
+                      <circle cx="59" cy="25" r="14" stroke="#0A0A0A" stroke-width="7"/>
+                      <path d="M59 41v43" stroke="#0A0A0A" stroke-width="7" stroke-linecap="round"/>
+                      <path d="M59 51 37 67M59 51l22 16" stroke="#0A0A0A" stroke-width="7" stroke-linecap="round"/>
+                      <path d="m59 84-23 30M59 84l23 30" stroke="#0A0A0A" stroke-width="7" stroke-linecap="round"/>
+                      <path d="M37 114h-11M82 114h11" stroke="#0A0A0A" stroke-width="7" stroke-linecap="round"/>
+                      <path d="M33 137h-9M85 137h9" stroke="#0A0A0A" stroke-width="7" stroke-linecap="round"/>
+                    </svg>
+                    <div style="position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:8px;font-weight:650;color:rgba(107,107,115,.7);letter-spacing:.2px;">1:1 容器 · 留白透明</div>
+                  </div>
+                </div>
+                <div class="media-caption">
+                  <span class="left"><i></i>自动循环 · 无控制条 · 不可点</span>
+                  <span>切走自动暂停</span>
+                </div>
+
+                <div class="demo-card">
+                  <div class="demo-card-head">
+                    <span>动作要点</span>
+                    <span style="color:var(--ink-3);font-size:9px;font-weight:650;">展开 ⌃</span>
+                  </div>
+                  <ul class="cue-list">
+                    <li>脚与肩同宽，脚尖略外展，重心落在全脚掌。</li>
+                    <li>下蹲时膝盖对准脚尖，保持腰背中立。</li>
+                    <li>起身先推地，呼气，不要塌膝或弓腰。</li>
+                  </ul>
+                </div>
+
+                <div class="tip-card">
+                  <div class="tip-head"><span class="tip-dot"></span>训练提示</div>
+                  <p>上次 40 kg × 10 很稳。今天先保持动作质量，最后一组再考虑加到 42.5 kg。</p>
+                </div>
+
+                <p class="demo-footnote">视频只在这页播放；切回记录页会暂停。</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="rest-strip">
+            <span class="rest-label">休息中</span>
+            <span class="rest-time">0:45</span>
+            <button class="rest-skip" type="button" data-action="skip-rest">跳过</button>
+            <span class="rest-progress"></span>
+          </div>
+
+          <div class="bottom-bar">
+            <div class="bottom-top">
+              <button class="skip-link" type="button">跳过剩余组</button>
+              <span class="done-label">已完成 2 组</span>
+            </div>
+            <button class="cta" type="button" data-cta>完成第 3 组 · 40kg × 10</button>
+          </div>
+
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+    </div>
+    <p class="device-note">点击页签 / 左右拖动；演示页可上滑</p>
+  </section>
+
+  <!-- ============ 演示页 ============ -->
+  <section class="device-wrap">
+    <div class="device-label"><span class="dot"></span>演示页 · 视频独占</div>
+    <div class="device-shell">
+      <div class="device-scale">
+        <div class="screen" data-page="1">
+          <div class="statusbar">
+            <span>9:41</span>
+            <span class="status-icons">
+              <svg width="17" height="11" viewBox="0 0 17 11" fill="none" aria-hidden="true">
+                <rect x="0" y="7" width="3" height="4" rx="1" fill="#0A0A0A"/>
+                <rect x="4.5" y="5" width="3" height="6" rx="1" fill="#0A0A0A"/>
+                <rect x="9" y="2.5" width="3" height="8.5" rx="1" fill="#0A0A0A"/>
+                <rect x="13.5" y="0" width="3" height="11" rx="1" fill="#0A0A0A"/>
+              </svg>
+              <svg width="15" height="11" viewBox="0 0 15 11" fill="none" aria-hidden="true">
+                <path d="M1 4.2C2.7 2.7 4.8 1.9 7.5 1.9S12.3 2.7 14 4.2" stroke="#0A0A0A" stroke-width="1.6" stroke-linecap="round"/>
+                <path d="M3.5 6.6C4.6 5.6 5.9 5.1 7.5 5.1S10.4 5.6 11.5 6.6" stroke="#0A0A0A" stroke-width="1.6" stroke-linecap="round"/>
+                <circle cx="7.5" cy="9.2" r="1.1" fill="#0A0A0A"/>
+              </svg>
+              <svg width="23" height="11" viewBox="0 0 23 11" fill="none" aria-hidden="true">
+                <rect x="0.6" y="0.8" width="18" height="9.4" rx="2.4" stroke="#0A0A0A" stroke-opacity=".4" stroke-width="1.2"/>
+                <rect x="2" y="2.2" width="12" height="6.6" rx="1.4" fill="#0A0A0A"/>
+                <path d="M20.5 3.3V7.7C21.4 7.4 21.9 6.6 21.9 5.5C21.9 4.4 21.4 3.6 20.5 3.3Z" fill="#0A0A0A" fill-opacity=".45"/>
+              </svg>
+            </span>
+            <div class="island"></div>
+          </div>
+
+          <div class="navbar">
+            <span class="side">暂停</span>
+            <span class="title">训练中</span>
+            <span class="side right"></span>
+          </div>
+
+          <div class="fixed-head">
+            <div class="progress-top">
+              <div>
+                <div class="overline">Session / 训练进度</div>
+                <div class="day-title">推 · 胸肩三头</div>
+              </div>
+              <div class="progress-stats">
+                <div class="sets">5/12 组</div>
+                <div class="exercises">2/5 动作</div>
+              </div>
+            </div>
+            <div class="track"><i></i></div>
+            <div class="exercise-head">
+              <div>
+                <div class="exercise-name">深蹲</div>
+                <div class="exercise-meta">
+                  <span class="chip">固定器械</span>
+                  <span>4 组 × 8–10 次 · RPE 7.5</span>
+                </div>
+              </div>
+              <button class="adjust-link" type="button">调整</button>
+            </div>
+            <div class="tabs">
+              <button class="tab" type="button" data-action="tab" data-target="0">
+                <span class="tab-dot"></span>记录
+              </button>
+              <button class="tab active" type="button" data-action="tab" data-target="1">
+                <span class="tab-dot"></span>演示
+              </button>
+            </div>
+          </div>
+
+          <div class="pager-viewport">
+            <div class="pager-track">
+              <div class="page log-page">
+                <div class="primary-card">
+                  <div class="set-top">
+                    <div>
+                      <span class="set-title">第 3 组</span>
+                      <span class="set-total">共 4 组</span>
+                    </div>
+                  </div>
+
+                  <div class="last-row">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                      <path d="M6 2.2A3.8 3.8 0 1 1 2.2 6" stroke="#6B6B73" stroke-width="1.3" stroke-linecap="round"/>
+                      <path d="M6 1.2V3.4L7.6 4.6" stroke="#6B6B73" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M2.2 2.2V4.4H4.4" stroke="#6B6B73" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="grow">上次 40 kg × 10</span>
+                    <button class="use-last" type="button" data-action="use-last">用上次</button>
+                  </div>
+
+                  <div class="control">
+                    <div class="control-head">
+                      <span class="control-label">本组重量</span>
+                      <button class="step-btn" type="button" data-action="step-cycle">步进 <span data-step-value>2.5</span> kg ⌄</button>
+                    </div>
+                    <div class="stepper">
+                      <button class="step" type="button" data-action="weight-minus" aria-label="减少重量">−</button>
+                      <div class="value-box">
+                        <span class="value" data-weight-value>40</span>
+                        <span class="unit">kg</span>
+                        <svg class="pencil" width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                          <path d="M7.6 1.5 9.5 3.4 3.7 9.2 1.3 9.7l.5-2.4 5.8-5.8Z" stroke="#0A0A0A" stroke-width="1.1" stroke-linejoin="round"/>
+                        </svg>
+                      </div>
+                      <button class="step" type="button" data-action="weight-plus" aria-label="增加重量">+</button>
+                    </div>
+                  </div>
+
+                  <div class="control">
+                    <div class="control-head">
+                      <span class="control-label">实际次数</span>
+                      <span class="control-hint">目标 8–10 次</span>
+                    </div>
+                    <div class="stepper">
+                      <button class="step" type="button" data-action="reps-minus" aria-label="减少次数">−</button>
+                      <div class="value-box">
+                        <span class="value" data-reps-value>10</span>
+                        <span class="unit">次</span>
+                        <svg class="pencil" width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                          <path d="M7.6 1.5 9.5 3.4 3.7 9.2 1.3 9.7l.5-2.4 5.8-5.8Z" stroke="#0A0A0A" stroke-width="1.1" stroke-linejoin="round"/>
+                        </svg>
+                      </div>
+                      <button class="step" type="button" data-action="reps-plus" aria-label="增加次数">+</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="secondary">
+                  <div class="best-row">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                      <path d="M2.2 1.6h7.6v3.1c0 2.1-1.7 3.8-3.8 3.8S2.2 6.8 2.2 4.7V1.6Z" stroke="#6B6B73" stroke-width="1.1"/>
+                      <path d="M2.2 2.5H.9v1.1c0 1.1.9 1.9 1.9 1.9M9.8 2.5h1.3v1.1c0 1.1-.9 1.9-1.9 1.9M6 8.5v1.8M4.2 10.4h3.6" stroke="#6B6B73" stroke-width="1.1" stroke-linecap="round"/>
+                    </svg>
+                    <span>历史最佳 45 kg × 8</span>
+                  </div>
+
+                  <div class="mini-card">
+                    <div class="rpe-head">
+                      <span class="rpe-title">主观强度 RPE</span>
+                      <span class="rpe-hint">8 = 还能做 2 次</span>
+                    </div>
+                    <div class="rpe-controls">
+                      <button class="mini-step" type="button" data-action="rpe-minus" aria-label="降低 RPE">−</button>
+                      <span class="rpe-value" data-rpe-value>7.5</span>
+                      <button class="mini-step" type="button" data-action="rpe-plus" aria-label="提高 RPE">+</button>
+                    </div>
+                  </div>
+
+                  <button class="link-row" type="button">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                      <path d="M2 4.2h7.1M6.6 1.7l2.5 2.5-2.5 2.5M11 8.8H3.9M6.4 11.3 3.9 8.8l2.5-2.5" stroke="#6B6B73" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    器械被占了？换一个
+                    <svg class="chev" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                      <path d="m3.4 1.8 3.2 3.2-3.2 3.2" stroke="#0A0A0A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+
+                  <button class="undo-row" type="button">
+                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                      <path d="M3.1 2.4 1.2 4.3l1.9 1.9M1.5 4.3h4.2a3.1 3.1 0 0 1 0 6.2H4.1" stroke="#6B6B73" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    撤销上一组
+                  </button>
+                </div>
+              </div>
+
+              <div class="page demo-page">
+                <div class="media-stage">
+                  <div class="clip">
+                    <span class="clip-tag">原生比例</span>
+                    <svg class="figure" width="118" height="150" viewBox="0 0 118 150" fill="none" aria-hidden="true">
+                      <circle cx="59" cy="25" r="14" stroke="#0A0A0A" stroke-width="7"/>
+                      <path d="M59 41v43" stroke="#0A0A0A" stroke-width="7" stroke-linecap="round"/>
+                      <path d="M59 51 37 67M59 51l22 16" stroke="#0A0A0A" stroke-width="7" stroke-linecap="round"/>
+                      <path d="m59 84-23 30M59 84l23 30" stroke="#0A0A0A" stroke-width="7" stroke-linecap="round"/>
+                      <path d="M37 114h-11M82 114h11" stroke="#0A0A0A" stroke-width="7" stroke-linecap="round"/>
+                      <path d="M33 137h-9M85 137h9" stroke="#0A0A0A" stroke-width="7" stroke-linecap="round"/>
+                    </svg>
+                    <div style="position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:8px;font-weight:650;color:rgba(107,107,115,.7);letter-spacing:.2px;">1:1 容器 · 留白透明</div>
+                  </div>
+                </div>
+                <div class="media-caption">
+                  <span class="left"><i></i>自动循环 · 无控制条 · 不可点</span>
+                  <span>切走自动暂停</span>
+                </div>
+
+                <div class="demo-card">
+                  <div class="demo-card-head">
+                    <span>动作要点</span>
+                    <span style="color:var(--ink-3);font-size:9px;font-weight:650;">展开 ⌃</span>
+                  </div>
+                  <ul class="cue-list">
+                    <li>脚与肩同宽，脚尖略外展，重心落在全脚掌。</li>
+                    <li>下蹲时膝盖对准脚尖，保持腰背中立。</li>
+                    <li>起身先推地，呼气，不要塌膝或弓腰。</li>
+                  </ul>
+                </div>
+
+                <div class="tip-card">
+                  <div class="tip-head"><span class="tip-dot"></span>训练提示</div>
+                  <p>上次 40 kg × 10 很稳。今天先保持动作质量，最后一组再考虑加到 42.5 kg。</p>
+                </div>
+
+                <p class="demo-footnote">视频只在这页播放；切回记录页会暂停。</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="rest-strip">
+            <span class="rest-label">休息中</span>
+            <span class="rest-time">0:45</span>
+            <button class="rest-skip" type="button" data-action="skip-rest">跳过</button>
+            <span class="rest-progress"></span>
+          </div>
+
+          <div class="bottom-bar">
+            <div class="bottom-top">
+              <button class="skip-link" type="button">跳过剩余组</button>
+              <span class="done-label">已完成 2 组</span>
+            </div>
+            <button class="cta" type="button" data-cta>完成第 3 组 · 40kg × 10</button>
+          </div>
+
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+    </div>
+    <p class="device-note">点击页签 / 左右拖动；演示页可上滑</p>
+  </section>
+</main>
+
+<section class="legend">
+  <h2>结构说明</h2>
+  <div class="legend-grid">
+    <div class="legend-card">
+      <span class="tag"><i></i>固定</span>
+      <p><strong>进度头 + 动作头 + 页签</strong><br>训练中永远知道第几个动作、第几组、目标是多少。</p>
+    </div>
+    <div class="legend-card">
+      <span class="tag"><i></i>固定</span>
+      <p><strong>第几组 / 上次 / 重量 / 次数</strong><br>记录页上半屏不滚动，输入永远在首屏。</p>
+    </div>
+    <div class="legend-card">
+      <span class="tag"><i></i>可滚动</span>
+      <p><strong>最佳 / RPE / 换器械 / 撤销</strong><br>次要信息才滚动，不再和主输入抢位置。</p>
+    </div>
+    <div class="legend-card">
+      <span class="tag"><i></i>固定</span>
+      <p><strong>休息条 + 完成按钮</strong><br>两页都能看到休息时间，也都能直接完成本组。</p>
+    </div>
+  </div>
+
+  <div class="removed">
+    <h3>这一版去掉或缩小的 UI</h3>
+    <ul>
+      <li>视频从记录页移到演示页，记录页不再被 1:1 视频占掉半屏。</li>
+      <li>大号动作卡缩成两行固定头，动作序号交给进度头。</li>
+      <li>步进选择整行收进「步进 2.5 kg」菜单。</li>
+      <li>自重说明整行改成次数行左侧的小标签（本示例为器械动作，所以显示重量）。</li>
+      <li>上次 / 最佳两行合并，最佳移到可滚动区。</li>
+      <li>RPE 横向 Slider 改步进，避免和左右滑动抢手势。</li>
+      <li>动作要点 / 训练提示移到演示页。</li>
+      <li>大休息卡改成 34pt 休息条。</li>
+      <li>「动作演示」角标删除，页签已经说明当前页面。</li>
+    </ul>
+  </div>
+
+  <div class="hint">
+    <span>交互只用于看结构：点页签或左右拖动切换页面；+ / − 调重量、次数、RPE；点「步进」循环 1.25 / 2.5 / 5 kg。</span>
+    <button class="reset" type="button" data-action="reset">重置演示</button>
+  </div>
+</section>
+
+<script>
+  const state = {
+    weight: 40,
+    reps: 10,
+    rpe: 7.5,
+    step: 2.5,
+    setIndex: 3,
+    sets: 4,
+    done: 2
+  };
+
+  const initial = { ...state };
+
+  function fmtWeight(value) {
+    if (Math.round(value) === value) return String(Math.round(value));
+    if (Math.round(value * 10) === value * 10) return value.toFixed(1);
+    return value.toFixed(2);
+  }
+
+  function render() {
+    document.querySelectorAll('[data-weight-value]').forEach(el => {
+      el.textContent = fmtWeight(state.weight);
+    });
+    document.querySelectorAll('[data-reps-value]').forEach(el => {
+      el.textContent = String(state.reps);
+    });
+    document.querySelectorAll('[data-rpe-value]').forEach(el => {
+      el.textContent = state.rpe.toFixed(1);
+    });
+    document.querySelectorAll('[data-step-value]').forEach(el => {
+      el.textContent = fmtWeight(state.step);
+    });
+    document.querySelectorAll('[data-cta]').forEach(el => {
+      el.textContent = `完成第 ${state.setIndex} 组 · ${fmtWeight(state.weight)}kg × ${state.reps}`;
+    });
+  }
+
+  function switchPage(device, page) {
+    const next = page === 1 ? 1 : 0;
+    device.dataset.page = String(next);
+    const track = device.querySelector('.pager-track');
+    if (track) track.style.transform = `translateX(-${next * 50}%)`;
+    device.querySelectorAll('.tab').forEach(tab => {
+      const active = tab.dataset.target === String(next);
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+  }
+
+  document.querySelectorAll('.screen').forEach(device => {
+    switchPage(device, Number(device.dataset.page || 0));
+
+    const viewport = device.querySelector('.pager-viewport');
+    let startX = null;
+    let startY = null;
+    let suppressClick = false;
+
+    viewport.addEventListener('pointerdown', event => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      startX = event.clientX;
+      startY = event.clientY;
+    });
+
+    viewport.addEventListener('pointerup', event => {
+      if (startX === null) return;
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      startX = null;
+      startY = null;
+
+      if (Math.abs(dx) < 44 || Math.abs(dx) < Math.abs(dy) * 1.15) return;
+      const current = Number(device.dataset.page || 0);
+      const next = dx < 0 ? Math.min(1, current + 1) : Math.max(0, current - 1);
+      if (next !== current) {
+        suppressClick = true;
+        switchPage(device, next);
+        setTimeout(() => { suppressClick = false; }, 0);
+      }
+    });
+
+    viewport.addEventListener('pointercancel', () => {
+      startX = null;
+      startY = null;
+    });
+
+    viewport.addEventListener('click', event => {
+      if (!suppressClick) return;
+      event.preventDefault();
+      event.stopPropagation();
+    }, true);
+  });
+
+  document.addEventListener('click', event => {
+    const button = event.target.closest('[data-action]');
+    if (!button) return;
+    const action = button.dataset.action;
+
+    if (action === 'tab') {
+      const device = button.closest('.screen');
+      if (device) switchPage(device, Number(button.dataset.target));
+      return;
+    }
+
+    if (action === 'weight-minus') {
+      state.weight = Math.max(0, Math.round((state.weight - state.step) * 100) / 100);
+    } else if (action === 'weight-plus') {
+      state.weight = Math.min(300, Math.round((state.weight + state.step) * 100) / 100);
+    } else if (action === 'reps-minus') {
+      state.reps = Math.max(1, state.reps - 1);
+    } else if (action === 'reps-plus') {
+      state.reps = Math.min(60, state.reps + 1);
+    } else if (action === 'rpe-minus') {
+      state.rpe = Math.max(6, Math.round((state.rpe - 0.5) * 2) / 2);
+    } else if (action === 'rpe-plus') {
+      state.rpe = Math.min(10, Math.round((state.rpe + 0.5) * 2) / 2);
+    } else if (action === 'use-last') {
+      state.weight = 40;
+      state.reps = 10;
+    } else if (action === 'step-cycle') {
+      const steps = [1.25, 2.5, 5];
+      const index = steps.indexOf(state.step);
+      state.step = steps[(index + 1) % steps.length];
+    } else if (action === 'skip-rest') {
+      document.querySelectorAll('.rest-strip').forEach(el => el.classList.add('is-hidden'));
+      return;
+    } else if (action === 'reset') {
+      Object.assign(state, initial);
+      document.querySelectorAll('.rest-strip').forEach(el => el.classList.remove('is-hidden'));
+      document.querySelectorAll('.screen').forEach(device => {
+        switchPage(device, device.classList.contains('screen') && device.dataset.initialPage === '1' ? 1 : 0);
+      });
+      render();
+      return;
+    }
+
+    render();
+  });
+
+  // Keep each phone's initial page stable across resets.
+  document.querySelectorAll('.screen').forEach((device, index) => {
+    device.dataset.initialPage = device.dataset.page || (index === 1 ? '1' : '0');
+    switchPage(device, Number(device.dataset.page || 0));
+  });
+
+  render();
+</script>
+</body>
+</html>
