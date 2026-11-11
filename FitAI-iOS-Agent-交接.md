@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`f22cd87`（Windows 问题 2 B 版训练页；后端 `26ba205`；macOS 已验证 `a324b98`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`959b6f9`（Windows 问题 2 B 版训练页；GitHub Actions `iOS Build` 已通过；后端 `26ba205`；macOS 已验证 `a324b98`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -29,7 +29,7 @@
 ### 2026-11-12 · Windows（问题 2：训练页 B 版 2 页横滑 + 底栏组记录器）
 
 - 分支：`develop`
-- 代码提交：`2ac9c08` + `d74857f` + `f22cd87`
+- 代码提交：`2ac9c08` + `d74857f` + `f22cd87` + `959b6f9`
 - 方案：用户选定 B 版
   - 对比稿：`docs/mockups/workout-session-bottom-logger.html`
   - A 版对照：`docs/mockups/workout-session-2page.html`
@@ -44,8 +44,10 @@
   - 交互：页签滑动指示器 + lime 点、数值 contentTransition、长按连续步进、休息脉冲、Reduce Motion、底部渐隐
 - 验证：
   - 所有改动的 Swift 文件 tree-sitter 语法通过
-  - Windows 无 Xcode，**未编译、未跑测试**
-  - `WorkoutSetCard.swift` 已删除，Mac 必须 `xcodegen generate`
+  - GitHub Actions `iOS Build` **success**（`959b6f9`）：xcodegen、SwiftLint、FitAIWorkoutCore 测试、iOS 模拟器编译全部通过
+  - CI 顺带发现并修复了之前问题 3 的编译错误：`ExerciseMediaStore.installLocalFallbacks` 的 `compactMap` 多语句闭包需要显式 `[ExerciseMediaItem]` / `ExerciseMediaItem?` 类型（`959b6f9`）
+  - 本地 Windows 无 Xcode / 无模拟器；`FitAITests` 和真机交互仍未跑
+  - `WorkoutSetCard.swift` 已删除，Mac 仍建议 `xcodegen generate` 后再开工程
 - Mac 需要做：
   - `git pull` → `xcodegen generate` → 编译 → `FitAITests`
   - 真机重点：
