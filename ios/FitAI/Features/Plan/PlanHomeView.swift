@@ -83,7 +83,7 @@ struct PlanHomeView: View {
                     .appPagePadding()
                     .appReadableContent()
                     .appPageTopPadding()
-                    .padding(.bottom, 28)
+                    .padding(.bottom, AppLayout.tabBarContentInset)
                 }
                 .background(AppBackground())
                 .navigationTitle("")

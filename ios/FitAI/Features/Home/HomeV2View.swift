@@ -74,19 +74,12 @@ struct HomeV2View: View {
                 }
                 .padding(.horizontal, 20)
                 .appPageTopPadding()
-                .padding(.bottom, 96)
+                .padding(.bottom, AppLayout.tabBarContentInset)
             }
             .background(AppBackground())
             .navigationTitle("")
             .navigationBarHidden(true)
             .appTabDestinations()
-            .overlay(alignment: .bottomTrailing) {
-                CaptureFAB {
-                    showCaptureHub = true
-                }
-                .padding(.trailing, 20)
-                .padding(.bottom, 88)
-            }
             .fullScreenCover(isPresented: $showCompose, onDismiss: presentPendingWorkout) {
                 if let day = selectedDay {
                     CustomWorkoutBuilderView(

@@ -4,18 +4,47 @@ extension HomeV2View {
     // MARK: - Quick actions
 
     var quickActions: some View {
-        HStack(spacing: 8) {
-            quickTile(title: "记录身体", symbol: "figure.stand", accent: Theme.primary) {
+        LazyVGrid(
+            columns: [
+                GridItem(.flexible(), spacing: 8),
+                GridItem(.flexible(), spacing: 8),
+            ],
+            spacing: 8
+        ) {
+            quickTile(
+                title: "记录身体",
+                symbol: "figure.stand",
+                accent: Theme.primary
+            ) {
                 bodyCheckInManual = true
                 showBodyCheckIn = true
             }
+
             NavigationLink(value: TabRoute.progressOverview) {
-                quickTileLabel(title: "变化", symbol: "chart.line.uptrend.xyaxis", accent: Theme.ink, foreground: Theme.onAccent)
+                quickTileLabel(
+                    title: "变化",
+                    symbol: "chart.line.uptrend.xyaxis",
+                    accent: Theme.ink,
+                    foreground: Theme.onAccent
+                )
             }
             .buttonStyle(CardPressStyle(scale: 0.985))
 
-            quickTile(title: "问教练", symbol: "bubble.left.and.bubble.right", accent: Theme.primary) {
+            quickTile(
+                title: "问教练",
+                symbol: "bubble.left.and.bubble.right",
+                accent: Theme.primary
+            ) {
                 store.selectedTab = 2
+            }
+
+            quickTile(
+                title: "拍照识别",
+                symbol: "camera.fill",
+                accent: Theme.ink,
+                foreground: Theme.onAccent
+            ) {
+                showCaptureHub = true
             }
         }
     }
@@ -24,18 +53,29 @@ extension HomeV2View {
         title: String,
         symbol: String,
         accent: Color,
+        foreground: Color = Theme.onPrimary,
         action: @escaping () -> Void
     ) -> some View {
         Button {
             Haptics.tap()
             action()
         } label: {
-            quickTileLabel(title: title, symbol: symbol, accent: accent, foreground: Theme.onPrimary)
+            quickTileLabel(
+                title: title,
+                symbol: symbol,
+                accent: accent,
+                foreground: foreground
+            )
         }
         .buttonStyle(CardPressStyle(scale: 0.985))
     }
 
-    func quickTileLabel(title: String, symbol: String, accent: Color, foreground: Color) -> some View {
+    func quickTileLabel(
+        title: String,
+        symbol: String,
+        accent: Color,
+        foreground: Color
+    ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Image(systemName: symbol)
                 .font(.system(size: 16, weight: .bold))

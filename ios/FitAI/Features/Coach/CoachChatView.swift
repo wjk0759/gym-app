@@ -26,6 +26,8 @@ struct CoachChatView: View {
     @State var isLoadingVideo = false
     @State var attachmentError: String?
     @State var selectedDietRecipe: DietRecipeSelection?
+    @State var accessWaitExpired = false
+    @State var accessRetryToken = 0
     @FocusState var focused: Bool
 
     var canSend: Bool {
@@ -281,6 +283,11 @@ struct CoachChatView: View {
                 matching: .videos,
                 photoLibrary: .shared()
             )
+            .task(id: accessRetryToken) {
+                accessWaitExpired = false
+                try? await Task.sleep(for: .seconds(8))
+                accessWaitExpired = store.accessSnapshot == nil
+            }
         }
     }
 }

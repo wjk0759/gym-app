@@ -171,23 +171,52 @@ struct ProgressRing: View {
 }
 
 struct RecommendationBadge: View {
+    enum Style: Equatable {
+        case success
+        case loading
+        case warning
+    }
+
     let text: String
+    var style: Style = .success
 
     var body: some View {
         HStack(spacing: 5) {
-            Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 10, weight: .bold))
+            icon
             Text(text)
                 .font(AppType.micro)
                 .tracking(0.2)
         }
-        .foregroundStyle(Theme.onPrimary)
+        .foregroundStyle(style == .warning ? Theme.onAccent : Theme.onPrimary)
         .padding(.horizontal, 9)
         .padding(.vertical, 5)
-        .background(Theme.primary, in: Capsule(style: .continuous))
+        .background(
+            style == .warning ? Theme.ink : Theme.primary,
+            in: Capsule(style: .continuous)
+        )
         .overlay {
             Capsule(style: .continuous)
-                .strokeBorder(Theme.ink.opacity(0.12), lineWidth: 0.8)
+                .strokeBorder(
+                    (style == .warning ? Theme.onAccent : Theme.ink)
+                        .opacity(0.14),
+                    lineWidth: 0.8
+                )
+        }
+    }
+
+    @ViewBuilder
+    private var icon: some View {
+        switch style {
+        case .success:
+            Image(systemName: "checkmark.seal.fill")
+                .font(.system(size: 10, weight: .bold))
+        case .loading:
+            ProgressView()
+                .controlSize(.mini)
+                .tint(Theme.onPrimary)
+        case .warning:
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 10, weight: .bold))
         }
     }
 }
@@ -273,31 +302,5 @@ struct EditorialMetric: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(Theme.stroke, lineWidth: 1)
         }
-    }
-}
-
-struct CaptureFAB: View {
-    var action: () -> Void
-
-    var body: some View {
-        Button {
-            Haptics.impact(.light)
-            action()
-        } label: {
-            ZStack {
-                Circle()
-                    .fill(Theme.primary)
-                    .frame(width: 58, height: 58)
-                    .shadow(color: .black.opacity(0.18), radius: 10, x: 0, y: 6)
-                Circle()
-                    .strokeBorder(Theme.inkSolid, lineWidth: 2)
-                    .frame(width: 58, height: 58)
-                Image(systemName: "camera.fill")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(Theme.onPrimary)
-            }
-        }
-        .buttonStyle(SubtlePressStyle(scale: 0.92))
-        .accessibilityLabel("拍照识别")
     }
 }

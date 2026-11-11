@@ -16,6 +16,9 @@ enum AppLayout {
     static let actionBarSpacing: CGFloat = 12
     /// Standard gap between the navigation bar or safe area and page content.
     static let pageTopPadding: CGFloat = 16
+    /// Bottom breathing room for tab roots. iOS 26+ uses a floating tab bar,
+    /// so content must clear it instead of only the home indicator.
+    static let tabBarContentInset: CGFloat = 96
 
     /// Card rhythm. More generous than control spacing so content breathes.
     static let cardPadding: CGFloat = 20

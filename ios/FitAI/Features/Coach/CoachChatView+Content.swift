@@ -23,8 +23,33 @@ extension CoachChatView {
         if store.hasProAccess {
             return store.useRemoteAI ? "远程 AI 已连接" : "本地建议"
         }
-        guard store.accessSnapshot != nil else { return "正在确认权益" }
+        guard store.accessSnapshot != nil else { return "权益确认中…" }
         return store.shouldShowCoachQuotaCard ? "今日额度已用完" : "免费 AI 额度"
+    }
+
+    @ViewBuilder
+    var coachAccessBadge: some View {
+        if store.accessSnapshot != nil {
+            RecommendationBadge(text: coachBadgeText)
+        } else if accessWaitExpired {
+            Button {
+                Haptics.tap()
+                accessRetryToken += 1
+                Task { await store.refreshAccess() }
+            } label: {
+                RecommendationBadge(
+                    text: "权益确认失败 · 重试",
+                    style: .warning
+                )
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("重新确认权益")
+        } else {
+            RecommendationBadge(
+                text: "权益确认中…",
+                style: .loading
+            )
+        }
     }
 
     var welcome: some View {
@@ -47,7 +72,7 @@ extension CoachChatView {
                     .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 8) {
-                    RecommendationBadge(text: coachBadgeText)
+                    coachAccessBadge
                     Spacer()
                     Text("疼痛 / 孕期 / 术后会先拦")
                         .font(AppType.micro)

@@ -25,7 +25,7 @@ struct DiscoverView: View {
                 }
                 .appPagePadding()
                 .appPageTopPadding()
-                .padding(.bottom, 28)
+                .padding(.bottom, AppLayout.tabBarContentInset)
             }
             .background(AppBackground())
             .navigationTitle("发现")
