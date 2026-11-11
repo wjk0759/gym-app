@@ -74,19 +74,32 @@ struct EquipmentCatalogDetailView: View {
     private var hero: some View {
         Group {
             if info.imageURLList.isEmpty {
-                EquipmentTypeImageView(info: info, symbolSize: 54)
-                    .frame(height: 240)
-                    .frame(maxWidth: .infinity)
-                    .background(Theme.ink.opacity(0.03))
-                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                EquipmentTypeImageView(
+                    info: info,
+                    symbolSize: 54,
+                    contentMode: .fit
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(10)
+                .aspectRatio(1, contentMode: .fit)
+                .background(Theme.paper)
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .strokeBorder(Theme.stroke, lineWidth: 1)
+                }
             } else {
                 TabView(selection: $imageIndex) {
                     ForEach(info.imageURLList.indices, id: \.self) { index in
-                        EquipmentTypeImageView(info: info, index: index, symbolSize: 54)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 240)
-                            .clipped()
-                            .tag(index)
+                        EquipmentTypeImageView(
+                            info: info,
+                            index: index,
+                            symbolSize: 54,
+                            contentMode: .fit
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding(10)
+                        .tag(index)
                     }
                 }
                 .tabViewStyle(
@@ -94,8 +107,9 @@ struct EquipmentCatalogDetailView: View {
                         indexDisplayMode: info.imageURLList.count > 1 ? .automatic : .never
                     )
                 )
-                .frame(height: 240)
-                .background(Theme.ink.opacity(0.03))
+                .frame(maxWidth: .infinity)
+                .aspectRatio(1, contentMode: .fit)
+                .background(Theme.paper)
                 .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 22, style: .continuous)

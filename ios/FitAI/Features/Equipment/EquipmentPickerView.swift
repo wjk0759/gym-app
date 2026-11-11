@@ -115,11 +115,9 @@ struct EquipmentPickerView: View {
 
             libraryHeader
 
-            HStack(alignment: .top, spacing: 9) {
-                if showsBodyPartSidebar {
-                    categorySidebar
-                }
-
+            CatalogTwoColumnLayout(showSidebar: showsBodyPartSidebar) {
+                categorySidebar
+            } content: {
                 ScrollViewReader { proxy in
                     AppScrollView {
                         exerciseGrid
@@ -134,6 +132,7 @@ struct EquipmentPickerView: View {
                         }
                     }
                 }
+                .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 16)
         }

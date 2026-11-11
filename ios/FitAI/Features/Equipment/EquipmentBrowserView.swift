@@ -51,9 +51,17 @@ struct EquipmentBrowserView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                searchBar
-                HStack(alignment: .top, spacing: 9) {
+                CatalogSearchField(
+                    text: $query,
+                    placeholder: "搜索器械或训练部位"
+                )
+                .padding(.horizontal, 16)
+                .padding(.top, 9)
+                .padding(.bottom, 9)
+
+                CatalogTwoColumnLayout {
                     bodyPartSidebar
+                } content: {
                     catalogGrid
                 }
                 .padding(.horizontal, 16)
@@ -76,109 +84,52 @@ struct EquipmentBrowserView: View {
         }
     }
 
-    private var searchBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(Theme.tertiaryText)
-            TextField("搜索器械或训练部位", text: $query)
-                .textInputAutocapitalization(.never)
-                .foregroundStyle(Theme.ink)
-                .submitLabel(.search)
-            if !query.isEmpty {
-                Button {
-                    query = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(
-            Theme.ink.opacity(0.035),
-            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Theme.stroke, lineWidth: 1)
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 9)
-        .padding(.bottom, 9)
-    }
-
     private var bodyPartSidebar: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 1) {
-                sideButton(nil, title: "全部", count: EquipmentCatalog.all.count)
-                ForEach(EquipmentCatalog.bodyParts, id: \.self) { part in
-                    sideButton(
-                        part,
-                        title: part,
-                        count: EquipmentCatalog.count(for: part)
-                    )
+        CatalogSidebarContainer(width: 82) {
+            CatalogSidebarButton(
+                title: "全部",
+                count: EquipmentCatalog.all.count,
+                active: selectedBodyPart == nil && !isSearching
+            ) {
+                selectBodyPart(nil)
+            }
+
+            ForEach(EquipmentCatalog.bodyParts, id: \.self) { part in
+                CatalogSidebarButton(
+                    title: part,
+                    count: EquipmentCatalog.count(for: part),
+                    active: selectedBodyPart == part && !isSearching
+                ) {
+                    selectBodyPart(part)
                 }
             }
-            .padding(.horizontal, 4)
-            .padding(.vertical, 5)
-        }
-        .frame(width: 82)
-        .background(
-            Theme.paper,
-            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .strokeBorder(Theme.stroke, lineWidth: 1)
         }
     }
 
-    private func sideButton(_ part: String?, title: String, count: Int) -> some View {
-        let active = selectedBodyPart == part && !isSearching
-
-        return Button {
-            Haptics.select()
-            withAnimation(Motion.quick) {
-                selectedBodyPart = part
-                if isSearching {
-                    query = ""
-                }
+    private func selectBodyPart(_ part: String?) {
+        withAnimation(Motion.quick) {
+            selectedBodyPart = part
+            if isSearching {
+                query = ""
             }
-        } label: {
-            VStack(spacing: 2) {
-                Text(title)
-                    .font(.system(size: 11, weight: active ? .bold : .medium))
-                    .foregroundStyle(active ? Theme.onPrimary : Theme.secondaryText)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                Text("\(count)")
-                    .font(.system(size: 8.5, weight: .medium, design: .monospaced))
-                    .foregroundStyle(active ? Theme.onPrimary.opacity(0.72) : Theme.tertiaryText)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 6)
-            .background(
-                active ? Theme.primary : Color.clear,
-                in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-            )
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(title)器械")
-        .accessibilityAddTraits(active ? .isSelected : [])
     }
 
     private var catalogGrid: some View {
         ScrollView(showsIndicators: false) {
             if filtered.isEmpty {
-                emptyCard
+                CatalogEmptyCard(
+                    icon: "magnifyingglass",
+                    title: "没有匹配的器械",
+                    message: "换个器械名或清空搜索。"
+                )
+                .padding(.top, 4)
             } else {
                 LazyVGrid(
                     columns: [
-                        GridItem(.flexible(), spacing: 9),
-                        GridItem(.flexible(), spacing: 9)
+                        GridItem(.adaptive(minimum: 118), spacing: 9)
                     ],
+                    alignment: .leading,
                     spacing: 9
                 ) {
                     ForEach(filtered) { info in
@@ -192,21 +143,32 @@ struct EquipmentBrowserView: View {
                             card(info)
                         }
                         .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 2)
                 .padding(.bottom, 24)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 
     private func card(_ info: EquipmentTypeInfo) -> some View {
         VStack(alignment: .leading, spacing: 7) {
-            EquipmentTypeImageView(info: info)
-                .frame(height: 108)
-                .frame(maxWidth: .infinity)
-                .clipped()
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            ZStack {
+                Theme.paper
+                EquipmentTypeImageView(info: info)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 108)
+            .clipped()
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Theme.stroke.opacity(0.8), lineWidth: 1)
+            }
 
             Text(info.nameZH)
                 .font(AppType.callout.weight(.semibold))
@@ -214,11 +176,13 @@ struct EquipmentBrowserView: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.85)
                 .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             Text(info.targetSummary)
                 .font(.system(size: 9, weight: .medium))
                 .foregroundStyle(Theme.secondaryText)
                 .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack(spacing: 4) {
                 Text(info.categoryLabel)
@@ -237,6 +201,7 @@ struct EquipmentBrowserView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(9)
         .background(
             Theme.paper,
@@ -246,31 +211,6 @@ struct EquipmentBrowserView: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .strokeBorder(Theme.stroke, lineWidth: 1)
         }
-    }
-
-    private var emptyCard: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 26, weight: .light))
-                .foregroundStyle(Theme.tertiaryText)
-            Text("没有匹配的器械")
-                .font(AppType.callout.weight(.semibold))
-                .foregroundStyle(Theme.ink)
-            Text("换个器械名或清空搜索。")
-                .font(AppType.caption)
-                .foregroundStyle(Theme.secondaryText)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 30)
-        .background(
-            Theme.paper,
-            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Theme.stroke, style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
-        }
-        .padding(.top, 4)
     }
 
     private func isAdded(_ info: EquipmentTypeInfo) -> Bool {

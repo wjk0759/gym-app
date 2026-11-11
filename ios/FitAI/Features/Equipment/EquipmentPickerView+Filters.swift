@@ -168,36 +168,10 @@ extension EquipmentPickerView {
     }
 
     var searchBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText.opacity(0.82))
-
-            TextField("搜索动作、肌群或器械", text: $query)
-                .font(.system(size: 14))
-                .textInputAutocapitalization(.never)
-                .foregroundStyle(Theme.ink)
-                .submitLabel(.search)
-                .onChange(of: query) { _, value in
-                    if value.count > 60 {
-                        query = String(value.prefix(60))
-                    }
-                }
-
-            if !query.isEmpty {
-                Button {
-                    Haptics.tap()
-                    query = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
-                        .frame(width: 24, height: 24)
-                }
-                .buttonStyle(SubtlePressStyle(scale: 0.9))
-                .accessibilityLabel("清空搜索")
-            }
-
+        CatalogSearchField(
+            text: $query,
+            placeholder: "搜索动作、肌群或器械"
+        ) {
             if !isPickingForSession {
                 Button {
                     Haptics.tap()
@@ -220,136 +194,71 @@ extension EquipmentPickerView {
                 .accessibilityLabel("拍照识别器械")
             }
         }
-        .padding(.leading, 13)
-        .padding(.trailing, 7)
-        .padding(.vertical, 6)
-        .frame(minHeight: 48)
-        .background(
-            Theme.ink.opacity(0.035),
-            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .strokeBorder(Theme.stroke, lineWidth: 1)
-        )
     }
 
     var categorySidebar: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 1) {
-                categorySideButton(nil, title: "全部")
-                ForEach(ExerciseLibrary.visibleCategoryTree) { entry in
-                    VStack(spacing: 1) {
-                        categorySideButton(entry.l1, title: entry.l1)
+        CatalogSidebarContainer(width: 80) {
+            CatalogSidebarButton(
+                title: "全部",
+                active: selectedCategory == nil && !isSearching
+            ) {
+                selectCategory(
+                    nil,
+                    active: selectedCategory == nil && !isSearching
+                )
+            }
 
-                        if selectedCategory == entry.l1 && !isSearching && !entry.l2.isEmpty {
-                            VStack(spacing: 1) {
-                                ForEach(entry.l2, id: \.self) { sub in
-                                    categorySubButton(sub, parent: entry.l1)
+            ForEach(ExerciseLibrary.visibleCategoryTree) { entry in
+                VStack(spacing: 1) {
+                    CatalogSidebarButton(
+                        title: entry.l1,
+                        active: selectedCategory == entry.l1 && !isSearching
+                    ) {
+                        selectCategory(
+                            entry.l1,
+                            active: selectedCategory == entry.l1 && !isSearching
+                        )
+                    }
+
+                    if selectedCategory == entry.l1 && !isSearching && !entry.l2.isEmpty {
+                        CatalogSidebarChildren {
+                            ForEach(entry.l2, id: \.self) { sub in
+                                CatalogSidebarSubButton(
+                                    title: sub,
+                                    active: selectedSubcategory == sub && !isSearching
+                                ) {
+                                    selectSubcategory(
+                                        sub,
+                                        parent: entry.l1,
+                                        active: selectedSubcategory == sub && !isSearching
+                                    )
                                 }
-                            }
-                            .padding(.leading, 6)
-                            .overlay(alignment: .leading) {
-                                Capsule()
-                                    .fill(Theme.cobalt.opacity(0.22))
-                                    .frame(width: 1.5)
-                                    .padding(.vertical, 2)
                             }
                         }
                     }
                 }
             }
-            .padding(.horizontal, 4)
-            .padding(.vertical, 5)
         }
-        .frame(width: 80)
-        .background(
-            Theme.paper,
-            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .strokeBorder(Theme.stroke, lineWidth: 1)
-        )
     }
 
-    func categorySideButton(_ category: String?, title: String) -> some View {
-        let active = selectedCategory == category && !isSearching
-
-        return Button {
-            Haptics.select()
-            withAnimation(Motion.quick) {
-                selectedCategory = active ? nil : category
-                selectedSubcategory = nil
-                if isSearching {
-                    query = ""
-                }
+    private func selectCategory(_ category: String?, active: Bool) {
+        withAnimation(Motion.quick) {
+            selectedCategory = active ? nil : category
+            selectedSubcategory = nil
+            if isSearching {
+                query = ""
             }
-        } label: {
-            Text(title)
-                .font(.system(size: 11, weight: active ? .bold : .medium))
-                .foregroundStyle(active ? Theme.onPrimary : Theme.secondaryText.opacity(0.86))
-                .multilineTextAlignment(.center)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 6.5)
-                .background(
-                    active ? Theme.primary : Color.clear,
-                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(
-                            active ? Theme.ink.opacity(0.12) : Color.clear,
-                            lineWidth: 1
-                        )
-                )
-                .animation(Motion.quick, value: active)
         }
-        .buttonStyle(SubtlePressStyle(scale: 0.95))
-        .accessibilityLabel("\(title)分类")
-        .accessibilityAddTraits(active ? .isSelected : [])
     }
 
-    func categorySubButton(_ subcategory: String, parent: String) -> some View {
-        let active = selectedCategory == parent && selectedSubcategory == subcategory && !isSearching
-
-        return Button {
-            Haptics.select()
-            withAnimation(Motion.quick) {
-                selectedCategory = parent
-                selectedSubcategory = (selectedSubcategory == subcategory) ? nil : subcategory
-                if isSearching {
-                    query = ""
-                }
+    private func selectSubcategory(_ subcategory: String, parent: String, active: Bool) {
+        withAnimation(Motion.quick) {
+            selectedCategory = parent
+            selectedSubcategory = active ? nil : subcategory
+            if isSearching {
+                query = ""
             }
-        } label: {
-            Text(subcategory)
-                .font(.system(size: 10, weight: active ? .bold : .medium))
-                .foregroundStyle(active ? Theme.cobalt : Theme.secondaryText.opacity(0.82))
-                .multilineTextAlignment(.center)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 5.5)
-                .padding(.leading, 5)
-                .background(
-                    active ? Theme.cobalt.opacity(0.10) : Color.clear,
-                    in: RoundedRectangle(cornerRadius: 7, style: .continuous)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .stroke(
-                            active ? Theme.cobalt.opacity(0.16) : Color.clear,
-                            lineWidth: 1
-                        )
-                )
-                .animation(Motion.quick, value: active)
         }
-        .buttonStyle(SubtlePressStyle(scale: 0.95))
-        .accessibilityLabel("\(subcategory)肌群")
-        .accessibilityAddTraits(active ? .isSelected : [])
     }
 
     var equipmentFilters: some View {

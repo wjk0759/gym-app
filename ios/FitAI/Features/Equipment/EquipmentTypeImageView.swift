@@ -5,6 +5,7 @@ struct EquipmentTypeImageView: View {
     let info: EquipmentTypeInfo
     var index: Int = 0
     var symbolSize: CGFloat = 26
+    var contentMode: ContentMode = .fill
 
     var body: some View {
         Group {
@@ -14,7 +15,7 @@ struct EquipmentTypeImageView: View {
                     case .success(let image):
                         image
                             .resizable()
-                            .scaledToFill()
+                            .aspectRatio(contentMode: contentMode)
                     case .failure:
                         placeholder
                     default:
