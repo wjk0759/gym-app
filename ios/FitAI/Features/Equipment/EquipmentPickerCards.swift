@@ -22,8 +22,6 @@ struct EquipmentPickerExerciseCard: View {
 
     private var musclePlaceholder: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .fill(Theme.ink.opacity(0.04))
             Circle()
                 .fill(Theme.cobalt.opacity(0.06))
                 .overlay(
@@ -37,16 +35,13 @@ struct EquipmentPickerExerciseCard: View {
                         .foregroundStyle(Theme.cobalt.opacity(0.9))
                 )
         }
-        .frame(height: 102)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Theme.ink.opacity(0.04))
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ZStack {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .fill(Theme.ink.opacity(0.04))
-                    .frame(height: 102)
-
                 if let thumbnail = exercise.thumbnailURL {
                     AsyncImage(url: thumbnail) { phase in
                         switch phase {
@@ -62,12 +57,14 @@ struct EquipmentPickerExerciseCard: View {
                             musclePlaceholder
                         }
                     }
-                    .frame(height: 102)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .clipped()
                 } else {
                     musclePlaceholder
                 }
             }
+            .aspectRatio(1, contentMode: .fit)
+            .frame(maxWidth: .infinity)
             .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
             .overlay(alignment: .topLeading) {
                 if AppConfig.exerciseVideosEnabled, exercise.demoVideoURL != nil {
@@ -91,8 +88,9 @@ struct EquipmentPickerExerciseCard: View {
             Text(exercise.nameZH)
                 .font(AppType.callout.weight(.semibold))
                 .foregroundStyle(Theme.ink)
-                .lineLimit(2)
+                .lineLimit(2, reservesSpace: true)
                 .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 9)
                 .padding(.top, 9)
 
@@ -110,6 +108,7 @@ struct EquipmentPickerExerciseCard: View {
             .padding(.top, 4)
             .padding(.bottom, 10)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.paper)
         .background(selected ? Theme.cobalt.opacity(0.06) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))

@@ -20,6 +20,53 @@ struct ExerciseMediaItem: Decodable, Equatable, Identifiable {
 
     var id: String { mediaID ?? exerciseSlug }
 
+    init(
+        exerciseSlug: String,
+        mediaID: String? = nil,
+        sex: String = "unisex",
+        phoneURL: URL?,
+        posterURL: URL?,
+        watchURL: URL? = nil,
+        durationSeconds: Int? = nil,
+        loopStartMS: Int? = nil,
+        loopEndMS: Int? = nil,
+        version: Int = 1,
+        visualStyle: String? = nil,
+        visualPriority: Int? = nil,
+        isPrimaryForWatch: Bool = false
+    ) {
+        self.exerciseSlug = exerciseSlug
+        self.mediaID = mediaID
+        self.sex = sex
+        self.phoneURL = phoneURL
+        self.posterURL = posterURL
+        self.watchURL = watchURL
+        self.durationSeconds = durationSeconds
+        self.loopStartMS = loopStartMS
+        self.loopEndMS = loopEndMS
+        self.version = version
+        self.visualStyle = visualStyle
+        self.visualPriority = visualPriority
+        self.isPrimaryForWatch = isPrimaryForWatch
+    }
+
+    init(
+        exerciseSlug: String,
+        localVariant variant: ExerciseMediaVariant,
+        index: Int
+    ) {
+        self.init(
+            exerciseSlug: exerciseSlug,
+            mediaID: "local-\(exerciseSlug)-\(index)",
+            sex: "unisex",
+            phoneURL: variant.videoURL,
+            posterURL: variant.posterURL,
+            visualStyle: variant.visualStyle,
+            visualPriority: 1000 + index,
+            isPrimaryForWatch: false
+        )
+    }
+
     enum CodingKeys: String, CodingKey {
         case exerciseSlug = "exercise_slug"
         case mediaID = "media_id"

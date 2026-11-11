@@ -39,6 +39,11 @@ final class ExerciseMediaStore {
         isLoading = true
         defer { isLoading = false }
 
+        // The local v2 catalog already carries every clip. Install it first so
+        // the workout card never waits on a network round trip; the API pass
+        // below can still replace it with a sex-matched variant.
+        installLocalFallbacks(for: missing)
+
         do {
             let items = try await APIClient.shared.fetchExerciseMedia(
                 slugs: missing
@@ -54,13 +59,39 @@ final class ExerciseMediaStore {
                     return (lhs.visualPriority ?? 99) < (rhs.visualPriority ?? 99)
                 }
             }
+            installLocalFallbacks(for: missing)
             lastError = nil
         } catch {
             // Network failures should not keep the training screen from
             // working. Allow a later foreground pass to retry.
             requested.subtract(missing)
+            installLocalFallbacks(for: missing)
             lastError = (error as? APIError)?.message
                 ?? "动作演示暂时不可用"
+        }
+    }
+
+    /// Fills missing slugs from the bundled v2 catalog. This is a safety net
+    /// for old media records, sex fallbacks and short network outages.
+    private func installLocalFallbacks(for slugs: [String]) {
+        for slug in slugs {
+            guard itemsBySlug[slug]?.isEmpty ?? true,
+                  let exercise = ExerciseLibrary.exercise(slug: slug)
+            else { continue }
+
+            let variants = exercise.mediaVariants.enumerated().compactMap {
+                index, variant in
+                guard variant.videoURL != nil || variant.posterURL != nil
+                else { return nil }
+                return ExerciseMediaItem(
+                    exerciseSlug: slug,
+                    localVariant: variant,
+                    index: index
+                )
+            }
+            if !variants.isEmpty {
+                itemsBySlug[slug] = variants
+            }
         }
     }
 
