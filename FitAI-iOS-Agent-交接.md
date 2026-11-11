@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`270989c`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`a1c200a`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试对齐（`827ea94`）；修复 `AppStore.swift` 非法 UTF-8、`PlanGenerator` 器械池重名；`FitAITests` **62/62** 通过，phone-only Release 已安装并启动 Wu-Tang；此前完成动作库别名/计划白名单/隐藏 `other`、媒体 coverage 校验、phone-only 构建脚本、媒体图库验证、Watch UI 重设计（`fc8634c`/`bc183ae`/`d890a53`/`4af3bcb`/`2d5dea0`）
@@ -25,6 +25,42 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-11 · Windows（自定义器械照片上传 + 必选训练部位）
+
+- 分支：`develop`
+- 代码提交：`a1c200a`
+- 做了什么：
+  - **V30**：`user_equipment.target_muscles JSON`；自定义器械（`equipment_type == null`）至少 1 个细分部位，标准目录类型不强制
+  - 新增照片服务 `backend/app/services/equipment_photo.py` 和 `POST /equipment/items/{client_id}/photo`；存 `/media/equipment/`，换图删旧图，删器械删照片
+  - `photo_url` 由照片接口独占；普通字段同步不再覆盖照片（`model_fields_set` 判断）
+  - 教练上下文 / profile 导出带 `target_muscles` 和 `photo_url`
+  - iOS：`EquipmentItem.targetMuscles`；添加/编辑自定义器械可选照片、必选多选训练部位；拍照识别补全默认使用刚拍的照片并可更换
+  - iOS 同步：`photoData != nil && photoURL == nil` 视为待上传；pull 时同 URL 保留本地图片缓存，换设备/重装可读远端图
+  - 器械库列表/详情展示训练部位和远端照片；自定义器械右上角新增「编辑」
+- 生产自测（真实 token）：
+  - 自定义器械无部位 → **422**
+  - 带 `["胸大肌","下胸"]` → **201**，回读一致
+  - 真实 JPEG 上传 → **200**，`photo_url` 公网可读且 `content-type=image/*`
+  - 只改名称/备注再同步 → 照片保留
+  - 换图 → 旧 URL **404**，新 URL **200**
+  - 标准目录器械（leg_press）无部位 → **201**
+  - 删除器械 → 照片 **404**，列表清除
+  - 本地 **235 passed** + Ruff 通过
+- 数据库 / 部署：
+  - 生产已手动执行 V30，并补记 `flyway_schema_history`：V29（之前漏记）和 V30，均 `checksum=NULL`
+  - 后端已重新打包部署 HK，`/health/ready` 正常
+  - `/opt/fitai/media/equipment` 已创建，烟测文件已清理，无 `smoke-*` 器械残留
+- 未验证：
+  - Windows 无 Xcode，iOS **没有编译和真机运行**；只做了 tree-sitter 语法解析、括号/引用/API 存在性检查
+- Mac 需要做：
+  - `git pull` → `xcodegen generate` → 编译运行
+  - 验收：手动添加「自定义」必须选至少 1 个细分部位；拍照识别补全自动带照片；编辑自定义器械可换图；杀进程/重新登录后照片仍在；器械列表显示「胸 · 胸大肌、下胸」
+  - 重点看 `EquipmentPhotoCard`、`AddEquipmentView(editingItem:)`、`CustomExerciseAddSheet`、`PhysicalEquipmentDetailView` 的编辑入口
+- 不要恢复：
+  - 不要把照片只存在本机（会在 pull 时丢失）
+  - 不要取消自定义器械的训练部位必选
+  - 不要让普通器械字段同步覆盖 `photo_url`
 
 ### 2026-11-11 · Windows（动作库二级分类收进左侧栏）
 
