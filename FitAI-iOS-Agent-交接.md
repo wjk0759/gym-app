@@ -14,10 +14,10 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`dd59304`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`0dbdbcd`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
-- macOS 最新完成（2026-11-11）：equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试对齐（`827ea94`）；修复 `AppStore.swift` 非法 UTF-8、`PlanGenerator` 器械池重名；`FitAITests` **62/62** 通过，phone-only Release 已安装并启动 Wu-Tang；此前完成动作库别名/计划白名单/隐藏 `other`、媒体 coverage 校验、phone-only 构建脚本、媒体图库验证、Watch UI 重设计（`fc8634c`/`bc183ae`/`d890a53`/`4af3bcb`/`2d5dea0`）
+- macOS 最新完成（2026-11-11）：器械目录 v3 UI 验证 + `EquipmentCatalogUITests`（`0dbdbcd`）；Debug build 成功，`FitAITests` **62/62**，catalog validator 通过，UI test 通过，phone-only Release 已安装并启动 Wu-Tang；此前完成 equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）、动作库白名单/coverage、phone-only 脚本、媒体图库和 Watch UI（`fc8634c`/`bc183ae`/`d890a53`/`4af3bcb`/`2d5dea0`）
 - Windows 最新完成（2026-11-07）：拉取并保留 macOS 单行语音输入（`9a833b1`）；完成教练内核统一并部署生产；`test_reviewer` 已授 Pro、补齐基础档案和 3 分化计划；生产 Watch 预载/登录/刷新/语音/撤销全链路烟测通过；iPhone 训练页动作循环动画 PoC、`/exercise-media` 批量接口、11 条 sample 媒体已上生产（`341981f`）；器械识别修复：图片归一化、禁止随机 mock、37 类器械目录、生产导入 57 条训记动作、4 张真实照片 + 1 张负例烟测 5/5 命中（`5bf99a1`）；2026-11-08 增加 Vision OCR 标签提示、18 张多品牌评测和准确率实验（`23e41c8`）；生产视觉切 **Qwen3-VL-Plus**；器械识别加 **top-2 候选 + 混淆兜底**，18 张缩略图 top-1 61%、top-2 83%（`0d63191`）；已合并到 `develop`（`48ad5f0`），develop CI 全绿
 - Windows 前一轮完成（2026-11-07）：手表独立语音教练、watch 专用登录会话、媒体预载/本地缓存、离线 outbox/ack、手机 inbox 回灌、手机→手表指令、3 天 Pro 宽限与中途到期继续结束、HealthKit 保活/手机单写者、Watch AppIcon 恢复、Watch 隐私清单、训练来源 `phone/watch`
 - 本地后台（2026-11-08）：FastAPI `8000`、admin-server `8080`、admin-web `5173/admin`、MySQL `3307` V24；真机 API `http://192.168.1.4:8000/api/v1`
@@ -25,6 +25,22 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-11 · macOS（器械目录 v3 UI 验证）
+
+- 分支：`develop`
+- 代码提交：`0dbdbcd`（UI test）
+- 做了什么：
+  - 拉取 `dd59304`，`xcodegen`；catalog validator **ok**；Debug build **BUILD SUCCEEDED**；`FitAITests` **62/62**
+  - 新增 `EquipmentCatalogUITests`：QA bypass auth → 发现 → 我的器械库 → 从器械库添加 → Browser → 坐姿推胸机详情，并保存截图
+  - 用 production API 覆盖 Debug API 后，70 类器械图片正常加载；部位计数、图片网格、详情图片、训练部位、使用方法均正常
+  - phone-only Release 已安装并启动 Wu-Tang
+- Windows 需要做：
+  - 保留 UI test；可单跑 `-only-testing:FitAIUITests/EquipmentCatalogUITests`
+  - Debug 默认 API 是 localhost；本地后端未启动时器械图片会一直转圈，这是预期，不是 catalog 数据问题；验证图片需生产 API 或本地后端
+- 不要恢复：
+  - 不要删除 `EquipmentCatalogUITests`
+  - 不要恢复旧 95 类 App 目录
 
 ### 2026-11-11 · Windows（器械目录 v3：70 类图片目录）
 
