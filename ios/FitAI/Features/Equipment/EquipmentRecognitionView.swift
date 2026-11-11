@@ -447,15 +447,16 @@ struct EquipmentRecognitionView: View {
 
                 if !isScanning,
                    !equipmentName.isEmpty,
-                   equipmentName.contains("深蹲")
-                    || equipmentName.contains("腿举")
-                    || equipmentName.contains("倒蹬") {
+                   (
+                       equipmentName.contains("深蹲")
+                       || equipmentName.contains("腿举")
+                       || equipmentName.contains("倒蹬")
+                   ) {
                     Text("这类器械容易和坐姿划船/腿举混淆。如果不对，点下方「从器械库选择」。")
                         .font(.system(size: 9.5, weight: .medium))
                         .foregroundStyle(Theme.secondaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-
                 resultSection
             }
 
