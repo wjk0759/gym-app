@@ -1,0 +1,223 @@
+{
+ "chest_press_seated": [
+  "chest_press_seated-1.jpg"
+ ],
+ "chest_press_iso": [
+  "chest_press_iso-1.jpg"
+ ],
+ "chest_press_flat": [
+  "chest_press_flat-1.jpg"
+ ],
+ "chest_press_incline": [
+  "chest_press_incline-1.jpg"
+ ],
+ "chest_press_decline": [
+  "chest_press_decline-1.jpg"
+ ],
+ "pec_deck": [
+  "pec_deck-1.jpg"
+ ],
+ "bench_press": [
+  "bench_press-1.jpg"
+ ],
+ "incline_bench": [
+  "incline_bench-1.jpg"
+ ],
+ "lat_pulldown": [
+  "lat_pulldown-1.jpg"
+ ],
+ "lat_pulldown_iso": [
+  "lat_pulldown_iso-1.jpg",
+  "lat_pulldown_iso-2.jpg"
+ ],
+ "pullover": [
+  "pullover-1.jpg"
+ ],
+ "seated_row": [
+  "seated_row-1.jpg",
+  "seated_row-2.jpg",
+  "seated_row-3.jpg"
+ ],
+ "seated_row_low": [
+  "seated_row_low-1.jpg"
+ ],
+ "seated_row_high": [
+  "seated_row_high-1.jpg"
+ ],
+ "leverage_row": [
+  "leverage_row-1.jpg"
+ ],
+ "t_bar_row": [
+  "t_bar_row-1.jpg"
+ ],
+ "cable_row": [
+  "cable_row-1.jpg"
+ ],
+ "assisted_pullup": [
+  "assisted_pullup-1.jpg"
+ ],
+ "back_extension": [
+  "back_extension-1.jpg"
+ ],
+ "shrug": [
+  "shrug-1.jpg"
+ ],
+ "shoulder_press": [
+  "shoulder_press-1.jpg"
+ ],
+ "shoulder_press_iso": [
+  "shoulder_press_iso-1.jpg"
+ ],
+ "lateral_raise": [
+  "lateral_raise-1.jpg",
+  "lateral_raise-2.jpg"
+ ],
+ "upright_row": [
+  "upright_row-1.jpg"
+ ],
+ "neck_machine": [
+  "neck_machine-1.jpg"
+ ],
+ "bicep_curl": [
+  "bicep_curl-1.jpg"
+ ],
+ "preacher_curl": [
+  "preacher_curl-1.jpg"
+ ],
+ "tricep_pushdown": [
+  "tricep_pushdown-1.jpg"
+ ],
+ "tricep_extension": [
+  "tricep_extension-1.jpg"
+ ],
+ "forearm_trainer": [
+  "forearm_trainer-1.jpg"
+ ],
+ "assisted_dip": [
+  "assisted_dip-1.jpg"
+ ],
+ "pullup_dip_station": [
+  "pullup_dip_station-1.jpg"
+ ],
+ "leg_extension": [
+  "leg_extension-1.jpg"
+ ],
+ "leg_extension_iso": [
+  "leg_extension_iso-1.jpg"
+ ],
+ "leg_curl_seated": [
+  "leg_curl_seated-1.jpg"
+ ],
+ "leg_curl_lying": [
+  "leg_curl_lying-1.jpg"
+ ],
+ "leg_curl_lying_iso": [
+  "leg_curl_lying_iso-1.jpg"
+ ],
+ "leg_curl_single": [
+  "leg_curl_single-1.jpg"
+ ],
+ "leg_curl_standing": [
+  "leg_curl_standing-1.jpg"
+ ],
+ "leg_extension_curl_combo": [
+  "leg_extension_curl_combo-1.jpg"
+ ],
+ "leg_press_45": [
+  "leg_press_45-1.jpg",
+  "leg_press_45-2.jpg",
+  "leg_press_45-3.jpg"
+ ],
+ "hack_squat": [
+  "hack_squat-1.jpg"
+ ],
+ "v_squat": [
+  "v_squat-1.jpg"
+ ],
+ "belt_squat": [
+  "belt_squat-1.jpg"
+ ],
+ "pendulum_squat": [
+  "pendulum_squat-1.jpg"
+ ],
+ "squat_rack": [
+  "squat_rack-1.jpg"
+ ],
+ "seated_calf": [
+  "seated_calf-1.jpg"
+ ],
+ "standing_calf": [
+  "standing_calf-1.jpg"
+ ],
+ "tibialis_raise": [
+  "tibialis_raise-1.jpg"
+ ],
+ "inner_outer_thigh": [
+  "inner_outer_thigh-1.jpg"
+ ],
+ "hip_adduction": [
+  "hip_adduction-1.jpg"
+ ],
+ "hip_thrust": [
+  "hip_thrust-1.jpg"
+ ],
+ "glute_bridge": [
+  "glute_bridge-1.jpg",
+  "glute_bridge-2.jpg"
+ ],
+ "glute_ham": [
+  "glute_ham-1.jpg"
+ ],
+ "glute_kickback": [
+  "glute_kickback-1.jpg",
+  "glute_kickback-2.jpg",
+  "glute_kickback-3.jpg"
+ ],
+ "reverse_hyper": [
+  "reverse_hyper-1.jpg"
+ ],
+ "hip_abduction": [
+  "hip_abduction-1.jpg"
+ ],
+ "deadlift_machine": [
+  "deadlift_machine-1.jpg"
+ ],
+ "ab_bench": [
+  "ab_bench-1.jpg"
+ ],
+ "ab_crunch": [
+  "ab_crunch-1.jpg",
+  "ab_crunch-2.jpg"
+ ],
+ "ab_crunch_iso": [
+  "ab_crunch_iso-1.jpg"
+ ],
+ "ab_coaster": [
+  "ab_coaster-1.jpg"
+ ],
+ "torso_rotation": [
+  "torso_rotation-1.jpg",
+  "torso_rotation-2.jpg"
+ ],
+ "treadmill": [
+  "treadmill-1.jpg"
+ ],
+ "elliptical": [
+  "elliptical-1.jpg"
+ ],
+ "stationary_bike": [
+  "stationary_bike-1.jpg"
+ ],
+ "stair_climber": [
+  "stair_climber-1.jpg"
+ ],
+ "smith_machine": [
+  "smith_machine-1.jpg"
+ ],
+ "cable_crossover": [
+  "cable_crossover-1.jpg"
+ ],
+ "dual_pulley": [
+  "dual_pulley-1.jpg"
+ ]
+}

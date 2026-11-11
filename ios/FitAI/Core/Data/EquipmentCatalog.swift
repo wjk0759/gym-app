@@ -1,13 +1,17 @@
 import Foundation
 
-/// 94 类器械目录（iOS 打包版，含 class -> exercise_group 映射）。
+/// 70 类物理器械目录（来自无水印图片集）。
 struct EquipmentTypeInfo: Decodable, Identifiable {
     let slug: String
     let nameZH: String
     let nameEN: String?
     let category: String
-    let muscleCategory: String?
+    let bodyPart: String?
+    let secondaryBodyParts: [String]?
+    let targetMuscles: [String]?
     let exerciseGroup: String
+    let exerciseSlugs: [String]?
+    let imageURLs: [String]?
     let universal: Bool
     let aliases: [String]?
 
@@ -18,10 +22,30 @@ struct EquipmentTypeInfo: Decodable, Identifiable {
         case nameZH = "name_zh"
         case nameEN = "name_en"
         case category
-        case muscleCategory = "muscle_category"
+        case bodyPart = "body_part"
+        case secondaryBodyParts = "secondary_body_parts"
+        case targetMuscles = "target_muscles"
         case exerciseGroup = "exercise_group"
+        case exerciseSlugs = "exercise_slugs"
+        case imageURLs = "image_urls"
         case universal
         case aliases
+    }
+
+    var bodyPartLabel: String {
+        bodyPart ?? "全身"
+    }
+
+    var secondaryBodyPartList: [String] {
+        secondaryBodyParts ?? []
+    }
+
+    var targetMuscleList: [String] {
+        targetMuscles ?? []
+    }
+
+    var imageURLList: [String] {
+        imageURLs ?? []
     }
 
     var categoryLabel: String {
@@ -47,10 +71,39 @@ struct EquipmentTypeInfo: Decodable, Identifiable {
         default: return "gearshape.fill"
         }
     }
+
+    var targetSummary: String {
+        let muscles = targetMuscleList
+        guard !muscles.isEmpty else { return "训练部位待补充" }
+        let preview = muscles.prefix(2).joined(separator: "、")
+        return muscles.count > 2 ? "\(preview) 等" : preview
+    }
+
+    /// 优先使用目录里显式给出的动作；否则按动作库的 equipment_group 过滤。
+    var trainableExercises: [Exercise] {
+        if let exerciseSlugs, !exerciseSlugs.isEmpty {
+            let rows = exerciseSlugs.compactMap { ExerciseLibrary.exercise(slug: $0) }
+            if !rows.isEmpty {
+                return rows.sorted { $0.nameZH < $1.nameZH }
+            }
+        }
+        return ExerciseLibrary.all
+            .filter { $0.equipmentTypes.contains(exerciseGroup) }
+            .sorted { $0.nameZH < $1.nameZH }
+    }
+
+    var planEligibleExercises: [Exercise] {
+        trainableExercises.filter(\.planEligible)
+    }
 }
 
 enum EquipmentCatalog {
     static let all: [EquipmentTypeInfo] = load()
+
+    /// 添加页左侧部位栏。顺序与动作库一致。
+    static let bodyParts: [String] = [
+        "胸", "背", "肩", "臂", "腿", "臀", "核心", "有氧", "全身"
+    ]
 
     private static func load() -> [EquipmentTypeInfo] {
         let bundles = [Bundle(for: EquipmentBundleToken.self), Bundle.main] + Bundle.allBundles
@@ -75,23 +128,13 @@ enum EquipmentCatalog {
         type(for: typeSlug)?.exerciseGroup
     }
 
-    static var universal: [EquipmentTypeInfo] {
-        all.filter(\.universal)
+    static func types(for bodyPart: String?) -> [EquipmentTypeInfo] {
+        guard let bodyPart, !bodyPart.isEmpty else { return all }
+        return all.filter { $0.bodyPartLabel == bodyPart }
     }
 
-    /// 器械库浏览页的一级分类。
-    static let browseCategories: [String] = [
-        "固定器械", "自由重量", "有氧器械", "自重", "小工具"
-    ]
-
-    static func browseCategory(of info: EquipmentTypeInfo) -> String {
-        switch info.category {
-        case "machine", "cable", "multi": return "固定器械"
-        case "free_weight": return "自由重量"
-        case "cardio": return "有氧器械"
-        case "bodyweight": return "自重"
-        default: return "小工具"
-        }
+    static func count(for bodyPart: String) -> Int {
+        all.filter { $0.bodyPartLabel == bodyPart }.count
     }
 }
 

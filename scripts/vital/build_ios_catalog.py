@@ -135,24 +135,7 @@ def main() -> None:
     print(f"actions={len(rows)} plan_eligible={eligible} bytes={size}")
     print(f"wrote {DST}")
 
-    equipment = json.loads(EQUIPMENT.read_text(encoding="utf-8"))["equipment"]
-    compact = [
-        {
-            "slug": item["slug"],
-            "name_zh": item["name_zh"],
-            "name_en": item.get("name_en") or None,
-            "category": item.get("category") or "",
-            "muscle_category": item.get("muscle_category") or "",
-            "exercise_group": item.get("exercise_group") or item["slug"],
-            "universal": item["slug"] in UNIVERSAL_SLUGS,
-            "aliases": item.get("aliases") or [],
-        }
-        for item in equipment
-    ]
-    EQUIPMENT_DST.write_text(
-        json.dumps(compact, ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
-    )
-    print(f"equipment={len(compact)} wrote {EQUIPMENT_DST.name}")
+    print(f"equipment catalog: use scripts/vital/build_equipment_v3.py")
 
 
 if __name__ == "__main__":

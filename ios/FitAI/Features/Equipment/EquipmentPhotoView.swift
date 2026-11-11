@@ -13,7 +13,7 @@ struct EquipmentPhotoView: View {
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFill()
-            } else if let url = AppConfig.resolveMediaURL(item.photoURL) {
+            } else if let url = AppConfig.resolveMediaURL(item.photoURL ?? catalogImage) {
                 AsyncImage(url: url) { phase in
                     if let image = phase.image {
                         image
@@ -27,6 +27,10 @@ struct EquipmentPhotoView: View {
                 placeholder
             }
         }
+    }
+
+    private var catalogImage: String? {
+        EquipmentCatalog.type(for: item.equipmentType)?.imageURLList.first
     }
 
     private var placeholder: some View {

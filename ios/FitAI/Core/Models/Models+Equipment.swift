@@ -48,8 +48,11 @@ struct EquipmentItem: Codable, Identifiable, Hashable {
         return groups.isEmpty ? values.joined(separator: "、") : groups.joined(separator: " / ")
     }
 
-    /// 这件器械能练的动作（class slug -> exercise_group -> 动作）。
+    /// 这件器械能练的动作（优先使用目录里显式给出的动作）。
     var trainableExercises: [Exercise] {
+        if let type = EquipmentCatalog.type(for: equipmentType) {
+            return type.trainableExercises
+        }
         guard let group = EquipmentCatalog.group(for: equipmentType) else { return [] }
         return ExerciseLibrary.all.filter { $0.equipmentTypes.contains(group) }
     }
