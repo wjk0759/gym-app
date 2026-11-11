@@ -38,7 +38,7 @@
   - Debug build **BUILD SUCCEEDED**；`FitAITests` **65/65**
   - UI 截图：iPhone 17 / iPhone SE 4 列快捷区正常；深色模式下今日/教练/我的正常；记录/我的滚动到底内容完整
   - 教练权益超时 UI test 通过（`http://127.0.0.1:9`，8 秒后出现「权益确认失败 · 重试」）
-  - 未测：真机（本轮 phone-only 安装随后执行）
+  - 真机：phone-only Release 已安装并启动 Wu-Tang（首次启动因锁屏被拒，解锁后重试成功）
 - Windows 需要做：
   - 保留 `tabBarContentInset` 和 4 列一行快捷区；不要恢复悬浮 FAB
   - 真机复测教练权益失败/重试态
