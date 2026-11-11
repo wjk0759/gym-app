@@ -276,8 +276,17 @@ class EquipmentLibraryIn(BaseModel):
     slug: str | None = Field(default=None, max_length=80)
     muscle: str | None = Field(default=None, max_length=30)
     equipment: str | None = Field(default=None, max_length=30)
+    target_muscles: list[str] = Field(default_factory=list, max_length=20)
     notes: str = Field(default="", max_length=1000)
     source: str = Field(default="manual", max_length=20)
+
+    @model_validator(mode="after")
+    def _require_custom_equipment_targets(self):
+        values = [value.strip() for value in self.target_muscles if value.strip()]
+        self.target_muscles = list(dict.fromkeys(values))
+        if not self.equipment_type and not self.target_muscles:
+            raise ValueError("自定义器械至少选择一个训练部位")
+        return self
 
 
 class EquipmentExercisesIn(BaseModel):

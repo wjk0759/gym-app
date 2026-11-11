@@ -21,9 +21,31 @@ struct EquipmentItem: Codable, Identifiable, Hashable {
     var createdAt: Date = Date()
     var syncedAt: Date? = nil
     var source: String? = nil
+    /// 自定义器械的训练细分部位（二级部位中文名，例如 ["胸大肌", "下胸"]）。
+    var targetMuscles: [String]? = nil
 
     var exercise: Exercise? {
         slug.flatMap { ExerciseLibrary.exercise(slug: $0) }
+    }
+
+    var targetMuscleList: [String] {
+        targetMuscles ?? []
+    }
+
+    /// 按一级部位分组展示：胸 · 胸大肌、下胸 / 背 · 背阔肌。
+    var targetMuscleSummary: String? {
+        Self.muscleSummary(for: targetMuscleList)
+    }
+
+    static func muscleSummary(for values: [String]) -> String? {
+        let selected = Set(values)
+        guard !selected.isEmpty else { return nil }
+        let groups = ExerciseLibrary.categoryTree.compactMap { entry -> String? in
+            let matches = entry.l2.filter { selected.contains($0) }
+            guard !matches.isEmpty else { return nil }
+            return "\(entry.l1) · \(matches.joined(separator: "、"))"
+        }
+        return groups.isEmpty ? values.joined(separator: "、") : groups.joined(separator: " / ")
     }
 
     /// 这件器械能练的动作（class slug -> exercise_group -> 动作）。

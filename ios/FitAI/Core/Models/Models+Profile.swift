@@ -126,6 +126,21 @@ enum MuscleGroup: String, Codable, CaseIterable, Identifiable {
         case .cardio: return "有氧"
         }
     }
+
+    /// 从一级部位名映射到旧的大类，兼容列表图标、搜索和教练上下文。
+    static func from(bodyPart: String?) -> MuscleGroup? {
+        switch bodyPart {
+        case "胸": return .chest
+        case "背": return .back
+        case "腿": return .legs
+        case "臀": return .glutes
+        case "肩": return .shoulders
+        case "臂": return .arms
+        case "核心": return .core
+        case "全身": return .cardio
+        default: return nil
+        }
+    }
 }
 
 enum Weekday {

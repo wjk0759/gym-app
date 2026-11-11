@@ -134,6 +134,7 @@ def equipment_context(db: Session, user_id: str) -> list[dict]:
             "slug": item.slug,
             "muscle": item.muscle,
             "equipment": item.equipment,
+            "target_muscles": item.target_muscles or [],
             "notes": item.notes,
         }
         for item in rows

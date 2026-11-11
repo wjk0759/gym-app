@@ -429,6 +429,8 @@ def export_me(user_id: CurrentUser, db: DBSession):
                 "slug": item.slug,
                 "muscle": item.muscle,
                 "equipment": item.equipment,
+                "target_muscles": item.target_muscles or [],
+                "photo_url": public_media_url(item.photo_url),
                 "notes": item.notes,
                 "created_at": item.created_at.isoformat(),
             }

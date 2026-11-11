@@ -114,7 +114,7 @@ struct EquipmentRecognitionView: View {
             CustomExerciseAddSheet(
                 initialName: recognizedName,
                 photo: selectedImage,
-                onAdd: { name, muscle, equipment in
+                onAdd: { name, targets, muscle, equipment, photo in
                     let item = EquipmentItem(
                         name: name,
                         slug: nil,
@@ -122,8 +122,11 @@ struct EquipmentRecognitionView: View {
                         equipment: equipment,
                         videoURL: nil,
                         notes: "拍照识别未收录，手动添加",
-                        photoData: selectedImage?.jpegData(compressionQuality: 0.7) ?? imageData,
-                        source: "recognition"
+                        photoData: photo
+                            ?? selectedImage?.jpegData(compressionQuality: 0.7)
+                            ?? imageData,
+                        source: "recognition",
+                        targetMuscles: targets
                     )
                     store.addEquipment(item)
                     onSaved?(item)

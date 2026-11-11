@@ -51,6 +51,8 @@ extension AppStore {
         photoData: Data? = nil,
         enabledExerciseSlugs: [String] = [],
         notes: String = "",
+        muscle: MuscleGroup? = nil,
+        targetMuscles: [String] = [],
         source: String = "manual"
     ) -> EquipmentItem {
         let item = EquipmentItem(
@@ -60,17 +62,45 @@ extension AppStore {
             photoURL: nil,
             enabledExerciseSlugs: enabledExerciseSlugs,
             slug: nil,
-            muscle: nil,
+            muscle: muscle,
             equipment: nil,
             videoURL: nil,
             notes: notes,
             photoData: photoData,
-            source: source
+            source: source,
+            targetMuscles: targetMuscles
         )
         equipmentLibrary.insert(item, at: 0)
         persist()
         syncPendingUserData()
         return item
+    }
+
+    /// 编辑自定义器械的名称 / 照片 / 训练部位 / 备注。
+    func updateEquipment(
+        _ itemID: UUID,
+        name: String,
+        notes: String,
+        muscle: MuscleGroup?,
+        targetMuscles: [String],
+        photoData: Data?,
+        photoChanged: Bool
+    ) {
+        guard let index = equipmentLibrary.firstIndex(where: { $0.id == itemID }) else {
+            return
+        }
+        equipmentLibrary[index].name = name
+        equipmentLibrary[index].notes = notes
+        equipmentLibrary[index].muscle = muscle
+        equipmentLibrary[index].targetMuscles = targetMuscles
+        if photoChanged {
+            equipmentLibrary[index].photoData = photoData
+            // Clearing the URL marks the new local image as pending upload.
+            equipmentLibrary[index].photoURL = nil
+        }
+        equipmentLibrary[index].syncedAt = nil
+        persist()
+        syncPendingUserData()
     }
 
     func removeEquipment(_ id: UUID) {

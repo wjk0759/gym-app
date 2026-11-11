@@ -74,6 +74,10 @@ _PROFILE_COLUMNS = {
     "training_stage": "VARCHAR(20) DEFAULT 'beginner'",
 }
 
+_USER_EQUIPMENT_COLUMNS = {
+    "target_muscles": "JSON",
+}
+
 _AI_MEMORY_COLUMNS = {
     "memory_key": "VARCHAR(80) DEFAULT 'general'",
     "source": "VARCHAR(40) DEFAULT 'agent'",
@@ -369,6 +373,17 @@ def ensure_schema() -> None:
                         "ADD COLUMN source VARCHAR(20) DEFAULT 'manual'"
                     )
                 )
+        for table in ("equipment_library", "user_equipment"):
+            if table not in tables:
+                continue
+            equipment_columns = {
+                column["name"] for column in inspector.get_columns(table)
+            }
+            for name, ddl in _USER_EQUIPMENT_COLUMNS.items():
+                if name not in equipment_columns:
+                    connection.execute(
+                        text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}")
+                    )
         for table, ddl in _PERFORMANCE_INDEXES:
             if table in tables:
                 connection.execute(text(ddl))

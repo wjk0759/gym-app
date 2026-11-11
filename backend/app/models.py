@@ -816,6 +816,8 @@ class EquipmentLibraryItem(Base):
     slug: Mapped[str | None] = mapped_column(String(80))
     muscle: Mapped[str | None] = mapped_column(String(30))
     equipment: Mapped[str | None] = mapped_column(String(30))
+    # 自定义器械关联的二级细分部位（中文名数组，例如 ["胸大肌", "下胸"]）。
+    target_muscles: Mapped[list | None] = mapped_column(JSON)
     notes: Mapped[str] = mapped_column(Text, default="")
     source: Mapped[str] = mapped_column(String(20), default="manual")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

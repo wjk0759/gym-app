@@ -3,6 +3,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 
 from ..deps import CurrentUser, DBSession
+from ..media import public_media_url
 from ..models import (
     EquipmentLibraryItem,
     EquipmentScan,
@@ -11,10 +12,11 @@ from ..models import (
     UserUniversalEquipment,
 )
 from ..schemas import EquipmentExercisesIn, EquipmentLibraryIn, UniversalEquipmentIn
-from ..services import access, generation, photo_cache
+from ..services import access, equipment_photo, generation, photo_cache
 from ..services.equipment import recognize, refresh_profile_equipment_cache
 from ..services.equipment_catalog_v2 import get as get_equipment_type
 from ..services.image_input import InvalidImageError, normalize_image_bytes
+from ..services.rate_limit import enforce as enforce_rate_limit
 
 router = APIRouter(tags=["equipment"])
 
@@ -177,10 +179,11 @@ def _equipment_item_dict(item: EquipmentLibraryItem, enabled_slugs=None) -> dict
         "name": item.name,
         "equipment_type": item.equipment_type,
         "category": item.category,
-        "photo_url": item.photo_url,
+        "photo_url": public_media_url(item.photo_url),
         "slug": item.slug,
         "muscle": item.muscle,
         "equipment": item.equipment,
+        "target_muscles": item.target_muscles or [],
         "notes": item.notes,
         "source": item.source,
         "enabled_exercise_slugs": enabled_slugs or [],
@@ -193,10 +196,15 @@ def _apply_equipment_item(item: EquipmentLibraryItem, payload: EquipmentLibraryI
     item.equipment_type = payload.equipment_type
     catalog = get_equipment_type(payload.equipment_type) if payload.equipment_type else None
     item.category = payload.category or (catalog or {}).get("category")
-    item.photo_url = payload.photo_url
+    # Photos are owned by POST /equipment/items/{client_id}/photo. Only touch
+    # this column when a client explicitly sends photo_url, otherwise a normal
+    # metadata sync would erase the uploaded photo.
+    if "photo_url" in payload.model_fields_set:
+        item.photo_url = payload.photo_url
     item.slug = payload.slug
     item.muscle = payload.muscle
     item.equipment = payload.equipment or item.category
+    item.target_muscles = payload.target_muscles
     item.notes = payload.notes
     item.source = payload.source or "manual"
 
@@ -313,6 +321,39 @@ def list_equipment_items(
     }
 
 
+@router.post("/equipment/items/{client_id}/photo")
+async def upload_equipment_item_photo(
+    client_id: str,
+    user_id: CurrentUser,
+    db: DBSession,
+    file: UploadFile = File(...),
+):
+    enforce_rate_limit(db, "equipment_photo_upload", user_id, 20, 3600)
+    item = db.execute(
+        select(EquipmentLibraryItem).where(
+            EquipmentLibraryItem.user_id == user_id,
+            EquipmentLibraryItem.client_id == client_id,
+        )
+    ).scalar_one_or_none()
+    if item is None:
+        raise HTTPException(status_code=404, detail="器械不存在")
+
+    data = await equipment_photo.read_upload(file)
+    processed = equipment_photo.process(data)
+    relative = equipment_photo.save(user_id, processed)
+
+    previous = item.photo_url
+    item.photo_url = relative
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        equipment_photo.delete_local(relative)
+        raise
+    equipment_photo.delete_local(previous)
+    return {"photo_url": equipment_photo.public_url(relative)}
+
+
 @router.delete("/equipment/items/{client_id}")
 def delete_equipment_item(
     client_id: str,
@@ -327,10 +368,12 @@ def delete_equipment_item(
     ).scalar_one_or_none()
     if item is None:
         raise HTTPException(status_code=404, detail="器械不存在")
+    previous_photo = item.photo_url
     db.delete(item)
     db.flush()
     refresh_profile_equipment_cache(db, user_id)
     db.commit()
+    equipment_photo.delete_local(previous_photo)
     return {"status": "deleted", "client_id": client_id}
 
 

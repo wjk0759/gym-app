@@ -8,12 +8,14 @@ MEDIA_ROOT = Path(settings.media_root).resolve()
 VIDEO_DIR = MEDIA_ROOT / "videos"
 POSTER_DIR = MEDIA_ROOT / "posters"
 AVATAR_DIR = MEDIA_ROOT / "avatars"
+EQUIPMENT_DIR = MEDIA_ROOT / "equipment"
 
 
 def ensure_media_dirs() -> None:
     VIDEO_DIR.mkdir(parents=True, exist_ok=True)
     POSTER_DIR.mkdir(parents=True, exist_ok=True)
     AVATAR_DIR.mkdir(parents=True, exist_ok=True)
+    EQUIPMENT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def public_media_url(value: str | None) -> str | None:

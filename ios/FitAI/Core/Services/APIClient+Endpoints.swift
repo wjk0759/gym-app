@@ -249,11 +249,11 @@ extension APIClient {
             "client_id": item.id.uuidString,
             "name": item.name,
             "notes": item.notes,
-            "enabled_exercise_slugs": item.enabledExerciseSlugs ?? []
+            "enabled_exercise_slugs": item.enabledExerciseSlugs ?? [],
+            "target_muscles": item.targetMuscleList
         ]
         if let equipmentType = item.equipmentType { payload["equipment_type"] = equipmentType }
         if let category = item.category { payload["category"] = category }
-        if let photoURL = item.photoURL { payload["photo_url"] = photoURL }
         if let slug = item.slug { payload["slug"] = slug }
         if let muscle = item.muscle { payload["muscle"] = muscle.rawValue }
         if let equipment = item.equipment { payload["equipment"] = equipment.rawValue }

@@ -282,14 +282,31 @@ extension AppStore {
     }
 
     private func pushPendingEquipment() async {
-        for item in equipmentLibrary where item.syncedAt == nil {
+        for item in equipmentLibrary {
+            let needsSync = item.syncedAt == nil
+            let needsPhoto = item.photoData != nil && item.photoURL == nil
+            guard needsSync || needsPhoto else { continue }
             do {
-                try await APIClient.shared.syncEquipmentItem(item)
-                if let index = equipmentLibrary.firstIndex(where: { $0.id == item.id }) {
-                    equipmentLibrary[index].syncedAt = Date()
+                if needsSync {
+                    try await APIClient.shared.syncEquipmentItem(item)
+                    if let index = equipmentLibrary.firstIndex(where: { $0.id == item.id }) {
+                        equipmentLibrary[index].syncedAt = Date()
+                    }
+                }
+                if let data = item.photoData, item.photoURL == nil {
+                    let response = try await APIClient.shared.uploadEquipmentPhoto(
+                        clientID: item.id,
+                        imageData: data
+                    )
+                    if let index = equipmentLibrary.firstIndex(where: { $0.id == item.id }),
+                       let url = AppConfig.resolveMediaURL(response.photoURL)?.absoluteString {
+                        equipmentLibrary[index].photoURL = url
+                        equipmentLibrary[index].photoData = data
+                        equipmentLibrary[index].syncedAt = Date()
+                    }
                 }
             } catch {
-                // Keep pending.
+                // Keep pending: the next sync retries both the item and photo.
             }
         }
     }
@@ -340,12 +357,12 @@ extension AppStore {
         if let remote = try? await APIClient.shared.fetchEquipmentItems() {
             for item in remote {
                 guard let id = UUID(uuidString: item.clientID) else { continue }
-                let value = EquipmentItem(
+                var value = EquipmentItem(
                     id: id,
                     name: item.name,
                     equipmentType: item.equipmentType,
                     category: item.category,
-                    photoURL: item.photoURL,
+                    photoURL: AppConfig.resolveMediaURL(item.photoURL)?.absoluteString,
                     enabledExerciseSlugs: item.enabledExerciseSlugs ?? [],
                     slug: item.slug,
                     muscle: item.muscle.flatMap { MuscleGroup(rawValue: $0) },
@@ -354,8 +371,14 @@ extension AppStore {
                     notes: item.notes,
                     photoData: nil,
                     createdAt: item.createdAt,
-                    syncedAt: Date()
+                    syncedAt: Date(),
+                    targetMuscles: item.targetMuscles ?? []
                 )
+                if let local = equipmentLibrary.first(where: { $0.id == id }),
+                   local.photoURL == value.photoURL {
+                    // Keep the local image cache when it still matches the remote URL.
+                    value.photoData = local.photoData
+                }
                 if let index = equipmentLibrary.firstIndex(where: { $0.id == id }) {
                     equipmentLibrary[index] = value
                 } else {

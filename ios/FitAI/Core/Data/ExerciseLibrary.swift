@@ -73,6 +73,11 @@ enum ExerciseLibrary {
         visibleCategoryTree.first { $0.l1 == l1 }?.l2 ?? []
     }
 
+    /// 二级部位 -> 一级部位，例如 胸大肌 -> 胸。
+    static func bodyPart(forMuscle muscle: String) -> String? {
+        categoryTree.first { $0.l2.contains(muscle) }?.l1
+    }
+
     /// Catch-all category stays searchable but is not a browse destination.
     private static let hiddenBrowseCategories: Set<String> = ["other"]
 

@@ -509,6 +509,7 @@ struct RemoteEquipmentItem: Decodable {
     let slug: String?
     let muscle: String?
     let equipment: String?
+    let targetMuscles: [String]?
     let notes: String
     let createdAt: Date
 
@@ -522,6 +523,7 @@ struct RemoteEquipmentItem: Decodable {
         case slug
         case muscle
         case equipment
+        case targetMuscles = "target_muscles"
         case notes
         case createdAt = "created_at"
     }
@@ -529,6 +531,14 @@ struct RemoteEquipmentItem: Decodable {
 
 struct RemoteEquipmentItemResponse: Decodable {
     let items: [RemoteEquipmentItem]
+}
+
+struct EquipmentPhotoResponse: Decodable {
+    let photoURL: String?
+
+    enum CodingKeys: String, CodingKey {
+        case photoURL = "photo_url"
+    }
 }
 
 struct RemoteUniversalEquipmentItem: Decodable {

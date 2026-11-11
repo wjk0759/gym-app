@@ -38,6 +38,9 @@ struct EquipmentLibraryView: View {
                 item.name.localizedCaseInsensitiveContains(text)
                     || (item.muscle?.label.localizedCaseInsensitiveContains(text) ?? false)
                     || (item.equipment?.label.localizedCaseInsensitiveContains(text) ?? false)
+                    || item.targetMuscleList.contains(where: {
+                        $0.localizedCaseInsensitiveContains(text)
+                    })
             }
 
         return items.enumerated().sorted { lhs, rhs in

@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 /// 物理器械详情：展示这件器械能练的动作，并维护这件器械启用的动作。
 ///
@@ -13,6 +12,7 @@ struct PhysicalEquipmentDetailView: View {
 
     @State private var selectedTrainingType: String = "力量"
     @State private var showExercisePicker = false
+    @State private var showEdit = false
 
     private struct ExerciseGroup: Identifiable {
         let part: String
@@ -99,9 +99,19 @@ struct PhysicalEquipmentDetailView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("关闭") { dismiss() }
                 }
+                if item?.equipmentType == nil {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("编辑") { showEdit = true }
+                    }
+                }
             }
             .sheet(isPresented: $showExercisePicker) {
                 EquipmentExercisePickerView(equipmentID: equipmentID)
+            }
+            .sheet(isPresented: $showEdit) {
+                if let item {
+                    AddEquipmentView(editingItem: item)
+                }
             }
         }
     }
@@ -142,15 +152,11 @@ struct PhysicalEquipmentDetailView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(Theme.ink.opacity(0.035))
-                if let data = item.photoData, let image = UIImage(data: data) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    Image(systemName: symbol(for: item))
-                        .font(.system(size: 30, weight: .light))
-                        .foregroundStyle(Theme.cobalt)
-                }
+                EquipmentPhotoView(
+                    item: item,
+                    symbol: symbol(for: item),
+                    symbolSize: 30
+                )
             }
             .frame(width: 96, height: 96)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -174,6 +180,13 @@ struct PhysicalEquipmentDetailView: View {
                 Text(categoryLabel(item))
                     .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
+
+                if item.equipmentType == nil, let summary = item.targetMuscleSummary {
+                    Text(summary)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(Theme.cobalt)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 Text(heroExerciseSummary(item))
                     .font(.system(size: 9.5, weight: .medium))
@@ -400,6 +413,18 @@ struct PhysicalEquipmentDetailView: View {
                 Text("\(customExercises.count) 个动作")
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("训练部位")
+                    .font(.system(size: 9.5, weight: .semibold))
+                    .foregroundStyle(Theme.secondaryText)
+                Text(item?.targetMuscleSummary ?? "未设置 · 点右上角编辑补充")
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(
+                        item?.targetMuscleSummary == nil ? Theme.coral : Theme.ink
+                    )
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             if customExercises.isEmpty {

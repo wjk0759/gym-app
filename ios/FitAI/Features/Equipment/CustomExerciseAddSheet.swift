@@ -4,25 +4,29 @@ import UIKit
 struct CustomExerciseAddSheet: View {
     @Environment(\.dismiss) var dismiss
 
-    let initialName: String
-    let photo: UIImage?
-    let onAdd: (String, MuscleGroup, Equipment) -> Void
+    let onAdd: (String, [String], MuscleGroup, Equipment, Data?) -> Void
 
-    @State var name = ""
-    @State var muscle: MuscleGroup = .chest
-    @State var equipment: Equipment = .machine
+    @State private var name: String
+    @State private var photoData: Data?
+    @State private var targetMuscles: [String] = []
+    @State private var equipment: Equipment = .machine
+    @State private var showBodyPartPicker = false
     @FocusState private var nameFocused: Bool
-
-    private let muscleColumns = [
-        GridItem(.flexible(), spacing: 7),
-        GridItem(.flexible(), spacing: 7),
-        GridItem(.flexible(), spacing: 7)
-    ]
 
     private let equipmentColumns = [
         GridItem(.flexible(), spacing: 7),
         GridItem(.flexible(), spacing: 7)
     ]
+
+    init(
+        initialName: String,
+        photo: UIImage?,
+        onAdd: @escaping (String, [String], MuscleGroup, Equipment, Data?) -> Void
+    ) {
+        _name = State(initialValue: initialName)
+        _photoData = State(initialValue: photo?.jpegData(compressionQuality: 0.7))
+        self.onAdd = onAdd
+    }
 
     var body: some View {
         NavigationStack {
@@ -30,22 +34,13 @@ struct CustomExerciseAddSheet: View {
                 VStack(alignment: .leading, spacing: 16) {
                     header
 
-                    if let photo {
-                        Image(uiImage: photo)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 170)
-                            .clipped()
-                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                    .stroke(Theme.stroke, lineWidth: 0.8)
-                            )
-                    }
+                    EquipmentPhotoCard(
+                        photoData: $photoData,
+                        title: "器械照片"
+                    )
 
                     nameCard
-                    muscleCard
+                    bodyPartCard
                     equipmentCard
 
                     Button {
@@ -54,7 +49,7 @@ struct CustomExerciseAddSheet: View {
                         Label("保存到器械库", systemImage: "plus.circle.fill")
                     }
                     .buttonStyle(PrimaryButtonStyle())
-                    .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(!canSave)
                 }
                 .appPagePadding()
                 .appPageTopPadding()
@@ -70,12 +65,19 @@ struct CustomExerciseAddSheet: View {
             }
             .keyboardDoneToolbar()
             .onAppear {
-                if name.isEmpty {
-                    name = initialName
-                }
                 nameFocused = true
             }
+            .sheet(isPresented: $showBodyPartPicker) {
+                EquipmentBodyPartPickerView(initial: targetMuscles) { selection in
+                    targetMuscles = selection
+                }
+            }
         }
+    }
+
+    private var canSave: Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !targetMuscles.isEmpty
     }
 
     private var header: some View {
@@ -91,7 +93,7 @@ struct CustomExerciseAddSheet: View {
                 .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text("AI 已预填识别名称。确认名称、训练肌群和器械类型后，加入你的个人器械库。")
+            Text("AI 已预填识别名称和照片。确认训练部位后，保存到你的器械库。")
                 .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
@@ -125,29 +127,55 @@ struct CustomExerciseAddSheet: View {
         .card(padding: 14)
     }
 
-    private var muscleCard: some View {
+    private var bodyPartCard: some View {
         VStack(alignment: .leading, spacing: 9) {
-            Text("主要训练肌群")
-                .font(.system(size: 9.5, weight: .semibold))
-                .foregroundStyle(Theme.secondaryText)
-            LazyVGrid(columns: muscleColumns, spacing: 7) {
-                ForEach(MuscleGroup.allCases) { group in
-                    selectionChip(
-                        title: group.label,
-                        selected: muscle == group
-                    ) {
-                        muscle = group
-                        Haptics.select()
-                    }
+            HStack {
+                Text("训练部位（必选）")
+                    .font(.system(size: 9.5, weight: .semibold))
+                    .foregroundStyle(Theme.secondaryText)
+                Spacer()
+                if targetMuscles.isEmpty {
+                    Text("至少 1 个")
+                        .font(.system(size: 9.5, weight: .semibold))
+                        .foregroundStyle(Theme.coral)
                 }
             }
+
+            Button {
+                showBodyPartPicker = true
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(
+                            EquipmentItem.muscleSummary(for: targetMuscles)
+                                ?? "选择训练部位"
+                        )
+                        .font(AppType.callout)
+                        .foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                        Text(
+                            targetMuscles.isEmpty
+                                ? "用于筛选动作和进入计划"
+                                : "已选 \(targetMuscles.count) 个细分部位"
+                        )
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(Theme.secondaryText)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(AppType.caption)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+            }
+            .buttonStyle(.plain)
         }
         .card(padding: 14)
     }
 
     private var equipmentCard: some View {
         VStack(alignment: .leading, spacing: 9) {
-            Text("器械类型")
+            Text("器械类别")
                 .font(.system(size: 9.5, weight: .semibold))
                 .foregroundStyle(Theme.secondaryText)
             LazyVGrid(columns: equipmentColumns, spacing: 7) {
@@ -193,8 +221,12 @@ struct CustomExerciseAddSheet: View {
 
     private func add() {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        onAdd(trimmed, muscle, equipment)
+        guard !trimmed.isEmpty, !targetMuscles.isEmpty else { return }
+        let bodyPart = targetMuscles.first.flatMap {
+            ExerciseLibrary.bodyPart(forMuscle: $0)
+        }
+        let muscle = MuscleGroup.from(bodyPart: bodyPart) ?? .core
+        onAdd(trimmed, targetMuscles, muscle, equipment, photoData)
         dismiss()
     }
 }

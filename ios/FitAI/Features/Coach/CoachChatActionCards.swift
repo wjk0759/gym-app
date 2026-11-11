@@ -334,6 +334,10 @@ extension CoachChatView {
                         Spacer()
                         Button(isEquipmentSaved(candidate) ? "已加入" : "加入") {
                             guard !isEquipmentSaved(candidate) else { return }
+                            let targetMuscles = [
+                                candidate.exercise.categoryL2
+                                    ?? candidate.exercise.muscle.label
+                            ]
                             store.addEquipment(
                                 EquipmentItem(
                                     name: candidate.exercise.nameZH,
@@ -342,7 +346,8 @@ extension CoachChatView {
                                     equipment: candidate.exercise.equipment,
                                     videoURL: candidate.exercise.videoURL?.absoluteString,
                                     notes: "来自拍照识别",
-                                    source: "recognition"
+                                    source: "recognition",
+                                    targetMuscles: targetMuscles
                                 )
                             )
                         }

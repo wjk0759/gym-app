@@ -1,7 +1,4 @@
-import ImageIO
-import PhotosUI
 import SwiftUI
-import UIKit
 
 struct SwipeDeleteRow<Content: View>: View {
     let isOpen: Bool
@@ -101,18 +98,27 @@ struct AddEquipmentView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 
+    private let editingItem: EquipmentItem?
+
     @State private var name = ""
     @State private var selectedType: EquipmentTypeInfo?
+    @State private var targetMuscles: [String] = []
     @State private var notes = ""
     @State private var photoData: Data?
-    @State private var photoItem: PhotosPickerItem?
-    @State private var showCamera = false
     @State private var showTypePicker = false
+    @State private var showBodyPartPicker = false
     @State private var message = ""
     @State private var showAlert = false
 
-    init(initialPhotoData: Data? = nil) {
-        _photoData = State(initialValue: initialPhotoData)
+    init(initialPhotoData: Data? = nil, editingItem: EquipmentItem? = nil) {
+        self.editingItem = editingItem
+        _name = State(initialValue: editingItem?.name ?? "")
+        _selectedType = State(
+            initialValue: EquipmentCatalog.type(for: editingItem?.equipmentType)
+        )
+        _targetMuscles = State(initialValue: editingItem?.targetMuscleList ?? [])
+        _notes = State(initialValue: editingItem?.notes ?? "")
+        _photoData = State(initialValue: editingItem?.photoData ?? initialPhotoData)
     }
 
     var body: some View {
@@ -137,35 +143,11 @@ struct AddEquipmentView: View {
                     }
                     .card()
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("器械类型")
-                            .font(AppType.caption)
-                            .foregroundStyle(Theme.secondaryText)
-                        Button {
-                            showTypePicker = true
-                        } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(selectedType?.nameZH ?? "自定义器械")
-                                        .font(AppType.callout)
-                                        .foregroundStyle(Theme.ink)
-                                    Text(
-                                        selectedType.map {
-                                            "\($0.categoryLabel) · \(trainableCount(for: $0)) 个动作"
-                                        } ?? "不关联标准类型，保存后可手动添加动作"
-                                    )
-                                    .font(.system(size: 9.5, weight: .medium))
-                                    .foregroundStyle(Theme.secondaryText)
-                                }
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(AppType.caption)
-                                    .foregroundStyle(Theme.tertiaryText)
-                            }
-                        }
-                        .buttonStyle(.plain)
+                    typeCard
+
+                    if selectedType == nil {
+                        bodyPartCard
                     }
-                    .card()
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("备注（选填）")
@@ -186,9 +168,12 @@ struct AddEquipmentView: View {
                     }
                     .card()
 
-                    photoCard
+                    EquipmentPhotoCard(
+                        photoData: $photoData,
+                        remotePhotoURL: editingItem?.photoURL
+                    )
 
-                    Button("保存到器械库") {
+                    Button(editingItem == nil ? "保存到器械库" : "保存修改") {
                         save()
                     }
                     .buttonStyle(PrimaryButtonStyle())
@@ -197,7 +182,7 @@ struct AddEquipmentView: View {
                 .padding(.bottom, 20)
             }
             .background(AppBackground())
-            .navigationTitle("添加器械")
+            .navigationTitle(editingItem == nil ? "添加器械" : "编辑器械")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -213,24 +198,10 @@ struct AddEquipmentView: View {
                     }
                 }
             }
-            .onChange(of: photoItem) { _, _ in
-                guard let item = photoItem else { return }
-                Task { @MainActor in
-                    await load(item)
+            .sheet(isPresented: $showBodyPartPicker) {
+                EquipmentBodyPartPickerView(initial: targetMuscles) { selection in
+                    targetMuscles = selection
                 }
-            }
-            .fullScreenCover(isPresented: $showCamera) {
-                PhotoCaptureView(
-                    title: "拍摄器械",
-                    hint: "让器械完整进入画面，避免只拍到局部或边缘。",
-                    onImage: { picked in
-                        photoData = picked.jpegData(compressionQuality: 0.7)
-                        showCamera = false
-                    },
-                    onCancel: {
-                        showCamera = false
-                    }
-                )
             }
             .alert("提示", isPresented: $showAlert) {
                 Button("知道了", role: .cancel) {}
@@ -240,37 +211,100 @@ struct AddEquipmentView: View {
         }
     }
 
-    private var photoCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("器械照片（选填）")
+    @ViewBuilder
+    private var typeCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("器械类型")
                 .font(AppType.caption)
                 .foregroundStyle(Theme.secondaryText)
 
-            if let data = photoData, let image = UIImage(data: data) {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: 160)
-                    .frame(maxWidth: .infinity)
-                    .clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            }
-
-            HStack(spacing: 10) {
-                Button("拍照") { showCamera = true }
-                    .buttonStyle(SecondaryButtonStyle())
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    Text("相册")
-                        .font(AppType.callout.weight(.semibold))
-                        .foregroundStyle(Theme.cobalt)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 13)
-                        .background(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(Theme.cobalt.opacity(0.10))
+            if editingItem != nil {
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(selectedType?.nameZH ?? "自定义器械")
+                            .font(AppType.callout)
+                            .foregroundStyle(Theme.ink)
+                        Text(
+                            selectedType.map {
+                                "\($0.categoryLabel) · \(trainableCount(for: $0)) 个动作"
+                            } ?? "保存后不可修改器械类型"
                         )
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(Theme.secondaryText)
+                    }
+                    Spacer()
+                }
+            } else {
+                Button {
+                    showTypePicker = true
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(selectedType?.nameZH ?? "自定义器械")
+                                .font(AppType.callout)
+                                .foregroundStyle(Theme.ink)
+                            Text(
+                                selectedType.map {
+                                    "\($0.categoryLabel) · \(trainableCount(for: $0)) 个动作"
+                                } ?? "不关联标准类型，保存后可手动添加动作"
+                            )
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundStyle(Theme.secondaryText)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(AppType.caption)
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .card()
+    }
+
+    private var bodyPartCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("训练部位（必选）")
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.secondaryText)
+                Spacer()
+                if targetMuscles.isEmpty {
+                    Text("至少 1 个")
+                        .font(.system(size: 9.5, weight: .semibold))
+                        .foregroundStyle(Theme.coral)
                 }
             }
+
+            Button {
+                showBodyPartPicker = true
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(
+                            EquipmentItem.muscleSummary(for: targetMuscles)
+                                ?? "选择训练部位"
+                        )
+                        .font(AppType.callout)
+                        .foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                        Text(
+                            targetMuscles.isEmpty
+                                ? "用于筛选动作和进入计划"
+                                : "已选 \(targetMuscles.count) 个细分部位"
+                        )
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(Theme.secondaryText)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(AppType.caption)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+            }
+            .buttonStyle(.plain)
         }
         .card()
     }
@@ -283,20 +317,47 @@ struct AddEquipmentView: View {
             return
         }
 
+        let isCustom = selectedType == nil
+        if isCustom && targetMuscles.isEmpty {
+            message = "请选择至少一个训练部位。"
+            showAlert = true
+            return
+        }
+
+        let firstBodyPart = targetMuscles.first.flatMap {
+            ExerciseLibrary.bodyPart(forMuscle: $0)
+        }
+        let muscle = isCustom ? MuscleGroup.from(bodyPart: firstBodyPart) : nil
         let enabled = selectedType.map { type in
             ExerciseLibrary.all
                 .filter { $0.planEligible && $0.equipmentTypes.contains(type.exerciseGroup) }
                 .map(\.slug)
         } ?? []
-        _ = store.addEquipment(
-            equipmentType: selectedType?.slug,
-            name: trimmed,
-            category: selectedType?.category,
-            photoData: photoData,
-            enabledExerciseSlugs: enabled,
-            notes: notes.trimmingCharacters(in: .whitespacesAndNewlines),
-            source: "manual"
-        )
+        let cleanNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let editingItem {
+            store.updateEquipment(
+                editingItem.id,
+                name: trimmed,
+                notes: cleanNotes,
+                muscle: muscle,
+                targetMuscles: isCustom ? targetMuscles : [],
+                photoData: photoData,
+                photoChanged: photoData != editingItem.photoData
+            )
+        } else {
+            _ = store.addEquipment(
+                equipmentType: selectedType?.slug,
+                name: trimmed,
+                category: selectedType?.category,
+                photoData: photoData,
+                enabledExerciseSlugs: enabled,
+                notes: cleanNotes,
+                muscle: muscle,
+                targetMuscles: isCustom ? targetMuscles : [],
+                source: "manual"
+            )
+        }
         dismiss()
     }
 
@@ -304,68 +365,5 @@ struct AddEquipmentView: View {
         ExerciseLibrary.all.filter {
             $0.planEligible && $0.equipmentTypes.contains(type.exerciseGroup)
         }.count
-    }
-
-    @MainActor
-    private func load(_ item: PhotosPickerItem) async {
-        guard let data = try? await item.loadTransferable(type: Data.self),
-              let image = UIImage(data: data) else {
-            return
-        }
-        photoData = image.jpegData(compressionQuality: 0.7)
-        photoItem = nil
-    }
-}
-
-struct EquipmentThumbnail: View {
-    let itemID: UUID
-    let data: Data
-
-    @State private var image: UIImage?
-    private static let cache = NSCache<NSString, UIImage>()
-
-    var body: some View {
-        Group {
-            if let image {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-            } else {
-                Color.clear
-            }
-        }
-        .task(id: itemID) {
-            await load()
-        }
-    }
-
-    @MainActor
-    private func load() async {
-        let key = "\(itemID.uuidString)-\(data.count)" as NSString
-        if let cached = Self.cache.object(forKey: key) {
-            image = cached
-            return
-        }
-        let payload = data
-        let decoded = await Task.detached(priority: .utility) {
-            Self.downsample(payload, maxPixel: 140)
-        }.value
-        guard let decoded else { return }
-        Self.cache.setObject(decoded, forKey: key)
-        image = decoded
-    }
-
-    nonisolated private static func downsample(_ data: Data, maxPixel: CGFloat) -> UIImage? {
-        let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: maxPixel,
-            kCGImageSourceShouldCacheImmediately: true
-        ]
-        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
-              let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
-            return nil
-        }
-        return UIImage(cgImage: cgImage)
     }
 }
