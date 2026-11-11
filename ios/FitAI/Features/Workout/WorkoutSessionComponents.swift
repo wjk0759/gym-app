@@ -91,7 +91,15 @@ struct WorkoutTrainingTipCard: View {
                     .foregroundStyle(Theme.tertiaryText)
             }
         }
-        .card(padding: 14)
+        .padding(12)
+        .background(
+            Theme.paper,
+            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Theme.stroke, lineWidth: 1)
+        }
     }
 }
 
