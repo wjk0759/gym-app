@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`a1c200a`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`d5292f0`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试对齐（`827ea94`）；修复 `AppStore.swift` 非法 UTF-8、`PlanGenerator` 器械池重名；`FitAITests` **62/62** 通过，phone-only Release 已安装并启动 Wu-Tang；此前完成动作库别名/计划白名单/隐藏 `other`、媒体 coverage 校验、phone-only 构建脚本、媒体图库验证、Watch UI 重设计（`fc8634c`/`bc183ae`/`d890a53`/`4af3bcb`/`2d5dea0`）
@@ -25,6 +25,41 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-11 · Windows（器械目录 v3：70 类图片目录）
+
+- 分支：`develop`
+- 代码提交：`d5292f0`
+- 做了什么：
+  - 以 `E:\Projects\无水印光板健身器械图` 为唯一来源，生成 **70 类物理器械**目录；旧 95 类从 App 目录移除
+  - 81 张图 → 70 个名称（8 组多图），压缩到最长边 1000 / JPEG 82，上传到 `/media/equipment-catalog/`
+  - 6 个新 slug：`leg_extension_iso`、`leg_curl_lying_iso`、`leg_curl_single`、`glute_bridge`、`deadlift_machine`、`ab_bench`；其余 64 类复用旧 slug
+  - 新页面：`EquipmentBrowserView` 左侧按胸/背/肩/臂/腿/臀/核心/有氧/全身，右侧器械图片网格
+  - 新 `EquipmentCatalogDetailView`：图片轮播、训练部位、不同部位使用方法（步骤 + 每个目标肌群的发力提示 + 安全提示）、可练动作
+  - `EquipmentTypePickerView` / `EquipmentCatalogView` 改为同一个 Browser 的选择/添加模式
+  - 通用器械 10 个仍在「我的器械库」勾选；Browser 不显示通用器械
+  - 「我的器械库」列表/详情在用户没传照片时回退显示目录器械图片
+  - 70 份 guide 生成到 `equipment_guides.json`；对深蹲架、绳索划船、腹部器械、腿屈伸/弯举组合、GHD 等补了显式动作映射
+  - 新脚本 `scripts/vital/build_equipment_v3.py`；`build_ios_catalog.py` 不再覆盖器械目录
+- 数据自测：
+  - catalog 70 / guides 70 / iOS catalog 70，slug 集合一致
+  - 81 张优化图全部存在；示例 URL `chest_press_seated-1.jpg`、`leg_press_45-3.jpg`、`glute_bridge-2.jpg` 等生产 HEAD **200**
+  - 所有 guide 的目标肌群都有 cue；显式 action slug 全部能在 `vital_exercises.json` 找到
+  - 后端 **235 passed** + Ruff 通过（本轮无后端代码改动，未重新部署）
+- 说明：
+  - 旧 95 类只在**后端/识别兼容层**保留，App 已不再展示；未做后端物理删除
+  - 新 6 个 slug 目前是客户端目录类型；后端按 `category` 存，计划池仍按 `enabled_exercise_slugs` 走
+  - 生产图片目录：`/opt/fitai/media/equipment-catalog/`（81 个文件）
+- 未验证：
+  - Windows 无 Xcode，iOS **没有编译和真机运行**；只做了 tree-sitter 语法解析和引用/数据检查
+- Mac 需要做：
+  - `git pull` → `xcodegen generate` → 编译运行
+  - 验收：添加页左侧部位栏、右侧图片网格、点卡片进详情；详情图片轮播、部位 chips、使用方法切换；从详情添加/选用；通用器械勾选不变；我的器械库显示目录图片
+  - 重点看 `EquipmentBrowserView`、`EquipmentCatalogDetailView`、`EquipmentTypeImageView`、`AddEquipmentView` 的类型选择 sheet
+- 不要恢复：
+  - 不要恢复旧 95 类 App 目录
+  - 不要把通用器械放回 Browser
+  - 不要运行 `build_ios_catalog.py` 重新生成旧器械目录（器械目录由 `build_equipment_v3.py` 生成）
 
 ### 2026-11-11 · Windows（自定义器械照片上传 + 必选训练部位）
 
