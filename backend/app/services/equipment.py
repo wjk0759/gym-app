@@ -294,6 +294,7 @@ async def recognize(
             db=db,
             user_id=user_id,
             kind="equipment_scan",
+            temperature=0.0,
         )
     except Exception as exc:  # noqa: BLE001 - return an honest UI state
         logger.warning("equipment vision failed: %s", exc)
@@ -312,10 +313,49 @@ async def recognize(
             "视觉识别暂时不可用，请稍后重试。",
         )
 
-    return _map_result(db, result, filename)
+    return _map_result(db, result, filename, ocr_text=ocr_text)
 
 
-def _map_result(db: Session, result: dict, filename: str) -> dict:
+def _normalize_match_text(value: str | None) -> str:
+    return " ".join(str(value or "").strip().lower().split())
+
+
+def _unique_ocr_match(db: Session, text: str | None) -> EquipmentType | None:
+    """Return the one catalog type a printed label clearly names.
+
+    OCR is only trusted when it contains a complete, specific machine name.
+    Generic words such as "LEG PRESS" match several catalog entries and are
+    deliberately ignored so OCR cannot override the visual model by itself.
+    """
+    normalized = _normalize_match_text(text)
+    if len(normalized) < 4:
+        return None
+
+    matches: list[EquipmentType] = []
+    for item in catalog_types(db):
+        best = 0
+        for value in [item.name_zh, item.name_en, *(item.aliases or [])]:
+            candidate = _normalize_match_text(value)
+            if not candidate:
+                continue
+            if candidate in normalized or normalized in candidate:
+                best = max(best, len(candidate))
+        # Specific labels only: "SEATED ROW" / "坐姿划船机", not "ROW"/"LEG PRESS".
+        if best >= 5:
+            matches.append(item)
+
+    # A label that could mean several catalog types is not a specific label.
+    if len(matches) != 1:
+        return None
+    return matches[0]
+
+
+def _map_result(
+    db: Session,
+    result: dict,
+    filename: str,
+    ocr_text: str = "",
+) -> dict:
     equipment_slug = str(result.get("equipment_slug") or "").strip().lower()
     equipment_name = str(result.get("equipment_name") or "").strip()
     description = str(result.get("description") or "").strip()
@@ -341,11 +381,15 @@ def _map_result(db: Session, result: dict, filename: str) -> dict:
             "status": "not_gym_equipment",
         }
 
-    item = (
+    model_item = (
         catalog_get(db, equipment_slug)
         or match_name(db, equipment_name)
         or match_name(db, str(result.get("name") or ""))
     )
+    # A printed machine label is a much stronger signal than the VLM's guess.
+    # Only use it when it maps to exactly one specific catalog type.
+    ocr_item = _unique_ocr_match(db, ocr_text)
+    item = ocr_item or model_item
     if item is None:
         return {
             "scan_id": str(uuid.uuid4()),
@@ -370,6 +414,22 @@ def _map_result(db: Session, result: dict, filename: str) -> dict:
 
     options: list[dict] = []
     seen: set[str] = set()
+
+    # The primary answer is the OCR label when it is specific, otherwise the
+    # model's top-level slug. The candidate list is auxiliary: it must never
+    # silently replace the primary (the model often returns a noisy shortlist).
+    primary_confidence = 0.95 if ocr_item is not None else confidence
+    primary_option = _build_option(db, item, primary_confidence)
+    if primary_option is not None:
+        options.append(primary_option)
+        seen.add(item.slug)
+
+    if model_item is not None and model_item.slug not in seen:
+        model_option = _build_option(db, model_item, confidence)
+        if model_option is not None:
+            options.append(model_option)
+            seen.add(model_item.slug)
+
     for raw in raw_options[:2]:
         if not isinstance(raw, dict):
             continue
@@ -382,11 +442,6 @@ def _map_result(db: Session, result: dict, filename: str) -> dict:
         option = _build_option(db, option_item, raw_confidence)
         if option is not None:
             options.append(option)
-
-    if not options:
-        top_option = _build_option(db, item, confidence)
-        if top_option is not None:
-            options.append(top_option)
 
     if len(options) > 1:
         top_confidence = options[0]["confidence"]
@@ -414,6 +469,13 @@ def _map_result(db: Session, result: dict, filename: str) -> dict:
 
     top = options[0]
     needs_confirmation = len(options) > 1 or top["confidence"] < 0.6
+    logger.info(
+        "equipment scan model=%s ocr=%s primary=%s options=%s",
+        equipment_slug or "-",
+        bool(ocr_item),
+        top["slug"],
+        [option["slug"] for option in options[:3]],
+    )
 
     return {
         "scan_id": str(uuid.uuid4()),

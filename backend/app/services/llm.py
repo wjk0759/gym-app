@@ -172,6 +172,7 @@ async def complete_vision_json(
     db: Session | None = None,
     user_id: str | None = None,
     kind: str = "vision",
+    temperature: float = 0.2,
 ) -> dict:
     """One or more images -> one JSON response using the vision model."""
     if settings.use_mock_vision:
@@ -201,7 +202,7 @@ async def complete_vision_json(
     payload = {
         "model": settings.vision_model_name,
         "messages": messages,
-        "temperature": 0.2,
+        "temperature": temperature,
         "response_format": {"type": "json_object"},
     }
     last_error: Exception | None = None
