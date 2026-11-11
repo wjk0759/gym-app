@@ -42,13 +42,16 @@ struct EquipmentPickerExerciseCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ZStack {
+                Theme.ink.opacity(0.035)
+
                 if let thumbnail = exercise.thumbnailURL {
                     AsyncImage(url: thumbnail) { phase in
                         switch phase {
                         case .success(let image):
                             image
                                 .resizable()
-                                .scaledToFill()
+                                .scaledToFit()
+                                .padding(6)
                         case .failure:
                             musclePlaceholder
                         case .empty:

@@ -38,6 +38,7 @@ struct EquipmentRecognitionView: View {
     @State var equipmentOptions: [EquipmentMatchOption] = []
     @State var selectedEquipmentSlug: String?
     @State var showAddCustom = false
+    @State var showEquipmentPicker = false
     @State var didAutoOfferCustom = false
     @State var pendingCustomOffer = false
     @State var customAddedName = ""
@@ -138,6 +139,11 @@ struct EquipmentRecognitionView: View {
             )
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showEquipmentPicker) {
+            EquipmentTypePickerView { info in
+                applyEquipmentType(info)
+            }
         }
     }
 
@@ -427,6 +433,28 @@ struct EquipmentRecognitionView: View {
                 }
                 resultSection
             }
+
+            if !isScanning, imageData != nil {
+                Button {
+                    Haptics.tap()
+                    showEquipmentPicker = true
+                } label: {
+                    Label("识别不对？从器械库选择", systemImage: "square.grid.2x2")
+                        .font(.system(size: 9.5, weight: .semibold))
+                        .foregroundStyle(Theme.cobalt)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                        .background(
+                            Theme.paper,
+                            in: Capsule(style: .continuous)
+                        )
+                        .overlay {
+                            Capsule(style: .continuous)
+                                .strokeBorder(Theme.stroke, lineWidth: 1)
+                        }
+                }
+                .buttonStyle(SubtlePressStyle(scale: 0.98))
+            }
         }
         .card()
     }
@@ -438,6 +466,36 @@ struct EquipmentRecognitionView: View {
         equipmentName = option.name
         candidates = option.candidates
         notInLibrary = false
+    }
+
+    /// Manual correction path: the user knows the machine better than the
+    /// vision model. Selecting a catalog type fills the same result shape, so
+    /// saving and plan-pool integration work unchanged.
+    func applyEquipmentType(_ info: EquipmentTypeInfo?) {
+        showEquipmentPicker = false
+        guard let info else { return }
+
+        let mapped = info.planEligibleExercises.map {
+            EquipmentCandidate(exercise: $0, confidence: 1)
+        }
+        selectedEquipmentSlug = info.slug
+        equipmentName = info.nameZH
+        candidates = mapped
+        equipmentOptions = [
+            EquipmentMatchOption(
+                slug: info.slug,
+                name: info.nameZH,
+                confidence: 1,
+                candidates: mapped
+            )
+        ]
+        scanStatus = mapped.isEmpty ? "no_actions" : "ok"
+        notInLibrary = mapped.isEmpty
+        description = "已从器械库选择 \(info.nameZH)"
+        warning = ""
+        customAddedName = ""
+        didAutoOfferCustom = false
+        Haptics.select()
     }
 
     var isEquipmentSaved: Bool {
