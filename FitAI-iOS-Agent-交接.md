@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`999466b`（器械识别 OCR/手动纠错 + 动作库格子统一；macOS 已验证 `95fe496` 训练页；后端生产已部署 `84c1046`，rebase 前内容等价 `d459515`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`b66feb2`（器械识别 OCR/手动纠错 + 动作库格子统一；macOS 已验证 `95fe496` 训练页；后端生产已部署 `84c1046`，rebase 前内容等价 `d459515`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -29,7 +29,7 @@
 ### 2026-11-12 · Windows（器械识别回归 + 动作库格子统一）
 
 - 分支：`develop`
-- 代码提交：`ef4c2f0`（后端 OCR 优先）、`801f0d6`（iOS 格子 + 手动选择）、`d459515`（后端候选顺序修正）、`999466b`（iOS 候选换行）；生产已部署 `84c1046`（rebase 前，内容与 `d459515` 等价）
+- 代码提交：`ef4c2f0`（后端 OCR 优先）、`801f0d6`（iOS 格子 + 手动选择）、`d459515`（后端候选顺序修正）、`999466b`（iOS 候选换行）、`b66feb2`（腿类识别歧义提示）；生产已部署 `84c1046`（rebase 前，内容与 `d459515` 等价）
 - 器械识别根因（详细实测）：
   - 生产视觉配置正常：`vision=qwen3-vl-plus`、key 已配置、非 mock；最近扫描 `ok`、3–6 秒
   - 但 v3 目录实测：坐姿划船图不带 OCR → `squat_press`/`leg_press_45`；哈克深蹲图 → `leg_press_45`；腿举图 → `leg_press_45`；模型顶层还经常统一给 `hack_squat`。Qwen3-VL-Plus 对这三类器械的图片判别本身不可靠，不是单纯候选顺序问题
@@ -47,7 +47,7 @@
 - 验证：
   - 后端 **245 passed**，Ruff 通过
   - 生产：`SEATED ROW` OCR 2/2 → `seated_row`；腿举候选优先；无 OCR 坐姿划船仍会被判成腿举/哈克深蹲（模型能力上限，必须靠手动选择）
-  - GitHub Actions iOS Build：`999466b` 已 push，等待 macOS runner（排队中）；Mac 仍需真机看格子
+  - GitHub Actions iOS Build：`999466b` / `b66feb2` 已 push，macOS runner 排队中；Mac 仍需真机看格子
 - Mac 需要做：
   - `git pull` → `xcodegen generate` → 编译 → `FitAITests`
   - 动作库：横版/方形/竖版缩略图都应在一个 1:1 居中框里，所有卡片同宽同高
