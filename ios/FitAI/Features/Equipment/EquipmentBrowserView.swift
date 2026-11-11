@@ -16,6 +16,10 @@ struct EquipmentBrowserView: View {
     @State private var query = ""
     @State private var showCustomAdd = false
 
+    init(mode: EquipmentBrowserMode) {
+        self.mode = mode
+    }
+
     private var isSearching: Bool {
         !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }

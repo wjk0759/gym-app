@@ -13,6 +13,16 @@ struct EquipmentCatalogDetailView: View {
     @State private var selectedMuscle: String?
     @State private var selectedExercise: Exercise?
 
+    init(
+        info: EquipmentTypeInfo,
+        mode: EquipmentBrowserMode,
+        onClose: (() -> Void)? = nil
+    ) {
+        self.info = info
+        self.mode = mode
+        self.onClose = onClose
+    }
+
     private var guide: EquipmentGuide? {
         EquipmentGuideCatalog.guide(for: info.slug)
     }

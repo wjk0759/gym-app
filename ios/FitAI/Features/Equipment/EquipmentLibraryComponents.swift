@@ -328,11 +328,7 @@ struct AddEquipmentView: View {
             ExerciseLibrary.bodyPart(forMuscle: $0)
         }
         let muscle = isCustom ? MuscleGroup.from(bodyPart: firstBodyPart) : nil
-        let enabled = selectedType.map { type in
-            ExerciseLibrary.all
-                .filter { $0.planEligible && $0.equipmentTypes.contains(type.exerciseGroup) }
-                .map(\.slug)
-        } ?? []
+        let enabled = selectedType?.planEligibleExercises.map(\.slug) ?? []
         let cleanNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if let editingItem {
@@ -362,8 +358,6 @@ struct AddEquipmentView: View {
     }
 
     private func trainableCount(for type: EquipmentTypeInfo) -> Int {
-        ExerciseLibrary.all.filter {
-            $0.planEligible && $0.equipmentTypes.contains(type.exerciseGroup)
-        }.count
+        type.planEligibleExercises.count
     }
 }
