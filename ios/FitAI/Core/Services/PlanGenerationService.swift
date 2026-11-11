@@ -10,7 +10,6 @@ struct PlanGenerationService {
 
     func generateRemote(
         profile: UserProfile,
-        equipmentSlugs: [String],
         strictEquipment: Bool,
         focusAreas: Set<BodyFocusArea>,
         force: Bool,
@@ -24,7 +23,6 @@ struct PlanGenerationService {
         return try await client.generatePlan(
             force: force,
             onboarding: onboarding,
-            equipmentSlugs: equipmentSlugs,
             strictEquipment: strictEquipment,
             split: profile.split,
             focus: BodyFocusArea.displayOrder

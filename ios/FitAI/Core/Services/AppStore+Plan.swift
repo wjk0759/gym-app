@@ -34,10 +34,28 @@ extension AppStore {
             let idempotencyKey = pendingPlanIdempotencyKey ?? UUID().uuidString
             pendingPlanIdempotencyKey = idempotencyKey
             Task { @MainActor in
+                // The server owns the candidate pool, so the equipment
+                // library must be current before it can plan.
+                let equipmentSynced = await self.syncEquipmentForPlanGeneration()
+                guard equipmentSynced else {
+                    await self.applyLocalPlanFallback(
+                        profile: snapshot,
+                        equipmentSlugs: librarySlugs,
+                        strictEquipment: strictEquipment,
+                        weeklyWeekdays: weeklyWeekdays,
+                        focusAreas: focusAreas,
+                        onboarding: onboarding,
+                        toast: "器械库未同步，已使用本地模板"
+                    )
+                    self.isGenerating = false
+                    self.persist()
+                    self.rescheduleNotifications()
+                    return
+                }
+
                 do {
                     var generated = try await self.planGeneration.generateRemote(
                         profile: snapshot,
-                        equipmentSlugs: librarySlugs,
                         strictEquipment: strictEquipment,
                         focusAreas: focusAreas,
                         force: force,
@@ -50,7 +68,7 @@ extension AppStore {
                     self.plan = generated
                     self.toast = generated.generatedBy == "ai"
                         ? "已由 AI 生成计划"
-                        : "AI 暂不可用，已用规则模板生成"
+                        : "已用规则模板生成计划"
                     self.lastPlanGeneratedAt = Date()
                     if onboarding {
                         await self.consumeOnboardingTrialIfNeeded()
@@ -76,25 +94,26 @@ extension AppStore {
                     self.isGenerating = false
                     self.toast = "计划服务暂时不可用，请稍后重试"
                     return
-                } catch {
-                    var fallback = self.planGeneration.generateLocal(
+                } catch let error as APIError where error.statusCode == 422 {
+                    await self.applyLocalPlanFallback(
                         profile: snapshot,
-                        dislikedSlugs: self.dislikedSlugs,
                         equipmentSlugs: librarySlugs,
                         strictEquipment: strictEquipment,
                         weeklyWeekdays: weeklyWeekdays,
                         focusAreas: focusAreas,
-                        sessions: self.sessions,
-                        planWeights: self.planWeightTargets
+                        onboarding: onboarding,
+                        toast: error.message
                     )
-                    fallback.version = (self.plan?.version ?? 0) + 1
-                    self.archiveCurrentPlan()
-                    self.plan = fallback
-                    self.toast = "AI 服务不可用，已使用本地模板"
-                    self.lastPlanGeneratedAt = Date()
-                    if onboarding {
-                        await self.consumeOnboardingTrialIfNeeded()
-                    }
+                } catch {
+                    await self.applyLocalPlanFallback(
+                        profile: snapshot,
+                        equipmentSlugs: librarySlugs,
+                        strictEquipment: strictEquipment,
+                        weeklyWeekdays: weeklyWeekdays,
+                        focusAreas: focusAreas,
+                        onboarding: onboarding,
+                        toast: "网络或服务异常，已使用本地模板"
+                    )
                 }
                 self.isGenerating = false
                 self.persist()
@@ -129,6 +148,38 @@ extension AppStore {
                     await self.consumeOnboardingTrialIfNeeded()
                 }
             }
+        }
+    }
+
+    /// Builds the local plan when the remote path cannot run, and explains why
+    /// instead of blaming the AI service for every failure.
+    @MainActor
+    private func applyLocalPlanFallback(
+        profile snapshot: UserProfile,
+        equipmentSlugs: [String],
+        strictEquipment: Bool,
+        weeklyWeekdays: [Int]?,
+        focusAreas: Set<BodyFocusArea>,
+        onboarding: Bool,
+        toast message: String
+    ) async {
+        var fallback = planGeneration.generateLocal(
+            profile: snapshot,
+            dislikedSlugs: dislikedSlugs,
+            equipmentSlugs: equipmentSlugs,
+            strictEquipment: strictEquipment,
+            weeklyWeekdays: weeklyWeekdays,
+            focusAreas: focusAreas,
+            sessions: sessions,
+            planWeights: planWeightTargets
+        )
+        fallback.version = (plan?.version ?? 0) + 1
+        archiveCurrentPlan()
+        plan = fallback
+        toast = message
+        lastPlanGeneratedAt = Date()
+        if onboarding {
+            await consumeOnboardingTrialIfNeeded()
         }
     }
 

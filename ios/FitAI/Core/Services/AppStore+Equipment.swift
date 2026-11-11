@@ -158,4 +158,35 @@ extension AppStore {
         }
         setUniversalEquipment(slugs)
     }
+
+    /// Pushes the equipment library so the server can derive the plan pool.
+    /// Plan generation must not run against a stale server pool, so callers
+    /// fall back to the local template when this returns false.
+    @MainActor
+    func syncEquipmentForPlanGeneration() async -> Bool {
+        guard AuthTokenStore.shared.accessToken != nil else { return false }
+
+        var complete = true
+        for item in equipmentLibrary {
+            do {
+                try await APIClient.shared.syncEquipmentItem(item)
+                if let index = equipmentLibrary.firstIndex(where: { $0.id == item.id }) {
+                    equipmentLibrary[index].syncedAt = Date()
+                }
+            } catch {
+                complete = false
+            }
+        }
+        do {
+            try await APIClient.shared.replaceUniversalEquipment(
+                slugs: selectedUniversalSlugs
+            )
+        } catch {
+            complete = false
+        }
+        if complete {
+            persist()
+        }
+        return complete
+    }
 }
