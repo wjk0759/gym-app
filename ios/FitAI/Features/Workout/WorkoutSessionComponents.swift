@@ -230,7 +230,7 @@ struct WorkoutSessionActionBar: View {
         VStack(spacing: 8) {
             if let exercise {
                 HStack {
-                    Button("跳过这个动作") {
+                    Button(done > 0 ? "跳过剩余组" : "跳过这个动作") {
                         onSkip()
                     }
                     .font(AppType.caption.weight(.medium))

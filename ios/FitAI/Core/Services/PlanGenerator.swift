@@ -300,7 +300,7 @@ enum PlanGenerator {
         return preferred.count >= 8 ? preferred : pool
     }
 
-    private static func injuryTags(_ text: String) -> Set<String> {
+    static func injuryTags(_ text: String) -> Set<String> {
         let mapping: [(String, String)] = [
             ("膝", "knee_pain"),
             ("半月板", "knee_pain"),

@@ -45,6 +45,8 @@ struct WorkoutSessionView: View {
     @State var valueEditor: WorkoutValueEditor?
     @State var mediaStore = ExerciseMediaStore()
     @State var showInstructions = false
+    @State var substitutionTarget: Exercise?
+    @State var substitutionNotice: String?
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -78,6 +80,70 @@ struct WorkoutSessionView: View {
         .appPagePadding()
         .padding(.top, 8)
         .transition(.move(edge: .top).combined(with: .opacity))
+    }
+
+    @ViewBuilder
+    private var substitutionBanner: some View {
+        if let substitutionNotice {
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(Theme.cobalt)
+                Text(substitutionNotice)
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 4)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .background(
+                Theme.cobalt.opacity(0.07),
+                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Theme.cobalt.opacity(0.20), lineWidth: 1)
+            }
+            .appPagePadding()
+            .padding(.top, 8)
+            .transition(.move(edge: .top).combined(with: .opacity))
+        }
+    }
+
+    @ViewBuilder
+    private var substitutionEntry: some View {
+        if let exercise = currentExercise,
+           !isWatchLed,
+           let info = exercise.exercise,
+           info.equipment != .bodyweight,
+           completedSets(for: exercise) < exercise.sets {
+            Button {
+                Haptics.tap()
+                substitutionTarget = info
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("器械被占了？换一个")
+                        .font(AppType.caption.weight(.semibold))
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .bold))
+                }
+                .foregroundStyle(Theme.cobalt)
+                .padding(.horizontal, 13)
+                .padding(.vertical, 11)
+                .background(
+                    Theme.cobalt.opacity(0.06),
+                    in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .strokeBorder(Theme.cobalt.opacity(0.18), lineWidth: 1)
+                }
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     private var sessionScroll: some View {
@@ -148,6 +214,7 @@ struct WorkoutSessionView: View {
                 exerciseCount: activeDay.exercises.count,
                 periodMode: periodMode
             )
+            substitutionEntry
             WorkoutSetCard(
                 exercise: exercise,
                 done: completedSets(for: exercise),
@@ -248,6 +315,10 @@ struct WorkoutSessionView: View {
 
                 if showResumeBanner {
                     resumeBanner
+                }
+
+                if substitutionNotice != nil {
+                    substitutionBanner
                 }
 
                 sessionScroll
@@ -363,6 +434,19 @@ struct WorkoutSessionView: View {
             .sheet(isPresented: $showAdjustSheet) {
                 adjustSheet
             }
+            .sheet(item: $substitutionTarget) { target in
+                WorkoutSubstitutionSheet(
+                    current: target,
+                    profile: store.profile,
+                    equipmentLibrary: store.equipmentLibrary,
+                    universalSlugs: store.selectedUniversalSlugs,
+                    strictEquipment: store.strictEquipmentMode,
+                    todaySlugs: Set(activeDay.exercises.map(\.slug)),
+                    lastSet: { store.lastSet(for: $0) },
+                    onSelect: { applySubstitution($0) },
+                    onSkip: { skipRemainingSets() }
+                )
+            }
             .sheet(item: $valueEditor) { editor in
                 WorkoutSessionValueEntrySheet(
                     editor: editor,
@@ -405,6 +489,13 @@ struct WorkoutSessionView: View {
 
     func effectiveExercise(_ exercise: PlanExercise) -> PlanExercise {
         var value = adjustedExercises[exercise.id] ?? exercise
+        if let sessionSets = value.sessionSets {
+            value.sets = max(0, sessionSets)
+            if periodMode == .light, let weight = value.weightKG, weight > 0 {
+                value.weightKG = ((weight * 0.8) * 2).rounded() / 2
+            }
+            return value
+        }
         if periodMode == .light {
             value.sets = max(2, value.sets - 1)
             if let weight = value.weightKG, weight > 0 {
@@ -426,7 +517,7 @@ struct WorkoutSessionView: View {
             done: done,
             nextTitle: nextTitle,
             setSummary: exercise.map { setSummary(for: $0) } ?? "",
-            onSkip: { advance() },
+            onSkip: { skipRemainingSets() },
             onComplete: {
                 guard let exercise else { return }
                 completeSet(exercise)

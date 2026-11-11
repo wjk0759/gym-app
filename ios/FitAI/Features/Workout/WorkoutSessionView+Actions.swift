@@ -157,7 +157,7 @@ extension WorkoutSessionView {
     }
 
     func saveDraftIfNeeded(persistImmediately: Bool = false) {
-        guard !didFinish, !logs.isEmpty else { return }
+        guard !didFinish, (!logs.isEmpty || !(resumedExercises?.isEmpty ?? true)) else { return }
         store.saveWorkoutDraft(
             WorkoutDraft(
                 dayID: day.id,
@@ -300,6 +300,134 @@ extension WorkoutSessionView {
         dismiss()
     }
 
+    // MARK: - 器械被占：替换与跳过
+
+    func applySubstitution(_ replacement: Exercise) {
+        guard !isWatchLed else {
+            watchNotice = "本次训练以手表为准，请在手表上调整"
+            substitutionTarget = nil
+            return
+        }
+        guard let current = currentExercise else {
+            substitutionTarget = nil
+            return
+        }
+
+        let completed = completedSets(for: current)
+        let total = current.sets
+        let remaining = max(0, total - completed)
+        guard remaining > 0 else {
+            substitutionTarget = nil
+            return
+        }
+
+        var session = resumedExercises ?? day.exercises
+        guard let position = session.firstIndex(where: { $0.id == current.id }) else {
+            substitutionTarget = nil
+            return
+        }
+
+        var original = adjustedExercises[current.id] ?? session[position]
+        original.sessionSets = completed
+        session[position] = original
+
+        if completed == 0 {
+            var replacementPlan = original
+            replacementPlan.slug = replacement.slug
+            replacementPlan.sets = total
+            replacementPlan.sessionSets = total
+            replacementPlan.reps = replacement.equipment == .bodyweight
+                ? "12-15"
+                : original.reps
+            replacementPlan.weightKG = store.lastSet(for: replacement.slug)?.weightKG
+            session[position] = replacementPlan
+            resumedExercises = session
+        } else {
+            var substitute = PlanExercise(
+                slug: replacement.slug,
+                sets: remaining,
+                reps: replacement.equipment == .bodyweight ? "12-15" : original.reps,
+                weightKG: store.lastSet(for: replacement.slug)?.weightKG,
+                restSec: original.restSec,
+                rpe: original.rpe
+            )
+            substitute.sessionSets = remaining
+            let insertAt = position + 1
+            session.insert(substitute, at: insertAt)
+            resumedExercises = session
+            index = insertAt
+        }
+
+        adjustedExercises.removeValue(forKey: current.id)
+        restRemaining = nil
+        prepare(currentExercise)
+        prefetchExerciseMedia()
+        saveDraftIfNeeded(persistImmediately: true)
+
+        let message = completed == 0
+            ? "已换成\(replacement.nameZH)，计划组数不变"
+            : "已加入\(replacement.nameZH)，剩余 \(remaining) 组"
+        showSubstitutionNotice(message)
+        substitutionTarget = nil
+        Haptics.success()
+    }
+
+    func skipRemainingSets() {
+        guard !isWatchLed else {
+            watchNotice = "本次训练以手表为准，请在手表上调整"
+            substitutionTarget = nil
+            return
+        }
+        guard let current = currentExercise else {
+            substitutionTarget = nil
+            return
+        }
+
+        let completed = completedSets(for: current)
+        var session = resumedExercises ?? day.exercises
+        guard let position = session.firstIndex(where: { $0.id == current.id }) else {
+            substitutionTarget = nil
+            return
+        }
+
+        if completed > 0 {
+            var updated = adjustedExercises[current.id] ?? session[position]
+            updated.sessionSets = completed
+            session[position] = updated
+            resumedExercises = session
+            index = position + 1
+        } else {
+            session.remove(at: position)
+            resumedExercises = session
+            index = min(position, session.count)
+        }
+
+        adjustedExercises.removeValue(forKey: current.id)
+        restRemaining = nil
+        saveDraftIfNeeded(persistImmediately: true)
+        prepare(currentExercise)
+        showSubstitutionNotice(
+            completed > 0
+                ? "已跳过\(current.displayName)剩余组"
+                : "已跳过\(current.displayName)"
+        )
+        substitutionTarget = nil
+        Haptics.tap()
+    }
+
+    func showSubstitutionNotice(_ text: String) {
+        withAnimation(Motion.quick) {
+            substitutionNotice = text
+        }
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            guard substitutionNotice == text else { return }
+            withAnimation(Motion.quick) {
+                substitutionNotice = nil
+            }
+        }
+    }
+
     func openAdjustSheet(_ exercise: PlanExercise) {
         if isWatchLed {
             watchNotice = "本次训练以手表为准，请在手表上调整"
@@ -327,6 +455,9 @@ extension WorkoutSessionView {
         updated.reps = WorkoutPickerOptions.normalizedReps(adjustReps)
         updated.weightKG = adjustWeight > 0 ? adjustWeight : nil
         updated.restSec = min(max(adjustRest, 0), 300)
+        if base.sessionSets != nil {
+            updated.sessionSets = updated.sets
+        }
         adjustedExercises[id] = updated
 
         if currentExercise?.id == id {

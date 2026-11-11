@@ -10,6 +10,9 @@ struct PlanExercise: Codable, Identifiable, Hashable {
     var weightKG: Double?
     var restSec: Int
     var rpe: Double
+    /// Session-only pinned set count. Used when an occupied machine moves the
+    /// remaining sets to a substitute; nil for normal plan rows.
+    var sessionSets: Int? = nil
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -19,6 +22,7 @@ struct PlanExercise: Codable, Identifiable, Hashable {
         case weightKG = "weight_kg"
         case restSec = "rest_sec"
         case rpe
+        case sessionSets = "session_sets"
     }
 
     var exercise: Exercise? {
