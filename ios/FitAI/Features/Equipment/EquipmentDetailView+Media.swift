@@ -6,9 +6,7 @@ extension EquipmentItemDetailView {
 @ViewBuilder
 func videoContent(for item: EquipmentItem) -> some View {
         if let url = videoURL {
-            LoopingVideoPlayer(url: url)
-                .frame(height: 245)
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            ExerciseMediaBox(url: url)
                 .overlay {
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .strokeBorder(Theme.stroke, lineWidth: 1)
@@ -58,7 +56,7 @@ func videoContent(for item: EquipmentItem) -> some View {
                         .foregroundStyle(Theme.onMedia.opacity(0.70))
                 }
             }
-            .frame(height: 245)
+            .aspectRatio(1, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -91,7 +89,7 @@ struct MotionBoardGallery: View {
         VStack(spacing: 10) {
             ZStack(alignment: .topLeading) {
                 if let url = variants[selectedIndex].videoURL {
-                    LoopingVideoPlayer(url: url)
+                    ExerciseMediaBox(url: url, cornerRadius: 16)
                 } else {
                     Color.clear
                 }
@@ -104,8 +102,7 @@ struct MotionBoardGallery: View {
                     .background(Theme.cobalt.opacity(0.92), in: Capsule())
                     .padding(10)
             }
-            .frame(height: 232)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .aspectRatio(1, contentMode: .fit)
             .overlay {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .strokeBorder(Theme.stroke, lineWidth: 1)

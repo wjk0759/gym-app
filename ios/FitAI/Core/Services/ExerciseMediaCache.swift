@@ -74,7 +74,12 @@ final class ExerciseMediaCache {
     }
 
     private func fileURL(for media: ExerciseMediaItem, kind: String) -> URL {
-        let safe = media.id.replacingOccurrences(
+        let remote = kind == "poster" ? media.posterURL : media.phoneURL
+        let mediaFolder = remote?
+            .deletingLastPathComponent()
+            .lastPathComponent ?? "v\(media.version)"
+        let cacheKey = "\(media.id)-\(mediaFolder)"
+        let safe = cacheKey.replacingOccurrences(
             of: "[^A-Za-z0-9_-]",
             with: "_",
             options: .regularExpression

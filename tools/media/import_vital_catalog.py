@@ -145,15 +145,14 @@ def probe_duration(ffmpeg: str, video: Path) -> float:
 
 
 def transcode(
-    ffmpeg: str, source: Path, target: Path, size: int, crf: int, fps: int, preset: str
+    ffmpeg: str, source: Path, target: Path, width: int, crf: int, fps: int, preset: str
 ) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     result = run([
         ffmpeg, "-y", "-hide_banner", "-loglevel", "error",
         "-i", str(source),
         "-vf",
-        f"scale={size}:{size}:force_original_aspect_ratio=decrease,"
-        f"pad={size}:{size}:(ow-iw)/2:(oh-ih)/2:color=white",
+        f"scale={width}:-2:flags=lanczos",
         "-c:v", "libx264", "-preset", preset, "-crf", str(crf),
         "-pix_fmt", "yuv420p", "-r", str(fps), "-an",
         "-movflags", "+faststart", str(target),
@@ -162,14 +161,13 @@ def transcode(
         raise SystemExit(f"ffmpeg failed: {target}\n{result.stderr}")
 
 
-def poster(ffmpeg: str, source: Path, target: Path, size: int) -> None:
+def poster(ffmpeg: str, source: Path, target: Path, width: int) -> None:
     result = run([
         ffmpeg, "-y", "-hide_banner", "-loglevel", "error",
         "-ss", "0.4", "-i", str(source),
         "-frames:v", "1",
         "-vf",
-        f"scale={size}:{size}:force_original_aspect_ratio=decrease,"
-        f"pad={size}:{size}:(ow-iw)/2:(oh-ih)/2:color=white",
+        f"scale={width}:-2:flags=lanczos",
         "-q:v", "4", "-update", "1", str(target),
     ])
     if result.returncode != 0:
@@ -237,15 +235,20 @@ def main() -> int:
     parser.add_argument("--preset", default="medium")
     parser.add_argument("--jobs", type=int, default=4)
     parser.add_argument("--limit", type=int, default=0, help="只处理前 N 条（测试用）")
+    parser.add_argument("--slug", default="", help="只处理这个 exercise slug（测试用）")
+    parser.add_argument("--media-version", default="v1", help="媒体目录版本，例如 v2")
     args = parser.parse_args()
 
     actions = load_actions(Path(args.catalog))
-    write_exercises_sql(actions, Path(args.sql_out))
     rows, key_of = build_manifest(actions)
-    write_manifest(rows, Path(args.manifest))
-    print(f"actions={len(actions)} manifest_rows={len(rows)}")
-    print(f"wrote {args.sql_out}")
-    print(f"wrote {args.manifest}")
+    if not args.slug:
+        write_exercises_sql(actions, Path(args.sql_out))
+        write_manifest(rows, Path(args.manifest))
+        print(f"actions={len(actions)} manifest_rows={len(rows)}")
+        print(f"wrote {args.sql_out}")
+        print(f"wrote {args.manifest}")
+    else:
+        print(f"actions={len(actions)} manifest_rows={len(rows)} (slug={args.slug})")
 
     if not args.transcode:
         return 0
@@ -257,7 +260,13 @@ def main() -> int:
     output_root = Path(args.output).expanduser().resolve()
     output_root.mkdir(parents=True, exist_ok=True)
 
-    work = rows if args.limit <= 0 else rows[: args.limit]
+    work = rows
+    if args.slug:
+        work = [r for r in work if r["slug"] == args.slug]
+    if args.limit > 0:
+        work = work[: args.limit]
+    if not work:
+        raise SystemExit(f"no manifest rows matched slug={args.slug!r}")
 
     from concurrent.futures import ThreadPoolExecutor
     import threading
@@ -274,7 +283,7 @@ def main() -> int:
                 print(f"MISSING {r['source_file']}")
             return
         slug = r["slug"]
-        folder = output_root / slug / r["variant_key"] / "v1"
+        folder = output_root / slug / r["variant_key"] / args.media_version
         phone_path = folder / "iphone.mp4"
         watch_path = folder / "watch.mp4"
         poster_path = folder / "poster.jpg"
@@ -282,7 +291,7 @@ def main() -> int:
         transcode(ffmpeg, src, phone_path, args.phone_size, crf=23, fps=30, preset=args.preset)
         transcode(ffmpeg, src, watch_path, args.watch_size, crf=26, fps=24, preset=args.preset)
         poster(ffmpeg, src, poster_path, args.phone_size)
-        rel = Path("exercises") / "vital" / slug / r["variant_key"] / "v1"
+        rel = Path("exercises") / "vital" / slug / r["variant_key"] / args.media_version
         r["phone_url"] = f"/media/{rel.as_posix()}/iphone.mp4"
         r["watch_url"] = f"/media/{rel.as_posix()}/watch.mp4"
         r["poster_url"] = f"/media/{rel.as_posix()}/poster.jpg"
@@ -302,8 +311,9 @@ def main() -> int:
 
     print(f"missing={missing} processed={len(work) - missing}")
 
-    write_media_sql(rows, Path(args.media_sql))
-    print(f"wrote {args.media_sql}")
+    if not args.slug:
+        write_media_sql(rows, Path(args.media_sql))
+        print(f"wrote {args.media_sql}")
     return 0
 
 

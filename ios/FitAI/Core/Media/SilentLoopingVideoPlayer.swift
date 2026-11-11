@@ -48,6 +48,7 @@ final class LoopingPlayerUIView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         isOpaque = false
+        isUserInteractionEnabled = false
         backgroundColor = .clear
         playerLayer.backgroundColor = UIColor.clear.cgColor
         playerLayer.videoGravity = .resizeAspect
@@ -56,6 +57,7 @@ final class LoopingPlayerUIView: UIView {
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         isOpaque = false
+        isUserInteractionEnabled = false
         backgroundColor = .clear
         playerLayer.backgroundColor = UIColor.clear.cgColor
         playerLayer.videoGravity = .resizeAspect
