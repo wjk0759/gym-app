@@ -294,7 +294,6 @@ async def recognize(
             db=db,
             user_id=user_id,
             kind="equipment_scan",
-            temperature=0.0,
         )
     except Exception as exc:  # noqa: BLE001 - return an honest UI state
         logger.warning("equipment vision failed: %s", exc)
@@ -415,20 +414,14 @@ def _map_result(
     options: list[dict] = []
     seen: set[str] = set()
 
-    # The primary answer is the OCR label when it is specific, otherwise the
-    # model's top-level slug. The candidate list is auxiliary: it must never
-    # silently replace the primary (the model often returns a noisy shortlist).
-    primary_confidence = 0.95 if ocr_item is not None else confidence
-    primary_option = _build_option(db, item, primary_confidence)
-    if primary_option is not None:
-        options.append(primary_option)
-        seen.add(item.slug)
-
-    if model_item is not None and model_item.slug not in seen:
-        model_option = _build_option(db, model_item, confidence)
-        if model_option is not None:
-            options.append(model_option)
-            seen.add(model_item.slug)
+    # A specific printed label is the strongest signal. Without one, keep the
+    # previous candidate-first order: the model's shortlist is noisy, but its
+    # top-level slug is even more biased toward hack_squat on leg machines.
+    if ocr_item is not None:
+        primary_option = _build_option(db, ocr_item, 0.95)
+        if primary_option is not None:
+            options.append(primary_option)
+            seen.add(ocr_item.slug)
 
     for raw in raw_options[:2]:
         if not isinstance(raw, dict):
@@ -442,6 +435,15 @@ def _map_result(
         option = _build_option(db, option_item, raw_confidence)
         if option is not None:
             options.append(option)
+
+    # Keep the VLM's top-level answer as a manual alternative when it differs
+    # from the candidate list. The app shows the candidates first (the old
+    # behavior is safer for leg presses) but the user can switch in one tap.
+    if model_item is not None and model_item.slug not in seen:
+        model_option = _build_option(db, model_item, confidence)
+        if model_option is not None:
+            options.append(model_option)
+            seen.add(model_item.slug)
 
     if len(options) > 1:
         top_confidence = options[0]["confidence"]

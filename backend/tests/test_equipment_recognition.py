@@ -208,51 +208,6 @@ def test_two_close_equipment_candidates_are_returned(monkeypatch):
     assert result["needs_confirmation"] is True
 
 
-def test_primary_slug_wins_over_noisy_candidates(monkeypatch):
-    async def fake_vision(system, user, image, mime="image/jpeg", **kwargs):
-        return _vision_result(
-            equipment_slug="hack_squat",
-            equipment_name="哈克深蹲机",
-            confidence=0.95,
-            equipment_candidates=[
-                {"slug": "leg_press_45", "confidence": 0.65},
-                {"slug": "squat_press", "confidence": 0.4},
-            ],
-        )
-
-    types = [
-        _fake_type("hack_squat", "哈克深蹲机", group="hack_squat"),
-        _fake_type("leg_press_45", "倒蹬机", group="leg_press"),
-        _fake_type("squat_press", "深蹲腿举器", group="leg_press"),
-    ]
-    mapping = {
-        "hack_squat": ["vital-hack-squat-machine"],
-        "leg_press_45": ["vital-leg-press"],
-        "squat_press": ["vital-squat-press"],
-    }
-    _patch_catalog(monkeypatch, types, mapping)
-    monkeypatch.setattr(equipment, "settings", _settings())
-    monkeypatch.setattr(equipment.llm, "complete_vision_json", fake_vision)
-    monkeypatch.setattr(
-        equipment,
-        "_active_exercises",
-        lambda db: [
-            _exercise("vital-hack-squat-machine", "哈克深蹲"),
-            _exercise("vital-leg-press", "腿举"),
-            _exercise("vital-squat-press", "深蹲腿举"),
-        ],
-    )
-
-    result = asyncio.run(
-        equipment.recognize(None, b"not-a-real-image", "x.jpg")
-    )
-
-    assert result["status"] == "ok"
-    assert result["equipment_slug"] == "hack_squat"
-    assert result["equipment_candidates"][0]["slug"] == "hack_squat"
-    assert result["candidates"][0]["slug"] == "vital-hack-squat-machine"
-
-
 def test_specific_ocr_label_overrides_wrong_vision_slug(monkeypatch):
     async def fake_vision(system, user, image, mime="image/jpeg", **kwargs):
         return _vision_result(
@@ -356,30 +311,6 @@ def test_generic_ocr_label_does_not_override(monkeypatch):
     )
 
     assert result["equipment_slug"] == "leg_press_45"
-
-
-def test_equipment_scan_uses_zero_temperature(monkeypatch):
-    captured = {}
-
-    async def fake_vision(system, user, image, mime="image/jpeg", **kwargs):
-        captured["temperature"] = kwargs.get("temperature")
-        return _vision_result()
-
-    types = [_fake_type("leg_press", "腿举机")]
-    _patch_catalog(monkeypatch, types, {"leg_press": ["vital-leg-press"]})
-    monkeypatch.setattr(equipment, "settings", _settings())
-    monkeypatch.setattr(equipment.llm, "complete_vision_json", fake_vision)
-    monkeypatch.setattr(
-        equipment,
-        "_active_exercises",
-        lambda db: [_exercise("vital-leg-press", "腿举")],
-    )
-
-    asyncio.run(
-        equipment.recognize(None, b"not-a-real-image", "x.jpg")
-    )
-
-    assert captured["temperature"] == 0.0
 
 
 def test_ocr_text_is_included_and_matched_to_catalog(monkeypatch):
