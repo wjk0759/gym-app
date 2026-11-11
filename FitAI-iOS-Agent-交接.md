@@ -52,19 +52,25 @@
   - `200-0101` 脚本样片 1080×1608，无白边
   - Swift 文件 tree-sitter 通过
   - Windows 无 Xcode，未编译
-- 未做：
-  - 全量 1,571 条 v2 重导/上传未跑；线上仍指向 v1 带白边的媒体
-  - 数据库 media URL 未更新
+- 全量重导/上传（已完成）：
+  - 1,571 条全部重导，`missing=0`；phone/watch/poster 各 1,571，共 4,713 个文件 / 945MB
+  - 上传到 `/opt/fitai/media/exercises/vital/**/v2/*`，服务器 v2 文件 4,713 个
+  - 备份 `exercise_media_assets` → `/opt/fitai/media_table_backup_20261112.sql`
+  - 应用 `data/vital/media_insert.sql`：1,571 条 / 1,571 个 v2 URL / 0 个 v1 URL
+  - 生产抽查 `200-0101` v2：HTTP 200，1080×1608
 - Mac 需要做：
   - `git pull` → `xcodegen generate` → 编译 → `FitAITests`
   - 真机看详情页/训练卡：1:1 盒子，横版上下透明、竖版左右透明、方形占满；无控制条、不可点
-  - 全量媒体确认后再跑：
-    ```text
-    python tools/media/import_vital_catalog.py --transcode \
-      --source "E:\3d健身素材\1500VitalAnimations" \
-      --media-version v2 --ffmpeg D:\EVCapture\ffmpeg.exe --preset medium --jobs 4
-    ```
-  - 上传 `backend/media/exercises/vital/**/v2/*` 到生产 `/opt/fitai/media/...`，应用 `data/vital/media_insert.sql`
+  - 旧 App 缓存可能还命中 v1；新构建的 cache key 已带 v2，必要时删除 App 重装/清缓存
+  - 生产媒体已切 v2，不需要再跑批量
+- 重跑命令（如需）：
+  ```text
+  python tools/media/import_vital_catalog.py --transcode \
+    --source "E:\3d健身素材\1500VitalAnimations" \
+    --media-version v2 --ffmpeg D:\EVCapture\ffmpeg.exe --preset veryfast --jobs 6
+  ```
+- 回滚：
+  - v1 文件仍保留；DB 备份在 `/opt/fitai/media_table_backup_20261112.sql`
 - 不要恢复：
   - 不要恢复 `pad=...:color=white`
   - 不要把 1:1 裁切/补背景烘进视频
