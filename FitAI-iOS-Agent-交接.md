@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`015224e`（macOS 4 列快捷区；Windows 最新 `fc25555`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`5d64d44`（Windows 器械替换；macOS 最新 `015224e`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -25,6 +25,55 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-11 · Windows（训练中器械被占替换）
+
+- 分支：`develop`
+- 代码提交：`5d64d44`
+- 做了什么：
+  - 训练页动作卡下方新增「器械被占了？换一个」入口
+  - 底部 sheet 默认给 3 个候选，最多 9 个可「换一批」
+  - 候选来源：
+    - 70 类固定器械用 `equipment_catalog` 的 exact/similar 动作
+    - 哑铃/杠铃/绳索/弹力带等通用器械用 `ExerciseLibrary` 过滤
+    - 过滤个人器械、伤病、planEligible、今天已排动作
+    - 严格模式只用个人器械；非严格模式不足 3 个时补「非我的器械」候选
+  - 个人器械候选 = 0 时，切人工自重兜底：
+    - 胸/背/肩/腿/臀/核心分别有白名单
+    - 排除负重、跳跃、波比、手枪、倒立、单臂等变式
+    - 二头没有自重替代时返回空，不拿三头动作凑
+  - 「自己选」是过滤后的轻量列表，不是完整动作库浏览器
+  - 替换规则：
+    - 已完成 0 组：直接替换当前动作，组数不变
+    - 已完成 N 组：原动作保留 N 组，插入替代动作，组数 = 原组数 - N
+    - `plannedTotalSets` 保持原总数
+    - 历史按 slug 正常分组，先显示原动作 X 组、再显示替代动作 Y 组
+  - 跳过改成「跳过剩余组」：未开始则移除动作，已开始则只保留已完成组，不扣完成率
+  - `PlanExercise` 新增可选 `sessionSets`，只用于本次训练固定组数，不改后端 schema
+- 验证：
+  - 用 Python 按同一规则模拟关键数据：
+    - 只有坐姿推胸机 -> 个人候选 0 -> 自重兜底
+    - 有哑铃但没卧推凳 -> 不出哑铃卧推
+    - 有卧推凳 + 哑铃 -> 出哑铃卧推
+    - T 杠划船 -> 不出直立划船
+    - 牧师凳弯举 -> 二头无自重替代 -> 空
+  - 新增 `ExerciseSubstitutionTests` 6 条
+  - Swift 文件通过 tree-sitter 解析；Windows 无 Xcode，未编译
+- Mac 需要做：
+  - `git pull` → `xcodegen generate` → 编译 → `FitAITests`（含 `ExerciseSubstitutionTests`）
+  - 真机/模拟器训练页验证：
+    - 点「器械被占了」出 3 个候选
+    - 换动作后组数/休息不变，重量按新动作历史重置
+    - 已完成 1 组再换：记录显示原动作 1 组 + 替代动作剩余组
+    - 跳过剩余组：完成率不被扣
+    - 严格模式开/关：候选范围不同，非我的器械有标记
+    - 个人库为空：出 3 个自重动作
+  - 注意 `PlanExercise.session_sets` 只存在本地/草稿；后端忽略，不需要迁移
+- 不要恢复：
+  - 不要在候选为 0 时静默放宽器械限制
+  - 不要用三头动作替代二头
+  - 不要把自重兜底混进正常的 3 个器械候选
+  - 不要把替换写回下周计划
 
 ### 2026-11-11 · macOS（全局 UI 交互打磨）
 
