@@ -17,7 +17,7 @@
 - `develop` 代码 HEAD：`fc25555`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
-- macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64`）：悬浮 Tab Bar 底部留白、相机入口改 2×2 快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，器械目录 UI test 通过，phone-only Release 已装 Wu-Tang；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
+- macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
 - Windows 最新完成（2026-11-07）：拉取并保留 macOS 单行语音输入（`9a833b1`）；完成教练内核统一并部署生产；`test_reviewer` 已授 Pro、补齐基础档案和 3 分化计划；生产 Watch 预载/登录/刷新/语音/撤销全链路烟测通过；iPhone 训练页动作循环动画 PoC、`/exercise-media` 批量接口、11 条 sample 媒体已上生产（`341981f`）；器械识别修复：图片归一化、禁止随机 mock、37 类器械目录、生产导入 57 条训记动作、4 张真实照片 + 1 张负例烟测 5/5 命中（`5bf99a1`）；2026-11-08 增加 Vision OCR 标签提示、18 张多品牌评测和准确率实验（`23e41c8`）；生产视觉切 **Qwen3-VL-Plus**；器械识别加 **top-2 候选 + 混淆兜底**，18 张缩略图 top-1 61%、top-2 83%（`0d63191`）；已合并到 `develop`（`48ad5f0`），develop CI 全绿
 - Windows 前一轮完成（2026-11-07）：手表独立语音教练、watch 专用登录会话、媒体预载/本地缓存、离线 outbox/ack、手机 inbox 回灌、手机→手表指令、3 天 Pro 宽限与中途到期继续结束、HealthKit 保活/手机单写者、Watch AppIcon 恢复、Watch 隐私清单、训练来源 `phone/watch`
 - 本地后台（2026-11-08）：FastAPI `8000`、admin-server `8080`、admin-web `5173/admin`、MySQL `3307` V24；真机 API `http://192.168.1.4:8000/api/v1`
@@ -29,18 +29,19 @@
 ### 2026-11-11 · macOS（全局 UI 交互打磨）
 
 - 分支：`develop`
-- 代码提交：`684cd64`
+- 代码提交：`684cd64`（4 列快捷区随后续提交）
 - 做了什么：
   - 新增 `AppLayout.tabBarContentInset = 96`，应用到今日/记录/发现/我的；修复 iOS 26 悬浮 Tab Bar 永久遮挡底部内容
-  - 今日页移除 `CaptureFAB`，快捷区改为 2×2：记录身体 / 变化 / 问教练 / 拍照识别；消除相机按钮压住「问教练」的点击冲突
+  - 今日页移除 `CaptureFAB`，快捷区改为 4 列一行：记录身体 / 变化 / 问教练 / 拍照识别；消除相机按钮压住「问教练」的点击冲突
   - 教练权益徽章支持 `success` / `loading` / `warning`：加载中显示 ProgressView，8 秒超时显示「权益确认失败 · 重试」，成功才显示 checkmark
 - 验证：
   - Debug build **BUILD SUCCEEDED**；`FitAITests` **65/65**
-  - UI 截图：今日 2×2 快捷区、记录/我的滚动到底、教练「权益确认中…」spinner
-  - 未测：iPhone SE/小屏、深色模式复测、真机
+  - UI 截图：iPhone 17 / iPhone SE 4 列快捷区正常；深色模式下今日/教练/我的正常；记录/我的滚动到底内容完整
+  - 教练权益超时 UI test 通过（`http://127.0.0.1:9`，8 秒后出现「权益确认失败 · 重试」）
+  - 未测：真机（本轮 phone-only 安装随后执行）
 - Windows 需要做：
-  - 保留 `tabBarContentInset` 和 2×2 快捷区；不要恢复悬浮 FAB
-  - 在小屏和深色模式复测；断网/超时时复测教练权益失败态
+  - 保留 `tabBarContentInset` 和 4 列一行快捷区；不要恢复悬浮 FAB
+  - 真机复测教练权益失败/重试态
 - 不要恢复：
   - 不要恢复相机 FAB 覆盖快捷卡
   - 不要把权益确认状态画成 checkmark

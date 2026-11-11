@@ -5,10 +5,10 @@ extension HomeV2View {
 
     var quickActions: some View {
         LazyVGrid(
-            columns: [
-                GridItem(.flexible(), spacing: 8),
-                GridItem(.flexible(), spacing: 8),
-            ],
+            columns: Array(
+                repeating: GridItem(.flexible(), spacing: 8),
+                count: 4
+            ),
             spacing: 8
         ) {
             quickTile(
