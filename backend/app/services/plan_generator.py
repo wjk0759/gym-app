@@ -30,9 +30,9 @@ PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "plan_system.
 def user_plan_pool_slugs(db: Session, user_id: str) -> list[str]:
     """Build the equipment plan pool from the DB.
 
-    Union of fixed-machine enabled exercises and the checked universal
-    equipment mappings. Used by the coach/agent path and as the backend
-    fallback when the client does not send a pool.
+    This is the single source of truth for plan generation: the union of
+    fixed-machine enabled exercises and the checked universal equipment
+    mappings. The client only sends training constraints.
     """
     fixed = (
         db.execute(
@@ -185,9 +185,7 @@ def _normalize_focus(focus: list[str] | None) -> list[str]:
 
 def _allowed_exercises(
     db: Session,
-    equipment: list[str] | None,
     injuries: list[str] | None,
-    preferred_slugs: list[str] | None = None,
     plan_pool_slugs: list[str] | None = None,
     strict_equipment: bool = False,
 ) -> list[Exercise]:
@@ -217,13 +215,6 @@ def _allowed_exercises(
         if e.plan_eligible
         and not (banned & set(e.contraindications or []))
     ]
-
-    if preferred_slugs:
-        preferred = set(preferred_slugs)
-        narrowed = [item for item in result if item.slug in preferred]
-        # 器械库太少时不强行限制，避免生成不出完整计划
-        if len(narrowed) >= 8:
-            result = narrowed
 
     return result
 
@@ -379,7 +370,6 @@ def build_template_plan(
     session_minutes: int | None = None,
     weekdays: list[int] | None = None,
     focus: list[str] | None = None,
-    plan_pool_slugs: list[str] | None = None,
     strict_equipment: bool = False,
 ) -> dict:
     """Build a deterministic, validated plan for the agent proposal tool."""
@@ -388,13 +378,10 @@ def build_template_plan(
     equipment_types = available_equipment_types(
         db, profile.user_id, profile.equipment
     )
-    if not plan_pool_slugs:
-        plan_pool_slugs = user_plan_pool_slugs(db, profile.user_id)
+    plan_pool_slugs = user_plan_pool_slugs(db, profile.user_id)
     available = _allowed_exercises(
         db,
-        equipment_types,
         profile.injuries,
-        None,
         plan_pool_slugs,
         strict_equipment,
     )
@@ -467,7 +454,6 @@ def _user_prompt(
     goal: Any,
     available: list[Exercise],
     weeks: int,
-    equipment_slugs: list[str] | None = None,
     split: str | None = None,
     focus: list[str] | None = None,
 ) -> str:
@@ -498,7 +484,6 @@ def _user_prompt(
             "goal_type": goal_type,
             "goal": goal,
             "split": split,
-            "equipment_library_slugs": equipment_slugs or [],
             "focus_areas": normalized_focus,
         },
         "weeks": weeks,
@@ -534,10 +519,8 @@ async def generate_plan(
     goal_type: str,
     goal: Any = None,
     weeks: int = 4,
-    equipment_slugs: list[str] | None = None,
     split: str | None = None,
     focus: list[str] | None = None,
-    plan_pool_slugs: list[str] | None = None,
     strict_equipment: bool = False,
 ) -> dict:
     # Fast path: the reasoning LLM is far too slow for plan generation (see
@@ -551,7 +534,6 @@ async def generate_plan(
             weeks=weeks,
             split=split,
             focus=focus,
-            plan_pool_slugs=plan_pool_slugs,
             strict_equipment=strict_equipment,
         )
 
@@ -560,13 +542,10 @@ async def generate_plan(
     equipment_types = available_equipment_types(
         db, profile.user_id, profile.equipment
     )
-    if not plan_pool_slugs:
-        plan_pool_slugs = user_plan_pool_slugs(db, profile.user_id)
+    plan_pool_slugs = user_plan_pool_slugs(db, profile.user_id)
     available = _allowed_exercises(
         db,
-        equipment_types,
         profile.injuries,
-        equipment_slugs,
         plan_pool_slugs,
         strict_equipment,
     )
@@ -598,7 +577,6 @@ async def generate_plan(
                     goal,
                     available,
                     weeks,
-                    equipment_slugs,
                     split,
                     focus,
                 ),

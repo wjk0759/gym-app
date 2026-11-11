@@ -120,8 +120,6 @@ class GoalIn(BaseModel):
 class PlanGenerateIn(BaseModel):
     force: bool = False
     onboarding: bool = False
-    equipment_slugs: list[str] = Field(default_factory=list, max_length=50)
-    plan_pool_slugs: list[str] = Field(default_factory=list, max_length=500)
     strict_equipment: bool = False
     split: str | None = Field(default=None, max_length=20)
     focus: list[str] = Field(default_factory=list, max_length=20)

@@ -404,14 +404,11 @@ def main() -> None:
 
         response = client.post(
             "/api/v1/plans/generate",
-            json={
-                "force": True,
-                "equipment_slugs": ["lat_pulldown", "leg_press"],
-            },
+            json={"force": True},
             headers=headers,
         )
         assert response.status_code == 200, response.text
-        print("equipment-filtered plan days:", len(response.json()["days"]))
+        print("generated plan days:", len(response.json()["days"]))
 
         response = client.get("/api/v1/exercises/search?q=深蹲")
         assert response.status_code == 200, response.text

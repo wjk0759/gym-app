@@ -106,10 +106,8 @@ async def generate(
             goal_type=goal_type,
             goal=goal_to_dict(goal),
             weeks=4,
-            equipment_slugs=payload.equipment_slugs,
             split=payload.split,
             focus=payload.focus,
-            plan_pool_slugs=payload.plan_pool_slugs,
             strict_equipment=payload.strict_equipment,
         )
         program = save_plan(

@@ -35,7 +35,7 @@ from .coach_context import build_coach_context, recent_training
 from .coach_core import coach_core_prompt
 from .exercise_search import search_exercise_payload
 from .memory import remember_facts, schedule_memory_extraction
-from .plan_generator import build_template_plan, user_plan_pool_slugs
+from .plan_generator import build_template_plan
 from .queries import active_goal, active_program
 from .safety import assess_safety
 from .serializers import save_plan
@@ -570,7 +570,6 @@ def _tool_result(
                 session_minutes=session_minutes,
                 weekdays=weekdays,
                 focus=focus,
-                plan_pool_slugs=user_plan_pool_slugs(db, user_id),
             )
         except Exception as exc:  # noqa: BLE001 - tool error is returned to the model
             return {"ok": False, "error": str(exc)[:500]}
