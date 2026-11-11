@@ -54,6 +54,13 @@ def user_plan_pool_slugs(db: Session, user_id: str) -> list[str]:
         .all()
     )
     slugs = set(fixed)
+
+    # 新账号只在 onboarding 选了器械大类，个人器械库还没配置。
+    # 此时唯一的通用器械是默认「徒手」；返回空池，让 _allowed_exercises
+    # 按 profile.equipment 的器械大类回退，避免新手只拿到徒手计划。
+    if not fixed and set(universal) <= {"bodyweight"}:
+        return []
+
     for group in universal:
         type_slug = "pullup_dip_station" if group in {"pullup", "dip"} else group
         rows = (
@@ -66,6 +73,7 @@ def user_plan_pool_slugs(db: Session, user_id: str) -> list[str]:
             .all()
         )
         slugs.update(rows)
+
     return sorted(slugs)
 
 GOAL_LABELS = {

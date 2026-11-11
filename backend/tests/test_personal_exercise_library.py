@@ -1,6 +1,10 @@
 from app.models import Exercise
 from app.schemas import PlanGenerateIn
-from app.services.plan_generator import _allowed_exercises, _candidate_pool
+from app.services.plan_generator import (
+    _allowed_exercises,
+    _candidate_pool,
+    user_plan_pool_slugs,
+)
 
 
 class _FakeResult:
@@ -20,6 +24,16 @@ class _FakeDB:
 
     def execute(self, _stmt):
         return _FakeResult(self._rows)
+
+
+class _QueueDB:
+    """Returns one prepared result per query, in call order."""
+
+    def __init__(self, batches):
+        self._batches = list(batches)
+
+    def execute(self, _stmt):
+        return _FakeResult(self._batches.pop(0))
 
 
 def _exercise(slug, equipment="dumbbell", contraindications=None):
@@ -118,3 +132,34 @@ def test_candidate_pool_for_the_model_stays_balanced_and_capped():
 
     assert len(candidates) == 96
     assert {item.muscle_group for item in candidates} == set(muscles)
+
+
+def test_new_account_falls_back_to_the_onboarding_equipment_categories():
+    # No fixed machines, only the default universal bodyweight row. The empty
+    # pool lets _allowed_exercises use profile.equipment instead of a
+    # bodyweight-only plan.
+    db = _QueueDB([[], ["bodyweight"]])
+    assert user_plan_pool_slugs(db, "user") == []
+
+
+def test_explicit_universal_equipment_builds_the_pool():
+    db = _QueueDB(
+        [
+            [],
+            ["bodyweight", "dumbbell"],
+            ["bodyweight-push-up"],
+            ["dumbbell-curl"],
+        ]
+    )
+    assert user_plan_pool_slugs(db, "user") == [
+        "bodyweight-push-up",
+        "dumbbell-curl",
+    ]
+
+
+def test_specific_equipment_keeps_its_pool_even_with_default_bodyweight():
+    db = _QueueDB([["machine-press"], ["bodyweight"], ["bodyweight-push-up"]])
+    assert user_plan_pool_slugs(db, "user") == [
+        "bodyweight-push-up",
+        "machine-press",
+    ]
