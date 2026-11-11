@@ -22,6 +22,7 @@ OUT_IMAGES = ROOT / "data" / "vital" / "equipment_images_v3"
 OUT_IOS_CATALOG = ROOT / "ios" / "FitAI" / "Resources" / "equipment_catalog.json"
 OUT_IOS_GUIDES = ROOT / "ios" / "FitAI" / "Resources" / "equipment_guides.json"
 OUT_MANIFEST = ROOT / "data" / "vital" / "equipment_image_manifest_v3.json"
+EXERCISES = ROOT / "ios" / "FitAI" / "Resources" / "vital_exercises.json"
 
 MANUAL_OLD = {
     "卧推架": "bench_press",
@@ -54,40 +55,115 @@ NEW_TYPES = {
     "腹肌训练凳": ("ab_bench", "ab"),
 }
 
-EXTRA_EXERCISE_SLUGS = {
-    "deadlift_machine": [
-        "vital-stiff-legged-deadlift-machine",
-        "vital-conventional-deadlift",
-        "vital-hex-bar-deadlift",
-        "vital-barbell-romanian-deadlift",
-        "vital-deadlift-barbell",
+EXACT_EXERCISES = {
+    "incline_bench": [
+        "vital-incline-barbell-bench-press",
+        "vital-incline-dumbbell-bench-press",
+        "vital-dumbbell-bench-press-incline",
+        "vital-incline-bench-press-alternate-arm",
     ],
-    "v_squat": [
-        "vital-landmine-v-squat",
-        "vital-squat-machine",
-        "vital-back-squat",
+    "chest_press_incline": ["vital-seated-machine-chest-press"],
+    "chest_press_decline": ["vital-seated-machine-chest-press"],
+    "chest_press_iso": ["vital-seated-machine-chest-press"],
+    "bench_press": [
+        "vital-barbell-bench-press-flat",
+        "vital-dumbbell-bench-press",
+        "vital-dumbbell-bench-press-bench",
+        "vital-flat-dumbbell-bench-press",
+        "vital-barbell-close-grip-bench-press",
+        "vital-close-grip-barbell-bench-press",
+        "vital-dumbbell-close-grip-bench-press",
+        "vital-barbell-bench-wide-grip-press",
     ],
-    "belt_squat": [
-        "vital-squat-machine",
-        "vital-back-squat",
-        "vital-squat-with-high-knee",
+    "chest_press_seated": ["vital-seated-machine-chest-press"],
+    "chest_press_flat": ["vital-seated-machine-chest-press"],
+    "pec_deck": [
+        "vital-machine-pec-deck-fly",
+        "vital-pec-deck-machine-fly",
     ],
-    "pendulum_squat": [
-        "vital-squat-machine",
-        "vital-back-squat",
-        "vital-hack-squat-machine",
+    "t_bar_row": ["vital-t-bar-row"],
+    "seated_row_low": ["vital-machine-seated-row"],
+    "lat_pulldown_iso": ["vital-lat-pulldown"],
+    "assisted_pullup": [
+        "vital-assisted-pull-up",
+        "vital-pull-up",
+        "vital-chin-up",
+        "vital-wide-grip-pull-up",
     ],
-    "inner_outer_thigh": [
-        "vital-lean-forward-hip-abduction",
-        "vital-inner-thigh-push-out-kneeling-hip-abduction",
-        "vital-seated-abductor-hip-lift",
+    "seated_row": ["vital-machine-seated-row"],
+    "back_extension": [
+        "vital-hyperextensions-back-extensions",
+        "vital-back-extension-glute-focus",
     ],
+    "leverage_row": ["vital-machine-seated-row"],
     "cable_row": [
         "vital-seated-cable-row",
         "vital-wide-grip-seated-cable-row",
         "vital-standing-cable-row",
     ],
+    "shrug": [],
+    "lat_pulldown": ["vital-lat-pulldown"],
+    "seated_row_high": ["vital-machine-seated-row"],
+    "pullover": [],
+    "lateral_raise": ["vital-lateral-raise-machine"],
+    "shoulder_press_iso": ["vital-seated-shoulder-press-machine"],
+    "shoulder_press": ["vital-seated-shoulder-press-machine"],
+    "upright_row": [],
+    "neck_machine": [],
+    "tricep_pushdown": ["vital-seated-triceps-dip-machine"],
+    "tricep_extension": [],
+    "bicep_curl": [],
+    "forearm_trainer": [],
+    "assisted_dip": [
+        "vital-dips",
+        "vital-dips-chest-focus-leaning-forward",
+    ],
+    "pullup_dip_station": [
+        "vital-pull-up",
+        "vital-chin-up",
+        "vital-wide-grip-pull-up",
+        "vital-dips",
+        "vital-dips-chest-focus-leaning-forward",
+    ],
+    "preacher_curl": ["vital-preacher-curl-machine"],
+    "v_squat": [],
+    "leg_curl_lying": ["vital-lying-leg-curl-machine"],
+    "leg_press_45": [
+        "vital-leg-press",
+        "vital-leg-press-machine",
+        "vital-wide-stance-leg-press",
+        "vital-leg-press-narrow-stance",
+        "vital-single-leg-leg-press",
+        "vital-leg-press-frog-stance",
+    ],
+    "leg_extension_iso": [
+        "vital-leg-extension",
+        "vital-leg-extension-machine",
+    ],
+    "leg_curl_lying_iso": ["vital-lying-leg-curl-machine"],
+    "leg_curl_single": ["vital-lying-leg-curl-machine"],
+    "hack_squat": [
+        "vital-hack-squat-machine",
+        "vital-reverse-hack-squat",
+        "vital-wide-hack-squat",
+        "vital-narrow-grip-hack-squat",
+        "vital-b-stance-squat-hack-squat-machine",
+        "vital-lunges-to-hacksquat",
+    ],
+    "seated_calf": ["vital-seated-calf-raise"],
+    "leg_curl_seated": ["vital-seated-leg-curl-machine"],
+    "inner_outer_thigh": [
+        "vital-hip-adduction-machine",
+        "vital-hip-abduction-machine",
+    ],
+    "leg_extension_curl_combo": [
+        "vital-leg-extension",
+        "vital-leg-extension-machine",
+        "vital-lying-leg-curl-machine",
+        "vital-seated-leg-curl-machine",
+    ],
     "squat_rack": [
+        "vital-back-squat",
         "vital-barbell-front-squat",
         "vital-barbell-elevated-back-squat",
         "vital-barbell-bulgarian-split-squat",
@@ -98,61 +174,307 @@ EXTRA_EXERCISE_SLUGS = {
         "vital-zercher-squat",
         "vital-jefferson-squat",
     ],
-    "ab_crunch": [
-        "vital-crunch",
+    "standing_calf": [],
+    "leg_curl_standing": [],
+    "tibialis_raise": [],
+    "belt_squat": [],
+    "leg_extension": [
+        "vital-leg-extension",
+        "vital-leg-extension-machine",
+    ],
+    "pendulum_squat": ["vital-pendulum-squat"],
+    "hip_adduction": ["vital-hip-adduction-machine"],
+    "reverse_hyper": ["vital-reverse-hyperextension"],
+    "glute_kickback": [],
+    "deadlift_machine": ["vital-stiff-legged-deadlift-machine"],
+    "hip_thrust": ["vital-glute-drive-machine"],
+    "glute_bridge": [],
+    "glute_ham": [
+        "vital-nordic-curl",
+        "vital-back-extension-glute-focus",
+    ],
+    "hip_abduction": ["vital-hip-abduction-machine"],
+    "ab_crunch_iso": [],
+    "ab_crunch": [],
+    "ab_coaster": [],
+    "ab_bench": [
+        "vital-sit-ups",
+        "vital-incline-sit-up",
         "vital-decline-bench-crunch",
-        "vital-cable-crunch",
-        "vital-half-way-crunch",
-        "vital-reverse-crunch",
+        "vital-crunch",
+    ],
+    "torso_rotation": [],
+    "stationary_bike": [],
+    "elliptical": [],
+    "stair_climber": [],
+    "treadmill": [],
+}
+
+SIMILAR_EXERCISES = {
+    "incline_bench": [
+        "vital-barbell-bench-press-flat",
+        "vital-dumbbell-bench-press",
+    ],
+    "chest_press_incline": [
+        "vital-incline-dumbbell-bench-press",
+        "vital-incline-barbell-bench-press",
+    ],
+    "chest_press_decline": ["vital-dumbbell-bench-press-decline"],
+    "chest_press_iso": [
+        "vital-dumbbell-close-chest-press",
+        "vital-dumbbell-bench-press",
+    ],
+    "bench_press": [
+        "vital-incline-barbell-bench-press",
+        "vital-dumbbell-bench-press-incline",
+    ],
+    "chest_press_seated": [
+        "vital-dumbbell-bench-press",
+        "vital-barbell-bench-press-flat",
+    ],
+    "chest_press_flat": [
+        "vital-barbell-bench-press-flat",
+        "vital-dumbbell-bench-press",
+    ],
+    "pec_deck": ["vital-rear-delt-fly-reverse-pec-deck"],
+    "t_bar_row": [
+        "vital-bent-over-barbell-row",
+        "vital-barbell-row",
+        "vital-single-arm-row",
+        "vital-pendlay-row",
+        "vital-yates-row",
+        "vital-meadows-row",
+        "vital-machine-seated-row",
+    ],
+    "seated_row_low": [
+        "vital-seated-cable-row",
+        "vital-wide-grip-seated-cable-row",
+        "vital-banded-seated-row",
+    ],
+    "lat_pulldown_iso": [
+        "vital-lat-pull-down-wide-grip",
+        "vital-close-grip-lat-pull-down",
+        "vital-single-arm-lat-pulldown",
+    ],
+    "assisted_pullup": [
+        "vital-negative-pull-up",
+        "vital-lat-pulldown",
+    ],
+    "seated_row": [
+        "vital-seated-cable-row",
+        "vital-wide-grip-seated-cable-row",
+        "vital-banded-seated-row",
+    ],
+    "back_extension": [
+        "vital-prone-back-extension",
+        "vital-nordic-curl",
+        "vital-reverse-hyperextension",
+        "vital-45-degree-hyperextension-machine",
+    ],
+    "leverage_row": [
+        "vital-t-bar-row",
+        "vital-bent-over-barbell-row",
+    ],
+    "cable_row": [
+        "vital-machine-seated-row",
+        "vital-t-bar-row",
+    ],
+    "shrug": [
+        "vital-barbell-shrug",
+        "vital-dumbbell-shrug",
+        "vital-hex-bar-deadlift-to-shrug",
+    ],
+    "lat_pulldown": [
+        "vital-lat-pull-down-wide-grip",
+        "vital-close-grip-lat-pull-down",
+        "vital-single-arm-lat-pulldown",
+        "vital-cross-lat-pulldown",
+    ],
+    "seated_row_high": [
+        "vital-wide-grip-seated-cable-row",
+        "vital-cable-face-pull-up",
+        "vital-seated-cable-row",
+    ],
+    "pullover": [
+        "vital-dumbbell-pullover",
+        "vital-cable-straight-arm-pulldown",
+    ],
+    "lateral_raise": [
+        "vital-dumbbell-lateral-raise",
+        "vital-cable-lateral-raise",
+        "vital-cable-cross-lateral-raise",
+        "vital-banded-lateral-raise",
+    ],
+    "shoulder_press_iso": [
+        "vital-dumbbell-shoulder-press",
+        "vital-standing-dumbbell-shoulder-press",
+    ],
+    "shoulder_press": [
+        "vital-dumbbell-shoulder-press",
+        "vital-standing-dumbbell-shoulder-press",
+    ],
+    "upright_row": [
+        "vital-barbell-upright-row",
+        "vital-dumbbell-upright-row",
+        "vital-cable-upright-row",
+        "vital-reverse-grip-barbell-upright-row",
+    ],
+    "neck_machine": ["vital-isometric-front-neck-press"],
+    "tricep_pushdown": [
+        "vital-triceps-pushdown",
+        "vital-triceps-pushdown-cable-rope",
+        "vital-triceps-pushdown-cable-straight-bar",
+        "vital-cable-triceps-pushdown-v-bar-attachment",
+    ],
+    "tricep_extension": [
+        "vital-cable-overhead-triceps-extension",
+        "vital-overhead-triceps-extension-dumbbell",
+        "vital-resistance-band-overhead-triceps-extension",
+    ],
+    "bicep_curl": [
+        "vital-biceps-curl",
+        "vital-dumbbell-biceps-curl-up",
+        "vital-ez-bar-biceps-curl",
+        "vital-preacher-curl-machine",
+    ],
+    "forearm_trainer": ["vital-dumbbell-forearms-curl"],
+    "assisted_dip": [
+        "vital-bench-dips-high",
+        "vital-seated-triceps-dip-machine",
+    ],
+    "pullup_dip_station": [
+        "vital-negative-pull-up",
+        "vital-assisted-pull-up",
+    ],
+    "preacher_curl": [
+        "vital-preacher-curl-ez-bar",
+        "vital-spider-curl",
+    ],
+    "v_squat": [
+        "vital-landmine-v-squat",
+        "vital-hack-squat-machine",
+        "vital-back-squat",
+    ],
+    "leg_curl_lying": [
+        "vital-lying-leg-curl",
+        "vital-dumbbell-leg-curl",
+        "vital-alternate-leg-curl",
+    ],
+    "leg_press_45": [
+        "vital-hack-squat-machine",
+        "vital-back-squat",
+    ],
+    "leg_extension_iso": [],
+    "leg_curl_lying_iso": [
+        "vital-lying-leg-curl",
+        "vital-dumbbell-leg-curl",
+    ],
+    "leg_curl_single": [
+        "vital-lying-leg-curl",
+        "vital-alternate-leg-curl",
+    ],
+    "hack_squat": [
+        "vital-leg-press",
+        "vital-back-squat",
+    ],
+    "seated_calf": [
+        "vital-seated-calf-raise-leg-press",
+        "vital-calf-raise",
+    ],
+    "leg_curl_seated": [
+        "vital-dumbbell-leg-curl",
+        "vital-glute-lift-leg-curl",
+    ],
+    "inner_outer_thigh": [
+        "vital-hip-adduction",
+        "vital-hip-abduction",
+    ],
+    "leg_extension_curl_combo": [
+        "vital-lying-leg-curl",
+        "vital-seated-leg-curl",
+    ],
+    "squat_rack": [],
+    "standing_calf": [
+        "vital-standing-calf-raise",
+        "vital-barbell-standing-calf-raise",
+    ],
+    "leg_curl_standing": [
+        "vital-lying-leg-curl",
+        "vital-alternate-leg-curl",
+    ],
+    "tibialis_raise": [],
+    "belt_squat": [
+        "vital-back-squat",
+        "vital-squat-machine",
+        "vital-hack-squat-machine",
+    ],
+    "leg_extension": [],
+    "pendulum_squat": [
+        "vital-hack-squat-machine",
+        "vital-back-squat",
+    ],
+    "hip_adduction": [],
+    "reverse_hyper": [
+        "vital-smith-machine-reverse-hyper",
+        "vital-back-extension-glute-focus",
+    ],
+    "glute_kickback": [
+        "vital-cable-kickback",
+        "vital-cable-glute-kickback",
+        "vital-cable-leg-kickback",
+        "vital-banded-straight-leg-kickback",
+    ],
+    "deadlift_machine": [
+        "vital-conventional-deadlift",
+        "vital-hex-bar-deadlift",
+        "vital-barbell-romanian-deadlift",
+        "vital-deadlift-barbell",
+    ],
+    "hip_thrust": [
+        "vital-hip-thrust",
+        "vital-barbell-hip-thrust",
+        "vital-hip-thrust-bench",
+    ],
+    "glute_bridge": [
+        "vital-glute-bridge",
+        "vital-bent-knee-glute-bridge",
+        "vital-hip-thrust-bench",
+    ],
+    "glute_ham": [
+        "vital-hyperextensions-back-extensions",
+        "vital-reverse-hyperextension",
+    ],
+    "hip_abduction": [
+        "vital-cable-hip-abduction",
+        "vital-lean-forward-hip-abduction",
     ],
     "ab_crunch_iso": [
-        "vital-crunch",
+        "vital-cable-crunch",
         "vital-single-arm-side-cable-crunch",
-        "vital-cross-body-knee-crunch",
-        "vital-half-way-crunch",
-    ],
-    "ab_bench": [
-        "vital-incline-sit-up",
-        "vital-sit-ups",
-        "vital-incline-sit-up-rotation",
-        "vital-sit-ups-twist-sit-ups",
-        "vital-decline-bench-crunch",
         "vital-crunch",
+    ],
+    "ab_crunch": [
+        "vital-cable-crunch",
+        "vital-crunch",
+        "vital-decline-bench-crunch",
     ],
     "ab_coaster": [
         "vital-reverse-crunch",
         "vital-crunch",
-        "vital-half-reverse-crunch",
         "vital-seated-knee-to-chest-crunch",
     ],
+    "ab_bench": ["vital-sit-ups-twist-sit-ups"],
     "torso_rotation": [
-        "vital-cable-wood-chop",
         "vital-viking-press-trunk-rotation",
         "vital-exercise-oblique-rotation-exercise-ball-kettlebell",
         "vital-incline-sit-up-rotation",
     ],
-    "reverse_hyper": [
-        "vital-reverse-hyperextension",
-        "vital-smith-machine-reverse-hyper",
-        "vital-45-degree-hyperextension-machine",
-        "vital-hyperextensions-back-extensions",
-    ],
-    "leg_extension_curl_combo": [
-        "vital-leg-extension",
-        "vital-leg-extension-machine",
-        "vital-lying-leg-curl-machine",
-        "vital-seated-leg-curl-machine",
-        "vital-lying-leg-curl",
-        "vital-seated-leg-curl",
-    ],
-    "glute_ham": [
-        "vital-nordic-curl",
-        "vital-45-degree-hyperextension-machine",
-        "vital-prone-back-extension",
-        "vital-reverse-hyperextension",
-        "vital-hyperextensions-back-extensions",
-    ],
+    "stationary_bike": [],
+    "elliptical": [],
+    "stair_climber": [],
+    "treadmill": [],
 }
+
 
 
 def E(name, body, secondary, targets, template, setup, *, cues=None):
@@ -573,6 +895,27 @@ def main():
     if len(SEED) != 70:
         raise SystemExit(f"expected 70 seed entries, got {len(SEED)}")
 
+    exercises = {
+        row["slug"]: row
+        for row in json.loads(EXERCISES.read_text(encoding="utf-8"))
+    }
+    for mapping_name, mapping in (
+        ("exact", EXACT_EXERCISES),
+        ("similar", SIMILAR_EXERCISES),
+    ):
+        for equipment_slug, slugs in mapping.items():
+            for slug in slugs:
+                row = exercises.get(slug)
+                if row is None:
+                    raise SystemExit(
+                        f"{mapping_name} action missing: {equipment_slug} -> {slug}"
+                    )
+                if not row.get("plan_eligible"):
+                    raise SystemExit(
+                        f"{mapping_name} action not plan eligible: "
+                        f"{equipment_slug} -> {slug}"
+                    )
+
     files = sorted(p for p in IMAGE_SOURCE.iterdir() if p.is_file())
     groups = {}
     for path in files:
@@ -631,7 +974,8 @@ def main():
                 "secondary_body_parts": entry["secondary"],
                 "target_muscles": entry["targets"],
                 "exercise_group": group,
-                "exercise_slugs": EXTRA_EXERCISE_SLUGS.get(slug),
+                "exercise_slugs": EXACT_EXERCISES.get(slug),
+                "similar_exercise_slugs": SIMILAR_EXERCISES.get(slug, []),
                 "image_urls": image_urls,
                 "universal": False,
                 "aliases": sorted(aliases),
@@ -680,6 +1024,7 @@ def main():
             "target_muscles": row["target_muscles"],
             "exercise_group": row["exercise_group"],
             "exercise_slugs": row["exercise_slugs"],
+            "similar_exercise_slugs": row["similar_exercise_slugs"],
             "image_urls": row["image_urls"],
             "universal": False,
             "aliases": row["aliases"],

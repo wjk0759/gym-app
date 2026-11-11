@@ -11,6 +11,7 @@ struct EquipmentTypeInfo: Decodable, Identifiable {
     let targetMuscles: [String]?
     let exerciseGroup: String
     let exerciseSlugs: [String]?
+    let similarExerciseSlugs: [String]?
     let imageURLs: [String]?
     let universal: Bool
     let aliases: [String]?
@@ -27,6 +28,7 @@ struct EquipmentTypeInfo: Decodable, Identifiable {
         case targetMuscles = "target_muscles"
         case exerciseGroup = "exercise_group"
         case exerciseSlugs = "exercise_slugs"
+        case similarExerciseSlugs = "similar_exercise_slugs"
         case imageURLs = "image_urls"
         case universal
         case aliases
@@ -80,12 +82,12 @@ struct EquipmentTypeInfo: Decodable, Identifiable {
     }
 
     /// 优先使用目录里显式给出的动作；否则按动作库的 equipment_group 过滤。
+    /// 显式空数组表示“这台器械没有专用动作”，不能再回退到旧分组。
     var trainableExercises: [Exercise] {
-        if let exerciseSlugs, !exerciseSlugs.isEmpty {
-            let rows = exerciseSlugs.compactMap { ExerciseLibrary.exercise(slug: $0) }
-            if !rows.isEmpty {
-                return rows.sorted { $0.nameZH < $1.nameZH }
-            }
+        if let exerciseSlugs {
+            return exerciseSlugs
+                .compactMap { ExerciseLibrary.exercise(slug: $0) }
+                .sorted { $0.nameZH < $1.nameZH }
         }
         return ExerciseLibrary.all
             .filter { $0.equipmentTypes.contains(exerciseGroup) }
@@ -94,6 +96,14 @@ struct EquipmentTypeInfo: Decodable, Identifiable {
 
     var planEligibleExercises: [Exercise] {
         trainableExercises.filter(\.planEligible)
+    }
+
+    /// 同类动作：不同器械，仅作参考，不默认启用、不进计划池。
+    var similarExercises: [Exercise] {
+        (similarExerciseSlugs ?? [])
+            .compactMap { ExerciseLibrary.exercise(slug: $0) }
+            .filter(\.planEligible)
+            .sorted { $0.nameZH < $1.nameZH }
     }
 }
 

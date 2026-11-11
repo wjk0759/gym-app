@@ -15,7 +15,16 @@
    "肱三头肌"
   ],
   "exercise_group": "incline_bench",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-incline-barbell-bench-press",
+   "vital-incline-dumbbell-bench-press",
+   "vital-dumbbell-bench-press-incline",
+   "vital-incline-bench-press-alternate-arm"
+  ],
+  "similar_exercise_slugs": [
+   "vital-barbell-bench-press-flat",
+   "vital-dumbbell-bench-press"
+  ],
   "image_urls": [
    "/media/equipment-catalog/incline_bench-1.jpg"
   ],
@@ -40,7 +49,13 @@
    "肱三头肌"
   ],
   "exercise_group": "chest_press",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-seated-machine-chest-press"
+  ],
+  "similar_exercise_slugs": [
+   "vital-incline-dumbbell-bench-press",
+   "vital-incline-barbell-bench-press"
+  ],
   "image_urls": [
    "/media/equipment-catalog/chest_press_incline-1.jpg"
   ],
@@ -67,7 +82,12 @@
    "三角肌前束"
   ],
   "exercise_group": "chest_press",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-seated-machine-chest-press"
+  ],
+  "similar_exercise_slugs": [
+   "vital-dumbbell-bench-press-decline"
+  ],
   "image_urls": [
    "/media/equipment-catalog/chest_press_decline-1.jpg"
   ],
@@ -94,7 +114,13 @@
    "肱三头肌"
   ],
   "exercise_group": "chest_press",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-seated-machine-chest-press"
+  ],
+  "similar_exercise_slugs": [
+   "vital-dumbbell-close-chest-press",
+   "vital-dumbbell-bench-press"
+  ],
   "image_urls": [
    "/media/equipment-catalog/chest_press_iso-1.jpg"
   ],
@@ -121,7 +147,20 @@
    "肱三头肌"
   ],
   "exercise_group": "bench_press",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-barbell-bench-press-flat",
+   "vital-dumbbell-bench-press",
+   "vital-dumbbell-bench-press-bench",
+   "vital-flat-dumbbell-bench-press",
+   "vital-barbell-close-grip-bench-press",
+   "vital-close-grip-barbell-bench-press",
+   "vital-dumbbell-close-grip-bench-press",
+   "vital-barbell-bench-wide-grip-press"
+  ],
+  "similar_exercise_slugs": [
+   "vital-incline-barbell-bench-press",
+   "vital-dumbbell-bench-press-incline"
+  ],
   "image_urls": [
    "/media/equipment-catalog/bench_press-1.jpg"
   ],
@@ -146,7 +185,13 @@
    "肱三头肌"
   ],
   "exercise_group": "chest_press",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-seated-machine-chest-press"
+  ],
+  "similar_exercise_slugs": [
+   "vital-dumbbell-bench-press",
+   "vital-barbell-bench-press-flat"
+  ],
   "image_urls": [
    "/media/equipment-catalog/chest_press_seated-1.jpg"
   ],
@@ -174,7 +219,13 @@
    "肱三头肌"
   ],
   "exercise_group": "chest_press",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-seated-machine-chest-press"
+  ],
+  "similar_exercise_slugs": [
+   "vital-barbell-bench-press-flat",
+   "vital-dumbbell-bench-press"
+  ],
   "image_urls": [
    "/media/equipment-catalog/chest_press_flat-1.jpg"
   ],
@@ -199,7 +250,13 @@
    "三角肌前束"
   ],
   "exercise_group": "pec_deck",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-machine-pec-deck-fly",
+   "vital-pec-deck-machine-fly"
+  ],
+  "similar_exercise_slugs": [
+   "vital-rear-delt-fly-reverse-pec-deck"
+  ],
   "image_urls": [
    "/media/equipment-catalog/pec_deck-1.jpg"
   ],
@@ -227,7 +284,18 @@
    "肱二头肌"
   ],
   "exercise_group": "seated_row",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-t-bar-row"
+  ],
+  "similar_exercise_slugs": [
+   "vital-bent-over-barbell-row",
+   "vital-barbell-row",
+   "vital-single-arm-row",
+   "vital-pendlay-row",
+   "vital-yates-row",
+   "vital-meadows-row",
+   "vital-machine-seated-row"
+  ],
   "image_urls": [
    "/media/equipment-catalog/t_bar_row-1.jpg"
   ],
@@ -253,7 +321,14 @@
    "肱二头肌"
   ],
   "exercise_group": "seated_row",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-machine-seated-row"
+  ],
+  "similar_exercise_slugs": [
+   "vital-seated-cable-row",
+   "vital-wide-grip-seated-cable-row",
+   "vital-banded-seated-row"
+  ],
   "image_urls": [
    "/media/equipment-catalog/seated_row_low-1.jpg"
   ],
@@ -279,7 +354,14 @@
    "肱二头肌"
   ],
   "exercise_group": "lat_pulldown",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-lat-pulldown"
+  ],
+  "similar_exercise_slugs": [
+   "vital-lat-pull-down-wide-grip",
+   "vital-close-grip-lat-pull-down",
+   "vital-single-arm-lat-pulldown"
+  ],
   "image_urls": [
    "/media/equipment-catalog/lat_pulldown_iso-1.jpg",
    "/media/equipment-catalog/lat_pulldown_iso-2.jpg"
@@ -306,7 +388,16 @@
    "肱二头肌"
   ],
   "exercise_group": "pullup",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-assisted-pull-up",
+   "vital-pull-up",
+   "vital-chin-up",
+   "vital-wide-grip-pull-up"
+  ],
+  "similar_exercise_slugs": [
+   "vital-negative-pull-up",
+   "vital-lat-pulldown"
+  ],
   "image_urls": [
    "/media/equipment-catalog/assisted_pullup-1.jpg"
   ],
@@ -333,7 +424,14 @@
    "肱二头肌"
   ],
   "exercise_group": "seated_row",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-machine-seated-row"
+  ],
+  "similar_exercise_slugs": [
+   "vital-seated-cable-row",
+   "vital-wide-grip-seated-cable-row",
+   "vital-banded-seated-row"
+  ],
   "image_urls": [
    "/media/equipment-catalog/seated_row-1.jpg",
    "/media/equipment-catalog/seated_row-2.jpg",
@@ -362,7 +460,16 @@
    "腘绳肌"
   ],
   "exercise_group": "back_extension",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-hyperextensions-back-extensions",
+   "vital-back-extension-glute-focus"
+  ],
+  "similar_exercise_slugs": [
+   "vital-prone-back-extension",
+   "vital-nordic-curl",
+   "vital-reverse-hyperextension",
+   "vital-45-degree-hyperextension-machine"
+  ],
   "image_urls": [
    "/media/equipment-catalog/back_extension-1.jpg"
   ],
@@ -390,7 +497,13 @@
    "斜方肌中束"
   ],
   "exercise_group": "seated_row",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-machine-seated-row"
+  ],
+  "similar_exercise_slugs": [
+   "vital-t-bar-row",
+   "vital-bent-over-barbell-row"
+  ],
   "image_urls": [
    "/media/equipment-catalog/leverage_row-1.jpg"
   ],
@@ -420,6 +533,10 @@
    "vital-wide-grip-seated-cable-row",
    "vital-standing-cable-row"
   ],
+  "similar_exercise_slugs": [
+   "vital-machine-seated-row",
+   "vital-t-bar-row"
+  ],
   "image_urls": [
    "/media/equipment-catalog/cable_row-1.jpg"
   ],
@@ -444,7 +561,12 @@
    "肩胛提肌"
   ],
   "exercise_group": "shrug",
-  "exercise_slugs": null,
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [
+   "vital-barbell-shrug",
+   "vital-dumbbell-shrug",
+   "vital-hex-bar-deadlift-to-shrug"
+  ],
   "image_urls": [
    "/media/equipment-catalog/shrug-1.jpg"
   ],
@@ -470,7 +592,15 @@
    "斜方肌中下束"
   ],
   "exercise_group": "lat_pulldown",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-lat-pulldown"
+  ],
+  "similar_exercise_slugs": [
+   "vital-lat-pull-down-wide-grip",
+   "vital-close-grip-lat-pull-down",
+   "vital-single-arm-lat-pulldown",
+   "vital-cross-lat-pulldown"
+  ],
   "image_urls": [
    "/media/equipment-catalog/lat_pulldown-1.jpg"
   ],
@@ -498,7 +628,14 @@
    "菱形肌"
   ],
   "exercise_group": "seated_row",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-machine-seated-row"
+  ],
+  "similar_exercise_slugs": [
+   "vital-wide-grip-seated-cable-row",
+   "vital-cable-face-pull-up",
+   "vital-seated-cable-row"
+  ],
   "image_urls": [
    "/media/equipment-catalog/seated_row_high-1.jpg"
   ],
@@ -524,7 +661,11 @@
    "肱三头肌长头"
   ],
   "exercise_group": "lat_pulldown",
-  "exercise_slugs": null,
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [
+   "vital-dumbbell-pullover",
+   "vital-cable-straight-arm-pulldown"
+  ],
   "image_urls": [
    "/media/equipment-catalog/pullover-1.jpg"
   ],
@@ -548,7 +689,15 @@
    "三角肌中束"
   ],
   "exercise_group": "lateral_raise",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-lateral-raise-machine"
+  ],
+  "similar_exercise_slugs": [
+   "vital-dumbbell-lateral-raise",
+   "vital-cable-lateral-raise",
+   "vital-cable-cross-lateral-raise",
+   "vital-banded-lateral-raise"
+  ],
   "image_urls": [
    "/media/equipment-catalog/lateral_raise-1.jpg",
    "/media/equipment-catalog/lateral_raise-2.jpg"
@@ -575,7 +724,13 @@
    "肱三头肌"
   ],
   "exercise_group": "shoulder_press",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-seated-shoulder-press-machine"
+  ],
+  "similar_exercise_slugs": [
+   "vital-dumbbell-shoulder-press",
+   "vital-standing-dumbbell-shoulder-press"
+  ],
   "image_urls": [
    "/media/equipment-catalog/shoulder_press_iso-1.jpg"
   ],
@@ -601,7 +756,13 @@
    "肱三头肌"
   ],
   "exercise_group": "shoulder_press",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-seated-shoulder-press-machine"
+  ],
+  "similar_exercise_slugs": [
+   "vital-dumbbell-shoulder-press",
+   "vital-standing-dumbbell-shoulder-press"
+  ],
   "image_urls": [
    "/media/equipment-catalog/shoulder_press-1.jpg"
   ],
@@ -628,7 +789,13 @@
    "肱二头肌"
   ],
   "exercise_group": "seated_row",
-  "exercise_slugs": null,
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [
+   "vital-barbell-upright-row",
+   "vital-dumbbell-upright-row",
+   "vital-cable-upright-row",
+   "vital-reverse-grip-barbell-upright-row"
+  ],
   "image_urls": [
    "/media/equipment-catalog/upright_row-1.jpg"
   ],
@@ -653,7 +820,10 @@
    "颈部伸肌"
   ],
   "exercise_group": "neck",
-  "exercise_slugs": null,
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [
+   "vital-isometric-front-neck-press"
+  ],
   "image_urls": [
    "/media/equipment-catalog/neck_machine-1.jpg"
   ],
@@ -674,7 +844,15 @@
    "肱三头肌"
   ],
   "exercise_group": "tricep",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-seated-triceps-dip-machine"
+  ],
+  "similar_exercise_slugs": [
+   "vital-triceps-pushdown",
+   "vital-triceps-pushdown-cable-rope",
+   "vital-triceps-pushdown-cable-straight-bar",
+   "vital-cable-triceps-pushdown-v-bar-attachment"
+  ],
   "image_urls": [
    "/media/equipment-catalog/tricep_pushdown-1.jpg"
   ],
@@ -696,7 +874,12 @@
    "肱三头肌"
   ],
   "exercise_group": "tricep",
-  "exercise_slugs": null,
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [
+   "vital-cable-overhead-triceps-extension",
+   "vital-overhead-triceps-extension-dumbbell",
+   "vital-resistance-band-overhead-triceps-extension"
+  ],
   "image_urls": [
    "/media/equipment-catalog/tricep_extension-1.jpg"
   ],
@@ -720,7 +903,13 @@
    "肱桡肌"
   ],
   "exercise_group": "bicep",
-  "exercise_slugs": null,
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [
+   "vital-biceps-curl",
+   "vital-dumbbell-biceps-curl-up",
+   "vital-ez-bar-biceps-curl",
+   "vital-preacher-curl-machine"
+  ],
   "image_urls": [
    "/media/equipment-catalog/bicep_curl-1.jpg"
   ],
@@ -743,7 +932,10 @@
    "前臂伸肌"
   ],
   "exercise_group": "forearm",
-  "exercise_slugs": null,
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [
+   "vital-dumbbell-forearms-curl"
+  ],
   "image_urls": [
    "/media/equipment-catalog/forearm_trainer-1.jpg"
   ],
@@ -768,7 +960,14 @@
    "三角肌前束"
   ],
   "exercise_group": "dip",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-dips",
+   "vital-dips-chest-focus-leaning-forward"
+  ],
+  "similar_exercise_slugs": [
+   "vital-bench-dips-high",
+   "vital-seated-triceps-dip-machine"
+  ],
   "image_urls": [
    "/media/equipment-catalog/assisted_dip-1.jpg"
   ],
@@ -794,7 +993,17 @@
    "三角肌前束"
   ],
   "exercise_group": "pullup",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-pull-up",
+   "vital-chin-up",
+   "vital-wide-grip-pull-up",
+   "vital-dips",
+   "vital-dips-chest-focus-leaning-forward"
+  ],
+  "similar_exercise_slugs": [
+   "vital-negative-pull-up",
+   "vital-assisted-pull-up"
+  ],
   "image_urls": [
    "/media/equipment-catalog/pullup_dip_station-1.jpg"
   ],
@@ -819,7 +1028,13 @@
    "肱肌"
   ],
   "exercise_group": "bicep",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-preacher-curl-machine"
+  ],
+  "similar_exercise_slugs": [
+   "vital-preacher-curl-ez-bar",
+   "vital-spider-curl"
+  ],
   "image_urls": [
    "/media/equipment-catalog/preacher_curl-1.jpg"
   ],
@@ -844,9 +1059,10 @@
    "臀大肌"
   ],
   "exercise_group": "hack_squat",
-  "exercise_slugs": [
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [
    "vital-landmine-v-squat",
-   "vital-squat-machine",
+   "vital-hack-squat-machine",
    "vital-back-squat"
   ],
   "image_urls": [
@@ -870,7 +1086,14 @@
    "腓肠肌"
   ],
   "exercise_group": "leg_curl",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-lying-leg-curl-machine"
+  ],
+  "similar_exercise_slugs": [
+   "vital-lying-leg-curl",
+   "vital-dumbbell-leg-curl",
+   "vital-alternate-leg-curl"
+  ],
   "image_urls": [
    "/media/equipment-catalog/leg_curl_lying-1.jpg"
   ],
@@ -897,7 +1120,18 @@
    "内收肌"
   ],
   "exercise_group": "leg_press",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-leg-press",
+   "vital-leg-press-machine",
+   "vital-wide-stance-leg-press",
+   "vital-leg-press-narrow-stance",
+   "vital-single-leg-leg-press",
+   "vital-leg-press-frog-stance"
+  ],
+  "similar_exercise_slugs": [
+   "vital-hack-squat-machine",
+   "vital-back-squat"
+  ],
   "image_urls": [
    "/media/equipment-catalog/leg_press_45-1.jpg",
    "/media/equipment-catalog/leg_press_45-2.jpg",
@@ -922,7 +1156,11 @@
    "股四头肌"
   ],
   "exercise_group": "leg_extension",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-leg-extension",
+   "vital-leg-extension-machine"
+  ],
+  "similar_exercise_slugs": [],
   "image_urls": [
    "/media/equipment-catalog/leg_extension_iso-1.jpg"
   ],
@@ -941,7 +1179,13 @@
    "腓肠肌"
   ],
   "exercise_group": "leg_curl",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-lying-leg-curl-machine"
+  ],
+  "similar_exercise_slugs": [
+   "vital-lying-leg-curl",
+   "vital-dumbbell-leg-curl"
+  ],
   "image_urls": [
    "/media/equipment-catalog/leg_curl_lying_iso-1.jpg"
   ],
@@ -960,7 +1204,13 @@
    "腓肠肌"
   ],
   "exercise_group": "leg_curl",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-lying-leg-curl-machine"
+  ],
+  "similar_exercise_slugs": [
+   "vital-lying-leg-curl",
+   "vital-alternate-leg-curl"
+  ],
   "image_urls": [
    "/media/equipment-catalog/leg_curl_single-1.jpg"
   ],
@@ -982,7 +1232,18 @@
    "腘绳肌"
   ],
   "exercise_group": "hack_squat",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-hack-squat-machine",
+   "vital-reverse-hack-squat",
+   "vital-wide-hack-squat",
+   "vital-narrow-grip-hack-squat",
+   "vital-b-stance-squat-hack-squat-machine",
+   "vital-lunges-to-hacksquat"
+  ],
+  "similar_exercise_slugs": [
+   "vital-leg-press",
+   "vital-back-squat"
+  ],
   "image_urls": [
    "/media/equipment-catalog/hack_squat-1.jpg"
   ],
@@ -1004,7 +1265,13 @@
    "腓肠肌"
   ],
   "exercise_group": "calf_raise",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-seated-calf-raise"
+  ],
+  "similar_exercise_slugs": [
+   "vital-seated-calf-raise-leg-press",
+   "vital-calf-raise"
+  ],
   "image_urls": [
    "/media/equipment-catalog/seated_calf-1.jpg"
   ],
@@ -1026,7 +1293,13 @@
    "腓肠肌"
   ],
   "exercise_group": "leg_curl",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-seated-leg-curl-machine"
+  ],
+  "similar_exercise_slugs": [
+   "vital-dumbbell-leg-curl",
+   "vital-glute-lift-leg-curl"
+  ],
   "image_urls": [
    "/media/equipment-catalog/leg_curl_seated-1.jpg"
   ],
@@ -1052,9 +1325,12 @@
   ],
   "exercise_group": "hip_adduction",
   "exercise_slugs": [
-   "vital-lean-forward-hip-abduction",
-   "vital-inner-thigh-push-out-kneeling-hip-abduction",
-   "vital-seated-abductor-hip-lift"
+   "vital-hip-adduction-machine",
+   "vital-hip-abduction-machine"
+  ],
+  "similar_exercise_slugs": [
+   "vital-hip-adduction",
+   "vital-hip-abduction"
   ],
   "image_urls": [
    "/media/equipment-catalog/inner_outer_thigh-1.jpg"
@@ -1082,7 +1358,9 @@
    "vital-leg-extension",
    "vital-leg-extension-machine",
    "vital-lying-leg-curl-machine",
-   "vital-seated-leg-curl-machine",
+   "vital-seated-leg-curl-machine"
+  ],
+  "similar_exercise_slugs": [
    "vital-lying-leg-curl",
    "vital-seated-leg-curl"
   ],
@@ -1114,6 +1392,7 @@
   ],
   "exercise_group": "squat_rack",
   "exercise_slugs": [
+   "vital-back-squat",
    "vital-barbell-front-squat",
    "vital-barbell-elevated-back-squat",
    "vital-barbell-bulgarian-split-squat",
@@ -1124,6 +1403,7 @@
    "vital-zercher-squat",
    "vital-jefferson-squat"
   ],
+  "similar_exercise_slugs": [],
   "image_urls": [
    "/media/equipment-catalog/squat_rack-1.jpg"
   ],
@@ -1144,7 +1424,11 @@
    "比目鱼肌"
   ],
   "exercise_group": "calf_raise",
-  "exercise_slugs": null,
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [
+   "vital-standing-calf-raise",
+   "vital-barbell-standing-calf-raise"
+  ],
   "image_urls": [
    "/media/equipment-catalog/standing_calf-1.jpg"
   ],
@@ -1166,7 +1450,11 @@
    "腘绳肌"
   ],
   "exercise_group": "leg_curl",
-  "exercise_slugs": null,
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [
+   "vital-lying-leg-curl",
+   "vital-alternate-leg-curl"
+  ],
   "image_urls": [
    "/media/equipment-catalog/leg_curl_standing-1.jpg"
   ],
@@ -1188,7 +1476,8 @@
    "胫骨前肌"
   ],
   "exercise_group": "tibialis",
-  "exercise_slugs": null,
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [],
   "image_urls": [
    "/media/equipment-catalog/tibialis_raise-1.jpg"
   ],
@@ -1213,10 +1502,11 @@
    "腘绳肌"
   ],
   "exercise_group": "hack_squat",
-  "exercise_slugs": [
-   "vital-squat-machine",
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [
    "vital-back-squat",
-   "vital-squat-with-high-knee"
+   "vital-squat-machine",
+   "vital-hack-squat-machine"
   ],
   "image_urls": [
    "/media/equipment-catalog/belt_squat-1.jpg"
@@ -1238,7 +1528,11 @@
    "股四头肌"
   ],
   "exercise_group": "leg_extension",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-leg-extension",
+   "vital-leg-extension-machine"
+  ],
+  "similar_exercise_slugs": [],
   "image_urls": [
    "/media/equipment-catalog/leg_extension-1.jpg"
   ],
@@ -1264,9 +1558,11 @@
   ],
   "exercise_group": "hack_squat",
   "exercise_slugs": [
-   "vital-squat-machine",
-   "vital-back-squat",
-   "vital-hack-squat-machine"
+   "vital-pendulum-squat"
+  ],
+  "similar_exercise_slugs": [
+   "vital-hack-squat-machine",
+   "vital-back-squat"
   ],
   "image_urls": [
    "/media/equipment-catalog/pendulum_squat-1.jpg"
@@ -1288,7 +1584,10 @@
    "内收肌群"
   ],
   "exercise_group": "hip_adduction",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-hip-adduction-machine"
+  ],
+  "similar_exercise_slugs": [],
   "image_urls": [
    "/media/equipment-catalog/hip_adduction-1.jpg"
   ],
@@ -1316,10 +1615,11 @@
   ],
   "exercise_group": "back_extension",
   "exercise_slugs": [
-   "vital-reverse-hyperextension",
+   "vital-reverse-hyperextension"
+  ],
+  "similar_exercise_slugs": [
    "vital-smith-machine-reverse-hyper",
-   "vital-45-degree-hyperextension-machine",
-   "vital-hyperextensions-back-extensions"
+   "vital-back-extension-glute-focus"
   ],
   "image_urls": [
    "/media/equipment-catalog/reverse_hyper-1.jpg"
@@ -1342,7 +1642,13 @@
    "臀中肌"
   ],
   "exercise_group": "glute_kickback",
-  "exercise_slugs": null,
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [
+   "vital-cable-kickback",
+   "vital-cable-glute-kickback",
+   "vital-cable-leg-kickback",
+   "vital-banded-straight-leg-kickback"
+  ],
   "image_urls": [
    "/media/equipment-catalog/glute_kickback-1.jpg",
    "/media/equipment-catalog/glute_kickback-2.jpg",
@@ -1374,7 +1680,9 @@
   ],
   "exercise_group": "barbell",
   "exercise_slugs": [
-   "vital-stiff-legged-deadlift-machine",
+   "vital-stiff-legged-deadlift-machine"
+  ],
+  "similar_exercise_slugs": [
    "vital-conventional-deadlift",
    "vital-hex-bar-deadlift",
    "vital-barbell-romanian-deadlift",
@@ -1401,7 +1709,14 @@
    "腘绳肌"
   ],
   "exercise_group": "hip_thrust",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-glute-drive-machine"
+  ],
+  "similar_exercise_slugs": [
+   "vital-hip-thrust",
+   "vital-barbell-hip-thrust",
+   "vital-hip-thrust-bench"
+  ],
   "image_urls": [
    "/media/equipment-catalog/hip_thrust-1.jpg"
   ],
@@ -1427,7 +1742,12 @@
    "竖脊肌"
   ],
   "exercise_group": "hip_thrust",
-  "exercise_slugs": null,
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [
+   "vital-glute-bridge",
+   "vital-bent-knee-glute-bridge",
+   "vital-hip-thrust-bench"
+  ],
   "image_urls": [
    "/media/equipment-catalog/glute_bridge-1.jpg",
    "/media/equipment-catalog/glute_bridge-2.jpg"
@@ -1453,10 +1773,11 @@
   "exercise_group": "back_extension",
   "exercise_slugs": [
    "vital-nordic-curl",
-   "vital-45-degree-hyperextension-machine",
-   "vital-prone-back-extension",
-   "vital-reverse-hyperextension",
-   "vital-hyperextensions-back-extensions"
+   "vital-back-extension-glute-focus"
+  ],
+  "similar_exercise_slugs": [
+   "vital-hyperextensions-back-extensions",
+   "vital-reverse-hyperextension"
   ],
   "image_urls": [
    "/media/equipment-catalog/glute_ham-1.jpg"
@@ -1485,7 +1806,13 @@
    "阔筋膜张肌"
   ],
   "exercise_group": "hip_abduction",
-  "exercise_slugs": null,
+  "exercise_slugs": [
+   "vital-hip-abduction-machine"
+  ],
+  "similar_exercise_slugs": [
+   "vital-cable-hip-abduction",
+   "vital-lean-forward-hip-abduction"
+  ],
   "image_urls": [
    "/media/equipment-catalog/hip_abduction-1.jpg"
   ],
@@ -1508,11 +1835,11 @@
    "腹斜肌"
   ],
   "exercise_group": "ab",
-  "exercise_slugs": [
-   "vital-crunch",
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [
+   "vital-cable-crunch",
    "vital-single-arm-side-cable-crunch",
-   "vital-cross-body-knee-crunch",
-   "vital-half-way-crunch"
+   "vital-crunch"
   ],
   "image_urls": [
    "/media/equipment-catalog/ab_crunch_iso-1.jpg"
@@ -1537,12 +1864,11 @@
    "腹斜肌"
   ],
   "exercise_group": "ab",
-  "exercise_slugs": [
-   "vital-crunch",
-   "vital-decline-bench-crunch",
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [
    "vital-cable-crunch",
-   "vital-half-way-crunch",
-   "vital-reverse-crunch"
+   "vital-crunch",
+   "vital-decline-bench-crunch"
   ],
   "image_urls": [
    "/media/equipment-catalog/ab_crunch-1.jpg",
@@ -1568,10 +1894,10 @@
    "腹斜肌"
   ],
   "exercise_group": "ab",
-  "exercise_slugs": [
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [
    "vital-reverse-crunch",
    "vital-crunch",
-   "vital-half-reverse-crunch",
    "vital-seated-knee-to-chest-crunch"
   ],
   "image_urls": [
@@ -1599,12 +1925,13 @@
   ],
   "exercise_group": "ab",
   "exercise_slugs": [
-   "vital-incline-sit-up",
    "vital-sit-ups",
-   "vital-incline-sit-up-rotation",
-   "vital-sit-ups-twist-sit-ups",
+   "vital-incline-sit-up",
    "vital-decline-bench-crunch",
    "vital-crunch"
+  ],
+  "similar_exercise_slugs": [
+   "vital-sit-ups-twist-sit-ups"
   ],
   "image_urls": [
    "/media/equipment-catalog/ab_bench-1.jpg"
@@ -1627,8 +1954,8 @@
    "竖脊肌"
   ],
   "exercise_group": "ab",
-  "exercise_slugs": [
-   "vital-cable-wood-chop",
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [
    "vital-viking-press-trunk-rotation",
    "vital-exercise-oblique-rotation-exercise-ball-kettlebell",
    "vital-incline-sit-up-rotation"
@@ -1661,7 +1988,8 @@
    "小腿"
   ],
   "exercise_group": "stationary_bike",
-  "exercise_slugs": null,
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [],
   "image_urls": [
    "/media/equipment-catalog/stationary_bike-1.jpg"
   ],
@@ -1682,7 +2010,8 @@
    "全身"
   ],
   "exercise_group": "elliptical",
-  "exercise_slugs": null,
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [],
   "image_urls": [
    "/media/equipment-catalog/elliptical-1.jpg"
   ],
@@ -1706,7 +2035,8 @@
    "小腿"
   ],
   "exercise_group": "stair_climber",
-  "exercise_slugs": null,
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [],
   "image_urls": [
    "/media/equipment-catalog/stair_climber-1.jpg"
   ],
@@ -1727,7 +2057,8 @@
    "下肢"
   ],
   "exercise_group": "treadmill",
-  "exercise_slugs": null,
+  "exercise_slugs": [],
+  "similar_exercise_slugs": [],
   "image_urls": [
    "/media/equipment-catalog/treadmill-1.jpg"
   ],
@@ -1751,6 +2082,7 @@
   ],
   "exercise_group": "cable",
   "exercise_slugs": null,
+  "similar_exercise_slugs": [],
   "image_urls": [
    "/media/equipment-catalog/dual_pulley-1.jpg"
   ],
@@ -1779,6 +2111,7 @@
   ],
   "exercise_group": "smith",
   "exercise_slugs": null,
+  "similar_exercise_slugs": [],
   "image_urls": [
    "/media/equipment-catalog/smith_machine-1.jpg"
   ],
@@ -1808,6 +2141,7 @@
   ],
   "exercise_group": "cable",
   "exercise_slugs": null,
+  "similar_exercise_slugs": [],
   "image_urls": [
    "/media/equipment-catalog/cable_crossover-1.jpg"
   ],

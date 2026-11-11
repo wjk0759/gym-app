@@ -43,6 +43,10 @@ struct EquipmentCatalogDetailView: View {
         Array(info.planEligibleExercises.prefix(6))
     }
 
+    private var similarExercises: [Exercise] {
+        Array(info.similarExercises.prefix(6))
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -51,6 +55,9 @@ struct EquipmentCatalogDetailView: View {
                 bodyPartSection
                 usageSection
                 exercisesSection
+                if !similarExercises.isEmpty {
+                    similarExercisesSection
+                }
                 actionButton
             }
             .padding(20)
@@ -296,56 +303,74 @@ struct EquipmentCatalogDetailView: View {
             sectionTitle("可练动作", subtitle: "\(exercises.count) 个")
 
             if exercises.isEmpty {
-                Text("动作库暂未收录这台器械的动作，可在添加后手动关联。")
+                Text("动作库暂无这台器械的专用动作，可在添加后手动关联。")
                     .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
-                VStack(spacing: 0) {
-                    ForEach(Array(exercises.enumerated()), id: \.element.id) { index, exercise in
-                        Button {
-                            selectedExercise = exercise
-                        } label: {
-                            HStack(spacing: 9) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(exercise.nameZH)
-                                        .font(AppType.callout.weight(.semibold))
-                                        .foregroundStyle(Theme.ink)
-                                        .lineLimit(2)
-                                    Text("\(exercise.muscle.label) · \(exercise.equipment.label)")
-                                        .font(.system(size: 9.5, weight: .medium))
-                                        .foregroundStyle(Theme.secondaryText)
-                                }
-                                Spacer(minLength: 6)
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .foregroundStyle(Theme.tertiaryText)
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 10)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-
-                        if index < exercises.count - 1 {
-                            Rectangle()
-                                .fill(Theme.stroke.opacity(0.7))
-                                .frame(height: 1)
-                                .padding(.leading, 12)
-                        }
-                    }
-                }
-                .background(
-                    Theme.paper,
-                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(Theme.stroke, lineWidth: 1)
-                }
+                exerciseList(exercises)
             }
         }
         .card(padding: 14)
+    }
+
+    private var similarExercisesSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionTitle("同类动作", subtitle: "不同器械，仅供参考")
+
+            Text("这些动作不是这台器械专用，不会默认加入计划池。")
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(Theme.tertiaryText)
+                .fixedSize(horizontal: false, vertical: true)
+
+            exerciseList(similarExercises)
+        }
+        .card(padding: 14)
+    }
+
+    private func exerciseList(_ items: [Exercise]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(items.enumerated()), id: \.element.id) { index, exercise in
+                Button {
+                    selectedExercise = exercise
+                } label: {
+                    HStack(spacing: 9) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(exercise.nameZH)
+                                .font(AppType.callout.weight(.semibold))
+                                .foregroundStyle(Theme.ink)
+                                .lineLimit(2)
+                            Text("\(exercise.muscle.label) · \(exercise.equipment.label)")
+                                .font(.system(size: 9.5, weight: .medium))
+                                .foregroundStyle(Theme.secondaryText)
+                        }
+                        Spacer(minLength: 6)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                if index < items.count - 1 {
+                    Rectangle()
+                        .fill(Theme.stroke.opacity(0.7))
+                        .frame(height: 1)
+                        .padding(.leading, 12)
+                }
+            }
+        }
+        .background(
+            Theme.paper,
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Theme.stroke, lineWidth: 1)
+        }
     }
 
     // MARK: - CTA
