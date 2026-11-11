@@ -14,14 +14,14 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`684cd64`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`fc25555`；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64`）：悬浮 Tab Bar 底部留白、相机入口改 2×2 快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，器械目录 UI test 通过，phone-only Release 已装 Wu-Tang；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
 - Windows 最新完成（2026-11-07）：拉取并保留 macOS 单行语音输入（`9a833b1`）；完成教练内核统一并部署生产；`test_reviewer` 已授 Pro、补齐基础档案和 3 分化计划；生产 Watch 预载/登录/刷新/语音/撤销全链路烟测通过；iPhone 训练页动作循环动画 PoC、`/exercise-media` 批量接口、11 条 sample 媒体已上生产（`341981f`）；器械识别修复：图片归一化、禁止随机 mock、37 类器械目录、生产导入 57 条训记动作、4 张真实照片 + 1 张负例烟测 5/5 命中（`5bf99a1`）；2026-11-08 增加 Vision OCR 标签提示、18 张多品牌评测和准确率实验（`23e41c8`）；生产视觉切 **Qwen3-VL-Plus**；器械识别加 **top-2 候选 + 混淆兜底**，18 张缩略图 top-1 61%、top-2 83%（`0d63191`）；已合并到 `develop`（`48ad5f0`），develop CI 全绿
 - Windows 前一轮完成（2026-11-07）：手表独立语音教练、watch 专用登录会话、媒体预载/本地缓存、离线 outbox/ack、手机 inbox 回灌、手机→手表指令、3 天 Pro 宽限与中途到期继续结束、HealthKit 保活/手机单写者、Watch AppIcon 恢复、Watch 隐私清单、训练来源 `phone/watch`
 - 本地后台（2026-11-08）：FastAPI `8000`、admin-server `8080`、admin-web `5173/admin`、MySQL `3307` V24；真机 API `http://192.168.1.4:8000/api/v1`
-- 最新后端验证：**235 passed**，Ruff app/tests 通过；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source`、`/exercise-media`、器械目录识别、器械 top-2、器械照片上传/训练部位已接入测试；生产 Flyway 已到 **V30**（V29 为补记，均 `checksum=NULL`）；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
+- 最新后端验证：**237 passed**，Ruff app/tests 通过；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source`、`/exercise-media`、器械目录识别、器械 top-2、器械照片上传/训练部位已接入测试；生产 Flyway 已到 **V30**（V29 为补记，均 `checksum=NULL`）；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
@@ -44,6 +44,35 @@
 - 不要恢复：
   - 不要恢复相机 FAB 覆盖快捷卡
   - 不要把权益确认状态画成 checkmark
+
+### 2026-11-11 · Windows（教练语气：亲切、热情、专业）
+
+- 分支：`develop`
+- 代码提交：`fc25555`
+- 做了什么：
+  - `backend/app/prompts/coach_system.md` 新增「温度」段：
+    - 亲切、热情、专业三条边界
+    - 每条回复按「接住 → 结论 → 下一步」，可合成 1–2 句
+    - 语气跟随：只回“嗯/好”、焦虑、想听解释、开玩笑
+    - 饮食回答必须给具体食物和一份的量（鸡胸 100g、鸡蛋 2 个、牛奶 250ml），不能只给克数
+    - 训练安排至少给组数/次数/重量/RPE 中的两项
+  - 语气示例改暖，新增 PR、饮食、疼痛三个示例
+  - `coach_core.py` 的 `_FALLBACK_CORE` 同步
+  - `coach.py` 的 `_mock_reply` 同步：没计划、替代、饮食、疼痛、营养/康复 skill、通用
+  - `CoachService.swift` 的本地兜底同步
+- 验证：
+  - backend **237 passed**，Ruff app/tests 通过
+  - `coach_core_prompt()` 已包含「温度」；`SYSTEM_PROMPT` 同样包含，iPhone/Watch 共用
+  - Watch 仍受 `WATCH_VOICE_INSTRUCTIONS` 的 1–3 句限制
+  - Swift 文件通过 tree-sitter 解析；Windows 无 Xcode，未编译
+- Mac 需要做：
+  - `git pull` → `xcodegen generate` → 编译 → `FitAITests`
+  - 真机看教练对话：累、疼痛、蛋白、器械被占四种问法
+  - 确认回复不超过 3 句、有数字/动作、无「宝子/亲爱的/兄弟」等禁词
+- 不要恢复：
+  - 不要把饮食回答退回只给克数
+  - 不要让教练用「小白/宝子/亲爱的/兄弟」称呼
+  - 不要为了热情连用感叹号或 emoji
 
 ### 2026-11-11 · Windows（器械动作白名单 + 同类动作拆分）
 
