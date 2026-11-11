@@ -385,7 +385,17 @@ struct EquipmentRecognitionView: View {
                             .tracking(0.8)
                             .foregroundStyle(Theme.tertiaryText)
 
-                        HStack(spacing: 8) {
+                        LazyVGrid(
+                            columns: [
+                                GridItem(
+                                    .adaptive(minimum: 108),
+                                    spacing: 8,
+                                    alignment: .leading
+                                )
+                            ],
+                            alignment: .leading,
+                            spacing: 8
+                        ) {
                             ForEach(equipmentOptions) { option in
                                 Button {
                                     selectEquipment(option)
@@ -393,6 +403,8 @@ struct EquipmentRecognitionView: View {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(option.name)
                                             .font(AppType.caption.weight(.semibold))
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.72)
                                         Text("\(Int(option.confidence * 100))%")
                                             .font(.system(size: 9, weight: .medium, design: .monospaced))
                                     }
@@ -403,6 +415,7 @@ struct EquipmentRecognitionView: View {
                                     )
                                     .padding(.horizontal, 11)
                                     .padding(.vertical, 7)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                                     .background(
                                         selectedEquipmentSlug == option.slug
                                             ? Theme.primary
