@@ -79,16 +79,17 @@ final class ExerciseMediaStore {
                   let exercise = ExerciseLibrary.exercise(slug: slug)
             else { continue }
 
-            let variants = exercise.mediaVariants.enumerated().compactMap {
-                index, variant in
-                guard variant.videoURL != nil || variant.posterURL != nil
-                else { return nil }
-                return ExerciseMediaItem(
-                    exerciseSlug: slug,
-                    localVariant: variant,
-                    index: index
-                )
-            }
+            let variants: [ExerciseMediaItem] = exercise.mediaVariants
+                .enumerated()
+                .compactMap { index, variant -> ExerciseMediaItem? in
+                    guard variant.videoURL != nil || variant.posterURL != nil
+                    else { return nil }
+                    return ExerciseMediaItem(
+                        exerciseSlug: slug,
+                        localVariant: variant,
+                        index: index
+                    )
+                }
             if !variants.isEmpty {
                 itemsBySlug[slug] = variants
             }
