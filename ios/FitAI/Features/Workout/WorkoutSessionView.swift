@@ -17,6 +17,7 @@ struct WorkoutSessionView: View {
     }
 
     @State var index = 0
+    @State var page: WorkoutSessionPage = .data
     @State var logs: [SetLog] = []
     @State var weight: Double = 0
     @State var reps: Int = 10
@@ -110,187 +111,95 @@ struct WorkoutSessionView: View {
         }
     }
 
-    @ViewBuilder
-    private var substitutionEntry: some View {
-        if let exercise = currentExercise,
-           !isWatchLed,
-           let info = exercise.exercise,
-           info.equipment != .bodyweight,
-           completedSets(for: exercise) < exercise.sets {
-            Button {
-                Haptics.tap()
+    private var sessionContent: some View {
+        Group {
+            if let exercise = currentExercise {
+                VStack(spacing: 0) {
+                    WorkoutSessionExerciseHeader(
+                        exercise: exercise,
+                        periodMode: periodMode,
+                        onAdjust: { openAdjustSheet(exercise) }
+                    )
+
+                    WorkoutSessionPageTabs(selection: $page)
+
+                    TabView(selection: $page) {
+                        dataPage(exercise)
+                            .tag(WorkoutSessionPage.data)
+
+                        demoPage(exercise)
+                            .tag(WorkoutSessionPage.demo)
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .overlay(alignment: .bottom) {
+                        LinearGradient(
+                            colors: [
+                                Theme.background.opacity(0),
+                                Theme.background
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(height: 16)
+                        .allowsHitTesting(false)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                summaryScroll
+            }
+        }
+    }
+
+    private func dataPage(_ exercise: PlanExercise) -> some View {
+        WorkoutSessionDataPage(
+            exercise: exercise,
+            logs: logs,
+            lastSet: store.lastSet(for: exercise.slug),
+            bestSet: store.bestSet(for: exercise.slug),
+            rpe: $rpe,
+            canSubstitute: !isWatchLed
+                && exercise.exercise != nil
+                && exercise.exercise?.equipment != .bodyweight
+                && completedSets(for: exercise) < exercise.sets,
+            canUndo: logs.last?.slug == exercise.slug,
+            onUseLast: {
+                guard let last = store.lastSet(for: exercise.slug) else { return }
+                weight = last.weightKG
+                reps = last.reps
+            },
+            onSubstitute: {
+                guard let info = exercise.exercise else { return }
                 substitutionTarget = info
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(.system(size: 11, weight: .semibold))
-                    Text("器械被占了？换一个")
-                        .font(AppType.caption.weight(.semibold))
-                    Spacer(minLength: 4)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 9, weight: .bold))
+            },
+            onUndo: {
+                guard !logs.isEmpty else { return }
+                if isWatchLed {
+                    let command = WorkoutCommand.undoLastSet(
+                        .init(at: Date(), source: .phone)
+                    )
+                    _ = sendToWatch(command)
+                    return
                 }
-                .foregroundStyle(Theme.cobalt)
-                .padding(.horizontal, 13)
-                .padding(.vertical, 11)
-                .background(
-                    Theme.cobalt.opacity(0.06),
-                    in: RoundedRectangle(cornerRadius: 13, style: .continuous)
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 13, style: .continuous)
-                        .strokeBorder(Theme.cobalt.opacity(0.18), lineWidth: 1)
-                }
+                logs.removeLast()
+                restRemaining = nil
             }
-            .buttonStyle(.plain)
-        }
+        )
     }
 
-    private var sessionScroll: some View {
-        ScrollViewReader { proxy in
-            AppScrollView {
-                VStack(spacing: AppLayout.sectionSpacing) {
-                    if let restRemaining {
-                        WorkoutRestCard(
-                            remaining: restRemaining,
-                            total: restTotal,
-                            onSkip: {
-                                if isWatchLed {
-                                    let command = WorkoutCommand.skipRest(
-                                        .init(at: Date(), source: .phone)
-                                    )
-                                    guard sendToWatch(command) else { return }
-                                }
-                                self.restRemaining = nil
-                            }
-                        )
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-
-                    Group {
-                        sessionCards
-                    }
-                    .id(index)
-                    .transition(
-                        .asymmetric(
-                            insertion: .opacity.combined(with: .offset(x: 22)),
-                            removal: .opacity.combined(with: .offset(x: -18))
-                        )
-                    )
-                }
-                .appPagePadding()
-                .padding(.vertical, 16)
-                .padding(.bottom, 24)
-                .appReadableContent()
-                .id("session-top")
-                .motionAnimation(Motion.smooth, value: index)
-                .motionAnimation(Motion.quick, value: restRemaining != nil)
-            }
-            .onChange(of: index) { _, _ in
-                showInstructions = false
-                withAnimation(Motion.smooth) {
-                    proxy.scrollTo("session-top", anchor: .top)
-                }
-            }
-            .onChange(of: restRemaining != nil) { _, isResting in
-                guard isResting else { return }
-                withAnimation(Motion.smooth) {
-                    proxy.scrollTo("session-top", anchor: .top)
-                }
-            }
-        }
+    private func demoPage(_ exercise: PlanExercise) -> some View {
+        WorkoutSessionDemoPage(
+            exercise: exercise,
+            medias: mediaStore.items(for: exercise.slug),
+            isPlaying: page == .demo,
+            lastSet: store.lastSet(for: exercise.slug),
+            showInstructions: $showInstructions
+        )
     }
 
-    @ViewBuilder
-    private var sessionCards: some View {
-        if let exercise = currentExercise {
-            let medias = mediaStore.items(for: exercise.slug)
-            if !medias.isEmpty {
-                ExerciseAnimationCard(exercise: exercise, medias: medias)
-            }
-            WorkoutSessionExerciseCard(
-                exercise: exercise,
-                index: index,
-                exerciseCount: activeDay.exercises.count,
-                periodMode: periodMode
-            )
-            substitutionEntry
-            WorkoutSetCard(
-                exercise: exercise,
-                done: completedSets(for: exercise),
-                lastSet: store.lastSet(for: exercise.slug),
-                bestSet: store.bestSet(for: exercise.slug),
-                weight: $weight,
-                reps: $reps,
-                rpe: $rpe,
-                weightStep: $weightStep,
-                onAdjust: { openAdjustSheet(exercise) },
-                onEditWeight: { valueEditor = .weight },
-                onEditReps: { valueEditor = .reps },
-                onUndoLast: {
-                    guard !logs.isEmpty else { return }
-                    if isWatchLed {
-                        let command = WorkoutCommand.undoLastSet(
-                            .init(at: Date(), source: .phone)
-                        )
-                        _ = sendToWatch(command)
-                        return
-                    }
-                    logs.removeLast()
-                    restRemaining = nil
-                },
-                isLastSetCurrent: {
-                    guard completedSets(for: exercise) > 0, let last = logs.last else { return false }
-                    return last.slug == exercise.slug
-                }()
-            )
-            if let instructions = exercise.exercise?.instructions,
-               !instructions.isEmpty {
-                Button {
-                    Haptics.select()
-                    withAnimation(Motion.quick) {
-                        showInstructions.toggle()
-                    }
-                } label: {
-                    HStack {
-                        Label("动作要点", systemImage: "list.bullet")
-                            .font(AppType.caption.weight(.semibold))
-                            .foregroundStyle(Theme.ink)
-                        Spacer()
-                        Image(systemName: showInstructions ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Theme.tertiaryText)
-                    }
-                    .padding(14)
-                    .background(Theme.paper, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .strokeBorder(Theme.stroke, lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-
-                if showInstructions {
-                    Text(instructions)
-                        .font(AppType.callout)
-                        .foregroundStyle(Theme.secondaryText)
-                        .lineSpacing(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(14)
-                        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .strokeBorder(Theme.stroke, lineWidth: 1)
-                        )
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-            }
-            WorkoutTrainingTipCard(
-                exercise: exercise,
-                lastSet: store.lastSet(for: exercise.slug)
-            )
-        } else {
+    private var summaryScroll: some View {
+        ScrollView {
             WorkoutSessionSummaryCard(
                 logs: logs,
                 plannedTotalSets: plannedTotalSets,
@@ -299,7 +208,12 @@ struct WorkoutSessionView: View {
                 feeling: $feeling,
                 notes: $notes
             )
+            .appPagePadding()
+            .padding(.vertical, 16)
+            .appReadableContent()
         }
+        .scrollIndicators(.hidden)
+        .scrollDismissesKeyboard(.interactively)
     }
 
     var body: some View {
@@ -321,7 +235,7 @@ struct WorkoutSessionView: View {
                     substitutionBanner
                 }
 
-                sessionScroll
+                sessionContent
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -352,6 +266,8 @@ struct WorkoutSessionView: View {
                 drainWatchInbox()
             }
             .onChange(of: index) { _, _ in
+                showInstructions = false
+                page = .data
                 prefetchExerciseMedia()
             }
             .onDisappear {
@@ -512,12 +428,19 @@ struct WorkoutSessionView: View {
     var actionBar: some View {
         let exercise = currentExercise
         let done = exercise.map { completedSets(for: $0) } ?? 0
-        return WorkoutSessionActionBar(
+        return WorkoutSessionLoggerBar(
             exercise: exercise,
             done: done,
             nextTitle: nextTitle,
-            setSummary: exercise.map { setSummary(for: $0) } ?? "",
-            onSkip: { skipRemainingSets() },
+            weight: $weight,
+            reps: $reps,
+            weightStep: $weightStep,
+            restRemaining: restRemaining,
+            restTotal: restTotal,
+            onEditWeight: { valueEditor = .weight },
+            onEditReps: { valueEditor = .reps },
+            onSkipRest: { skipRest() },
+            onSkipRemaining: { skipRemainingSets() },
             onComplete: {
                 guard let exercise else { return }
                 completeSet(exercise)

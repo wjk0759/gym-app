@@ -15,6 +15,7 @@ private enum DemoPanelStyle {
 struct ExerciseAnimationCard: View {
     let exercise: PlanExercise
     let medias: [ExerciseMediaItem]
+    var isPlaying: Bool = true
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -33,26 +34,16 @@ struct ExerciseAnimationCard: View {
     }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack {
             if canPlayVideo, let url = playURL {
                 ExerciseMediaBox(
                     url: url,
+                    isPlaying: isPlaying,
                     onFailure: { videoFailed = true }
                 )
             } else {
                 posterContent
             }
-
-            Text("动作示范")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 5)
-                .background(
-                    Theme.inkSolid.opacity(0.9),
-                    in: Capsule()
-                )
-                .padding(10)
         }
         .aspectRatio(1, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))

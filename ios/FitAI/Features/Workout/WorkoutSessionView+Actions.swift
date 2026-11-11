@@ -21,18 +21,6 @@ extension WorkoutSessionView {
         }
     }
 
-    func adjustWeight(by delta: Double) {
-        let next = weight + delta
-        weight = min(300, max(0, (next * 100).rounded() / 100))
-    }
-
-    func setSummary(for exercise: PlanExercise) -> String {
-        let load = exercise.exercise?.equipment == .bodyweight
-            ? "自重"
-            : "\(WorkoutWeightFormat.text(weight)) kg"
-        return "\(load) × \(reps) 次"
-    }
-
     var isWatchLed: Bool {
         WatchSyncManager.shared.hasActiveWatchSession(for: day.id)
     }
@@ -90,6 +78,16 @@ extension WorkoutSessionView {
         let rest = exercise.restSec
         restTotal = Double(max(1, rest))
         restRemaining = rest > 0 ? rest : nil
+    }
+
+    func skipRest() {
+        if isWatchLed {
+            let command = WorkoutCommand.skipRest(
+                .init(at: Date(), source: .phone)
+            )
+            guard sendToWatch(command) else { return }
+        }
+        restRemaining = nil
     }
 
     func advance() {
