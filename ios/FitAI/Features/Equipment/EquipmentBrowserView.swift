@@ -41,7 +41,7 @@ struct EquipmentBrowserView: View {
         }
     }
 
-    private var navigationTitle: String {
+    private var screenTitle: String {
         switch mode {
         case .addToLibrary: return "器械库"
         case .selectType: return "选择器械"
@@ -59,7 +59,7 @@ struct EquipmentBrowserView: View {
                 .padding(.horizontal, 16)
             }
             .background(AppBackground())
-            .navigationTitle(navigationTitle)
+            .navigationTitle(screenTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

@@ -90,7 +90,9 @@ struct EquipmentCatalogDetailView: View {
                     }
                 }
                 .tabViewStyle(
-                    .page(indexDisplayMode: info.imageURLList.count > 1 ? .automatic : .never)
+                    PageTabViewStyle(
+                        indexDisplayMode: info.imageURLList.count > 1 ? .automatic : .never
+                    )
                 )
                 .frame(height: 240)
                 .background(Theme.ink.opacity(0.03))
