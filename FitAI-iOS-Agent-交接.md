@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`2bfef85`（Windows 休息倒计时后台/灵动岛/通知 + 设置双开关；AI 教练 `modify_workout`；iOS Build CI 在 `2bfef85` 通过；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da` **尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`09c01e3`（Windows 休息倒计时后台/灵动岛/通知 + 设置双开关；AI 教练 `modify_workout`；iOS Build CI 在 `09c01e3` 通过；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da` **尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -80,7 +80,7 @@
 ### 2026-11-12 · Windows（休息倒计时后台 / 灵动岛 / 通知 + 设置双开关）
 
 - 背景：用户反馈组间休息倒计时退出 App 后停止；要求灵动岛显示、到 0 震动，并给不喜欢灵动岛的人一个开关
-- 代码提交：`3d467a3` + `a612242` + `8b8362b` + `2bfef85`（HEAD `2bfef85`）
+- 代码提交：`3d467a3` + `a612242` + `8b8362b` + `2bfef85` + `09c01e3`（代码 HEAD `09c01e3`）
 - 实现：
   - 休息计时从内存 Timer 改为墙钟 `restEndDate`，写入 `WorkoutDraft`；后台/回前台/重启按真实时间恢复
   - 新增 `FitAIWidget` app-extension：锁屏 + 灵动岛 Live Activity，`Text(timerInterval:)` 自动倒计时
@@ -93,7 +93,7 @@
   - 顺手修复 `EquipmentRecognitionView` SwiftLint type body error（拆 `matchesSection`），iOS Build 恢复绿
   - 新增 `RestTimerTests`（墙钟取整/夹 0）；iOS Build 只编译不跑单测，需 Mac 跑 `FitAITests`
 - 验证：
-  - iOS Build CI 在 `2bfef85` 通过；`FitAIWidget.appex` 已构建并嵌入 `FitAI.app/PlugIns`
+  - iOS Build CI 在 `09c01e3` 通过；`FitAIWidget.appex` 已构建并嵌入 `FitAI.app/PlugIns`
   - 未做真机验证（Windows 无 Xcode）：需要在 Mac 上 `xcodegen generate`、真机安装
 - Mac 待办：
   - `git pull` → `cd ios && xcodegen generate` → Release build/install
