@@ -86,7 +86,7 @@ final class NotificationScheduler {
             let identifiers = requests
                 .map(\.identifier)
                 .filter { $0.hasPrefix("workout-") }
-            center.removePendingNotificationRequests(withIdentifiers: identifiers)
+            self.center.removePendingNotificationRequests(withIdentifiers: identifiers)
         }
     }
 
@@ -95,7 +95,7 @@ final class NotificationScheduler {
             let identifiers = requests
                 .map(\.identifier)
                 .filter { $0.hasPrefix("rest-") }
-            center.removePendingNotificationRequests(withIdentifiers: identifiers)
+            self.center.removePendingNotificationRequests(withIdentifiers: identifiers)
         }
     }
 
