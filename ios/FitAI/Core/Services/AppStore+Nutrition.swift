@@ -24,9 +24,11 @@ extension AppStore {
 
     func removeFoodLog(_ id: UUID) {
         foodLogs.removeAll { $0.id == id }
-        persist()
-        Task {
-            try? await APIClient.shared.deleteFoodLog(id: id)
+        let key = id.uuidString
+        if !pendingFoodDeletionIDs.contains(key) {
+            pendingFoodDeletionIDs.append(key)
         }
+        persist()
+        syncPendingUserData()
     }
 }

@@ -292,7 +292,6 @@ extension AppStore {
             let right = $1.date ?? .distantFuture
             return left == right ? $0.weekday < $1.weekday : left < right
         }
-        current.version += 1
         current.updatedAt = now
         plan = current
         toast = "训练日期已更新"
@@ -436,7 +435,6 @@ extension AppStore {
         let now = Date()
         current.days[index].skippedAt = now
         current.days[index].scheduleUpdatedAt = now
-        current.version += 1
         current.updatedAt = now
         plan = current
         toast = "已跳过这次训练，不会算作未完成"
@@ -477,7 +475,6 @@ extension AppStore {
         current.days[index].skippedAt = nil
         current.days[index].scheduleUpdatedAt = now
         current.weeks = max(current.weeks, targetWeek)
-        current.version += 1
         current.updatedAt = now
         plan = current
         toast = "已改到 \(FitnessDate.short(target))"

@@ -53,7 +53,16 @@ enum DietPlanner {
             proteinPerKg = 1.6
         }
 
-        let kcal = tdee * goalFactor
+        let bmi = weight / ((height / 100) * (height / 100))
+        let safeFloor = profile.sex == .female ? 1200.0 : 1500.0
+        let rawKcal: Double
+        if profile.goalType == .loseFat, bmi < 18.5 {
+            // Never recommend further fat loss for an underweight profile.
+            rawKcal = tdee
+        } else {
+            rawKcal = tdee * goalFactor
+        }
+        let kcal = max(safeFloor, rawKcal)
         let protein = weight * proteinPerKg
         let fat = weight * 0.9
         let carbs = max(0, (kcal - protein * 4 - fat * 9) / 4)

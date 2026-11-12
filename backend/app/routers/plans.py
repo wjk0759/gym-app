@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Header, HTTPException
@@ -5,16 +6,30 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from ..deps import CurrentUser, DBSession
-from ..models import Exercise, Goal, PlanExercise, Profile, Program, WorkoutSession
-from ..schemas import PlanDayPatch, PlanGenerateIn
+from ..models import (
+    Exercise,
+    Goal,
+    PlanExercise,
+    Profile,
+    Program,
+    ProgramDay,
+    WorkoutSession,
+)
+from ..schemas import PlanDayPatch, PlanGenerateIn, PlanImportIn
 from ..services import access, generation
 from ..services.load_progression import adjustment_multipliers
 from ..services.locking import lock_user
-from ..services.plan_generator import generate_plan
+from ..services.plan_generator import generate_plan, validate_plan_for_user
 from ..services.plan_validator import PlanValidationError, injury_tags
-from ..services.queries import active_program, owned_program, owned_program_day
+from ..services.queries import (
+    active_goal,
+    active_program,
+    owned_program,
+    owned_program_day,
+)
 from ..services.rate_limit import enforce as enforce_rate_limit
 from ..services.serializers import (
+    archive_active_plans,
     clone_program,
     goal_to_dict,
     load_program,
@@ -164,6 +179,161 @@ def get_plan(plan_id: str, user_id: CurrentUser, db: DBSession):
     return serialize_program(_owned_program(db, user_id, plan_id))
 
 
+def _normalized_day_id(value: str | None) -> str | None:
+    if not value:
+        return None
+    try:
+        return str(uuid.UUID(value.strip()))
+    except (ValueError, AttributeError):
+        return None
+
+
+def _plan_day_id(
+    db: DBSession,
+    value: str | None,
+    *,
+    allowed: set[str],
+    used: set[str],
+) -> str:
+    candidate = _normalized_day_id(value)
+    if (
+        candidate is not None
+        and candidate not in used
+        and (candidate in allowed or db.get(ProgramDay, candidate) is None)
+    ):
+        used.add(candidate)
+        return candidate
+    new_value = str(uuid.uuid4())
+    while new_value in used:
+        new_value = str(uuid.uuid4())
+    used.add(new_value)
+    return new_value
+
+
+@router.put("/{plan_id}")
+def import_plan(
+    plan_id: str,
+    payload: PlanImportIn,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    """Create or replace a plan with client-generated IDs.
+
+    iOS can generate a plan locally when the remote generator is unavailable.
+    Importing it gives the server the same plan identity, so schedule, coach
+    actions and cross-device reads all target the same program.
+    """
+    program = db.get(Program, plan_id)
+    if program is not None and program.user_id != user_id:
+        raise HTTPException(status_code=404, detail="计划不存在")
+    if program is not None and (
+        payload.expected_plan_version is not None
+        and program.version != payload.expected_plan_version
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "PLAN_VERSION_CONFLICT",
+                "message": "计划已经更新，请刷新后再同步",
+                "current_version": program.version,
+            },
+        )
+
+    try:
+        cleaned, warnings = validate_plan_for_user(
+            db,
+            user_id,
+            payload.model_dump(),
+        )
+    except PlanValidationError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "UNSAFE_PLAN",
+                "message": "计划与当前伤病或器械条件冲突，请重新生成",
+            },
+        ) from exc
+    if warnings:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "UNSAFE_PLAN",
+                "message": "计划与当前伤病、器械或训练频率不一致，请重新生成",
+                "warnings": warnings,
+            },
+        )
+
+    lock_user(db, user_id)
+    archive_active_plans(db, user_id)
+    existing_day_ids = {day.id for day in program.days} if program else set()
+    used_day_ids: set[str] = set()
+    source_day_ids = {
+        (day.week_index, day.weekday): day.id
+        for day in payload.days
+        if day.id
+    }
+
+    if program is None:
+        goal = active_goal(db, user_id)
+        program = Program(
+            id=plan_id,
+            user_id=user_id,
+            title=payload.title,
+            goal_type=goal.type if goal else "recomp",
+            version=1,
+            status="active",
+            weeks=payload.weeks,
+            generated_by=payload.generated_by or "local",
+        )
+        db.add(program)
+    else:
+        program.title = payload.title
+        program.weeks = payload.weeks
+        program.generated_by = payload.generated_by or program.generated_by
+        program.status = "active"
+        program.version += 1
+        program.days.clear()
+        # Flush the delete-orphan rows before reusing day IDs from the payload.
+        db.flush()
+
+    for day_doc in cleaned["days"]:
+        source_id = source_day_ids.get(
+            (int(day_doc["week_index"]), int(day_doc["weekday"]))
+        )
+        day_id = _plan_day_id(
+            db,
+            source_id,
+            allowed=existing_day_ids,
+            used=used_day_ids,
+        )
+        day = ProgramDay(
+            id=day_id,
+            week_index=int(day_doc["week_index"]),
+            weekday=int(day_doc["weekday"]),
+            title=str(day_doc["title"]),
+            focus=list(day_doc.get("focus") or []),
+        )
+        for item in day_doc["exercises"]:
+            day.exercises.append(
+                PlanExercise(
+                    exercise_slug=item["slug"],
+                    order_index=int(item["order_index"]),
+                    sets=int(item["sets"]),
+                    reps=str(item["reps"]),
+                    weight_kg=item.get("weight_kg"),
+                    rest_sec=int(item["rest_sec"]),
+                    rpe=item.get("rpe"),
+                )
+            )
+        program.days.append(day)
+
+    db.commit()
+    current = load_program(db, plan_id)
+    if current is None:
+        raise HTTPException(status_code=500, detail="计划保存失败")
+    return serialize_program(current)
+
+
 @router.patch("/{plan_id}/days/{day_id}")
 def update_day(
     plan_id: str,
@@ -173,6 +343,18 @@ def update_day(
     db: DBSession,
 ):
     program = _owned_program(db, user_id, plan_id)
+    if (
+        payload.expected_plan_version is not None
+        and program.version != payload.expected_plan_version
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "PLAN_VERSION_CONFLICT",
+                "message": "计划已经更新，请刷新后再改",
+                "current_version": program.version,
+            },
+        )
     lock_user(db, user_id)
     day = owned_program_day(db, user_id, day_id)
     if day is None or day.program_id != program.id:
@@ -183,6 +365,8 @@ def update_day(
     equipment.add("bodyweight")
     banned = injury_tags(profile.injuries if profile else [])
     exercise_slugs = {item.slug for item in payload.exercises}
+    if len(exercise_slugs) != len(payload.exercises):
+        raise HTTPException(status_code=422, detail="同一天不能重复添加同一个动作")
     exercises = {
         row.slug: row
         for row in db.execute(
@@ -219,6 +403,7 @@ def update_day(
                 rpe=item.rpe,
             )
         )
+    program.version += 1
     db.commit()
     program = load_program(db, program.id) or program
     return serialize_program(program)

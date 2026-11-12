@@ -47,6 +47,9 @@ final class AppStore {
 
     var profile = UserProfile()
     var plan: TrainingPlan?
+    /// Set when the current plan was produced locally and has not reached the
+    /// server yet. Retried on the next user-data sync.
+    var planNeedsServerSync = false
     var planHistory: [TrainingPlan] = []
     var sessions: [WorkoutSession] = []
     /// 当前训练中的本地草稿；只保留一个，避免同一天出现多份进度。
@@ -68,6 +71,8 @@ final class AppStore {
     var planAdjustmentCategory = ""
     var planAdjustmentProposal: PlanAdjustmentProposal?
     var foodLogs: [FoodLog] = []
+    /// Food log client IDs deleted locally but not yet acknowledged by the API.
+    var pendingFoodDeletionIDs: [String] = []
     var customFoods: [FoodItem] = []
     var dislikedSlugs: Set<String> = []
     var equipmentLibrary: [EquipmentItem] = []
@@ -194,11 +199,13 @@ final class AppStore {
         draftPersistWorkItem = nil
         profile = UserProfile()
         plan = nil
+        planNeedsServerSync = false
         planHistory = []
         sessions = []
         workoutDraft = nil
         chat = []
         foodLogs = []
+        pendingFoodDeletionIDs = []
         customFoods = []
         dislikedSlugs = []
         notificationsEnabled = false
@@ -284,11 +291,13 @@ final class AppStore {
         var persistAfterMigration = false
         profile = state.profile
         plan = state.plan
+        planNeedsServerSync = state.planNeedsServerSync ?? false
         planHistory = state.planHistory ?? []
         sessions = state.sessions
         workoutDraft = state.workoutDraft
         chat = state.chat
         foodLogs = state.foodLogs ?? []
+        pendingFoodDeletionIDs = state.pendingFoodDeletionIDs ?? []
         customFoods = state.customFoods ?? []
         dislikedSlugs = Set(state.dislikedSlugs ?? [])
         reminderHour = state.reminderHour
@@ -330,11 +339,13 @@ final class AppStore {
         let state = PersistedState(
             profile: profile,
             plan: plan,
+            planNeedsServerSync: planNeedsServerSync,
             planHistory: planHistory,
             sessions: sessions,
             workoutDraft: workoutDraft,
             chat: chat,
             foodLogs: foodLogs,
+            pendingFoodDeletionIDs: pendingFoodDeletionIDs,
             customFoods: customFoods,
             dislikedSlugs: Array(dislikedSlugs).sorted(),
             reminderHour: reminderHour,
@@ -436,11 +447,13 @@ final class AppStore {
     private struct PersistedState: Codable {
         var profile: UserProfile
         var plan: TrainingPlan?
+        var planNeedsServerSync: Bool?
         var planHistory: [TrainingPlan]?
         var sessions: [WorkoutSession]
         var workoutDraft: WorkoutDraft?
         var chat: [ChatMessage]
         var foodLogs: [FoodLog]?
+        var pendingFoodDeletionIDs: [String]?
         var customFoods: [FoodItem]?
         var dislikedSlugs: [String]?
         var reminderHour: Int

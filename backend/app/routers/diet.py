@@ -213,6 +213,25 @@ def targets(user_id: CurrentUser, db: DBSession):
     return {"targets": calculate_targets(profile, _goal_type(db, user_id))}
 
 
+@router.get("/plan")
+def saved_plan(
+    user_id: CurrentUser,
+    db: DBSession,
+    plan_date: date | None = Query(default=None, alias="date"),
+):
+    """Return the saved plan for a day so reopening the app does not fall back
+    to the generic local template."""
+    target_date = plan_date or date.today()
+    record = get_day(db, user_id, target_date)
+    if record is None or not record.plan:
+        raise HTTPException(status_code=404, detail="当天还没有饮食计划")
+    result = dict(record.plan)
+    result["strategy"] = record.strategy
+    result["generated_by"] = record.generated_by or result.get("generated_by")
+    result["warning"] = result.get("warning")
+    return result
+
+
 @router.post("/plan")
 async def plan(
     payload: DietPlanIn,

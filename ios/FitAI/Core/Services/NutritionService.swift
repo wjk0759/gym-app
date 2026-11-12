@@ -24,6 +24,10 @@ struct NutritionService {
         )
     }
 
+    func fetchSavedPlan(dateString: String) async throws -> RemoteDietPlan? {
+        try await client.fetchSavedDietPlan(dateString: dateString)
+    }
+
     func fetchWeek(
         strategy: String,
         weekStart: String?,

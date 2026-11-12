@@ -25,6 +25,7 @@ extension AppStore {
             // profile exists server-side before recording its one-time trial.
             try? await APIClient.shared.syncProfile(value)
             try? await APIClient.shared.syncGoal(value)
+            self.syncPendingUserData()
             let granted = await NotificationScheduler.shared.requestAuthorization()
             self.notificationsEnabled = granted
             self.persist()
@@ -32,7 +33,7 @@ extension AppStore {
         }
     }
 
-    func updateProfile(_ updated: UserProfile) {
+    func updateProfile(_ updated: UserProfile, regeneratePlan: Bool = false) {
         let old = profile
         var value = updated
         value.isOnboarded = true
@@ -71,9 +72,12 @@ extension AppStore {
         }
         persist()
         syncPendingUserData()
-        if planSettingsChanged, hasPlanEquipment {
+        if planSettingsChanged, hasPlanEquipment, regeneratePlan {
             generatePlan(force: true)
         } else {
+            if planSettingsChanged {
+                toast = "档案已更新；训练设置有变化，需要重排计划时请在训练手账重新生成"
+            }
             rescheduleNotifications()
         }
     }

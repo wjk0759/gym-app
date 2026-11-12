@@ -14,6 +14,7 @@ struct NutritionView: View {
     @State var pendingFoodDelete: FoodLog?
     @State var aiMeals: [MealSuggestion]?
     @State var aiPlanNote = ""
+    @State var serverTargets: NutritionTargets?
     @State var pendingPlanGenerationKey: String?
     @State var isGeneratingPlan = false
     @State var mode: NutritionMode = .plan
@@ -50,7 +51,7 @@ struct NutritionView: View {
     }
 
     var targets: NutritionTargets {
-        DietPlanner.targets(profile: store.profile)
+        serverTargets ?? DietPlanner.targets(profile: store.profile)
     }
 
     var isToday: Bool {
@@ -90,6 +91,41 @@ struct NutritionView: View {
         Self.dateFormatter.string(from: date)
     }
 
+    private func applyServerTargets(_ remote: RemoteDietPlan) {
+        guard let values = remote.targets,
+              let kcal = values.targetKcal,
+              let protein = values.proteinG,
+              let carbs = values.carbG,
+              let fat = values.fatG else {
+            return
+        }
+        let base = DietPlanner.targets(profile: store.profile)
+        serverTargets = NutritionTargets(
+            bmr: base.bmr,
+            tdee: base.tdee,
+            kcal: kcal,
+            protein: protein,
+            carbs: carbs,
+            fat: fat,
+            fiber: base.fiber
+        )
+    }
+
+    @MainActor
+    func loadSavedPlan() async {
+        guard aiMeals == nil else { return }
+        guard let plan = (try? await NutritionService().fetchSavedPlan(
+            dateString: dateString
+        )) ?? nil, !plan.meals.isEmpty else {
+            return
+        }
+        aiMeals = plan.meals.map {
+            MealSuggestion(name: $0.name, kcal: $0.kcal, items: $0.items)
+        }
+        aiPlanNote = plan.note ?? ""
+        applyServerTargets(plan)
+    }
+
     @MainActor
     func generateAIPlan() async {
         guard !isGeneratingPlan else { return }
@@ -117,6 +153,7 @@ struct NutritionView: View {
                 MealSuggestion(name: $0.name, kcal: $0.kcal, items: $0.items)
             }
             aiPlanNote = plan.note ?? ""
+            applyServerTargets(plan)
         } catch let error as APIError where error.isProRequired {
             await store.refreshAccess()
             store.requestPro(.mealPlan)
@@ -194,6 +231,9 @@ struct NutritionView: View {
             }
         } message: { log in
             Text("\(log.foodName) · \(Int(log.kcal)) kcal")
+        }
+        .task(id: dateString) {
+            await loadSavedPlan()
         }
     }
 

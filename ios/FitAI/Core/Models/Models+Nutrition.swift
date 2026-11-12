@@ -180,7 +180,22 @@ struct RemoteDietPlan: Decodable {
         let items: [String]
     }
 
+    struct Targets: Decodable {
+        let targetKcal: Int?
+        let proteinG: Int?
+        let carbG: Int?
+        let fatG: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case targetKcal = "target_kcal"
+            case proteinG = "protein_g"
+            case carbG = "carb_g"
+            case fatG = "fat_g"
+        }
+    }
+
     let meals: [Meal]
+    let targets: Targets?
     let tips: [String]?
     let note: String?
     let generatedBy: String?
@@ -188,6 +203,7 @@ struct RemoteDietPlan: Decodable {
 
     enum CodingKeys: String, CodingKey {
         case meals
+        case targets
         case tips
         case note
         case warning

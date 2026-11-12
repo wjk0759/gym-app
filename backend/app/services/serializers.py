@@ -131,6 +131,11 @@ def _next_version(db: Session, user_id: str) -> int:
     return int(current or 0) + 1
 
 
+def archive_active_plans(db: Session, user_id: str) -> None:
+    """Archive the current active plan before importing/replacing another."""
+    _archive_active(db, user_id)
+
+
 def save_plan(
     db: Session,
     user_id: str,

@@ -13,15 +13,19 @@ extension AppStore {
             toast = "先生成训练计划，再应用体型分析"
             return
         }
+        guard workoutDraft == nil else {
+            toast = "你正在训练；请先保存或结束当前训练，再应用体型分析"
+            return
+        }
 
         current.version += 1
         current.updatedAt = Date()
         current.days = current.days.map { day in
             var newDay = day
-            newDay.id = UUID()
+            // Keep day/exercise IDs stable: schedule state, workout history and
+            // server day references all depend on them.
             newDay.exercises = day.exercises.map { item in
                 var newItem = item
-                newItem.id = UUID()
                 if let muscle = item.exercise?.muscle,
                    analysis.focusAreas.contains(muscle) {
                     newItem.sets = min(6, item.sets + 1)
@@ -32,6 +36,7 @@ extension AppStore {
         }
         archiveCurrentPlan()
         plan = current
+        planNeedsServerSync = true
 
         if let index = bodyAnalyses.firstIndex(where: { $0.id == analysis.id }) {
             bodyAnalyses[index].appliedToPlan = true
@@ -43,6 +48,7 @@ extension AppStore {
 
         toast = "已应用体型分析：重点部位每周增加 1 组"
         persist()
+        syncPendingUserData()
     }
 
     /// 体型分析后跳转到 AI 教练：把分析结果作为上下文带进对话，闭环继续。

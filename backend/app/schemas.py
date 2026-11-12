@@ -135,7 +135,34 @@ class PlanExercisePatch(BaseModel):
 
 
 class PlanDayPatch(BaseModel):
+    expected_plan_version: int | None = Field(default=None, ge=1)
     exercises: list[PlanExercisePatch] = Field(min_length=1, max_length=12)
+
+
+class PlanImportExerciseIn(BaseModel):
+    slug: str = Field(min_length=1, max_length=60)
+    sets: int = Field(default=3, ge=1, le=10)
+    reps: str = Field(default="10", max_length=20)
+    weight_kg: float | None = Field(default=None, ge=0, le=500)
+    rest_sec: int = Field(default=60, ge=0, le=600)
+    rpe: float | None = Field(default=None, ge=1, le=10)
+
+
+class PlanImportDayIn(BaseModel):
+    id: str | None = Field(default=None, max_length=36)
+    week_index: int = Field(default=1, ge=1, le=8)
+    weekday: int = Field(ge=1, le=7)
+    title: str = Field(default="训练日", max_length=80)
+    focus: list[str] = Field(default_factory=list, max_length=6)
+    exercises: list[PlanImportExerciseIn] = Field(min_length=1, max_length=12)
+
+
+class PlanImportIn(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
+    weeks: int = Field(default=4, ge=1, le=8)
+    expected_plan_version: int | None = Field(default=None, ge=1)
+    generated_by: str = Field(default="local", max_length=20)
+    days: list[PlanImportDayIn] = Field(min_length=1, max_length=56)
 
 
 class SetIn(BaseModel):

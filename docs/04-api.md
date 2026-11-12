@@ -258,13 +258,41 @@
 
 ```json
 {
+  "expected_plan_version": 3,
   "exercises": [
     {"slug": "pushup", "sets": 3, "reps": "12-15", "weight_kg": null, "rest_sec": 60, "rpe": 7}
   ]
 }
 ```
 
-服务端重新跑校验器；不合法返回 422。
+服务端重新跑校验器；不合法返回 422。版本不一致返回 409 `PLAN_VERSION_CONFLICT`，成功后计划内容版本 +1。
+
+#### `PUT /plans/{plan_id}`
+
+导入或替换一份完整计划，主要用于本地模板兜底、离线改课和恢复：
+
+```json
+{
+  "title": "4 周增肌计划",
+  "weeks": 4,
+  "expected_plan_version": 3,
+  "generated_by": "local",
+  "days": [
+    {
+      "id": "uuid",
+      "week_index": 1,
+      "weekday": 1,
+      "title": "全身 A",
+      "focus": ["legs"],
+      "exercises": [
+        {"slug": "pushup", "sets": 3, "reps": "10", "rest_sec": 60}
+      ]
+    }
+  ]
+}
+```
+
+服务端会校验当前伤病、器械和频率；客户端提供的训练日 ID 会尽量保留，以保证排期状态不丢。
 
 #### `POST /plans/{plan_id}/adjust`
 
@@ -504,7 +532,11 @@ data: {"session_id": "uuid", "safety_flag": null, "citations": []}
 {"date": "2026-10-25"}
 ```
 
-返回目标热量、宏量营养素与三餐建议（当前为公式 + 模板，不接 LLM）。
+返回目标热量、宏量营养素与三餐建议。
+
+#### `GET /diet/plan?date=YYYY-MM-DD`
+
+读取已经保存的当天饮食计划。App 重新打开饮食页时使用这个接口，不再退回通用本地模板；没有保存计划返回 404。
 
 ### 2.8 教学视频（只读）
 

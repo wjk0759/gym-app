@@ -64,6 +64,72 @@ extension APIClient {
         )
     }
 
+    func fetchCurrentPlan() async throws -> TrainingPlan? {
+        do {
+            let plan: TrainingPlan = try await send(
+                path: "plans/current",
+                method: "GET",
+                body: nil
+            )
+            return plan
+        } catch let error as APIError where error.statusCode == 404 {
+            return nil
+        }
+    }
+
+    func updatePlanDay(
+        planID: UUID,
+        dayID: UUID,
+        expectedPlanVersion: Int,
+        exercises: [PlanExercise]
+    ) async throws -> TrainingPlan {
+        struct Payload: Encodable {
+            let expectedPlanVersion: Int
+            let exercises: [PlanExercise]
+
+            enum CodingKeys: String, CodingKey {
+                case expectedPlanVersion = "expected_plan_version"
+                case exercises
+            }
+        }
+        let body = try JSONEncoder().encode(
+            Payload(
+                expectedPlanVersion: expectedPlanVersion,
+                exercises: exercises
+            )
+        )
+        return try await send(
+            path: "plans/\(planID.uuidString.lowercased())/days/\(dayID.uuidString.lowercased())",
+            method: "PATCH",
+            body: body
+        )
+    }
+
+    func importPlan(
+        _ plan: TrainingPlan,
+        expectedPlanVersion: Int? = nil
+    ) async throws -> TrainingPlan {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .custom { date, encoder in
+            var container = encoder.singleValueContainer()
+            try container.encode(APIDateCoding.iso8601WithFractionalSeconds.string(from: date))
+        }
+        let encoded = try encoder.encode(plan)
+        let body: Data
+        if let expectedPlanVersion {
+            var object = try JSONSerialization.jsonObject(with: encoded) as? [String: Any] ?? [:]
+            object["expected_plan_version"] = expectedPlanVersion
+            body = try JSONSerialization.data(withJSONObject: object)
+        } else {
+            body = encoded
+        }
+        return try await send(
+            path: "plans/\(plan.id.uuidString.lowercased())",
+            method: "PUT",
+            body: body
+        )
+    }
+
     func syncSchedule(
         planID: String,
         planVersion: Int?,
@@ -542,6 +608,22 @@ extension APIClient {
             body: body,
             headers: idempotencyHeaders(idempotencyKey)
         )
+    }
+
+    func fetchSavedDietPlan(dateString: String) async throws -> RemoteDietPlan? {
+        let encoded = dateString.addingPercentEncoding(
+            withAllowedCharacters: .urlQueryAllowed
+        ) ?? dateString
+        do {
+            let plan: RemoteDietPlan = try await send(
+                path: "diet/plan?date=\(encoded)",
+                method: "GET",
+                body: nil
+            )
+            return plan
+        } catch let error as APIError where error.statusCode == 404 {
+            return nil
+        }
     }
 
     func syncStoreKitTransaction(signedTransaction: String) async throws -> AccessSnapshot {

@@ -8,13 +8,24 @@ struct ProfileEditView: View {
     @State private var draft = UserProfile()
     @State private var alertMessage = ""
     @State private var showAlert = false
+    @State private var showPlanRegenerateConfirm = false
+
+    private var planSettingsChanged: Bool {
+        let current = store.profile
+        return current.goalType != draft.goalType
+            || current.split != draft.split
+            || current.weeklyDays != draft.weeklyDays
+            || current.sessionMinutes != draft.sessionMinutes
+            || current.experience != draft.experience
+            || current.equipment != draft.equipment
+    }
 
     var body: some View {
         AppScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 ProfileFormView(draft: $draft)
 
-                Text("保存后会按新设置重排计划。")
+                Text("保存只更新档案；如果训练设置变化，会询问你是否重排计划。")
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
                     .fixedSize(horizontal: false, vertical: true)
@@ -44,6 +55,23 @@ struct ProfileEditView: View {
         } message: {
             Text(alertMessage)
         }
+        .confirmationDialog(
+            "训练设置变化了",
+            isPresented: $showPlanRegenerateConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("仅更新档案") {
+                store.updateProfile(draft, regeneratePlan: false)
+                dismiss()
+            }
+            Button("更新并重排计划") {
+                store.updateProfile(draft, regeneratePlan: true)
+                dismiss()
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("重排会归档当前计划；正在进行的训练草稿不会被静默清除。")
+        }
     }
 
     private func save() {
@@ -69,7 +97,11 @@ struct ProfileEditView: View {
         }
 
         draft.nickname = name
-        store.updateProfile(draft)
+        if planSettingsChanged, store.plan != nil {
+            showPlanRegenerateConfirm = true
+            return
+        }
+        store.updateProfile(draft, regeneratePlan: false)
         dismiss()
     }
 }

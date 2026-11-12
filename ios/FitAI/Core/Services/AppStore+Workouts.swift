@@ -28,9 +28,86 @@ extension AppStore {
               let index = current.days.firstIndex(where: { $0.id == day.id }) else {
             return
         }
+        let previous = current
+        let expectedVersion = current.version
         current.days[index] = day
+        current.version += 1
+        current.updatedAt = Date()
         plan = current
         persist()
+        let localPlan = current
+        let localVersion = current.version
+
+        Task { @MainActor in
+            do {
+                if self.planNeedsServerSync {
+                    let remote = try await APIClient.shared.importPlan(
+                        localPlan,
+                        expectedPlanVersion: expectedVersion > 1 ? expectedVersion : nil
+                    )
+                    self.mergeServerPlan(remote)
+                    self.planNeedsServerSync = false
+                    self.persist()
+                    return
+                }
+                let remote = try await APIClient.shared.updatePlanDay(
+                    planID: localPlan.id,
+                    dayID: day.id,
+                    expectedPlanVersion: expectedVersion,
+                    exercises: day.exercises
+                )
+                guard var latest = self.plan,
+                      latest.id == remote.id,
+                      latest.version == localVersion,
+                      let remoteDay = remote.days.first(where: { $0.id == day.id }),
+                      let latestIndex = latest.days.firstIndex(where: { $0.id == day.id }) else {
+                    return
+                }
+                latest.days[latestIndex].exercises = remoteDay.exercises
+                latest.version = remote.version
+                latest.updatedAt = Date()
+                self.plan = latest
+                self.planNeedsServerSync = false
+                self.persist()
+            } catch {
+                // Do not leave the UI claiming a server-backed edit when the
+                // request failed. The user can retry from the editor.
+                if var latest = self.plan,
+                   latest.id == previous.id,
+                   latest.version == expectedVersion + 1 {
+                    latest = previous
+                    self.plan = latest
+                    self.persist()
+                }
+                if let apiError = error as? APIError,
+                   apiError.statusCode == 409 {
+                    self.toast = "计划已在其他设备更新，请刷新后再改"
+                } else {
+                    self.toast = "计划保存失败，请检查网络后重试"
+                }
+            }
+        }
+    }
+
+    /// Merge a server-owned plan while keeping local scheduling metadata.
+    /// Server serializers intentionally do not own dates/skip state; those are
+    /// stored separately in PlanDayState and must survive an import.
+    func mergeServerPlan(_ remote: TrainingPlan) {
+        guard var current = plan, current.id == remote.id else {
+            plan = remote
+            return
+        }
+        var merged = remote
+        for index in merged.days.indices {
+            guard let local = current.days.first(where: { $0.id == merged.days[index].id }) else {
+                continue
+            }
+            merged.days[index].date = local.date
+            merged.days[index].skippedAt = local.skippedAt
+            merged.days[index].scheduleUpdatedAt = local.scheduleUpdatedAt
+        }
+        current = merged
+        plan = current
     }
 
     func addExercise(_ exercise: Exercise, to dayID: UUID) {

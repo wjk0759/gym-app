@@ -188,11 +188,34 @@ extension AppStore {
                     self.syncPendingUserData()
                 }
             }
+            await self.pushPendingFoodDeletions()
             await self.pushPendingFoodLogs()
             await self.pushPendingBodyMetrics()
             await self.pushPendingEquipment()
+            await self.syncPlanIfNeeded()
             await self.pushPlanSchedule()
             await self.pullCloudUserData()
+        }
+    }
+
+    /// Upload a locally generated plan before schedule/coach flows depend on it.
+    /// This is what makes local-template fallback and offline plan edits visible
+    /// to the server, other devices, and the coach action executor.
+    private func syncPlanIfNeeded() async {
+        guard planNeedsServerSync, let plan else { return }
+        // Server validation uses the current profile, especially weekly_days,
+        // equipment and injury constraints.
+        try? await APIClient.shared.syncProfile(profile)
+        do {
+            let remote = try await APIClient.shared.importPlan(
+                plan,
+                expectedPlanVersion: plan.version > 1 ? plan.version - 1 : nil
+            )
+            mergeServerPlan(remote)
+            planNeedsServerSync = false
+            persist()
+        } catch {
+            // Keep the pending flag. The next login/foreground retries.
         }
     }
 
@@ -251,6 +274,24 @@ extension AppStore {
         plan = current
         persist()
         rescheduleNotifications()
+    }
+
+    private func pushPendingFoodDeletions() async {
+        for key in pendingFoodDeletionIDs {
+            guard let id = UUID(uuidString: key) else {
+                pendingFoodDeletionIDs.removeAll { $0 == key }
+                continue
+            }
+            do {
+                try await APIClient.shared.deleteFoodLog(id: id)
+                pendingFoodDeletionIDs.removeAll { $0 == key }
+            } catch let error as APIError where error.statusCode == 404 {
+                pendingFoodDeletionIDs.removeAll { $0 == key }
+            } catch {
+                // Keep pending; a later sync retries the delete.
+            }
+        }
+        persist()
     }
 
     private func pushPendingFoodLogs() async {
@@ -312,9 +353,25 @@ extension AppStore {
     }
 
     private func pullCloudUserData() async {
+        if !planNeedsServerSync,
+           let remote = try? await APIClient.shared.fetchCurrentPlan() {
+            if let local = plan,
+               local.id == remote.id,
+               local.version > remote.version {
+                // Local is ahead only while an edit is still in flight.
+            } else {
+                mergeServerPlan(remote)
+                planNeedsServerSync = false
+                persist()
+            }
+        }
         if let remote = try? await nutrition.fetchRemote() {
             let localIDs = Set(foodLogs.map(\.id))
+            let pendingDeletes = Set(pendingFoodDeletionIDs)
             for item in remote {
+                if pendingDeletes.contains(item.clientID) {
+                    continue
+                }
                 guard let value = nutrition.makeFoodLog(from: item) else {
                     continue
                 }

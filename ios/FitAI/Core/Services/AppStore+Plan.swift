@@ -12,6 +12,10 @@ extension AppStore {
             return
         }
         guard !isGenerating else { return }
+        guard workoutDraft == nil else {
+            toast = "你正在训练；请先保存或结束当前训练，再重新生成计划"
+            return
+        }
         if !onboarding && !hasProAccess {
             requestPro(.trainingPlan)
             return
@@ -66,6 +70,7 @@ extension AppStore {
                     self.pendingPlanIdempotencyKey = nil
                     self.archiveCurrentPlan()
                     self.plan = generated
+                    self.planNeedsServerSync = false
                     self.toast = generated.generatedBy == "ai"
                         ? "已由 AI 生成计划"
                         : "已用规则模板生成计划"
@@ -138,6 +143,7 @@ extension AppStore {
             generated.version = (self.plan?.version ?? 0) + 1
             self.archiveCurrentPlan()
             self.plan = generated
+            self.planNeedsServerSync = true
             self.lastPlanGeneratedAt = Date()
             self.isGenerating = false
             self.persist()
@@ -176,6 +182,7 @@ extension AppStore {
         fallback.version = (plan?.version ?? 0) + 1
         archiveCurrentPlan()
         plan = fallback
+        planNeedsServerSync = true
         toast = message
         lastPlanGeneratedAt = Date()
         if onboarding {
@@ -240,10 +247,18 @@ extension AppStore {
 
     func restorePlan(_ archived: TrainingPlan) {
         guard archived.id != plan?.id else { return }
+        guard workoutDraft == nil else {
+            toast = "你正在训练；请先保存或结束当前训练，再恢复旧计划"
+            return
+        }
         archiveCurrentPlan()
         planHistory.removeAll { $0.id == archived.id }
-        plan = archived
-        toast = "已恢复计划 v\(archived.version)"
+        var restored = archived
+        restored.version += 1
+        restored.updatedAt = Date()
+        plan = restored
+        planNeedsServerSync = true
+        toast = "已恢复计划 v\(restored.version)"
         persist()
         rescheduleNotifications()
         syncPendingUserData()

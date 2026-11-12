@@ -161,6 +161,10 @@ extension AppStore {
 
     func applyPlanAdjustment() {
         guard requirePro(.trainingPlan) else { return }
+        guard workoutDraft == nil else {
+            toast = "你正在训练；请先保存或结束当前训练，再调整计划"
+            return
+        }
         guard let proposal = planAdjustmentProposal else { return }
         if proposal.regeneratePlan {
             var updated = profile
@@ -239,6 +243,7 @@ extension AppStore {
         }
 
         plan = current
+        planNeedsServerSync = true
         chat.append(
             ChatMessage(
                 role: .assistant,
@@ -249,6 +254,7 @@ extension AppStore {
         planAdjustmentProposal = nil
         planAdjustmentRequested = false
         persist()
+        syncPendingUserData()
     }
 
     func revisePlanAdjustment() {

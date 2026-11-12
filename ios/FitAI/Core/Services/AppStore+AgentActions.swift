@@ -422,6 +422,10 @@ extension AppStore {
 
     func applyAgentProposal() {
         guard let proposal = agentProposal, !isAgentWorking else { return }
+        guard workoutDraft == nil else {
+            toast = "你正在训练；请先保存或结束当前训练，再应用新计划"
+            return
+        }
         isAgentWorking = true
         Task { @MainActor in
             defer {
@@ -432,6 +436,7 @@ extension AppStore {
                 let updated = try await APIClient.shared.applyAgentProposal(id: proposal.id)
                 self.archiveCurrentPlan()
                 self.plan = updated
+                self.planNeedsServerSync = false
                 if let proposed = proposal.proposed {
                     if let days = proposed.weeklyDays {
                         self.profile.weeklyDays = max(1, min(7, days))
