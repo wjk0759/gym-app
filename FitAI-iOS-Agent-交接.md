@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`48539e9`（器械识别收尾；后端 `5c16528`；iOS `cba2980`；macOS 已验证 `48539e9`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`1f8681d`（macOS 已验证 TestFlight 分发签名；Windows 器械识别 `48539e9`；后端 `5c16528`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -24,7 +24,7 @@
 - 最新后端验证：**246 passed**，Ruff app/tests 通过；计划池已收归服务端（1,068 动作账号生产实跑 `generated_by=ai`）；器械识别：Qwen3-VL-Plus 对坐姿划船/腿举/哈克深蹲的图片判别不可靠，已加“具体 OCR 标签优先 + 候选顺序 + 手动从器械库选择 + 豆包 lite row/leg gate”，生产无 OCR 坐姿划船实测已返回 `seated_row`；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source`、`/exercise-media`、器械目录识别、器械 top-2、器械照片上传/训练部位已接入测试；生产 Flyway 已到 **V30**（V29 为补记，均 `checksum=NULL`）；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
-- 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+- 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
 
 ### 2026-11-12 · macOS（拉取并验证器械识别 / 动作库格子）
 
@@ -51,6 +51,31 @@
   - 不要恢复 `scaledToFill` 裁剪/横版撑宽
   - 不要移除「从器械库选择」兜底
   - 不要在无 OCR 时声称坐姿划船已自动解决
+
+### 2026-11-12 · macOS（TestFlight 分发签名验证）
+
+- 分支：`develop`
+- 做了什么：
+  - 用 `xcodebuild archive` + `-exportArchive`（`app-store-connect`）验证分发签名
+  - 生成 `ios/build/testflight/叫练-0.1.0-1.ipa`（17MB，未提交，`build/` 已忽略）
+- 验证：
+  - `ARCHIVE SUCCEEDED`、`EXPORT SUCCEEDED`
+  - IPA 签名：**Apple Distribution: wu jiekang (ZCHURNA4CM)**
+  - 分发证书：Cloud Managed Apple Distribution，到期 2027-11-12
+  - 主 App profile：`iOS Team Store Provisioning Profile: com.wjk.fitai`，`beta-reports-active=true`，`get-task-allow=false`
+  - Watch App 也在 IPA 内，使用同一分发证书和 Store profile 签名
+  - 版本：`0.1.0` / build `1`
+- 未完成：
+  - 未上传 TestFlight；`altool` 当前没有 App Store Connect API key 或 Apple ID app-specific password
+  - 未确认 App Store Connect 是否已创建 `com.wjk.fitai` App 记录
+  - 未做 Apple 服务端 validate/upload
+- 下一步：
+  - 在 App Store Connect 创建/确认 App 记录，Bundle ID `com.wjk.fitai`
+  - 提供 ASC API Key（Issuer ID + Key ID + `.p8`）或 Apple ID app-specific password
+  - 首次上传 build `1`；若已被占用则递增 `CURRENT_PROJECT_VERSION` 后重 archive
+  - 内部 TestFlight 可先上；外部测试再走 Beta App Review
+- 注意：
+  - TestFlight 安装本身不需要 IAP 商品；但要在测试版里测订阅，仍需 IAP 商品、协议和 App Store Server API Key/p8
 
 ### 2026-11-12 · Windows（豆包 lite 坐姿划船/腿类复核 gate 上线）
 
