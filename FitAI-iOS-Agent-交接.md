@@ -14,17 +14,61 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`7b0e7fb`（P1-8 Agent 请求状态/持久幂等/模型失败降级；后端 311 passed；P1-5 输出安全 `ab12716`；P1-6 上下文预算 `077823a`；AI 改课收归服务端 `53fdd8c`；iOS Build 在 `53fdd8c` 通过；休息倒计时 `09c01e3`；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da`/`a751b4c`/`174d027`/`cf147b2`/`53fdd8c`/`077823a`/`ab12716`/`e975815`/`c8166d2`/`7b0e7fb` **尚未部署**；V31/V32/V33 迁移待执行）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`93adcf0`（P0-1 计划服务端唯一事实源 + 饮食计划回读；后端 317 passed；iOS Build 在 `93adcf0` 通过；P1-8 Agent 请求状态/持久幂等/模型失败降级；P1-5 输出安全 `ab12716`；P1-6 上下文预算 `077823a`；AI 改课收归服务端 `53fdd8c`；iOS Build 在 `53fdd8c` 通过；休息倒计时 `09c01e3`；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da`/`a751b4c`/`174d027`/`cf147b2`/`53fdd8c`/`077823a`/`ab12716`/`e975815`/`c8166d2`/`7b0e7fb`/`93adcf0` **尚未部署**；V31/V32/V33 迁移待执行）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
 - Windows 最新完成（2026-11-07）：拉取并保留 macOS 单行语音输入（`9a833b1`）；完成教练内核统一并部署生产；`test_reviewer` 已授 Pro、补齐基础档案和 3 分化计划；生产 Watch 预载/登录/刷新/语音/撤销全链路烟测通过；iPhone 训练页动作循环动画 PoC、`/exercise-media` 批量接口、11 条 sample 媒体已上生产（`341981f`）；器械识别修复：图片归一化、禁止随机 mock、37 类器械目录、生产导入 57 条训记动作、4 张真实照片 + 1 张负例烟测 5/5 命中（`5bf99a1`）；2026-11-08 增加 Vision OCR 标签提示、18 张多品牌评测和准确率实验（`23e41c8`）；生产视觉切 **Qwen3-VL-Plus**；器械识别加 **top-2 候选 + 混淆兜底**，18 张缩略图 top-1 61%、top-2 83%（`0d63191`）；已合并到 `develop`（`48ad5f0`），develop CI 全绿
 - Windows 前一轮完成（2026-11-07）：手表独立语音教练、watch 专用登录会话、媒体预载/本地缓存、离线 outbox/ack、手机 inbox 回灌、手机→手表指令、3 天 Pro 宽限与中途到期继续结束、HealthKit 保活/手机单写者、Watch AppIcon 恢复、Watch 隐私清单、训练来源 `phone/watch`
 - 本地后台（2026-11-08）：FastAPI `8000`、admin-server `8080`、admin-web `5173/admin`、MySQL `3307` V24；真机 API `http://192.168.1.4:8000/api/v1`
-- 最新后端验证：**311 passed**，Ruff app/tests 通过；计划池已收归服务端（1,068 动作账号生产实跑 `generated_by=ai`）；器械识别：Qwen3-VL-Plus 对坐姿划船/腿举/哈克深蹲的图片判别不可靠，已加“具体 OCR 标签优先 + 候选顺序 + 手动从器械库选择 + 豆包 lite row/leg gate”，生产无 OCR 坐姿划船实测已返回 `seated_row`；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source`、`/exercise-media`、器械目录识别、器械 top-2、器械照片上传/训练部位已接入测试；生产 Flyway 已到 **V30**（V29 为补记，均 `checksum=NULL`）；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
+- 最新后端验证：**317 passed**，Ruff app/tests 通过；计划池已收归服务端（1,068 动作账号生产实跑 `generated_by=ai`）；器械识别：Qwen3-VL-Plus 对坐姿划船/腿举/哈克深蹲的图片判别不可靠，已加“具体 OCR 标签优先 + 候选顺序 + 手动从器械库选择 + 豆包 lite row/leg gate”，生产无 OCR 坐姿划船实测已返回 `seated_row`；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source`、`/exercise-media`、器械目录识别、器械 top-2、器械照片上传/训练部位已接入测试；生产 Flyway 已到 **V30**（V29 为补记，均 `checksum=NULL`）；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-13 · Windows（P0 计划服务端化 + 饮食计划回读）
+
+- 代码提交：`93adcf0`
+- 背景：训练计划手动编辑只写本地；服务端 PATCH 接口存在但 iOS 没接；本地 fallback 计划服务端没有；训练日期变更会错误递增计划内容版本；饮食计划离开页面后丢失；删除饮食记录会被云端旧数据拉回来。
+- 后端：
+  - `PATCH /plans/{id}/days/{day_id}` 增加 `expected_plan_version`，冲突返回 409 `PLAN_VERSION_CONFLICT`
+  - PATCH 成功后 `Program.version + 1`；同日重复动作 422
+  - 新增 `PUT /plans/{id}`：导入本地模板/离线计划/恢复计划；按当前伤病、器械、频率重新校验
+  - 导入尽量保留客户端提供的训练日 ID，避免排期状态丢失
+  - 新增 `GET /diet/plan?date=YYYY-MM-DD`：回读已保存的当日饮食计划
+- iOS：
+  - `AppStore.updateDay()` 改为乐观更新 + PATCH；成功合并服务端训练日，失败回滚
+  - 本地 fallback、体型分析、本地教练改计划会标记 `planNeedsServerSync`，下次同步自动 `PUT` 上传
+  - 登录/回前台拉取 `GET /plans/current`，计划内容可跨设备恢复
+  - 训练日期/跳过只更新 `scheduleUpdatedAt`，不再递增计划内容版本
+  - 档案保存拆成“仅更新档案 / 更新并重排计划”，不再静默重生成
+  - 有训练草稿时禁止优先重生成、恢复计划和应用新计划，避免草稿被静默清空
+  - 体型分析应用计划不再重建 day id，保留训练历史和排期引用
+  - 饮食页打开时读取已保存计划，不再回到通用本地模板
+  - 有服务端每日 targets 时使用服务端目标
+  - 客户端热量目标补 1200/1500 kcal 安全下限和 BMI <18.5 减脂保护
+  - 饮食记录删除增加 pending 队列，同步成功前不会被云端拉回
+- 验证：
+  - 后端 **317 passed**，Ruff 通过
+  - `Backend Tests` 在 `93adcf0` 通过
+  - `iOS Build` 在 `93adcf0` 通过
+  - 新增 `test_plan_sync.py`：版本冲突、PATCH 版本递增、本地 ID 导入、旧计划归档、重复动作
+  - 新增 `test_diet_plan_saved.py`：每日饮食计划回读和 404
+- 部署：
+  - 本次没有新迁移；仍需先执行 V31+V32+V33
+  - 部署 backend `93adcf0`；iOS 装 `93adcf0` 新包后手动改计划才会走服务端
+- 已知限制：
+  - 还没有计划预览确认页，onboarding 仍是 14 步
+  - 老版本 App 已经存在的“仅本地计划编辑”没有自动迁移标记；需要用户再编辑一次或重新生成才会进入服务端
+  - 复盘仍未读取实际计划完成率/跳过/错过；本地复盘和服务端周复盘仍并存
+  - 周计划的目标还没有驱动每日饮食页；计划餐一键记录、食物最近/收藏/条码仍未做
+  - 计划历史仍是本地最多 5 个版本，没有服务端 revision 表
+- 不要恢复：
+  - 不要恢复 `updateDay` 的纯本地写入
+  - 不要在训练日期变更时递增计划内容版本
+  - 不要在档案保存时静默重生成计划
+  - 不要在训练草稿存在时清空草稿或替换计划
+  - 不要删除饮食记录时忽略远端删除失败
 
 ### 2026-11-13 · Windows（P1-8 Agent 请求状态 + 持久幂等 + fallback）
 
