@@ -435,6 +435,42 @@ event: done
 data: {"session_id": "uuid", "safety_flag": null, "citations": []}
 ```
 
+#### `POST /agent/reviews/weekly`
+
+确定性周复盘，不调用大模型。复盘按**实际排期**统计计划日，而不是只看档案里的每周次数：
+
+```json
+{
+  "period": "week",
+  "week_start": "2026-11-09",
+  "stats": {
+    "sessions": 2,
+    "planned": 3,
+    "completion_rate": 0.67,
+    "planned_days": 3,
+    "completed_plan_days": 2,
+    "skipped_plan_days": 1,
+    "missed_plan_days": 0,
+    "adherence_rate": 1.0,
+    "volume_kg": 6200,
+    "average_rpe": 7.8,
+    "average_duration_min": 46,
+    "previous_volume_kg": 5800,
+    "nutrition_logged_days": 4,
+    "plan_title": "4 周增肌计划"
+  },
+  "summary": "本周计划 3 次，完成 2 次，计划完成率 100%；跳过 1 次，错过 0 次，总容量 6200 kg。",
+  "wins": ["按计划完成了训练", "本周计划全部完成"],
+  "watchouts": [],
+  "actions": ["下周保持频率，主力动作在动作稳定时加 2.5% 重量或 +1 次"]
+}
+```
+
+- 计划日以 `assigned_date` 为准；未排期的计划日按计划创建周与 `week_index/weekday` 回退。
+- 只有关联训练记录覆盖了计划组数，才算完成该计划日；练了一半仍算错过。
+- `skipped_plan_days` 不计入完成率分母。
+- 计划未覆盖本期时，`planned` 与 `completion_rate` 回退到档案 `weekly_days`。
+
 ### 2.6 器械识别
 
 #### `POST /equipment/scan`

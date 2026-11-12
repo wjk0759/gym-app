@@ -393,7 +393,7 @@ enum PlanReviewEngine {
         let volume = sessions.reduce(0) { $0 + $1.volume }
         let completedSets = sessions.flatMap(\.sets).filter(\.completed)
         let sets = completedSets.count
-        let averageRPE = completedSets.isEmpty
+        let averageRPE: Double? = completedSets.isEmpty
             ? nil
             : completedSets.reduce(0) { $0 + $1.rpe } / Double(completedSets.count)
         let adherence = planAdherence(

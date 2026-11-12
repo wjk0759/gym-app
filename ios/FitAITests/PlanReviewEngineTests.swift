@@ -96,7 +96,7 @@ final class PlanReviewEngineTests: XCTestCase {
         XCTAssertEqual(review.current.adherence.skippedDays, 1)
         XCTAssertEqual(review.current.adherence.missedDays, 1)
         XCTAssertEqual(review.current.adherence.eligibleDays, 2)
-        XCTAssertEqual(review.current.adherence.rate, 0.5)
+        XCTAssertEqual(review.current.adherence.rate ?? -1, 0.5, accuracy: 0.001)
         XCTAssertEqual(review.nextAction?.title, "先补一次错过的训练")
     }
 
@@ -120,6 +120,6 @@ final class PlanReviewEngineTests: XCTestCase {
 
         XCTAssertEqual(review.current.adherence.completedDays, 0)
         XCTAssertEqual(review.current.adherence.missedDays, 1)
-        XCTAssertEqual(review.current.averageRPE, 8)
+        XCTAssertEqual(review.current.averageRPE ?? 0, 8, accuracy: 0.001)
     }
 }
