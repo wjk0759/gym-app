@@ -203,6 +203,7 @@ extension CoachChatView {
         case "update_goal": return "target"
         case "log_body_metric": return "scalemass"
         case "create_diet_plan": return "fork.knife"
+        case "swap_diet_meal": return "arrow.triangle.2.circlepath"
         case "recognize_equipment": return "camera.viewfinder"
         case "analyze_body": return "figure.stand"
         case "modify_workout": return "slider.horizontal.3"

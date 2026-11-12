@@ -11,7 +11,7 @@ import json
 import logging
 import re
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 from uuid import uuid4
 
@@ -77,6 +77,7 @@ APP_ACTION_TYPES = {
     "update_goal",
     "log_body_metric",
     "create_diet_plan",
+    "swap_diet_meal",
     "recognize_equipment",
     "analyze_body",
     "modify_workout",
@@ -138,6 +139,7 @@ AGENT_INSTRUCTIONS = """你可以读取用户状态、读取训练记录、生�
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"reschedule_training","title":"把明天的训练改到周四","summary":"保留原训练内容，只调整日期","requires_confirmation":true,"payload":{"day_id":"本地训练日ID","target_date":"2026-10-29"}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_body_metric","title":"记录体重 70kg","summary":"写入今天身体数据","requires_confirmation":true,"payload":{"weight_kg":70}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"create_diet_plan","title":"生成本周碳循环饮食计划","summary":"训练日高碳、休息日低碳，蛋白质固定","requires_confirmation":true,"payload":{"strategy":"carb_cycle","week_start":"2026-10-26"}}]}}
+{"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"swap_diet_meal","title":"把周四午餐换一餐","summary":"保持热量和蛋白质不变，只替换菜品","requires_confirmation":true,"payload":{"date":"2026-11-12","meal":"lunch"}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"recognize_equipment","title":"拍照识别器械","summary":"打开相机识别器械，可加入个人动作库","requires_confirmation":true,"payload":{}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"analyze_body","title":"拍照分析体型","summary":"拍全身或半身照，给出训练重点","requires_confirmation":true,"payload":{}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"modify_workout","title":"把今天的卧推换成哑铃卧推","summary":"保留组数，改动作和重量","requires_confirmation":true,"payload":{"day_id":"本地训练日ID","scope":"day","changes":[{"op":"swap","from_slug":"bench_press","to_slug":"dumbbell_press"},{"op":"sets","slug":"dumbbell_press","sets":2}]}}]}}
@@ -177,10 +179,11 @@ App Context 和可执行操作：
 - 用户追问图片中人物或物品的可见属性时，先给基于 visual_context 的最佳判断，再说明限制；不评价美丑、不诊断、不制造焦虑。
 - state.coach_skill 仅用于兼容旧客户端；当前统一为 AI 私人健身教练，不区分康复师/营养师模式。训练、饮食、恢复、器械和日程都可以直接回答，并识别和准备 App 操作。
 - 用户要求改期、跳过、开始训练、打开页面或修改目标时，必须调用 propose_app_actions，不要只在 final 里描述。
-- 只能使用这些 action type：reschedule_training、skip_training、start_training、open_screen、update_goal、log_body_metric、create_diet_plan、recognize_equipment、analyze_body。
+- 只能使用这些 action type：reschedule_training、skip_training、start_training、open_screen、update_goal、log_body_metric、create_diet_plan、swap_diet_meal、recognize_equipment、analyze_body、modify_workout。
 - 用户说“我的体重现在是 70kg”时，调用 log_body_metric，payload 至少包含 weight_kg（可选 body_fat_pct、waist_cm），不要让用户自己去页面填写。
 - 体重、体脂、腰围等身体数据只能用 propose_app_actions + log_body_metric；绝对不要用 remember，也不要把 remember 当作更新身体数据的方式。
 - 用户想安排饮食计划、碳循环、低碳、高蛋白、地中海、素食、16:8 或换饮食策略时，调用 create_diet_plan。payload.strategy 只能是 balanced / carb_cycle / low_carb / high_protein / mediterranean / vegetarian / time_restricted_16_8，week_start 用周一日期（YYYY-MM-DD，可省略，默认本周）。先说明会按什么策略排，再让用户确认。
+- 用户只想替换某一餐、不想重排整周时，调用 swap_diet_meal。payload 必须包含 date（YYYY-MM-DD）和 meal（breakfast / lunch / dinner / snack）；服务端会保持当天热量和三大营养素不变，只换菜品。不要说已经换好，等用户确认。
 - 用户问某个动作怎么做、主要练哪里、目标肌肉、动作细节、动作替代、器械对应动作时，都要先调用 lookup_exercise，query 用最短动作名（如“弹力带划船”“深蹲”），limit 默认 3。只引用返回的步骤，不要凭记忆编造动作；没有结果就说明没查到，并让用户补充动作名或器械。
 - 用户想拍器械、问某个器械怎么练、或想把器械加入个人动作库时，调用 recognize_equipment。payload 可以为空；不要假装已经识别，等用户在相机里拍完。
 - 用户想拍体型照、看体态、问训练重点时，调用 analyze_body。payload 可以为空；不要假装已经分析，等用户拍完。
@@ -595,6 +598,15 @@ def _normalize_app_actions(
                 if not valid_date(week_start):
                     raise ValueError("week_start must be YYYY-MM-DD")
                 payload["week_start"] = week_start
+        if action_type == "swap_diet_meal":
+            meal = str(payload.get("meal") or "").strip().lower()
+            if meal not in {"breakfast", "lunch", "dinner", "snack"}:
+                raise ValueError("swap_diet_meal requires a valid meal")
+            payload["meal"] = meal
+            if not valid_date(date_value):
+                payload["date"] = date.today().isoformat()
+            else:
+                payload["date"] = date_value
         if action_type == "modify_workout":
             payload["changes"] = _normalize_workout_changes(payload.get("changes"))
             scope = str(payload.get("scope") or "day").strip().lower()

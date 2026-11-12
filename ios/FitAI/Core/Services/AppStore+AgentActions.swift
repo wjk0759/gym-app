@@ -311,6 +311,32 @@ extension AppStore {
             }
             return "正在生成本周饮食计划…"
 
+        case "swap_diet_meal":
+            guard let payload = action.payload,
+                  let mealRaw = payload.meal,
+                  let meal = MealType(rawValue: mealRaw) else {
+                return "没有指定要替换哪一餐"
+            }
+            let dateString = payload.date ?? FitnessDate.key(Date())
+            do {
+                let plan = try await APIClient.shared.swapDietMeal(
+                    dateString: dateString,
+                    meal: meal
+                )
+                let mealName = plan.meals.first { $0.meal == mealRaw }?.name ?? "新餐"
+                if let week = try? await NutritionService().fetchSavedWeek(weekStart: nil) {
+                    dietWeekPlan = week
+                }
+                let dayText = FitnessDate.date(from: dateString).map {
+                    FitnessDate.short($0)
+                } ?? dateString
+                return "已把 \(dayText) \(meal.label)换成「\(mealName)」"
+            } catch let error as APIError where error.statusCode == 404 {
+                return "这一天还没有保存的饮食计划"
+            } catch {
+                return "换餐失败：\(error.localizedDescription)"
+            }
+
         case "recognize_equipment":
             coachEquipmentScanRequested = true
             return "正在打开器械识别…"

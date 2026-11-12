@@ -17,6 +17,7 @@ struct NutritionView: View {
     @State var serverTargets: NutritionTargets?
     @State var pendingPlanGenerationKey: String?
     @State var isGeneratingPlan = false
+    @State var swappingMeal: MealType?
     @State var mode: NutritionMode = .plan
 
     enum NutritionMode: String, CaseIterable, Identifiable {
@@ -123,6 +124,20 @@ struct NutritionView: View {
         applyTargets(response.targets)
     }
 
+    private func suggestions(from plan: RemoteDietPlan) -> [MealSuggestion] {
+        plan.meals.map {
+            MealSuggestion(
+                name: $0.name,
+                kcal: $0.kcal,
+                items: $0.items,
+                meal: MealType(rawValue: $0.meal) ?? .breakfast,
+                protein: $0.proteinG ?? 0,
+                carbs: $0.carbG ?? 0,
+                fat: $0.fatG ?? 0
+            )
+        }
+    }
+
     @MainActor
     func loadSavedPlan() async {
         do {
@@ -132,22 +147,34 @@ struct NutritionView: View {
                 aiMeals = nil
                 return
             }
-            aiMeals = plan.meals.map {
-                MealSuggestion(
-                    name: $0.name,
-                    kcal: $0.kcal,
-                    items: $0.items,
-                    meal: MealType(rawValue: $0.meal) ?? .breakfast,
-                    protein: $0.proteinG ?? 0,
-                    carbs: $0.carbG ?? 0,
-                    fat: $0.fatG ?? 0
-                )
-            }
+            aiMeals = suggestions(from: plan)
             aiPlanNote = plan.note ?? ""
             applyServerTargets(plan)
         } catch {
             // Keep the existing plan when the failure is network-related; only
             // a 404 (handled as nil above) means the day has no saved plan.
+        }
+    }
+
+    @MainActor
+    func swapPlanMeal(_ suggestion: MealSuggestion) async {
+        guard swappingMeal == nil else { return }
+        swappingMeal = suggestion.meal
+        defer { swappingMeal = nil }
+        do {
+            let plan = try await NutritionService().swapMeal(
+                dateString: dateString,
+                meal: suggestion.meal
+            )
+            aiMeals = suggestions(from: plan)
+            applyServerTargets(plan)
+            Haptics.success()
+        } catch let error as APIError where error.statusCode == 404 {
+            message = "这一天还没有保存的饮食计划，先生成计划再换餐。"
+            showAlert = true
+        } catch {
+            message = "换餐失败，请稍后重试。"
+            showAlert = true
         }
     }
 
@@ -199,17 +226,7 @@ struct NutritionView: View {
             )
             pendingPlanGenerationKey = nil
             guard !plan.meals.isEmpty else { return }
-            aiMeals = plan.meals.map {
-                MealSuggestion(
-                    name: $0.name,
-                    kcal: $0.kcal,
-                    items: $0.items,
-                    meal: MealType(rawValue: $0.meal) ?? .breakfast,
-                    protein: $0.proteinG ?? 0,
-                    carbs: $0.carbG ?? 0,
-                    fat: $0.fatG ?? 0
-                )
-            }
+            aiMeals = suggestions(from: plan)
             aiPlanNote = plan.note ?? ""
             applyServerTargets(plan)
         } catch let error as APIError where error.isProRequired {

@@ -227,6 +227,21 @@ extension NutritionView {
                     Text("建议 \(suggestion.kcal) kcal")
                         .font(AppType.micro)
                         .foregroundStyle(Theme.secondaryText)
+                    Button {
+                        Task { await swapPlanMeal(suggestion) }
+                    } label: {
+                        if swappingMeal == suggestion.meal {
+                            ProgressView()
+                                .controlSize(.mini)
+                        } else {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Theme.cobalt)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(swappingMeal != nil)
+                    .accessibilityLabel("换一餐 \(suggestion.name)")
                 }
 
                 VStack(alignment: .leading, spacing: 6) {

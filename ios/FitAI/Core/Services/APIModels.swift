@@ -331,6 +331,7 @@ struct AgentActionPayload: Codable, Hashable {
     let waistCM: Double?
     let strategy: String?
     let weekStart: String?
+    let meal: String?
     let scope: String?
     let changes: [AgentWorkoutChange]?
 
@@ -348,6 +349,7 @@ struct AgentActionPayload: Codable, Hashable {
         case waistCM = "waist_cm"
         case strategy
         case weekStart = "week_start"
+        case meal
         case scope
         case changes
     }

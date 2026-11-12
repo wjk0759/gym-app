@@ -603,6 +603,28 @@ mediterranean / vegetarian / time_restricted_16_8
 
 读取已保存的一周计划；不传日期时返回本周。
 
+#### `POST /diet/plan/{date}/meals/{meal}/swap`
+
+只替换某一餐，不重排整周：
+
+```text
+meal: breakfast / lunch / dinner / snack
+```
+
+优先使用同周其他日期同名餐次的菜品；没有同周数据时使用规则备选。返回当天完整计划，并保持原餐次的热量和蛋白质/碳水/脂肪不变，只换菜名、食材和做法。
+
+```json
+{
+  "swapped_meal": {
+    "meal": "lunch",
+    "from": "周一鸡腿饭",
+    "to": "周二牛肉饭"
+  }
+}
+```
+
+教练侧对应 App action：`swap_diet_meal`，payload 为 `{"date":"YYYY-MM-DD","meal":"lunch"}`。
+
 #### `GET /diet/review?from=YYYY-MM-DD&to=YYYY-MM-DD`
 
 确定性的饮食计划执行复盘，不调用大模型。只把带 `plan_date` / `plan_meal` 的记录算作“计划餐完成”；手动记录仍计入实际摄入，但不算计划餐完成。
