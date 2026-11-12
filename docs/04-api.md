@@ -457,6 +457,11 @@ data: {"session_id": "uuid", "safety_flag": null, "citations": []}
     "average_duration_min": 46,
     "previous_volume_kg": 5800,
     "nutrition_logged_days": 4,
+    "diet_planned_meals": 18,
+    "diet_logged_plan_meals": 11,
+    "diet_adherence_rate": 0.61,
+    "diet_planned_kcal": 10800,
+    "diet_actual_kcal": 9600,
     "plan_title": "4 周增肌计划"
   },
   "summary": "本周计划 3 次，完成 2 次，计划完成率 100%；跳过 1 次，错过 0 次，总容量 6200 kg。",
@@ -597,6 +602,45 @@ mediterranean / vegetarian / time_restricted_16_8
 #### `GET /diet/plan/week?week_start=YYYY-MM-DD`
 
 读取已保存的一周计划；不传日期时返回本周。
+
+#### `GET /diet/review?from=YYYY-MM-DD&to=YYYY-MM-DD`
+
+确定性的饮食计划执行复盘，不调用大模型。只把带 `plan_date` / `plan_meal` 的记录算作“计划餐完成”；手动记录仍计入实际摄入，但不算计划餐完成。
+
+```json
+{
+  "from": "2026-11-09",
+  "to": "2026-11-15",
+  "totals": {
+    "planned_days": 5,
+    "planned_meals": 20,
+    "logged_plan_meals": 12,
+    "adherence_rate": 0.6,
+    "planned_kcal": 11000,
+    "actual_kcal": 9800,
+    "planned_protein_g": 750,
+    "actual_protein_g": 620
+  },
+  "days": [
+    {
+      "date": "2026-11-09",
+      "planned_meals": 4,
+      "logged_plan_meals": 3,
+      "planned_kcal": 2200,
+      "actual_kcal": 2100,
+      "planned_protein_g": 150,
+      "actual_protein_g": 140,
+      "status": "on_track"
+    }
+  ],
+  "missing_meals": [
+    {"date": "2026-11-09", "meal": "snack", "name": "加餐", "kcal": 220}
+  ],
+  "insight": "有 8 餐计划没有记录。先补看最常漏掉的那一餐，是时间不够还是餐单不合适。"
+}
+```
+
+`status`：`on_track` / `under` / `over` / `no_log` / `no_plan`。默认范围最近 7 天，最长 366 天。
 
 #### `GET /diet/targets?date=YYYY-MM-DD`
 

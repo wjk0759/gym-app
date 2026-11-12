@@ -40,6 +40,8 @@ def build_diet_review(
     logs,
     date_from: date,
     date_to: date,
+    *,
+    today: date | None = None,
 ) -> dict:
     plan_by_day = {
         plan.plan_date: ensure_meal_macros(plan.plan or {})
@@ -68,8 +70,12 @@ def build_diet_review(
     planned_protein_total = 0.0
     actual_protein_total = 0.0
 
+    # A current-week review must not call Thursday-Sunday meals "missing" on
+    # Monday. Future plans stay out of the denominator until their day arrives.
+    review_end = min(date_to, today or date.today())
+
     current = date_from
-    while current <= date_to:
+    while current <= review_end:
         plan = plan_by_day.get(current)
         day_logs = logs_by_day.get(current, [])
         actual_kcal = sum(float(log.kcal or 0) for log in day_logs)

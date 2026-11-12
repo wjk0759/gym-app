@@ -67,6 +67,23 @@ def test_review_includes_actual_only_days_without_counting_them_as_plan():
     assert extra["status"] == "no_plan"
 
 
+def test_future_plan_days_are_not_counted_as_missing():
+    day = date(2026, 11, 9)
+    future = date(2026, 11, 10)
+
+    result = build_diet_review(
+        [_plan(day), _plan(future)],
+        [],
+        day,
+        future,
+        today=day,
+    )
+
+    assert result["totals"]["planned_meals"] == 3
+    assert len(result["missing_meals"]) == 3
+    assert all(item["date"] == day.isoformat() for item in result["missing_meals"])
+
+
 def test_range_bounds_rejects_reversed_and_too_long_ranges():
     try:
         range_bounds(date(2026, 11, 10), date(2026, 11, 9))
