@@ -366,13 +366,29 @@ AI 复盘并生成新版本：
   "reply": "先降低重量……如果伴随疼痛，建议停止训练并咨询医生。",
   "safety_flag": null,
   "citations": [
-    {"type": "exercise", "slug": "goblet_squat", "name_zh": "高脚杯深蹲"}
+    {
+      "type": "exercise",
+      "slug": "goblet-squat",
+      "name_zh": "高脚杯深蹲",
+      "source": "current_plan"
+    },
+    {
+      "type": "exercise",
+      "slug": "bench-press",
+      "name_zh": "杠铃卧推",
+      "source": "hasaneyldrm/exercises-dataset",
+      "license": "MIT (data/text); media © Gym visual"
+    }
   ]
 }
 ```
 
 `safety_flag` 取值：`crisis` / `medical_referral` / `minor_guard` / `fall_guard` / `condition_guard` / `medication_guard` / `injury_guard` / `ped_guard` / `supplement_guard` / `null`。
 只有 Pro 会员的 App 会调用远程 DeepSeek；未开通时客户端使用本地规则回复。
+
+`citations` 由服务端根据回复文本、当前计划和服务端动作库校验后生成，不信任模型自己编造的来源；没有匹配到真实动作时返回空数组。
+
+回复返回前还会执行输出安全护栏：如果模型建议“带伤继续练”、极端断食/催吐、补剂或药物剂量、替代就医或直接下诊断，服务端会替换为确定性的安全回复，并返回对应的 `safety_flag`。
 
 #### `POST /coach/chat/stream`
 
@@ -383,7 +399,7 @@ event: delta
 data: {"text": "先降低"}
 
 event: done
-data: {"session_id": "uuid", "safety_flag": null}
+data: {"session_id": "uuid", "safety_flag": null, "citations": []}
 ```
 
 ### 2.6 器械识别

@@ -16,9 +16,11 @@ from contextlib import suppress
 from sqlalchemy.orm import Session
 
 from ..config import settings
+from ..models import Profile
 from . import llm
 from .plan_validator import VALID_MUSCLES
 from .prompt_registry import prompt_version
+from .reply_guard import review_reply
 
 logger = logging.getLogger(__name__)
 
@@ -97,14 +99,30 @@ async def analyze(
             for item in (data.get("focus_areas") or [])
             if str(item) in VALID_MUSCLES
         ][:4]
+        summary = str(data.get("summary") or "")[:200]
+        recommendations = [
+            str(item)[:120] for item in (data.get("recommendations") or [])[:4]
+        ]
+        profile = (
+            db.get(Profile, user_id)
+            if db is not None and user_id
+            else None
+        )
+        review = review_reply(
+            profile,
+            " ".join([summary, *recommendations]),
+        )
+        if review.blocked:
+            summary = review.reply
+            focus = []
+            recommendations = []
         return {
-            "summary": str(data.get("summary") or "")[:200],
+            "summary": summary,
             "focus_areas": focus,
-            "recommendations": [
-                str(item)[:120] for item in (data.get("recommendations") or [])[:4]
-            ],
+            "recommendations": recommendations,
             "confidence": round(_clamp_confidence(data.get("confidence")), 2),
             "disclaimer": DISCLAIMER,
+            "safety_flag": review.safety_flag,
             "model": settings.vision_model_name,
             "image_name": filename,
         }

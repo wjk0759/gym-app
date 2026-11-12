@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import time
 from typing import Literal
 
@@ -11,6 +12,7 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from ..models import ChatMessage, Exercise, Profile, Program
 from . import llm
+from .citations import build_reply_citations
 from .coach_context import build_coach_context, context_as_text
 from .coach_core import (
     coach_core_prompt,
@@ -18,11 +20,24 @@ from .coach_core import (
     watch_voice_system_prompt,
 )
 from .prompt_registry import prompt_version
+from .reply_guard import review_reply
 from .safety import assess_safety
 
 CoachSkill = Literal["trainer", "rehab", "nutrition"]
 COACH_PROMPT_VERSION = prompt_version("coach", coach_core_prompt())
 WATCH_PROMPT_VERSION = prompt_version("coach_watch", watch_voice_system_prompt())
+logger = logging.getLogger(__name__)
+
+
+def _review_or_none(profile: Profile, reply: str):
+    review = review_reply(profile, reply)
+    if review.blocked:
+        logger.warning(
+            "coach output blocked by guard: %s",
+            ",".join(review.rules),
+        )
+    return review
+
 
 def _input_strategy(message: str) -> str | None:
     """Cheap heuristic for messy real-world messages; guides the LLM's handling."""
@@ -116,6 +131,7 @@ def _mock_reply(
                                 "type": "exercise",
                                 "slug": item.exercise_slug,
                                 "name_zh": name,
+                                "source": "current_plan",
                             }
                         )
                 lines.append("如果今天状态一般，把最后一组去掉，优先保证动作质量。")
@@ -153,7 +169,12 @@ def _mock_reply(
             for item in rows:
                 lines.append(f"· {item.name_zh}（{item.equipment}）")
                 citations.append(
-                    {"type": "exercise", "slug": item.slug, "name_zh": item.name_zh}
+                    {
+                        "type": "exercise",
+                        "slug": item.slug,
+                        "name_zh": item.name_zh,
+                        "source": "exercise_library",
+                    }
                 )
             lines.append(
                 "选一个能稳定做 8–12 次的重量，动作变形就降。"
@@ -270,7 +291,18 @@ async def coach_reply(
                 kind=f"coach_{skill}",
                 prompt_version=COACH_PROMPT_VERSION,
             )
-            return {"reply": reply, "safety_flag": None, "citations": []}
+            review = _review_or_none(profile, reply)
+            if review.blocked:
+                return {
+                    "reply": review.reply,
+                    "safety_flag": review.safety_flag,
+                    "citations": [],
+                }
+            return {
+                "reply": reply,
+                "safety_flag": None,
+                "citations": build_reply_citations(db, reply, program=program),
+            }
         except llm.LLMError as exc:
             llm.record_job(
                 db,
@@ -285,6 +317,13 @@ async def coach_reply(
             )
 
     reply, citations = _mock_reply(message, profile, program, db, skill)
+    review = _review_or_none(profile, reply)
+    if review.blocked:
+        return {
+            "reply": review.reply,
+            "safety_flag": review.safety_flag,
+            "citations": [],
+        }
     return {"reply": reply, "safety_flag": None, "citations": citations}
 
 
@@ -365,11 +404,16 @@ async def watch_voice_reply(
                 reasoning_effort="low",
                 prompt_version=WATCH_PROMPT_VERSION,
             )
+            review = _review_or_none(profile, reply)
             return {
-                "reply": reply,
-                "safety_flag": None,
+                "reply": review.reply,
+                "safety_flag": review.safety_flag,
                 "requires_phone_confirmation": False,
-                "citations": [],
+                "citations": (
+                    []
+                    if review.blocked
+                    else build_reply_citations(db, reply, program=program)
+                ),
             }
         except llm.LLMError as exc:
             llm.record_job(
@@ -391,6 +435,14 @@ async def watch_voice_reply(
         db,
         "trainer",
     )
+    review = _review_or_none(profile, reply)
+    if review.blocked:
+        return {
+            "reply": review.reply,
+            "safety_flag": review.safety_flag,
+            "requires_phone_confirmation": False,
+            "citations": [],
+        }
     return {
         "reply": reply,
         "safety_flag": None,

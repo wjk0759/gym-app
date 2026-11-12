@@ -21,7 +21,7 @@ from ..models import (
 from . import llm
 from .equipment import available_equipment_types
 from .load_progression import apply_plan_weights
-from .plan_validator import injury_tags, validate_plan
+from .plan_validator import PlanValidationError, injury_tags, validate_plan
 from .prompt_registry import prompt_version
 from .training_stage import refresh_training_stage
 
@@ -226,6 +226,48 @@ def _allowed_exercises(
     ]
 
     return result
+
+
+def validate_plan_for_user(
+    db: Session,
+    user_id: str,
+    plan_doc: dict,
+) -> tuple[dict, list[str]]:
+    """Revalidate a stored plan against the user's current safety profile.
+
+    Proposals can sit for up to 30 minutes. During that window the user may add
+    an injury, remove equipment, or change weekly frequency, so applying the
+    draft without re-running validation could write a plan that was safe only
+    at generation time.
+    """
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        raise PlanValidationError("用户还没有完成个人档案")
+
+    equipment_types = available_equipment_types(
+        db, user_id, profile.equipment
+    )
+    plan_pool_slugs = user_plan_pool_slugs(db, user_id)
+    allowed = _allowed_exercises(db, profile.injuries, plan_pool_slugs)
+    if plan_pool_slugs and allowed:
+        equipment_types = sorted({item.equipment for item in allowed})
+
+    # Pass every active exercise so validate_plan can report the actual cause
+    # (injury or equipment) instead of treating a filtered exercise as missing.
+    by_slug = {
+        item.slug: item
+        for item in db.execute(
+            select(Exercise).where(Exercise.is_active.is_(True))
+        ).scalars()
+    }
+    return validate_plan(
+        plan_doc,
+        exercises=by_slug,
+        equipment=equipment_types,
+        injuries=profile.injuries,
+        weekly_days=profile.weekly_days,
+        weeks=int(plan_doc.get("weeks") or 4),
+    )
 
 
 def _pick_for_day(

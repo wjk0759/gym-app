@@ -31,13 +31,16 @@ from ..models import (
     utcnow,
 )
 from . import llm
+from .citations import build_reply_citations
 from .coach_context import build_coach_context, recent_training
 from .coach_core import coach_core_prompt
 from .exercise_search import search_exercise_payload
 from .memory import remember_facts, schedule_memory_extraction
-from .plan_generator import build_template_plan
+from .plan_generator import build_template_plan, validate_plan_for_user
+from .plan_validator import PlanValidationError
 from .prompt_registry import prompt_version
 from .queries import active_goal, active_program
+from .reply_guard import review_reply
 from .safety import assess_safety
 from .serializers import save_plan
 from .training_history import (
@@ -989,6 +992,8 @@ async def run_agent(
     actions: list[dict] = []
     error: str | None = None
     usage: dict[str, int] = {}
+    output_flag: str | None = None
+    citations: list[dict] = []
     started = time.perf_counter()
 
     profile = db.get(Profile, user_id)
@@ -1006,6 +1011,7 @@ async def run_agent(
             "proposal": None,
             "actions": [],
             "safety_flag": decision.flag,
+            "citations": [],
             "elapsed_ms": int((time.perf_counter() - started) * 1000),
             "usage": usage,
             "error": None,
@@ -1120,6 +1126,30 @@ async def run_agent(
                 .scalars()
                 .first()
             )
+
+        review = review_reply(profile, final_message)
+        if review.blocked:
+            logger.warning(
+                "agent output blocked by guard: %s",
+                ",".join(review.rules),
+            )
+            final_message = review.reply
+            output_flag = review.safety_flag
+            actions = []
+            if proposal is not None:
+                proposal.status = "superseded"
+                proposal = None
+            run.intent = "safety"
+            _record_step(
+                db,
+                run,
+                "safety",
+                output_data={
+                    "action": "blocked",
+                    "rules": list(review.rules),
+                },
+            )
+
         if proposal is not None or any(
             item.get("requires_confirmation") for item in actions
         ):
@@ -1131,6 +1161,11 @@ async def run_agent(
             run.intent = "app_action"
         elif proposal is not None:
             run.intent = "plan_change"
+        citations = build_reply_citations(
+            db,
+            final_message,
+            program=active_program(db, user_id),
+        )
         run.output_text = final_message[:4000]
         run.completed_at = utcnow()
         db.commit()
@@ -1173,11 +1208,57 @@ async def run_agent(
         "reply": final_message or "",
         "proposal": _serialize_proposal(proposal) if proposal else None,
         "actions": actions,
-        "safety_flag": decision.flag,
+        "safety_flag": output_flag or decision.flag,
+        "citations": citations,
         "elapsed_ms": int((time.perf_counter() - started) * 1000),
         "usage": usage,
         "error": error,
     }
+
+
+def _plan_number(value: Any) -> float | None:
+    if value in (None, ""):
+        return None
+    try:
+        return round(float(value), 4)
+    except (TypeError, ValueError):
+        return None
+
+
+def _plan_signature(plan: dict) -> tuple:
+    """Canonical plan shape for revalidation comparison.
+
+    Numeric JSON can round-trip as int or float (7 vs 7.0), so compare the
+    normalized values instead of serialized JSON.
+    """
+    days = []
+    for day in plan.get("days") or []:
+        exercises = tuple(
+            (
+                str(item.get("slug") or ""),
+                int(item.get("order_index") or 0),
+                int(item.get("sets") or 0),
+                str(item.get("reps") or ""),
+                _plan_number(item.get("weight_kg")),
+                int(item.get("rest_sec") or 0),
+                _plan_number(item.get("rpe")),
+            )
+            for item in (day.get("exercises") or [])
+        )
+        days.append(
+            (
+                int(day.get("week_index") or 0),
+                int(day.get("weekday") or 0),
+                str(day.get("title") or ""),
+                tuple(str(item) for item in (day.get("focus") or [])),
+                exercises,
+            )
+        )
+    return (
+        str(plan.get("title") or ""),
+        int(plan.get("weeks") or 0),
+        tuple(days),
+    )
 
 
 def apply_proposal(db: Session, user_id: str, proposal_id: str) -> tuple[Program, AgentPlanProposal]:
@@ -1204,6 +1285,23 @@ def apply_proposal(db: Session, user_id: str, proposal_id: str) -> tuple[Program
         or current.version != proposal.base_version
     ):
         raise RuntimeError("当前计划已经变化，请重新生成草案")
+
+    try:
+        cleaned, warnings = validate_plan_for_user(
+            db,
+            user_id,
+            proposal.plan_data,
+        )
+    except PlanValidationError as exc:
+        raise ValueError(
+            "你的伤病或器械条件已经变化，请重新生成计划草案"
+        ) from exc
+    if warnings or _plan_signature(cleaned) != _plan_signature(
+        proposal.plan_data
+    ):
+        raise ValueError(
+            "你的伤病、器械或训练频率已经变化，请重新生成计划草案"
+        )
 
     goal = active_goal(db, user_id)
     program = save_plan(

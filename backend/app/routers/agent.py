@@ -174,6 +174,7 @@ async def _agent_chat_inner(
     assistant_message = ChatMessage(
         role="assistant",
         content=result["reply"],
+        citations=result.get("citations", []),
         safety_flag=result.get("safety_flag"),
     )
     session.messages.extend([user_message, assistant_message])
@@ -188,6 +189,7 @@ async def _agent_chat_inner(
         "proposal": result["proposal"],
         "actions": result.get("actions", []),
         "safety_flag": result.get("safety_flag"),
+        "citations": result.get("citations", []),
         "elapsed_ms": result["elapsed_ms"],
         "usage": result.get("usage", {}),
     }

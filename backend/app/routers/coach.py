@@ -379,6 +379,7 @@ async def voice_chat(payload: VoiceChatIn, user_id: CurrentUser, db: DBSession):
             "speech_text": _speech_text(safety.reply),
             "safety_flag": safety.flag,
             "requires_phone_confirmation": requires_phone,
+            "citations": [],
             "server_time": utcnow().isoformat(),
         }
 
@@ -389,6 +390,7 @@ async def voice_chat(payload: VoiceChatIn, user_id: CurrentUser, db: DBSession):
             "speech_text": reply,
             "safety_flag": None,
             "requires_phone_confirmation": True,
+            "citations": [],
             "server_time": utcnow().isoformat(),
         }
 
@@ -409,6 +411,7 @@ async def voice_chat(payload: VoiceChatIn, user_id: CurrentUser, db: DBSession):
         "requires_phone_confirmation": result[
             "requires_phone_confirmation"
         ],
+        "citations": result.get("citations", []),
         "server_time": utcnow().isoformat(),
     }
 
@@ -569,6 +572,7 @@ async def chat_stream(payload: ChatIn, user_id: CurrentUser, db: DBSession):
     session_id = session.id
     reply = result["reply"]
     safety_flag = result["safety_flag"]
+    citations = result["citations"]
 
     async def event_stream():
         for index in range(0, len(reply), 6):
@@ -578,7 +582,11 @@ async def chat_stream(payload: ChatIn, user_id: CurrentUser, db: DBSession):
         yield (
             "event: done\ndata: "
             + json.dumps(
-                {"session_id": session_id, "safety_flag": safety_flag},
+                {
+                    "session_id": session_id,
+                    "safety_flag": safety_flag,
+                    "citations": citations,
+                },
                 ensure_ascii=False,
             )
             + "\n\n"

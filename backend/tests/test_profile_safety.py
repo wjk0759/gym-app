@@ -3,12 +3,15 @@ from datetime import date
 from types import SimpleNamespace
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.config import settings
 from app.db import Base
-from app.models import Profile, User
+from app.models import AgentRun, AgentStep, Profile, User
+from app.services import agent as agent_service
+from app.services import coach as coach_service
 from app.services.agent import run_agent
 from app.services.coach import coach_reply
 from app.services.safety import assess_safety, detect_safety
@@ -214,3 +217,101 @@ def test_normal_request_has_no_safety_decision():
     assert decision.flag is None
     assert decision.reply is None
     assert decision.caution is None
+
+
+def test_agent_blocks_unsafe_model_output(monkeypatch):
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    db = Session()
+    db.add(User(id="output-guard-user"))
+    db.add(
+        Profile(
+            user_id="output-guard-user",
+            nickname="输出护栏",
+            sex="male",
+            birth_date=date(date.today().year - 30, 1, 1),
+            height_cm=178,
+            weight_kg=75,
+            equipment=["bodyweight"],
+        )
+    )
+    db.commit()
+
+    async def unsafe_final(system, user, **kwargs):
+        return {
+            "action": "final",
+            "message": "膝盖疼也可以继续练，不用停。",
+        }
+
+    monkeypatch.setattr(settings, "llm_api_key", "test-key")
+    monkeypatch.setattr(agent_service.llm, "complete_json", unsafe_final)
+    monkeypatch.setattr(
+        agent_service,
+        "schedule_memory_extraction",
+        lambda *args, **kwargs: None,
+    )
+
+    result = asyncio.run(
+        run_agent(db, "output-guard-user", "今天练什么？")
+    )
+
+    assert result["safety_flag"] == "injury_guard"
+    assert result["actions"] == []
+    assert result["proposal"] is None
+    assert "不要继续练" in result["reply"]
+
+    run = db.execute(
+        select(AgentRun).where(AgentRun.user_id == "output-guard-user")
+    ).scalar_one()
+    assert run.intent == "safety"
+    step = db.execute(
+        select(AgentStep).where(
+            AgentStep.run_id == run.id,
+            AgentStep.step_type == "safety",
+        )
+    ).scalar_one()
+    assert step.output_json["action"] == "blocked"
+
+
+def test_coach_reply_blocks_unsafe_model_output(monkeypatch):
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    db = Session()
+    db.add(User(id="coach-output-guard"))
+    db.add(
+        Profile(
+            user_id="coach-output-guard",
+            nickname="输出护栏",
+            sex="female",
+            birth_date=date(date.today().year - 28, 1, 1),
+            height_cm=165,
+            weight_kg=55,
+            equipment=["bodyweight"],
+        )
+    )
+    db.commit()
+    profile = db.get(Profile, "coach-output-guard")
+
+    async def unsafe_text(messages, **kwargs):
+        return "膝盖疼也可以继续练，不用停。"
+
+    monkeypatch.setattr(settings, "llm_api_key", "test-key")
+    monkeypatch.setattr(coach_service.llm, "complete_text", unsafe_text)
+
+    result = asyncio.run(
+        coach_reply(db, profile, None, [], "今天练什么？")
+    )
+
+    assert result["safety_flag"] == "injury_guard"
+    assert "不要继续练" in result["reply"]
+    assert result["citations"] == []

@@ -12,8 +12,10 @@ from contextlib import suppress
 from sqlalchemy.orm import Session
 
 from ..config import settings
+from ..models import Profile
 from . import llm
 from .prompt_registry import prompt_version
+from .reply_guard import review_reply
 
 logger = logging.getLogger(__name__)
 
@@ -281,6 +283,14 @@ async def review_many(
     safety_flag = str(raw.get("safety_flag") or "").strip()
     if safety_flag not in {"medical_referral"}:
         safety_flag = ""
+
+    profile = db.get(Profile, user_id) if db is not None and user_id else None
+    review = review_reply(profile, f"{summary} {next_cue}")
+    if review.blocked:
+        summary = review.reply
+        observations = []
+        next_cue = ""
+        safety_flag = review.safety_flag
 
     return {
         "mode": mode,
