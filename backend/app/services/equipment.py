@@ -579,27 +579,32 @@ async def _apply_row_gate(
     if not row_signal:
         return result
 
-    row_options: list[dict] = []
-    seen: set[str] = set()
-    for index, slug in enumerate(_ROW_MACHINE_SLUGS):
+    row_option: dict | None = None
+    for slug in _ROW_MACHINE_SLUGS:
         item = catalog_get(db, slug)
-        if item is None or item.slug in seen:
+        if item is None:
             continue
-        option = _build_option(db, item, 0.9 if index == 0 else 0.6)
-        if option is None:
-            continue
-        row_options.append(option)
-        seen.add(item.slug)
+        candidate = _build_option(db, item, 0.9)
+        if candidate is not None:
+            row_option = candidate
+            break
 
-    if not row_options:
+    if row_option is None:
         return result
 
+    row_options: list[dict] = [row_option]
+    seen: set[str] = {row_option["slug"]}
+
+    # Keep exactly one alternative (the original leg-machine answer) so the
+    # old two-capsule recognition UI still fits; the newer UI can refine via
+    # "从器械库选择".
     for option in result.get("equipment_candidates") or []:
         slug = str(option.get("slug") or "")
         if not slug or slug in seen:
             continue
         row_options.append(option)
         seen.add(slug)
+        break
 
     top = row_options[0]
     updated = dict(result)
