@@ -37,8 +37,8 @@ final class DietPlannerTests: XCTestCase {
         let meals = DietPlanner.meals(profile: makeProfile())
 
         XCTAssertEqual(
-            Int(meals.reduce(0) { $0 + $1.protein }),
-            targets.protein,
+            meals.reduce(0) { $0 + $1.protein },
+            Double(targets.protein),
             accuracy: 2
         )
         XCTAssertEqual(meals.first?.meal, MealType.breakfast)
