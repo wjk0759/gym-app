@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`1f8681d`（macOS 已验证 TestFlight 分发签名；Windows 器械识别 `48539e9`；后端 `5c16528`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`31b2d80`（Windows AI 教练 `modify_workout` 改课 action；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80` **尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -76,6 +76,35 @@
   - 内部 TestFlight 可先上；外部测试再走 Beta App Review
 - 注意：
   - TestFlight 安装本身不需要 IAP 商品；但要在测试版里测订阅，仍需 IAP 商品、协议和 App Store Server API Key/p8
+
+### 2026-11-12 · Windows（AI 教练改课 `modify_workout`）
+
+- 背景：用户用账号 `13428104171` 测试“AI 教练改课”，教练只给文字建议，没有出现可确认的改课卡
+- 根因：后端 `APP_ACTION_TYPES` 没有 `modify_workout`；用真实 DeepSeek 复现时，模型 reasoning 明确写“没有编辑动作的 action type”，只能 `final` 文字建议。不是模型/网络/账号问题
+- 代码提交：`31b2d80`
+- 后端：
+  - 新增 `modify_workout` action，payload 为 `day_id`/`date` + `scope`（`day`/`plan`）+ `changes[]`
+  - `changes` 支持 `swap` / `sets` / `reps` / `weight` / `rest` / `remove` / `add`；最多 8 条；`sets` 1–10、`weight_kg` 0–500、`rest_sec` 0–300；slug 正则校验
+  - prompt 增加示例和规则 11–13：改课必须走 `modify_workout`，不能只给文字；换/加动作前先 `lookup_exercise`；默认 `scope=day`
+  - `app_context.plan.days` 增加 `exercises`；prompt 注明手机端计划与 `coach_context.current_plan` 冲突时以手机端为准
+  - 新增 `test_agent.py` 覆盖合法/非法改课；后端 **248 passed**，Ruff 通过
+- iOS：
+  - `AgentActionPayload` 增加 `scope`/`changes`；新增 `AgentWorkoutChange`
+  - `AppStore+AgentActions` 新增 `modify_workout`：解析目标训练日（默认今天/下一个未完成）、应用 swap/sets/reps/weight/rest/remove/add、`scope=plan` 批量、版本 +1、保存撤销快照
+  - `AgentUndoState` 增加 `.plan(TrainingPlan)`，撤销时恢复整份计划
+  - `agentAppContext` 的 `plan.days` 增加 `exercises`
+  - 新增 `ios/FitAITests/AgentActionDecodingTests.swift`
+- 验证：
+  - 后端单测/Ruff 通过；真实 DeepSeek 两步实跑：先 `lookup_exercise("哑铃卧推")`，再产出合法 `modify_workout`，`_normalize_app_actions` 通过
+  - iOS 尚未 build（Windows 无 Xcode）；需 Mac 编译并真机验证
+- 部署：
+  - 本机 SSH 22 到 `8.218.205.149` 被阻断（TCP timeout），后端 **尚未部署**
+  - Mac 需要：`git pull` → 部署 backend（`docker compose build api && docker compose up -d api`）→ `xcodegen generate` → build/install iOS
+- 注意 / 未做：
+  - `modify_workout` 目前只改**本地计划**；服务端计划动作不会同步，教练上下文靠 `app_context.plan.days.exercises` 覆盖
+  - 旧 App 不认识新 action，会显示“暂不支持操作：modify_workout”；必须装新包
+  - 未做训练中 active session 改课；当前只改计划日
+  - 账号 `13428104171` 的具体对话日志未能拉取（SSH 被阻断）；根因由代码 + 真实模型复现确认
 
 ### 2026-11-12 · Windows（豆包 lite 坐姿划船/腿类复核 gate 上线）
 
