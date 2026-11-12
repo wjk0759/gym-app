@@ -128,6 +128,8 @@ extension HomeV2View {
                 }
                 .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
 
                 Text(review.summary)
                     .font(AppType.caption)

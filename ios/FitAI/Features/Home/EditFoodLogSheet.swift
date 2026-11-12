@@ -149,6 +149,7 @@ struct EditFoodLogSheet: View {
             Spacer()
             TextField("0", text: text)
                 .keyboardType(.decimalPad)
+                .accessibilityLabel(title)
                 .multilineTextAlignment(.trailing)
                 .font(.system(size: 16, weight: .semibold, design: .monospaced))
                 .frame(maxWidth: 110)

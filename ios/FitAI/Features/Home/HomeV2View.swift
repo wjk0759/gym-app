@@ -162,6 +162,9 @@ struct HomeV2View: View {
                     showBodyCheckIn = true
                 }
             }
+            .onChange(of: store.profile.goalType) { _, _ in
+                Task { await store.refreshDailyNutritionTargets() }
+            }
             .onChange(of: store.bodyCheckInFrequency) { _, _ in
                 if store.bodyCheckInDue {
                     bodyCheckInManual = false
