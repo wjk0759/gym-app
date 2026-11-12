@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`b462fcb`（训练总结 + 周复盘闭环；后端 **319 passed**；后端按实际排期统计计划日；Onboarding 压缩 + 计划预览确认 `2a52eb4`；P0-1 计划服务端唯一事实源 + 饮食计划回读 `93adcf0`；P1-5 输出安全 `ab12716`；P1-6 上下文预算 `077823a`；AI 改课收归服务端 `53fdd8c`；休息倒计时 `09c01e3`；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da`/`a751b4c`/`174d027`/`cf147b2`/`53fdd8c`/`077823a`/`ab12716`/`e975815`/`c8166d2`/`7b0e7fb`/`93adcf0`/`0bc6509`/`2a52eb4`/`b462fcb` **尚未部署**；V31/V32/V33 迁移待执行）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`b462fcb`（训练总结 + 周复盘闭环；后端 **319 passed**；iOS Build 在 `8420dde` 通过；后端按实际排期统计计划日；Onboarding 压缩 + 计划预览确认 `2a52eb4`；P0-1 计划服务端唯一事实源 + 饮食计划回读 `93adcf0`；P1-5 输出安全 `ab12716`；P1-6 上下文预算 `077823a`；AI 改课收归服务端 `53fdd8c`；休息倒计时 `09c01e3`；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da`/`a751b4c`/`174d027`/`cf147b2`/`53fdd8c`/`077823a`/`ab12716`/`e975815`/`c8166d2`/`7b0e7fb`/`93adcf0`/`0bc6509`/`2a52eb4`/`b462fcb` **尚未部署**；V31/V32/V33 迁移待执行）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -52,10 +52,11 @@
   - 后端 **319 passed**，Ruff 通过
   - 新增 `test_weekly_review.py`：完成/跳过/错过/完成率
   - 新增 `PlanReviewEngineTests`：跳过不进分母、练一半不算完成、错过训练优先成为下一步
-  - `Backend Tests`、`Coach Eval` 在 `b462fcb` 通过；iOS Build 结果见 GitHub Actions
+  - `Backend Tests`、`Coach Eval` 在 `b462fcb` 通过
+  - `iOS Build` 在 `8420dde` 通过（`8420dde` 仅补 RPE 类型标注、测试断言和文档）
 - 部署：
   - 本次没有新迁移；仍需 V31+V32+V33
-  - 部署 backend `b462fcb` + iOS 新包
+  - 部署 backend `b462fcb` + iOS `8420dde` 新包
 - 已知限制：
   - 复盘完成率只统计当前 active 计划覆盖的日期；旧计划/旧训练没有 `program_day_id` 时不计入计划日完成
   - 服务端计划日回退仍按计划创建周推算，客户端未上传 `assigned_date` 的旧数据可能偏差一天
