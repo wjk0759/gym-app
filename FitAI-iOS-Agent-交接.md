@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`cf147b2`（教练每组历史 + 时区 + 评测门禁 + 消息反馈；iOS Build 在 `cf147b2` 通过；休息倒计时 `09c01e3`；AI 教练 `modify_workout`；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da`/`a751b4c`/`174d027`/`cf147b2` **尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`53fdd8c`（AI 改课收归服务端 + 教练反馈 + 每组历史 + 评测门禁；iOS Build 在 `53fdd8c` 通过；休息倒计时 `09c01e3`；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da`/`a751b4c`/`174d027`/`cf147b2`/`53fdd8c` **尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -76,6 +76,36 @@
   - 内部 TestFlight 可先上；外部测试再走 Beta App Review
 - 注意：
   - TestFlight 安装本身不需要 IAP 商品；但要在测试版里测订阅，仍需 IAP 商品、协议和 App Store Server API Key/p8
+
+### 2026-11-13 · Windows（AI 改课收归服务端）
+
+- 代码提交：`53fdd8c`
+- 背景：`modify_workout` 之前只在 iOS 本地改计划，服务端计划不更新；无效/过期/重复动作没有服务端拦截
+- 后端：
+  - 新增 `workout_actions.py`：swap/sets/reps/weight/rest/remove/add 的服务端校验与执行
+  - 校验：动作存在、同日不重复、至少保留一个动作、器械清单、伤病禁忌、sets/weight/rest 范围
+  - 版本：`expected_plan_version` 不匹配返回 409 `PLAN_VERSION_CONFLICT`；成功后 `Program.version + 1`
+  - 新增 `POST /agent/actions/{id}/dry-run`、`/execute`、`/undo`
+  - 幂等：同 `user_id + action_id` 已 executed 直接返回上次结果；undo 后不能重复执行
+  - 复用 `AgentActionEvent.detail` 存 `before` / `after_version` / 结果，不需要新迁移
+  - `report_action_result` 合并 detail，避免客户端回执覆盖服务端快照
+- iOS：
+  - `AppStore+AgentActions` 的 `modify_workout` 改为调用 execute API，不再本地 apply
+  - 服务端返回计划后，只把目标训练日的动作合并进本地计划，保留本地日期/跳过状态
+  - undo 改为调用 undo API；新增 `AppStore+AgentUndo.swift`，避免 type body 超 600
+  - `AgentUndoState.serverWorkoutAction(actionID, planID, dayID)`
+  - `scope=plan` 暂不支持，明确提示按训练日改
+- 验证：
+  - 后端 **266 passed**，Ruff 通过
+  - `Backend Tests` 和 `iOS Build` 在 `53fdd8c` 均通过
+  - 新增 `test_workout_actions.py`（校验/执行/冲突/撤销）和 `test_workout_action_routes.py`（幂等/undo）
+- 已知限制：
+  - 没有完整 plan sync；如果本地计划版本和服务端不一致，execute 返回 409，需要重新生成改课方案。下一步补 `PUT /plans/{id}` 或按天同步。
+  - 服务端返回计划只合并目标训练日，其他本地编辑保留。
+  - Admin CI 仍卡在历史 V28 全新库 FK 问题，和本次无关
+- 部署：
+  - 部署 backend `53fdd8c` 即可；本次没有新数据库迁移
+  - 旧 iOS 包仍走本地改课；要服务端执行必须装新包
 
 ### 2026-11-12 · Windows（教练消息反馈闭环）
 
