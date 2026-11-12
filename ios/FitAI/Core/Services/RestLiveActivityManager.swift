@@ -42,14 +42,14 @@ final class RestLiveActivityManager {
             return
         }
 
-        await endAll()
-
         if let existing = Activity<RestTimerAttributes>.activities
             .first(where: { $0.attributes.sessionID == sessionID }) {
             activity = existing
             await existing.update(content)
             return
         }
+
+        await endAll()
 
         do {
             activity = try Activity.request(
