@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`69986da`（Windows AI 教练 `modify_workout` 改课 action + SwiftLint 拆分；iOS Build CI 在 `69986da` 通过；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da` **尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`2bfef85`（Windows 休息倒计时后台/灵动岛/通知 + 设置双开关；AI 教练 `modify_workout`；iOS Build CI 在 `2bfef85` 通过；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da` **尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -76,6 +76,44 @@
   - 内部 TestFlight 可先上；外部测试再走 Beta App Review
 - 注意：
   - TestFlight 安装本身不需要 IAP 商品；但要在测试版里测订阅，仍需 IAP 商品、协议和 App Store Server API Key/p8
+
+### 2026-11-12 · Windows（休息倒计时后台 / 灵动岛 / 通知 + 设置双开关）
+
+- 背景：用户反馈组间休息倒计时退出 App 后停止；要求灵动岛显示、到 0 震动，并给不喜欢灵动岛的人一个开关
+- 代码提交：`3d467a3` + `a612242` + `8b8362b` + `2bfef85`（HEAD `2bfef85`）
+- 实现：
+  - 休息计时从内存 Timer 改为墙钟 `restEndDate`，写入 `WorkoutDraft`；后台/回前台/重启按真实时间恢复
+  - 新增 `FitAIWidget` app-extension：锁屏 + 灵动岛 Live Activity，`Text(timerInterval:)` 自动倒计时
+  - 新增 `RestLiveActivityManager`；休息开始/更新/跳过/换动作/结束/暂停/完成时 start/update/end
+  - 本地通知：App 进后台按 endDate 排 `rest-` 通知，到 0 通知/震动；回前台取消并重算；前台用 `Haptics.warning()`
+  - `WorkoutDraft` 新增 `restEndDate`/`restTotalSeconds`；App 重启恢复
+  - 设置页新增“休息提醒”卡：`锁屏与灵动岛倒计时` + `休息结束提醒` 两个独立开关
+  - 训练提醒“关闭”改为只取消 `workout-`，不再误杀 `rest-`
+  - 灵动岛/锁屏点击回训练：`fitai://workout?day=<dayID>` + `RootView.onOpenURL`
+  - 顺手修复 `EquipmentRecognitionView` SwiftLint type body error（拆 `matchesSection`），iOS Build 恢复绿
+  - 新增 `RestTimerTests`（墙钟取整/夹 0）；iOS Build 只编译不跑单测，需 Mac 跑 `FitAITests`
+- 验证：
+  - iOS Build CI 在 `2bfef85` 通过；`FitAIWidget.appex` 已构建并嵌入 `FitAI.app/PlugIns`
+  - 未做真机验证（Windows 无 Xcode）：需要在 Mac 上 `xcodegen generate`、真机安装
+- Mac 待办：
+  - `git pull` → `cd ios && xcodegen generate` → Release build/install
+  - 首次会注册 `com.wjk.fitai.widget` / `com.wjk.fitai.dev.widget` App ID；确认自动签名
+  - 验证：
+    1. 完成一组，休息 60s，退后台/锁屏 → 灵动岛/锁屏倒计时继续
+    2. 到 0 → 通知/震动；回 App 休息条消失
+    3. 休息中跳过/换动作/结束训练/暂停 → Live Activity 立即消失
+    4. 下一组重置倒计时
+    5. 设置页关掉“锁屏与灵动岛倒计时” → 下一次休息不显示；休息中关掉立即消失；重开恢复
+    6. 关掉“休息结束提醒” → 到 0 不通知；App 内前台也不震动
+    7. 关闭训练提醒 → 不影响休息提醒
+    8. 强制退出 App → 灵动岛继续，通知仍触发
+    9. 手表领训 → 手机不重复显示
+    10. 点锁屏 Live Activity → 回到当前训练
+    11. 无灵动岛机型 → 锁屏显示
+- 注意：
+  - 后台震动依赖系统通知权限；静音/专注模式可能不震；Live Activity 依赖系统“实时活动”开关
+  - 旧包没有 Widget target；必须装新包
+  - 未做首次使用提示；如果用户找不到开关，可后续加一次轻提示
 
 ### 2026-11-12 · Windows（AI 教练改课 `modify_workout`）
 
