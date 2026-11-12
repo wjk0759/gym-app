@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from app.services.diet import (
     _normalize_ai_week,
     build_diet_week,
+    ensure_meal_macros,
 )
 
 
@@ -82,6 +83,30 @@ def test_remaining_strategies_keep_meal_macros_and_ratios():
     meal_keys = [meal["meal"] for meal in fasting["days"][0]["meals"]]
     assert "breakfast" not in meal_keys
     assert fasting["strategy"]["caution"]
+
+
+def test_old_saved_plan_backfills_meal_macros():
+    plan = {
+        "targets": {
+            "target_kcal": 2000,
+            "protein_g": 140,
+            "carb_g": 220,
+            "fat_g": 60,
+        },
+        "meals": [
+            {"meal": "breakfast", "kcal": 500},
+            {"meal": "lunch", "kcal": 700},
+            {"meal": "dinner", "kcal": 600},
+            {"meal": "snack", "kcal": 200},
+        ],
+    }
+
+    result = ensure_meal_macros(plan)
+
+    assert result["meals"][0]["protein_g"] == 35
+    assert result["meals"][1]["protein_g"] == 49
+    assert result["meals"][0]["carbs_g"] > 0
+    assert "protein_g" not in plan["meals"][0]
 
 
 def test_ai_week_normalization_keeps_recipes_and_falls_back_missing_days():

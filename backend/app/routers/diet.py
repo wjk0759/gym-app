@@ -13,6 +13,7 @@ from ..services.diet import (
     build_ai_diet_week,
     build_ai_plan,
     calculate_targets,
+    ensure_meal_macros,
     list_diet_strategies,
 )
 from ..services.food_vision import analyze as analyze_food_photo
@@ -254,7 +255,7 @@ def saved_plan(
     record = get_day(db, user_id, target_date)
     if record is None or not record.plan:
         raise HTTPException(status_code=404, detail="当天还没有饮食计划")
-    result = dict(record.plan)
+    result = ensure_meal_macros(record.plan)
     result["strategy"] = record.strategy
     result["generated_by"] = record.generated_by or result.get("generated_by")
     result["warning"] = result.get("warning")
@@ -378,7 +379,7 @@ def _week_payload(db: DBSession, user_id: str, start: date) -> dict:
     summary = week_summary(rows)
     return {
         "week_start": start.isoformat(),
-        "days": [row.plan for row in rows if row.plan],
+        "days": [ensure_meal_macros(row.plan) for row in rows if row.plan],
         "generated_by": summary["generated_by"],
         "warning": summary["warning"],
         "strategy": summary["strategy"],

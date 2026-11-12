@@ -579,6 +579,70 @@ data: {"session_id": "uuid", "safety_flag": null, "citations": []}
 
 读取已经保存的当天饮食计划。App 重新打开饮食页时使用这个接口，不再退回通用本地模板；没有保存计划返回 404。
 
+#### `POST /diet/plan/week`
+
+```json
+{"week_start": "2026-11-09", "strategy": "mediterranean"}
+```
+
+生成并保存 7 天餐单。`strategy` 支持：
+
+```text
+balanced / carb_cycle / low_carb / high_protein
+mediterranean / vegetarian / time_restricted_16_8
+```
+
+`time_restricted_16_8` 只生成午餐、晚餐和加餐，并返回进食窗口提示。每餐除 `kcal` 外还返回 `protein_g / carbs_g / fat_g`，供客户端一键记录整餐。
+
+#### `GET /diet/plan/week?week_start=YYYY-MM-DD`
+
+读取已保存的一周计划；不传日期时返回本周。
+
+#### `GET /diet/targets?date=YYYY-MM-DD`
+
+每日营养目标。优先返回该日已保存计划的目标（碳循环高/低碳日会不同），否则按档案重算：
+
+```json
+{
+  "date": "2026-11-12",
+  "targets": {
+    "bmr_kcal": 1680,
+    "tdee_kcal": 2600,
+    "target_kcal": 2360,
+    "protein_g": 150,
+    "carb_g": 280,
+    "fat_g": 62
+  },
+  "strategy": "carb_cycle",
+  "source": "saved_day"
+}
+```
+
+`source` 为 `saved_day` 或 `calculated`。
+
+#### `POST /diet/logs`
+
+```json
+{
+  "client_id": "uuid",
+  "logged_at": "2026-11-12T04:30:00Z",
+  "meal": "lunch",
+  "food_name": "午餐（计划餐）",
+  "grams": 0,
+  "kcal": 620,
+  "protein": 42,
+  "carbs": 68,
+  "fat": 18,
+  "fiber": 8,
+  "plan_date": "2026-11-12",
+  "plan_meal": "lunch"
+}
+```
+
+`plan_date` / `plan_meal` 是可选的软关联：用于一键记录计划餐、在记录里显示“计划餐”标记，不建立外键。计划重新生成后，历史饮食记录仍保留。
+
+`GET /diet/logs` 返回同样字段；`DELETE /diet/logs/{client_id}` 删除记录。
+
 ### 2.8 教学视频（只读）
 
 #### `GET /videos/{exercise_slug}`

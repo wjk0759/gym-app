@@ -277,6 +277,37 @@ def _macro_or(value, fallback: float) -> float:
     return parsed if parsed > 0 else fallback
 
 
+def ensure_meal_macros(plan: dict) -> dict:
+    """Backfill per-meal macros for plans saved before they were introduced.
+
+    Old rows only stored kcal, so one-tap logging would otherwise write zeros.
+    The estimate uses each meal's share of the day's kcal target.
+    """
+    result = dict(plan)
+    meals = [
+        dict(meal) for meal in (result.get("meals") or []) if isinstance(meal, dict)
+    ]
+    result["meals"] = meals
+    targets = result.get("targets") or {}
+    if not meals or not all(
+        key in targets for key in ("protein_g", "carb_g", "fat_g")
+    ):
+        return result
+    total_kcal = sum(float(meal.get("kcal") or 0) for meal in meals)
+    if total_kcal <= 0:
+        total_kcal = float(targets.get("target_kcal") or 0)
+    for meal in meals:
+        ratio = (
+            float(meal.get("kcal") or 0) / total_kcal
+            if total_kcal > 0
+            else 0.25
+        )
+        for key, value in _meal_macros(targets, ratio).items():
+            if not meal.get(key):
+                meal[key] = value
+    return result
+
+
 async def build_ai_plan(
     db,
     profile: Profile,
