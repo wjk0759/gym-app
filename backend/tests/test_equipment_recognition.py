@@ -268,6 +268,77 @@ def test_specific_ocr_label_overrides_wrong_vision_slug(monkeypatch):
     )
 
 
+def test_row_gate_switches_leg_result_to_seated_row(monkeypatch):
+    async def fake_vision(system, user, image, mime="image/jpeg", **kwargs):
+        return _vision_result(
+            equipment_slug="hack_squat",
+            equipment_name="哈克深蹲机",
+            confidence=0.92,
+            equipment_candidates=[
+                {"slug": "hack_squat", "confidence": 0.92},
+            ],
+        )
+
+    async def fake_gate(*args, **kwargs):
+        return "seated_pull"
+
+    types = [
+        _fake_type("hack_squat", "哈克深蹲机", group="hack_squat"),
+        _fake_type(
+            "seated_row",
+            "坐姿划船机",
+            group="seated_row",
+            name_en="Seated Row",
+        ),
+    ]
+    mapping = {
+        "hack_squat": ["vital-hack-squat-machine"],
+        "seated_row": ["vital-machine-seated-row"],
+    }
+    _patch_catalog(monkeypatch, types, mapping)
+    monkeypatch.setattr(
+        equipment,
+        "settings",
+        SimpleNamespace(
+            use_mock_vision=False,
+            vision_model="test-vision",
+            vision_model_name="test-vision",
+            vision_gate_enabled=True,
+            vision_gate_base_url="https://example.test/v3",
+            vision_gate_model="gate-model",
+            vision_gate_api_key="gate-key",
+            vision_gate_timeout_seconds=5,
+        ),
+    )
+    monkeypatch.setattr(equipment.llm, "complete_vision_json", fake_vision)
+    monkeypatch.setattr(
+        equipment.llm,
+        "complete_secondary_vision_text",
+        fake_gate,
+    )
+    monkeypatch.setattr(
+        equipment,
+        "_active_exercises",
+        lambda db: [
+            _exercise("vital-hack-squat-machine", "哈克深蹲"),
+            _exercise("vital-machine-seated-row", "坐姿划船"),
+        ],
+    )
+
+    result = asyncio.run(
+        equipment.recognize(None, b"not-a-real-image", "x.jpg")
+    )
+
+    assert result["status"] == "ok"
+    assert result["equipment_slug"] == "seated_row"
+    assert result["equipment_candidates"][0]["slug"] == "seated_row"
+    assert result["candidates"][0]["slug"] == "vital-machine-seated-row"
+    assert any(
+        option["slug"] == "hack_squat"
+        for option in result["equipment_candidates"]
+    )
+
+
 def test_generic_ocr_label_does_not_override(monkeypatch):
     async def fake_vision(system, user, image, mime="image/jpeg", **kwargs):
         return _vision_result(

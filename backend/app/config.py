@@ -49,6 +49,14 @@ class Settings(BaseSettings):
     vision_base_url: str = ""
     vision_api_key: str = ""
 
+    # 视觉复核模型（当前用豆包 lite 做坐姿划船 / 腿举的二选一）。
+    # 只在主视觉结果落在腿类器械时调用，避免每张图都多一次请求。
+    vision_gate_enabled: bool = False
+    vision_gate_base_url: str = ""
+    vision_gate_model: str = ""
+    vision_gate_api_key: str = ""
+    vision_gate_timeout_seconds: float = 20.0
+
     # 认证。生产环境必须配置 JWT_SECRET；开发环境未配置时使用固定开发密钥。
     jwt_secret: str = ""
     access_token_minutes: int = 30

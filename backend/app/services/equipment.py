@@ -56,6 +56,28 @@ _UNIVERSAL_TO_EQUIPMENT = {
     "sled": "other",
 }
 
+_LEG_MACHINE_SLUGS = {
+    "hack_squat",
+    "leg_press",
+    "leg_press_45",
+    "leg_press_horizontal",
+    "squat_press",
+    "v_squat",
+    "belt_squat",
+    "pendulum_squat",
+}
+
+_ROW_MACHINE_SLUGS = [
+    "seated_row",
+    "seated_row_low",
+    "seated_row_high",
+    "row_combo",
+    "lat_pulldown",
+    "lat_pulldown_iso",
+    "leverage_row",
+    "chest_supported_row",
+]
+
 _SYSTEM_PROMPT = """你是叫练的健身器械识别助手。你只判断图片中的固定器械类型，并从给定目录中选择。
 规则：
 1. 只能选择目录中存在的 equipment_slug；看不清或不是固定器械时用 unknown。
@@ -312,7 +334,10 @@ async def recognize(
             "视觉识别暂时不可用，请稍后重试。",
         )
 
-    return _map_result(db, result, filename, ocr_text=ocr_text)
+    mapped = _map_result(db, result, filename, ocr_text=ocr_text)
+    if _unique_ocr_match(db, ocr_text) is not None:
+        return mapped
+    return await _apply_row_gate(db, mapped, image_bytes, user_id=user_id)
 
 
 def _normalize_match_text(value: str | None) -> str:
@@ -495,6 +520,115 @@ def _map_result(
         "image_name": filename,
         "status": "ok",
     }
+
+
+async def _apply_row_gate(
+    db: Session,
+    result: dict,
+    image_bytes: bytes,
+    *,
+    user_id: str | None = None,
+) -> dict:
+    """Second opinion for the row-vs-leg confusion.
+
+    Qwen3-VL-Plus often returns hack_squat/leg_press for a seated row. The
+    activated Doubao lite model answers the much simpler binary question
+    reliably and quickly. Only run for ambiguous leg machines, and only when
+    OCR did not already provide a specific machine name.
+    """
+    if not getattr(settings, "vision_gate_enabled", False):
+        return result
+    if result.get("status") != "ok":
+        return result
+    if result.get("equipment_slug") not in _LEG_MACHINE_SLUGS:
+        return result
+    if not (
+        settings.vision_gate_base_url
+        and settings.vision_gate_model
+        and settings.vision_gate_api_key
+    ):
+        return result
+
+    try:
+        answer = await llm.complete_secondary_vision_text(
+            "You are a precise gym equipment inspector. Answer with two words max.",
+            (
+                "Look at the machine. Is it a seated pulling machine with a "
+                "chest pad and handles pulled toward the torso, or a leg "
+                "press/hack squat with a foot plate and shoulder pads? "
+                "Answer exactly: seated_pull or leg_press."
+            ),
+            base64.b64encode(image_bytes).decode(),
+            base_url=settings.vision_gate_base_url,
+            model=settings.vision_gate_model,
+            api_key=settings.vision_gate_api_key,
+            timeout=settings.vision_gate_timeout_seconds,
+            db=db,
+            user_id=user_id,
+        )
+    except Exception as exc:  # noqa: BLE001 - gate is best-effort
+        logger.warning("equipment row gate failed: %s", exc)
+        return result
+
+    normalized = answer.lower()
+    row_signal = (
+        "seated_pull" in normalized
+        or "seated pull" in normalized
+        or ("seated" in normalized and "pull" in normalized)
+    )
+    if not row_signal:
+        return result
+
+    row_options: list[dict] = []
+    seen: set[str] = set()
+    for index, slug in enumerate(_ROW_MACHINE_SLUGS):
+        item = catalog_get(db, slug)
+        if item is None or item.slug in seen:
+            continue
+        option = _build_option(db, item, 0.9 if index == 0 else 0.6)
+        if option is None:
+            continue
+        row_options.append(option)
+        seen.add(item.slug)
+
+    if not row_options:
+        return result
+
+    for option in result.get("equipment_candidates") or []:
+        slug = str(option.get("slug") or "")
+        if not slug or slug in seen:
+            continue
+        row_options.append(option)
+        seen.add(slug)
+
+    top = row_options[0]
+    updated = dict(result)
+    updated.update(
+        {
+            "candidates": top["candidates"],
+            "equipment_candidates": row_options,
+            "needs_confirmation": True,
+            "not_in_library": False,
+            "name": top["name_zh"],
+            "equipment_slug": top["slug"],
+            "equipment_name": top["name_zh"],
+            "confidence": max(0.9, top["confidence"]),
+            "description": (
+                "豆包视觉复核判断更像坐姿划船机，已优先展示划船动作。"
+            ),
+            "warning": (
+                "这类器械容易和腿举/哈克深蹲混淆；如果不对，"
+                "可从器械库选择。"
+            ),
+            "status": "ok",
+        }
+    )
+    logger.info(
+        "equipment row gate switched %s -> %s",
+        result.get("equipment_slug"),
+        top["slug"],
+    )
+    return updated
 
 
 def _unavailable(filename: str, message: str) -> dict:

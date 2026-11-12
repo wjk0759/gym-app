@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import time
+from contextlib import suppress
 
 import httpx
 from sqlalchemy.orm import Session
@@ -271,6 +272,81 @@ async def complete_vision_json(
 
     logger.warning("vision JSON retry failed: %s", last_error)
     raise LLMError("vision JSON retry failed")
+
+
+async def complete_secondary_vision_text(
+    system: str,
+    user_text: str,
+    image_base64: str,
+    *,
+    base_url: str,
+    model: str,
+    api_key: str,
+    timeout: float = 20.0,
+    db: Session | None = None,
+    user_id: str | None = None,
+    kind: str = "equipment_gate",
+) -> str:
+    """Ask a second vision model a short, text-only question.
+
+    Used for the row-vs-leg gate. Deliberately not JSON mode: a two-word
+    answer is faster and more reliable on the Doubao lite model.
+    """
+    if not (base_url and model and api_key):
+        raise LLMError("secondary vision is not configured")
+
+    endpoint = base_url.rstrip("/") + "/chat/completions"
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system},
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": user_text},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": "data:image/jpeg;base64," + image_base64
+                        },
+                    },
+                ],
+            },
+        ],
+        "temperature": 0.0,
+    }
+    started = time.perf_counter()
+    async with _get_semaphore():
+        response = await _get_client().post(
+            endpoint,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=timeout,
+        )
+    if response.status_code >= 400:
+        raise LLMError(
+            f"secondary vision HTTP {response.status_code}: {response.text[:200]}"
+        )
+    try:
+        data = response.json()
+        content = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError, ValueError) as exc:
+        raise LLMError("unexpected secondary vision response") from exc
+
+    if db is not None:
+        with suppress(Exception):
+            _record_success(
+                db,
+                user_id,
+                kind,
+                model,
+                started,
+                data.get("usage"),
+            )
+    return str(content or "").strip()
 
 
 def _strip_fences(content: str) -> str:
