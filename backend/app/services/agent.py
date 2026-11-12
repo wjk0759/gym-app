@@ -39,6 +39,10 @@ from .plan_generator import build_template_plan
 from .queries import active_goal, active_program
 from .safety import assess_safety
 from .serializers import save_plan
+from .training_history import (
+    exercise_history_payload,
+    workout_detail_payload,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +54,8 @@ PROPOSAL_TTL_MINUTES = 30
 ALLOWED_TOOLS = {
     "get_context",
     "get_recent_training",
+    "get_exercise_history",
+    "get_workout_detail",
     "lookup_exercise",
     "propose_plan",
     "propose_app_actions",
@@ -118,6 +124,8 @@ AGENT_INSTRUCTIONS = """你可以读取用户状态、读取训练记录、生�
 {"action":"tool","tool":"get_context","arguments":{}}
 {"action":"tool","tool":"get_recent_training","arguments":{"days":30}}
 {"action":"tool","tool":"lookup_exercise","arguments":{"query":"弹力带划船","limit":3}}
+{"action":"tool","tool":"get_exercise_history","arguments":{"slug":"bench_press","limit":5}}
+{"action":"tool","tool":"get_workout_detail","arguments":{"session_id":"训练记录ID"}}
 {"action":"tool","tool":"propose_plan","arguments":{"weekly_days":3,"weekdays":[2,4,6],"session_minutes":45,"split":"3分化","weeks":4,"focus":["back","shoulders"]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"reschedule_training","title":"把明天的训练改到周四","summary":"保留原训练内容，只调整日期","requires_confirmation":true,"payload":{"day_id":"本地训练日ID","target_date":"2026-10-29"}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_body_metric","title":"记录体重 70kg","summary":"写入今天身体数据","requires_confirmation":true,"payload":{"weight_kg":70}}]}}
@@ -145,6 +153,8 @@ AGENT_INSTRUCTIONS = """你可以读取用户状态、读取训练记录、生�
 12. modify_workout 的 from_slug/slug 必须是当前计划里已有的动作；换动作/加动作前先用 lookup_exercise 确认目标 slug，不要编造。默认 scope=day，只改指定训练日；用户明确说“以后都/整个计划”时才用 scope=plan。最多 8 条改动；换动作后重量默认不沿用旧动作，需要指定时再加一条 weight；add 只作用于指定训练日，不要用 scope=plan 批量加动作。
 13. 改课是待确认操作；final 里要说明“确认后才会改”，不能声称已经改好。
 14. 如果 app_context.today_day.in_progress=true，说明训练已经开始；不要用 modify_workout 改当前这次训练，先让用户在训练页用“调整/替换”改本次训练；可以改之后的训练日。
+15. 用户问某个动作最近练得怎么样、为什么没进步、下次加不加重量、有没有退步时，先调用 get_exercise_history；用返回的真实每组数据回答，不要用计划目标代替实际完成。
+16. 用户问某天/某次训练的具体内容时，调用 get_workout_detail；只引用返回的数据，不要编造重量、次数或 RPE。
 
 App Context 和可执行操作：
 - state.coach_context 是服务端构建的版本化上下文，包含 profile、goal、current_plan（当前周训练）、recent_training、body_metrics、nutrition_7d、equipment_library 和 memories；它是回答事实问题的首选依据。
@@ -610,6 +620,16 @@ def _tool_result(
         }
     if tool == "get_recent_training":
         return {"ok": True, **recent_training(db, user_id, int(arguments.get("days", 30)))}
+    if tool == "get_exercise_history":
+        slug = str(arguments.get("slug") or "").strip()
+        try:
+            limit = int(arguments.get("limit") or 5)
+        except (TypeError, ValueError):
+            limit = 5
+        return exercise_history_payload(db, user_id, slug, limit)
+    if tool == "get_workout_detail":
+        session_id = str(arguments.get("session_id") or "").strip()
+        return workout_detail_payload(db, user_id, session_id)
     if tool == "remember":
         kind = str(arguments.get("kind", "preference"))[:30]
         content = str(arguments.get("content", "")).strip()[:1000]
@@ -991,10 +1011,14 @@ async def run_agent(
             run.status = "failed"
             error = "LLM is not configured"
         else:
+            coach_context = build_coach_context(db, user_id)
             state = {
                 "user_message": message,
-                "current_date": datetime.now(timezone.utc).date().isoformat(),
-                "coach_context": build_coach_context(db, user_id),
+                "current_date": (
+                    (coach_context.get("today") or {}).get("date")
+                    or datetime.now(timezone.utc).date().isoformat()
+                ),
+                "coach_context": coach_context,
                 "safety_context": decision.caution,
                 "history": [
                     {"role": item.role, "content": item.content[:1000]}

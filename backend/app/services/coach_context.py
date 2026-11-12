@@ -9,6 +9,7 @@ UI. All values here are computed from database state, not from the model.
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
@@ -27,6 +28,7 @@ from ..models import (
 from .memory import list_memories
 from .queries import active_goal, active_program
 from .serializers import goal_to_dict, profile_to_dict
+from .training_history import exercise_performance
 
 CONTEXT_VERSION = "coach-context-v1"
 MAX_RECENT_SESSIONS = 10
@@ -35,6 +37,14 @@ MAX_DAY_STATES = 30
 
 def _now(value: datetime | None = None) -> datetime:
     return value or utcnow()
+
+
+def _profile_zone(profile: Profile) -> ZoneInfo:
+    name = getattr(profile, "timezone", None) or "Asia/Shanghai"
+    try:
+        return ZoneInfo(str(name))
+    except Exception:
+        return ZoneInfo("Asia/Shanghai")
 
 
 def _weekday_label(value: int) -> str:
@@ -212,9 +222,9 @@ def recent_training(db: Session, user_id: str, days: int = 30) -> dict:
     }
 
 
-def _plan_exercise_context(item) -> dict:
+def _plan_exercise_context(item, performance: dict | None = None) -> dict:
     exercise = item.exercise
-    return {
+    payload = {
         "id": item.id,
         "slug": item.exercise_slug,
         "name_zh": exercise.name_zh if exercise else item.exercise_slug,
@@ -227,6 +237,11 @@ def _plan_exercise_context(item) -> dict:
         "rpe": item.rpe,
         "notes": item.notes,
     }
+    if performance:
+        for key in ("last", "best", "recent", "session_count"):
+            if key in performance:
+                payload[key] = performance[key]
+    return payload
 
 
 def current_plan_context(
@@ -241,6 +256,18 @@ def current_plan_context(
     first_week = [day for day in program.days if day.week_index == 1]
     week_index = _current_week_index(program, now.date())
     week_days = [day for day in program.days if day.week_index == week_index]
+    performed_slugs = sorted(
+        {
+            item.exercise_slug
+            for day in week_days
+            for item in day.exercises
+        }
+    )
+    performance = (
+        exercise_performance(db, user_id, performed_slugs)
+        if performed_slugs
+        else {}
+    )
 
     states = (
         db.execute(
@@ -276,7 +303,11 @@ def current_plan_context(
                 "title": day.title,
                 "focus": day.focus or [],
                 "exercises": [
-                    _plan_exercise_context(item) for item in day.exercises
+                    _plan_exercise_context(
+                        item,
+                        performance.get(item.exercise_slug),
+                    )
+                    for item in day.exercises
                 ],
             }
             for day in week_days
@@ -304,10 +335,15 @@ def build_coach_context(
     now: datetime | None = None,
 ) -> dict:
     """Build the canonical, versioned context for one coach turn."""
-    moment = _now(now)
+    moment_utc = _now(now)
     safe_app_context = app_context if isinstance(app_context, dict) else {}
     memories = _memory_items(db, user_id)
     profile = db.get(Profile, user_id)
+    moment = (
+        moment_utc.astimezone(_profile_zone(profile))
+        if profile is not None
+        else moment_utc
+    )
 
     if profile is None:
         return {
@@ -327,6 +363,7 @@ def build_coach_context(
             "date": moment.date().isoformat(),
             "weekday": moment.isoweekday(),
             "weekday_label": _weekday_label(moment.isoweekday()),
+            "timezone": str(moment.tzinfo or "UTC"),
         },
         "profile": profile_to_dict(profile),
         "goal": goal_to_dict(active_goal(db, user_id)),

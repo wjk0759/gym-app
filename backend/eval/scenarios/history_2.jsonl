@@ -1,0 +1,2 @@
+{"id":"history_001","category":"training","persona":"beginner","turns":["我深蹲最近练得怎么样？"],"expected":{"expected_tools":["get_exercise_history"],"must_include_any":["20","10"]}}
+{"id":"history_002","category":"training","persona":"beginner","turns":["我上次训练具体练了什么？"],"expected":{"expected_tools":["get_workout_detail"],"must_include_any":["深蹲","20"]}}

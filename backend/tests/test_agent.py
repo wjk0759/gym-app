@@ -12,6 +12,15 @@ from app.services.agent import (
 )
 
 
+def test_agent_exposes_training_history_tools():
+    from app.services.agent import AGENT_INSTRUCTIONS, ALLOWED_TOOLS
+
+    assert "get_exercise_history" in ALLOWED_TOOLS
+    assert "get_workout_detail" in ALLOWED_TOOLS
+    assert "get_exercise_history" in AGENT_INSTRUCTIONS
+    assert "get_workout_detail" in AGENT_INSTRUCTIONS
+
+
 def test_weekday_normalization():
     assert _normalize_weekdays([2, 4, 6, 2]) == [2, 4, 6]
     assert _normalize_weekdays([]) == []

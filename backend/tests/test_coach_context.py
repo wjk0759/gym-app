@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import pytest
 from sqlalchemy import create_engine
@@ -222,8 +223,19 @@ def test_context_has_version_and_profile(db, seeded):
     assert context["needs_profile"] is False
     assert context["profile"]["nickname"] == "小林"
     assert context["profile"]["equipment"] == ["bodyweight", "dumbbell"]
-    assert context["today"]["date"] == now.date().isoformat()
+    local_date = now.astimezone(ZoneInfo("Asia/Shanghai")).date().isoformat()
+    assert context["today"]["date"] == local_date
+    assert context["today"]["timezone"] == "Asia/Shanghai"
     json.dumps(context, ensure_ascii=False)
+
+
+def test_context_uses_profile_timezone(db, seeded):
+    fixed = datetime(2026, 1, 1, 16, 30, tzinfo=timezone.utc)
+
+    context = build_coach_context(db, "user-1", now=fixed)
+
+    assert context["today"]["date"] == "2026-01-02"
+    assert context["today"]["weekday"] == 5
 
 
 def test_context_contains_current_plan_week(db, seeded):
@@ -237,6 +249,20 @@ def test_context_contains_current_plan_week(db, seeded):
     assert plan["days"][0]["exercises"][0]["name_zh"] == "高脚杯深蹲"
     assert plan["day_states"][0]["day_id"] == "day-1"
     assert plan["day_states"][0]["skipped"] is False
+
+
+def test_context_contains_last_and_best_performance(db, seeded):
+    context = build_coach_context(db, "user-1")
+
+    exercise = context["current_plan"]["days"][0]["exercises"][0]
+    assert exercise["last"]["weight_kg"] == 24
+    assert exercise["last"]["reps"] == 10
+    assert exercise["last"]["rpe"] == 7
+    assert exercise["best"]["weight_kg"] == 24
+    assert exercise["best"]["reps"] == 10
+    assert exercise["best"]["e1rm"] == 32.0
+    assert exercise["session_count"] == 1
+    assert exercise["recent"][0]["sets"][1]["reps"] == 9
 
 
 def test_context_contains_recent_training(db, seeded):
