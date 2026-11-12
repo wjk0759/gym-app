@@ -26,6 +26,20 @@
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
 
+### 2026-11-12 · Windows（豆包视觉 API 接入测试）
+
+- 用户提供火山方舟 API key；仅用于本次测试，未写入仓库/交接文档
+- 测试结果：
+  - key 有效，`GET /api/v3/models` 可以列出模型
+  - 但账号 `2134326457` 只开通了 `doubao-seed-2-1-lite-260915`
+  - `doubao-seed-2-1-pro-260915`、`doubao-seed-2-0-pro-260215`、`doubao-seed-2-0-lite-260428`、`doubao-seed-2-1-turbo-260628`、Ark 的 DeepSeek v4.1 都返回 `ModelNotOpen`
+  - 用已开通的 `doubao-seed-2-1-lite-260915` 跑同一张 `seated_row-2.jpg`：`chest_press_iso` 0.92（错），单张 >50s，不能直接替换生产
+- 结论：
+  - 不是“只换 key”就能解决；需要先在火山方舟控制台开通豆包 App 实际使用的视觉模型（很可能是 `doubao-seed-2-1-pro-260915`，或用户提供接入点 ID）
+  - 开通后用同一批坐姿划船/哈克深蹲/腿举/推胸图做 A/B，通过后再切生产
+- 代码层：当前 `VISION_BASE_URL` / `VISION_MODEL` / `VISION_API_KEY` 已是 OpenAI 兼容；lite 模型调用、JSON 解析、`response_format` 都通，开通 pro 后只需改 `.env`
+- 生产：继续 Qwen3-VL-Plus + 具体 OCR 标签优先 + 手动从器械库选择；没有切到豆包 lite
+
 ### 2026-11-12 · Windows（器械识别回归 + 动作库格子统一）
 
 - 分支：`develop`
