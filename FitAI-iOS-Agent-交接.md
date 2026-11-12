@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`09c01e3`（Windows 休息倒计时后台/灵动岛/通知 + 设置双开关；AI 教练 `modify_workout`；iOS Build CI 在 `09c01e3` 通过；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da` **尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`a751b4c`（教练每组训练历史 + 时区；iOS 休息倒计时 `09c01e3`；AI 教练 `modify_workout`；iOS Build CI 在 `09c01e3` 通过；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da`/`a751b4c` **尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -76,6 +76,30 @@
   - 内部 TestFlight 可先上；外部测试再走 Beta App Review
 - 注意：
   - TestFlight 安装本身不需要 IAP 商品；但要在测试版里测订阅，仍需 IAP 商品、协议和 App Store Server API Key/p8
+
+### 2026-11-12 · Windows（教练每组训练数据 + 历史工具 + 时区）
+
+- 背景：教练之前只能看到会话级汇总（session_count / total_volume / average_rpe），看不到每组重量、次数、RPE；用户问“卧推为什么没进步”只能猜
+- 代码提交：`a751b4c`
+- 后端：
+  - `training_history.py` 保留原 `load_exercise_history`，新增：
+    - `exercise_performance`：每个动作 last / best / recent（最近 3 次，最多 6 组/次）/ session_count
+    - `exercise_history_payload`：`get_exercise_history` 工具用；支持自定义动作（不在共享目录也能查）
+    - `workout_detail_payload`：`get_workout_detail` 工具用；按动作分组，校验 session 归属
+  - `coach_context.py`：当前周计划每个动作带 `last` / `best` / `recent` / `session_count`
+  - `agent.py`：`ALLOWED_TOOLS` 增加 `get_exercise_history` / `get_workout_detail`；prompt 加示例和规则 15–16
+  - 时区：`build_coach_context` 的 `today` 按 `profile.timezone`（默认 `Asia/Shanghai`）；`run_agent.current_date` 直接用 context 的 today；训练历史日期按 UTC+8
+- 验证：
+  - 后端 **254 passed**，Ruff 通过
+  - 真实 DeepSeek 两条 eval 2/2：
+    - “我深蹲最近练得怎么样？” → 调 `get_exercise_history`，回答 `20kg×10×3，RPE 7`，并建议加 2.5kg
+    - “我上次训练具体练了什么？” → 调 `get_workout_detail`，回答日期、45 分钟、高脚杯深蹲 3×10
+  - 新增 `backend/eval/scenarios/history_2.jsonl`
+- 未做：
+  - 上下文 token 预算 / 压缩（P1）
+  - 服务端 action 验证、反馈闭环、评测 CI（后续 P0）
+  - 后端生产未部署；`a751b4c` 需要部署后线上才生效
+- Mac / 对方：本轮无 iOS 改动；继续按休息倒计时条目做真机验证
 
 ### 2026-11-12 · Windows（休息倒计时后台 / 灵动岛 / 通知 + 设置双开关）
 
