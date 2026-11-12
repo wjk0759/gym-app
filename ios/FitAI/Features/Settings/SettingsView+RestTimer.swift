@@ -105,8 +105,7 @@ extension SettingsView {
         .task {
             restNotificationAuthorized = await NotificationScheduler.shared.isAuthorized()
             if !restNotificationAuthorized, store.restNotificationsEnabled {
-                store.restNotificationsEnabled = false
-                store.persist()
+                store.disableRestNotifications()
             }
         }
     }

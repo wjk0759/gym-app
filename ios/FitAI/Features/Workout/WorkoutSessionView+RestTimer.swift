@@ -23,7 +23,10 @@ extension WorkoutSessionView {
         restRemaining = seconds
 
         if store.restLiveActivityEnabled {
-            let setLabel = "第 \(completedSets(for: exercise) + 1) 组"
+            let completed = completedSets(for: exercise)
+            let setLabel = completed < exercise.sets
+                ? "下一组 \(completed + 1)"
+                : "本动作完成"
             Task {
                 await RestLiveActivityManager.shared.start(
                     sessionID: day.id.uuidString,
