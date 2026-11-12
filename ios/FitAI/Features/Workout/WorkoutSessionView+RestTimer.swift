@@ -28,6 +28,7 @@ extension WorkoutSessionView {
                 ? "下一组 \(completed + 1)"
                 : "本动作完成"
             Task {
+                guard store.restLiveActivityEnabled else { return }
                 await RestLiveActivityManager.shared.start(
                     sessionID: day.id.uuidString,
                     dayTitle: activeDay.title,

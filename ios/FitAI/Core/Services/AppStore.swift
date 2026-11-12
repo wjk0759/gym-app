@@ -168,6 +168,9 @@ final class AppStore {
         try? FileManager.default.removeItem(at: fileURL)
         resetInMemory()
         NotificationScheduler.shared.cancelAll()
+        Task { @MainActor in
+            await RestLiveActivityManager.shared.endAll()
+        }
     }
 
     /// 登录账号切换时使用独立本地数据文件，避免 A 账号看到 B 账号数据。
