@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`c8166d2`（P1-8 Agent 请求状态/持久幂等/模型失败降级；后端 311 passed；P1-5 输出安全 `ab12716`；P1-6 上下文预算 `077823a`；AI 改课收归服务端 `53fdd8c`；iOS Build 在 `53fdd8c` 通过；休息倒计时 `09c01e3`；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da`/`a751b4c`/`174d027`/`cf147b2`/`53fdd8c`/`077823a`/`ab12716`/`e975815`/`c8166d2` **尚未部署**；V31/V32/V33 迁移待执行）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`7b0e7fb`（P1-8 Agent 请求状态/持久幂等/模型失败降级；后端 311 passed；P1-5 输出安全 `ab12716`；P1-6 上下文预算 `077823a`；AI 改课收归服务端 `53fdd8c`；iOS Build 在 `53fdd8c` 通过；休息倒计时 `09c01e3`；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da`/`a751b4c`/`174d027`/`cf147b2`/`53fdd8c`/`077823a`/`ab12716`/`e975815`/`c8166d2`/`7b0e7fb` **尚未部署**；V31/V32/V33 迁移待执行）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -39,7 +39,7 @@
   - 新增 `GET /agent/requests/{request_id}`：查询 `running / completed / failed`，running 带 `retry_after`
   - 删除原来的进程内 `_agent_result_cache` / `_agent_request_locks`
   - 模型不可用或调用异常时，优先走 `_mock_reply` 的确定性本地回复（今日训练、动作替换、蛋白等），而不是只给“请重试”
-  - 完全无法回答时才返回 failed；失败轮次不写 ChatMessage，避免重试后上下文重复问答
+  - 完全无法回答时才返回 failed；失败轮次不写 ChatMessage，避免重试后上下文重复问答，并退回已预占的免费教练额度
 - 验证：
   - 后端 **310 passed**，Ruff app/tests 通过
   - `Backend Tests`、`Coach Eval` 在 `e975815` 通过
