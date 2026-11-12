@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`0bc6509`（Onboarding 压缩 + 计划预览确认；后端 318 passed；iOS Build 在 `0bc6509` 通过；P0-1 计划服务端唯一事实源 + 饮食计划回读 `93adcf0`；P1-5 输出安全 `ab12716`；P1-6 上下文预算 `077823a`；AI 改课收归服务端 `53fdd8c`；iOS Build 在 `53fdd8c` 通过；休息倒计时 `09c01e3`；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da`/`a751b4c`/`174d027`/`cf147b2`/`53fdd8c`/`077823a`/`ab12716`/`e975815`/`c8166d2`/`7b0e7fb`/`93adcf0`/`0bc6509` **尚未部署**；V31/V32/V33 迁移待执行）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`2a52eb4`（Onboarding 压缩 + 计划预览确认；后端 318 passed；iOS Build 在 `2a52eb4` 通过；P0-1 计划服务端唯一事实源 + 饮食计划回读 `93adcf0`；P1-5 输出安全 `ab12716`；P1-6 上下文预算 `077823a`；AI 改课收归服务端 `53fdd8c`；iOS Build 在 `53fdd8c` 通过；休息倒计时 `09c01e3`；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da`/`a751b4c`/`174d027`/`cf147b2`/`53fdd8c`/`077823a`/`ab12716`/`e975815`/`c8166d2`/`7b0e7fb`/`93adcf0`/`0bc6509`/`2a52eb4` **尚未部署**；V31/V32/V33 迁移待执行）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -45,13 +45,14 @@
   - 生成后进入 pending preview，用户确认后才成为当前计划
   - pending preview 持久化，App 重启后仍可确认
   - 本地 fallback 计划确认时走 `PUT /plans/{id}` 上传
+  - `2a52eb4`：pending 使用显式 `preview=true`，旧客户端只传 `onboarding=true` 仍直接生成 active，避免旧包/测试账号计划失效
 - 后端：
   - onboarding 生成计划保存为 `pending`，不再直接 active
   - 新增 `POST /plans/{plan_id}/activate`：pending 计划激活并归档旧 active 计划
   - `GET /plans/current` 仍只返回 active 计划
 - 验证：
   - 后端 **318 passed**，Ruff 通过
-  - `Backend Tests`、`iOS Build` 在 `0bc6509` 均通过
+  - `Backend Tests`、`iOS Build` 在 `2a52eb4` 均通过
   - `test_plan_sync.py` 增加 pending preview/activate 测试
 - 部署：
   - 本次没有新迁移；仍需 V31+V32+V33
