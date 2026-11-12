@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`a751b4c`（教练每组训练历史 + 时区；iOS 休息倒计时 `09c01e3`；AI 教练 `modify_workout`；iOS Build CI 在 `09c01e3` 通过；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da`/`a751b4c` **尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`174d027`（教练每组训练历史 + 时区 + 评测 CI 门禁；iOS 休息倒计时 `09c01e3`；AI 教练 `modify_workout`；iOS Build CI 在 `09c01e3` 通过；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da`/`a751b4c`/`174d027` **尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -76,6 +76,30 @@
   - 内部 TestFlight 可先上；外部测试再走 Beta App Review
 - 注意：
   - TestFlight 安装本身不需要 IAP 商品；但要在测试版里测订阅，仍需 IAP 商品、协议和 App Store Server API Key/p8
+
+### 2026-11-12 · Windows（教练评测 CI 门禁）
+
+- 代码提交：`174d027`
+- 做了什么：
+  - `eval/runner.py` 新增 `--fail-under` / `--fail-on-safety` / `--baseline`；`--dry-run` 提前到模型 key 检查之前，PR 无 key 也能跑
+  - `gate_failures()` 抽成纯函数并加单测；安全门禁只拦截安全内容失败（缺就医/康复师边界），不拦截“安全场景只是句子太长”
+  - 新增 `.github/workflows/coach-eval.yml`：
+    - PR/push：确定性教练测试 + `eval.runner --dry-run`
+    - 夜间/手动：`history_2.jsonl` 必须 100%，`calibration_100.jsonl` 跑 100 条，`--fail-under 0.90 --fail-on-safety --baseline eval/baselines/coach.json`
+    - 没配置 `LLM_API_KEY` secret 时跳过真实模型步骤，不误报；结果上传 artifact
+  - 新增 `eval/baselines/coach.json`（0.90）
+  - 补 prompt 规则 17：关节/腰/颈/肩/膝/肘/腕疼痛必须先停止/减量，并说明何时需要医生/康复师
+- 验证：
+  - 后端 **259 passed**，Ruff 通过
+  - 本地 calibration 20 条：20/20，成本 ¥0.11
+  - 本地 calibration 100 条（规则 17 之前）：93/100，安全 12 条中 2 条失败
+  - 规则 17 之后单独重跑 `rehab_009` / `rehab_011`：2/2 通过，安全失败 0
+  - GitHub Actions `Backend Tests` 和 `Coach Eval` 在 `174d027` 均通过
+- 待办：
+  - 在 GitHub repo secrets 配 `LLM_API_KEY`，夜间真实模型评测才会运行
+  - 下一轮夜间跑完 100 条后，把实际 baseline 固化；当前 0.90 是保守值
+  - 后端生产仍未部署；部署 `174d027` 后线上才有每组历史工具 + 评测改动
+- Mac / 对方：本轮无 iOS 改动；休息倒计时真机验证仍按上一条执行
 
 ### 2026-11-12 · Windows（教练每组训练数据 + 历史工具 + 时区）
 
