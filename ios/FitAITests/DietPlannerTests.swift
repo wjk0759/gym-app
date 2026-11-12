@@ -46,6 +46,23 @@ final class DietPlannerTests: XCTestCase {
         XCTAssertTrue(meals.allSatisfy { $0.kcal > 0 })
     }
 
+    func testRemoteTargetsOverrideLocalTargets() {
+        let remote = RemoteDietPlan.Targets(
+            targetKcal: 2360,
+            proteinG: 150,
+            carbG: 280,
+            fatG: 62
+        )
+
+        let targets = NutritionTargets(remote: remote, profile: makeProfile())
+
+        XCTAssertEqual(targets?.kcal, 2360)
+        XCTAssertEqual(targets?.protein, 150)
+        XCTAssertEqual(targets?.carbs, 280)
+        XCTAssertEqual(targets?.fat, 62)
+        XCTAssertNotNil(targets?.bmr)
+    }
+
     func testFoodLogRoundTripsPlanLink() throws {
         let log = FoodLog(
             date: Date(),

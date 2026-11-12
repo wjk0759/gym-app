@@ -36,6 +36,12 @@ MAX_IMAGE_BYTES = 8 * 1024 * 1024
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic"}
 
 
+def _public_plan(plan: dict) -> dict:
+    result = ensure_meal_macros(plan)
+    result.pop("_swap_previous", None)
+    return result
+
+
 def _goal_type(db: DBSession, user_id: str) -> str:
     goal = db.execute(
         select(Goal).where(Goal.user_id == user_id, Goal.status == "active")
@@ -297,7 +303,7 @@ def saved_plan(
     record = get_day(db, user_id, target_date)
     if record is None or not record.plan:
         raise HTTPException(status_code=404, detail="当天还没有饮食计划")
-    result = ensure_meal_macros(record.plan)
+    result = _public_plan(record.plan)
     result["strategy"] = record.strategy
     result["generated_by"] = record.generated_by or result.get("generated_by")
     result["warning"] = result.get("warning")
@@ -314,7 +320,9 @@ def swap_meal(
     if meal not in MEAL_KEYS:
         raise HTTPException(status_code=422, detail="不支持的餐次")
     try:
-        return swap_planned_meal(db, user_id, plan_date, meal)
+        result = swap_planned_meal(db, user_id, plan_date, meal)
+        result.pop("_swap_previous", None)
+        return result
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
@@ -455,7 +463,7 @@ def _week_payload(db: DBSession, user_id: str, start: date) -> dict:
     summary = week_summary(rows)
     return {
         "week_start": start.isoformat(),
-        "days": [ensure_meal_macros(row.plan) for row in rows if row.plan],
+        "days": [_public_plan(row.plan) for row in rows if row.plan],
         "generated_by": summary["generated_by"],
         "warning": summary["warning"],
         "strategy": summary["strategy"],

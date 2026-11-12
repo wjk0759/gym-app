@@ -99,23 +99,14 @@ struct NutritionView: View {
     }
 
     private func applyTargets(_ values: RemoteDietPlan.Targets?) {
-        guard let values,
-              let kcal = values.targetKcal,
-              let protein = values.proteinG,
-              let carbs = values.carbG,
-              let fat = values.fatG else {
-            return
+        guard let resolved = NutritionTargets(
+            remote: values,
+            profile: store.profile
+        ) else { return }
+        serverTargets = resolved
+        if isToday {
+            store.cacheDailyNutritionTargets(resolved, dateString: dateString)
         }
-        let base = DietPlanner.targets(profile: store.profile)
-        serverTargets = NutritionTargets(
-            bmr: base.bmr,
-            tdee: base.tdee,
-            kcal: kcal,
-            protein: protein,
-            carbs: carbs,
-            fat: fat,
-            fiber: base.fiber
-        )
     }
 
     @MainActor

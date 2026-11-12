@@ -151,6 +151,7 @@ struct HomeV2View: View {
             }
             .task {
                 store.refreshWeeklyReview()
+                await store.refreshDailyNutritionTargets()
             }
             .onAppear {
                 presentLaunchIfNeeded()

@@ -4,7 +4,10 @@ extension HomeV2View {
     // MARK: - Nutrition
 
     var nutritionPulse: some View {
-        let targets = DietPlanner.targets(profile: store.profile)
+        let cached = store.dailyNutritionTargetsKey == FitnessDate.key(Date())
+            ? store.dailyNutritionTargets
+            : nil
+        let targets = cached ?? DietPlanner.targets(profile: store.profile)
         let consumed = store.todayNutrition
         let remaining = max(0, targets.kcal - Int(consumed.kcal))
         let proteinLeft = max(0, targets.protein - Int(consumed.protein))

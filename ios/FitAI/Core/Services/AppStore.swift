@@ -73,6 +73,10 @@ final class AppStore {
     var planAdjustmentCategory = ""
     var planAdjustmentProposal: PlanAdjustmentProposal?
     var foodLogs: [FoodLog] = []
+    /// Last server-confirmed targets for the current day. Home reads this so its
+    /// nutrition ring matches the weekly plan instead of a flat local estimate.
+    var dailyNutritionTargets: NutritionTargets?
+    var dailyNutritionTargetsKey: String?
     /// Food log client IDs deleted locally but not yet acknowledged by the API.
     var pendingFoodDeletionIDs: [String] = []
     /// Food log client IDs edited locally but not yet accepted by the API.
@@ -213,6 +217,8 @@ final class AppStore {
         workoutDraft = nil
         chat = []
         foodLogs = []
+        dailyNutritionTargets = nil
+        dailyNutritionTargetsKey = nil
         pendingFoodDeletionIDs = []
         pendingFoodUpdateIDs = []
         customFoods = []
@@ -308,6 +314,8 @@ final class AppStore {
         workoutDraft = state.workoutDraft
         chat = state.chat
         foodLogs = state.foodLogs ?? []
+        dailyNutritionTargets = state.dailyNutritionTargets
+        dailyNutritionTargetsKey = state.dailyNutritionTargetsKey
         pendingFoodDeletionIDs = state.pendingFoodDeletionIDs ?? []
         pendingFoodUpdateIDs = state.pendingFoodUpdateIDs ?? []
         customFoods = state.customFoods ?? []
@@ -359,6 +367,8 @@ final class AppStore {
             workoutDraft: workoutDraft,
             chat: chat,
             foodLogs: foodLogs,
+            dailyNutritionTargets: dailyNutritionTargets,
+            dailyNutritionTargetsKey: dailyNutritionTargetsKey,
             pendingFoodDeletionIDs: pendingFoodDeletionIDs,
             pendingFoodUpdateIDs: pendingFoodUpdateIDs,
             customFoods: customFoods,
@@ -470,6 +480,8 @@ final class AppStore {
         var workoutDraft: WorkoutDraft?
         var chat: [ChatMessage]
         var foodLogs: [FoodLog]?
+        var dailyNutritionTargets: NutritionTargets?
+        var dailyNutritionTargetsKey: String?
         var pendingFoodDeletionIDs: [String]?
         var pendingFoodUpdateIDs: [String]?
         var customFoods: [FoodItem]?

@@ -1,6 +1,6 @@
 import Foundation
 
-struct NutritionTargets {
+struct NutritionTargets: Codable {
     let bmr: Int
     let tdee: Int
     let kcal: Int
@@ -8,6 +8,44 @@ struct NutritionTargets {
     let carbs: Int
     let fat: Int
     let fiber: Int
+
+    init(
+        bmr: Int,
+        tdee: Int,
+        kcal: Int,
+        protein: Int,
+        carbs: Int,
+        fat: Int,
+        fiber: Int
+    ) {
+        self.bmr = bmr
+        self.tdee = tdee
+        self.kcal = kcal
+        self.protein = protein
+        self.carbs = carbs
+        self.fat = fat
+        self.fiber = fiber
+    }
+
+    init?(remote: RemoteDietPlan.Targets?, profile: UserProfile) {
+        guard let remote,
+              let kcal = remote.targetKcal,
+              let protein = remote.proteinG,
+              let carbs = remote.carbG,
+              let fat = remote.fatG else {
+            return nil
+        }
+        let base = DietPlanner.targets(profile: profile)
+        self.init(
+            bmr: base.bmr,
+            tdee: base.tdee,
+            kcal: kcal,
+            protein: protein,
+            carbs: carbs,
+            fat: fat,
+            fiber: base.fiber
+        )
+    }
 }
 
 struct MealSuggestion: Identifiable {

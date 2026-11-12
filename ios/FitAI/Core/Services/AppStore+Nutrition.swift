@@ -56,6 +56,29 @@ extension AppStore {
 
     /// One-tap planned-meal logging shared by the nutrition page and the coach
     /// diet card. Duplicate checks live here so every entry point behaves the same.
+    @MainActor
+    func refreshDailyNutritionTargets(date: Date = Date()) async {
+        guard AuthTokenStore.shared.accessToken != nil else { return }
+        let key = FitnessDate.key(date)
+        guard let response = try? await NutritionService().fetchTargets(
+            dateString: key
+        ), let targets = NutritionTargets(
+            remote: response.targets,
+            profile: profile
+        ) else { return }
+        guard key == FitnessDate.key(Date()) else { return }
+        dailyNutritionTargets = targets
+        dailyNutritionTargetsKey = key
+        persist()
+    }
+
+    func cacheDailyNutritionTargets(_ targets: NutritionTargets, dateString: String) {
+        guard dateString == FitnessDate.key(Date()) else { return }
+        dailyNutritionTargets = targets
+        dailyNutritionTargetsKey = dateString
+        persist()
+    }
+
     @discardableResult
     func logPlannedMeal(
         date: Date,
