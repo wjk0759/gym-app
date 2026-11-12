@@ -94,6 +94,7 @@
   - `AgentUndoState` 增加 `.plan(TrainingPlan)`，撤销时恢复整份计划
   - `agentAppContext` 的 `plan.days` 增加 `exercises`
   - 新增 `ios/FitAITests/AgentActionDecodingTests.swift`
+  - 同时修复 iOS Build 的 SwiftLint `type_body_length` error：把 `EquipmentRecognitionView.matchesSection` 拆到 `EquipmentRecognitionView+Matches.swift`，`scan()` 改为 internal
 - 验证：
   - 后端单测/Ruff 通过；真实 DeepSeek 两步实跑：先 `lookup_exercise("哑铃卧推")`，再产出合法 `modify_workout`，`_normalize_app_actions` 通过
   - iOS 尚未 build（Windows 无 Xcode）；需 Mac 编译并真机验证
