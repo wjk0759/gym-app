@@ -88,6 +88,20 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .fitaiSessionExpired)) { _ in
             auth.handleSessionExpired()
         }
+        .onOpenURL { url in
+            guard url.scheme == "fitai",
+                  url.host == "workout",
+                  let components = URLComponents(
+                    url: url,
+                    resolvingAgainstBaseURL: false
+                  ),
+                  let value = components.queryItems?.first(where: { $0.name == "day" })?.value,
+                  let dayID = UUID(uuidString: value) else {
+                return
+            }
+            store.selectedTab = 0
+            store.workoutLaunchDayID = dayID
+        }
         .onReceive(
             NotificationCenter.default.publisher(for: .fitaiWatchSessionPending)
         ) { _ in

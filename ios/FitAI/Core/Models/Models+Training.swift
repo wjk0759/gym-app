@@ -208,6 +208,9 @@ struct WorkoutDraft: Codable, Identifiable, Hashable {
     var feeling: Int
     var notes: String
     var adjustedExercises: [PlanExercise]
+    /// 手机领训时的休息结束时间；后台/重启后按墙钟恢复，不依赖 Timer。
+    var restEndDate: Date? = nil
+    var restTotalSeconds: Int? = nil
     /// 本次训练实际使用的动作列表；计划日被自定义调整后，恢复时必须沿用这份顺序。
     var exercises: [PlanExercise]? = nil
     var updatedAt: Date = Date()

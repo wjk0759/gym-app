@@ -22,7 +22,43 @@ extension AppStore {
 
     func disableReminders() {
         notificationsEnabled = false
-        NotificationScheduler.shared.cancelAll()
+        NotificationScheduler.shared.cancelWorkoutReminders()
+        persist()
+    }
+
+    // MARK: - 休息提醒
+
+    func setRestLiveActivityEnabled(_ enabled: Bool) {
+        restLiveActivityEnabled = enabled
+        persist()
+
+        if enabled {
+            let dayTitle = workoutDraft.flatMap { draft in
+                plan?.days.first(where: { $0.id == draft.dayID })?.title
+            } ?? "训练"
+            Task { @MainActor in
+                await RestLiveActivityManager.shared.resumeFromDraftIfNeeded(
+                    draft: workoutDraft,
+                    dayTitle: dayTitle
+                )
+            }
+        } else {
+            Task { @MainActor in
+                await RestLiveActivityManager.shared.endAll()
+            }
+        }
+    }
+
+    func enableRestNotifications() async -> Bool {
+        let granted = await NotificationScheduler.shared.requestAuthorization()
+        restNotificationsEnabled = granted
+        persist()
+        return granted
+    }
+
+    func disableRestNotifications() {
+        restNotificationsEnabled = false
+        NotificationScheduler.shared.cancelRestNotifications()
         persist()
     }
 

@@ -123,6 +123,8 @@ final class AppStore {
     var reminderHour = 19
     var reminderMinute = 0
     var notificationsEnabled = false
+    var restLiveActivityEnabled = true
+    var restNotificationsEnabled = true
     var useRemoteAI = AppConfig.useRemoteAI
     /// Server snapshot, StoreKit fallback and paywall coordinator live here so
     /// AppStore stays a data/sync store instead of the entitlement source.
@@ -195,6 +197,8 @@ final class AppStore {
         customFoods = []
         dislikedSlugs = []
         notificationsEnabled = false
+        restLiveActivityEnabled = true
+        restNotificationsEnabled = true
         useRemoteAI = AppConfig.useRemoteAI
         healthKitEnabled = false
         equipmentLibrary = []
@@ -285,6 +289,8 @@ final class AppStore {
         reminderHour = state.reminderHour
         reminderMinute = state.reminderMinute
         notificationsEnabled = state.notificationsEnabled
+        restLiveActivityEnabled = state.restLiveActivityEnabled ?? true
+        restNotificationsEnabled = state.restNotificationsEnabled ?? true
         useRemoteAI = state.useRemoteAI ?? AppConfig.useRemoteAI
 #if DEBUG
         let debugRemoteMigration = "fitai_debug_remote_default_v2"
@@ -329,6 +335,8 @@ final class AppStore {
             reminderHour: reminderHour,
             reminderMinute: reminderMinute,
             notificationsEnabled: notificationsEnabled,
+            restLiveActivityEnabled: restLiveActivityEnabled,
+            restNotificationsEnabled: restNotificationsEnabled,
             useRemoteAI: useRemoteAI,
             healthKitEnabled: healthKitEnabled,
             equipmentLibrary: equipmentLibrary,
@@ -433,6 +441,8 @@ final class AppStore {
         var reminderHour: Int
         var reminderMinute: Int
         var notificationsEnabled: Bool
+        var restLiveActivityEnabled: Bool?
+        var restNotificationsEnabled: Bool?
         var useRemoteAI: Bool?
         var healthKitEnabled: Bool?
         var equipmentLibrary: [EquipmentItem]?

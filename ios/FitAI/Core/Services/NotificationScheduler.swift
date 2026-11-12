@@ -79,6 +79,64 @@ final class NotificationScheduler {
         center.removeAllPendingNotificationRequests()
     }
 
+    /// Turning off weekly training reminders must not cancel an active rest
+    /// notification. Keep this scoped to the workout identifiers.
+    func cancelWorkoutReminders() {
+        center.getPendingNotificationRequests { requests in
+            let identifiers = requests
+                .map(\.identifier)
+                .filter { $0.hasPrefix("workout-") }
+            center.removePendingNotificationRequests(withIdentifiers: identifiers)
+        }
+    }
+
+    func cancelRestNotifications() {
+        center.getPendingNotificationRequests { requests in
+            let identifiers = requests
+                .map(\.identifier)
+                .filter { $0.hasPrefix("rest-") }
+            center.removePendingNotificationRequests(withIdentifiers: identifiers)
+        }
+    }
+
+    func scheduleRestEnd(
+        at date: Date,
+        identifier: String,
+        exerciseName: String
+    ) {
+        let content = UNMutableNotificationContent()
+        content.title = "休息结束"
+        content.body = exerciseName.isEmpty
+            ? "可以开始下一组了"
+            : "下一组：\(exerciseName)"
+        content.sound = .default
+        content.threadIdentifier = "rest-timer"
+        content.userInfo = ["kind": "rest"]
+
+        let interval = max(1, date.timeIntervalSinceNow)
+        let trigger = UNTimeIntervalNotificationTrigger(
+            timeInterval: interval,
+            repeats: false
+        )
+        let request = UNNotificationRequest(
+            identifier: identifier,
+            content: content,
+            trigger: trigger
+        )
+        center.removePendingNotificationRequests(withIdentifiers: [identifier])
+        center.add(request) { _ in }
+    }
+
+    func cancelRestEnd(identifier: String) {
+        center.removePendingNotificationRequests(withIdentifiers: [identifier])
+    }
+
+    func isAuthorized() async -> Bool {
+        let settings = await center.notificationSettings()
+        return settings.authorizationStatus == .authorized
+            || settings.authorizationStatus == .provisional
+    }
+
     /// 训练上传成功后立即提醒查看服务端生成的复盘；本地通知不依赖 APNs。
     /// 天气提醒也走本地通知。只有用户允许通知且天气服务判定有雨/雪时才会调用。
     @discardableResult

@@ -1,5 +1,7 @@
 included:
   - FitAI
+  - FitAIWidget
+  - Shared
   - FitAITests
   - FitAIUITests
 

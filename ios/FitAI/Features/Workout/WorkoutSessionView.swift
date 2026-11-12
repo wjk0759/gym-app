@@ -23,6 +23,7 @@ struct WorkoutSessionView: View {
     @State var reps: Int = 10
     @State var rpe: Double = 7.5
     @State var restRemaining: Int?
+    @State var restEndDate: Date?
     @State var restTotal: Double = 1
     @State var feeling = 4
     @State var notes = ""
@@ -183,7 +184,7 @@ struct WorkoutSessionView: View {
                     return
                 }
                 logs.removeLast()
-                restRemaining = nil
+                endRest()
             }
         )
     }
@@ -288,6 +289,13 @@ struct WorkoutSessionView: View {
                     saveDraftIfNeeded(persistImmediately: true)
                     store.flushPersistence()
                 }
+                handleRestScenePhase(phase)
+            }
+            .onChange(of: store.restLiveActivityEnabled) { _, enabled in
+                handleRestLiveActivitySettingChange(enabled)
+            }
+            .onChange(of: store.restNotificationsEnabled) { _, enabled in
+                handleRestNotificationSettingChange(enabled)
             }
             .onReceive(timer) { _ in
                 tickRest()

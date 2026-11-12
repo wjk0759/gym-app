@@ -74,20 +74,13 @@ extension WorkoutSessionView {
             )
         )
         Haptics.success()
-        saveDraftIfNeeded()
         let rest = exercise.restSec
-        restTotal = Double(max(1, rest))
-        restRemaining = rest > 0 ? rest : nil
-    }
-
-    func skipRest() {
-        if isWatchLed {
-            let command = WorkoutCommand.skipRest(
-                .init(at: Date(), source: .phone)
-            )
-            guard sendToWatch(command) else { return }
+        if rest > 0 {
+            startRest(seconds: rest, exercise: exercise)
+        } else {
+            endRest()
         }
-        restRemaining = nil
+        saveDraftIfNeeded()
     }
 
     func advance() {
@@ -102,7 +95,7 @@ extension WorkoutSessionView {
             guard sendToWatch(command) else { return }
             return
         }
-        restRemaining = nil
+        endRest()
         if index < activeDay.exercises.count - 1 {
             index += 1
             prepare(currentExercise)
@@ -110,16 +103,6 @@ extension WorkoutSessionView {
             index = activeDay.exercises.count
         }
         saveDraftIfNeeded()
-    }
-
-    func tickRest() {
-        guard let remaining = restRemaining else { return }
-        if remaining <= 1 {
-            restRemaining = nil
-            Haptics.warning()
-        } else {
-            restRemaining = remaining - 1
-        }
     }
 
     func loadDraftIfNeeded() {
@@ -141,6 +124,7 @@ extension WorkoutSessionView {
             draft.adjustedExercises.map { ($0.id, $0) },
             uniquingKeysWith: { _, latest in latest }
         )
+        restoreRestFromDraft(draft)
 
         guard !draft.logs.isEmpty else { return }
         withAnimation(Motion.smooth) {
@@ -167,6 +151,8 @@ extension WorkoutSessionView {
                 feeling: feeling,
                 notes: String(notes.prefix(300)),
                 adjustedExercises: Array(adjustedExercises.values),
+                restEndDate: restEndDate,
+                restTotalSeconds: restEndDate == nil ? nil : Int(restTotal),
                 exercises: activeDay.exercises
             ),
             persistImmediately: persistImmediately
@@ -192,11 +178,10 @@ extension WorkoutSessionView {
         index = min(snapshot.currentExerciseIndex, activeDay.exercises.count)
         elapsedSeconds = 0
         activeStartedAt = snapshot.startedAt
+        endRest()
         if let remaining = snapshot.remainingRest(at: Date()), remaining > 0 {
             restTotal = max(1, remaining)
             restRemaining = max(0, Int(remaining.rounded()))
-        } else {
-            restRemaining = nil
         }
         saveDraftIfNeeded()
         if snapshot.status == .finished {
@@ -234,6 +219,7 @@ extension WorkoutSessionView {
             dismiss()
             return
         }
+        endRest()
         didFinish = true
         var sessionDay = day
         sessionDay.exercises = activeDay.exercises.map(effectiveExercise)
@@ -264,6 +250,7 @@ extension WorkoutSessionView {
             )
             guard sendToWatch(command) else { return }
         }
+        endRest()
         saveDraftIfNeeded(persistImmediately: true)
         store.flushPersistence()
         dismiss()
@@ -274,6 +261,7 @@ extension WorkoutSessionView {
             showEmptySaveAlert = true
             return
         }
+        endRest()
         if isWatchLed {
             let command = WorkoutCommand.finish(
                 .init(at: Date(), source: .phone)
@@ -357,7 +345,7 @@ extension WorkoutSessionView {
         }
 
         adjustedExercises.removeValue(forKey: current.id)
-        restRemaining = nil
+        endRest()
         prepare(currentExercise)
         prefetchExerciseMedia()
         saveDraftIfNeeded(persistImmediately: true)
@@ -401,7 +389,7 @@ extension WorkoutSessionView {
         }
 
         adjustedExercises.removeValue(forKey: current.id)
-        restRemaining = nil
+        endRest()
         saveDraftIfNeeded(persistImmediately: true)
         prepare(currentExercise)
         showSubstitutionNotice(

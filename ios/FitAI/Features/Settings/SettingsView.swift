@@ -35,6 +35,7 @@ struct SettingsView: View {
     @State var showDeleteAccount = false
     @State var showAgentMemory = false
     @State var showWeatherDetail = false
+    @State var restNotificationAuthorized = true
 
     var body: some View {
         AppScrollView {
@@ -50,6 +51,7 @@ struct SettingsView: View {
 
                 sectionLabel("训练设置")
                 reminderCard
+                restTimerCard
                 bodyCheckInCard
                 healthCard
                 preferenceCard

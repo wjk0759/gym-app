@@ -47,6 +47,7 @@ targets:
       - path: FitAI
         excludes:
           - "Resources/Info.plist"
+      - path: Shared
     dependencies:
       - target: FitAIWorkoutCore
       - target: FitAIWatch
@@ -55,6 +56,10 @@ targets:
         # XcodeGen defaults codeSign to false for embedded executable targets,
         # which causes "integrity could not be verified" on watchOS.
         codeSign: true
+      - target: FitAIWidget
+        embed: true
+        codeSign: true
+      - sdk: ActivityKit.framework
     settings:
       base:
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks"
@@ -121,6 +126,34 @@ targets:
         Release:
           PRODUCT_BUNDLE_IDENTIFIER: com.wjk.fitai.watchkitapp
           FITAI_COMPANION_BUNDLE_ID: com.wjk.fitai
+
+  FitAIWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: FitAIWidget
+        excludes:
+          - "Info.plist"
+      - path: Shared
+    dependencies:
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+      - sdk: ActivityKit.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.wjk.fitai.widget
+        PRODUCT_NAME: FitAIWidget
+        INFOPLIST_FILE: FitAIWidget/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        CODE_SIGN_STYLE: Automatic
+        APPLICATION_EXTENSION_API_ONLY: YES
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.wjk.fitai.dev.widget
 
   FitAITests:
     type: bundle.unit-test
