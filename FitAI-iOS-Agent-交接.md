@@ -34,6 +34,7 @@
   - 但账号 `2134326457` 只开通了 `doubao-seed-2-1-lite-260915`
   - `doubao-seed-2-1-pro-260915`、`doubao-seed-2-0-pro-260215`、`doubao-seed-2-0-lite-260428`、`doubao-seed-2-1-turbo-260628`、Ark 的 DeepSeek v4.1 都返回 `ModelNotOpen`
   - 用已开通的 `doubao-seed-2-1-lite-260915` 跑同一张 `seated_row-2.jpg`：`chest_press_iso` 0.92（错），单张 >50s，不能直接替换生产
+  - 用户后来又给了一个 key；实测仍解析到同一个账号 `2134326457`，pro 模型还是 `ModelNotOpen`。换 key 不会改变模型开通状态
 - 结论：
   - 不是“只换 key”就能解决；需要先在火山方舟控制台开通豆包 App 实际使用的视觉模型（很可能是 `doubao-seed-2-1-pro-260915`，或用户提供接入点 ID）
   - 开通后用同一批坐姿划船/哈克深蹲/腿举/推胸图做 A/B，通过后再切生产
