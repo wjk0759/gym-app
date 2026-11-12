@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`174d027`（教练每组训练历史 + 时区 + 评测 CI 门禁；iOS 休息倒计时 `09c01e3`；AI 教练 `modify_workout`；iOS Build CI 在 `09c01e3` 通过；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da`/`a751b4c`/`174d027` **尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`cf147b2`（教练每组历史 + 时区 + 评测门禁 + 消息反馈；iOS Build 在 `cf147b2` 通过；休息倒计时 `09c01e3`；AI 教练 `modify_workout`；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da`/`a751b4c`/`174d027`/`cf147b2` **尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -76,6 +76,35 @@
   - 内部 TestFlight 可先上；外部测试再走 Beta App Review
 - 注意：
   - TestFlight 安装本身不需要 IAP 商品；但要在测试版里测订阅，仍需 IAP 商品、协议和 App Store Server API Key/p8
+
+### 2026-11-12 · Windows（教练消息反馈闭环）
+
+- 代码提交：`cf147b2`
+- 后端：
+  - `/agent/chat` 返回助手消息 `message_id`（同时保留 `run_id`）
+  - 新增 `coach_feedback` 表和 `V31__coach_feedback.sql`；按 `(user_id, message_id)` 唯一，重复提交更新
+  - 新增 `POST /agent/feedback`（message 归属、assistant 角色、rating/reason 校验）和 `GET /agent/feedback`
+  - 反馈原因白名单：`inaccurate` / `unsafe` / `too_long` / `not_understood` / `other`
+- iOS：
+  - `ChatMessage` 增加 `serverMessageID` / `serverRunID` / `feedbackRating` / `feedbackReason`
+  - 助手消息下显示“有帮助 / 没帮助”；“没帮助”菜单选原因
+  - 本地乐观更新，API 失败回滚并 toast
+  - `AgentChatResponse` 解码 `message_id`；新增 `APIClient.agentFeedback`
+  - 新增 `CoachChatFeedback.swift`、`AppStore+CoachFeedback.swift`；`bubble` 拆成 `bubbleContent + 反馈行`
+- 验证：
+  - 后端 **262 passed**，Ruff 通过
+  - `Backend Tests` 在 `cf147b2` 通过
+  - `iOS Build` 在 `cf147b2` 通过
+  - 新增 `test_coach_feedback.py` 覆盖创建/更新、跨用户、user 消息、非法 reason
+- 注意：
+  - `Admin CI` 在 `cf147b2` 失败，但失败点是历史 `V28` 在全新库上的 FK 问题（`equipment_type_exercises` → `exercises`），不是 V31；生产已在 V30，V31 只会追加执行
+  - 生产部署需要让 admin-server 跑 Flyway（或手工执行 V31），否则 `/agent/feedback` 会因缺表 500
+- Mac 待办：
+  - 装新 iOS 包，测每条助手消息的“有帮助 / 没帮助”、失败回滚
+  - 部署 backend + V31 migration
+- 仍未做：
+  - 反馈后台队列/运营页面（当前只有用户自己的 GET）
+  - 把 down 样本自动灌入 eval bank（下一步）
 
 ### 2026-11-12 · Windows（教练评测 CI 门禁）
 
