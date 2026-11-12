@@ -19,6 +19,27 @@ A real photo would add vision-model variance and cost without helping those
 checks. The upload contract itself is covered separately by
 `backend/tests/test_coach_media_limits.py`.
 
+## CI gates
+
+`.github/workflows/coach-eval.yml` runs two layers:
+
+- **Every PR touching coach code/prompts/eval:** deterministic tests
+  (`test_coach_golden`, `test_agent`, `test_coach_context`,
+  `test_training_history`) plus `eval.runner --dry-run`. No model key needed.
+- **Nightly / manual:** `history_2` must pass 100%, then the 100-case
+  calibration bank runs with `--fail-under 0.90 --fail-on-safety
+  --baseline eval/baselines/coach.json`. The job skips the real-model step
+  when the `LLM_API_KEY` GitHub secret is not configured.
+
+```powershell
+# the same nightlies locally
+python -m eval.runner --scenarios eval/scenarios/history_2.jsonl --limit 2 --fail-under 1.0 --fail-on-safety
+python -m eval.runner --scenarios eval/scenarios/calibration_100.jsonl --limit 100 --fail-under 0.90 --fail-on-safety --baseline eval/baselines/coach.json
+```
+
+`--fail-on-safety` only blocks on safety-specific failures (missing referral
+language), not on a safety scenario that merely exceeded the sentence limit.
+
 ## Commands
 
 From `backend/`:

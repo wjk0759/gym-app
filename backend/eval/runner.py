@@ -681,15 +681,74 @@ def _summarize(results: list[dict]) -> dict:
     }
 
 
-async def main_async(args: argparse.Namespace) -> int:
-    if settings.use_mock_llm:
-        print("LLM is not configured; set LLM_API_KEY in backend/.env", file=sys.stderr)
-        return 2
-    ok, balance = await check_balance()
-    print(balance, flush=True)
-    if not ok:
-        return 2
+def gate_failures(
+    *,
+    summary: dict,
+    results: list[dict],
+    scenarios: list[dict],
+    fail_under: float | None,
+    fail_on_safety: bool,
+    baseline: str | None,
+) -> list[str]:
+    """Return the reasons a CI/release run must fail."""
+    failures: list[str] = []
+    if fail_under is not None and summary["pass_rate"] < fail_under:
+        failures.append(
+            f"pass_rate {summary['pass_rate']:.4f} < {fail_under:.4f}"
+        )
 
+    if fail_on_safety:
+        safety_ids = {
+            str(item.get("id"))
+            for item in scenarios
+            if (item.get("expected") or {}).get("expected_safety")
+        }
+        # A safety scenario can also fail on style/length. Only block the gate
+        # when the failure is specifically a safety failure.
+        safety_failed = [
+            item
+            for item in results
+            if str(item.get("id")) in safety_ids
+            and any(
+                "safety" in str(failure).lower()
+                for failure in (item.get("failures") or [])
+            )
+        ]
+        if safety_failed:
+            failures.append(
+                f"safety scenarios failed: {len(safety_failed)}/{len(safety_ids)}"
+            )
+
+    if baseline:
+        baseline_path = Path(baseline)
+        if not baseline_path.exists():
+            failures.append(f"baseline not found: {baseline_path}")
+        else:
+            data = json.loads(baseline_path.read_text(encoding="utf-8"))
+            baseline_rate = float(data.get("pass_rate") or 0)
+            if summary["pass_rate"] + 1e-9 < baseline_rate:
+                failures.append(
+                    f"pass_rate below baseline {baseline_rate:.4f}"
+                )
+            for category, bucket in (data.get("by_category") or {}).items():
+                actual = summary["by_category"].get(category)
+                if not actual or not actual.get("total"):
+                    continue
+                actual_rate = actual["passed"] / actual["total"]
+                base_total = int(bucket.get("total") or 0)
+                base_rate = (
+                    int(bucket.get("passed") or 0) / base_total
+                    if base_total
+                    else 0
+                )
+                if actual_rate + 1e-9 < base_rate:
+                    failures.append(
+                        f"{category} rate {actual_rate:.4f} < baseline {base_rate:.4f}"
+                    )
+    return failures
+
+
+async def main_async(args: argparse.Namespace) -> int:
     scenarios = _load_scenarios(
         Path(args.scenarios),
         None if args.category else args.limit,
@@ -705,6 +764,14 @@ async def main_async(args: argparse.Namespace) -> int:
         for item in scenarios[:5]:
             print(item["id"], item["category"], item["turns"])
         return 0
+
+    if settings.use_mock_llm:
+        print("LLM is not configured; set LLM_API_KEY in backend/.env", file=sys.stderr)
+        return 2
+    ok, balance = await check_balance()
+    print(balance, flush=True)
+    if not ok:
+        return 2
 
     engine = create_engine(
         "sqlite:///:memory:",
@@ -755,15 +822,42 @@ async def main_async(args: argparse.Namespace) -> int:
             handle.write(json.dumps(item, ensure_ascii=False) + "\n")
 
     summary = _summarize(results)
+    security_ids = {
+        str(item.get("id"))
+        for item in scenarios
+        if (item.get("expected") or {}).get("expected_safety")
+    }
+    safety_failed = [
+        item for item in results
+        if str(item.get("id")) in security_ids and not item.get("pass")
+    ]
+    summary["safety"] = {
+        "total": len(security_ids),
+        "failed": len(safety_failed),
+    }
     summary["model"] = settings.llm_model
     summary["reasoning_effort"] = settings.llm_agent_reasoning_effort
     summary["elapsed_seconds"] = round(time.perf_counter() - started, 1)
+
+    failures = gate_failures(
+        summary=summary,
+        results=results,
+        scenarios=scenarios,
+        fail_under=args.fail_under,
+        fail_on_safety=args.fail_on_safety,
+        baseline=args.baseline,
+    )
+
     summary_path = Path(args.summary) if args.summary else output.with_suffix(".summary.json")
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     print(f"results: {output}")
     print(f"summary: {summary_path}")
+    if failures:
+        for failure in failures:
+            print(f"EVAL GATE FAILED: {failure}", file=sys.stderr)
+        return 1
     return 0
 
 
@@ -778,6 +872,9 @@ def main() -> None:
     parser.add_argument("--output", default="eval/results/calibration.jsonl")
     parser.add_argument("--summary", default=None)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--fail-under", type=float, default=None)
+    parser.add_argument("--fail-on-safety", action="store_true")
+    parser.add_argument("--baseline", default=None)
     args = parser.parse_args()
     raise SystemExit(asyncio.run(main_async(args)))
 

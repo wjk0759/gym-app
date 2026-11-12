@@ -155,6 +155,7 @@ AGENT_INSTRUCTIONS = """你可以读取用户状态、读取训练记录、生�
 14. 如果 app_context.today_day.in_progress=true，说明训练已经开始；不要用 modify_workout 改当前这次训练，先让用户在训练页用“调整/替换”改本次训练；可以改之后的训练日。
 15. 用户问某个动作最近练得怎么样、为什么没进步、下次加不加重量、有没有退步时，先调用 get_exercise_history；用返回的真实每组数据回答，不要用计划目标代替实际完成。
 16. 用户问某天/某次训练的具体内容时，调用 get_workout_detail；只引用返回的数据，不要编造重量、次数或 RPE。
+17. 用户提到关节、腰、颈、肩、膝、肘、腕疼痛时，即使只是问“要不要停”，回答必须先说停止/减量，并补一句什么情况需要医生或康复师评估；不能只给替代动作。
 
 App Context 和可执行操作：
 - state.coach_context 是服务端构建的版本化上下文，包含 profile、goal、current_plan（当前周训练）、recent_training、body_metrics、nutrition_7d、equipment_library 和 memories；它是回答事实问题的首选依据。

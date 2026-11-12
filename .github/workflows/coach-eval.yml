@@ -1,0 +1,150 @@
+name: Coach Eval
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Nightly at 02:00 China time (18:00 UTC).
+    - cron: "0 18 * * *"
+  push:
+    paths:
+      - "backend/app/prompts/**"
+      - "backend/app/services/agent.py"
+      - "backend/app/services/coach_context.py"
+      - "backend/app/services/training_history.py"
+      - "backend/app/services/safety.py"
+      - "backend/app/services/llm.py"
+      - "backend/eval/**"
+      - "backend/tests/test_agent.py"
+      - "backend/tests/test_coach_context.py"
+      - "backend/tests/test_coach_golden.py"
+      - "backend/tests/test_training_history.py"
+      - ".github/workflows/coach-eval.yml"
+  pull_request:
+    paths:
+      - "backend/app/prompts/**"
+      - "backend/app/services/agent.py"
+      - "backend/app/services/coach_context.py"
+      - "backend/app/services/training_history.py"
+      - "backend/app/services/safety.py"
+      - "backend/app/services/llm.py"
+      - "backend/eval/**"
+      - "backend/tests/test_agent.py"
+      - "backend/tests/test_coach_context.py"
+      - "backend/tests/test_coach_golden.py"
+      - "backend/tests/test_training_history.py"
+      - ".github/workflows/coach-eval.yml"
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements-dev.txt
+
+      - name: Deterministic coach tests
+        working-directory: backend
+        run: |
+          python -m pytest \
+            tests/test_coach_golden.py \
+            tests/test_agent.py \
+            tests/test_coach_context.py \
+            tests/test_training_history.py \
+            -q
+
+      - name: Eval scenario contract
+        working-directory: backend
+        run: python -m eval.runner --dry-run
+
+  nightly:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements-dev.txt
+
+      - name: Check model key
+        id: key
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: |
+          if [ -z "$LLM_API_KEY" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "LLM_API_KEY secret is not configured; skipping real-model eval."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run history smoke
+        if: steps.key.outputs.enabled == 'true'
+        working-directory: backend
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_PROVIDER: deepseek
+          LLM_MODEL: deepseek-flash
+          LLM_BASE_URL: https://api.deepseek.com/v1
+          LLM_AGENT_REASONING_EFFORT: high
+          PYTHONIOENCODING: utf-8
+        run: |
+          python -m eval.runner \
+            --scenarios eval/scenarios/history_2.jsonl \
+            --limit 2 \
+            --fail-under 1.0 \
+            --fail-on-safety \
+            --output eval/results/history.jsonl
+
+      - name: Run coach calibration
+        if: steps.key.outputs.enabled == 'true'
+        working-directory: backend
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_PROVIDER: deepseek
+          LLM_MODEL: deepseek-flash
+          LLM_BASE_URL: https://api.deepseek.com/v1
+          LLM_AGENT_REASONING_EFFORT: high
+          PYTHONIOENCODING: utf-8
+        run: |
+          python -m eval.runner \
+            --scenarios eval/scenarios/calibration_100.jsonl \
+            --limit 100 \
+            --fail-under 0.90 \
+            --fail-on-safety \
+            --baseline eval/baselines/coach.json \
+            --output eval/results/calibration-100.jsonl
+
+      - name: Upload eval results
+        if: always() && steps.key.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-eval-results
+          path: |
+            backend/eval/results/history.jsonl
+            backend/eval/results/history.summary.json
+            backend/eval/results/calibration-100.jsonl
+            backend/eval/results/calibration-100.summary.json
+          if-no-files-found: ignore
