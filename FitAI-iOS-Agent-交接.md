@@ -14,17 +14,39 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`cba2980`（器械识别 OCR/手动纠错 + 动作库格子统一；macOS 已验证 `95fe496` 训练页；后端生产已部署 `84c1046`，rebase 前内容等价 `d459515`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`5c16528`（后端豆包 row/leg gate；iOS `cba2980`；macOS 已验证 `95fe496` 训练页；后端生产已部署 `5c16528`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
 - Windows 最新完成（2026-11-07）：拉取并保留 macOS 单行语音输入（`9a833b1`）；完成教练内核统一并部署生产；`test_reviewer` 已授 Pro、补齐基础档案和 3 分化计划；生产 Watch 预载/登录/刷新/语音/撤销全链路烟测通过；iPhone 训练页动作循环动画 PoC、`/exercise-media` 批量接口、11 条 sample 媒体已上生产（`341981f`）；器械识别修复：图片归一化、禁止随机 mock、37 类器械目录、生产导入 57 条训记动作、4 张真实照片 + 1 张负例烟测 5/5 命中（`5bf99a1`）；2026-11-08 增加 Vision OCR 标签提示、18 张多品牌评测和准确率实验（`23e41c8`）；生产视觉切 **Qwen3-VL-Plus**；器械识别加 **top-2 候选 + 混淆兜底**，18 张缩略图 top-1 61%、top-2 83%（`0d63191`）；已合并到 `develop`（`48ad5f0`），develop CI 全绿
 - Windows 前一轮完成（2026-11-07）：手表独立语音教练、watch 专用登录会话、媒体预载/本地缓存、离线 outbox/ack、手机 inbox 回灌、手机→手表指令、3 天 Pro 宽限与中途到期继续结束、HealthKit 保活/手机单写者、Watch AppIcon 恢复、Watch 隐私清单、训练来源 `phone/watch`
 - 本地后台（2026-11-08）：FastAPI `8000`、admin-server `8080`、admin-web `5173/admin`、MySQL `3307` V24；真机 API `http://192.168.1.4:8000/api/v1`
-- 最新后端验证：**245 passed**，Ruff app/tests 通过；计划池已收归服务端（1,068 动作账号生产实跑 `generated_by=ai`）；器械识别：Qwen3-VL-Plus 对坐姿划船/腿举/哈克深蹲的图片判别不可靠，已加“具体 OCR 标签优先 + 候选顺序 + 手动从器械库选择”，生产 OCR `SEATED ROW` 实测返回 `seated_row`；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source`、`/exercise-media`、器械目录识别、器械 top-2、器械照片上传/训练部位已接入测试；生产 Flyway 已到 **V30**（V29 为补记，均 `checksum=NULL`）；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
+- 最新后端验证：**246 passed**，Ruff app/tests 通过；计划池已收归服务端（1,068 动作账号生产实跑 `generated_by=ai`）；器械识别：Qwen3-VL-Plus 对坐姿划船/腿举/哈克深蹲的图片判别不可靠，已加“具体 OCR 标签优先 + 候选顺序 + 手动从器械库选择 + 豆包 lite row/leg gate”，生产无 OCR 坐姿划船实测已返回 `seated_row`；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source`、`/exercise-media`、器械目录识别、器械 top-2、器械照片上传/训练部位已接入测试；生产 Flyway 已到 **V30**（V29 为补记，均 `checksum=NULL`）；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、Mac Release 签名上传、正式 1,500 动作 × 男女素材采购与映射、真实 Watch App ID/HealthKit capability、TestFlight/App Store 真机验收
+
+### 2026-11-12 · Windows（豆包 lite 坐姿划船/腿类复核 gate 上线）
+
+- 代码提交：`64e3ac0` + `5c16528`；生产已部署 `5c16528`
+- 背景：两个 key 都解析到同一账号 `2134326457`；pro 模型仍 `ModelNotOpen`。lite 做全量目录识别又慢又错，但做“坐姿划船 vs 腿举/哈克深蹲”的二元问题很稳
+- 实测：
+  - lite 二元问题：坐姿划船 → `seated_pull`，哈克深蹲/腿举 → `leg_press`（3/3），单次 6.9 秒
+  - 全量目录/短名单在 lite 上不稳定，不能作为主识别
+- 后端实现：
+  - 新增 `VISION_GATE_*`（base/model/key/enabled/timeout），默认关闭，生产启用
+  - 主视觉结果落在腿类且 OCR 没有具体名称时，调用 gate
+  - gate 返回 `seated_pull`：主结果改成 `seated_row`，候选只保留 `seated_row` + 原腿类首选（兼容旧 App 的两胶囊布局）；返回 `needs_confirmation=true` 和 warning
+  - gate 返回 `leg_press`：保留主结果；gate 失败/超时不影响主结果
+  - 同时保留具体 OCR 标签优先、候选顺序、手动从器械库选择
+- 生产验证（2026-11-12，部署 `5c16528` 后）：
+  - `seated_row-2.jpg` 无 OCR → **`seated_row` 0.9，9.1 秒**，options `["seated_row","hack_squat"]`（修复）
+  - `hack_squat-1.jpg` → `leg_press_45` 0.65，options 含 `hack_squat`（Qwen 主结果仍不稳；需手动/候选确认）
+  - `leg_press_45-1.jpg` → `leg_press_45` 0.65
+  - `chest_press_seated-1.jpg` → `chest_press_seated` 0.92
+  - `seated_row-2.jpg` + OCR `SEATED ROW` → `seated_row` 0.95（gate 跳过，4.9 秒）
+- 说明：这不是“视觉全量替换 Doubao”。pro 开通后可以把 `VISION_*` 指到 pro；当前 gate 用已开通的 `doubao-seed-2-1-lite-260915` 解决坐姿划船误判
+- Key 只在服务器 `/opt/fitai/.env` 和本地 `backend/.env`，未写入仓库/交接文档
 
 ### 2026-11-12 · Windows（豆包视觉 API 接入测试）
 
@@ -39,7 +61,7 @@
   - 不是“只换 key”就能解决；需要先在火山方舟控制台开通豆包 App 实际使用的视觉模型（很可能是 `doubao-seed-2-1-pro-260915`，或用户提供接入点 ID）
   - 开通后用同一批坐姿划船/哈克深蹲/腿举/推胸图做 A/B，通过后再切生产
 - 代码层：当前 `VISION_BASE_URL` / `VISION_MODEL` / `VISION_API_KEY` 已是 OpenAI 兼容；lite 模型调用、JSON 解析、`response_format` 都通，开通 pro 后只需改 `.env`
-- 生产：继续 Qwen3-VL-Plus + 具体 OCR 标签优先 + 手动从器械库选择；没有切到豆包 lite
+- 生产：Qwen3-VL-Plus + 具体 OCR 标签优先 + 手动从器械库选择 + 豆包 lite row/leg gate（见上一条）；没有全量切到豆包 lite
 
 ### 2026-11-12 · Windows（器械识别回归 + 动作库格子统一）
 
