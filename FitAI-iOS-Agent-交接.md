@@ -14,17 +14,56 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`077823a`（P1-6 上下文预算 + prompt 版本 + 可观测；后端 276 passed；AI 改课收归服务端 `53fdd8c`；iOS Build 在 `53fdd8c` 通过；休息倒计时 `09c01e3`；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da`/`a751b4c`/`174d027`/`cf147b2`/`53fdd8c`/`077823a` **尚未部署**；V31/V32 迁移待执行）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`ab12716`（P1-5 输出安全护栏 + 动作引用 + 草案应用前重新校验；后端 298 passed；P1-6 上下文预算/prompt 版本 `077823a`；AI 改课收归服务端 `53fdd8c`；iOS Build 在 `53fdd8c` 通过；休息倒计时 `09c01e3`；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da`/`a751b4c`/`174d027`/`cf147b2`/`53fdd8c`/`077823a`/`ab12716` **尚未部署**；V31/V32 迁移待执行）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
 - Windows 最新完成（2026-11-07）：拉取并保留 macOS 单行语音输入（`9a833b1`）；完成教练内核统一并部署生产；`test_reviewer` 已授 Pro、补齐基础档案和 3 分化计划；生产 Watch 预载/登录/刷新/语音/撤销全链路烟测通过；iPhone 训练页动作循环动画 PoC、`/exercise-media` 批量接口、11 条 sample 媒体已上生产（`341981f`）；器械识别修复：图片归一化、禁止随机 mock、37 类器械目录、生产导入 57 条训记动作、4 张真实照片 + 1 张负例烟测 5/5 命中（`5bf99a1`）；2026-11-08 增加 Vision OCR 标签提示、18 张多品牌评测和准确率实验（`23e41c8`）；生产视觉切 **Qwen3-VL-Plus**；器械识别加 **top-2 候选 + 混淆兜底**，18 张缩略图 top-1 61%、top-2 83%（`0d63191`）；已合并到 `develop`（`48ad5f0`），develop CI 全绿
 - Windows 前一轮完成（2026-11-07）：手表独立语音教练、watch 专用登录会话、媒体预载/本地缓存、离线 outbox/ack、手机 inbox 回灌、手机→手表指令、3 天 Pro 宽限与中途到期继续结束、HealthKit 保活/手机单写者、Watch AppIcon 恢复、Watch 隐私清单、训练来源 `phone/watch`
 - 本地后台（2026-11-08）：FastAPI `8000`、admin-server `8080`、admin-web `5173/admin`、MySQL `3307` V24；真机 API `http://192.168.1.4:8000/api/v1`
-- 最新后端验证：**276 passed**，Ruff app/tests 通过；计划池已收归服务端（1,068 动作账号生产实跑 `generated_by=ai`）；器械识别：Qwen3-VL-Plus 对坐姿划船/腿举/哈克深蹲的图片判别不可靠，已加“具体 OCR 标签优先 + 候选顺序 + 手动从器械库选择 + 豆包 lite row/leg gate”，生产无 OCR 坐姿划船实测已返回 `seated_row`；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source`、`/exercise-media`、器械目录识别、器械 top-2、器械照片上传/训练部位已接入测试；生产 Flyway 已到 **V30**（V29 为补记，均 `checksum=NULL`）；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
+- 最新后端验证：**298 passed**，Ruff app/tests 通过；计划池已收归服务端（1,068 动作账号生产实跑 `generated_by=ai`）；器械识别：Qwen3-VL-Plus 对坐姿划船/腿举/哈克深蹲的图片判别不可靠，已加“具体 OCR 标签优先 + 候选顺序 + 手动从器械库选择 + 豆包 lite row/leg gate”，生产无 OCR 坐姿划船实测已返回 `seated_row`；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source`、`/exercise-media`、器械目录识别、器械 top-2、器械照片上传/训练部位已接入测试；生产 Flyway 已到 **V30**（V29 为补记，均 `checksum=NULL`）；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-13 · Windows（P1-5 生成后安全 + citations）
+
+- 代码提交：`ab12716`
+- 背景：前置 `assess_safety` 只能拦用户输入；模型仍可能在正常输入下输出“带伤继续练”、极端饮食、补剂剂量或替代就医。动作引用也只有 mock 回复有，LLM 回复没有可追溯来源。
+- 后端：
+  - 新增 `reply_guard.py`：回复落库/返回前确定性扫描
+  - 覆盖：带伤继续练/疼也加重量、极端断食/催吐/超低热量、补剂或药物剂量、替代就医、直接下诊断
+  - 命中后整段替换为安全回复；危险原文不返回、不落库
+  - 复用现有 `safety_flag`：`injury_guard` / `medical_referral` / `minor_guard` / `supplement_guard`，没有新增客户端枚举
+  - Agent 命中时清空 `actions`，把草案标为 `superseded`，并写一条 `safety` AgentStep
+  - `/coach/chat`、`/coach/chat/stream`、`/agent/chat`、`/coach/voice` 都接输出护栏
+  - 视觉分析 `coach_vision` 与体型分析 `body_analysis` 的文本建议也过输出护栏
+  - 新增 `citations.py`：根据回复文本 + 当前计划 + 服务端动作库生成动作引用
+  - 引用带 `slug/name_zh/source/license`；模型编造的动作不会产生引用
+  - `/coach/chat` 和 `/agent/chat` 的 assistant `ChatMessage.citations` 落库；Agent 响应新增 `citations`；流式 done 事件也带 `citations`
+  - `apply_proposal` 应用前按**当前**伤病、器械、训练频率重新校验；条件变化返回 409，要求重新生成草案
+- 验证：
+  - 后端 **298 passed**，Ruff app/tests/scripts 通过
+  - GitHub `Backend Tests` 和 `Coach Eval` 在 `ab12716` 通过
+  - 新增 `test_reply_guard.py`：疼痛继续练、极端饮食、补剂剂量、替代就医、诊断、否定语境、跨句否定
+  - 新增 `test_citations.py`：当前计划引用、动作库来源、幻觉动作不引用、数量限制
+  - 新增 `test_plan_safety.py`：新增伤病后重新校验、草案应用拒绝、正常草案仍可应用
+  - `test_profile_safety.py` 新增 Agent / Coach 输出护栏集成测试
+  - `eval.runner --dry-run` 正常加载 100 条场景
+  - 本次没有 iOS 代码变化，未触发 iOS Build
+- 部署：
+  - 本次没有新数据库迁移；仍需先执行 V31 + V32
+  - 部署 backend `ab12716` 后生效；iOS 旧包会忽略新增 `citations` 字段，不需要重新装包
+- 已知限制：
+  - 输出护栏是规则扫描，不是语义审核；它只拦明确危险建议，不替代模型质量评测
+  - citations 目前覆盖动作，不覆盖营养/医学外部文献；营养建议仍走确定性计算 + 安全护栏
+  - iOS 端还没有渲染 citations 的 UI；当前先保证 API 和落库可追溯
+  - 计划草案应用前重新校验会拒绝“生成后档案变化”的旧草案，这是有意的
+- 不要恢复：
+  - 不要绕过 `reply_guard` 直接把模型原文落库或返回
+  - 不要在输出护栏命中后保留待确认 actions / draft proposal
+  - 不要把 citations 交给模型自己生成
+  - 不要在 `apply_proposal` 里跳过当前档案的重新校验
 
 ### 2026-11-13 · Windows（P1-6 上下文预算 + prompt 版本 + 可观测）
 
