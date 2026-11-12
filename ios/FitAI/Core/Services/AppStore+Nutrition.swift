@@ -54,6 +54,19 @@ extension AppStore {
         return result
     }
 
+    func updateFoodLog(_ log: FoodLog) {
+        guard let index = foodLogs.firstIndex(where: { $0.id == log.id }) else {
+            return
+        }
+        var updated = log
+        // Re-sync the edited row with the server; the client_id is the upsert key.
+        updated.syncedAt = nil
+        foodLogs[index] = updated
+        foodLogs.sort { $0.date > $1.date }
+        persist()
+        syncPendingUserData()
+    }
+
     func removeFoodLog(_ id: UUID) {
         foodLogs.removeAll { $0.id == id }
         let key = id.uuidString

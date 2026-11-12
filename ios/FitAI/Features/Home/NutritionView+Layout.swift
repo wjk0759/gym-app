@@ -381,15 +381,24 @@ extension NutritionView {
                             Text("\(Int(log.kcal)) kcal")
                                 .font(AppType.micro.weight(.semibold))
                                 .foregroundStyle(Theme.secondaryText)
-                            Button(role: .destructive) {
-                                pendingFoodDelete = log
+                            Menu {
+                                Button {
+                                    editingFoodLog = log
+                                } label: {
+                                    Label("编辑", systemImage: "pencil")
+                                }
+                                Button(role: .destructive) {
+                                    pendingFoodDelete = log
+                                } label: {
+                                    Label("删除", systemImage: "trash")
+                                }
                             } label: {
-                                Image(systemName: "trash")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(Theme.danger.opacity(0.72))
+                                Image(systemName: "ellipsis")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(Theme.tertiaryText)
+                                    .frame(width: 26, height: 26)
                             }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("删除 \(log.foodName)")
+                            .accessibilityLabel("编辑或删除 \(log.foodName)")
                         }
                         .padding(.vertical, 4)
                     }

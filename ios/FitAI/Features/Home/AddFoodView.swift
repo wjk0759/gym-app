@@ -27,6 +27,14 @@ struct AddFoodView: View {
         Array(FoodLibrary.search(query, custom: store.customFoods).prefix(30))
     }
 
+    private var externalFoods: [FoodItem] {
+        Array(
+            (store.customFoods + FoodLibrary.all)
+                .filter { $0.category == "外食" }
+                .prefix(8)
+        )
+    }
+
     var body: some View {
         NavigationStack {
             AppScrollView {
@@ -74,6 +82,9 @@ struct AddFoodView: View {
                             let recents = store.recentFoodItems()
                             if !recents.isEmpty {
                                 foodSection("最近记录", foods: recents)
+                            }
+                            if !externalFoods.isEmpty {
+                                foodSection("外食 / 聚餐", foods: externalFoods)
                             }
                         }
 

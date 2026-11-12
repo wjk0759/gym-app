@@ -12,6 +12,7 @@ struct NutritionView: View {
     @State var showWeekPlan = false
     @State var selectedMeal: MealType = .breakfast
     @State var pendingFoodDelete: FoodLog?
+    @State var editingFoodLog: FoodLog?
     @State var aiMeals: [MealSuggestion]?
     @State var aiPlanNote = ""
     @State var serverTargets: NutritionTargets?
@@ -284,6 +285,9 @@ struct NutritionView: View {
         }
         .sheet(isPresented: $showFoodPhoto) {
             FoodPhotoAnalysisView(date: date)
+        }
+        .sheet(item: $editingFoodLog) { log in
+            EditFoodLogSheet(log: log)
         }
         .sheet(isPresented: $showWeekPlan, onDismiss: {
             Task {
