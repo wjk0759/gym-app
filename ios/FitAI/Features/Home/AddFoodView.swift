@@ -67,42 +67,20 @@ struct AddFoodView: View {
                     if let food = selected {
                         selectedCard(food)
                     } else {
-                        VStack(spacing: 8) {
-                            ForEach(results) { food in
-                                Button {
-                                    selected = food
-                                    grams = food.servingGrams
-                                } label: {
-                                    HStack {
-                                        VStack(alignment: .leading, spacing: 3) {
-                                            Text(food.name)
-                                                .font(AppType.callout)
-                                                .foregroundStyle(Theme.ink)
-                                            Text("\(food.category) · 每 100g")
-                                                .font(.system(size: 9.5, weight: .medium))
-                                                .foregroundStyle(Theme.secondaryText)
-                                        }
-                                        Spacer()
-                                        VStack(alignment: .trailing, spacing: 2) {
-                                            Text("\(Int(food.kcal)) kcal")
-                                                .font(AppType.caption.weight(.semibold))
-                                                .foregroundStyle(Theme.cobalt)
-                                            Text("P\(Int(food.protein)) C\(Int(food.carbs)) F\(Int(food.fat))")
-                                                .font(.system(size: 9.5, weight: .medium))
-                                                .foregroundStyle(Theme.tertiaryText)
-                                        }
-                                        Image(systemName: "plus.circle")
-                                            .foregroundStyle(Theme.cobalt)
-                                    }
-                                    .padding(12)
-                                    .background(
-                                        Theme.ink.opacity(0.035),
-                                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    )
-                                }
-                                .buttonStyle(.plain)
+                        if trimmedQuery.isEmpty {
+                            if !store.favoriteFoods.isEmpty {
+                                foodSection("收藏", foods: store.favoriteFoods)
+                            }
+                            let recents = store.recentFoodItems()
+                            if !recents.isEmpty {
+                                foodSection("最近记录", foods: recents)
                             }
                         }
+
+                        foodSection(
+                            trimmedQuery.isEmpty ? "食物库" : "搜索结果",
+                            foods: results
+                        )
 
                         Button {
                             customInitialName = trimmedQuery
@@ -143,6 +121,75 @@ struct AddFoodView: View {
                 }
             }
         }
+    }
+
+    private func foodSection(_ title: String, foods: [FoodItem]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(AppType.micro.weight(.bold))
+                .foregroundStyle(Theme.tertiaryText)
+                .textCase(.uppercase)
+
+            ForEach(foods) { food in
+                foodRow(food)
+            }
+        }
+    }
+
+    private func foodRow(_ food: FoodItem) -> some View {
+        HStack(spacing: 4) {
+            Button {
+                selected = food
+                grams = food.servingGrams
+            } label: {
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(food.name)
+                            .font(AppType.callout)
+                            .foregroundStyle(Theme.ink)
+                        Text("\(food.category) · 每 100g")
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundStyle(Theme.secondaryText)
+                    }
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("\(Int(food.kcal)) kcal")
+                            .font(AppType.caption.weight(.semibold))
+                            .foregroundStyle(Theme.cobalt)
+                        Text("P\(Int(food.protein)) C\(Int(food.carbs)) F\(Int(food.fat))")
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                    Image(systemName: "plus.circle")
+                        .foregroundStyle(Theme.cobalt)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                Haptics.select()
+                store.toggleFavoriteFood(food)
+            } label: {
+                Image(systemName: store.isFavoriteFood(food) ? "star.fill" : "star")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(
+                        store.isFavoriteFood(food) ? Theme.warning : Theme.tertiaryText
+                    )
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(
+                store.isFavoriteFood(food) ? "取消收藏 \(food.name)" : "收藏 \(food.name)"
+            )
+        }
+        .padding(.leading, 12)
+        .padding(.trailing, 8)
+        .padding(.vertical, 12)
+        .background(
+            Theme.ink.opacity(0.035),
+            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+        )
     }
 
     private func selectedCard(_ food: FoodItem) -> some View {

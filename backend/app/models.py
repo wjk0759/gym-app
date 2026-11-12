@@ -798,6 +798,11 @@ class FoodLog(Base):
     carbs: Mapped[float] = mapped_column(Numeric(6, 1, asdecimal=False), default=0)
     fat: Mapped[float] = mapped_column(Numeric(6, 1, asdecimal=False), default=0)
     fiber: Mapped[float] = mapped_column(Numeric(6, 1, asdecimal=False), default=0)
+    # One-tap planned-meal logging keeps a soft link to the meal plan day/meal.
+    # It is deliberately not a foreign key: plans can be regenerated, while the
+    # user's record of what they ate must remain.
+    plan_date: Mapped[date | None] = mapped_column(Date)
+    plan_meal: Mapped[str | None] = mapped_column(String(20))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow

@@ -40,6 +40,50 @@ def test_template_week_has_a_recipe_for_every_meal():
                 assert len(dish["recipe"]["steps"]) >= 2
 
 
+def test_remaining_strategies_keep_meal_macros_and_ratios():
+    expected_meals = {
+        "balanced": 4,
+        "carb_cycle": 4,
+        "low_carb": 4,
+        "high_protein": 4,
+        "mediterranean": 4,
+        "vegetarian": 4,
+        "time_restricted_16_8": 3,
+    }
+    for strategy_id, meal_count in expected_meals.items():
+        week = build_diet_week(
+            _profile(),
+            "recomp",
+            strategy_id,
+            date(2026, 10, 26),
+            training_days=[1, 3, 5],
+        )
+        assert week["strategy"]["id"] == strategy_id
+        for day in week["days"]:
+            assert len(day["meals"]) == meal_count
+            for meal in day["meals"]:
+                assert meal["protein_g"] > 0
+                assert meal["carbs_g"] >= 0
+                assert meal["fat_g"] > 0
+            assert (
+                abs(
+                    sum(meal["kcal"] for meal in day["meals"])
+                    - day["targets"]["target_kcal"]
+                )
+                <= 2
+            )
+
+    fasting = build_diet_week(
+        _profile(),
+        "recomp",
+        "time_restricted_16_8",
+        date(2026, 10, 26),
+    )
+    meal_keys = [meal["meal"] for meal in fasting["days"][0]["meals"]]
+    assert "breakfast" not in meal_keys
+    assert fasting["strategy"]["caution"]
+
+
 def test_ai_week_normalization_keeps_recipes_and_falls_back_missing_days():
     fallback = {
         "week_start": "2026-10-26",

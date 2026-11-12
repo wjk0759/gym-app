@@ -321,7 +321,7 @@ extension APIClient {
     // MARK: - Cross-device data
 
     func syncFoodLog(_ log: FoodLog) async throws {
-        let payload: [String: Any] = [
+        var payload: [String: Any] = [
             "client_id": log.id.uuidString,
             "logged_at": APIDateCoding.iso8601WithFractionalSeconds.string(from: log.date),
             "meal": log.meal.rawValue,
@@ -333,6 +333,12 @@ extension APIClient {
             "fat": log.fat,
             "fiber": log.fiber ?? 0
         ]
+        if let planDate = log.planDate {
+            payload["plan_date"] = APIDateCoding.dateOnlyLocal.string(from: planDate)
+        }
+        if let planMeal = log.planMeal {
+            payload["plan_meal"] = planMeal.rawValue
+        }
         let body = try JSONSerialization.data(withJSONObject: payload)
         try await sendVoid(path: "diet/logs", method: "POST", body: body)
     }
@@ -618,6 +624,17 @@ extension APIClient {
             method: "POST",
             body: body,
             headers: idempotencyHeaders(idempotencyKey)
+        )
+    }
+
+    func fetchDietTargets(dateString: String) async throws -> RemoteDietTargets {
+        let encoded = dateString.addingPercentEncoding(
+            withAllowedCharacters: .urlQueryAllowed
+        ) ?? dateString
+        return try await send(
+            path: "diet/targets?date=\(encoded)",
+            method: "GET",
+            body: nil
         )
     }
 

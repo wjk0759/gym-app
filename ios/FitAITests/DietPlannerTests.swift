@@ -32,6 +32,41 @@ final class DietPlannerTests: XCTestCase {
         XCTAssertEqual(Double(mealCalories), Double(targets.kcal), accuracy: 10)
     }
 
+    func testMealMacrosSplitAcrossMeals() {
+        let targets = DietPlanner.targets(profile: makeProfile())
+        let meals = DietPlanner.meals(profile: makeProfile())
+
+        XCTAssertEqual(
+            Int(meals.reduce(0) { $0 + $1.protein }),
+            targets.protein,
+            accuracy: 2
+        )
+        XCTAssertEqual(meals.first?.meal, MealType.breakfast)
+        XCTAssertEqual(meals.last?.meal, MealType.snack)
+        XCTAssertTrue(meals.allSatisfy { $0.kcal > 0 })
+    }
+
+    func testFoodLogRoundTripsPlanLink() throws {
+        let log = FoodLog(
+            date: Date(),
+            meal: .lunch,
+            foodName: "午餐（计划餐）",
+            grams: 0,
+            kcal: 620,
+            protein: 42,
+            carbs: 68,
+            fat: 18,
+            planDate: Date(),
+            planMeal: .lunch
+        )
+
+        let data = try JSONEncoder().encode(log)
+        let decoded = try JSONDecoder().decode(FoodLog.self, from: data)
+
+        XCTAssertEqual(decoded.planMeal, MealType.lunch)
+        XCTAssertNotNil(decoded.planDate)
+    }
+
     func testFatLossTargetIsLowerThanBuildMuscle() {
         let cut = DietPlanner.targets(profile: makeProfile(goal: .loseFat))
         let bulk = DietPlanner.targets(profile: makeProfile(goal: .buildMuscle))

@@ -106,6 +106,9 @@ struct FoodLog: Codable, Identifiable, Hashable {
     /// 旧数据没有该字段；0 表示未记录，不阻塞解码。
     var fiber: Double? = nil
     var syncedAt: Date? = nil
+    /// 一键记录计划餐时保留来源；手动记录或旧数据为空。
+    var planDate: Date? = nil
+    var planMeal: MealType? = nil
 }
 
 struct NutritionTotals {
@@ -178,6 +181,19 @@ struct RemoteDietPlan: Decodable {
         let name: String
         let kcal: Int
         let items: [String]
+        let proteinG: Double?
+        let carbG: Double?
+        let fatG: Double?
+
+        enum CodingKeys: String, CodingKey {
+            case meal
+            case name
+            case kcal
+            case items
+            case proteinG = "protein_g"
+            case carbG = "carbs_g"
+            case fatG = "fat_g"
+        }
     }
 
     struct Targets: Decodable {
@@ -209,6 +225,13 @@ struct RemoteDietPlan: Decodable {
         case warning
         case generatedBy = "generated_by"
     }
+}
+
+struct RemoteDietTargets: Decodable {
+    let date: String
+    let targets: RemoteDietPlan.Targets
+    let strategy: String?
+    let source: String?
 }
 
 struct RemoteDietRecipe: Decodable {
@@ -263,8 +286,22 @@ struct RemoteDietWeek: Decodable {
         let kcal: Int
         let items: [String]
         let dishes: [RemoteDietDish]?
+        let proteinG: Double?
+        let carbG: Double?
+        let fatG: Double?
 
         var id: String { meal }
+
+        enum CodingKeys: String, CodingKey {
+            case meal
+            case name
+            case kcal
+            case items
+            case dishes
+            case proteinG = "protein_g"
+            case carbG = "carbs_g"
+            case fatG = "fat_g"
+        }
     }
 
     struct Day: Decodable, Identifiable {

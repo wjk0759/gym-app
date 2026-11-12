@@ -28,6 +28,10 @@ struct NutritionService {
         try await client.fetchSavedDietPlan(dateString: dateString)
     }
 
+    func fetchTargets(dateString: String) async throws -> RemoteDietTargets {
+        try await client.fetchDietTargets(dateString: dateString)
+    }
+
     func fetchWeek(
         strategy: String,
         weekStart: String?,
@@ -60,7 +64,9 @@ struct NutritionService {
             carbs: item.carbs,
             fat: item.fat,
             fiber: item.fiber,
-            syncedAt: Date()
+            syncedAt: Date(),
+            planDate: item.planDate,
+            planMeal: item.planMeal.flatMap(MealType.init(rawValue:))
         )
     }
 }

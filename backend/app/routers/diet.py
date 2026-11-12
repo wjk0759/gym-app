@@ -117,6 +117,8 @@ def _food_log_dict(item: FoodLog) -> dict:
         "carbs": item.carbs,
         "fat": item.fat,
         "fiber": item.fiber,
+        "plan_date": item.plan_date.isoformat() if item.plan_date else None,
+        "plan_meal": item.plan_meal,
     }
 
 
@@ -130,6 +132,8 @@ def _apply_food_log(item: FoodLog, payload: FoodLogIn) -> None:
     item.carbs = payload.carbs
     item.fat = payload.fat
     item.fiber = payload.fiber
+    item.plan_date = payload.plan_date
+    item.plan_meal = payload.plan_meal
 
 
 @router.post("/logs", status_code=201)
@@ -206,11 +210,36 @@ def delete_food_log(client_id: str, user_id: CurrentUser, db: DBSession):
 
 
 @router.get("/targets")
-def targets(user_id: CurrentUser, db: DBSession):
+def targets(
+    user_id: CurrentUser,
+    db: DBSession,
+    plan_date: date | None = Query(default=None, alias="date"),
+):
     profile = db.get(Profile, user_id)
     if profile is None:
         raise HTTPException(status_code=404, detail="请先完成个人档案")
-    return {"targets": calculate_targets(profile, _goal_type(db, user_id))}
+    target_date = plan_date or date.today()
+
+    # Prefer the saved plan for this exact day. The daily nutrition view then
+    # follows the weekly plan's day-specific targets (carb-cycle high/low days)
+    # instead of recalculating a flat target from the profile.
+    record = get_day(db, user_id, target_date)
+    if record is not None and record.plan:
+        saved = record.plan.get("targets")
+        if saved:
+            return {
+                "date": target_date.isoformat(),
+                "targets": saved,
+                "strategy": record.strategy,
+                "source": "saved_day",
+            }
+
+    return {
+        "date": target_date.isoformat(),
+        "targets": calculate_targets(profile, _goal_type(db, user_id)),
+        "strategy": None,
+        "source": "calculated",
+    }
 
 
 @router.get("/plan")

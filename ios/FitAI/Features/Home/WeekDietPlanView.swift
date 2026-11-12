@@ -22,10 +22,13 @@ struct WeekDietPlanView: View {
     }
 
     private let strategies: [(id: String, label: String)] = [
+        ("balanced", "均衡"),
         ("carb_cycle", "碳循环"),
         ("low_carb", "低碳"),
         ("high_protein", "高蛋白"),
-        ("balanced", "均衡")
+        ("mediterranean", "地中海"),
+        ("vegetarian", "素食"),
+        ("time_restricted_16_8", "16:8")
     ]
 
     var body: some View {
@@ -136,12 +139,30 @@ struct WeekDietPlanView: View {
                 .font(AppType.headline)
                 .foregroundStyle(Theme.ink)
 
-            Picker("策略", selection: $strategy) {
-                ForEach(strategies, id: \.id) { item in
-                    Text(item.label).tag(item.id)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 7) {
+                    ForEach(strategies, id: \.id) { item in
+                        let selected = strategy == item.id
+                        Button {
+                            Haptics.select()
+                            strategy = item.id
+                        } label: {
+                            Text(item.label)
+                                .font(AppType.caption.weight(.semibold))
+                                .foregroundStyle(
+                                    selected ? Theme.onAccent : Theme.secondaryText
+                                )
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 7)
+                                .background(
+                                    selected ? Theme.cobalt : Theme.ink.opacity(0.045),
+                                    in: Capsule()
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
-            .pickerStyle(.segmented)
 
             Text(cautionText)
                 .font(.system(size: 9.5, weight: .medium))
@@ -180,6 +201,12 @@ struct WeekDietPlanView: View {
             return "碳水约 20–30%；高强度训练、孕期、糖尿病或肾病人群不建议自行使用。"
         case "high_protein":
             return "蛋白质约 2.0–2.2g/kg；肾病或肾功能异常人群需先咨询医生。"
+        case "mediterranean":
+            return "鱼类、豆类、全谷物和橄榄油为主；坚果和油脂热量高，仍需按总量控制。"
+        case "vegetarian":
+            return "蛋奶素为主；纯素需额外关注 B12、铁、钙和蛋白质，特殊人群请咨询营养师。"
+        case "time_restricted_16_8":
+            return "每天 8 小时进食窗口；孕期、青少年、进食障碍史、糖尿病用药者不适合自行使用。"
         default:
             return "均衡策略，最稳；适合大多数人。"
         }

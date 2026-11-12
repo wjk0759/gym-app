@@ -92,7 +92,11 @@ struct NutritionView: View {
     }
 
     private func applyServerTargets(_ remote: RemoteDietPlan) {
-        guard let values = remote.targets,
+        applyTargets(remote.targets)
+    }
+
+    private func applyTargets(_ values: RemoteDietPlan.Targets?) {
+        guard let values,
               let kcal = values.targetKcal,
               let protein = values.proteinG,
               let carbs = values.carbG,
@@ -112,18 +116,64 @@ struct NutritionView: View {
     }
 
     @MainActor
-    func loadSavedPlan() async {
-        guard aiMeals == nil else { return }
-        guard let plan = (try? await NutritionService().fetchSavedPlan(
+    func loadTargets() async {
+        guard let response = try? await NutritionService().fetchTargets(
             dateString: dateString
-        )) ?? nil, !plan.meals.isEmpty else {
-            return
+        ) else { return }
+        applyTargets(response.targets)
+    }
+
+    @MainActor
+    func loadSavedPlan() async {
+        do {
+            guard let plan = try await NutritionService().fetchSavedPlan(
+                dateString: dateString
+            ), !plan.meals.isEmpty else {
+                aiMeals = nil
+                return
+            }
+            aiMeals = plan.meals.map {
+                MealSuggestion(
+                    name: $0.name,
+                    kcal: $0.kcal,
+                    items: $0.items,
+                    meal: MealType(rawValue: $0.meal) ?? .breakfast,
+                    protein: $0.proteinG ?? 0,
+                    carbs: $0.carbG ?? 0,
+                    fat: $0.fatG ?? 0
+                )
+            }
+            aiPlanNote = plan.note ?? ""
+            applyServerTargets(plan)
+        } catch {
+            // Keep the existing plan when the failure is network-related; only
+            // a 404 (handled as nil above) means the day has no saved plan.
         }
-        aiMeals = plan.meals.map {
-            MealSuggestion(name: $0.name, kcal: $0.kcal, items: $0.items)
-        }
-        aiPlanNote = plan.note ?? ""
-        applyServerTargets(plan)
+    }
+
+    /// One tap logs the whole planned meal using the server's per-meal macro
+    /// estimate. The soft link lets the log show it came from the plan and
+    /// keeps a second tap from adding the same meal twice.
+    func logPlannedMeal(_ suggestion: MealSuggestion) {
+        guard !daySnapshot.byMeal[suggestion.meal, default: []].contains(where: {
+            $0.planDate != nil && $0.planMeal == suggestion.meal
+        }) else { return }
+        store.addFoodLog(
+            FoodLog(
+                date: date,
+                meal: suggestion.meal,
+                foodName: "\(suggestion.name)（计划餐）",
+                grams: 0,
+                kcal: Double(suggestion.kcal),
+                protein: suggestion.protein,
+                carbs: suggestion.carbs,
+                fat: suggestion.fat,
+                fiber: suggestion.fiber,
+                planDate: date,
+                planMeal: suggestion.meal
+            )
+        )
+        Haptics.success()
     }
 
     @MainActor
@@ -150,7 +200,15 @@ struct NutritionView: View {
             pendingPlanGenerationKey = nil
             guard !plan.meals.isEmpty else { return }
             aiMeals = plan.meals.map {
-                MealSuggestion(name: $0.name, kcal: $0.kcal, items: $0.items)
+                MealSuggestion(
+                    name: $0.name,
+                    kcal: $0.kcal,
+                    items: $0.items,
+                    meal: MealType(rawValue: $0.meal) ?? .breakfast,
+                    protein: $0.proteinG ?? 0,
+                    carbs: $0.carbG ?? 0,
+                    fat: $0.fatG ?? 0
+                )
             }
             aiPlanNote = plan.note ?? ""
             applyServerTargets(plan)
@@ -210,7 +268,12 @@ struct NutritionView: View {
         .sheet(isPresented: $showFoodPhoto) {
             FoodPhotoAnalysisView(date: date)
         }
-        .sheet(isPresented: $showWeekPlan) {
+        .sheet(isPresented: $showWeekPlan, onDismiss: {
+            Task {
+                await loadTargets()
+                await loadSavedPlan()
+            }
+        }) {
             WeekDietPlanView()
         }
         .confirmationDialog(
@@ -233,6 +296,7 @@ struct NutritionView: View {
             Text("\(log.foodName) · \(Int(log.kcal)) kcal")
         }
         .task(id: dateString) {
+            await loadTargets()
             await loadSavedPlan()
         }
     }

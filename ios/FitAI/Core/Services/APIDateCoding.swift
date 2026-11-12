@@ -60,6 +60,9 @@ enum APIDateCoding {
                 return date
             }
         }
+        if let date = dateOnlyLocal.date(from: text) {
+            return date
+        }
         return nil
     }
 

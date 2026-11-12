@@ -293,6 +293,8 @@ class FoodLogIn(BaseModel):
     carbs: float = Field(default=0, ge=0, le=1000)
     fat: float = Field(default=0, ge=0, le=1000)
     fiber: float = Field(default=0, ge=0, le=1000)
+    plan_date: dt_date | None = None
+    plan_meal: Literal["breakfast", "lunch", "dinner", "snack"] | None = None
 
 
 class BodyMetricIn(BaseModel):

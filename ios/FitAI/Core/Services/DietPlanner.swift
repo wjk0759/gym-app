@@ -14,8 +14,13 @@ struct MealSuggestion: Identifiable {
     let name: String
     let kcal: Int
     let items: [String]
+    var meal: MealType = .breakfast
+    var protein: Double = 0
+    var carbs: Double = 0
+    var fat: Double = 0
+    var fiber: Double = 0
 
-    var id: String { name }
+    var id: String { meal.rawValue + "|" + name }
 }
 
 enum DietPlanner {
@@ -79,19 +84,25 @@ enum DietPlanner {
     }
 
     static func meals(profile: UserProfile) -> [MealSuggestion] {
-        let target = targets(profile: profile).kcal
-        let templates: [(String, Double, [String])] = [
-            ("早餐", 0.25, ["燕麦 50g", "鸡蛋 2 个", "无糖酸奶 150g", "蓝莓 80g"]),
-            ("午餐", 0.35, ["糙米饭 150g", "鸡胸肉 150g", "西兰花 200g", "橄榄油 5g"]),
-            ("晚餐", 0.30, ["红薯 150g", "三文鱼或豆腐 150g", "混合蔬菜 250g"]),
-            ("加餐", 0.10, ["牛奶 200ml", "坚果 15g"])
+        let targets = targets(profile: profile)
+        let target = targets.kcal
+        let templates: [(MealType, String, Double, [String])] = [
+            (.breakfast, "早餐", 0.25, ["燕麦 50g", "鸡蛋 2 个", "无糖酸奶 150g", "蓝莓 80g"]),
+            (.lunch, "午餐", 0.35, ["糙米饭 150g", "鸡胸肉 150g", "西兰花 200g", "橄榄油 5g"]),
+            (.dinner, "晚餐", 0.30, ["红薯 150g", "三文鱼或豆腐 150g", "混合蔬菜 250g"]),
+            (.snack, "加餐", 0.10, ["牛奶 200ml", "坚果 15g"])
         ]
 
         return templates.map { item in
             MealSuggestion(
-                name: item.0,
-                kcal: Int(Double(target) * item.1),
-                items: item.2
+                name: item.1,
+                kcal: Int(Double(target) * item.2),
+                items: item.3,
+                meal: item.0,
+                protein: Double(targets.protein) * item.2,
+                carbs: Double(targets.carbs) * item.2,
+                fat: Double(targets.fat) * item.2,
+                fiber: Double(targets.fiber) * item.2
             )
         }
     }

@@ -498,6 +498,8 @@ struct RemoteFoodLog: Decodable {
     let carbs: Double
     let fat: Double
     let fiber: Double
+    let planDate: Date?
+    let planMeal: String?
 
     enum CodingKeys: String, CodingKey {
         case clientID = "client_id"
@@ -510,6 +512,8 @@ struct RemoteFoodLog: Decodable {
         case carbs
         case fat
         case fiber
+        case planDate = "plan_date"
+        case planMeal = "plan_meal"
     }
 }
 

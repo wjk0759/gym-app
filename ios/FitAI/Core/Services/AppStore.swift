@@ -76,6 +76,8 @@ final class AppStore {
     /// Food log client IDs deleted locally but not yet acknowledged by the API.
     var pendingFoodDeletionIDs: [String] = []
     var customFoods: [FoodItem] = []
+    /// Saved food-library items shown above search results in AddFoodView.
+    var favoriteFoods: [FoodItem] = []
     var dislikedSlugs: Set<String> = []
     var equipmentLibrary: [EquipmentItem] = []
     /// 通用器械勾选（徒手/哑铃/杠铃...）。
@@ -210,6 +212,7 @@ final class AppStore {
         foodLogs = []
         pendingFoodDeletionIDs = []
         customFoods = []
+        favoriteFoods = []
         dislikedSlugs = []
         notificationsEnabled = false
         restLiveActivityEnabled = true
@@ -303,6 +306,7 @@ final class AppStore {
         foodLogs = state.foodLogs ?? []
         pendingFoodDeletionIDs = state.pendingFoodDeletionIDs ?? []
         customFoods = state.customFoods ?? []
+        favoriteFoods = state.favoriteFoods ?? []
         dislikedSlugs = Set(state.dislikedSlugs ?? [])
         reminderHour = state.reminderHour
         reminderMinute = state.reminderMinute
@@ -352,6 +356,7 @@ final class AppStore {
             foodLogs: foodLogs,
             pendingFoodDeletionIDs: pendingFoodDeletionIDs,
             customFoods: customFoods,
+            favoriteFoods: favoriteFoods,
             dislikedSlugs: Array(dislikedSlugs).sorted(),
             reminderHour: reminderHour,
             reminderMinute: reminderMinute,
@@ -461,6 +466,7 @@ final class AppStore {
         var foodLogs: [FoodLog]?
         var pendingFoodDeletionIDs: [String]?
         var customFoods: [FoodItem]?
+        var favoriteFoods: [FoodItem]?
         var dislikedSlugs: [String]?
         var reminderHour: Int
         var reminderMinute: Int

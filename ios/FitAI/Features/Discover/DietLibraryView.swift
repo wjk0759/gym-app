@@ -62,6 +62,36 @@ struct DietLibraryView: View {
             symbol: "leaf.fill",
             color: Theme.lime,
             tags: ["控糖", "减脂"]
+        ),
+        StrategyInfo(
+            id: "mediterranean",
+            label: "地中海",
+            tagline: "鱼、豆、全谷物和橄榄油",
+            description: "以不饱和脂肪和天然食材为主，适合长期吃，也更容易兼顾心血管健康。",
+            caution: "坚果和橄榄油热量高，仍需控制总量；坚果过敏者需替换。",
+            symbol: "sun.max.fill",
+            color: Theme.accentWarm,
+            tags: ["长期", "心血管"]
+        ),
+        StrategyInfo(
+            id: "vegetarian",
+            label: "素食",
+            tagline: "蛋奶 + 豆制品补蛋白",
+            description: "不吃肉的训练者用鸡蛋、奶制品、豆腐和豆类补足蛋白质。",
+            caution: "纯素需额外关注 B12、铁、钙和蛋白质；特殊人群请咨询营养师。",
+            symbol: "carrot.fill",
+            color: Theme.secondary,
+            tags: ["蛋奶素", "植物蛋白"]
+        ),
+        StrategyInfo(
+            id: "time_restricted_16_8",
+            label: "16:8",
+            tagline: "8 小时吃完，16 小时空腹",
+            description: "把进食集中在午餐、晚餐和加餐，适合作息稳定、能规律吃两餐的人。",
+            caution: "孕期、青少年、进食障碍史、糖尿病用药者不适合自行使用。",
+            symbol: "clock.arrow.circlepath",
+            color: Theme.cobalt,
+            tags: ["时间限制", "进阶"]
         )
     ]
 

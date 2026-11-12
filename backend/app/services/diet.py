@@ -109,17 +109,31 @@ def calculate_targets(profile: Profile, goal_type: str) -> dict:
     }
 
 
+def _meal_macros(targets: dict, ratio: float) -> dict:
+    """Split daily macros across meals by the same ratio used for kcal.
+
+    The split is an estimate, but it gives the client enough data to log a whole
+    planned meal in one tap instead of asking the user to weigh each item.
+    """
+    return {
+        "protein_g": round(targets["protein_g"] * ratio, 1),
+        "carbs_g": round(targets["carb_g"] * ratio, 1),
+        "fat_g": round(targets["fat_g"] * ratio, 1),
+    }
+
+
 def build_plan(profile: Profile, goal_type: str, plan_date: date) -> dict:
     targets = calculate_targets(profile, goal_type)
-    meals = [
-        {
+    meals = []
+    for template in MEAL_TEMPLATE:
+        meal = {
             "meal": template["meal"],
             "name": template["name"],
             "kcal": round(targets["target_kcal"] * template["ratio"]),
             "items": template["items"],
         }
-        for template in MEAL_TEMPLATE
-    ]
+        meal.update(_meal_macros(targets, template["ratio"]))
+        meals.append(meal)
     return {
         "date": plan_date.isoformat(),
         "targets": targets,
@@ -172,14 +186,18 @@ def _normalize_ai_plan(raw: dict, targets: dict, plan_date: date) -> dict:
         items = [str(x)[:80] for x in (item.get("items") or []) if str(x).strip()]
         if not items:
             continue
+        ratio = next(
+            (t["ratio"] for t in MEAL_TEMPLATE if t["meal"] == meal_key), 0.25
+        )
+        macros = _meal_macros(targets, ratio)
         meals.append(
             {
                 "meal": meal_key,
                 "name": str(item.get("name") or _meal_name(meal_key))[:20],
                 "kcal": _to_int(item.get("kcal"), 0),
-                "protein_g": _to_float(item.get("protein_g")),
-                "carbs_g": _to_float(item.get("carbs_g")),
-                "fat_g": _to_float(item.get("fat_g")),
+                "protein_g": _macro_or(item.get("protein_g"), macros["protein_g"]),
+                "carbs_g": _macro_or(item.get("carbs_g"), macros["carbs_g"]),
+                "fat_g": _macro_or(item.get("fat_g"), macros["fat_g"]),
                 "items": items[:8],
             }
         )
@@ -189,16 +207,17 @@ def _normalize_ai_plan(raw: dict, targets: dict, plan_date: date) -> dict:
 
     # 不足 4 餐时用模板补齐，保证页面结构完整。
     have = {meal["meal"] for meal in meals}
-    meals.extend(
-        {
+    for template in MEAL_TEMPLATE:
+        if template["meal"] in have:
+            continue
+        fallback = {
             "meal": template["meal"],
             "name": template["name"],
             "kcal": round(targets["target_kcal"] * template["ratio"]),
             "items": template["items"],
         }
-        for template in MEAL_TEMPLATE
-        if template["meal"] not in have
-    )
+        fallback.update(_meal_macros(targets, template["ratio"]))
+        meals.append(fallback)
 
     meals.sort(key=lambda meal: _meal_order(meal["meal"]))
 
@@ -251,6 +270,11 @@ def _to_float(value) -> float:
         return round(float(value), 1)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _macro_or(value, fallback: float) -> float:
+    parsed = _to_float(value)
+    return parsed if parsed > 0 else fallback
 
 
 async def build_ai_plan(
@@ -380,6 +404,13 @@ def _normalize_ai_meal(
         "meal": meal_key,
         "name": str(raw_meal.get("name") or fallback_meal["name"]).strip()[:20],
         "kcal": kcal,
+        "protein_g": _macro_or(
+            raw_meal.get("protein_g"), fallback_meal.get("protein_g", 0)
+        ),
+        "carbs_g": _macro_or(
+            raw_meal.get("carbs_g"), fallback_meal.get("carbs_g", 0)
+        ),
+        "fat_g": _macro_or(raw_meal.get("fat_g"), fallback_meal.get("fat_g", 0)),
         "items": items[:10],
         "dishes": dishes,
     }
@@ -552,6 +583,30 @@ DIET_STRATEGIES: dict[str, DietStrategy] = {
         template="high_protein",
         caution="肾病或肾功能异常人群需先咨询医生。",
     ),
+    "mediterranean": DietStrategy(
+        id="mediterranean",
+        label="地中海",
+        description="以鱼类、豆类、全谷物、蔬菜和橄榄油为主，脂肪略高但以不饱和脂肪为主。",
+        carb_mult=0.95,
+        fat_mult=1.15,
+        template="mediterranean",
+        caution="坚果和橄榄油热量较高，仍需按总量控制；对坚果过敏者请替换。",
+    ),
+    "vegetarian": DietStrategy(
+        id="vegetarian",
+        label="素食",
+        description="蛋奶素为主，用豆制品、蛋奶和全谷物补足蛋白质，适合不吃肉的训练者。",
+        protein_mult=0.95,
+        template="vegetarian",
+        caution="纯素饮食需额外关注维生素 B12、铁、钙和蛋白质；特殊人群请咨询营养师。",
+    ),
+    "time_restricted_16_8": DietStrategy(
+        id="time_restricted_16_8",
+        label="16:8",
+        description="每天 8 小时进食窗口、16 小时不进食；餐次集中在午餐、晚餐和加餐。",
+        template="fasting_16_8",
+        caution="不适合孕期、青少年、进食障碍史、糖尿病用药或需要规律进餐的人；出现头晕、暴食或月经紊乱应停止。",
+    ),
 }
 
 DEFAULT_TRAINING_DAYS = {
@@ -679,6 +734,81 @@ HIGH_PROTEIN_TEMPLATE = [
     },
 ]
 
+MEDITERRANEAN_TEMPLATE = [
+    {
+        "meal": "breakfast",
+        "name": "早餐",
+        "ratio": 0.25,
+        "items": ["全麦面包 80g", "鸡蛋 2 个", "番茄 150g", "无糖酸奶 150g"],
+    },
+    {
+        "meal": "lunch",
+        "name": "午餐",
+        "ratio": 0.35,
+        "items": ["糙米饭 150g", "三文鱼/鸡腿 150g", "彩椒西兰花 250g", "橄榄油 10g"],
+    },
+    {
+        "meal": "dinner",
+        "name": "晚餐",
+        "ratio": 0.30,
+        "items": ["全麦意面 100g", "虾/豆腐 150g", "混合蔬菜 250g", "橄榄油 5g"],
+    },
+    {
+        "meal": "snack",
+        "name": "加餐",
+        "ratio": 0.10,
+        "items": ["苹果 1 个", "坚果 20g", "无糖酸奶 120g"],
+    },
+]
+
+VEGETARIAN_TEMPLATE = [
+    {
+        "meal": "breakfast",
+        "name": "早餐",
+        "ratio": 0.25,
+        "items": ["无糖豆浆 300ml", "全麦面包 80g", "鸡蛋 2 个", "番茄 150g"],
+    },
+    {
+        "meal": "lunch",
+        "name": "午餐",
+        "ratio": 0.35,
+        "items": ["糙米饭 150g", "香干/豆腐 200g", "西兰花 200g", "橄榄油 8g"],
+    },
+    {
+        "meal": "dinner",
+        "name": "晚餐",
+        "ratio": 0.30,
+        "items": ["红薯 150g", "鹰嘴豆/毛豆 150g", "混合蔬菜 250g", "芝麻 5g"],
+    },
+    {
+        "meal": "snack",
+        "name": "加餐",
+        "ratio": 0.10,
+        "items": ["希腊酸奶 150g", "香蕉 100g", "坚果 15g"],
+    },
+]
+
+FASTING_16_8_TEMPLATE = [
+    {
+        "meal": "lunch",
+        "name": "第一餐",
+        "ratio": 0.40,
+        "items": ["米饭 200g", "鸡胸肉/豆腐 180g", "西兰花 250g", "橄榄油 8g"],
+    },
+    {
+        "meal": "dinner",
+        "name": "第二餐",
+        "ratio": 0.35,
+        "items": ["红薯 200g", "三文鱼/牛肉 150g", "混合蔬菜 250g"],
+    },
+    {
+        "meal": "snack",
+        "name": "加餐",
+        "ratio": 0.25,
+        "items": ["无糖酸奶 200g", "香蕉 100g", "坚果 15g"],
+    },
+]
+
 
 def list_diet_strategies() -> list[dict]:
     return [
@@ -760,6 +890,12 @@ def _template_for(strategy: DietStrategy, day_type: str) -> list[dict]:
         return LOW_CARB_TEMPLATE
     if strategy.template == "high_protein":
         return HIGH_PROTEIN_TEMPLATE
+    if strategy.template == "mediterranean":
+        return MEDITERRANEAN_TEMPLATE
+    if strategy.template == "vegetarian":
+        return VEGETARIAN_TEMPLATE
+    if strategy.template == "fasting_16_8":
+        return FASTING_16_8_TEMPLATE
     return MEAL_TEMPLATE
 
 
@@ -832,17 +968,20 @@ def _normalize_dishes(raw_dishes, meal_items: list[str]) -> list[dict]:
     return dishes[:4] or [_fallback_dish("家常餐", meal_items)]
 
 
-def _meals_for(template: list[dict], target_kcal: int) -> list[dict]:
-    return [
-        {
+def _meals_for(template: list[dict], targets: dict) -> list[dict]:
+    target_kcal = targets["target_kcal"]
+    meals = []
+    for item in template:
+        meal = {
             "meal": item["meal"],
             "name": item["name"],
             "kcal": round(target_kcal * item["ratio"]),
             "items": item["items"],
             "dishes": [_fallback_dish(item["name"], item["items"])],
         }
-        for item in template
-    ]
+        meal.update(_meal_macros(targets, item["ratio"]))
+        meals.append(meal)
+    return meals
 
 
 def build_diet_week(
@@ -881,7 +1020,7 @@ def build_diet_week(
                 "day_type_label": day_label,
                 "title": f"{WEEKDAY_LABELS[weekday - 1]} · {day_label}",
                 "targets": targets,
-                "meals": _meals_for(_template_for(strategy, day_type), targets["target_kcal"]),
+                "meals": _meals_for(_template_for(strategy, day_type), targets),
             }
         )
 

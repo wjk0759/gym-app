@@ -203,6 +203,17 @@ extension NutritionView {
         logs: [FoodLog]
     ) -> some View {
         let loggedKcal = logs.reduce(0.0) { $0 + $1.kcal }
+        let plannedLog = logs.first {
+            $0.planDate != nil && $0.planMeal == suggestion.meal
+        }
+        let statusText: String
+        if let plannedLog {
+            statusText = "已记录整餐 \(Int(plannedLog.kcal)) kcal"
+        } else if loggedKcal > 0 {
+            statusText = "已记录 \(Int(loggedKcal)) kcal"
+        } else {
+            statusText = "还没记录"
+        }
         let colors: [Color] = [Theme.primary, Theme.secondary]
         let color = colors[index % colors.count]
 
@@ -236,15 +247,35 @@ extension NutritionView {
                 InkDivider()
 
                 HStack(spacing: 8) {
-                    Text(loggedKcal > 0 ? "已记录 \(Int(loggedKcal)) kcal" : "还没记录")
+                    Text(statusText)
                         .font(AppType.micro)
-                        .foregroundStyle(loggedKcal > 0 ? Theme.cobalt : Theme.tertiaryText)
-                    Spacer()
+                        .foregroundStyle(
+                            plannedLog != nil || loggedKcal > 0
+                                ? Theme.cobalt
+                                : Theme.tertiaryText
+                        )
+                    Spacer(minLength: 4)
+
+                    if plannedLog == nil {
+                        Button {
+                            logPlannedMeal(suggestion)
+                        } label: {
+                            Label("整餐", systemImage: "checkmark.circle")
+                                .font(AppType.micro.weight(.bold))
+                                .foregroundStyle(Theme.onAccent)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(color, in: Capsule(style: .continuous))
+                        }
+                        .buttonStyle(SubtlePressStyle(scale: 0.96))
+                        .accessibilityLabel("记录整餐 \(suggestion.name)")
+                    }
+
                     Button {
                         selectedMeal = mealType(for: suggestion)
                         showAddFood = true
                     } label: {
-                        Label(loggedKcal > 0 ? "补记" : "记录这餐", systemImage: "plus")
+                        Label("补记", systemImage: "plus")
                             .font(AppType.micro.weight(.bold))
                             .foregroundStyle(Theme.ink)
                             .padding(.horizontal, 10)
@@ -309,12 +340,27 @@ extension NutritionView {
                     ForEach(logs) { log in
                         HStack(spacing: 8) {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(log.foodName)
-                                    .font(AppType.callout.weight(.medium))
-                                    .foregroundStyle(Theme.ink)
-                                Text("\(log.grams.formatted()) g · P\(Int(log.protein)) C\(Int(log.carbs)) F\(Int(log.fat))")
-                                    .font(AppType.micro)
-                                    .foregroundStyle(Theme.tertiaryText)
+                                HStack(spacing: 5) {
+                                    Text(log.foodName)
+                                        .font(AppType.callout.weight(.medium))
+                                        .foregroundStyle(Theme.ink)
+                                        .lineLimit(1)
+                                    if log.planDate != nil {
+                                        Text("计划餐")
+                                            .font(.system(size: 8, weight: .bold))
+                                            .foregroundStyle(Theme.cobalt)
+                                            .padding(.horizontal, 5)
+                                            .padding(.vertical, 2)
+                                            .background(Theme.cobalt.opacity(0.10), in: Capsule())
+                                    }
+                                }
+                                Text(
+                                    log.grams > 0
+                                        ? "\(log.grams.formatted()) g · P\(Int(log.protein)) C\(Int(log.carbs)) F\(Int(log.fat))"
+                                        : "P\(Int(log.protein)) C\(Int(log.carbs)) F\(Int(log.fat))"
+                                )
+                                .font(AppType.micro)
+                                .foregroundStyle(Theme.tertiaryText)
                             }
                             Spacer()
                             Text("\(Int(log.kcal)) kcal")
@@ -372,10 +418,7 @@ extension NutritionView {
     }
 
     func mealType(for suggestion: MealSuggestion) -> MealType {
-        if suggestion.name == MealType.breakfast.label { return .breakfast }
-        if suggestion.name == MealType.lunch.label { return .lunch }
-        if suggestion.name == MealType.dinner.label { return .dinner }
-        return .snack
+        suggestion.meal
     }
 
     func header(snapshot: DayLogsSnapshot, targets: NutritionTargets) -> some View {

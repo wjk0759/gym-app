@@ -315,6 +315,24 @@ def ensure_schema() -> None:
                     "ON workout_sessions(user_id, client_id)"
                 )
             )
+        if "food_logs" in tables:
+            food_columns = {
+                column["name"] for column in inspector.get_columns("food_logs")
+            }
+            for name, ddl in {
+                "plan_date": "DATE",
+                "plan_meal": "VARCHAR(20)",
+            }.items():
+                if name not in food_columns:
+                    connection.execute(
+                        text(f"ALTER TABLE food_logs ADD COLUMN {name} {ddl}")
+                    )
+            connection.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_food_logs_user_plan "
+                    "ON food_logs(user_id, plan_date)"
+                )
+            )
         if "meal_plans" in tables:
             # Keep the newest row for a user/day before adding the unique index.
             meal_columns = {
