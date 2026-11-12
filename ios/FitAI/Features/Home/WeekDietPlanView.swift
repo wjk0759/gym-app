@@ -6,7 +6,7 @@ struct WeekDietPlanView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var week: RemoteDietWeek?
-    @State private var strategy = "carb_cycle"
+    @State private var strategy = "balanced"
     @State private var isLoading = false
     @State private var didLoad = false
     @State private var errorMessage = ""
@@ -17,7 +17,9 @@ struct WeekDietPlanView: View {
     private let requestedStrategy: String?
 
     init(initialStrategy: String? = nil) {
-        _strategy = State(initialValue: initialStrategy ?? "carb_cycle")
+        // Balanced is the safe default. Carb cycling and 16:8 are explicit
+        // choices, not something a first-time user should fall into.
+        _strategy = State(initialValue: initialStrategy ?? "balanced")
         requestedStrategy = initialStrategy
     }
 

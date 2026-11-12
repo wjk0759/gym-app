@@ -1,8 +1,8 @@
-from datetime import date
+from datetime import datetime
 
 import pytest
 
-from app.services.agent import _normalize_app_actions
+from app.services.agent import REVIEW_TZ, _normalize_app_actions
 
 
 def test_swap_diet_meal_action_keeps_date_and_meal():
@@ -32,7 +32,7 @@ def test_swap_diet_meal_defaults_to_today_and_rejects_unknown_meal():
             }
         ]
     )
-    assert actions[0]["payload"]["date"] == date.today().isoformat()
+    assert actions[0]["payload"]["date"] == datetime.now(REVIEW_TZ).date().isoformat()
 
     with pytest.raises(ValueError):
         _normalize_app_actions(

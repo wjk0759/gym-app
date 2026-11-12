@@ -136,6 +136,7 @@ extension AppStore {
     func removeFoodLog(_ id: UUID) {
         foodLogs.removeAll { $0.id == id }
         let key = id.uuidString
+        pendingFoodUpdateIDs.removeAll { $0 == key }
         if !pendingFoodDeletionIDs.contains(key) {
             pendingFoodDeletionIDs.append(key)
         }

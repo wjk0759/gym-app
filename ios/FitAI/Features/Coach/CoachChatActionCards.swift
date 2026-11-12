@@ -303,6 +303,7 @@ extension CoachChatView {
                                             )
                                             if logged {
                                                 Haptics.success()
+                                                store.toast = "已记录\(meal.name) · \(meal.kcal) kcal"
                                             }
                                         }
                                         .font(.system(size: 9.5, weight: .bold))

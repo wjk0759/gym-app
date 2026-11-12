@@ -11,7 +11,7 @@ import json
 import logging
 import re
 import time
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import uuid4
 
@@ -604,7 +604,7 @@ def _normalize_app_actions(
                 raise ValueError("swap_diet_meal requires a valid meal")
             payload["meal"] = meal
             if not valid_date(date_value):
-                payload["date"] = date.today().isoformat()
+                payload["date"] = datetime.now(REVIEW_TZ).date().isoformat()
             else:
                 payload["date"] = date_value
         if action_type == "modify_workout":

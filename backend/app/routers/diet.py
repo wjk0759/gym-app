@@ -32,8 +32,14 @@ from ..services.rate_limit import enforce as enforce_rate_limit
 
 router = APIRouter(prefix="/diet", tags=["diet"])
 
+CHINA_TZ = timezone(timedelta(hours=8))
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic"}
+
+
+def _today() -> date:
+    # Diet days are local to the user, not the server's UTC date.
+    return datetime.now(CHINA_TZ).date()
 
 
 def _public_plan(plan: dict) -> dict:
@@ -227,7 +233,7 @@ def targets(
     profile = db.get(Profile, user_id)
     if profile is None:
         raise HTTPException(status_code=404, detail="请先完成个人档案")
-    target_date = plan_date or date.today()
+    target_date = plan_date or _today()
 
     # Prefer the saved plan for this exact day. The daily nutrition view then
     # follows the weekly plan's day-specific targets (carb-cycle high/low days)
@@ -259,7 +265,7 @@ def review(
     date_to: date | None = Query(default=None, alias="to"),
 ):
     try:
-        start_date, end_date = range_bounds(date_from, date_to)
+        start_date, end_date = range_bounds(date_from, date_to, today=_today())
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -299,7 +305,7 @@ def saved_plan(
 ):
     """Return the saved plan for a day so reopening the app does not fall back
     to the generic local template."""
-    target_date = plan_date or date.today()
+    target_date = plan_date or _today()
     record = get_day(db, user_id, target_date)
     if record is None or not record.plan:
         raise HTTPException(status_code=404, detail="当天还没有饮食计划")
@@ -360,7 +366,7 @@ async def plan(
         raise HTTPException(status_code=404, detail="请先完成个人档案")
 
     enforce_rate_limit(db, "diet_plan_generate", user_id, 3, 60)
-    plan_date = payload.date or date.today()
+    plan_date = payload.date or _today()
     lease = generation.begin_generation(
         db,
         user_id,
@@ -515,7 +521,7 @@ async def plan_week(
         generation.abort_generation(db, lease, user_id=user_id)
         raise
 
-    week_start = week_start_for(payload.week_start or date.today())
+    week_start = week_start_for(payload.week_start or _today())
     try:
         program = active_program(db, user_id)
         result = await build_ai_diet_week(
@@ -588,4 +594,4 @@ def get_plan_week(
     db: DBSession,
     week_start: date | None = Query(default=None),
 ):
-    return _week_payload(db, user_id, week_start_for(week_start or date.today()))
+    return _week_payload(db, user_id, week_start_for(week_start or _today()))

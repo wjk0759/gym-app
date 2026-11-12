@@ -71,7 +71,12 @@ struct EditFoodLogSheet: View {
                         Text("食物")
                             .font(AppType.headline)
                             .foregroundStyle(Theme.ink)
-                        DatePicker("日期", selection: $date, displayedComponents: .date)
+                        DatePicker(
+                            "日期",
+                            selection: $date,
+                            in: ...Date(),
+                            displayedComponents: .date
+                        )
                             .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                         TextField("食物名称", text: $name)
