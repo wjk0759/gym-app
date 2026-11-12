@@ -13,6 +13,7 @@ from app.services.reply_guard import review_reply
         "补剂剂量我不给具体数字，也不建议你自己加量。",
         "这个不能确诊为骨折，先找医生检查。",
         "有人说疼也继续练，这是错误的，先停下来。",
+        "膝盖疼可以继续练上肢，腿先停。",
     ],
 )
 def test_safe_or_negated_replies_are_not_blocked(reply):
