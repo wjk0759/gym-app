@@ -46,7 +46,8 @@
   - `chest_press_seated-1.jpg` → `chest_press_seated` 0.92
   - `seated_row-2.jpg` + OCR `SEATED ROW` → `seated_row` 0.95（gate 跳过，4.9 秒）
 - 说明：这不是“视觉全量替换 Doubao”。pro 开通后可以把 `VISION_*` 指到 pro；当前 gate 用已开通的 `doubao-seed-2-1-lite-260915` 解决坐姿划船误判
-- Key 只在服务器 `/opt/fitai/.env` 和本地 `backend/.env`，未写入仓库/交接文档
+- Key 未写入仓库/交接文档；用户决定不接豆包后已从服务器和本地 `.env` 移除
+- 2026-11-12 用户决定：**先继续用 Qwen，豆包暂不接**。已从服务器/本地 `.env` 移除全部 `VISION_GATE_*`，强制重建 API；`vision_gate_enabled=false`、`vision_model=qwen3-vl-plus`，健康检查 ready。代码保留但默认关闭，以后要接再加 `VISION_GATE_*`
 
 ### 2026-11-12 · Windows（豆包视觉 API 接入测试）
 
