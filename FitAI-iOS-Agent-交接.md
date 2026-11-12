@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`31b2d80`（Windows AI 教练 `modify_workout` 改课 action；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80` **尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`69986da`（Windows AI 教练 `modify_workout` 改课 action + SwiftLint 拆分；iOS Build CI 在 `69986da` 通过；macOS 已验证 TestFlight 分发签名 `1f8681d`；后端生产仍为 `5c16528`，`31b2d80`/`69986da` **尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -97,10 +97,12 @@
   - 同时修复 iOS Build 的 SwiftLint `type_body_length` error：把 `EquipmentRecognitionView.matchesSection` 拆到 `EquipmentRecognitionView+Matches.swift`，`scan()` 改为 internal
 - 验证：
   - 后端单测/Ruff 通过；真实 DeepSeek 两步实跑：先 `lookup_exercise("哑铃卧推")`，再产出合法 `modify_workout`，`_normalize_app_actions` 通过
-  - iOS 尚未 build（Windows 无 Xcode）；需 Mac 编译并真机验证
+  - Backend Tests CI 在 `021e891` 通过；iOS Build CI 在 `69986da` 通过（SwiftLint + simulator build）
+  - 仍未做 Mac 真机验证：需要在账号 `13428104171` 上重试“改课”，确认卡片出现、确认后计划动作真的变化、撤销可用
 - 部署：
   - 本机 SSH 22 到 `8.218.205.149` 被阻断（TCP timeout），后端 **尚未部署**
-  - Mac 需要：`git pull` → 部署 backend（`docker compose build api && docker compose up -d api`）→ `xcodegen generate` → build/install iOS
+  - Mac 需要：`git pull` → `scp`/同步 `backend/app` 到 `/opt/fitai/backend` → `cd /opt/fitai && docker compose build api && docker compose up -d api` → `curl -fsS https://hk-api.jiaolianfit.cn/health/ready` → `cd ios && xcodegen generate` → build/install iOS
+  - 部署后确认生产 `POST /api/v1/agent/chat` 能返回 `modify_workout` action；旧 App 会显示“暂不支持操作”，必须装新包
 - 注意 / 未做：
   - `modify_workout` 目前只改**本地计划**；服务端计划动作不会同步，教练上下文靠 `app_context.plan.days.exercises` 覆盖
   - 旧 App 不认识新 action，会显示“暂不支持操作：modify_workout”；必须装新包
