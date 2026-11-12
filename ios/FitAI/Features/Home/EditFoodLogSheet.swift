@@ -161,16 +161,19 @@ struct EditFoodLogSheet: View {
     }
 
     private func save() {
+        func clamp(_ text: String, fallback: Double, limit: Double) -> Double {
+            min(limit, max(0, Double(text) ?? fallback))
+        }
         var updated = log
         updated.date = Calendar.current.startOfDay(for: date)
         updated.meal = meal
-        updated.foodName = trimmedName
-        updated.grams = max(0, Double(gramsText) ?? log.grams)
-        updated.kcal = max(0, Double(kcalText) ?? log.kcal)
-        updated.protein = max(0, Double(proteinText) ?? log.protein)
-        updated.carbs = max(0, Double(carbsText) ?? log.carbs)
-        updated.fat = max(0, Double(fatText) ?? log.fat)
-        updated.fiber = max(0, Double(fiberText) ?? log.fiber ?? 0)
+        updated.foodName = String(trimmedName.prefix(120))
+        updated.grams = clamp(gramsText, fallback: log.grams, limit: 5000)
+        updated.kcal = clamp(kcalText, fallback: log.kcal, limit: 10000)
+        updated.protein = clamp(proteinText, fallback: log.protein, limit: 1000)
+        updated.carbs = clamp(carbsText, fallback: log.carbs, limit: 1000)
+        updated.fat = clamp(fatText, fallback: log.fat, limit: 1000)
+        updated.fiber = clamp(fiberText, fallback: log.fiber ?? 0, limit: 1000)
         if updated.planDate != nil {
             // Moving a planned record to another day or meal should move its plan
             // link too; otherwise the old slot keeps looking unrecorded.
