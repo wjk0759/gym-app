@@ -19,6 +19,7 @@ struct NutritionView: View {
     @State var pendingPlanGenerationKey: String?
     @State var isGeneratingPlan = false
     @State var swappingMeal: MealType?
+    @State var lastSwappedMeal: MealType?
     @State var mode: NutritionMode = .plan
 
     enum NutritionMode: String, CaseIterable, Identifiable {
@@ -160,6 +161,11 @@ struct NutritionView: View {
     @MainActor
     func swapPlanMeal(_ suggestion: MealSuggestion) async {
         guard swappingMeal == nil else { return }
+        guard aiMeals != nil else {
+            message = "当前是本地参考餐单，先生成一周饮食计划再换餐。"
+            showAlert = true
+            return
+        }
         swappingMeal = suggestion.meal
         defer { swappingMeal = nil }
         do {
@@ -169,6 +175,7 @@ struct NutritionView: View {
             )
             aiMeals = suggestions(from: plan)
             applyServerTargets(plan)
+            lastSwappedMeal = suggestion.meal
             Haptics.success()
         } catch let error as APIError where error.statusCode == 404 {
             message = "这一天还没有保存的饮食计划，先生成计划再换餐。"
@@ -179,29 +186,46 @@ struct NutritionView: View {
         }
     }
 
+    @MainActor
+    func undoPlanMealSwap(_ suggestion: MealSuggestion) async {
+        guard swappingMeal == nil else { return }
+        swappingMeal = suggestion.meal
+        defer { swappingMeal = nil }
+        do {
+            let plan = try await NutritionService().undoSwapMeal(
+                dateString: dateString,
+                meal: suggestion.meal
+            )
+            aiMeals = suggestions(from: plan)
+            applyServerTargets(plan)
+            lastSwappedMeal = nil
+            Haptics.success()
+        } catch let error as APIError where error.statusCode == 404 {
+            message = "没有可以撤销的换餐。"
+            showAlert = true
+        } catch {
+            message = "撤销失败，请稍后重试。"
+            showAlert = true
+        }
+    }
+
     /// One tap logs the whole planned meal using the server's per-meal macro
     /// estimate. The soft link lets the log show it came from the plan and
     /// keeps a second tap from adding the same meal twice.
     func logPlannedMeal(_ suggestion: MealSuggestion) {
-        guard !daySnapshot.byMeal[suggestion.meal, default: []].contains(where: {
-            $0.planDate != nil && $0.planMeal == suggestion.meal
-        }) else { return }
-        store.addFoodLog(
-            FoodLog(
-                date: date,
-                meal: suggestion.meal,
-                foodName: "\(suggestion.name)（计划餐）",
-                grams: 0,
-                kcal: Double(suggestion.kcal),
-                protein: suggestion.protein,
-                carbs: suggestion.carbs,
-                fat: suggestion.fat,
-                fiber: suggestion.fiber,
-                planDate: date,
-                planMeal: suggestion.meal
-            )
+        let logged = store.logPlannedMeal(
+            date: date,
+            meal: suggestion.meal,
+            name: suggestion.name,
+            kcal: Double(suggestion.kcal),
+            protein: suggestion.protein,
+            carbs: suggestion.carbs,
+            fat: suggestion.fat,
+            fiber: suggestion.fiber
         )
-        Haptics.success()
+        if logged {
+            Haptics.success()
+        }
     }
 
     @MainActor
@@ -251,7 +275,7 @@ struct NutritionView: View {
                 macroStrip(snapshot: snapshot, targets: nutritionTargets)
 
                 if mode == .plan {
-                    planHeader
+                    planHeader(snapshot: snapshot)
                     ForEach(meals.indices, id: \.self) { index in
                         let meal = meals[index]
                         planMealPage(meal, index: index, logs: snapshot.byMeal[mealType(for: meal)] ?? [])
@@ -317,6 +341,7 @@ struct NutritionView: View {
             Text("\(log.foodName) · \(Int(log.kcal)) kcal")
         }
         .task(id: dateString) {
+            lastSwappedMeal = nil
             await loadTargets()
             await loadSavedPlan()
         }

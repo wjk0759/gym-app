@@ -120,6 +120,8 @@ def swap_planned_meal(
         "dishes": dishes,
     }
     # Keep the original meal's calorie/macro slot so the day total is stable.
+    # The backup lets the user undo an accidental swap without regenerating.
+    plan["_swap_previous"] = {"meal": meal_key, "meal_data": current}
     plan["meals"] = list(meals)
     plan["meals"][index] = swapped
     record.plan = plan
@@ -133,5 +135,49 @@ def swap_planned_meal(
         "meal": meal_key,
         "from": current_name,
         "to": swapped["name"],
+    }
+    return result
+
+
+def undo_planned_meal(
+    db: Session,
+    user_id: str,
+    target_date: date,
+    meal_key: str,
+) -> dict:
+    if meal_key not in MEAL_KEYS:
+        raise ValueError("不支持的餐次")
+    record = get_day(db, user_id, target_date)
+    if record is None or not record.plan:
+        raise LookupError("当天还没有饮食计划")
+    plan = ensure_meal_macros(record.plan)
+    backup = plan.get("_swap_previous")
+    if not isinstance(backup, dict) or backup.get("meal") != meal_key:
+        raise LookupError("没有可以撤销的换餐")
+    previous = backup.get("meal_data")
+    if not isinstance(previous, dict):
+        raise LookupError("换餐备份已损坏")
+    meals = [meal for meal in plan.get("meals", []) if isinstance(meal, dict)]
+    index = next(
+        (i for i, meal in enumerate(meals) if str(meal.get("meal")) == meal_key),
+        None,
+    )
+    if index is None:
+        raise LookupError("这一天没有这一餐")
+    restored = dict(previous)
+    restored["meal"] = meal_key
+    plan["meals"] = list(meals)
+    plan["meals"][index] = restored
+    plan.pop("_swap_previous", None)
+    record.plan = plan
+    db.commit()
+
+    result = dict(plan)
+    result["strategy"] = record.strategy
+    result["generated_by"] = record.generated_by or result.get("generated_by")
+    result["warning"] = result.get("warning")
+    result["restored_meal"] = {
+        "meal": meal_key,
+        "name": restored.get("name", ""),
     }
     return result

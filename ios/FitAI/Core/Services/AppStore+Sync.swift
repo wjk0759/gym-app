@@ -178,6 +178,9 @@ extension AppStore {
             scheduleSyncRequested = true
             return
         }
+        let hadFoodWork = !pendingFoodDeletionIDs.isEmpty
+            || !pendingFoodUpdateIDs.isEmpty
+            || foodLogs.contains { $0.syncedAt == nil }
         isSyncingUserData = true
         Task { @MainActor in
             defer {
@@ -195,6 +198,9 @@ extension AppStore {
             await self.syncPlanIfNeeded()
             await self.pushPlanSchedule()
             await self.pullCloudUserData()
+            if hadFoodWork {
+                self.refreshWeeklyReview(force: true)
+            }
         }
     }
 
@@ -301,6 +307,7 @@ extension AppStore {
                 if let index = foodLogs.firstIndex(where: { $0.id == log.id }) {
                     foodLogs[index].syncedAt = Date()
                 }
+                pendingFoodUpdateIDs.removeAll { $0 == log.id.uuidString }
             } catch {
                 // Keep pending for the next foreground/login retry.
             }
@@ -368,8 +375,10 @@ extension AppStore {
         if let remote = try? await nutrition.fetchRemote() {
             let localIDs = Set(foodLogs.map(\.id))
             let pendingDeletes = Set(pendingFoodDeletionIDs)
+            let pendingUpdates = Set(pendingFoodUpdateIDs)
             for item in remote {
-                if pendingDeletes.contains(item.clientID) {
+                if pendingDeletes.contains(item.clientID)
+                    || pendingUpdates.contains(item.clientID) {
                     continue
                 }
                 guard let value = nutrition.makeFoodLog(from: item) else {

@@ -75,6 +75,9 @@ final class AppStore {
     var foodLogs: [FoodLog] = []
     /// Food log client IDs deleted locally but not yet acknowledged by the API.
     var pendingFoodDeletionIDs: [String] = []
+    /// Food log client IDs edited locally but not yet accepted by the API.
+    /// Prevents a cloud pull from restoring the old values.
+    var pendingFoodUpdateIDs: [String] = []
     var customFoods: [FoodItem] = []
     /// Saved food-library items shown above search results in AddFoodView.
     var favoriteFoods: [FoodItem] = []
@@ -211,6 +214,7 @@ final class AppStore {
         chat = []
         foodLogs = []
         pendingFoodDeletionIDs = []
+        pendingFoodUpdateIDs = []
         customFoods = []
         favoriteFoods = []
         dislikedSlugs = []
@@ -305,6 +309,7 @@ final class AppStore {
         chat = state.chat
         foodLogs = state.foodLogs ?? []
         pendingFoodDeletionIDs = state.pendingFoodDeletionIDs ?? []
+        pendingFoodUpdateIDs = state.pendingFoodUpdateIDs ?? []
         customFoods = state.customFoods ?? []
         favoriteFoods = state.favoriteFoods ?? []
         dislikedSlugs = Set(state.dislikedSlugs ?? [])
@@ -355,6 +360,7 @@ final class AppStore {
             chat: chat,
             foodLogs: foodLogs,
             pendingFoodDeletionIDs: pendingFoodDeletionIDs,
+            pendingFoodUpdateIDs: pendingFoodUpdateIDs,
             customFoods: customFoods,
             favoriteFoods: favoriteFoods,
             dislikedSlugs: Array(dislikedSlugs).sorted(),
@@ -465,6 +471,7 @@ final class AppStore {
         var chat: [ChatMessage]
         var foodLogs: [FoodLog]?
         var pendingFoodDeletionIDs: [String]?
+        var pendingFoodUpdateIDs: [String]?
         var customFoods: [FoodItem]?
         var favoriteFoods: [FoodItem]?
         var dislikedSlugs: [String]?

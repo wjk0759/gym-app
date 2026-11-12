@@ -54,6 +54,45 @@ extension AppStore {
         return result
     }
 
+    /// One-tap planned-meal logging shared by the nutrition page and the coach
+    /// diet card. Duplicate checks live here so every entry point behaves the same.
+    @discardableResult
+    func logPlannedMeal(
+        date: Date,
+        meal: MealType,
+        name: String,
+        kcal: Double,
+        protein: Double,
+        carbs: Double,
+        fat: Double,
+        fiber: Double = 0
+    ) -> Bool {
+        let day = Calendar.current.startOfDay(for: date)
+        let alreadyLogged = foodLogs.contains { log in
+            guard log.planMeal == meal, let planDate = log.planDate else {
+                return false
+            }
+            return Calendar.current.startOfDay(for: planDate) == day
+        }
+        guard !alreadyLogged else { return false }
+        addFoodLog(
+            FoodLog(
+                date: day,
+                meal: meal,
+                foodName: "\(name)（计划餐）",
+                grams: 0,
+                kcal: kcal,
+                protein: protein,
+                carbs: carbs,
+                fat: fat,
+                fiber: fiber,
+                planDate: day,
+                planMeal: meal
+            )
+        )
+        return true
+    }
+
     func updateFoodLog(_ log: FoodLog) {
         guard let index = foodLogs.firstIndex(where: { $0.id == log.id }) else {
             return
@@ -62,6 +101,10 @@ extension AppStore {
         // Re-sync the edited row with the server; the client_id is the upsert key.
         updated.syncedAt = nil
         foodLogs[index] = updated
+        let key = updated.id.uuidString
+        if !pendingFoodUpdateIDs.contains(key) {
+            pendingFoodUpdateIDs.append(key)
+        }
         foodLogs.sort { $0.date > $1.date }
         persist()
         syncPendingUserData()

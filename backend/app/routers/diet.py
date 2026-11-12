@@ -17,7 +17,7 @@ from ..services.diet import (
     list_diet_strategies,
 )
 from ..services.diet_review import build_diet_review, range_bounds, utc_window
-from ..services.diet_swap import MEAL_KEYS, swap_planned_meal
+from ..services.diet_swap import MEAL_KEYS, swap_planned_meal, undo_planned_meal
 from ..services.food_vision import analyze as analyze_food_photo
 from ..services.image_input import InvalidImageError, normalize_image_bytes
 from ..services.meal_plans import (
@@ -315,6 +315,23 @@ def swap_meal(
         raise HTTPException(status_code=422, detail="不支持的餐次")
     try:
         return swap_planned_meal(db, user_id, plan_date, meal)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/plan/{plan_date}/meals/{meal}/undo-swap")
+def undo_swap_meal(
+    plan_date: date,
+    meal: str,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    if meal not in MEAL_KEYS:
+        raise HTTPException(status_code=422, detail="不支持的餐次")
+    try:
+        return undo_planned_meal(db, user_id, plan_date, meal)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:

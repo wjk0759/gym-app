@@ -229,6 +229,13 @@ extension CoachChatView {
                 Text(week.strategy?.label ?? "饮食")
                     .font(AppType.caption.weight(.semibold))
                     .foregroundStyle(Theme.cobalt)
+                Button("去记录") {
+                    store.selectedTab = 0
+                    store.pendingRoute = .nutrition
+                }
+                .font(AppType.caption.weight(.semibold))
+                .foregroundStyle(Theme.cobalt)
+                .buttonStyle(.plain)
             }
 
             if let warning = week.warning, !warning.isEmpty {
@@ -238,32 +245,70 @@ extension CoachChatView {
             }
 
             ForEach(week.days) { day in
+                let dayDate = FitnessDate.date(from: day.date)
+                let isToday = dayDate.map { Calendar.current.isDateInToday($0) } ?? false
                 DisclosureGroup {
                     VStack(alignment: .leading, spacing: 7) {
                         ForEach(day.meals) { meal in
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("\(meal.name) · \(meal.kcal) kcal")
-                                    .font(AppType.caption.weight(.semibold))
-                                    .foregroundStyle(Theme.ink)
+                            let mealType = MealType(rawValue: meal.meal)
+                            let alreadyLogged = store.foodLogs.contains { log in
+                                guard let planDate = log.planDate,
+                                      let dayDate,
+                                      let mealType else { return false }
+                                return Calendar.current.isDate(planDate, inSameDayAs: dayDate)
+                                    && log.planMeal == mealType
+                            }
+                            HStack(alignment: .top, spacing: 8) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("\(meal.name) · \(meal.kcal) kcal")
+                                        .font(AppType.caption.weight(.semibold))
+                                        .foregroundStyle(Theme.ink)
 
-                                if let dishes = meal.dishes, !dishes.isEmpty {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        ForEach(Array(dishes.enumerated()), id: \.offset) { pair in
-                                            let dish = pair.element
-                                            DietDishRow(dish: dish) {
-                                                selectedDietRecipe = DietRecipeSelection(
-                                                    dayTitle: day.title,
-                                                    mealName: meal.name,
-                                                    dish: dish
-                                                )
+                                    if let dishes = meal.dishes, !dishes.isEmpty {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            ForEach(Array(dishes.enumerated()), id: \.offset) { pair in
+                                                let dish = pair.element
+                                                DietDishRow(dish: dish) {
+                                                    selectedDietRecipe = DietRecipeSelection(
+                                                        dayTitle: day.title,
+                                                        mealName: meal.name,
+                                                        dish: dish
+                                                    )
+                                                }
                                             }
                                         }
+                                    } else {
+                                        Text(meal.items.joined(separator: "、"))
+                                            .font(.system(size: 9.5, weight: .medium))
+                                            .foregroundStyle(Theme.secondaryText)
+                                            .fixedSize(horizontal: false, vertical: true)
                                     }
-                                } else {
-                                    Text(meal.items.joined(separator: "、"))
-                                        .font(.system(size: 9.5, weight: .medium))
-                                        .foregroundStyle(Theme.secondaryText)
-                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                Spacer(minLength: 0)
+                                if isToday, let dayDate, let mealType {
+                                    if alreadyLogged {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .font(.system(size: 13, weight: .semibold))
+                                            .foregroundStyle(Theme.cobalt)
+                                    } else {
+                                        Button("记录") {
+                                            let logged = store.logPlannedMeal(
+                                                date: dayDate,
+                                                meal: mealType,
+                                                name: meal.name,
+                                                kcal: Double(meal.kcal),
+                                                protein: meal.proteinG ?? 0,
+                                                carbs: meal.carbG ?? 0,
+                                                fat: meal.fatG ?? 0
+                                            )
+                                            if logged {
+                                                Haptics.success()
+                                            }
+                                        }
+                                        .font(.system(size: 9.5, weight: .bold))
+                                        .foregroundStyle(Theme.cobalt)
+                                        .buttonStyle(.plain)
+                                    }
                                 }
                             }
                         }

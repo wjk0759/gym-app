@@ -7,7 +7,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.db import Base
 from app.models import User
-from app.services.diet_swap import swap_planned_meal
+from app.services.diet_swap import swap_planned_meal, undo_planned_meal
 from app.services.meal_plans import get_day, save_day_plan
 
 
@@ -93,6 +93,25 @@ def test_swap_single_day_plan_uses_a_recipe_alternative(db):
     assert swapped["name"] != "周一鸡腿饭"
     assert swapped["dishes"][0]["recipe"]["steps"]
     assert swapped["kcal"] == 700
+
+
+def test_undo_swap_restores_the_original_meal(db):
+    monday = date(2026, 11, 9)
+    save_day_plan(
+        db, "user-1", monday, _plan(monday, "周一鸡腿饭"),
+        strategy="balanced", generated_by="ai",
+    )
+    db.commit()
+
+    swapped = swap_planned_meal(db, "user-1", monday, "lunch")
+    assert next(meal for meal in swapped["meals"] if meal["meal"] == "lunch")[
+        "name"
+    ] != "周一鸡腿饭"
+
+    restored = undo_planned_meal(db, "user-1", monday, "lunch")
+    lunch = next(meal for meal in restored["meals"] if meal["meal"] == "lunch")
+    assert lunch["name"] == "周一鸡腿饭"
+    assert restored["restored_meal"]["name"] == "周一鸡腿饭"
 
 
 def test_swap_missing_day_or_meal_is_reported(db):

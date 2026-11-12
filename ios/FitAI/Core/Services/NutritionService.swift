@@ -32,6 +32,10 @@ struct NutritionService {
         try await client.swapDietMeal(dateString: dateString, meal: meal)
     }
 
+    func undoSwapMeal(dateString: String, meal: MealType) async throws -> RemoteDietPlan {
+        try await client.undoSwapDietMeal(dateString: dateString, meal: meal)
+    }
+
     func fetchTargets(dateString: String) async throws -> RemoteDietTargets {
         try await client.fetchDietTargets(dateString: dateString)
     }

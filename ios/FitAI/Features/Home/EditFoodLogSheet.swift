@@ -9,6 +9,7 @@ struct EditFoodLogSheet: View {
 
     let log: FoodLog
 
+    @State private var date: Date
     @State private var meal: MealType
     @State private var name: String
     @State private var gramsText: String
@@ -20,6 +21,7 @@ struct EditFoodLogSheet: View {
 
     init(log: FoodLog) {
         self.log = log
+        _date = State(initialValue: log.date)
         _meal = State(initialValue: log.meal)
         _name = State(initialValue: log.foodName)
         _gramsText = State(initialValue: Self.text(log.grams))
@@ -69,6 +71,9 @@ struct EditFoodLogSheet: View {
                         Text("食物")
                             .font(AppType.headline)
                             .foregroundStyle(Theme.ink)
+                        DatePicker("日期", selection: $date, displayedComponents: .date)
+                            .font(AppType.caption)
+                            .foregroundStyle(Theme.secondaryText)
                         TextField("食物名称", text: $name)
                             .padding(12)
                             .background(
@@ -152,6 +157,7 @@ struct EditFoodLogSheet: View {
 
     private func save() {
         var updated = log
+        updated.date = Calendar.current.startOfDay(for: date)
         updated.meal = meal
         updated.foodName = trimmedName
         updated.grams = max(0, Double(gramsText) ?? log.grams)
@@ -160,6 +166,12 @@ struct EditFoodLogSheet: View {
         updated.carbs = max(0, Double(carbsText) ?? log.carbs)
         updated.fat = max(0, Double(fatText) ?? log.fat)
         updated.fiber = max(0, Double(fiberText) ?? log.fiber ?? 0)
+        if updated.planDate != nil {
+            // Moving a planned record to another day or meal should move its plan
+            // link too; otherwise the old slot keeps looking unrecorded.
+            updated.planDate = updated.date
+            updated.planMeal = meal
+        }
         store.updateFoodLog(updated)
         Haptics.success()
         dismiss()

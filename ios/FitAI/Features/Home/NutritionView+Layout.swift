@@ -159,12 +159,26 @@ extension NutritionView {
         }
     }
 
-    var planHeader: some View {
-        HStack(alignment: .bottom) {
+    func planHeader(snapshot: DayLogsSnapshot) -> some View {
+        let plannedKeys = Set(meals.map(\.meal))
+        let loggedKeys = Set(
+            snapshot.logs.filter { $0.planDate != nil }.compactMap(\.planMeal)
+        )
+        let completed = plannedKeys.intersection(loggedKeys).count
+        return HStack(alignment: .bottom) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("今日食谱")
                     .font(AppType.headline)
                     .foregroundStyle(Theme.ink)
+                if !plannedKeys.isEmpty {
+                    Text("已记录 \(completed)/\(plannedKeys.count) 餐")
+                        .font(AppType.micro)
+                        .foregroundStyle(
+                            completed >= plannedKeys.count
+                                ? Theme.cobalt
+                                : Theme.tertiaryText
+                        )
+                }
             }
             Spacer(minLength: 8)
             Button {
@@ -242,6 +256,16 @@ extension NutritionView {
                     .buttonStyle(.plain)
                     .disabled(swappingMeal != nil)
                     .accessibilityLabel("换一餐 \(suggestion.name)")
+
+                    if lastSwappedMeal == suggestion.meal {
+                        Button("撤销") {
+                            Task { await undoPlanMealSwap(suggestion) }
+                        }
+                        .font(AppType.micro.weight(.semibold))
+                        .foregroundStyle(Theme.cobalt)
+                        .buttonStyle(.plain)
+                        .disabled(swappingMeal != nil)
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 6) {

@@ -305,6 +305,10 @@ extension AppStore {
                         weekStart: weekStart
                     )
                     self.dietWeekPlan = week
+                } catch let error as APIError where error.isProRequired {
+                    await self.refreshAccess()
+                    self.requestPro(.mealPlan)
+                    self.toast = "本周饮食计划需要 Pro，已为你打开订阅选项"
                 } catch {
                     self.toast = "饮食计划生成失败，请稍后重试"
                 }
@@ -332,7 +336,7 @@ extension AppStore {
                 } ?? dateString
                 return "已把 \(dayText) \(meal.label)换成「\(mealName)」"
             } catch let error as APIError where error.statusCode == 404 {
-                return "这一天还没有保存的饮食计划"
+                return "没有找到这一天保存的饮食计划"
             } catch {
                 return "换餐失败：\(error.localizedDescription)"
             }

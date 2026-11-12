@@ -449,6 +449,16 @@ struct AgentReviewStats: Codable, Hashable {
     let previousVolumeKG: Double
     let nutritionLoggedDays: Int
     let planTitle: String?
+    let plannedDays: Int?
+    let completedPlanDays: Int?
+    let skippedPlanDays: Int?
+    let missedPlanDays: Int?
+    let adherenceRate: Double?
+    let dietPlannedMeals: Int?
+    let dietLoggedPlanMeals: Int?
+    let dietAdherenceRate: Double?
+    let dietPlannedKcal: Int?
+    let dietActualKcal: Int?
 
     enum CodingKeys: String, CodingKey {
         case sessions
@@ -460,6 +470,16 @@ struct AgentReviewStats: Codable, Hashable {
         case previousVolumeKG = "previous_volume_kg"
         case nutritionLoggedDays = "nutrition_logged_days"
         case planTitle = "plan_title"
+        case plannedDays = "planned_days"
+        case completedPlanDays = "completed_plan_days"
+        case skippedPlanDays = "skipped_plan_days"
+        case missedPlanDays = "missed_plan_days"
+        case adherenceRate = "adherence_rate"
+        case dietPlannedMeals = "diet_planned_meals"
+        case dietLoggedPlanMeals = "diet_logged_plan_meals"
+        case dietAdherenceRate = "diet_adherence_rate"
+        case dietPlannedKcal = "diet_planned_kcal"
+        case dietActualKcal = "diet_actual_kcal"
     }
 }
 

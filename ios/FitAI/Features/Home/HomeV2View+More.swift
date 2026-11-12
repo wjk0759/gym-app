@@ -112,6 +112,23 @@ extension HomeV2View {
                 .disabled(store.isReviewingWeekly)
             }
             if let review = store.weeklyReview {
+                HStack(spacing: 10) {
+                    Label(
+                        "训练 \(review.stats.sessions)/\(review.stats.planned)",
+                        systemImage: "figure.strengthtraining.traditional"
+                    )
+                    if let planned = review.stats.dietPlannedMeals,
+                       let logged = review.stats.dietLoggedPlanMeals {
+                        Label("计划餐 \(logged)/\(planned)", systemImage: "fork.knife")
+                    }
+                    if let adherence = review.stats.dietAdherenceRate,
+                       (review.stats.dietPlannedMeals ?? 0) > 0 {
+                        Text("饮食 \(Int((adherence * 100).rounded()))%")
+                    }
+                }
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(Theme.tertiaryText)
+
                 Text(review.summary)
                     .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
@@ -122,7 +139,7 @@ extension HomeV2View {
                         .foregroundStyle(Theme.cobalt)
                 }
             } else if store.isReviewingWeekly {
-                Text("教练正在读本周训练…")
+                Text("教练正在读本周训练和饮食…")
                     .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
             } else {
