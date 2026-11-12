@@ -15,6 +15,7 @@ from pathlib import Path
 from ..config import settings
 from ..models import Profile
 from . import llm
+from .prompt_registry import prompt_version
 
 logger = logging.getLogger(__name__)
 
@@ -263,15 +264,18 @@ async def build_ai_plan(
     if settings.use_mock_llm:
         return build_plan(profile, goal_type, plan_date)
 
+    system_prompt = _system_prompt()
+    system_version = prompt_version("diet_plan", system_prompt)
     usage: dict[str, int] = {}
     try:
         raw = await llm.complete_json(
-            _system_prompt(),
+            system_prompt,
             _user_prompt(profile, goal_type, targets),
             usage=usage,
             db=db,
             user_id=getattr(profile, "user_id", None),
             kind="diet_plan",
+            prompt_version=system_version,
         )
         result = _normalize_ai_plan(raw, targets, plan_date)
         return result
@@ -288,6 +292,7 @@ async def build_ai_plan(
                 model=settings.llm_model,
                 error=str(exc)[:500],
                 usage=usage,
+                prompt_version=system_version,
             )
         return result
 
@@ -462,16 +467,19 @@ async def build_ai_diet_week(
         return fallback
 
     strategy = _strategy(strategy_id)
+    system_prompt = _week_system_prompt()
+    system_version = prompt_version("diet_week", system_prompt)
     usage: dict[str, int] = {}
     try:
         raw = await llm.complete_json(
-            _week_system_prompt(),
+            system_prompt,
             _week_user_prompt(profile, goal_type, strategy, fallback),
             reasoning_effort="low",
             usage=usage,
             db=db,
             user_id=getattr(profile, "user_id", None),
             kind="diet_week",
+            prompt_version=system_version,
         )
         result = _normalize_ai_week(raw, fallback)
         return result
@@ -488,6 +496,7 @@ async def build_ai_diet_week(
                 model=settings.llm_model,
                 error=str(exc)[:500],
                 usage=usage,
+                prompt_version=system_version,
             )
         return fallback
 

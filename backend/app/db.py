@@ -281,6 +281,18 @@ def ensure_schema() -> None:
                         "ADD COLUMN client_type VARCHAR(20) DEFAULT 'ios'"
                     )
                 )
+        if "agent_runs" in tables:
+            run_columns = {
+                column["name"]
+                for column in inspector.get_columns("agent_runs")
+            }
+            if "prompt_version" not in run_columns:
+                connection.execute(
+                    text(
+                        "ALTER TABLE agent_runs "
+                        "ADD COLUMN prompt_version VARCHAR(30)"
+                    )
+                )
         if "workout_sessions" in tables:
             workout_columns = {
                 column["name"]

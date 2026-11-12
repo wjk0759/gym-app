@@ -25,6 +25,7 @@ from ..models import (
     UserUniversalEquipment,
 )
 from . import llm
+from .prompt_registry import prompt_version
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +85,11 @@ _SYSTEM_PROMPT = """你是叫练的健身器械识别助手。你只判断图片
 2. 图片里有多台器械时，选择占据画面主体、最靠近镜头的那一台。
 3. 不要靠品牌或颜色猜；优先看结构：座椅、靠背、脚踏板、配重片、滑轮、把手、轨道、绳索。
 4. 只输出一个 JSON 对象，不要解释。"""
+_PROMPT_VERSION = prompt_version("equipment_scan", _SYSTEM_PROMPT)
+_GATE_SYSTEM_PROMPT = (
+    "You are a precise gym equipment inspector. Answer with two words max."
+)
+_GATE_PROMPT_VERSION = prompt_version("equipment_gate", _GATE_SYSTEM_PROMPT)
 
 
 def catalog_types(db: Session, recognition_only: bool = False) -> list[EquipmentType]:
@@ -316,6 +322,7 @@ async def recognize(
             db=db,
             user_id=user_id,
             kind="equipment_scan",
+            prompt_version=_PROMPT_VERSION,
         )
     except Exception as exc:  # noqa: BLE001 - return an honest UI state
         logger.warning("equipment vision failed: %s", exc)
@@ -328,6 +335,7 @@ async def recognize(
                 model=settings.vision_model_name,
                 error=str(exc)[:500],
                 usage=usage,
+                prompt_version=_PROMPT_VERSION,
             )
         return _unavailable(
             filename,
@@ -551,7 +559,7 @@ async def _apply_row_gate(
 
     try:
         answer = await llm.complete_secondary_vision_text(
-            "You are a precise gym equipment inspector. Answer with two words max.",
+            _GATE_SYSTEM_PROMPT,
             (
                 "Look at the machine. Is it a seated pulling machine with a "
                 "chest pad and handles pulled toward the torso, or a leg "
@@ -565,6 +573,7 @@ async def _apply_row_gate(
             timeout=settings.vision_gate_timeout_seconds,
             db=db,
             user_id=user_id,
+            prompt_version=_GATE_PROMPT_VERSION,
         )
     except Exception as exc:  # noqa: BLE001 - gate is best-effort
         logger.warning("equipment row gate failed: %s", exc)

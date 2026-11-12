@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from . import llm
+from .prompt_registry import prompt_version
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +80,7 @@ async def analyze(
             db=db,
             user_id=user_id,
             kind="food_vision",
+            prompt_version=_PROMPT_VERSION,
         )
         return _normalize(result, filename)
     except Exception as exc:  # noqa: BLE001 - 识别失败回退本地估算，不让拍照功能崩溃
@@ -93,6 +95,7 @@ async def analyze(
                     model=settings.vision_model_name,
                     error=str(exc)[:500],
                     usage=usage,
+                    prompt_version=_PROMPT_VERSION,
                 )
         payload = _mock_analyze(image_bytes, filename)
         payload["warning"] = "视觉识别暂时不可用，已回退本地估算"
@@ -105,6 +108,7 @@ _SYSTEM_PROMPT = (
     "食物密度估算份量。没有参照物时，按常见中式餐具和常见份量保守估算。"
     "不要假精确，必须给出克数区间和置信度。只输出一个 JSON 对象，不要解释。"
 )
+_PROMPT_VERSION = prompt_version("food_vision", _SYSTEM_PROMPT)
 
 _USER_PROMPT = (
     '识别图片并输出 JSON：'

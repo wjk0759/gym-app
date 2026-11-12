@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from . import llm
 from .plan_validator import VALID_MUSCLES
+from .prompt_registry import prompt_version
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +90,7 @@ async def analyze(
             db=db,
             user_id=user_id,
             kind="body_vision",
+            prompt_version=_PROMPT_VERSION,
         )
         focus = [
             str(item)
@@ -118,6 +120,7 @@ async def analyze(
                     model=settings.vision_model_name,
                     error=str(exc)[:500],
                     usage=usage,
+                    prompt_version=_PROMPT_VERSION,
                 )
         payload = _mock_analyze(image_bytes, filename)
         payload["warning"] = "视觉分析暂时不可用，已回退本地建议"
@@ -129,6 +132,7 @@ _SYSTEM_PROMPT = (
     "如果图片不是人体/体型照片，如实说明拍到的是什么，不要硬给建议。"
     "只输出一个 JSON 对象，不要解释。"
 )
+_PROMPT_VERSION = prompt_version("body_vision", _SYSTEM_PROMPT)
 
 _USER_PROMPT = (
     '根据图片内容，输出 JSON：'

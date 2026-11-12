@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     # 计划/饮食周计划成功后的服务端冷却。自动化 smoke 可设为 0 连续验证，
     # 生产保持 60 秒；客户端也有同样的 60 秒防连点。
     generation_cooldown_seconds: int = 60
+    # Coach context is serialized JSON; keep it bounded before it reaches the
+    # model. 24k Chinese characters is roughly 8–12k tokens depending on JSON
+    # punctuation; lower it if the provider's context window is tighter.
+    coach_context_max_chars: int = 24000
 
     vision_model: str = ""
     vision_base_url: str = ""

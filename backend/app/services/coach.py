@@ -17,9 +17,12 @@ from .coach_core import (
     requires_phone_confirmation,
     watch_voice_system_prompt,
 )
+from .prompt_registry import prompt_version
 from .safety import assess_safety
 
 CoachSkill = Literal["trainer", "rehab", "nutrition"]
+COACH_PROMPT_VERSION = prompt_version("coach", coach_core_prompt())
+WATCH_PROMPT_VERSION = prompt_version("coach_watch", watch_voice_system_prompt())
 
 def _input_strategy(message: str) -> str | None:
     """Cheap heuristic for messy real-world messages; guides the LLM's handling."""
@@ -265,6 +268,7 @@ async def coach_reply(
                 db=db,
                 user_id=getattr(profile, "user_id", None),
                 kind=f"coach_{skill}",
+                prompt_version=COACH_PROMPT_VERSION,
             )
             return {"reply": reply, "safety_flag": None, "citations": []}
         except llm.LLMError as exc:
@@ -277,6 +281,7 @@ async def coach_reply(
                 latency_ms=int((time.perf_counter() - started) * 1000),
                 error=str(exc),
                 usage=usage,
+                prompt_version=COACH_PROMPT_VERSION,
             )
 
     reply, citations = _mock_reply(message, profile, program, db, skill)
@@ -358,6 +363,7 @@ async def watch_voice_reply(
                 kind="coach_watch_voice",
                 max_tokens=600,
                 reasoning_effort="low",
+                prompt_version=WATCH_PROMPT_VERSION,
             )
             return {
                 "reply": reply,
@@ -375,6 +381,7 @@ async def watch_voice_reply(
                 latency_ms=int((time.perf_counter() - started) * 1000),
                 error=str(exc),
                 usage=usage,
+                prompt_version=WATCH_PROMPT_VERSION,
             )
 
     reply, citations = _mock_reply(

@@ -4,7 +4,13 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db import Base
-from app.models import ChatMessage, ChatSession, CoachFeedback, User
+from app.models import (
+    AgentRun,
+    ChatMessage,
+    ChatSession,
+    CoachFeedback,
+    User,
+)
 from app.services.coach_feedback import save_feedback
 
 
@@ -100,3 +106,31 @@ def test_feedback_rejects_unknown_reason(db, seeded):
             rating="down",
             reason="because",
         )
+
+
+def test_feedback_records_the_run_prompt_version(db, seeded):
+    db.add(
+        AgentRun(
+            id="run-1",
+            user_id="user-1",
+            intent="coach_chat",
+            status="completed",
+            model="deepseek-chat",
+            prompt_version="agent@abc12345",
+            input_text="练什么？",
+        )
+    )
+    db.commit()
+
+    item = save_feedback(
+        db,
+        "user-1",
+        message_id="assistant-1",
+        run_id="run-1",
+        rating="down",
+        reason="too_long",
+    )
+
+    assert item.run_id == "run-1"
+    assert item.prompt_version == "agent@abc12345"
+    assert item.model == "deepseek-chat"

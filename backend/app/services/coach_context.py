@@ -8,12 +8,15 @@ UI. All values here are computed from database state, not from the model.
 
 from __future__ import annotations
 
+import copy
+import json
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
+from ..config import settings
 from ..models import (
     BodyMetric,
     EquipmentLibraryItem,
@@ -37,6 +40,165 @@ MAX_DAY_STATES = 30
 
 def _now(value: datetime | None = None) -> datetime:
     return value or utcnow()
+
+
+def _context_size(value: dict) -> int:
+    return len(json.dumps(value, ensure_ascii=False, default=str))
+
+
+def fit_context_to_budget(
+    context: dict,
+    max_chars: int | None = None,
+) -> dict:
+    """Trim low-value context sections before they reach the model.
+
+    The order is deliberate: app_context plan exercises and long lists are the
+    biggest and least useful for every turn; the current plan, safety/profile,
+    and the last/best performance of each exercise are kept longest.
+    """
+    limit = max(4000, int(max_chars or settings.coach_context_max_chars))
+    result = copy.deepcopy(context)
+    truncated: list[str] = []
+
+    def mark(label: str) -> None:
+        if label not in truncated:
+            truncated.append(label)
+
+    def over() -> bool:
+        return _context_size(result) > limit - 800
+
+    if not over():
+        result["context_meta"] = {
+            "max_chars": limit,
+            "estimated_chars": _context_size(result),
+            "truncated": [],
+            "timezone": (result.get("today") or {}).get("timezone"),
+            "data_as_of": result.get("generated_at"),
+            "plan_version": (result.get("current_plan") or {}).get("version"),
+        }
+        return result
+
+    # 1. app_context.plan is the largest duplicate; keep today/in-progress
+    #    exercises and only day metadata for the rest.
+    app_context = result.get("app_context")
+    if isinstance(app_context, dict):
+        app_plan = app_context.get("plan")
+        if isinstance(app_plan, dict):
+            today_id = (app_context.get("today_day") or {}).get("id")
+            days = app_plan.get("days")
+            if isinstance(days, list):
+                prioritized = [
+                    day
+                    for day in days
+                    if isinstance(day, dict)
+                    and (
+                        day.get("id") == today_id
+                        or day.get("in_progress")
+                    )
+                ] + [
+                    day
+                    for day in days
+                    if isinstance(day, dict)
+                    and day.get("id") != today_id
+                    and not day.get("in_progress")
+                ]
+                app_plan["days"] = prioritized[:10]
+                if len(days) > 10:
+                    mark("app_plan_days")
+                for day in app_plan["days"]:
+                    if not isinstance(day, dict):
+                        continue
+                    if day.get("id") == today_id or day.get("in_progress"):
+                        continue
+                    if "exercises" in day:
+                        day.pop("exercises", None)
+                        mark("app_plan_exercises")
+
+    # 2. Long lists that the model can query again when needed.
+    for key, count in (
+        ("memories", 8),
+        ("equipment_library", 12),
+    ):
+        items = result.get(key)
+        if isinstance(items, list) and len(items) > count:
+            result[key] = items[:count]
+            mark(key)
+
+    recent = result.get("recent_training")
+    if isinstance(recent, dict):
+        sessions = recent.get("recent_sessions")
+        if isinstance(sessions, list) and len(sessions) > 5:
+            recent["recent_sessions"] = sessions[:5]
+            mark("recent_sessions")
+
+    body = result.get("body_metrics")
+    if isinstance(body, list) and len(body) > 3:
+        result["body_metrics"] = body[:3]
+        mark("body_metrics")
+
+    # 3. Current-week plan: keep last/best, drop the extra recent sets first.
+    plan = result.get("current_plan")
+    if isinstance(plan, dict):
+        for day in plan.get("days") or []:
+            for exercise in day.get("exercises") or []:
+                if not isinstance(exercise, dict):
+                    continue
+                if "recent" in exercise:
+                    exercise.pop("recent", None)
+                    mark("plan_recent_sets")
+                if "notes" in exercise:
+                    exercise.pop("notes", None)
+                    mark("plan_notes")
+
+    # 4. Further degrade large optional sections.
+    if over():
+        recent = result.get("recent_training")
+        if isinstance(recent, dict) and recent.get("recent_sessions"):
+            recent.pop("recent_sessions", None)
+            mark("recent_sessions_removed")
+        items = result.get("memories")
+        if isinstance(items, list) and len(items) > 4:
+            result["memories"] = items[:4]
+            mark("memories_4")
+        items = result.get("equipment_library")
+        if isinstance(items, list) and len(items) > 6:
+            result["equipment_library"] = items[:6]
+            mark("equipment_6")
+
+    # 5. Last resort: keep aggregate training facts and the plan essentials.
+    if over():
+        for key in ("memories", "equipment_library"):
+            if key in result:
+                result[key] = []
+                mark(f"{key}_removed")
+        plan = result.get("current_plan")
+        if isinstance(plan, dict):
+            for day in plan.get("days") or []:
+                for exercise in day.get("exercises") or []:
+                    if not isinstance(exercise, dict):
+                        continue
+                    for key in ("best", "session_count"):
+                        if key in exercise:
+                            exercise.pop(key, None)
+                            mark("plan_best_removed")
+        app_context = result.get("app_context")
+        if isinstance(app_context, dict):
+            app_plan = app_context.get("plan")
+            if isinstance(app_plan, dict):
+                for day in app_plan.get("days") or []:
+                    if isinstance(day, dict) and "exercises" in day:
+                        day.pop("exercises", None)
+                        mark("app_plan_exercises_removed")
+
+    result["context_meta"] = {
+        "max_chars": limit,
+        "estimated_chars": _context_size(result),
+        "truncated": truncated,
+        "timezone": (result.get("today") or {}).get("timezone"),
+        "data_as_of": result.get("generated_at"),
+        "plan_version": (result.get("current_plan") or {}).get("version"),
+    }
+    return result
 
 
 def _profile_zone(profile: Profile) -> ZoneInfo:
@@ -346,35 +508,39 @@ def build_coach_context(
     )
 
     if profile is None:
-        return {
+        return fit_context_to_budget(
+            {
+                "version": CONTEXT_VERSION,
+                "generated_at": moment.isoformat(),
+                "needs_profile": True,
+                "memories": memories,
+                "app_context": safe_app_context,
+            }
+        )
+
+    program = active_program(db, user_id)
+    return fit_context_to_budget(
+        {
             "version": CONTEXT_VERSION,
             "generated_at": moment.isoformat(),
-            "needs_profile": True,
+            "needs_profile": False,
+            "today": {
+                "date": moment.date().isoformat(),
+                "weekday": moment.isoweekday(),
+                "weekday_label": _weekday_label(moment.isoweekday()),
+                "timezone": str(moment.tzinfo or "UTC"),
+            },
+            "profile": profile_to_dict(profile),
+            "goal": goal_to_dict(active_goal(db, user_id)),
+            "current_plan": current_plan_context(db, program, user_id, moment),
+            "recent_training": recent_training(db, user_id, recent_days),
+            "body_metrics": body_context(db, user_id),
+            "nutrition_7d": nutrition_context(db, user_id, 7),
+            "equipment_library": equipment_context(db, user_id),
             "memories": memories,
             "app_context": safe_app_context,
         }
-
-    program = active_program(db, user_id)
-    return {
-        "version": CONTEXT_VERSION,
-        "generated_at": moment.isoformat(),
-        "needs_profile": False,
-        "today": {
-            "date": moment.date().isoformat(),
-            "weekday": moment.isoweekday(),
-            "weekday_label": _weekday_label(moment.isoweekday()),
-            "timezone": str(moment.tzinfo or "UTC"),
-        },
-        "profile": profile_to_dict(profile),
-        "goal": goal_to_dict(active_goal(db, user_id)),
-        "current_plan": current_plan_context(db, program, user_id, moment),
-        "recent_training": recent_training(db, user_id, recent_days),
-        "body_metrics": body_context(db, user_id),
-        "nutrition_7d": nutrition_context(db, user_id, 7),
-        "equipment_library": equipment_context(db, user_id),
-        "memories": memories,
-        "app_context": safe_app_context,
-    }
+    )
 
 
 def context_as_text(context: dict) -> str:

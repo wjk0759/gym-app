@@ -594,6 +594,7 @@ class AgentRun(Base):
     intent: Mapped[str] = mapped_column(String(40), default="coach_chat")
     status: Mapped[str] = mapped_column(String(30), default="running", index=True)
     model: Mapped[str | None] = mapped_column(String(80))
+    prompt_version: Mapped[str | None] = mapped_column(String(30))
     input_text: Mapped[str] = mapped_column(Text)
     output_text: Mapped[str | None] = mapped_column(Text)
     step_count: Mapped[int] = mapped_column(Integer, default=0)

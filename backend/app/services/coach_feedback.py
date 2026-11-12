@@ -63,6 +63,7 @@ def save_feedback(
             rating=rating,
             reason=normalized_reason,
             comment=(comment or "").strip()[:500] or None,
+            prompt_version=run.prompt_version if run is not None else None,
             model=run.model if run is not None else None,
         )
         db.add(item)
@@ -72,6 +73,9 @@ def save_feedback(
         item.rating = rating
         item.reason = normalized_reason
         item.comment = (comment or "").strip()[:500] or None
+        item.prompt_version = (
+            run.prompt_version if run is not None else item.prompt_version
+        )
         item.model = run.model if run is not None else item.model
         item.updated_at = utcnow()
 

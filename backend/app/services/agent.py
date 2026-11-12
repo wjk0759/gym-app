@@ -36,6 +36,7 @@ from .coach_core import coach_core_prompt
 from .exercise_search import search_exercise_payload
 from .memory import remember_facts, schedule_memory_extraction
 from .plan_generator import build_template_plan
+from .prompt_registry import prompt_version
 from .queries import active_goal, active_program
 from .safety import assess_safety
 from .serializers import save_plan
@@ -185,6 +186,8 @@ App Context 和可执行操作：
 """
 
 SYSTEM_PROMPT = coach_core_prompt() + "\n\n" + AGENT_INSTRUCTIONS
+AGENT_PROMPT_VERSION = prompt_version("agent", SYSTEM_PROMPT)
+REVIEW_PROMPT_VERSION = "review-rules@v1"
 
 
 def _safe_json(value: Any) -> Any:
@@ -910,6 +913,7 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
         intent="review_week",
         status="running",
         model="review-rules-v1",
+        prompt_version=REVIEW_PROMPT_VERSION,
         input_text="auto:weekly_review",
     )
     db.add(run)
@@ -973,6 +977,7 @@ async def run_agent(
         intent="coach_chat",
         status="running",
         model=settings.llm_model,
+        prompt_version=AGENT_PROMPT_VERSION,
         input_text=message[:4000],
     )
     db.add(run)
@@ -1046,6 +1051,7 @@ async def run_agent(
                     db=db,
                     user_id=user_id,
                     kind="agent",
+                    prompt_version=AGENT_PROMPT_VERSION,
                 )
                 _record_step(
                     db,

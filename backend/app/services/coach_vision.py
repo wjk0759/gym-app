@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from . import llm
+from .prompt_registry import prompt_version
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ SYSTEM_PROMPT = (
     "如果出现胸痛、晕厥、明显畸形、无法承重等急性风险，safety_flag 输出 medical_referral，并建议立即停止训练、线下就医。"
     "只输出一个 JSON 对象，不要输出 Markdown。"
 )
+PROMPT_VERSION = prompt_version("coach_vision", SYSTEM_PROMPT)
 
 USER_PROMPT = (
     "请根据用户问题和图片内容选择 mode，输出 JSON："
@@ -223,6 +225,7 @@ async def review_many(
             db=db,
             user_id=user_id,
             kind="coach_vision",
+            prompt_version=PROMPT_VERSION,
         )
     except Exception as exc:  # noqa: BLE001 - 视觉失败必须降级而不是让拍照崩溃
         logger.warning("coach vision failed: %s", exc)
@@ -236,6 +239,7 @@ async def review_many(
                     model=settings.vision_model_name,
                     error=str(exc)[:500],
                     usage=usage,
+                    prompt_version=PROMPT_VERSION,
                 )
         return _fallback(f"视觉分析失败：{str(exc)[:160]}")
 

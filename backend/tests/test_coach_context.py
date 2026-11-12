@@ -28,6 +28,7 @@ from app.services.coach_context import (
     CONTEXT_VERSION,
     build_coach_context,
     context_as_text,
+    fit_context_to_budget,
 )
 
 
@@ -307,3 +308,115 @@ def test_context_without_profile_is_honest(db):
     assert context["version"] == CONTEXT_VERSION
     assert "profile" not in context
     assert "memory" not in context
+
+
+def _plan_days(count: int, exercises: int) -> list[dict]:
+    return [
+        {
+            "id": f"day-{index}",
+            "title": f"训练日 {index}",
+            "exercises": [
+                {
+                    "slug": f"exercise-{index}-{item}",
+                    "name_zh": f"动作 {index}-{item}",
+                    "notes": "保持核心收紧，控制离心两秒，呼吸节奏稳定。" * 8,
+                    "sets": 4,
+                    "reps": "8-10",
+                }
+                for item in range(exercises)
+            ],
+        }
+        for index in range(count)
+    ]
+
+
+def test_fit_context_to_budget_leaves_small_context_untouched():
+    context = {
+        "version": CONTEXT_VERSION,
+        "today": {"timezone": "Asia/Shanghai"},
+        "current_plan": {"version": 3},
+        "app_context": {"plan": {"days": _plan_days(2, 2)}},
+    }
+    before = json.dumps(context, ensure_ascii=False)
+
+    fitted = fit_context_to_budget(context, max_chars=24000)
+
+    assert {
+        key: value
+        for key, value in fitted.items()
+        if key != "context_meta"
+    } == context
+    assert fitted["context_meta"]["truncated"] == []
+    assert fitted["context_meta"]["estimated_chars"] == len(before)
+    assert fitted["context_meta"]["plan_version"] == 3
+
+
+def test_fit_context_to_budget_trims_plan_before_core_context():
+    context = {
+        "version": CONTEXT_VERSION,
+        "today": {"timezone": "Asia/Shanghai"},
+        "current_plan": {
+            "id": "program-1",
+            "version": 3,
+            "days": [
+                {
+                    "id": "day-0",
+                    "exercises": [
+                        {
+                            "slug": "goblet-squat",
+                            "last": {"weight_kg": 24, "reps": 10},
+                            "best": {"weight_kg": 24, "reps": 10},
+                            "recent": [{"sets": [{"reps": 10}]}] * 5,
+                        }
+                    ],
+                }
+            ],
+        },
+        "app_context": {
+            "today_day": {"id": "day-0"},
+            "plan": {"days": _plan_days(18, 6)},
+        },
+        "memories": [
+            {"key": f"memory-{index}", "content": "训练偏好" * 20}
+            for index in range(14)
+        ],
+        "equipment_library": [{"name": f"器械 {index}"} for index in range(20)],
+    }
+
+    fitted = fit_context_to_budget(context, max_chars=6000)
+
+    meta = fitted["context_meta"]
+    assert meta["estimated_chars"] <= 6000
+    assert meta["truncated"]
+    app_plan = fitted["app_context"]["plan"]
+    assert len(app_plan["days"]) == 10
+    assert app_plan["days"][0]["id"] == "day-0"
+    assert app_plan["days"][0]["exercises"]
+    assert all(
+        "exercises" not in day
+        for day in app_plan["days"]
+        if day["id"] != "day-0"
+    )
+    assert fitted["current_plan"]["days"][0]["exercises"][0]["last"]
+    assert len(fitted["memories"]) <= 8
+    assert len(fitted["equipment_library"]) <= 12
+    # The caller's object must not be mutated by trimming.
+    assert len(context["app_context"]["plan"]["days"]) == 18
+
+
+def test_build_context_respects_budget_with_large_app_context(db, seeded):
+    app_context = {
+        "selected_tab": "coach",
+        "today_day": {"id": "day-1"},
+        "plan": {"days": _plan_days(24, 10)},
+    }
+
+    context = build_coach_context(db, "user-1", app_context=app_context)
+
+    meta = context["context_meta"]
+    assert meta["max_chars"] == 24000
+    assert meta["estimated_chars"] <= 24000
+    assert meta["truncated"]
+    assert context["profile"]["nickname"] == "小林"
+    assert context["current_plan"]["days"][0]["exercises"][0]["name_zh"]
+    assert context["app_context"]["today_day"]["id"] == "day-1"

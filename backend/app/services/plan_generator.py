@@ -22,6 +22,7 @@ from . import llm
 from .equipment import available_equipment_types
 from .load_progression import apply_plan_weights
 from .plan_validator import injury_tags, validate_plan
+from .prompt_registry import prompt_version
 from .training_stage import refresh_training_stage
 
 PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "plan_system.md"
@@ -571,6 +572,8 @@ async def generate_plan(
     error: str | None = None
     warnings: list[str] = []
     usage: dict[str, int] = {}
+    system_prompt = _system_prompt()
+    system_version = prompt_version("plan", system_prompt)
 
     if not settings.use_mock_llm:
         try:
@@ -578,7 +581,7 @@ async def generate_plan(
             # while the model generates the plan.
             db.commit()
             raw = await llm.complete_json(
-                _system_prompt(),
+                system_prompt,
                 _user_prompt(
                     profile,
                     goal_type,
@@ -593,6 +596,7 @@ async def generate_plan(
                 db=db,
                 user_id=getattr(profile, "user_id", None),
                 kind="plan",
+                prompt_version=system_version,
             )
             cleaned, warnings = validate_plan(
                 raw,
@@ -622,6 +626,7 @@ async def generate_plan(
                 latency_ms=int((time.perf_counter() - started) * 1000),
                 error=error,
                 usage=usage,
+                prompt_version=system_version,
             )
 
     raw = fallback_plan(

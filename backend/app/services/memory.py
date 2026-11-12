@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from ..models import AIMemory, utcnow
 from . import llm
+from .prompt_registry import prompt_version
 
 MEMORY_KINDS = {
     "preference",
@@ -52,6 +53,7 @@ MEMORY_PROMPT = """你是「叫练」的记忆整理器。
 5. kind 只能是：preference、constraint、schedule、equipment、injury、goal、behavior。
 6. key 用稳定的短标识，例如 weekly_schedule、session_minutes、home_equipment、knee_pain、preferred_split。
 """
+MEMORY_PROMPT_VERSION = prompt_version("memory", MEMORY_PROMPT)
 
 
 def _normalize_key(value: Any, kind: str) -> str:
@@ -227,6 +229,7 @@ async def extract_and_store(
             db=db,
             user_id=user_id,
             kind="memory",
+            prompt_version=MEMORY_PROMPT_VERSION,
         )
         facts = raw.get("memories", []) if isinstance(raw, dict) else []
         if not isinstance(facts, list):

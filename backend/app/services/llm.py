@@ -85,6 +85,7 @@ def _record_success(
     model: str | None,
     started: float,
     usage: dict | None,
+    prompt_version: str | None = None,
 ) -> None:
     if db is None or not kind:
         return
@@ -96,6 +97,7 @@ def _record_success(
         model=model,
         latency_ms=int((time.perf_counter() - started) * 1000),
         usage=usage,
+        prompt_version=prompt_version,
     )
 
 
@@ -173,6 +175,7 @@ async def complete_vision_json(
     db: Session | None = None,
     user_id: str | None = None,
     kind: str = "vision",
+    prompt_version: str | None = None,
     temperature: float = 0.2,
 ) -> dict:
     """One or more images -> one JSON response using the vision model."""
@@ -260,7 +263,13 @@ async def complete_vision_json(
         try:
             parsed = _parse_json_object(content)
             _record_success(
-                db, user_id, kind, settings.vision_model_name, started, usage
+                db,
+                user_id,
+                kind,
+                settings.vision_model_name,
+                started,
+                usage,
+                prompt_version,
             )
             return parsed
         except LLMError as exc:
@@ -286,6 +295,7 @@ async def complete_secondary_vision_text(
     db: Session | None = None,
     user_id: str | None = None,
     kind: str = "equipment_gate",
+    prompt_version: str | None = None,
 ) -> str:
     """Ask a second vision model a short, text-only question.
 
@@ -345,6 +355,7 @@ async def complete_secondary_vision_text(
                 model,
                 started,
                 data.get("usage"),
+                prompt_version,
             )
     return str(content or "").strip()
 
@@ -413,6 +424,7 @@ async def complete_json(
     db: Session | None = None,
     user_id: str | None = None,
     kind: str = "llm",
+    prompt_version: str | None = None,
 ) -> dict:
     if settings.use_mock_llm:
         raise LLMError("mock mode: no LLM key configured")
@@ -474,7 +486,15 @@ async def complete_json(
 
         try:
             parsed = _parse_json_object(content)
-            _record_success(db, user_id, kind, settings.llm_model, started, usage)
+            _record_success(
+                db,
+                user_id,
+                kind,
+                settings.llm_model,
+                started,
+                usage,
+                prompt_version,
+            )
             return parsed
         except LLMError:
             if attempt < 2:
@@ -508,6 +528,7 @@ async def complete_text(
     kind: str = "llm",
     max_tokens: int | None = None,
     reasoning_effort: str | None = None,
+    prompt_version: str | None = None,
 ) -> str:
     if settings.use_mock_llm:
         raise LLMError("mock mode: no LLM key configured")
@@ -546,7 +567,15 @@ async def complete_text(
             data = response.json()
             _merge_usage(usage, data.get("usage"))
             content = data["choices"][0]["message"]["content"]
-            _record_success(db, user_id, kind, settings.llm_model, started, usage)
+            _record_success(
+                db,
+                user_id,
+                kind,
+                settings.llm_model,
+                started,
+                usage,
+                prompt_version,
+            )
             return content
         except (KeyError, IndexError, TypeError, ValueError) as exc:
             if attempt == 0:
@@ -566,6 +595,7 @@ def record_job(
     latency_ms: int | None = None,
     error: str | None = None,
     usage: dict | None = None,
+    prompt_version: str | None = None,
 ) -> None:
     input_tokens, output_tokens = _usage_tokens(usage)
     db.add(
@@ -578,7 +608,7 @@ def record_job(
             input_tokens=input_tokens or None,
             output_tokens=output_tokens or None,
             error=(error or "")[:1000] or None,
-            prompt_version="v1",
+            prompt_version=(prompt_version or "")[:30] or None,
         )
     )
     db.commit()
