@@ -15,7 +15,7 @@ from app.models import (
     ProgramDay,
     User,
 )
-from app.routers.plans import import_plan, update_day
+from app.routers.plans import activate_plan, import_plan, update_day
 from app.schemas import (
     PlanDayPatch,
     PlanExercisePatch,
@@ -242,6 +242,67 @@ def test_import_plan_preserves_local_ids_and_archives_old_plan(db, seeded):
     new = db.get(Program, local_plan_id)
     assert new.status == "active"
     assert len(new.days[0].exercises) == 3
+
+
+def test_onboarding_preview_is_pending_until_activated(db, seeded):
+    from app.services.serializers import save_plan
+
+    plan_doc = {
+        "title": "预览计划",
+        "weeks": 1,
+        "days": [
+            {
+                "week_index": 1,
+                "weekday": 1,
+                "title": "全身",
+                "focus": ["legs"],
+                "exercises": [
+                    {
+                        "slug": "pushup",
+                        "order_index": 1,
+                        "sets": 3,
+                        "reps": "10",
+                        "weight_kg": None,
+                        "rest_sec": 60,
+                        "rpe": 7,
+                    },
+                    {
+                        "slug": "squat",
+                        "order_index": 2,
+                        "sets": 3,
+                        "reps": "10",
+                        "weight_kg": None,
+                        "rest_sec": 60,
+                        "rpe": 7,
+                    },
+                    {
+                        "slug": "plank",
+                        "order_index": 3,
+                        "sets": 3,
+                        "reps": "30s",
+                        "weight_kg": None,
+                        "rest_sec": 60,
+                        "rpe": 7,
+                    },
+                ],
+            }
+        ],
+    }
+    pending = save_plan(
+        db,
+        "user-1",
+        plan_doc,
+        goal_type="recomp",
+        generated_by="template",
+        status="pending",
+    )
+    assert pending.status == "pending"
+
+    active = activate_plan(pending.id, "user-1", db)
+
+    assert active["status"] == "active"
+    assert active["version"] == pending.version
+    assert db.get(Program, pending.id).status == "active"
 
 
 def test_import_plan_rejects_stale_version_for_existing_plan(db, seeded):

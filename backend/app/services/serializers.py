@@ -143,15 +143,17 @@ def save_plan(
     goal_type: str,
     generated_by: str,
     model_name: str | None = None,
+    status: str = "active",
 ) -> Program:
     lock_user(db, user_id)
-    _archive_active(db, user_id)
+    if status == "active":
+        _archive_active(db, user_id)
     program = Program(
         user_id=user_id,
         title=plan_doc["title"],
         goal_type=goal_type,
         version=_next_version(db, user_id),
-        status="active",
+        status=status,
         weeks=int(plan_doc.get("weeks", 4)),
         generated_by=generated_by,
         model_name=model_name,

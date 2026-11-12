@@ -42,12 +42,12 @@ extension CoachOnboardingView {
         }
     }
 
-    var ageHeightStep: some View {
+    var ageHeightWeightStep: some View {
         VStack(alignment: .leading, spacing: 18) {
             stepTitle(
                 eyebrow: "身体基线",
-                title: "年龄和身高",
-                subtitle: "这两个数决定热量和动作幅度。"
+                title: "年龄、身高和体重",
+                subtitle: "这三个数决定热量、动作幅度和起始重量。"
             )
 
             VStack(spacing: 12) {
@@ -65,6 +65,36 @@ extension CoachOnboardingView {
                     decrement: { draft.heightCM = max(140, draft.heightCM - 1) },
                     increment: { draft.heightCM = min(210, draft.heightCM + 1) }
                 )
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text("体重")
+                        .font(AppType.headline)
+                        .foregroundStyle(Theme.ink)
+                    Spacer()
+                    Text(String(format: "%.1f", draft.weightKG))
+                        .font(.system(size: 22, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Theme.ink)
+                    Text("kg")
+                        .font(AppType.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+                Slider(value: $draft.weightKG, in: 35...160, step: 0.5)
+                    .tint(Theme.cobalt)
+                HStack {
+                    Text("35")
+                    Spacer()
+                    Text("160")
+                }
+                .font(AppType.micro)
+                .foregroundStyle(Theme.tertiaryText)
+            }
+            .padding(18)
+            .background(Theme.paper, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(Theme.stroke, lineWidth: 1)
             }
         }
     }
@@ -315,6 +345,102 @@ extension CoachOnboardingView {
                         draft.weeklyDays = days
                         draft.split = days <= 3 ? .one : (days == 4 ? .three : .five)
                     }
+                }
+            }
+        }
+    }
+
+    var frequencyDurationStep: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            stepTitle(
+                eyebrow: "时间",
+                title: "每周练几次、每次多久？",
+                subtitle: "先选一个目前容易做到的频率和时长，计划之后还能改。"
+            )
+
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: 10),
+                    GridItem(.flexible(), spacing: 10)
+                ],
+                spacing: 10
+            ) {
+                ForEach([2, 3, 4, 5], id: \.self) { days in
+                    Button {
+                        Haptics.select()
+                        draft.weeklyDays = days
+                        draft.split = days <= 3 ? .one : (days == 4 ? .three : .five)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("每周 \(days) 次")
+                                .font(AppType.callout.weight(.semibold))
+                                .foregroundStyle(Theme.ink)
+                            Text(days <= 3 ? "更容易坚持" : "训练量更足")
+                                .font(AppType.micro)
+                                .foregroundStyle(Theme.tertiaryText)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(14)
+                        .background(
+                            draft.weeklyDays == days
+                                ? Theme.lime.opacity(0.22)
+                                : Theme.paper
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                .strokeBorder(
+                                    draft.weeklyDays == days ? Theme.ink : Theme.stroke,
+                                    lineWidth: draft.weeklyDays == days ? 1.8 : 1
+                                )
+                        }
+                    }
+                    .buttonStyle(CardPressStyle(scale: 0.985))
+                }
+            }
+
+            Text("单次训练时长")
+                .font(AppType.headline)
+                .foregroundStyle(Theme.ink)
+
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: 10),
+                    GridItem(.flexible(), spacing: 10),
+                    GridItem(.flexible(), spacing: 10)
+                ],
+                spacing: 10
+            ) {
+                ForEach([20, 30, 45, 60, 90], id: \.self) { minutes in
+                    Button {
+                        Haptics.select()
+                        draft.sessionMinutes = minutes
+                    } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("\(minutes)")
+                                .font(.system(size: 22, weight: .bold, design: .monospaced))
+                                .foregroundStyle(Theme.ink)
+                            Text("分钟")
+                                .font(AppType.micro)
+                                .foregroundStyle(Theme.tertiaryText)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(13)
+                        .background(
+                            draft.sessionMinutes == minutes
+                                ? Theme.lime.opacity(0.22)
+                                : Theme.paper
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(
+                                    draft.sessionMinutes == minutes ? Theme.ink : Theme.stroke,
+                                    lineWidth: draft.sessionMinutes == minutes ? 1.8 : 1
+                                )
+                        }
+                    }
+                    .buttonStyle(CardPressStyle(scale: 0.985))
                 }
             }
         }

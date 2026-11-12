@@ -47,6 +47,8 @@ final class AppStore {
 
     var profile = UserProfile()
     var plan: TrainingPlan?
+    /// Onboarding plan waiting for the user's confirmation.
+    var pendingPlanPreview: TrainingPlan?
     /// Set when the current plan was produced locally and has not reached the
     /// server yet. Retried on the next user-data sync.
     var planNeedsServerSync = false
@@ -199,6 +201,7 @@ final class AppStore {
         draftPersistWorkItem = nil
         profile = UserProfile()
         plan = nil
+        pendingPlanPreview = nil
         planNeedsServerSync = false
         planHistory = []
         sessions = []
@@ -291,6 +294,7 @@ final class AppStore {
         var persistAfterMigration = false
         profile = state.profile
         plan = state.plan
+        pendingPlanPreview = state.pendingPlanPreview
         planNeedsServerSync = state.planNeedsServerSync ?? false
         planHistory = state.planHistory ?? []
         sessions = state.sessions
@@ -339,6 +343,7 @@ final class AppStore {
         let state = PersistedState(
             profile: profile,
             plan: plan,
+            pendingPlanPreview: pendingPlanPreview,
             planNeedsServerSync: planNeedsServerSync,
             planHistory: planHistory,
             sessions: sessions,
@@ -447,6 +452,7 @@ final class AppStore {
     private struct PersistedState: Codable {
         var profile: UserProfile
         var plan: TrainingPlan?
+        var pendingPlanPreview: TrainingPlan?
         var planNeedsServerSync: Bool?
         var planHistory: [TrainingPlan]?
         var sessions: [WorkoutSession]

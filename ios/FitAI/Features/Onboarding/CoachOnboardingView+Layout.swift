@@ -158,18 +158,12 @@ extension CoachOnboardingView {
         switch step {
         case 1: nameStep
         case 2: sexStep
-        case 3: ageHeightStep
-        case 4: weightStep
-        case 5: bodyTypeStep
-        case 6: bodyFatStep
-        case 7: goalStep
-        case 8: focusStep
-        case 9: injuryStep
-        case 10: locationStep
-        case 11: equipmentStep
-        case 12: experienceStep
-        case 13: frequencyStep
-        case 14: durationStep
+        case 3: ageHeightWeightStep
+        case 4: goalStep
+        case 5: injuryStep
+        case 6: equipmentStep
+        case 7: experienceStep
+        case 8: frequencyDurationStep
         default: reportStep
         }
     }

@@ -130,6 +130,15 @@ extension APIClient {
         )
     }
 
+    func activatePlan(id: UUID) async throws -> TrainingPlan {
+        try await send(
+            path: "plans/\(id.uuidString.lowercased())/activate",
+            method: "POST",
+            body: nil,
+            timeout: 30
+        )
+    }
+
     func syncSchedule(
         planID: String,
         planVersion: Int?,

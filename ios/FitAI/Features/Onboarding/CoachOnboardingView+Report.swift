@@ -180,7 +180,7 @@ extension CoachOnboardingView {
             if !safetyText.isEmpty {
                 actionLine("安全限制：\(safetyText)")
             }
-            actionLine("计划会在生成后进入 Today，你可以随时找教练改。")
+            actionLine("计划生成后会先让你确认；开始后也可以随时找教练改。")
         }
         .padding(16)
         .background(Theme.paper, in: RoundedRectangle(cornerRadius: 20, style: .continuous))

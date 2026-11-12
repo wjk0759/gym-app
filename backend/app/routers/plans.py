@@ -132,6 +132,7 @@ async def generate(
             goal_type=goal_type,
             generated_by=result["generated_by"],
             model_name=result["model"],
+            status="pending" if payload.onboarding else "active",
         )
     except PlanValidationError as exc:
         generation.abort_generation(db, lease, user_id=user_id)
@@ -331,6 +332,21 @@ def import_plan(
     current = load_program(db, plan_id)
     if current is None:
         raise HTTPException(status_code=500, detail="计划保存失败")
+    return serialize_program(current)
+
+
+@router.post("/{plan_id}/activate")
+def activate_plan(plan_id: str, user_id: CurrentUser, db: DBSession):
+    program = _owned_program(db, user_id, plan_id)
+    if program.status == "active":
+        return serialize_program(program)
+    if program.status not in {"pending", "archived"}:
+        raise HTTPException(status_code=409, detail="这份计划当前不能激活")
+    lock_user(db, user_id)
+    archive_active_plans(db, user_id)
+    program.status = "active"
+    db.commit()
+    current = load_program(db, plan_id) or program
     return serialize_program(current)
 
 

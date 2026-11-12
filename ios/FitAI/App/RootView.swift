@@ -60,6 +60,9 @@ struct RootView: View {
         .sheet(item: $paywall.feature) { feature in
             ProPaywallSheet(feature: feature)
         }
+        .sheet(item: $store.pendingPlanPreview) { plan in
+            PlanPreviewSheet(plan: plan)
+        }
         .sensoryFeedback(.success, trigger: auth.isAuthenticated) { _, isAuthenticated in
             isAuthenticated
         }

@@ -29,7 +29,9 @@ struct CoachOnboardingView: View {
     @AppStorage("fitai_body_type") private var storedBodyType = ""
     @AppStorage("fitai_focus_areas") private var storedFocusAreas = ""
 
-    let inputSteps = 14
+    // Keep the first pass short. Body type, body-fat reference, focus areas and
+    // training location can be completed after the user has a usable plan.
+    let inputSteps = 8
 
     enum TrainingLocation: String, CaseIterable, Identifiable {
         case gym
@@ -138,22 +140,7 @@ struct CoachOnboardingView: View {
             }
             draft.nickname = name
             nameFocused = false
-        case 5:
-            guard bodyType != nil else {
-                alertMessage = "先选一个最接近的体型，下一步才能按体型选体脂。"
-                showAlert = true
-                return
-            }
         case 6:
-            if bodyFatID == nil {
-                let options = BodyFatOption.options(for: draft.sex)
-                let fallback = options.min {
-                    abs($0.midpoint - draft.bodyFatPCT) < abs($1.midpoint - draft.bodyFatPCT)
-                } ?? options[2]
-                bodyFatID = fallback.id
-                draft.bodyFatPCT = fallback.midpoint
-            }
-        case 11:
             if draft.equipment.isEmpty { draft.equipment = [.bodyweight] }
         case inputSteps:
             step = inputSteps + 1

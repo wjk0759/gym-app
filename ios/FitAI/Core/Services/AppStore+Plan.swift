@@ -68,12 +68,18 @@ extension AppStore {
                     )
                     generated.version = max(generated.version, (self.plan?.version ?? 0) + 1)
                     self.pendingPlanIdempotencyKey = nil
-                    self.archiveCurrentPlan()
-                    self.plan = generated
-                    self.planNeedsServerSync = false
-                    self.toast = generated.generatedBy == "ai"
-                        ? "已由 AI 生成计划"
-                        : "已用规则模板生成计划"
+                    if onboarding, self.plan == nil {
+                        self.pendingPlanPreview = generated
+                        self.planNeedsServerSync = false
+                        self.toast = "计划已生成，确认后开始"
+                    } else {
+                        self.archiveCurrentPlan()
+                        self.plan = generated
+                        self.planNeedsServerSync = false
+                        self.toast = generated.generatedBy == "ai"
+                            ? "已由 AI 生成计划"
+                            : "已用规则模板生成计划"
+                    }
                     self.lastPlanGeneratedAt = Date()
                     if onboarding {
                         await self.consumeOnboardingTrialIfNeeded()
@@ -141,9 +147,15 @@ extension AppStore {
                 planWeights: self.planWeightTargets
             )
             generated.version = (self.plan?.version ?? 0) + 1
-            self.archiveCurrentPlan()
-            self.plan = generated
-            self.planNeedsServerSync = true
+            if onboarding, self.plan == nil {
+                self.pendingPlanPreview = generated
+                self.planNeedsServerSync = true
+                self.toast = "计划已生成，确认后开始"
+            } else {
+                self.archiveCurrentPlan()
+                self.plan = generated
+                self.planNeedsServerSync = true
+            }
             self.lastPlanGeneratedAt = Date()
             self.isGenerating = false
             self.persist()
@@ -180,10 +192,16 @@ extension AppStore {
             planWeights: planWeightTargets
         )
         fallback.version = (plan?.version ?? 0) + 1
-        archiveCurrentPlan()
-        plan = fallback
-        planNeedsServerSync = true
-        toast = message
+        if onboarding, plan == nil {
+            pendingPlanPreview = fallback
+            planNeedsServerSync = true
+            toast = "计划已用本地模板生成，确认后开始"
+        } else {
+            archiveCurrentPlan()
+            plan = fallback
+            planNeedsServerSync = true
+            toast = message
+        }
         lastPlanGeneratedAt = Date()
         if onboarding {
             await consumeOnboardingTrialIfNeeded()
@@ -262,6 +280,42 @@ extension AppStore {
         persist()
         rescheduleNotifications()
         syncPendingUserData()
+    }
+
+    func confirmPendingPlan(openRecord: Bool = false) {
+        guard let pending = pendingPlanPreview else { return }
+        guard workoutDraft == nil else {
+            toast = "你正在训练；请先保存或结束当前训练，再开始新计划"
+            return
+        }
+        let needsServerImport = planNeedsServerSync
+        pendingPlanPreview = nil
+        Task { @MainActor in
+            if !needsServerImport {
+                do {
+                    _ = try await APIClient.shared.activatePlan(id: pending.id)
+                } catch {
+                    // The server plan may have been lost; fall back to importing
+                    // the local copy on the next sync.
+                    self.planNeedsServerSync = true
+                }
+            }
+            self.archiveCurrentPlan()
+            self.plan = pending
+            self.planNeedsServerSync = needsServerImport || self.planNeedsServerSync
+            self.persist()
+            self.rescheduleNotifications()
+            self.syncPendingUserData()
+            if openRecord {
+                self.selectedTab = 1
+            }
+        }
+    }
+
+    func discardPendingPlan() {
+        pendingPlanPreview = nil
+        planNeedsServerSync = false
+        persist()
     }
 
     func archiveCurrentPlan() {
