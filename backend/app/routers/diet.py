@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from ..deps import CurrentUser, DBSession
-from ..models import FoodLog, Goal, Profile
+from ..models import FoodLog, Goal, MealPlan, Profile
 from ..schemas import DietPlanIn, DietWeekIn, FoodLogIn
 from ..services import access, generation, photo_cache
 from ..services.diet import (
@@ -16,6 +16,7 @@ from ..services.diet import (
     ensure_meal_macros,
     list_diet_strategies,
 )
+from ..services.diet_review import build_diet_review, range_bounds, utc_window
 from ..services.food_vision import analyze as analyze_food_photo
 from ..services.image_input import InvalidImageError, normalize_image_bytes
 from ..services.meal_plans import (
@@ -241,6 +242,46 @@ def targets(
         "strategy": None,
         "source": "calculated",
     }
+
+
+@router.get("/review")
+def review(
+    user_id: CurrentUser,
+    db: DBSession,
+    date_from: date | None = Query(default=None, alias="from"),
+    date_to: date | None = Query(default=None, alias="to"),
+):
+    try:
+        start_date, end_date = range_bounds(date_from, date_to)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    plans = (
+        db.execute(
+            select(MealPlan)
+            .where(
+                MealPlan.user_id == user_id,
+                MealPlan.plan_date >= start_date,
+                MealPlan.plan_date <= end_date,
+            )
+            .order_by(MealPlan.plan_date)
+        )
+        .scalars()
+        .all()
+    )
+    log_start, log_end = utc_window(start_date, end_date)
+    logs = (
+        db.execute(
+            select(FoodLog).where(
+                FoodLog.user_id == user_id,
+                FoodLog.logged_at >= log_start,
+                FoodLog.logged_at < log_end,
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return build_diet_review(plans, logs, start_date, end_date)
 
 
 @router.get("/plan")

@@ -234,6 +234,79 @@ struct RemoteDietTargets: Decodable {
     let source: String?
 }
 
+struct RemoteDietReview: Decodable {
+    struct Totals: Decodable {
+        let plannedDays: Int
+        let plannedMeals: Int
+        let loggedPlanMeals: Int
+        let adherenceRate: Double?
+        let plannedKcal: Int
+        let actualKcal: Int
+        let plannedProteinG: Int
+        let actualProteinG: Int
+
+        enum CodingKeys: String, CodingKey {
+            case plannedDays = "planned_days"
+            case plannedMeals = "planned_meals"
+            case loggedPlanMeals = "logged_plan_meals"
+            case adherenceRate = "adherence_rate"
+            case plannedKcal = "planned_kcal"
+            case actualKcal = "actual_kcal"
+            case plannedProteinG = "planned_protein_g"
+            case actualProteinG = "actual_protein_g"
+        }
+    }
+
+    struct Day: Decodable, Identifiable {
+        let date: String
+        let plannedMeals: Int
+        let loggedPlanMeals: Int
+        let plannedKcal: Int
+        let actualKcal: Int
+        let plannedProteinG: Int
+        let actualProteinG: Int
+        let status: String
+
+        var id: String { date }
+
+        enum CodingKeys: String, CodingKey {
+            case date
+            case plannedMeals = "planned_meals"
+            case loggedPlanMeals = "logged_plan_meals"
+            case plannedKcal = "planned_kcal"
+            case actualKcal = "actual_kcal"
+            case plannedProteinG = "planned_protein_g"
+            case actualProteinG = "actual_protein_g"
+            case status
+        }
+    }
+
+    struct MissingMeal: Decodable, Identifiable {
+        let date: String
+        let meal: String
+        let name: String
+        let kcal: Int
+
+        var id: String { date + "|" + meal }
+    }
+
+    let from: String
+    let to: String
+    let totals: Totals
+    let days: [Day]
+    let missingMeals: [MissingMeal]
+    let insight: String
+
+    enum CodingKeys: String, CodingKey {
+        case from
+        case to
+        case totals
+        case days
+        case missingMeals = "missing_meals"
+        case insight
+    }
+}
+
 struct RemoteDietRecipe: Decodable {
     let title: String
     let ingredients: [String]

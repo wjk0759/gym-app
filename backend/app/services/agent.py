@@ -24,6 +24,8 @@ from ..models import (
     AgentRun,
     AgentStep,
     ChatMessage,
+    FoodLog,
+    MealPlan,
     PlanDayState,
     Profile,
     Program,
@@ -35,6 +37,7 @@ from . import llm
 from .citations import build_reply_citations
 from .coach_context import build_coach_context, recent_training
 from .coach_core import coach_core_prompt
+from .diet_review import build_diet_review, utc_window
 from .exercise_search import search_exercise_payload
 from .memory import remember_facts, schedule_memory_extraction
 from .plan_generator import build_template_plan, validate_plan_for_user
@@ -960,6 +963,39 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
         completion = min(1.5, current["sessions"] / target)
     minutes = profile.session_minutes or 45
 
+    local_week_start = week_start.astimezone(REVIEW_TZ).date()
+    local_week_end = local_week_start + timedelta(days=6)
+    diet_plans = (
+        db.execute(
+            select(MealPlan).where(
+                MealPlan.user_id == user_id,
+                MealPlan.plan_date >= local_week_start,
+                MealPlan.plan_date <= local_week_end,
+            )
+        )
+        .scalars()
+        .all()
+    )
+    diet_log_start, diet_log_end = utc_window(local_week_start, local_week_end)
+    diet_logs = (
+        db.execute(
+            select(FoodLog).where(
+                FoodLog.user_id == user_id,
+                FoodLog.logged_at >= diet_log_start,
+                FoodLog.logged_at < diet_log_end,
+            )
+        )
+        .scalars()
+        .all()
+    )
+    diet_review = build_diet_review(
+        diet_plans,
+        diet_logs,
+        local_week_start,
+        local_week_end,
+    )
+    diet_totals = diet_review["totals"]
+
     wins: list[str] = []
     watchouts: list[str] = []
     actions: list[str] = []
@@ -1017,7 +1053,19 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
         watchouts.append("训练容量较上周下降")
 
     logged_days = int(nutrition.get("logged_days") or 0)
-    if logged_days < 3:
+    diet_planned_meals = int(diet_totals["planned_meals"] or 0)
+    diet_adherence = diet_totals["adherence_rate"]
+    if diet_planned_meals and logged_days == 0:
+        watchouts.append("有饮食计划但本周没有记录")
+        actions.append(
+            f"本周有 {diet_planned_meals} 餐计划；先在午餐或晚餐记录一餐，判断餐单是否合适"
+        )
+    elif diet_planned_meals and (diet_adherence or 0) < 0.6:
+        actions.append(
+            f"计划餐只记录了 {diet_totals['logged_plan_meals']}/{diet_planned_meals} 餐；"
+            "先把最容易执行的一餐固定下来，不要一次要求全部做到"
+        )
+    elif logged_days < 3:
         actions.append(
             f"本周只有 {logged_days} 天有饮食记录，先做到每天至少记录一餐，便于判断热量"
         )
@@ -1047,6 +1095,11 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
             "average_duration_min": current["average_duration_min"],
             "previous_volume_kg": previous["volume_kg"],
             "nutrition_logged_days": logged_days,
+            "diet_planned_meals": diet_planned_meals,
+            "diet_logged_plan_meals": diet_totals["logged_plan_meals"],
+            "diet_adherence_rate": diet_adherence,
+            "diet_planned_kcal": diet_totals["planned_kcal"],
+            "diet_actual_kcal": diet_totals["actual_kcal"],
             "plan_title": (context.get("current_plan") or {}).get("title"),
         },
         "summary": summary,

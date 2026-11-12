@@ -5,6 +5,7 @@ struct PlanReviewView: View {
 
     @State private var period: ReviewPeriod = .month
     @State private var review: ReviewData?
+    @State private var dietReview: RemoteDietReview?
 
     var body: some View {
         AppScrollView {
@@ -17,6 +18,7 @@ struct PlanReviewView: View {
                     kpiGrid(review)
                     trainingCard(review)
                     nutritionCard(review)
+                    dietExecutionCard
                     recentCard(review)
                 } else {
                     reviewHeaderPlaceholder
@@ -69,6 +71,7 @@ struct PlanReviewView: View {
 
     private func loadReview() async {
         review = nil
+        dietReview = nil
         let input = ReviewInput(store: store)
         let targetPeriod = period
         let data = await Task.detached(priority: .userInitiated) {
@@ -76,6 +79,11 @@ struct PlanReviewView: View {
         }.value
         guard !Task.isCancelled else { return }
         review = data
+
+        let from = APIDateCoding.dateOnlyLocal.string(from: data.rangeStart)
+        let to = APIDateCoding.dateOnlyLocal.string(from: data.rangeEnd)
+        dietReview = try? await NutritionService().fetchReview(from: from, to: to)
+        guard !Task.isCancelled else { return }
     }
 
     private func header(_ review: ReviewData) -> some View {
@@ -286,6 +294,78 @@ struct PlanReviewView: View {
                 .foregroundStyle(Theme.tertiaryText)
         }
         .card()
+    }
+
+    @ViewBuilder
+    private var dietExecutionCard: some View {
+        if let diet = dietReview {
+            let totals = diet.totals
+            let rate = totals.adherenceRate.map {
+                "\(Int(($0 * 100).rounded()))%"
+            } ?? "—"
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("饮食计划执行")
+                        .font(AppType.headline)
+                        .foregroundStyle(Theme.ink)
+                    Spacer()
+                    Text("\(totals.plannedDays) 天有排餐")
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+
+                HStack(spacing: 6) {
+                    detailMetric(rate, "计划餐完成")
+                    detailMetric(
+                        "\(totals.loggedPlanMeals)/\(totals.plannedMeals)",
+                        "已记录 / 计划"
+                    )
+                    detailMetric("\(totals.actualKcal)", "实际 kcal")
+                    detailMetric("\(totals.plannedKcal)", "计划 kcal")
+                }
+
+                if totals.plannedProteinG > 0 {
+                    Text(
+                        "蛋白质 计划 \(totals.plannedProteinG)g · 实际 \(totals.actualProteinG)g"
+                    )
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(Theme.tertiaryText)
+                }
+
+                if !diet.missingMeals.isEmpty {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("还没记录的计划餐")
+                            .font(.system(size: 9.5, weight: .semibold))
+                            .foregroundStyle(Theme.secondaryText)
+                        ForEach(diet.missingMeals.prefix(3)) { item in
+                            HStack(spacing: 6) {
+                                Text(
+                                    APIDateCoding.date(from: item.date).map {
+                                        FitnessDate.short($0)
+                                    } ?? item.date
+                                )
+                                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                .foregroundStyle(Theme.cobalt)
+                                Text(item.name)
+                                    .font(.system(size: 9.5, weight: .medium))
+                                    .foregroundStyle(Theme.ink)
+                                Spacer()
+                                Text("\(item.kcal) kcal")
+                                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                    .foregroundStyle(Theme.tertiaryText)
+                            }
+                        }
+                    }
+                }
+
+                Text(diet.insight)
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .card()
+        }
     }
 
     private func recentCard(_ review: ReviewData) -> some View {

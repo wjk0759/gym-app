@@ -89,6 +89,8 @@ struct ReviewKPI: Identifiable {
 struct ReviewData {
     let period: ReviewPeriod
     let rangeLabel: String
+    let rangeStart: Date
+    let rangeEnd: Date
     let current: ReviewSnapshot
     let previous: ReviewSnapshot
     let kpis: [ReviewKPI]
@@ -247,6 +249,8 @@ enum PlanReviewEngine {
         return ReviewData(
             period: period,
             rangeLabel: bounds.rangeLabel,
+            rangeStart: bounds.currentStart,
+            rangeEnd: bounds.currentEnd,
             current: current,
             previous: previous,
             kpis: kpis,

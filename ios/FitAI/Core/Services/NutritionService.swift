@@ -32,6 +32,10 @@ struct NutritionService {
         try await client.fetchDietTargets(dateString: dateString)
     }
 
+    func fetchReview(from: String, to: String) async throws -> RemoteDietReview {
+        try await client.fetchDietReview(from: from, to: to)
+    }
+
     func fetchWeek(
         strategy: String,
         weekStart: String?,

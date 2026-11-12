@@ -627,6 +627,16 @@ extension APIClient {
         )
     }
 
+    func fetchDietReview(from: String, to: String) async throws -> RemoteDietReview {
+        let start = from.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? from
+        let end = to.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? to
+        return try await send(
+            path: "diet/review?from=\(start)&to=\(end)",
+            method: "GET",
+            body: nil
+        )
+    }
+
     func fetchDietTargets(dateString: String) async throws -> RemoteDietTargets {
         let encoded = dateString.addingPercentEncoding(
             withAllowedCharacters: .urlQueryAllowed
