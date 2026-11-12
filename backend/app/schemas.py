@@ -120,6 +120,9 @@ class GoalIn(BaseModel):
 class PlanGenerateIn(BaseModel):
     force: bool = False
     onboarding: bool = False
+    # New clients preview the onboarding plan before making it active. The
+    # explicit flag keeps older clients on the old active-on-generate behavior.
+    preview: bool = False
     strict_equipment: bool = False
     split: str | None = Field(default=None, max_length=20)
     focus: list[str] = Field(default_factory=list, max_length=20)

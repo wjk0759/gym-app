@@ -208,7 +208,7 @@
 
 - `force=false`：已有 active 计划则直接返回
 - `force=true`：归档旧计划，生成新版本
-- `onboarding=true`：新计划先存为 `pending`，客户端预览确认后调用 `POST /plans/{plan_id}/activate` 才生效
+- `preview=true`：新计划先存为 `pending`，客户端预览确认后调用 `POST /plans/{plan_id}/activate` 才生效；旧客户端不传这个字段，保持原来的直接生效行为
 - `equipment_slugs`：用户器械库中已录入的动作 slug；后端优先从这些动作 + 徒手动作里编排，数量不足时回退到档案器械类型
 - `split`：可选训练分化；决定每天的训练日模板
 - `focus`：可选重点部位，取值 `chest/back/legs/glutes/shoulders/arms/core`；最多取前两个，每天优先安排 1–2 个对应动作，但不会破坏 `split` 的骨架

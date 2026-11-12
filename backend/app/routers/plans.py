@@ -132,7 +132,7 @@ async def generate(
             goal_type=goal_type,
             generated_by=result["generated_by"],
             model_name=result["model"],
-            status="pending" if payload.onboarding else "active",
+            status="pending" if payload.preview else "active",
         )
     except PlanValidationError as exc:
         generation.abort_generation(db, lease, user_id=user_id)

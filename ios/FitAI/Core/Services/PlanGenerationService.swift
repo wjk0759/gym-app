@@ -23,6 +23,7 @@ struct PlanGenerationService {
         return try await client.generatePlan(
             force: force,
             onboarding: onboarding,
+            preview: onboarding,
             strictEquipment: strictEquipment,
             split: profile.split,
             focus: BodyFocusArea.displayOrder

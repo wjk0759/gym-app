@@ -41,6 +41,7 @@ extension APIClient {
     func generatePlan(
         force: Bool = true,
         onboarding: Bool = false,
+        preview: Bool = false,
         strictEquipment: Bool = false,
         split: SplitType,
         focus: [String] = [],
@@ -49,6 +50,7 @@ extension APIClient {
         let body = try JSONSerialization.data(withJSONObject: [
             "force": force,
             "onboarding": onboarding,
+            "preview": preview,
             "strict_equipment": strictEquipment,
             "split": split.rawValue,
             "focus": focus
