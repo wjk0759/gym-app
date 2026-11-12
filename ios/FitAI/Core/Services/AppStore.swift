@@ -25,6 +25,8 @@ indirect enum AgentUndoState {
         previousProfile: UserProfile
     )
     case profile(UserProfile)
+    /// 改课会直接改本地计划；撤销时恢复改课前的整份计划。
+    case plan(TrainingPlan)
     /// 一次 Agent 动作卡可能包含多天操作，撤销时要一起恢复。
     case batch([AgentUndoState])
 }

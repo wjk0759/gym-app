@@ -72,6 +72,90 @@ def test_app_action_normalization():
     assert actions[0]["id"] != actions[1]["id"]
 
 
+def test_modify_workout_action_normalization():
+    context = {"plan": {"days": [{"id": "day-1"}]}}
+    actions = _normalize_app_actions(
+        [
+            {
+                "type": "modify_workout",
+                "title": "Swap bench press",
+                "summary": "Use dumbbells",
+                "payload": {
+                    "day_id": "day-1",
+                    "scope": "day",
+                    "changes": [
+                        {
+                            "op": "swap",
+                            "from_slug": "bench_press",
+                            "to_slug": "dumbbell_press",
+                        },
+                        {"op": "sets", "slug": "dumbbell_press", "sets": 2},
+                        {
+                            "op": "weight",
+                            "slug": "dumbbell_press",
+                            "weight_kg": 17.5,
+                        },
+                    ],
+                },
+            }
+        ],
+        context,
+    )
+    payload = actions[0]["payload"]
+    assert actions[0]["type"] == "modify_workout"
+    assert payload["scope"] == "day"
+    assert len(payload["changes"]) == 3
+    assert payload["changes"][0]["to_slug"] == "dumbbell_press"
+    assert payload["changes"][1]["sets"] == 2
+
+
+def test_modify_workout_rejects_bad_changes():
+    with pytest.raises(ValueError):
+        _normalize_app_actions(
+            [{"type": "modify_workout", "payload": {"changes": []}}]
+        )
+    with pytest.raises(ValueError):
+        _normalize_app_actions(
+            [
+                {
+                    "type": "modify_workout",
+                    "payload": {
+                        "changes": [
+                            {"op": "explode", "slug": "bench_press"}
+                        ]
+                    },
+                }
+            ]
+        )
+    with pytest.raises(ValueError):
+        _normalize_app_actions(
+            [
+                {
+                    "type": "modify_workout",
+                    "payload": {
+                        "changes": [
+                            {"op": "sets", "slug": "bench_press", "sets": 20}
+                        ]
+                    },
+                }
+            ]
+        )
+    with pytest.raises(ValueError):
+        _normalize_app_actions(
+            [
+                {
+                    "type": "modify_workout",
+                    "payload": {
+                        "scope": "everything",
+                        "changes": [
+                            {"op": "remove", "slug": "bench_press"}
+                        ],
+                    },
+                }
+            ]
+        )
+
+
 def test_app_action_rejects_unknown_day_or_screen():
     context = {"plan": {"days": [{"id": "day-1"}]}}
     with pytest.raises(ValueError):

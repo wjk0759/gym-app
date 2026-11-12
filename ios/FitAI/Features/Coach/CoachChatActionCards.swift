@@ -205,6 +205,7 @@ extension CoachChatView {
         case "create_diet_plan": return "fork.knife"
         case "recognize_equipment": return "camera.viewfinder"
         case "analyze_body": return "figure.stand"
+        case "modify_workout": return "slider.horizontal.3"
         default: return "bolt"
         }
     }

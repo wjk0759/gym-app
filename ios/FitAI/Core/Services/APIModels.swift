@@ -295,6 +295,28 @@ struct AgentPlanProposal: Codable, Identifiable, Hashable {
     var proposed: AgentProposalDiff.Proposed? { diff?.proposed }
 }
 
+struct AgentWorkoutChange: Codable, Hashable {
+    let op: String
+    let fromSlug: String?
+    let toSlug: String?
+    let slug: String?
+    let sets: Int?
+    let reps: String?
+    let weightKG: Double?
+    let restSec: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case op
+        case fromSlug = "from_slug"
+        case toSlug = "to_slug"
+        case slug
+        case sets
+        case reps
+        case weightKG = "weight_kg"
+        case restSec = "rest_sec"
+    }
+}
+
 struct AgentActionPayload: Codable, Hashable {
     let dayID: String?
     let date: String?
@@ -309,6 +331,8 @@ struct AgentActionPayload: Codable, Hashable {
     let waistCM: Double?
     let strategy: String?
     let weekStart: String?
+    let scope: String?
+    let changes: [AgentWorkoutChange]?
 
     enum CodingKeys: String, CodingKey {
         case dayID = "day_id"
@@ -324,6 +348,8 @@ struct AgentActionPayload: Codable, Hashable {
         case waistCM = "waist_cm"
         case strategy
         case weekStart = "week_start"
+        case scope
+        case changes
     }
 }
 

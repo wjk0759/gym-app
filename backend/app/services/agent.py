@@ -65,6 +65,7 @@ APP_ACTION_TYPES = {
     "create_diet_plan",
     "recognize_equipment",
     "analyze_body",
+    "modify_workout",
 }
 APP_SCREENS = {
     "today",
@@ -123,6 +124,7 @@ AGENT_INSTRUCTIONS = """你可以读取用户状态、读取训练记录、生�
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"create_diet_plan","title":"生成本周碳循环饮食计划","summary":"训练日高碳、休息日低碳，蛋白质固定","requires_confirmation":true,"payload":{"strategy":"carb_cycle","week_start":"2026-10-26"}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"recognize_equipment","title":"拍照识别器械","summary":"打开相机识别器械，可加入个人动作库","requires_confirmation":true,"payload":{}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"analyze_body","title":"拍照分析体型","summary":"拍全身或半身照，给出训练重点","requires_confirmation":true,"payload":{}}]}}
+{"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"modify_workout","title":"把今天的卧推换成哑铃卧推","summary":"保留组数，改动作和重量","requires_confirmation":true,"payload":{"day_id":"本地训练日ID","scope":"day","changes":[{"op":"swap","from_slug":"bench_press","to_slug":"dumbbell_press"},{"op":"sets","slug":"dumbbell_press","sets":2}]}}]}}
 {"action":"tool","tool":"remember","arguments":{"kind":"preference","content":"用户出差期间只有哑铃"}}
 {"action":"final","message":"给用户的最终回复"}
 {"action":"ask_user","message":"需要补充的信息"}
@@ -139,11 +141,15 @@ AGENT_INSTRUCTIONS = """你可以读取用户状态、读取训练记录、生�
 8. 给出训练建议前，优先参考 state.coach_context（服务端已计算好的档案、目标、当前计划、最近训练、饮食、身体数据和记忆）；需要刷新或查看更细的近期记录时再调用 get_context / get_recent_training。不要自己重算计划日期、热量、体重或训练量。
 9. 不要用泛泛的“多喝水、坚持训练、循序渐进”凑字数。先给结论，再给 1–2 个具体动作/组数/重量/时间建议，并说明依据；用户没要完整方案时，不要扩成整套计划。列表最多 3 条，每条一句话。
 10. 如果用户的安排已经发生变化，直接指出哪一天、哪个动作或哪个参数需要改，不要重复整份计划。
+11. 用户要改今天/某天的动作、组数、次数、重量、休息，或删除/增加动作时，必须调用 propose_app_actions，type=modify_workout；不要只给文字建议，也不要用 propose_plan 代替单日改课。
+12. modify_workout 的 from_slug/slug 必须是当前计划里已有的动作；换动作/加动作前先用 lookup_exercise 确认目标 slug，不要编造。默认 scope=day，只改指定训练日；用户明确说“以后都/整个计划”时才用 scope=plan。最多 8 条改动；换动作后重量默认不沿用旧动作，需要指定时再加一条 weight；add 只作用于指定训练日，不要用 scope=plan 批量加动作。
+13. 改课是待确认操作；final 里要说明“确认后才会改”，不能声称已经改好。
+14. 如果 app_context.today_day.in_progress=true，说明训练已经开始；不要用 modify_workout 改当前这次训练，先让用户在训练页用“调整/替换”改本次训练；可以改之后的训练日。
 
 App Context 和可执行操作：
 - state.coach_context 是服务端构建的版本化上下文，包含 profile、goal、current_plan（当前周训练）、recent_training、body_metrics、nutrition_7d、equipment_library 和 memories；它是回答事实问题的首选依据。
 - state.safety_context 是服务端前置安全上下文（未成年、慢性病、用药、跌倒/平衡风险）；必须遵守，必要时建议家长、医生或康复师介入。
-- state.app_context 是 iOS 本地计划日期和当前页面，包含 plan.days（day_id/title/date/completed/skipped）、today、selected_tab，以及最近一次图片/视频的 visual_context。
+- state.app_context 是 iOS 本地计划和当前页面，包含 plan.days（day_id/title/date/completed/skipped/exercises）、today、selected_tab，以及最近一次图片/视频的 visual_context。app_context.plan 是手机端最新计划；如果它和 coach_context.current_plan 冲突，以 app_context.plan 为准（服务端可能还没收到本地改课）。
 - state.app_context.visual_context 是图片/视频分析的结构化记忆；history 里的“[图片]”标记表示用户发过附件。用户说“图中 / 这张 / 她 / 他 / 刚才那张”时，先结合 visual_context 和 history 回答，绝对不要说自己没收到图、看不到人或没有图片。
 - 只要本轮存在 visual_context，且用户问的是这张图/视频里的动作、体型、体脂、器械或食物，当前结论必须以 visual_context 为准；coach_context.body_metrics 只能用于历史对比，不能覆盖本次视觉结果。
 - 用户没有发图却要求“看照片估体脂”时，先要一张全身正面/侧面照和身高体重腰围；不要把历史 body_fat_pct 说成本次视觉估算。用户问“现在体脂多少”但没有本轮图片时，只说明这次看不到照片并请用户发当前照片，不要报历史体脂数字，即使用“上次记录”标注也不要说。
@@ -357,6 +363,97 @@ def _guard_pending_action_claims(message: str) -> str:
     return text
 
 
+_WORKOUT_CHANGE_OPS = {"swap", "sets", "reps", "weight", "rest", "remove", "add"}
+_EXERCISE_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{1,79}$")
+
+
+def _workout_int(value: Any, field: str, low: int, high: int) -> int:
+    try:
+        number = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field} must be an integer") from exc
+    if number < low or number > high:
+        raise ValueError(f"{field} out of range")
+    return number
+
+
+def _workout_float(value: Any, field: str, low: float, high: float) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field} must be a number") from exc
+    if number < low or number > high:
+        raise ValueError(f"{field} out of range")
+    return round(number, 2)
+
+
+def _normalize_workout_changes(raw_changes: Any) -> list[dict]:
+    """Validate the small, explicit vocabulary the app can apply to one day."""
+    if not isinstance(raw_changes, list) or not raw_changes:
+        raise ValueError("modify_workout requires a non-empty changes list")
+    if len(raw_changes) > 8:
+        raise ValueError("at most 8 workout changes are allowed")
+
+    result: list[dict] = []
+    for raw in raw_changes:
+        if not isinstance(raw, dict):
+            continue
+        op = str(raw.get("op", "")).strip().lower()
+        if op not in _WORKOUT_CHANGE_OPS:
+            raise ValueError(f"unsupported workout change: {op}")
+
+        item: dict[str, Any] = {"op": op}
+        if op == "swap":
+            from_slug = str(raw.get("from_slug", "")).strip()
+            to_slug = str(raw.get("to_slug", "")).strip()
+            if not _EXERCISE_SLUG_RE.match(from_slug):
+                raise ValueError("swap requires from_slug")
+            if not _EXERCISE_SLUG_RE.match(to_slug):
+                raise ValueError("swap requires to_slug")
+            if from_slug == to_slug:
+                raise ValueError("swap target must be different")
+            item.update({"from_slug": from_slug, "to_slug": to_slug})
+        else:
+            slug = str(raw.get("slug", "")).strip()
+            if not _EXERCISE_SLUG_RE.match(slug):
+                raise ValueError(f"{op} requires slug")
+            item["slug"] = slug
+            if op == "sets":
+                item["sets"] = _workout_int(raw.get("sets"), "sets", 1, 10)
+            elif op == "reps":
+                reps = str(raw.get("reps", "")).strip()
+                if not reps or len(reps) > 20 or "\n" in reps:
+                    raise ValueError("reps must be a short string")
+                item["reps"] = reps
+            elif op == "weight":
+                item["weight_kg"] = _workout_float(
+                    raw.get("weight_kg"), "weight_kg", 0, 500
+                )
+            elif op == "rest":
+                item["rest_sec"] = _workout_int(raw.get("rest_sec"), "rest_sec", 0, 300)
+            elif op == "add":
+                if raw.get("sets") is not None:
+                    item["sets"] = _workout_int(raw.get("sets"), "sets", 1, 10)
+                if raw.get("reps") is not None:
+                    reps = str(raw.get("reps")).strip()
+                    if not reps or len(reps) > 20 or "\n" in reps:
+                        raise ValueError("reps must be a short string")
+                    item["reps"] = reps
+                if raw.get("weight_kg") is not None:
+                    item["weight_kg"] = _workout_float(
+                        raw.get("weight_kg"), "weight_kg", 0, 500
+                    )
+                if raw.get("rest_sec") is not None:
+                    item["rest_sec"] = _workout_int(
+                        raw.get("rest_sec"), "rest_sec", 0, 300
+                    )
+        result.append(item)
+
+    if not result:
+        raise ValueError("no valid workout changes")
+    return result
+
+
 def _normalize_app_actions(
     raw_actions: Any, app_context: dict | None = None
 ) -> list[dict]:
@@ -474,6 +571,12 @@ def _normalize_app_actions(
                 if not valid_date(week_start):
                     raise ValueError("week_start must be YYYY-MM-DD")
                 payload["week_start"] = week_start
+        if action_type == "modify_workout":
+            payload["changes"] = _normalize_workout_changes(payload.get("changes"))
+            scope = str(payload.get("scope") or "day").strip().lower()
+            if scope not in {"day", "plan"}:
+                raise ValueError("unsupported modify_workout scope")
+            payload["scope"] = scope
 
         title = str(raw.get("title") or action_type).strip()[:120]
         summary = str(raw.get("summary") or "").strip()[:500]
