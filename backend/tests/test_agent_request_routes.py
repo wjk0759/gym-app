@@ -10,6 +10,7 @@ from app.db import Base
 from app.models import AgentRun, ChatMessage, Profile, User
 from app.routers import agent as agent_router
 from app.schemas import AgentChatIn
+from app.services import access
 
 
 @pytest.fixture()
@@ -106,6 +107,8 @@ def test_failed_turn_is_not_persisted_for_retry(db, monkeypatch):
     assert result["status"] == "failed"
     assert result["message_id"] is None
     assert db.query(ChatMessage).count() == 0
+    used, _, _ = access.coach_usage(db, "user-1")
+    assert used == 0
 
 
 def test_in_progress_request_returns_structured_409(db):

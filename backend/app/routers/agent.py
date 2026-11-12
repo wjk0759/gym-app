@@ -189,6 +189,8 @@ async def _agent_chat_claimed(
         "usage": result.get("usage", {}),
     }
     if result.get("status") == "failed":
+        if reserved and coach_period is not None:
+            access.release_coach_message(db, user_id, period=coach_period)
         fail_agent_request(
             db,
             user_id,
