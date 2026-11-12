@@ -964,6 +964,36 @@ def _mock_agent_response(db: Session, user_id: str) -> str:
     return "AI 服务暂时不可用。我可以先读取你的本地训练记录，但这次没有生成新的计划草案。"
 
 
+def _agent_fallback_reply(
+    db: Session,
+    user_id: str,
+    message: str,
+    *,
+    profile: Profile | None = None,
+) -> tuple[str | None, list[dict], str | None]:
+    """Deterministic local reply when the model/provider fails.
+
+    The legacy coach already has safe rules for common questions (today's
+    workout, substitutions, protein, schedule). Reuse them instead of returning
+    a generic "try again" when the user's data is enough to answer.
+    """
+    try:
+        profile = profile or db.get(Profile, user_id)
+        if profile is None:
+            return None, [], None
+        from .coach import _mock_reply
+
+        program = active_program(db, user_id)
+        reply, citations = _mock_reply(message, profile, program, db, "trainer")
+        review = review_reply(profile, reply)
+        if review.blocked:
+            return review.reply, [], review.safety_flag
+        return reply, citations, None
+    except Exception:  # noqa: BLE001 - fallback must never mask the original error
+        logger.exception("Agent deterministic fallback failed")
+        return None, [], None
+
+
 async def run_agent(
     db: Session,
     user_id: str,
@@ -1019,9 +1049,20 @@ async def run_agent(
 
     try:
         if settings.use_mock_llm:
-            final_message = _mock_agent_response(db, user_id)
-            run.status = "failed"
-            error = "LLM is not configured"
+            fallback_message, fallback_citations, fallback_flag = (
+                _agent_fallback_reply(
+                    db,
+                    user_id,
+                    message,
+                    profile=profile,
+                )
+            )
+            final_message = fallback_message or _mock_agent_response(db, user_id)
+            citations = fallback_citations
+            output_flag = fallback_flag
+            run.status = "completed"
+            run.intent = "fallback"
+            error = "LLM is not configured; deterministic fallback"
         else:
             coach_context = build_coach_context(db, user_id)
             state = {
@@ -1195,8 +1236,26 @@ async def run_agent(
                 else "completed"
             )
         else:
-            run.status = "failed"
-            run.output_text = "这次请求没有完成，可能是模型服务短暂异常，可以重试。"
+            if proposal is not None or actions:
+                final_message = "我先把可执行方案准备好了，请确认后再执行。"
+                citations = []
+                run.status = "needs_confirmation"
+            else:
+                fallback_message, fallback_citations, fallback_flag = (
+                    _agent_fallback_reply(db, user_id, message)
+                )
+                if fallback_message:
+                    final_message = fallback_message
+                    citations = fallback_citations
+                    output_flag = fallback_flag
+                    run.status = "completed"
+                    run.intent = "fallback"
+                else:
+                    run.status = "failed"
+                    final_message = (
+                        "这次请求没有完成，可能是模型服务短暂异常，可以重试。"
+                    )
+            run.output_text = final_message
         run.error = error
         run.completed_at = utcnow()
         db.commit()

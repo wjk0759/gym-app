@@ -1031,6 +1031,41 @@ class FeatureResultCache(Base):
     )
 
 
+class AgentRequestState(Base):
+    """Durable lifecycle for one client ``request_id``.
+
+    The in-process agent cache cannot survive a restart and does not coordinate
+    multiple workers. This row is the source of truth for running/completed
+    requests and stores the completed response for an idempotent replay.
+    """
+
+    __tablename__ = "agent_request_state"
+    __table_args__ = (
+        Index("ix_agent_request_state_expires", "expires_at"),
+    )
+
+    user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    request_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    status: Mapped[str] = mapped_column(String(20), default="running")
+    run_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("agent_runs.id", ondelete="SET NULL")
+    )
+    response: Mapped[dict | None] = mapped_column(JSON)
+    error: Mapped[str | None] = mapped_column(String(500))
+    attempts: Mapped[int] = mapped_column(Integer, default=1)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
 class RateLimitBucket(Base):
     __tablename__ = "rate_limit_buckets"
     __table_args__ = (Index("ix_rate_limit_buckets_updated", "updated_at"),)

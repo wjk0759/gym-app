@@ -138,9 +138,12 @@ GET  /api/v1/agent/proposals/{proposal_id}
 POST /api/v1/agent/reviews/weekly
 GET  /api/v1/agent/memories
 DELETE /api/v1/agent/memories/{memory_id}
+GET  /api/v1/agent/requests/{request_id}
 ```
 
 Agent 回复中的 `proposal` 只包含变更摘要和验证结果；应用接口返回正式计划。响应包含 `safety_flag` 和 `citations`；安全拦截时 `proposal` 和 `actions` 为空。`citations` 只引用服务端校验过的当前计划动作或动作库记录。
+
+`request_id` 的幂等状态落在 `agent_request_state`：已完成请求重放保存的响应，进行中请求返回 409 `AGENT_REQUEST_IN_PROGRESS`，失败可重试；`GET /agent/requests/{request_id}` 用来在客户端超时后查询任务状态。模型失败时优先降级到确定性本地教练回复。
 
 记忆接口只返回当前账号的 `active` 记忆，删除是软删除，账号注销时随用户数据一起清理。
 

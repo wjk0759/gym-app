@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import asyncio
-import time
-
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -26,6 +23,13 @@ from ..schemas import (
 )
 from ..services import access, generation
 from ..services.agent import apply_proposal, generate_weekly_review, run_agent
+from ..services.agent_requests import (
+    AgentRequestInProgress,
+    claim_agent_request,
+    complete_agent_request,
+    fail_agent_request,
+    get_agent_request,
+)
 from ..services.coach_feedback import save_feedback
 from ..services.memory import list_memories
 from ..services.rate_limit import enforce as enforce_rate_limit
@@ -41,47 +45,15 @@ from ..services.workout_actions import (
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 
-# 开发/单进程部署下的短时幂等缓存。正式多 worker 部署应替换为 Redis 或
-# 数据库任务表；它至少能覆盖“客户端超时后立刻点重试”的常见情况。
-_AGENT_RESULT_TTL_SECONDS = 600
-_AGENT_RESULT_CACHE_LIMIT = 256
-_agent_result_cache: dict[str, tuple[float, dict]] = {}
-_agent_request_locks: dict[str, asyncio.Lock] = {}
-
-
-def _agent_cache_key(user_id: str, request_id: str) -> str:
-    return f"{user_id}:{request_id}"
-
-
-def _cached_agent_result(user_id: str, request_id: str | None) -> dict | None:
-    if not request_id:
-        return None
-    key = _agent_cache_key(user_id, request_id)
-    item = _agent_result_cache.get(key)
-    if item is None:
-        return None
-    created_at, result = item
-    if time.monotonic() - created_at > _AGENT_RESULT_TTL_SECONDS:
-        _agent_result_cache.pop(key, None)
-        return None
-    return result
-
-
-def _remember_agent_result(user_id: str, request_id: str | None, result: dict) -> None:
-    if not request_id or result.get("status") == "failed":
-        return
-    now = time.monotonic()
-    _agent_result_cache[_agent_cache_key(user_id, request_id)] = (now, result)
-    if len(_agent_result_cache) > _AGENT_RESULT_CACHE_LIMIT:
-        expired = [
-            key
-            for key, (created_at, _) in _agent_result_cache.items()
-            if now - created_at > _AGENT_RESULT_TTL_SECONDS
-        ]
-        for key in expired:
-            _agent_result_cache.pop(key, None)
-        while len(_agent_result_cache) > _AGENT_RESULT_CACHE_LIMIT:
-            _agent_result_cache.pop(next(iter(_agent_result_cache)))
+def _request_in_progress(exc: AgentRequestInProgress) -> HTTPException:
+    return HTTPException(
+        status_code=409,
+        detail={
+            "code": "AGENT_REQUEST_IN_PROGRESS",
+            "message": "这次请求还在处理中，请稍后重试",
+            "retry_after": exc.retry_after,
+        },
+    )
 
 
 async def _agent_chat_inner(
@@ -89,10 +61,30 @@ async def _agent_chat_inner(
     user_id: str,
     db: DBSession,
 ):
-    cached = _cached_agent_result(user_id, payload.request_id)
-    if cached is not None:
-        return cached
+    try:
+        claim = claim_agent_request(db, user_id, payload.request_id)
+    except AgentRequestInProgress as exc:
+        raise _request_in_progress(exc) from exc
+    if claim.is_replay:
+        return claim.replay
 
+    try:
+        return await _agent_chat_claimed(payload, user_id, db)
+    except Exception as exc:
+        fail_agent_request(
+            db,
+            user_id,
+            payload.request_id,
+            error=str(exc),
+        )
+        raise
+
+
+async def _agent_chat_claimed(
+    payload: AgentChatIn,
+    user_id: str,
+    db: DBSession,
+):
     enforce_rate_limit(db, "agent_chat", user_id, 10, 60)
     session: ChatSession | None = None
     if payload.session_id:
@@ -170,19 +162,22 @@ async def _agent_chat_inner(
             result_ref=result["run_id"],
         )
 
-    user_message = ChatMessage(role="user", content=payload.message)
-    assistant_message = ChatMessage(
-        role="assistant",
-        content=result["reply"],
-        citations=result.get("citations", []),
-        safety_flag=result.get("safety_flag"),
-    )
-    session.messages.extend([user_message, assistant_message])
-    db.commit()
+    message_id = None
+    if result.get("status") != "failed":
+        user_message = ChatMessage(role="user", content=payload.message)
+        assistant_message = ChatMessage(
+            role="assistant",
+            content=result["reply"],
+            citations=result.get("citations", []),
+            safety_flag=result.get("safety_flag"),
+        )
+        session.messages.extend([user_message, assistant_message])
+        db.commit()
+        message_id = assistant_message.id
 
     response = {
         "session_id": session.id,
-        "message_id": assistant_message.id,
+        "message_id": message_id,
         "run_id": result["run_id"],
         "status": result["status"],
         "reply": result["reply"],
@@ -193,7 +188,22 @@ async def _agent_chat_inner(
         "elapsed_ms": result["elapsed_ms"],
         "usage": result.get("usage", {}),
     }
-    _remember_agent_result(user_id, payload.request_id, response)
+    if result.get("status") == "failed":
+        fail_agent_request(
+            db,
+            user_id,
+            payload.request_id,
+            error=result.get("error"),
+            run_id=result.get("run_id"),
+        )
+    else:
+        complete_agent_request(
+            db,
+            user_id,
+            payload.request_id,
+            run_id=result.get("run_id"),
+            response=response,
+        )
     return response
 
 
@@ -203,22 +213,22 @@ async def agent_chat(
     user_id: CurrentUser,
     db: DBSession,
 ):
-    # 同一 request_id 的并发重试等待第一个请求完成后再读缓存，
-    # 避免客户端断开/重试时同时创建两条 AgentRun。
-    if not payload.request_id:
-        return await _agent_chat_inner(payload, user_id, db)
+    return await _agent_chat_inner(payload, user_id, db)
 
-    key = _agent_cache_key(user_id, payload.request_id)
-    lock = _agent_request_locks.get(key)
-    if lock is None:
-        if len(_agent_request_locks) > _AGENT_RESULT_CACHE_LIMIT:
-            for old_key, old_lock in list(_agent_request_locks.items()):
-                if not old_lock.locked():
-                    _agent_request_locks.pop(old_key, None)
-        lock = asyncio.Lock()
-        _agent_request_locks[key] = lock
-    async with lock:
-        return await _agent_chat_inner(payload, user_id, db)
+
+@router.get("/requests/{request_id}")
+def agent_request_state(
+    request_id: str,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    value = request_id.strip()
+    if not 1 <= len(value) <= 64:
+        raise HTTPException(status_code=400, detail="request_id 不合法")
+    state = get_agent_request(db, user_id, value)
+    if state is None:
+        raise HTTPException(status_code=404, detail="请求记录不存在或已过期")
+    return state
 
 
 @router.post("/actions/{action_id}/result")

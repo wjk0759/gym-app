@@ -278,6 +278,81 @@ def test_agent_blocks_unsafe_model_output(monkeypatch):
     assert step.output_json["action"] == "blocked"
 
 
+def test_agent_falls_back_to_deterministic_reply_on_model_failure(monkeypatch):
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    db = Session()
+    db.add(User(id="fallback-user"))
+    db.add(
+        Profile(
+            user_id="fallback-user",
+            nickname="降级测试",
+            sex="male",
+            birth_date=date(date.today().year - 30, 1, 1),
+            height_cm=175,
+            weight_kg=70,
+            equipment=["bodyweight"],
+        )
+    )
+    db.commit()
+
+    async def broken_model(system, user, **kwargs):
+        raise RuntimeError("model down")
+
+    monkeypatch.setattr(settings, "llm_api_key", "test-key")
+    monkeypatch.setattr(agent_service.llm, "complete_json", broken_model)
+    monkeypatch.setattr(
+        agent_service,
+        "schedule_memory_extraction",
+        lambda *args, **kwargs: None,
+    )
+
+    result = asyncio.run(
+        run_agent(db, "fallback-user", "今天练什么？")
+    )
+
+    assert result["status"] == "completed"
+    assert "还没生成计划" in result["reply"]
+    assert "model down" in result["error"]
+
+
+def test_agent_mock_mode_returns_useful_fallback(monkeypatch):
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    db = Session()
+    db.add(User(id="mock-fallback-user"))
+    db.add(
+        Profile(
+            user_id="mock-fallback-user",
+            nickname="Mock 降级",
+            sex="female",
+            birth_date=date(date.today().year - 28, 1, 1),
+            height_cm=165,
+            weight_kg=55,
+            equipment=["bodyweight"],
+        )
+    )
+    db.commit()
+    monkeypatch.setattr(settings, "llm_api_key", "")
+
+    result = asyncio.run(
+        run_agent(db, "mock-fallback-user", "今天练什么？")
+    )
+
+    assert result["status"] == "completed"
+    assert "还没生成计划" in result["reply"]
+
+
 def test_coach_reply_blocks_unsafe_model_output(monkeypatch):
     engine = create_engine(
         "sqlite:///:memory:",

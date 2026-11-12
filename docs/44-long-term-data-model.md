@@ -125,6 +125,7 @@ V12 增加中文 ngram 全文索引：
 - `feature_usage`：按北京时间自然日记录 AI 教练用量，免费用户每天 3 条且不累计；安全/医疗回复不计入。
 - `feature_generation_state` V17：计划/饮食周计划的持久冷却、进行中锁和幂等回放。成功后才开始 60 秒冷却；相同 `Idempotency-Key` 在 10 分钟内返回已保存结果。
 - `feature_result_cache` V21：拍照分析（体型/饮食/器械/教练视觉）的短时幂等回放。只存脱敏后的 JSON 文本，不存原图；TTL 默认 300 秒，过期行在写入新结果时批量清理，生产可再加定时清理任务。
+- `agent_request_state` V33：Agent 对话的持久任务状态和请求幂等。按 `(user_id, request_id)` 记录 `running / completed / failed`、`attempts`、`run_id` 和已完成的完整响应；客户端超时重试直接回放，不重复调用模型。进行中的重复请求返回 409 和 `retry_after`，过期行在 claim 时清理。
 - `rate_limit_buckets` V18：按 `(feature, user)` 的分布式 token bucket，所有 worker 共享同一额度，避免进程内限流被多 worker 绕过。
 - `ai_runtime_control` V19：全局 AI 开关。暂停时仅 `users.is_test` 白名单可用，其他请求降级到规则/Mock；后台变更写审计日志。
 - `ai_jobs`：新增按调用记录 `input_tokens / output_tokens`，后台 AI 用量页和全局日/月预算共用这一份数据。
