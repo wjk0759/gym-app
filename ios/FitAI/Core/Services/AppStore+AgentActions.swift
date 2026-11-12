@@ -82,7 +82,7 @@ extension AppStore {
             var undoStates: [AgentUndoState] = []
             for action in actions {
                 var undoState: AgentUndoState?
-                let message = self.executeAgentAction(action, undo: &undoState)
+                let message = await self.executeAgentAction(action, undo: &undoState)
                 results.append(message)
                 let status = self.agentActionStatus(for: message)
                 if status != "failed", let undoState {
@@ -111,7 +111,7 @@ extension AppStore {
             self.chat.append(
                 ChatMessage(
                     role: .assistant,
-                    text: "已为你完成：\n" + results.joined(separator: "\n")
+                    text: "处理结果：\n" + results.joined(separator: "\n")
                 )
             )
             self.toast = "Agent 操作已执行"
@@ -150,7 +150,7 @@ extension AppStore {
     private func executeAgentAction(
         _ action: AgentAction,
         undo: inout AgentUndoState?
-    ) -> String {
+    ) async -> String {
         switch action.type {
         case "open_screen":
             guard let screen = action.payload?.screen else {
@@ -325,40 +325,52 @@ extension AppStore {
                   !changes.isEmpty else {
                 return "没有收到具体的改课内容"
             }
-            guard var current = plan else {
+            guard (payload.scope ?? "day") == "day" else {
+                return "暂不支持一次改整个计划，请按训练日改"
+            }
+            guard let current = plan else {
                 return "还没有训练计划，无法改课"
             }
             guard let target = resolveActionPlanDay(payload)
                 ?? defaultWorkoutDayForAgent(in: current) else {
                 return "没有找到可以修改的训练日"
             }
-            let previousPlan = current
-            let outcome = applyWorkoutChanges(
-                changes,
-                to: &current,
-                dayID: target.id,
-                scope: payload.scope ?? "day"
-            )
-            guard outcome.applied > 0 else {
-                return outcome.message
+            do {
+                let updated = try await APIClient.shared.executeWorkoutAction(
+                    actionID: action.id,
+                    planID: current.id.uuidString,
+                    dayID: target.id.uuidString,
+                    expectedPlanVersion: current.version,
+                    changes: changes
+                )
+                guard let merged = mergeServerWorkoutPlan(
+                    updated,
+                    into: current,
+                    dayID: target.id
+                ) else {
+                    return "改课失败：服务端返回的计划不一致"
+                }
+                plan = merged
+                undo = .serverWorkoutAction(
+                    actionID: action.id,
+                    planID: current.id,
+                    dayID: target.id
+                )
+                persist()
+                rescheduleNotifications()
+                syncPendingUserData()
+                return action.summary.isEmpty
+                    ? "已改课"
+                    : "已改课：\(action.summary)"
+            } catch let error as APIError where error.statusCode == 409 {
+                return "计划已经更新，请重新生成改课方案"
+            } catch {
+                return "改课失败：\(error.localizedDescription)"
             }
-            current.version += 1
-            current.updatedAt = Date()
-            plan = current
-            undo = .plan(previousPlan)
-            persist()
-            rescheduleNotifications()
-            syncPendingUserData()
-            return outcome.message
 
         default:
             return "暂不支持操作：\(action.type)"
         }
-    }
-
-    private struct WorkoutChangeOutcome {
-        let applied: Int
-        let message: String
     }
 
     private func defaultWorkoutDayForAgent(in plan: TrainingPlan) -> PlanDay? {
@@ -374,318 +386,21 @@ extension AppStore {
             .first
     }
 
-    private func applyWorkoutChanges(
-        _ changes: [AgentWorkoutChange],
-        to plan: inout TrainingPlan,
-        dayID: UUID,
-        scope: String
-    ) -> WorkoutChangeOutcome {
-        let targetIndexes: [Int]
-        if scope == "plan" {
-            targetIndexes = Array(plan.days.indices)
-        } else if let index = plan.days.firstIndex(where: { $0.id == dayID }) {
-            targetIndexes = [index]
-        } else {
-            return WorkoutChangeOutcome(applied: 0, message: "没有找到要修改的训练日")
-        }
-
-        var applied = 0
-        var notes: [String] = []
-
-        func name(of slug: String) -> String {
-            ExerciseLibrary.exercise(slug: slug)?.nameZH ?? slug
-        }
-
-        // Structural changes first so a following weight/sets op can address
-        // the replacement exercise, regardless of the model's array order.
-        let orderedChanges = changes.filter { $0.op == "swap" || $0.op == "add" }
-            + changes.filter { $0.op != "swap" && $0.op != "add" }
-        for change in orderedChanges {
-            switch change.op {
-            case "swap":
-                guard let from = change.fromSlug,
-                      let to = change.toSlug,
-                      let replacement = ExerciseLibrary.exercise(slug: to) else {
-                    notes.append("动作库里没有 \(change.toSlug ?? "目标动作")")
-                    continue
-                }
-                var swapped = 0
-                for index in targetIndexes {
-                    var exercises = plan.days[index].exercises
-                    guard let exerciseIndex = exercises.firstIndex(where: { $0.slug == from }) else {
-                        continue
-                    }
-                    guard !exercises.contains(where: { $0.slug == to }) else {
-                        continue
-                    }
-                    let original = exercises[exerciseIndex]
-                    exercises[exerciseIndex] = PlanExercise(
-                        slug: replacement.slug,
-                        sets: original.sets,
-                        reps: original.reps,
-                        weightKG: nil,
-                        restSec: original.restSec,
-                        rpe: original.rpe
-                    )
-                    plan.days[index].exercises = exercises
-                    swapped += 1
-                }
-                if swapped > 0 {
-                    applied += swapped
-                    notes.append("\(name(of: from)) → \(replacement.nameZH)")
-                }
-
-            case "sets":
-                guard let slug = change.slug, let sets = change.sets else { continue }
-                let value = min(max(sets, 1), 10)
-                let updated = updateWorkoutExercises(
-                    in: &plan,
-                    indexes: targetIndexes,
-                    slug: slug
-                ) { exercise in
-                    exercise.sets = value
-                    return true
-                }
-                if updated > 0 {
-                    applied += updated
-                    notes.append("\(name(of: slug)) 改为 \(value) 组")
-                }
-
-            case "reps":
-                guard let slug = change.slug,
-                      let reps = change.reps,
-                      !reps.isEmpty else { continue }
-                let value = String(reps.prefix(20))
-                let updated = updateWorkoutExercises(
-                    in: &plan,
-                    indexes: targetIndexes,
-                    slug: slug
-                ) { exercise in
-                    exercise.reps = value
-                    return true
-                }
-                if updated > 0 {
-                    applied += updated
-                    notes.append("\(name(of: slug)) 改为 \(value)")
-                }
-
-            case "weight":
-                guard let slug = change.slug, let weight = change.weightKG else { continue }
-                let updated = updateWorkoutExercises(
-                    in: &plan,
-                    indexes: targetIndexes,
-                    slug: slug
-                ) { exercise in
-                    exercise.weightKG = weight > 0 ? weight : nil
-                    return true
-                }
-                if updated > 0 {
-                    applied += updated
-                    notes.append("\(name(of: slug)) 重量 \(weight.formatted())kg")
-                }
-
-            case "rest":
-                guard let slug = change.slug, let rest = change.restSec else { continue }
-                let value = min(max(rest, 0), 300)
-                let updated = updateWorkoutExercises(
-                    in: &plan,
-                    indexes: targetIndexes,
-                    slug: slug
-                ) { exercise in
-                    exercise.restSec = value
-                    return true
-                }
-                if updated > 0 {
-                    applied += updated
-                    notes.append("\(name(of: slug)) 休息 \(value)s")
-                }
-
-            case "remove":
-                guard let slug = change.slug else { continue }
-                var removed = 0
-                for index in targetIndexes {
-                    var exercises = plan.days[index].exercises
-                    guard exercises.count > 1,
-                          let exerciseIndex = exercises.firstIndex(where: { $0.slug == slug }) else {
-                        continue
-                    }
-                    exercises.remove(at: exerciseIndex)
-                    plan.days[index].exercises = exercises
-                    removed += 1
-                }
-                if removed > 0 {
-                    applied += removed
-                    notes.append("移除 \(name(of: slug))")
-                }
-
-            case "add":
-                guard let slug = change.slug,
-                      let replacement = ExerciseLibrary.exercise(slug: slug),
-                      let index = plan.days.firstIndex(where: { $0.id == dayID }) else {
-                    continue
-                }
-                guard !plan.days[index].exercises.contains(where: { $0.slug == slug }) else {
-                    continue
-                }
-                plan.days[index].exercises.append(
-                    PlanExercise(
-                        slug: replacement.slug,
-                        sets: min(max(change.sets ?? 3, 1), 10),
-                        reps: change.reps ?? "10-12",
-                        weightKG: change.weightKG,
-                        restSec: min(max(change.restSec ?? 60, 0), 300),
-                        rpe: 7.5
-                    )
-                )
-                applied += 1
-                notes.append("加入 \(replacement.nameZH)")
-
-            default:
-                continue
-            }
-        }
-
-        let message = notes.isEmpty
-            ? "没有找到可以修改的动作"
-            : "已改课：" + notes.joined(separator: "；") + "。"
-        return WorkoutChangeOutcome(applied: applied, message: message)
-    }
-
-    private func updateWorkoutExercises(
-        in plan: inout TrainingPlan,
-        indexes: [Int],
-        slug: String,
-        transform: (inout PlanExercise) -> Bool
-    ) -> Int {
-        var updated = 0
-        for index in indexes {
-            var exercises = plan.days[index].exercises
-            var changed = false
-            for exerciseIndex in exercises.indices where exercises[exerciseIndex].slug == slug {
-                if transform(&exercises[exerciseIndex]) {
-                    changed = true
-                    updated += 1
-                }
-            }
-            if changed {
-                plan.days[index].exercises = exercises
-            }
-        }
-        return updated
-    }
-
-    private func scheduleUndoState(for day: PlanDay) -> AgentUndoState? {
-        guard let plan,
-              let current = plan.days.first(where: { $0.id == day.id }) else {
+    func mergeServerWorkoutPlan(
+        _ updated: TrainingPlan,
+        into current: TrainingPlan,
+        dayID: UUID
+    ) -> TrainingPlan? {
+        guard updated.id == current.id,
+              let serverDay = updated.days.first(where: { $0.id == dayID }),
+              let index = current.days.firstIndex(where: { $0.id == dayID }) else {
             return nil
         }
-        return .schedule(
-            planID: plan.id,
-            dayID: current.id,
-            previousDate: current.date,
-            previousWeekday: current.weekday,
-            previousWeekIndex: current.weekIndex,
-            previousSkippedAt: current.skippedAt
-        )
-    }
-
-    func undoLastAgentAction() {
-        guard let pending = pendingUndo else { return }
-        pendingUndo = nil
-        guard Date() < pending.expiresAt else {
-            toast = "撤销窗口已结束"
-            return
-        }
-        let now = Date()
-        let succeeded = undoSingleAction(pending.state, at: now)
-        if case let .batch(states) = pending.state {
-            toast = succeeded
-                ? "已撤销本次 \(states.count) 项修改"
-                : "部分修改撤销失败，请检查计划"
-        }
-        Task {
-            try? await APIClient.shared.reportAgentAction(
-                id: pending.id,
-                runID: pending.runID,
-                type: pending.actionType,
-                status: "undone",
-                message: "用户撤销"
-            )
-        }
-    }
-
-    @discardableResult
-    private func undoSingleAction(_ state: AgentUndoState, at now: Date) -> Bool {
-        switch state {
-        case let .batch(states):
-            var allSucceeded = true
-            for item in states {
-                if !undoSingleAction(item, at: now) {
-                    allSucceeded = false
-                }
-            }
-            return allSucceeded
-
-        case let .schedule(
-            planID,
-            dayID,
-            previousDate,
-            previousWeekday,
-            previousWeekIndex,
-            previousSkippedAt
-        ):
-            guard var current = plan,
-                  current.id == planID,
-                  let index = current.days.firstIndex(where: { $0.id == dayID }) else {
-                toast = "当前计划已变化，无法撤销"
-                return false
-            }
-            current.days[index].date = previousDate
-            current.days[index].weekday = previousWeekday
-            current.days[index].weekIndex = previousWeekIndex
-            current.days[index].skippedAt = previousSkippedAt
-            current.days[index].scheduleUpdatedAt = now
-            current.version += 1
-            current.updatedAt = now
-            plan = current
-            persist()
-            rescheduleNotifications()
-            syncPendingUserData()
-            toast = "已撤销排期修改"
-            return true
-
-        case let .bodyMetric(metricID, previousMetric, previousProfile):
-            removeBodyMetric(id: metricID)
-            profile = previousProfile
-            if let previousMetric {
-                appendBodyMetric(previousMetric)
-            }
-            persist()
-            syncPendingUserData()
-            Task {
-                try? await APIClient.shared.syncProfile(previousProfile)
-                try? await APIClient.shared.syncGoal(previousProfile)
-            }
-            toast = "已撤销身体数据"
-            return true
-
-        case let .plan(previousPlan):
-            guard let current = plan, current.id == previousPlan.id else {
-                toast = "当前计划已变化，无法撤销改课"
-                return false
-            }
-            plan = previousPlan
-            persist()
-            rescheduleNotifications()
-            syncPendingUserData()
-            toast = "已撤销改课"
-            return true
-
-        case let .profile(previousProfile):
-            updateProfile(previousProfile)
-            toast = "已撤销目标修改"
-            return true
-        }
+        var result = current
+        result.days[index].exercises = serverDay.exercises
+        result.version = updated.version
+        result.updatedAt = Date()
+        return result
     }
 
     private func resolveActionPlanDay(_ payload: AgentActionPayload?) -> PlanDay? {

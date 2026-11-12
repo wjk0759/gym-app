@@ -1,5 +1,19 @@
 import Foundation
 
+private struct WorkoutActionExecuteRequest: Encodable {
+    let planID: String
+    let dayID: String
+    let expectedPlanVersion: Int
+    let changes: [AgentWorkoutChange]
+
+    enum CodingKeys: String, CodingKey {
+        case planID = "plan_id"
+        case dayID = "day_id"
+        case expectedPlanVersion = "expected_plan_version"
+        case changes
+    }
+}
+
 extension APIClient {
     // MARK: - 健康检查
 
@@ -192,6 +206,39 @@ extension APIClient {
             method: "POST",
             body: try JSONSerialization.data(withJSONObject: payload)
         )
+    }
+
+    func executeWorkoutAction(
+        actionID: String,
+        planID: String,
+        dayID: String,
+        expectedPlanVersion: Int,
+        changes: [AgentWorkoutChange]
+    ) async throws -> TrainingPlan {
+        let request = WorkoutActionExecuteRequest(
+            planID: planID,
+            dayID: dayID,
+            expectedPlanVersion: expectedPlanVersion,
+            changes: changes
+        )
+        let body = try JSONEncoder().encode(request)
+        let response: WorkoutActionExecuteResponse = try await send(
+            path: "agent/actions/\(actionID)/execute",
+            method: "POST",
+            body: body,
+            timeout: 30
+        )
+        return response.program
+    }
+
+    func undoWorkoutAction(actionID: String) async throws -> TrainingPlan {
+        let response: WorkoutActionExecuteResponse = try await send(
+            path: "agent/actions/\(actionID)/undo",
+            method: "POST",
+            body: nil,
+            timeout: 30
+        )
+        return response.program
     }
 
     // MARK: - Cross-device data

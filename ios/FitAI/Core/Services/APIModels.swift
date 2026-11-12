@@ -399,6 +399,20 @@ struct AgentApplyResponse: Decodable {
     let program: TrainingPlan
 }
 
+struct WorkoutActionExecuteResponse: Decodable {
+    let program: TrainingPlan
+    let actionID: String
+    let status: String
+    let idempotent: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case program
+        case actionID = "action_id"
+        case status
+        case idempotent
+    }
+}
+
 struct AgentMemory: Codable, Identifiable, Hashable {
     let id: String
     let kind: String

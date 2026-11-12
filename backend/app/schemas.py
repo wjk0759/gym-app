@@ -195,6 +195,24 @@ class AgentFeedbackIn(BaseModel):
     comment: str | None = Field(default=None, max_length=500)
 
 
+class WorkoutActionChangeIn(BaseModel):
+    op: Literal["swap", "sets", "reps", "weight", "rest", "remove", "add"]
+    from_slug: str | None = Field(default=None, max_length=80)
+    to_slug: str | None = Field(default=None, max_length=80)
+    slug: str | None = Field(default=None, max_length=80)
+    sets: int | None = Field(default=None, ge=1, le=10)
+    reps: str | None = Field(default=None, max_length=20)
+    weight_kg: float | None = Field(default=None, ge=0, le=500)
+    rest_sec: int | None = Field(default=None, ge=0, le=300)
+
+
+class WorkoutActionExecuteIn(BaseModel):
+    plan_id: str = Field(min_length=1, max_length=36)
+    day_id: str = Field(min_length=1, max_length=36)
+    expected_plan_version: int | None = Field(default=None, ge=1)
+    changes: list[WorkoutActionChangeIn] = Field(min_length=1, max_length=8)
+
+
 class PlanDayStateIn(BaseModel):
     day_id: str = Field(min_length=1, max_length=36)
     assigned_date: date | None = None

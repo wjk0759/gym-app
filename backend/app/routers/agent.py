@@ -16,8 +16,14 @@ from ..models import (
     ChatSession,
     CoachFeedback,
     Profile,
+    utcnow,
 )
-from ..schemas import AgentActionResultIn, AgentChatIn, AgentFeedbackIn
+from ..schemas import (
+    AgentActionResultIn,
+    AgentChatIn,
+    AgentFeedbackIn,
+    WorkoutActionExecuteIn,
+)
 from ..services import access, generation
 from ..services.agent import apply_proposal, generate_weekly_review, run_agent
 from ..services.coach_feedback import save_feedback
@@ -25,6 +31,13 @@ from ..services.memory import list_memories
 from ..services.rate_limit import enforce as enforce_rate_limit
 from ..services.safety import assess_safety
 from ..services.serializers import serialize_program
+from ..services.workout_actions import (
+    WorkoutActionConflict,
+    WorkoutActionError,
+    execute_modify_workout,
+    prepare_modify_workout,
+    undo_modify_workout,
+)
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 
@@ -239,7 +252,7 @@ def report_action_result(
     event.action_type = payload.action_type
     event.status = payload.status
     event.message = (payload.message or "")[:500] or None
-    event.detail = payload.detail or {}
+    event.detail = {**(event.detail or {}), **(payload.detail or {})}
     try:
         db.commit()
     except IntegrityError:
@@ -254,7 +267,7 @@ def report_action_result(
         event.action_type = payload.action_type
         event.status = payload.status
         event.message = (payload.message or "")[:500] or None
-        event.detail = payload.detail or {}
+        event.detail = {**(event.detail or {}), **(payload.detail or {})}
         db.commit()
     return {"ok": True, "action_id": event.action_id, "status": event.status}
 
@@ -325,6 +338,185 @@ def list_coach_feedback(
             }
             for item in rows
         ]
+    }
+
+
+def _clean_action_id(action_id: str) -> str:
+    value = (action_id or "").strip()
+    if not 1 <= len(value) <= 64:
+        raise HTTPException(status_code=400, detail="action_id 不合法")
+    return value
+
+
+def _workout_changes(payload: WorkoutActionExecuteIn) -> list[dict]:
+    return [
+        item.model_dump(exclude_none=True)
+        for item in payload.changes
+    ]
+
+
+@router.post("/actions/{action_id}/dry-run")
+def dry_run_workout_action(
+    action_id: str,
+    payload: WorkoutActionExecuteIn,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    action_id = _clean_action_id(action_id)
+    try:
+        program, day, before, after = prepare_modify_workout(
+            db,
+            user_id,
+            plan_id=payload.plan_id,
+            day_id=payload.day_id,
+            changes=_workout_changes(payload),
+            expected_plan_version=payload.expected_plan_version,
+        )
+    except WorkoutActionConflict as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "PLAN_VERSION_CONFLICT", "message": str(exc)},
+        ) from exc
+    except WorkoutActionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "ok": True,
+        "action_id": action_id,
+        "plan_id": program.id,
+        "day_id": day.id,
+        "before": before,
+        "after": after,
+    }
+
+
+@router.post("/actions/{action_id}/execute")
+def execute_workout_action(
+    action_id: str,
+    payload: WorkoutActionExecuteIn,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    action_id = _clean_action_id(action_id)
+    existing = db.execute(
+        select(AgentActionEvent).where(
+            AgentActionEvent.user_id == user_id,
+            AgentActionEvent.action_id == action_id,
+        )
+    ).scalar_one_or_none()
+
+    if existing is not None:
+        detail = existing.detail or {}
+        if existing.status == "executed" and detail.get("server_executed"):
+            return {
+                "program": detail.get("result"),
+                "action_id": action_id,
+                "status": "executed",
+                "idempotent": True,
+            }
+        if existing.status == "undone":
+            raise HTTPException(
+                status_code=409,
+                detail="这次改课已经撤销，请重新生成方案",
+            )
+
+    try:
+        program, before, after_version = execute_modify_workout(
+            db,
+            user_id,
+            plan_id=payload.plan_id,
+            day_id=payload.day_id,
+            changes=_workout_changes(payload),
+            expected_plan_version=payload.expected_plan_version,
+        )
+    except WorkoutActionConflict as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "PLAN_VERSION_CONFLICT", "message": str(exc)},
+        ) from exc
+    except WorkoutActionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    detail = {
+        **(existing.detail if existing is not None else {}),
+        "server_executed": True,
+        "plan_id": payload.plan_id,
+        "day_id": payload.day_id,
+        "before": before,
+        "after_version": after_version,
+        "changes": _workout_changes(payload),
+        "result": program,
+    }
+    if existing is None:
+        existing = AgentActionEvent(
+            user_id=user_id,
+            action_id=action_id,
+            action_type="modify_workout",
+            status="executed",
+        )
+        db.add(existing)
+    existing.action_type = "modify_workout"
+    existing.status = "executed"
+    existing.message = "服务端已应用改课"
+    existing.detail = detail
+    db.commit()
+    return {
+        "program": program,
+        "action_id": action_id,
+        "status": "executed",
+        "idempotent": False,
+    }
+
+
+@router.post("/actions/{action_id}/undo")
+def undo_workout_action(
+    action_id: str,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    action_id = _clean_action_id(action_id)
+    event = db.execute(
+        select(AgentActionEvent).where(
+            AgentActionEvent.user_id == user_id,
+            AgentActionEvent.action_id == action_id,
+        )
+    ).scalar_one_or_none()
+    detail = (event.detail or {}) if event is not None else {}
+    if event is None or not detail.get("server_executed"):
+        raise HTTPException(status_code=404, detail="改课记录不存在")
+    if event.status != "executed":
+        raise HTTPException(status_code=409, detail="改课当前不能撤销")
+    before = detail.get("before") or []
+    if not before:
+        raise HTTPException(status_code=409, detail="缺少撤销快照")
+
+    try:
+        program = undo_modify_workout(
+            db,
+            user_id,
+            plan_id=str(detail.get("plan_id") or ""),
+            day_id=str(detail.get("day_id") or ""),
+            before=before,
+            expected_version=int(detail.get("after_version") or 0),
+        )
+    except WorkoutActionConflict as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "PLAN_VERSION_CONFLICT", "message": str(exc)},
+        ) from exc
+    except WorkoutActionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    event.status = "undone"
+    event.message = "用户撤销改课"
+    event.detail = {
+        **detail,
+        "undone_at": utcnow().isoformat(),
+    }
+    db.commit()
+    return {
+        "program": program,
+        "action_id": action_id,
+        "status": "undone",
     }
 
 
