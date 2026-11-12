@@ -13,6 +13,7 @@ struct PlanReviewView: View {
                     header(review)
                     periodPicker
                     trendSummary(review)
+                    nextActionCard(review)
                     kpiGrid(review)
                     trainingCard(review)
                     nutritionCard(review)
@@ -122,6 +123,50 @@ struct PlanReviewView: View {
         }
     }
 
+    @ViewBuilder
+    private func nextActionCard(_ review: ReviewData) -> some View {
+        if let action = review.nextAction {
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(spacing: 6) {
+                    Text(action.kind == .nutrition ? "NEXT / 饮食" : action.kind == .plan ? "NEXT / 计划" : "NEXT / 训练")
+                        .font(AppType.overline)
+                        .tracking(1.2)
+                        .foregroundStyle(Theme.cobalt)
+                    Spacer()
+                    Text(review.rangeLabel)
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+
+                Text(action.title)
+                    .font(AppType.headline)
+                    .foregroundStyle(Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(action.detail)
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button {
+                    Haptics.select()
+                    store.selectedTab = action.kind == .nutrition ? 0 : 2
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(action.kind == .nutrition ? "去记录饮食" : "让教练调整")
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 9, weight: .bold))
+                    }
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.cobalt)
+                }
+                .buttonStyle(.plain)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .card()
+        }
+    }
+
     private func kpiGrid(_ review: ReviewData) -> some View {
         LazyVGrid(
             columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
@@ -174,21 +219,36 @@ struct PlanReviewView: View {
     }
 
     private func trainingCard(_ review: ReviewData) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let adherence = review.current.adherence
+        return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("训练明细")
                     .font(AppType.headline)
                     .foregroundStyle(Theme.ink)
                 Spacer()
-                Text("\(review.current.trainingDays) 个训练日")
-                    .font(.system(size: 9.5, weight: .medium))
-                    .foregroundStyle(Theme.tertiaryText)
+                Text(
+                    adherence.plannedDays > 0
+                        ? "计划日 \(adherence.completedDays)/\(adherence.eligibleDays)"
+                        : "\(review.current.trainingDays) 个训练日"
+                )
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(Theme.tertiaryText)
             }
             HStack(spacing: 6) {
                 detailMetric("\(Int(review.current.volume))", "总容量 kg")
                 detailMetric("\(review.current.sets)", "总组数")
-                detailMetric(formatMinutes(review.current.averageSessionMinutes), "单次分钟")
+                detailMetric(
+                    review.current.averageRPE.map { String(format: "%.1f", $0) } ?? "—",
+                    "平均 RPE"
+                )
                 detailMetric("\(review.current.sessions.count)", "完成训练")
+            }
+            if adherence.plannedDays > 0 {
+                Text(
+                    "跳过 \(adherence.skippedDays) 次 · 错过 \(adherence.missedDays) 次 · 跳过不计入完成率分母"
+                )
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(Theme.tertiaryText)
             }
         }
         .card()

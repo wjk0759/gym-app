@@ -201,14 +201,21 @@ struct WorkoutSessionView: View {
 
     private var summaryScroll: some View {
         ScrollView {
-            WorkoutSessionSummaryCard(
-                logs: logs,
-                plannedTotalSets: plannedTotalSets,
-                isFullSession: isFullSession,
-                durationMinutes: durationMinutes,
-                feeling: $feeling,
-                notes: $notes
-            )
+            VStack(spacing: 12) {
+                WorkoutSessionSummaryCard(
+                    logs: logs,
+                    plannedTotalSets: plannedTotalSets,
+                    isFullSession: isFullSession,
+                    durationMinutes: durationMinutes,
+                    feeling: $feeling,
+                    notes: $notes
+                )
+
+                WorkoutOutcomeCard(
+                    exercises: activeDay.exercises.map(effectiveExercise),
+                    logs: logs
+                )
+            }
             .appPagePadding()
             .padding(.vertical, 16)
             .appReadableContent()

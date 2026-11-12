@@ -24,6 +24,7 @@ from ..models import (
     AgentRun,
     AgentStep,
     ChatMessage,
+    PlanDayState,
     Profile,
     Program,
     SetLog,
@@ -820,6 +821,106 @@ def _review_snapshot(
     }
 
 
+def _plan_week_adherence(
+    db: Session,
+    program: Program | None,
+    user_id: str,
+    week_start: datetime,
+    week_end: datetime,
+    now: datetime,
+) -> dict:
+    """Count planned, completed, skipped and missed plan days for one week.
+
+    The schedule comes from ``plan_day_states`` where the client has moved a
+    day, and falls back to the plan's week rows otherwise. A day counts as
+    completed only when the linked workout covered its planned sets; partial
+    sessions remain missed until finished.
+    """
+    empty = {
+        "planned": 0,
+        "completed": 0,
+        "skipped": 0,
+        "missed": 0,
+        "rate": None,
+    }
+    if program is None:
+        return empty
+
+    local_start = week_start.astimezone(REVIEW_TZ)
+    week_dates = {(local_start + timedelta(days=offset)).date() for offset in range(7)}
+    today_local = now.astimezone(REVIEW_TZ).date()
+
+    states = {
+        item.day_id: item
+        for item in db.execute(
+            select(PlanDayState).where(
+                PlanDayState.user_id == user_id,
+                PlanDayState.plan_id == program.id,
+            )
+        )
+        .scalars()
+        .all()
+    }
+    day_ids = [day.id for day in program.days]
+    completed_sets: dict[str, int] = {}
+    if day_ids:
+        rows = db.execute(
+            select(WorkoutSession.program_day_id, func.count(SetLog.id))
+            .select_from(WorkoutSession)
+            .outerjoin(
+                SetLog,
+                and_(
+                    SetLog.session_id == WorkoutSession.id,
+                    SetLog.completed.is_(True),
+                ),
+            )
+            .where(
+                WorkoutSession.user_id == user_id,
+                WorkoutSession.program_day_id.in_(day_ids),
+                WorkoutSession.started_at >= week_start,
+                WorkoutSession.started_at < week_end,
+            )
+            .group_by(WorkoutSession.program_day_id)
+        ).all()
+        completed_sets = {str(day_id): int(count or 0) for day_id, count in rows}
+
+    created_at = program.created_at
+    if created_at.tzinfo is None:
+        created_at = created_at.replace(tzinfo=timezone.utc)
+    anchor_local = created_at.astimezone(REVIEW_TZ).date()
+    anchor_monday = anchor_local - timedelta(days=anchor_local.weekday())
+
+    planned = completed = skipped = missed = 0
+    for day in program.days:
+        state = states.get(day.id)
+        scheduled = (
+            state.assigned_date
+            if state is not None and state.assigned_date is not None
+            else anchor_monday
+            + timedelta(days=(day.week_index - 1) * 7 + day.weekday - 1)
+        )
+        if scheduled not in week_dates:
+            continue
+        planned += 1
+        if state is not None and state.skipped_at is not None:
+            skipped += 1
+            continue
+        required = sum(max(1, item.sets) for item in day.exercises)
+        if completed_sets.get(day.id, 0) >= max(1, required):
+            completed += 1
+        elif scheduled < today_local:
+            missed += 1
+
+    eligible = max(0, planned - skipped)
+    return {
+        "planned": planned,
+        "completed": completed,
+        "skipped": skipped,
+        "missed": missed,
+        "rate": (completed / eligible) if eligible else None,
+    }
+
+
 def generate_weekly_review(db: Session, user_id: str) -> dict:
     """Create an auditable, rule-based weekly review without an LLM call.
 
@@ -838,8 +939,22 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
     previous = _review_snapshot(db, user_id, previous_start, week_start)
     context = build_coach_context(db, user_id)
     nutrition = context.get("nutrition_7d") or {}
-    target = max(1, int(profile.weekly_days or 3))
-    completion = min(1.5, current["sessions"] / target)
+    program = active_program(db, user_id)
+    adherence = _plan_week_adherence(
+        db,
+        program,
+        user_id,
+        week_start,
+        week_start + timedelta(days=7),
+        now,
+    )
+    planned_days = adherence["planned"]
+    eligible_days = max(0, planned_days - adherence["skipped"])
+    target = planned_days or max(1, int(profile.weekly_days or 3))
+    if eligible_days:
+        completion = min(1.5, adherence["completed"] / eligible_days)
+    else:
+        completion = min(1.5, current["sessions"] / target)
     minutes = profile.session_minutes or 45
 
     wins: list[str] = []
@@ -853,20 +968,38 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
         )
         watchouts.append("本周训练频率不足")
         actions.append(f"从今天或明天安排一次 {minutes} 分钟的全身训练")
-    elif current["sessions"] >= target:
+    elif eligible_days:
         summary = (
-            f"本周完成 {current['sessions']}/{target} 次训练，达到计划目标，"
-            f"总容量 {current['volume_kg']:.0f} kg。"
+            f"本周计划 {planned_days} 次，完成 {adherence['completed']} 次，"
+            f"计划完成率 {completion:.0%}；跳过 {adherence['skipped']} 次，"
+            f"错过 {adherence['missed']} 次，总容量 {current['volume_kg']:.0f} kg。"
         )
-        wins.append("训练频率达标")
-        actions.append("下周保持频率，主力动作在动作稳定时加 2.5% 重量或 +1 次")
+        if adherence["missed"]:
+            watchouts.append(f"有 {adherence['missed']} 次计划训练未完成")
+        if adherence["completed"] >= 1:
+            wins.append("按计划完成了训练")
+        if adherence["completed"] >= eligible_days:
+            wins.append("本周计划全部完成")
+            actions.append("下周保持频率，主力动作在动作稳定时加 2.5% 重量或 +1 次")
+        else:
+            actions.append(
+                f"先补 1 次 {minutes} 分钟训练，优先保留主项，不必把错过的次数全部补回来"
+            )
     else:
-        summary = (
-            f"本周完成 {current['sessions']}/{target} 次训练，完成率 "
-            f"{completion:.0%}，还差 {max(0, target - current['sessions'])} 次。"
-        )
-        wins.append("已经完成部分训练")
-        actions.append(f"剩余时间优先补 1 次 {minutes} 分钟训练，不必追求练到力竭")
+        if current["sessions"] >= target:
+            summary = (
+                f"本周完成 {current['sessions']}/{target} 次训练，达到计划目标，"
+                f"总容量 {current['volume_kg']:.0f} kg。"
+            )
+            wins.append("训练频率达标")
+            actions.append("下周保持频率，主力动作在动作稳定时加 2.5% 重量或 +1 次")
+        else:
+            summary = (
+                f"本周完成 {current['sessions']}/{target} 次训练，完成率 "
+                f"{completion:.0%}，还差 {max(0, target - current['sessions'])} 次。"
+            )
+            wins.append("已经完成部分训练")
+            actions.append(f"剩余时间优先补 1 次 {minutes} 分钟训练，不必追求练到力竭")
 
     if current["average_rpe"] is not None:
         if current["average_rpe"] >= 8.5:
@@ -897,6 +1030,15 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
             "sessions": current["sessions"],
             "planned": target,
             "completion_rate": round(completion, 2),
+            "planned_days": planned_days,
+            "completed_plan_days": adherence["completed"],
+            "skipped_plan_days": adherence["skipped"],
+            "missed_plan_days": adherence["missed"],
+            "adherence_rate": (
+                round(adherence["rate"], 2)
+                if adherence["rate"] is not None
+                else None
+            ),
             "volume_kg": current["volume_kg"],
             "average_rpe": current["average_rpe"],
             "average_duration_min": current["average_duration_min"],
