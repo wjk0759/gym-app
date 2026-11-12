@@ -542,6 +542,41 @@ class ChatMessage(Base):
     session: Mapped[ChatSession] = relationship(back_populates="messages")
 
 
+class CoachFeedback(Base):
+    __tablename__ = "coach_feedback"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "message_id",
+            name="uq_coach_feedback_user_message",
+        ),
+        Index("ix_coach_feedback_user_created", "user_id", "created_at"),
+        Index("ix_coach_feedback_rating_created", "rating", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    message_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("chat_messages.id", ondelete="CASCADE")
+    )
+    run_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("agent_runs.id", ondelete="SET NULL")
+    )
+    rating: Mapped[str] = mapped_column(String(10))
+    reason: Mapped[str | None] = mapped_column(String(40))
+    comment: Mapped[str | None] = mapped_column(Text)
+    prompt_version: Mapped[str | None] = mapped_column(String(30))
+    model: Mapped[str | None] = mapped_column(String(80))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
 class AgentRun(Base):
     __tablename__ = "agent_runs"
     __table_args__ = (

@@ -175,6 +175,25 @@ extension APIClient {
         )
     }
 
+    func agentFeedback(
+        messageID: String,
+        runID: String?,
+        rating: String,
+        reason: String?
+    ) async throws {
+        var payload: [String: Any] = [
+            "message_id": messageID,
+            "rating": rating,
+        ]
+        if let runID { payload["run_id"] = runID }
+        if let reason { payload["reason"] = reason }
+        try await sendVoid(
+            path: "agent/feedback",
+            method: "POST",
+            body: try JSONSerialization.data(withJSONObject: payload)
+        )
+    }
+
     // MARK: - Cross-device data
 
     func syncFoodLog(_ log: FoodLog) async throws {

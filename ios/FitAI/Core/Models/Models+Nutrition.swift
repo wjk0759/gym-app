@@ -59,6 +59,11 @@ struct ChatMessage: Codable, Identifiable, Hashable {
     /// 视频只保存预览缩略图和时长；原始视频不会上传或持久化。
     var videoThumbnailData: Data? = nil
     var videoDurationSeconds: Int? = nil
+    /// 服务端消息/运行 ID，用于提交“有帮助 / 没帮助”反馈。
+    var serverMessageID: String? = nil
+    var serverRunID: String? = nil
+    var feedbackRating: String? = nil
+    var feedbackReason: String? = nil
 
     var allImageData: [Data] {
         if let imageDataList, !imageDataList.isEmpty {

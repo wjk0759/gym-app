@@ -373,6 +373,7 @@ struct AgentAction: Codable, Identifiable, Hashable {
 
 struct AgentChatResponse: Decodable {
     let sessionID: UUID?
+    let messageID: String?
     let runID: String
     let status: String
     let reply: String
@@ -383,6 +384,7 @@ struct AgentChatResponse: Decodable {
 
     enum CodingKeys: String, CodingKey {
         case sessionID = "session_id"
+        case messageID = "message_id"
         case runID = "run_id"
         case status
         case reply

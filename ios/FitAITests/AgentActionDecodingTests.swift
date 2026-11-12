@@ -33,4 +33,31 @@ final class AgentActionDecodingTests: XCTestCase {
         XCTAssertEqual(action.payload?.changes?.first?.toSlug, "dumbbell_press")
         XCTAssertEqual(action.payload?.changes?.last?.weightKG, 17.5)
     }
+
+    func testAgentChatResponseDecodesMessageID() throws {
+        let json = """
+        {
+          "session_id": "00000000-0000-0000-0000-000000000001",
+          "message_id": "00000000-0000-0000-0000-000000000002",
+          "run_id": "run-1",
+          "status": "completed",
+          "reply": "今天练腿。",
+          "proposal": null,
+          "actions": [],
+          "safety_flag": null,
+          "elapsed_ms": 1200
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(
+            AgentChatResponse.self,
+            from: json
+        )
+
+        XCTAssertEqual(
+            response.messageID,
+            "00000000-0000-0000-0000-000000000002"
+        )
+        XCTAssertEqual(response.runID, "run-1")
+    }
 }

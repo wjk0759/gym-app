@@ -154,7 +154,7 @@ extension CoachChatView {
         .card(padding: 14)
     }
 
-    func bubble(_ message: ChatMessage) -> some View {
+    func bubbleContent(_ message: ChatMessage) -> some View {
         CoachChatBubble(isUser: message.role == .user, isSafety: message.isSafety) {
             VStack(alignment: .leading, spacing: 6) {
                 if message.isSafety {

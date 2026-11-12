@@ -187,6 +187,14 @@ class AgentActionResultIn(BaseModel):
     detail: dict[str, Any] | None = None
 
 
+class AgentFeedbackIn(BaseModel):
+    message_id: str = Field(min_length=1, max_length=36)
+    run_id: str | None = Field(default=None, max_length=36)
+    rating: Literal["up", "down"]
+    reason: str | None = Field(default=None, max_length=40)
+    comment: str | None = Field(default=None, max_length=500)
+
+
 class PlanDayStateIn(BaseModel):
     day_id: str = Field(min_length=1, max_length=36)
     assigned_date: date | None = None

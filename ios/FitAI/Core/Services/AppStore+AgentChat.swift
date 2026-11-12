@@ -180,13 +180,14 @@ extension AppStore {
                 }
                 self.agentProposal = response.proposal
                 self.agentActions = response.actions ?? []
-                self.chat.append(
-                    ChatMessage(
-                        role: .assistant,
-                        text: response.reply,
-                        isSafety: response.safetyFlag != nil
-                    )
+                var assistant = ChatMessage(
+                    role: .assistant,
+                    text: response.reply,
+                    isSafety: response.safetyFlag != nil
                 )
+                assistant.serverMessageID = response.messageID
+                assistant.serverRunID = response.runID
+                self.chat.append(assistant)
                 self.lastAgentRetryText = nil
                 self.lastAgentRequestID = nil
                 if response.safetyFlag == nil {

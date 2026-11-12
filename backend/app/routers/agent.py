@@ -8,10 +8,19 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from ..deps import CurrentUser, DBSession
-from ..models import AgentActionEvent, AgentPlanProposal, AgentRun, ChatMessage, ChatSession, Profile
-from ..schemas import AgentActionResultIn, AgentChatIn
+from ..models import (
+    AgentActionEvent,
+    AgentPlanProposal,
+    AgentRun,
+    ChatMessage,
+    ChatSession,
+    CoachFeedback,
+    Profile,
+)
+from ..schemas import AgentActionResultIn, AgentChatIn, AgentFeedbackIn
 from ..services import access, generation
 from ..services.agent import apply_proposal, generate_weekly_review, run_agent
+from ..services.coach_feedback import save_feedback
 from ..services.memory import list_memories
 from ..services.rate_limit import enforce as enforce_rate_limit
 from ..services.safety import assess_safety
@@ -148,18 +157,18 @@ async def _agent_chat_inner(
             result_ref=result["run_id"],
         )
 
-    session.messages.append(ChatMessage(role="user", content=payload.message))
-    session.messages.append(
-        ChatMessage(
-            role="assistant",
-            content=result["reply"],
-            safety_flag=result.get("safety_flag"),
-        )
+    user_message = ChatMessage(role="user", content=payload.message)
+    assistant_message = ChatMessage(
+        role="assistant",
+        content=result["reply"],
+        safety_flag=result.get("safety_flag"),
     )
+    session.messages.extend([user_message, assistant_message])
     db.commit()
 
     response = {
         "session_id": session.id,
+        "message_id": assistant_message.id,
         "run_id": result["run_id"],
         "status": result["status"],
         "reply": result["reply"],
@@ -248,6 +257,75 @@ def report_action_result(
         event.detail = payload.detail or {}
         db.commit()
     return {"ok": True, "action_id": event.action_id, "status": event.status}
+
+
+@router.post("/feedback")
+def coach_feedback(
+    payload: AgentFeedbackIn,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    enforce_rate_limit(db, "coach_feedback", user_id, 30, 3600)
+    try:
+        item = save_feedback(
+            db,
+            user_id,
+            message_id=payload.message_id,
+            run_id=payload.run_id,
+            rating=payload.rating,
+            reason=payload.reason,
+            comment=payload.comment,
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "id": item.id,
+        "message_id": item.message_id,
+        "run_id": item.run_id,
+        "rating": item.rating,
+        "reason": item.reason,
+        "created_at": item.created_at.isoformat() if item.created_at else None,
+    }
+
+
+@router.get("/feedback")
+def list_coach_feedback(
+    user_id: CurrentUser,
+    db: DBSession,
+    limit: int = 20,
+):
+    limit = max(1, min(100, limit))
+    rows = (
+        db.execute(
+            select(CoachFeedback)
+            .where(CoachFeedback.user_id == user_id)
+            .order_by(CoachFeedback.created_at.desc())
+            .limit(limit)
+        )
+        .scalars()
+        .all()
+    )
+    return {
+        "items": [
+            {
+                "id": item.id,
+                "message_id": item.message_id,
+                "run_id": item.run_id,
+                "rating": item.rating,
+                "reason": item.reason,
+                "comment": item.comment,
+                "created_at": (
+                    item.created_at.isoformat() if item.created_at else None
+                ),
+                "updated_at": (
+                    item.updated_at.isoformat() if item.updated_at else None
+                ),
+            }
+            for item in rows
+        ]
+    }
 
 
 @router.get("/actions")
