@@ -37,6 +37,7 @@ TRAINING = "training.reschedule"
 SKIP_TRAINING = "training.skip"
 CARDIO = "training.log_cardio"
 WEIGHT = "body.log_weight"
+REVIEW = "review.weekly"
 
 
 def _looks_like_reschedule(message: str) -> bool:
@@ -120,6 +121,10 @@ def _looks_like_swap_meal(message: str) -> bool:
             and re.search(r"早餐|午餐|晚餐|加餐|这餐|计划餐", message)
         )
     )
+
+
+def _looks_like_review(message: str) -> bool:
+    return bool(re.search(r"复盘|本周总结|这周怎么样|这周状态|周报", message))
 
 
 def _looks_like_skip_training(message: str) -> bool:
@@ -247,7 +252,7 @@ async def handle_turn(
         }
     # A new user turn supersedes an old card. Confirmation/cancel should use
     # the dedicated endpoints; typing a new request means the old card is stale.
-    if pending is not None and pending.kind == "card":
+    if pending is not None and pending.kind in {"card", "insight"}:
         cancel_active_pending(db, session)
         pending = None
 
@@ -301,6 +306,36 @@ async def handle_turn(
                     context = {**stored, **context}
                 text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
                 intent_override = SKIP_TRAINING
+
+    if intent_override is None and _looks_like_review(text):
+        from .capabilities.review import resolve as resolve_review
+
+        resolution = resolve_review(db, user_id)
+        payload = resolution["payload"]
+        set_pending(
+            db,
+            session,
+            kind="insight",
+            capability_id=REVIEW,
+            payload=payload,
+        )
+        reply = payload.get("summary") or "本周复盘已经生成。"
+        turn.intent = REVIEW
+        turn.status = "completed"
+        turn.reply = reply
+        turn.latency_ms = int((time.perf_counter() - started) * 1000)
+        session.last_turn_at = utcnow()
+        session.updated_at = utcnow()
+        db.commit()
+        active = get_active_pending(db, user_id, session.id)
+        return {
+            "session": serialize_session(session, active),
+            "turn_id": turn.id,
+            "intent": turn.intent,
+            "status": turn.status,
+            "reply": reply,
+            "pending": serialize_pending(active),
+        }
 
     meal_capability: str | None = None
     if intent_override in {PLANNED, SKIP_MEAL, RESTORE_MEAL}:

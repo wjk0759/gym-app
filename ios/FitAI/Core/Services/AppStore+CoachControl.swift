@@ -22,6 +22,12 @@ extension AppStore {
             options: .regularExpression
         ) != nil
         if reschedule && hasDate { return true }
+        if value.range(
+            of: #"复盘|本周总结|这周状态|周报"#,
+            options: .regularExpression
+        ) != nil {
+            return true
+        }
 
         if value.range(
             of: #"多少|热量|卡路里|为什么|怎么|吗|？|\?"#,

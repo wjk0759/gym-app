@@ -387,6 +387,11 @@ struct AgentActionPayload: Codable, Hashable {
     let sets: [AgentLoggedSet]?
     let scope: String?
     let changes: [AgentWorkoutChange]?
+    let summary: String?
+    let wins: [String]?
+    let watchouts: [String]?
+    let actions: [String]?
+    let generatedAt: String?
 
     enum CodingKeys: String, CodingKey {
         case dayID = "day_id"
@@ -418,6 +423,11 @@ struct AgentActionPayload: Codable, Hashable {
         case sets
         case scope
         case changes
+        case summary
+        case wins
+        case watchouts
+        case actions
+        case generatedAt = "generated_at"
     }
 }
 

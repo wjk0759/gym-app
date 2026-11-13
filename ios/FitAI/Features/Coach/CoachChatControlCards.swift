@@ -23,6 +23,8 @@ extension CoachChatView {
                     Text("还需要补充一点信息，直接在输入框回复即可。")
                         .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
+                } else if pending.capabilityID == "review.weekly" {
+                    reviewPendingContent(pending)
                 } else if pending.capabilityID == "diet.log_food" {
                     dietPendingContent(pending)
                 } else if pending.capabilityID == "training.reschedule" {
@@ -64,6 +66,11 @@ extension CoachChatView {
                         .buttonStyle(SecondaryButtonStyle())
                         .disabled(store.isCoachControlWorking)
                     }
+                } else if pending.kind == "insight" {
+                    Button("知道了") {
+                        store.cancelCoachPending()
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
                 }
             }
         }
@@ -100,6 +107,33 @@ extension CoachChatView {
                     .fontWeight(.semibold)
             }
             .font(AppType.caption)
+        }
+    }
+
+    private func reviewPendingContent(_ pending: CoachPendingState) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(pending.payload?.summary ?? "本周复盘")
+                .font(AppType.callout)
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            if let wins = pending.payload?.wins, !wins.isEmpty {
+                Text("做得好：\(wins.joined(separator: "；"))")
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.cobalt)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let watchouts = pending.payload?.watchouts, !watchouts.isEmpty {
+                Text("留意：\(watchouts.joined(separator: "；"))")
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let action = pending.payload?.actions?.first {
+                Text("下一步：\(action)")
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 

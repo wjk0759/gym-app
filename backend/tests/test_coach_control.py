@@ -178,6 +178,20 @@ def test_body_weight_confirm_and_undo(db):
     assert db.execute(select(BodyMetric)).scalars().all() == []
 
 
+def test_weekly_review_is_an_insight_not_a_write(db):
+    import asyncio
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "复盘本周"))
+    assert turn["intent"] == "review.weekly"
+    assert turn["pending"]["kind"] == "insight"
+    assert turn["pending"]["payload"]["summary"]
+    assert turn["reply"]
+
+    cancelled = runtime.cancel(db, "user-1", turn["pending"]["id"])
+    assert cancelled["ok"] is True
+    assert db.execute(select(CoachPending)).scalar_one().status == "cancelled"
+
+
 def test_training_skip_confirm_and_undo(db):
     import asyncio
 
