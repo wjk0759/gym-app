@@ -233,8 +233,30 @@ def _pending_action_correction(
             if name and name in message:
                 target_index = index
                 break
+        if target_index is None:
+            ordinals = {
+                "第一": 0,
+                "第1": 0,
+                "第一个": 0,
+                "第二": 1,
+                "第2": 1,
+                "第二个": 1,
+                "第三": 2,
+                "第3": 2,
+                "第三个": 2,
+            }
+            for token, index in ordinals.items():
+                if token in message and index < len(items):
+                    target_index = index
+                    break
     if target_index is None:
-        return None
+        names = "、".join(
+            str(item.get("name") or "这一项") for item in items
+        )
+        return {
+            "actions": [],
+            "reply": f"这张卡里有 {names}，你是要把哪一项改成 {round(grams)}g？回复食物名或第几项。",
+        }
     item = dict(items[target_index])
     old_grams = float(item.get("grams") or 0)
     if old_grams <= 0:
@@ -1650,8 +1672,8 @@ async def run_agent(
     if correction is not None:
         actions = correction["actions"]
         final_message = correction["reply"]
-        run.intent = "app_action"
-        run.status = "needs_confirmation"
+        run.intent = "app_action" if actions else "clarification"
+        run.status = "needs_confirmation" if actions else "completed"
         run.output_text = final_message
         run.completed_at = utcnow()
         _record_step(

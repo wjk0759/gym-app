@@ -79,6 +79,46 @@ def test_pending_food_card_correction_updates_before_write():
     assert action["payload"]["items"][0]["kcal"] == 536.7
 
 
+def test_multi_item_card_correction_asks_or_uses_ordinal():
+    context = {
+        "pending_action": {
+            "type": "log_food",
+            "payload": {
+                "date": "2026-11-13",
+                "meal": "dinner",
+                "items": [
+                    {
+                        "name": "肉肠",
+                        "grams": 180,
+                        "kcal": 420,
+                        "protein_g": 24,
+                        "carbs_g": 6,
+                        "fat_g": 32,
+                    },
+                    {
+                        "name": "奶茶",
+                        "grams": 250,
+                        "kcal": 175,
+                        "protein_g": 2.5,
+                        "carbs_g": 30,
+                        "fat_g": 5.8,
+                    },
+                ],
+            },
+        }
+    }
+
+    ambiguous = _pending_action_correction(context, "记错了是 230 克")
+    assert ambiguous is not None
+    assert ambiguous["actions"] == []
+    assert "哪一项" in ambiguous["reply"]
+
+    updated = _pending_action_correction(context, "第二个改成 300 克")
+    assert updated is not None
+    assert updated["actions"][0]["payload"]["items"][1]["grams"] == 300
+    assert updated["actions"][0]["payload"]["items"][0]["grams"] == 180
+
+
 def test_log_food_action_requires_resolved_items():
     actions = _normalize_app_actions(
         [
