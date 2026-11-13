@@ -130,6 +130,7 @@ extension CoachChatView {
         case "diet.log_planned_meal": return "按当天计划记录整餐"
         case "diet.skip_planned_meal": return "把这一餐标记为主动跳过"
         case "diet.restore_planned_meal": return "恢复被跳过的计划餐"
+        case "diet.swap_meal": return "从本周计划换一餐"
         default: return "记录饮食"
         }
     }

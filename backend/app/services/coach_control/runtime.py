@@ -32,6 +32,7 @@ DIET = "diet.log_food"
 PLANNED = "diet.log_planned_meal"
 SKIP_MEAL = "diet.skip_planned_meal"
 RESTORE_MEAL = "diet.restore_planned_meal"
+SWAP_MEAL = "diet.swap_meal"
 TRAINING = "training.reschedule"
 SKIP_TRAINING = "training.skip"
 CARDIO = "training.log_cardio"
@@ -108,6 +109,16 @@ def _looks_like_restore_meal(message: str) -> bool:
     return bool(
         re.search(r"恢复", message)
         and re.search(r"早餐|午餐|晚餐|加餐|这餐|计划餐", message)
+    )
+
+
+def _looks_like_swap_meal(message: str) -> bool:
+    return bool(
+        re.search(r"换一餐|换餐|换掉这餐", message)
+        or (
+            re.search(r"换成|换掉|换一个", message)
+            and re.search(r"早餐|午餐|晚餐|加餐|这餐|计划餐", message)
+        )
     )
 
 
@@ -259,7 +270,7 @@ async def handle_turn(
                     context = {**stored, **context}
                 text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
                 intent_override = TRAINING
-        elif pending.capability_id in {PLANNED, SKIP_MEAL, RESTORE_MEAL}:
+        elif pending.capability_id in {PLANNED, SKIP_MEAL, RESTORE_MEAL, SWAP_MEAL}:
             if not _looks_like_diet_slot_answer(text):
                 cancel_pending(db, session, pending)
                 pending = None
@@ -299,6 +310,8 @@ async def handle_turn(
             meal_capability = RESTORE_MEAL
         elif _looks_like_skip_meal(text):
             meal_capability = SKIP_MEAL
+        elif _looks_like_swap_meal(text):
+            meal_capability = SWAP_MEAL
         elif _looks_like_planned_meal(text):
             meal_capability = PLANNED
 
@@ -318,6 +331,7 @@ async def handle_turn(
                 PLANNED: "记录计划餐",
                 SKIP_MEAL: "跳过计划餐",
                 RESTORE_MEAL: "恢复计划餐",
+                SWAP_MEAL: "换一餐",
             }
             reply = (
                 f"准备{labels[meal_capability]}：{payload['date']} "
@@ -612,10 +626,16 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "BodyMetricLogged"
         entity_type = "body_metric"
         entity_id = action_id
-    elif pending.capability_id in {PLANNED, SKIP_MEAL, RESTORE_MEAL}:
+    elif pending.capability_id in {PLANNED, SKIP_MEAL, RESTORE_MEAL, SWAP_MEAL}:
         from .capabilities import diet as diet_capability
 
-        if pending.capability_id == PLANNED:
+        if pending.capability_id == SWAP_MEAL:
+            result = diet_capability.execute_swap(
+                db, user_id, action_id, pending.payload
+            )
+            summary = "已换一餐"
+            event_type = "DietMealSwapped"
+        elif pending.capability_id == PLANNED:
             result = diet_capability.execute_planned(
                 db, user_id, action_id, pending.payload
             )
@@ -740,6 +760,10 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
         from .capabilities.diet import undo_restore
 
         result = undo_restore(db, user_id, action_id, record.payload)
+    elif record.capability_id == SWAP_MEAL:
+        from .capabilities.diet import undo_swap
+
+        result = undo_swap(db, user_id, action_id, record.payload)
     else:
         raise ValueError("暂不支持撤销这个能力")
     record.status = "undone"

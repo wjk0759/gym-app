@@ -6,6 +6,8 @@ payload and writes the same FoodLog rows used by the rest of the app.
 
 from __future__ import annotations
 
+from datetime import date
+
 from sqlalchemy.orm import Session
 
 from ...coach_actions.food_actions import (
@@ -20,6 +22,7 @@ from ...coach_actions.schemas import (
     LogPlannedMealPayload,
     SkipPlannedMealPayload,
 )
+from ...diet_swap import swap_planned_meal, undo_planned_meal
 from ...food_text import food_log_context, parse_meal, resolve_food_text
 from ..registry import Capability, register
 
@@ -69,6 +72,18 @@ RESTORE_PLANNED = register(
         requires_confirmation=True,
         undo=True,
         events=("PlannedMealRestored",),
+    )
+)
+SWAP_MEAL = register(
+    Capability(
+        id="diet.swap_meal",
+        domain="diet",
+        kind="write",
+        title="换一餐",
+        description="在周计划里换掉某一餐",
+        requires_confirmation=True,
+        undo=True,
+        events=("DietMealSwapped",),
     )
 )
 
@@ -221,6 +236,34 @@ def execute_restore(
         user_id,
         action_id,
         SkipPlannedMealPayload.model_validate(payload),
+    )
+
+
+def execute_swap(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: dict,
+) -> dict:
+    return swap_planned_meal(
+        db,
+        user_id,
+        date.fromisoformat(str(payload["date"])),
+        str(payload["meal"]),
+    )
+
+
+def undo_swap(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: dict,
+) -> dict:
+    return undo_planned_meal(
+        db,
+        user_id,
+        date.fromisoformat(str(payload["date"])),
+        str(payload["meal"]),
     )
 
 

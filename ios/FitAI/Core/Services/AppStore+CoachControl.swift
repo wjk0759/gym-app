@@ -31,7 +31,7 @@ extension AppStore {
         }
 
         if value.range(
-            of: #"计划餐|按计划吃|跳过.*(早餐|午餐|晚餐|加餐)|恢复.*(早餐|午餐|晚餐|加餐)|体重|称重"#,
+            of: #"计划餐|按计划吃|跳过.*(早餐|午餐|晚餐|加餐)|恢复.*(早餐|午餐|晚餐|加餐)|换一餐|换餐|体重|称重"#,
             options: .regularExpression
         ) != nil {
             return true
