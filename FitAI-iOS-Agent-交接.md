@@ -26,6 +26,26 @@
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
 
+### 2026-11-13 · macOS（生产部署尝试：SSH 被安全组阻断）
+
+- 分支：`develop`，HEAD `b7c6b58`
+- 本地验证：
+  - `FitAITests` **79/79**、`FitAIUITests` **4/4**
+  - phone-only Release（含 `FitAIWidget`）已装 Wu-Tang
+- 部署尝试：
+  - `ssh root@8.218.205.149:22` **超时**
+  - 同机 `443` 正常，`https://hk-api.jiaolianfit.cn/health/ready` 返回 `{"status":"ready"}`
+  - 当前公网 IP：`27.38.152.227`；文档记录安全组 22 端口只放行 `163.125.200.210/32`
+- 结果：
+  - **未修改服务器**，生产仍是 `5c16528`
+  - V31–V34 迁移仍未执行
+- 解锁条件：
+  - 在阿里云 ECS 安全组把当前公网 IP `27.38.152.227/32` 加到 22 端口，或改用 ECS Workbench
+  - 放行后再：备份数据库 → 执行 V31–V34 → 部署 backend → 健康检查
+- 不要：
+  - 不要在 V31–V34 之前部署新 backend
+  - 不要为了省事关闭 22 端口白名单
+
 ### 2026-11-13 · macOS（拉取并验证饮食/复盘/教练/休息计时）
 
 - 分支：`develop`
