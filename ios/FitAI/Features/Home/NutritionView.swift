@@ -315,6 +315,15 @@ struct NutritionView: View {
         .navigationTitle(isToday ? "今日饮食" : "饮食记录")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("问教练") {
+                    store.openCoach(prompt: "帮我看看今天的饮食：")
+                }
+                .font(AppType.caption.weight(.semibold))
+                .foregroundStyle(Theme.cobalt)
+            }
+        }
         .alert("提示", isPresented: $showAlert) {
             Button("知道了", role: .cancel) {}
         } message: {

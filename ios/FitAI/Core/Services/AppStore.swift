@@ -133,6 +133,7 @@ final class AppStore {
     var coachReceipt: CoachReceipt?
     var coachUndoActionID: String?
     var coachInbox: [CoachInboxItem] = []
+    var coachEntryPrompt: String?
     var isCoachControlWorking = false
     var agentRunID: String?
     var agentProposal: AgentPlanProposal?

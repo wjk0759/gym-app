@@ -185,6 +185,10 @@ struct CoachChatView: View {
                 consumePendingCoachAttachments()
                 store.restoreCoachControlSession()
                 store.refreshCoachInbox()
+                consumeCoachEntryPrompt()
+            }
+            .onChange(of: store.coachEntryPrompt) { _, _ in
+                consumeCoachEntryPrompt()
             }
             .onChange(of: store.pendingCoachAttachmentData.count) { _, _ in
                 consumePendingCoachAttachments()

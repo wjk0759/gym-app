@@ -28,6 +28,11 @@ extension PlanHomeView {
 
             Menu {
                 Button {
+                    store.openCoach(prompt: "帮我调整这一天的训练：")
+                } label: {
+                    Label("问教练调整", systemImage: "bubble.left.and.bubble.right")
+                }
+                Button {
                     showHistory = true
                 } label: {
                     Label("计划版本历史", systemImage: "clock.arrow.circlepath")

@@ -5,6 +5,11 @@ import Foundation
 /// The legacy `sendAgentChat` path stays available for capabilities not yet
 /// migrated. Only food logging and training rescheduling route here for now.
 extension AppStore {
+    func openCoach(prompt: String) {
+        coachEntryPrompt = prompt
+        selectedTab = 2
+    }
+
     func canRouteToCoachControl(_ text: String) -> Bool {
         let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !value.isEmpty else { return false }

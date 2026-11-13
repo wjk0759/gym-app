@@ -3,6 +3,13 @@ import PhotosUI
 import UIKit
 
 extension CoachChatView {
+    func consumeCoachEntryPrompt() {
+        guard let prompt = store.coachEntryPrompt else { return }
+        store.coachEntryPrompt = nil
+        input = prompt
+        focused = true
+    }
+
     func sendCurrent() {
         guard !store.isReplying, !isLoadingVideo, !isLoadingAttachments else { return }
         let caption = String(input.trimmingCharacters(in: .whitespacesAndNewlines).prefix(500))
