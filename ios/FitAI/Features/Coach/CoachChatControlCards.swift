@@ -41,6 +41,8 @@ extension CoachChatView {
                     Text("体重 \(pending.payload?.weightKG.map { String(format: "%.1f", $0) } ?? "—") kg")
                         .font(AppType.callout.weight(.semibold))
                         .foregroundStyle(Theme.ink)
+                } else if pending.capabilityID == "profile.update_goal" {
+                    goalPendingContent(pending)
                 } else {
                     Text("准备执行一项操作。")
                         .font(AppType.callout)
@@ -107,6 +109,26 @@ extension CoachChatView {
                     .fontWeight(.semibold)
             }
             .font(AppType.caption)
+        }
+    }
+
+    private func goalPendingContent(_ pending: CoachPendingState) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let goal = pending.payload?.goalType {
+                Text("目标：\(goal)")
+                    .font(AppType.callout.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+            }
+            if let weight = pending.payload?.targetWeightKG {
+                Text("目标体重：\(String(format: "%.1f", weight)) kg")
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.secondaryText)
+            }
+            if let date = pending.payload?.targetDate {
+                Text("目标日期：\(date)")
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.secondaryText)
+            }
         }
     }
 

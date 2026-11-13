@@ -44,6 +44,17 @@ extension AppStore {
         }
 
         if value.range(
+            of: #"目标|减脂|减肥|增肌|塑形|重塑|耐力|体能"#,
+            options: .regularExpression
+        ) != nil,
+           value.range(
+               of: #"\d|月|日"#,
+               options: .regularExpression
+           ) != nil {
+            return true
+        }
+
+        if value.range(
             of: #"跑|骑车|单车|自行车|游泳|快走|走路|划船|有氧"#,
             options: .regularExpression
         ) != nil,

@@ -38,6 +38,7 @@ SKIP_TRAINING = "training.skip"
 CARDIO = "training.log_cardio"
 WEIGHT = "body.log_weight"
 REVIEW = "review.weekly"
+GOAL = "profile.update_goal"
 
 
 def _looks_like_reschedule(message: str) -> bool:
@@ -120,6 +121,15 @@ def _looks_like_swap_meal(message: str) -> bool:
             re.search(r"换成|换掉|换一个", message)
             and re.search(r"早餐|午餐|晚餐|加餐|这餐|计划餐", message)
         )
+    )
+
+
+def _looks_like_goal(message: str) -> bool:
+    if re.search(r"怎么|多少|为什么|吗|？|\?", message):
+        return False
+    return bool(
+        re.search(r"目标|减脂|减肥|增肌|塑形|重塑|耐力|体能", message)
+        and re.search(r"\d|月|日|前", message)
     )
 
 
@@ -306,6 +316,13 @@ async def handle_turn(
                     context = {**stored, **context}
                 text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
                 intent_override = SKIP_TRAINING
+        elif pending.capability_id == GOAL:
+            if not _looks_like_goal(text) and not re.search(r"\d", text):
+                cancel_pending(db, session, pending)
+                pending = None
+            else:
+                text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
+                intent_override = GOAL
 
     if intent_override is None and _looks_like_review(text):
         from .capabilities.review import resolve as resolve_review
@@ -321,6 +338,47 @@ async def handle_turn(
         )
         reply = payload.get("summary") or "本周复盘已经生成。"
         turn.intent = REVIEW
+        turn.status = "completed"
+        turn.reply = reply
+        turn.latency_ms = int((time.perf_counter() - started) * 1000)
+        session.last_turn_at = utcnow()
+        session.updated_at = utcnow()
+        db.commit()
+        active = get_active_pending(db, user_id, session.id)
+        return {
+            "session": serialize_session(session, active),
+            "turn_id": turn.id,
+            "intent": turn.intent,
+            "status": turn.status,
+            "reply": reply,
+            "pending": serialize_pending(active),
+        }
+
+    if intent_override == GOAL or (
+        intent_override is None and _looks_like_goal(text)
+    ):
+        from .capabilities.profile import resolve as resolve_goal
+
+        resolution = resolve_goal(text)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            _pending_card(
+                db,
+                session,
+                capability_id=GOAL,
+                payload=payload,
+            )
+            reply = "目标已整理好，确认后更新。"
+        else:
+            question = (resolution.get("questions") or ["想改成什么目标？"])[0]
+            _pending_draft(
+                db,
+                session,
+                capability_id=GOAL,
+                payload={"message": text},
+            )
+            reply = question
+        turn.intent = GOAL
         turn.status = "completed"
         turn.reply = reply
         turn.latency_ms = int((time.perf_counter() - started) * 1000)
@@ -615,6 +673,19 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "TrainingRescheduled"
         entity_type = "plan_day"
         entity_id = str(pending.payload.get("day_id") or "")
+    elif pending.capability_id == GOAL:
+        from .capabilities.profile import execute as execute_goal
+
+        result = execute_goal(db, user_id, action_id, pending.payload)
+        before = result.get("before") or {}
+        after = result.get("after") or {}
+        receipt = {
+            "summary": "已更新目标",
+            "deep_link": "fitai://profile",
+        }
+        event_type = "GoalUpdated"
+        entity_type = "goal"
+        entity_id = action_id
     elif pending.capability_id == SKIP_TRAINING:
         from .capabilities.training import execute_skip as execute_skip_training
 
@@ -759,6 +830,16 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
         from .capabilities.training import undo as undo_training
 
         result = undo_training(
+            db,
+            user_id,
+            action_id,
+            record.payload,
+            record.before or {},
+        )
+    elif record.capability_id == GOAL:
+        from .capabilities.profile import undo as undo_goal
+
+        result = undo_goal(
             db,
             user_id,
             action_id,

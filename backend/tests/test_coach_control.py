@@ -14,6 +14,7 @@ from app.models import (
     CoachSession,
     DomainEvent,
     FoodLog,
+    Goal,
     PlanDayState,
     Profile,
     User,
@@ -159,6 +160,23 @@ def test_cardio_log_confirm_and_undo(db):
 
     runtime.undo_action(db, "user-1", confirmed["action_id"])
     assert db.execute(select(WorkoutSession)).scalars().all() == []
+
+
+def test_goal_update_confirm_and_undo(db):
+    import asyncio
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "目标体重 68kg"))
+    assert turn["intent"] == "profile.update_goal"
+    assert turn["pending"]["kind"] == "card"
+    assert turn["pending"]["payload"]["target_weight_kg"] == 68
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    goal = db.execute(select(Goal)).scalar_one()
+    assert goal.target_weight_kg == 68
+    assert db.execute(select(DomainEvent)).scalar_one().type == "GoalUpdated"
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(Goal)).scalars().all() == []
 
 
 def test_body_weight_confirm_and_undo(db):
