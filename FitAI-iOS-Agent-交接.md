@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`b7c6b58`（饮食可用性收尾；代码 `2ef2379`；后端 **333 passed**；iOS Build 在 `2ef2379` 通过；macOS 已验证 `b7c6b58`，`FitAITests` **79/79**，phone-only 新包含 Widget 已装 Wu-Tang；后端生产仍为 `5c16528`，V31–V34 迁移未执行）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`6d585d4`（macOS 已完成生产部署；后端生产已到 `78839d2`，Flyway **V34**；macOS 已验证 iOS `b7c6b58`，`FitAITests` **79/79**，phone-only 新包含 Widget 已装 Wu-Tang）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -25,6 +25,35 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-13 · macOS（生产部署完成：V31–V34 + backend）
+
+- 分支：`develop`，部署代码对应后端 `78839d2`
+- SSH：阿里云安全组已放行当前 Mac IP `27.38.152.227/32`，`root@8.218.205.149` 公钥登录成功
+- 备份：
+  - MySQL：`/opt/fitai/backups/fitai-pre-v31-root-20261113-201157.sql.gz`（466K，49 tables）
+  - backend：`/opt/fitai/backups/backend-pre-deploy-20261113-201252.tar.gz`
+- 迁移：
+  - 用 `flyway/flyway:10` + `fitai_default` 网络执行
+  - 先 `info` 确认 V31–V34 Pending，再 `migrate`
+  - 结果：**V31 coach_feedback、V32 agent_prompt_version、V33 agent_request_state、V34 food_log_plan_link 全部 success**
+  - `flyway_schema_history` 当前版本 **34**
+- 后端：
+  - `rsync backend/app` → `/opt/fitai/backend/app`（保留 data / .env / Dockerfile）
+  - `docker compose build api && docker compose up -d api`
+  - `fitai-api` healthy，`https://hk-api.jiaolianfit.cn/health/ready` 返回 `{"status":"ready"}`
+  - OpenAPI 已确认包含 `/agent/feedback`、`/agent/requests/{request_id}`、`/diet/review`、`/plans/{plan_id}/activate`、`/diet/plan/{date}/meals/{meal}/undo-swap`
+- 验证过的表/列：
+  - `coach_feedback`、`agent_request_state` 已创建
+  - `agent_runs.prompt_version` 已添加
+  - `food_logs.plan_date` / `plan_meal` 已添加
+- 未验证：
+  - 需要登录后的端到端：教练反馈提交、饮食复盘、换餐撤销、Agent 新请求状态
+  - iOS 真机新 UI（饮食编辑/复盘/休息灵动岛）
+- 注意：
+  - 迁移只前进，回滚需用上面的 MySQL 备份
+  - 22 端口当前仍对 `27.38.152.227/32` 放行；部署结束后可移除或改成固定办公 IP
+  - `backend/data` 未覆盖，已比对内容一致（仅 CRLF 差异）
 
 ### 2026-11-13 · macOS（生产部署尝试：SSH 被安全组阻断）
 
