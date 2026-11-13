@@ -220,6 +220,53 @@ def test_skip_planned_meal_is_reversible(db):
     assert plan["skipped_meals"] == []
 
 
+def test_update_and_delete_food_log_can_be_undone(db):
+    created = execute_action(
+        db,
+        "user-1",
+        "food-create",
+        "log_food",
+        {
+            "date": "2026-11-13",
+            "meal": "lunch",
+            "items": [
+                {
+                    "name": "肉肠",
+                    "grams": 180,
+                    "kcal": 420,
+                    "protein_g": 24,
+                    "carbs_g": 6,
+                    "fat_g": 32,
+                }
+            ],
+        },
+    )
+    client_id = created["created_logs"][0]["client_id"]
+
+    execute_action(
+        db,
+        "user-1",
+        "food-update",
+        "update_food_log",
+        {"client_id": client_id, "grams": 230},
+    )
+    undo_action(db, "user-1", "food-update")
+
+    log = db.execute(select(FoodLog)).scalar_one()
+    assert log.grams == 180
+
+    execute_action(
+        db,
+        "user-1",
+        "food-delete",
+        "delete_food_log",
+        {"client_id": client_id},
+    )
+    assert db.execute(select(FoodLog)).scalars().all() == []
+    undo_action(db, "user-1", "food-delete")
+    assert db.execute(select(FoodLog)).scalar_one().client_id == client_id
+
+
 def test_generic_route_wraps_food_action_result(db):
     response = run_agent_action(
         "route-action",

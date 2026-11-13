@@ -430,6 +430,8 @@ extension AppStore {
                 await refreshDailyNutritionTargets()
                 if action.type == "log_food" || action.type == "log_planned_meal" {
                     undo = .foodLogAction(actionID: action.id)
+                } else if action.type == "update_food_log" || action.type == "delete_food_log" {
+                    undo = .foodLogEditAction(actionID: action.id)
                 }
                 if action.type == "delete_food_log" {
                     return "已删除饮食记录"

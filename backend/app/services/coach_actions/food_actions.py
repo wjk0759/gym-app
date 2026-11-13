@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ...models import FoodLog
+from ...models import AgentActionEvent, FoodLog
 from ..coach_context import today_nutrition_context
 from ..diet import ensure_meal_macros
 from ..meal_plans import get_day
@@ -56,6 +56,46 @@ def _food_log_payload(item: FoodLog) -> dict:
         "source_action_id": item.source_action_id,
         "source_group_id": item.source_group_id,
     }
+
+
+def _event_result(db: Session, user_id: str, action_id: str) -> dict:
+    event = db.execute(
+        select(AgentActionEvent).where(
+            AgentActionEvent.user_id == user_id,
+            AgentActionEvent.action_id == action_id,
+        )
+    ).scalar_one_or_none()
+    if event is None or not isinstance(event.detail, dict):
+        raise LookupError("操作记录不存在")
+    result = event.detail.get("result")
+    return result if isinstance(result, dict) else {}
+
+
+def _restore_food_log(db: Session, user_id: str, snapshot: dict) -> FoodLog:
+    log = FoodLog(
+        user_id=user_id,
+        client_id=snapshot["client_id"],
+        logged_at=datetime.fromisoformat(snapshot["logged_at"]),
+        meal=snapshot["meal"],
+        food_name=snapshot["food_name"],
+        grams=float(snapshot.get("grams") or 0),
+        kcal=float(snapshot.get("kcal") or 0),
+        protein=float(snapshot.get("protein") or 0),
+        carbs=float(snapshot.get("carbs") or 0),
+        fat=float(snapshot.get("fat") or 0),
+        fiber=float(snapshot.get("fiber") or 0),
+        plan_date=(
+            date.fromisoformat(snapshot["plan_date"])
+            if snapshot.get("plan_date")
+            else None
+        ),
+        plan_meal=snapshot.get("plan_meal"),
+        source=snapshot.get("source") or "manual",
+        source_action_id=snapshot.get("source_action_id"),
+        source_group_id=snapshot.get("source_group_id"),
+    )
+    db.add(log)
+    return log
 
 
 def _nutrition(db: Session, user_id: str, day: date) -> dict:
@@ -250,6 +290,7 @@ def execute_update_food_log(
     ).scalar_one_or_none()
     if log is None:
         raise LookupError("饮食记录不存在")
+    before = _food_log_payload(log)
     values = payload.model_dump(exclude_none=True, exclude={"client_id"})
     if "date" in values:
         log.logged_at = _meal_time(values.pop("date"), values.get("meal", log.meal))
@@ -273,6 +314,7 @@ def execute_update_food_log(
         log.plan_meal = log.meal
     db.flush()
     return {
+        "before_log": before,
         "updated_log": _food_log_payload(log),
         "today_nutrition": _nutrition(
             db, user_id, log.logged_at.astimezone(DIET_TZ).date()
@@ -300,6 +342,74 @@ def execute_delete_food_log(
     db.flush()
     return {
         "deleted_log": snapshot,
+        "today_nutrition": _nutrition(db, user_id, day),
+    }
+
+
+def undo_update_food_log(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload,
+) -> dict:
+    before = _event_result(db, user_id, action_id).get("before_log")
+    if not isinstance(before, dict):
+        raise LookupError("没有可撤销的修改")
+    log = db.execute(
+        select(FoodLog).where(
+            FoodLog.user_id == user_id,
+            FoodLog.client_id == payload.client_id,
+        )
+    ).scalar_one_or_none()
+    if log is None:
+        log = _restore_food_log(db, user_id, before)
+    else:
+        log.logged_at = datetime.fromisoformat(before["logged_at"])
+        log.meal = before["meal"]
+        log.food_name = before["food_name"]
+        log.grams = float(before.get("grams") or 0)
+        log.kcal = float(before.get("kcal") or 0)
+        log.protein = float(before.get("protein") or 0)
+        log.carbs = float(before.get("carbs") or 0)
+        log.fat = float(before.get("fat") or 0)
+        log.fiber = float(before.get("fiber") or 0)
+        log.plan_date = (
+            date.fromisoformat(before["plan_date"])
+            if before.get("plan_date")
+            else None
+        )
+        log.plan_meal = before.get("plan_meal")
+    db.flush()
+    return {
+        "restored": True,
+        "updated_log": _food_log_payload(log),
+        "today_nutrition": _nutrition(
+            db, user_id, log.logged_at.astimezone(DIET_TZ).date()
+        ),
+    }
+
+
+def undo_delete_food_log(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload,
+) -> dict:
+    snapshot = _event_result(db, user_id, action_id).get("deleted_log")
+    if not isinstance(snapshot, dict):
+        raise LookupError("没有可恢复的记录")
+    existing = db.execute(
+        select(FoodLog).where(
+            FoodLog.user_id == user_id,
+            FoodLog.client_id == snapshot["client_id"],
+        )
+    ).scalar_one_or_none()
+    if existing is None:
+        _restore_food_log(db, user_id, snapshot)
+    db.flush()
+    day = datetime.fromisoformat(snapshot["logged_at"]).astimezone(DIET_TZ).date()
+    return {
+        "restored": True,
         "today_nutrition": _nutrition(db, user_id, day),
     }
 
@@ -366,6 +476,7 @@ register(
     ActionSpec(
         payload_model=UpdateFoodLogPayload,
         execute=execute_update_food_log,
+        undo=undo_update_food_log,
     ),
 )
 register(
@@ -373,5 +484,6 @@ register(
     ActionSpec(
         payload_model=DeleteFoodLogPayload,
         execute=execute_delete_food_log,
+        undo=undo_delete_food_log,
     ),
 )
