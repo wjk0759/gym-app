@@ -8,6 +8,8 @@ from sqlalchemy.pool import StaticPool
 from app.db import Base
 from app.models import (
     AgentPendingAction,
+    AgentPlanProposal,
+    AgentRun,
     ChatSession,
     Profile,
     User,
@@ -22,6 +24,7 @@ from app.services.agent_pending import (
     pending_food_action_context,
     resolve_pending_action,
     store_pending_actions,
+    supersede_pending_proposals,
     update_pending_action,
 )
 from app.services.coach_actions.executor import execute_action
@@ -179,6 +182,33 @@ def test_pending_state_route_restores_card_and_draft(db):
     assert state["pending_draft"]["id"] == draft.id
 
 
+def _add_proposal(db, *, expires_in: timedelta = timedelta(minutes=30)):
+    db.add(
+        AgentRun(
+            id="run-proposal",
+            user_id="user-1",
+            session_id="session-1",
+            intent="plan_change",
+            status="needs_confirmation",
+            input_text="给我排一个四周计划",
+        )
+    )
+    proposal = AgentPlanProposal(
+        id="proposal-1",
+        user_id="user-1",
+        run_id="run-proposal",
+        status="draft",
+        title="四周增肌计划",
+        plan_data={"title": "四周增肌计划"},
+        diff_data={"changes": ["每周 4 练"]},
+        validation_data={"valid": True},
+        expires_at=utcnow() + expires_in,
+    )
+    db.add(proposal)
+    db.commit()
+    return proposal
+
+
 def test_pending_state_route_is_empty_without_pending_work(db):
     state = agent_pending_state("user-1", db)
 
@@ -186,7 +216,27 @@ def test_pending_state_route_is_empty_without_pending_work(db):
         "session_id": None,
         "pending_action": None,
         "pending_draft": None,
+        "proposal": None,
     }
+
+
+def test_pending_state_route_restores_a_plan_proposal(db):
+    _add_proposal(db)
+
+    state = agent_pending_state("user-1", db)
+
+    assert state["session_id"] == "session-1"
+    assert state["proposal"]["id"] == "proposal-1"
+    assert state["proposal"]["changes"] == ["每周 4 练"]
+
+
+def test_expired_plan_proposal_is_not_restored(db):
+    _add_proposal(db, expires_in=timedelta(minutes=-1))
+
+    state = agent_pending_state("user-1", db)
+
+    assert state["proposal"] is None
+    assert db.get(AgentPlanProposal, "proposal-1").status == "expired"
 
 
 def test_pending_state_route_restores_a_draft_without_a_card(db):
@@ -224,6 +274,14 @@ def test_executing_an_action_consumes_its_pending_card(db):
     row = db.execute(select(AgentPendingAction)).scalar_one()
     assert row.status == "consumed"
     assert latest_pending_action(db, "user-1") is None
+
+
+def test_new_turn_without_a_proposal_supersedes_the_card(db):
+    _add_proposal(db)
+
+    supersede_pending_proposals(db, "user-1")
+
+    assert db.get(AgentPlanProposal, "proposal-1").status == "superseded"
 
 
 def test_card_edits_are_persisted_for_other_devices(db):

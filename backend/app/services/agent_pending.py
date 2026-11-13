@@ -12,7 +12,15 @@ from datetime import timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..models import AgentPendingAction, utcnow
+from ..models import AgentPendingAction, AgentPlanProposal, utcnow
+
+
+def _is_past(value) -> bool:
+    if value is None:
+        return True
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value < utcnow()
 
 PENDING_TTL = timedelta(minutes=30)
 ACTIVE_STATUSES = {"pending"}
@@ -133,6 +141,56 @@ def pending_food_action_context(
                 "payload": payload,
             }
     return None
+
+
+def latest_pending_proposal(
+    db: Session,
+    user_id: str,
+) -> AgentPlanProposal | None:
+    """Latest unexpired draft proposal, used for cross-device restore."""
+
+    rows = (
+        db.execute(
+            select(AgentPlanProposal)
+            .where(
+                AgentPlanProposal.user_id == user_id,
+                AgentPlanProposal.status == "draft",
+            )
+            .order_by(AgentPlanProposal.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+    result: AgentPlanProposal | None = None
+    changed = False
+    for row in rows:
+        if _is_past(row.expires_at):
+            row.status = "expired"
+            changed = True
+        elif result is None:
+            result = row
+    if changed:
+        db.flush()
+    return result
+
+
+def supersede_pending_proposals(db: Session, user_id: str) -> None:
+    """A new turn without a proposal clears the previous card, like iOS does."""
+
+    rows = (
+        db.execute(
+            select(AgentPlanProposal).where(
+                AgentPlanProposal.user_id == user_id,
+                AgentPlanProposal.status == "draft",
+            )
+        )
+        .scalars()
+        .all()
+    )
+    for row in rows:
+        row.status = "superseded"
+    if rows:
+        db.flush()
 
 
 def update_pending_action(

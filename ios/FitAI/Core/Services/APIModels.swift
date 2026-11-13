@@ -489,11 +489,13 @@ struct AgentPendingState: Decodable {
     let sessionID: UUID?
     let pendingAction: AgentPendingActionCard?
     let pendingDraft: AgentPendingDraft?
+    let proposal: AgentPlanProposal?
 
     enum CodingKeys: String, CodingKey {
         case sessionID = "session_id"
         case pendingAction = "pending_action"
         case pendingDraft = "pending_draft"
+        case proposal
     }
 }
 

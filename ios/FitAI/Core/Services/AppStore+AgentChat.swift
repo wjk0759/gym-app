@@ -75,6 +75,16 @@ extension AppStore {
                 guard self.currentUserID == accountID,
                       !self.isReplying,
                       !self.isExecutingAgentActions else { return }
+                if let proposal = state.proposal {
+                    if self.agentProposal == nil {
+                        self.agentProposal = proposal
+                        if let sessionID = state.sessionID {
+                            self.agentSessionID = sessionID
+                        }
+                    }
+                } else if self.agentProposal != nil {
+                    self.agentProposal = nil
+                }
                 if let card = state.pendingAction, !card.actions.isEmpty {
                     if self.agentActions.isEmpty {
                         self.agentSessionID = state.sessionID

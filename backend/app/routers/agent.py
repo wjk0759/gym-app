@@ -30,13 +30,20 @@ from ..services.action_drafts import (
     get_active_draft,
     get_latest_active_draft,
 )
-from ..services.agent import apply_proposal, generate_weekly_review, run_agent
+from ..services.agent import (
+    _serialize_proposal,
+    apply_proposal,
+    generate_weekly_review,
+    run_agent,
+)
 from ..services.agent_pending import (
     latest_pending_action,
+    latest_pending_proposal,
     pending_action_payload,
     pending_food_action_context,
     resolve_pending_action,
     store_pending_actions,
+    supersede_pending_proposals,
     update_pending_action,
 )
 from ..services.agent_requests import (
@@ -193,6 +200,8 @@ async def _agent_chat_claimed(
             result.get("run_id"),
             result.get("actions") or [],
         )
+        if result.get("proposal") is None:
+            supersede_pending_proposals(db, user_id)
         user_message = ChatMessage(role="user", content=payload.message)
         assistant_message = ChatMessage(
             role="assistant",
@@ -271,6 +280,7 @@ def agent_pending_state(
     """Latest pending card/draft, used to restore state on another device."""
 
     row = latest_pending_action(db, user_id)
+    proposal = latest_pending_proposal(db, user_id)
     draft = None
     session_id = None
     if row is not None:
@@ -280,11 +290,15 @@ def agent_pending_state(
         draft = get_latest_active_draft(db, user_id)
         if draft is not None:
             session_id = draft.session_id
+        elif proposal is not None:
+            run = db.get(AgentRun, proposal.run_id)
+            session_id = run.session_id if run is not None else None
     db.commit()
     return {
         "session_id": session_id,
         "pending_action": pending_action_payload(row) if row is not None else None,
         "pending_draft": compact_draft(draft),
+        "proposal": _serialize_proposal(proposal) if proposal is not None else None,
     }
 
 
