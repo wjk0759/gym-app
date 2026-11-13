@@ -433,7 +433,7 @@ struct AgentAction: Codable, Identifiable, Hashable {
     }
 }
 
-struct AgentPendingDraft: Decodable, Identifiable, Hashable {
+struct AgentPendingDraft: Codable, Identifiable, Hashable {
     let id: String
     let type: String
     let summary: String

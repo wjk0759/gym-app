@@ -321,6 +321,8 @@ final class AppStore {
         sessions = state.sessions
         workoutDraft = state.workoutDraft
         chat = state.chat
+        agentActions = state.agentActions ?? []
+        pendingDraft = state.pendingDraft
         foodLogs = state.foodLogs ?? []
         dailyNutritionTargets = state.dailyNutritionTargets
         dailyNutritionTargetsKey = state.dailyNutritionTargetsKey
@@ -374,6 +376,8 @@ final class AppStore {
             sessions: sessions,
             workoutDraft: workoutDraft,
             chat: chat,
+            agentActions: agentActions,
+            pendingDraft: pendingDraft,
             foodLogs: foodLogs,
             dailyNutritionTargets: dailyNutritionTargets,
             dailyNutritionTargetsKey: dailyNutritionTargetsKey,
@@ -487,6 +491,8 @@ final class AppStore {
         var sessions: [WorkoutSession]
         var workoutDraft: WorkoutDraft?
         var chat: [ChatMessage]
+        var agentActions: [AgentAction]?
+        var pendingDraft: AgentPendingDraft?
         var foodLogs: [FoodLog]?
         var dailyNutritionTargets: NutritionTargets?
         var dailyNutritionTargetsKey: String?
