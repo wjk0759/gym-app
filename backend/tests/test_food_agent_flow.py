@@ -313,6 +313,112 @@ def test_draft_answer_resolves_and_consumes_the_draft(db, monkeypatch):
     assert calls["food"] == 2
 
 
+def _pending_card(items):
+    return {
+        "pending_action": {
+            "type": "log_food",
+            "payload": {
+                "date": "2026-11-13",
+                "meal": "snack",
+                "raw_text": "玉米肉肠 100g",
+                "items": items,
+            },
+        }
+    }
+
+
+def test_short_food_amount_is_a_complete_log_intent():
+    assert agent_service._forced_food_log_intent("100 克玉米肉肠")
+    assert agent_service._forced_food_log_intent("玉米鸡肉肠 100 克")
+    assert not agent_service._forced_food_log_intent("100 克玉米肉肠多少卡")
+
+
+def test_pending_card_can_replace_a_food_by_name(db, monkeypatch):
+    _install_fake_llm(
+        monkeypatch,
+        food_resolution={
+            "items": [
+                {
+                    "name": "玉米鸡肉肠",
+                    "grams": 100,
+                    "kcal": 200,
+                    "protein_g": 13,
+                    "carbs_g": 9,
+                    "fat_g": 12,
+                }
+            ],
+            "questions": [],
+        },
+    )
+    context = _pending_card(
+        [
+            {
+                "name": "玉米肉肠",
+                "grams": 100,
+                "kcal": 250,
+                "protein_g": 12,
+                "carbs_g": 10,
+                "fat_g": 18,
+            },
+            {
+                "name": "牛筋肉肠",
+                "grams": 180,
+                "kcal": 468,
+                "protein_g": 25,
+                "carbs_g": 14,
+                "fat_g": 36,
+            },
+        ]
+    )
+
+    result = asyncio.run(
+        agent_service._pending_food_replacement(
+            db,
+            "user-1",
+            context,
+            "不是玉米肉肠，是玉米鸡肉肠 100 克",
+        )
+    )
+
+    assert result is not None
+    assert len(result["actions"]) == 1
+    items = result["actions"][0]["payload"]["items"]
+    assert items[0]["name"] == "玉米鸡肉肠"
+    assert items[0]["grams"] == 100
+    assert items[1]["name"] == "牛筋肉肠"
+    assert result["actions"][0]["payload"]["date"] == "2026-11-13"
+
+
+def test_pending_card_amount_only_correction_is_not_a_replacement(db, monkeypatch):
+    _install_fake_llm(
+        monkeypatch,
+        food_resolution=llm.LLMError("should not be called"),
+    )
+    context = _pending_card(
+        [
+            {
+                "name": "玉米肉肠",
+                "grams": 100,
+                "kcal": 250,
+                "protein_g": 12,
+                "carbs_g": 10,
+                "fat_g": 18,
+            }
+        ]
+    )
+
+    result = asyncio.run(
+        agent_service._pending_food_replacement(
+            db,
+            "user-1",
+            context,
+            "记错了是 230 克",
+        )
+    )
+
+    assert result is None
+
+
 def test_food_resolution_overrides_model_invented_items():
     action = agent_service._normalize_app_actions(
         [

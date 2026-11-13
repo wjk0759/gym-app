@@ -162,11 +162,25 @@ def _forced_food_log_intent(message: str) -> bool:
         return False
     if _forced_workout_log_intent(text):
         return False
+    if re.search(
+        r"帮我记|记一下|记录一下|补记|帮我记录|记饮食|记录饮食|"
+        r"吃了.{0,40}(记|记录)|喝了.{0,40}(记|记录)",
+        text,
+    ):
+        return True
+    # In an active food-logging conversation a short "食物 + 份量" message is
+    # already a complete log intent ("100 克玉米肉肠"). Do not require the
+    # user to repeat "帮我记".
+    if len(text) > 30 or re.search(
+        r"多少|热量|卡路里|几|吗|？|\?|怎么|能不能|可以吗", text
+    ):
+        return False
     return bool(
         re.search(
-            r"帮我记|记一下|记录一下|补记|帮我记录|记饮食|记录饮食|"
-            r"吃了.{0,40}(记|记录)|喝了.{0,40}(记|记录)",
+            r"\d+(?:\.\d+)?\s*(g|克|ml|毫升|杯|份|碗|个|片|勺|盒|瓶)|"
+            r"(半|一|两|二|三)\s*(杯|份|碗|个|片|勺)",
             text,
+            flags=re.IGNORECASE,
         )
     )
 
@@ -292,6 +306,143 @@ def _pending_action_correction(
     return {
         "actions": _normalize_app_actions([raw]),
         "reply": "改好了，确认后按新的份量写入。",
+    }
+
+
+def _has_new_food_name(text: str) -> bool:
+    cleaned = re.sub(
+        r"\d+(?:\.\d+)?\s*(g|克|ml|毫升|杯|份|碗|个|片|勺|盒|瓶)",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
+    cleaned = re.sub(
+        r"记错|不是|改成|换成|改为|应该是|修正|改一下|了|是|的|我|你",
+        "",
+        cleaned,
+    )
+    return bool(re.search(r"[\u4e00-\u9fff]{2,}", cleaned))
+
+
+async def _pending_food_replacement(
+    db: Session,
+    user_id: str,
+    app_context: dict | None,
+    message: str,
+) -> dict | None:
+    """Replace one food in a pending log card when the user corrects its name.
+
+    Amount-only corrections stay on the deterministic fast path; this helper
+    handles "不是玉米肉肠，是玉米鸡肉肠 100 克" and the single-item
+    "玉米鸡肉肠 100 克" case without forcing the model to invent macros.
+    """
+
+    if not isinstance(app_context, dict):
+        return None
+    pending = app_context.get("pending_action")
+    if not isinstance(pending, dict) or pending.get("type") != "log_food":
+        return None
+    payload = pending.get("payload")
+    if not isinstance(payload, dict):
+        return None
+    items = payload.get("items")
+    if not isinstance(items, list) or not items:
+        return None
+
+    target: int | None = None
+    new_text: str | None = None
+    for pattern in (
+        re.compile(
+            r"不是\s*(?P<old>[^，,。]+?)\s*[，,]\s*是\s*(?P<new>[^，,。]+)"
+        ),
+        re.compile(
+            r"把?\s*(?P<old>[^，,。]+?)\s*(?:改成|换成|改为)\s*(?P<new>[^，,。]+)"
+        ),
+    ):
+        match = pattern.search(message)
+        if match is None:
+            continue
+        old = match.group("old").strip()
+        for index, item in enumerate(items):
+            name = str(item.get("name") or "") if isinstance(item, dict) else ""
+            if old and name and (old in name or name in old):
+                target = index
+                new_text = match.group("new").strip()
+                break
+        if target is not None:
+            break
+
+    if (
+        target is None
+        and len(items) == 1
+        and _has_new_food_name(message)
+        and _forced_food_log_intent(message)
+        and not re.search(
+            r"记错|不是|改成|换成|改为|应该是|修正|"
+            r"再|添加|加一个|另外|还有|记一下|帮我记|记录|补记",
+            message,
+        )
+    ):
+        target = 0
+        new_text = message.strip()
+
+    if target is None or not new_text:
+        return None
+
+    try:
+        target_date = date.fromisoformat(str(payload.get("date") or ""))
+    except ValueError:
+        target_date = datetime.now(REVIEW_TZ).date()
+    meal = str(payload.get("meal") or "lunch")
+    if meal not in {"breakfast", "lunch", "dinner", "snack"}:
+        meal = "lunch"
+
+    resolution = await resolve_food_text(
+        db,
+        user_id,
+        new_text,
+        meal=meal,
+        target_date=target_date,
+        prefer_llm=True,
+    )
+    resolved_items = resolution.get("items") or []
+    if resolution.get("questions") or not resolved_items:
+        return {
+            "actions": [],
+            "reply": _food_question_message(resolution),
+        }
+    if len(resolved_items) != 1:
+        return {
+            "actions": [],
+            "reply": "我解析出了多种食物，能只告诉我替换后的那一种吗？",
+        }
+
+    updated_items = [dict(item) for item in items]
+    updated_items[target] = dict(resolved_items[0])
+    kcal = round(
+        sum(
+            float(item.get("kcal") or 0)
+            for item in updated_items
+            if isinstance(item, dict)
+        )
+    )
+    raw = {
+        "type": "log_food",
+        "title": "修正饮食记录",
+        "summary": f"约 {kcal} kcal",
+        "requires_confirmation": True,
+        "payload": {
+            "date": target_date.isoformat(),
+            "meal": meal,
+            "raw_text": (
+                str(payload.get("raw_text") or "") + "；" + message
+            )[:500],
+            "items": updated_items,
+        },
+    }
+    return {
+        "actions": _normalize_app_actions([raw]),
+        "reply": "改好了，确认后按修正后的食物和份量写入。",
     }
 
 
@@ -1739,9 +1890,21 @@ async def run_agent(
             pass
 
     try:
-        correction = _pending_action_correction(app_context, message)
+        replacement = await _pending_food_replacement(
+            db,
+            user_id,
+            app_context,
+            message,
+        )
     except Exception:
-        correction = None
+        replacement = None
+    if replacement is not None:
+        correction = replacement
+    else:
+        try:
+            correction = _pending_action_correction(app_context, message)
+        except Exception:
+            correction = None
     if correction is not None:
         actions = correction["actions"]
         final_message = correction["reply"]
