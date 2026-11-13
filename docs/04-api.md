@@ -528,6 +528,23 @@ DELETE /agent/drafts/{draft_id}
 - 执行或忽略 card 中的某个 action 后，服务端会从卡里移除；全部处理完后卡片变为 consumed。
 - 用户不说“记错了”但服务端保存了 `log_food` 卡时，`/agent/chat` 也会直接用服务端卡做确认前修正，不依赖客户端回传 `app_context.pending_action`。
 
+#### `PATCH /agent/pending/actions/{action_id}`
+
+客户端在确认前调整份量/日期/餐次后，把新的 payload 同步回服务端卡片：
+
+```json
+{
+  "summary": "约 537 kcal",
+  "payload": {
+    "date": "2026-11-14",
+    "meal": "lunch",
+    "items": [{ "name": "肉肠", "grams": 230, "kcal": 536.7 }]
+  }
+}
+```
+
+只允许修改当前用户活跃卡片中的 action；卡片已执行/过期返回 404。
+
 #### `POST /agent/actions/{action_id}/run`
 
 统一执行教练产出的非训练改课动作。请求：

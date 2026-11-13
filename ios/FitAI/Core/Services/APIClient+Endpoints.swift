@@ -218,6 +218,21 @@ extension APIClient {
         )
     }
 
+    func updateAgentPendingAction(
+        id: String,
+        summary: String,
+        payload: AgentActionPayload
+    ) async throws {
+        let body = try JSONEncoder().encode(
+            AgentPendingActionPatchRequest(summary: summary, payload: payload)
+        )
+        try await sendVoid(
+            path: "agent/pending/actions/\(id)",
+            method: "PATCH",
+            body: body
+        )
+    }
+
     func agentWeeklyReview() async throws -> AgentWeeklyReview {
         try await send(
             path: "agent/reviews/weekly",

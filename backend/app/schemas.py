@@ -209,6 +209,11 @@ class AgentChatIn(BaseModel):
     app_context: dict[str, Any] | None = None
 
 
+class AgentPendingActionPatchIn(BaseModel):
+    summary: str | None = Field(default=None, max_length=120)
+    payload: dict[str, Any]
+
+
 class AgentActionResultIn(BaseModel):
     run_id: str | None = Field(default=None, max_length=36)
     action_type: str = Field(min_length=1, max_length=40)

@@ -480,6 +480,11 @@ struct AgentPendingActionCard: Decodable {
     }
 }
 
+struct AgentPendingActionPatchRequest: Encodable {
+    let summary: String
+    let payload: AgentActionPayload
+}
+
 struct AgentPendingState: Decodable {
     let sessionID: UUID?
     let pendingAction: AgentPendingActionCard?

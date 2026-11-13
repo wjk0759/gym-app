@@ -111,6 +111,15 @@ extension AppStore {
         let kcal = items.reduce(0) { $0 + $1.kcal }
         agentActions[index].summary = "约 \(Int(kcal)) kcal"
         persist()
+        guard let payload = agentActions[index].payload else { return }
+        let summary = agentActions[index].summary
+        Task {
+            try? await APIClient.shared.updateAgentPendingAction(
+                id: actionID,
+                summary: summary,
+                payload: payload
+            )
+        }
     }
 
     func executeAgentActions() {

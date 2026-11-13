@@ -22,6 +22,7 @@ from app.services.agent_pending import (
     pending_food_action_context,
     resolve_pending_action,
     store_pending_actions,
+    update_pending_action,
 )
 from app.services.coach_actions.executor import execute_action
 from app.services.food_text import resolve_food_rules
@@ -223,6 +224,31 @@ def test_executing_an_action_consumes_its_pending_card(db):
     row = db.execute(select(AgentPendingAction)).scalar_one()
     assert row.status == "consumed"
     assert latest_pending_action(db, "user-1") is None
+
+
+def test_card_edits_are_persisted_for_other_devices(db):
+    store_pending_actions(
+        db, "user-1", "session-1", None, [_food_action("action-edit")]
+    )
+
+    updated = update_pending_action(
+        db,
+        "user-1",
+        "action-edit",
+        {
+            "date": "2026-11-14",
+            "meal": "lunch",
+            "items": [{"name": "肉肠", "grams": 230, "kcal": 536.7}],
+        },
+        summary="约 537 kcal",
+    )
+
+    assert updated["summary"] == "约 537 kcal"
+    context = pending_food_action_context(db, "user-1", "session-1")
+    assert context["payload"]["items"][0]["grams"] == 230
+
+    with pytest.raises(LookupError):
+        update_pending_action(db, "user-1", "missing", {}, summary=None)
 
 
 def test_reporting_a_rejected_action_consumes_the_card(db):

@@ -20,6 +20,7 @@ from ..schemas import (
     AgentActionRunIn,
     AgentChatIn,
     AgentFeedbackIn,
+    AgentPendingActionPatchIn,
     WorkoutActionExecuteIn,
 )
 from ..services import access, generation
@@ -36,6 +37,7 @@ from ..services.agent_pending import (
     pending_food_action_context,
     resolve_pending_action,
     store_pending_actions,
+    update_pending_action,
 )
 from ..services.agent_requests import (
     AgentRequestInProgress,
@@ -284,6 +286,30 @@ def agent_pending_state(
         "pending_action": pending_action_payload(row) if row is not None else None,
         "pending_draft": compact_draft(draft),
     }
+
+
+@router.patch("/pending/actions/{action_id}")
+def patch_pending_action(
+    action_id: str,
+    payload: AgentPendingActionPatchIn,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    action_id = action_id.strip()
+    if not 1 <= len(action_id) <= 64:
+        raise HTTPException(status_code=400, detail="action_id 不合法")
+    try:
+        action = update_pending_action(
+            db,
+            user_id,
+            action_id,
+            payload.payload,
+            summary=payload.summary,
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    db.commit()
+    return {"ok": True, "action": action}
 
 
 @router.delete("/drafts/{draft_id}")

@@ -135,6 +135,33 @@ def pending_food_action_context(
     return None
 
 
+def update_pending_action(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: dict,
+    summary: str | None = None,
+) -> dict:
+    """Persist a client-side card edit so other devices see the same values."""
+
+    for row in _active_rows(db, user_id):
+        actions = [
+            dict(action) if isinstance(action, dict) else action
+            for action in (row.actions or [])
+        ]
+        for action in actions:
+            if not isinstance(action, dict) or action.get("id") != action_id:
+                continue
+            action["payload"] = payload
+            if summary is not None:
+                action["summary"] = summary
+            row.actions = actions
+            row.updated_at = utcnow()
+            db.flush()
+            return action
+    raise LookupError("待确认操作不存在")
+
+
 def resolve_pending_action(
     db: Session,
     user_id: str,
