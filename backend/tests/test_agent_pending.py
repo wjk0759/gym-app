@@ -13,7 +13,8 @@ from app.models import (
     User,
     utcnow,
 )
-from app.routers.agent import agent_pending_state
+from app.routers.agent import agent_pending_state, report_action_result
+from app.schemas import AgentActionResultIn
 from app.services.action_drafts import create_food_draft
 from app.services.agent_pending import (
     latest_pending_action,
@@ -222,6 +223,25 @@ def test_executing_an_action_consumes_its_pending_card(db):
     row = db.execute(select(AgentPendingAction)).scalar_one()
     assert row.status == "consumed"
     assert latest_pending_action(db, "user-1") is None
+
+
+def test_reporting_a_rejected_action_consumes_the_card(db):
+    store_pending_actions(
+        db, "user-1", "session-1", None, [_food_action("action-reject")]
+    )
+
+    report_action_result(
+        "action-reject",
+        AgentActionResultIn(
+            action_type="log_food",
+            status="rejected",
+            message="用户取消",
+        ),
+        "user-1",
+        db,
+    )
+
+    assert latest_pending_action(db, "user-1", "session-1") is None
 
 
 def test_pending_action_payload_exposes_run_and_expiry(db):

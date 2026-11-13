@@ -11,6 +11,7 @@ from app.models import AgentRun, ChatMessage, Profile, User
 from app.routers import agent as agent_router
 from app.schemas import AgentChatIn
 from app.services import access
+from app.services.agent_pending import latest_pending_action
 
 
 @pytest.fixture()
@@ -109,6 +110,92 @@ def test_failed_turn_is_not_persisted_for_retry(db, monkeypatch):
     assert db.query(ChatMessage).count() == 0
     used, _, _ = access.coach_usage(db, "user-1")
     assert used == 0
+
+
+def test_pending_card_is_stored_and_reused_by_the_next_turn(db, monkeypatch):
+    action = {
+        "id": "action-food",
+        "type": "log_food",
+        "title": "记录饮食",
+        "summary": "约 420 kcal",
+        "requires_confirmation": True,
+        "payload": {
+            "date": "2026-11-14",
+            "meal": "lunch",
+            "items": [
+                {
+                    "name": "肉肠",
+                    "grams": 180,
+                    "kcal": 420,
+                    "protein_g": 24,
+                    "carbs_g": 6,
+                    "fat_g": 32,
+                }
+            ],
+        },
+    }
+
+    async def first_run(db, user_id, message, **kwargs):
+        return {
+            "run_id": "run-pending",
+            "status": "needs_confirmation",
+            "reply": "确认一下卡片。",
+            "proposal": None,
+            "actions": [action],
+            "safety_flag": None,
+            "citations": [],
+            "elapsed_ms": 1,
+            "usage": {},
+            "error": None,
+        }
+
+    monkeypatch.setattr(agent_router, "run_agent", first_run)
+    first = asyncio.run(
+        agent_router._agent_chat_inner(
+            AgentChatIn(message="午餐吃了肉肠", request_id="request-pending"),
+            "user-1",
+            db,
+        )
+    )
+
+    row = latest_pending_action(db, "user-1")
+    assert row is not None
+    assert row.session_id == first["session_id"]
+    assert row.actions[0]["id"] == "action-food"
+
+    captured = {}
+
+    async def correction_run(db, user_id, message, **kwargs):
+        captured.update(kwargs)
+        return {
+            "run_id": "run-correction",
+            "status": "completed",
+            "reply": "改好了。",
+            "proposal": None,
+            "actions": [],
+            "safety_flag": None,
+            "citations": [],
+            "elapsed_ms": 1,
+            "usage": {},
+            "error": None,
+        }
+
+    monkeypatch.setattr(agent_router, "run_agent", correction_run)
+    asyncio.run(
+        agent_router._agent_chat_inner(
+            AgentChatIn(
+                message="记错了是 230 克",
+                session_id=first["session_id"],
+                request_id="request-correction",
+            ),
+            "user-1",
+            db,
+        )
+    )
+
+    pending = captured["app_context"]["pending_action"]
+    assert pending["id"] == "action-food"
+    assert pending["payload"]["items"][0]["grams"] == 180
 
 
 def test_in_progress_request_returns_structured_409(db):
