@@ -44,10 +44,10 @@ def parse_meal(text: str) -> str | None:
         return "breakfast"
     if re.search(r"午餐|午饭|中饭|中午|晌午", value):
         return "lunch"
-    if re.search(r"晚餐|晚饭|晚上|傍晚", value):
-        return "dinner"
     if re.search(r"加餐|夜宵|宵夜|零食|下午茶|小吃", value):
         return "snack"
+    if re.search(r"晚餐|晚饭|晚上|傍晚|昨晚|夜里", value):
+        return "dinner"
     return None
 
 
