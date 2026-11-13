@@ -182,8 +182,17 @@ extension CoachChatView {
                                                 .foregroundStyle(Theme.cobalt)
                                         }
                                     }
-                                    Text("估算值，确认后写入今日饮食")
-                                        .foregroundStyle(Theme.tertiaryText)
+                                    HStack(spacing: 8) {
+                                        Text("估算值，确认后写入今日饮食")
+                                            .foregroundStyle(Theme.tertiaryText)
+                                        Spacer(minLength: 0)
+                                        Button("调整份量") {
+                                            editingFoodAction = action
+                                        }
+                                        .font(.system(size: 9.5, weight: .bold))
+                                        .foregroundStyle(Theme.cobalt)
+                                        .buttonStyle(.plain)
+                                    }
                                 }
                                 .font(.system(size: 9.5, weight: .medium))
                                 .padding(.top, 2)

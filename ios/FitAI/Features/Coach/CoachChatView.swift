@@ -26,6 +26,7 @@ struct CoachChatView: View {
     @State var isLoadingVideo = false
     @State var attachmentError: String?
     @State var selectedDietRecipe: DietRecipeSelection?
+    @State var editingFoodAction: AgentAction?
     @State var accessWaitExpired = false
     @State var accessRetryToken = 0
     @FocusState var focused: Bool
@@ -218,6 +219,9 @@ struct CoachChatView: View {
             }
             .sheet(item: $selectedDietRecipe) { selection in
                 DietRecipeSheet(selection: selection)
+            }
+            .sheet(item: $editingFoodAction) { action in
+                EditFoodActionSheet(action: action)
             }
             .fullScreenCover(isPresented: $showCamera) {
                 PhotoCaptureView(

@@ -65,6 +65,14 @@ extension AppStore {
         return context
     }
 
+    func updateAgentFoodItems(actionID: String, items: [AgentFoodItem]) {
+        guard let index = agentActions.firstIndex(where: { $0.id == actionID }) else {
+            return
+        }
+        agentActions[index].payload?.items = items
+        persist()
+    }
+
     func executeAgentActions() {
         guard !agentActions.isEmpty, !isExecutingAgentActions else { return }
         let actions = agentActions

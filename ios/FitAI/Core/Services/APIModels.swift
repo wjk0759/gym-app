@@ -373,7 +373,7 @@ struct AgentActionPayload: Codable, Hashable {
     let weekStart: String?
     let meal: String?
     let rawText: String?
-    let items: [AgentFoodItem]?
+    var items: [AgentFoodItem]?
     let title: String?
     let durationMinutes: Int?
     let kind: String?
@@ -419,7 +419,7 @@ struct AgentAction: Codable, Identifiable, Hashable {
     let title: String
     let summary: String
     let requiresConfirmation: Bool
-    let payload: AgentActionPayload?
+    var payload: AgentActionPayload?
 
     enum CodingKeys: String, CodingKey {
         case id
