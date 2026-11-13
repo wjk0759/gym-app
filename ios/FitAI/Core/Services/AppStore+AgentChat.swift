@@ -91,9 +91,7 @@ extension AppStore {
                         self.agentRunID = card.runID
                         self.agentActions = card.actions
                     }
-                    if self.pendingDraft == nil {
-                        self.pendingDraft = state.pendingDraft
-                    }
+                    self.pendingDraft = nil
                     self.persist()
                     return
                 }
@@ -248,7 +246,12 @@ extension AppStore {
                 }
                 self.agentProposal = response.proposal
                 self.agentActions = response.actions ?? []
-                self.pendingDraft = response.pendingDraft
+                // A confirmation card and a slot-filling draft are mutually
+                // exclusive. Trust the card when both arrive (old server
+                // versions could return both after a failed resolver).
+                self.pendingDraft = self.agentActions.isEmpty
+                    ? response.pendingDraft
+                    : nil
                 var assistant = ChatMessage(
                     role: .assistant,
                     text: response.reply,

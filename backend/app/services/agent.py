@@ -36,6 +36,7 @@ from ..models import (
 from . import llm
 from .action_drafts import (
     answer_food_draft,
+    cancel_active_draft,
     compact_draft,
     create_food_draft,
     draft_context,
@@ -57,7 +58,13 @@ from .coach_context import build_coach_context, recent_training
 from .coach_core import coach_core_prompt
 from .diet_review import build_diet_review, utc_window
 from .exercise_search import search_exercise_payload
-from .food_text import parse_amount_grams, resolve_food_text
+from .food_text import (
+    food_log_context,
+    parse_amount_grams,
+    parse_food_date,
+    parse_meal,
+    resolve_food_text,
+)
 from .memory import remember_facts, schedule_memory_extraction
 from .plan_generator import build_template_plan, validate_plan_for_user
 from .plan_validator import PlanValidationError
@@ -73,7 +80,7 @@ from .training_history import (
 
 logger = logging.getLogger(__name__)
 
-MAX_STEPS = 7
+MAX_STEPS = 10
 # 一周最多 7 天；整周取消/批量跳过应在一次工具调用里完成，
 # 否则模型会被“最多 3 个动作”的校验逼着拆成多轮，延迟从十几秒涨到一分钟以上。
 MAX_APP_ACTIONS = 7
@@ -314,6 +321,7 @@ async def _resolve_raw_draft(
         combined,
         meal=str(payload.get("meal") or "lunch"),
         target_date=target,
+        prefer_llm=True,
     )
     slots = list(resolution.get("missing_slots") or [])
     questions = [
@@ -394,10 +402,15 @@ async def _handle_draft_turn(
             "payload": payload,
         }
         actions = _normalize_app_actions([raw])
-        final_message = f"补充好了，约 {int(kcal)} kcal。确认一下卡片就写入今日饮食。"
+        final_message = f"补充好了，约 {int(kcal)} kcal。确认一下卡片就写入饮食记录。"
     else:
-        question = (answer.get("questions") or ["再确认一下份量"])[0]
-        final_message = f"{question} 直接告诉我毫升或克数就行。"
+        question = _food_question_message(answer)
+        draft = get_active_draft(db, user_id, session_id)
+        final_message = (
+            question
+            if needs_raw_clarification(draft)
+            else f"{question} 直接告诉我毫升或克数就行。"
+        )
     run.intent = "app_action" if actions else "draft_clarification"
     run.status = "needs_confirmation" if actions else "completed"
     run.output_text = final_message
@@ -815,7 +828,9 @@ def _normalize_workout_changes(raw_changes: Any) -> list[dict]:
 
 
 def _normalize_app_actions(
-    raw_actions: Any, app_context: dict | None = None
+    raw_actions: Any,
+    app_context: dict | None = None,
+    food_resolution: dict | None = None,
 ) -> list[dict]:
     if not isinstance(raw_actions, list) or not raw_actions:
         raise ValueError("actions must be a non-empty list")
@@ -935,7 +950,17 @@ def _normalize_app_actions(
                     raise ValueError("week_start must be YYYY-MM-DD")
                 payload["week_start"] = week_start
         if action_type == "log_food":
-            if not valid_date(date_value):
+            if food_resolution is not None:
+                if not food_resolution.get("ready", True):
+                    raise ValueError("食物解析还没有完成，先补充信息")
+                resolved_items = food_resolution.get("items") or []
+                if resolved_items:
+                    payload["items"] = resolved_items
+                if food_resolution.get("date"):
+                    payload["date"] = food_resolution["date"]
+                if food_resolution.get("meal"):
+                    payload["meal"] = food_resolution["meal"]
+            if not valid_date(str(payload.get("date", ""))):
                 payload["date"] = datetime.now(REVIEW_TZ).date().isoformat()
             if not isinstance(payload.get("items"), list) or not payload["items"]:
                 raise ValueError("log_food requires items; call resolve_food first")
@@ -1025,6 +1050,49 @@ def _normalize_app_actions(
     return result
 
 
+def _food_question_message(result: dict) -> str:
+    questions = [
+        str(value).strip()
+        for value in (result.get("questions") or [])
+        if str(value).strip()
+    ]
+    if len(questions) == 1:
+        return questions[0]
+    if questions:
+        return "还有几项需要确认：\n" + "\n".join(f"· {item}" for item in questions[:2])
+    return "我还需要确认一下这餐的食物或份量。"
+
+
+def _build_food_log_action(
+    resolution: dict,
+    raw_text: str,
+    date_value: str,
+    meal: str,
+) -> dict:
+    items = resolution.get("items") or []
+    if not items:
+        raise ValueError("食物还没有解析出可记录的项目")
+    kcal = round(
+        sum(float(item.get("kcal") or 0) for item in items if isinstance(item, dict))
+    )
+    return _normalize_app_actions(
+        [
+            {
+                "type": "log_food",
+                "title": "记录饮食",
+                "summary": f"约 {kcal} kcal",
+                "requires_confirmation": True,
+                "payload": {
+                    "date": date_value,
+                    "meal": meal,
+                    "raw_text": raw_text[:500],
+                    "items": items,
+                },
+            }
+        ]
+    )[0]
+
+
 def _tool_result(
     db: Session,
     run: AgentRun,
@@ -1032,6 +1100,7 @@ def _tool_result(
     tool: str,
     arguments: dict,
     app_context: dict | None = None,
+    food_resolution: dict | None = None,
 ) -> dict:
     if tool == "get_context":
         return {
@@ -1166,7 +1235,11 @@ def _tool_result(
         return {"ok": True, "proposal": _serialize_proposal(proposal)}
     if tool == "propose_app_actions":
         try:
-            actions = _normalize_app_actions(arguments.get("actions"), app_context)
+            actions = _normalize_app_actions(
+                arguments.get("actions"),
+                app_context,
+                food_resolution=food_resolution,
+            )
         except ValueError as exc:
             return {"ok": False, "error": str(exc)}
         return {"ok": True, "actions": actions}
@@ -1684,6 +1757,8 @@ async def run_agent(
             input_data={"message": message[:200]},
             output_data={"actions": actions},
         )
+        if actions and session_id:
+            cancel_active_draft(db, user_id, session_id)
         db.commit()
         return {
             "run_id": run.id,
@@ -1735,12 +1810,14 @@ async def run_agent(
                     "get_exercise_history",
                     "propose_app_actions",
                 ]
+            food_context = food_log_context(message)
             state = {
                 "user_message": message,
                 "current_date": (
                     (coach_context.get("today") or {}).get("date")
                     or datetime.now(timezone.utc).date().isoformat()
                 ),
+                "food_context": food_context,
                 "coach_context": coach_context,
                 "safety_context": decision.caution,
                 "history": [
@@ -1762,6 +1839,9 @@ async def run_agent(
                 "allowed_tools": allowed_tools,
                 "max_steps": MAX_STEPS,
             }
+            food_resolution: dict | None = None
+            food_date = food_context["date"]
+            food_meal = food_context["meal"]
             for _ in range(MAX_STEPS):
                 step_started = time.perf_counter()
                 # Persist audit steps and release the read connection while
@@ -1820,14 +1900,31 @@ async def run_agent(
                                 else:
                                     result = {"ok": True, **answer}
                             else:
-                                target = None
-                                raw_date = str(arguments.get("date") or "").strip()
-                                if raw_date:
-                                    try:
-                                        target = date.fromisoformat(raw_date)
-                                    except ValueError:
-                                        target = None
-                                meal = str(arguments.get("meal") or "lunch")
+                                target = parse_food_date(text)
+                                if target is None:
+                                    raw_date = str(
+                                        arguments.get("date") or ""
+                                    ).strip()
+                                    if raw_date:
+                                        try:
+                                            target = date.fromisoformat(raw_date)
+                                        except ValueError:
+                                            target = None
+                                if target is None:
+                                    target = date.fromisoformat(food_context["date"])
+                                parsed_meal = parse_meal(text)
+                                meal = (
+                                    parsed_meal
+                                    or str(arguments.get("meal") or "").strip()
+                                    or food_context["meal"]
+                                )
+                                if meal not in {
+                                    "breakfast",
+                                    "lunch",
+                                    "dinner",
+                                    "snack",
+                                }:
+                                    meal = food_context["meal"]
                                 resolution = await resolve_food_text(
                                     db,
                                     user_id,
@@ -1835,15 +1932,13 @@ async def run_agent(
                                     meal=meal,
                                     target_date=target,
                                 )
+                                food_date = target.isoformat()
+                                food_meal = meal
                                 draft = create_food_draft(
                                     db,
                                     user_id,
                                     session_id,
-                                    date=(
-                                        target.isoformat()
-                                        if target
-                                        else datetime.now(REVIEW_TZ).date().isoformat()
-                                    ),
+                                    date=food_date,
                                     meal=meal,
                                     raw_text=text,
                                     resolution=resolution,
@@ -1851,17 +1946,44 @@ async def run_agent(
                                 result = {
                                     "ok": True,
                                     **resolution,
+                                    "date": food_date,
+                                    "meal": food_meal,
+                                    "text": text,
                                     "draft_id": draft.id if draft else None,
                                     "ready": not resolution.get("missing_slots")
                                     and not resolution.get("questions"),
                                 }
                         else:
                             result = _tool_result(
-                                db, run, user_id, tool, arguments, app_context
+                                db,
+                                run,
+                                user_id,
+                                tool,
+                                arguments,
+                                app_context,
+                                food_resolution=food_resolution,
                             )
                         status = "ok" if result.get("ok", True) else "error"
                         if forced_food_log and tool == "propose_app_actions":
                             proposed = result.get("actions")
+                            if (
+                                isinstance(proposed, list)
+                                and any(
+                                    isinstance(item, dict)
+                                    and item.get("type") == "log_food"
+                                    for item in proposed
+                                )
+                                and food_resolution is None
+                            ):
+                                result = {
+                                    "ok": False,
+                                    "error": (
+                                        "记录饮食必须先调用 resolve_food，"
+                                        "不能直接生成食物和热量。"
+                                    ),
+                                }
+                                status = "error"
+                                proposed = []
                             food_types = {
                                 "log_food",
                                 "log_planned_meal",
@@ -1918,6 +2040,35 @@ async def run_agent(
                     )
                     observations.append({"tool": tool, "result": result})
                     state["observations"] = observations
+                    if tool == "resolve_food":
+                        food_resolution = result
+                        food_date = str(result.get("date") or food_date)
+                        food_meal = str(result.get("meal") or food_meal)
+                        if not result.get("ready", True):
+                            # Slot filling is deterministic: ask one question
+                            # and end the turn instead of letting the model
+                            # keep retrying and eventually invent nutrition.
+                            final_message = _food_question_message(result)
+                            actions = []
+                            run.intent = "clarification"
+                            break
+                        if forced_food_log:
+                            try:
+                                action = _build_food_log_action(
+                                    result,
+                                    message,
+                                    food_date,
+                                    food_meal,
+                                )
+                                actions = [action]
+                                final_message = (
+                                    f"已识别 {len(action['payload']['items'])} 种食物，"
+                                    f"{action['summary']}。确认后写入。"
+                                )
+                            except ValueError as exc:
+                                final_message = str(exc)
+                                actions = []
+                            break
                     if isinstance(result.get("proposal"), dict):
                         proposal = db.get(
                             AgentPlanProposal,
@@ -1938,7 +2089,17 @@ async def run_agent(
                 state["observations"] = observations
 
         if not final_message:
-            final_message = "我需要再确认一下你的目标。你希望调整训练日、频率，还是训练时长？"
+            if actions:
+                final_message = "操作已经准备好，请确认后执行。"
+            elif proposal is not None:
+                final_message = "计划草案已经生成，请确认。"
+            else:
+                final_message = (
+                    "这次请求没有完成，可能是网络或模型服务异常。"
+                    "请重试一次；如果是记录饮食，也可以直接到饮食页手动添加。"
+                )
+                error = error or "agent_max_steps"
+                run.status = "failed"
         if proposal is None:
             proposal = (
                 db.execute(
@@ -1972,6 +2133,12 @@ async def run_agent(
                     "rules": list(review.rules),
                 },
             )
+
+        if actions and session_id:
+            # A card and a draft are mutually exclusive. The card is the
+            # authoritative next step; a stale draft must not keep asking the
+            # same question underneath it.
+            cancel_active_draft(db, user_id, session_id)
 
         if proposal is not None or any(
             item.get("requires_confirmation") for item in actions

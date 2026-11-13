@@ -281,6 +281,17 @@ def cancel_draft(db: Session, user_id: str, draft_id: str) -> bool:
     return True
 
 
+def cancel_active_draft(db: Session, user_id: str, session_id: str | None) -> bool:
+    """Cancel any active draft for the session before showing an action card."""
+
+    draft = get_active_draft(db, user_id, session_id)
+    if draft is None:
+        return False
+    draft.status = "cancelled"
+    db.flush()
+    return True
+
+
 def consume_draft(db: Session, user_id: str, draft_id: str) -> None:
     draft = db.get(AgentActionDraft, draft_id)
     if draft is not None and draft.user_id == user_id:

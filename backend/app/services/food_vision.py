@@ -11,6 +11,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import logging
+import re
 from contextlib import suppress
 
 from sqlalchemy.orm import Session
@@ -135,6 +136,22 @@ def _clamp(value: float, low: float, high: float) -> float:
     return max(low, min(high, value))
 
 
+def _num(value: object, default: float = 0.0) -> float:
+    """Vision models sometimes return ``"150g"`` or ``"1,000"``."""
+
+    if isinstance(value, (int, float)):
+        return float(value)
+    if value is None:
+        return default
+    match = re.search(r"-?\d+(?:\.\d+)?", str(value).replace(",", ""))
+    if match is None:
+        return default
+    try:
+        return float(match.group(0))
+    except ValueError:
+        return default
+
+
 def _round_grams(value: float) -> int:
     return int(round(_clamp(value, 5.0, 2000.0) / 5.0) * 5)
 
@@ -154,14 +171,18 @@ def _normalize(data: dict, filename: str) -> dict:
         if not isinstance(raw, dict):
             continue
         name = str(raw.get("name") or "食物")[:24]
-        grams_raw = _clamp(float(raw.get("grams") or 100), 5.0, 2000.0)
+        grams_raw = _clamp(
+            _num(raw.get("grams"), _num(raw.get("volume_ml"), 100)),
+            5.0,
+            2000.0,
+        )
         min_raw = raw.get("grams_min")
         max_raw = raw.get("grams_max")
         if min_raw is None or max_raw is None:
             min_raw = grams_raw * (1 - default_delta)
             max_raw = grams_raw * (1 + default_delta)
-        min_grams = _round_grams(float(min_raw))
-        max_grams = _round_grams(float(max_raw))
+        min_grams = _round_grams(_num(min_raw, grams_raw))
+        max_grams = _round_grams(_num(max_raw, grams_raw))
         grams = _round_grams(grams_raw)
         min_grams = min(min_grams, grams)
         max_grams = max(max_grams, grams)
@@ -169,10 +190,10 @@ def _normalize(data: dict, filename: str) -> dict:
             min_grams = max(5, grams - 5)
             max_grams = min(2000, grams + 5)
 
-        kcal = float(raw.get("kcal") or 0)
-        protein = _clamp(float(raw.get("protein_g") or 0), 0, 500)
-        carbs = _clamp(float(raw.get("carbs_g") or 0), 0, 500)
-        fat = _clamp(float(raw.get("fat_g") or 0), 0, 500)
+        kcal = _num(raw.get("kcal"), 0)
+        protein = _clamp(_num(raw.get("protein_g"), 0), 0, 500)
+        carbs = _clamp(_num(raw.get("carbs_g"), 0), 0, 500)
+        fat = _clamp(_num(raw.get("fat_g"), 0), 0, 500)
         macro_kcal = protein * 4 + carbs * 4 + fat * 9
         if macro_kcal > 0 and (
             kcal <= 0 or abs(kcal - macro_kcal) / macro_kcal > 0.30
@@ -181,7 +202,10 @@ def _normalize(data: dict, filename: str) -> dict:
         kcal = _clamp(kcal, 0, 5000)
 
         portion_confidence = _clamp(
-            float(raw.get("portion_confidence") or (0.6 if has_reference else 0.4)),
+            _num(
+                raw.get("portion_confidence"),
+                0.6 if has_reference else 0.4,
+            ),
             0,
             1,
         )
@@ -208,7 +232,7 @@ def _normalize(data: dict, filename: str) -> dict:
                 "carbs_g": round(carbs, 1),
                 "fat_g": round(fat, 1),
                 "confidence": round(
-                    _clamp(float(raw.get("confidence") or 0.7), 0, 1), 2
+                    _clamp(_num(raw.get("confidence"), 0.7), 0, 1), 2
                 ),
             }
         )
