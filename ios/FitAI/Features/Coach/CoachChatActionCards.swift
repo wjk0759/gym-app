@@ -139,6 +139,44 @@ extension CoachChatView {
         }
     }
 
+    func pendingDraftCard(_ draft: AgentPendingDraft) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "text.append")
+                .font(AppType.callout.weight(.semibold))
+                .foregroundStyle(Theme.cobalt)
+                .frame(width: 22)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(draft.summary)
+                    .font(AppType.callout.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                if let question = draft.questions?.first, !question.isEmpty {
+                    Text(question)
+                        .font(AppType.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Text("直接回复补充信息，我会接着记。")
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            Spacer(minLength: 4)
+            Button("取消") {
+                store.cancelPendingDraft()
+            }
+            .font(AppType.micro.weight(.semibold))
+            .foregroundStyle(Theme.tertiaryText)
+            .buttonStyle(.plain)
+        }
+        .padding(12)
+        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Theme.stroke, lineWidth: 1)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 4)
+    }
+
     var agentActionsCard: some View {
         CoachCard(border: Theme.cobalt.opacity(0.25)) {
             VStack(alignment: .leading, spacing: 10) {

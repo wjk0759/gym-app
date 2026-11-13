@@ -126,6 +126,7 @@ final class AppStore {
     var agentRunID: String?
     var agentProposal: AgentPlanProposal?
     var agentActions: [AgentAction] = []
+    var pendingDraft: AgentPendingDraft?
     var dietWeekPlan: RemoteDietWeek?
     var coachEquipmentScanRequested = false
     var coachBodyAnalysisRequested = false
@@ -259,6 +260,7 @@ final class AppStore {
         agentRunID = nil
         agentProposal = nil
         agentActions = []
+        pendingDraft = nil
         coachVisualMemory = nil
         coachQuotaExhausted = false
         isExecutingAgentActions = false

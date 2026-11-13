@@ -690,6 +690,38 @@ class AgentActionEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class AgentActionDraft(Base):
+    """Structured slot-filling state for multi-turn coach actions.
+
+    The draft lives across chat turns so a short answer such as "250ml" can
+    update the exact food item instead of asking the model to reconstruct it
+    from truncated message history.
+    """
+
+    __tablename__ = "agent_action_drafts"
+    __table_args__ = (
+        Index("ix_agent_action_drafts_session_status", "session_id", "status"),
+        Index("ix_agent_action_drafts_expires", "expires_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    session_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("chat_sessions.id", ondelete="CASCADE"), index=True
+    )
+    draft_type: Mapped[str] = mapped_column(String(30))
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    missing_slots: Mapped[list] = mapped_column(JSON, default=list)
+    status: Mapped[str] = mapped_column(String(20), default="collecting")
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
 class PlanDayState(Base):
     """Cross-device state for a local or server plan day.
 

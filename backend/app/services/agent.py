@@ -34,6 +34,13 @@ from ..models import (
     utcnow,
 )
 from . import llm
+from .action_drafts import (
+    answer_food_draft,
+    compact_draft,
+    create_food_draft,
+    draft_context,
+    get_active_draft,
+)
 from .citations import build_reply_citations
 from .coach_actions.schemas import (
     DeleteFoodLogPayload,
@@ -172,6 +179,93 @@ def _forced_workout_log_intent(message: str) -> bool:
     )
 
 
+def _is_draft_answer(message: str) -> bool:
+    text = message.strip()
+    if not text or _forced_workout_log_intent(text):
+        return False
+    if re.search(r"取消|不要了|算了|不记了", text):
+        return True
+    if re.fullmatch(r"(对|是|是的|可以|嗯|好|行|没错)[。.!！]?", text):
+        return True
+    if re.fullmatch(r"\d+(?:\.\d+)?", text):
+        return True
+    return bool(
+        re.search(
+            r"\d+(?:\.\d+)?\s*(ml|毫升|g|克)|"
+            r"(半|一|两|二|三)\s*(杯|份|碗)",
+            text,
+            flags=re.IGNORECASE,
+        )
+    )
+
+
+def _draft_total(items: list[dict], key: str) -> float:
+    return round(sum(float(item.get(key) or 0) for item in items), 1)
+
+
+def _handle_draft_turn(
+    db: Session,
+    run: AgentRun,
+    user_id: str,
+    session_id: str | None,
+    message: str,
+    started: float,
+    usage: dict[str, int],
+) -> dict:
+    answer = answer_food_draft(db, user_id, session_id, message)
+    if answer is None:
+        raise LookupError("草稿已失效")
+    actions: list[dict] = []
+    if answer.get("cancelled"):
+        final_message = "已取消这次记录。"
+    elif answer.get("ready"):
+        payload = {
+            "date": answer.get("date")
+            or datetime.now(REVIEW_TZ).date().isoformat(),
+            "meal": answer.get("meal") or "lunch",
+            "items": answer.get("items") or [],
+        }
+        kcal = _draft_total(payload["items"], "kcal")
+        raw = {
+            "type": "log_food",
+            "title": "记录饮食",
+            "summary": f"约 {int(kcal)} kcal",
+            "requires_confirmation": True,
+            "payload": payload,
+        }
+        actions = _normalize_app_actions([raw])
+        final_message = f"补充好了，约 {int(kcal)} kcal。确认一下卡片就写入今日饮食。"
+    else:
+        question = (answer.get("questions") or ["再确认一下份量"])[0]
+        final_message = f"{question} 直接告诉我毫升或克数就行。"
+    run.intent = "app_action" if actions else "draft_clarification"
+    run.status = "needs_confirmation" if actions else "completed"
+    run.output_text = final_message
+    run.completed_at = utcnow()
+    _record_step(
+        db,
+        run,
+        "tool",
+        tool_name="resolve_food",
+        input_data={"draft_answer": message[:200]},
+        output_data=answer,
+    )
+    db.commit()
+    return {
+        "run_id": run.id,
+        "status": run.status,
+        "reply": final_message,
+        "proposal": None,
+        "actions": actions,
+        "safety_flag": None,
+        "citations": [],
+        "pending_draft": compact_draft(get_active_draft(db, user_id, session_id)),
+        "elapsed_ms": int((time.perf_counter() - started) * 1000),
+        "usage": usage,
+        "error": None,
+    }
+
+
 def _normalize_split(value: Any) -> str | None:
     if value is None:
         return None
@@ -249,6 +343,8 @@ App Context 和可执行操作：
 - 用户只想替换某一餐、不想重排整周时，调用 swap_diet_meal。payload 必须包含 date（YYYY-MM-DD）和 meal（breakfast / lunch / dinner / snack）；服务端会保持当天热量和三大营养素不变，只换菜品。不要说已经换好，等用户确认。
 - 如果 state.forced_intent=log_food，本轮只能使用 get_context、resolve_food、propose_app_actions；propose_app_actions 的 type 必须是 log_food / log_planned_meal / update_food_log / delete_food_log。不要调用 open_screen 或 create_diet_plan。
 - 如果 state.forced_intent=log_workout，本轮只能使用 get_context、lookup_exercise、get_exercise_history、propose_app_actions；propose_app_actions 的 type 只能是 log_workout。用户说“练完了/跑了/补录”不是“开始训练”，不要调用 start_training。
+- 如果 state.pending_draft 存在（例如正在记录午餐，只差奶茶份量），用户这句话要先当作草稿补参数：调用 resolve_food，draft_id 传 pending_draft.id，text 传用户原话；不要重新识别整餐，不要重新创建 log_food action。补完后 resolve_food 返回 ready=true，再用返回的 items 生成 log_food。
+- 如果 resolve_food 返回 ready=false 或 questions，调用 ask_user 继续问，不要生成 action。用户说取消/不要了时，不要执行任何写入。
 - 用户说“我今天吃了/喝了……帮我记一下/补记/记录饮食”时：
   1. 先调用 resolve_food，text 传用户原话，meal 尽量从上下文判断，date 用今天或用户指定日期。
   2. 如果 resolve_food 返回 questions，先 ask_user 补份量，不要直接写。
@@ -1388,10 +1484,24 @@ async def run_agent(
             "actions": [],
             "safety_flag": decision.flag,
             "citations": [],
+            "pending_draft": compact_draft(
+                get_active_draft(db, user_id, session_id)
+            ),
             "elapsed_ms": int((time.perf_counter() - started) * 1000),
             "usage": usage,
             "error": None,
         }
+
+    draft = get_active_draft(db, user_id, session_id)
+    if draft is not None and _is_draft_answer(message):
+        try:
+            return _handle_draft_turn(
+                db, run, user_id, session_id, message, started, usage
+            )
+        except LookupError:
+            # Draft expired or was cancelled between read and write; fall
+            # through to the normal model path.
+            pass
 
     try:
         if settings.use_mock_llm:
@@ -1443,6 +1553,9 @@ async def run_agent(
                     if item.role in {"user", "assistant"}
                 ],
                 "app_context": _safe_json(app_context or {}),
+                "pending_draft": draft_context(
+                    get_active_draft(db, user_id, session_id)
+                ),
                 "coach_skill": "trainer",
                 "observations": observations,
                 "forced_intent": (
@@ -1485,11 +1598,23 @@ async def run_agent(
                     try:
                         if tool == "resolve_food":
                             text = str(arguments.get("text") or "").strip()
+                            draft_id = str(arguments.get("draft_id") or "").strip()
                             if not text:
                                 result = {
                                     "ok": False,
                                     "error": "resolve_food requires text",
                                 }
+                            elif draft_id:
+                                answer = answer_food_draft(
+                                    db, user_id, session_id, text
+                                )
+                                if answer is None:
+                                    result = {
+                                        "ok": False,
+                                        "error": "草稿已过期或不存在，请重新描述这餐",
+                                    }
+                                else:
+                                    result = {"ok": True, **answer}
                             else:
                                 target = None
                                 raw_date = str(arguments.get("date") or "").strip()
@@ -1498,14 +1623,34 @@ async def run_agent(
                                         target = date.fromisoformat(raw_date)
                                     except ValueError:
                                         target = None
-                                result = await resolve_food_text(
+                                meal = str(arguments.get("meal") or "lunch")
+                                resolution = await resolve_food_text(
                                     db,
                                     user_id,
                                     text,
-                                    meal=str(arguments.get("meal") or "lunch"),
+                                    meal=meal,
                                     target_date=target,
                                 )
-                                result = {"ok": True, **result}
+                                draft = create_food_draft(
+                                    db,
+                                    user_id,
+                                    session_id,
+                                    date=(
+                                        target.isoformat()
+                                        if target
+                                        else datetime.now(REVIEW_TZ).date().isoformat()
+                                    ),
+                                    meal=meal,
+                                    raw_text=text,
+                                    resolution=resolution,
+                                )
+                                result = {
+                                    "ok": True,
+                                    **resolution,
+                                    "draft_id": draft.id if draft else None,
+                                    "ready": not resolution.get("missing_slots")
+                                    and not resolution.get("questions"),
+                                }
                         else:
                             result = _tool_result(
                                 db, run, user_id, tool, arguments, app_context
@@ -1702,6 +1847,9 @@ async def run_agent(
         "actions": actions,
         "safety_flag": output_flag or decision.flag,
         "citations": citations,
+        "pending_draft": compact_draft(
+            get_active_draft(db, user_id, session_id)
+        ),
         "elapsed_ms": int((time.perf_counter() - started) * 1000),
         "usage": usage,
         "error": error,

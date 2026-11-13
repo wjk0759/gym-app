@@ -149,6 +149,9 @@ struct CoachChatView: View {
                     }
                 }
 
+                if let draft = store.pendingDraft {
+                    pendingDraftCard(draft)
+                }
                 if store.lastAgentRetryText != nil {
                     agentRetryCard
                 }

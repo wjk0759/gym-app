@@ -431,6 +431,13 @@ struct AgentAction: Codable, Identifiable, Hashable {
     }
 }
 
+struct AgentPendingDraft: Decodable, Identifiable, Hashable {
+    let id: String
+    let type: String
+    let summary: String
+    let questions: [String]?
+}
+
 struct AgentChatResponse: Decodable {
     let sessionID: UUID?
     let messageID: String?
@@ -439,6 +446,7 @@ struct AgentChatResponse: Decodable {
     let reply: String
     let proposal: AgentPlanProposal?
     let actions: [AgentAction]?
+    let pendingDraft: AgentPendingDraft?
     let safetyFlag: String?
     let elapsedMS: Int?
 
@@ -450,6 +458,7 @@ struct AgentChatResponse: Decodable {
         case reply
         case proposal
         case actions
+        case pendingDraft = "pending_draft"
         case safetyFlag = "safety_flag"
         case elapsedMS = "elapsed_ms"
     }

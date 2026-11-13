@@ -227,6 +227,14 @@ extension APIClient {
         return response.program
     }
 
+    func deleteAgentDraft(id: String) async throws {
+        try await sendVoid(
+            path: "agent/drafts/\(id)",
+            method: "DELETE",
+            body: nil
+        )
+    }
+
     func agentMemories() async throws -> [AgentMemory] {
         let response: AgentMemoryResponse = try await send(
             path: "agent/memories",

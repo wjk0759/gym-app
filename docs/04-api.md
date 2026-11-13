@@ -476,6 +476,37 @@ data: {"session_id": "uuid", "safety_flag": null, "citations": []}
 - `skipped_plan_days` 不计入完成率分母。
 - 计划未覆盖本期时，`planned` 与 `completion_rate` 回退到档案 `weekly_days`。
 
+#### 多轮草稿 `pending_draft`
+
+当教练需要补充份量时，`/agent/chat` 会返回：
+
+```json
+{
+  "pending_draft": {
+    "id": "uuid",
+    "type": "log_food",
+    "summary": "正在记录午餐",
+    "questions": ["奶茶大概多少量？"],
+    "missing_slots": [
+      {
+        "item_index": 0,
+        "field": "grams",
+        "question": "奶茶大概多少量？",
+        "suggested_grams": 500
+      }
+    ]
+  }
+}
+```
+
+下一次用户只说“250ml”时，服务端会读取该 session 的草稿并补参数，生成完整的 `log_food` action。草稿 30 分钟过期，只允许同一用户同一 session 读取。
+
+取消草稿：
+
+```text
+DELETE /agent/drafts/{draft_id}
+```
+
 #### `POST /agent/actions/{action_id}/run`
 
 统一执行教练产出的非训练改课动作。请求：

@@ -23,6 +23,7 @@ from ..schemas import (
     WorkoutActionExecuteIn,
 )
 from ..services import access, generation
+from ..services.action_drafts import cancel_draft
 from ..services.agent import apply_proposal, generate_weekly_review, run_agent
 from ..services.agent_requests import (
     AgentRequestInProgress,
@@ -185,6 +186,7 @@ async def _agent_chat_claimed(
         "reply": result["reply"],
         "proposal": result["proposal"],
         "actions": result.get("actions", []),
+        "pending_draft": result.get("pending_draft"),
         "safety_flag": result.get("safety_flag"),
         "citations": result.get("citations", []),
         "elapsed_ms": result["elapsed_ms"],
@@ -233,6 +235,20 @@ def agent_request_state(
     if state is None:
         raise HTTPException(status_code=404, detail="请求记录不存在或已过期")
     return state
+
+
+@router.delete("/drafts/{draft_id}")
+def delete_agent_draft(
+    draft_id: str,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    try:
+        cancelled = cancel_draft(db, user_id, draft_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    db.commit()
+    return {"ok": True, "cancelled": cancelled}
 
 
 @router.post("/actions/{action_id}/result")

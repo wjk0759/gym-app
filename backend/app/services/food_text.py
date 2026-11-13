@@ -76,6 +76,16 @@ NUMBER_WORDS = {
     "十": 10.0,
 }
 
+ASK_IMPLICIT_PORTION = {
+    "奶茶",
+    "可乐",
+    "拿铁",
+    "螺蛳粉",
+    "麻辣香锅",
+    "火锅",
+}
+
+
 DEFAULT_GRAMS = {
     "螺蛳粉": 500.0,
     "奶茶": 500.0,
@@ -102,6 +112,7 @@ _PROMPT_VERSION = prompt_version("food_text", _SYSTEM_PROMPT)
 class FoodResolution:
     items: list[dict] = field(default_factory=list)
     questions: list[str] = field(default_factory=list)
+    missing_slots: list[dict] = field(default_factory=list)
     source: str = "rules"
     confidence: float = 0.0
 
@@ -109,6 +120,7 @@ class FoodResolution:
         return {
             "items": self.items,
             "questions": self.questions,
+            "missing_slots": self.missing_slots,
             "source": self.source,
             "confidence": round(self.confidence, 2),
         }
@@ -137,6 +149,24 @@ def _portion(segment: str) -> tuple[float | None, str | None]:
     if amount is None or unit not in PORTION_UNITS:
         return None, None
     return amount * PORTION_UNITS[unit], match.group(0)
+
+
+def parse_amount_grams(text: str) -> float | None:
+    """Parse a short slot answer such as 250ml, 半杯 or just 250."""
+    value = text.strip()
+    match = re.search(
+        r"(\d+(?:\.\d+)?)\s*(g|克|ml|毫升)",
+        value,
+        flags=re.IGNORECASE,
+    )
+    if match:
+        return max(1.0, min(5000.0, float(match.group(1))))
+    grams, _ = _portion(value)
+    if grams is not None:
+        return max(1.0, min(5000.0, grams))
+    if re.fullmatch(r"\d+(?:\.\d+)?", value):
+        return max(1.0, min(5000.0, float(value)))
+    return None
 
 
 def _match_food(segment: str) -> tuple[str, str] | None:
@@ -169,6 +199,7 @@ def resolve_food_rules(text: str) -> FoodResolution:
     ]
     items: list[dict] = []
     questions: list[str] = []
+    missing_slots: list[dict] = []
 
     for segment in segments:
         matched = _match_food(segment)
@@ -189,6 +220,15 @@ def resolve_food_rules(text: str) -> FoodResolution:
             "confidence": 0.72 if explicit_portion else 0.55,
         }
         items.append(item)
+        if not explicit_portion and base in ASK_IMPLICIT_PORTION:
+            missing_slots.append(
+                {
+                    "item_index": len(items) - 1,
+                    "field": "grams",
+                    "question": f"{display_name}大概多少量？",
+                    "suggested_grams": round(grams),
+                }
+            )
 
     if items and questions:
         # Keep partial matches; the app can confirm what it understood and ask
@@ -202,6 +242,7 @@ def resolve_food_rules(text: str) -> FoodResolution:
     return FoodResolution(
         items=items,
         questions=questions,
+        missing_slots=missing_slots,
         source="rules",
         confidence=confidence,
     )

@@ -125,6 +125,11 @@ extension AppStore {
                     text: "处理结果：\n" + results.joined(separator: "\n")
                 )
             )
+            if actions.contains(where: {
+                ["log_food", "log_planned_meal", "skip_planned_meal", "restore_planned_meal"].contains($0.type)
+            }) {
+                self.pendingDraft = nil
+            }
             if failedCount == actions.count {
                 self.toast = "操作失败，请查看处理结果"
             } else if failedCount > 0 {

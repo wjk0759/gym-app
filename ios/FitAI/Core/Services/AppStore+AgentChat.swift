@@ -180,6 +180,7 @@ extension AppStore {
                 }
                 self.agentProposal = response.proposal
                 self.agentActions = response.actions ?? []
+                self.pendingDraft = response.pendingDraft
                 var assistant = ChatMessage(
                     role: .assistant,
                     text: response.reply,
@@ -262,6 +263,18 @@ extension AppStore {
     }
 
     /// 用户主动停止当前回复，不等待网络请求自然结束。
+    func cancelPendingDraft() {
+        guard let draft = pendingDraft else { return }
+        pendingDraft = nil
+        chat.append(
+            ChatMessage(role: .assistant, text: "已取消这次记录。")
+        )
+        persist()
+        Task {
+            try? await APIClient.shared.deleteAgentDraft(id: draft.id)
+        }
+    }
+
     func cancelAgentChat() {
         guard isReplying else { return }
         cancelActiveChatRequest()

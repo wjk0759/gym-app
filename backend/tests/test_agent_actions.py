@@ -6,6 +6,7 @@ from app.services.agent import (
     REVIEW_TZ,
     _forced_food_log_intent,
     _forced_workout_log_intent,
+    _is_draft_answer,
     _normalize_app_actions,
 )
 
@@ -40,6 +41,11 @@ def test_food_log_intent_is_detected_without_misrouting_questions():
     assert _forced_workout_log_intent("今天补录一次训练")
     assert not _forced_workout_log_intent("开始训练")
     assert not _forced_workout_log_intent("打开训练页")
+    assert _is_draft_answer("250ml")
+    assert _is_draft_answer("半杯")
+    assert _is_draft_answer("对")
+    assert _is_draft_answer("不要了")
+    assert not _is_draft_answer("我昨天跑了 30 分钟")
 
 
 def test_log_food_action_requires_resolved_items():
