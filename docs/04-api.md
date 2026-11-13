@@ -582,6 +582,20 @@ delete_workout_log
 
 `log_food` 必须先通过 `resolve_food` 得到结构化 items；`log_planned_meal` 会按当天计划餐复制热量和宏量，并写入 `plan_date` / `plan_meal`。
 
+已确认记录的修正必须带真实 `client_id`：
+
+```json
+{
+  "type": "update_food_log",
+  "payload": {
+    "client_id": "来自 today_nutrition.recent_logs 的 client_id",
+    "grams": 230
+  }
+}
+```
+
+如果卡片还没确认，不要调用 `update_food_log`；应生成修正后的 `log_food` 卡。
+
 `skip_planned_meal` 把某餐标记为主动跳过，写入计划 JSON 的 `skipped_meals`；跳过不计入饮食复盘缺失和完成率分母。已记录的餐不能跳过。`restore_planned_meal` 撤销跳过。
 
 #### `POST /agent/actions/{action_id}/undo-run`
