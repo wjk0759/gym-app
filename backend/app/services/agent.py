@@ -40,6 +40,7 @@ from .action_drafts import (
     create_food_draft,
     draft_context,
     get_active_draft,
+    needs_raw_clarification,
 )
 from .citations import build_reply_citations
 from .coach_actions.schemas import (
@@ -269,7 +270,76 @@ def _draft_total(items: list[dict], key: str) -> float:
     return round(sum(float(item.get(key) or 0) for item in items), 1)
 
 
-def _handle_draft_turn(
+async def _resolve_raw_draft(
+    db: Session,
+    user_id: str,
+    session_id: str | None,
+    message: str,
+) -> dict | None:
+    draft = get_active_draft(db, user_id, session_id)
+    if draft is None or not needs_raw_clarification(draft):
+        return None
+    payload = draft.payload or {}
+    combined = f"{payload.get('raw_text') or ''} {message}".strip()[:500]
+    target = None
+    try:
+        target = date.fromisoformat(str(payload.get("date") or ""))
+    except ValueError:
+        target = None
+    resolution = await resolve_food_text(
+        db,
+        user_id,
+        combined,
+        meal=str(payload.get("meal") or "lunch"),
+        target_date=target,
+    )
+    slots = list(resolution.get("missing_slots") or [])
+    questions = [
+        str(value)[:120]
+        for value in (resolution.get("questions") or [])
+        if str(value).strip()
+    ]
+    items = resolution.get("items") or []
+    if items and not slots and not questions:
+        draft.payload = {
+            "date": payload.get("date")
+            or datetime.now(REVIEW_TZ).date().isoformat(),
+            "meal": payload.get("meal") or "lunch",
+            "raw_text": combined,
+            "items": items,
+        }
+        draft.missing_slots = []
+        draft.status = "consumed"
+        draft.updated_at = utcnow()
+        db.flush()
+        return {
+            "draft_id": draft.id,
+            "ready": True,
+            "date": draft.payload["date"],
+            "meal": draft.payload["meal"],
+            "items": items,
+            "questions": [],
+        }
+    if items:
+        payload["items"] = items
+    payload["raw_text"] = combined
+    if not slots and questions:
+        slots = [{"field": "raw_text", "question": questions[0]}]
+    draft.payload = payload
+    draft.missing_slots = slots
+    draft.status = "collecting"
+    draft.updated_at = utcnow()
+    db.flush()
+    return {
+        "draft_id": draft.id,
+        "ready": False,
+        "items": items,
+        "questions": [item.get("question") for item in slots],
+        "missing_slots": slots,
+    }
+
+
+async def _handle_draft_turn(
     db: Session,
     run: AgentRun,
     user_id: str,
@@ -278,7 +348,9 @@ def _handle_draft_turn(
     started: float,
     usage: dict[str, int],
 ) -> dict:
-    answer = answer_food_draft(db, user_id, session_id, message)
+    answer = await _resolve_raw_draft(db, user_id, session_id, message)
+    if answer is None:
+        answer = answer_food_draft(db, user_id, session_id, message)
     if answer is None:
         raise LookupError("草稿已失效")
     actions: list[dict] = []
@@ -1563,7 +1635,7 @@ async def run_agent(
     draft = get_active_draft(db, user_id, session_id)
     if draft is not None and _is_draft_answer(message):
         try:
-            return _handle_draft_turn(
+            return await _handle_draft_turn(
                 db, run, user_id, session_id, message, started, usage
             )
         except LookupError:
@@ -1707,9 +1779,17 @@ async def run_agent(
                                     "error": "resolve_food requires text",
                                 }
                             elif draft_id:
-                                answer = answer_food_draft(
-                                    db, user_id, session_id, text
+                                active_draft = get_active_draft(
+                                    db, user_id, session_id
                                 )
+                                if needs_raw_clarification(active_draft):
+                                    answer = await _resolve_raw_draft(
+                                        db, user_id, session_id, text
+                                    )
+                                else:
+                                    answer = answer_food_draft(
+                                        db, user_id, session_id, text
+                                    )
                                 if answer is None:
                                     result = {
                                         "ok": False,

@@ -81,9 +81,16 @@ def create_food_draft(
     raw_text: str,
     resolution: dict,
 ) -> AgentActionDraft | None:
-    slots = resolution.get("missing_slots") or []
-    if not session_id or not slots:
+    slots = list(resolution.get("missing_slots") or [])
+    questions = [
+        str(value)[:120]
+        for value in (resolution.get("questions") or [])
+        if str(value).strip()
+    ]
+    if not session_id or (not slots and not questions):
         return None
+    if not slots:
+        slots = [{"field": "raw_text", "question": questions[0]}]
     _cancel_existing(db, user_id, session_id)
     draft = AgentActionDraft(
         id=str(uuid4()),
@@ -189,6 +196,13 @@ def answer_food_draft(
         "questions": [item.get("question") for item in slots],
         "missing_slots": slots,
     }
+
+
+def needs_raw_clarification(draft: AgentActionDraft | None) -> bool:
+    return draft is not None and any(
+        isinstance(slot, dict) and slot.get("field") == "raw_text"
+        for slot in (draft.missing_slots or [])
+    )
 
 
 def draft_context(draft: AgentActionDraft | None) -> dict | None:

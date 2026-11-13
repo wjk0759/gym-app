@@ -73,6 +73,25 @@ def test_food_draft_asks_for_implicit_drink_portion(db):
     assert get_active_draft(db, "user-1", "session-1") is None
 
 
+def test_unknown_food_creates_a_raw_clarification_draft(db):
+    resolution = resolve_food_rules("神秘食物")
+    assert resolution.questions
+    assert not resolution.missing_slots
+
+    draft = create_food_draft(
+        db,
+        "user-1",
+        "session-1",
+        date="2026-11-13",
+        meal="lunch",
+        raw_text="神秘食物",
+        resolution=resolution.as_dict(),
+    )
+
+    assert draft is not None
+    assert draft.missing_slots[0]["field"] == "raw_text"
+
+
 def test_food_draft_accepts_affirmative_and_cancels(db):
     resolution = resolve_food_rules("奶茶")
     create_food_draft(
