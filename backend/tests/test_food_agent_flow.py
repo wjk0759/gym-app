@@ -67,6 +67,7 @@ def _install_fake_llm(monkeypatch, *, food_resolution, agent_decision=None):
             return response
         raise AssertionError(f"unexpected prompt: {system[:40]}")
 
+    monkeypatch.setattr(agent_service.settings, "llm_api_key", "test-key")
     monkeypatch.setattr(llm, "complete_json", fake_complete_json)
     monkeypatch.setattr(
         agent_service,
