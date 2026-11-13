@@ -29,7 +29,11 @@ from .state import (
 )
 
 DIET = "diet.log_food"
+PLANNED = "diet.log_planned_meal"
+SKIP_MEAL = "diet.skip_planned_meal"
+RESTORE_MEAL = "diet.restore_planned_meal"
 TRAINING = "training.reschedule"
+WEIGHT = "body.log_weight"
 
 
 def _looks_like_reschedule(message: str) -> bool:
@@ -78,6 +82,37 @@ def _looks_like_training_slot_answer(message: str) -> bool:
             r"今天|明天|后天|\d{1,2}月\d{1,2}[日号]|\d{4}[-/.]\d{1,2}[-/.]\d{1,2}",
             value,
         )
+    )
+
+
+def _looks_like_planned_meal(message: str) -> bool:
+    return bool(
+        re.search(
+            r"计划餐|按计划吃|计划早餐|计划午餐|计划晚餐|计划加餐|"
+            r"记录.*计划.*餐|把.*计划.*餐.*记",
+            message,
+        )
+    )
+
+
+def _looks_like_skip_meal(message: str) -> bool:
+    return bool(
+        re.search(r"跳过", message)
+        and re.search(r"早餐|午餐|晚餐|加餐|这餐|计划餐", message)
+    )
+
+
+def _looks_like_restore_meal(message: str) -> bool:
+    return bool(
+        re.search(r"恢复", message)
+        and re.search(r"早餐|午餐|晚餐|加餐|这餐|计划餐", message)
+    )
+
+
+def _looks_like_weight(message: str) -> bool:
+    return bool(
+        re.search(r"体重|称重|称了|称一下", message)
+        and re.search(r"\d", message)
     )
 
 
@@ -204,8 +239,64 @@ async def handle_turn(
                     context = {**stored, **context}
                 text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
                 intent_override = TRAINING
+        elif pending.capability_id in {PLANNED, SKIP_MEAL, RESTORE_MEAL}:
+            if not _looks_like_diet_slot_answer(text):
+                cancel_pending(db, session, pending)
+                pending = None
+            else:
+                text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
+                intent_override = pending.capability_id
+        elif pending.capability_id == WEIGHT:
+            if not re.search(r"\d", text):
+                cancel_pending(db, session, pending)
+                pending = None
+            else:
+                text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
+                intent_override = WEIGHT
 
-    if intent_override == TRAINING or (
+    meal_capability: str | None = None
+    if intent_override in {PLANNED, SKIP_MEAL, RESTORE_MEAL}:
+        meal_capability = intent_override
+    elif intent_override is None:
+        if _looks_like_restore_meal(text):
+            meal_capability = RESTORE_MEAL
+        elif _looks_like_skip_meal(text):
+            meal_capability = SKIP_MEAL
+        elif _looks_like_planned_meal(text):
+            meal_capability = PLANNED
+
+    if meal_capability is not None:
+        from .capabilities.diet import resolve_planned
+
+        resolution = resolve_planned(text, require_explicit_meal=True)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            _pending_card(
+                db,
+                session,
+                capability_id=meal_capability,
+                payload=payload,
+            )
+            labels = {
+                PLANNED: "记录计划餐",
+                SKIP_MEAL: "跳过计划餐",
+                RESTORE_MEAL: "恢复计划餐",
+            }
+            reply = (
+                f"准备{labels[meal_capability]}：{payload['date']} "
+                f"{payload['meal']}。确认后生效。"
+            )
+        else:
+            question = (resolution.get("questions") or ["哪一餐？"])[0]
+            _pending_draft(
+                db,
+                session,
+                capability_id=meal_capability,
+                payload={"message": text},
+            )
+            reply = question
+        turn.intent = meal_capability
+    elif intent_override == TRAINING or (
         intent_override is None and _looks_like_reschedule(text)
     ):
         from .capabilities.training import resolve as resolve_training
@@ -231,6 +322,31 @@ async def handle_turn(
             )
             reply = question
             turn.intent = TRAINING
+    elif intent_override == WEIGHT or (
+        intent_override is None and _looks_like_weight(text)
+    ):
+        from .capabilities.body import resolve as resolve_weight
+
+        resolution = resolve_weight(text)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            _pending_card(
+                db,
+                session,
+                capability_id=WEIGHT,
+                payload=payload,
+            )
+            reply = f"准备记录体重 {payload['weight_kg']} kg。确认后写入。"
+        else:
+            question = (resolution.get("questions") or ["体重大概多少公斤？"])[0]
+            _pending_draft(
+                db,
+                session,
+                capability_id=WEIGHT,
+                payload={"message": text},
+            )
+            reply = question
+        turn.intent = WEIGHT
     elif intent_override == DIET or (
         intent_override is None and _looks_like_food(text)
     ):
@@ -360,6 +476,49 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "TrainingRescheduled"
         entity_type = "plan_day"
         entity_id = str(pending.payload.get("day_id") or "")
+    elif pending.capability_id == WEIGHT:
+        from .capabilities.body import execute as execute_weight
+
+        result = execute_weight(db, user_id, action_id, pending.payload)
+        after = result
+        receipt = {
+            "summary": f"已记录体重 {pending.payload.get('weight_kg')} kg",
+            "date": pending.payload.get("date"),
+            "deep_link": "fitai://profile",
+        }
+        event_type = "BodyMetricLogged"
+        entity_type = "body_metric"
+        entity_id = action_id
+    elif pending.capability_id in {PLANNED, SKIP_MEAL, RESTORE_MEAL}:
+        from .capabilities import diet as diet_capability
+
+        if pending.capability_id == PLANNED:
+            result = diet_capability.execute_planned(
+                db, user_id, action_id, pending.payload
+            )
+            summary = "已记录计划餐"
+            event_type = "PlannedMealLogged"
+        elif pending.capability_id == SKIP_MEAL:
+            result = diet_capability.execute_skip(
+                db, user_id, action_id, pending.payload
+            )
+            summary = "已跳过计划餐"
+            event_type = "PlannedMealSkipped"
+        else:
+            result = diet_capability.execute_restore(
+                db, user_id, action_id, pending.payload
+            )
+            summary = "已恢复计划餐"
+            event_type = "PlannedMealRestored"
+        after = result
+        receipt = {
+            "summary": summary,
+            "date": pending.payload.get("date"),
+            "meal": pending.payload.get("meal"),
+            "deep_link": f"fitai://nutrition/{pending.payload.get('date')}",
+        }
+        entity_type = "meal_plan"
+        entity_id = action_id
     else:
         raise ValueError("暂不支持这个能力")
 
@@ -428,6 +587,22 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
             record.payload,
             record.before or {},
         )
+    elif record.capability_id == WEIGHT:
+        from .capabilities.body import undo as undo_weight
+
+        result = undo_weight(db, user_id, action_id, record.payload)
+    elif record.capability_id == PLANNED:
+        from .capabilities.diet import undo_planned
+
+        result = undo_planned(db, user_id, action_id, record.payload)
+    elif record.capability_id == SKIP_MEAL:
+        from .capabilities.diet import undo_skip
+
+        result = undo_skip(db, user_id, action_id, record.payload)
+    elif record.capability_id == RESTORE_MEAL:
+        from .capabilities.diet import undo_restore
+
+        result = undo_restore(db, user_id, action_id, record.payload)
     else:
         raise ValueError("暂不支持撤销这个能力")
     record.status = "undone"

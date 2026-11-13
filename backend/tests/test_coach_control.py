@@ -8,6 +8,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.db import Base
 from app.models import (
+    BodyMetric,
     CoachActionRecord,
     CoachPending,
     CoachSession,
@@ -79,6 +80,83 @@ def test_food_card_confirm_undo_and_event(db):
     assert db.execute(select(FoodLog)).scalars().all() == []
     record = db.execute(select(CoachActionRecord)).scalar_one()
     assert record.status == "undone"
+
+
+def test_planned_meal_log_and_skip_loop(db):
+    import asyncio
+
+    from app.models import MealPlan
+    from app.services.meal_plans import save_day_plan
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    save_day_plan(
+        db,
+        "user-1",
+        today,
+        {
+            "meals": [
+                {
+                    "meal": "lunch",
+                    "name": "鸡胸饭",
+                    "kcal": 600,
+                    "protein_g": 40,
+                    "carb_g": 70,
+                    "fat_g": 15,
+                },
+                {
+                    "meal": "dinner",
+                    "name": "牛肉饭",
+                    "kcal": 650,
+                    "protein_g": 35,
+                    "carb_g": 80,
+                    "fat_g": 18,
+                },
+            ]
+        },
+        strategy="balanced",
+        generated_by="template",
+    )
+    db.commit()
+
+    planned = asyncio.run(
+        runtime.handle_turn(db, "user-1", "记录今天的计划午餐")
+    )
+    assert planned["intent"] == "diet.log_planned_meal"
+    assert planned["pending"]["kind"] == "card"
+    confirmed = runtime.confirm_pending(db, "user-1", planned["pending"]["id"])
+    assert confirmed["status"] == "executed"
+    assert db.execute(select(FoodLog)).scalar_one().plan_meal == "lunch"
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(FoodLog)).scalars().all() == []
+
+    skipped = asyncio.run(runtime.handle_turn(db, "user-1", "跳过今天晚餐"))
+    assert skipped["intent"] == "diet.skip_planned_meal"
+    runtime.confirm_pending(db, "user-1", skipped["pending"]["id"])
+    record = db.execute(select(MealPlan)).scalar_one()
+    assert "dinner" in record.plan.get("skipped_meals", [])
+
+    restored = asyncio.run(runtime.handle_turn(db, "user-1", "恢复今天晚餐"))
+    assert restored["intent"] == "diet.restore_planned_meal"
+    runtime.confirm_pending(db, "user-1", restored["pending"]["id"])
+    db.refresh(record)
+    assert "dinner" not in record.plan.get("skipped_meals", [])
+
+
+def test_body_weight_confirm_and_undo(db):
+    import asyncio
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "今天体重 72.5kg"))
+    assert turn["intent"] == "body.log_weight"
+    assert turn["pending"]["kind"] == "card"
+    assert turn["pending"]["payload"]["weight_kg"] == 72.5
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    metric = db.execute(select(BodyMetric)).scalar_one()
+    assert metric.weight_kg == 72.5
+    assert db.execute(select(DomainEvent)).scalar_one().type == "BodyMetricLogged"
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(BodyMetric)).scalars().all() == []
 
 
 def test_training_reschedule_confirm_and_undo(db):

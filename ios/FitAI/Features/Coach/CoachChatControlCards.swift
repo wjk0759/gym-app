@@ -27,6 +27,12 @@ extension CoachChatView {
                     dietPendingContent(pending)
                 } else if pending.capabilityID == "training.reschedule" {
                     trainingPendingContent(pending)
+                } else if pending.capabilityID.hasPrefix("diet.") {
+                    mealPendingContent(pending)
+                } else if pending.capabilityID == "body.log_weight" {
+                    Text("体重 \(pending.payload?.weightKG.map { String(format: "%.1f", $0) } ?? "—") kg")
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
                 } else {
                     Text("准备执行一项操作。")
                         .font(AppType.callout)
@@ -88,6 +94,26 @@ extension CoachChatView {
                     .fontWeight(.semibold)
             }
             .font(AppType.caption)
+        }
+    }
+
+    private func mealPendingContent(_ pending: CoachPendingState) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("\(pending.payload?.date ?? "") · \(mealLabel(pending.payload?.meal))")
+                .font(AppType.callout.weight(.semibold))
+                .foregroundStyle(Theme.ink)
+            Text(actionLabel(pending.capabilityID))
+                .font(AppType.caption)
+                .foregroundStyle(Theme.secondaryText)
+        }
+    }
+
+    private func actionLabel(_ capability: String) -> String {
+        switch capability {
+        case "diet.log_planned_meal": return "按当天计划记录整餐"
+        case "diet.skip_planned_meal": return "把这一餐标记为主动跳过"
+        case "diet.restore_planned_meal": return "恢复被跳过的计划餐"
+        default: return "记录饮食"
         }
     }
 

@@ -24,6 +24,13 @@ extension AppStore {
         ) != nil {
             return false
         }
+
+        if value.range(
+            of: #"计划餐|按计划吃|跳过.*(早餐|午餐|晚餐|加餐)|恢复.*(早餐|午餐|晚餐|加餐)|体重|称重"#,
+            options: .regularExpression
+        ) != nil {
+            return true
+        }
         let foodWord = value.range(
             of: #"记|吃|喝|餐|零食|夜宵|鸡|牛|猪|鱼|蛋|奶|饭|面|肠|菜|果"#,
             options: .regularExpression

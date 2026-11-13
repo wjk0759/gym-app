@@ -1,3 +1,3 @@
 """Capability implementations. Importing registers them."""
 
-from . import diet, training  # noqa: F401
+from . import body, diet, training  # noqa: F401
