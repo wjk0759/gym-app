@@ -2,7 +2,11 @@ from datetime import datetime
 
 import pytest
 
-from app.services.agent import REVIEW_TZ, _normalize_app_actions
+from app.services.agent import (
+    REVIEW_TZ,
+    _forced_food_log_intent,
+    _normalize_app_actions,
+)
 
 
 def test_swap_diet_meal_action_keeps_date_and_meal():
@@ -20,6 +24,16 @@ def test_swap_diet_meal_action_keeps_date_and_meal():
     assert actions[0]["type"] == "swap_diet_meal"
     assert actions[0]["payload"]["date"] == "2026-11-12"
     assert actions[0]["payload"]["meal"] == "lunch"
+
+
+def test_food_log_intent_is_detected_without_misrouting_questions():
+    assert _forced_food_log_intent(
+        "我今天吃了一份湿炒螺蛳粉，半杯奶茶，帮我记一下"
+    )
+    assert _forced_food_log_intent("记录一下午餐：鸡腿饭")
+    assert not _forced_food_log_intent("打开饮食页")
+    assert not _forced_food_log_intent("我今天吃了什么")
+    assert not _forced_food_log_intent("我今天吃了什么，还可以吃什么")
 
 
 def test_log_food_action_requires_resolved_items():

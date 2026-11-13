@@ -127,6 +127,24 @@ SPLIT_ALIASES = {
 }
 
 
+def _forced_food_log_intent(message: str) -> bool:
+    """A narrow guard for the common "log what I ate" phrasing.
+
+    The model still resolves the food and writes the confirmation; this only
+    prevents it from turning an explicit logging request into `open_screen`.
+    """
+    text = message.strip()
+    if any(token in text for token in ("打开饮食", "饮食页", "看看饮食")):
+        return False
+    return bool(
+        re.search(
+            r"帮我记|记一下|记录一下|补记|帮我记录|记饮食|记录饮食|"
+            r"吃了.{0,40}(记|记录)|喝了.{0,40}(记|记录)",
+            text,
+        )
+    )
+
+
 def _normalize_split(value: Any) -> str | None:
     if value is None:
         return None
@@ -199,6 +217,7 @@ App Context 和可执行操作：
 - 体重、体脂、腰围等身体数据只能用 propose_app_actions + log_body_metric；绝对不要用 remember，也不要把 remember 当作更新身体数据的方式。
 - 用户想安排饮食计划、碳循环、低碳、高蛋白、地中海、素食、16:8 或换饮食策略时，调用 create_diet_plan。payload.strategy 只能是 balanced / carb_cycle / low_carb / high_protein / mediterranean / vegetarian / time_restricted_16_8，week_start 用周一日期（YYYY-MM-DD，可省略，默认本周）。先说明会按什么策略排，再让用户确认。
 - 用户只想替换某一餐、不想重排整周时，调用 swap_diet_meal。payload 必须包含 date（YYYY-MM-DD）和 meal（breakfast / lunch / dinner / snack）；服务端会保持当天热量和三大营养素不变，只换菜品。不要说已经换好，等用户确认。
+- 如果 state.forced_intent=log_food，本轮只能使用 get_context、resolve_food、propose_app_actions；propose_app_actions 的 type 必须是 log_food / log_planned_meal / update_food_log / delete_food_log。不要调用 open_screen 或 create_diet_plan。
 - 用户说“我今天吃了/喝了……帮我记一下/补记/记录饮食”时：
   1. 先调用 resolve_food，text 传用户原话，meal 尽量从上下文判断，date 用今天或用户指定日期。
   2. 如果 resolve_food 返回 questions，先 ask_user 补份量，不要直接写。
@@ -1328,6 +1347,14 @@ async def run_agent(
             error = "LLM is not configured; deterministic fallback"
         else:
             coach_context = build_coach_context(db, user_id)
+            forced_food_log = _forced_food_log_intent(message)
+            allowed_tools = sorted(ALLOWED_TOOLS)
+            if forced_food_log:
+                allowed_tools = [
+                    "get_context",
+                    "resolve_food",
+                    "propose_app_actions",
+                ]
             state = {
                 "user_message": message,
                 "current_date": (
@@ -1344,7 +1371,8 @@ async def run_agent(
                 "app_context": _safe_json(app_context or {}),
                 "coach_skill": "trainer",
                 "observations": observations,
-                "allowed_tools": sorted(ALLOWED_TOOLS),
+                "forced_intent": "log_food" if forced_food_log else None,
+                "allowed_tools": allowed_tools,
                 "max_steps": MAX_STEPS,
             }
             for _ in range(MAX_STEPS):
@@ -1405,6 +1433,29 @@ async def run_agent(
                                 db, run, user_id, tool, arguments, app_context
                             )
                         status = "ok" if result.get("ok", True) else "error"
+                        if forced_food_log and tool == "propose_app_actions":
+                            proposed = result.get("actions")
+                            food_types = {
+                                "log_food",
+                                "log_planned_meal",
+                                "update_food_log",
+                                "delete_food_log",
+                            }
+                            if not isinstance(proposed, list) or not proposed or any(
+                                str(item.get("type")) not in food_types
+                                for item in proposed
+                                if isinstance(item, dict)
+                            ):
+                                result = {
+                                    "ok": False,
+                                    "error": (
+                                        "本轮 forced_intent=log_food；只能使用 "
+                                        "log_food / log_planned_meal / "
+                                        "update_food_log / delete_food_log，"
+                                        "不要打开页面或生成饮食计划"
+                                    ),
+                                }
+                                status = "error"
                         tool_error = None if status == "ok" else str(result.get("error", ""))[:500]
                     except Exception as exc:  # noqa: BLE001 - tool failures return to model
                         result = {"ok": False, "error": str(exc)[:500]}
