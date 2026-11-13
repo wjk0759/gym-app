@@ -399,6 +399,24 @@ POST /coach/actions/{action_id}/undo
 GET  /coach/inbox
 ```
 
+已迁移能力：
+
+```text
+diet.log_food
+diet.log_planned_meal
+diet.skip_planned_meal
+diet.restore_planned_meal
+diet.swap_meal
+training.reschedule
+training.skip
+training.log_cardio
+body.log_weight
+profile.update_goal
+review.weekly（只读洞察）
+```
+
+`/coach/turns` 与旧 `/agent/chat` 共用免费教练日额度，并额外有 20 次/分钟的用户限流。
+
 `POST /coach/turns`：
 
 ```json
