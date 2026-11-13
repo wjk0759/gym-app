@@ -9,7 +9,12 @@ from sqlalchemy.orm import Session
 from ...models import Exercise, Program, ProgramDay, SetLog, WorkoutSession
 from ..training_stage import refresh_training_stage
 from .registry import ActionSpec, register
-from .schemas import LogWorkoutPayload
+from .schemas import (
+    DeleteWorkoutPayload,
+    LogWorkoutPayload,
+    UpdateWorkoutPayload,
+    WorkoutSetIn,
+)
 
 DIET_TZ = ZoneInfo("Asia/Shanghai")
 
@@ -22,6 +27,35 @@ def _owned_day_id(db: Session, user_id: str, day_id: str | None) -> str | None:
         .join(Program, Program.id == ProgramDay.program_id)
         .where(ProgramDay.id == day_id, Program.user_id == user_id)
     ).scalar_one_or_none()
+
+
+def _validate_slugs(db: Session, sets: list[WorkoutSetIn]) -> None:
+    slugs = {item.slug for item in sets}
+    if not slugs:
+        return
+    known = {
+        row[0]
+        for row in db.execute(
+            select(Exercise.slug).where(Exercise.slug.in_(slugs))
+        ).all()
+    }
+    missing = slugs - known
+    if missing:
+        raise ValueError(f"动作不存在：{', '.join(sorted(missing))}")
+
+
+def _owned_session(
+    db: Session, user_id: str, session_id: str
+) -> WorkoutSession:
+    session = db.execute(
+        select(WorkoutSession).where(
+            WorkoutSession.id == session_id,
+            WorkoutSession.user_id == user_id,
+        )
+    ).scalar_one_or_none()
+    if session is None:
+        raise LookupError("训练记录不存在")
+    return session
 
 
 def _session_payload(session: WorkoutSession) -> dict:
@@ -67,17 +101,7 @@ def execute_log_workout(
     if existing is not None:
         return {"already_logged": True, "created_workout": _session_payload(existing)}
 
-    slugs = {item.slug for item in payload.sets}
-    if slugs:
-        known = {
-            row[0]
-            for row in db.execute(
-                select(Exercise.slug).where(Exercise.slug.in_(slugs))
-            ).all()
-        }
-        missing = slugs - known
-        if missing:
-            raise ValueError(f"动作不存在：{', '.join(sorted(missing))}")
+    _validate_slugs(db, payload.sets)
 
     start_local = datetime.combine(
         payload.date,
@@ -121,6 +145,65 @@ def execute_log_workout(
     }
 
 
+def execute_update_workout(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: UpdateWorkoutPayload,
+) -> dict:
+    session = _owned_session(db, user_id, payload.session_id)
+    if payload.date is not None:
+        if payload.date > datetime.now(DIET_TZ).date():
+            raise ValueError("不能把训练改到未来日期")
+        start_local = datetime.combine(
+            payload.date,
+            time(hour=18),
+            tzinfo=DIET_TZ,
+        )
+        session.started_at = start_local.astimezone(timezone.utc)
+    if payload.duration_minutes is not None:
+        session.duration_min = payload.duration_minutes
+        session.finished_at = session.started_at + timedelta(
+            minutes=payload.duration_minutes
+        )
+    if payload.notes is not None:
+        session.notes = payload.notes
+    if payload.sets is not None:
+        _validate_slugs(db, payload.sets)
+        session.sets.clear()
+        # Flush deletes before reusing the same (session, slug, set_index)
+        # unique keys for the replacement rows.
+        db.flush()
+        for index, item in enumerate(payload.sets, start=1):
+            session.sets.append(
+                SetLog(
+                    exercise_slug=item.slug,
+                    set_index=item.set_index or index,
+                    weight_kg=item.weight_kg,
+                    reps=item.reps,
+                    rpe=item.rpe,
+                    completed=item.completed,
+                )
+            )
+    db.flush()
+    refresh_training_stage(db, user_id)
+    return {"updated_workout": _session_payload(session)}
+
+
+def execute_delete_workout(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: DeleteWorkoutPayload,
+) -> dict:
+    session = _owned_session(db, user_id, payload.session_id)
+    snapshot = _session_payload(session)
+    db.delete(session)
+    db.flush()
+    refresh_training_stage(db, user_id)
+    return {"deleted_workout": snapshot}
+
+
 def undo_log_workout(
     db: Session,
     user_id: str,
@@ -147,5 +230,19 @@ register(
         payload_model=LogWorkoutPayload,
         execute=execute_log_workout,
         undo=undo_log_workout,
+    ),
+)
+register(
+    "update_workout_log",
+    ActionSpec(
+        payload_model=UpdateWorkoutPayload,
+        execute=execute_update_workout,
+    ),
+)
+register(
+    "delete_workout_log",
+    ActionSpec(
+        payload_model=DeleteWorkoutPayload,
+        execute=execute_delete_workout,
     ),
 )

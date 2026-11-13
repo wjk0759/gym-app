@@ -379,6 +379,7 @@ struct AgentActionPayload: Codable, Hashable {
     let kind: String?
     let notes: String?
     let programDayID: String?
+    let sessionID: String?
     let sets: [AgentLoggedSet]?
     let scope: String?
     let changes: [AgentWorkoutChange]?
@@ -405,6 +406,7 @@ struct AgentActionPayload: Codable, Hashable {
         case kind
         case notes
         case programDayID = "program_day_id"
+        case sessionID = "session_id"
         case sets
         case scope
         case changes

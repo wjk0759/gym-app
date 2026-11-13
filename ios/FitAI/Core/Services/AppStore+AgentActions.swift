@@ -415,6 +415,28 @@ extension AppStore {
                 return "记录训练失败：\(error.localizedDescription)"
             }
 
+        case "update_workout_log", "delete_workout_log":
+            guard let payload = action.payload else {
+                return "没有收到训练记录参数"
+            }
+            do {
+                _ = try await APIClient.shared.runAgentAction(
+                    id: action.id,
+                    type: action.type,
+                    payload: payload
+                )
+                syncRemoteWorkouts()
+                return action.type == "delete_workout_log"
+                    ? "已删除训练记录"
+                    : "已更新训练记录"
+            } catch let error as APIError where error.statusCode == 404 {
+                return "没有找到这条训练记录"
+            } catch let error as APIError where error.statusCode == 422 {
+                return "训练记录失败：参数不合法"
+            } catch {
+                return "更新训练失败：\(error.localizedDescription)"
+            }
+
         case "recognize_equipment":
             coachEquipmentScanRequested = true
             return "正在打开器械识别…"

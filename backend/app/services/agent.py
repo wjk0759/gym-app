@@ -37,10 +37,12 @@ from . import llm
 from .citations import build_reply_citations
 from .coach_actions.schemas import (
     DeleteFoodLogPayload,
+    DeleteWorkoutPayload,
     LogFoodPayload,
     LogPlannedMealPayload,
     LogWorkoutPayload,
     UpdateFoodLogPayload,
+    UpdateWorkoutPayload,
 )
 from .coach_context import build_coach_context, recent_training
 from .coach_core import coach_core_prompt
@@ -92,6 +94,8 @@ APP_ACTION_TYPES = {
     "update_food_log",
     "delete_food_log",
     "log_workout",
+    "update_workout_log",
+    "delete_workout_log",
     "recognize_equipment",
     "analyze_body",
     "modify_workout",
@@ -189,6 +193,7 @@ AGENT_INSTRUCTIONS = """你可以读取用户状态、读取训练记录、生�
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_food","title":"记录午餐：湿炒螺蛳粉和奶茶","summary":"约 775 kcal，蛋白质 24.5g","requires_confirmation":true,"payload":{"date":"2026-11-13","meal":"lunch","raw_text":"湿炒螺蛳粉一份，半杯奶茶","items":[{"name":"湿炒螺蛳粉","portion":"1份","grams":500,"kcal":600,"protein_g":22,"carbs_g":80,"fat_g":18,"confidence":0.72},{"name":"奶茶","portion":"半杯","grams":250,"kcal":175,"protein_g":2.5,"carbs_g":30,"fat_g":5.8,"confidence":0.68}]}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_planned_meal","title":"记录计划午餐","summary":"把今天计划里的午餐记为已吃","requires_confirmation":true,"payload":{"date":"2026-11-13","meal":"lunch"}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_workout","title":"补录昨天跑步","summary":"30 分钟有氧，写入训练记录","requires_confirmation":true,"payload":{"date":"2026-11-12","title":"跑步","duration_minutes":30,"kind":"cardio"}}]}}
+{"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"update_workout_log","title":"修正昨天训练","summary":"把深蹲重量改成 60kg","requires_confirmation":true,"payload":{"session_id":"训练记录ID","sets":[{"slug":"goblet-squat","weight_kg":60,"reps":8,"rpe":8}]}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"recognize_equipment","title":"拍照识别器械","summary":"打开相机识别器械，可加入个人动作库","requires_confirmation":true,"payload":{}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"analyze_body","title":"拍照分析体型","summary":"拍全身或半身照，给出训练重点","requires_confirmation":true,"payload":{}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"modify_workout","title":"把今天的卧推换成哑铃卧推","summary":"保留组数，改动作和重量","requires_confirmation":true,"payload":{"day_id":"本地训练日ID","scope":"day","changes":[{"op":"swap","from_slug":"bench_press","to_slug":"dumbbell_press"},{"op":"sets","slug":"dumbbell_press","sets":2}]}}]}}
@@ -228,7 +233,7 @@ App Context 和可执行操作：
 - 用户追问图片中人物或物品的可见属性时，先给基于 visual_context 的最佳判断，再说明限制；不评价美丑、不诊断、不制造焦虑。
 - state.coach_skill 仅用于兼容旧客户端；当前统一为 AI 私人健身教练，不区分康复师/营养师模式。训练、饮食、恢复、器械和日程都可以直接回答，并识别和准备 App 操作。
 - 用户要求改期、跳过、开始训练、打开页面或修改目标时，必须调用 propose_app_actions，不要只在 final 里描述。
-- 只能使用这些 action type：reschedule_training、skip_training、start_training、open_screen、update_goal、log_body_metric、create_diet_plan、swap_diet_meal、log_food、log_planned_meal、update_food_log、delete_food_log、log_workout、recognize_equipment、analyze_body、modify_workout。
+- 只能使用这些 action type：reschedule_training、skip_training、start_training、open_screen、update_goal、log_body_metric、create_diet_plan、swap_diet_meal、log_food、log_planned_meal、update_food_log、delete_food_log、log_workout、update_workout_log、delete_workout_log、recognize_equipment、analyze_body、modify_workout。
 - 用户说“我的体重现在是 70kg”时，调用 log_body_metric，payload 至少包含 weight_kg（可选 body_fat_pct、waist_cm），不要让用户自己去页面填写。
 - 体重、体脂、腰围等身体数据只能用 propose_app_actions + log_body_metric；绝对不要用 remember，也不要把 remember 当作更新身体数据的方式。
 - 用户想安排饮食计划、碳循环、低碳、高蛋白、地中海、素食、16:8 或换饮食策略时，调用 create_diet_plan。payload.strategy 只能是 balanced / carb_cycle / low_carb / high_protein / mediterranean / vegetarian / time_restricted_16_8，week_start 用周一日期（YYYY-MM-DD，可省略，默认本周）。先说明会按什么策略排，再让用户确认。
@@ -243,6 +248,7 @@ App Context 和可执行操作：
 - 用户说“我吃了计划里的午餐/晚餐”时，调用 log_planned_meal，payload 包含 date 和 meal；这会把计划餐记为完成。
 - 用户说“我昨天跑了 30 分钟/今天补录一次训练/把刚才那次训练记上”时，调用 log_workout；payload 至少包含 date、title、duration_minutes，kind 用 strength 或 cardio。不要把“已经练完/补录”误判成 start_training。
 - log_workout 的记录日期不能是未来；动作型训练可以带 sets（slug、重量、次数、RPE），有氧可以只写 title + duration。
+- 用户要修改或删除已经记录的训练时，调用 update_workout_log / delete_workout_log；session_id 必须来自 recent_training.recent_sessions 或用户明确提供的记录 ID，不要猜。修改动作重量/次数时传完整 sets 列表。
 - 用户说“打开饮食页”时才调用 open_screen nutrition；“记录饮食”不等于“打开饮食页”。
 - 用户说“把刚才那条饮食改成/删掉”时，使用 update_food_log / delete_food_log，client_id 必须来自 app_context 或用户明确提供的记录 ID；找不到记录就 ask_user，不要猜。
 - 用户问某个动作怎么做、主要练哪里、目标肌肉、动作细节、动作替代、器械对应动作时，都要先调用 lookup_exercise，query 用最短动作名（如“弹力带划船”“深蹲”），limit 默认 3。只引用返回的步骤，不要凭记忆编造动作；没有结果就说明没查到，并让用户补充动作名或器械。
@@ -698,6 +704,16 @@ def _normalize_app_actions(
                 )
             except Exception as exc:
                 raise ValueError(f"log_workout payload invalid: {exc}") from exc
+        if action_type in {"update_workout_log", "delete_workout_log"}:
+            try:
+                model = (
+                    UpdateWorkoutPayload
+                    if action_type == "update_workout_log"
+                    else DeleteWorkoutPayload
+                )
+                payload = model.model_validate(payload).model_dump(mode="json")
+            except Exception as exc:
+                raise ValueError(f"{action_type} payload invalid: {exc}") from exc
         if action_type == "swap_diet_meal":
             meal = str(payload.get("meal") or "").strip().lower()
             if meal not in {"breakfast", "lunch", "dinner", "snack"}:

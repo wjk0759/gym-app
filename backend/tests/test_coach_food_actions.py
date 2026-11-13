@@ -252,3 +252,71 @@ def test_log_workout_action_writes_session_and_undoes(db):
 
     undo_action(db, "user-1", "action-workout")
     assert db.execute(select(WorkoutSession)).scalars().all() == []
+
+
+def test_update_and_delete_workout_actions(db):
+    db.add(
+        Exercise(
+            slug="goblet-squat",
+            name_zh="高脚杯深蹲",
+            muscle_group="legs",
+            equipment="dumbbell",
+            is_compound=True,
+            contraindications=[],
+        )
+    )
+    db.commit()
+    created = execute_action(
+        db,
+        "user-1",
+        "action-workout-edit",
+        "log_workout",
+        {
+            "date": "2026-11-12",
+            "title": "腿部训练",
+            "duration_minutes": 40,
+            "kind": "strength",
+            "sets": [
+                {
+                    "slug": "goblet-squat",
+                    "set_index": 1,
+                    "weight_kg": 24,
+                    "reps": 10,
+                    "rpe": 8,
+                }
+            ],
+        },
+    )
+    session_id = created["created_workout"]["id"]
+
+    updated = execute_action(
+        db,
+        "user-1",
+        "action-workout-edit-2",
+        "update_workout_log",
+        {
+            "session_id": session_id,
+            "duration_minutes": 50,
+            "sets": [
+                {
+                    "slug": "goblet-squat",
+                    "set_index": 1,
+                    "weight_kg": 60,
+                    "reps": 8,
+                    "rpe": 9,
+                }
+            ],
+        },
+    )
+
+    assert updated["updated_workout"]["duration_min"] == 50
+    assert updated["updated_workout"]["sets"][0]["weight_kg"] == 60
+
+    execute_action(
+        db,
+        "user-1",
+        "action-workout-edit-3",
+        "delete_workout_log",
+        {"session_id": session_id},
+    )
+    assert db.execute(select(WorkoutSession)).scalars().all() == []

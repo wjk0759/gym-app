@@ -64,3 +64,15 @@ class LogWorkoutPayload(BaseModel):
     notes: str | None = Field(default=None, max_length=500)
     program_day_id: str | None = Field(default=None, max_length=36)
     sets: list[WorkoutSetIn] = Field(default_factory=list, max_length=100)
+
+
+class UpdateWorkoutPayload(BaseModel):
+    session_id: str = Field(min_length=1, max_length=36)
+    date: dt_date | None = None
+    duration_minutes: int | None = Field(default=None, ge=1, le=300)
+    notes: str | None = Field(default=None, max_length=500)
+    sets: list[WorkoutSetIn] | None = Field(default=None, max_length=100)
+
+
+class DeleteWorkoutPayload(BaseModel):
+    session_id: str = Field(min_length=1, max_length=36)

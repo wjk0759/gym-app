@@ -525,6 +525,8 @@ log_planned_meal
 update_food_log
 delete_food_log
 log_workout
+update_workout_log
+delete_workout_log
 ```
 
 `log_workout` 用于教练补录已完成的训练：
@@ -542,6 +544,8 @@ log_workout
 ```
 
 力量训练可以带 `sets`，每项包含 `slug`、`weight_kg`、`reps`、`rpe`。不能记录未来日期；同一 action 重放不会创建第二次训练，`undo-run` 会删除该 action 创建的记录。
+
+`update_workout_log` 用 `session_id` 修改日期、时长、备注或整组 sets；`delete_workout_log` 用 `session_id` 删除记录。`session_id` 来自 `recent_training.recent_sessions` 或训练详情。
 
 `log_food` 必须先通过 `resolve_food` 得到结构化 items；`log_planned_meal` 会按当天计划餐复制热量和宏量，并写入 `plan_date` / `plan_meal`。
 
