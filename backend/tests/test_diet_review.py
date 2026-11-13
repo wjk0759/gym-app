@@ -54,6 +54,23 @@ def test_review_counts_only_linked_plan_meals():
     assert result["insight"]
 
 
+def test_skipped_meals_are_excluded_from_missing_and_denominator():
+    day = date(2026, 11, 9)
+    plan = _plan(day)
+    plan.plan["skipped_meals"] = ["breakfast"]
+    logs = [_log(day, "lunch", 680, 48, plan_meal="lunch")]
+
+    result = build_diet_review([plan], logs, day, day)
+
+    totals = result["totals"]
+    assert totals["planned_meals"] == 3
+    assert totals["skipped_meals"] == 1
+    assert totals["eligible_meals"] == 2
+    assert totals["logged_plan_meals"] == 1
+    assert totals["adherence_rate"] == 0.5
+    assert [item["meal"] for item in result["missing_meals"]] == ["dinner"]
+
+
 def test_review_includes_actual_only_days_without_counting_them_as_plan():
     planned_day = date(2026, 11, 9)
     extra_day = date(2026, 11, 10)

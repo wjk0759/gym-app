@@ -349,6 +349,9 @@ def today_nutrition_context(
         for log in logs
         if log.plan_date == day and log.plan_meal
     }
+    skipped_plan_meals = {
+        str(value) for value in plan.get("skipped_meals", []) if value
+    }
     for meal in plan.get("meals", []):
         if not isinstance(meal, dict):
             continue
@@ -360,6 +363,7 @@ def today_nutrition_context(
                 "kcal": round(float(meal.get("kcal") or 0)),
                 "protein_g": round(float(meal.get("protein_g") or 0), 1),
                 "logged": key in logged_plan_meals,
+                "skipped": key in skipped_plan_meals,
             }
         )
 
@@ -380,6 +384,7 @@ def today_nutrition_context(
         },
         "plan_meals": plan_meals,
         "logged_plan_meals": sorted(value for value in logged_plan_meals if value),
+        "skipped_plan_meals": sorted(value for value in skipped_plan_meals if value),
         "recent_logs": [
             {
                 "client_id": log.client_id,

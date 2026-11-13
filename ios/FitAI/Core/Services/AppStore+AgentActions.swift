@@ -437,6 +437,28 @@ extension AppStore {
                 return "更新训练失败：\(error.localizedDescription)"
             }
 
+        case "skip_planned_meal", "restore_planned_meal":
+            guard let payload = action.payload else {
+                return "没有收到计划餐参数"
+            }
+            do {
+                _ = try await APIClient.shared.runAgentAction(
+                    id: action.id,
+                    type: action.type,
+                    payload: payload
+                )
+                undo = .mealPlanStateAction(actionID: action.id)
+                return action.type == "skip_planned_meal"
+                    ? "已跳过这餐"
+                    : "已恢复这餐"
+            } catch let error as APIError where error.statusCode == 404 {
+                return "没有找到这一餐的计划"
+            } catch let error as APIError where error.statusCode == 422 {
+                return "计划餐操作失败：已记录或参数不合法"
+            } catch {
+                return "计划餐操作失败：\(error.localizedDescription)"
+            }
+
         case "recognize_equipment":
             coachEquipmentScanRequested = true
             return "正在打开器械识别…"

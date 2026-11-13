@@ -253,6 +253,8 @@ extension CoachChatView {
         case "create_diet_plan": return "fork.knife"
         case "swap_diet_meal": return "arrow.triangle.2.circlepath"
         case "log_food", "log_planned_meal": return "fork.knife"
+        case "skip_planned_meal": return "forward.end"
+        case "restore_planned_meal": return "arrow.uturn.backward"
         case "log_workout": return "figure.strengthtraining.traditional"
         case "update_workout_log": return "pencil"
         case "delete_workout_log": return "trash"

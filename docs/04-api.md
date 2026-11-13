@@ -522,6 +522,8 @@ data: {"session_id": "uuid", "safety_flag": null, "citations": []}
 ```text
 log_food
 log_planned_meal
+skip_planned_meal
+restore_planned_meal
 update_food_log
 delete_food_log
 log_workout
@@ -548,6 +550,8 @@ delete_workout_log
 `update_workout_log` 用 `session_id` 修改日期、时长、备注或整组 sets；`delete_workout_log` 用 `session_id` 删除记录。`session_id` 来自 `recent_training.recent_sessions` 或训练详情。
 
 `log_food` 必须先通过 `resolve_food` 得到结构化 items；`log_planned_meal` 会按当天计划餐复制热量和宏量，并写入 `plan_date` / `plan_meal`。
+
+`skip_planned_meal` 把某餐标记为主动跳过，写入计划 JSON 的 `skipped_meals`；跳过不计入饮食复盘缺失和完成率分母。已记录的餐不能跳过。`restore_planned_meal` 撤销跳过。
 
 #### `POST /agent/actions/{action_id}/undo-run`
 
@@ -727,8 +731,10 @@ meal: breakfast / lunch / dinner / snack
   "totals": {
     "planned_days": 5,
     "planned_meals": 20,
+    "eligible_meals": 18,
+    "skipped_meals": 2,
     "logged_plan_meals": 12,
-    "adherence_rate": 0.6,
+    "adherence_rate": 0.67,
     "planned_kcal": 11000,
     "actual_kcal": 9800,
     "planned_protein_g": 750,

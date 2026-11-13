@@ -218,6 +218,7 @@ struct RemoteDietPlan: Decodable {
     let note: String?
     let generatedBy: String?
     let warning: String?
+    let skippedMeals: [String]?
 
     enum CodingKeys: String, CodingKey {
         case meals
@@ -226,6 +227,7 @@ struct RemoteDietPlan: Decodable {
         case note
         case warning
         case generatedBy = "generated_by"
+        case skippedMeals = "skipped_meals"
     }
 }
 
@@ -240,6 +242,8 @@ struct RemoteDietReview: Decodable {
     struct Totals: Decodable {
         let plannedDays: Int
         let plannedMeals: Int
+        let eligibleMeals: Int?
+        let skippedMeals: Int?
         let loggedPlanMeals: Int
         let adherenceRate: Double?
         let plannedKcal: Int
@@ -250,6 +254,8 @@ struct RemoteDietReview: Decodable {
         enum CodingKeys: String, CodingKey {
             case plannedDays = "planned_days"
             case plannedMeals = "planned_meals"
+            case eligibleMeals = "eligible_meals"
+            case skippedMeals = "skipped_meals"
             case loggedPlanMeals = "logged_plan_meals"
             case adherenceRate = "adherence_rate"
             case plannedKcal = "planned_kcal"

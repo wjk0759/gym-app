@@ -30,6 +30,11 @@ class LogPlannedMealPayload(BaseModel):
     meal: Literal["breakfast", "lunch", "dinner", "snack"]
 
 
+class SkipPlannedMealPayload(BaseModel):
+    date: dt_date
+    meal: Literal["breakfast", "lunch", "dinner", "snack"]
+
+
 class UpdateFoodLogPayload(BaseModel):
     client_id: str = Field(min_length=1, max_length=36)
     date: dt_date | None = None

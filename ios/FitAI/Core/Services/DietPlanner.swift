@@ -57,6 +57,7 @@ struct MealSuggestion: Identifiable {
     var carbs: Double = 0
     var fat: Double = 0
     var fiber: Double = 0
+    var skipped: Bool = false
 
     var id: String { meal.rawValue + "|" + name }
 }

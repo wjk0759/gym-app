@@ -16,6 +16,7 @@ from .schemas import (
     DeleteFoodLogPayload,
     LogFoodPayload,
     LogPlannedMealPayload,
+    SkipPlannedMealPayload,
     UpdateFoodLogPayload,
 )
 
@@ -118,6 +119,15 @@ def execute_log_planned_meal(
     if meal is None:
         raise LookupError("计划里没有这一餐")
 
+    skipped = [
+        value
+        for value in plan.get("skipped_meals", [])
+        if isinstance(value, str) and value != payload.meal
+    ]
+    if skipped != plan.get("skipped_meals", []):
+        plan["skipped_meals"] = skipped
+        record.plan = plan
+
     existing = db.execute(
         select(FoodLog).where(
             FoodLog.user_id == user_id,
@@ -156,6 +166,72 @@ def execute_log_planned_meal(
     return {
         "group_id": group_id,
         "created_logs": [_food_log_payload(log)],
+        "today_nutrition": _nutrition(db, user_id, payload.date),
+    }
+
+
+def execute_skip_planned_meal(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: SkipPlannedMealPayload,
+) -> dict:
+    record = get_day(db, user_id, payload.date)
+    if record is None or not record.plan:
+        raise LookupError("这一天没有饮食计划")
+    plan = ensure_meal_macros(record.plan)
+    meals = {
+        str(item.get("meal"))
+        for item in plan.get("meals", [])
+        if isinstance(item, dict)
+    }
+    if payload.meal not in meals:
+        raise LookupError("计划里没有这一餐")
+    existing_log = db.execute(
+        select(FoodLog).where(
+            FoodLog.user_id == user_id,
+            FoodLog.plan_date == payload.date,
+            FoodLog.plan_meal == payload.meal,
+        )
+    ).scalar_one_or_none()
+    if existing_log is not None:
+        raise ValueError("这一餐已经记录，不能跳过")
+    skipped = {
+        value
+        for value in plan.get("skipped_meals", [])
+        if isinstance(value, str)
+    }
+    skipped.add(payload.meal)
+    plan["skipped_meals"] = sorted(skipped)
+    record.plan = plan
+    db.flush()
+    return {
+        "skipped_meal": payload.meal,
+        "date": payload.date.isoformat(),
+        "today_nutrition": _nutrition(db, user_id, payload.date),
+    }
+
+
+def undo_skip_planned_meal(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: SkipPlannedMealPayload,
+) -> dict:
+    record = get_day(db, user_id, payload.date)
+    if record is None or not record.plan:
+        raise LookupError("这一天没有饮食计划")
+    plan = ensure_meal_macros(record.plan)
+    plan["skipped_meals"] = [
+        value
+        for value in plan.get("skipped_meals", [])
+        if isinstance(value, str) and value != payload.meal
+    ]
+    record.plan = plan
+    db.flush()
+    return {
+        "restored_meal": payload.meal,
+        "date": payload.date.isoformat(),
         "today_nutrition": _nutrition(db, user_id, payload.date),
     }
 
@@ -268,6 +344,21 @@ register(
         payload_model=LogPlannedMealPayload,
         execute=execute_log_planned_meal,
         undo=undo_log_food,
+    ),
+)
+register(
+    "skip_planned_meal",
+    ActionSpec(
+        payload_model=SkipPlannedMealPayload,
+        execute=execute_skip_planned_meal,
+        undo=undo_skip_planned_meal,
+    ),
+)
+register(
+    "restore_planned_meal",
+    ActionSpec(
+        payload_model=SkipPlannedMealPayload,
+        execute=undo_skip_planned_meal,
     ),
 )
 register(

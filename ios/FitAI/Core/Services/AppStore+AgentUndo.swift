@@ -154,6 +154,16 @@ extension AppStore {
                 return false
             }
 
+        case let .mealPlanStateAction(actionID):
+            do {
+                _ = try await APIClient.shared.undoAgentAction(id: actionID)
+                toast = "已恢复计划餐状态"
+                return true
+            } catch {
+                toast = "恢复计划餐失败：\(error.localizedDescription)"
+                return false
+            }
+
         case let .plan(previousPlan):
             guard let current = plan, current.id == previousPlan.id else {
                 toast = "当前计划已变化，无法撤销改课"

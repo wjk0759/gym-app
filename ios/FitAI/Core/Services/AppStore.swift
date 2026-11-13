@@ -31,6 +31,8 @@ indirect enum AgentUndoState {
     case foodLogAction(actionID: String)
     /// 教练补录的训练；撤销时删除该 action 创建的训练。
     case workoutAction(actionID: String)
+    /// 计划餐跳过/恢复；撤销时恢复服务端计划餐状态。
+    case mealPlanStateAction(actionID: String)
     /// 旧版本地改课；撤销时恢复改课前的整份计划。
     case plan(TrainingPlan)
     /// 一次 Agent 动作卡可能包含多天操作，撤销时要一起恢复。

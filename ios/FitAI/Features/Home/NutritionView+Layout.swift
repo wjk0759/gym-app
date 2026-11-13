@@ -160,11 +160,13 @@ extension NutritionView {
     }
 
     func planHeader(snapshot: DayLogsSnapshot) -> some View {
-        let plannedKeys = Set(meals.map(\.meal))
+        let activeMeals = meals.filter { !$0.skipped }
+        let plannedKeys = Set(activeMeals.map(\.meal))
         let loggedKeys = Set(
             snapshot.logs.filter { $0.planDate != nil }.compactMap(\.planMeal)
         )
         let completed = plannedKeys.intersection(loggedKeys).count
+        let skippedCount = meals.count - activeMeals.count
         return HStack(alignment: .bottom) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("今日食谱")
@@ -178,6 +180,11 @@ extension NutritionView {
                                 ? Theme.cobalt
                                 : Theme.tertiaryText
                         )
+                }
+                if skippedCount > 0 {
+                    Text("已跳过 \(skippedCount) 餐")
+                        .font(AppType.micro)
+                        .foregroundStyle(Theme.tertiaryText)
                 }
             }
             Spacer(minLength: 8)
@@ -221,7 +228,9 @@ extension NutritionView {
             $0.planDate != nil && $0.planMeal == suggestion.meal
         }
         let statusText: String
-        if let plannedLog {
+        if suggestion.skipped {
+            statusText = "已跳过这餐"
+        } else if let plannedLog {
             statusText = "已记录整餐 \(Int(plannedLog.kcal)) kcal"
         } else if loggedKcal > 0 {
             statusText = "已记录 \(Int(loggedKcal)) kcal"
@@ -295,7 +304,7 @@ extension NutritionView {
                         )
                     Spacer(minLength: 4)
 
-                    if plannedLog == nil {
+                    if plannedLog == nil && !suggestion.skipped {
                         Button {
                             logPlannedMeal(suggestion)
                         } label: {

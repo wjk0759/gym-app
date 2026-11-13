@@ -118,7 +118,8 @@ struct NutritionView: View {
     }
 
     private func suggestions(from plan: RemoteDietPlan) -> [MealSuggestion] {
-        plan.meals.map {
+        let skipped = Set(plan.skippedMeals ?? [])
+        return plan.meals.map {
             MealSuggestion(
                 name: $0.name,
                 kcal: $0.kcal,
@@ -126,7 +127,8 @@ struct NutritionView: View {
                 meal: MealType(rawValue: $0.meal) ?? .breakfast,
                 protein: $0.proteinG ?? 0,
                 carbs: $0.carbG ?? 0,
-                fat: $0.fatG ?? 0
+                fat: $0.fatG ?? 0,
+                skipped: skipped.contains($0.meal)
             )
         }
     }

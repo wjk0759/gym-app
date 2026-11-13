@@ -318,8 +318,8 @@ struct PlanReviewView: View {
                 HStack(spacing: 6) {
                     detailMetric(rate, "计划餐完成")
                     detailMetric(
-                        "\(totals.loggedPlanMeals)/\(totals.plannedMeals)",
-                        "已记录 / 计划"
+                        "\(totals.loggedPlanMeals)/\(totals.eligibleMeals ?? totals.plannedMeals)",
+                        "已记录 / 有效计划"
                     )
                     detailMetric("\(totals.actualKcal)", "实际 kcal")
                     detailMetric("\(totals.plannedKcal)", "计划 kcal")
@@ -331,6 +331,12 @@ struct PlanReviewView: View {
                     )
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
+                }
+
+                if let skipped = totals.skippedMeals, skipped > 0 {
+                    Text("主动跳过 \(skipped) 餐，不计入完成率")
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(Theme.tertiaryText)
                 }
 
                 if !diet.missingMeals.isEmpty {

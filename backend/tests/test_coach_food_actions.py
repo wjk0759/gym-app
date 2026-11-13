@@ -12,7 +12,7 @@ from app.schemas import AgentActionRunIn
 from app.services.coach_actions.executor import execute_action, undo_action
 from app.services.coach_actions.schemas import LogFoodPayload
 from app.services.food_text import resolve_food_rules
-from app.services.meal_plans import save_day_plan
+from app.services.meal_plans import get_day, save_day_plan
 
 
 @pytest.fixture()
@@ -177,6 +177,45 @@ def test_log_planned_meal_links_to_plan_and_is_idempotent(db):
     logs = db.execute(select(FoodLog)).scalars().all()
     assert len(logs) == 1
     assert logs[0].plan_date == day
+
+
+def test_skip_planned_meal_is_reversible(db):
+    day = date(2026, 11, 13)
+    save_day_plan(
+        db,
+        "user-1",
+        day,
+        {
+            "date": day.isoformat(),
+            "targets": {
+                "target_kcal": 2100,
+                "protein_g": 150,
+                "carb_g": 230,
+                "fat_g": 65,
+            },
+            "meals": [
+                {"meal": "lunch", "name": "鸡腿饭", "kcal": 700},
+                {"meal": "dinner", "name": "番茄牛腩", "kcal": 700},
+            ],
+        },
+        strategy="balanced",
+        generated_by="ai",
+    )
+    db.commit()
+
+    execute_action(
+        db,
+        "user-1",
+        "action-skip",
+        "skip_planned_meal",
+        {"date": day.isoformat(), "meal": "dinner"},
+    )
+    plan = get_day(db, "user-1", day).plan
+    assert plan["skipped_meals"] == ["dinner"]
+
+    undo_action(db, "user-1", "action-skip")
+    plan = get_day(db, "user-1", day).plan
+    assert plan["skipped_meals"] == []
 
 
 def test_generic_route_wraps_food_action_result(db):

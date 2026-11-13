@@ -64,6 +64,8 @@ def build_diet_review(
     days = []
     missing_meals = []
     planned_meals_total = 0
+    eligible_meals_total = 0
+    skipped_meals_total = 0
     logged_meals_total = 0
     planned_kcal_total = 0.0
     actual_kcal_total = 0.0
@@ -88,31 +90,37 @@ def build_diet_review(
             continue
 
         meals = [meal for meal in (plan or {}).get("meals", []) if isinstance(meal, dict)]
-        planned_kcal = sum(_meal_macros(meal)[0] for meal in meals)
-        planned_protein = sum(_meal_macros(meal)[1] for meal in meals)
+        skipped = {
+            str(value) for value in (plan or {}).get("skipped_meals", []) if value
+        }
+        active_meals = [meal for meal in meals if str(meal.get("meal")) not in skipped]
+        planned_kcal = sum(_meal_macros(meal)[0] for meal in active_meals)
+        planned_protein = sum(_meal_macros(meal)[1] for meal in active_meals)
         planned_meals = len(meals)
+        eligible_meals = len(active_meals)
         logged_meals = len(logged_plan_meals.get(current, set()) & {
-            str(meal.get("meal")) for meal in meals
+            str(meal.get("meal")) for meal in active_meals
         })
 
         planned_meals_total += planned_meals
+        eligible_meals_total += eligible_meals
+        skipped_meals_total += len(skipped)
         logged_meals_total += logged_meals
         planned_kcal_total += planned_kcal
         planned_protein_total += planned_protein
 
-        if meals:
-            for meal in meals:
-                key = str(meal.get("meal") or "")
-                if key in logged_plan_meals.get(current, set()):
-                    continue
-                missing_meals.append(
-                    {
-                        "date": current.isoformat(),
-                        "meal": key,
-                        "name": str(meal.get("name") or MEAL_LABELS.get(key, key)),
-                        "kcal": round(float(meal.get("kcal") or 0)),
-                    }
-                )
+        for meal in active_meals:
+            key = str(meal.get("meal") or "")
+            if key in logged_plan_meals.get(current, set()):
+                continue
+            missing_meals.append(
+                {
+                    "date": current.isoformat(),
+                    "meal": key,
+                    "name": str(meal.get("name") or MEAL_LABELS.get(key, key)),
+                    "kcal": round(float(meal.get("kcal") or 0)),
+                }
+            )
 
         if not day_logs:
             status = "no_log"
@@ -129,6 +137,7 @@ def build_diet_review(
             {
                 "date": current.isoformat(),
                 "planned_meals": planned_meals,
+                "skipped_meals": len(skipped),
                 "logged_plan_meals": logged_meals,
                 "planned_kcal": round(planned_kcal),
                 "actual_kcal": round(actual_kcal),
@@ -140,7 +149,9 @@ def build_diet_review(
         current += timedelta(days=1)
 
     adherence = (
-        logged_meals_total / planned_meals_total if planned_meals_total else None
+        logged_meals_total / eligible_meals_total
+        if eligible_meals_total
+        else None
     )
     return {
         "from": date_from.isoformat(),
@@ -148,6 +159,8 @@ def build_diet_review(
         "totals": {
             "planned_days": sum(1 for day in days if day["planned_meals"] > 0),
             "planned_meals": planned_meals_total,
+            "eligible_meals": eligible_meals_total,
+            "skipped_meals": skipped_meals_total,
             "logged_plan_meals": logged_meals_total,
             "adherence_rate": round(adherence, 2) if adherence is not None else None,
             "planned_kcal": round(planned_kcal_total),
@@ -159,6 +172,8 @@ def build_diet_review(
         "missing_meals": missing_meals[:12],
         "insight": _insight(
             planned_meals_total=planned_meals_total,
+            eligible_meals_total=eligible_meals_total,
+            skipped_meals_total=skipped_meals_total,
             logged_meals_total=logged_meals_total,
             missing_count=len(missing_meals),
             planned_kcal=planned_kcal_total,
@@ -173,6 +188,8 @@ def build_diet_review(
 def _insight(
     *,
     planned_meals_total: int,
+    eligible_meals_total: int,
+    skipped_meals_total: int,
     logged_meals_total: int,
     missing_count: int,
     planned_kcal: float,
@@ -185,11 +202,13 @@ def _insight(
         return "这段时间还没有保存的饮食计划。先让教练排一周餐单，再回来看计划执行。"
     if not has_logs:
         return "有饮食计划，但这段时间还没有任何饮食记录。先做到每天记录一餐。"
+    if eligible_meals_total == 0:
+        return f"这期 {skipped_meals_total} 餐都标记了跳过。如果这是主动安排，可以重新调整下周餐次。"
     if logged_meals_total == 0:
         return "还没有用「整餐」记录计划餐；手动记录也算摄入，但无法判断是哪一餐按计划执行。"
-    adherence = logged_meals_total / planned_meals_total
+    adherence = logged_meals_total / eligible_meals_total
     if adherence < 0.5:
-        return f"计划餐只记录了 {logged_meals_total}/{planned_meals_total} 餐。先把最容易执行的一餐固定下来，不要一次要求全部做到。"
+        return f"计划餐只记录了 {logged_meals_total}/{eligible_meals_total} 餐（另跳过 {skipped_meals_total} 餐）。先把最容易执行的一餐固定下来，不要一次要求全部做到。"
     if missing_count >= 3:
         return f"有 {missing_count} 餐计划没有记录。先补看最常漏掉的那一餐，是时间不够还是餐单不合适。"
     if planned_kcal > 0 and actual_kcal > planned_kcal * 1.10:
