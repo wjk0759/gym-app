@@ -210,6 +210,54 @@ extension APIClient {
         return try await send(path: "agent/chat", method: "POST", body: body, timeout: 50)
     }
 
+    func coachTurn(
+        message: String,
+        sessionID: UUID? = nil,
+        appContext: [String: Any]? = nil
+    ) async throws -> CoachTurnResponse {
+        var payload: [String: Any] = ["message": message]
+        if let sessionID { payload["session_id"] = sessionID.uuidString.lowercased() }
+        if let appContext { payload["app_context"] = appContext }
+        let body = try JSONSerialization.data(withJSONObject: payload)
+        return try await send(path: "coach/turns", method: "POST", body: body, timeout: 50)
+    }
+
+    func coachSession(id: UUID) async throws -> CoachSessionState {
+        try await send(path: "coach/sessions/\(id.uuidString.lowercased())", method: "GET", body: nil)
+    }
+
+    func confirmCoachPending(id: UUID) async throws -> CoachConfirmResponse {
+        try await send(
+            path: "coach/pending/\(id.uuidString.lowercased())/confirm",
+            method: "POST",
+            body: nil
+        )
+    }
+
+    func cancelCoachPending(id: UUID) async throws {
+        try await sendVoid(
+            path: "coach/pending/\(id.uuidString.lowercased())/cancel",
+            method: "POST",
+            body: nil
+        )
+    }
+
+    func undoCoachAction(id: String) async throws -> CoachUndoResponse {
+        try await send(
+            path: "coach/actions/\(id)/undo",
+            method: "POST",
+            body: nil
+        )
+    }
+
+    func coachInbox(limit: Int = 20) async throws -> CoachInboxResponse {
+        try await send(
+            path: "coach/inbox?limit=\(limit)",
+            method: "GET",
+            body: nil
+        )
+    }
+
     func agentPendingState() async throws -> AgentPendingState {
         try await send(
             path: "agent/pending",

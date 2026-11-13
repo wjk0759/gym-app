@@ -359,6 +359,9 @@ struct AgentLoggedSet: Codable, Hashable {
 
 struct AgentActionPayload: Codable, Hashable {
     let dayID: String?
+    let planID: String?
+    let fromDate: String?
+    let toDate: String?
     var date: String?
     let targetDate: String?
     let clientID: String?
@@ -387,6 +390,9 @@ struct AgentActionPayload: Codable, Hashable {
 
     enum CodingKeys: String, CodingKey {
         case dayID = "day_id"
+        case planID = "plan_id"
+        case fromDate = "from_date"
+        case toDate = "to_date"
         case date
         case targetDate = "target_date"
         case clientID = "client_id"
@@ -496,6 +502,136 @@ struct AgentPendingState: Decodable {
         case pendingAction = "pending_action"
         case pendingDraft = "pending_draft"
         case proposal
+    }
+}
+
+struct CoachPendingState: Decodable, Identifiable, Hashable {
+    let id: UUID
+    let kind: String
+    let capabilityID: String
+    let payload: AgentActionPayload?
+    let status: String
+    let actionID: String?
+    let expiresAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case kind
+        case capabilityID = "capability_id"
+        case payload
+        case status
+        case actionID = "action_id"
+        case expiresAt = "expires_at"
+    }
+}
+
+struct CoachSessionState: Decodable, Hashable {
+    let id: UUID
+    let status: String
+    let activeTopic: String?
+    let pending: CoachPendingState?
+    let updatedAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case status
+        case activeTopic = "active_topic"
+        case pending
+        case updatedAt = "updated_at"
+    }
+}
+
+struct CoachTurnResponse: Decodable {
+    let session: CoachSessionState
+    let turnID: String
+    let intent: String?
+    let status: String
+    let reply: String
+    let pending: CoachPendingState?
+
+    enum CodingKeys: String, CodingKey {
+        case session
+        case turnID = "turn_id"
+        case intent
+        case status
+        case reply
+        case pending
+    }
+}
+
+struct CoachReceipt: Decodable, Hashable {
+    let summary: String?
+    let deepLink: String?
+    let date: String?
+    let meal: String?
+    let items: Int?
+    let fromDate: String?
+    let toDate: String?
+    let title: String?
+    let planID: String?
+    let dayID: String?
+
+    enum CodingKeys: String, CodingKey {
+        case summary
+        case deepLink = "deep_link"
+        case date
+        case meal
+        case items
+        case fromDate = "from_date"
+        case toDate = "to_date"
+        case title
+        case planID = "plan_id"
+        case dayID = "day_id"
+    }
+}
+
+struct CoachConfirmResponse: Decodable {
+    let actionID: String
+    let status: String
+    let receipt: CoachReceipt?
+    let idempotent: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case actionID = "action_id"
+        case status
+        case receipt
+        case idempotent
+    }
+}
+
+struct CoachInboxItem: Decodable, Identifiable, Hashable {
+    let id: UUID
+    let kind: String
+    let title: String
+    let body: String
+    let capabilityID: String?
+    let payload: AgentActionPayload?
+    let status: String
+    let createdAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case kind
+        case title
+        case body
+        case capabilityID = "capability_id"
+        case payload
+        case status
+        case createdAt = "created_at"
+    }
+}
+
+struct CoachInboxResponse: Decodable {
+    let items: [CoachInboxItem]
+}
+
+struct CoachUndoResponse: Decodable {
+    let actionID: String
+    let status: String
+
+    enum CodingKeys: String, CodingKey {
+        case actionID = "action_id"
+        case status
     }
 }
 

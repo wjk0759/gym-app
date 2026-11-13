@@ -82,10 +82,10 @@ def _looks_like_training_slot_answer(message: str) -> bool:
 
 
 def _looks_like_food(message: str) -> bool:
-    if re.search(r"记|吃|喝|补|餐|零食|夜宵", message):
-        return True
     if re.search(r"多少|热量|卡路里|为什么|怎么|吗|？|\?", message):
         return False
+    if re.search(r"记|吃|喝|补|餐|零食|夜宵", message):
+        return True
     return bool(
         re.search(
             r"\d+(?:\.\d+)?\s*(g|克|ml|毫升|杯|份|碗|个|片|勺|盒|瓶)",
@@ -350,6 +350,8 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         receipt = {
             "summary": "已调整训练日期",
             **result.get("receipt", {}),
+            "plan_id": pending.payload.get("plan_id"),
+            "day_id": pending.payload.get("day_id"),
             "deep_link": (
                 f"fitai://plan/{pending.payload.get('plan_id')}"
                 f"/day/{pending.payload.get('day_id')}"

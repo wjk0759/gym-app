@@ -127,6 +127,13 @@ final class AppStore {
     var pendingWorkoutDeletionIDs: [String] = []
     var isAgentWorking = false
     var agentSessionID: UUID?
+    var coachSessionID: UUID?
+    var coachSession: CoachSessionState?
+    var coachPending: CoachPendingState?
+    var coachReceipt: CoachReceipt?
+    var coachUndoActionID: String?
+    var coachInbox: [CoachInboxItem] = []
+    var isCoachControlWorking = false
     var agentRunID: String?
     var agentProposal: AgentPlanProposal?
     var agentActions: [AgentAction] = []
@@ -261,6 +268,13 @@ final class AppStore {
         reminderMinute = 0
         isAgentWorking = false
         agentSessionID = nil
+        coachSessionID = nil
+        coachSession = nil
+        coachPending = nil
+        coachReceipt = nil
+        coachUndoActionID = nil
+        coachInbox = []
+        isCoachControlWorking = false
         agentRunID = nil
         agentProposal = nil
         agentActions = []
@@ -326,6 +340,7 @@ final class AppStore {
         workoutDraft = state.workoutDraft
         chat = state.chat
         agentSessionID = state.agentSessionID
+        coachSessionID = state.coachSessionID
         agentActions = state.agentActions ?? []
         pendingDraft = state.pendingDraft
         foodLogs = state.foodLogs ?? []
@@ -382,6 +397,7 @@ final class AppStore {
             workoutDraft: workoutDraft,
             chat: chat,
             agentSessionID: agentSessionID,
+            coachSessionID: coachSessionID,
             agentActions: agentActions,
             pendingDraft: pendingDraft,
             foodLogs: foodLogs,
@@ -498,6 +514,7 @@ final class AppStore {
         var workoutDraft: WorkoutDraft?
         var chat: [ChatMessage]
         var agentSessionID: UUID?
+        var coachSessionID: UUID?
         var agentActions: [AgentAction]?
         var pendingDraft: AgentPendingDraft?
         var foodLogs: [FoodLog]?

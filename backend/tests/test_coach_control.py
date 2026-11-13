@@ -178,6 +178,14 @@ def test_cancel_clears_the_active_pending(db):
     )
 
 
+def test_food_question_does_not_create_a_logging_draft(db):
+    import asyncio
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "减脂怎么吃"))
+    assert turn["intent"] == "unsupported"
+    assert turn["pending"] is None
+
+
 def test_unrelated_message_cancels_a_stale_draft(db):
     import asyncio
 

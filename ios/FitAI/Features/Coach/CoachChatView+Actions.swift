@@ -178,6 +178,10 @@ extension CoachChatView {
         input = ""
         focused = false
         KeyboardDismiss.dismiss()
+        if store.canRouteToCoachControl(trimmed) {
+            store.sendCoachControlTurn(trimmed)
+            return
+        }
         if store.canUseRemoteAI || !store.hasProAccess {
             // 免费用户一律先交给 Agent：文字教练只受每日额度约束，
             // 不能因为“像计划调整”就在发送前弹订阅。

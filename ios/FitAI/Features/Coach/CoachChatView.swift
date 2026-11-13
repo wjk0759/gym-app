@@ -149,6 +149,8 @@ struct CoachChatView: View {
                     }
                 }
 
+                coachControlCards
+
                 if let draft = store.pendingDraft {
                     pendingDraftCard(draft)
                 }
@@ -181,6 +183,8 @@ struct CoachChatView: View {
                     store.beginPlanAdjustment()
                 }
                 consumePendingCoachAttachments()
+                store.restoreCoachControlSession()
+                store.refreshCoachInbox()
             }
             .onChange(of: store.pendingCoachAttachmentData.count) { _, _ in
                 consumePendingCoachAttachments()
