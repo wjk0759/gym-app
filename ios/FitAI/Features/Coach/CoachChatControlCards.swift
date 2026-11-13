@@ -29,6 +29,10 @@ extension CoachChatView {
                     trainingPendingContent(pending)
                 } else if pending.capabilityID == "training.log_cardio" {
                     cardioPendingContent(pending)
+                } else if pending.capabilityID == "training.skip" {
+                    Text("\(pending.payload?.date ?? "") · \(pending.payload?.title ?? "训练")")
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
                 } else if pending.capabilityID.hasPrefix("diet.") {
                     mealPendingContent(pending)
                 } else if pending.capabilityID == "body.log_weight" {

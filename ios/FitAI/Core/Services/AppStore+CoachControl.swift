@@ -42,6 +42,13 @@ extension AppStore {
            ) != nil {
             return true
         }
+
+        if value.range(
+            of: #"跳过.*训练|不练了|少练一次|休息一天|今天休息"#,
+            options: .regularExpression
+        ) != nil {
+            return true
+        }
         let foodWord = value.range(
             of: #"记|吃|喝|餐|零食|夜宵|鸡|牛|猪|鱼|蛋|奶|饭|面|肠|菜|果"#,
             options: .regularExpression

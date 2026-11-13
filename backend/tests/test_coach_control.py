@@ -178,6 +178,45 @@ def test_body_weight_confirm_and_undo(db):
     assert db.execute(select(BodyMetric)).scalars().all() == []
 
 
+def test_training_skip_confirm_and_undo(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    context = {
+        "plan": {
+            "id": "plan-1",
+            "version": 1,
+            "days": [
+                {
+                    "id": "day-1",
+                    "date": today.isoformat(),
+                    "title": "下肢",
+                    "completed": False,
+                    "skipped": False,
+                }
+            ],
+        }
+    }
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "今天不练了",
+            app_context=context,
+        )
+    )
+    assert turn["intent"] == "training.skip"
+    assert turn["pending"]["kind"] == "card"
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    state = db.execute(select(PlanDayState)).scalar_one()
+    assert state.skipped_at is not None
+    assert db.execute(select(DomainEvent)).scalar_one().type == "TrainingSkipped"
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(PlanDayState)).scalars().all() == []
+
+
 def test_training_reschedule_confirm_and_undo(db):
     import asyncio
 

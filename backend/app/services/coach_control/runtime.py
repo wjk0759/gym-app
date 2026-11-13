@@ -33,6 +33,7 @@ PLANNED = "diet.log_planned_meal"
 SKIP_MEAL = "diet.skip_planned_meal"
 RESTORE_MEAL = "diet.restore_planned_meal"
 TRAINING = "training.reschedule"
+SKIP_TRAINING = "training.skip"
 CARDIO = "training.log_cardio"
 WEIGHT = "body.log_weight"
 
@@ -107,6 +108,13 @@ def _looks_like_restore_meal(message: str) -> bool:
     return bool(
         re.search(r"恢复", message)
         and re.search(r"早餐|午餐|晚餐|加餐|这餐|计划餐", message)
+    )
+
+
+def _looks_like_skip_training(message: str) -> bool:
+    return bool(
+        re.search(r"跳过|不练|少练|休息", message)
+        and re.search(r"训练|今天|明天|后天|这周|本周", message)
     )
 
 
@@ -272,6 +280,16 @@ async def handle_turn(
             else:
                 text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
                 intent_override = CARDIO
+        elif pending.capability_id == SKIP_TRAINING:
+            if not _looks_like_training_slot_answer(text):
+                cancel_pending(db, session, pending)
+                pending = None
+            else:
+                stored = pending.payload.get("app_context")
+                if isinstance(stored, dict):
+                    context = {**stored, **context}
+                text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
+                intent_override = SKIP_TRAINING
 
     meal_capability: str | None = None
     if intent_override in {PLANNED, SKIP_MEAL, RESTORE_MEAL}:
@@ -315,6 +333,31 @@ async def handle_turn(
             )
             reply = question
         turn.intent = meal_capability
+    elif intent_override == SKIP_TRAINING or (
+        intent_override is None and _looks_like_skip_training(text)
+    ):
+        from .capabilities.training import resolve_skip
+
+        resolution = resolve_skip(db, user_id, text, context)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            _pending_card(
+                db,
+                session,
+                capability_id=SKIP_TRAINING,
+                payload=payload,
+            )
+            reply = f"准备跳过 {payload['date']} 的「{payload['title']}」。确认后生效。"
+        else:
+            question = (resolution.get("questions") or ["想跳过哪一天？"])[0]
+            _pending_draft(
+                db,
+                session,
+                capability_id=SKIP_TRAINING,
+                payload={"message": text, "app_context": context},
+            )
+            reply = question
+        turn.intent = SKIP_TRAINING
     elif intent_override == TRAINING or (
         intent_override is None and _looks_like_reschedule(text)
     ):
@@ -523,6 +566,23 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "TrainingRescheduled"
         entity_type = "plan_day"
         entity_id = str(pending.payload.get("day_id") or "")
+    elif pending.capability_id == SKIP_TRAINING:
+        from .capabilities.training import execute_skip as execute_skip_training
+
+        result = execute_skip_training(db, user_id, action_id, pending.payload)
+        before = result.get("before") or {}
+        after = result.get("after") or {}
+        receipt = {
+            "summary": f"已跳过 {pending.payload.get('date')} 的训练",
+            "date": pending.payload.get("date"),
+            "deep_link": (
+                f"fitai://plan/{pending.payload.get('plan_id')}"
+                f"/day/{pending.payload.get('day_id')}"
+            ),
+        }
+        event_type = "TrainingSkipped"
+        entity_type = "plan_day"
+        entity_id = str(pending.payload.get("day_id") or "")
     elif pending.capability_id == CARDIO:
         from .capabilities.training import execute_cardio
 
@@ -644,6 +704,16 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
         from .capabilities.training import undo as undo_training
 
         result = undo_training(
+            db,
+            user_id,
+            action_id,
+            record.payload,
+            record.before or {},
+        )
+    elif record.capability_id == SKIP_TRAINING:
+        from .capabilities.training import undo_skip as undo_skip_training
+
+        result = undo_skip_training(
             db,
             user_id,
             action_id,

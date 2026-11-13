@@ -38,6 +38,18 @@ CARDIO = register(
         events=("WorkoutLogged",),
     )
 )
+SKIP = register(
+    Capability(
+        id="training.skip",
+        domain="training",
+        kind="write",
+        title="跳过训练",
+        description="把某一次计划训练标记为主动跳过",
+        requires_confirmation=True,
+        undo=True,
+        events=("TrainingSkipped",),
+    )
+)
 
 _WEEKDAYS = {
     "一": 0,
@@ -198,6 +210,98 @@ def resolve(
             "title": str(source.get("title") or "训练"),
         },
     }
+
+
+def resolve_skip(
+    db: Session,
+    user_id: str,
+    message: str,
+    app_context: dict | None = None,
+) -> dict:
+    context = app_context if isinstance(app_context, dict) else {}
+    today = datetime.now(DIET_TZ).date()
+    plan = context.get("plan") if isinstance(context.get("plan"), dict) else {}
+    plan_id = str(plan.get("id") or "")
+    source = _source_day(message, context, today=today)
+    if not plan_id or source is None:
+        return {
+            "ready": False,
+            "questions": ["你想跳过哪一天训练？告诉我日期，或从训练手账里选一天。"],
+        }
+    return {
+        "ready": True,
+        "payload": {
+            "plan_id": plan_id,
+            "day_id": str(source.get("id") or ""),
+            "plan_version": plan.get("version"),
+            "date": str(source.get("date") or ""),
+            "title": str(source.get("title") or "训练"),
+        },
+    }
+
+
+def execute_skip(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: dict,
+) -> dict:
+    plan_id = str(payload.get("plan_id") or "")
+    day_id = str(payload.get("day_id") or "")
+    if not plan_id or not day_id:
+        raise ValueError("跳过训练缺少计划或训练日")
+    state = db.execute(
+        select(PlanDayState).where(
+            PlanDayState.user_id == user_id,
+            PlanDayState.plan_id == plan_id,
+            PlanDayState.day_id == day_id,
+        )
+    ).scalar_one_or_none()
+    before = _serialize_state(state)
+    if state is None:
+        state = PlanDayState(
+            user_id=user_id,
+            plan_id=plan_id,
+            day_id=day_id,
+            client_updated_at=utcnow(),
+        )
+        db.add(state)
+    state.skipped_at = utcnow()
+    state.client_updated_at = utcnow()
+    state.updated_at = utcnow()
+    db.flush()
+    return {"before": before, "after": _serialize_state(state)}
+
+
+def undo_skip(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: dict,
+    before: dict,
+) -> dict:
+    plan_id = str(payload.get("plan_id") or "")
+    day_id = str(payload.get("day_id") or "")
+    state = db.execute(
+        select(PlanDayState).where(
+            PlanDayState.user_id == user_id,
+            PlanDayState.plan_id == plan_id,
+            PlanDayState.day_id == day_id,
+        )
+    ).scalar_one_or_none()
+    if not before:
+        if state is not None:
+            db.delete(state)
+            db.flush()
+        return {"restored": True, "deleted": True}
+    if state is None:
+        return {"restored": False}
+    skipped = before.get("skipped_at")
+    state.skipped_at = datetime.fromisoformat(skipped) if skipped else None
+    state.client_updated_at = utcnow()
+    state.updated_at = utcnow()
+    db.flush()
+    return {"restored": True, "skipped_at": skipped}
 
 
 def _cardio_title(message: str) -> str | None:
