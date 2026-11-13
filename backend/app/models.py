@@ -722,6 +722,49 @@ class AgentActionDraft(Base):
     )
 
 
+class AgentPendingAction(Base):
+    """Server-owned coach card waiting for confirmation.
+
+    iOS still renders the card locally, but persisting it lets another device
+    restore the same pending work and lets the server apply corrections even
+    when the client does not resend ``app_context.pending_action``.
+    """
+
+    __tablename__ = "agent_pending_actions"
+    __table_args__ = (
+        Index(
+            "ix_agent_pending_actions_user_status",
+            "user_id",
+            "status",
+            "updated_at",
+        ),
+        Index(
+            "ix_agent_pending_actions_session_status",
+            "session_id",
+            "status",
+        ),
+        Index("ix_agent_pending_actions_expires", "expires_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    session_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("chat_sessions.id", ondelete="CASCADE"), index=True
+    )
+    run_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("agent_runs.id", ondelete="SET NULL"), index=True
+    )
+    actions: Mapped[list] = mapped_column(JSON, default=list)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
 class PlanDayState(Base):
     """Cross-device state for a local or server plan day.
 

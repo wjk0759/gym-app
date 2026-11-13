@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ...models import AgentActionEvent
+from ..agent_pending import resolve_pending_action
 from . import (
     food_actions,  # noqa: F401 - registers built-in actions
     workout_actions,  # noqa: F401 - registers built-in actions
@@ -70,6 +71,7 @@ def execute_action(
         "payload": data.model_dump(mode="json"),
         "result": result,
     }
+    resolve_pending_action(db, user_id, action_id)
     db.commit()
     return result
 

@@ -210,6 +210,14 @@ extension APIClient {
         return try await send(path: "agent/chat", method: "POST", body: body, timeout: 50)
     }
 
+    func agentPendingState() async throws -> AgentPendingState {
+        try await send(
+            path: "agent/pending",
+            method: "GET",
+            body: nil
+        )
+    }
+
     func agentWeeklyReview() async throws -> AgentWeeklyReview {
         try await send(
             path: "agent/reviews/weekly",

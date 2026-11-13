@@ -71,6 +71,36 @@ def get_active_draft(
     return draft
 
 
+def get_latest_active_draft(
+    db: Session, user_id: str
+) -> AgentActionDraft | None:
+    """Latest active draft across sessions, used for cross-device restore."""
+
+    rows = (
+        db.execute(
+            select(AgentActionDraft)
+            .where(
+                AgentActionDraft.user_id == user_id,
+                AgentActionDraft.status.in_(ACTIVE_STATUSES),
+            )
+            .order_by(AgentActionDraft.updated_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+    result: AgentActionDraft | None = None
+    changed = False
+    for row in rows:
+        if _is_expired(row):
+            row.status = "expired"
+            changed = True
+        elif result is None:
+            result = row
+    if changed:
+        db.flush()
+    return result
+
+
 def create_food_draft(
     db: Session,
     user_id: str,

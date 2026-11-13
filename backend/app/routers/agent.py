@@ -23,8 +23,20 @@ from ..schemas import (
     WorkoutActionExecuteIn,
 )
 from ..services import access, generation
-from ..services.action_drafts import cancel_draft
+from ..services.action_drafts import (
+    cancel_draft,
+    compact_draft,
+    get_active_draft,
+    get_latest_active_draft,
+)
 from ..services.agent import apply_proposal, generate_weekly_review, run_agent
+from ..services.agent_pending import (
+    latest_pending_action,
+    pending_action_payload,
+    pending_food_action_context,
+    resolve_pending_action,
+    store_pending_actions,
+)
 from ..services.agent_requests import (
     AgentRequestInProgress,
     claim_agent_request,
@@ -138,6 +150,11 @@ async def _agent_chat_claimed(
         except Exception:
             access.release_coach_message(db, user_id, period=coach_period)
             raise
+    app_context = dict(payload.app_context or {})
+    if not isinstance(app_context.get("pending_action"), dict):
+        server_pending = pending_food_action_context(db, user_id, session.id)
+        if server_pending is not None:
+            app_context["pending_action"] = server_pending
     try:
         result = await run_agent(
             db,
@@ -146,7 +163,7 @@ async def _agent_chat_claimed(
             session_id=session.id,
             history=history,
             skill=payload.skill,
-            app_context=payload.app_context,
+            app_context=app_context,
         )
     except Exception as exc:  # safety net: never turn an Agent crash into a 500
         if lease is not None:
@@ -167,6 +184,13 @@ async def _agent_chat_claimed(
 
     message_id = None
     if result.get("status") != "failed":
+        store_pending_actions(
+            db,
+            user_id,
+            session.id,
+            result.get("run_id"),
+            result.get("actions") or [],
+        )
         user_message = ChatMessage(role="user", content=payload.message)
         assistant_message = ChatMessage(
             role="assistant",
@@ -237,6 +261,31 @@ def agent_request_state(
     return state
 
 
+@router.get("/pending")
+def agent_pending_state(
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    """Latest pending card/draft, used to restore state on another device."""
+
+    row = latest_pending_action(db, user_id)
+    draft = None
+    session_id = None
+    if row is not None:
+        session_id = row.session_id
+        draft = get_active_draft(db, user_id, row.session_id)
+    else:
+        draft = get_latest_active_draft(db, user_id)
+        if draft is not None:
+            session_id = draft.session_id
+    db.commit()
+    return {
+        "session_id": session_id,
+        "pending_action": pending_action_payload(row) if row is not None else None,
+        "pending_draft": compact_draft(draft),
+    }
+
+
 @router.delete("/drafts/{draft_id}")
 def delete_agent_draft(
     draft_id: str,
@@ -285,6 +334,7 @@ def report_action_result(
     event.status = payload.status
     event.message = (payload.message or "")[:500] or None
     event.detail = {**(event.detail or {}), **(payload.detail or {})}
+    resolve_pending_action(db, user_id, action_id)
     try:
         db.commit()
     except IntegrityError:
@@ -300,6 +350,7 @@ def report_action_result(
         event.status = payload.status
         event.message = (payload.message or "")[:500] or None
         event.detail = {**(event.detail or {}), **(payload.detail or {})}
+        resolve_pending_action(db, user_id, action_id)
         db.commit()
     return {"ok": True, "action_id": event.action_id, "status": event.status}
 

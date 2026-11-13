@@ -507,6 +507,27 @@ data: {"session_id": "uuid", "safety_flag": null, "citations": []}
 DELETE /agent/drafts/{draft_id}
 ```
 
+#### `GET /agent/pending`
+
+返回当前用户最近一张待确认卡和/或活跃草稿，用于换设备或重装后恢复：
+
+```json
+{
+  "session_id": "uuid",
+  "pending_action": {
+    "id": "uuid",
+    "run_id": "uuid",
+    "actions": [{ "id": "action-id", "type": "log_food", "requires_confirmation": true }],
+    "expires_at": "2026-11-14T12:30:00+00:00"
+  },
+  "pending_draft": null
+}
+```
+
+- 待确认卡 30 分钟过期；新一轮对话没有 actions 时会清掉旧卡。
+- 执行或忽略 card 中的某个 action 后，服务端会从卡里移除；全部处理完后卡片变为 consumed。
+- 用户不说“记错了”但服务端保存了 `log_food` 卡时，`/agent/chat` 也会直接用服务端卡做确认前修正，不依赖客户端回传 `app_context.pending_action`。
+
 #### `POST /agent/actions/{action_id}/run`
 
 统一执行教练产出的非训练改课动作。请求：

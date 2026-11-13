@@ -466,6 +466,32 @@ struct AgentChatResponse: Decodable {
     }
 }
 
+struct AgentPendingActionCard: Decodable {
+    let id: String
+    let runID: String?
+    let actions: [AgentAction]
+    let expiresAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case runID = "run_id"
+        case actions
+        case expiresAt = "expires_at"
+    }
+}
+
+struct AgentPendingState: Decodable {
+    let sessionID: UUID?
+    let pendingAction: AgentPendingActionCard?
+    let pendingDraft: AgentPendingDraft?
+
+    enum CodingKeys: String, CodingKey {
+        case sessionID = "session_id"
+        case pendingAction = "pending_action"
+        case pendingDraft = "pending_draft"
+    }
+}
+
 struct AgentApplyResponse: Decodable {
     let program: TrainingPlan
 }
