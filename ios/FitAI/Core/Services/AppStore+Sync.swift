@@ -157,7 +157,7 @@ extension AppStore {
                 sessions.append(
                     workoutSync.makeSession(
                         from: item,
-                        dayTitle: planTitle ?? "训练记录",
+                        dayTitle: planTitle ?? item.notes ?? "训练记录",
                         localID: item.clientID.flatMap { UUID(uuidString: $0) } ?? UUID()
                     )
                 )

@@ -39,6 +39,7 @@ from .coach_actions.schemas import (
     DeleteFoodLogPayload,
     LogFoodPayload,
     LogPlannedMealPayload,
+    LogWorkoutPayload,
     UpdateFoodLogPayload,
 )
 from .coach_context import build_coach_context, recent_training
@@ -90,6 +91,7 @@ APP_ACTION_TYPES = {
     "log_planned_meal",
     "update_food_log",
     "delete_food_log",
+    "log_workout",
     "recognize_equipment",
     "analyze_body",
     "modify_workout",
@@ -145,6 +147,19 @@ def _forced_food_log_intent(message: str) -> bool:
     )
 
 
+def _forced_workout_log_intent(message: str) -> bool:
+    text = message.strip()
+    if any(token in text for token in ("开始训练", "打开训练", "训练页")):
+        return False
+    return bool(
+        re.search(
+            r"跑了|骑车|游泳|练完|练了|补录.{0,8}训练|记录.{0,8}训练|"
+            r"刚才那次训练|昨天.{0,8}(跑|练)",
+            text,
+        )
+    )
+
+
 def _normalize_split(value: Any) -> str | None:
     if value is None:
         return None
@@ -173,6 +188,7 @@ AGENT_INSTRUCTIONS = """你可以读取用户状态、读取训练记录、生�
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"swap_diet_meal","title":"把周四午餐换一餐","summary":"保持热量和蛋白质不变，只替换菜品","requires_confirmation":true,"payload":{"date":"2026-11-12","meal":"lunch"}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_food","title":"记录午餐：湿炒螺蛳粉和奶茶","summary":"约 775 kcal，蛋白质 24.5g","requires_confirmation":true,"payload":{"date":"2026-11-13","meal":"lunch","raw_text":"湿炒螺蛳粉一份，半杯奶茶","items":[{"name":"湿炒螺蛳粉","portion":"1份","grams":500,"kcal":600,"protein_g":22,"carbs_g":80,"fat_g":18,"confidence":0.72},{"name":"奶茶","portion":"半杯","grams":250,"kcal":175,"protein_g":2.5,"carbs_g":30,"fat_g":5.8,"confidence":0.68}]}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_planned_meal","title":"记录计划午餐","summary":"把今天计划里的午餐记为已吃","requires_confirmation":true,"payload":{"date":"2026-11-13","meal":"lunch"}}]}}
+{"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_workout","title":"补录昨天跑步","summary":"30 分钟有氧，写入训练记录","requires_confirmation":true,"payload":{"date":"2026-11-12","title":"跑步","duration_minutes":30,"kind":"cardio"}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"recognize_equipment","title":"拍照识别器械","summary":"打开相机识别器械，可加入个人动作库","requires_confirmation":true,"payload":{}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"analyze_body","title":"拍照分析体型","summary":"拍全身或半身照，给出训练重点","requires_confirmation":true,"payload":{}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"modify_workout","title":"把今天的卧推换成哑铃卧推","summary":"保留组数，改动作和重量","requires_confirmation":true,"payload":{"day_id":"本地训练日ID","scope":"day","changes":[{"op":"swap","from_slug":"bench_press","to_slug":"dumbbell_press"},{"op":"sets","slug":"dumbbell_press","sets":2}]}}]}}
@@ -212,18 +228,21 @@ App Context 和可执行操作：
 - 用户追问图片中人物或物品的可见属性时，先给基于 visual_context 的最佳判断，再说明限制；不评价美丑、不诊断、不制造焦虑。
 - state.coach_skill 仅用于兼容旧客户端；当前统一为 AI 私人健身教练，不区分康复师/营养师模式。训练、饮食、恢复、器械和日程都可以直接回答，并识别和准备 App 操作。
 - 用户要求改期、跳过、开始训练、打开页面或修改目标时，必须调用 propose_app_actions，不要只在 final 里描述。
-- 只能使用这些 action type：reschedule_training、skip_training、start_training、open_screen、update_goal、log_body_metric、create_diet_plan、swap_diet_meal、log_food、log_planned_meal、update_food_log、delete_food_log、recognize_equipment、analyze_body、modify_workout。
+- 只能使用这些 action type：reschedule_training、skip_training、start_training、open_screen、update_goal、log_body_metric、create_diet_plan、swap_diet_meal、log_food、log_planned_meal、update_food_log、delete_food_log、log_workout、recognize_equipment、analyze_body、modify_workout。
 - 用户说“我的体重现在是 70kg”时，调用 log_body_metric，payload 至少包含 weight_kg（可选 body_fat_pct、waist_cm），不要让用户自己去页面填写。
 - 体重、体脂、腰围等身体数据只能用 propose_app_actions + log_body_metric；绝对不要用 remember，也不要把 remember 当作更新身体数据的方式。
 - 用户想安排饮食计划、碳循环、低碳、高蛋白、地中海、素食、16:8 或换饮食策略时，调用 create_diet_plan。payload.strategy 只能是 balanced / carb_cycle / low_carb / high_protein / mediterranean / vegetarian / time_restricted_16_8，week_start 用周一日期（YYYY-MM-DD，可省略，默认本周）。先说明会按什么策略排，再让用户确认。
 - 用户只想替换某一餐、不想重排整周时，调用 swap_diet_meal。payload 必须包含 date（YYYY-MM-DD）和 meal（breakfast / lunch / dinner / snack）；服务端会保持当天热量和三大营养素不变，只换菜品。不要说已经换好，等用户确认。
 - 如果 state.forced_intent=log_food，本轮只能使用 get_context、resolve_food、propose_app_actions；propose_app_actions 的 type 必须是 log_food / log_planned_meal / update_food_log / delete_food_log。不要调用 open_screen 或 create_diet_plan。
+- 如果 state.forced_intent=log_workout，本轮只能使用 get_context、lookup_exercise、get_exercise_history、propose_app_actions；propose_app_actions 的 type 只能是 log_workout。用户说“练完了/跑了/补录”不是“开始训练”，不要调用 start_training。
 - 用户说“我今天吃了/喝了……帮我记一下/补记/记录饮食”时：
   1. 先调用 resolve_food，text 传用户原话，meal 尽量从上下文判断，date 用今天或用户指定日期。
   2. 如果 resolve_food 返回 questions，先 ask_user 补份量，不要直接写。
   3. 如果返回 items，调用 propose_app_actions，type=log_food，payload.items 使用 resolve_food 的结果。
   4. 不要调用 open_screen nutrition，不要调用 create_diet_plan，也不要让用户自己去页面填写。
 - 用户说“我吃了计划里的午餐/晚餐”时，调用 log_planned_meal，payload 包含 date 和 meal；这会把计划餐记为完成。
+- 用户说“我昨天跑了 30 分钟/今天补录一次训练/把刚才那次训练记上”时，调用 log_workout；payload 至少包含 date、title、duration_minutes，kind 用 strength 或 cardio。不要把“已经练完/补录”误判成 start_training。
+- log_workout 的记录日期不能是未来；动作型训练可以带 sets（slug、重量、次数、RPE），有氧可以只写 title + duration。
 - 用户说“打开饮食页”时才调用 open_screen nutrition；“记录饮食”不等于“打开饮食页”。
 - 用户说“把刚才那条饮食改成/删掉”时，使用 update_food_log / delete_food_log，client_id 必须来自 app_context 或用户明确提供的记录 ID；找不到记录就 ask_user，不要猜。
 - 用户问某个动作怎么做、主要练哪里、目标肌肉、动作细节、动作替代、器械对应动作时，都要先调用 lookup_exercise，query 用最短动作名（如“弹力带划船”“深蹲”），limit 默认 3。只引用返回的步骤，不要凭记忆编造动作；没有结果就说明没查到，并让用户补充动作名或器械。
@@ -670,6 +689,15 @@ def _normalize_app_actions(
                 payload = model.model_validate(payload).model_dump(mode="json")
             except Exception as exc:
                 raise ValueError(f"{action_type} payload invalid: {exc}") from exc
+        if action_type == "log_workout":
+            if not valid_date(date_value):
+                payload["date"] = datetime.now(REVIEW_TZ).date().isoformat()
+            try:
+                payload = LogWorkoutPayload.model_validate(payload).model_dump(
+                    mode="json"
+                )
+            except Exception as exc:
+                raise ValueError(f"log_workout payload invalid: {exc}") from exc
         if action_type == "swap_diet_meal":
             meal = str(payload.get("meal") or "").strip().lower()
             if meal not in {"breakfast", "lunch", "dinner", "snack"}:
@@ -1348,11 +1376,21 @@ async def run_agent(
         else:
             coach_context = build_coach_context(db, user_id)
             forced_food_log = _forced_food_log_intent(message)
+            forced_workout_log = (
+                not forced_food_log and _forced_workout_log_intent(message)
+            )
             allowed_tools = sorted(ALLOWED_TOOLS)
             if forced_food_log:
                 allowed_tools = [
                     "get_context",
                     "resolve_food",
+                    "propose_app_actions",
+                ]
+            elif forced_workout_log:
+                allowed_tools = [
+                    "get_context",
+                    "lookup_exercise",
+                    "get_exercise_history",
                     "propose_app_actions",
                 ]
             state = {
@@ -1371,7 +1409,11 @@ async def run_agent(
                 "app_context": _safe_json(app_context or {}),
                 "coach_skill": "trainer",
                 "observations": observations,
-                "forced_intent": "log_food" if forced_food_log else None,
+                "forced_intent": (
+                    "log_food"
+                    if forced_food_log
+                    else "log_workout" if forced_workout_log else None
+                ),
                 "allowed_tools": allowed_tools,
                 "max_steps": MAX_STEPS,
             }
@@ -1453,6 +1495,21 @@ async def run_agent(
                                         "log_food / log_planned_meal / "
                                         "update_food_log / delete_food_log，"
                                         "不要打开页面或生成饮食计划"
+                                    ),
+                                }
+                                status = "error"
+                        if forced_workout_log and tool == "propose_app_actions":
+                            proposed = result.get("actions")
+                            if not isinstance(proposed, list) or not proposed or any(
+                                str(item.get("type")) != "log_workout"
+                                for item in proposed
+                                if isinstance(item, dict)
+                            ):
+                                result = {
+                                    "ok": False,
+                                    "error": (
+                                        "本轮 forced_intent=log_workout；只能使用 "
+                                        "log_workout，不要开始训练或修改计划"
                                     ),
                                 }
                                 status = "error"

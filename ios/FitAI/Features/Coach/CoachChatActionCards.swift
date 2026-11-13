@@ -188,6 +188,29 @@ extension CoachChatView {
                                 .font(.system(size: 9.5, weight: .medium))
                                 .padding(.top, 2)
                             }
+                            if action.type == "log_workout",
+                               let payload = action.payload {
+                                HStack(spacing: 8) {
+                                    if let title = payload.title {
+                                        Text(title)
+                                            .foregroundStyle(Theme.ink)
+                                    }
+                                    if let minutes = payload.durationMinutes {
+                                        Text("\(minutes) 分钟")
+                                            .foregroundStyle(Theme.cobalt)
+                                    }
+                                    if let kind = payload.kind {
+                                        Text(kind == "cardio" ? "有氧" : "力量")
+                                            .foregroundStyle(Theme.tertiaryText)
+                                    }
+                                    if let count = payload.sets?.count, count > 0 {
+                                        Text("\(count) 组")
+                                            .foregroundStyle(Theme.tertiaryText)
+                                    }
+                                }
+                                .font(.system(size: 9.5, weight: .medium))
+                                .padding(.top, 2)
+                            }
                         }
                         Spacer(minLength: 0)
                     }
@@ -230,6 +253,7 @@ extension CoachChatView {
         case "create_diet_plan": return "fork.knife"
         case "swap_diet_meal": return "arrow.triangle.2.circlepath"
         case "log_food", "log_planned_meal": return "fork.knife"
+        case "log_workout": return "figure.strengthtraining.traditional"
         case "update_food_log": return "pencil"
         case "delete_food_log": return "trash"
         case "recognize_equipment": return "camera.viewfinder"

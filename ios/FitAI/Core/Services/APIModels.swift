@@ -339,6 +339,24 @@ struct AgentFoodItem: Codable, Hashable {
     }
 }
 
+struct AgentLoggedSet: Codable, Hashable {
+    let slug: String
+    let setIndex: Int?
+    let weightKG: Double?
+    let reps: Int?
+    let rpe: Double?
+    let completed: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case slug
+        case setIndex = "set_index"
+        case weightKG = "weight_kg"
+        case reps
+        case rpe
+        case completed
+    }
+}
+
 struct AgentActionPayload: Codable, Hashable {
     let dayID: String?
     let date: String?
@@ -356,6 +374,12 @@ struct AgentActionPayload: Codable, Hashable {
     let meal: String?
     let rawText: String?
     let items: [AgentFoodItem]?
+    let title: String?
+    let durationMinutes: Int?
+    let kind: String?
+    let notes: String?
+    let programDayID: String?
+    let sets: [AgentLoggedSet]?
     let scope: String?
     let changes: [AgentWorkoutChange]?
 
@@ -376,6 +400,12 @@ struct AgentActionPayload: Codable, Hashable {
         case meal
         case rawText = "raw_text"
         case items
+        case title
+        case durationMinutes = "duration_minutes"
+        case kind
+        case notes
+        case programDayID = "program_day_id"
+        case sets
         case scope
         case changes
     }

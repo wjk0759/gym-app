@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db import Base
-from app.models import FoodLog, Profile, User
+from app.models import Exercise, FoodLog, Profile, SetLog, User, WorkoutSession
 from app.routers.agent import run_agent_action
 from app.schemas import AgentActionRunIn
 from app.services.coach_actions.executor import execute_action, undo_action
@@ -206,3 +206,49 @@ def test_generic_route_wraps_food_action_result(db):
     assert response["status"] == "executed"
     assert response["type"] == "log_food"
     assert response["result"]["created_logs"][0]["food_name"] == "鸡蛋"
+
+
+def test_log_workout_action_writes_session_and_undoes(db):
+    db.add(
+        Exercise(
+            slug="goblet-squat",
+            name_zh="高脚杯深蹲",
+            muscle_group="legs",
+            equipment="dumbbell",
+            is_compound=True,
+            contraindications=[],
+        )
+    )
+    db.commit()
+
+    payload = {
+        "date": "2026-11-12",
+        "title": "腿部训练",
+        "duration_minutes": 40,
+        "kind": "strength",
+        "sets": [
+            {
+                "slug": "goblet-squat",
+                "set_index": 1,
+                "weight_kg": 24,
+                "reps": 10,
+                "rpe": 8,
+            }
+        ],
+    }
+    first = execute_action(
+        db, "user-1", "action-workout", "log_workout", payload
+    )
+    second = execute_action(
+        db, "user-1", "action-workout", "log_workout", payload
+    )
+
+    assert first["created_workout"]["duration_min"] == 40
+    assert second == first
+    sessions = db.execute(select(WorkoutSession)).scalars().all()
+    assert len(sessions) == 1
+    assert len(db.execute(select(SetLog)).scalars().all()) == 1
+    assert sessions[0].source == "coach"
+
+    undo_action(db, "user-1", "action-workout")
+    assert db.execute(select(WorkoutSession)).scalars().all() == []

@@ -4,7 +4,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ...models import AgentActionEvent
-from . import food_actions  # noqa: F401 - registers built-in actions
+from . import (
+    food_actions,  # noqa: F401 - registers built-in actions
+    workout_actions,  # noqa: F401 - registers built-in actions
+)
 from .registry import REGISTRY
 
 
