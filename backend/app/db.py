@@ -147,6 +147,11 @@ _PERFORMANCE_INDEXES = (
         "ON food_logs(user_id, logged_at)",
     ),
     (
+        "food_logs",
+        "CREATE INDEX IF NOT EXISTS ix_food_logs_source_action "
+        "ON food_logs(user_id, source_action_id)",
+    ),
+    (
         "body_metrics",
         "CREATE INDEX IF NOT EXISTS ix_body_metrics_user_measured "
         "ON body_metrics(user_id, measured_at)",
@@ -322,6 +327,10 @@ def ensure_schema() -> None:
             for name, ddl in {
                 "plan_date": "DATE",
                 "plan_meal": "VARCHAR(20)",
+                "source": "VARCHAR(20) DEFAULT 'manual'",
+                "source_action_id": "VARCHAR(64)",
+                "source_group_id": "VARCHAR(36)",
+                "estimate_confidence": "FLOAT",
             }.items():
                 if name not in food_columns:
                     connection.execute(

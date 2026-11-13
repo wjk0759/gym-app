@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import copy
 import json
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import and_, func, select
@@ -28,6 +28,8 @@ from ..models import (
     WorkoutSession,
     utcnow,
 )
+from .diet import calculate_targets, ensure_meal_macros
+from .meal_plans import get_day
 from .memory import list_memories
 from .queries import active_goal, active_program
 from .serializers import goal_to_dict, profile_to_dict
@@ -289,6 +291,111 @@ def nutrition_context(db: Session, user_id: str, days: int = 7) -> dict:
     }
 
 
+def today_nutrition_context(
+    db: Session,
+    user_id: str,
+    target_date: date | None = None,
+    *,
+    profile: Profile | None = None,
+    moment: datetime | None = None,
+) -> dict:
+    """Item-level nutrition state for the coach's current day."""
+    profile = profile or db.get(Profile, user_id)
+    if profile is None:
+        return {}
+    zone = _profile_zone(profile)
+    day = target_date or (moment.date() if moment else datetime.now(zone).date())
+    start = datetime.combine(day, datetime.min.time(), tzinfo=zone)
+    end = start + timedelta(days=1)
+    start_utc = start.astimezone(timezone.utc)
+    end_utc = end.astimezone(timezone.utc)
+
+    logs = (
+        db.execute(
+            select(FoodLog)
+            .where(
+                FoodLog.user_id == user_id,
+                FoodLog.logged_at >= start_utc,
+                FoodLog.logged_at < end_utc,
+            )
+            .order_by(FoodLog.logged_at.asc())
+        )
+        .scalars()
+        .all()
+    )
+    goal = active_goal(db, user_id)
+    targets = calculate_targets(profile, goal.type if goal else "recomp")
+    record = get_day(db, user_id, day)
+    plan = ensure_meal_macros(record.plan) if record and record.plan else {}
+    if plan.get("targets"):
+        saved = plan["targets"]
+        targets = {
+            **targets,
+            "target_kcal": saved.get("target_kcal", targets["target_kcal"]),
+            "protein_g": saved.get("protein_g", targets["protein_g"]),
+            "carb_g": saved.get("carb_g", targets["carb_g"]),
+            "fat_g": saved.get("fat_g", targets["fat_g"]),
+        }
+
+    totals = {
+        "kcal": round(sum(float(log.kcal or 0) for log in logs), 1),
+        "protein_g": round(sum(float(log.protein or 0) for log in logs), 1),
+        "carbs_g": round(sum(float(log.carbs or 0) for log in logs), 1),
+        "fat_g": round(sum(float(log.fat or 0) for log in logs), 1),
+    }
+    plan_meals = []
+    logged_plan_meals = {
+        log.plan_meal
+        for log in logs
+        if log.plan_date == day and log.plan_meal
+    }
+    for meal in plan.get("meals", []):
+        if not isinstance(meal, dict):
+            continue
+        key = str(meal.get("meal") or "")
+        plan_meals.append(
+            {
+                "meal": key,
+                "name": meal.get("name") or key,
+                "kcal": round(float(meal.get("kcal") or 0)),
+                "protein_g": round(float(meal.get("protein_g") or 0), 1),
+                "logged": key in logged_plan_meals,
+            }
+        )
+
+    return {
+        "date": day.isoformat(),
+        "targets": {
+            "kcal": int(targets["target_kcal"]),
+            "protein_g": int(targets["protein_g"]),
+            "carbs_g": int(targets["carb_g"]),
+            "fat_g": int(targets["fat_g"]),
+        },
+        "logged": totals,
+        "remaining": {
+            "kcal": max(0, int(targets["target_kcal"]) - int(totals["kcal"])),
+            "protein_g": max(
+                0, int(targets["protein_g"]) - int(totals["protein_g"])
+            ),
+        },
+        "plan_meals": plan_meals,
+        "logged_plan_meals": sorted(value for value in logged_plan_meals if value),
+        "recent_logs": [
+            {
+                "client_id": log.client_id,
+                "food_name": log.food_name,
+                "meal": log.meal,
+                "grams": log.grams,
+                "kcal": log.kcal,
+                "protein_g": log.protein,
+                "plan_date": log.plan_date.isoformat() if log.plan_date else None,
+                "plan_meal": log.plan_meal,
+            }
+            for log in logs[-12:]
+        ],
+    }
+
+
 def equipment_context(db: Session, user_id: str) -> list[dict]:
     rows = (
         db.execute(
@@ -536,6 +643,9 @@ def build_coach_context(
             "recent_training": recent_training(db, user_id, recent_days),
             "body_metrics": body_context(db, user_id),
             "nutrition_7d": nutrition_context(db, user_id, 7),
+            "today_nutrition": today_nutrition_context(
+                db, user_id, moment.date(), profile=profile, moment=moment
+            ),
             "equipment_library": equipment_context(db, user_id),
             "memories": memories,
             "app_context": safe_app_context,
@@ -552,6 +662,7 @@ def context_as_text(context: dict) -> str:
     plan = context.get("current_plan") or {}
     training = context.get("recent_training") or {}
     nutrition = context.get("nutrition_7d") or {}
+    today_nutrition = context.get("today_nutrition") or {}
     lines = [
         f"用户：{profile.get('nickname') or '用户'}，"
         f"{profile.get('sex') or '?'}，{profile.get('age') or '?'} 岁，"
@@ -565,6 +676,15 @@ def context_as_text(context: dict) -> str:
         f"饮食近 7 天：记录 {nutrition.get('logged_days', 0)} 天，"
         f"{nutrition.get('kcal', 0)}kcal，蛋白质 {nutrition.get('protein_g', 0)}g。",
     ]
+    if today_nutrition:
+        lines.append(
+            "今日饮食："
+            f"{today_nutrition.get('logged', {}).get('kcal', 0)}/"
+            f"{today_nutrition.get('targets', {}).get('kcal', 0)}kcal，"
+            f"剩余 {today_nutrition.get('remaining', {}).get('kcal', 0)}kcal，"
+            f"计划餐 {len(today_nutrition.get('logged_plan_meals', []))}/"
+            f"{len(today_nutrition.get('plan_meals', []))}。"
+        )
     if plan:
         lines.append(
             f"当前计划：{plan.get('title')}，第 {plan.get('current_week')} 周，"

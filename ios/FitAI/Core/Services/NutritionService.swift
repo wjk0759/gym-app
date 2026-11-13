@@ -78,7 +78,8 @@ struct NutritionService {
             fiber: item.fiber,
             syncedAt: Date(),
             planDate: item.planDate,
-            planMeal: item.planMeal.flatMap(MealType.init(rawValue:))
+            planMeal: item.planMeal.flatMap(MealType.init(rawValue:)),
+            sourceActionID: item.sourceActionID
         )
     }
 }

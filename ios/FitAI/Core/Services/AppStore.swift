@@ -27,6 +27,8 @@ indirect enum AgentUndoState {
     case profile(UserProfile)
     /// 服务端改课；撤销时调用服务端并替换返回的计划日。
     case serverWorkoutAction(actionID: String, planID: UUID, dayID: UUID)
+    /// 教练写入的饮食记录；撤销时删除同一 action 的整组记录。
+    case foodLogAction(actionID: String)
     /// 旧版本地改课；撤销时恢复改课前的整份计划。
     case plan(TrainingPlan)
     /// 一次 Agent 动作卡可能包含多天操作，撤销时要一起恢复。

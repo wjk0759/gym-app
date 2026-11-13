@@ -282,6 +282,11 @@ class StoreKitReconcileIn(BaseModel):
     limit: int = Field(default=200, ge=1, le=500)
 
 
+class AgentActionRunIn(BaseModel):
+    type: str = Field(min_length=1, max_length=60)
+    payload: dict = Field(default_factory=dict)
+
+
 class FoodLogIn(BaseModel):
     client_id: str = Field(min_length=1, max_length=36)
     logged_at: datetime

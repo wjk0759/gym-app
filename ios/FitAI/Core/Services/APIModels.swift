@@ -317,6 +317,28 @@ struct AgentWorkoutChange: Codable, Hashable {
     }
 }
 
+struct AgentFoodItem: Codable, Hashable {
+    let name: String
+    let portion: String?
+    let grams: Double
+    let kcal: Double
+    let proteinG: Double
+    let carbsG: Double
+    let fatG: Double
+    let confidence: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case portion
+        case grams
+        case kcal
+        case proteinG = "protein_g"
+        case carbsG = "carbs_g"
+        case fatG = "fat_g"
+        case confidence
+    }
+}
+
 struct AgentActionPayload: Codable, Hashable {
     let dayID: String?
     let date: String?
@@ -332,6 +354,8 @@ struct AgentActionPayload: Codable, Hashable {
     let strategy: String?
     let weekStart: String?
     let meal: String?
+    let rawText: String?
+    let items: [AgentFoodItem]?
     let scope: String?
     let changes: [AgentWorkoutChange]?
 
@@ -350,6 +374,8 @@ struct AgentActionPayload: Codable, Hashable {
         case strategy
         case weekStart = "week_start"
         case meal
+        case rawText = "raw_text"
+        case items
         case scope
         case changes
     }
@@ -399,6 +425,31 @@ struct AgentChatResponse: Decodable {
 
 struct AgentApplyResponse: Decodable {
     let program: TrainingPlan
+}
+
+struct AgentActionRunRequest: Encodable {
+    let type: String
+    let payload: AgentActionPayload
+}
+
+struct AgentActionRunResponse: Decodable {
+    let status: String
+    let type: String?
+    let result: AgentActionRunResult?
+}
+
+struct AgentActionRunResult: Decodable {
+    let groupID: String?
+    let createdLogs: [RemoteFoodLog]?
+    let updatedLog: RemoteFoodLog?
+    let deletedLog: RemoteFoodLog?
+
+    enum CodingKeys: String, CodingKey {
+        case groupID = "group_id"
+        case createdLogs = "created_logs"
+        case updatedLog = "updated_log"
+        case deletedLog = "deleted_log"
+    }
 }
 
 struct WorkoutActionExecuteResponse: Decodable {
@@ -522,6 +573,8 @@ struct RemoteFoodLog: Decodable {
     let fiber: Double
     let planDate: Date?
     let planMeal: String?
+    let sourceActionID: String?
+    let sourceGroupID: String?
 
     enum CodingKeys: String, CodingKey {
         case clientID = "client_id"
@@ -536,6 +589,8 @@ struct RemoteFoodLog: Decodable {
         case fiber
         case planDate = "plan_date"
         case planMeal = "plan_meal"
+        case sourceActionID = "source_action_id"
+        case sourceGroupID = "source_group_id"
     }
 }
 

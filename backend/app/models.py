@@ -803,6 +803,11 @@ class FoodLog(Base):
     # user's record of what they ate must remain.
     plan_date: Mapped[date | None] = mapped_column(Date)
     plan_meal: Mapped[str | None] = mapped_column(String(20))
+    # Provenance for coach/photo/manual writes and idempotent undo.
+    source: Mapped[str] = mapped_column(String(20), default="manual")
+    source_action_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    source_group_id: Mapped[str | None] = mapped_column(String(36), index=True)
+    estimate_confidence: Mapped[float | None] = mapped_column(Float)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow

@@ -109,6 +109,8 @@ struct FoodLog: Codable, Identifiable, Hashable {
     /// 一键记录计划餐时保留来源；手动记录或旧数据为空。
     var planDate: Date? = nil
     var planMeal: MealType? = nil
+    /// 教练动作 ID；撤销整次记录时按它删除。
+    var sourceActionID: String? = nil
 }
 
 struct NutritionTotals {

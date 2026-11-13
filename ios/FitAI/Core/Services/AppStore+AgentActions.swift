@@ -80,12 +80,15 @@ extension AppStore {
             }
             var results: [String] = []
             var undoStates: [AgentUndoState] = []
+            var failedCount = 0
             for action in actions {
                 var undoState: AgentUndoState?
                 let message = await self.executeAgentAction(action, undo: &undoState)
                 results.append(message)
                 let status = self.agentActionStatus(for: message)
-                if status != "failed", let undoState {
+                if status == "failed" {
+                    failedCount += 1
+                } else if let undoState {
                     undoStates.append(undoState)
                 }
                 Task {
@@ -114,7 +117,13 @@ extension AppStore {
                     text: "处理结果：\n" + results.joined(separator: "\n")
                 )
             )
-            self.toast = "Agent 操作已执行"
+            if failedCount == actions.count {
+                self.toast = "操作失败，请查看处理结果"
+            } else if failedCount > 0 {
+                self.toast = "部分操作未完成，请查看处理结果"
+            } else {
+                self.toast = "Agent 操作已执行"
+            }
         }
     }
 
@@ -339,6 +348,48 @@ extension AppStore {
                 return "没有找到这一天保存的饮食计划"
             } catch {
                 return "换餐失败：\(error.localizedDescription)"
+            }
+
+        case "log_food", "log_planned_meal", "update_food_log", "delete_food_log":
+            guard let payload = action.payload else {
+                return "没有收到饮食记录参数"
+            }
+            do {
+                let response = try await APIClient.shared.runAgentAction(
+                    id: action.id,
+                    type: action.type,
+                    payload: payload
+                )
+                let result = response.result
+                if let logs = result?.createdLogs {
+                    mergeRemoteFoodLogs(logs)
+                }
+                if let updated = result?.updatedLog {
+                    mergeRemoteFoodLogs([updated])
+                }
+                if let deleted = result?.deletedLog,
+                   let id = UUID(uuidString: deleted.clientID) {
+                    foodLogs.removeAll { $0.id == id }
+                    persist()
+                }
+                syncPendingUserData()
+                refreshWeeklyReview(force: true)
+                await refreshDailyNutritionTargets()
+                if action.type == "log_food" || action.type == "log_planned_meal" {
+                    undo = .foodLogAction(actionID: action.id)
+                }
+                if action.type == "delete_food_log" {
+                    return "已删除饮食记录"
+                }
+                return action.summary.isEmpty
+                    ? "已记录饮食"
+                    : "已记录：\(action.summary)"
+            } catch let error as APIError where error.statusCode == 404 {
+                return "没有找到可修改的饮食记录"
+            } catch let error as APIError where error.statusCode == 422 {
+                return "饮食记录失败：参数不合法"
+            } catch {
+                return "记录饮食失败：\(error.localizedDescription)"
             }
 
         case "recognize_equipment":

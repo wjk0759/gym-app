@@ -128,6 +128,21 @@ extension AppStore {
                 return false
             }
 
+        case let .foodLogAction(actionID):
+            do {
+                _ = try await APIClient.shared.undoAgentAction(id: actionID)
+                foodLogs.removeAll { $0.sourceActionID == actionID }
+                persist()
+                syncPendingUserData()
+                refreshWeeklyReview(force: true)
+                await refreshDailyNutritionTargets()
+                toast = "已撤销饮食记录"
+                return true
+            } catch {
+                toast = "撤销饮食记录失败：\(error.localizedDescription)"
+                return false
+            }
+
         case let .plan(previousPlan):
             guard let current = plan, current.id == previousPlan.id else {
                 toast = "当前计划已变化，无法撤销改课"

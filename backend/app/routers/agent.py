@@ -17,6 +17,7 @@ from ..models import (
 )
 from ..schemas import (
     AgentActionResultIn,
+    AgentActionRunIn,
     AgentChatIn,
     AgentFeedbackIn,
     WorkoutActionExecuteIn,
@@ -30,6 +31,7 @@ from ..services.agent_requests import (
     fail_agent_request,
     get_agent_request,
 )
+from ..services.coach_actions.executor import execute_action, undo_action
 from ..services.coach_feedback import save_feedback
 from ..services.memory import list_memories
 from ..services.rate_limit import enforce as enforce_rate_limit
@@ -284,6 +286,49 @@ def report_action_result(
         event.detail = {**(event.detail or {}), **(payload.detail or {})}
         db.commit()
     return {"ok": True, "action_id": event.action_id, "status": event.status}
+
+
+@router.post("/actions/{action_id}/run")
+def run_agent_action(
+    action_id: str,
+    payload: AgentActionRunIn,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    action_id = action_id.strip()
+    if not 1 <= len(action_id) <= 64:
+        raise HTTPException(status_code=400, detail="action_id 不合法")
+    try:
+        result = execute_action(
+            db,
+            user_id,
+            action_id,
+            payload.type,
+            payload.payload,
+        )
+        return {"status": "executed", "type": payload.type, "result": result}
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/actions/{action_id}/undo-run")
+def undo_agent_action(
+    action_id: str,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    action_id = action_id.strip()
+    if not 1 <= len(action_id) <= 64:
+        raise HTTPException(status_code=400, detail="action_id 不合法")
+    try:
+        result = undo_action(db, user_id, action_id)
+        return {"status": "undone", "result": result}
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.post("/feedback")

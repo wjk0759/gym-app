@@ -163,6 +163,31 @@ extension CoachChatView {
                                     .foregroundStyle(Theme.secondaryText)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
+                            if action.type == "log_food",
+                               let items = action.payload?.items,
+                               !items.isEmpty {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    ForEach(Array(items.enumerated()), id: \.offset) { pair in
+                                        let item = pair.element
+                                        HStack(spacing: 6) {
+                                            Text(item.name)
+                                                .foregroundStyle(Theme.ink)
+                                                .lineLimit(1)
+                                            if let portion = item.portion, !portion.isEmpty {
+                                                Text(portion)
+                                                    .foregroundStyle(Theme.tertiaryText)
+                                            }
+                                            Spacer(minLength: 0)
+                                            Text("\(Int(item.kcal)) kcal")
+                                                .foregroundStyle(Theme.cobalt)
+                                        }
+                                    }
+                                    Text("估算值，确认后写入今日饮食")
+                                        .foregroundStyle(Theme.tertiaryText)
+                                }
+                                .font(.system(size: 9.5, weight: .medium))
+                                .padding(.top, 2)
+                            }
                         }
                         Spacer(minLength: 0)
                     }
@@ -204,6 +229,9 @@ extension CoachChatView {
         case "log_body_metric": return "scalemass"
         case "create_diet_plan": return "fork.knife"
         case "swap_diet_meal": return "arrow.triangle.2.circlepath"
+        case "log_food", "log_planned_meal": return "fork.knife"
+        case "update_food_log": return "pencil"
+        case "delete_food_log": return "trash"
         case "recognize_equipment": return "camera.viewfinder"
         case "analyze_body": return "figure.stand"
         case "modify_workout": return "slider.horizontal.3"

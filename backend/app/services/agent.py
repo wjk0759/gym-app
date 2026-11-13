@@ -11,7 +11,7 @@ import json
 import logging
 import re
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 from uuid import uuid4
 
@@ -35,10 +35,17 @@ from ..models import (
 )
 from . import llm
 from .citations import build_reply_citations
+from .coach_actions.schemas import (
+    DeleteFoodLogPayload,
+    LogFoodPayload,
+    LogPlannedMealPayload,
+    UpdateFoodLogPayload,
+)
 from .coach_context import build_coach_context, recent_training
 from .coach_core import coach_core_prompt
 from .diet_review import build_diet_review, utc_window
 from .exercise_search import search_exercise_payload
+from .food_text import resolve_food_text
 from .memory import remember_facts, schedule_memory_extraction
 from .plan_generator import build_template_plan, validate_plan_for_user
 from .plan_validator import PlanValidationError
@@ -65,6 +72,7 @@ ALLOWED_TOOLS = {
     "get_exercise_history",
     "get_workout_detail",
     "lookup_exercise",
+    "resolve_food",
     "propose_plan",
     "propose_app_actions",
     "remember",
@@ -78,6 +86,10 @@ APP_ACTION_TYPES = {
     "log_body_metric",
     "create_diet_plan",
     "swap_diet_meal",
+    "log_food",
+    "log_planned_meal",
+    "update_food_log",
+    "delete_food_log",
     "recognize_equipment",
     "analyze_body",
     "modify_workout",
@@ -133,6 +145,7 @@ AGENT_INSTRUCTIONS = """你可以读取用户状态、读取训练记录、生�
 {"action":"tool","tool":"get_context","arguments":{}}
 {"action":"tool","tool":"get_recent_training","arguments":{"days":30}}
 {"action":"tool","tool":"lookup_exercise","arguments":{"query":"弹力带划船","limit":3}}
+{"action":"tool","tool":"resolve_food","arguments":{"text":"湿炒螺蛳粉一份，半杯奶茶","meal":"lunch","date":"2026-11-13"}}
 {"action":"tool","tool":"get_exercise_history","arguments":{"slug":"bench_press","limit":5}}
 {"action":"tool","tool":"get_workout_detail","arguments":{"session_id":"训练记录ID"}}
 {"action":"tool","tool":"propose_plan","arguments":{"weekly_days":3,"weekdays":[2,4,6],"session_minutes":45,"split":"3分化","weeks":4,"focus":["back","shoulders"]}}
@@ -140,6 +153,8 @@ AGENT_INSTRUCTIONS = """你可以读取用户状态、读取训练记录、生�
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_body_metric","title":"记录体重 70kg","summary":"写入今天身体数据","requires_confirmation":true,"payload":{"weight_kg":70}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"create_diet_plan","title":"生成本周碳循环饮食计划","summary":"训练日高碳、休息日低碳，蛋白质固定","requires_confirmation":true,"payload":{"strategy":"carb_cycle","week_start":"2026-10-26"}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"swap_diet_meal","title":"把周四午餐换一餐","summary":"保持热量和蛋白质不变，只替换菜品","requires_confirmation":true,"payload":{"date":"2026-11-12","meal":"lunch"}}]}}
+{"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_food","title":"记录午餐：湿炒螺蛳粉和奶茶","summary":"约 775 kcal，蛋白质 24.5g","requires_confirmation":true,"payload":{"date":"2026-11-13","meal":"lunch","raw_text":"湿炒螺蛳粉一份，半杯奶茶","items":[{"name":"湿炒螺蛳粉","portion":"1份","grams":500,"kcal":600,"protein_g":22,"carbs_g":80,"fat_g":18,"confidence":0.72},{"name":"奶茶","portion":"半杯","grams":250,"kcal":175,"protein_g":2.5,"carbs_g":30,"fat_g":5.8,"confidence":0.68}]}}]}}
+{"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_planned_meal","title":"记录计划午餐","summary":"把今天计划里的午餐记为已吃","requires_confirmation":true,"payload":{"date":"2026-11-13","meal":"lunch"}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"recognize_equipment","title":"拍照识别器械","summary":"打开相机识别器械，可加入个人动作库","requires_confirmation":true,"payload":{}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"analyze_body","title":"拍照分析体型","summary":"拍全身或半身照，给出训练重点","requires_confirmation":true,"payload":{}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"modify_workout","title":"把今天的卧推换成哑铃卧推","summary":"保留组数，改动作和重量","requires_confirmation":true,"payload":{"day_id":"本地训练日ID","scope":"day","changes":[{"op":"swap","from_slug":"bench_press","to_slug":"dumbbell_press"},{"op":"sets","slug":"dumbbell_press","sets":2}]}}]}}
@@ -168,7 +183,7 @@ AGENT_INSTRUCTIONS = """你可以读取用户状态、读取训练记录、生�
 17. 用户提到关节、腰、颈、肩、膝、肘、腕疼痛时，即使只是问“要不要停”，回答必须先说停止/减量，并补一句什么情况需要医生或康复师评估；不能只给替代动作。
 
 App Context 和可执行操作：
-- state.coach_context 是服务端构建的版本化上下文，包含 profile、goal、current_plan（当前周训练）、recent_training、body_metrics、nutrition_7d、equipment_library 和 memories；它是回答事实问题的首选依据。
+- state.coach_context 是服务端构建的版本化上下文，包含 profile、goal、current_plan（当前周训练）、recent_training、body_metrics、nutrition_7d、today_nutrition（今天的计划餐、实际摄入和剩余额度）、equipment_library 和 memories；它是回答事实问题的首选依据。回答“今天还能吃多少/计划餐完成了吗”必须读 today_nutrition。
 - state.safety_context 是服务端前置安全上下文（未成年、慢性病、用药、跌倒/平衡风险）；必须遵守，必要时建议家长、医生或康复师介入。
 - state.app_context 是 iOS 本地计划和当前页面，包含 plan.days（day_id/title/date/completed/skipped/exercises）、today、selected_tab，以及最近一次图片/视频的 visual_context。app_context.plan 是手机端最新计划；如果它和 coach_context.current_plan 冲突，以 app_context.plan 为准（服务端可能还没收到本地改课）。
 - state.app_context.visual_context 是图片/视频分析的结构化记忆；history 里的“[图片]”标记表示用户发过附件。用户说“图中 / 这张 / 她 / 他 / 刚才那张”时，先结合 visual_context 和 history 回答，绝对不要说自己没收到图、看不到人或没有图片。
@@ -179,11 +194,19 @@ App Context 和可执行操作：
 - 用户追问图片中人物或物品的可见属性时，先给基于 visual_context 的最佳判断，再说明限制；不评价美丑、不诊断、不制造焦虑。
 - state.coach_skill 仅用于兼容旧客户端；当前统一为 AI 私人健身教练，不区分康复师/营养师模式。训练、饮食、恢复、器械和日程都可以直接回答，并识别和准备 App 操作。
 - 用户要求改期、跳过、开始训练、打开页面或修改目标时，必须调用 propose_app_actions，不要只在 final 里描述。
-- 只能使用这些 action type：reschedule_training、skip_training、start_training、open_screen、update_goal、log_body_metric、create_diet_plan、swap_diet_meal、recognize_equipment、analyze_body、modify_workout。
+- 只能使用这些 action type：reschedule_training、skip_training、start_training、open_screen、update_goal、log_body_metric、create_diet_plan、swap_diet_meal、log_food、log_planned_meal、update_food_log、delete_food_log、recognize_equipment、analyze_body、modify_workout。
 - 用户说“我的体重现在是 70kg”时，调用 log_body_metric，payload 至少包含 weight_kg（可选 body_fat_pct、waist_cm），不要让用户自己去页面填写。
 - 体重、体脂、腰围等身体数据只能用 propose_app_actions + log_body_metric；绝对不要用 remember，也不要把 remember 当作更新身体数据的方式。
 - 用户想安排饮食计划、碳循环、低碳、高蛋白、地中海、素食、16:8 或换饮食策略时，调用 create_diet_plan。payload.strategy 只能是 balanced / carb_cycle / low_carb / high_protein / mediterranean / vegetarian / time_restricted_16_8，week_start 用周一日期（YYYY-MM-DD，可省略，默认本周）。先说明会按什么策略排，再让用户确认。
 - 用户只想替换某一餐、不想重排整周时，调用 swap_diet_meal。payload 必须包含 date（YYYY-MM-DD）和 meal（breakfast / lunch / dinner / snack）；服务端会保持当天热量和三大营养素不变，只换菜品。不要说已经换好，等用户确认。
+- 用户说“我今天吃了/喝了……帮我记一下/补记/记录饮食”时：
+  1. 先调用 resolve_food，text 传用户原话，meal 尽量从上下文判断，date 用今天或用户指定日期。
+  2. 如果 resolve_food 返回 questions，先 ask_user 补份量，不要直接写。
+  3. 如果返回 items，调用 propose_app_actions，type=log_food，payload.items 使用 resolve_food 的结果。
+  4. 不要调用 open_screen nutrition，不要调用 create_diet_plan，也不要让用户自己去页面填写。
+- 用户说“我吃了计划里的午餐/晚餐”时，调用 log_planned_meal，payload 包含 date 和 meal；这会把计划餐记为完成。
+- 用户说“打开饮食页”时才调用 open_screen nutrition；“记录饮食”不等于“打开饮食页”。
+- 用户说“把刚才那条饮食改成/删掉”时，使用 update_food_log / delete_food_log，client_id 必须来自 app_context 或用户明确提供的记录 ID；找不到记录就 ask_user，不要猜。
 - 用户问某个动作怎么做、主要练哪里、目标肌肉、动作细节、动作替代、器械对应动作时，都要先调用 lookup_exercise，query 用最短动作名（如“弹力带划船”“深蹲”），limit 默认 3。只引用返回的步骤，不要凭记忆编造动作；没有结果就说明没查到，并让用户补充动作名或器械。
 - 用户想拍器械、问某个器械怎么练、或想把器械加入个人动作库时，调用 recognize_equipment。payload 可以为空；不要假装已经识别，等用户在相机里拍完。
 - 用户想拍体型照、看体态、问训练重点时，调用 analyze_body。payload 可以为空；不要假装已经分析，等用户拍完。
@@ -598,6 +621,36 @@ def _normalize_app_actions(
                 if not valid_date(week_start):
                     raise ValueError("week_start must be YYYY-MM-DD")
                 payload["week_start"] = week_start
+        if action_type == "log_food":
+            if not valid_date(date_value):
+                payload["date"] = datetime.now(REVIEW_TZ).date().isoformat()
+            if not isinstance(payload.get("items"), list) or not payload["items"]:
+                raise ValueError("log_food requires items; call resolve_food first")
+            try:
+                payload = LogFoodPayload.model_validate(payload).model_dump(
+                    mode="json"
+                )
+            except Exception as exc:
+                raise ValueError(f"log_food payload invalid: {exc}") from exc
+        if action_type == "log_planned_meal":
+            if not valid_date(date_value):
+                payload["date"] = datetime.now(REVIEW_TZ).date().isoformat()
+            try:
+                payload = LogPlannedMealPayload.model_validate(payload).model_dump(
+                    mode="json"
+                )
+            except Exception as exc:
+                raise ValueError(f"log_planned_meal payload invalid: {exc}") from exc
+        if action_type in {"update_food_log", "delete_food_log"}:
+            try:
+                model = (
+                    UpdateFoodLogPayload
+                    if action_type == "update_food_log"
+                    else DeleteFoodLogPayload
+                )
+                payload = model.model_validate(payload).model_dump(mode="json")
+            except Exception as exc:
+                raise ValueError(f"{action_type} payload invalid: {exc}") from exc
         if action_type == "swap_diet_meal":
             meal = str(payload.get("meal") or "").strip().lower()
             if meal not in {"breakfast", "lunch", "dinner", "snack"}:
@@ -1324,9 +1377,33 @@ async def run_agent(
                     arguments = raw.get("arguments") if isinstance(raw.get("arguments"), dict) else {}
                     tool_started = time.perf_counter()
                     try:
-                        result = _tool_result(
-                            db, run, user_id, tool, arguments, app_context
-                        )
+                        if tool == "resolve_food":
+                            text = str(arguments.get("text") or "").strip()
+                            if not text:
+                                result = {
+                                    "ok": False,
+                                    "error": "resolve_food requires text",
+                                }
+                            else:
+                                target = None
+                                raw_date = str(arguments.get("date") or "").strip()
+                                if raw_date:
+                                    try:
+                                        target = date.fromisoformat(raw_date)
+                                    except ValueError:
+                                        target = None
+                                result = await resolve_food_text(
+                                    db,
+                                    user_id,
+                                    text,
+                                    meal=str(arguments.get("meal") or "lunch"),
+                                    target_date=target,
+                                )
+                                result = {"ok": True, **result}
+                        else:
+                            result = _tool_result(
+                                db, run, user_id, tool, arguments, app_context
+                            )
                         status = "ok" if result.get("ok", True) else "error"
                         tool_error = None if status == "ok" else str(result.get("error", ""))[:500]
                     except Exception as exc:  # noqa: BLE001 - tool failures return to model

@@ -22,6 +22,45 @@ def test_swap_diet_meal_action_keeps_date_and_meal():
     assert actions[0]["payload"]["meal"] == "lunch"
 
 
+def test_log_food_action_requires_resolved_items():
+    actions = _normalize_app_actions(
+        [
+            {
+                "type": "log_food",
+                "title": "记录午餐",
+                "payload": {
+                    "date": "2026-11-13",
+                    "meal": "lunch",
+                    "items": [
+                        {
+                            "name": "湿炒螺蛳粉",
+                            "grams": 500,
+                            "kcal": 600,
+                            "protein_g": 22,
+                            "carbs_g": 80,
+                            "fat_g": 18,
+                        }
+                    ],
+                },
+            }
+        ]
+    )
+
+    assert actions[0]["payload"]["items"][0]["name"] == "湿炒螺蛳粉"
+    assert actions[0]["payload"]["meal"] == "lunch"
+
+    with pytest.raises(ValueError):
+        _normalize_app_actions(
+            [
+                {
+                    "type": "log_food",
+                    "title": "记录午餐",
+                    "payload": {"date": "2026-11-13", "meal": "lunch"},
+                }
+            ]
+        )
+
+
 def test_swap_diet_meal_defaults_to_today_and_rejects_unknown_meal():
     actions = _normalize_app_actions(
         [

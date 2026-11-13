@@ -116,6 +116,26 @@ extension AppStore {
         return true
     }
 
+    func mergeRemoteFoodLogs(_ items: [RemoteFoodLog]) {
+        let service = NutritionService()
+        let pendingDeletes = Set(pendingFoodDeletionIDs)
+        let pendingUpdates = Set(pendingFoodUpdateIDs)
+        for item in items {
+            guard !pendingDeletes.contains(item.clientID),
+                  !pendingUpdates.contains(item.clientID),
+                  let value = service.makeFoodLog(from: item) else {
+                continue
+            }
+            if let index = foodLogs.firstIndex(where: { $0.id == value.id }) {
+                foodLogs[index] = value
+            } else {
+                foodLogs.append(value)
+            }
+        }
+        foodLogs.sort { $0.date > $1.date }
+        persist()
+    }
+
     func updateFoodLog(_ log: FoodLog) {
         guard let index = foodLogs.firstIndex(where: { $0.id == log.id }) else {
             return

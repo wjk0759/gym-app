@@ -285,6 +285,30 @@ extension APIClient {
         )
     }
 
+    func runAgentAction(
+        id: String,
+        type: String,
+        payload: AgentActionPayload
+    ) async throws -> AgentActionRunResponse {
+        let request = AgentActionRunRequest(type: type, payload: payload)
+        let body = try JSONEncoder().encode(request)
+        return try await send(
+            path: "agent/actions/\(id)/run",
+            method: "POST",
+            body: body,
+            timeout: 30
+        )
+    }
+
+    func undoAgentAction(id: String) async throws -> AgentActionRunResponse {
+        try await send(
+            path: "agent/actions/\(id)/undo-run",
+            method: "POST",
+            body: nil,
+            timeout: 30
+        )
+    }
+
     func executeWorkoutAction(
         actionID: String,
         planID: String,

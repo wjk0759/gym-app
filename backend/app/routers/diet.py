@@ -134,6 +134,9 @@ def _food_log_dict(item: FoodLog) -> dict:
         "fiber": item.fiber,
         "plan_date": item.plan_date.isoformat() if item.plan_date else None,
         "plan_meal": item.plan_meal,
+        "source": item.source,
+        "source_action_id": item.source_action_id,
+        "source_group_id": item.source_group_id,
     }
 
 
