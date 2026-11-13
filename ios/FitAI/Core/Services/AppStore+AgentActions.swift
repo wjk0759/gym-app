@@ -481,6 +481,7 @@ extension AppStore {
                     payload: payload
                 )
                 syncRemoteWorkouts()
+                undo = .workoutEditAction(actionID: action.id)
                 return action.type == "delete_workout_log"
                     ? "已删除训练记录"
                     : "已更新训练记录"

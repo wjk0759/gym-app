@@ -400,6 +400,11 @@ def test_update_and_delete_workout_actions(db):
     assert updated["updated_workout"]["duration_min"] == 50
     assert updated["updated_workout"]["sets"][0]["weight_kg"] == 60
 
+    undo_action(db, "user-1", "action-workout-edit-2")
+    restored = db.get(WorkoutSession, session_id)
+    assert restored.duration_min == 40
+    assert restored.sets[0].weight_kg == 24
+
     execute_action(
         db,
         "user-1",
@@ -408,3 +413,5 @@ def test_update_and_delete_workout_actions(db):
         {"session_id": session_id},
     )
     assert db.execute(select(WorkoutSession)).scalars().all() == []
+    undo_action(db, "user-1", "action-workout-edit-3")
+    assert db.get(WorkoutSession, session_id) is not None

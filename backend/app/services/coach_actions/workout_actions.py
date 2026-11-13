@@ -6,7 +6,14 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ...models import Exercise, Program, ProgramDay, SetLog, WorkoutSession
+from ...models import (
+    AgentActionEvent,
+    Exercise,
+    Program,
+    ProgramDay,
+    SetLog,
+    WorkoutSession,
+)
 from ..training_stage import refresh_training_stage
 from .registry import ActionSpec, register
 from .schemas import (
@@ -67,6 +74,9 @@ def _session_payload(session: WorkoutSession) -> dict:
         if session.finished_at
         else None,
         "duration_min": session.duration_min,
+        "feeling": session.feeling,
+        "notes": session.notes,
+        "program_day_id": session.program_day_id,
         "source": session.source,
         "sets": [
             {
@@ -80,6 +90,49 @@ def _session_payload(session: WorkoutSession) -> dict:
             for item in session.sets
         ],
     }
+
+
+def _event_result(db: Session, user_id: str, action_id: str) -> dict:
+    event = db.execute(
+        select(AgentActionEvent).where(
+            AgentActionEvent.user_id == user_id,
+            AgentActionEvent.action_id == action_id,
+        )
+    ).scalar_one_or_none()
+    if event is None or not isinstance(event.detail, dict):
+        raise LookupError("操作记录不存在")
+    result = event.detail.get("result")
+    return result if isinstance(result, dict) else {}
+
+
+def _apply_session_snapshot(
+    db: Session,
+    session: WorkoutSession,
+    snapshot: dict,
+) -> None:
+    session.started_at = datetime.fromisoformat(snapshot["started_at"])
+    session.finished_at = (
+        datetime.fromisoformat(snapshot["finished_at"])
+        if snapshot.get("finished_at")
+        else None
+    )
+    session.duration_min = snapshot.get("duration_min")
+    session.feeling = snapshot.get("feeling")
+    session.notes = snapshot.get("notes")
+    session.program_day_id = snapshot.get("program_day_id")
+    session.sets.clear()
+    db.flush()
+    for index, item in enumerate(snapshot.get("sets") or [], start=1):
+        session.sets.append(
+            SetLog(
+                exercise_slug=item["slug"],
+                set_index=int(item.get("set_index") or index),
+                weight_kg=float(item.get("weight_kg") or 0),
+                reps=int(item.get("reps") or 0),
+                rpe=float(item.get("rpe") or 7),
+                completed=bool(item.get("completed", True)),
+            )
+        )
 
 
 def execute_log_workout(
@@ -152,6 +205,7 @@ def execute_update_workout(
     payload: UpdateWorkoutPayload,
 ) -> dict:
     session = _owned_session(db, user_id, payload.session_id)
+    before = _session_payload(session)
     if payload.date is not None:
         if payload.date > datetime.now(DIET_TZ).date():
             raise ValueError("不能把训练改到未来日期")
@@ -187,7 +241,10 @@ def execute_update_workout(
             )
     db.flush()
     refresh_training_stage(db, user_id)
-    return {"updated_workout": _session_payload(session)}
+    return {
+        "before_workout": before,
+        "updated_workout": _session_payload(session),
+    }
 
 
 def execute_delete_workout(
@@ -202,6 +259,49 @@ def execute_delete_workout(
     db.flush()
     refresh_training_stage(db, user_id)
     return {"deleted_workout": snapshot}
+
+
+def undo_update_workout(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: UpdateWorkoutPayload,
+) -> dict:
+    before = _event_result(db, user_id, action_id).get("before_workout")
+    if not isinstance(before, dict):
+        raise LookupError("没有可撤销的训练修改")
+    session = _owned_session(db, user_id, payload.session_id)
+    _apply_session_snapshot(db, session, before)
+    db.flush()
+    refresh_training_stage(db, user_id)
+    return {"restored": True, "updated_workout": _session_payload(session)}
+
+
+def undo_delete_workout(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: DeleteWorkoutPayload,
+) -> dict:
+    snapshot = _event_result(db, user_id, action_id).get("deleted_workout")
+    if not isinstance(snapshot, dict):
+        raise LookupError("没有可恢复的训练记录")
+    session = db.get(WorkoutSession, snapshot["id"])
+    if session is not None and session.user_id != user_id:
+        raise LookupError("训练记录不存在")
+    if session is None:
+        session = WorkoutSession(
+            id=snapshot["id"],
+            user_id=user_id,
+            client_id=snapshot.get("client_id"),
+            source=snapshot.get("source") or "coach",
+            started_at=datetime.fromisoformat(snapshot["started_at"]),
+        )
+        db.add(session)
+    _apply_session_snapshot(db, session, snapshot)
+    db.flush()
+    refresh_training_stage(db, user_id)
+    return {"restored": True, "created_workout": _session_payload(session)}
 
 
 def undo_log_workout(
@@ -237,6 +337,7 @@ register(
     ActionSpec(
         payload_model=UpdateWorkoutPayload,
         execute=execute_update_workout,
+        undo=undo_update_workout,
     ),
 )
 register(
@@ -244,5 +345,6 @@ register(
     ActionSpec(
         payload_model=DeleteWorkoutPayload,
         execute=execute_delete_workout,
+        undo=undo_delete_workout,
     ),
 )

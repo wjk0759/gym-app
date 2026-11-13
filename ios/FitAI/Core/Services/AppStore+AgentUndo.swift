@@ -177,6 +177,17 @@ extension AppStore {
                 return false
             }
 
+        case let .workoutEditAction(actionID):
+            do {
+                _ = try await APIClient.shared.undoAgentAction(id: actionID)
+                syncRemoteWorkouts()
+                toast = "已撤销训练修改"
+                return true
+            } catch {
+                toast = "撤销训练修改失败：\(error.localizedDescription)"
+                return false
+            }
+
         case let .plan(previousPlan):
             guard let current = plan, current.id == previousPlan.id else {
                 toast = "当前计划已变化，无法撤销改课"
