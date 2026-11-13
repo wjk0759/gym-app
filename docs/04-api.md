@@ -385,6 +385,68 @@ AI 复盘并生成新版本：
 
 ### 2.5 AI 教练
 
+#### 教练控制平面（新）
+
+服务端 Session + Capability + Action Ledger 的入口。旧 `/coach/chat`、`/agent/chat` 继续兼容，新客户端优先使用这一组：
+
+```text
+GET  /coach/capabilities
+POST /coach/turns
+GET  /coach/sessions/{session_id}
+POST /coach/pending/{pending_id}/confirm
+POST /coach/pending/{pending_id}/cancel
+POST /coach/actions/{action_id}/undo
+GET  /coach/inbox
+```
+
+`POST /coach/turns`：
+
+```json
+{
+  "message": "午餐吃了 100 克鸡胸肉",
+  "session_id": "uuid|null",
+  "app_context": {
+    "plan": {
+      "id": "uuid",
+      "version": 3,
+      "days": [
+        {"id": "day-uuid", "date": "2026-11-14", "title": "上肢"}
+      ]
+    }
+  }
+}
+```
+
+响应：
+
+```json
+{
+  "session": {
+    "id": "uuid",
+    "status": "waiting",
+    "active_topic": "diet.log_food",
+    "pending": {
+      "id": "pending-uuid",
+      "kind": "card",
+      "capability_id": "diet.log_food",
+      "payload": {
+        "date": "2026-11-14",
+        "meal": "lunch",
+        "items": []
+      },
+      "action_id": "action-uuid"
+    }
+  },
+  "turn_id": "uuid",
+  "intent": "diet.log_food",
+  "status": "completed",
+  "reply": "已识别 1 种食物，约 165 kcal。确认后写入。",
+  "pending": {}
+}
+```
+
+确认后返回 `receipt`、`action_id` 和 `deep_link`；撤销走 `/coach/actions/{id}/undo`。卡片和草稿互斥，同一 session 最多一个 `pending`。
+
 #### `POST /coach/chat`
 
 ```json

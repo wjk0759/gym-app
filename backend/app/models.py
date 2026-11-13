@@ -765,6 +765,153 @@ class AgentPendingAction(Base):
     )
 
 
+class CoachSession(Base):
+    """One server-owned coach session.
+
+    The session is the single source of truth for the active topic and the
+    single pending object (draft, card or plan proposal).
+    """
+
+    __tablename__ = "coach_sessions"
+    __table_args__ = (
+        Index("ix_coach_sessions_user_status", "user_id", "status", "updated_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    status: Mapped[str] = mapped_column(String(20), default="idle")
+    active_topic: Mapped[str | None] = mapped_column(String(40))
+    pending_id: Mapped[str | None] = mapped_column(String(36))
+    last_turn_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
+class CoachTurn(Base):
+    __tablename__ = "coach_turns"
+    __table_args__ = (
+        Index("ix_coach_turns_session_created", "session_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    session_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("coach_sessions.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    input_text: Mapped[str] = mapped_column(Text)
+    intent: Mapped[str | None] = mapped_column(String(40))
+    status: Mapped[str] = mapped_column(String(20), default="completed")
+    reply: Mapped[str | None] = mapped_column(Text)
+    error: Mapped[str | None] = mapped_column(Text)
+    latency_ms: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class CoachPending(Base):
+    """The one active draft/card/proposal for a session."""
+
+    __tablename__ = "coach_pending"
+    __table_args__ = (
+        Index("ix_coach_pending_session_status", "session_id", "status"),
+        Index("ix_coach_pending_expires", "expires_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    session_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("coach_sessions.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(20))
+    capability_id: Mapped[str] = mapped_column(String(60))
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    action_id: Mapped[str | None] = mapped_column(String(64))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
+class CoachActionRecord(Base):
+    __tablename__ = "coach_actions"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "idempotency_key", name="uq_coach_actions_user_idempotency"
+        ),
+        Index("ix_coach_actions_user_created", "user_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    session_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("coach_sessions.id", ondelete="SET NULL"), index=True
+    )
+    capability_id: Mapped[str] = mapped_column(String(60))
+    status: Mapped[str] = mapped_column(String(20), default="executed")
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    before: Mapped[dict] = mapped_column(JSON, default=dict)
+    after: Mapped[dict] = mapped_column(JSON, default=dict)
+    receipt: Mapped[dict] = mapped_column(JSON, default=dict)
+    undo_token: Mapped[str | None] = mapped_column(String(64))
+    idempotency_key: Mapped[str] = mapped_column(String(64))
+    error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    executed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    undone_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class DomainEvent(Base):
+    __tablename__ = "domain_events"
+    __table_args__ = (
+        Index("ix_domain_events_user_created", "user_id", "occurred_at"),
+        Index("ix_domain_events_type_consumed", "type", "consumed_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    type: Mapped[str] = mapped_column(String(60))
+    entity_type: Mapped[str | None] = mapped_column(String(40))
+    entity_id: Mapped[str | None] = mapped_column(String(64))
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class CoachInbox(Base):
+    __tablename__ = "coach_inbox"
+    __table_args__ = (
+        Index("ix_coach_inbox_user_status", "user_id", "status", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(30))
+    title: Mapped[str] = mapped_column(String(120))
+    body: Mapped[str] = mapped_column(Text)
+    capability_id: Mapped[str | None] = mapped_column(String(60))
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(20), default="unread")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class PlanDayState(Base):
     """Cross-device state for a local or server plan day.
 

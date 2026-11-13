@@ -1,0 +1,450 @@
+"""Coach runtime for the first control-plane slices.
+
+The model is not allowed to write here. Intent resolution chooses a capability;
+the capability resolves facts, the server builds the card, and confirmation
+executes through the action ledger.
+"""
+
+from __future__ import annotations
+
+import re
+import time
+from uuid import uuid4
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from ...models import CoachActionRecord, CoachPending, CoachSession, CoachTurn, utcnow
+from . import capabilities  # noqa: F401 - registers capabilities
+from .events import emit_event
+from .state import (
+    cancel_active_pending,
+    cancel_pending,
+    consume_pending,
+    get_active_pending,
+    get_or_create_session,
+    serialize_pending,
+    serialize_session,
+    set_pending,
+)
+
+DIET = "diet.log_food"
+TRAINING = "training.reschedule"
+
+
+def _looks_like_reschedule(message: str) -> bool:
+    return bool(
+        re.search(r"改到|改期|顺延|挪到|换到|调到|改天|换一天|改一下", message)
+        and re.search(
+            r"周[一二三四五六日天]|星期[一二三四五六日天]|礼拜[一二三四五六日天]|"
+            r"今天|明天|后天|\d{1,2}月\d{1,2}[日号]|\d{4}[-/.]\d{1,2}[-/.]\d{1,2}",
+            message,
+        )
+    )
+
+
+def _is_affirmative(message: str) -> bool:
+    return bool(
+        re.fullmatch(
+            r"(对|是|是的|可以|嗯|好|行|没错)[。.!！]?",
+            message.strip(),
+        )
+    )
+
+
+def _looks_like_diet_slot_answer(message: str) -> bool:
+    value = message.strip()
+    if _is_affirmative(value):
+        return True
+    if re.search(
+        r"\d+(?:\.\d+)?\s*(g|克|ml|毫升|杯|份|碗|个|片|勺|盒|瓶)|"
+        r"(半|一|两|二|三)\s*(杯|份|碗|个|片|勺)",
+        value,
+        flags=re.IGNORECASE,
+    ):
+        return True
+    return len(value) <= 20 and bool(
+        re.search(r"吃|喝|餐|零食|夜宵|鸡|牛|猪|鱼|蛋|奶|饭|面|肠|菜|果", value)
+    )
+
+
+def _looks_like_training_slot_answer(message: str) -> bool:
+    value = message.strip()
+    if _is_affirmative(value):
+        return True
+    return bool(
+        re.search(
+            r"周[一二三四五六日天]|星期[一二三四五六日天]|礼拜[一二三四五六日天]|"
+            r"今天|明天|后天|\d{1,2}月\d{1,2}[日号]|\d{4}[-/.]\d{1,2}[-/.]\d{1,2}",
+            value,
+        )
+    )
+
+
+def _looks_like_food(message: str) -> bool:
+    if re.search(r"记|吃|喝|补|餐|零食|夜宵", message):
+        return True
+    if re.search(r"多少|热量|卡路里|为什么|怎么|吗|？|\?", message):
+        return False
+    return bool(
+        re.search(
+            r"\d+(?:\.\d+)?\s*(g|克|ml|毫升|杯|份|碗|个|片|勺|盒|瓶)",
+            message,
+            flags=re.IGNORECASE,
+        )
+    )
+
+
+def _pending_card(
+    db: Session,
+    session: CoachSession,
+    *,
+    capability_id: str,
+    payload: dict,
+) -> CoachPending:
+    return set_pending(
+        db,
+        session,
+        kind="card",
+        capability_id=capability_id,
+        payload=payload,
+        action_id=str(uuid4()),
+    )
+
+
+def _pending_draft(
+    db: Session,
+    session: CoachSession,
+    *,
+    capability_id: str,
+    payload: dict,
+) -> CoachPending:
+    return set_pending(
+        db,
+        session,
+        kind="draft",
+        capability_id=capability_id,
+        payload=payload,
+    )
+
+
+def _food_reply(resolution: dict) -> str:
+    items = resolution.get("items") or []
+    kcal = round(sum(float(item.get("kcal") or 0) for item in items))
+    return f"已识别 {len(items)} 种食物，约 {kcal} kcal。确认后写入。"
+
+
+def _training_reply(payload: dict) -> str:
+    return (
+        f"准备把「{payload.get('title') or '训练'}」"
+        f"从 {payload.get('from_date')} 改到 {payload.get('to_date')}。确认后生效。"
+    )
+
+
+async def handle_turn(
+    db: Session,
+    user_id: str,
+    message: str,
+    *,
+    session_id: str | None = None,
+    app_context: dict | None = None,
+) -> dict:
+    started = time.perf_counter()
+    session = get_or_create_session(db, user_id, session_id)
+    context = app_context if isinstance(app_context, dict) else {}
+    text = message.strip()
+    turn = CoachTurn(
+        session_id=session.id,
+        user_id=user_id,
+        input_text=text[:4000],
+        status="running",
+    )
+    db.add(turn)
+    db.flush()
+
+    pending = get_active_pending(db, user_id, session.id)
+    if pending is not None and re.search(r"取消|不要了|算了|不记了", text):
+        cancel_pending(db, session, pending)
+        turn.status = "completed"
+        turn.intent = pending.capability_id
+        turn.reply = "已取消这次操作。"
+        session.last_turn_at = utcnow()
+        session.updated_at = utcnow()
+        db.commit()
+        return {
+            "session": serialize_session(session, None),
+            "turn_id": turn.id,
+            "intent": turn.intent,
+            "status": turn.status,
+            "reply": turn.reply,
+            "pending": None,
+        }
+    # A new user turn supersedes an old card. Confirmation/cancel should use
+    # the dedicated endpoints; typing a new request means the old card is stale.
+    if pending is not None and pending.kind == "card":
+        cancel_active_pending(db, session)
+        pending = None
+
+    intent_override: str | None = None
+    if pending is not None and pending.kind == "draft":
+        if pending.capability_id == DIET:
+            if not _looks_like_diet_slot_answer(text):
+                cancel_pending(db, session, pending)
+                pending = None
+            else:
+                text = f"{pending.payload.get('text') or ''} {text}".strip()[:2000]
+                intent_override = DIET
+        elif pending.capability_id == TRAINING:
+            if not _looks_like_training_slot_answer(text):
+                cancel_pending(db, session, pending)
+                pending = None
+            else:
+                stored = pending.payload.get("app_context")
+                if isinstance(stored, dict):
+                    context = {**stored, **context}
+                text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
+                intent_override = TRAINING
+
+    if intent_override == TRAINING or (
+        intent_override is None and _looks_like_reschedule(text)
+    ):
+        from .capabilities.training import resolve as resolve_training
+
+        resolution = resolve_training(db, user_id, text, context)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            _pending_card(
+                db,
+                session,
+                capability_id=TRAINING,
+                payload=payload,
+            )
+            reply = _training_reply(payload)
+            turn.intent = TRAINING
+        else:
+            question = (resolution.get("questions") or ["想改到哪一天？"])[0]
+            _pending_draft(
+                db,
+                session,
+                capability_id=TRAINING,
+                payload={"message": text, "app_context": context},
+            )
+            reply = question
+            turn.intent = TRAINING
+    elif intent_override == DIET or (
+        intent_override is None and _looks_like_food(text)
+    ):
+        from .capabilities.diet import resolve as resolve_diet
+
+        resolution = await resolve_diet(db, user_id, text)
+        if resolution.get("questions") or resolution.get("missing_slots"):
+            question = (resolution.get("questions") or ["这餐还需要补充信息。"])[0]
+            _pending_draft(
+                db,
+                session,
+                capability_id=DIET,
+                payload={
+                    "text": text,
+                    "date": resolution.get("date"),
+                    "meal": resolution.get("meal"),
+                    "questions": resolution.get("questions") or [],
+                },
+            )
+            reply = question
+            turn.intent = DIET
+        else:
+            payload = {
+                "date": resolution["date"],
+                "meal": resolution["meal"],
+                "raw_text": text[:500],
+                "items": resolution.get("items") or [],
+            }
+            _pending_card(
+                db,
+                session,
+                capability_id=DIET,
+                payload=payload,
+            )
+            reply = _food_reply(resolution)
+            turn.intent = DIET
+    else:
+        reply = (
+            "这条控制链路目前支持记录饮食和调整训练日期。"
+            "你可以说“午餐吃了100克鸡胸肉”，或者说“把周四的训练改到周六”。"
+        )
+        turn.intent = "unsupported"
+
+    turn.status = "completed"
+    turn.reply = reply
+    turn.latency_ms = int((time.perf_counter() - started) * 1000)
+    session.last_turn_at = utcnow()
+    session.updated_at = utcnow()
+    db.commit()
+    active = get_active_pending(db, user_id, session.id)
+    return {
+        "session": serialize_session(session, active),
+        "turn_id": turn.id,
+        "intent": turn.intent,
+        "status": turn.status,
+        "reply": reply,
+        "pending": serialize_pending(active),
+    }
+
+
+def _load_pending(db: Session, user_id: str, pending_id: str) -> tuple[CoachSession, CoachPending]:
+    pending = db.get(CoachPending, pending_id)
+    if pending is None or pending.user_id != user_id:
+        raise LookupError("待确认操作不存在")
+    session = db.get(CoachSession, pending.session_id)
+    if session is None or session.user_id != user_id:
+        raise LookupError("会话不存在")
+    return session, pending
+
+
+def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
+    session, pending = _load_pending(db, user_id, pending_id)
+    if pending.status != "pending" or pending.kind != "card":
+        raise ValueError("这个操作已经处理或不是待确认卡片")
+    action_id = pending.action_id or str(uuid4())
+
+    existing = db.execute(
+        select(CoachActionRecord).where(
+            CoachActionRecord.user_id == user_id,
+            CoachActionRecord.idempotency_key == action_id,
+        )
+    ).scalar_one_or_none()
+    if existing is not None and existing.status == "executed":
+        return {
+            "action_id": existing.id,
+            "status": existing.status,
+            "receipt": existing.receipt or {},
+            "idempotent": True,
+        }
+    if existing is not None and existing.status == "undone":
+        raise ValueError("这次操作已经撤销，请重新生成")
+
+    receipt: dict
+    before: dict = {}
+    after: dict = {}
+    if pending.capability_id == DIET:
+        from .capabilities.diet import execute as execute_diet
+
+        result = execute_diet(db, user_id, action_id, pending.payload)
+        receipt = {
+            "summary": "已写入饮食记录",
+            "date": pending.payload.get("date"),
+            "meal": pending.payload.get("meal"),
+            "items": len(result.get("created_logs") or []),
+            "deep_link": f"fitai://nutrition/{pending.payload.get('date')}",
+        }
+        after = {"created_logs": result.get("created_logs") or []}
+        event_type = "FoodLogged"
+        entity_type = "food_log"
+        entity_id = action_id
+    elif pending.capability_id == TRAINING:
+        from .capabilities.training import execute as execute_training
+
+        result = execute_training(db, user_id, action_id, pending.payload)
+        before = result.get("before") or {}
+        after = result.get("after") or {}
+        receipt = {
+            "summary": "已调整训练日期",
+            **result.get("receipt", {}),
+            "deep_link": (
+                f"fitai://plan/{pending.payload.get('plan_id')}"
+                f"/day/{pending.payload.get('day_id')}"
+            ),
+        }
+        event_type = "TrainingRescheduled"
+        entity_type = "plan_day"
+        entity_id = str(pending.payload.get("day_id") or "")
+    else:
+        raise ValueError("暂不支持这个能力")
+
+    record = CoachActionRecord(
+        id=action_id,
+        user_id=user_id,
+        session_id=session.id,
+        capability_id=pending.capability_id,
+        status="executed",
+        payload=pending.payload,
+        before=before,
+        after=after,
+        receipt=receipt,
+        undo_token=action_id,
+        idempotency_key=action_id,
+        executed_at=utcnow(),
+    )
+    db.add(record)
+    emit_event(
+        db,
+        user_id,
+        event_type,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        payload={"action_id": action_id, "receipt": receipt},
+    )
+    consume_pending(db, session, pending)
+    db.commit()
+    return {
+        "action_id": action_id,
+        "status": "executed",
+        "receipt": receipt,
+        "idempotent": False,
+    }
+
+
+def cancel(db: Session, user_id: str, pending_id: str) -> dict:
+    session, pending = _load_pending(db, user_id, pending_id)
+    if pending.status != "pending":
+        return {"ok": True, "already": True}
+    cancel_pending(db, session, pending)
+    db.commit()
+    return {"ok": True, "pending_id": pending_id}
+
+
+def undo_action(db: Session, user_id: str, action_id: str) -> dict:
+    record = db.execute(
+        select(CoachActionRecord).where(
+            CoachActionRecord.id == action_id,
+            CoachActionRecord.user_id == user_id,
+        )
+    ).scalar_one_or_none()
+    if record is None or record.status != "executed":
+        raise LookupError("这个操作已经不能撤销")
+    if record.capability_id == DIET:
+        from .capabilities.diet import undo as undo_diet
+
+        result = undo_diet(db, user_id, action_id, record.payload)
+    elif record.capability_id == TRAINING:
+        from .capabilities.training import undo as undo_training
+
+        result = undo_training(
+            db,
+            user_id,
+            action_id,
+            record.payload,
+            record.before or {},
+        )
+    else:
+        raise ValueError("暂不支持撤销这个能力")
+    record.status = "undone"
+    record.undone_at = utcnow()
+    emit_event(
+        db,
+        user_id,
+        "ActionUndone",
+        entity_type="coach_action",
+        entity_id=action_id,
+        payload={"capability_id": record.capability_id},
+    )
+    db.commit()
+    return {"action_id": action_id, "status": "undone", "result": result}
+
+
+def session_state(db: Session, user_id: str, session_id: str) -> dict:
+    session = db.get(CoachSession, session_id)
+    if session is None or session.user_id != user_id:
+        raise LookupError("会话不存在")
+    pending = get_active_pending(db, user_id, session.id)
+    return serialize_session(session, pending)

@@ -26,6 +26,18 @@ Agent 需要判断这是**操作**，不是知识问答，并生成结构化动�
 
 当前动作不跨 App，不执行付款、账号删除等高风险操作。
 
+### 控制平面（新）
+
+旧 `/agent/chat` 继续兼容；新链路使用 `app/services/coach_control`：
+
+```text
+CoachSession / CoachPending / CoachActionRecord / DomainEvent
+Capability Registry
+Runtime: intent -> clarify -> card -> confirm -> execute -> receipt -> undo
+```
+
+每个写能力由服务端构造 payload，模型只选择 capability 和填槽位。一个 session 同时最多一个 draft/card/proposal；动作执行后写 action ledger 并发出 domain event。
+
 ## 3. Action 类型
 
 | type | 说明 | 需要确认 |
