@@ -476,6 +476,72 @@ data: {"session_id": "uuid", "safety_flag": null, "citations": []}
 - `skipped_plan_days` 不计入完成率分母。
 - 计划未覆盖本期时，`planned` 与 `completion_rate` 回退到档案 `weekly_days`。
 
+#### `POST /agent/actions/{action_id}/run`
+
+统一执行教练产出的非训练改课动作。请求：
+
+```json
+{
+  "type": "log_food",
+  "payload": {
+    "date": "2026-11-13",
+    "meal": "lunch",
+    "raw_text": "湿炒螺蛳粉一份，半杯奶茶",
+    "items": [
+      {
+        "name": "湿炒螺蛳粉",
+        "portion": "1份",
+        "grams": 500,
+        "kcal": 600,
+        "protein_g": 22,
+        "carbs_g": 80,
+        "fat_g": 18,
+        "confidence": 0.72
+      }
+    ]
+  }
+}
+```
+
+返回：
+
+```json
+{
+  "status": "executed",
+  "type": "log_food",
+  "result": {
+    "group_id": "uuid",
+    "created_logs": [{"client_id": "uuid", "food_name": "湿炒螺蛳粉", "plan_date": null, "plan_meal": null}],
+    "today_nutrition": {"logged": {"kcal": 600}, "remaining": {"kcal": 1600}}
+  }
+}
+```
+
+同一 `action_id` 重放直接返回第一次结果，不重复写入。当前支持：
+
+```text
+log_food
+log_planned_meal
+update_food_log
+delete_food_log
+```
+
+`log_food` 必须先通过 `resolve_food` 得到结构化 items；`log_planned_meal` 会按当天计划餐复制热量和宏量，并写入 `plan_date` / `plan_meal`。
+
+#### `POST /agent/actions/{action_id}/undo-run`
+
+撤销同一 action 的整组饮食记录。只对 `log_food` / `log_planned_meal` 开放。
+
+#### `resolve_food` Agent 工具
+
+教练收到“吃了/喝了/帮我记一下”时，先调用此工具把自然语言转成结构化食物项：
+
+```json
+{"text": "湿炒螺蛳粉一份，半杯奶茶", "meal": "lunch", "date": "2026-11-13"}
+```
+
+返回 `items`、`totals`、`questions`、`confidence`。份量不明确时 `questions` 非空，教练必须先追问，不能直接写入。
+
 ### 2.6 器械识别
 
 #### `POST /equipment/scan`
