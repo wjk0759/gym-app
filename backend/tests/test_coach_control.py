@@ -142,6 +142,25 @@ def test_planned_meal_log_and_skip_loop(db):
     assert "dinner" not in record.plan.get("skipped_meals", [])
 
 
+def test_cardio_log_confirm_and_undo(db):
+    import asyncio
+
+    from app.models import WorkoutSession
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "昨天跑了 30 分钟"))
+    assert turn["intent"] == "training.log_cardio"
+    assert turn["pending"]["kind"] == "card"
+    assert turn["pending"]["payload"]["duration_minutes"] == 30
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    session = db.execute(select(WorkoutSession)).scalar_one()
+    assert session.duration_min == 30
+    assert db.execute(select(DomainEvent)).scalar_one().type == "WorkoutLogged"
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(WorkoutSession)).scalars().all() == []
+
+
 def test_body_weight_confirm_and_undo(db):
     import asyncio
 

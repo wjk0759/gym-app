@@ -9,7 +9,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ....models import PlanDayState, utcnow
-from ...food_text import DIET_TZ
+from ...coach_actions.schemas import LogWorkoutPayload
+from ...coach_actions.workout_actions import execute_log_workout, undo_log_workout
+from ...food_text import DIET_TZ, parse_food_date
 from ..registry import Capability, register
 
 CAPABILITY = register(
@@ -22,6 +24,18 @@ CAPABILITY = register(
         requires_confirmation=True,
         undo=True,
         events=("TrainingRescheduled",),
+    )
+)
+CARDIO = register(
+    Capability(
+        id="training.log_cardio",
+        domain="training",
+        kind="write",
+        title="补录有氧训练",
+        description="记录跑步、骑车、游泳等有氧训练",
+        requires_confirmation=True,
+        undo=True,
+        events=("WorkoutLogged",),
     )
 )
 
@@ -184,6 +198,77 @@ def resolve(
             "title": str(source.get("title") or "训练"),
         },
     }
+
+
+def _cardio_title(message: str) -> str | None:
+    if re.search(r"跑|慢跑", message):
+        return "跑步"
+    if re.search(r"骑车|单车|自行车", message):
+        return "骑车"
+    if re.search(r"游泳", message):
+        return "游泳"
+    if re.search(r"快走|走路", message):
+        return "快走"
+    if re.search(r"划船", message):
+        return "划船"
+    if re.search(r"有氧", message):
+        return "有氧"
+    return None
+
+
+def resolve_cardio(message: str) -> dict:
+    title = _cardio_title(message)
+    if title is None:
+        return {"ready": False, "questions": ["记录哪种训练？跑步、骑车、游泳都可以。"]}
+    match = re.search(r"(\d+(?:\.\d+)?)\s*(分钟|min|小时|h)", message, re.IGNORECASE)
+    if match is None:
+        return {"ready": False, "questions": ["这次大概练了多久？说分钟或小时都可以。"]}
+    duration = float(match.group(1))
+    if match.group(2).lower() in {"小时", "h"}:
+        duration *= 60
+    duration_minutes = max(1, min(300, round(duration)))
+    target = parse_food_date(message) or datetime.now(DIET_TZ).date()
+    if target > datetime.now(DIET_TZ).date():
+        return {"ready": False, "questions": ["未来的训练还不能记录，换一个日期？"]}
+    return {
+        "ready": True,
+        "payload": {
+            "date": target.isoformat(),
+            "title": title,
+            "duration_minutes": duration_minutes,
+            "kind": "cardio",
+            "notes": message[:500],
+            "sets": [],
+        },
+    }
+
+
+def execute_cardio(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: dict,
+) -> dict:
+    return execute_log_workout(
+        db,
+        user_id,
+        action_id,
+        LogWorkoutPayload.model_validate(payload),
+    )
+
+
+def undo_cardio(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: dict,
+) -> dict:
+    return undo_log_workout(
+        db,
+        user_id,
+        action_id,
+        LogWorkoutPayload.model_validate(payload),
+    )
 
 
 def _serialize_state(state: PlanDayState | None) -> dict:

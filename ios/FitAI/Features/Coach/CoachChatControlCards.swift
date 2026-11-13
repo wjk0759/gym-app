@@ -27,6 +27,8 @@ extension CoachChatView {
                     dietPendingContent(pending)
                 } else if pending.capabilityID == "training.reschedule" {
                     trainingPendingContent(pending)
+                } else if pending.capabilityID == "training.log_cardio" {
+                    cardioPendingContent(pending)
                 } else if pending.capabilityID.hasPrefix("diet.") {
                     mealPendingContent(pending)
                 } else if pending.capabilityID == "body.log_weight" {
@@ -94,6 +96,17 @@ extension CoachChatView {
                     .fontWeight(.semibold)
             }
             .font(AppType.caption)
+        }
+    }
+
+    private func cardioPendingContent(_ pending: CoachPendingState) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(pending.payload?.title ?? "有氧训练")
+                .font(AppType.callout.weight(.semibold))
+                .foregroundStyle(Theme.ink)
+            Text("\(pending.payload?.date ?? "") · \(pending.payload?.durationMinutes ?? 0) 分钟")
+                .font(AppType.caption)
+                .foregroundStyle(Theme.secondaryText)
         }
     }
 

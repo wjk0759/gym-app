@@ -31,6 +31,17 @@ extension AppStore {
         ) != nil {
             return true
         }
+
+        if value.range(
+            of: #"跑|骑车|单车|自行车|游泳|快走|走路|划船|有氧"#,
+            options: .regularExpression
+        ) != nil,
+           value.range(
+               of: #"\d+(?:\.\d+)?\s*(分钟|min|小时|h)"#,
+               options: [.regularExpression, .caseInsensitive]
+           ) != nil {
+            return true
+        }
         let foodWord = value.range(
             of: #"记|吃|喝|餐|零食|夜宵|鸡|牛|猪|鱼|蛋|奶|饭|面|肠|菜|果"#,
             options: .regularExpression
