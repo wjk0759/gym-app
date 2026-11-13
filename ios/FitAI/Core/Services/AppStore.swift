@@ -321,6 +321,7 @@ final class AppStore {
         sessions = state.sessions
         workoutDraft = state.workoutDraft
         chat = state.chat
+        agentSessionID = state.agentSessionID
         agentActions = state.agentActions ?? []
         pendingDraft = state.pendingDraft
         foodLogs = state.foodLogs ?? []
@@ -376,6 +377,7 @@ final class AppStore {
             sessions: sessions,
             workoutDraft: workoutDraft,
             chat: chat,
+            agentSessionID: agentSessionID,
             agentActions: agentActions,
             pendingDraft: pendingDraft,
             foodLogs: foodLogs,
@@ -491,6 +493,7 @@ final class AppStore {
         var sessions: [WorkoutSession]
         var workoutDraft: WorkoutDraft?
         var chat: [ChatMessage]
+        var agentSessionID: UUID?
         var agentActions: [AgentAction]?
         var pendingDraft: AgentPendingDraft?
         var foodLogs: [FoodLog]?
