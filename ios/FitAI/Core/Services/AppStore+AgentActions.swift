@@ -65,11 +65,24 @@ extension AppStore {
         return context
     }
 
-    func updateAgentFoodItems(actionID: String, items: [AgentFoodItem]) {
+    func updateAgentFoodAction(
+        actionID: String,
+        items: [AgentFoodItem],
+        date: String?,
+        meal: MealType?
+    ) {
         guard let index = agentActions.firstIndex(where: { $0.id == actionID }) else {
             return
         }
         agentActions[index].payload?.items = items
+        if let date {
+            agentActions[index].payload?.date = date
+        }
+        if let meal {
+            agentActions[index].payload?.meal = meal.rawValue
+        }
+        let kcal = items.reduce(0) { $0 + $1.kcal }
+        agentActions[index].summary = "约 \(Int(kcal)) kcal"
         persist()
     }
 

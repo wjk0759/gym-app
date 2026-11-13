@@ -359,7 +359,7 @@ struct AgentLoggedSet: Codable, Hashable {
 
 struct AgentActionPayload: Codable, Hashable {
     let dayID: String?
-    let date: String?
+    var date: String?
     let targetDate: String?
     let screen: String?
     let goalType: String?
@@ -371,7 +371,7 @@ struct AgentActionPayload: Codable, Hashable {
     let waistCM: Double?
     let strategy: String?
     let weekStart: String?
-    let meal: String?
+    var meal: String?
     let rawText: String?
     var items: [AgentFoodItem]?
     let title: String?
@@ -417,7 +417,7 @@ struct AgentAction: Codable, Identifiable, Hashable {
     let id: String
     let type: String
     let title: String
-    let summary: String
+    var summary: String
     let requiresConfirmation: Bool
     var payload: AgentActionPayload?
 

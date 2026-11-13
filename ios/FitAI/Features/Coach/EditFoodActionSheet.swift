@@ -9,10 +9,20 @@ struct EditFoodActionSheet: View {
     let action: AgentAction
 
     @State private var items: [AgentFoodItem]
+    @State private var date: Date
+    @State private var meal: MealType
 
     init(action: AgentAction) {
         self.action = action
         _items = State(initialValue: action.payload?.items ?? [])
+        _date = State(
+            initialValue: action.payload?.date.flatMap(FitnessDate.date(from:))
+                ?? Date()
+        )
+        _meal = State(
+            initialValue: action.payload?.meal.flatMap(MealType.init(rawValue:))
+                ?? .lunch
+        )
     }
 
     private var totals: (kcal: Double, protein: Double, carbs: Double, fat: Double) {
@@ -44,6 +54,25 @@ struct EditFoodActionSheet: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
+                    VStack(alignment: .leading, spacing: 10) {
+                        DatePicker(
+                            "日期",
+                            selection: $date,
+                            in: ...Date(),
+                            displayedComponents: .date
+                        )
+                        .font(AppType.caption)
+                        .foregroundStyle(Theme.secondaryText)
+
+                        Picker("餐次", selection: $meal) {
+                            ForEach(MealType.allCases) { item in
+                                Text(item.label).tag(item)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                    .card()
+
                     ForEach(items.indices, id: \.self) { index in
                         foodCard(index)
                     }
@@ -59,8 +88,13 @@ struct EditFoodActionSheet: View {
                     }
                     .card()
 
-                    Button("保存份量") {
-                        store.updateAgentFoodItems(actionID: action.id, items: items)
+                    Button("保存调整") {
+                        store.updateAgentFoodAction(
+                            actionID: action.id,
+                            items: items,
+                            date: FitnessDate.key(date),
+                            meal: meal
+                        )
                         dismiss()
                     }
                     .buttonStyle(PrimaryButtonStyle())
@@ -92,6 +126,16 @@ struct EditFoodActionSheet: View {
                 Text("\(Int(item.kcal)) kcal")
                     .font(.system(size: 13, weight: .bold, design: .monospaced))
                     .foregroundStyle(Theme.cobalt)
+                Button(role: .destructive) {
+                    guard items.count > 1 else { return }
+                    items.remove(at: index)
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Theme.danger.opacity(0.7))
+                }
+                .buttonStyle(.plain)
+                .disabled(items.count <= 1)
             }
 
             Stepper(
