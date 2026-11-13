@@ -35,6 +35,7 @@ def test_food_log_intent_is_detected_without_misrouting_questions():
     assert not _forced_food_log_intent("打开饮食页")
     assert not _forced_food_log_intent("我今天吃了什么")
     assert not _forced_food_log_intent("我今天吃了什么，还可以吃什么")
+    assert not _forced_food_log_intent("我昨天跑了 30 分钟，帮我记一下")
     assert _forced_workout_log_intent("我昨天跑了 30 分钟")
     assert _forced_workout_log_intent("今天补录一次训练")
     assert not _forced_workout_log_intent("开始训练")

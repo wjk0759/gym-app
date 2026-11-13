@@ -142,6 +142,8 @@ def _forced_food_log_intent(message: str) -> bool:
     text = message.strip()
     if any(token in text for token in ("打开饮食", "饮食页", "看看饮食")):
         return False
+    if _forced_workout_log_intent(text):
+        return False
     return bool(
         re.search(
             r"帮我记|记一下|记录一下|补记|帮我记录|记饮食|记录饮食|"
@@ -154,6 +156,9 @@ def _forced_food_log_intent(message: str) -> bool:
 def _forced_workout_log_intent(message: str) -> bool:
     text = message.strip()
     if any(token in text for token in ("开始训练", "打开训练", "训练页")):
+        return False
+    # "练完吃了一碗面" is a food-logging request, not a workout record.
+    if re.search(r"吃|喝|奶茶|饭|餐|粉|面", text):
         return False
     return bool(
         re.search(
