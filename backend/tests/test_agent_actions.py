@@ -8,6 +8,7 @@ from app.services.agent import (
     _forced_workout_log_intent,
     _is_draft_answer,
     _normalize_app_actions,
+    _pending_action_correction,
 )
 
 
@@ -46,6 +47,36 @@ def test_food_log_intent_is_detected_without_misrouting_questions():
     assert _is_draft_answer("对")
     assert _is_draft_answer("不要了")
     assert not _is_draft_answer("我昨天跑了 30 分钟")
+
+
+def test_pending_food_card_correction_updates_before_write():
+    result = _pending_action_correction(
+        {
+            "pending_action": {
+                "type": "log_food",
+                "payload": {
+                    "date": "2026-11-13",
+                    "meal": "dinner",
+                    "items": [
+                        {
+                            "name": "肉肠",
+                            "grams": 180,
+                            "kcal": 420,
+                            "protein_g": 24,
+                            "carbs_g": 6,
+                            "fat_g": 32,
+                        }
+                    ],
+                },
+            }
+        },
+        "记错了是 230 克",
+    )
+
+    assert result is not None
+    action = result["actions"][0]
+    assert action["payload"]["items"][0]["grams"] == 230
+    assert action["payload"]["items"][0]["kcal"] == 536.7
 
 
 def test_log_food_action_requires_resolved_items():

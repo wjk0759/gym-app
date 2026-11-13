@@ -361,6 +361,7 @@ struct AgentActionPayload: Codable, Hashable {
     let dayID: String?
     var date: String?
     let targetDate: String?
+    let clientID: String?
     let screen: String?
     let goalType: String?
     let targetWeightKG: Double?
@@ -388,6 +389,7 @@ struct AgentActionPayload: Codable, Hashable {
         case dayID = "day_id"
         case date
         case targetDate = "target_date"
+        case clientID = "client_id"
         case screen
         case goalType = "goal_type"
         case targetWeightKG = "target_weight_kg"

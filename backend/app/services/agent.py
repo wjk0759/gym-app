@@ -56,7 +56,7 @@ from .coach_context import build_coach_context, recent_training
 from .coach_core import coach_core_prompt
 from .diet_review import build_diet_review, utc_window
 from .exercise_search import search_exercise_payload
-from .food_text import resolve_food_text
+from .food_text import parse_amount_grams, resolve_food_text
 from .memory import remember_facts, schedule_memory_extraction
 from .plan_generator import build_template_plan, validate_plan_for_user
 from .plan_validator import PlanValidationError
@@ -199,6 +199,72 @@ def _is_draft_answer(message: str) -> bool:
     )
 
 
+def _pending_action_correction(
+    app_context: dict | None,
+    message: str,
+) -> dict | None:
+    if not isinstance(app_context, dict):
+        return None
+    pending = app_context.get("pending_action")
+    if not isinstance(pending, dict) or pending.get("type") != "log_food":
+        return None
+    payload = pending.get("payload")
+    if not isinstance(payload, dict):
+        return None
+    items = payload.get("items")
+    if not isinstance(items, list) or not items:
+        return None
+    if not re.search(r"记错|不是|改成|应该是|修正|改一下", message):
+        grams = parse_amount_grams(message)
+        if grams is None or len(message.strip()) > 20:
+            return None
+    else:
+        grams = parse_amount_grams(message)
+    if grams is None:
+        return None
+
+    target_index = None
+    if len(items) == 1:
+        target_index = 0
+    else:
+        for index, item in enumerate(items):
+            name = str(item.get("name") or "")
+            if name and name in message:
+                target_index = index
+                break
+    if target_index is None:
+        return None
+    item = dict(items[target_index])
+    old_grams = float(item.get("grams") or 0)
+    if old_grams <= 0:
+        return None
+    factor = grams / old_grams
+    item["grams"] = round(grams)
+    item["portion"] = f"约{round(grams)}g"
+    for key in ("kcal", "protein_g", "carbs_g", "fat_g"):
+        if item.get(key) is not None:
+            item[key] = round(float(item[key]) * factor, 1)
+    updated_items = [dict(value) for value in items]
+    updated_items[target_index] = item
+    kcal = round(sum(float(value.get("kcal") or 0) for value in updated_items))
+    raw = {
+        "type": "log_food",
+        "title": "修正饮食记录",
+        "summary": f"约 {kcal} kcal",
+        "requires_confirmation": True,
+        "payload": {
+            "date": payload.get("date")
+            or datetime.now(REVIEW_TZ).date().isoformat(),
+            "meal": payload.get("meal") or "lunch",
+            "items": updated_items,
+        },
+    }
+    return {
+        "actions": _normalize_app_actions([raw]),
+        "reply": "改好了，确认后按新的份量写入。",
+    }
+
+
 def _draft_total(items: list[dict], key: str) -> float:
     return round(sum(float(item.get(key) or 0) for item in items), 1)
 
@@ -293,6 +359,7 @@ AGENT_INSTRUCTIONS = """你可以读取用户状态、读取训练记录、生�
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"create_diet_plan","title":"生成本周碳循环饮食计划","summary":"训练日高碳、休息日低碳，蛋白质固定","requires_confirmation":true,"payload":{"strategy":"carb_cycle","week_start":"2026-10-26"}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"swap_diet_meal","title":"把周四午餐换一餐","summary":"保持热量和蛋白质不变，只替换菜品","requires_confirmation":true,"payload":{"date":"2026-11-12","meal":"lunch"}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_food","title":"记录午餐：湿炒螺蛳粉和奶茶","summary":"约 775 kcal，蛋白质 24.5g","requires_confirmation":true,"payload":{"date":"2026-11-13","meal":"lunch","raw_text":"湿炒螺蛳粉一份，半杯奶茶","items":[{"name":"湿炒螺蛳粉","portion":"1份","grams":500,"kcal":600,"protein_g":22,"carbs_g":80,"fat_g":18,"confidence":0.72},{"name":"奶茶","portion":"半杯","grams":250,"kcal":175,"protein_g":2.5,"carbs_g":30,"fat_g":5.8,"confidence":0.68}]}}]}}
+{"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"update_food_log","title":"修正肉肠克数","summary":"把已记录的肉肠改成 230g","requires_confirmation":true,"payload":{"client_id":"来自 recent_logs 的 client_id","grams":230}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_planned_meal","title":"记录计划午餐","summary":"把今天计划里的午餐记为已吃","requires_confirmation":true,"payload":{"date":"2026-11-13","meal":"lunch"}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"skip_planned_meal","title":"跳过今晚计划餐","summary":"标记为主动跳过，不算漏记","requires_confirmation":true,"payload":{"date":"2026-11-13","meal":"dinner"}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_workout","title":"补录昨天跑步","summary":"30 分钟有氧，写入训练记录","requires_confirmation":true,"payload":{"date":"2026-11-12","title":"跑步","duration_minutes":30,"kind":"cardio"}}]}}
@@ -344,6 +411,7 @@ App Context 和可执行操作：
 - 如果 state.forced_intent=log_food，本轮只能使用 get_context、resolve_food、propose_app_actions；propose_app_actions 的 type 必须是 log_food / log_planned_meal / update_food_log / delete_food_log。不要调用 open_screen 或 create_diet_plan。
 - 如果 state.forced_intent=log_workout，本轮只能使用 get_context、lookup_exercise、get_exercise_history、propose_app_actions；propose_app_actions 的 type 只能是 log_workout。用户说“练完了/跑了/补录”不是“开始训练”，不要调用 start_training。
 - 如果 state.pending_draft 存在（例如正在记录午餐，只差奶茶份量），用户这句话要先当作草稿补参数：调用 resolve_food，draft_id 传 pending_draft.id，text 传用户原话；不要重新识别整餐，不要重新创建 log_food action。补完后 resolve_food 返回 ready=true，再用返回的 items 生成 log_food。
+- 如果 app_context.pending_action 存在，说明这是还没确认的饮食/训练卡：用户说“记错了/改成/不是/应该是”时，应生成一张修正后的同类型 action 卡，不要调用 update_food_log（此时还没有 FoodLog）。只有 pending_action 不存在、且 today_nutrition.recent_logs 里有真实 client_id 时，才调用 update_food_log / delete_food_log，payload.client_id 必须来自 recent_logs，不能猜。
 - 如果 resolve_food 返回 ready=false 或 questions，调用 ask_user 继续问，不要生成 action。用户说取消/不要了时，不要执行任何写入。
 - 用户说“我今天吃了/喝了……帮我记一下/补记/记录饮食”时：
   1. 先调用 resolve_food，text 传用户原话，meal 尽量从上下文判断，date 用今天或用户指定日期。
@@ -1502,6 +1570,40 @@ async def run_agent(
             # Draft expired or was cancelled between read and write; fall
             # through to the normal model path.
             pass
+
+    try:
+        correction = _pending_action_correction(app_context, message)
+    except Exception:
+        correction = None
+    if correction is not None:
+        actions = correction["actions"]
+        final_message = correction["reply"]
+        run.intent = "app_action"
+        run.status = "needs_confirmation"
+        run.output_text = final_message
+        run.completed_at = utcnow()
+        _record_step(
+            db,
+            run,
+            "tool",
+            tool_name="update_pending_action",
+            input_data={"message": message[:200]},
+            output_data={"actions": actions},
+        )
+        db.commit()
+        return {
+            "run_id": run.id,
+            "status": run.status,
+            "reply": final_message,
+            "proposal": None,
+            "actions": actions,
+            "safety_flag": None,
+            "citations": [],
+            "pending_draft": None,
+            "elapsed_ms": int((time.perf_counter() - started) * 1000),
+            "usage": usage,
+            "error": None,
+        }
 
     try:
         if settings.use_mock_llm:

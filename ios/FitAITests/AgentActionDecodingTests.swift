@@ -34,6 +34,27 @@ final class AgentActionDecodingTests: XCTestCase {
         XCTAssertEqual(action.payload?.changes?.last?.weightKG, 17.5)
     }
 
+    func testUpdateFoodLogKeepsClientID() throws {
+        let json = """
+        {
+          "id": "food-update",
+          "type": "update_food_log",
+          "title": "修正饮食记录",
+          "summary": "把肉肠改成 230g",
+          "requires_confirmation": true,
+          "payload": {
+            "client_id": "food-log-1",
+            "grams": 230
+          }
+        }
+        """.data(using: .utf8)!
+
+        let action = try JSONDecoder().decode(AgentAction.self, from: json)
+
+        XCTAssertEqual(action.payload?.clientID, "food-log-1")
+        XCTAssertNil(action.payload?.items)
+    }
+
     func testLogFoodActionDecodesItems() throws {
         let json = """
         {

@@ -117,6 +117,7 @@ extension AppStore {
             chat.append(ChatMessage(role: .user, text: trimmed))
         }
 
+        let pendingActions = agentActions
         let activeRequestID = requestID ?? UUID()
         agentChatRequestID = activeRequestID
         lastAgentRequestID = activeRequestID
@@ -142,7 +143,7 @@ extension AppStore {
                 }
             }
             do {
-                let context = self.agentAppContext()
+                let context = self.agentAppContext(pendingActions: pendingActions)
                 let response: AgentChatResponse
                 do {
                     response = try await APIClient.shared.agentChat(
@@ -199,12 +200,15 @@ extension AppStore {
                 return
             } catch let error as APIError where error.isCoachQuotaExhausted {
                 await self.refreshAccess()
+                self.agentActions = pendingActions
                 self.coachQuotaExhausted = true
                 return
             } catch let error as APIError where error.isRateLimited || error.statusCode == 429 {
+                self.agentActions = pendingActions
                 self.toast = "请求太频繁，请稍后再试"
                 return
             } catch let error as APIError where error.isProRequired {
+                self.agentActions = pendingActions
                 await self.refreshAccess()
                 if self.hasProAccess || (self.access.policy.coachRemaining ?? 0) > 0 {
                     // A text coach turn must never open the coach paywall while
@@ -218,6 +222,7 @@ extension AppStore {
                 return
             } catch {
                 guard !Task.isCancelled else { return }
+                self.agentActions = pendingActions
                 guard !self.shouldShowCoachQuotaCard else {
                     self.toast = "网络暂时不可用，请稍后重试"
                     return

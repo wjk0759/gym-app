@@ -3,11 +3,38 @@ import Foundation
 extension AppStore {
     // MARK: - App Action 执行层
 
-    func agentAppContext() -> [String: Any] {
+    func agentAppContext(pendingActions: [AgentAction] = []) -> [String: Any] {
         var context: [String: Any] = [
             "today": FitnessDate.key(Date()),
             "selected_tab": selectedTab,
         ]
+        if let action = pendingActions.last,
+           let payload = action.payload,
+           action.type == "log_food" {
+            var snapshot: [String: Any] = [
+                "id": action.id,
+                "type": action.type,
+            ]
+            var fields: [String: Any] = [:]
+            if let date = payload.date { fields["date"] = date }
+            if let meal = payload.meal { fields["meal"] = meal }
+            if let items = payload.items {
+                fields["items"] = items.map { item -> [String: Any] in
+                    [
+                        "name": item.name,
+                        "portion": item.portion ?? "",
+                        "grams": item.grams,
+                        "kcal": item.kcal,
+                        "protein_g": item.proteinG,
+                        "carbs_g": item.carbsG,
+                        "fat_g": item.fatG,
+                        "confidence": item.confidence ?? 0,
+                    ]
+                }
+            }
+            snapshot["payload"] = fields
+            context["pending_action"] = snapshot
+        }
         if let visual = coachVisualMemory {
             context["visual_context"] = [
                 "summary": visual.summary,
