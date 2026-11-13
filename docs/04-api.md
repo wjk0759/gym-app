@@ -765,6 +765,10 @@ meal: breakfast / lunch / dinner / snack
 
 撤销最近一次该餐次的换餐，恢复换餐前的菜品。没有可撤销备份返回 404。响应包含完整当天计划和 `restored_meal`。
 
+#### `POST /diet/plan/{date}/meals/{meal}/restore`
+
+恢复被主动跳过的计划餐。返回完整当天计划，并在 `restored_meal` 中标出餐次。
+
 #### `GET /diet/review?from=YYYY-MM-DD&to=YYYY-MM-DD`
 
 确定性的饮食计划执行复盘，不调用大模型。只把带 `plan_date` / `plan_meal` 的记录算作“计划餐完成”；手动记录仍计入实际摄入，但不算计划餐完成。

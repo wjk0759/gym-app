@@ -304,6 +304,21 @@ extension NutritionView {
                         )
                     Spacer(minLength: 4)
 
+                    if suggestion.skipped {
+                        Button {
+                            Task { await restorePlanMeal(suggestion) }
+                        } label: {
+                            Label("恢复", systemImage: "arrow.uturn.backward")
+                                .font(AppType.micro.weight(.bold))
+                                .foregroundStyle(Theme.onAccent)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(color, in: Capsule(style: .continuous))
+                        }
+                        .buttonStyle(SubtlePressStyle(scale: 0.96))
+                        .disabled(restoringMeal != nil)
+                    }
+
                     if plannedLog == nil && !suggestion.skipped {
                         Button {
                             logPlannedMeal(suggestion)

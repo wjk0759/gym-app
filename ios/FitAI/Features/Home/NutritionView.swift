@@ -19,6 +19,7 @@ struct NutritionView: View {
     @State var pendingPlanGenerationKey: String?
     @State var isGeneratingPlan = false
     @State var swappingMeal: MealType?
+    @State var restoringMeal: MealType?
     @State var lastSwappedMeal: MealType?
     @State var mode: NutritionMode = .plan
 
@@ -175,6 +176,28 @@ struct NutritionView: View {
             showAlert = true
         } catch {
             message = "换餐失败，请稍后重试。"
+            showAlert = true
+        }
+    }
+
+    @MainActor
+    func restorePlanMeal(_ suggestion: MealSuggestion) async {
+        guard restoringMeal == nil else { return }
+        restoringMeal = suggestion.meal
+        defer { restoringMeal = nil }
+        do {
+            let plan = try await NutritionService().restoreMeal(
+                dateString: dateString,
+                meal: suggestion.meal
+            )
+            aiMeals = suggestions(from: plan)
+            applyServerTargets(plan)
+            Haptics.success()
+        } catch let error as APIError where error.statusCode == 404 {
+            message = "没有找到这一餐的计划。"
+            showAlert = true
+        } catch {
+            message = "恢复这餐失败，请稍后重试。"
             showAlert = true
         }
     }

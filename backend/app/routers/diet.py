@@ -9,6 +9,8 @@ from ..deps import CurrentUser, DBSession
 from ..models import FoodLog, Goal, MealPlan, Profile
 from ..schemas import DietPlanIn, DietWeekIn, FoodLogIn
 from ..services import access, generation, photo_cache
+from ..services.coach_actions.food_actions import undo_skip_planned_meal
+from ..services.coach_actions.schemas import SkipPlannedMealPayload
 from ..services.diet import (
     build_ai_diet_week,
     build_ai_plan,
@@ -353,6 +355,36 @@ def undo_swap_meal(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/plan/{plan_date}/meals/{meal}/restore")
+def restore_skipped_meal(
+    plan_date: date,
+    meal: str,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    if meal not in MEAL_KEYS:
+        raise HTTPException(status_code=422, detail="不支持的餐次")
+    try:
+        undo_skip_planned_meal(
+            db,
+            user_id,
+            "direct-restore",
+            SkipPlannedMealPayload(date=plan_date, meal=meal),
+        )
+        db.commit()
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    record = get_day(db, user_id, plan_date)
+    if record is None or not record.plan:
+        raise HTTPException(status_code=404, detail="当天还没有饮食计划")
+    result = _public_plan(record.plan)
+    result["strategy"] = record.strategy
+    result["generated_by"] = record.generated_by or result.get("generated_by")
+    result["warning"] = result.get("warning")
+    result["restored_meal"] = meal
+    return result
 
 
 @router.post("/plan")

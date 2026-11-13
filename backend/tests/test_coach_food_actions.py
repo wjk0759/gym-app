@@ -8,6 +8,7 @@ from sqlalchemy.pool import StaticPool
 from app.db import Base
 from app.models import Exercise, FoodLog, Profile, SetLog, User, WorkoutSession
 from app.routers.agent import run_agent_action
+from app.routers.diet import restore_skipped_meal
 from app.schemas import AgentActionRunIn
 from app.services.coach_actions.executor import execute_action, undo_action
 from app.services.coach_actions.schemas import LogFoodPayload
@@ -213,7 +214,8 @@ def test_skip_planned_meal_is_reversible(db):
     plan = get_day(db, "user-1", day).plan
     assert plan["skipped_meals"] == ["dinner"]
 
-    undo_action(db, "user-1", "action-skip")
+    restored = restore_skipped_meal(day, "dinner", "user-1", db)
+    assert restored["restored_meal"] == "dinner"
     plan = get_day(db, "user-1", day).plan
     assert plan["skipped_meals"] == []
 

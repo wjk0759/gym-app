@@ -691,6 +691,17 @@ extension APIClient {
         )
     }
 
+    func restoreDietMeal(dateString: String, meal: MealType) async throws -> RemoteDietPlan {
+        let encoded = dateString.addingPercentEncoding(
+            withAllowedCharacters: .urlQueryAllowed
+        ) ?? dateString
+        return try await send(
+            path: "diet/plan/\(encoded)/meals/\(meal.rawValue)/restore",
+            method: "POST",
+            body: nil
+        )
+    }
+
     func undoSwapDietMeal(dateString: String, meal: MealType) async throws -> RemoteDietPlan {
         let encoded = dateString.addingPercentEncoding(
             withAllowedCharacters: .urlQueryAllowed
