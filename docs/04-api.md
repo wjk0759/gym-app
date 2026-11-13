@@ -524,7 +524,24 @@ log_food
 log_planned_meal
 update_food_log
 delete_food_log
+log_workout
 ```
+
+`log_workout` 用于教练补录已完成的训练：
+
+```json
+{
+  "type": "log_workout",
+  "payload": {
+    "date": "2026-11-12",
+    "title": "跑步",
+    "duration_minutes": 30,
+    "kind": "cardio"
+  }
+}
+```
+
+力量训练可以带 `sets`，每项包含 `slug`、`weight_kg`、`reps`、`rpe`。不能记录未来日期；同一 action 重放不会创建第二次训练，`undo-run` 会删除该 action 创建的记录。
 
 `log_food` 必须先通过 `resolve_food` 得到结构化 items；`log_planned_meal` 会按当天计划餐复制热量和宏量，并写入 `plan_date` / `plan_meal`。
 
