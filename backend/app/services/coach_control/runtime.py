@@ -52,6 +52,7 @@ CARDIO = "training.log_cardio"
 PREVIEW = "training.preview_next"
 EDIT_EXERCISES = "training.edit_day_exercises"
 EDIT_EXERCISE = "training.edit_day_exercise"
+ADD_DAY = "training.add_plan_day"
 STRENGTH = "training.log_strength"
 WEIGHT = "body.log_weight"
 BODY_REVIEW = "body.review_trend"
@@ -181,6 +182,17 @@ def _looks_like_plan_adjust(message: str) -> bool:
             re.search(r"减量|加量|降低重量|减重|轻一点|太累|恢复不过来", message)
             and re.search(r"计划|训练", message)
         )
+    )
+
+
+def _looks_like_add_day(message: str) -> bool:
+    if not re.search(
+        r"加一次|加个|加一天|补一次|想练|额外练|加练",
+        message,
+    ):
+        return False
+    return bool(
+        re.search(r"胸|背|腿|肩|手臂|全身|上肢|下肢", message)
     )
 
 
@@ -565,6 +577,41 @@ async def handle_turn(
             else:
                 text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
                 intent_override = GOAL
+
+    if intent_override is None and _looks_like_add_day(text):
+        from .capabilities.training_add_day import resolve as resolve_add_day
+
+        resolution = resolve_add_day(db, user_id, text, context)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            set_pending(
+                db,
+                session,
+                kind="proposal",
+                capability_id=ADD_DAY,
+                payload=payload,
+            )
+            reply = f"{payload.get('summary') or '加练草案好了。'}确认后生效。"
+        else:
+            reply = (
+                resolution.get("questions") or ["暂时不能增加训练日。"]
+            )[0]
+        turn.intent = ADD_DAY
+        turn.status = "completed"
+        turn.reply = reply
+        turn.latency_ms = int((time.perf_counter() - started) * 1000)
+        session.last_turn_at = utcnow()
+        session.updated_at = utcnow()
+        db.commit()
+        active = get_active_pending(db, user_id, session.id)
+        return {
+            "session": serialize_session(session, active),
+            "turn_id": turn.id,
+            "intent": turn.intent,
+            "status": turn.status,
+            "reply": reply,
+            "pending": serialize_pending(active),
+        }
 
     if intent_override is None and _looks_like_single_exercise_edit(text):
         from .capabilities.training_exercise_edit import (
@@ -1555,6 +1602,24 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "DietPlanGenerated"
         entity_type = "meal_plan"
         entity_id = str(pending.payload.get("date") or "")
+    elif pending.capability_id == ADD_DAY:
+        from .capabilities.training_add_day import execute as execute_add_day
+
+        result = execute_add_day(db, user_id, action_id, pending.payload)
+        after = result.get("plan") or {}
+        before = result.get("before") or {}
+        receipt = {
+            "summary": (
+                f"已增加 {pending.payload.get('date')} 的"
+                f"「{pending.payload.get('title')}」训练"
+            ),
+            "plan_id": pending.payload.get("plan_id"),
+            "day_id": result.get("day_id"),
+            "deep_link": "fitai://plan",
+        }
+        event_type = "TrainingPlanAdjusted"
+        entity_type = "program"
+        entity_id = str(pending.payload.get("plan_id") or "")
     elif pending.capability_id in {EDIT_EXERCISES, EDIT_EXERCISE}:
         from .capabilities.training_edit import (
             execute as execute_exercise_edit,
@@ -1649,6 +1714,7 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
             ADJUST_PLAN,
             EDIT_EXERCISES,
             EDIT_EXERCISE,
+            ADD_DAY,
         }
         else None,
         "idempotent": False,
@@ -1746,6 +1812,10 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
             record.before or {},
             record.payload,
         )
+    elif record.capability_id == ADD_DAY:
+        from .capabilities.training_add_day import undo as undo_add_day
+
+        result = undo_add_day(db, user_id, record.before or {}, record.payload)
     elif record.capability_id == PLANNED:
         from .capabilities.diet import undo_planned
 

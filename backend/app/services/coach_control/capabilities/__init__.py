@@ -12,6 +12,7 @@ from . import (  # noqa: F401
     profile,
     review,
     training,
+    training_add_day,
     training_edit,
     training_exercise_edit,
     training_preview,

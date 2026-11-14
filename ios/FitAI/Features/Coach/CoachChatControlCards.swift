@@ -101,7 +101,8 @@ extension CoachChatView {
                 } else if pending.capabilityID == "training.preview_next" {
                     trainingPreviewPendingContent(pending)
                 } else if pending.capabilityID == "training.edit_day_exercises"
-                            || pending.capabilityID == "training.edit_day_exercise" {
+                            || pending.capabilityID == "training.edit_day_exercise"
+                            || pending.capabilityID == "training.add_plan_day" {
                     exerciseEditPendingContent(pending)
                 } else if pending.capabilityID == "review.weekly"
                             || pending.capabilityID == "diet.review_day"

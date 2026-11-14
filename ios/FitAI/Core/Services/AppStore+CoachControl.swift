@@ -72,6 +72,18 @@ extension AppStore {
             of: #"(?:改|修改|调整).{0,8}(?:训练)?计划|(?:训练)?计划.{0,8}(?:改|修改|调整)"#,
             options: .regularExpression
         ) != nil
+        let addDay = value.range(
+            of: #"加一次|加个|加一天|补一次|想练|额外练|加练"#,
+            options: .regularExpression
+        ) != nil
+            && value.range(
+                of: #"胸|背|腿|肩|手臂|全身|上肢|下肢"#,
+                options: .regularExpression
+            ) != nil
+        if addDay {
+            return true
+        }
+
         let exerciseName = value.range(
             of: #"卧推|深蹲|硬拉|划船|推举|飞鸟|弯举|下压|引体|臂屈伸|腿举|推胸|蝴蝶机|夹胸|侧平举|后束|卷腹|臀桥"#,
             options: .regularExpression
@@ -420,7 +432,8 @@ extension AppStore {
                     if pending.capabilityID == "training.generate_plan"
                         || pending.capabilityID == "training.adjust_plan"
                         || pending.capabilityID == "training.edit_day_exercises"
-                        || pending.capabilityID == "training.edit_day_exercise" {
+                        || pending.capabilityID == "training.edit_day_exercise"
+                        || pending.capabilityID == "training.add_plan_day" {
                         self.coachPlanBefore = self.plan
                     }
                     self.plan = plan
@@ -500,7 +513,8 @@ extension AppStore {
                 if receipt?.capabilityID == "training.generate_plan"
                     || receipt?.capabilityID == "training.adjust_plan"
                     || receipt?.capabilityID == "training.edit_day_exercises"
-                    || receipt?.capabilityID == "training.edit_day_exercise" {
+                    || receipt?.capabilityID == "training.edit_day_exercise"
+                    || receipt?.capabilityID == "training.add_plan_day" {
                     self.plan = self.coachPlanBefore
                     self.coachPlanBefore = nil
                     self.planNeedsServerSync = false

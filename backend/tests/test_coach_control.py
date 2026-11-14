@@ -1551,6 +1551,86 @@ def test_diet_week_generation_confirm_and_undo(db, monkeypatch):
     assert db.execute(select(MealPlan)).scalars().all() == []
 
 
+def test_add_plan_day_copies_focus_template_and_undo(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    monday = today - timedelta(days=today.weekday())
+    db.add(
+        Exercise(
+            slug="bench_press",
+            name_zh="杠铃卧推",
+            name_en="bench_press",
+            muscle_group="chest",
+            equipment="barbell",
+            is_compound=True,
+            contraindications=[],
+        )
+    )
+    db.commit()
+    program = Program(
+        user_id="user-1",
+        title="测试胸计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=monday,
+        weeks=4,
+    )
+    db.add(program)
+    db.flush()
+    source = ProgramDay(
+        program_id=program.id,
+        week_index=2,
+        weekday=1,
+        title="胸",
+        focus=["chest"],
+    )
+    db.add(source)
+    db.flush()
+    db.add(
+        PlanExercise(
+            program_day_id=source.id,
+            exercise_slug="bench_press",
+            order_index=1,
+            sets=3,
+            reps="8-12",
+            rest_sec=90,
+        )
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "今天加一次练胸",
+            app_context={
+                "plan": {
+                    "id": program.id,
+                    "version": program.version,
+                    "days": [],
+                }
+            },
+        )
+    )
+    assert turn["intent"] == "training.add_plan_day"
+    assert turn["pending"]["kind"] == "proposal"
+    payload = turn["pending"]["payload"]
+    assert payload["date"] == today.isoformat()
+    assert [item["slug"] for item in payload["exercises"]] == ["bench_press"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    day_id = confirmed["receipt"]["day_id"]
+    created = db.get(ProgramDay, day_id)
+    assert created is not None
+    assert created.weekday == today.isoweekday()
+    assert [item.exercise_slug for item in created.exercises] == ["bench_press"]
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.get(ProgramDay, day_id) is None
+
+
 def test_routing_eval_covers_deterministic_capabilities(db):
     """A small regression matrix for the intents the control plane owns.
 
