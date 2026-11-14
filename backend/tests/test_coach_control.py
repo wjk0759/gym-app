@@ -488,6 +488,22 @@ def test_safety_reply_bypasses_exhausted_free_quota(db):
     assert turn["status"] == "blocked"
 
 
+def test_unsupported_turn_releases_free_quota(db):
+    import asyncio
+
+    from app.routers.coach_control import CoachTurnIn, create_turn
+    from app.services import access
+
+    used, _, _ = access.coach_usage(db, "user-1")
+    assert used == 0
+
+    turn = asyncio.run(create_turn(CoachTurnIn(message="你好"), "user-1", db))
+    assert turn["intent"] == "unsupported"
+
+    used, _, _ = access.coach_usage(db, "user-1")
+    assert used == 0
+
+
 def test_client_diagnostic_is_audited(db):
     from app.routers.coach_control import ClientDiagnosticIn, upload_client_diagnostic
 

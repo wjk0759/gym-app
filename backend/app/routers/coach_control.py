@@ -176,13 +176,20 @@ async def create_turn(
             )
         reserved = True
     try:
-        return await runtime.handle_turn(
+        result = await runtime.handle_turn(
             db,
             user_id,
             payload.message,
             session_id=payload.session_id,
             app_context=payload.app_context,
         )
+        if (
+            reserved
+            and coach_period is not None
+            and result.get("intent") == "unsupported"
+        ):
+            access.release_coach_message(db, user_id, period=coach_period)
+        return result
     except Exception as exc:  # noqa: BLE001 - never leak model/provider errors
         db.rollback()
         if reserved and coach_period is not None:
