@@ -99,6 +99,29 @@ def resolve(db: Session, user_id: str, context: dict) -> dict:
         and str(item.get("date") or "") >= today.isoformat()
     ]
     if not candidates:
+        open_days = [
+            item
+            for item in days
+            if isinstance(item, dict)
+            and not item.get("completed")
+            and not item.get("skipped")
+        ]
+        if open_days:
+            return {
+                "ready": True,
+                "payload": {
+                    "summary": (
+                        f"计划里还有 {len(open_days)} 次训练没完成，"
+                        "但日期已经过去了。"
+                    ),
+                    "wins": [],
+                    "watchouts": [
+                        "可以把没完成的训练改期，或者让教练重新生成一份计划。"
+                    ],
+                    "actions": [],
+                    "generated_at": utcnow().isoformat(),
+                },
+            }
         return {
             "ready": True,
             "payload": {
