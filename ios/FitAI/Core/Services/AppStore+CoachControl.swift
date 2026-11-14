@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 /// New server-owned coach control plane.
 ///
@@ -481,6 +482,7 @@ extension AppStore {
                 self.coachPending = nil
                 self.coachReceipt = response.receipt
                 self.coachUndoActionID = response.actionID
+                self.scheduleCoachUndoDismissal()
                 if pending.capabilityID == "training.reschedule" {
                     self.applyCoachPlanDate(
                         dayID: pending.payload?.dayID,
@@ -492,6 +494,9 @@ extension AppStore {
                         receipt: response.receipt,
                         actionID: response.actionID
                     )
+                }
+                if pending.capabilityID == "profile.update_goal" {
+                    self.applyCoachGoal(pending: pending)
                 }
                 if let plan = response.plan {
                     if pending.capabilityID == "training.generate_plan"
@@ -512,9 +517,16 @@ extension AppStore {
                         text: response.receipt?.summary ?? "已执行，可以在下方撤销。"
                     )
                 )
-                self.syncPendingUserData()
-                self.refreshWeeklyReview(force: true)
-                Task { await self.refreshDailyNutritionTargets() }
+                let domains = CoachRefreshDomains.domains(
+                    for: pending.capabilityID,
+                    server: response.refreshDomains
+                )
+                Task {
+                    await self.refreshDomains(domains)
+                }
+                if domains.contains(.diet) {
+                    Task { await self.refreshDailyNutritionTargets() }
+                }
                 Telemetry.shared.track(
                     "coach_pending_confirmed",
                     properties: ["capability": pending.capabilityID]
@@ -550,13 +562,16 @@ extension AppStore {
     func undoCoachReceipt() {
         guard let actionID = coachUndoActionID, !isCoachControlWorking else { return }
         let receipt = coachReceipt
+        coachUndoDismissTask?.cancel()
+        coachUndoDismissTask = nil
+        coachUndoExpiresAt = nil
         coachUndoActionID = nil
         coachReceipt = nil
         persist()
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                _ = try await APIClient.shared.undoCoachAction(id: actionID)
+                let response = try await APIClient.shared.undoCoachAction(id: actionID)
                 if let receipt, receipt.fromDate != nil {
                     self.applyCoachPlanDate(
                         dayID: receipt.dayID,
@@ -585,9 +600,16 @@ extension AppStore {
                     self.planNeedsServerSync = false
                     self.rescheduleNotifications()
                 }
-                self.syncPendingUserData()
-                self.refreshWeeklyReview(force: true)
-                Task { await self.refreshDailyNutritionTargets() }
+                let domains = CoachRefreshDomains.domains(
+                    for: receipt?.capabilityID ?? "",
+                    server: response.refreshDomains
+                )
+                Task {
+                    await self.refreshDomains(domains)
+                }
+                if domains.contains(.diet) {
+                    Task { await self.refreshDailyNutritionTargets() }
+                }
                 self.toast = "已撤销"
                 Telemetry.shared.track(
                     "coach_action_undone",
@@ -604,33 +626,33 @@ extension AppStore {
                 )
                 self.coachUndoActionID = actionID
                 self.coachReceipt = receipt
+                // Keep the card until the user retries or taps 完成.
+                self.coachUndoExpiresAt = nil
                 self.toast = "撤销失败：\(error.localizedDescription)"
             }
         }
     }
 
-    func restoreCoachControlSession() {
+    @MainActor
+    func restoreCoachControlSession() async {
         guard let sessionID = coachSessionID,
               AuthTokenStore.shared.accessToken != nil,
               !isCoachControlWorking,
               !isReplying else { return }
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            do {
-                let state = try await APIClient.shared.coachSession(id: sessionID)
-                self.coachSession = state
-                self.coachPending = state.pending
-                if let history = try? await APIClient.shared.coachHistory(sessionID: sessionID) {
-                    self.mergeCoachHistory(history.items)
-                    self.coachHistoryHasMore = history.hasMore
-                    self.coachHistoryCursor = history.nextBeforeID
-                }
-                self.persist()
-            } catch {
-                self.coachSessionID = nil
-                self.coachPending = nil
-                self.persist()
+        do {
+            let state = try await APIClient.shared.coachSession(id: sessionID)
+            coachSession = state
+            coachPending = state.pending
+            if let history = try? await APIClient.shared.coachHistory(sessionID: sessionID) {
+                mergeCoachHistory(history.items)
+                coachHistoryHasMore = history.hasMore
+                coachHistoryCursor = history.nextBeforeID
             }
+            persist()
+        } catch {
+            coachSessionID = nil
+            coachPending = nil
+            persist()
         }
     }
 
@@ -644,28 +666,26 @@ extension AppStore {
         }
     }
 
-    func loadEarlierCoachHistory() {
+    @MainActor
+    func loadEarlierCoachHistory() async {
         guard let sessionID = coachSessionID,
               let cursor = coachHistoryCursor,
               coachHistoryHasMore,
               !isLoadingCoachHistory,
               AuthTokenStore.shared.accessToken != nil else { return }
         isLoadingCoachHistory = true
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            defer { self.isLoadingCoachHistory = false }
-            do {
-                let history = try await APIClient.shared.coachHistory(
-                    sessionID: sessionID,
-                    beforeID: cursor
-                )
-                self.mergeCoachHistory(history.items)
-                self.coachHistoryHasMore = history.hasMore
-                self.coachHistoryCursor = history.nextBeforeID
-                self.persist()
-            } catch {
-                self.toast = "更早的消息加载失败，请稍后重试"
-            }
+        defer { isLoadingCoachHistory = false }
+        do {
+            let history = try await APIClient.shared.coachHistory(
+                sessionID: sessionID,
+                beforeID: cursor
+            )
+            mergeCoachHistory(history.items)
+            coachHistoryHasMore = history.hasMore
+            coachHistoryCursor = history.nextBeforeID
+            persist()
+        } catch {
+            toast = "更早的消息加载失败，请稍后重试"
         }
     }
 
@@ -700,7 +720,7 @@ extension AppStore {
                 }
             }
         }
-        chat.sort { $0.date < $1.date }
+        chat = CoachChatOrdering.sorted(chat)
     }
 
     private func applyCoachWeight(receipt: CoachReceipt?, actionID: String) {
@@ -744,5 +764,60 @@ extension AppStore {
         updated.updatedAt = Date()
         plan = updated
         persist()
+    }
+
+    private func applyCoachGoal(pending: CoachPendingState) {
+        guard let payload = pending.payload else { return }
+        if let raw = payload.goalType, let goal = goalType(from: raw) {
+            profile.goalType = goal
+        }
+        if let weight = payload.targetWeightKG {
+            profile.targetWeightKG = weight
+        }
+        if let raw = payload.targetDate,
+           let date = FitnessDate.date(from: raw) {
+            profile.targetDate = date
+        }
+        normalizeGoalStart(&profile)
+        persist()
+    }
+
+    private func goalType(from serverValue: String) -> GoalType? {
+        switch serverValue {
+        case "lose_fat": return .loseFat
+        case "build_muscle": return .buildMuscle
+        case "recomp": return .recomp
+        case "endurance": return .endurance
+        default: return GoalType(rawValue: serverValue)
+        }
+    }
+
+    func dismissCoachReceipt() {
+        coachUndoDismissTask?.cancel()
+        coachUndoDismissTask = nil
+        coachUndoExpiresAt = nil
+        coachReceipt = nil
+        coachUndoActionID = nil
+        coachBodyBefore = nil
+        coachWeightBefore = nil
+    }
+
+    private func scheduleCoachUndoDismissal() {
+        coachUndoDismissTask?.cancel()
+        // VoiceOver users need to read the receipt before choosing undo.
+        guard !UIAccessibility.isVoiceOverRunning else {
+            coachUndoExpiresAt = nil
+            coachUndoDismissTask = nil
+            return
+        }
+        let deadline = Date().addingTimeInterval(5)
+        coachUndoExpiresAt = deadline
+        coachUndoDismissTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            guard !Task.isCancelled, let self else { return }
+            guard let expiry = self.coachUndoExpiresAt,
+                  Date() >= expiry else { return }
+            self.dismissCoachReceipt()
+        }
     }
 }

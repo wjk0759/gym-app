@@ -30,6 +30,7 @@ CAPABILITY = register(
         requires_confirmation=True,
         undo=True,
         events=("DietPlanGenerated",),
+        refreshes=("diet",),
     )
 )
 

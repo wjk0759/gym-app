@@ -27,6 +27,7 @@ from . import capabilities  # noqa: F401 - registers capabilities
 from .consumers import consume_event
 from .context import with_plan_context
 from .events import emit_event
+from .registry import CAPABILITIES
 from .state import (
     cancel_active_pending,
     cancel_pending,
@@ -1552,6 +1553,11 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
             "action_id": existing.id,
             "status": existing.status,
             "receipt": existing.receipt or {},
+            "refresh_domains": list(
+                CAPABILITIES[existing.capability_id].refreshes
+                if existing.capability_id in CAPABILITIES
+                else ()
+            ),
             "idempotent": True,
         }
     if existing is not None and existing.status == "undone":
@@ -1867,6 +1873,11 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
             ADD_DAY,
         }
         else None,
+        "refresh_domains": list(
+            CAPABILITIES[pending.capability_id].refreshes
+            if pending.capability_id in CAPABILITIES
+            else ()
+        ),
         "idempotent": False,
     }
 
@@ -2006,7 +2017,16 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
         payload={"capability_id": record.capability_id},
     )
     db.commit()
-    return {"action_id": action_id, "status": "undone", "result": result}
+    return {
+        "action_id": action_id,
+        "status": "undone",
+        "result": result,
+        "refresh_domains": list(
+            CAPABILITIES[record.capability_id].refreshes
+            if record.capability_id in CAPABILITIES
+            else ()
+        ),
+    }
 
 
 def session_state(db: Session, user_id: str, session_id: str) -> dict:

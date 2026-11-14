@@ -18,11 +18,14 @@ extension AppStore {
 
     func undoLastAgentAction() {
         guard let pending = pendingUndo else { return }
-        pendingUndo = nil
+        pendingUndoDismissTask?.cancel()
+        pendingUndoDismissTask = nil
         guard Date() < pending.expiresAt else {
+            pendingUndo = nil
             toast = "撤销窗口已结束"
             return
         }
+        pendingUndo = nil
         let now = Date()
         Task { @MainActor in
             let succeeded = await self.undoSingleAction(pending.state, at: now)

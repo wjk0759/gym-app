@@ -27,6 +27,7 @@ CAPABILITY = register(
         requires_confirmation=True,
         undo=True,
         events=("TrainingPlanGenerated",),
+        refreshes=("plan", "schedule", "workouts", "diet"),
     )
 )
 ADJUST = register(
@@ -39,6 +40,7 @@ ADJUST = register(
         requires_confirmation=True,
         undo=True,
         events=("TrainingPlanAdjusted",),
+        refreshes=("plan", "schedule", "workouts", "diet"),
     )
 )
 

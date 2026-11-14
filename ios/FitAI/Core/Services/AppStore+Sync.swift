@@ -380,105 +380,177 @@ extension AppStore {
         }
     }
 
+    @MainActor
     private func pullCloudUserData() async {
-        if !planNeedsServerSync,
-           let remote = try? await APIClient.shared.fetchCurrentPlan() {
+        await refreshDomains([.plan, .schedule, .diet, .body, .equipment])
+    }
+
+    // MARK: - Domain refresh
+
+    func revision(_ domain: AppDataDomain) -> Int {
+        dataRevisions[domain] ?? 0
+    }
+
+    func bump(_ domains: Set<AppDataDomain>) {
+        for domain in domains {
+            dataRevisions[domain, default: 0] += 1
+        }
+    }
+
+    /// Re-fetch only the modules affected by a coach write. The server returns
+    /// `refresh_domains` on confirm/undo; this is the single client-side path
+    /// that turns those names into real GET requests.
+    @MainActor
+    func refreshDomains(_ domains: Set<AppDataDomain>) async {
+        guard !domains.isEmpty else { return }
+        let account = currentUserID
+        var refreshed: Set<AppDataDomain> = []
+
+        if domains.contains(.plan), !planNeedsServerSync,
+           let remote = try? await APIClient.shared.fetchCurrentPlan(),
+           currentUserID == account {
             if let local = plan,
                local.id == remote.id,
                local.version > remote.version {
-                // Local is ahead only while an edit is still in flight.
+                // Local is ahead while an edit is still in flight.
             } else {
                 mergeServerPlan(remote)
                 planNeedsServerSync = false
-                persist()
-                // The plan fetch may contain days added by the coach that the
-                // earlier schedule push did not know about. Pull their dates
-                // before the home screen renders.
-                await refreshPlanSchedule()
+                rescheduleNotifications()
+                refreshed.insert(.plan)
             }
         }
-        if let remote = try? await nutrition.fetchRemote() {
-            let localIDs = Set(foodLogs.map(\.id))
-            let pendingDeletes = Set(pendingFoodDeletionIDs)
-            let pendingUpdates = Set(pendingFoodUpdateIDs)
-            for item in remote {
-                if pendingDeletes.contains(item.clientID)
-                    || pendingUpdates.contains(item.clientID) {
-                    continue
-                }
-                guard let value = nutrition.makeFoodLog(from: item) else {
-                    continue
-                }
-                if let index = foodLogs.firstIndex(where: { $0.id == value.id }) {
-                    foodLogs[index] = value
-                } else if !localIDs.contains(value.id) {
-                    foodLogs.append(value)
-                }
-            }
-            foodLogs.sort { $0.date > $1.date }
+        if domains.contains(.schedule), await refreshPlanSchedule() {
+            refreshed.insert(.schedule)
         }
-        if let remote = try? await APIClient.shared.fetchBodyMetrics() {
-            for item in remote {
-                guard let id = UUID(uuidString: item.clientID) else { continue }
-                let value = BodyMetric(
-                    id: id,
-                    date: item.measuredAt,
-                    weightKG: item.weightKG,
-                    bodyFatPCT: item.bodyFatPCT,
-                    waistCM: item.waistCM,
-                    armCM: item.armCM,
-                    thighCM: item.thighCM,
-                    syncedAt: Date()
-                )
-                if let index = bodyMetrics.firstIndex(where: { $0.id == id }) {
-                    bodyMetrics[index] = value
-                } else {
-                    bodyMetrics.append(value)
-                }
-            }
-            bodyMetrics.sort { $0.date > $1.date }
-            if let latest = bodyMetrics.first {
-                if let weight = latest.weightKG { profile.weightKG = weight }
-                if let bodyFat = latest.bodyFatPCT { profile.bodyFatPCT = bodyFat }
-                if let waist = latest.waistCM { profile.waistCM = waist }
-                if let arm = latest.armCM, arm > 0 { profile.armCM = arm }
-                if let thigh = latest.thighCM, thigh > 0 { profile.thighCM = thigh }
-            }
+        if domains.contains(.workouts),
+           let remote = try? await workoutSync.fetchRecent(),
+           currentUserID == account {
+            mergeRemoteWorkouts(remote)
+            refreshed.insert(.workouts)
         }
-        if let remote = try? await APIClient.shared.fetchEquipmentItems() {
-            for item in remote {
-                guard let id = UUID(uuidString: item.clientID) else { continue }
-                var value = EquipmentItem(
-                    id: id,
-                    name: item.name,
-                    equipmentType: item.equipmentType,
-                    category: item.category,
-                    photoURL: AppConfig.resolveMediaURL(item.photoURL)?.absoluteString,
-                    enabledExerciseSlugs: item.enabledExerciseSlugs ?? [],
-                    slug: item.slug,
-                    muscle: item.muscle.flatMap { MuscleGroup(rawValue: $0) },
-                    equipment: item.equipment.flatMap { Equipment(rawValue: $0) },
-                    videoURL: nil,
-                    notes: item.notes,
-                    photoData: nil,
-                    createdAt: item.createdAt,
-                    syncedAt: Date(),
-                    targetMuscles: item.targetMuscles ?? []
-                )
-                if let local = equipmentLibrary.first(where: { $0.id == id }),
-                   local.photoURL == value.photoURL {
-                    // Keep the local image cache when it still matches the remote URL.
-                    value.photoData = local.photoData
-                }
-                if let index = equipmentLibrary.firstIndex(where: { $0.id == id }) {
-                    equipmentLibrary[index] = value
-                } else {
-                    equipmentLibrary.append(value)
-                }
-            }
+        if domains.contains(.diet),
+           let remote = try? await nutrition.fetchRemote(),
+           currentUserID == account {
+            mergeRemoteFoodLogs(remote)
+            refreshed.insert(.diet)
         }
-        if let remote = try? await APIClient.shared.fetchUniversalEquipment() {
+        if domains.contains(.body),
+           let remote = try? await APIClient.shared.fetchBodyMetrics(),
+           currentUserID == account {
+            mergeRemoteBodyMetrics(remote)
+            refreshed.insert(.body)
+        }
+        if domains.contains(.equipment),
+           let remote = try? await APIClient.shared.fetchEquipmentItems(),
+           currentUserID == account {
+            mergeRemoteEquipmentItems(remote)
+            refreshed.insert(.equipment)
+        }
+        if domains.contains(.equipment),
+           let remote = try? await APIClient.shared.fetchUniversalEquipment(),
+           currentUserID == account {
             selectedUniversalSlugs = remote.filter(\.enabled).map(\.slug)
+            refreshed.insert(.equipment)
+        }
+        if domains.contains(.review) {
+            refreshWeeklyReview(force: true)
+            refreshed.insert(.review)
+        }
+        if domains.contains(.inbox) {
+            refreshCoachInbox()
+            refreshed.insert(.inbox)
+        }
+        if domains.contains(.profile) {
+            // Goal updates are applied from the confirmed pending payload.
+            refreshed.insert(.profile)
+        }
+        bump(refreshed)
+        if !refreshed.isEmpty {
+            persist()
+        }
+    }
+
+    private func mergeRemoteFoodLogs(_ remote: [RemoteFoodLog]) {
+        let localIDs = Set(foodLogs.map(\.id))
+        let pendingDeletes = Set(pendingFoodDeletionIDs)
+        let pendingUpdates = Set(pendingFoodUpdateIDs)
+        for item in remote {
+            if pendingDeletes.contains(item.clientID)
+                || pendingUpdates.contains(item.clientID) {
+                continue
+            }
+            guard let value = nutrition.makeFoodLog(from: item) else {
+                continue
+            }
+            if let index = foodLogs.firstIndex(where: { $0.id == value.id }) {
+                foodLogs[index] = value
+            } else if !localIDs.contains(value.id) {
+                foodLogs.append(value)
+            }
+        }
+        foodLogs.sort { $0.date > $1.date }
+    }
+
+    private func mergeRemoteBodyMetrics(_ remote: [RemoteBodyMetric]) {
+        for item in remote {
+            guard let id = UUID(uuidString: item.clientID) else { continue }
+            let value = BodyMetric(
+                id: id,
+                date: item.measuredAt,
+                weightKG: item.weightKG,
+                bodyFatPCT: item.bodyFatPCT,
+                waistCM: item.waistCM,
+                armCM: item.armCM,
+                thighCM: item.thighCM,
+                syncedAt: Date()
+            )
+            if let index = bodyMetrics.firstIndex(where: { $0.id == id }) {
+                bodyMetrics[index] = value
+            } else {
+                bodyMetrics.append(value)
+            }
+        }
+        bodyMetrics.sort { $0.date > $1.date }
+        if let latest = bodyMetrics.first {
+            if let weight = latest.weightKG { profile.weightKG = weight }
+            if let bodyFat = latest.bodyFatPCT { profile.bodyFatPCT = bodyFat }
+            if let waist = latest.waistCM { profile.waistCM = waist }
+            if let arm = latest.armCM, arm > 0 { profile.armCM = arm }
+            if let thigh = latest.thighCM, thigh > 0 { profile.thighCM = thigh }
+        }
+    }
+
+    private func mergeRemoteEquipmentItems(_ remote: [RemoteEquipmentItem]) {
+        for item in remote {
+            guard let id = UUID(uuidString: item.clientID) else { continue }
+            var value = EquipmentItem(
+                id: id,
+                name: item.name,
+                equipmentType: item.equipmentType,
+                category: item.category,
+                photoURL: AppConfig.resolveMediaURL(item.photoURL)?.absoluteString,
+                enabledExerciseSlugs: item.enabledExerciseSlugs ?? [],
+                slug: item.slug,
+                muscle: item.muscle.flatMap { MuscleGroup(rawValue: $0) },
+                equipment: item.equipment.flatMap { Equipment(rawValue: $0) },
+                videoURL: nil,
+                notes: item.notes,
+                photoData: nil,
+                createdAt: item.createdAt,
+                syncedAt: Date(),
+                targetMuscles: item.targetMuscles ?? []
+            )
+            if let local = equipmentLibrary.first(where: { $0.id == id }),
+               local.photoURL == value.photoURL {
+                // Keep the local image cache when it still matches the remote URL.
+                value.photoData = local.photoData
+            }
+            if let index = equipmentLibrary.firstIndex(where: { $0.id == id }) {
+                equipmentLibrary[index] = value
+            } else {
+                equipmentLibrary.append(value)
+            }
         }
     }
 }

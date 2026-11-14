@@ -77,66 +77,72 @@ struct TypewriterText: View {
 
 // MARK: - Week strip
 
-/// Shared week strip for Today, Nutrition and Progress. It keeps the week in
-/// the user's field of view without the weight of a full month calendar.
+/// Seven-day strip centred on today: three days before, today, three after.
+/// A rolling window keeps the next days visible even at the end of a week.
+/// The arithmetic is a pure helper so it can be unit-tested.
+enum WeekStripWindow {
+    static func dates(
+        around date: Date,
+        calendar: Calendar = FitnessDate.calendar
+    ) -> [Date] {
+        let today = calendar.startOfDay(for: date)
+        return (-3...3).compactMap {
+            calendar.date(byAdding: .day, value: $0, to: today)
+        }
+    }
+}
+
 struct WeekStrip: View {
     @Binding var selectedDate: Date
     var markedKeys: Set<String> = []
     var completedKeys: Set<String> = []
 
-    private let calendar = Calendar.current
-
-    private var days: [Date] {
-        let start = calendar.startOfDay(for: Date())
-        let weekday = calendar.component(.weekday, from: start)
-        let mondayOffset = weekday == 1 ? -6 : 2 - weekday
-        guard let monday = calendar.date(byAdding: .day, value: mondayOffset, to: start) else {
-            return [start]
-        }
-        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: monday) }
-    }
+    private let calendar = FitnessDate.calendar
 
     var body: some View {
-        HStack(spacing: 6) {
-            ForEach(days, id: \.self) { day in
-                let key = FitnessDate.key(day)
-                let selected = calendar.isDate(day, inSameDayAs: selectedDate)
-                let isToday = calendar.isDateInToday(day)
-                Button {
-                    Haptics.select()
-                    selectedDate = day
-                } label: {
-                    VStack(spacing: 6) {
-                        Text(weekdayLabel(day))
-                            .font(AppType.micro)
-                            .foregroundStyle(selected ? Theme.onPrimary : Theme.tertiaryText)
-                        Text("\(calendar.component(.day, from: day))")
-                            .font(.system(size: 17, weight: .bold, design: .monospaced))
-                            .foregroundStyle(selected ? Theme.onPrimary : Theme.primaryText)
-                        Circle()
-                            .fill(
-                                completedKeys.contains(key)
-                                    ? Theme.lime
-                                    : (markedKeys.contains(key) ? Theme.cobalt : Color.clear)
-                            )
-                            .frame(width: 5, height: 5)
+        TimelineView(.periodic(from: .now, by: 60)) { context in
+            let days = WeekStripWindow.dates(around: context.date, calendar: calendar)
+            HStack(spacing: 6) {
+                ForEach(days, id: \.self) { day in
+                    let key = FitnessDate.key(day)
+                    let selected = calendar.isDate(day, inSameDayAs: selectedDate)
+                    let isToday = calendar.isDate(day, inSameDayAs: context.date)
+                    Button {
+                        Haptics.select()
+                        selectedDate = day
+                    } label: {
+                        VStack(spacing: 6) {
+                            Text(weekdayLabel(day))
+                                .font(AppType.micro)
+                                .foregroundStyle(selected ? Theme.onPrimary : Theme.tertiaryText)
+                            Text("\(calendar.component(.day, from: day))")
+                                .font(.system(size: 17, weight: .bold, design: .monospaced))
+                                .foregroundStyle(selected ? Theme.onPrimary : Theme.primaryText)
+                            Circle()
+                                .fill(
+                                    completedKeys.contains(key)
+                                        ? Theme.lime
+                                        : (markedKeys.contains(key) ? Theme.cobalt : Color.clear)
+                                )
+                                .frame(width: 5, height: 5)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                        .background {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(selected ? Theme.primary : Theme.paper)
+                        }
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(
+                                    isToday && !selected ? Theme.cobalt : Theme.stroke,
+                                    lineWidth: isToday && !selected ? 1.5 : 1
+                                )
+                        }
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 9)
-                    .background {
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(selected ? Theme.primary : Theme.paper)
-                    }
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .strokeBorder(
-                                isToday && !selected ? Theme.cobalt : Theme.stroke,
-                                lineWidth: isToday && !selected ? 1.5 : 1
-                            )
-                    }
+                    .buttonStyle(SubtlePressStyle(scale: 0.96))
+                    .accessibilityLabel("\(weekdayLabel(day)) \(calendar.component(.day, from: day))")
                 }
-                .buttonStyle(SubtlePressStyle(scale: 0.96))
-                .accessibilityLabel("\(weekdayLabel(day)) \(calendar.component(.day, from: day))")
             }
         }
     }

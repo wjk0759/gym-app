@@ -78,6 +78,9 @@ struct WeekDietPlanView: View {
                 didLoad = true
                 await load()
             }
+            .onChange(of: store.revision(.diet)) { _, _ in
+                Task { await load() }
+            }
             .sheet(item: $selectedRecipe) { selection in
                 DietRecipeSheet(selection: selection)
             }

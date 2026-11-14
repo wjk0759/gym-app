@@ -35,7 +35,8 @@ struct HomeV2View: View {
     var markedKeys: Set<String> {
         Set(
             (store.plan?.days ?? []).compactMap { day in
-                store.plan?.scheduledDate(for: day).map { FitnessDate.key($0) }
+                guard day.skippedAt == nil else { return nil }
+                return store.plan?.scheduledDate(for: day).map { FitnessDate.key($0) }
             }
         )
     }

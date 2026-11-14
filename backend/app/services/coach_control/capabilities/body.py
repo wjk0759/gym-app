@@ -22,6 +22,7 @@ CAPABILITY = register(
         requires_confirmation=True,
         undo=True,
         events=("BodyMetricLogged",),
+        refreshes=("body", "profile", "review"),
     )
 )
 

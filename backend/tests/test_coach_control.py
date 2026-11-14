@@ -734,11 +734,13 @@ def test_training_reschedule_confirm_and_undo(db):
 
     confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
     assert confirmed["status"] == "executed"
+    assert set(confirmed["refresh_domains"]) == {"plan", "schedule", "diet"}
     state = db.execute(select(PlanDayState)).scalar_one()
     assert state.assigned_date == date(today.year, 11, 20)
     assert db.execute(select(DomainEvent)).scalar_one().type == "TrainingRescheduled"
 
-    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    undone = runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert set(undone["refresh_domains"]) == {"plan", "schedule", "diet"}
     assert db.execute(select(PlanDayState)).scalars().all() == []
 
 
@@ -1221,6 +1223,69 @@ def test_reschedule_uses_server_plan_dates_without_client_context(db):
     assert turn["pending"]["payload"]["to_date"] == (
         today + timedelta(days=1)
     ).isoformat()
+
+
+def test_reschedule_tomorrow_to_today_before_first_week(db):
+    import asyncio
+
+    from app.models import utcnow
+    from app.services.coach_control.context import with_plan_context
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    tomorrow = today + timedelta(days=1)
+    program = Program(
+        user_id="user-1",
+        title="明天开始的计划",
+        goal_type="recomp",
+        version=1,
+        status="active",
+        start_date=today,
+        weeks=4,
+    )
+    db.add(program)
+    db.flush()
+    day = ProgramDay(
+        program_id=program.id,
+        week_index=1,
+        weekday=1,
+        title="胸",
+    )
+    db.add(day)
+    db.flush()
+    db.add(
+        PlanDayState(
+            user_id="user-1",
+            plan_id=program.id,
+            day_id=day.id,
+            assigned_date=tomorrow,
+            client_updated_at=utcnow(),
+        )
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "把明天的训练改到今天")
+    )
+    assert turn["intent"] == "training.reschedule", turn
+    assert turn["pending"]["payload"]["to_date"] == today.isoformat()
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert confirmed["status"] == "executed"
+    assert set(confirmed["refresh_domains"]) == {"plan", "schedule", "diet"}
+
+    context = with_plan_context(db, "user-1", {})
+    item = next(
+        item for item in context["plan"]["days"] if item["id"] == day.id
+    )
+    assert item["date"] == today.isoformat()
+
+
+def test_write_capabilities_declare_refresh_domains():
+    from app.services.coach_control.registry import CAPABILITIES
+
+    for capability in CAPABILITIES.values():
+        if capability.kind == "write":
+            assert capability.refreshes, capability.id
 
 
 def test_edit_day_exercises_confirm_and_undo(db):

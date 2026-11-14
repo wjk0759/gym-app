@@ -25,6 +25,7 @@ CAPABILITY = register(
         requires_confirmation=True,
         undo=True,
         events=("TrainingRescheduled",),
+        refreshes=("plan", "schedule", "diet"),
     )
 )
 CARDIO = register(
@@ -37,6 +38,7 @@ CARDIO = register(
         requires_confirmation=True,
         undo=True,
         events=("WorkoutLogged",),
+        refreshes=("workouts", "plan", "schedule", "review"),
     )
 )
 SKIP = register(
@@ -49,6 +51,7 @@ SKIP = register(
         requires_confirmation=True,
         undo=True,
         events=("TrainingSkipped",),
+        refreshes=("plan", "schedule"),
     )
 )
 STRENGTH = register(
@@ -61,6 +64,7 @@ STRENGTH = register(
         requires_confirmation=True,
         undo=True,
         events=("WorkoutLogged",),
+        refreshes=("workouts", "plan", "schedule", "review"),
     )
 )
 

@@ -424,7 +424,10 @@ extension CoachChatView {
     private func coachReceiptCard(_ receipt: CoachReceipt) -> some View {
         CoachCard(border: Theme.primary.opacity(0.3)) {
             VStack(alignment: .leading, spacing: 9) {
-                CoachCardHeader(eyebrow: "COACH / 已完成", status: "可撤销")
+                CoachCardHeader(
+                    eyebrow: "COACH / 已完成",
+                    status: store.coachUndoExpiresAt == nil ? "可撤销" : "5 秒内可撤销"
+                )
                 Text(receipt.summary ?? "操作已完成")
                     .font(AppType.callout)
                     .foregroundStyle(Theme.ink)
@@ -433,12 +436,27 @@ extension CoachChatView {
                         .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
-                if store.coachUndoActionID != nil {
-                    Button("撤销这次操作") {
-                        store.undoCoachReceipt()
+                if let deadline = store.coachUndoExpiresAt {
+                    TimelineView(.periodic(from: .now, by: 0.1)) { context in
+                        let remaining = max(0, deadline.timeIntervalSince(context.date))
+                        ProgressView(value: remaining, total: 5)
+                            .tint(Theme.coral)
+                    }
+                }
+                HStack(spacing: 16) {
+                    if store.coachUndoActionID != nil {
+                        Button("撤销这次操作") {
+                            store.undoCoachReceipt()
+                        }
+                        .font(AppType.caption.weight(.semibold))
+                        .foregroundStyle(Theme.coral)
+                        .buttonStyle(.plain)
+                    }
+                    Button("完成") {
+                        store.dismissCoachReceipt()
                     }
                     .font(AppType.caption.weight(.semibold))
-                    .foregroundStyle(Theme.coral)
+                    .foregroundStyle(Theme.secondaryText)
                     .buttonStyle(.plain)
                 }
             }

@@ -370,6 +370,12 @@ struct NutritionView: View {
             await loadTargets()
             await loadSavedPlan()
         }
+        .onChange(of: store.revision(.diet)) { _, _ in
+            Task {
+                await loadTargets()
+                await loadSavedPlan()
+            }
+        }
     }
 
     var suggestedMeal: MealType {

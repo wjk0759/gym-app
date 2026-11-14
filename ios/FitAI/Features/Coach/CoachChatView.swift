@@ -8,6 +8,8 @@ struct CoachChatView: View {
     @Environment(AppStore.self) var store
     @Environment(\.colorScheme) var colorScheme
 
+    private let coachBottomID = "coach-bottom"
+
     @State var input = ""
     @State var showCamera = false
     @State var cameraTitle = "拍照问教练"
@@ -29,6 +31,7 @@ struct CoachChatView: View {
     @State var editingFoodAction: AgentAction?
     @State var accessWaitExpired = false
     @State var accessRetryToken = 0
+    @State var isPrependingHistory = false
     @FocusState var focused: Bool
 
     var canSend: Bool {
@@ -54,6 +57,13 @@ struct CoachChatView: View {
             && !isLoadingAttachments
             && !isLoadingVideo
             && !store.isReplying
+    }
+
+    private func scrollToBottom(_ proxy: ScrollViewProxy) {
+        // Let the lazy list lay out the newly merged turns before scrolling.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            proxy.scrollTo(coachBottomID, anchor: .bottom)
+        }
     }
 
     struct StarterPrompt: Identifiable {
@@ -82,59 +92,83 @@ struct CoachChatView: View {
                             welcome
                                 .padding(20)
                         } else {
-                            LazyVStack(spacing: 12) {
-                                if store.coachHistoryHasMore {
-                                    Button {
-                                        store.loadEarlierCoachHistory()
-                                    } label: {
-                                        Text(
-                                            store.isLoadingCoachHistory
-                                                ? "加载中…"
-                                                : "查看更早消息"
+                            VStack(spacing: 0) {
+                                LazyVStack(spacing: 12) {
+                                    if store.coachHistoryHasMore {
+                                        Button {
+                                            let anchor = store.chat.first?.id
+                                            Task { @MainActor in
+                                                isPrependingHistory = true
+                                                await store.loadEarlierCoachHistory()
+                                                if let anchor {
+                                                    proxy.scrollTo(anchor, anchor: .top)
+                                                }
+                                                try? await Task.sleep(nanoseconds: 100_000_000)
+                                                isPrependingHistory = false
+                                            }
+                                        } label: {
+                                            Text(
+                                                store.isLoadingCoachHistory
+                                                    ? "加载中…"
+                                                    : "查看更早消息"
+                                            )
+                                            .font(AppType.micro.weight(.medium))
+                                            .foregroundStyle(Theme.cobalt)
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 6)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .disabled(store.isLoadingCoachHistory)
+                                    }
+
+                                    ForEach(store.chat) { message in
+                                        bubble(message)
+                                            .id(message.id)
+                                            .transition(.opacity)
+                                    }
+
+                                    if store.isReplying {
+                                        HStack(spacing: 9) {
+                                            TypingDots()
+                                            Text("教练正在输入…")
+                                                .font(AppType.caption)
+                                                .foregroundStyle(Theme.secondaryText)
+                                            Spacer()
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 10)
+                                        .background(
+                                            Theme.paper,
+                                            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
                                         )
-                                        .font(AppType.micro.weight(.medium))
-                                        .foregroundStyle(Theme.cobalt)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 6)
+                                        .padding(.horizontal, 4)
+                                        .transition(.opacity.combined(with: .offset(y: 8)))
                                     }
-                                    .buttonStyle(.plain)
-                                    .disabled(store.isLoadingCoachHistory)
                                 }
-
-                                ForEach(store.chat) { message in
-                                    bubble(message)
-                                        .id(message.id)
-                                        .transition(.opacity)
-                                }
-
-                                if store.isReplying {
-                                    HStack(spacing: 9) {
-                                        TypingDots()
-                                        Text("教练正在输入…")
-                                            .font(AppType.caption)
-                                            .foregroundStyle(Theme.secondaryText)
-                                        Spacer()
-                                    }
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 10)
-                                    .background(
-                                        Theme.paper,
-                                        in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    )
-                                    .padding(.horizontal, 4)
-                                    .transition(.opacity.combined(with: .offset(y: 8)))
-                                }
+                                Color.clear
+                                    .frame(height: 1)
+                                    .id(coachBottomID)
                             }
                             .padding(20)
                         }
                     }
+                    .onAppear {
+                        scrollToBottom(proxy)
+                        Task { @MainActor in
+                            await store.restoreCoachControlSession()
+                            scrollToBottom(proxy)
+                        }
+                    }
                     .onChange(of: store.chat.last?.id) { _, _ in
-                        guard let last = store.chat.last else { return }
-                        proxy.scrollTo(last.id, anchor: .bottom)
+                        scrollToBottom(proxy)
+                    }
+                    .onChange(of: store.chat.count) { _, _ in
+                        guard !store.isLoadingCoachHistory,
+                              !isPrependingHistory else { return }
+                        scrollToBottom(proxy)
                     }
                     .onChange(of: store.isReplying) { _, _ in
-                        guard let last = store.chat.last else { return }
-                        proxy.scrollTo(last.id, anchor: .bottom)
+                        scrollToBottom(proxy)
                     }
                 }
 
@@ -201,7 +235,6 @@ struct CoachChatView: View {
                     store.beginPlanAdjustment()
                 }
                 consumePendingCoachAttachments()
-                store.restoreCoachControlSession()
                 store.refreshCoachInbox()
                 consumeCoachEntryPrompt()
             }

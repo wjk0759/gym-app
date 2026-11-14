@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct PlanScheduleView: View {
-    @Environment(AppStore.self) private var store
+    @Environment(AppStore.self) var store
     @Environment(\.dismiss) private var dismiss
 
     private var weeks: Int {
@@ -10,12 +10,29 @@ struct PlanScheduleView: View {
 
     @State private var startDate = FitnessDate.startOfDay(Date())
     @State private var daysPerWeek = 3
-    @State private var selected = Set<String>()
+    @State var selected = Set<String>()
     @State private var didLoad = false
     @State private var isLoading = false
     @State private var message = ""
 
-    private var calendar: Calendar { FitnessDate.calendar }
+    var calendar: Calendar { FitnessDate.calendar }
+
+    var today: Date { FitnessDate.startOfDay(Date()) }
+    var todayKey: String { FitnessDate.key(today) }
+
+    /// Today is only outside the weekly grid when the plan starts in the
+    /// future. In that case the date page offers it as a move target.
+    var todaySlotVisible: Bool {
+        guard let firstStart = blocks.first?.start else { return false }
+        return today < firstStart
+    }
+
+    func todayPlanDay(in plan: TrainingPlan) -> PlanDay? {
+        plan.days.first { day in
+            guard let date = day.date else { return false }
+            return calendar.isDate(date, inSameDayAs: today)
+        }
+    }
 
     private struct ScheduleBlock: Identifiable {
         let id: Int
@@ -48,14 +65,47 @@ struct PlanScheduleView: View {
     }
 
     private var selectedCount: Int {
-        counts.reduce(0, +)
+        let firstStart = blocks.first?.start ?? .distantPast
+        let otherEarly = (store.plan?.days ?? []).filter { day in
+            guard let date = day.date,
+                  date < firstStart,
+                  !calendar.isDate(date, inSameDayAs: today) else { return false }
+            return selected.contains(FitnessDate.key(date))
+        }.count
+        let todaySelected = todaySlotVisible && selected.contains(todayKey) ? 1 : 0
+        return counts.reduce(0, +) + todaySelected + otherEarly
     }
 
     /// 比基准每周天数少选的日期，会在保存时标记为跳过。
     private var skippedCount: Int {
-        blocks.reduce(0) { total, block in
-            let slots = visibleBlockDays(for: block.id).count
-            return total + max(0, slots - counts[block.id])
+        guard let plan = store.plan else { return 0 }
+        return blocks.reduce(0) { total, block in
+            let blockDays = plan.days.filter { $0.weekIndex == block.id + 1 }
+            let firstStart = blocks.first?.start ?? .distantPast
+            let earlyKeys = Set(blockDays.compactMap { day -> String? in
+                guard let date = day.date, date < firstStart else { return nil }
+                return FitnessDate.key(date)
+            })
+            let selectedEarly: Int
+            if block.id == 0 {
+                selectedEarly = blockDays.filter { day in
+                    guard let date = day.date else { return false }
+                    let key = FitnessDate.key(date)
+                    return earlyKeys.contains(key) && selected.contains(key)
+                }.count
+            } else {
+                selectedEarly = 0
+            }
+            let todaySelected: Int
+            if block.id == 0 && todaySlotVisible && selected.contains(todayKey) {
+                todaySelected = 1
+            } else {
+                todaySelected = 0
+            }
+            return total + max(
+                0,
+                blockDays.count - counts[block.id] - selectedEarly - todaySelected
+            )
         }
     }
 
@@ -79,7 +129,7 @@ struct PlanScheduleView: View {
                         loadingCard
                     } else {
                         overview
-                        if !earlyDays.isEmpty {
+                        if todaySlotVisible || !earlyDays.isEmpty {
                             earlyDayCard
                         }
                         board
@@ -112,6 +162,13 @@ struct PlanScheduleView: View {
             }
             .onAppear(perform: load)
             .onChange(of: store.plan?.updatedAt) { _, _ in
+                load()
+            }
+            .onChange(of: store.revision(.schedule)) { _, _ in
+                guard !isLoading else { return }
+                didLoad = false
+                selected.removeAll()
+                message = "计划已更新"
                 load()
             }
         }
@@ -413,6 +470,11 @@ struct PlanScheduleView: View {
             }
             chosen.sorted().forEach { selected.insert($0) }
         }
+        if todaySlotVisible,
+           let day = todayPlanDay(in: plan),
+           day.skippedAt == nil {
+            selected.insert(todayKey)
+        }
     }
 
     private var loadingCard: some View {
@@ -429,7 +491,7 @@ struct PlanScheduleView: View {
     /// A coach-added session can fall before the plan's first Monday (for
     /// example, training on the Sunday before week 1). It is not one of the
     /// 7-column week slots, but it is still a real scheduled workout.
-    private var earlyDays: [PlanDay] {
+    var earlyDays: [PlanDay] {
         guard let plan = store.plan, let firstStart = blocks.first?.start else {
             return []
         }
@@ -441,43 +503,26 @@ struct PlanScheduleView: View {
             .sorted { ($0.date ?? .distantFuture) < ($1.date ?? .distantFuture) }
     }
 
-    private var earlyDayCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("首周之前")
-                .font(AppType.caption.weight(.semibold))
-                .foregroundStyle(Theme.ink)
-
-            Text("这些日期不在 4 周日期板内，已作为额外训练保留。")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
-
-            ForEach(earlyDays) { day in
-                HStack(spacing: 6) {
-                    Image(systemName: day.skippedAt == nil
-                        ? "checkmark.circle.fill"
-                        : "circle")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(day.skippedAt == nil ? Theme.cobalt : Theme.tertiaryText)
-                    Text("\(day.date.map(FitnessDate.short) ?? "--") · \(day.title)")
-                        .font(AppType.caption)
-                        .foregroundStyle(Theme.ink)
-                    Spacer(minLength: 4)
-                    if day.skippedAt != nil {
-                        Text("已跳过")
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(Theme.tertiaryText)
-                    }
-                }
-            }
-
-            Text("想临时加练，直接对教练说「今天我想练背」。")
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
+    func toggleToday() {
+        guard todaySlotVisible else { return }
+        if selected.contains(todayKey) {
+            selected.remove(todayKey)
+            message = ""
+            return
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .card()
+        guard let plan = store.plan else { return }
+        let weekDays = plan.days.filter { $0.weekIndex == 1 }
+        let firstStart = blocks.first?.start ?? .distantPast
+        let selectedEarly = weekDays.filter { day in
+            guard let date = day.date, date < firstStart else { return false }
+            return selected.contains(FitnessDate.key(date))
+        }.count
+        guard counts[0] + selectedEarly < weekDays.count else {
+            message = "本周已选满 \(weekDays.count) 天，先取消要移到今天的那天"
+            return
+        }
+        selected.insert(todayKey)
+        message = ""
     }
 
     private func toggle(_ date: Date, block: Int) {
@@ -528,7 +573,14 @@ struct PlanScheduleView: View {
             let dates = block.dates.filter { selected.contains(FitnessDate.key($0)) }
             selection[block.id + 1] = dates
         }
-        if store.applyPlanSchedule(selection) {
+        if todaySlotVisible, selected.contains(todayKey) {
+            selection[1, default: []].append(today)
+            selection[1]?.sort()
+        }
+        if store.applyPlanSchedule(
+            selection,
+            managedEarlyKeys: todaySlotVisible ? [todayKey] : []
+        ) {
             dismiss()
         } else {
             message = store.lastScheduleSaveError

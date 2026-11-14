@@ -36,6 +36,7 @@ CAPABILITY = register(
         requires_confirmation=True,
         undo=True,
         events=("FoodLogged",),
+        refreshes=("diet", "review"),
     )
 )
 LOG_PLANNED = register(
@@ -48,6 +49,7 @@ LOG_PLANNED = register(
         requires_confirmation=True,
         undo=True,
         events=("PlannedMealLogged",),
+        refreshes=("diet",),
     )
 )
 SKIP_PLANNED = register(
@@ -60,6 +62,7 @@ SKIP_PLANNED = register(
         requires_confirmation=True,
         undo=True,
         events=("PlannedMealSkipped",),
+        refreshes=("diet",),
     )
 )
 RESTORE_PLANNED = register(
@@ -72,6 +75,7 @@ RESTORE_PLANNED = register(
         requires_confirmation=True,
         undo=True,
         events=("PlannedMealRestored",),
+        refreshes=("diet",),
     )
 )
 SWAP_MEAL = register(
@@ -84,6 +88,7 @@ SWAP_MEAL = register(
         requires_confirmation=True,
         undo=True,
         events=("DietMealSwapped",),
+        refreshes=("diet",),
     )
 )
 

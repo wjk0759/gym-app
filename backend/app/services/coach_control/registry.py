@@ -20,6 +20,7 @@ class Capability:
     requires_confirmation: bool = True
     undo: bool = True
     events: tuple[str, ...] = ()
+    refreshes: tuple[str, ...] = ()
 
 
 CAPABILITIES: dict[str, Capability] = {}
@@ -43,6 +44,7 @@ def capability_payloads() -> list[dict]:
             "requires_confirmation": item.requires_confirmation,
             "undo": item.undo,
             "events": list(item.events),
+            "refreshes": list(item.refreshes),
         }
         for item in CAPABILITIES.values()
     ]

@@ -252,14 +252,22 @@ extension AppStore {
 
     // MARK: - Plan schedule
 
-    func applyPlanSchedule(_ selection: [Int: [Date]]) -> Bool {
+    func applyPlanSchedule(
+        _ selection: [Int: [Date]],
+        managedEarlyKeys: Set<String> = []
+    ) -> Bool {
         lastScheduleSaveError = nil
         guard let current = plan else {
             lastScheduleSaveError = PlanScheduleValidationError.noPlan.message
             return false
         }
         let now = Date()
-        switch PlanScheduleEngine.apply(to: current, selection: selection, now: now) {
+        switch PlanScheduleEngine.apply(
+            to: current,
+            selection: selection,
+            managedEarlyKeys: managedEarlyKeys,
+            now: now
+        ) {
         case .success(let updated):
             plan = updated
             toast = "训练日期已更新"

@@ -653,6 +653,7 @@ struct CoachConfirmResponse: Decodable {
     let status: String
     let receipt: CoachReceipt?
     let plan: TrainingPlan?
+    let refreshDomains: [String]?
     let idempotent: Bool?
 
     enum CodingKeys: String, CodingKey {
@@ -660,6 +661,7 @@ struct CoachConfirmResponse: Decodable {
         case status
         case receipt
         case plan
+        case refreshDomains = "refresh_domains"
         case idempotent
     }
 }
@@ -693,10 +695,12 @@ struct CoachInboxResponse: Decodable {
 struct CoachUndoResponse: Decodable {
     let actionID: String
     let status: String
+    let refreshDomains: [String]?
 
     enum CodingKeys: String, CodingKey {
         case actionID = "action_id"
         case status
+        case refreshDomains = "refresh_domains"
     }
 }
 

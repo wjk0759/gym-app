@@ -134,6 +134,80 @@ final class PlanScheduleEngineTests: XCTestCase {
         XCTAssertNil(preserved.skippedAt)
     }
 
+    func testMovingTomorrowToTodayBeforeWeekOne() throws {
+        let plan = makePlan()
+        let chest = try XCTUnwrap(
+            plan.days.first { key($0.date) == "2026-11-16" }
+        )
+        var dates = selection(from: plan)
+        dates[1]?.removeAll { FitnessDate.key($0) == "2026-11-16" }
+        dates[1] = (dates[1] ?? []) + [date(-1)]
+        dates[1]?.sort()
+
+        let updated = try PlanScheduleEngine.apply(to: plan, selection: dates).get()
+
+        let moved = try XCTUnwrap(updated.days.first { $0.id == chest.id })
+        XCTAssertEqual(key(moved.date), "2026-11-15")
+        XCTAssertNil(moved.skippedAt)
+        XCTAssertEqual(
+            activeKeys(updated, week: 1),
+            ["2026-11-15", "2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20"]
+        )
+    }
+
+    func testTodayCannotBeAddedOnTopOfAFullWeek() {
+        let plan = makePlan()
+        var dates = selection(from: plan)
+        dates[1] = (dates[1] ?? []) + [date(-1)]
+        dates[1]?.sort()
+
+        let result = PlanScheduleEngine.apply(to: plan, selection: dates)
+
+        XCTAssertEqual(
+            result.failure,
+            PlanScheduleValidationError.tooManyDays(week: 1, limit: 5)
+        )
+    }
+
+    func testTodayCanFillAnExtraSixthSlot() throws {
+        let plan = makePlan(offsets: [
+            [0, 1, 2, 3, 4, -1],
+            [7, 8, 9, 10, 11],
+            [14, 15, 16, 17, 18],
+            [21, 22, 23, 24, 25],
+        ])
+        var dates = selection(from: plan)
+
+        let updated = try PlanScheduleEngine.apply(to: plan, selection: dates).get()
+
+        XCTAssertEqual(activeKeys(updated, week: 1).count, 6)
+        XCTAssertTrue(activeKeys(updated, week: 1).contains("2026-11-15"))
+    }
+
+    func testDeselectingManagedTodayRemovesTheExtraDay() throws {
+        let plan = makePlan(offsets: [
+            [0, 1, 2, 3, 4, -1],
+            [7, 8, 9, 10, 11],
+            [14, 15, 16, 17, 18],
+            [21, 22, 23, 24, 25],
+        ])
+        let extra = try XCTUnwrap(
+            plan.days.first { key($0.date) == "2026-11-15" }
+        )
+        var dates = selection(from: plan)
+        dates[1]?.removeAll { FitnessDate.key($0) == "2026-11-15" }
+
+        let updated = try PlanScheduleEngine.apply(
+            to: plan,
+            selection: dates,
+            managedEarlyKeys: ["2026-11-15"]
+        ).get()
+
+        let changed = try XCTUnwrap(updated.days.first { $0.id == extra.id })
+        XCTAssertNotNil(changed.skippedAt)
+        XCTAssertNil(changed.date)
+    }
+
     func testDeselectingMiddleDaySkipsThatDayInsteadOfTheLastOne() throws {
         let plan = makePlan()
         let thursday = try XCTUnwrap(

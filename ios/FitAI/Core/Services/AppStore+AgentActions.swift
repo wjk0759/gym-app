@@ -163,10 +163,11 @@ extension AppStore {
                     id: first.id,
                     title: undoStates.count == 1 ? first.title : "恢复本次 \(undoStates.count) 项修改",
                     actionType: undoStates.count == 1 ? first.type : "batch",
-                    expiresAt: Date().addingTimeInterval(300),
+                    expiresAt: Date().addingTimeInterval(5),
                     runID: runID,
                     state: undoStates.count == 1 ? undoStates[0] : .batch(undoStates)
                 )
+                self.schedulePendingUndoDismissal(for: first.id)
             }
             self.chat.append(
                 ChatMessage(
@@ -692,6 +693,23 @@ extension AppStore {
     func dismissAgentProposal() {
         agentProposal = nil
         persist()
+    }
+
+    func dismissPendingUndo() {
+        pendingUndoDismissTask?.cancel()
+        pendingUndoDismissTask = nil
+        pendingUndo = nil
+    }
+
+    func schedulePendingUndoDismissal(for id: String) {
+        pendingUndoDismissTask?.cancel()
+        pendingUndoDismissTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            guard !Task.isCancelled, let self,
+                  self.pendingUndo?.id == id else { return }
+            self.pendingUndo = nil
+            self.pendingUndoDismissTask = nil
+        }
     }
 
 }

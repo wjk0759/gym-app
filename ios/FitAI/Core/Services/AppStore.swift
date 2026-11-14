@@ -136,6 +136,10 @@ final class AppStore {
     var coachPending: CoachPendingState?
     var coachReceipt: CoachReceipt?
     var coachUndoActionID: String?
+    var coachUndoExpiresAt: Date?
+    var dataRevisions: [AppDataDomain: Int] = [:]
+    @ObservationIgnored var coachUndoDismissTask: Task<Void, Never>?
+    @ObservationIgnored var pendingUndoDismissTask: Task<Void, Never>?
     var coachBodyBefore: BodyMetric?
     var coachWeightBefore: Double?
     var coachPlanBefore: TrainingPlan?
@@ -286,6 +290,12 @@ final class AppStore {
         coachPending = nil
         coachReceipt = nil
         coachUndoActionID = nil
+        coachUndoExpiresAt = nil
+        coachUndoDismissTask?.cancel()
+        coachUndoDismissTask = nil
+        pendingUndoDismissTask?.cancel()
+        pendingUndoDismissTask = nil
+        dataRevisions = [:]
         coachBodyBefore = nil
         coachWeightBefore = nil
         coachPlanBefore = nil
