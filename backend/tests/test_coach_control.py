@@ -2286,6 +2286,18 @@ def test_start_training_and_open_screen_via_control_plane(db):
     assert confirmed["status"] == "executed"
     assert confirmed["receipt"]["screen"] == "workout_history"
 
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "分析一下我的体型"))
+    assert turn["intent"] == "ui.open_screen"
+    assert turn["pending"]["payload"]["screen"] == "body_analysis"
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "帮我识别这个器械"))
+    assert turn["intent"] == "ui.open_screen"
+    assert turn["pending"]["payload"]["screen"] == "equipment_scan"
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "打开身体打卡"))
+    assert turn["intent"] == "ui.open_screen"
+    assert turn["pending"]["payload"]["screen"] == "body_checkin"
+
 
 def test_remember_preference_via_control_plane(db):
     import asyncio
@@ -2343,7 +2355,8 @@ def test_vision_turn_is_recorded_in_the_control_plane(db, monkeypatch):
             "user-1",
             db,
             upload,
-            question="看看我的深蹲",
+            question="请判断图片内容并给出训练建议",
+            caption="看看我的深蹲",
             session_id=None,
             idempotency_key=None,
         )
@@ -2358,6 +2371,7 @@ def test_vision_turn_is_recorded_in_the_control_plane(db, monkeypatch):
     assert turn.status == "completed"
     assert turn.input_text.startswith("[图片]")
     assert "看看我的深蹲" in turn.input_text
+    assert "请判断图片内容" not in turn.input_text
     assert "深蹲底部膝盖轻微内扣" in turn.reply
     assert turn.session_id == result["session_id"]
 
@@ -2415,6 +2429,7 @@ def test_second_vision_turn_gets_control_plane_context(db, monkeypatch):
             db,
             upload(),
             question="看看我的深蹲",
+            caption="",
             session_id=None,
             idempotency_key=None,
         )
@@ -2425,6 +2440,7 @@ def test_second_vision_turn_gets_control_plane_context(db, monkeypatch):
             db,
             upload(),
             question="这次呢",
+            caption="",
             session_id=first["session_id"],
             idempotency_key=None,
         )

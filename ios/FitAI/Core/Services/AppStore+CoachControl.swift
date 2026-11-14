@@ -906,6 +906,12 @@ extension AppStore {
         case "body_checkin":
             selectedTab = AppTab.today.rawValue
             pendingRoute = .bodyCheckIn
+        case "body_analysis":
+            selectedTab = AppTab.coach.rawValue
+            coachBodyAnalysisRequested = true
+        case "equipment_scan":
+            selectedTab = AppTab.coach.rawValue
+            coachEquipmentScanRequested = true
         case "workout_history":
             selectedTab = AppTab.record.rawValue
             pendingRoute = .workoutHistory

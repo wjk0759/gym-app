@@ -7,6 +7,8 @@ iOS app executes after the user confirms.
 
 from __future__ import annotations
 
+import re
+
 from sqlalchemy.orm import Session
 
 from ..registry import Capability, register
@@ -44,12 +46,19 @@ SCREENS = {
     "训练安排": "training_schedule",
     "饮食": "nutrition",
     "餐": "nutrition",
+    "体型分析": "body_analysis",
+    "体态分析": "body_analysis",
+    "照片分析": "body_analysis",
+    "体型": "body_analysis",
+    "身体打卡": "body_checkin",
     "身体": "body_checkin",
-    "体型": "body_checkin",
     "设置": "profile_edit",
     "档案": "profile_edit",
     "计划": "plan",
     "教练": "coach",
+    "器械识别": "equipment_scan",
+    "器械扫描": "equipment_scan",
+    "识别器械": "equipment_scan",
     "器械": "equipment",
     "记忆": "agent_memory",
     "经期": "period_schedule",
@@ -90,6 +99,22 @@ def resolve_start(db: Session, user_id: str, context: dict) -> dict:
 
 
 def resolve_open(message: str) -> dict:
+    if re.search(r"识别|扫描|拍照|拍张|看看", message) and re.search(
+        r"器械|设备", message
+    ):
+        return {
+            "ready": True,
+            "payload": {"screen": "equipment_scan", "title": "器械识别"},
+            "summary": "准备打开器械识别。",
+        }
+    if re.search(r"分析|评估|看看|照片", message) and re.search(
+        r"体型|体态|身材", message
+    ):
+        return {
+            "ready": True,
+            "payload": {"screen": "body_analysis", "title": "体型分析"},
+            "summary": "准备打开体型分析。",
+        }
     for label, screen in SCREENS.items():
         if label in message:
             return {

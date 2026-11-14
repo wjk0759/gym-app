@@ -68,6 +68,24 @@ extension CoachChatView {
         appendDraft(image: prepared, data: data)
     }
 
+    /// Present a coach sheet requested by a control-plane UI action.
+    /// `onChange` only fires while the view is mounted, so a brand-new coach
+    /// tab also checks the pending flags on appear.
+    func presentCoachSheetIfNeeded() {
+        if store.coachEquipmentScanRequested {
+            if store.requirePro(.equipmentScan) {
+                showEquipmentScan = true
+            }
+            store.coachEquipmentScanRequested = false
+        }
+        if store.coachBodyAnalysisRequested {
+            if store.requirePro(.bodyPhoto) {
+                showBodyAnalysis = true
+            }
+            store.coachBodyAnalysisRequested = false
+        }
+    }
+
     @MainActor
     func loadPickedPhotos() async {
         guard !isLoadingAttachments else { return }

@@ -62,6 +62,7 @@ extension AppStore {
                     result = try await APIClient.shared.reviewCoachVision(
                         imageData: images[0],
                         question: visionQuestion,
+                        caption: trimmed,
                         sessionID: self.coachSessionID,
                         idempotencyKey: requestID.uuidString
                     )
@@ -69,6 +70,7 @@ extension AppStore {
                     result = try await APIClient.shared.reviewCoachVisionBatch(
                         imageData: images,
                         question: visionQuestion,
+                        caption: trimmed,
                         sessionID: self.coachSessionID,
                         idempotencyKey: requestID.uuidString
                     )

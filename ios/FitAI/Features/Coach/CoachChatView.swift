@@ -154,6 +154,7 @@ struct CoachChatView: View {
                     }
                     .onAppear {
                         scrollToBottom(proxy)
+                        presentCoachSheetIfNeeded()
                         Task { @MainActor in
                             await store.restoreCoachControlSession()
                             scrollToBottom(proxy)

@@ -213,6 +213,7 @@ async def create_vision_turn(
     db: DBSession,
     file: UploadFile = File(...),
     question: str = Form(default=""),
+    caption: str = Form(default=""),
     session_id: str | None = Form(default=None),
     idempotency_key: str | None = Header(
         default=None, alias="Idempotency-Key", max_length=64
@@ -234,7 +235,7 @@ async def create_vision_turn(
             db,
             user_id,
             session,
-            question,
+            caption or question,
             1,
             vision_turns.safety_response(decision),
         )
@@ -255,7 +256,7 @@ async def create_vision_turn(
     cached = photo_cache.get_cached_result(db, user_id, feature_key, key)
     if cached is not None:
         result = vision_turns.record_control_vision_turn(
-            db, user_id, session, question, 1, cached
+            db, user_id, session, caption or question, 1, cached
         )
         db.commit()
         return result
@@ -280,7 +281,7 @@ async def create_vision_turn(
             user_id=user_id,
         )
         result = vision_turns.record_control_vision_turn(
-            db, user_id, session, question, 1, result
+            db, user_id, session, caption or question, 1, result
         )
         photo_cache.store_cached_result(db, user_id, feature_key, key, result)
     except Exception:
@@ -301,6 +302,7 @@ async def create_vision_turn_batch(
     db: DBSession,
     files: list[UploadFile] = File(...),
     question: str = Form(default=""),
+    caption: str = Form(default=""),
     session_id: str | None = Form(default=None),
     idempotency_key: str | None = Header(
         default=None, alias="Idempotency-Key", max_length=64
@@ -317,7 +319,7 @@ async def create_vision_turn_batch(
             db,
             user_id,
             session,
-            question,
+            caption or question,
             len(files),
             vision_turns.safety_response(decision),
         )
@@ -352,7 +354,7 @@ async def create_vision_turn_batch(
     cached = photo_cache.get_cached_result(db, user_id, feature_key, key)
     if cached is not None:
         result = vision_turns.record_control_vision_turn(
-            db, user_id, session, question, len(images), cached
+            db, user_id, session, caption or question, len(images), cached
         )
         db.commit()
         return result
@@ -377,7 +379,7 @@ async def create_vision_turn_batch(
             user_id=user_id,
         )
         result = vision_turns.record_control_vision_turn(
-            db, user_id, session, question, len(images), result
+            db, user_id, session, caption or question, len(images), result
         )
         photo_cache.store_cached_result(db, user_id, feature_key, key, result)
     except Exception:

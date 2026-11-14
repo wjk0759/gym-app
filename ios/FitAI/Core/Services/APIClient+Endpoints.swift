@@ -739,10 +739,14 @@ extension APIClient {
     func reviewCoachVision(
         imageData: Data,
         question: String,
+        caption: String = "",
         sessionID: UUID? = nil,
         idempotencyKey: String? = nil
     ) async throws -> CoachVisionResult {
         var fields = ["question": question]
+        if !caption.isEmpty {
+            fields["caption"] = caption
+        }
         if let sessionID {
             fields["session_id"] = sessionID.uuidString.lowercased()
         }
@@ -759,10 +763,14 @@ extension APIClient {
     func reviewCoachVisionBatch(
         imageData: [Data],
         question: String,
+        caption: String = "",
         sessionID: UUID? = nil,
         idempotencyKey: String? = nil
     ) async throws -> CoachVisionResult {
         var fields = ["question": question]
+        if !caption.isEmpty {
+            fields["caption"] = caption
+        }
         if let sessionID {
             fields["session_id"] = sessionID.uuidString.lowercased()
         }

@@ -267,6 +267,18 @@ def _looks_like_open_screen(message: str) -> bool:
     )
 
 
+def _looks_like_analysis_screen(message: str) -> bool:
+    """Photo analysis / equipment scan requested without an upload.
+
+    The coach page hosts the camera sheets already; opening them from the
+    control plane keeps these capabilities inside the coach instead of sending
+    the user to a separate module as the primary path.
+    """
+    if not re.search(r"分析|评估|看看|识别|扫描|拍照|拍张|照片", message):
+        return False
+    return bool(re.search(r"体型|体态|身材|器械|设备", message))
+
+
 def _looks_like_plan(message: str) -> bool:
     return bool(
         re.search(
@@ -879,7 +891,9 @@ async def handle_turn(
             reply=(resolution.get("questions") or ["现在没有可开始的训练。"])[0],
         )
 
-    if intent_override is None and _looks_like_open_screen(text):
+    if intent_override is None and (
+        _looks_like_open_screen(text) or _looks_like_analysis_screen(text)
+    ):
         from .capabilities.ui_actions import resolve_open
 
         resolution = resolve_open(text)
