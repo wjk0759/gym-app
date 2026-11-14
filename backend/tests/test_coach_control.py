@@ -2339,6 +2339,47 @@ def test_remember_preference_via_control_plane(db):
     assert memory.active is False
 
 
+def test_memory_undo_handles_duplicate_content(db):
+    from app.models import AIMemory
+    from app.services.coach_control.capabilities.memory import undo
+
+    content = "我每周二四六练"
+    db.add_all(
+        [
+            AIMemory(
+                user_id="user-1",
+                kind="preference",
+                memory_key="general",
+                content=content,
+                source="coach_control",
+                confidence=1.0,
+                active=True,
+            ),
+            AIMemory(
+                user_id="user-1",
+                kind="preference",
+                memory_key="general",
+                content=content,
+                source="coach_control",
+                confidence=1.0,
+                active=True,
+            ),
+        ]
+    )
+    db.commit()
+
+    result = undo(db, "user-1", "action-1", {"content": content})
+    assert result["restored"] is True
+    active = db.execute(
+        select(AIMemory).where(
+            AIMemory.user_id == "user-1",
+            AIMemory.content == content,
+            AIMemory.active.is_(True),
+        )
+    ).scalars().all()
+    assert len(active) == 1
+
+
 def test_vision_turn_is_recorded_in_the_control_plane(db, monkeypatch):
     import asyncio
     import io

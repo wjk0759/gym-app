@@ -69,13 +69,20 @@ def undo(
     action_id: str,
     payload: dict,
 ) -> dict:
-    item = db.execute(
-        select(AIMemory).where(
-            AIMemory.user_id == user_id,
-            AIMemory.content == str(payload.get("content") or "")[:500],
-            AIMemory.source == "coach_control",
+    item = (
+        db.execute(
+            select(AIMemory)
+            .where(
+                AIMemory.user_id == user_id,
+                AIMemory.content == str(payload.get("content") or "")[:500],
+                AIMemory.source == "coach_control",
+                AIMemory.active.is_(True),
+            )
+            .order_by(AIMemory.created_at.desc(), AIMemory.id.desc())
         )
-    ).scalar_one_or_none()
+        .scalars()
+        .first()
+    )
     if item is not None:
         item.active = False
         db.flush()
