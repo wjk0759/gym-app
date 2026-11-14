@@ -807,7 +807,7 @@ def test_unrelated_message_cancels_a_stale_draft(db):
         runtime.handle_turn(
             db,
             "user-1",
-            "今天练什么",
+            "你好",
             session_id=first["session"]["id"],
         )
     )
@@ -1013,6 +1013,45 @@ def test_body_trend_review_uses_metrics_and_goal(db):
     assert any("目标进度" in item for item in turn["pending"]["payload"]["wins"])
 
 
+def test_training_preview_uses_the_client_schedule(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    context = {
+        "plan": {
+            "id": "plan-1",
+            "days": [
+                {
+                    "id": "day-1",
+                    "date": today.isoformat(),
+                    "title": "上肢",
+                    "completed": True,
+                    "skipped": False,
+                },
+                {
+                    "id": "day-2",
+                    "date": (today + timedelta(days=1)).isoformat(),
+                    "title": "下肢",
+                    "completed": False,
+                    "skipped": False,
+                },
+            ],
+        }
+    }
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "明天练什么",
+            app_context=context,
+        )
+    )
+    assert turn["intent"] == "training.preview_next"
+    assert turn["pending"]["kind"] == "insight"
+    assert "明天" in turn["reply"]
+    assert "下肢" in turn["reply"]
+
+
 def test_routing_eval_covers_deterministic_capabilities(db):
     """A small regression matrix for the intents the control plane owns.
 
@@ -1061,6 +1100,7 @@ def test_routing_eval_covers_deterministic_capabilities(db):
         ("蛋白质够吗", "diet.review_day"),
         ("最近体重怎么样", "body.review_trend"),
         ("目标进度", "body.review_trend"),
+        ("今天练什么", "training.preview_next"),
         ("帮我生成一个 4 周计划", "training.generate_plan"),
         ("计划太累了，减量", "training.adjust_plan"),
         ("我想减脂，目标 72kg", "profile.update_goal"),

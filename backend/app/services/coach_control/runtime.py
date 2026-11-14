@@ -47,6 +47,7 @@ SWAP_MEAL = "diet.swap_meal"
 TRAINING = "training.reschedule"
 SKIP_TRAINING = "training.skip"
 CARDIO = "training.log_cardio"
+PREVIEW = "training.preview_next"
 STRENGTH = "training.log_strength"
 WEIGHT = "body.log_weight"
 BODY_REVIEW = "body.review_trend"
@@ -212,6 +213,15 @@ def _looks_like_body_review(message: str) -> bool:
         re.search(r"体重|体脂|腰围|身体|身材|目标进度", message)
         and re.search(
             r"变化|趋势|怎么样|怎么|如何|进度|最近|几周|吗|？|\?",
+            message,
+        )
+    )
+
+
+def _looks_like_training_preview(message: str) -> bool:
+    return bool(
+        re.search(
+            r"练什么|练哪|下一练|下次训练|训练安排|接下来.*练",
             message,
         )
     )
@@ -532,6 +542,38 @@ async def handle_turn(
         )
         reply = payload.get("summary") or "身体趋势已经整理好。"
         turn.intent = BODY_REVIEW
+        turn.status = "completed"
+        turn.reply = reply
+        turn.latency_ms = int((time.perf_counter() - started) * 1000)
+        session.last_turn_at = utcnow()
+        session.updated_at = utcnow()
+        db.commit()
+        active = get_active_pending(db, user_id, session.id)
+        return {
+            "session": serialize_session(session, active),
+            "turn_id": turn.id,
+            "intent": turn.intent,
+            "status": turn.status,
+            "reply": reply,
+            "pending": serialize_pending(active),
+        }
+
+    if intent_override is None and _looks_like_training_preview(text):
+        from .capabilities.training_preview import (
+            resolve as resolve_training_preview,
+        )
+
+        resolution = resolve_training_preview(db, user_id, context)
+        payload = resolution["payload"]
+        set_pending(
+            db,
+            session,
+            kind="insight",
+            capability_id=PREVIEW,
+            payload=payload,
+        )
+        reply = payload.get("summary") or "下一练已经整理好。"
+        turn.intent = PREVIEW
         turn.status = "completed"
         turn.reply = reply
         turn.latency_ms = int((time.perf_counter() - started) * 1000)

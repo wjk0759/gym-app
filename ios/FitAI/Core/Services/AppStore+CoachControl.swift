@@ -119,6 +119,13 @@ extension AppStore {
         }
 
         if value.range(
+            of: #"练什么|练哪|下一练|下次训练|训练安排|接下来.*练"#,
+            options: .regularExpression
+        ) != nil {
+            return true
+        }
+
+        if value.range(
             of: #"多少|热量|卡路里|为什么|怎么|吗|？|\?"#,
             options: .regularExpression
         ) != nil {
