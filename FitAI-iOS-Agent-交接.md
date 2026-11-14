@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`3bd642f`（控制平面 + V38；首页 today±3、日期页当天 slot、静默 refresh_domains、教练对话滚到最新、5 秒撤销；后端生产已部署 `c661b10` 的 coach_control/runtime + `c415ed8` 的 context + `9564ac8` 的 schedule，无新迁移；iOS 已装 `48f682e`，`3bd642f` 待 Mac build/test；macOS `FitAITests` 基线 **91/91**，`3bd642f` 预期 **104/104**、UI **4/4**；后端 **449 passed**、QA **16/16**；账号 `13428104171` 新计划 `4c994a67` 保持 11-15 背 + 4 周日期）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`b1431fd`（控制平面 + V38；首页 today±3、日期页当天 slot、静默 refresh_domains、教练对话滚到最新、5 秒撤销；后端生产已部署 `b1431fd` 的 coach_control/runtime/training_add_day + `c415ed8` 的 context + `9564ac8` 的 schedule，无新迁移；iOS 已装 `48f682e`，`b1431fd` 待 Mac build/test；macOS `FitAITests` 基线 **91/91**，`b1431fd` 预期 **106/106**、UI **4/4**；后端 **449 passed**、QA **16/16**；账号 `13428104171` 新计划 `4c994a67` 保持 11-15 背 + 4 周日期）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -28,7 +28,7 @@
 
 ### 2026-11-15 · Windows（首页日期条 + 静默刷新 + 5 秒撤销 + 当天改期）
 
-- 代码提交：`c661b10`、`3bd642f`
+- 代码提交：`c661b10`、`3bd642f`、`b1431fd`
 - 首页日期条：
   - `WeekStrip` 改为 **today - 3 … today + 3**，不再固定周一到周日
   - 使用 `FitnessDate.calendar`，`TimelineView` 每分钟滚动，跨午夜保持今天居中
@@ -39,6 +39,7 @@
   - 本周已满或今天已有训练时阻止，并给出提示
   - `PlanScheduleEngine` 支持 `managedEarlyKeys`，未被管理的首周前额外训练继续保留
   - 后端补「把明天的训练改到今天」回归测试，`with_plan_context` 返回 11-15
+  - 教练新增日服务端同时写入目标日期的 `plan_day_state`，撤销时删除
 - 教练静默刷新：
   - 后端 `Capability.refreshes` + confirm/undo 返回 `refresh_domains`
   - iOS `refreshDomains` 真实 GET plan/schedule/workouts/diet/body
@@ -56,11 +57,11 @@
 - 验证：
   - 后端 **449 passed**、QA **16/16**、Ruff 通过
   - 生产实测 `body.log_weight` confirm/undo 返回 `["body","profile","review"]`
-  - iOS Build 在 `3bd642f` 通过
-  - Mac 仍需跑 `FitAITests`，预期 **104/104**、UI **4/4**
+  - iOS Build 在 `b1431fd` 通过
+  - Mac 仍需跑 `FitAITests`，预期 **106/106**、UI **4/4**
 - 部署：
-  - 后端已增量部署 coach_control / runtime，容器 healthy；无新迁移
-  - iOS `3bd642f` 待 Mac build/install
+  - 后端已增量部署 coach_control / runtime / training_add_day，容器 healthy；无新迁移
+  - iOS `b1431fd` 待 Mac build/install
 - 生产数据：
   - 当前 active 计划 `4c994a67` 仍保持 11-15 额外背 + 11-16..12-11 五分化日期
 
