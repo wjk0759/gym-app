@@ -511,6 +511,10 @@ struct PlanScheduleView: View {
             return
         }
         guard let plan = store.plan else { return }
+        if todayDay?.skippedAt == nil {
+            message = "今天已经有训练；先保存跳过今天这次，再移动其他训练"
+            return
+        }
         let weekDays = plan.days.filter { $0.weekIndex == 1 }
         let firstStart = blocks.first?.start ?? .distantPast
         let selectedEarly = weekDays.filter { day in

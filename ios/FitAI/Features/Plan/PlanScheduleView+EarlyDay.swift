@@ -8,9 +8,11 @@ extension PlanScheduleView {
                 .foregroundStyle(Theme.ink)
 
             Text(
-                todayDay?.skippedAt == nil
-                    ? "今天不在 4 周日期板内，已作为额外训练保留。"
-                    : "今天不在 4 周日期板内。先取消要移到今天的那天，再选这里。"
+                todaySlotVisible
+                    ? (todayDay?.skippedAt == nil
+                        ? "今天不在 4 周日期板内，已作为额外训练保留。"
+                        : "今天不在 4 周日期板内。先取消要移到今天的那天，再选这里。")
+                    : "这些日期在首周之前，保留为额外训练。"
             )
             .font(.system(size: 10, weight: .medium))
             .foregroundStyle(Theme.tertiaryText)
