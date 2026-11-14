@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`d86230e`（控制平面全量迁移 + Ring 2 入口收口；today±3 日期条、日期页当天 slot、静默 refresh_domains、5 秒撤销；新增饮食/训练改删、频率配置、开始训练/打开页面/记忆；照片分析写入 `coach_turns`，重装/新设备恢复最近会话，清空对话关闭服务端会话；体型分析/器械识别可从教练内打开；控制平面反馈恢复；后端生产已部署最新代码，iOS 已装 `b1431fd`，**最新 iOS 代码（`04bf779`）尚未在 Mac 构建/安装**；后端 **465 passed**、QA **16/16**；CI `04bf779` iOS build success；账号 `13428104171` 新计划 `4c994a67` 保持 11-15 背 + 4 周日期）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`c8eca16`（控制平面全量迁移 + Ring 2 入口收口；today±3 日期条、日期页当天 slot、静默 refresh_domains、5 秒撤销；新增饮食/训练改删、频率配置、开始训练/打开页面/记忆；照片分析写入 `coach_turns`，重装/新设备恢复最近会话，清空对话关闭服务端会话；体型分析/器械识别可从教练内打开；控制平面反馈恢复；关闭远程 AI 时不再发照片/周复盘；后端生产已部署最新代码，iOS 已装 `b1431fd`，**最新 iOS 代码（`c8eca16`）尚未在 Mac 构建/安装**；后端 **466 passed**、QA **16/16**；CI `04bf779` iOS build success，`c8eca16` 系列 build 进行中；账号 `13428104171` 新计划 `4c994a67` 保持 11-15 背 + 4 周日期）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -28,7 +28,7 @@
 
 ### 2026-11-15 · Windows（细节修复：反馈 / 卡片目标 / 中文频率 / 记忆唯一键 / 照片重试）
 
-- 提交：`e1a114b`、`04bf779`、`09477c1`、`69c679e`、`a9574ab`、`68c6e10`、`5d94979`、`d86230e`，均已推 `develop`；生产后端已部署到 `d86230e`。
+- 提交：`e1a114b`、`04bf779`、`09477c1`、`69c679e`、`a9574ab`、`68c6e10`、`5d94979`、`d86230e`、`686f79f`、`dd34bcd`、`d88d605`、`e907606`、`c8eca16`，均已推 `develop`；生产后端已部署到 `dd34bcd`（`d88d605`/`e907606`/`c8eca16` 仅 iOS）。
 - 做了什么：
   - 控制平面回复恢复反馈入口：`POST /coach/turns/{turn_id}/feedback` 写 `DomainEvent`，同一轮只记一次；iOS 对 `coach-<uuid>-assistant` 自动路由。
   - 改删卡显示真实目标：删除饮食带 `food_name/date/meal`，训练改删带 `title`，不再只显示“饮食记录/训练记录”。
@@ -37,21 +37,25 @@
   - 记忆撤销兼容历史重复内容，不再 `MultipleResultsFound` 500。
   - 照片分析同 idempotency key 重试复用原 `turn_id`，不重复写视觉轮次。
   - 计划配置取消不再提前改 `profile.weekly_days/session_minutes`：确认后才应用，撤销恢复原值。
+  - “计划太满/太忙/没时间/坚持不下来”按减量调整处理，不再只回一句“想怎么调整”。
+  - Pro 关闭远程 AI 后，教练拍照/视频不再上传，周复盘也不再调用远端模型；`coachContext`（体型分析上下文）随本地状态持久化，清空对话时一并清除。
 - 已验证：
-  - 后端 **465 passed**、QA **16/16**、Ruff app/tests/scripts/qa 全绿（`d86230e`）。
+  - 后端 **466 passed**、QA **16/16**、Ruff app/tests/scripts/qa 全绿（`dd34bcd`）。
   - GitHub CI：`e1a114b`、`04bf779` iOS build 均 success。
-  - 生产烟测：完整能力烟测重跑通过（能力 33 项；饮食改/删+撤销；训练改+撤销；开始训练/打开页面确认；记忆确认+撤销；计划配置确认+撤销）；删除卡返回 `鸡胸肉` / `跑步`；`一周三练，二四六，45分钟，三分化` → `training.configure_plan`；同 key 视觉请求两次返回同一 `turn_id`；反馈提交 200、重复提交 200 不重复写、缺失 turn 404；计划配置 `每周4练，二四六日，60分钟` 取消后 profile 仍 3/45，确认后 4/60，撤销恢复 3/45。
+  - 生产烟测：完整能力烟测重跑通过（能力 33 项；饮食改/删+撤销；训练改+撤销；开始训练/打开页面确认；记忆确认+撤销；计划配置确认+撤销）；删除卡返回 `鸡胸肉` / `跑步`；`一周三练，二四六，45分钟，三分化` → `training.configure_plan`；同 key 视觉请求两次返回同一 `turn_id`；反馈提交 200、重复提交 200 不重复写、缺失 turn 404；计划配置 `每周4练，二四六日，60分钟` 取消后 profile 仍 3/45，确认后 4/60，撤销恢复 3/45；`计划太满，坚持不下来` → `training.adjust_plan` 减量草案。
 - 未验证（需要 Mac / 真机）：
-  - 最新 iOS 代码（`04bf779`）的 Mac 构建、`FitAITests`（预期 **108/108**，新增 2 个 ID 解析测试）、`FitAIUITests` **4/4**。
+  - 最新 iOS 代码（`c8eca16`）的 Mac 构建、`FitAITests`（预期 **108/108**，新增 2 个 ID 解析测试）、`FitAIUITests` **4/4**。
   - 真机：控制平面反馈按钮、改删卡目标文案、中文频率配置、记忆撤销、照片重试不重复。
 - 对方需要做：
-  1. `git pull` → `xcodegen generate` → 跑 `FitAITests` + `FitAIUITests`，装 `04bf779`（后端用 `68c6e10`）。
+  1. `git pull` → `xcodegen generate` → 跑 `FitAITests` + `FitAIUITests`，装 `c8eca16`（后端用 `dd34bcd`）。
   2. 按“未验证”逐项走；重点看反馈是否写入、改删卡目标是否正确、`一周三练` 是否真的排 3 天。
 - 禁止恢复：
   - 不要给显式记忆复用 `memory_key="general"`，生产唯一索引会 500。
   - 不要让照片重试在 cache 命中时再写一条 `coach.vision`。
   - 不要用 `scalar_one_or_none()` 按内容找记忆撤销，历史可能有重复。
   - 不要在 `configure_plan` 的 resolve 阶段改 profile；必须等确认，否则取消也会污染设置。
+  - 不要在 Pro 关闭远程 AI 后上传照片或调用周复盘；这是隐私开关。
+  - 不要在清空对话时只清本地数组，必须关闭服务端会话并清 `coachSessionID`。
 
 ### 2026-11-15 · Windows（Ring 2 入口收口：照片统一 / 会话恢复 / 清空 / 体型器械）
 
