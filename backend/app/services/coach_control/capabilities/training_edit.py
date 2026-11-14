@@ -173,6 +173,10 @@ def resolve(
 
     resolved: list[dict] = []
     watchouts: list[str] = []
+    if re.search(r"今天|今日", message) and str(day.get("date") or "") != today.isoformat():
+        watchouts.append(
+            f"今天没有对应训练，按 {day.get('date') or '下一个训练日'} 处理。"
+        )
     for name in names:
         exercise, resolved_name = _resolve_exercise(db, name)
         if exercise is None:
