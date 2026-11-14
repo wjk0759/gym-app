@@ -96,7 +96,21 @@ def resolve_adjust(db: Session, user_id: str, message: str) -> dict:
     sets_delta = 0
     multiplier = 1.0
     suffix = ""
-    if any(word in message for word in ("减量", "太累", "恢复不过来", "降低强度", "少一点")):
+    if any(
+        word in message
+        for word in (
+            "减量",
+            "太累",
+            "恢复不过来",
+            "降低强度",
+            "少一点",
+            "太满",
+            "太忙",
+            "时间不够",
+            "没时间",
+            "坚持不下来",
+        )
+    ):
         sets_delta = -1
         multiplier = 0.95
         suffix = " · 减量"

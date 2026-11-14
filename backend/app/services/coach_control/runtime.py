@@ -297,7 +297,11 @@ def _looks_like_plan_adjust(message: str) -> bool:
     return bool(
         re.search(r"调整.{0,6}计划|计划.{0,6}调整", message)
         or (
-            re.search(r"减量|加量|降低重量|减重|轻一点|太累|恢复不过来", message)
+            re.search(
+                r"减量|加量|降低重量|减重|轻一点|太累|恢复不过来|"
+                r"太满|太忙|时间不够|没时间|坚持不下来",
+                message,
+            )
             and re.search(r"计划|训练", message)
         )
     )
