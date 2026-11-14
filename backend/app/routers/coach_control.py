@@ -10,8 +10,15 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy import func, select
 
 from ..deps import CurrentUser, DBSession
+from ..models import (
+    CoachActionRecord,
+    CoachInbox,
+    CoachTurn,
+    DomainEvent,
+)
 from ..services import access
 from ..services.coach_control import runtime
 from ..services.coach_control.context import build_control_context
@@ -39,6 +46,40 @@ def coach_context(
     db: DBSession,
 ):
     return build_control_context(db, user_id)
+
+
+@router.get("/stats")
+def coach_stats(
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    turn_rows = db.execute(
+        select(CoachTurn.status, func.count())
+        .where(CoachTurn.user_id == user_id)
+        .group_by(CoachTurn.status)
+    ).all()
+    action_rows = db.execute(
+        select(CoachActionRecord.status, func.count())
+        .where(CoachActionRecord.user_id == user_id)
+        .group_by(CoachActionRecord.status)
+    ).all()
+    event_rows = db.execute(
+        select(DomainEvent.type, func.count())
+        .where(DomainEvent.user_id == user_id)
+        .group_by(DomainEvent.type)
+    ).all()
+    unread = db.execute(
+        select(func.count()).where(
+            CoachInbox.user_id == user_id,
+            CoachInbox.status == "unread",
+        )
+    ).scalar_one()
+    return {
+        "turns": {str(key): int(value) for key, value in turn_rows},
+        "actions": {str(key): int(value) for key, value in action_rows},
+        "events": {str(key): int(value) for key, value in event_rows},
+        "inbox_unread": int(unread or 0),
+    }
 
 
 @router.post("/turns")
