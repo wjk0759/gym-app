@@ -235,8 +235,32 @@ def coach_inbox(
     user_id: CurrentUser,
     db: DBSession,
     limit: int = 20,
+    status: str | None = None,
 ):
-    return {"items": list_inbox(db, user_id, limit)}
+    items = list_inbox(db, user_id, limit, status)
+    return {"items": items}
+
+
+@router.post("/inbox/read-all")
+def read_all_coach_inbox(
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    items = (
+        db.execute(
+            select(CoachInbox).where(
+                CoachInbox.user_id == user_id,
+                CoachInbox.status == "unread",
+            )
+        )
+        .scalars()
+        .all()
+    )
+    for item in items:
+        item.status = "read"
+        item.read_at = utcnow()
+    db.commit()
+    return {"ok": True, "updated": len(items)}
 
 
 @router.post("/inbox/{item_id}/read")

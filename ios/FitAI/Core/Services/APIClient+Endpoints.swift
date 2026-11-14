@@ -266,6 +266,14 @@ extension APIClient {
         )
     }
 
+    func markAllCoachInboxRead() async throws {
+        try await sendVoid(
+            path: "coach/inbox/read-all",
+            method: "POST",
+            body: nil
+        )
+    }
+
     func coachInbox(limit: Int = 20) async throws -> CoachInboxResponse {
         try await send(
             path: "coach/inbox?limit=\(limit)",

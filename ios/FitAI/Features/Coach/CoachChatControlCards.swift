@@ -3,18 +3,22 @@ import SwiftUI
 extension CoachChatView {
     @ViewBuilder
     var coachInboxSection: some View {
-        if !store.coachInbox.isEmpty {
+        let unread = store.coachInbox.filter { $0.status == "unread" }
+        if !unread.isEmpty {
             VStack(alignment: .leading, spacing: 9) {
                 HStack {
                     Text("教练动态")
                         .font(AppType.callout.weight(.semibold))
                         .foregroundStyle(Theme.ink)
                     Spacer()
-                    Text("\(store.coachInbox.count)")
-                        .font(AppType.micro)
-                        .foregroundStyle(Theme.tertiaryText)
+                    Button("全部已读") {
+                        store.markAllCoachInboxRead()
+                    }
+                    .font(AppType.micro.weight(.semibold))
+                    .foregroundStyle(Theme.cobalt)
+                    .buttonStyle(.plain)
                 }
-                ForEach(store.coachInbox.prefix(3)) { item in
+                ForEach(unread.prefix(3)) { item in
                     VStack(alignment: .leading, spacing: 3) {
                         Text(item.title)
                             .font(AppType.caption.weight(.semibold))

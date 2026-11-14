@@ -5,6 +5,31 @@ import Foundation
 /// The legacy `sendAgentChat` path stays available for capabilities not yet
 /// migrated. Only food logging and training rescheduling route here for now.
 extension AppStore {
+    var coachInboxUnreadCount: Int {
+        coachInbox.filter { $0.status == "unread" }.count
+    }
+
+    func markAllCoachInboxRead() {
+        guard coachInboxUnreadCount > 0 else { return }
+        coachInbox = coachInbox.map { item in
+            guard item.status == "unread" else { return item }
+            return CoachInboxItem(
+                id: item.id,
+                kind: item.kind,
+                title: item.title,
+                body: item.body,
+                capabilityID: item.capabilityID,
+                payload: item.payload,
+                status: "read",
+                createdAt: item.createdAt
+            )
+        }
+        persist()
+        Task {
+            try? await APIClient.shared.markAllCoachInboxRead()
+        }
+    }
+
     func openCoach(prompt: String) {
         coachEntryPrompt = prompt
         selectedTab = 2

@@ -261,6 +261,7 @@ struct RootView: View {
         store.refreshWeeklyReview()
         store.syncPendingUserData()
         store.restoreAgentPendingState()
+        store.refreshCoachInbox()
         ingestPendingWatchSessions()
         preloadTodayForWatch()
         activateWeatherIfNeeded()

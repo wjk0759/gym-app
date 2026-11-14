@@ -52,13 +52,20 @@ def create_inbox_item(
     return item
 
 
-def list_inbox(db: Session, user_id: str, limit: int = 20) -> list[dict]:
+def list_inbox(
+    db: Session,
+    user_id: str,
+    limit: int = 20,
+    status: str | None = None,
+) -> list[dict]:
+    statement = select(CoachInbox).where(CoachInbox.user_id == user_id)
+    if status:
+        statement = statement.where(CoachInbox.status == status)
     rows = (
         db.execute(
-            select(CoachInbox)
-            .where(CoachInbox.user_id == user_id)
-            .order_by(CoachInbox.created_at.desc())
-            .limit(max(1, min(limit, 100)))
+            statement.order_by(CoachInbox.created_at.desc()).limit(
+                max(1, min(limit, 100))
+            )
         )
         .scalars()
         .all()

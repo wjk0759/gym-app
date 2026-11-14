@@ -58,6 +58,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("教练", systemImage: "bubble.left.and.bubble.right.fill")
                 }
+                .badge(store.coachInboxUnreadCount)
 
             DiscoverView(navigationPath: $discoverPath)
                 .tag(AppTab.discover.rawValue)

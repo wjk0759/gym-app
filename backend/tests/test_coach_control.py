@@ -352,6 +352,39 @@ def test_body_weight_confirm_and_undo(db):
     assert db.execute(select(BodyMetric)).scalars().all() == []
 
 
+def test_inbox_unread_filter_and_read_all(db):
+    from app.models import utcnow
+    from app.services.coach_control.events import create_inbox_item, list_inbox
+
+    first = create_inbox_item(
+        db,
+        "user-1",
+        kind="workout",
+        title="训练已记录",
+        body="这次训练已保存。",
+    )
+    create_inbox_item(
+        db,
+        "user-1",
+        kind="plan",
+        title="训练计划已更新",
+        body="新版本计划已经生效。",
+    )
+    db.commit()
+
+    assert len(list_inbox(db, "user-1")) == 2
+    assert len(list_inbox(db, "user-1", status="unread")) == 2
+
+    first.status = "read"
+    first.read_at = utcnow()
+    db.commit()
+
+    unread = list_inbox(db, "user-1", status="unread")
+    assert [item["kind"] for item in unread] == ["plan"]
+    read = list_inbox(db, "user-1", status="read")
+    assert [item["kind"] for item in read] == ["workout"]
+
+
 def test_control_context_contains_recent_events_and_last_action(db):
     import asyncio
 
