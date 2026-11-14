@@ -89,6 +89,21 @@ extension AppStore {
         ) != nil {
             return true
         }
+
+        if value.range(
+            of: #"体重|称重"#,
+            options: .regularExpression
+        ) == nil,
+           value.range(
+               of: #"\d+(?:\.\d+)?\s*(kg|公斤|斤)"#,
+               options: [.regularExpression, .caseInsensitive]
+           ) != nil,
+           value.range(
+               of: #"\d+\s*(组|次|个|reps?)"#,
+               options: [.regularExpression, .caseInsensitive]
+           ) != nil {
+            return true
+        }
         let foodWord = value.range(
             of: #"吃|喝|餐|零食|夜宵|记录饮食|记饮食|鸡|牛|猪|鱼|蛋|奶|饭|面|肠|菜|果"#,
             options: .regularExpression

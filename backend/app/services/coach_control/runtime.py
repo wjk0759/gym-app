@@ -37,6 +37,7 @@ SWAP_MEAL = "diet.swap_meal"
 TRAINING = "training.reschedule"
 SKIP_TRAINING = "training.skip"
 CARDIO = "training.log_cardio"
+STRENGTH = "training.log_strength"
 WEIGHT = "body.log_weight"
 REVIEW = "review.weekly"
 GOAL = "profile.update_goal"
@@ -173,6 +174,14 @@ def _looks_like_cardio(message: str) -> bool:
             message,
             re.IGNORECASE,
         )
+    )
+
+
+def _looks_like_strength(message: str) -> bool:
+    return bool(
+        not re.search(r"体重|称重", message)
+        and re.search(r"\d+(?:\.\d+)?\s*(kg|公斤|斤)", message, re.IGNORECASE)
+        and re.search(r"\d+\s*(组|次|个|reps?)", message, re.IGNORECASE)
     )
 
 
@@ -331,6 +340,13 @@ async def handle_turn(
             else:
                 text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
                 intent_override = CARDIO
+        elif pending.capability_id == STRENGTH:
+            if not _looks_like_strength(text) and not re.search(r"\d", text):
+                cancel_pending(db, session, pending)
+                pending = None
+            else:
+                text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
+                intent_override = STRENGTH
         elif pending.capability_id == SKIP_TRAINING:
             if not _looks_like_training_slot_answer(text):
                 cancel_pending(db, session, pending)
@@ -604,6 +620,34 @@ async def handle_turn(
             )
             reply = question
         turn.intent = CARDIO
+    elif intent_override == STRENGTH or (
+        intent_override is None and _looks_like_strength(text)
+    ):
+        from .capabilities.training import resolve_strength
+
+        resolution = resolve_strength(db, text)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            _pending_card(
+                db,
+                session,
+                capability_id=STRENGTH,
+                payload=payload,
+            )
+            reply = (
+                f"准备记录 {payload['date']} 的{payload['title']}，"
+                f"{len(payload['sets'])} 组。确认后写入。"
+            )
+        else:
+            question = (resolution.get("questions") or ["动作、重量和次数是什么？"])[0]
+            _pending_draft(
+                db,
+                session,
+                capability_id=STRENGTH,
+                payload={"message": text},
+            )
+            reply = question
+        turn.intent = STRENGTH
     elif intent_override == WEIGHT or (
         intent_override is None and _looks_like_weight(text)
     ):
@@ -788,6 +832,22 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "TrainingSkipped"
         entity_type = "plan_day"
         entity_id = str(pending.payload.get("day_id") or "")
+    elif pending.capability_id == STRENGTH:
+        from .capabilities.training import execute_strength
+
+        result = execute_strength(db, user_id, action_id, pending.payload)
+        after = result
+        receipt = {
+            "summary": (
+                f"已记录{pending.payload.get('title')} "
+                f"{len(pending.payload.get('sets') or [])} 组"
+            ),
+            "date": pending.payload.get("date"),
+            "deep_link": "fitai://workout_history",
+        }
+        event_type = "WorkoutLogged"
+        entity_type = "workout"
+        entity_id = action_id
     elif pending.capability_id == CARDIO:
         from .capabilities.training import execute_cardio
 
@@ -946,6 +1006,10 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
             record.payload,
             record.before or {},
         )
+    elif record.capability_id == STRENGTH:
+        from .capabilities.training import undo_strength
+
+        result = undo_strength(db, user_id, action_id, record.payload)
     elif record.capability_id == CARDIO:
         from .capabilities.training import undo_cardio
 

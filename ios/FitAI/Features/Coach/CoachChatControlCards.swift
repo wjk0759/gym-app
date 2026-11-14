@@ -35,6 +35,8 @@ extension CoachChatView {
                     Text("\(pending.payload?.date ?? "") · \(pending.payload?.title ?? "训练")")
                         .font(AppType.callout.weight(.semibold))
                         .foregroundStyle(Theme.ink)
+                } else if pending.capabilityID == "training.log_strength" {
+                    strengthPendingContent(pending)
                 } else if pending.capabilityID.hasPrefix("diet.") {
                     mealPendingContent(pending)
                 } else if pending.capabilityID == "body.log_weight" {
@@ -156,6 +158,23 @@ extension CoachChatView {
                     .foregroundStyle(Theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        }
+    }
+
+    private func strengthPendingContent(_ pending: CoachPendingState) -> some View {
+        let sets = pending.payload?.sets ?? []
+        let first = sets.first
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(pending.payload?.title ?? "力量训练")
+                .font(AppType.callout.weight(.semibold))
+                .foregroundStyle(Theme.ink)
+            Text(
+                "\(pending.payload?.date ?? "") · \(sets.count) 组 × "
+                + "\(first?.reps ?? 0) 次"
+                + (first.map { " · \(String(format: "%.1f", $0.weightKG ?? 0)) kg" } ?? "")
+            )
+            .font(AppType.caption)
+            .foregroundStyle(Theme.secondaryText)
         }
     }
 

@@ -13,6 +13,7 @@ from app.models import (
     CoachPending,
     CoachSession,
     DomainEvent,
+    Exercise,
     FoodLog,
     Goal,
     PlanDayState,
@@ -141,6 +142,41 @@ def test_planned_meal_log_and_skip_loop(db):
     runtime.confirm_pending(db, "user-1", restored["pending"]["id"])
     db.refresh(record)
     assert "dinner" not in record.plan.get("skipped_meals", [])
+
+
+def test_strength_log_confirm_and_undo(db):
+    import asyncio
+
+    from app.models import WorkoutSession
+
+    db.add(
+        Exercise(
+            slug="barbell-bench-press",
+            name_zh="杠铃卧推",
+            name_en="barbell bench press",
+            muscle_group="chest",
+            equipment="barbell",
+            is_compound=True,
+            contraindications=[],
+        )
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "今天卧推 60kg 8次 3组")
+    )
+    assert turn["intent"] == "training.log_strength"
+    assert turn["pending"]["kind"] == "card"
+    assert len(turn["pending"]["payload"]["sets"]) == 3
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    session = db.execute(select(WorkoutSession)).scalar_one()
+    assert session.sets[0].exercise_slug == "barbell-bench-press"
+    assert session.sets[0].weight_kg == 60
+    assert db.execute(select(DomainEvent)).scalar_one().type == "WorkoutLogged"
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(WorkoutSession)).scalars().all() == []
 
 
 def test_cardio_log_confirm_and_undo(db):

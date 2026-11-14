@@ -8,9 +8,10 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ....models import PlanDayState, utcnow
+from ....models import Exercise, PlanDayState, utcnow
 from ...coach_actions.schemas import LogWorkoutPayload
 from ...coach_actions.workout_actions import execute_log_workout, undo_log_workout
+from ...exercise_search import search_exercises
 from ...food_text import DIET_TZ, parse_food_date
 from ..registry import Capability, register
 
@@ -48,6 +49,18 @@ SKIP = register(
         requires_confirmation=True,
         undo=True,
         events=("TrainingSkipped",),
+    )
+)
+STRENGTH = register(
+    Capability(
+        id="training.log_strength",
+        domain="training",
+        kind="write",
+        title="补录力量训练",
+        description="记录动作、组数、重量和次数",
+        requires_confirmation=True,
+        undo=True,
+        events=("WorkoutLogged",),
     )
 )
 
@@ -362,6 +375,106 @@ def execute_cardio(
 
 
 def undo_cardio(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: dict,
+) -> dict:
+    return undo_log_workout(
+        db,
+        user_id,
+        action_id,
+        LogWorkoutPayload.model_validate(payload),
+    )
+
+
+def resolve_strength(db: Session, message: str) -> dict:
+    clean = re.sub(
+        r"\d+(?:\.\d+)?\s*(kg|公斤|斤|组|次|个|分钟|小时|reps?)",
+        " ",
+        message,
+        flags=re.IGNORECASE,
+    )
+    clean = re.sub(
+        r"今天|昨天|前天|刚才|补录|记录|练了|做了|每组|大概|训练",
+        " ",
+        clean,
+    ).strip()
+    results = search_exercises(clean, limit=3)
+    if not results:
+        return {"ready": False, "questions": ["记录哪个动作？例如卧推、深蹲、硬拉。"]}
+    name = str(results[0].get("name_zh") or "").strip()
+    exercise = db.execute(
+        select(Exercise).where(Exercise.name_zh == name)
+    ).scalar_one_or_none()
+    if exercise is None:
+        exercise = db.execute(
+            select(Exercise).where(Exercise.name_zh.contains(name)).limit(1)
+        ).scalar_one_or_none()
+    if exercise is None:
+        return {"ready": False, "questions": [f"没找到动作「{name}」，换一个名称试试？"]}
+
+    weight_match = re.search(
+        r"(\d+(?:\.\d+)?)\s*(kg|公斤|斤)",
+        message,
+        flags=re.IGNORECASE,
+    )
+    weight = 0.0
+    if weight_match:
+        weight = float(weight_match.group(1))
+        if weight_match.group(2) == "斤":
+            weight = weight / 2
+    elif exercise.equipment != "bodyweight":
+        return {"ready": False, "questions": [f"{name}用了多重？说公斤或斤都可以。"]}
+
+    reps_match = re.search(r"(\d+)\s*(次|个|reps?)", message, re.IGNORECASE)
+    if reps_match is None:
+        return {"ready": False, "questions": [f"{name}每组做了几次？"]}
+    reps = max(1, min(100, int(reps_match.group(1))))
+
+    sets_match = re.search(r"(\d+)\s*组", message)
+    sets = max(1, min(10, int(sets_match.group(1)))) if sets_match else 3
+    target = parse_food_date(message) or datetime.now(DIET_TZ).date()
+    if target > datetime.now(DIET_TZ).date():
+        return {"ready": False, "questions": ["未来的训练还不能记录，换一个日期？"]}
+    return {
+        "ready": True,
+        "payload": {
+            "date": target.isoformat(),
+            "title": name,
+            "duration_minutes": max(15, sets * 4 + 5),
+            "kind": "strength",
+            "notes": message[:500],
+            "sets": [
+                {
+                    "slug": exercise.slug,
+                    "set_index": index,
+                    "weight_kg": round(weight, 1),
+                    "reps": reps,
+                    "rpe": 7,
+                    "completed": True,
+                }
+                for index in range(1, sets + 1)
+            ],
+        },
+    }
+
+
+def execute_strength(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: dict,
+) -> dict:
+    return execute_log_workout(
+        db,
+        user_id,
+        action_id,
+        LogWorkoutPayload.model_validate(payload),
+    )
+
+
+def undo_strength(
     db: Session,
     user_id: str,
     action_id: str,
