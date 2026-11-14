@@ -14,6 +14,10 @@ extension AppStore {
         let trimmed = caption.trimmingCharacters(in: .whitespacesAndNewlines)
         let images = Array(imageData.prefix(CoachAttachmentPolicy.maxImages))
         guard !images.isEmpty else { return }
+        if hasProAccess && !useRemoteAI {
+            toast = "已在设置中关闭远程 AI；照片分析需要远程模型。"
+            return
+        }
 
         let customQuestion = (question ?? trimmed).trimmingCharacters(in: .whitespacesAndNewlines)
         let visionQuestion = customQuestion.isEmpty
