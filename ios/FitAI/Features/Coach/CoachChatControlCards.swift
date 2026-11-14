@@ -100,11 +100,12 @@ extension CoachChatView {
                         .foregroundStyle(Theme.secondaryText)
                 } else if pending.capabilityID == "training.preview_next" {
                     trainingPreviewPendingContent(pending)
+                } else if pending.capabilityID == "training.edit_day_exercises" {
+                    exerciseEditPendingContent(pending)
                 } else if pending.capabilityID == "review.weekly"
                             || pending.capabilityID == "diet.review_day"
                             || pending.capabilityID == "body.review_trend"
-                            || pending.capabilityID == "diet.generate_day"
-                            || pending.capabilityID == "training.edit_day_exercises" {
+                            || pending.capabilityID == "diet.generate_day" {
                     reviewPendingContent(pending)
                 } else if pending.capabilityID == "training.generate_plan",
                           let plan = pending.payload?.plan {
@@ -250,6 +251,30 @@ extension CoachChatView {
                 Text("目标日期：\(date)")
                     .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
+            }
+        }
+    }
+
+    private func exerciseEditPendingContent(_ pending: CoachPendingState) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(pending.payload?.summary ?? "准备替换当天动作")
+                .font(AppType.callout)
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            if let lines = pending.payload?.wins, !lines.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(lines, id: \.self) { line in
+                        Text("· \(line)")
+                            .font(AppType.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                    }
+                }
+            }
+            if let watchouts = pending.payload?.watchouts, !watchouts.isEmpty {
+                Text("留意：\(watchouts.joined(separator: "；"))")
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
