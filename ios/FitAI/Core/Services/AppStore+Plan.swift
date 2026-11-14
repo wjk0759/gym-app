@@ -282,6 +282,20 @@ extension AppStore {
         syncPendingUserData()
     }
 
+    func deferPendingPlan() {
+        guard let pending = pendingPlanPreview else { return }
+        deferredPlanPreview = pending
+        pendingPlanPreview = nil
+        persist()
+    }
+
+    func resumeDeferredPlan() {
+        guard let deferred = deferredPlanPreview else { return }
+        deferredPlanPreview = nil
+        pendingPlanPreview = deferred
+        persist()
+    }
+
     func confirmPendingPlan(openRecord: Bool = false) {
         guard let pending = pendingPlanPreview else { return }
         guard workoutDraft == nil else {
@@ -290,6 +304,7 @@ extension AppStore {
         }
         let needsServerImport = planNeedsServerSync
         pendingPlanPreview = nil
+        deferredPlanPreview = nil
         Task { @MainActor in
             if !needsServerImport {
                 do {
@@ -314,6 +329,7 @@ extension AppStore {
 
     func discardPendingPlan() {
         pendingPlanPreview = nil
+        deferredPlanPreview = nil
         planNeedsServerSync = false
         persist()
     }

@@ -14,7 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from ..models import FeatureTrial, FeatureUsage, UserEntitlement, utcnow
+from ..models import FeatureTrial, FeatureUsage, Program, UserEntitlement, utcnow
 
 # China has no DST. A fixed UTC+8 offset avoids a hard dependency on the
 # optional tzdata package in slim containers and on Windows test machines.
@@ -178,6 +178,17 @@ def require_training_plan_generation(
     trial = db.get(FeatureTrial, (user_id, FEATURE_TRAINING_PLAN))
     if onboarding and trial is None:
         return "onboarding"
+    if onboarding and trial is not None:
+        pending = db.execute(
+            select(Program.id).where(
+                Program.user_id == user_id,
+                Program.status == "pending",
+            )
+        ).first()
+        if pending is not None:
+            # The first preview is still unconfirmed. Let the user regenerate
+            # without consuming a second trial or hitting the paywall.
+            return "onboarding_regen"
     _raise_pro_required(FEATURE_TRAINING_PLAN)
 
 

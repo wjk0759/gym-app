@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from ...models import CoachActionRecord, CoachPending, CoachSession, CoachTurn, utcnow
 from . import capabilities  # noqa: F401 - registers capabilities
+from .context import with_plan_context
 from .events import emit_event
 from .state import (
     cancel_active_pending,
@@ -252,7 +253,11 @@ async def handle_turn(
 ) -> dict:
     started = time.perf_counter()
     session = get_or_create_session(db, user_id, session_id)
-    context = app_context if isinstance(app_context, dict) else {}
+    context = with_plan_context(
+        db,
+        user_id,
+        app_context if isinstance(app_context, dict) else {},
+    )
     text = message.strip()
     turn = CoachTurn(
         session_id=session.id,

@@ -227,6 +227,21 @@ def test_body_weight_confirm_and_undo(db):
     assert db.execute(select(BodyMetric)).scalars().all() == []
 
 
+def test_control_context_contains_recent_events_and_last_action(db):
+    import asyncio
+
+    from app.services.coach_control.context import build_control_context
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "今天体重 73kg"))
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+
+    context = build_control_context(db, "user-1")
+    assert context["version"] == "coach-control-v1"
+    assert context["coach_context"]["today"]["date"]
+    assert context["recent_events"][0]["type"] == "BodyMetricLogged"
+    assert context["last_action"]["capability_id"] == "body.log_weight"
+
+
 def test_weekly_review_is_an_insight_not_a_write(db):
     import asyncio
 

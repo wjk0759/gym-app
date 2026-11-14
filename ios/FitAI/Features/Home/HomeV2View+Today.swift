@@ -193,16 +193,32 @@ extension HomeV2View {
 
     var noPlanCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("还没有训练计划")
+            Text(store.deferredPlanPreview == nil ? "还没有训练计划" : "计划还等你确认")
                 .font(AppType.hero)
                 .foregroundStyle(Theme.ink)
-            Text("先让我按你的目标、器械和时间排一份 4 周计划。")
-                .font(AppType.body)
-                .foregroundStyle(Theme.secondaryText)
-            Button("生成计划") {
-                store.generatePlan()
+            Text(
+                store.deferredPlanPreview == nil
+                    ? "先让我按你的目标、器械和时间排一份 4 周计划。"
+                    : "上次生成的计划还在，确认后就能开始。"
+            )
+            .font(AppType.body)
+            .foregroundStyle(Theme.secondaryText)
+            if store.deferredPlanPreview != nil {
+                Button("继续确认计划") {
+                    store.resumeDeferredPlan()
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                Button("重新生成") {
+                    store.discardPendingPlan()
+                    store.generatePlan(onboarding: true)
+                }
+                .buttonStyle(SecondaryButtonStyle())
+            } else {
+                Button("生成计划") {
+                    store.generatePlan()
+                }
+                .buttonStyle(PrimaryButtonStyle())
             }
-            .buttonStyle(PrimaryButtonStyle())
         }
         .editorialCard(accent: Theme.lime)
     }

@@ -59,6 +59,8 @@ final class AppStore {
     var plan: TrainingPlan?
     /// Onboarding plan waiting for the user's confirmation.
     var pendingPlanPreview: TrainingPlan?
+    /// User tapped "稍后" on the first-plan preview. Keep it so Home can resume.
+    var deferredPlanPreview: TrainingPlan?
     /// Set when the current plan was produced locally and has not reached the
     /// server yet. Retried on the next user-data sync.
     var planNeedsServerSync = false
@@ -232,6 +234,7 @@ final class AppStore {
         profile = UserProfile()
         plan = nil
         pendingPlanPreview = nil
+        deferredPlanPreview = nil
         planNeedsServerSync = false
         planHistory = []
         sessions = []
@@ -339,6 +342,7 @@ final class AppStore {
         profile = state.profile
         plan = state.plan
         pendingPlanPreview = state.pendingPlanPreview
+        deferredPlanPreview = state.deferredPlanPreview
         planNeedsServerSync = state.planNeedsServerSync ?? false
         planHistory = state.planHistory ?? []
         sessions = state.sessions
@@ -396,6 +400,7 @@ final class AppStore {
             profile: profile,
             plan: plan,
             pendingPlanPreview: pendingPlanPreview,
+            deferredPlanPreview: deferredPlanPreview,
             planNeedsServerSync: planNeedsServerSync,
             planHistory: planHistory,
             sessions: sessions,
@@ -513,6 +518,7 @@ final class AppStore {
         var profile: UserProfile
         var plan: TrainingPlan?
         var pendingPlanPreview: TrainingPlan?
+        var deferredPlanPreview: TrainingPlan?
         var planNeedsServerSync: Bool?
         var planHistory: [TrainingPlan]?
         var sessions: [WorkoutSession]

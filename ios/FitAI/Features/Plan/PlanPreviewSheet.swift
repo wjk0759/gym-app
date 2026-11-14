@@ -31,7 +31,10 @@ struct PlanPreviewSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("稍后") { dismiss() }
+                    Button("稍后") {
+                        store.deferPendingPlan()
+                        dismiss()
+                    }
                 }
             }
         }

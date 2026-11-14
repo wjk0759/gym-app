@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from ..deps import CurrentUser, DBSession
 from ..services import access
 from ..services.coach_control import runtime
+from ..services.coach_control.context import build_control_context
 from ..services.coach_control.events import list_inbox
 from ..services.coach_control.registry import capability_payloads
 from ..services.rate_limit import enforce as enforce_rate_limit
@@ -30,6 +31,14 @@ class CoachTurnIn(BaseModel):
 @router.get("/capabilities")
 def capabilities():
     return {"items": capability_payloads()}
+
+
+@router.get("/context")
+def coach_context(
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    return build_control_context(db, user_id)
 
 
 @router.post("/turns")
