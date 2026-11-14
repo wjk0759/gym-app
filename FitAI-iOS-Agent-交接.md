@@ -49,6 +49,36 @@
   - 体脂/腰围只在有至少两次记录时展示变化
   - 目标进度用 12 周窗口起点估算，不回溯更早历史
   - 不含体态照片对比
+
+### 2026-11-14 · macOS（身体趋势复盘部署）
+
+- 分支：`develop`，部署后端 `33b38b5`、iOS `33b38b5`
+- 本地验证：
+  - `FitAITests` **81/81** 通过
+  - `FitAIUITests` **4/4** 通过
+- 备份：
+  - MySQL：`/opt/fitai/backups/fitai-pre-body-review-20261114-143814.sql.gz`（516K）
+  - backend：`/opt/fitai/backups/backend-pre-body-review-20261114-143814.tar.gz`
+- 迁移：无新增，保持 **V38**
+- 能力：
+  - `body.review_trend`
+  - 汇总最近 12 周体重、体脂、腰围
+  - 对照当前目标显示差距和进度
+  - 近 4 周变化过快/过慢提示
+  - 超过 14 天没记录时提示趋势滞后
+- 后端：
+  - `docker compose build api && up -d api` 成功，`fitai-api` healthy
+  - `/health/ready` 返回 `{"status":"ready"}`
+  - 最近日志无 ERROR
+- iOS：
+  - 最新 phone-only Release 已安装并启动 Wu-Tang
+  - 当前停留在记录页，页面正常
+- 未验证：
+  - 真实对话「我体重最近怎么样」「体脂有变化吗」「离目标还有多远」
+  - 趋势卡的数字、目标进度、watchouts 是否正确
+- 注意：
+  - 生产 22 端口仍对 `27.38.152.227/32` 放行；部署完成，可移除或改固定 IP
+
 ### 2026-11-14 · macOS（饮食复盘 + 漏斗埋点部署）
 
 - 分支：`develop`，部署后端 `77ac61d`、iOS `1429a02`
