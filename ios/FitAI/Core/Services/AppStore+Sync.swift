@@ -391,6 +391,10 @@ extension AppStore {
                 mergeServerPlan(remote)
                 planNeedsServerSync = false
                 persist()
+                // The plan fetch may contain days added by the coach that the
+                // earlier schedule push did not know about. Pull their dates
+                // before the home screen renders.
+                await refreshPlanSchedule()
             }
         }
         if let remote = try? await nutrition.fetchRemote() {
