@@ -296,17 +296,16 @@ def test_chest_pain_must_block_training(db):
 def test_week_schedule_understands_next_next_week(db):
     today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
     this_monday = today - timedelta(days=today.weekday())
-    days = []
-    for offset in (0, 7, 14):
-        days.append(
-            {
-                "id": f"qa-week-{offset}",
-                "date": (this_monday + timedelta(days=offset)).isoformat(),
-                "title": f"第{offset // 7 + 1}周训练",
-                "completed": False,
-                "skipped": False,
-            }
-        )
+    days = [
+        {
+            "id": f"qa-week-{offset}",
+            "date": (this_monday + timedelta(days=offset)).isoformat(),
+            "title": f"第{offset // 7 + 1}周训练",
+            "completed": False,
+            "skipped": False,
+        }
+        for offset in (0, 7, 14)
+    ]
     context = {"plan": {"id": "plan-qa", "days": days}}
     result = turn(db, "下下周训练安排", context)
     assert result["intent"] == "training.week_schedule", result

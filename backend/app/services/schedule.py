@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..models import PlanDayState, utcnow
@@ -27,7 +27,7 @@ def _utc(value: datetime) -> datetime:
 
 def _serialize(item: PlanDayState) -> dict:
     return {
-        "day_id": item.day_id,
+        "day_id": item.day_id.lower(),
         "assigned_date": item.assigned_date.isoformat() if item.assigned_date else None,
         "skipped_at": (
             _utc(item.skipped_at).isoformat() if item.skipped_at else None
@@ -43,7 +43,7 @@ def get_schedule(db: Session, user_id: str, plan_id: str) -> dict:
             select(PlanDayState)
             .where(
                 PlanDayState.user_id == user_id,
-                PlanDayState.plan_id == plan_id,
+                func.lower(PlanDayState.plan_id) == plan_id.lower(),
             )
             .order_by(PlanDayState.day_id)
         )
@@ -57,22 +57,24 @@ def sync_schedule(db: Session, user_id: str, payload: ScheduleSyncIn) -> dict:
     incoming: dict[str, object] = {}
     for item in payload.days:
         # Duplicate day ids in one batch: last one wins.
-        incoming[item.day_id] = item
+        incoming[item.day_id.lower()] = item
 
     existing_rows = (
         db.execute(
             select(PlanDayState)
             .where(
                 PlanDayState.user_id == user_id,
-                PlanDayState.plan_id == payload.plan_id,
-                PlanDayState.day_id.in_(list(incoming.keys()) or [""]),
+                func.lower(PlanDayState.plan_id) == payload.plan_id.lower(),
+                func.lower(PlanDayState.day_id).in_(
+                    list(incoming.keys()) or [""]
+                ),
             )
             .with_for_update()
         )
         .scalars()
         .all()
     )
-    existing = {item.day_id: item for item in existing_rows}
+    existing = {item.day_id.lower(): item for item in existing_rows}
     accepted: list[str] = []
     ignored: list[str] = []
     for day_id, item in incoming.items():
@@ -84,12 +86,16 @@ def sync_schedule(db: Session, user_id: str, payload: ScheduleSyncIn) -> dict:
         if current is None:
             current = PlanDayState(
                 user_id=user_id,
-                plan_id=payload.plan_id,
-                day_id=day_id,
+                plan_id=payload.plan_id.lower(),
+                day_id=day_id.lower(),
                 client_updated_at=incoming_at,
             )
             db.add(current)
             existing[day_id] = current
+        if current.day_id != day_id:
+            current.day_id = day_id
+        if current.plan_id != payload.plan_id.lower():
+            current.plan_id = payload.plan_id.lower()
         current.assigned_date = item.assigned_date
         current.skipped_at = item.skipped_at
         current.plan_version = payload.plan_version

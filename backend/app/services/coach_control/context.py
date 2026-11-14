@@ -94,7 +94,7 @@ def with_plan_context(
     if not isinstance(days, list) or not days:
         return context
     states = {
-        str(item.get("day_id")): item
+        str(item.get("day_id")).lower(): item
         for item in (plan.get("day_states") or [])
         if isinstance(item, dict)
     }
@@ -107,7 +107,7 @@ def with_plan_context(
         if not isinstance(item, dict):
             continue
         day_id = str(item.get("id") or "")
-        state = states.get(day_id) or {}
+        state = states.get(day_id.lower()) or {}
         assigned = state.get("assigned_date")
         computed = None
         if start is not None:

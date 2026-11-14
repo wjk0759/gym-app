@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from datetime import date, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ....models import Exercise, PlanDayState, utcnow
@@ -300,16 +300,16 @@ def execute_skip(
     state = db.execute(
         select(PlanDayState).where(
             PlanDayState.user_id == user_id,
-            PlanDayState.plan_id == plan_id,
-            PlanDayState.day_id == day_id,
+            func.lower(PlanDayState.plan_id) == plan_id.lower(),
+            func.lower(PlanDayState.day_id) == day_id.lower(),
         )
     ).scalar_one_or_none()
     before = _serialize_state(state)
     if state is None:
         state = PlanDayState(
             user_id=user_id,
-            plan_id=plan_id,
-            day_id=day_id,
+            plan_id=plan_id.lower(),
+            day_id=day_id.lower(),
             client_updated_at=utcnow(),
         )
         db.add(state)
@@ -332,8 +332,8 @@ def undo_skip(
     state = db.execute(
         select(PlanDayState).where(
             PlanDayState.user_id == user_id,
-            PlanDayState.plan_id == plan_id,
-            PlanDayState.day_id == day_id,
+            func.lower(PlanDayState.plan_id) == plan_id.lower(),
+            func.lower(PlanDayState.day_id) == day_id.lower(),
         )
     ).scalar_one_or_none()
     if not before:
@@ -549,16 +549,16 @@ def execute(
     state = db.execute(
         select(PlanDayState).where(
             PlanDayState.user_id == user_id,
-            PlanDayState.plan_id == plan_id,
-            PlanDayState.day_id == day_id,
+            func.lower(PlanDayState.plan_id) == plan_id.lower(),
+            func.lower(PlanDayState.day_id) == day_id.lower(),
         )
     ).scalar_one_or_none()
     before = _serialize_state(state)
     if state is None:
         state = PlanDayState(
             user_id=user_id,
-            plan_id=plan_id,
-            day_id=day_id,
+            plan_id=plan_id.lower(),
+            day_id=day_id.lower(),
             client_updated_at=utcnow(),
         )
         db.add(state)
@@ -592,8 +592,8 @@ def undo(
     state = db.execute(
         select(PlanDayState).where(
             PlanDayState.user_id == user_id,
-            PlanDayState.plan_id == plan_id,
-            PlanDayState.day_id == day_id,
+            func.lower(PlanDayState.plan_id) == plan_id.lower(),
+            func.lower(PlanDayState.day_id) == day_id.lower(),
         )
     ).scalar_one_or_none()
     if not before:
