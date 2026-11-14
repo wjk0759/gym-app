@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`e924492`（控制平面 + V38；体重撤销纠错、身体数据同步、首计划“稍后”保留、Context Assembler v1、力量补录、计划生成/激活；后端 **398 passed**；`Backend Tests`、`iOS Build` 在 `e924492` 通过；生产已部署 backend `a304f02` + Flyway **V38**、iOS `f77146d`，本修复尚未部署；macOS 已验证 `FitAITests` **81/81**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`79ef22d`（控制平面 + V38；体重撤销纠错、身体数据同步、首计划“稍后”保留、Context Assembler v1、力量补录、计划生成/调整/激活；后端 **398 passed**；`Backend Tests`、`iOS Build` 在 `79ef22d` 通过；生产已部署 backend `a304f02` + Flyway **V38**、iOS `f77146d`，本修复尚未部署；macOS 已验证 `FitAITests` **81/81**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -25,6 +25,28 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-14 · Windows（计划调整 + 撤销恢复）
+
+- 代码提交：`79ef22d`
+- 新增能力：
+  - `training.adjust_plan`
+  - “计划太累了，减量”/“加量”/“降低重量” → 生成 pending 计划版本
+  - 确认后激活新版本
+  - 撤销后恢复上一个 active 计划
+- iOS：
+  - 计划调整也走 proposal 卡
+  - 确认更新本地计划
+  - 撤销恢复本地旧计划并重排通知
+- 验证：
+  - 后端 **398 passed**，Ruff 通过
+  - `Backend Tests`、`iOS Build` 在 `79ef22d` 通过
+  - 计划生成 → 调整 → 激活 → 撤销恢复旧计划测试通过
+- 部署：
+  - 无新迁移；部署 backend `79ef22d` + iOS `79ef22d`
+- 已知限制：
+  - 计划调整目前只支持减量/加量/降重量，不支持自然语言改动作/换分化
+  - 仍只对 Pro 生效
 
 ### 2026-11-14 · Windows（教练生成并激活训练计划）
 
