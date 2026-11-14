@@ -95,7 +95,7 @@ extension AppStore {
             options: .regularExpression
         ) != nil
         let dietQuestion = value.range(
-            of: #"多少|怎么样|如何|够|缺|看看|总结|复盘|超"#,
+            of: #"多少|什么|怎么样|如何|够|缺|看看|总结|复盘|超"#,
             options: .regularExpression
         ) != nil
         let weeklyReview = value.range(
@@ -193,6 +193,31 @@ extension AppStore {
         return foodWord || amount
     }
 
+    /// Route conversational text to the control-plane answer capability.
+    ///
+    /// Action-heavy requests stay on the legacy agent until their specific
+    /// capabilities are migrated. Recognized writes are already intercepted by
+    /// `canRouteToCoachControl` before this check.
+    func shouldUseCoachFreeChat(_ text: String) -> Bool {
+        let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else { return false }
+        let action = value.range(
+            of: #"改成|换成|换一个|换个|替换|调整|修改|删掉|删除|增加|减少|生成|重排|安排|记录|记一下|帮我记|保存|计划餐|改到|改期|顺延|挪到"#,
+            options: .regularExpression
+        ) != nil
+        if action { return false }
+        let question = value.range(
+            of: #"吗|？|\?|怎么|如何|为什么|能不能|可不可以|要不要|该不该|推荐|建议|什么是|多少|几天|多久"#,
+            options: .regularExpression
+        ) != nil
+        if question { return true }
+        return value.count <= 40
+            && value.range(
+                of: #"我|今天|最近|感觉|有点|没|不想|吃|睡|累|疼|酸|练"#,
+                options: .regularExpression
+            ) != nil
+    }
+
     func sendCoachControlTurn(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !isCoachControlWorking, !isReplying else { return }
@@ -247,7 +272,26 @@ extension AppStore {
                 if response.intent == "safety" {
                     Telemetry.shared.track("coach_safety_block")
                 }
+                self.coachQuotaExhausted = false
+                Task { await self.refreshAccess() }
                 self.persist()
+            } catch is CancellationError {
+                return
+            } catch let error as APIError where error.isCoachQuotaExhausted {
+                Telemetry.shared.track(
+                    "coach_turn_failed",
+                    properties: ["stage": "quota"]
+                )
+                self.coachQuotaExhausted = true
+                self.toast = "今日免费额度已用完"
+                Task { await self.refreshAccess() }
+            } catch let error as APIError where error.isRateLimited
+                || error.statusCode == 429 {
+                Telemetry.shared.track(
+                    "coach_turn_failed",
+                    properties: ["stage": "rate_limit"]
+                )
+                self.toast = "请求太频繁，请稍后再试"
             } catch {
                 Telemetry.shared.track(
                     "coach_turn_failed",

@@ -983,13 +983,71 @@ async def handle_turn(
             reply = _food_reply(resolution)
             turn.intent = DIET
     else:
-        reply = (
-            "这条控制链路目前支持记录饮食和调整训练日期。"
-            "你可以说“午餐吃了100克鸡胸肉”，或者说“把周四的训练改到周六”。"
-        )
-        turn.intent = "unsupported"
+        profile = db.get(Profile, user_id)
+        if profile is None:
+            reply = "先完成个人档案，我才能给你更准确的建议。"
+            turn.intent = "unsupported"
+        else:
+            from ...config import settings
+            from ..memory import schedule_memory_extraction
+            from ..queries import active_program
+            from .capabilities.coach_answer import (
+                HistoryMessage,
+            )
+            from .capabilities.coach_answer import (
+                resolve as resolve_answer,
+            )
 
-    turn.status = "completed"
+            history_rows = (
+                db.execute(
+                    select(CoachTurn)
+                    .where(
+                        CoachTurn.session_id == session.id,
+                        CoachTurn.user_id == user_id,
+                        CoachTurn.id != turn.id,
+                    )
+                    .order_by(
+                        CoachTurn.created_at.desc(),
+                        CoachTurn.id.desc(),
+                    )
+                    .limit(10)
+                )
+                .scalars()
+                .all()
+            )
+            history_rows.reverse()
+            history: list[HistoryMessage] = []
+            for item in history_rows:
+                history.append(
+                    HistoryMessage(role="user", content=item.input_text)
+                )
+                if item.reply:
+                    history.append(
+                        HistoryMessage(role="assistant", content=item.reply)
+                    )
+            result = await resolve_answer(
+                db,
+                profile,
+                active_program(db, user_id),
+                history,
+                text,
+            )
+            reply = result.get("reply") or "我在。可以再说具体一点。"
+            if result.get("safety_flag"):
+                turn.intent = "safety"
+                turn.status = "blocked"
+            else:
+                turn.intent = "coach.answer"
+                if not settings.use_mock_llm and len(text.strip()) >= 8:
+                    schedule_memory_extraction(
+                        user_id,
+                        text,
+                        reply,
+                        source="coach_control",
+                    )
+
+    if turn.status != "blocked":
+        turn.status = "completed"
     turn.reply = reply
     turn.latency_ms = int((time.perf_counter() - started) * 1000)
     session.last_turn_at = utcnow()

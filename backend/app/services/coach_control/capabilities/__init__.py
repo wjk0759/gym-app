@@ -3,6 +3,7 @@
 from . import (  # noqa: F401
     body,
     body_review,
+    coach_answer,
     diet,
     diet_review,
     plan,

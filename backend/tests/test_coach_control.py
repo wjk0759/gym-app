@@ -491,16 +491,20 @@ def test_safety_reply_bypasses_exhausted_free_quota(db):
 def test_unsupported_turn_releases_free_quota(db):
     import asyncio
 
+    from app.models import User
     from app.routers.coach_control import CoachTurnIn, create_turn
     from app.services import access
 
-    used, _, _ = access.coach_usage(db, "user-1")
+    db.add(User(id="user-2", phone="13428104172", status="active"))
+    db.commit()
+
+    used, _, _ = access.coach_usage(db, "user-2")
     assert used == 0
 
-    turn = asyncio.run(create_turn(CoachTurnIn(message="你好"), "user-1", db))
+    turn = asyncio.run(create_turn(CoachTurnIn(message="你好"), "user-2", db))
     assert turn["intent"] == "unsupported"
 
-    used, _, _ = access.coach_usage(db, "user-1")
+    used, _, _ = access.coach_usage(db, "user-2")
     assert used == 0
 
 
@@ -789,17 +793,23 @@ def test_cancel_clears_the_active_pending(db):
     )
 
 
-def test_food_question_does_not_create_a_logging_draft(db):
+def test_food_question_does_not_create_a_logging_draft(db, monkeypatch):
     import asyncio
 
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "llm_provider", "mock")
     turn = asyncio.run(runtime.handle_turn(db, "user-1", "减脂怎么吃"))
-    assert turn["intent"] == "unsupported"
+    assert turn["intent"] == "coach.answer"
     assert turn["pending"] is None
 
 
-def test_unrelated_message_cancels_a_stale_draft(db):
+def test_unrelated_message_cancels_a_stale_draft(db, monkeypatch):
     import asyncio
 
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "llm_provider", "mock")
     first = asyncio.run(runtime.handle_turn(db, "user-1", "午餐喝了奶茶"))
     assert first["pending"]["kind"] == "draft"
 
@@ -812,7 +822,7 @@ def test_unrelated_message_cancels_a_stale_draft(db):
         )
     )
     assert second["pending"] is None
-    assert second["intent"] == "unsupported"
+    assert second["intent"] == "coach.answer"
     assert db.execute(select(CoachPending)).scalar_one().status == "cancelled"
 
 
@@ -1050,6 +1060,35 @@ def test_training_preview_uses_the_client_schedule(db):
     assert turn["pending"]["kind"] == "insight"
     assert "明天" in turn["reply"]
     assert "下肢" in turn["reply"]
+
+
+def test_free_chat_uses_the_control_session_and_history(db, monkeypatch):
+    import asyncio
+
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "llm_provider", "mock")
+    first = asyncio.run(
+        runtime.handle_turn(db, "user-1", "今天有点累，正常吗")
+    )
+    assert first["intent"] == "coach.answer"
+    assert first["pending"] is None
+
+    second = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "那我今天还练吗",
+            session_id=first["session"]["id"],
+        )
+    )
+    assert second["intent"] == "coach.answer"
+    assert second["pending"] is None
+
+    turns = db.execute(
+        select(CoachTurn).where(CoachTurn.session_id == first["session"]["id"])
+    ).scalars().all()
+    assert [item.intent for item in turns] == ["coach.answer", "coach.answer"]
 
 
 def test_routing_eval_covers_deterministic_capabilities(db):
