@@ -217,6 +217,11 @@ def resolve(
         exercises.append(item)
     old_name = current.exercise.name_zh if current.exercise else current.exercise_slug
     date_label = str(context_day.get("date") or "")
+    watchouts: list[str] = []
+    if re.search(r"今天|今日", message) and date_label != today.isoformat():
+        watchouts.append(f"今天没有对应训练，按 {date_label or '下一个训练日'} 处理。")
+    if new_name is not None:
+        watchouts.append("换动作后重量已清空，按新动作重新选重量。")
     if remove:
         summary = f"准备从{date_label}的「{day.title}」删除「{old_name}」。"
         wins = [f"删除 {old_name}"]
@@ -244,7 +249,7 @@ def resolve(
             "exercises": exercises,
             "summary": summary,
             "wins": wins,
-            "watchouts": [],
+            "watchouts": watchouts,
             "actions": [],
         },
     }
