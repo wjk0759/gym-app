@@ -254,68 +254,23 @@ extension AppStore {
 
     func applyPlanSchedule(_ selection: [Int: [Date]]) -> Bool {
         lastScheduleSaveError = nil
-        guard var current = plan else {
-            lastScheduleSaveError = "当前没有训练计划"
+        guard let current = plan else {
+            lastScheduleSaveError = PlanScheduleValidationError.noPlan.message
             return false
         }
         let now = Date()
-        let planWeeklyDays = current.weeklyDays
-            ?? max(1, current.days.count / max(1, current.weeks))
-        let target = max(1, min(7, planWeeklyDays))
-        for week in 1...current.weeks {
-            guard let dates = selection[week] else {
-                lastScheduleSaveError = "第 \(week) 周日期不完整"
-                return false
-            }
-            if dates.count > target {
-                lastScheduleSaveError = "第 \(week) 周最多选 \(target) 天"
-                return false
-            }
-            if Set(dates).count != dates.count {
-                lastScheduleSaveError = "第 \(week) 周有重复日期"
-                return false
-            }
+        switch PlanScheduleEngine.apply(to: current, selection: selection, now: now) {
+        case .success(let updated):
+            plan = updated
+            toast = "训练日期已更新"
+            persist()
+            rescheduleNotifications()
+            syncPendingUserData()
+            return true
+        case .failure(let error):
+            lastScheduleSaveError = error.message
+            return false
         }
-        for week in 1...current.weeks {
-            let indices = current.days.indices
-                .filter { current.days[$0].weekIndex == week }
-                .sorted {
-                    let left = current.scheduledDate(for: current.days[$0]) ?? .distantFuture
-                    let right = current.scheduledDate(for: current.days[$1]) ?? .distantFuture
-                    return left < right
-                }
-            let dates = (selection[week] ?? []).sorted()
-            guard dates.count <= indices.count else {
-                lastScheduleSaveError = "第 \(week) 周只有 \(indices.count) 个训练位"
-                return false
-            }
-            for (slot, index) in indices.enumerated() {
-                if slot < dates.count {
-                    current.days[index].date = FitnessDate.startOfDay(dates[slot])
-                    current.days[index].weekday = FitnessDate.weekdayNumber(dates[slot])
-                    current.days[index].skippedAt = nil
-                    current.days[index].scheduleUpdatedAt = now
-                } else if current.days[index].skippedAt == nil {
-                    // 用户主动少选的天数标记为跳过，不进入今日卡和通知。
-                    current.days[index].skippedAt = now
-                    current.days[index].scheduleUpdatedAt = now
-                }
-            }
-        }
-        current.days.sort {
-            if $0.weekIndex != $1.weekIndex { return $0.weekIndex < $1.weekIndex }
-            let left = $0.date ?? .distantFuture
-            let right = $1.date ?? .distantFuture
-            return left == right ? $0.weekday < $1.weekday : left < right
-        }
-        current.updatedAt = now
-        plan = current
-        lastScheduleSaveError = nil
-        toast = "训练日期已更新"
-        persist()
-        rescheduleNotifications()
-        syncPendingUserData()
-        return true
     }
 
     // MARK: - Flexible rescheduling

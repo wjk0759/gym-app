@@ -112,7 +112,7 @@ struct TrainingPlan: Codable, Identifiable, Hashable {
     var displayDate: Date { updatedAt ?? createdAt }
 
     var planStartDate: Date {
-        let calendar = Calendar.current
+        let calendar = FitnessDate.calendar
         let start = calendar.startOfDay(for: createdAt)
         let startWeekday = calendar.component(.weekday, from: start)
         let mondayOffset = startWeekday == 1 ? -6 : 2 - startWeekday
@@ -130,7 +130,7 @@ struct TrainingPlan: Codable, Identifiable, Hashable {
     }
 
     func date(week: Int, weekday: Int) -> Date? {
-        let calendar = Calendar.current
+        let calendar = FitnessDate.calendar
         let safeWeek = max(1, week)
         let safeWeekday = min(max(1, weekday), 7)
         return calendar.date(
@@ -151,7 +151,7 @@ struct TrainingPlan: Codable, Identifiable, Hashable {
         days.first { day in
             guard day.skippedAt == nil,
                   let value = scheduledDate(for: day) else { return false }
-            return Calendar.current.isDate(value, inSameDayAs: date)
+            return FitnessDate.calendar.isDate(value, inSameDayAs: date)
         }
     }
 

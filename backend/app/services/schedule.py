@@ -14,7 +14,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..models import PlanDayState, utcnow
-from ..schemas import ScheduleSyncIn
+from ..schemas import PlanDayStateIn, ScheduleSyncIn
 
 
 def _utc(value: datetime) -> datetime:
@@ -54,10 +54,26 @@ def get_schedule(db: Session, user_id: str, plan_id: str) -> dict:
 
 
 def sync_schedule(db: Session, user_id: str, payload: ScheduleSyncIn) -> dict:
-    incoming: dict[str, object] = {}
+    incoming: dict[str, PlanDayStateIn] = {}
     for item in payload.days:
         # Duplicate day ids in one batch: last one wins.
         incoming[item.day_id.lower()] = item
+
+    # A skipped workout must not keep a date that another active workout
+    # already uses. Older clients sent both, which created two entries on the
+    # same day after a fewer-day save.
+    active_dates = {
+        item.assigned_date
+        for item in incoming.values()
+        if item.assigned_date is not None and item.skipped_at is None
+    }
+    for item in incoming.values():
+        if (
+            item.assigned_date is not None
+            and item.skipped_at is not None
+            and item.assigned_date in active_dates
+        ):
+            item.assigned_date = None
 
     existing_rows = (
         db.execute(
@@ -102,6 +118,32 @@ def sync_schedule(db: Session, user_id: str, payload: ScheduleSyncIn) -> dict:
         current.client_updated_at = incoming_at
         current.updated_at = utcnow()
         accepted.append(day_id)
+
+    # Also clean rows from earlier partial syncs: a skipped day must not keep
+    # a date that an active day in the same plan already uses.
+    rows = (
+        db.execute(
+            select(PlanDayState).where(
+                PlanDayState.user_id == user_id,
+                func.lower(PlanDayState.plan_id) == payload.plan_id.lower(),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assigned_active = {
+        row.assigned_date
+        for row in rows
+        if row.assigned_date is not None and row.skipped_at is None
+    }
+    for row in rows:
+        if (
+            row.assigned_date is not None
+            and row.skipped_at is not None
+            and row.assigned_date in assigned_active
+        ):
+            row.assigned_date = None
+            row.updated_at = utcnow()
 
     db.commit()
     data = get_schedule(db, user_id, payload.plan_id)

@@ -230,7 +230,12 @@ extension AppStore {
         let uploads = plan.days.map { day in
             PlanScheduleUploadDay(
                 dayID: day.id.uuidString,
-                assignedDate: plan.scheduledDate(for: day).map { FitnessDate.key($0) },
+                // A skipped workout has no scheduled date. Sending its old
+                // date would create a duplicate with the active day that
+                // inherited it after a fewer-day save.
+                assignedDate: day.skippedAt == nil
+                    ? plan.scheduledDate(for: day).map { FitnessDate.key($0) }
+                    : nil,
                 skippedAt: day.skippedAt,
                 clientUpdatedAt: day.scheduleUpdatedAt
                     ?? plan.updatedAt
@@ -257,7 +262,7 @@ extension AppStore {
             }
             if let localAt = current.days[index].scheduleUpdatedAt,
                let remoteAt = item.clientUpdatedAt,
-               remoteAt < localAt {
+               remoteAt.addingTimeInterval(1) < localAt {
                 continue
             }
             let remoteDate = item.assignedDate.flatMap { FitnessDate.date(from: $0) }

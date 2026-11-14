@@ -1791,6 +1791,35 @@ def test_context_week_one_starts_next_monday_for_midweek_plan(db):
     assert day["date"] == next_monday.isoformat()
 
 
+def test_schedule_sync_drops_date_from_skipped_duplicate(db):
+    from app.schemas import PlanDayStateIn, ScheduleSyncIn
+    from app.services.schedule import sync_schedule
+
+    now = datetime.now(timezone.utc)
+    payload = ScheduleSyncIn(
+        plan_id="plan-1",
+        plan_version=1,
+        days=[
+            PlanDayStateIn(
+                day_id="day-1",
+                assigned_date=date(2026, 11, 23),
+                client_updated_at=now,
+            ),
+            PlanDayStateIn(
+                day_id="day-2",
+                assigned_date=date(2026, 11, 23),
+                skipped_at=now,
+                client_updated_at=now,
+            ),
+        ],
+    )
+
+    result = sync_schedule(db, "user-1", payload)
+    days = {item["day_id"]: item for item in result["days"]}
+    assert days["day-1"]["assigned_date"] == "2026-11-23"
+    assert days["day-2"]["assigned_date"] is None
+
+
 def test_edit_single_day_diet_strategy_and_undo(db, monkeypatch):
     import asyncio
 

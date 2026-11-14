@@ -52,12 +52,16 @@ struct PlanScheduleView: View {
 
     /// 比基准每周天数少选的日期，会在保存时标记为跳过。
     private var skippedCount: Int {
-        counts.reduce(0) { $0 + max(0, daysPerWeek - $1) }
+        guard let plan = store.plan else { return 0 }
+        return blocks.reduce(0) { total, block in
+            let slots = plan.days.filter { $0.weekIndex == block.id + 1 }.count
+            return total + max(0, slots - counts[block.id])
+        }
     }
 
-    /// The board starts from today, so columns follow today's weekday rather
-    /// than an assumed Monday-first week. Every block advances by seven days,
-    /// which keeps the same weekday in each column.
+    /// The board starts from the plan's first Monday, so week N on screen
+    /// matches plan week N. Every block advances by seven days, which keeps
+    /// the same weekday in each column.
     private var weekdayHeaders: [String] {
         guard let first = blocks.first else { return [] }
         return first.dates.map(weekdayShort)
@@ -224,7 +228,8 @@ struct PlanScheduleView: View {
 
     private func weekRow(_ block: ScheduleBlock) -> some View {
         let count = counts[block.id]
-        let isFull = count >= daysPerWeek
+        let limit = slotLimit(for: block.id)
+        let isFull = limit > 0 && count >= limit
 
         return VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -240,7 +245,7 @@ struct PlanScheduleView: View {
 
                 Spacer(minLength: 4)
 
-                Text("\(count)/\(daysPerWeek)")
+                Text(limit > 0 ? "\(count)/\(limit)" : "—")
                     .font(.system(size: 9, weight: .bold, design: .monospaced))
                     .foregroundStyle(count == 0 ? Theme.ink : Theme.secondary)
             }
@@ -368,15 +373,7 @@ struct PlanScheduleView: View {
         startDate = FitnessDate.startOfDay(plan.planStartDate)
         let offsets = defaultOffsets[daysPerWeek] ?? [0]
         for block in blocks {
-            let blockDays = plan.days.filter { day in
-                guard let dayDate = plan.scheduledDate(for: day) else { return false }
-                let diff = calendar.dateComponents(
-                    [.day],
-                    from: startDate,
-                    to: FitnessDate.startOfDay(dayDate)
-                ).day ?? -1
-                return diff >= block.id * 7 && diff < (block.id + 1) * 7
-            }
+            let blockDays = plan.days.filter { $0.weekIndex == block.id + 1 }
             var chosen = Array(Set(
                 blockDays
                     .filter { $0.date != nil && $0.skippedAt == nil }
@@ -407,12 +404,25 @@ struct PlanScheduleView: View {
             message = ""
             return
         }
-        guard counts[block] < daysPerWeek else {
-            message = "这周已选满 \(daysPerWeek) 天，先取消一个日期"
+        let limit = slotLimit(for: block)
+        guard limit > 0 else {
+            message = "第 \(block + 1) 周没有训练安排"
+            return
+        }
+        guard counts[block] < limit else {
+            message = limit < daysPerWeek
+                ? "第 \(block + 1) 周只有 \(limit) 个训练位"
+                : "这周已选满 \(limit) 天，先取消一个日期"
             return
         }
         selected.insert(key)
         message = ""
+    }
+
+    private func slotLimit(for block: Int) -> Int {
+        guard let plan = store.plan else { return daysPerWeek }
+        let slots = plan.days.filter { $0.weekIndex == block + 1 }.count
+        return slots > 0 ? min(daysPerWeek, slots) : 0
     }
 
     private func save() {
