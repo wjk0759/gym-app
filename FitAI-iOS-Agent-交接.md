@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`ca7afce`（控制平面 + V38；自由聊天、身体数据、单日/一周饮食计划、整天/单动作/批量参数修改、休息日加练、观测/洞察卡；后端 **426 passed**；`Backend Tests`、`iOS Build` 在 `ca7afce` 通过；后端生产已部署 `d29f2ac` + Flyway **V38**；iOS 已装 `d29f2ac`；macOS 已验证 `FitAITests` **81/81**、`FitAIUITests` **4/4**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`1221823`（控制平面 + V38；批量参数、休息日加练、周训练安排复盘、一周饮食计划；后端生产已部署 `1221823` + Flyway **V38**；iOS 已装 `1221823`；macOS 基线 `FitAITests` **81/81**；对抗 QA 仍见 `backend/qa/test_adversarial.py` 的 9 个失败）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -25,6 +25,72 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-14 · macOS（对抗性 QA：9 个失败 + 最新部署）
+
+- 部署：后端 `1221823`、iOS `1221823`、Flyway **V38**
+- 基线：`FitAITests` **81/81**；后端原测试 `422 passed`，另 1 条是临时容器缺 `data/vital`；对抗测试 **9 failed / 5 passed**
+- 健康检查：`{"status":"ready"}`，`fitai-api` healthy，日志无 ERROR
+- 备份：`/opt/fitai/backups/fitai-pre-weekreview-20261114-213616.sql.gz` 和同名 backend tar
+
+#### 已复现问题（测试文件 `backend/qa/test_adversarial.py`）
+
+1. **删最后一个动作会把训练日写成 0 个动作**（P0）
+   - “把哑铃卧推删掉” → 确认 → `plan_exercises` 为空
+   - 期望：拒绝/提示先加替代动作
+
+2. **整天替换允许重复动作**（P1）
+   - “今天的练胸计划帮我改成：杠铃卧推、杠铃卧推” → 写入两条相同 slug
+   - 期望：去重或拒绝
+
+3. **生产 active 计划有开始日之前的训练日**（P1）
+   - `program_id=139e8687-8898-4ec3-87d1-52a09776a225`
+   - `start_date=2026-11-13`，但 week 1 的 `assigned_date` 为 11-09..11-12
+   - 影响：用户刚建计划就看到 4 个已过期/错过训练日
+
+4. **换动作 + 同时改参数失败**（P1）
+   - “把哑铃卧推换成杠铃卧推 4组8次” → “没有找到「杠铃卧推 4组8次」”
+   - 期望：换动作并应用 4 组 8 次
+
+5. **单动作编辑带逗号路由到自由聊天**（P1）
+   - “把哑铃卧推换成杠铃卧推，4组8次” → `coach.answer`
+   - 原因：`_looks_like_single_exercise_edit` 遇到 `、,，;；/` 直接返回 False
+
+6. **加动作带参数失败**（P1）
+   - “给今天的练胸加一个蝴蝶机夹胸 3组12次” → 找不到动作
+   - 期望：加动作并应用 3 组 12 次
+
+7. **加动作带逗号路由到自由聊天**（P1）
+   - “给今天的练胸加一个蝴蝶机夹胸，3组12次” → `coach.answer`
+
+8. **一次加多个动作被当成一个名称**（P2）
+   - “加一个蝴蝶机夹胸和绳索夹胸” → 找不到“蝴蝶机夹胸和绳索夹胸”
+   - 期望：识别两个动作或明确要求分开说
+
+9. **身体趋势目标文案错误**（P2）
+   - 当前=目标 70kg → “已低于目标 0.0 kg”
+   - 增肌目标 80kg、当前 82kg → “还差 2.0 kg”
+   - 期望：“已达到目标” / “已超过目标”
+
+#### 其他观察
+
+- 未登录访问 `/coach/*`、`/telemetry/events`、`/agent/actions/*` 均 401
+- 非法登录参数 422；未知路由 404；错误方法 405
+- 恶意 Origin 的 CORS 预检返回 400，未反射 `Allow-Origin`
+- `/docs`、`/openapi.json` 生产公开（建议收紧）
+- 100 次 keep-alive 无效 token 请求出现 1 次 10s 超时；`Connection: close` 100/100 成功，暂列为连接复用观察项
+
+#### 未覆盖
+
+- 登录后真机 UI 全链路、额度/限流/安全拦截、跨设备恢复
+- 有效 token 的 telemetry 落库
+- 新一周饮食计划、休息日加练、周训练安排复盘的 UI
+
+#### Windows 下一步
+
+- 修 P0/P1，并把 `backend/qa/test_adversarial.py` 中修好的用例移入 `backend/tests`
+- 重点检查 `_looks_like_single_exercise_edit` 逗号分支、`_SWAP`/`_ADD` 参数捕获、`rewrite_day` 空列表/重复 slug
+- 检查 `assigned_date` 归一化，并提供已有 active 计划的数据修复
 
 ### 2026-11-14 · Windows（多动作参数批量修改）
 
