@@ -365,7 +365,7 @@ struct PlanScheduleView: View {
         didLoad = true
         message = ""
         daysPerWeek = min(7, max(1, plan.weeklyDays ?? max(1, plan.days.count / max(1, plan.weeks))))
-        startDate = FitnessDate.startOfDay(Date())
+        startDate = FitnessDate.startOfDay(plan.planStartDate)
         let offsets = defaultOffsets[daysPerWeek] ?? [0]
         for block in blocks {
             let blockDays = plan.days.filter { day in
