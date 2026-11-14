@@ -1315,6 +1315,90 @@ def test_edit_day_exercises_confirm_and_undo(db):
     ]
 
 
+def test_edit_exercises_falls_back_to_the_next_focus_day(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    monday = today - timedelta(days=today.weekday())
+    next_monday = monday + timedelta(days=7)
+    for slug, name in [
+        ("bench_press", "杠铃卧推"),
+        ("vital-incline-barbell-bench-press", "上斜杠铃卧推"),
+        ("old-chest-press", "哑铃卧推"),
+    ]:
+        db.add(
+            Exercise(
+                slug=slug,
+                name_zh=name,
+                name_en=slug,
+                muscle_group="chest",
+                equipment="barbell",
+                is_compound=True,
+                contraindications=[],
+            )
+        )
+    db.commit()
+
+    program = Program(
+        user_id="user-1",
+        title="测试胸计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=monday,
+        weeks=4,
+    )
+    db.add(program)
+    db.flush()
+    day = ProgramDay(
+        program_id=program.id,
+        week_index=2,
+        weekday=1,
+        title="胸",
+    )
+    db.add(day)
+    db.flush()
+    db.add(
+        PlanExercise(
+            program_day_id=day.id,
+            exercise_slug="old-chest-press",
+            order_index=1,
+            sets=3,
+            reps="8-12",
+            rest_sec=90,
+        )
+    )
+    db.commit()
+
+    context = {
+        "plan": {
+            "id": program.id,
+            "version": program.version,
+            "days": [
+                {
+                    "id": day.id,
+                    "date": next_monday.isoformat(),
+                    "title": "胸",
+                    "focus": ["chest"],
+                    "completed": False,
+                    "skipped": False,
+                }
+            ],
+        }
+    }
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "今天的练胸计划帮我改成：杠铃卧推、上斜杠铃卧推",
+            app_context=context,
+        )
+    )
+    assert turn["intent"] == "training.edit_day_exercises"
+    assert turn["pending"]["payload"]["date"] == next_monday.isoformat()
+    assert len(turn["pending"]["payload"]["exercises"]) == 2
+
+
 def test_routing_eval_covers_deterministic_capabilities(db):
     """A small regression matrix for the intents the control plane owns.
 
