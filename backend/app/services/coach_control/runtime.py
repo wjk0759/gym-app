@@ -49,6 +49,7 @@ SKIP_TRAINING = "training.skip"
 CARDIO = "training.log_cardio"
 STRENGTH = "training.log_strength"
 WEIGHT = "body.log_weight"
+BODY_REVIEW = "body.review_trend"
 REVIEW = "review.weekly"
 GOAL = "profile.update_goal"
 PLAN = "training.generate_plan"
@@ -201,6 +202,16 @@ def _looks_like_diet_review(message: str) -> bool:
         )
         and re.search(
             r"多少|怎么样|如何|够|缺|看看|总结|复盘|超",
+            message,
+        )
+    )
+
+
+def _looks_like_body_review(message: str) -> bool:
+    return bool(
+        re.search(r"体重|体脂|腰围|身体|身材|目标进度", message)
+        and re.search(
+            r"变化|趋势|怎么样|怎么|如何|进度|最近|几周|吗|？|\?",
             message,
         )
     )
@@ -506,6 +517,36 @@ async def handle_turn(
                 "reply": reply,
                 "pending": None,
             }
+
+    if intent_override is None and _looks_like_body_review(text):
+        from .capabilities.body_review import resolve as resolve_body_review
+
+        resolution = resolve_body_review(db, user_id)
+        payload = resolution["payload"]
+        set_pending(
+            db,
+            session,
+            kind="insight",
+            capability_id=BODY_REVIEW,
+            payload=payload,
+        )
+        reply = payload.get("summary") or "身体趋势已经整理好。"
+        turn.intent = BODY_REVIEW
+        turn.status = "completed"
+        turn.reply = reply
+        turn.latency_ms = int((time.perf_counter() - started) * 1000)
+        session.last_turn_at = utcnow()
+        session.updated_at = utcnow()
+        db.commit()
+        active = get_active_pending(db, user_id, session.id)
+        return {
+            "session": serialize_session(session, active),
+            "turn_id": turn.id,
+            "intent": turn.intent,
+            "status": turn.status,
+            "reply": reply,
+            "pending": serialize_pending(active),
+        }
 
     if intent_override is None and _looks_like_diet_review(text):
         from .capabilities.diet_review import resolve as resolve_diet_review

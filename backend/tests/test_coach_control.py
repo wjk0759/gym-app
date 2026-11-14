@@ -968,6 +968,51 @@ def test_diet_review_uses_the_plan_for_the_requested_day(db):
     assert "120 g" in payload["summary"]
 
 
+def test_body_trend_review_uses_metrics_and_goal(db):
+    import asyncio
+
+    now = datetime.now(timezone.utc)
+    db.add(
+        BodyMetric(
+            user_id="user-1",
+            client_id="metric-1",
+            measured_at=now - timedelta(weeks=8),
+            weight_kg=74.5,
+            body_fat_pct=24.0,
+            waist_cm=86,
+        )
+    )
+    db.add(
+        BodyMetric(
+            user_id="user-1",
+            client_id="metric-2",
+            measured_at=now - timedelta(days=1),
+            weight_kg=73.2,
+            body_fat_pct=23.0,
+            waist_cm=84,
+        )
+    )
+    db.add(
+        Goal(
+            user_id="user-1",
+            type="lose_fat",
+            target_weight_kg=70,
+            status="active",
+        )
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "最近体重怎么样")
+    )
+    assert turn["intent"] == "body.review_trend"
+    assert turn["pending"]["kind"] == "insight"
+    assert "74.5 kg" in turn["reply"]
+    assert "73.2 kg" in turn["reply"]
+    assert "70.0 kg" in turn["reply"]
+    assert any("目标进度" in item for item in turn["pending"]["payload"]["wins"])
+
+
 def test_routing_eval_covers_deterministic_capabilities(db):
     """A small regression matrix for the intents the control plane owns.
 
@@ -1014,6 +1059,8 @@ def test_routing_eval_covers_deterministic_capabilities(db):
         ("帮我复盘本周", "review.weekly"),
         ("今天饮食还缺什么", "diet.review_day"),
         ("蛋白质够吗", "diet.review_day"),
+        ("最近体重怎么样", "body.review_trend"),
+        ("目标进度", "body.review_trend"),
         ("帮我生成一个 4 周计划", "training.generate_plan"),
         ("计划太累了，减量", "training.adjust_plan"),
         ("我想减脂，目标 72kg", "profile.update_goal"),

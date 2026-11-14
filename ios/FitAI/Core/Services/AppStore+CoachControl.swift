@@ -106,6 +106,18 @@ extension AppStore {
             return true
         }
 
+        let bodyReview = value.range(
+            of: #"体重|体脂|腰围|身体|身材|目标进度"#,
+            options: .regularExpression
+        ) != nil
+        let bodyQuestion = value.range(
+            of: #"变化|趋势|怎么样|怎么|如何|进度|最近|几周|吗|？|\?"#,
+            options: .regularExpression
+        ) != nil
+        if bodyReview && bodyQuestion {
+            return true
+        }
+
         if value.range(
             of: #"多少|热量|卡路里|为什么|怎么|吗|？|\?"#,
             options: .regularExpression
