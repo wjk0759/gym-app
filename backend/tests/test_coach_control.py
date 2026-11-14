@@ -2339,6 +2339,33 @@ def test_remember_preference_via_control_plane(db):
     assert memory.active is False
 
 
+def test_remember_does_not_collide_with_the_general_memory(db):
+    from app.models import AIMemory
+    from app.services.coach_control.capabilities.memory import execute
+
+    db.add(
+        AIMemory(
+            user_id="user-1",
+            kind="preference",
+            memory_key="general",
+            content="喜欢早上训练",
+            source="agent",
+            confidence=1.0,
+            active=True,
+        )
+    )
+    db.commit()
+
+    result = execute(db, "user-1", "action-2", {"content": "我每周二四六练"})
+    item = db.get(AIMemory, result["memory_id"])
+    assert item is not None
+    assert item.memory_key.startswith("explicit:")
+    assert item.content == "我每周二四六练"
+
+    again = execute(db, "user-1", "action-3", {"content": "我每周二四六练"})
+    assert again["memory_id"] == item.id
+
+
 def test_memory_undo_handles_duplicate_content(db):
     from app.models import AIMemory
     from app.services.coach_control.capabilities.memory import undo

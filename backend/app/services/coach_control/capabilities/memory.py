@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ....models import AIMemory
+from ....models import AIMemory, utcnow
 from ..registry import Capability, register
 
 CAPABILITY = register(
@@ -49,16 +50,36 @@ def execute(
     action_id: str,
     payload: dict,
 ) -> dict:
-    item = AIMemory(
-        user_id=user_id,
-        kind="preference",
-        memory_key="general",
-        content=str(payload.get("content") or "")[:500],
-        source="coach_control",
-        confidence=1.0,
-        active=True,
+    content = str(payload.get("content") or "")[:500]
+    # One active memory per memory_key is enforced by the production schema.
+    # Never reuse "general": auto-extracted memories own it.
+    digest = hashlib.sha1(content.encode("utf-8")).hexdigest()[:16]
+    memory_key = f"explicit:{digest}"
+    item = (
+        db.execute(
+            select(AIMemory).where(
+                AIMemory.user_id == user_id,
+                AIMemory.memory_key == memory_key,
+                AIMemory.active.is_(True),
+            )
+        )
+        .scalars()
+        .first()
     )
-    db.add(item)
+    if item is None:
+        item = AIMemory(
+            user_id=user_id,
+            kind="preference",
+            memory_key=memory_key,
+            content=content,
+            source="coach_control",
+            confidence=1.0,
+            active=True,
+        )
+        db.add(item)
+    else:
+        item.content = content
+        item.updated_at = utcnow()
     db.flush()
     return {"memory_id": item.id, "content": item.content}
 
