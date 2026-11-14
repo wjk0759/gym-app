@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`787acd3`（控制平面 + V38；自由聊天、身体数据、单日饮食计划、整天动作替换、观测/洞察卡；后端 **422 passed**；`Backend Tests` 在 `09c1d1f` 通过；`iOS Build` 在 `787acd3` 通过；后端生产已部署 `09c1d1f` + Flyway **V38**；iOS 已装 `e467217`，`787acd3` 待增量部署；macOS 已验证 `FitAITests` **81/81**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`cedfcda`（控制平面 + V38；自由聊天、身体数据、单日饮食计划、整天动作替换、观测/洞察卡；后端 **422 passed**；`Backend Tests` 在 `cedfcda` 通过；`iOS Build` 在 `787acd3` 通过；后端生产已部署 `09c1d1f` + Flyway **V38**；iOS 已装 `e467217`，`787acd3`/`cedfcda` 待增量部署；macOS 已验证 `FitAITests` **81/81**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -41,11 +41,16 @@
   - 需要用户更新到 `e467217` 或更新包后重发原句
 - iOS 增量：
   - `787acd3` 把 `training.edit_day_exercises` 提案卡改为动作列表，不再用“做得好”渲染
+- 追加修复：
+  - `cedfcda` 把服务端计划日期统一按“开始周周一”计算，和 iOS `scheduledDate` 一致
+  - 修复非周一生成的计划在改期/下一练预览里整体偏移一天
+  - 生产验证时 test_reviewer 的卡片从 11-15 纠正为 11-14
 - 验证：
   - 后端 **422 passed**，Ruff 通过
+  - `Backend Tests` 在 `cedfcda` 通过
   - `iOS Build` 在 `787acd3` 通过
 - 部署：
-  - 无新迁移；增量部署 iOS `787acd3`（后端保持 `09c1d1f`）
+  - 无新迁移；增量部署 backend `cedfcda` + iOS `787acd3`
 
 ### 2026-11-14 · macOS（改计划 / 饮食计划 / 身体数据部署）
 
