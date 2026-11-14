@@ -133,7 +133,7 @@ extension AppStore {
         }
 
         if value.range(
-            of: #"计划餐|按计划吃|跳过.*(早餐|午餐|晚餐|加餐)|恢复.*(早餐|午餐|晚餐|加餐)|换一餐|换餐|体重|称重"#,
+            of: #"计划餐|按计划吃|跳过.*(早餐|午餐|晚餐|加餐)|恢复.*(早餐|午餐|晚餐|加餐)|换一餐|换餐|体重|称重|体脂|腰围|臂围|手臂围|腿围|大腿围"#,
             options: .regularExpression
         ) != nil {
             return true
@@ -548,21 +548,27 @@ extension AppStore {
     }
 
     private func applyCoachWeight(receipt: CoachReceipt?, actionID: String) {
-        guard let weight = receipt?.weightKG else { return }
-        let date = receipt?.date.flatMap { FitnessDate.date(from: $0) } ?? Date()
+        guard let receipt else { return }
+        let hasMetric = receipt.weightKG != nil
+            || receipt.bodyFatPCT != nil
+            || receipt.waistCM != nil
+            || receipt.armCM != nil
+            || receipt.thighCM != nil
+        guard hasMetric else { return }
+        let date = receipt.date.flatMap { FitnessDate.date(from: $0) } ?? Date()
         let key = FitnessDate.key(date)
         coachBodyBefore = bodyMetrics.first { $0.dateKey == key }
         coachWeightBefore = profile.weightKG
-        let id = UUID(uuidString: receipt?.clientID ?? actionID) ?? UUID()
+        let id = UUID(uuidString: receipt.clientID ?? actionID) ?? UUID()
         appendBodyMetric(
             BodyMetric(
                 id: id,
                 date: date,
-                weightKG: weight,
-                bodyFatPCT: nil,
-                waistCM: nil,
-                armCM: nil,
-                thighCM: nil,
+                weightKG: receipt.weightKG,
+                bodyFatPCT: receipt.bodyFatPCT,
+                waistCM: receipt.waistCM,
+                armCM: receipt.armCM,
+                thighCM: receipt.thighCM,
                 syncedAt: Date()
             )
         )

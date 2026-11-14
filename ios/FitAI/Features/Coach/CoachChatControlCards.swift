@@ -122,7 +122,7 @@ extension CoachChatView {
                 } else if pending.capabilityID.hasPrefix("diet.") {
                     mealPendingContent(pending)
                 } else if pending.capabilityID == "body.log_weight" {
-                    Text("体重 \(pending.payload?.weightKG.map { String(format: "%.1f", $0) } ?? "—") kg")
+                    Text(bodyMetricText(pending.payload))
                         .font(AppType.callout.weight(.semibold))
                         .foregroundStyle(Theme.ink)
                 } else if pending.capabilityID == "profile.update_goal" {
@@ -160,6 +160,26 @@ extension CoachChatView {
                 }
             }
         }
+    }
+
+    private func bodyMetricText(_ payload: AgentActionPayload?) -> String {
+        var parts: [String] = []
+        if let value = payload?.weightKG {
+            parts.append("体重 \(String(format: "%.1f", value)) kg")
+        }
+        if let value = payload?.bodyFatPCT {
+            parts.append("体脂 \(String(format: "%.1f", value))%")
+        }
+        if let value = payload?.waistCM {
+            parts.append("腰围 \(String(format: "%.1f", value)) cm")
+        }
+        if let value = payload?.armCM {
+            parts.append("臂围 \(String(format: "%.1f", value)) cm")
+        }
+        if let value = payload?.thighCM {
+            parts.append("腿围 \(String(format: "%.1f", value)) cm")
+        }
+        return parts.isEmpty ? "准备记录身体数据" : parts.joined(separator: " · ")
     }
 
     private func dietPendingContent(_ pending: CoachPendingState) -> some View {

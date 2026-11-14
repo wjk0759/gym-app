@@ -1102,6 +1102,31 @@ def test_negative_food_statement_does_not_create_a_draft(db, monkeypatch):
     assert turn["pending"] is None
 
 
+def test_body_composition_metrics_confirm_and_undo(db):
+    import asyncio
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "体脂 22%，腰围 84cm")
+    )
+    assert turn["intent"] == "body.log_weight"
+    assert turn["pending"]["kind"] == "card"
+    payload = turn["pending"]["payload"]
+    assert payload["body_fat_pct"] == 22.0
+    assert payload["waist_cm"] == 84.0
+    assert "weight_kg" not in payload
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    metric = db.execute(select(BodyMetric)).scalar_one()
+    assert metric.body_fat_pct == 22.0
+    assert metric.waist_cm == 84.0
+    assert metric.weight_kg is None
+    assert "体脂 22.0%" in confirmed["receipt"]["summary"]
+    assert "腰围 84.0 cm" in confirmed["receipt"]["summary"]
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(BodyMetric)).scalars().all() == []
+
+
 def test_routing_eval_covers_deterministic_capabilities(db):
     """A small regression matrix for the intents the control plane owns.
 
@@ -1145,6 +1170,8 @@ def test_routing_eval_covers_deterministic_capabilities(db):
         ("今天卧推 60kg 8次 3组", "training.log_strength"),
         ("深蹲 100 公斤 5 组 5 次", "training.log_strength"),
         ("体重 73.5kg", "body.log_weight"),
+        ("体脂 22%", "body.log_weight"),
+        ("腰围 84cm", "body.log_weight"),
         ("帮我复盘本周", "review.weekly"),
         ("今天饮食还缺什么", "diet.review_day"),
         ("今天吃了什么", "diet.review_day"),

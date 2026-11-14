@@ -255,7 +255,10 @@ def _looks_like_strength(message: str) -> bool:
 
 def _looks_like_weight(message: str) -> bool:
     return bool(
-        re.search(r"体重|称重|称了|称一下", message)
+        re.search(
+            r"体重|称重|称了|称一下|体脂|腰围|臂围|手臂围|腿围|大腿围",
+            message,
+        )
         and re.search(r"\d", message)
     )
 
@@ -313,6 +316,25 @@ def _food_reply(resolution: dict) -> str:
     items = resolution.get("items") or []
     kcal = round(sum(float(item.get("kcal") or 0) for item in items))
     return f"已识别 {len(items)} 种食物，约 {kcal} kcal。确认后写入。"
+
+
+def _body_metric_parts(payload: dict) -> list[str]:
+    parts: list[str] = []
+    if payload.get("weight_kg") is not None:
+        parts.append(f"体重 {payload['weight_kg']} kg")
+    if payload.get("body_fat_pct") is not None:
+        parts.append(f"体脂 {payload['body_fat_pct']}%")
+    if payload.get("waist_cm") is not None:
+        parts.append(f"腰围 {payload['waist_cm']} cm")
+    if payload.get("arm_cm") is not None:
+        parts.append(f"臂围 {payload['arm_cm']} cm")
+    if payload.get("thigh_cm") is not None:
+        parts.append(f"腿围 {payload['thigh_cm']} cm")
+    return parts
+
+
+def _body_metric_reply(payload: dict) -> str:
+    return f"准备记录{'、'.join(_body_metric_parts(payload))}。确认后写入。"
 
 
 def _training_reply(payload: dict) -> str:
@@ -937,7 +959,7 @@ async def handle_turn(
                 capability_id=WEIGHT,
                 payload=payload,
             )
-            reply = f"准备记录体重 {payload['weight_kg']} kg。确认后写入。"
+            reply = _body_metric_reply(payload)
         else:
             question = (resolution.get("questions") or ["体重大概多少公斤？"])[0]
             _pending_draft(
@@ -1248,11 +1270,15 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         result = execute_weight(db, user_id, action_id, pending.payload)
         after = result
         receipt = {
-            "summary": f"已记录体重 {pending.payload.get('weight_kg')} kg",
+            "summary": f"已记录{'、'.join(_body_metric_parts(pending.payload))}",
             "capability_id": WEIGHT,
             "client_id": action_id,
             "date": pending.payload.get("date"),
             "weight_kg": pending.payload.get("weight_kg"),
+            "body_fat_pct": pending.payload.get("body_fat_pct"),
+            "waist_cm": pending.payload.get("waist_cm"),
+            "arm_cm": pending.payload.get("arm_cm"),
+            "thigh_cm": pending.payload.get("thigh_cm"),
             "deep_link": "fitai://profile",
         }
         event_type = "BodyMetricLogged"

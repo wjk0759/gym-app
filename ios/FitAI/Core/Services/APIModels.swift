@@ -373,6 +373,8 @@ struct AgentActionPayload: Codable, Hashable {
     let weightKG: Double?
     let bodyFatPCT: Double?
     let waistCM: Double?
+    let armCM: Double?
+    let thighCM: Double?
     let strategy: String?
     let weekStart: String?
     var meal: String?
@@ -412,6 +414,8 @@ struct AgentActionPayload: Codable, Hashable {
         case weightKG = "weight_kg"
         case bodyFatPCT = "body_fat_pct"
         case waistCM = "waist_cm"
+        case armCM = "arm_cm"
+        case thighCM = "thigh_cm"
         case strategy
         case weekStart = "week_start"
         case meal
@@ -617,6 +621,10 @@ struct CoachReceipt: Decodable, Hashable {
     let planID: String?
     let dayID: String?
     let weightKG: Double?
+    let bodyFatPCT: Double?
+    let waistCM: Double?
+    let armCM: Double?
+    let thighCM: Double?
     let clientID: String?
 
     enum CodingKeys: String, CodingKey {
@@ -632,6 +640,10 @@ struct CoachReceipt: Decodable, Hashable {
         case planID = "plan_id"
         case dayID = "day_id"
         case weightKG = "weight_kg"
+        case bodyFatPCT = "body_fat_pct"
+        case waistCM = "waist_cm"
+        case armCM = "arm_cm"
+        case thighCM = "thigh_cm"
         case clientID = "client_id"
     }
 }
