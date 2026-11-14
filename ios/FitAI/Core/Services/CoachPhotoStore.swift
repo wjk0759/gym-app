@@ -27,8 +27,11 @@ extension AppStore {
         agentRunID = nil
         lastAgentRetryText = nil
         pendingUndo = nil
+        let requestID = UUID()
+        let localUserMessageID = UUID()
         chat.append(
             ChatMessage(
+                id: localUserMessageID,
                 role: .user,
                 text: trimmed,
                 imageDataList: videoThumbnailData == nil ? images : nil,
@@ -37,7 +40,6 @@ extension AppStore {
             )
         )
 
-        let requestID = UUID()
         coachPhotoRequestID = requestID
         isReplying = true
         persist()
@@ -60,20 +62,26 @@ extension AppStore {
                     result = try await APIClient.shared.reviewCoachVision(
                         imageData: images[0],
                         question: visionQuestion,
-                        sessionID: self.agentSessionID,
+                        sessionID: self.coachSessionID,
                         idempotencyKey: requestID.uuidString
                     )
                 } else {
                     result = try await APIClient.shared.reviewCoachVisionBatch(
                         imageData: images,
                         question: visionQuestion,
-                        sessionID: self.agentSessionID,
+                        sessionID: self.coachSessionID,
                         idempotencyKey: requestID.uuidString
                     )
                 }
                 try Task.checkCancellation()
                 if let sessionID = result.sessionID {
-                    self.agentSessionID = sessionID
+                    self.coachSessionID = sessionID
+                }
+                if let turnID = result.turnID {
+                    let turnKey = turnID.uuidString.lowercased()
+                    if let index = self.chat.firstIndex(where: { $0.id == localUserMessageID }) {
+                        self.chat[index].serverMessageID = "coach-\(turnKey)-user"
+                    }
                 }
                 if result.warning == nil {
                     self.coachVisualMemory = CoachVisualMemory(
@@ -86,7 +94,10 @@ extension AppStore {
                     ChatMessage(
                         role: .assistant,
                         text: self.formattedVisionReply(result),
-                        isSafety: result.safetyFlag != nil
+                        isSafety: result.safetyFlag != nil,
+                        serverMessageID: result.turnID.map {
+                            "coach-\($0.uuidString.lowercased())-assistant"
+                        }
                     )
                 )
             } catch is CancellationError {

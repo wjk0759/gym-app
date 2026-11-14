@@ -726,10 +726,21 @@ extension AppStore {
 
     @MainActor
     func restoreCoachControlSession() async {
-        guard let sessionID = coachSessionID,
-              AuthTokenStore.shared.accessToken != nil,
+        guard AuthTokenStore.shared.accessToken != nil,
               !isCoachControlWorking,
               !isReplying else { return }
+
+        // A reinstall/new device has no local session id. Resume the newest
+        // server session instead of silently starting from an empty chat.
+        if coachSessionID == nil {
+            guard let latest = try? await APIClient.shared.latestCoachSession(),
+                  let session = latest.session else { return }
+            coachSessionID = session.id
+            coachSession = session
+            coachPending = session.pending
+        }
+
+        guard let sessionID = coachSessionID else { return }
         do {
             let state = try await APIClient.shared.coachSession(id: sessionID)
             coachSession = state

@@ -2308,3 +2308,155 @@ def test_remember_preference_via_control_plane(db):
     runtime.undo_action(db, "user-1", confirmed["action_id"])
     db.refresh(memory)
     assert memory.active is False
+
+
+def test_vision_turn_is_recorded_in_the_control_plane(db, monkeypatch):
+    import asyncio
+    import io
+
+    from fastapi import UploadFile
+
+    from app.routers import coach_control
+    from app.services import access, coach_vision
+
+    async def fake_review(*args, **kwargs):
+        return {
+            "mode": "training",
+            "is_training": True,
+            "summary": "深蹲底部膝盖轻微内扣。",
+            "observations": ["脚掌稳定", "下蹲深度可以"],
+            "next_cue": "起身时把膝盖对准脚尖。",
+            "safety_flag": None,
+            "warning": None,
+        }
+
+    monkeypatch.setattr(coach_vision, "review", fake_review)
+    monkeypatch.setattr(access, "require_feature", lambda *a, **k: None)
+
+    upload = UploadFile(
+        file=io.BytesIO(b"jpeg-bytes"),
+        filename="squat.jpg",
+        headers={"content-type": "image/jpeg"},
+    )
+    result = asyncio.run(
+        coach_control.create_vision_turn(
+            "user-1",
+            db,
+            upload,
+            question="看看我的深蹲",
+            session_id=None,
+            idempotency_key=None,
+        )
+    )
+
+    assert result["turn_id"]
+    assert result["session_id"]
+    turns = db.execute(select(CoachTurn)).scalars().all()
+    assert len(turns) == 1
+    turn = turns[0]
+    assert turn.intent == "coach.vision"
+    assert turn.status == "completed"
+    assert turn.input_text.startswith("[图片]")
+    assert "看看我的深蹲" in turn.input_text
+    assert "深蹲底部膝盖轻微内扣" in turn.reply
+    assert turn.session_id == result["session_id"]
+
+
+def test_second_vision_turn_gets_control_plane_context(db, monkeypatch):
+    import asyncio
+    import io
+    from types import SimpleNamespace
+
+    from fastapi import UploadFile
+
+    from app.routers import coach_control
+    from app.services import access, coach_vision
+
+    seen_context: list[str] = []
+
+    async def fake_review(*args, **kwargs):
+        seen_context.append(kwargs.get("conversation_context") or "")
+        return {
+            "mode": "training",
+            "is_training": True,
+            "summary": "第二次看到膝盖还是有点内扣。",
+            "observations": ["脚掌稳定"],
+            "next_cue": "继续对准脚尖。",
+            "safety_flag": None,
+            "warning": None,
+        }
+
+    monkeypatch.setattr(coach_vision, "review", fake_review)
+    monkeypatch.setattr(access, "require_feature", lambda *a, **k: None)
+    monkeypatch.setattr(
+        coach_control.generation,
+        "begin_generation",
+        lambda *a, **k: SimpleNamespace(
+            feature_key="ai_vision", idempotency_key=None
+        ),
+    )
+    monkeypatch.setattr(
+        coach_control.generation, "complete_generation", lambda *a, **k: None
+    )
+    monkeypatch.setattr(
+        coach_control.generation, "abort_generation", lambda *a, **k: None
+    )
+
+    def upload():
+        return UploadFile(
+            file=io.BytesIO(b"jpeg-bytes"),
+            filename="squat.jpg",
+            headers={"content-type": "image/jpeg"},
+        )
+
+    first = asyncio.run(
+        coach_control.create_vision_turn(
+            "user-1",
+            db,
+            upload(),
+            question="看看我的深蹲",
+            session_id=None,
+            idempotency_key=None,
+        )
+    )
+    asyncio.run(
+        coach_control.create_vision_turn(
+            "user-1",
+            db,
+            upload(),
+            question="这次呢",
+            session_id=first["session_id"],
+            idempotency_key=None,
+        )
+    )
+
+    assert "看看我的深蹲" in seen_context[0] or seen_context[0] == ""
+    assert "看看我的深蹲" in seen_context[1]
+    assert "第二次看到膝盖还是有点内扣" in seen_context[1]
+    turns = db.execute(
+        select(CoachTurn).order_by(CoachTurn.created_at)
+    ).scalars().all()
+    assert len(turns) == 2
+
+
+def test_latest_session_returns_the_most_recent_one(db):
+    from app.models import CoachSession
+
+    older = CoachSession(
+        user_id="user-1",
+        status="active",
+        updated_at=datetime.now(timezone.utc) - timedelta(hours=2),
+    )
+    newer = CoachSession(
+        user_id="user-1",
+        status="active",
+        updated_at=datetime.now(timezone.utc) - timedelta(minutes=5),
+    )
+    db.add_all([older, newer])
+    db.commit()
+
+    from app.routers import coach_control
+
+    payload = coach_control.latest_session("user-1", db)
+    assert payload["session"]["id"] == newer.id
+    assert payload["pending"] is None

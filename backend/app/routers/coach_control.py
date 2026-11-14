@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, func, or_, select
 
@@ -25,11 +25,17 @@ from ..models import (
     Profile,
     utcnow,
 )
-from ..services import access
+from ..services import access, coach_vision, generation, photo_cache, vision_turns
 from ..services.coach_control import runtime
 from ..services.coach_control.context import build_control_context
 from ..services.coach_control.events import emit_event, list_inbox
 from ..services.coach_control.registry import capability_payloads
+from ..services.coach_control.state import (
+    get_active_pending,
+    get_or_create_session,
+    serialize_pending,
+    serialize_session,
+)
 from ..services.rate_limit import enforce as enforce_rate_limit
 from ..services.safety import assess_safety
 
@@ -199,6 +205,213 @@ async def create_turn(
             status_code=503,
             detail="教练暂时不可用，请重试",
         ) from exc
+
+
+@router.post("/turns/vision")
+async def create_vision_turn(
+    user_id: CurrentUser,
+    db: DBSession,
+    file: UploadFile = File(...),
+    question: str = Form(default=""),
+    session_id: str | None = Form(default=None),
+    idempotency_key: str | None = Header(
+        default=None, alias="Idempotency-Key", max_length=64
+    ),
+):
+    """Analyze one photo inside the control-plane coach session.
+
+    Keeps the legacy ``/coach/vision`` endpoint untouched for installed builds,
+    but records the text-only visual turn in ``coach_turns`` so follow-up
+    questions, history pagination and reinstall recovery share one ledger.
+    """
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="请先完成个人档案")
+    decision = assess_safety(profile, question)
+    session = get_or_create_session(db, user_id, session_id)
+    if decision.reply:
+        result = vision_turns.record_control_vision_turn(
+            db,
+            user_id,
+            session,
+            question,
+            1,
+            vision_turns.safety_response(decision),
+        )
+        db.commit()
+        return result
+
+    access.require_feature(db, user_id, access.FEATURE_AI_VISION)
+    enforce_rate_limit(db, "coach_vision", user_id, 6, 60)
+    vision_turns.require_image_upload(file)
+    image_bytes = await file.read()
+    if not image_bytes:
+        raise HTTPException(status_code=400, detail="图片为空")
+    if len(image_bytes) > vision_turns.MAX_VISION_FILE_BYTES:
+        raise HTTPException(status_code=413, detail="图片不能超过 8MB")
+
+    feature_key = access.FEATURE_AI_VISION
+    key = photo_cache.normalize_key(idempotency_key)
+    cached = photo_cache.get_cached_result(db, user_id, feature_key, key)
+    if cached is not None:
+        result = vision_turns.record_control_vision_turn(
+            db, user_id, session, question, 1, cached
+        )
+        db.commit()
+        return result
+
+    conversation_context = vision_turns.control_history_context(
+        db, user_id, session.id
+    )
+    lease = generation.begin_generation(
+        db,
+        user_id,
+        feature_key,
+        idempotency_key=key,
+        cooldown_seconds=5,
+    )
+    try:
+        result = await coach_vision.review(
+            image_bytes,
+            question,
+            safety_context=decision.caution,
+            conversation_context=conversation_context,
+            db=db,
+            user_id=user_id,
+        )
+        result = vision_turns.record_control_vision_turn(
+            db, user_id, session, question, 1, result
+        )
+        photo_cache.store_cached_result(db, user_id, feature_key, key, result)
+    except Exception:
+        generation.abort_generation(db, lease, user_id=user_id)
+        raise
+    generation.complete_generation(
+        db,
+        lease,
+        user_id=user_id,
+        result_ref=session.id,
+    )
+    return result
+
+
+@router.post("/turns/vision/batch")
+async def create_vision_turn_batch(
+    user_id: CurrentUser,
+    db: DBSession,
+    files: list[UploadFile] = File(...),
+    question: str = Form(default=""),
+    session_id: str | None = Form(default=None),
+    idempotency_key: str | None = Header(
+        default=None, alias="Idempotency-Key", max_length=64
+    ),
+):
+    """Analyze several staged photos as one control-plane coach turn."""
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="请先完成个人档案")
+    decision = assess_safety(profile, question)
+    session = get_or_create_session(db, user_id, session_id)
+    if decision.reply:
+        result = vision_turns.record_control_vision_turn(
+            db,
+            user_id,
+            session,
+            question,
+            len(files),
+            vision_turns.safety_response(decision),
+        )
+        db.commit()
+        return result
+
+    access.require_feature(db, user_id, access.FEATURE_AI_VISION)
+    enforce_rate_limit(db, "coach_vision", user_id, 6, 60)
+    if not files:
+        raise HTTPException(status_code=400, detail="没有收到图片")
+    if len(files) > vision_turns.MAX_VISION_FILES:
+        raise HTTPException(status_code=413, detail="一次最多上传 6 张图片")
+
+    images: list[bytes] = []
+    total_bytes = 0
+    for upload in files:
+        vision_turns.require_image_upload(upload)
+        image_bytes = await upload.read()
+        if not image_bytes:
+            continue
+        if len(image_bytes) > vision_turns.MAX_VISION_FILE_BYTES:
+            raise HTTPException(status_code=413, detail="单张图片不能超过 8MB")
+        total_bytes += len(image_bytes)
+        if total_bytes > vision_turns.MAX_VISION_TOTAL_BYTES:
+            raise HTTPException(status_code=413, detail="图片总大小不能超过 24MB")
+        images.append(image_bytes)
+    if not images:
+        raise HTTPException(status_code=400, detail="图片为空")
+
+    feature_key = access.FEATURE_AI_VISION
+    key = photo_cache.normalize_key(idempotency_key)
+    cached = photo_cache.get_cached_result(db, user_id, feature_key, key)
+    if cached is not None:
+        result = vision_turns.record_control_vision_turn(
+            db, user_id, session, question, len(images), cached
+        )
+        db.commit()
+        return result
+
+    conversation_context = vision_turns.control_history_context(
+        db, user_id, session.id
+    )
+    lease = generation.begin_generation(
+        db,
+        user_id,
+        feature_key,
+        idempotency_key=key,
+        cooldown_seconds=5,
+    )
+    try:
+        result = await coach_vision.review_many(
+            images,
+            question,
+            safety_context=decision.caution,
+            conversation_context=conversation_context,
+            db=db,
+            user_id=user_id,
+        )
+        result = vision_turns.record_control_vision_turn(
+            db, user_id, session, question, len(images), result
+        )
+        photo_cache.store_cached_result(db, user_id, feature_key, key, result)
+    except Exception:
+        generation.abort_generation(db, lease, user_id=user_id)
+        raise
+    generation.complete_generation(
+        db,
+        lease,
+        user_id=user_id,
+        result_ref=session.id,
+    )
+    return result
+
+
+@router.get("/sessions/latest")
+def latest_session(user_id: CurrentUser, db: DBSession):
+    """Resume the most recent coach session after reinstall or a new device."""
+    session = (
+        db.execute(
+            select(CoachSession)
+            .where(CoachSession.user_id == user_id)
+            .order_by(CoachSession.updated_at.desc(), CoachSession.id.desc())
+            .limit(1)
+        )
+        .scalars()
+        .first()
+    )
+    if session is None:
+        return {"session": None, "pending": None}
+    active = get_active_pending(db, user_id, session.id)
+    return {
+        "session": serialize_session(session, active),
+        "pending": serialize_pending(active),
+    }
 
 
 @router.get("/sessions/{session_id}")

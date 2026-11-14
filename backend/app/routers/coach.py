@@ -17,6 +17,20 @@ from ..services.memory import schedule_memory_extraction
 from ..services.queries import active_program
 from ..services.rate_limit import enforce as enforce_rate_limit
 from ..services.safety import assess_safety
+from ..services.vision_turns import (
+    MAX_VISION_FILE_BYTES,
+    MAX_VISION_FILES,
+    MAX_VISION_TOTAL_BYTES,
+)
+from ..services.vision_turns import (
+    history_text as _vision_history_text,
+)
+from ..services.vision_turns import (
+    require_image_upload as _require_image_upload,
+)
+from ..services.vision_turns import (
+    safety_response as _vision_safety_response,
+)
 
 router = APIRouter(prefix="/coach", tags=["coach"])
 
@@ -64,47 +78,6 @@ def _should_extract_memory(message: str, safety_flag: str | None) -> bool:
     return safety_flag is None and len(message.strip()) >= 8
 
 
-MAX_VISION_FILES = 6
-MAX_VISION_FILE_BYTES = 8 * 1024 * 1024
-MAX_VISION_TOTAL_BYTES = 24 * 1024 * 1024
-IMAGE_CONTENT_TYPES = {
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-    "image/heic",
-    "image/heif",
-    "image/webp",
-}
-
-
-def _require_image_upload(upload: UploadFile) -> None:
-    """Photos are the API contract; video must be converted to frames first.
-
-    The iOS client already extracts keyframes before calling this endpoint.
-    Rejecting video here keeps a 200MB upload from reaching the vision model
-    by mistake and gives the client a precise error.
-    """
-    content_type = (upload.content_type or "").lower()
-    if content_type and content_type not in IMAGE_CONTENT_TYPES:
-        raise HTTPException(
-            status_code=415,
-            detail="请上传图片；视频请先抽取关键帧再上传",
-        )
-
-
-
-
-def _vision_safety_response(decision) -> dict:
-    return {
-        "mode": "general",
-        "is_training": False,
-        "summary": decision.reply or "",
-        "observations": [],
-        "next_cue": "",
-        "safety_flag": decision.flag,
-        "warning": None,
-    }
-
 def _vision_profile(db: DBSession, user_id: str) -> Profile:
     profile = db.get(Profile, user_id)
     if profile is None:
@@ -145,20 +118,6 @@ def _vision_conversation_context(session: ChatSession, limit: int = 6) -> str:
         role = "用户" if item.role == "user" else "助手"
         lines.append(f"{role}：{item.content[:300]}")
     return "\n".join(lines)
-
-
-def _vision_history_text(result: dict) -> str:
-    parts: list[str] = []
-    summary = str(result.get("summary") or "").strip()
-    if summary:
-        parts.append(summary)
-    observations = result.get("observations") or []
-    if observations:
-        parts.append("可见：" + "；".join(str(item)[:80] for item in observations[:3]))
-    next_cue = str(result.get("next_cue") or "").strip()
-    if next_cue:
-        parts.append("提示：" + next_cue[:240])
-    return "\n".join(parts)[:4000] or "图片分析完成。"
 
 
 def _record_vision_turn(

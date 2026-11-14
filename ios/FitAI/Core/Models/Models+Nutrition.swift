@@ -164,6 +164,7 @@ struct CoachVisionResult: Decodable {
     let safetyFlag: String?
     let warning: String?
     let sessionID: UUID?
+    let turnID: UUID?
 
     enum CodingKeys: String, CodingKey {
         case mode
@@ -174,6 +175,7 @@ struct CoachVisionResult: Decodable {
         case safetyFlag = "safety_flag"
         case warning
         case sessionID = "session_id"
+        case turnID = "turn_id"
     }
 }
 

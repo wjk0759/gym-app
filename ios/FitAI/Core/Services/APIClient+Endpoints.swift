@@ -234,6 +234,10 @@ extension APIClient {
         try await send(path: "coach/sessions/\(id.uuidString.lowercased())", method: "GET", body: nil)
     }
 
+    func latestCoachSession() async throws -> CoachLatestSessionResponse {
+        try await send(path: "coach/sessions/latest", method: "GET", body: nil)
+    }
+
     func uploadClientDiagnostic(kind: String, data: Data) async throws {
         let payload: [String: Any] = [
             "kind": kind,
@@ -743,7 +747,7 @@ extension APIClient {
             fields["session_id"] = sessionID.uuidString.lowercased()
         }
         let data = try await upload(
-            path: "coach/vision",
+            path: "coach/turns/vision",
             imageData: imageData,
             filename: "form.jpg",
             fields: fields,
@@ -763,7 +767,7 @@ extension APIClient {
             fields["session_id"] = sessionID.uuidString.lowercased()
         }
         let data = try await uploadMany(
-            path: "coach/vision/batch",
+            path: "coach/turns/vision/batch",
             images: imageData,
             fields: fields,
             headers: idempotencyHeaders(idempotencyKey)

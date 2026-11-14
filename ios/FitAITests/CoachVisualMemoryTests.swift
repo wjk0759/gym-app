@@ -13,7 +13,8 @@ final class CoachVisualMemoryTests: XCTestCase {
             nextCue: nil,
             safetyFlag: nil,
             warning: nil,
-            sessionID: sessionID
+            sessionID: sessionID,
+            turnID: nil
         )
 
         let memory = CoachVisualMemory(
@@ -37,7 +38,8 @@ final class CoachVisualMemoryTests: XCTestCase {
             nextCue: nil,
             safetyFlag: nil,
             warning: nil,
-            sessionID: nil
+            sessionID: nil,
+            turnID: nil
         )
 
         let memory = CoachVisualMemory(result: result, imageCount: 0, question: "")

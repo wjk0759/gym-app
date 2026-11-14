@@ -577,6 +577,11 @@ struct CoachSessionState: Decodable, Hashable {
     }
 }
 
+struct CoachLatestSessionResponse: Decodable {
+    let session: CoachSessionState?
+    let pending: CoachPendingState?
+}
+
 struct CoachTurnResponse: Decodable {
     let session: CoachSessionState
     let turnID: String
