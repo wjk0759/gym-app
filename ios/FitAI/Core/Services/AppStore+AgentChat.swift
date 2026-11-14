@@ -136,7 +136,7 @@ extension AppStore {
 
     /// 后台生成的周复盘会落到 AgentRun，前台只读取结果；同一周默认复用缓存。
     func refreshWeeklyReview(force: Bool = false, notifyWhenReady: Bool = false) {
-        guard AuthTokenStore.shared.accessToken != nil, hasProAccess else { return }
+        guard AuthTokenStore.shared.accessToken != nil, hasProAccess, useRemoteAI else { return }
         if isReviewingWeekly {
             if force {
                 reviewRefreshQueued = true
