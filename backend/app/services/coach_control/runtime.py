@@ -1025,13 +1025,19 @@ async def handle_turn(
                     history.append(
                         HistoryMessage(role="assistant", content=item.reply)
                     )
-            result = await resolve_answer(
-                db,
-                profile,
-                active_program(db, user_id),
-                history,
-                text,
-            )
+            try:
+                result = await resolve_answer(
+                    db,
+                    profile,
+                    active_program(db, user_id),
+                    history,
+                    text,
+                )
+            except Exception as exc:  # noqa: BLE001 - keep failed turns auditable
+                turn.status = "failed"
+                turn.error = str(exc)[:500]
+                db.commit()
+                raise
             reply = result.get("reply") or "我在。可以再说具体一点。"
             if result.get("safety_flag"):
                 turn.intent = "safety"
