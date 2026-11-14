@@ -49,6 +49,8 @@ extension AppStore {
         agentProposal = nil
         agentActions = []
         coachVisualMemory = nil
+        coachContext = nil
+        coachEquipmentResult = nil
         isExecutingAgentActions = false
         workoutLaunchDayID = nil
         lastAgentRetryText = nil

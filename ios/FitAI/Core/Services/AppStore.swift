@@ -412,6 +412,7 @@ final class AppStore {
         pendingWorkoutDeletionIDs = state.pendingWorkoutDeletionIDs ?? []
         weeklyReview = state.weeklyReview
         coachVisualMemory = state.coachVisualMemory
+        coachContext = state.coachContext
         if persistAfterMigration {
             persist()
         }
@@ -461,7 +462,8 @@ final class AppStore {
             bodyCheckInDismissedDate: bodyCheckInDismissedDate,
             pendingWorkoutDeletionIDs: pendingWorkoutDeletionIDs,
             weeklyReview: weeklyReview,
-            coachVisualMemory: coachVisualMemory
+            coachVisualMemory: coachVisualMemory,
+            coachContext: coachContext
         )
         let url = fileURL
 
@@ -580,5 +582,6 @@ final class AppStore {
         var pendingWorkoutDeletionIDs: [String]?
         var weeklyReview: AgentWeeklyReview?
         var coachVisualMemory: CoachVisualMemory?
+        var coachContext: String?
     }
 }
