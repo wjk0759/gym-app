@@ -87,11 +87,15 @@ async def lifespan(app: FastAPI):
         await llm.close_client()
 
 
+expose_api_docs = settings.app_env in {"dev", "test"} or settings.api_docs_enabled
 app = FastAPI(
     title="叫练 API",
     description="AI 健身教练后端（中国大陆版）",
     version="0.1.0",
     lifespan=lifespan,
+    docs_url="/docs" if expose_api_docs else None,
+    redoc_url="/redoc" if expose_api_docs else None,
+    openapi_url="/openapi.json" if expose_api_docs else None,
 )
 
 allowed_origins = settings.allowed_origins

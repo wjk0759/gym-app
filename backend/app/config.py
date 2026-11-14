@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     app_env: str = "dev"
     # 仅开发/自动化测试可开启；生产即使误设为 dev 也应保持 false。
     allow_dev_user_header: bool = False
+    # /docs 与 /openapi.json 默认只在 dev/test 暴露；生产需要临时排障时显式打开。
+    api_docs_enabled: bool = False
     database_url: str = "sqlite:///./fitai.db"
     # 连接池/线程池。生产 MySQL 建议按机器规格调大，并在部署层开多个 worker。
     db_pool_size: int = 20
