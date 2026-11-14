@@ -193,16 +193,18 @@ def clone_program(
     weight_multipliers: dict[str, float] | None = None,
     title_suffix: str = "",
     generated_by: str = "ai",
+    status: str = "active",
 ) -> Program:
     lock_user(db, user_id)
-    _archive_active(db, user_id)
+    if status == "active":
+        _archive_active(db, user_id)
     version = _next_version(db, user_id)
     program = Program(
         user_id=user_id,
         title=(source.title + title_suffix)[:120],
         goal_type=source.goal_type,
         version=version,
-        status="active",
+        status=status,
         weeks=source.weeks,
         generated_by=generated_by,
         model_name="rule-adjustment",

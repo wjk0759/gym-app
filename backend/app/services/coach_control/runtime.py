@@ -42,6 +42,7 @@ WEIGHT = "body.log_weight"
 REVIEW = "review.weekly"
 GOAL = "profile.update_goal"
 PLAN = "training.generate_plan"
+ADJUST_PLAN = "training.adjust_plan"
 
 
 def _looks_like_reschedule(message: str) -> bool:
@@ -153,6 +154,16 @@ def _looks_like_plan(message: str) -> bool:
             r"生成.{0,6}计划|重新.{0,4}计划|重排.{0,4}计划|排.{0,4}计划|"
             r"4周计划|新的训练计划|给我.*计划",
             message,
+        )
+    )
+
+
+def _looks_like_plan_adjust(message: str) -> bool:
+    return bool(
+        re.search(r"调整.{0,6}计划|计划.{0,6}调整", message)
+        or (
+            re.search(r"减量|加量|降低重量|减重|轻一点|太累|恢复不过来", message)
+            and re.search(r"计划|训练", message)
         )
     )
 
@@ -452,6 +463,45 @@ async def handle_turn(
         )
         reply = payload.get("summary") or "本周复盘已经生成。"
         turn.intent = REVIEW
+        turn.status = "completed"
+        turn.reply = reply
+        turn.latency_ms = int((time.perf_counter() - started) * 1000)
+        session.last_turn_at = utcnow()
+        session.updated_at = utcnow()
+        db.commit()
+        active = get_active_pending(db, user_id, session.id)
+        return {
+            "session": serialize_session(session, active),
+            "turn_id": turn.id,
+            "intent": turn.intent,
+            "status": turn.status,
+            "reply": reply,
+            "pending": serialize_pending(active),
+        }
+
+    if intent_override is None and _looks_like_plan_adjust(text):
+        from .capabilities.plan import resolve_adjust
+
+        resolution = resolve_adjust(db, user_id, text)
+        if resolution.get("ready"):
+            plan_data = resolution["plan"]
+            set_pending(
+                db,
+                session,
+                kind="proposal",
+                capability_id=ADJUST_PLAN,
+                payload={
+                    "program_id": resolution["program_id"],
+                    "plan": plan_data,
+                },
+            )
+            reply = (
+                f"计划调整草案好了：{plan_data.get('title') or '训练计划'}。"
+                "确认后激活。"
+            )
+        else:
+            reply = (resolution.get("questions") or ["计划暂时不能调整。"])[0]
+        turn.intent = ADJUST_PLAN
         turn.status = "completed"
         turn.reply = reply
         turn.latency_ms = int((time.perf_counter() - started) * 1000)
@@ -834,7 +884,7 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
     receipt: dict
     before: dict = {}
     after: dict = {}
-    if pending.capability_id == PLAN:
+    if pending.capability_id in {PLAN, ADJUST_PLAN}:
         from .capabilities.plan import activate as activate_plan
 
         result = activate_plan(
@@ -843,12 +893,20 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
             str(pending.payload.get("program_id") or ""),
         )
         after = result.get("plan") or {}
+        before = {
+            "previous_program_id": result.get("previous_program_id"),
+            "program_id": result.get("program_id"),
+        }
         receipt = {
             "summary": f"已激活计划「{after.get('title') or '训练计划'}」",
             "plan_id": result.get("program_id"),
             "deep_link": "fitai://plan",
         }
-        event_type = "TrainingPlanGenerated"
+        event_type = (
+            "TrainingPlanGenerated"
+            if pending.capability_id == PLAN
+            else "TrainingPlanAdjusted"
+        )
         entity_type = "program"
         entity_id = str(result.get("program_id") or "")
     elif pending.capability_id == DIET:
@@ -1033,7 +1091,7 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         "action_id": action_id,
         "status": "executed",
         "receipt": receipt,
-        "plan": after if pending.capability_id == PLAN else None,
+        "plan": after if pending.capability_id in {PLAN, ADJUST_PLAN} else None,
         "idempotent": False,
     }
 
@@ -1070,6 +1128,15 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
             action_id,
             record.payload,
             record.before or {},
+        )
+    elif record.capability_id in {PLAN, ADJUST_PLAN}:
+        from .capabilities.plan import undo_activate
+
+        result = undo_activate(
+            db,
+            user_id,
+            str(record.payload.get("program_id") or ""),
+            (record.before or {}).get("previous_program_id"),
         )
     elif record.capability_id == GOAL:
         from .capabilities.profile import undo as undo_goal

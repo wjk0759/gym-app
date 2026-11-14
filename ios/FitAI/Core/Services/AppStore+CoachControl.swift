@@ -55,6 +55,17 @@ extension AppStore {
         }
 
         if value.range(
+            of: #"调整.*计划|计划.*调整|减量|加量|降低重量"#,
+            options: .regularExpression
+        ) != nil,
+           value.range(
+               of: #"计划|训练"#,
+               options: .regularExpression
+           ) != nil {
+            return true
+        }
+
+        if value.range(
             of: #"多少|热量|卡路里|为什么|怎么|吗|？|\?"#,
             options: .regularExpression
         ) != nil {
@@ -196,6 +207,10 @@ extension AppStore {
                     )
                 }
                 if let plan = response.plan {
+                    if pending.capabilityID == "training.generate_plan"
+                        || pending.capabilityID == "training.adjust_plan" {
+                        self.coachPlanBefore = self.plan
+                    }
                     self.plan = plan
                     self.planNeedsServerSync = false
                     self.deferredPlanPreview = nil
@@ -255,6 +270,13 @@ extension AppStore {
                     }
                     self.coachBodyBefore = nil
                     self.coachWeightBefore = nil
+                }
+                if receipt?.capabilityID == "training.generate_plan"
+                    || receipt?.capabilityID == "training.adjust_plan" {
+                    self.plan = self.coachPlanBefore
+                    self.coachPlanBefore = nil
+                    self.planNeedsServerSync = false
+                    self.rescheduleNotifications()
                 }
                 self.syncPendingUserData()
                 self.refreshWeeklyReview(force: true)

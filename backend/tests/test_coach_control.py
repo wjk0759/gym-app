@@ -210,6 +210,25 @@ def test_plan_generation_confirm_activates_program(db, monkeypatch):
     program = db.get(Program, program_id)
     assert program.status == "active"
 
+    adjusted = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "计划太累了，减量",
+            session_id=turn["session"]["id"],
+        )
+    )
+    assert adjusted["intent"] == "training.adjust_plan"
+    assert adjusted["pending"]["kind"] == "proposal"
+    adjusted_program_id = adjusted["pending"]["payload"]["program_id"]
+    second = runtime.confirm_pending(db, "user-1", adjusted["pending"]["id"])
+    assert db.get(Program, adjusted_program_id).status == "active"
+    assert "减量" in db.get(Program, adjusted_program_id).title
+
+    runtime.undo_action(db, "user-1", second["action_id"])
+    assert db.get(Program, program_id).status == "active"
+    assert db.get(Program, adjusted_program_id).status == "archived"
+
 
 def test_strength_log_confirm_and_undo(db):
     import asyncio
