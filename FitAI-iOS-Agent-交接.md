@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`d29f2ac`（控制平面 + V38；自由聊天、身体数据、单日饮食计划、整天/单动作替换、参数修改、新增动作、观测/洞察卡；后端 **423 passed**；`Backend Tests`、`iOS Build` 在 `d29f2ac` 通过；后端生产已部署 `09c1d1f` + Flyway **V38**；iOS 已装 `e467217`，`d29f2ac`/`787acd3`/`fdd263f` 待增量部署；macOS 已验证 `FitAITests` **81/81**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`d29f2ac`（控制平面 + V38；自由聊天、身体数据、单日饮食计划、整天/单动作替换、参数修改、新增动作、观测/洞察卡；后端生产已部署 `d29f2ac` + Flyway **V38**；iOS 已装 `d29f2ac`；macOS 已验证 `FitAITests` **81/81**、`FitAIUITests` **4/4**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -25,6 +25,39 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-14 · macOS（改计划增量部署：单动作 / 加动作）
+
+- 分支：`develop`，最终部署后端 `d29f2ac`、iOS `d29f2ac`
+- 本轮连续增量：
+  - `787acd3`：改计划提案卡改为动作列表
+  - `cedfcda`：计划日期统一按开始周周一，修复改期/下一练偏移一天
+  - `6fff489` + `fdd263f`：单动作替换/组次/重量/休息修改，换动作后重量重置，非当天说明
+  - `d29f2ac`：对话里给计划日新增动作
+- 本地验证：
+  - `FitAITests` **81/81** 通过
+  - `FitAIUITests` **4/4** 通过
+- 备份：
+  - `/opt/fitai/backups/fitai-pre-monday-20261114-202838.sql.gz`
+  - `/opt/fitai/backups/fitai-pre-single-edit-20261114-203457.sql.gz`
+  - `/opt/fitai/backups/fitai-pre-add-exercise-20261114-204138.sql.gz`
+  - 对应 backend tar 同在 `/opt/fitai/backups/`
+- 迁移：无新增，保持 **V38**
+- 后端：
+  - 多次 `rsync backend/app` + `docker compose build api && up -d api`
+  - 最终 `fitai-api` healthy，`/health/ready` 返回 `{"status":"ready"}`
+  - 最近日志无 ERROR
+- iOS：
+  - 最终 phone-only Release 已安装并启动 Wu-Tang
+  - 今日页正常加载「胸」计划
+- 未验证：
+  - 原句“今天的练胸计划帮我改成：杠铃卧推、上斜杠铃卧推、器械推胸、蝴蝶机”的动作列表卡与 11-14 日期
+  - “把哑铃卧推改成 4 组 8 次 20kg”
+  - “把哑铃卧推换成杠铃卧推”
+  - “给今天的胸加一个蝴蝶机”
+  - 确认/撤销后计划日与重量是否正确
+- 注意：
+  - 生产 22 端口仍对 `27.38.152.227/32` 放行；部署完成，可移除或改固定 IP
 
 ### 2026-11-14 · Windows（新增计划动作）
 
