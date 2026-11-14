@@ -226,12 +226,19 @@ extension APIClient {
         try await send(path: "coach/sessions/\(id.uuidString.lowercased())", method: "GET", body: nil)
     }
 
-    func coachHistory(sessionID: UUID, limit: Int = 50) async throws -> CoachHistoryResponse {
-        try await send(
-            path: "coach/sessions/\(sessionID.uuidString.lowercased())/turns?limit=\(limit)",
-            method: "GET",
-            body: nil
-        )
+    func coachHistory(
+        sessionID: UUID,
+        limit: Int = 50,
+        beforeID: String? = nil
+    ) async throws -> CoachHistoryResponse {
+        var path = "coach/sessions/\(sessionID.uuidString.lowercased())/turns?limit=\(limit)"
+        if let beforeID,
+           let encoded = beforeID.addingPercentEncoding(
+               withAllowedCharacters: .urlQueryAllowed
+           ) {
+            path += "&before_id=\(encoded)"
+        }
+        return try await send(path: path, method: "GET", body: nil)
     }
 
     func confirmCoachPending(id: UUID) async throws -> CoachConfirmResponse {

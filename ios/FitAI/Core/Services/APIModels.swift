@@ -591,6 +591,14 @@ struct CoachTurnRecord: Decodable, Identifiable, Hashable {
 
 struct CoachHistoryResponse: Decodable {
     let items: [CoachTurnRecord]
+    let hasMore: Bool
+    let nextBeforeID: String?
+
+    enum CodingKeys: String, CodingKey {
+        case items
+        case hasMore = "has_more"
+        case nextBeforeID = "next_before_id"
+    }
 }
 
 struct CoachReceipt: Decodable, Hashable {

@@ -10,7 +10,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 
 from ..deps import CurrentUser, DBSession
 from ..models import (
@@ -151,24 +151,46 @@ def coach_history(
     user_id: CurrentUser,
     db: DBSession,
     limit: int = 50,
+    before_id: str | None = None,
 ):
     session = db.get(CoachSession, session_id)
     if session is None or session.user_id != user_id:
         raise HTTPException(status_code=404, detail="会话不存在")
     limit = max(1, min(100, limit))
+    statement = select(CoachTurn).where(
+        CoachTurn.session_id == session_id,
+        CoachTurn.user_id == user_id,
+    )
+    if before_id:
+        anchor = db.get(CoachTurn, before_id)
+        if (
+            anchor is None
+            or anchor.user_id != user_id
+            or anchor.session_id != session_id
+        ):
+            raise HTTPException(status_code=404, detail="消息不存在")
+        statement = statement.where(
+            or_(
+                CoachTurn.created_at < anchor.created_at,
+                and_(
+                    CoachTurn.created_at == anchor.created_at,
+                    CoachTurn.id < anchor.id,
+                ),
+            )
+        )
     rows = (
         db.execute(
-            select(CoachTurn)
-            .where(
-                CoachTurn.session_id == session_id,
-                CoachTurn.user_id == user_id,
-            )
-            .order_by(CoachTurn.created_at.asc())
-            .limit(limit)
+            statement.order_by(
+                CoachTurn.created_at.desc(),
+                CoachTurn.id.desc(),
+            ).limit(limit + 1)
         )
         .scalars()
         .all()
     )
+    has_more = len(rows) > limit
+    rows = rows[:limit]
+    rows.reverse()
     return {
         "items": [
             {
@@ -182,7 +204,9 @@ def coach_history(
                 ),
             }
             for item in rows
-        ]
+        ],
+        "has_more": has_more,
+        "next_before_id": rows[0].id if has_more and rows else None,
     }
 
 

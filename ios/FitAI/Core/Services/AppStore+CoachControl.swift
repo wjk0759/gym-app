@@ -181,6 +181,10 @@ extension AppStore {
                     sessionID: self.coachSessionID,
                     appContext: self.agentAppContext()
                 )
+                if self.coachSessionID != response.session.id {
+                    self.coachHistoryHasMore = false
+                    self.coachHistoryCursor = nil
+                }
                 self.coachSessionID = response.session.id
                 self.coachSession = response.session
                 self.coachPending = response.pending
@@ -342,6 +346,8 @@ extension AppStore {
                 self.coachPending = state.pending
                 if let history = try? await APIClient.shared.coachHistory(sessionID: sessionID) {
                     self.mergeCoachHistory(history.items)
+                    self.coachHistoryHasMore = history.hasMore
+                    self.coachHistoryCursor = history.nextBeforeID
                 }
                 self.persist()
             } catch {
@@ -358,6 +364,31 @@ extension AppStore {
             guard let self else { return }
             if let response = try? await APIClient.shared.coachInbox() {
                 self.coachInbox = response.items
+            }
+        }
+    }
+
+    func loadEarlierCoachHistory() {
+        guard let sessionID = coachSessionID,
+              let cursor = coachHistoryCursor,
+              coachHistoryHasMore,
+              !isLoadingCoachHistory,
+              AuthTokenStore.shared.accessToken != nil else { return }
+        isLoadingCoachHistory = true
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { self.isLoadingCoachHistory = false }
+            do {
+                let history = try await APIClient.shared.coachHistory(
+                    sessionID: sessionID,
+                    beforeID: cursor
+                )
+                self.mergeCoachHistory(history.items)
+                self.coachHistoryHasMore = history.hasMore
+                self.coachHistoryCursor = history.nextBeforeID
+                self.persist()
+            } catch {
+                self.toast = "更早的消息加载失败，请稍后重试"
             }
         }
     }

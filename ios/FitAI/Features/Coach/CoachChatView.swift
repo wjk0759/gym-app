@@ -83,6 +83,24 @@ struct CoachChatView: View {
                                 .padding(20)
                         } else {
                             LazyVStack(spacing: 12) {
+                                if store.coachHistoryHasMore {
+                                    Button {
+                                        store.loadEarlierCoachHistory()
+                                    } label: {
+                                        Text(
+                                            store.isLoadingCoachHistory
+                                                ? "加载中…"
+                                                : "查看更早消息"
+                                        )
+                                        .font(AppType.micro.weight(.medium))
+                                        .foregroundStyle(Theme.cobalt)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 6)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .disabled(store.isLoadingCoachHistory)
+                                }
+
                                 ForEach(store.chat) { message in
                                     bubble(message)
                                         .id(message.id)
@@ -110,7 +128,7 @@ struct CoachChatView: View {
                             .padding(20)
                         }
                     }
-                    .onChange(of: store.chat.count) { _, _ in
+                    .onChange(of: store.chat.last?.id) { _, _ in
                         guard let last = store.chat.last else { return }
                         proxy.scrollTo(last.id, anchor: .bottom)
                     }

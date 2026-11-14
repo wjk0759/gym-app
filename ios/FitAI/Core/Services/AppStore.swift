@@ -138,6 +138,9 @@ final class AppStore {
     var coachWeightBefore: Double?
     var coachPlanBefore: TrainingPlan?
     var coachInbox: [CoachInboxItem] = []
+    var coachHistoryHasMore = false
+    var coachHistoryCursor: String?
+    var isLoadingCoachHistory = false
     var coachEntryPrompt: String?
     var isCoachControlWorking = false
     var agentRunID: String?
@@ -284,6 +287,9 @@ final class AppStore {
         coachWeightBefore = nil
         coachPlanBefore = nil
         coachInbox = []
+        coachHistoryHasMore = false
+        coachHistoryCursor = nil
+        isLoadingCoachHistory = false
         isCoachControlWorking = false
         agentRunID = nil
         agentProposal = nil

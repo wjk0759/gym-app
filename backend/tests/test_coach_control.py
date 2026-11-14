@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -13,6 +13,7 @@ from app.models import (
     CoachInbox,
     CoachPending,
     CoachSession,
+    CoachTurn,
     DomainEvent,
     Exercise,
     FoodLog,
@@ -383,6 +384,51 @@ def test_inbox_unread_filter_and_read_all(db):
     assert [item["kind"] for item in unread] == ["plan"]
     read = list_inbox(db, "user-1", status="read")
     assert [item["kind"] for item in read] == ["workout"]
+
+
+def test_coach_history_paginates_with_cursor(db):
+    from app.routers.coach_control import coach_history
+
+    db.add(CoachSession(id="session-1", user_id="user-1"))
+    base = datetime(2026, 1, 1, 8, 0, tzinfo=timezone.utc)
+    for index in range(5):
+        db.add(
+            CoachTurn(
+                id=f"00000000-0000-0000-0000-00000000000{index}",
+                session_id="session-1",
+                user_id="user-1",
+                input_text=f"m{index}",
+                reply=f"r{index}",
+                created_at=base + timedelta(minutes=index),
+            )
+        )
+    db.commit()
+
+    latest = coach_history("session-1", "user-1", db, limit=2)
+    assert [item["input_text"] for item in latest["items"]] == ["m3", "m4"]
+    assert latest["has_more"] is True
+    assert latest["next_before_id"] == "00000000-0000-0000-0000-000000000003"
+
+    earlier = coach_history(
+        "session-1",
+        "user-1",
+        db,
+        limit=2,
+        before_id=latest["next_before_id"],
+    )
+    assert [item["input_text"] for item in earlier["items"]] == ["m1", "m2"]
+    assert earlier["has_more"] is True
+
+    oldest = coach_history(
+        "session-1",
+        "user-1",
+        db,
+        limit=2,
+        before_id=earlier["next_before_id"],
+    )
+    assert [item["input_text"] for item in oldest["items"]] == ["m0"]
+    assert oldest["has_more"] is False
+    assert oldest["next_before_id"] is None
 
 
 def test_control_context_contains_recent_events_and_last_action(db):
