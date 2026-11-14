@@ -11,7 +11,12 @@ from app.models import (
     AIJob,
     ChatMessage,
     ChatSession,
+    CoachActionRecord,
     CoachFeedback,
+    CoachPending,
+    CoachSession,
+    CoachTurn,
+    DomainEvent,
     User,
     utcnow,
 )
@@ -153,6 +158,71 @@ def seeded(db):
             ),
         ]
     )
+    db.add(CoachSession(id="coach-1", user_id="user-1"))
+    db.add_all(
+        [
+            CoachTurn(
+                session_id="coach-1",
+                user_id="user-1",
+                input_text="复盘本周",
+                intent="review.weekly",
+                status="completed",
+                created_at=now - timedelta(minutes=5),
+            ),
+            CoachTurn(
+                session_id="coach-1",
+                user_id="user-1",
+                input_text="你好",
+                intent="coach.answer",
+                status="completed",
+                created_at=now - timedelta(minutes=4),
+            ),
+        ]
+    )
+    db.add(
+        CoachActionRecord(
+            user_id="user-1",
+            session_id="coach-1",
+            capability_id="body.log_weight",
+            status="executed",
+            idempotency_key="action-1",
+            created_at=now - timedelta(minutes=3),
+        )
+    )
+    db.add(
+        CoachPending(
+            session_id="coach-1",
+            user_id="user-1",
+            kind="card",
+            capability_id="body.log_weight",
+            payload={},
+            status="consumed",
+            expires_at=now + timedelta(minutes=10),
+            created_at=now - timedelta(minutes=3),
+        )
+    )
+    db.add_all(
+        [
+            DomainEvent(
+                user_id="user-1",
+                type="ClientEvent",
+                payload={"name": "app_open"},
+                occurred_at=now - timedelta(minutes=2),
+            ),
+            DomainEvent(
+                user_id="user-1",
+                type="ClientEvent",
+                payload={"name": "coach_turn_completed"},
+                occurred_at=now - timedelta(minutes=2),
+            ),
+            DomainEvent(
+                user_id="user-1",
+                type="SafetyBlocked",
+                payload={"flag": "injury_guard"},
+                occurred_at=now - timedelta(minutes=1),
+            ),
+        ]
+    )
     db.commit()
     return now
 
@@ -202,6 +272,28 @@ def test_report_ignores_rows_outside_the_window(db, seeded):
     assert by_kind["agent"]["total"] == 2
     # The 30-day-old agent job must not leak into the token totals.
     assert report["jobs"]["input_tokens"] == 140
+
+
+def test_report_includes_control_plane_and_client_funnel(db, seeded):
+    report = build_report(db, days=7, now=seeded)
+    control = report["control"]
+
+    assert control["turns"]["total"] == 2
+    assert control["turns"]["intents"]["review.weekly"] == 1
+    assert control["turns"]["statuses"]["completed"] == 2
+    assert control["actions"]["statuses"]["executed"] == 1
+    assert control["pending"]["statuses"]["consumed"] == 1
+    assert control["client_events"] == {
+        "app_open": 1,
+        "coach_turn_completed": 1,
+    }
+    assert control["safety_blocks"] == {"injury_guard": 1}
+
+    text = format_report(report)
+    assert "Control plane" in text
+    assert "Client funnel" in text
+    assert "app_open" in text
+    assert "injury_guard=1" in text
 
 
 def test_report_text_mentions_prompts_and_unsafe(db, seeded):

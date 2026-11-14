@@ -16,7 +16,16 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..models import AgentRun, AIJob, CoachFeedback, utcnow
+from ..models import (
+    AgentRun,
+    AIJob,
+    CoachActionRecord,
+    CoachFeedback,
+    CoachPending,
+    CoachTurn,
+    DomainEvent,
+    utcnow,
+)
 
 MAX_REPORT_DAYS = 90
 MAX_ROWS = 20000
@@ -183,6 +192,48 @@ def _feedback_section(items: list[CoachFeedback]) -> dict[str, Any]:
     }
 
 
+def _control_section(
+    turns: list[CoachTurn],
+    actions: list[CoachActionRecord],
+    pending: list[CoachPending],
+    events: list[DomainEvent],
+) -> dict[str, Any]:
+    turn_statuses = Counter(item.status for item in turns)
+    intents = Counter(item.intent or UNKNOWN_PROMPT for item in turns)
+    daily = Counter(
+        item.created_at.date().isoformat() for item in turns if item.created_at
+    )
+    action_statuses = Counter(item.status for item in actions)
+    pending_statuses = Counter(item.status for item in pending)
+    client_events: Counter[str] = Counter()
+    safety_flags: Counter[str] = Counter()
+    for event in events:
+        payload = event.payload or {}
+        if event.type == "ClientEvent":
+            client_events[str(payload.get("name") or "unknown")] += 1
+        elif event.type == "SafetyBlocked":
+            safety_flags[str(payload.get("flag") or "unknown")] += 1
+
+    return {
+        "turns": {
+            "total": len(turns),
+            "statuses": dict(sorted(turn_statuses.items())),
+            "intents": dict(sorted(intents.items())),
+            "daily": dict(sorted(daily.items())),
+        },
+        "actions": {
+            "total": len(actions),
+            "statuses": dict(sorted(action_statuses.items())),
+        },
+        "pending": {
+            "total": len(pending),
+            "statuses": dict(sorted(pending_statuses.items())),
+        },
+        "client_events": dict(sorted(client_events.items())),
+        "safety_blocks": dict(sorted(safety_flags.items())),
+    }
+
+
 def build_report(
     db: Session,
     *,
@@ -218,6 +269,41 @@ def build_report(
             .limit(MAX_ROWS)
         ).scalars()
     )
+    turns = list(
+        db.execute(
+            select(CoachTurn)
+            .where(CoachTurn.created_at >= start)
+            .order_by(CoachTurn.created_at.desc())
+            .limit(MAX_ROWS)
+        ).scalars()
+    )
+    actions = list(
+        db.execute(
+            select(CoachActionRecord)
+            .where(CoachActionRecord.created_at >= start)
+            .order_by(CoachActionRecord.created_at.desc())
+            .limit(MAX_ROWS)
+        ).scalars()
+    )
+    pending = list(
+        db.execute(
+            select(CoachPending)
+            .where(CoachPending.created_at >= start)
+            .order_by(CoachPending.created_at.desc())
+            .limit(MAX_ROWS)
+        ).scalars()
+    )
+    events = list(
+        db.execute(
+            select(DomainEvent)
+            .where(
+                DomainEvent.occurred_at >= start,
+                DomainEvent.type.in_(["ClientEvent", "SafetyBlocked"]),
+            )
+            .order_by(DomainEvent.occurred_at.desc())
+            .limit(MAX_ROWS)
+        ).scalars()
+    )
 
     return {
         "window": {
@@ -228,6 +314,7 @@ def build_report(
         "jobs": _job_section(jobs),
         "runs": _run_section(runs),
         "feedback": _feedback_section(feedback),
+        "control": _control_section(turns, actions, pending, events),
     }
 
 
@@ -306,5 +393,42 @@ def format_report(report: dict[str, Any]) -> str:
     if feedback["unsafe_reports"]:
         lines.append(
             f"! {feedback['unsafe_reports']} unsafe report(s) need review this window"
+        )
+
+    control = report["control"]
+    turns = control["turns"]
+    actions = control["actions"]
+    pending = control["pending"]
+    lines += [
+        "",
+        "Control plane",
+        f"turns {turns['total']}  statuses={turns['statuses']}",
+        "intents "
+        + "  ".join(f"{key}={value}" for key, value in turns["intents"].items()),
+        f"actions {actions['total']}  statuses={actions['statuses']}",
+        f"pending {pending['total']}  statuses={pending['statuses']}",
+    ]
+    if turns["daily"]:
+        lines.append(
+            "daily turns " + "  ".join(
+                f"{key}={value}" for key, value in turns["daily"].items()
+            )
+        )
+    lines.append("")
+    lines.append("Client funnel")
+    if control["client_events"]:
+        lines.extend(
+            f"  {name:<28}{count:>6}"
+            for name, count in control["client_events"].items()
+        )
+    else:
+        lines.append("  (no client events in this window)")
+    if control["safety_blocks"]:
+        lines.append(
+            "safety blocks: "
+            + "  ".join(
+                f"{flag}={count}"
+                for flag, count in control["safety_blocks"].items()
+            )
         )
     return "\n".join(lines)
