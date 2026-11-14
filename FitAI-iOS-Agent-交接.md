@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`9564ac8`（控制平面 + V38；训练日期保存 + 保存后错位修复；后端生产暂为 `9715765`，需部署 `9564ac8`；iOS 生产暂为 `b9f32e2`，`7998997` 已在 Mac 安装，`9564ac8` 待 Mac build/test；macOS `FitAITests` 基线 **81/81**，`9564ac8` 预期 **89/89**；后端 **446 passed**、QA **16/16**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`9564ac8`（控制平面 + V38；训练日期保存 + 保存后错位修复；后端生产已部署 `9564ac8` 的 `schedule.py` 归一化，无新迁移；iOS 生产暂为 `b9f32e2`，`7998997` 已在 Mac 安装，`9564ac8` 待 Mac build/test；macOS `FitAITests` 基线 **81/81**，`9564ac8` 预期 **89/89**；后端 **446 passed**、QA **16/16**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -51,6 +51,19 @@
   - 后端 **446 passed**，QA **16/16**
   - 新增 `backend/qa/conftest.py` 强制 mock LLM，修复 QA 套件跨事件循环复用真实 HTTP client 导致的 `Event loop is closed`
   - Ruff app/tests/scripts/qa 通过
+  - GitHub `iOS Build` 在 `9564ac8` 通过，`Backend Tests` 通过
+- 生产写流程烟测（`test_reviewer`，全部清理）：
+  - 训练：创建 201 → 列表可见 → 删除 200 → 列表消失
+  - 饮食：创建 201 → 列表可见 → 删除 200
+  - 身体：创建 201 → 列表可见 → 删除 200
+  - 器械：创建 201（需 `target_muscles`）→ 列表可见 → 删除 200
+  - 教练记录体重：turn → confirm → undo 全部 200
+  - 教练改期「把周一的训练改到周三」：`training.reschedule` → confirm 200（11-16 → 11-18）→ undo 200（恢复 null）
+  - 收件箱：列表 200 → read-all 200
+  - `/schedule` 跳过日撞期归一化：active 保留 `2026-11-23`，skipped 回读 `assigned_date=null`
+- 部署：
+  - 后端生产已增量部署 `schedule.py`（`9564ac8`），容器 healthy；无新迁移
+  - iOS 需 Mac 重新 build/安装 `9564ac8`
 - 需要 Mac：
   - 拉取 `9564ac8` → `xcodegen generate`
   - 跑 `FitAITests`，预期 **89/89**（81 + 8）
@@ -58,9 +71,6 @@
     1. 取消中间某天（如周三）→ 保存后只有周三被跳过，周四周五日期不变
     2. 再选回周三 → 周三恢复，其他日期不变
     3. 第 2 周不再出现两个 `11-23`
-- 部署：
-  - iOS 需 Mac 重新 build/安装
-  - 后端 `9564ac8` 需 Windows 部署（`schedule.py` 兜底归一化）；无新迁移
 
 ### 2026-11-14 · macOS（iOS 7998997 训练日期保存部署）
 
