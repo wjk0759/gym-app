@@ -2478,6 +2478,38 @@ def test_latest_session_returns_the_most_recent_one(db):
     assert payload["pending"] is None
 
 
+def test_reset_sessions_closes_history_and_latest_stays_empty(db):
+    from app.models import CoachSession
+
+    first = CoachSession(user_id="user-1", status="active")
+    second = CoachSession(user_id="user-1", status="waiting")
+    db.add_all([first, second])
+    db.commit()
+
+    from app.routers import coach_control
+
+    result = coach_control.reset_sessions("user-1", db)
+    assert result["closed"] == 2
+    db.refresh(first)
+    db.refresh(second)
+    assert first.status == "closed"
+    assert second.status == "closed"
+    assert coach_control.latest_session("user-1", db)["session"] is None
+
+    import asyncio
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "今天练什么",
+            session_id=first.id,
+        )
+    )
+    assert turn["session"]["id"] != first.id
+    assert turn["session"]["status"] != "closed"
+
+
 def test_coach_answer_receives_body_and_equipment_context(db, monkeypatch):
     import asyncio
 

@@ -28,7 +28,11 @@ def get_or_create_session(
 ) -> CoachSession:
     if session_id:
         session = db.get(CoachSession, session_id)
-        if session is not None and session.user_id == user_id:
+        if (
+            session is not None
+            and session.user_id == user_id
+            and session.status != "closed"
+        ):
             return session
     session = CoachSession(
         id=str(uuid4()),

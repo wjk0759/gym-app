@@ -238,6 +238,10 @@ extension APIClient {
         try await send(path: "coach/sessions/latest", method: "GET", body: nil)
     }
 
+    func resetCoachSessions() async throws {
+        try await sendVoid(path: "coach/sessions/reset", method: "POST", body: nil)
+    }
+
     func uploadClientDiagnostic(kind: String, data: Data) async throws {
         let payload: [String: Any] = [
             "kind": kind,

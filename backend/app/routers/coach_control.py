@@ -31,6 +31,7 @@ from ..services.coach_control.context import build_control_context
 from ..services.coach_control.events import emit_event, list_inbox
 from ..services.coach_control.registry import capability_payloads
 from ..services.coach_control.state import (
+    cancel_active_pending,
     get_active_pending,
     get_or_create_session,
     serialize_pending,
@@ -400,7 +401,10 @@ def latest_session(user_id: CurrentUser, db: DBSession):
     session = (
         db.execute(
             select(CoachSession)
-            .where(CoachSession.user_id == user_id)
+            .where(
+                CoachSession.user_id == user_id,
+                CoachSession.status != "closed",
+            )
             .order_by(CoachSession.updated_at.desc(), CoachSession.id.desc())
             .limit(1)
         )
@@ -414,6 +418,31 @@ def latest_session(user_id: CurrentUser, db: DBSession):
         "session": serialize_session(session, active),
         "pending": serialize_pending(active),
     }
+
+
+@router.post("/sessions/reset")
+def reset_sessions(user_id: CurrentUser, db: DBSession):
+    """Start a fresh coach conversation after the user clears the chat.
+
+    Rows are kept for audit; only the status changes so ``latest`` no longer
+    resumes them and any unconfirmed card is dropped.
+    """
+    sessions = (
+        db.execute(
+            select(CoachSession).where(
+                CoachSession.user_id == user_id,
+                CoachSession.status != "closed",
+            )
+        )
+        .scalars()
+        .all()
+    )
+    for session in sessions:
+        cancel_active_pending(db, session)
+        session.status = "closed"
+        session.pending_id = None
+    db.commit()
+    return {"closed": len(sessions)}
 
 
 @router.get("/sessions/{session_id}")

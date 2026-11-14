@@ -40,8 +40,7 @@ extension AppStore {
         if pendingDraft != nil {
             cancelPendingDraft()
         }
-        chat.removeAll()
-        planAdjustmentStage = 0
+        chat.removeAll()        planAdjustmentStage = 0
         planAdjustmentProposal = nil
         planAdjustmentRequested = false
         agentSessionID = nil
@@ -55,7 +54,22 @@ extension AppStore {
         lastAgentRetrySkill = .trainer
         pendingUndo = nil
         isReplying = false
+        // Clearing only the local array would let the next restore pull the
+        // same server session back. Close it server-side and forget the id.
+        coachSessionID = nil
+        coachSession = nil
+        coachPending = nil
+        coachReceipt = nil
+        coachUndoActionID = nil
+        coachUndoExpiresAt = nil
+        coachHistoryHasMore = false
+        coachHistoryCursor = nil
         persist()
+        if AuthTokenStore.shared.accessToken != nil {
+            Task {
+                try? await APIClient.shared.resetCoachSessions()
+            }
+        }
     }
 
     /// 服务端保存最近一张待确认卡和草稿；换设备或重装后可恢复。
