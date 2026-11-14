@@ -44,8 +44,9 @@
   - OpenAPI 已确认 `/coach/inbox/read-all`、`/coach/inbox/{id}/read`、`/coach/diagnostics`、`/coach/sessions/{id}/turns`、`/coach/stats`
   - 最近日志无 ERROR
 - iOS：
-  - 最新 phone-only Release 已安装到 Wu-Tang
-  - 安装后手机处于锁屏/需要密码状态，启动命令超时；尚未确认新包已在前台正常启动
+  - 最新 phone-only Release 已安装并启动 Wu-Tang
+  - 首次启动因手机锁屏超时，解锁后重试成功
+  - 今日页正常加载「胸」计划
 - 未验证：
   - Inbox 未读角标、全部已读、更早消息分页
   - 安全危机/医疗风险不被额度拦截
@@ -53,7 +54,7 @@
   - MetricKit 诊断上报
 - 注意：
   - 生产 22 端口仍对 `27.38.152.227/32` 放行；部署完成，可移除或改固定 IP
-  - 手机解锁后重新拉起 App 即可确认启动
+  - 手机解锁后已确认新包正常启动
 
 ### 2026-11-14 · Windows（安全额度豁免 + 跳餐提醒可执行）
 
