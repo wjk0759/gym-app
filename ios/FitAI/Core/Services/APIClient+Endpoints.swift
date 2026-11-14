@@ -141,6 +141,14 @@ extension APIClient {
         )
     }
 
+    func fetchSchedule(planID: String) async throws -> RemoteScheduleState {
+        try await send(
+            path: "schedule?plan_id=\(planID)",
+            method: "GET",
+            body: nil
+        )
+    }
+
     func syncSchedule(
         planID: String,
         planVersion: Int?,

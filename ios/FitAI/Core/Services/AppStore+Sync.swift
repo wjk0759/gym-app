@@ -251,6 +251,21 @@ extension AppStore {
         applyRemoteSchedule(remote)
     }
 
+    /// Pull the server schedule before an editor renders. The app is normally
+    /// push-only here; without this, a stale local plan can overwrite a newer
+    /// schedule repaired on another device.
+    @discardableResult
+    func refreshPlanSchedule() async -> Bool {
+        guard let plan else { return false }
+        guard let remote = try? await APIClient.shared.fetchSchedule(
+            planID: plan.id.uuidString
+        ) else {
+            return false
+        }
+        applyRemoteSchedule(remote)
+        return true
+    }
+
     private func applyRemoteSchedule(_ remote: RemoteScheduleState) {
         guard var current = plan,
               current.id.uuidString == remote.planID,

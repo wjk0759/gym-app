@@ -12,6 +12,7 @@ struct PlanScheduleView: View {
     @State private var daysPerWeek = 3
     @State private var selected = Set<String>()
     @State private var didLoad = false
+    @State private var isLoading = false
     @State private var message = ""
 
     private var calendar: Calendar { FitnessDate.calendar }
@@ -43,7 +44,7 @@ struct PlanScheduleView: View {
     }
 
     private var canSave: Bool {
-        selectedCount > 0 && store.plan != nil
+        didLoad && !isLoading && selectedCount > 0 && store.plan != nil
     }
 
     private var selectedCount: Int {
@@ -75,6 +76,8 @@ struct PlanScheduleView: View {
 
                     if store.plan == nil {
                         noPlanCard
+                    } else if isLoading {
+                        loadingCard
                     } else {
                         overview
                         board
@@ -362,13 +365,25 @@ struct PlanScheduleView: View {
     // MARK: - Data
 
     private func load() {
-        guard let plan = store.plan, !plan.days.isEmpty else {
-            message = "当前计划没有可调整的训练日期"
-            return
-        }
-        guard !didLoad else { return }
-        didLoad = true
+        guard !didLoad, !isLoading else { return }
+        isLoading = true
         message = ""
+        Task { @MainActor in
+            let refreshed = await store.refreshPlanSchedule()
+            isLoading = false
+            guard let plan = store.plan, !plan.days.isEmpty else {
+                message = "当前计划没有可调整的训练日期"
+                return
+            }
+            didLoad = true
+            populateBoard(with: plan)
+            if !refreshed {
+                message = "云端日期获取失败，当前显示本地日期"
+            }
+        }
+    }
+
+    private func populateBoard(with plan: TrainingPlan) {
         daysPerWeek = min(7, max(1, plan.weeklyDays ?? max(1, plan.days.count / max(1, plan.weeks))))
         startDate = FitnessDate.startOfDay(plan.planStartDate)
         let offsets = defaultOffsets[daysPerWeek] ?? [0]
@@ -395,6 +410,17 @@ struct PlanScheduleView: View {
             }
             chosen.sorted().forEach { selected.insert($0) }
         }
+    }
+
+    private var loadingCard: some View {
+        HStack(spacing: 10) {
+            ProgressView()
+            Text("正在获取云端训练日期…")
+                .font(AppType.body)
+                .foregroundStyle(Theme.secondaryText)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
     }
 
     private func toggle(_ date: Date, block: Int) {
