@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`33b38b5`（控制平面 + V38；安全护栏/额度豁免、Inbox 未读闭环与跳餐提醒、历史分页、确定性路由评测、MetricKit 诊断、客户端漏斗埋点、今日饮食复盘、身体趋势复盘；后端 **412 passed**；`Backend Tests`、`iOS Build` 在 `33b38b5` 通过；生产已部署 backend `b765b0c` + Flyway **V38**、iOS `a724db0`；macOS 已验证 `FitAITests` **81/81**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`edc6332`（控制平面 + V38；安全护栏/额度豁免、Inbox 未读闭环与跳餐提醒、历史分页、路由评测、MetricKit 诊断、客户端漏斗埋点、今日饮食复盘、身体趋势复盘；后端生产已部署 `33b38b5` + Flyway **V38**；iOS 已装 `33b38b5`；`035adf5` / `edc6332` 待部署；macOS 已验证 `FitAITests` **81/81**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -49,6 +49,34 @@
   - 体脂/腰围只在有至少两次记录时展示变化
   - 目标进度用 12 周窗口起点估算，不回溯更早历史
   - 不含体态照片对比
+### 2026-11-14 · macOS（饮食复盘 + 漏斗埋点部署）
+
+- 分支：`develop`，部署后端 `77ac61d`、iOS `1429a02`
+- 本地验证：
+  - `xcodegen generate` + 编译
+  - `FitAITests` **81/81** 通过
+  - `FitAIUITests` **4/4** 通过
+- 备份：
+  - MySQL：`/opt/fitai/backups/fitai-pre-telemetry-20261114-143158.sql.gz`（516K）
+  - backend：`/opt/fitai/backups/backend-pre-telemetry-20261114-143158.tar.gz`
+- 迁移：无新增，保持 **V38**
+- 后端：
+  - `rsync backend/app` → `/opt/fitai/backend/app`
+  - `docker compose build api && up -d api` 成功，`fitai-api` healthy
+  - `/health/ready` 返回 `{"status":"ready"}`
+  - OpenAPI 已确认 `/telemetry/events`、`/coach/turns`、`/coach/stats`、`/coach/inbox` 存在
+  - 最近日志无 ERROR
+- iOS：
+  - 最新 phone-only Release 已安装并启动 Wu-Tang
+  - 今日页正常加载「胸」计划
+- 未验证：
+  - 今日饮食复盘真实对话：热量/蛋白质缺口、跳过餐、下一步建议
+  - 客户端漏斗事件落库与下次启动补传
+  - Inbox 未读角标、全部已读、更早消息分页
+  - 安全拦截与额度豁免
+- 注意：
+  - 生产 22 端口仍对 `27.38.152.227/32` 放行；部署完成，可移除或改固定 IP
+  - 埋点只接收白名单事件，不上传聊天原文/体重/伤病等健康数据
 
 ### 2026-11-14 · Windows（今日饮食复盘能力）
 
