@@ -223,6 +223,7 @@ def coach_turn_feedback(
     turn = db.get(CoachTurn, turn_id)
     if turn is None or turn.user_id != user_id or not turn.reply:
         raise HTTPException(status_code=404, detail="消息不存在")
+    enforce_rate_limit(db, "coach_feedback", user_id, 30, 60)
     existing = (
         db.execute(
             select(DomainEvent).where(
@@ -476,6 +477,7 @@ def reset_sessions(user_id: CurrentUser, db: DBSession):
     Rows are kept for audit; only the status changes so ``latest`` no longer
     resumes them and any unconfirmed card is dropped.
     """
+    enforce_rate_limit(db, "coach_session_reset", user_id, 5, 60)
     sessions = (
         db.execute(
             select(CoachSession).where(
