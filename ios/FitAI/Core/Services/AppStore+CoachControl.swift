@@ -72,6 +72,22 @@ extension AppStore {
             of: #"(?:改|修改|调整).{0,8}(?:训练)?计划|(?:训练)?计划.{0,8}(?:改|修改|调整)"#,
             options: .regularExpression
         ) != nil
+        let weekSchedule = value.range(
+            of: #"下周|本周|这周|一周|上周"#,
+            options: .regularExpression
+        ) != nil
+            && value.range(
+                of: #"练什么|训练安排|计划|日程|安排"#,
+                options: .regularExpression
+            ) != nil
+            && value.range(
+                of: #"复盘|完成率|怎么样|总结|状态|饮食|餐|营养|食谱|餐单"#,
+                options: .regularExpression
+            ) == nil
+        if weekSchedule {
+            return true
+        }
+
         let addDay = value.range(
             of: #"加一次|加个|加一天|补一次|想练|额外练|加练"#,
             options: .regularExpression

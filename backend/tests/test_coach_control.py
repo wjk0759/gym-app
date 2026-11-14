@@ -1720,6 +1720,47 @@ def test_edit_multiple_exercise_params(db):
     assert restored["barbell-row"] == (3, "10-12")
 
 
+def test_week_schedule_lists_next_week(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    next_monday = today - timedelta(days=today.weekday()) + timedelta(days=7)
+    context = {
+        "plan": {
+            "id": "plan-1",
+            "days": [
+                {
+                    "id": "day-1",
+                    "date": next_monday.isoformat(),
+                    "title": "胸",
+                    "completed": False,
+                    "skipped": False,
+                },
+                {
+                    "id": "day-2",
+                    "date": (next_monday + timedelta(days=2)).isoformat(),
+                    "title": "背",
+                    "completed": False,
+                    "skipped": True,
+                },
+            ],
+        }
+    }
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "下周练什么",
+            app_context=context,
+        )
+    )
+    assert turn["intent"] == "training.week_schedule"
+    assert turn["pending"]["kind"] == "insight"
+    assert "下周" in turn["reply"]
+    assert any("胸" in item for item in turn["pending"]["payload"]["wins"])
+    assert any("背" in item for item in turn["pending"]["payload"]["wins"])
+
+
 def test_routing_eval_covers_deterministic_capabilities(db):
     """A small regression matrix for the intents the control plane owns.
 

@@ -50,6 +50,7 @@ TRAINING = "training.reschedule"
 SKIP_TRAINING = "training.skip"
 CARDIO = "training.log_cardio"
 PREVIEW = "training.preview_next"
+WEEK_SCHEDULE = "training.week_schedule"
 EDIT_EXERCISES = "training.edit_day_exercises"
 EDIT_EXERCISE = "training.edit_day_exercise"
 ADD_DAY = "training.add_plan_day"
@@ -325,6 +326,17 @@ def _looks_like_body_review(message: str) -> bool:
             r"变化|趋势|怎么样|怎么|如何|进度|最近|几周|吗|？|\?",
             message,
         )
+    )
+
+
+def _looks_like_week_schedule(message: str) -> bool:
+    if re.search(r"复盘|完成率|怎么样|总结|状态", message):
+        return False
+    if re.search(r"饮食|餐|营养|食谱|餐单", message):
+        return False
+    return bool(
+        re.search(r"下周|本周|这周|一周|上周", message)
+        and re.search(r"练什么|训练安排|计划|日程|安排", message)
     )
 
 
@@ -812,6 +824,36 @@ async def handle_turn(
         )
         reply = payload.get("summary") or "身体趋势已经整理好。"
         turn.intent = BODY_REVIEW
+        turn.status = "completed"
+        turn.reply = reply
+        turn.latency_ms = int((time.perf_counter() - started) * 1000)
+        session.last_turn_at = utcnow()
+        session.updated_at = utcnow()
+        db.commit()
+        active = get_active_pending(db, user_id, session.id)
+        return {
+            "session": serialize_session(session, active),
+            "turn_id": turn.id,
+            "intent": turn.intent,
+            "status": turn.status,
+            "reply": reply,
+            "pending": serialize_pending(active),
+        }
+
+    if intent_override is None and _looks_like_week_schedule(text):
+        from .capabilities.training_week import resolve as resolve_week_schedule
+
+        resolution = resolve_week_schedule(db, user_id, text, context)
+        payload = resolution["payload"]
+        set_pending(
+            db,
+            session,
+            kind="insight",
+            capability_id=WEEK_SCHEDULE,
+            payload=payload,
+        )
+        reply = payload.get("summary") or "本周训练安排已经整理好。"
+        turn.intent = WEEK_SCHEDULE
         turn.status = "completed"
         turn.reply = reply
         turn.latency_ms = int((time.perf_counter() - started) * 1000)
