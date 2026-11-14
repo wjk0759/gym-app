@@ -34,6 +34,7 @@ struct FitAIApp: App {
         UITabBar.appearance().scrollEdgeAppearance = tabAppearance
 
         UNUserNotificationCenter.current().delegate = AppNotificationDelegate.shared
+        DiagnosticsReporter.shared.start()
         _weather = State(initialValue: WeatherStore())
     }
 

@@ -31,6 +31,7 @@ def build_control_context(
             select(DomainEvent)
             .where(
                 DomainEvent.user_id == user_id,
+                DomainEvent.type != "ClientDiagnostic",
                 DomainEvent.occurred_at >= utcnow() - timedelta(days=7),
             )
             .order_by(DomainEvent.occurred_at.desc())

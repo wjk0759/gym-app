@@ -226,6 +226,16 @@ extension APIClient {
         try await send(path: "coach/sessions/\(id.uuidString.lowercased())", method: "GET", body: nil)
     }
 
+    func uploadClientDiagnostic(kind: String, data: Data) async throws {
+        let payload: [String: Any] = [
+            "kind": kind,
+            "app_version": AppConfig.appVersion,
+            "data_base64": data.base64EncodedString(),
+        ]
+        let body = try JSONSerialization.data(withJSONObject: payload)
+        try await sendVoid(path: "coach/diagnostics", method: "POST", body: body)
+    }
+
     func coachHistory(
         sessionID: UUID,
         limit: Int = 50,

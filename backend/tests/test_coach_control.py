@@ -444,6 +444,26 @@ def test_inbox_unread_filter_and_read_all(db):
     assert [item["kind"] for item in read] == ["workout"]
 
 
+def test_client_diagnostic_is_audited(db):
+    from app.routers.coach_control import ClientDiagnosticIn, upload_client_diagnostic
+
+    result = upload_client_diagnostic(
+        ClientDiagnosticIn(
+            kind="metrickit",
+            app_version="0.1.0",
+            data_base64="eyJjcmFzaCI6MX0=",
+        ),
+        "user-1",
+        db,
+    )
+    assert result["ok"] is True
+    event = db.execute(
+        select(DomainEvent).where(DomainEvent.type == "ClientDiagnostic")
+    ).scalar_one()
+    assert event.payload["app_version"] == "0.1.0"
+    assert event.payload["data_base64"]
+
+
 def test_stats_include_intents_pending_and_daily_counts(db):
     import asyncio
 

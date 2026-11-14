@@ -26,7 +26,7 @@ from ..models import (
 from ..services import access
 from ..services.coach_control import runtime
 from ..services.coach_control.context import build_control_context
-from ..services.coach_control.events import list_inbox
+from ..services.coach_control.events import emit_event, list_inbox
 from ..services.coach_control.registry import capability_payloads
 from ..services.rate_limit import enforce as enforce_rate_limit
 
@@ -37,6 +37,34 @@ class CoachTurnIn(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     session_id: str | None = Field(default=None, max_length=36)
     app_context: dict[str, Any] | None = None
+
+
+class ClientDiagnosticIn(BaseModel):
+    kind: str = Field(default="metrickit", max_length=40)
+    app_version: str | None = Field(default=None, max_length=40)
+    data_base64: str = Field(min_length=1, max_length=400_000)
+
+
+@router.post("/diagnostics")
+def upload_client_diagnostic(
+    payload: ClientDiagnosticIn,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    enforce_rate_limit(db, "client_diagnostics", user_id, 10, 60)
+    emit_event(
+        db,
+        user_id,
+        "ClientDiagnostic",
+        entity_type="ios",
+        payload={
+            "kind": payload.kind,
+            "app_version": payload.app_version,
+            "data_base64": payload.data_base64,
+        },
+    )
+    db.commit()
+    return {"ok": True}
 
 
 @router.get("/capabilities")
