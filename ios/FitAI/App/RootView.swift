@@ -157,6 +157,7 @@ struct RootView: View {
         }
         .onChange(of: auth.isAuthenticated) { _, _ in
             refreshSession()
+            Telemetry.shared.flush()
         }
         .onChange(of: auth.userID) { _, _ in
             refreshSession()
