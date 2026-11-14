@@ -19,6 +19,7 @@ from ..models import (
     CoachSession,
     CoachTurn,
     DomainEvent,
+    utcnow,
 )
 from ..services import access
 from ..services.coach_control import runtime
@@ -236,3 +237,18 @@ def coach_inbox(
     limit: int = 20,
 ):
     return {"items": list_inbox(db, user_id, limit)}
+
+
+@router.post("/inbox/{item_id}/read")
+def read_coach_inbox(
+    item_id: str,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    item = db.get(CoachInbox, item_id)
+    if item is None or item.user_id != user_id:
+        raise HTTPException(status_code=404, detail="消息不存在")
+    item.status = "read"
+    item.read_at = utcnow()
+    db.commit()
+    return {"ok": True, "id": item.id, "status": item.status}

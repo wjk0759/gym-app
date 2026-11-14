@@ -25,6 +25,9 @@ extension CoachChatView {
                             .fixedSize(horizontal: false, vertical: true)
                         if item.capabilityID == "review.weekly" {
                             Button("看复盘") {
+                                Task {
+                                    try? await APIClient.shared.markCoachInboxRead(id: item.id)
+                                }
                                 store.sendCoachControlTurn("复盘本周")
                             }
                             .font(AppType.micro.weight(.semibold))
