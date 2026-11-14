@@ -48,6 +48,26 @@ extension AppStore {
         ) != nil
         if reschedule && hasDate { return true }
 
+        let weekDiet = value.range(
+            of: #"一周|本周|这周|下周|周计划|7\s*天|七天"#,
+            options: .regularExpression
+        ) != nil
+            && value.range(
+                of: #"饮食|餐|营养"#,
+                options: .regularExpression
+            ) != nil
+            && value.range(
+                of: #"怎么样|复盘|总结|吃了什么|缺什么|多少"#,
+                options: .regularExpression
+            ) == nil
+            && value.range(
+                of: #"排|安排|生成|做|计划|餐单|食谱"#,
+                options: .regularExpression
+            ) != nil
+        if weekDiet {
+            return true
+        }
+
         let planEdit = value.range(
             of: #"(?:改|修改|调整).{0,8}(?:训练)?计划|(?:训练)?计划.{0,8}(?:改|修改|调整)"#,
             options: .regularExpression

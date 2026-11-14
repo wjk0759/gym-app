@@ -18,6 +18,7 @@ from app.models import (
     Exercise,
     FoodLog,
     Goal,
+    MealPlan,
     PlanDayState,
     PlanExercise,
     Profile,
@@ -1515,6 +1516,39 @@ def test_edit_single_exercise_swap_and_sets(db):
     assert [item.exercise_slug for item in db.get(ProgramDay, day.id).exercises] == [
         "old-dumbbell-press"
     ]
+
+
+def test_diet_week_generation_confirm_and_undo(db, monkeypatch):
+    import asyncio
+
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "llm_provider", "mock")
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    next_monday = today - timedelta(days=today.weekday()) + timedelta(days=7)
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "帮我排下周的碳循环饮食计划",
+        )
+    )
+    assert turn["intent"] == "diet.generate_week"
+    assert turn["pending"]["kind"] == "proposal"
+    payload = turn["pending"]["payload"]
+    assert payload["week_start"] == next_monday.isoformat()
+    assert payload["strategy"] == "carb_cycle"
+    assert len(payload["days"]) == 7
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert confirmed["status"] == "executed"
+    saved = db.execute(select(MealPlan)).scalars().all()
+    assert len(saved) == 7
+    assert {item.strategy for item in saved} == {"carb_cycle"}
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(MealPlan)).scalars().all() == []
 
 
 def test_routing_eval_covers_deterministic_capabilities(db):

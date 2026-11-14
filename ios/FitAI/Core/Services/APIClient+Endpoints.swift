@@ -219,7 +219,7 @@ extension APIClient {
         if let sessionID { payload["session_id"] = sessionID.uuidString.lowercased() }
         if let appContext { payload["app_context"] = appContext }
         let body = try JSONSerialization.data(withJSONObject: payload)
-        return try await send(path: "coach/turns", method: "POST", body: body, timeout: 50)
+        return try await send(path: "coach/turns", method: "POST", body: body, timeout: 90)
     }
 
     func coachSession(id: UUID) async throws -> CoachSessionState {

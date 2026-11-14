@@ -7,6 +7,7 @@ from . import (  # noqa: F401
     diet,
     diet_plan,
     diet_review,
+    diet_week,
     plan,
     profile,
     review,

@@ -40,6 +40,7 @@ from .state import (
 
 DIET = "diet.log_food"
 DIET_PLAN = "diet.generate_day"
+DIET_WEEK = "diet.generate_week"
 DIET_REVIEW = "diet.review_day"
 PLANNED = "diet.log_planned_meal"
 SKIP_MEAL = "diet.skip_planned_meal"
@@ -245,6 +246,17 @@ def _looks_like_review(message: str) -> bool:
     return bool(re.search(r"复盘|本周总结|这周怎么样|这周状态|周报", message))
 
 
+def _looks_like_diet_week(message: str) -> bool:
+    if not re.search(r"一周|本周|这周|下周|周计划|7\s*天|七天", message):
+        return False
+    if re.search(r"怎么样|复盘|总结|吃了什么|缺什么|多少", message):
+        return False
+    return bool(
+        re.search(r"排|安排|生成|做|来一份|计划|餐单|食谱", message)
+        and re.search(r"饮食|餐|营养", message)
+    )
+
+
 def _looks_like_diet_plan(message: str) -> bool:
     return bool(
         re.search(
@@ -268,6 +280,7 @@ def _looks_like_diet_review(message: str) -> bool:
             message,
         )
     )
+
 
 def _looks_like_body_review(message: str) -> bool:
     return bool(
@@ -757,6 +770,41 @@ async def handle_turn(
         )
         reply = payload.get("summary") or "下一练已经整理好。"
         turn.intent = PREVIEW
+        turn.status = "completed"
+        turn.reply = reply
+        turn.latency_ms = int((time.perf_counter() - started) * 1000)
+        session.last_turn_at = utcnow()
+        session.updated_at = utcnow()
+        db.commit()
+        active = get_active_pending(db, user_id, session.id)
+        return {
+            "session": serialize_session(session, active),
+            "turn_id": turn.id,
+            "intent": turn.intent,
+            "status": turn.status,
+            "reply": reply,
+            "pending": serialize_pending(active),
+        }
+
+    if intent_override is None and _looks_like_diet_week(text):
+        from .capabilities.diet_week import resolve as resolve_diet_week
+
+        resolution = await resolve_diet_week(db, user_id, text)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            set_pending(
+                db,
+                session,
+                kind="proposal",
+                capability_id=DIET_WEEK,
+                payload=payload,
+            )
+            reply = f"{payload.get('summary') or '一周饮食草案好了。'}确认后保存。"
+        else:
+            reply = (
+                resolution.get("questions") or ["一周饮食计划暂时不能生成。"]
+            )[0]
+        turn.intent = DIET_WEEK
         turn.status = "completed"
         turn.reply = reply
         turn.latency_ms = int((time.perf_counter() - started) * 1000)
@@ -1476,6 +1524,22 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "BodyMetricLogged"
         entity_type = "body_metric"
         entity_id = action_id
+    elif pending.capability_id == DIET_WEEK:
+        from .capabilities.diet_week import execute as execute_diet_week
+
+        result = execute_diet_week(db, user_id, action_id, pending.payload)
+        before = result.get("before") or {}
+        receipt = {
+            "summary": (
+                f"已保存 {pending.payload.get('week_start')} 起一周饮食计划"
+            ),
+            "capability_id": DIET_WEEK,
+            "date": pending.payload.get("week_start"),
+            "deep_link": "fitai://nutrition",
+        }
+        event_type = "DietPlanGenerated"
+        entity_type = "meal_plan"
+        entity_id = str(pending.payload.get("week_start") or "")
     elif pending.capability_id == DIET_PLAN:
         from .capabilities.diet_plan import execute as execute_diet_plan
 
@@ -1665,6 +1729,10 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
         from .capabilities.body import undo as undo_weight
 
         result = undo_weight(db, user_id, action_id, record.payload)
+    elif record.capability_id == DIET_WEEK:
+        from .capabilities.diet_week import undo as undo_diet_week
+
+        result = undo_diet_week(db, user_id, record.before or {}, record.payload)
     elif record.capability_id == DIET_PLAN:
         from .capabilities.diet_plan import undo as undo_diet_plan
 
