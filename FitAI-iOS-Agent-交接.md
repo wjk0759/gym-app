@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`9564ac8`（控制平面 + V38；训练日期保存 + 保存后错位修复；后端生产已部署 `9564ac8` 的 `schedule.py` 归一化，无新迁移；账号 `13428104171` 的 4 周日期已按周二-周六对齐并备份；iOS 生产暂为 `b9f32e2`，`7998997` 已在 Mac 安装，`9564ac8` 待 Mac build/test；macOS `FitAITests` 基线 **81/81**，`9564ac8` 预期 **89/89**；后端 **446 passed**、QA **16/16**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`134db20`（控制平面 + V38；训练日期保存/错位修复、计划日期对齐、单日饮食策略；后端生产 `9564ac8` + Flyway **V38**；iOS 已装 `9564ac8`；`FitAITests` **89/89**、`FitAIUITests` **4/4**、后端 **446 passed**、QA **16/16**；账号 `13428104171` 4 周日期已按周二-周六对齐）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -25,6 +25,30 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-15 · macOS（9564ac8 训练日期错位修复部署）
+
+- 部署：iOS `9564ac8`；后端 `9564ac8` 的 `schedule.py` 已在生产；Flyway **V38**
+- 测试：
+  - `FitAITests` **89/89**
+  - `FitAIUITests` **4/4**
+  - 后端完整测试 **446 passed**
+  - QA 对抗测试 **16/16**
+  - 后端 `schedule.py` 与本地 `9564ac8` 哈希一致
+- iOS：
+  - 最新 phone-only Release 已安装并启动 Wu-Tang
+  - 今日页正常显示 11-15 休息日
+- 数据：
+  - Windows 已把账号 `13428104171` 的 20 个训练日按周二-周六重排
+  - 备份表：`plan_day_states_backup_20261115_align`
+  - 20/20 有日期、无重复、0 skipped
+- 待真机验证：
+  - 取消中间某天（如周三）→ 只有周三被跳过，周四周五日期不变
+  - 再选回周三 → 周三恢复，其他日期不变
+  - 第 2 周不再出现两个 11-23
+- 备注：
+  - 旧包 `7998997` 不要在该账号保存训练日期；现已升级到 `9564ac8`
+  - 本轮无新迁移
 
 ### 2026-11-15 · Windows（账号 13428104171 计划日期对齐）
 
