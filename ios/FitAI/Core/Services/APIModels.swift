@@ -571,6 +571,28 @@ struct CoachTurnResponse: Decodable {
     }
 }
 
+struct CoachTurnRecord: Decodable, Identifiable, Hashable {
+    let id: String
+    let intent: String?
+    let status: String
+    let inputText: String
+    let reply: String?
+    let createdAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case intent
+        case status
+        case inputText = "input_text"
+        case reply
+        case createdAt = "created_at"
+    }
+}
+
+struct CoachHistoryResponse: Decodable {
+    let items: [CoachTurnRecord]
+}
+
 struct CoachReceipt: Decodable, Hashable {
     let summary: String?
     let capabilityID: String?

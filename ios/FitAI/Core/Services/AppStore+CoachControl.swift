@@ -159,9 +159,19 @@ extension AppStore {
                 self.coachSessionID = response.session.id
                 self.coachSession = response.session
                 self.coachPending = response.pending
-                self.chat.append(
-                    ChatMessage(role: .assistant, text: response.reply)
+                if let index = self.chat.lastIndex(where: {
+                    $0.role == .user
+                        && $0.serverMessageID == nil
+                        && $0.text == trimmed
+                }) {
+                    self.chat[index].serverMessageID = "coach-\(response.turnID)-user"
+                }
+                var assistant = ChatMessage(
+                    role: .assistant,
+                    text: response.reply
                 )
+                assistant.serverMessageID = "coach-\(response.turnID)-assistant"
+                self.chat.append(assistant)
                 self.persist()
             } catch {
                 self.chat.append(
@@ -305,6 +315,9 @@ extension AppStore {
                 let state = try await APIClient.shared.coachSession(id: sessionID)
                 self.coachSession = state
                 self.coachPending = state.pending
+                if let history = try? await APIClient.shared.coachHistory(sessionID: sessionID) {
+                    self.mergeCoachHistory(history.items)
+                }
                 self.persist()
             } catch {
                 self.coachSessionID = nil
@@ -322,6 +335,39 @@ extension AppStore {
                 self.coachInbox = response.items
             }
         }
+    }
+
+    private func mergeCoachHistory(_ turns: [CoachTurnRecord]) {
+        var known = Set(chat.compactMap(\.serverMessageID))
+        for turn in turns {
+            let userID = "coach-\(turn.id)-user"
+            if !turn.inputText.isEmpty, !known.contains(userID) {
+                chat.append(
+                    ChatMessage(
+                        role: .user,
+                        text: turn.inputText,
+                        date: turn.createdAt ?? Date(),
+                        serverMessageID: userID
+                    )
+                )
+                known.insert(userID)
+            }
+            if let reply = turn.reply, !reply.isEmpty {
+                let assistantID = "coach-\(turn.id)-assistant"
+                if !known.contains(assistantID) {
+                    chat.append(
+                        ChatMessage(
+                            role: .assistant,
+                            text: reply,
+                            date: turn.createdAt ?? Date(),
+                            serverMessageID: assistantID
+                        )
+                    )
+                    known.insert(assistantID)
+                }
+            }
+        }
+        chat.sort { $0.date < $1.date }
     }
 
     private func applyCoachWeight(receipt: CoachReceipt?, actionID: String) {

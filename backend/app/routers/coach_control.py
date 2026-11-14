@@ -16,6 +16,7 @@ from ..deps import CurrentUser, DBSession
 from ..models import (
     CoachActionRecord,
     CoachInbox,
+    CoachSession,
     CoachTurn,
     DomainEvent,
 )
@@ -141,6 +142,47 @@ def get_session(
         return runtime.session_state(db, user_id, session_id)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/sessions/{session_id}/turns")
+def coach_history(
+    session_id: str,
+    user_id: CurrentUser,
+    db: DBSession,
+    limit: int = 50,
+):
+    session = db.get(CoachSession, session_id)
+    if session is None or session.user_id != user_id:
+        raise HTTPException(status_code=404, detail="会话不存在")
+    limit = max(1, min(100, limit))
+    rows = (
+        db.execute(
+            select(CoachTurn)
+            .where(
+                CoachTurn.session_id == session_id,
+                CoachTurn.user_id == user_id,
+            )
+            .order_by(CoachTurn.created_at.asc())
+            .limit(limit)
+        )
+        .scalars()
+        .all()
+    )
+    return {
+        "items": [
+            {
+                "id": item.id,
+                "intent": item.intent,
+                "status": item.status,
+                "input_text": item.input_text,
+                "reply": item.reply,
+                "created_at": (
+                    item.created_at.isoformat() if item.created_at else None
+                ),
+            }
+            for item in rows
+        ]
+    }
 
 
 @router.post("/pending/{pending_id}/confirm")
