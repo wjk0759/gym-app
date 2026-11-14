@@ -32,6 +32,8 @@
 - 生产实测确认：
   - Mac 部署 iOS `7998997` 后，账号 `13428104171` 在 23:05（北京时间）成功保存了一次训练日期，服务端 `PUT /schedule` 返回 200
   - 说明“保存失败”本身已被 7998997 修掉
+  - 用户原始失败消息「今天的练胸计划帮我改成…」已在测试账号回归通过：正确路由、proposal、confirm 替换 4 个动作、undo 完整恢复
+  - 用户账号里 09:40 的旧 `body.log_weight` pending 会在下一条消息时自动取消，直接重发原话即可
 - 但保存后的数据仍有真实问题：
   - 第 2 周出现两个 `11-23`，其中一个已跳过但仍保留 `assigned_date`
   - 取消中间某天时，旧逻辑把后面的训练依次前移，并跳过**最后一个**训练位，不是用户取消的那天
@@ -53,12 +55,17 @@
   - Ruff app/tests/scripts/qa 通过
   - GitHub `iOS Build` 在 `9564ac8` 通过，`Backend Tests` 通过
 - 生产写流程烟测（`test_reviewer`，全部清理）：
-  - 训练：创建 201 → 列表可见 → 删除 200 → 列表消失
+  - 训练：创建 201 → 列表可见 → 删除 200 → 列表消失；PATCH 修改感受/备注/组数后 GET 一致
   - 饮食：创建 201 → 列表可见 → 删除 200
   - 身体：创建 201 → 列表可见 → 删除 200
   - 器械：创建 201（需 `target_muscles`）→ 列表可见 → 删除 200
   - 教练记录体重：turn → confirm → undo 全部 200
   - 教练改期「把周一的训练改到周三」：`training.reschedule` → confirm 200（11-16 → 11-18）→ undo 200（恢复 null）
+  - 用户原始失败消息回归：
+    - `今天的练胸计划帮我改成：杠铃卧推、上斜杠铃卧推、器械推胸、蝴蝶机`
+    - 现在正确路由 `training.edit_day_exercises`，proposal 含 `day_id/plan_id/date`
+    - confirm 200 后动作替换为 `bench_press` / `vital-incline-barbell-bench-press` / `vital-seated-machine-chest-press` / `vital-machine-pec-deck-fly`
+    - undo 200 后 4 个原动作完整恢复
   - 收件箱：列表 200 → read-all 200
   - `/schedule` 跳过日撞期归一化：active 保留 `2026-11-23`，skipped 回读 `assigned_date=null`
 - 部署：
