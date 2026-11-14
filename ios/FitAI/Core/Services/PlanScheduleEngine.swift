@@ -31,6 +31,16 @@ enum PlanScheduleValidationError: Error, Equatable {
 /// which moved following workouts whenever a middle day was deselected and
 /// marked the last slot as skipped instead of the day the user removed.
 enum PlanScheduleEngine {
+    /// Timestamp used for last-write-wins schedule sync.
+    ///
+    /// A freshly fetched plan has no per-day `scheduleUpdatedAt`; falling back
+    /// to `plan.updatedAt` would let a reinstall claim a newer timestamp than
+    /// the server state and overwrite a repaired schedule. `createdAt` is the
+    /// plan's real age, so an untouched local plan loses to newer server state.
+    static func uploadTimestamp(for day: PlanDay, in plan: TrainingPlan) -> Date {
+        day.scheduleUpdatedAt ?? plan.createdAt
+    }
+
     static func apply(
         to plan: TrainingPlan,
         selection: [Int: [Date]],

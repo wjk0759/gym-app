@@ -237,9 +237,10 @@ extension AppStore {
                     ? plan.scheduledDate(for: day).map { FitnessDate.key($0) }
                     : nil,
                 skippedAt: day.skippedAt,
-                clientUpdatedAt: day.scheduleUpdatedAt
-                    ?? plan.updatedAt
-                    ?? plan.createdAt
+                clientUpdatedAt: PlanScheduleEngine.uploadTimestamp(
+                    for: day,
+                    in: plan
+                )
             )
         }
         guard let remote = try? await APIClient.shared.syncSchedule(

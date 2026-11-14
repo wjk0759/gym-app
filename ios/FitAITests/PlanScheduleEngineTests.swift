@@ -75,6 +75,28 @@ final class PlanScheduleEngineTests: XCTestCase {
         XCTAssertTrue(updated.days.allSatisfy { $0.skippedAt == nil })
     }
 
+    func testUploadTimestampUsesCreationDateForUntouchedPlan() {
+        var plan = makePlan()
+        plan.createdAt = date(0)
+        plan.updatedAt = date(10)
+
+        XCTAssertEqual(
+            PlanScheduleEngine.uploadTimestamp(for: plan.days[0], in: plan),
+            date(0)
+        )
+    }
+
+    func testUploadTimestampUsesDayUpdateWhenPresent() {
+        var plan = makePlan()
+        let updated = date(3)
+        plan.days[0].scheduleUpdatedAt = updated
+
+        XCTAssertEqual(
+            PlanScheduleEngine.uploadTimestamp(for: plan.days[0], in: plan),
+            updated
+        )
+    }
+
     func testDeselectingMiddleDaySkipsThatDayInsteadOfTheLastOne() throws {
         let plan = makePlan()
         let thursday = try XCTUnwrap(
