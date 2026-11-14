@@ -141,7 +141,7 @@ struct TrainingPlan: Codable, Identifiable, Hashable {
     }
 
     func scheduledDate(for day: PlanDay) -> Date? {
-        if let date = day.date, date >= planStartDate {
+        if let date = day.date {
             return date
         }
         return date(week: day.weekIndex, weekday: day.weekday)

@@ -288,6 +288,26 @@ def test_what_did_i_eat_routes_to_daily_diet_review(db):
     assert result["intent"] == "diet.review_day", result
 
 
+def test_week_schedule_understands_next_next_week(db):
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    this_monday = today - timedelta(days=today.weekday())
+    days = [
+        {
+            "id": f"qa-week-{offset}",
+            "date": (this_monday + timedelta(days=offset)).isoformat(),
+            "title": f"第{offset // 7 + 1}周训练",
+            "completed": False,
+            "skipped": False,
+        }
+        for offset in (0, 7, 14)
+    ]
+    context = {"plan": {"id": "plan-qa", "days": days}}
+    result = turn(db, "下下周训练安排", context)
+    assert result["intent"] == "training.week_schedule", result
+    expected = (this_monday + timedelta(days=14)).isoformat()
+    assert expected[5:] in result["reply"] or "第3周训练" in result["reply"], result["reply"]
+
+
 def test_non_painful_body_part_can_still_train(db):
     result = turn(db, "膝盖疼，今天还能练胸吗", {})
     assert result["intent"] != "safety", result

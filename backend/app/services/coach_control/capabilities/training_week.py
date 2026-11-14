@@ -32,6 +32,8 @@ WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"
 
 def _week_start(message: str, today: date) -> date:
     monday = today - timedelta(days=today.weekday())
+    if re.search(r"下下周|下下星期", message):
+        return monday + timedelta(days=14)
     if re.search(r"下周|下星期", message):
         return monday + timedelta(days=7)
     if re.search(r"上周|上星期", message):
@@ -68,15 +70,21 @@ def resolve(db: Session, user_id: str, message: str, context: dict) -> dict:
             continue
         chosen.append((when, item))
     chosen.sort(key=lambda pair: pair[0])
-    label = "本周" if start <= today <= end else (
-        "下周" if start > today else "上周"
-    )
+    monday = today - timedelta(days=today.weekday())
+    if start == monday:
+        label = "本周"
+    elif start == monday + timedelta(days=7):
+        label = "下周"
+    elif start == monday + timedelta(days=14):
+        label = "下下周"
+    else:
+        label = "上周" if start < monday else "未来一周"
     if not chosen:
         return {
             "ready": True,
             "payload": {
-                "summary": f"{label}（{start.month}月{start.day}日–"
-                f"{end.month}月{end.day}日）没有安排训练。",
+                "summary": f"{label}（{start.isoformat()[5:]}–"
+                f"{end.isoformat()[5:]}）没有安排训练。",
                 "wins": [],
                 "watchouts": ["休息周也要保持日常活动；需要加练可以直接说。"],
                 "actions": [],
@@ -104,8 +112,8 @@ def resolve(db: Session, user_id: str, message: str, context: dict) -> dict:
         "ready": True,
         "payload": {
             "summary": (
-                f"{label}（{start.month}月{start.day}日–"
-                f"{end.month}月{end.day}日）计划 {len(chosen)} 练，"
+                f"{label}（{start.isoformat()[5:]}–{end.isoformat()[5:]}）"
+                f"计划 {len(chosen)} 练，"
                 f"已完成 {completed} 次。"
             ),
             "wins": wins,
