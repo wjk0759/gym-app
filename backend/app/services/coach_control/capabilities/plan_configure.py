@@ -53,15 +53,39 @@ SPLIT_ALIASES = {
 }
 
 
+CN_NUMBERS = {
+    "一": 1,
+    "二": 2,
+    "三": 3,
+    "四": 4,
+    "五": 5,
+    "六": 6,
+    "七": 7,
+}
+FREQUENCY_RE = re.compile(
+    r"(?:每周|一周)\s*([1-7一二三四五六七])\s*(?:练|次|天)"
+)
+
+
+def _frequency_value(value: str) -> int | None:
+    if value.isdigit():
+        return max(1, min(7, int(value)))
+    return CN_NUMBERS.get(value)
+
+
 def _weekdays(text: str) -> list[int]:
+    # "一周三练" contains the substring "周三"; strip the frequency phrase
+    # before looking for weekday names, otherwise it becomes one Wednesday
+    # session instead of three weekly sessions.
+    stripped = FREQUENCY_RE.sub("", text)
     found: list[int] = []
-    for match in re.finditer(r"(?:周|星期|礼拜)([一二三四五六日天])", text):
+    for match in re.finditer(r"(?:周|星期|礼拜)([一二三四五六日天])", stripped):
         value = WEEKDAY_MAP.get(match.group(1))
         if value is not None:
             found.append(value)
     for match in re.finditer(
         r"(?<![一二三四五六日天])([一二三四五六日天]{2,})(?![一二三四五六日天])",
-        text,
+        stripped,
     ):
         for char in match.group(1):
             value = WEEKDAY_MAP.get(char)
@@ -71,12 +95,12 @@ def _weekdays(text: str) -> list[int]:
 
 
 def _weekly_days(text: str) -> int | None:
-    match = re.search(r"(?:每周|一周)\s*(\d)\s*(?:练|次|天)?", text)
+    match = FREQUENCY_RE.search(text)
     if match:
-        return max(1, min(7, int(match.group(1))))
-    match = re.search(r"(\d)\s*(?:练|次|天)", text)
+        return _frequency_value(match.group(1))
+    match = re.search(r"([1-7一二三四五六七])\s*(?:练|次|天)", text)
     if match:
-        return max(1, min(7, int(match.group(1))))
+        return _frequency_value(match.group(1))
     return None
 
 
@@ -88,9 +112,11 @@ def _session_minutes(text: str) -> int | None:
 
 
 def _split(text: str) -> str | None:
-    match = re.search(r"([1-5])\s*分化", text)
+    match = re.search(r"([1-5一二三四五])\s*分化", text)
     if match:
-        return f"{match.group(1)}分化"
+        value = _frequency_value(match.group(1))
+        if value is not None:
+            return f"{value}分化"
     for label, value in SPLIT_ALIASES.items():
         if label in text:
             return value

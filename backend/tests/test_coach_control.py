@@ -2188,6 +2188,19 @@ def test_update_and_delete_workout_via_control_plane(db):
     assert db.get(WorkoutSession, session.id) is not None
 
 
+def test_configure_plan_parses_chinese_frequency_and_split():
+    from app.services.coach_control.capabilities import plan_configure
+
+    assert plan_configure._weekly_days("一周三练") == 3
+    assert plan_configure._weekly_days("每周三练") == 3
+    assert plan_configure._weekly_days("每周4练") == 4
+    assert plan_configure._weekdays("一周三练，二四六") == [2, 4, 6]
+    assert plan_configure._weekdays("每周三练") == []
+    assert plan_configure._split("三分化") == "3分化"
+    assert plan_configure._split("推拉腿") == "3分化"
+    assert runtime._looks_like_plan_configure("一周三练，二四六，45分钟")
+
+
 def test_configure_plan_parses_shape_and_activates(db, monkeypatch):
     import asyncio
 

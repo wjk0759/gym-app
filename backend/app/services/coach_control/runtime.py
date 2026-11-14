@@ -232,14 +232,18 @@ def _looks_like_workout_update(message: str) -> bool:
 def _looks_like_plan_configure(message: str) -> bool:
     has_shape = bool(
         re.search(
-            r"每周\s*\d|[1-5]\s*分化|推拉腿|"
+            r"每周\s*[1-7一二三四五六七]\s*(?:练|次|天)|"
+            r"一周\s*[1-7一二三四五六七]\s*(?:练|次|天)|"
+            r"[1-5一二三四五]\s*分化|推拉腿|"
             r"周[一二三四五六日天].*周[一二三四五六日天]",
             message,
         )
     )
     has_minutes = bool(re.search(r"\d{2,3}\s*分钟", message))
     has_plan = "计划" in message
-    if has_shape and (has_plan or "每周" in message or "分化" in message):
+    if has_shape and (
+        has_plan or "每周" in message or "一周" in message or "分化" in message
+    ):
         return True
     return has_plan and has_minutes and bool(re.search(r"改|调|安排", message))
 
