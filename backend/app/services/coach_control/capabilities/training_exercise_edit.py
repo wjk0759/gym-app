@@ -36,6 +36,15 @@ CAPABILITY = register(
 
 _SWAP = re.compile(r"(?:换成|替换成|替换为|改为)\s*([^，。；;]+)")
 _ADD = re.compile(r"(?:加上|加一个|加个|增加|再加)\s*([^，。；;]+)")
+_BATCH_SPLIT = re.compile(r"[，,；;]\s*")
+_BATCH_CHANGE = re.compile(
+    r"改成|加到|调到|重量|休息|每组|\d+\s*(?:组|次|kg|公斤)",
+    re.IGNORECASE,
+)
+_EXERCISE_HINT = re.compile(
+    r"卧推|深蹲|硬拉|划船|推举|飞鸟|弯举|下压|引体|"
+    r"臂屈伸|腿举|推胸|蝴蝶机|夹胸|侧平举|后束|卷腹|臀桥"
+)
 _SETS = re.compile(r"(\d+)\s*组")
 _REPS = re.compile(r"(\d+)(?:\s*[-~到]\s*(\d+))?\s*次")
 _WEIGHT = re.compile(r"(\d+(?:\.\d+)?)\s*(?:kg|公斤)", re.IGNORECASE)
@@ -237,6 +246,75 @@ def _resolve_add(
     }
 
 
+def _resolve_batch(
+    db: Session,
+    user_id: str,
+    message: str,
+    context: dict,
+    today: date,
+) -> dict | None:
+    segments = [
+        item.strip()
+        for item in _BATCH_SPLIT.split(message)
+        if item.strip()
+    ]
+    actionable = [
+        item
+        for item in segments
+        if _EXERCISE_HINT.search(item)
+        and _BATCH_CHANGE.search(item)
+        and not re.search(r"换成|替换|加上|加一个|加个|删掉|去掉|删除", item)
+    ]
+    if len(actionable) < 2:
+        return None
+    found = _find_day_and_exercise(db, user_id, context, actionable[0], today)
+    if found is None:
+        return {
+            "ready": False,
+            "questions": ["没有在计划里找到这些动作，先确认动作名或训练日。"],
+        }
+    program, day, _, context_day = found
+    before = _snapshot(day)
+    by_id = {item["id"]: item for item in before}
+    wins = []
+    for segment in actionable:
+        current = _match_exercise(day, segment)
+        if current is None:
+            return {
+                "ready": False,
+                "questions": [f"没有在今天计划里找到「{segment}」里的动作。"],
+            }
+        after = _parse_after(segment, current, None)
+        if after is None:
+            return {
+                "ready": False,
+                "questions": [f"没看懂「{segment}」要改成什么。"],
+            }
+        by_id[current.id] = after
+        name = current.exercise.name_zh if current.exercise else current.exercise_slug
+        wins.append(f"{name}：{after['sets']} 组 × {after['reps']}")
+    exercises = [by_id[item["id"]] for item in before if item["id"] in by_id]
+    date_label = str(context_day.get("date") or "")
+    return {
+        "ready": True,
+        "payload": {
+            "plan_id": program.id,
+            "day_id": day.id,
+            "date": date_label,
+            "title": day.title,
+            "before": before,
+            "exercises": exercises,
+            "summary": (
+                f"准备修改{date_label}的「{day.title}」里的 "
+                f"{len(actionable)} 个动作。"
+            ),
+            "wins": wins,
+            "watchouts": [],
+            "actions": [],
+        },
+    }
+
+
 def resolve(
     db: Session,
     user_id: str,
@@ -244,6 +322,9 @@ def resolve(
     context: dict,
 ) -> dict:
     today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    batch = _resolve_batch(db, user_id, message, context, today)
+    if batch is not None:
+        return batch
     add_match = _ADD.search(message)
     if add_match:
         return _resolve_add(db, user_id, message, context, today, add_match)

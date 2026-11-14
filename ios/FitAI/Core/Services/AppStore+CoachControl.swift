@@ -84,6 +84,23 @@ extension AppStore {
             return true
         }
 
+        let batchParts = value.components(
+            separatedBy: CharacterSet(charactersIn: "，,；;")
+        )
+        let batchCount = batchParts.filter { part in
+            part.range(
+                of: #"卧推|深蹲|硬拉|划船|推举|飞鸟|弯举|下压|引体|臂屈伸|腿举|推胸|蝴蝶机|夹胸|侧平举|后束|卷腹|臀桥"#,
+                options: .regularExpression
+            ) != nil
+                && part.range(
+                    of: #"改成|加到|调到|重量|休息|每组|\d+\s*(?:组|次|kg|公斤)"#,
+                    options: [.regularExpression, .caseInsensitive]
+                ) != nil
+        }.count
+        if batchCount >= 2 {
+            return true
+        }
+
         let exerciseName = value.range(
             of: #"卧推|深蹲|硬拉|划船|推举|飞鸟|弯举|下压|引体|臂屈伸|腿举|推胸|蝴蝶机|夹胸|侧平举|后束|卷腹|臀桥"#,
             options: .regularExpression

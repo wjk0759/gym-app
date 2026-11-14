@@ -1631,6 +1631,95 @@ def test_add_plan_day_copies_focus_template_and_undo(db):
     assert db.get(ProgramDay, day_id) is None
 
 
+def test_edit_multiple_exercise_params(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    monday = today - timedelta(days=today.weekday())
+    for slug, name in [
+        ("old-dumbbell-press", "哑铃卧推"),
+        ("barbell-row", "杠铃划船"),
+    ]:
+        db.add(
+            Exercise(
+                slug=slug,
+                name_zh=name,
+                name_en=slug,
+                muscle_group="chest",
+                equipment="barbell",
+                is_compound=True,
+                contraindications=[],
+            )
+        )
+    db.commit()
+    program = Program(
+        user_id="user-1",
+        title="测试日",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=monday,
+        weeks=4,
+    )
+    db.add(program)
+    db.flush()
+    day = ProgramDay(
+        program_id=program.id,
+        week_index=1,
+        weekday=today.isoweekday(),
+        title="胸背",
+    )
+    db.add(day)
+    db.flush()
+    db.add_all(
+        [
+            PlanExercise(
+                program_day_id=day.id,
+                exercise_slug="old-dumbbell-press",
+                order_index=1,
+                sets=3,
+                reps="8-12",
+                rest_sec=90,
+            ),
+            PlanExercise(
+                program_day_id=day.id,
+                exercise_slug="barbell-row",
+                order_index=2,
+                sets=3,
+                reps="10-12",
+                rest_sec=90,
+            ),
+        ]
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "哑铃卧推改成4组8次，杠铃划船改成3组12次",
+        )
+    )
+    assert turn["intent"] == "training.edit_day_exercise"
+    assert turn["pending"]["kind"] == "proposal"
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    updated = db.get(ProgramDay, day.id)
+    values = {
+        item.exercise_slug: (item.sets, item.reps)
+        for item in updated.exercises
+    }
+    assert values["old-dumbbell-press"] == (4, "8")
+    assert values["barbell-row"] == (3, "12")
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    restored = {
+        item.exercise_slug: (item.sets, item.reps)
+        for item in db.get(ProgramDay, day.id).exercises
+    }
+    assert restored["old-dumbbell-press"] == (3, "8-12")
+    assert restored["barbell-row"] == (3, "10-12")
+
+
 def test_routing_eval_covers_deterministic_capabilities(db):
     """A small regression matrix for the intents the control plane owns.
 

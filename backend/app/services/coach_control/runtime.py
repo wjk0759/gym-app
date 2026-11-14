@@ -196,6 +196,30 @@ def _looks_like_add_day(message: str) -> bool:
     )
 
 
+def _looks_like_batch_exercise_edit(message: str) -> bool:
+    parts = [
+        item
+        for item in re.split(r"[，,；;]\s*", message)
+        if item.strip()
+    ]
+    count = 0
+    for part in parts:
+        if not re.search(
+            r"卧推|深蹲|硬拉|划船|推举|飞鸟|弯举|下压|引体|"
+            r"臂屈伸|腿举|推胸|蝴蝶机|夹胸|侧平举|后束|卷腹|臀桥",
+            part,
+        ):
+            continue
+        if re.search(
+            r"改成|加到|调到|重量|休息|每组|"
+            r"\d+\s*(?:组|次|kg|公斤)",
+            part,
+            flags=re.IGNORECASE,
+        ):
+            count += 1
+    return count >= 2
+
+
 def _looks_like_single_exercise_edit(message: str) -> bool:
     if re.search(r"[、,，;；/]", message):
         return False
@@ -613,7 +637,10 @@ async def handle_turn(
             "pending": serialize_pending(active),
         }
 
-    if intent_override is None and _looks_like_single_exercise_edit(text):
+    if intent_override is None and (
+        _looks_like_single_exercise_edit(text)
+        or _looks_like_batch_exercise_edit(text)
+    ):
         from .capabilities.training_exercise_edit import (
             resolve as resolve_single_exercise_edit,
         )
