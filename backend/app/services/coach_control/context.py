@@ -8,7 +8,8 @@ action, plus a deterministic plan fallback when the client does not send
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -102,6 +103,18 @@ def with_plan_context(
         start = date.fromisoformat(str(plan.get("start_date")))
     except (TypeError, ValueError):
         start = None
+    start_week = None
+    if start is not None:
+        start_week = start - timedelta(days=start.weekday())
+        if start_week < start:
+            start_week += timedelta(days=7)
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    # Allow a workout explicitly added for today even when the plan's first
+    # Monday is still in the future (e.g. generate a plan on Sunday and add a
+    # Sunday session). Older stale pre-start dates still fall back.
+    earliest = start_week
+    if earliest is None or today < earliest:
+        earliest = today
     normalized = []
     for item in days:
         if not isinstance(item, dict):
@@ -113,10 +126,7 @@ def with_plan_context(
         if start is not None:
             week_index = int(item.get("week_index") or 1)
             weekday = int(item.get("weekday") or 1)
-            week_start = start - timedelta(days=start.weekday())
-            if week_start < start:
-                week_start += timedelta(days=7)
-            computed = week_start + timedelta(
+            computed = start_week + timedelta(
                 days=(week_index - 1) * 7 + weekday - 1
             )
         selected = None
@@ -125,16 +135,10 @@ def with_plan_context(
                 assigned_date = date.fromisoformat(str(assigned))
             except ValueError:
                 assigned_date = None
-            if assigned_date is not None:
-                start_week = (
-                    start - timedelta(days=start.weekday())
-                    if start is not None
-                    else None
-                )
-                if start_week is not None and start_week < start:
-                    start_week += timedelta(days=7)
-                if start_week is None or assigned_date >= start_week:
-                    selected = assigned
+            if assigned_date is not None and (
+                earliest is None or assigned_date >= earliest
+            ):
+                selected = assigned
         normalized.append(
             {
                 "id": item.get("id"),

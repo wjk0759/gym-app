@@ -97,6 +97,43 @@ final class PlanScheduleEngineTests: XCTestCase {
         )
     }
 
+    func testSeedDatesUsesPlanWeekdays() {
+        var plan = makePlan()
+        plan.createdAt = date(0)
+        for index in plan.days.indices {
+            plan.days[index].date = nil
+        }
+
+        let seeded = PlanScheduleEngine.seedDates(in: plan)
+
+        XCTAssertEqual(key(seeded.days[0].date), "2026-11-16")
+        XCTAssertEqual(key(seeded.days[5].date), "2026-11-23")
+    }
+
+    func testEarlyExtraDayIsPreservedWhenSavingItsWeek() throws {
+        var plan = makePlan()
+        let extra = PlanDay(
+            weekIndex: 1,
+            weekday: 7,
+            date: date(-1),
+            title: "extra",
+            focus: [],
+            exercises: []
+        )
+        plan.days.append(extra)
+
+        var dates = selection(from: plan)
+        dates[1] = plan.days
+            .filter { $0.weekIndex == 1 && $0.id != extra.id && $0.skippedAt == nil }
+            .compactMap(\.date)
+
+        let updated = try PlanScheduleEngine.apply(to: plan, selection: dates).get()
+
+        let preserved = try XCTUnwrap(updated.days.first { $0.id == extra.id })
+        XCTAssertEqual(key(preserved.date), "2026-11-15")
+        XCTAssertNil(preserved.skippedAt)
+    }
+
     func testDeselectingMiddleDaySkipsThatDayInsteadOfTheLastOne() throws {
         let plan = makePlan()
         let thursday = try XCTUnwrap(

@@ -69,12 +69,12 @@ extension AppStore {
                     generated.version = max(generated.version, (self.plan?.version ?? 0) + 1)
                     self.pendingPlanIdempotencyKey = nil
                     if onboarding, self.plan == nil {
-                        self.pendingPlanPreview = generated
+                        self.pendingPlanPreview = PlanScheduleEngine.seedDates(in: generated)
                         self.planNeedsServerSync = false
                         self.toast = "计划已生成，确认后开始"
                     } else {
                         self.archiveCurrentPlan()
-                        self.plan = generated
+                        self.plan = PlanScheduleEngine.seedDates(in: generated)
                         self.planNeedsServerSync = false
                         self.toast = generated.generatedBy == "ai"
                             ? "已由 AI 生成计划"

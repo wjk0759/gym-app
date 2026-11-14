@@ -53,9 +53,8 @@ struct PlanScheduleView: View {
 
     /// 比基准每周天数少选的日期，会在保存时标记为跳过。
     private var skippedCount: Int {
-        guard let plan = store.plan else { return 0 }
-        return blocks.reduce(0) { total, block in
-            let slots = plan.days.filter { $0.weekIndex == block.id + 1 }.count
+        blocks.reduce(0) { total, block in
+            let slots = visibleBlockDays(for: block.id).count
             return total + max(0, slots - counts[block.id])
         }
     }
@@ -389,12 +388,13 @@ struct PlanScheduleView: View {
         let offsets = defaultOffsets[daysPerWeek] ?? [0]
         for block in blocks {
             let blockDays = plan.days.filter { $0.weekIndex == block.id + 1 }
+            let blockKeys = Set(block.dates.map { FitnessDate.key($0) })
             var chosen = Array(Set(
                 blockDays
                     .filter { $0.date != nil && $0.skippedAt == nil }
                     .compactMap { plan.scheduledDate(for: $0) }
                     .map { FitnessDate.key($0) }
-            )).sorted()
+            )).filter { blockKeys.contains($0) }.sorted()
             if chosen.count > daysPerWeek {
                 chosen = Array(chosen.prefix(daysPerWeek))
             }
@@ -446,9 +446,22 @@ struct PlanScheduleView: View {
     }
 
     private func slotLimit(for block: Int) -> Int {
-        guard let plan = store.plan else { return daysPerWeek }
-        let slots = plan.days.filter { $0.weekIndex == block + 1 }.count
+        guard store.plan != nil else { return daysPerWeek }
+        let slots = visibleBlockDays(for: block).count
         return slots > 0 ? min(daysPerWeek, slots) : 0
+    }
+
+    /// Days that belong on the 7-column board. A day explicitly added before
+    /// its plan week (for example a Sunday session before week 1) is preserved
+    /// by the engine but is not part of the week's selectable slots.
+    private func visibleBlockDays(for block: Int) -> [PlanDay] {
+        guard let plan = store.plan, block < blocks.count else { return [] }
+        let keys = Set(blocks[block].dates.map { FitnessDate.key($0) })
+        return plan.days.filter { day in
+            guard day.weekIndex == block + 1 else { return false }
+            guard let date = day.date else { return true }
+            return keys.contains(FitnessDate.key(date))
+        }
     }
 
     private func save() {

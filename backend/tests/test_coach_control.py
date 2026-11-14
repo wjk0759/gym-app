@@ -1791,6 +1791,47 @@ def test_context_week_one_starts_next_monday_for_midweek_plan(db):
     assert day["date"] == next_monday.isoformat()
 
 
+def test_context_allows_workout_added_for_today_before_first_week(db):
+    from app.models import utcnow
+    from app.services.coach_control.context import with_plan_context
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    program = Program(
+        user_id="user-1",
+        title="明天开始的计划",
+        goal_type="recomp",
+        version=1,
+        status="active",
+        start_date=today + timedelta(days=1),
+        weeks=4,
+    )
+    db.add(program)
+    db.flush()
+    day = ProgramDay(
+        program_id=program.id,
+        week_index=1,
+        weekday=today.isoweekday(),
+        title="背",
+    )
+    db.add(day)
+    db.flush()
+    db.add(
+        PlanDayState(
+            user_id="user-1",
+            plan_id=program.id,
+            day_id=day.id,
+            assigned_date=today,
+            client_updated_at=utcnow(),
+        )
+    )
+    db.commit()
+
+    context = with_plan_context(db, "user-1", {})
+    item = next(item for item in context["plan"]["days"] if item["id"] == day.id)
+    assert item["date"] == today.isoformat()
+    assert item["skipped"] is False
+
+
 def test_schedule_sync_drops_date_from_skipped_duplicate(db):
     from app.schemas import PlanDayStateIn, ScheduleSyncIn
     from app.services.schedule import sync_schedule

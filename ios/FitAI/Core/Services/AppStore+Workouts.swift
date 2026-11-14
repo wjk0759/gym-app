@@ -94,7 +94,7 @@ extension AppStore {
     /// stored separately in PlanDayState and must survive an import.
     func mergeServerPlan(_ remote: TrainingPlan) {
         guard var current = plan, current.id == remote.id else {
-            plan = remote
+            plan = PlanScheduleEngine.seedDates(in: remote)
             return
         }
         var merged = remote

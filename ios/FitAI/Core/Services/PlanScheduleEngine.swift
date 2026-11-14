@@ -41,6 +41,20 @@ enum PlanScheduleEngine {
         day.scheduleUpdatedAt ?? plan.createdAt
     }
 
+    /// Give server-generated days the dates implied by their week/weekday.
+    /// Server serializers do not own schedule state, so without this a freshly
+    /// generated plan has no dates until an editor save.
+    static func seedDates(in plan: TrainingPlan) -> TrainingPlan {
+        var current = plan
+        for index in current.days.indices where current.days[index].date == nil {
+            current.days[index].date = current.date(
+                week: current.days[index].weekIndex,
+                weekday: current.days[index].weekday
+            )
+        }
+        return current
+    }
+
     static func apply(
         to plan: TrainingPlan,
         selection: [Int: [Date]],
@@ -66,11 +80,20 @@ enum PlanScheduleEngine {
         }
 
         for week in 1...weeks {
-            let indices = current.days.indices
+            let allIndices = current.days.indices
                 .filter { current.days[$0].weekIndex == week }
                 .sorted { left, right in
                     sortByScheduledDate(left, right, in: current)
                 }
+            // A workout explicitly added before its plan week (for example
+            // "train back today" on the Sunday before week 1) is not on the
+            // 7-column board. Preserve it instead of skipping it on save.
+            let weekStart = current.date(week: week, weekday: 1) ?? .distantPast
+            let early = allIndices.filter { index in
+                guard let date = current.days[index].date else { return false }
+                return date < weekStart
+            }
+            let indices = allIndices.filter { !early.contains($0) }
             let dates = (selection[week] ?? []).sorted()
             guard dates.count <= indices.count else {
                 return .failure(.notEnoughSlots(week: week, slots: indices.count))
