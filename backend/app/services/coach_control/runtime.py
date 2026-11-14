@@ -14,7 +14,15 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ...models import CoachActionRecord, CoachPending, CoachSession, CoachTurn, utcnow
+from ...models import (
+    CoachActionRecord,
+    CoachPending,
+    CoachSession,
+    CoachTurn,
+    Profile,
+    utcnow,
+)
+from ..safety import assess_safety
 from . import capabilities  # noqa: F401 - registers capabilities
 from .consumers import consume_event
 from .context import with_plan_context
@@ -301,6 +309,39 @@ async def handle_turn(
     db.flush()
 
     pending = get_active_pending(db, user_id, session.id)
+
+    # Hard safety boundaries run before any capability can build or confirm a
+    # write. A blocked turn also drops the stale card so it cannot be confirmed
+    # later with one tap.
+    decision = assess_safety(db.get(Profile, user_id), text)
+    if decision.reply:
+        if pending is not None:
+            _discard_pending_resource(db, user_id, pending)
+            cancel_active_pending(db, session)
+        turn.status = "blocked"
+        turn.intent = "safety"
+        turn.reply = decision.reply
+        turn.latency_ms = int((time.perf_counter() - started) * 1000)
+        session.last_turn_at = utcnow()
+        session.updated_at = utcnow()
+        emit_event(
+            db,
+            user_id,
+            "SafetyBlocked",
+            entity_type="coach_session",
+            entity_id=session.id,
+            payload={"flag": decision.flag, "reason": decision.reason},
+        )
+        db.commit()
+        return {
+            "session": serialize_session(session, None),
+            "turn_id": turn.id,
+            "intent": turn.intent,
+            "status": turn.status,
+            "reply": turn.reply,
+            "pending": None,
+        }
+
     if pending is not None and re.search(r"取消|不要了|算了|不记了", text):
         _discard_pending_resource(db, user_id, pending)
         cancel_pending(db, session, pending)
@@ -841,7 +882,7 @@ def _discard_pending_resource(
     user_id: str,
     pending: CoachPending | None,
 ) -> None:
-    if pending is None or pending.capability_id != PLAN:
+    if pending is None or pending.capability_id not in {PLAN, ADJUST_PLAN}:
         return
     program_id = str((pending.payload or {}).get("program_id") or "")
     if program_id:

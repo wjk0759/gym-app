@@ -269,6 +269,64 @@ def test_strength_log_confirm_and_undo(db):
     assert db.execute(select(WorkoutSession)).scalars().all() == []
 
 
+def test_safety_block_prevents_a_pending_strength_write(db):
+    import asyncio
+
+    from app.models import WorkoutSession
+
+    db.add(
+        Exercise(
+            slug="barbell-bench-press",
+            name_zh="杠铃卧推",
+            name_en="barbell bench press",
+            muscle_group="chest",
+            equipment="barbell",
+            is_compound=True,
+            contraindications=[],
+        )
+    )
+    db.commit()
+
+    first = asyncio.run(
+        runtime.handle_turn(db, "user-1", "今天卧推 60kg 8次 3组")
+    )
+    assert first["pending"]["kind"] == "card"
+
+    blocked = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "膝盖疼，还能深蹲 100kg 5组吗",
+            session_id=first["session"]["id"],
+        )
+    )
+    assert blocked["intent"] == "safety"
+    assert blocked["status"] == "blocked"
+    assert blocked["pending"] is None
+    assert "先停" in blocked["reply"]
+    assert (
+        db.execute(
+            select(CoachPending).where(CoachPending.status == "pending")
+        ).scalars().all()
+        == []
+    )
+    assert db.execute(select(WorkoutSession)).scalars().all() == []
+    event = db.execute(
+        select(DomainEvent).where(DomainEvent.type == "SafetyBlocked")
+    ).scalar_one()
+    assert event.payload["flag"] == "injury_guard"
+
+
+def test_safety_block_handles_crisis_language(db):
+    import asyncio
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "我不想活了"))
+    assert turn["intent"] == "safety"
+    assert turn["status"] == "blocked"
+    assert turn["pending"] is None
+    assert "安全" in turn["reply"]
+
+
 def test_cardio_log_confirm_and_undo(db):
     import asyncio
 

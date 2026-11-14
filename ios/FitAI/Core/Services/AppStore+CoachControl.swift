@@ -199,6 +199,7 @@ extension AppStore {
                     role: .assistant,
                     text: response.reply
                 )
+                assistant.isSafety = response.intent == "safety"
                 assistant.serverMessageID = "coach-\(response.turnID)-assistant"
                 self.chat.append(assistant)
                 self.persist()
@@ -416,6 +417,7 @@ extension AppStore {
                             role: .assistant,
                             text: reply,
                             date: turn.createdAt ?? Date(),
+                            isSafety: turn.intent == "safety",
                             serverMessageID: assistantID
                         )
                     )
