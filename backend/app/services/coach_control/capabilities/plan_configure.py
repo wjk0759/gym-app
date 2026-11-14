@@ -139,10 +139,13 @@ def resolve(db: Session, user_id: str, message: str) -> dict:
         session_minutes=minutes,
         weekdays=weekdays or None,
     )
+    plan_doc = result.get("plan") if isinstance(result, dict) else None
+    if not isinstance(plan_doc, dict):
+        plan_doc = result
     program = save_plan(
         db,
         user_id,
-        result,
+        plan_doc,
         goal_type=goal_type,
         generated_by="rule-configure",
         model_name="template",
