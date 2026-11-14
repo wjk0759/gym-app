@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`783ccfb`（控制平面全量迁移；today±3 日期条、日期页当天 slot、静默 refresh_domains、5 秒撤销、新计划日期/首周前加练；新增饮食/训练改删、频率配置、开始训练/打开页面、记忆能力；后端生产已部署 `783ccfb` + Flyway **V38**；iOS 已装 `b1431fd`，**`783ccfb` 尚未在 Mac 构建/安装**；后端 **454 passed**、QA **16/16**；本轮 `FitAITests`/UI 数字等 Mac 跑；账号 `13428104171` 新计划 `4c994a67` 保持 11-15 背 + 4 周日期）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`3e991aa`（控制平面全量迁移 + Ring 2 入口收口；today±3 日期条、日期页当天 slot、静默 refresh_domains、5 秒撤销；新增饮食/训练改删、频率配置、开始训练/打开页面/记忆；照片分析写入 `coach_turns`，重装/新设备恢复最近会话，清空对话关闭服务端会话；体型分析/器械识别可从教练内打开；后端生产已部署最新 `app`，iOS 已装 `b1431fd`，**`3e991aa` 尚未在 Mac 构建/安装**；后端 **459 passed**、QA **16/16**；CI `f7bcc2b`/`6b85dee`/`5f551a0`/`3e991aa` iOS build 均 success；账号 `13428104171` 新计划 `4c994a67` 保持 11-15 背 + 4 周日期）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -25,6 +25,34 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-15 · Windows（Ring 2 入口收口：照片统一 / 会话恢复 / 清空 / 体型器械）
+
+- 提交：`f7bcc2b`（照片轮次统一 + 最近会话）、`6b85dee`（教练内打开体型/器械）、`5f551a0`（分析上下文进入回答）、`b13c9e5` + `3e991aa`（清空对话关闭服务端会话 + 换行修复），均已推 `develop`；生产后端已整体更新到 `3e991aa` 的 `app`。
+- 做了什么：
+  - 新增 `POST /coach/turns/vision`、`/coach/turns/vision/batch`：照片分析结果以 `coach.vision` 轮次写入 `coach_turns`，只存文字摘要，不存原图；`app_context` 之前文来自同一会话。
+  - iOS 教练照片改走新接口，使用 `coachSessionID`；历史恢复按 `turn_id` 去重，不再重复气泡。
+  - 新增 `GET /coach/sessions/latest`：重装/新设备自动恢复最近会话与待确认卡。
+  - 新增 `POST /coach/sessions/reset`；清空对话同时关闭服务端会话并取消待确认，空会话 id 再发消息会新建会话。
+  - `ui.open_screen` 支持 `body_analysis` / `equipment_scan`；iOS 确认后在教练页直接弹体型分析/器械识别，首次进入也会补弹。
+  - `coach.answer` 接收 `body_analysis_context` / `equipment_context`，体型分析和器械识别结果会进入下一轮回答上下文。
+  - 照片历史用户气泡只存用户 caption（`[图片] …`），不把内部提示词写进历史。
+- 已验证：
+  - 后端 **459 passed**、QA **16/16**、Ruff app/tests/scripts/qa 全绿（`3e991aa`）。
+  - GitHub CI：`f7bcc2b`、`6b85dee`、`5f551a0`、`3e991aa` 的 iOS build 均 success；`b13c9e5` 因 `AppStore+AgentChat.swift` 少一个换行编译失败，`3e991aa` 已修复。
+  - 生产烟测（`test_reviewer`）：`/coach/turns/vision` 返回 `turn_id` + `session_id`，历史里出现 `[图片] 帮我看看这张照片` 且不含内部提示词；文字追问能引用照片内容；`/coach/sessions/reset` 返回 `closed=36`，`latest` 变空；新消息自动建新会话；`分析一下我的体型` → `body_analysis`，`帮我识别这个器械` → `equipment_scan`，`打开身体打卡` → `body_checkin`；计划配置 3 练二四六 45 分钟 3 分化确认/撤销恢复 `ba315c0b…`。
+- 未验证（需要 Mac / 真机）：
+  - `3e991aa` 的 Mac 构建、`FitAITests`（预期 **106/106**）、`FitAIUITests` **4/4**。
+  - 真机：教练拍照→重启后历史/气泡是否不重复；重装后是否恢复最近会话；清空对话后是否不再被旧会话恢复；体型分析/器械识别从教练卡片打开、首次进入补弹；体型/器械结果是否真的进入下一轮回答；旧包 `/agent` 兼容。
+- 对方需要做：
+  1. `git pull` → `xcodegen generate` → 跑 `FitAITests` + `FitAIUITests`，装 `3e991aa`。
+  2. 按“未验证”逐项真机走；重点看照片历史去重、清空后旧会话不复活、两个教练内 sheet 的首次进入。
+  3. 结果补到本节顶部。
+- 禁止恢复：
+  - 新包不要回到 `/agent/chat` 或旧 `restoreAgentPendingState`。
+  - 不要让 `/coach/vision` 继续作为新包主路径；新包只用 `/coach/turns/vision`。
+  - 不要把 `caption` 丢掉：历史里应只出现用户 caption，不出现内部视觉提示词。
+  - 不要在清空对话后保留 `coachSessionID`，否则恢复会把旧历史拉回来。
 
 ### 2026-11-15 · Windows（783ccfb 能力迁移：改删 / 频率 / 开始训练 / 记忆）
 
