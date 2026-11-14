@@ -35,6 +35,7 @@ CAPABILITY = register(
 )
 
 _SWAP = re.compile(r"(?:换成|替换成|替换为|改为)\s*([^，。；;]+)")
+_ADD = re.compile(r"(?:加上|加一个|加个|增加|再加)\s*([^，。；;]+)")
 _SETS = re.compile(r"(\d+)\s*组")
 _REPS = re.compile(r"(\d+)(?:\s*[-~到]\s*(\d+))?\s*次")
 _WEIGHT = re.compile(r"(\d+(?:\.\d+)?)\s*(?:kg|公斤)", re.IGNORECASE)
@@ -167,6 +168,75 @@ def _parse_after(message: str, current, new_slug: str | None) -> dict | None:
     return after if changed else None
 
 
+def _resolve_add(
+    db: Session,
+    user_id: str,
+    message: str,
+    context: dict,
+    today: date,
+    add_match: re.Match,
+) -> dict:
+    plan = context.get("plan") if isinstance(context, dict) else {}
+    program = db.get(Program, str(plan.get("id") or ""))
+    if program is None or program.user_id != user_id or program.status != "active":
+        return {"ready": False, "questions": ["当前计划不在服务端，先在训练手账里同步计划。"]}
+    target = None
+    for item in _day_candidates(context, message, today):
+        day = db.get(ProgramDay, str(item.get("id") or ""))
+        if day is not None and day.program_id == program.id:
+            target = (day, item)
+            break
+    if target is None:
+        return {"ready": False, "questions": ["想加到哪一天？告诉我今天、明天或周几。"]}
+    day, context_day = target
+    new_name = add_match.group(1).strip(" 动作。.！!")
+    exercise, resolved_name = _resolve_exercise(db, new_name)
+    if exercise is None:
+        return {
+            "ready": False,
+            "questions": [f"没有找到「{new_name}」这个动作，换个说法试试。"],
+        }
+    if any(item.exercise_slug == exercise.slug for item in day.exercises):
+        return {
+            "ready": False,
+            "questions": [f"「{resolved_name}」已经在这次训练里了。"],
+        }
+
+    template = day.exercises[0] if day.exercises else None
+    new_item = {
+        "slug": exercise.slug,
+        "sets": template.sets if template is not None else 3,
+        "reps": template.reps if template is not None else "8-12",
+        "weight_kg": None,
+        "rest_sec": template.rest_sec if template is not None else 90,
+        "rpe": template.rpe if template is not None else 7.5,
+        "notes": None,
+    }
+    before = _snapshot(day)
+    date_label = str(context_day.get("date") or "")
+    watchouts = []
+    if re.search(r"今天|今日", message) and date_label != today.isoformat():
+        watchouts.append(f"今天没有对应训练，按 {date_label or '下一个训练日'} 处理。")
+    return {
+        "ready": True,
+        "payload": {
+            "plan_id": program.id,
+            "day_id": day.id,
+            "date": date_label,
+            "title": day.title,
+            "before": before,
+            "exercises": [*before, new_item],
+            "summary": (
+                f"准备在{date_label}的「{day.title}」加上「{resolved_name}」，"
+                f"{new_item['sets']} 组 × {new_item['reps']}。"
+            ),
+            "wins": [resolved_name],
+            "watchouts": watchouts,
+            "actions": [],
+        },
+    }
+
+
 def resolve(
     db: Session,
     user_id: str,
@@ -174,6 +244,10 @@ def resolve(
     context: dict,
 ) -> dict:
     today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    add_match = _ADD.search(message)
+    if add_match:
+        return _resolve_add(db, user_id, message, context, today, add_match)
+
     found = _find_day_and_exercise(db, user_id, context, message, today)
     if found is None:
         return {

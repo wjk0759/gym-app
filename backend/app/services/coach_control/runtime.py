@@ -193,7 +193,11 @@ def _looks_like_single_exercise_edit(message: str) -> bool:
     ):
         return False
     return bool(
-        re.search(r"换成|替换成|替换为|改成|加到|调到|删掉|去掉|删除", message)
+        re.search(
+            r"换成|替换成|替换为|改成|加到|调到|删掉|去掉|删除|"
+            r"加上|加一个|加个|增加|再加",
+            message,
+        )
         or (
             re.search(r"组|次|kg|公斤|秒", message)
             and re.search(r"重量|休息|每组", message)

@@ -1410,6 +1410,7 @@ def test_edit_single_exercise_swap_and_sets(db):
     for slug, name in [
         ("old-dumbbell-press", "哑铃卧推"),
         ("bench_press", "杠铃卧推"),
+        ("vital-machine-pec-deck-fly", "蝴蝶机夹胸"),
     ]:
         db.add(
             Exercise(
@@ -1489,6 +1490,29 @@ def test_edit_single_exercise_swap_and_sets(db):
     runtime.undo_action(db, "user-1", confirmed["action_id"])
     restored = db.get(ProgramDay, day.id)
     assert [item.exercise_slug for item in restored.exercises] == [
+        "old-dumbbell-press"
+    ]
+
+    added = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "给今天的练胸加一个蝴蝶机",
+        )
+    )
+    assert added["intent"] == "training.edit_day_exercise"
+    assert added["pending"]["kind"] == "proposal"
+    added_confirmed = runtime.confirm_pending(
+        db,
+        "user-1",
+        added["pending"]["id"],
+    )
+    assert [item.exercise_slug for item in db.get(ProgramDay, day.id).exercises] == [
+        "old-dumbbell-press",
+        "vital-machine-pec-deck-fly",
+    ]
+    runtime.undo_action(db, "user-1", added_confirmed["action_id"])
+    assert [item.exercise_slug for item in db.get(ProgramDay, day.id).exercises] == [
         "old-dumbbell-press"
     ]
 

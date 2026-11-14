@@ -57,7 +57,7 @@ extension AppStore {
             options: .regularExpression
         ) != nil
         let changeVerb = value.range(
-            of: #"换成|替换成|替换为|改成|加到|调到|删掉|去掉|删除"#,
+            of: #"换成|替换成|替换为|改成|加到|调到|删掉|去掉|删除|加上|加一个|加个|增加|再加"#,
             options: .regularExpression
         ) != nil
         let paramVerb = value.range(
