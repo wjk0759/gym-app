@@ -836,6 +836,7 @@ async def handle_turn(
                 payload={
                     "program_id": resolution["program_id"],
                     "plan": resolution["plan"],
+                    "profile_before": resolution.get("profile_before") or {},
                 },
                 reply=resolution.get("summary") or "计划已重新排好，确认后激活。",
                 kind="proposal",
@@ -1956,6 +1957,7 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         before = {
             "previous_program_id": result.get("previous_program_id"),
             "program_id": result.get("program_id"),
+            "profile_before": pending.payload.get("profile_before") or {},
         }
         receipt = {
             "summary": f"已激活计划「{after.get('title') or '训练计划'}」",
@@ -2436,6 +2438,14 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
             str(record.payload.get("program_id") or ""),
             (record.before or {}).get("previous_program_id"),
         )
+        profile_before = (record.before or {}).get("profile_before") or {}
+        if isinstance(profile_before, dict) and profile_before:
+            profile = db.get(Profile, user_id)
+            if profile is not None:
+                for field in ("weekly_days", "session_minutes"):
+                    if field in profile_before:
+                        setattr(profile, field, profile_before[field])
+                db.flush()
     elif record.capability_id == GOAL:
         from .capabilities.profile import undo as undo_goal
 

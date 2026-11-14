@@ -154,6 +154,10 @@ def resolve(db: Session, user_id: str, message: str) -> dict:
     if weekdays and len(weekdays) != weekly_days:
         weekly_days = len(weekdays)
 
+    profile_before = {
+        "weekly_days": profile.weekly_days,
+        "session_minutes": profile.session_minutes,
+    }
     goal_type = _goal_type(db, user_id)
     result = build_template_plan(
         db,
@@ -181,8 +185,6 @@ def resolve(db: Session, user_id: str, message: str) -> dict:
     profile.weekly_days = weekly_days
     if minutes is not None:
         profile.session_minutes = minutes
-    if split is not None:
-        profile.split = split
     db.flush()
 
     data = serialize_program(program)
@@ -199,6 +201,7 @@ def resolve(db: Session, user_id: str, message: str) -> dict:
         "program_id": program.id,
         "plan": data,
         "summary": summary,
+        "profile_before": profile_before,
     }
 
 

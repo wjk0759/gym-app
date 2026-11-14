@@ -2257,8 +2257,66 @@ def test_configure_plan_parses_shape_and_activates(db, monkeypatch):
     assert confirmed["status"] == "executed"
     program = db.get(Program, program_id)
     assert program.status == "active"
+    profile = db.get(Profile, "user-1")
+    assert profile.weekly_days == 3
     runtime.undo_action(db, "user-1", confirmed["action_id"])
     assert db.get(Program, program_id).status == "archived"
+    db.refresh(profile)
+    assert profile.weekly_days == 3
+
+
+def test_configure_plan_undo_restores_profile_shape(db, monkeypatch):
+    import asyncio
+
+    from app.services import access
+    from app.services.coach_control.capabilities import plan_configure
+
+    monkeypatch.setattr(access, "has_pro", lambda db, user_id: True)
+
+    def fake_build(db, profile, goal_type, **kwargs):
+        return {
+            "title": "四练计划",
+            "weeks": 4,
+            "days": [
+                {
+                    "week_index": 1,
+                    "weekday": 2,
+                    "title": "上肢",
+                    "focus": ["chest", "back"],
+                    "exercises": [
+                        {
+                            "slug": "bench_press",
+                            "order_index": 1,
+                            "sets": 3,
+                            "reps": "8-10",
+                            "rest_sec": 90,
+                            "weight_kg": 20,
+                            "rpe": 7,
+                        }
+                    ],
+                }
+            ],
+        }
+
+    monkeypatch.setattr(plan_configure, "build_template_plan", fake_build)
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "每周4练，二四六日，60分钟",
+        )
+    )
+    assert turn["intent"] == "training.configure_plan"
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    profile = db.get(Profile, "user-1")
+    assert profile.weekly_days == 4
+    assert profile.session_minutes == 60
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    db.refresh(profile)
+    assert profile.weekly_days == 3
+    assert profile.session_minutes == 45
 
 
 def test_start_training_and_open_screen_via_control_plane(db):
