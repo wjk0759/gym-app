@@ -190,7 +190,11 @@ extension AppStore {
             of: #"\d+(?:\.\d+)?\s*(g|克|ml|毫升|杯|份|碗|个|片|勺|盒|瓶)"#,
             options: [.regularExpression, .caseInsensitive]
         ) != nil
-        return foodWord || amount
+        let negativeFood = value.range(
+            of: #"不想吃|没吃|不吃|吃不下|没胃口|不想喝|没喝"#,
+            options: .regularExpression
+        ) != nil
+        return (foodWord || amount) && !negativeFood
     }
 
     /// Route conversational text to the control-plane answer capability.

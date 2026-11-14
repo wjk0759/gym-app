@@ -1091,6 +1091,17 @@ def test_free_chat_uses_the_control_session_and_history(db, monkeypatch):
     assert [item.intent for item in turns] == ["coach.answer", "coach.answer"]
 
 
+def test_negative_food_statement_does_not_create_a_draft(db, monkeypatch):
+    import asyncio
+
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "llm_provider", "mock")
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "今天没吃晚饭"))
+    assert turn["intent"] == "coach.answer"
+    assert turn["pending"] is None
+
+
 def test_routing_eval_covers_deterministic_capabilities(db):
     """A small regression matrix for the intents the control plane owns.
 

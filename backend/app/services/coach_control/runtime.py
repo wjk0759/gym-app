@@ -261,6 +261,8 @@ def _looks_like_weight(message: str) -> bool:
 
 
 def _looks_like_food(message: str) -> bool:
+    if re.search(r"不想吃|没吃|不吃|吃不下|没胃口|不想喝|没喝", message):
+        return False
     if re.search(r"多少|热量|卡路里|为什么|怎么|吗|？|\?", message):
         return False
     if re.search(r"吃|喝|餐|零食|夜宵|记录饮食|记饮食", message):
