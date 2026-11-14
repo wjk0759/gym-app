@@ -105,10 +105,11 @@ extension CoachChatView {
                     exerciseEditPendingContent(pending)
                 } else if pending.capabilityID == "review.weekly"
                             || pending.capabilityID == "diet.review_day"
-                            || pending.capabilityID == "body.review_trend"
-                            || pending.capabilityID == "diet.generate_day"
-                            || pending.capabilityID == "diet.generate_week" {
+                            || pending.capabilityID == "body.review_trend" {
                     reviewPendingContent(pending)
+                } else if pending.capabilityID == "diet.generate_day"
+                            || pending.capabilityID == "diet.generate_week" {
+                    dietPlanPendingContent(pending)
                 } else if pending.capabilityID == "training.generate_plan",
                           let plan = pending.payload?.plan {
                     planPendingContent(plan)
@@ -253,6 +254,30 @@ extension CoachChatView {
                 Text("目标日期：\(date)")
                     .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
+            }
+        }
+    }
+
+    private func dietPlanPendingContent(_ pending: CoachPendingState) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(pending.payload?.summary ?? "准备保存饮食计划")
+                .font(AppType.callout)
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            if let lines = pending.payload?.wins, !lines.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(lines, id: \.self) { line in
+                        Text("· \(line)")
+                            .font(AppType.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                    }
+                }
+            }
+            if let watchouts = pending.payload?.watchouts, !watchouts.isEmpty {
+                Text("留意：\(watchouts.joined(separator: "；"))")
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
