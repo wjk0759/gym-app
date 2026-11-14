@@ -1402,6 +1402,97 @@ def test_edit_exercises_falls_back_to_the_next_focus_day(db):
     assert len(turn["pending"]["payload"]["exercises"]) == 2
 
 
+def test_edit_single_exercise_swap_and_sets(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    monday = today - timedelta(days=today.weekday())
+    for slug, name in [
+        ("old-dumbbell-press", "哑铃卧推"),
+        ("bench_press", "杠铃卧推"),
+    ]:
+        db.add(
+            Exercise(
+                slug=slug,
+                name_zh=name,
+                name_en=slug,
+                muscle_group="chest",
+                equipment="barbell",
+                is_compound=True,
+                contraindications=[],
+            )
+        )
+    db.commit()
+    program = Program(
+        user_id="user-1",
+        title="测试胸计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=monday,
+        weeks=4,
+    )
+    db.add(program)
+    db.flush()
+    day = ProgramDay(
+        program_id=program.id,
+        week_index=1,
+        weekday=today.isoweekday(),
+        title="胸",
+    )
+    db.add(day)
+    db.flush()
+    db.add(
+        PlanExercise(
+            program_day_id=day.id,
+            exercise_slug="old-dumbbell-press",
+            order_index=1,
+            sets=3,
+            reps="8-12",
+            rest_sec=90,
+        )
+    )
+    db.commit()
+
+    sets_turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "哑铃卧推改成4组",
+        )
+    )
+    assert sets_turn["intent"] == "training.edit_day_exercise"
+    assert sets_turn["pending"]["kind"] == "proposal"
+    sets_confirmed = runtime.confirm_pending(
+        db,
+        "user-1",
+        sets_turn["pending"]["id"],
+    )
+    updated = db.get(ProgramDay, day.id)
+    assert updated.exercises[0].sets == 4
+    runtime.undo_action(db, "user-1", sets_confirmed["action_id"])
+    assert db.get(ProgramDay, day.id).exercises[0].sets == 3
+
+    swapped = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "把哑铃卧推换成杠铃卧推",
+        )
+    )
+    assert swapped["intent"] == "training.edit_day_exercise"
+    assert swapped["pending"]["kind"] == "proposal"
+    confirmed = runtime.confirm_pending(db, "user-1", swapped["pending"]["id"])
+    updated = db.get(ProgramDay, day.id)
+    assert [item.exercise_slug for item in updated.exercises] == ["bench_press"]
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    restored = db.get(ProgramDay, day.id)
+    assert [item.exercise_slug for item in restored.exercises] == [
+        "old-dumbbell-press"
+    ]
+
+
 def test_routing_eval_covers_deterministic_capabilities(db):
     """A small regression matrix for the intents the control plane owns.
 

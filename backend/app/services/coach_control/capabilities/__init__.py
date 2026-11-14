@@ -12,5 +12,6 @@ from . import (  # noqa: F401
     review,
     training,
     training_edit,
+    training_exercise_edit,
     training_preview,
 )

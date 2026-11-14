@@ -50,6 +50,7 @@ SKIP_TRAINING = "training.skip"
 CARDIO = "training.log_cardio"
 PREVIEW = "training.preview_next"
 EDIT_EXERCISES = "training.edit_day_exercises"
+EDIT_EXERCISE = "training.edit_day_exercise"
 STRENGTH = "training.log_strength"
 WEIGHT = "body.log_weight"
 BODY_REVIEW = "body.review_trend"
@@ -178,6 +179,24 @@ def _looks_like_plan_adjust(message: str) -> bool:
         or (
             re.search(r"减量|加量|降低重量|减重|轻一点|太累|恢复不过来", message)
             and re.search(r"计划|训练", message)
+        )
+    )
+
+
+def _looks_like_single_exercise_edit(message: str) -> bool:
+    if re.search(r"[、,，;；/]", message):
+        return False
+    if not re.search(
+        r"卧推|深蹲|硬拉|划船|推举|飞鸟|弯举|下压|引体|"
+        r"臂屈伸|腿举|推胸|蝴蝶机|夹胸|侧平举|后束|卷腹|臀桥",
+        message,
+    ):
+        return False
+    return bool(
+        re.search(r"换成|替换成|替换为|改成|加到|调到|删掉|去掉|删除", message)
+        or (
+            re.search(r"组|次|kg|公斤|秒", message)
+            and re.search(r"重量|休息|每组", message)
         )
     )
 
@@ -529,6 +548,43 @@ async def handle_turn(
             else:
                 text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
                 intent_override = GOAL
+
+    if intent_override is None and _looks_like_single_exercise_edit(text):
+        from .capabilities.training_exercise_edit import (
+            resolve as resolve_single_exercise_edit,
+        )
+
+        resolution = resolve_single_exercise_edit(db, user_id, text, context)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            set_pending(
+                db,
+                session,
+                kind="proposal",
+                capability_id=EDIT_EXERCISE,
+                payload=payload,
+            )
+            reply = f"{payload.get('summary') or '动作调整草案好了。'}确认后生效。"
+        else:
+            reply = (
+                resolution.get("questions") or ["动作调整暂时不能生成。"]
+            )[0]
+        turn.intent = EDIT_EXERCISE
+        turn.status = "completed"
+        turn.reply = reply
+        turn.latency_ms = int((time.perf_counter() - started) * 1000)
+        session.last_turn_at = utcnow()
+        session.updated_at = utcnow()
+        db.commit()
+        active = get_active_pending(db, user_id, session.id)
+        return {
+            "session": serialize_session(session, active),
+            "turn_id": turn.id,
+            "intent": turn.intent,
+            "status": turn.status,
+            "reply": reply,
+            "pending": serialize_pending(active),
+        }
 
     if intent_override is None and _looks_like_exercise_edit(text):
         from .capabilities.training_edit import (
@@ -1431,7 +1487,7 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "DietPlanGenerated"
         entity_type = "meal_plan"
         entity_id = str(pending.payload.get("date") or "")
-    elif pending.capability_id == EDIT_EXERCISES:
+    elif pending.capability_id in {EDIT_EXERCISES, EDIT_EXERCISE}:
         from .capabilities.training_edit import (
             execute as execute_exercise_edit,
         )
@@ -1520,7 +1576,12 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         "status": "executed",
         "receipt": receipt,
         "plan": after
-        if pending.capability_id in {PLAN, ADJUST_PLAN, EDIT_EXERCISES}
+        if pending.capability_id in {
+            PLAN,
+            ADJUST_PLAN,
+            EDIT_EXERCISES,
+            EDIT_EXERCISE,
+        }
         else None,
         "idempotent": False,
     }
@@ -1604,7 +1665,7 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
         from .capabilities.diet_plan import undo as undo_diet_plan
 
         result = undo_diet_plan(db, user_id, record.before or {}, record.payload)
-    elif record.capability_id == EDIT_EXERCISES:
+    elif record.capability_id in {EDIT_EXERCISES, EDIT_EXERCISE}:
         from .capabilities.training_edit import undo as undo_exercise_edit
 
         result = undo_exercise_edit(

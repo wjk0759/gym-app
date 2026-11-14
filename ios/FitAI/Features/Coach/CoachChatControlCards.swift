@@ -100,7 +100,8 @@ extension CoachChatView {
                         .foregroundStyle(Theme.secondaryText)
                 } else if pending.capabilityID == "training.preview_next" {
                     trainingPreviewPendingContent(pending)
-                } else if pending.capabilityID == "training.edit_day_exercises" {
+                } else if pending.capabilityID == "training.edit_day_exercises"
+                            || pending.capabilityID == "training.edit_day_exercise" {
                     exerciseEditPendingContent(pending)
                 } else if pending.capabilityID == "review.weekly"
                             || pending.capabilityID == "diet.review_day"

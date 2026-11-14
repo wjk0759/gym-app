@@ -52,6 +52,25 @@ extension AppStore {
             of: #"(?:改|修改|调整).{0,8}(?:训练)?计划|(?:训练)?计划.{0,8}(?:改|修改|调整)"#,
             options: .regularExpression
         ) != nil
+        let exerciseName = value.range(
+            of: #"卧推|深蹲|硬拉|划船|推举|飞鸟|弯举|下压|引体|臂屈伸|腿举|推胸|蝴蝶机|夹胸|侧平举|后束|卷腹|臀桥"#,
+            options: .regularExpression
+        ) != nil
+        let changeVerb = value.range(
+            of: #"换成|替换成|替换为|改成|加到|调到|删掉|去掉|删除"#,
+            options: .regularExpression
+        ) != nil
+        let paramVerb = value.range(
+            of: #"组|次|kg|公斤|秒"#,
+            options: .regularExpression
+        ) != nil && value.range(
+            of: #"重量|休息|每组"#,
+            options: .regularExpression
+        ) != nil
+        let hasList = value.range(
+            of: #"[、,，;；/]"#,
+            options: .regularExpression
+        ) != nil
         let exerciseEdit = value.range(
             of: #"改成|换成|换为|替换为|替换成"#,
             options: .regularExpression
@@ -60,10 +79,10 @@ extension AppStore {
                 of: #"计划|训练|练胸|练背|练腿|练肩|练手臂|胸|背|腿|肩|手臂"#,
                 options: .regularExpression
             ) != nil
-            && value.range(
-                of: #"[、,，;；/]"#,
-                options: .regularExpression
-            ) != nil
+            && hasList
+        if exerciseName && !hasList && (changeVerb || paramVerb) {
+            return true
+        }
         if exerciseEdit {
             return true
         }
@@ -380,7 +399,8 @@ extension AppStore {
                 if let plan = response.plan {
                     if pending.capabilityID == "training.generate_plan"
                         || pending.capabilityID == "training.adjust_plan"
-                        || pending.capabilityID == "training.edit_day_exercises" {
+                        || pending.capabilityID == "training.edit_day_exercises"
+                        || pending.capabilityID == "training.edit_day_exercise" {
                         self.coachPlanBefore = self.plan
                     }
                     self.plan = plan
@@ -459,7 +479,8 @@ extension AppStore {
                 }
                 if receipt?.capabilityID == "training.generate_plan"
                     || receipt?.capabilityID == "training.adjust_plan"
-                    || receipt?.capabilityID == "training.edit_day_exercises" {
+                    || receipt?.capabilityID == "training.edit_day_exercises"
+                    || receipt?.capabilityID == "training.edit_day_exercise" {
                     self.plan = self.coachPlanBefore
                     self.coachPlanBefore = nil
                     self.planNeedsServerSync = false

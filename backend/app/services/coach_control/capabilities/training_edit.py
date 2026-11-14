@@ -130,6 +130,8 @@ def _resolve_exercise(db: Session, name: str) -> tuple[Exercise | None, str]:
 def _snapshot(day: ProgramDay) -> list[dict]:
     return [
         {
+            "id": item.id,
+            "order_index": item.order_index,
             "slug": item.exercise_slug,
             "sets": item.sets,
             "reps": item.reps,
@@ -236,21 +238,14 @@ def resolve(
     }
 
 
-def execute(
+def rewrite_day(
     db: Session,
-    user_id: str,
-    action_id: str,
-    payload: dict,
-) -> dict:
-    program = db.get(Program, str(payload.get("plan_id") or ""))
-    if program is None or program.user_id != user_id:
-        raise LookupError("计划不存在")
-    day = db.get(ProgramDay, str(payload.get("day_id") or ""))
-    if day is None or day.program_id != program.id:
-        raise LookupError("训练日不存在")
+    day: ProgramDay,
+    items: list[dict],
+) -> None:
     day.exercises.clear()
     db.flush()
-    for index, item in enumerate(payload.get("exercises") or [], start=1):
+    for index, item in enumerate(items, start=1):
         day.exercises.append(
             PlanExercise(
                 exercise_slug=str(item["slug"]),
@@ -264,6 +259,21 @@ def execute(
             )
         )
     db.flush()
+
+
+def execute(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: dict,
+) -> dict:
+    program = db.get(Program, str(payload.get("plan_id") or ""))
+    if program is None or program.user_id != user_id:
+        raise LookupError("计划不存在")
+    day = db.get(ProgramDay, str(payload.get("day_id") or ""))
+    if day is None or day.program_id != program.id:
+        raise LookupError("训练日不存在")
+    rewrite_day(db, day, payload.get("exercises") or [])
     return {
         "before": {"previous": payload.get("before") or []},
         "plan": serialize_program(program),
@@ -283,20 +293,5 @@ def undo(
     if day is None or day.program_id != program.id:
         raise LookupError("训练日不存在")
     previous = before.get("previous") if isinstance(before, dict) else []
-    day.exercises.clear()
-    db.flush()
-    for index, item in enumerate(previous or [], start=1):
-        day.exercises.append(
-            PlanExercise(
-                exercise_slug=str(item["slug"]),
-                order_index=index,
-                sets=int(item.get("sets") or 3),
-                reps=str(item.get("reps") or "8-12"),
-                weight_kg=item.get("weight_kg"),
-                rest_sec=int(item.get("rest_sec") or 90),
-                rpe=item.get("rpe"),
-                notes=item.get("notes"),
-            )
-        )
-    db.flush()
+    rewrite_day(db, day, previous or [])
     return {"restored": True, "plan": serialize_program(program)}
