@@ -655,3 +655,73 @@ def test_card_and_draft_are_mutually_exclusive(db):
     ).scalars().all()
     assert len(active) == 1
     assert db.execute(select(CoachSession)).scalar_one().pending_id == active[0].id
+
+
+def test_routing_eval_covers_deterministic_capabilities(db):
+    """A small regression matrix for the intents the control plane owns.
+
+    These utterances do not need the model: routing is decided by the
+    deterministic parsers. Keep this table growing when a new capability or a
+    common phrasing is added, so routing changes surface as test failures.
+    """
+
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    context = {
+        "plan": {
+            "id": "plan-1",
+            "version": 1,
+            "days": [
+                {
+                    "id": "day-1",
+                    "date": today.isoformat(),
+                    "title": "下肢",
+                    "completed": False,
+                    "skipped": False,
+                },
+                {
+                    "id": "day-2",
+                    "date": (today + timedelta(days=2)).isoformat(),
+                    "title": "上肢",
+                    "completed": False,
+                    "skipped": False,
+                },
+            ],
+        }
+    }
+    cases = [
+        ("把今天的训练改到 11月20日", "training.reschedule"),
+        ("帮我把周四的训练挪到周六", "training.reschedule"),
+        ("今天不练了", "training.skip"),
+        ("这周少练一次", "training.skip"),
+        ("昨天跑了 30 分钟", "training.log_cardio"),
+        ("今天骑车 45 分钟", "training.log_cardio"),
+        ("今天卧推 60kg 8次 3组", "training.log_strength"),
+        ("深蹲 100 公斤 5 组 5 次", "training.log_strength"),
+        ("体重 73.5kg", "body.log_weight"),
+        ("帮我复盘本周", "review.weekly"),
+        ("帮我生成一个 4 周计划", "training.generate_plan"),
+        ("计划太累了，减量", "training.adjust_plan"),
+        ("我想减脂，目标 72kg", "profile.update_goal"),
+        ("按计划吃午餐", "diet.log_planned_meal"),
+        ("跳过午餐", "diet.skip_planned_meal"),
+        ("恢复晚餐", "diet.restore_planned_meal"),
+        ("晚餐换一餐", "diet.swap_meal"),
+    ]
+
+    mismatches = []
+    for index, (message, expected) in enumerate(cases):
+        turn = asyncio.run(
+            runtime.handle_turn(
+                db,
+                "user-1",
+                message,
+                session_id=f"eval-{index}",
+                app_context=context,
+            )
+        )
+        if turn["intent"] != expected:
+            mismatches.append((message, expected, turn["intent"], turn["reply"]))
+
+    assert not mismatches, mismatches
