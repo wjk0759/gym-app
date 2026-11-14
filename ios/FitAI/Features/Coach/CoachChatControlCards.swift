@@ -86,18 +86,23 @@ extension CoachChatView {
         CoachCard(border: Theme.cobalt.opacity(0.25)) {
             VStack(alignment: .leading, spacing: 10) {
                 CoachCardHeader(
-                    eyebrow: "COACH / 待确认",
-                    status: pending.kind == "draft" ? "待补充" : "待执行"
+                    eyebrow: pending.kind == "insight"
+                        ? "COACH / 洞察"
+                        : "COACH / 待确认",
+                    status: pending.kind == "draft"
+                        ? "待补充"
+                        : (pending.kind == "insight" ? "只读" : "待执行")
                 )
 
                 if pending.kind == "draft" {
                     Text("还需要补充一点信息，直接在输入框回复即可。")
                         .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
+                } else if pending.capabilityID == "training.preview_next" {
+                    trainingPreviewPendingContent(pending)
                 } else if pending.capabilityID == "review.weekly"
                             || pending.capabilityID == "diet.review_day"
-                            || pending.capabilityID == "body.review_trend"
-                            || pending.capabilityID == "training.preview_next" {
+                            || pending.capabilityID == "body.review_trend" {
                     reviewPendingContent(pending)
                 } else if pending.capabilityID == "training.generate_plan",
                           let plan = pending.payload?.plan {
@@ -223,6 +228,31 @@ extension CoachChatView {
                 Text("目标日期：\(date)")
                     .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
+            }
+        }
+    }
+
+    private func trainingPreviewPendingContent(_ pending: CoachPendingState) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(pending.payload?.summary ?? "下一练")
+                .font(AppType.callout)
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            if let lines = pending.payload?.wins, !lines.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(lines, id: \.self) { line in
+                        Text("· \(line)")
+                            .font(AppType.caption)
+                            .foregroundStyle(Theme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            if let watchouts = pending.payload?.watchouts, !watchouts.isEmpty {
+                Text("留意：\(watchouts.joined(separator: "；"))")
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.tertiaryText)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
