@@ -21,7 +21,7 @@
 - Windows 最新完成（2026-11-07）：拉取并保留 macOS 单行语音输入（`9a833b1`）；完成教练内核统一并部署生产；`test_reviewer` 已授 Pro、补齐基础档案和 3 分化计划；生产 Watch 预载/登录/刷新/语音/撤销全链路烟测通过；iPhone 训练页动作循环动画 PoC、`/exercise-media` 批量接口、11 条 sample 媒体已上生产（`341981f`）；器械识别修复：图片归一化、禁止随机 mock、37 类器械目录、生产导入 57 条训记动作、4 张真实照片 + 1 张负例烟测 5/5 命中（`5bf99a1`）；2026-11-08 增加 Vision OCR 标签提示、18 张多品牌评测和准确率实验（`23e41c8`）；生产视觉切 **Qwen3-VL-Plus**；器械识别加 **top-2 候选 + 混淆兜底**，18 张缩略图 top-1 61%、top-2 83%（`0d63191`）；已合并到 `develop`（`48ad5f0`），develop CI 全绿
 - Windows 前一轮完成（2026-11-07）：手表独立语音教练、watch 专用登录会话、媒体预载/本地缓存、离线 outbox/ack、手机 inbox 回灌、手机→手表指令、3 天 Pro 宽限与中途到期继续结束、HealthKit 保活/手机单写者、Watch AppIcon 恢复、Watch 隐私清单、训练来源 `phone/watch`
 - 本地后台（2026-11-08）：FastAPI `8000`、admin-server `8080`、admin-web `5173/admin`、MySQL `3307` V24；真机 API `http://192.168.1.4:8000/api/v1`
-- 最新后端验证：**426 passed**，Ruff app/tests 通过；计划池已收归服务端（1,068 动作账号生产实跑 `generated_by=ai`）；器械识别：Qwen3-VL-Plus 对坐姿划船/腿举/哈克深蹲的图片判别不可靠，已加“具体 OCR 标签优先 + 候选顺序 + 手动从器械库选择 + 豆包 lite row/leg gate”，生产无 OCR 坐姿划船实测已返回 `seated_row`；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source`、`/exercise-media`、器械目录识别、器械 top-2、器械照片上传/训练部位已接入测试；生产 Flyway 已到 **V30**（V29 为补记，均 `checksum=NULL`）；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
+- 最新后端验证：**427 passed**，Ruff app/tests 通过；计划池已收归服务端（1,068 动作账号生产实跑 `generated_by=ai`）；器械识别：Qwen3-VL-Plus 对坐姿划船/腿举/哈克深蹲的图片判别不可靠，已加“具体 OCR 标签优先 + 候选顺序 + 手动从器械库选择 + 豆包 lite row/leg gate”，生产无 OCR 坐姿划船实测已返回 `seated_row`；`/watch/bootstrap`、`/watch/session`、`/coach/voice`、workout `source`、`/exercise-media`、器械目录识别、器械 top-2、器械照片上传/训练部位已接入测试；生产 Flyway 已到 **V30**（V29 为补记，均 `checksum=NULL`）；`/me/access` 免费教练额度 `daily_limit=3`、`weekly_limit=3`、`remaining=3`，`reset_at` 为北京时间次日 00:00；`training_stage=beginner`
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
@@ -91,6 +91,21 @@
 - 修 P0/P1，并把 `backend/qa/test_adversarial.py` 中修好的用例移入 `backend/tests`
 - 重点检查 `_looks_like_single_exercise_edit` 逗号分支、`_SWAP`/`_ADD` 参数捕获、`rewrite_day` 空列表/重复 slug
 - 检查 `assigned_date` 归一化，并提供已有 active 计划的数据修复
+### 2026-11-14 · Windows（本周/下周训练安排）
+
+- 代码提交：`1221823`
+- 新增：
+  - `training.week_schedule`
+  - 支持“这周练什么”“下周训练安排”“本周计划”
+  - 列出周一到周日、日期、训练部位、完成/跳过状态
+  - 无安排时提示休息周
+- 验证：
+  - 后端 **427 passed**，Ruff 通过
+  - `Backend Tests`、`iOS Build` 在 `1221823` 通过
+- 部署：
+  - 无新迁移；部署 backend `1221823` + iOS `1221823`
+- 已知限制：
+  - 只读取客户端计划快照，不自动修改
 
 ### 2026-11-14 · Windows（多动作参数批量修改）
 
