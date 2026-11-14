@@ -8,6 +8,8 @@ from sqlalchemy.orm import selectinload
 from ..deps import CurrentUser, DBSession
 from ..models import Exercise, Profile, Program, ProgramDay, SetLog, WorkoutSession
 from ..schemas import WorkoutIn
+from ..services.coach_control.consumers import consume_event
+from ..services.coach_control.events import emit_event
 from ..services.training_stage import refresh_training_stage
 
 router = APIRouter(prefix="/workouts", tags=["workouts"])
@@ -116,6 +118,19 @@ def create_workout(payload: WorkoutIn, user_id: CurrentUser, db: DBSession):
     db.add(session)
     db.flush()
     refresh_training_stage(db, user_id)
+    event = emit_event(
+        db,
+        user_id,
+        "WorkoutCompleted",
+        entity_type="workout",
+        entity_id=session.id,
+        payload={
+            "duration_min": duration,
+            "sets": len(payload.sets),
+            "source": payload.source,
+        },
+    )
+    consume_event(db, event)
     try:
         db.commit()
     except IntegrityError:

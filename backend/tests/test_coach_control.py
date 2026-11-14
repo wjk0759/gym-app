@@ -10,6 +10,7 @@ from app.db import Base
 from app.models import (
     BodyMetric,
     CoachActionRecord,
+    CoachInbox,
     CoachPending,
     CoachSession,
     DomainEvent,
@@ -260,6 +261,8 @@ def test_strength_log_confirm_and_undo(db):
     assert session.sets[0].exercise_slug == "barbell-bench-press"
     assert session.sets[0].weight_kg == 60
     assert db.execute(select(DomainEvent)).scalar_one().type == "WorkoutLogged"
+    inbox = db.execute(select(CoachInbox)).scalars().all()
+    assert any(item.kind == "workout" for item in inbox)
 
     runtime.undo_action(db, "user-1", confirmed["action_id"])
     assert db.execute(select(WorkoutSession)).scalars().all() == []

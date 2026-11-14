@@ -2,6 +2,49 @@ import SwiftUI
 
 extension CoachChatView {
     @ViewBuilder
+    var coachInboxSection: some View {
+        if !store.coachInbox.isEmpty {
+            VStack(alignment: .leading, spacing: 9) {
+                HStack {
+                    Text("教练动态")
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                    Spacer()
+                    Text("\(store.coachInbox.count)")
+                        .font(AppType.micro)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+                ForEach(store.coachInbox.prefix(3)) { item in
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(item.title)
+                            .font(AppType.caption.weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+                        Text(item.body)
+                            .font(AppType.micro)
+                            .foregroundStyle(Theme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if item.capabilityID == "review.weekly" {
+                            Button("看复盘") {
+                                store.sendCoachControlTurn("复盘本周")
+                            }
+                            .font(AppType.micro.weight(.semibold))
+                            .foregroundStyle(Theme.cobalt)
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        Theme.ink.opacity(0.035),
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    )
+                }
+            }
+            .card(padding: 14)
+        }
+    }
+
+    @ViewBuilder
     var coachControlCards: some View {
         if let pending = store.coachPending {
             coachPendingCard(pending)

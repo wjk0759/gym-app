@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from ...models import CoachActionRecord, CoachPending, CoachSession, CoachTurn, utcnow
 from . import capabilities  # noqa: F401 - registers capabilities
+from .consumers import consume_event
 from .context import with_plan_context
 from .events import emit_event
 from .state import (
@@ -1077,7 +1078,7 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         executed_at=utcnow(),
     )
     db.add(record)
-    emit_event(
+    event = emit_event(
         db,
         user_id,
         event_type,
@@ -1085,6 +1086,7 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         entity_id=entity_id,
         payload={"action_id": action_id, "receipt": receipt},
     )
+    consume_event(db, event)
     consume_pending(db, session, pending)
     db.commit()
     return {

@@ -122,6 +122,9 @@ extension CoachChatView {
 
             weeklyRecap
                 .staggerIn(2)
+
+            coachInboxSection
+                .staggerIn(3)
         }
     }
 
