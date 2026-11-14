@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`ca4979e`（控制平面 + V38；自由聊天、身体数据、单日/一周饮食计划、整天/单动作替换、参数修改、新增动作、观测/洞察卡；后端 **424 passed**；`Backend Tests`、`iOS Build` 在 `ca4979e` 通过；后端生产已部署 `d29f2ac` + Flyway **V38**；iOS 已装 `d29f2ac`；macOS 已验证 `FitAITests` **81/81**、`FitAIUITests` **4/4**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`fd48a41`（控制平面 + V38；自由聊天、身体数据、单日/一周饮食计划、整天/单动作替换、参数修改、新增动作、观测/洞察卡；后端 **424 passed**；`Backend Tests` 在 `160a5d0` 通过；`iOS Build` 在 `fd48a41` 通过；后端生产已部署 `d29f2ac` + Flyway **V38**；iOS 已装 `d29f2ac`；macOS 已验证 `FitAITests` **81/81**、`FitAIUITests` **4/4**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -43,11 +43,15 @@
   - 支持均衡/碳循环/低碳/高蛋白/地中海/素食/16:8
   - 7 天草案 → proposal → 确认保存 → 撤销恢复
   - 一周生成 3 次/10 分钟；首次试用在确认保存时才消耗
+- 追加修复：
+  - `160a5d0`：保存周计划时保留 `generated_by`/模型来源，支持“轻断食”映射到 16:8
+  - `fd48a41`：单日/一周饮食计划卡改为餐次/每日列表，不再套用“做得好”
 - 验证：
   - 后端 **424 passed**，Ruff 通过
-  - `Backend Tests`、`iOS Build` 在 `ca4979e` 通过
+  - `Backend Tests` 在 `160a5d0` 通过
+  - `iOS Build` 在 `fd48a41` 通过
 - 部署：
-  - 无新迁移；部署 backend `ca4979e` + iOS `ca4979e`
+  - 无新迁移；部署 backend `160a5d0` + iOS `fd48a41`
 - 已知限制：
   - 一周计划目前一次生成 7 天，暂不支持逐天改策略
   - 需要 Pro 或首次饮食计划试用
