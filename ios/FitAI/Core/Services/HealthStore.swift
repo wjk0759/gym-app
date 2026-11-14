@@ -255,7 +255,9 @@ extension AppStore {
     func applyPlanSchedule(_ selection: [Int: [Date]]) -> Bool {
         guard var current = plan else { return false }
         let now = Date()
-        let target = max(1, min(7, profile.weeklyDays))
+        let planWeeklyDays = current.weeklyDays
+            ?? max(1, current.days.count / max(1, current.weeks))
+        let target = max(1, min(7, planWeeklyDays))
         for week in 1...current.weeks {
             guard let dates = selection[week],
                   dates.count <= target,
