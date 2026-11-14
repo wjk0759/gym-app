@@ -17,6 +17,7 @@ from ...diet import build_ai_plan
 from ...food_text import food_log_context
 from ...meal_plans import get_day, save_day_plan
 from ...queries import active_goal
+from ...rate_limit import enforce as enforce_rate_limit
 from ..registry import Capability, register
 
 CAPABILITY = register(
@@ -62,6 +63,13 @@ async def resolve(db: Session, user_id: str, message: str) -> dict:
                 "饮食计划生成需要 Pro 或首次试用；你可以先记录饮食，或继续问我建议。"
             ],
         }
+    try:
+        enforce_rate_limit(db, "coach_diet_plan", user_id, 3, 600)
+    except HTTPException:
+        return {
+            "ready": False,
+            "questions": ["饮食计划生成有点频繁，十分钟后再试。"],
+        }
 
     plan_date = date.fromisoformat(food_log_context(message)["date"])
     goal = active_goal(db, user_id)
@@ -71,14 +79,6 @@ async def resolve(db: Session, user_id: str, message: str) -> dict:
         goal.type if goal is not None else "recomp",
         plan_date,
     )
-    if access_mode == "trial":
-        access.consume_trial(
-            db,
-            user_id,
-            access.FEATURE_MEAL_PLAN,
-            source="coach_generation",
-            result_ref=plan_date.isoformat(),
-        )
     targets = plan.get("targets") or {}
     watchouts = []
     if plan.get("warning"):
@@ -133,6 +133,14 @@ def execute(
         generated_by=plan.get("generated_by"),
         model_name=plan.get("model"),
     )
+    if payload.get("access_mode") == "trial":
+        access.consume_trial(
+            db,
+            user_id,
+            access.FEATURE_MEAL_PLAN,
+            source="coach_generation",
+            result_ref=plan_date.isoformat(),
+        )
     return {
         "date": plan_date.isoformat(),
         "before": {"previous": previous},
