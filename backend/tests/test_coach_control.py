@@ -2461,6 +2461,65 @@ def test_vision_turn_is_recorded_in_the_control_plane(db, monkeypatch):
     assert turn.session_id == result["session_id"]
 
 
+def test_vision_retry_with_the_same_key_reuses_the_turn(db, monkeypatch):
+    import asyncio
+    import io
+
+    from fastapi import UploadFile
+
+    from app.routers import coach_control
+    from app.services import access, coach_vision
+
+    async def fake_review(*args, **kwargs):
+        return {
+            "mode": "equipment",
+            "is_training": False,
+            "summary": "这是一台坐姿划船机。",
+            "observations": ["有配重片和把手"],
+            "next_cue": "",
+            "safety_flag": None,
+            "warning": None,
+        }
+
+    monkeypatch.setattr(coach_vision, "review", fake_review)
+    monkeypatch.setattr(access, "require_feature", lambda *a, **k: None)
+
+    def upload():
+        return UploadFile(
+            file=io.BytesIO(b"equipment-jpeg"),
+            filename="row.jpg",
+            headers={"content-type": "image/jpeg"},
+        )
+
+    first = asyncio.run(
+        coach_control.create_vision_turn(
+            "user-1",
+            db,
+            upload(),
+            question="这是什么器械",
+            caption="器械照片",
+            session_id=None,
+            idempotency_key="retry-key-1",
+        )
+    )
+    second = asyncio.run(
+        coach_control.create_vision_turn(
+            "user-1",
+            db,
+            upload(),
+            question="这是什么器械",
+            caption="器械照片",
+            session_id=None,
+            idempotency_key="retry-key-1",
+        )
+    )
+
+    assert second["turn_id"] == first["turn_id"]
+    assert second["session_id"] == first["session_id"]
+    turns = db.execute(select(CoachTurn)).scalars().all()
+    assert len(turns) == 1
+
+
 def test_second_vision_turn_gets_control_plane_context(db, monkeypatch):
     import asyncio
     import io

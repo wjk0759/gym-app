@@ -92,6 +92,29 @@ def control_history_context(
     return "\n".join(lines)
 
 
+def existing_turn_result(
+    db: Session,
+    user_id: str,
+    cached: dict,
+) -> dict | None:
+    """Reuse the turn recorded for a cached photo result.
+
+    A client retry with the same idempotency key must not append a duplicate
+    visual turn to the history. Legacy cache rows have no turn id, so those
+    still go through the normal recording path.
+    """
+    turn_id = cached.get("turn_id")
+    if not turn_id:
+        return None
+    turn = db.get(CoachTurn, str(turn_id))
+    if turn is None or turn.user_id != user_id:
+        return None
+    result = dict(cached)
+    result["session_id"] = turn.session_id
+    result["turn_id"] = turn.id
+    return result
+
+
 def record_control_vision_turn(
     db: Session,
     user_id: str,

@@ -299,6 +299,9 @@ async def create_vision_turn(
     key = photo_cache.normalize_key(idempotency_key)
     cached = photo_cache.get_cached_result(db, user_id, feature_key, key)
     if cached is not None:
+        existing = vision_turns.existing_turn_result(db, user_id, cached)
+        if existing is not None:
+            return existing
         result = vision_turns.record_control_vision_turn(
             db, user_id, session, caption or question, 1, cached
         )
@@ -397,6 +400,9 @@ async def create_vision_turn_batch(
     key = photo_cache.normalize_key(idempotency_key)
     cached = photo_cache.get_cached_result(db, user_id, feature_key, key)
     if cached is not None:
+        existing = vision_turns.existing_turn_result(db, user_id, cached)
+        if existing is not None:
+            return existing
         result = vision_turns.record_control_vision_turn(
             db, user_id, session, caption or question, len(images), cached
         )
