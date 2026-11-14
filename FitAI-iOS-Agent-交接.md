@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`21d3df0`（控制平面 + V38；自由聊天、身体数据、单日/一周饮食计划、整天/单动作/批量参数修改、休息日加练、周安排预览；后端 **442 passed**；对抗测试 **14/14**；`Backend Tests` 在 `21d3df0` 通过；`iOS Build` 在 `4085920` 通过；后端生产已部署 `1221823` + Flyway **V38**；iOS 已装 `1221823`；macOS 基线 `FitAITests` **81/81**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`952b287`（控制平面 + V38；Windows 声称后端 **442 passed**、对抗 **14/14**；macOS 复测发现 iOS `FitAITests` 在 `4085920` 有 **8 个回归失败**，已暂停部署；生产仍为 backend `1221823` + Flyway **V38**、iOS `1221823`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -25,6 +25,42 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-14 · macOS（QA 复测：iOS 计划日期修复引入 8 个回归，暂停部署）
+
+- 拉取：`c2c5d0a..952b287`
+- 目标版本：后端 `21d3df0`、iOS `4085920`
+- 后端复测（最新代码 + 完整 data/eval）：
+  - 原测试 **442 passed**
+  - 对抗测试 **14/14 passed**
+  - 说明 Windows 对上一轮 9 个后端问题的修复有效
+- **iOS 回归（阻断部署）**：
+  - `FitAITests` 在 `4085920` 出现 **8 failures / 81**
+  - 集中在 `PlanReviewEngineTests`：
+    - `plannedDays` 0 != 3
+    - `completedDays` 0 != 1
+    - `missedDays` 0 != 1
+    - `rate` -1 != 0.5
+    - 下一步变成“每天至少记录一餐”，而不是“先补一次错过的训练”
+    - 部分完成训练 `completedDays` 0 != 1
+  - 根因方向：`TrainingPlan.planStartDate` 改用 `createdAt` 并向后推到下周一；`scheduledDate(for:)` 会把 `day.date` 早于该日期的历史计划日整体挪走，导致复盘看不到这些计划日
+  - 影响：历史计划/复盘可能显示 0 个计划日、完成率错误；不只是测试数据问题
+- 新增后端边界问题（未修）：
+  - “下下周训练安排”被解析成“下周”（`_week_start` 的正则先命中“下周”）
+  - 复现：`backend/qa/test_adversarial.py::test_week_schedule_understands_next_next_week`
+- 文档安全：
+  - `/docs`、`/redoc`、`/openapi.json` 默认关闭的代码已在 `21d3df0`，但**尚未部署**
+- 生产状态：
+  - 仍为 backend `1221823` / iOS `1221823` / V38
+  - 未部署 `21d3df0` / `4085920`，避免把红色 iOS 包推给真机
+- Windows 下一步：
+  - 修 `TrainingPlan.planStartDate` / `scheduledDate(for:)`：历史 `day.date` 必须保留，不能被 `createdAt` 推到下周
+  - 重跑 `FitAITests`，确保 81/81
+  - 修“下下周”解析并补回归测试
+  - iOS 修复后再一起部署 backend `21d3df0` + iOS 新提交
+- 不要：
+  - 不要在 iOS 单测红色时部署 `4085920`
+  - 不要用 `createdAt` 覆盖用户/历史计划的显式日期
 
 ### 2026-11-14 · Windows（对抗性 QA 9 项修复）
 
