@@ -21,6 +21,7 @@ from ..models import (
     CoachSession,
     CoachTurn,
     DomainEvent,
+    Profile,
     utcnow,
 )
 from ..services import access
@@ -29,6 +30,7 @@ from ..services.coach_control.context import build_control_context
 from ..services.coach_control.events import emit_event, list_inbox
 from ..services.coach_control.registry import capability_payloads
 from ..services.rate_limit import enforce as enforce_rate_limit
+from ..services.safety import assess_safety
 
 router = APIRouter(prefix="/coach", tags=["coach-control"])
 
@@ -146,9 +148,12 @@ async def create_turn(
     db: DBSession,
 ):
     enforce_rate_limit(db, "coach_control", user_id, 20, 60)
+    # Safety replies must never be blocked by the free daily quota. The runtime
+    # repeats the deterministic check; this early pass only bypasses billing.
+    safety = assess_safety(db.get(Profile, user_id), payload.message)
     reserved = False
     coach_period = None
-    if not access.has_pro(db, user_id):
+    if not safety.reply and not access.has_pro(db, user_id):
         used, coach_period, reset_at = access.coach_usage(db, user_id)
         if used >= access.COACH_DAILY_LIMIT:
             raise HTTPException(

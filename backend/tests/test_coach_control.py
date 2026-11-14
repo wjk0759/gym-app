@@ -464,6 +464,30 @@ def test_skipped_meal_creates_an_actionable_inbox_item(db):
     assert item.payload["prompt"] == "今天饮食还缺什么？"
 
 
+def test_safety_reply_bypasses_exhausted_free_quota(db):
+    import asyncio
+
+    from fastapi import HTTPException
+
+    from app.routers.coach_control import CoachTurnIn, create_turn
+    from app.services import access
+
+    for _ in range(access.COACH_DAILY_LIMIT):
+        assert access.reserve_coach_message(db, "user-1")
+
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(
+            create_turn(CoachTurnIn(message="复盘本周"), "user-1", db)
+        )
+    assert exc.value.status_code == 429
+
+    turn = asyncio.run(
+        create_turn(CoachTurnIn(message="我不想活了"), "user-1", db)
+    )
+    assert turn["intent"] == "safety"
+    assert turn["status"] == "blocked"
+
+
 def test_client_diagnostic_is_audited(db):
     from app.routers.coach_control import ClientDiagnosticIn, upload_client_diagnostic
 
