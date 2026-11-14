@@ -471,27 +471,6 @@ extension AppStore {
         }
     }
 
-    private func mergeRemoteFoodLogs(_ remote: [RemoteFoodLog]) {
-        let localIDs = Set(foodLogs.map(\.id))
-        let pendingDeletes = Set(pendingFoodDeletionIDs)
-        let pendingUpdates = Set(pendingFoodUpdateIDs)
-        for item in remote {
-            if pendingDeletes.contains(item.clientID)
-                || pendingUpdates.contains(item.clientID) {
-                continue
-            }
-            guard let value = nutrition.makeFoodLog(from: item) else {
-                continue
-            }
-            if let index = foodLogs.firstIndex(where: { $0.id == value.id }) {
-                foodLogs[index] = value
-            } else if !localIDs.contains(value.id) {
-                foodLogs.append(value)
-            }
-        }
-        foodLogs.sort { $0.date > $1.date }
-    }
-
     private func mergeRemoteBodyMetrics(_ remote: [RemoteBodyMetric]) {
         for item in remote {
             guard let id = UUID(uuidString: item.clientID) else { continue }
