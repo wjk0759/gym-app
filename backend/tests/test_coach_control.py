@@ -1191,13 +1191,16 @@ def test_reschedule_uses_server_plan_dates_without_client_context(db):
 
     today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
     monday = today - timedelta(days=today.weekday())
+    # Start on a Tuesday in the previous week. The current week is week 2,
+    # and the day must still resolve to today after Monday normalization.
+    start_date = monday - timedelta(days=6)
     program = Program(
         user_id="user-1",
         title="测试计划",
         goal_type="recomp",
         version=1,
         status="active",
-        start_date=monday,
+        start_date=start_date,
         weeks=4,
     )
     db.add(program)
@@ -1205,7 +1208,7 @@ def test_reschedule_uses_server_plan_dates_without_client_context(db):
     db.add(
         ProgramDay(
             program_id=program.id,
-            week_index=1,
+            week_index=2,
             weekday=today.isoweekday(),
             title="上肢",
         )

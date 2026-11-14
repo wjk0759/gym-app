@@ -113,7 +113,8 @@ def with_plan_context(
         if start is not None:
             week_index = int(item.get("week_index") or 1)
             weekday = int(item.get("weekday") or 1)
-            computed = start + timedelta(
+            week_start = start - timedelta(days=start.weekday())
+            computed = week_start + timedelta(
                 days=(week_index - 1) * 7 + weekday - 1
             )
         normalized.append(
