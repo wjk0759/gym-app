@@ -1136,6 +1136,7 @@ def test_routing_eval_covers_deterministic_capabilities(db):
         ("体重 73.5kg", "body.log_weight"),
         ("帮我复盘本周", "review.weekly"),
         ("今天饮食还缺什么", "diet.review_day"),
+        ("今天吃了什么", "diet.review_day"),
         ("蛋白质够吗", "diet.review_day"),
         ("最近体重怎么样", "body.review_trend"),
         ("目标进度", "body.review_trend"),

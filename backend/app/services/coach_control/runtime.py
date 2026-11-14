@@ -202,7 +202,7 @@ def _looks_like_diet_review(message: str) -> bool:
             message,
         )
         and re.search(
-            r"多少|怎么样|如何|够|缺|看看|总结|复盘|超",
+            r"多少|什么|怎么样|如何|够|缺|看看|总结|复盘|超",
             message,
         )
     )
