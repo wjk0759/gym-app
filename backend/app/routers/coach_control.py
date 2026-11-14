@@ -53,7 +53,7 @@ def upload_client_diagnostic(
     user_id: CurrentUser,
     db: DBSession,
 ):
-    enforce_rate_limit(db, "client_diagnostics", user_id, 10, 60)
+    enforce_rate_limit(db, "client_diagnostics", user_id, 3, 600)
     emit_event(
         db,
         user_id,

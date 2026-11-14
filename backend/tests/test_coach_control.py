@@ -523,6 +523,10 @@ def test_client_events_are_ingested_and_excluded_from_context(db):
                     name="paywall_shown",
                     properties={"feature": "coach"},
                 ),
+                ClientEventIn(
+                    name="not_allowed_event",
+                    properties={"junk": "x"},
+                ),
             ]
         ),
         "user-1",
