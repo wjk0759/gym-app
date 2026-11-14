@@ -162,6 +162,37 @@ def test_cardio_log_confirm_and_undo(db):
     assert db.execute(select(WorkoutSession)).scalars().all() == []
 
 
+def test_correction_without_context_does_not_create_a_food_draft(db):
+    import asyncio
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "记错了 今天是74kg"))
+    assert turn["intent"] == "clarification"
+    assert turn["pending"] is None
+    assert "体重" in turn["reply"]
+
+
+def test_weight_correction_after_undo_keeps_context(db):
+    import asyncio
+
+    first = asyncio.run(runtime.handle_turn(db, "user-1", "今天体重 73kg"))
+    confirmed = runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+
+    corrected = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "记错了 今天是74kg",
+            session_id=first["session"]["id"],
+        )
+    )
+
+    assert corrected["intent"] == "body.log_weight"
+    assert corrected["pending"]["kind"] == "card"
+    assert corrected["pending"]["payload"]["weight_kg"] == 74.0
+    assert corrected["pending"]["capability_id"] == "body.log_weight"
+
+
 def test_goal_update_confirm_and_undo(db):
     import asyncio
 

@@ -132,6 +132,8 @@ final class AppStore {
     var coachPending: CoachPendingState?
     var coachReceipt: CoachReceipt?
     var coachUndoActionID: String?
+    var coachBodyBefore: BodyMetric?
+    var coachWeightBefore: Double?
     var coachInbox: [CoachInboxItem] = []
     var coachEntryPrompt: String?
     var isCoachControlWorking = false
@@ -274,6 +276,8 @@ final class AppStore {
         coachPending = nil
         coachReceipt = nil
         coachUndoActionID = nil
+        coachBodyBefore = nil
+        coachWeightBefore = nil
         coachInbox = []
         isCoachControlWorking = false
         agentRunID = nil

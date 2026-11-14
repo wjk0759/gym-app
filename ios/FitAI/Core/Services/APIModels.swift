@@ -571,6 +571,7 @@ struct CoachTurnResponse: Decodable {
 
 struct CoachReceipt: Decodable, Hashable {
     let summary: String?
+    let capabilityID: String?
     let deepLink: String?
     let date: String?
     let meal: String?
@@ -580,9 +581,12 @@ struct CoachReceipt: Decodable, Hashable {
     let title: String?
     let planID: String?
     let dayID: String?
+    let weightKG: Double?
+    let clientID: String?
 
     enum CodingKeys: String, CodingKey {
         case summary
+        case capabilityID = "capability_id"
         case deepLink = "deep_link"
         case date
         case meal
@@ -592,6 +596,8 @@ struct CoachReceipt: Decodable, Hashable {
         case title
         case planID = "plan_id"
         case dayID = "day_id"
+        case weightKG = "weight_kg"
+        case clientID = "client_id"
     }
 }
 

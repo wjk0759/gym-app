@@ -124,6 +124,26 @@ def _looks_like_swap_meal(message: str) -> bool:
     )
 
 
+def _last_action_capability(
+    db: Session,
+    user_id: str,
+    session_id: str,
+) -> str | None:
+    record = db.execute(
+        select(CoachActionRecord)
+        .where(
+            CoachActionRecord.user_id == user_id,
+            CoachActionRecord.session_id == session_id,
+        )
+        .order_by(CoachActionRecord.created_at.desc())
+    ).scalars().first()
+    return record.capability_id if record is not None else None
+
+
+def _looks_like_correction(message: str) -> bool:
+    return bool(re.search(r"记错|不是|改成|应该是|修正|改一下", message))
+
+
 def _looks_like_goal(message: str) -> bool:
     if re.search(r"怎么|多少|为什么|吗|？|\?", message):
         return False
@@ -165,7 +185,7 @@ def _looks_like_weight(message: str) -> bool:
 def _looks_like_food(message: str) -> bool:
     if re.search(r"多少|热量|卡路里|为什么|怎么|吗|？|\?", message):
         return False
-    if re.search(r"记|吃|喝|补|餐|零食|夜宵", message):
+    if re.search(r"吃|喝|餐|零食|夜宵|记录饮食|记饮食", message):
         return True
     return bool(
         re.search(
@@ -323,6 +343,66 @@ async def handle_turn(
             else:
                 text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
                 intent_override = GOAL
+
+    if intent_override is None and _looks_like_correction(text):
+        last_capability = _last_action_capability(
+            db, user_id, session.id
+        ) or session.active_topic
+        if last_capability == WEIGHT:
+            from .capabilities.body import resolve as resolve_weight
+
+            resolution = resolve_weight(text)
+            if resolution.get("ready"):
+                payload = resolution["payload"]
+                _pending_card(
+                    db,
+                    session,
+                    capability_id=WEIGHT,
+                    payload=payload,
+                )
+                reply = f"改好了，准备记录体重 {payload['weight_kg']} kg。确认后写入。"
+            else:
+                question = (resolution.get("questions") or ["体重大概多少公斤？"])[0]
+                _pending_draft(
+                    db,
+                    session,
+                    capability_id=WEIGHT,
+                    payload={"message": text},
+                )
+                reply = question
+            turn.intent = WEIGHT
+            turn.status = "completed"
+            turn.reply = reply
+            turn.latency_ms = int((time.perf_counter() - started) * 1000)
+            session.last_turn_at = utcnow()
+            session.updated_at = utcnow()
+            db.commit()
+            active = get_active_pending(db, user_id, session.id)
+            return {
+                "session": serialize_session(session, active),
+                "turn_id": turn.id,
+                "intent": turn.intent,
+                "status": turn.status,
+                "reply": reply,
+                "pending": serialize_pending(active),
+            }
+        if last_capability is None:
+            reply = "你想改的是体重、饮食，还是训练？直接告诉我新的数值或内容。"
+            turn.intent = "clarification"
+            turn.status = "completed"
+            turn.reply = reply
+            turn.latency_ms = int((time.perf_counter() - started) * 1000)
+            session.last_turn_at = utcnow()
+            session.updated_at = utcnow()
+            db.commit()
+            return {
+                "session": serialize_session(session, None),
+                "turn_id": turn.id,
+                "intent": turn.intent,
+                "status": turn.status,
+                "reply": reply,
+                "pending": None,
+            }
 
     if intent_override is None and _looks_like_review(text):
         from .capabilities.review import resolve as resolve_review
@@ -726,7 +806,10 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         after = result
         receipt = {
             "summary": f"已记录体重 {pending.payload.get('weight_kg')} kg",
+            "capability_id": WEIGHT,
+            "client_id": action_id,
             "date": pending.payload.get("date"),
+            "weight_kg": pending.payload.get("weight_kg"),
             "deep_link": "fitai://profile",
         }
         event_type = "BodyMetricLogged"
@@ -771,6 +854,8 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
     else:
         raise ValueError("暂不支持这个能力")
 
+    receipt.setdefault("capability_id", pending.capability_id)
+    receipt.setdefault("action_id", action_id)
     record = CoachActionRecord(
         id=action_id,
         user_id=user_id,

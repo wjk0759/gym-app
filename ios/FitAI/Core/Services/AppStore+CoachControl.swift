@@ -22,6 +22,24 @@ extension AppStore {
             options: .regularExpression
         ) != nil
         if reschedule && hasDate { return true }
+
+        let correction = value.range(
+            of: #"记错|不是|改成|应该是|修正|改一下"#,
+            options: .regularExpression
+        ) != nil
+        if correction {
+            let active = coachSession?.activeTopic
+            if let active, active != "review.weekly" {
+                return true
+            }
+            if value.range(
+                of: #"(kg|公斤|斤)"#,
+                options: [.regularExpression, .caseInsensitive]
+            ) != nil {
+                return true
+            }
+        }
+
         if value.range(
             of: #"复盘|本周总结|这周状态|周报"#,
             options: .regularExpression
@@ -72,7 +90,7 @@ extension AppStore {
             return true
         }
         let foodWord = value.range(
-            of: #"记|吃|喝|餐|零食|夜宵|鸡|牛|猪|鱼|蛋|奶|饭|面|肠|菜|果"#,
+            of: #"吃|喝|餐|零食|夜宵|记录饮食|记饮食|鸡|牛|猪|鱼|蛋|奶|饭|面|肠|菜|果"#,
             options: .regularExpression
         ) != nil
         let amount = value.range(
@@ -149,6 +167,12 @@ extension AppStore {
                         dateString: pending.payload?.toDate
                     )
                 }
+                if pending.capabilityID == "body.log_weight" {
+                    self.applyCoachWeight(
+                        receipt: response.receipt,
+                        actionID: response.actionID
+                    )
+                }
                 self.chat.append(
                     ChatMessage(
                         role: .assistant,
@@ -191,6 +215,18 @@ extension AppStore {
                         dayID: receipt.dayID,
                         dateString: receipt.fromDate
                     )
+                }
+                if receipt?.capabilityID == "body.log_weight" {
+                    let date = receipt?.date.flatMap { FitnessDate.date(from: $0) } ?? Date()
+                    let key = FitnessDate.key(date)
+                    self.bodyMetrics.removeAll { $0.dateKey == key }
+                    if let before = self.coachBodyBefore {
+                        self.appendBodyMetric(before)
+                    } else if let weight = self.coachWeightBefore {
+                        self.profile.weightKG = weight
+                    }
+                    self.coachBodyBefore = nil
+                    self.coachWeightBefore = nil
                 }
                 self.syncPendingUserData()
                 self.refreshWeeklyReview(force: true)
@@ -236,6 +272,28 @@ extension AppStore {
                 self.coachInbox = response.items
             }
         }
+    }
+
+    private func applyCoachWeight(receipt: CoachReceipt?, actionID: String) {
+        guard let weight = receipt?.weightKG else { return }
+        let date = receipt?.date.flatMap { FitnessDate.date(from: $0) } ?? Date()
+        let key = FitnessDate.key(date)
+        coachBodyBefore = bodyMetrics.first { $0.dateKey == key }
+        coachWeightBefore = profile.weightKG
+        let id = UUID(uuidString: receipt?.clientID ?? actionID) ?? UUID()
+        appendBodyMetric(
+            BodyMetric(
+                id: id,
+                date: date,
+                weightKG: weight,
+                bodyFatPCT: nil,
+                waistCM: nil,
+                armCM: nil,
+                thighCM: nil,
+                syncedAt: Date()
+            )
+        )
+        persist()
     }
 
     private func applyCoachPlanDate(dayID: String?, dateString: String?) {
