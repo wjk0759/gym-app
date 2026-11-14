@@ -114,13 +114,32 @@ def with_plan_context(
             week_index = int(item.get("week_index") or 1)
             weekday = int(item.get("weekday") or 1)
             week_start = start - timedelta(days=start.weekday())
+            if week_start < start:
+                week_start += timedelta(days=7)
             computed = week_start + timedelta(
                 days=(week_index - 1) * 7 + weekday - 1
             )
+        selected = None
+        if assigned:
+            try:
+                assigned_date = date.fromisoformat(str(assigned))
+            except ValueError:
+                assigned_date = None
+            if assigned_date is not None:
+                start_week = (
+                    start - timedelta(days=start.weekday())
+                    if start is not None
+                    else None
+                )
+                if start_week is not None and start_week < start:
+                    start_week += timedelta(days=7)
+                if start_week is None or assigned_date >= start_week:
+                    selected = assigned
         normalized.append(
             {
                 "id": item.get("id"),
-                "date": assigned or (computed.isoformat() if computed else None),
+                "date": selected
+                or (computed.isoformat() if computed else None),
                 "week_index": item.get("week_index"),
                 "weekday": item.get("weekday"),
                 "title": item.get("title"),

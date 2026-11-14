@@ -131,6 +131,45 @@ def _find_day_and_exercise(
     return None
 
 
+def _clean_exercise_name(value: str) -> str:
+    cleaned = value.strip(" 动作。.！!")
+    cleaned = re.split(
+        r"\s+(?=\d|组|次|kg|公斤|重量|休息|每组)",
+        cleaned,
+        maxsplit=1,
+    )[0]
+    return cleaned.strip(" 动作。.！!")
+
+
+def _apply_params(message: str, item: dict) -> dict | None:
+    match = _SETS.search(message)
+    if match:
+        value = int(match.group(1))
+        if not 1 <= value <= 10:
+            return None
+        item["sets"] = value
+    match = _REPS.search(message)
+    if match:
+        low = int(match.group(1))
+        high = int(match.group(2)) if match.group(2) else low
+        if not 1 <= low <= high <= 50:
+            return None
+        item["reps"] = f"{low}-{high}" if high != low else str(low)
+    match = _WEIGHT.search(message)
+    if match:
+        value = float(match.group(1))
+        if not 0 <= value <= 500:
+            return None
+        item["weight_kg"] = value
+    match = _REST.search(message)
+    if match:
+        value = int(match.group(1))
+        if not 0 <= value <= 300:
+            return None
+        item["rest_sec"] = value
+    return item
+
+
 def _parse_after(message: str, current, new_slug: str | None) -> dict | None:
     after = {
         "slug": new_slug or current.exercise_slug,
@@ -198,34 +237,58 @@ def _resolve_add(
     if target is None:
         return {"ready": False, "questions": ["想加到哪一天？告诉我今天、明天或周几。"]}
     day, context_day = target
-    new_name = add_match.group(1).strip(" 动作。.！!")
-    exercise, resolved_name = _resolve_exercise(db, new_name)
-    if exercise is None:
-        return {
-            "ready": False,
-            "questions": [f"没有找到「{new_name}」这个动作，换个说法试试。"],
-        }
-    if any(item.exercise_slug == exercise.slug for item in day.exercises):
-        return {
-            "ready": False,
-            "questions": [f"「{resolved_name}」已经在这次训练里了。"],
-        }
+    raw = add_match.group(1)
+    names = [
+        _clean_exercise_name(item)
+        for item in re.split(r"\s*和\s*|、|,|，|/", raw)
+        if _clean_exercise_name(item)
+    ]
+    if not names:
+        return {"ready": False, "questions": ["想加哪个动作？"]}
+    resolved: list[tuple[str, str]] = []
+    seen_slugs: set[str] = set()
+    for name in names:
+        exercise, resolved_name = _resolve_exercise(db, name)
+        if exercise is None:
+            return {
+                "ready": False,
+                "questions": [f"没有找到「{name}」这个动作，换个说法试试。"],
+            }
+        if exercise.slug in seen_slugs or any(
+            item.exercise_slug == exercise.slug for item in day.exercises
+        ):
+            return {
+                "ready": False,
+                "questions": [f"「{resolved_name}」已经在这次训练里了。"],
+            }
+        seen_slugs.add(exercise.slug)
+        resolved.append((exercise.slug, resolved_name))
 
     template = day.exercises[0] if day.exercises else None
-    new_item = {
-        "slug": exercise.slug,
-        "sets": template.sets if template is not None else 3,
-        "reps": template.reps if template is not None else "8-12",
-        "weight_kg": None,
-        "rest_sec": template.rest_sec if template is not None else 90,
-        "rpe": template.rpe if template is not None else 7.5,
-        "notes": None,
-    }
+    new_items = []
+    for slug, resolved_name in resolved:
+        new_item = {
+            "slug": slug,
+            "sets": template.sets if template is not None else 3,
+            "reps": template.reps if template is not None else "8-12",
+            "weight_kg": None,
+            "rest_sec": template.rest_sec if template is not None else 90,
+            "rpe": template.rpe if template is not None else 7.5,
+            "notes": None,
+        }
+        if _apply_params(message, new_item) is None:
+            return {
+                "ready": False,
+                "questions": [f"「{resolved_name}」的参数不太对，再确认一下。"],
+            }
+        new_items.append(new_item)
+
     before = _snapshot(day)
     date_label = str(context_day.get("date") or "")
     watchouts = []
     if re.search(r"今天|今日", message) and date_label != today.isoformat():
         watchouts.append(f"今天没有对应训练，按 {date_label or '下一个训练日'} 处理。")
+    names_text = "、".join(name for _, name in resolved)
     return {
         "ready": True,
         "payload": {
@@ -234,12 +297,12 @@ def _resolve_add(
             "date": date_label,
             "title": day.title,
             "before": before,
-            "exercises": [*before, new_item],
+            "exercises": [*before, *new_items],
             "summary": (
-                f"准备在{date_label}的「{day.title}」加上「{resolved_name}」，"
-                f"{new_item['sets']} 组 × {new_item['reps']}。"
+                f"准备在{date_label}的「{day.title}」加上「{names_text}」，"
+                f"{new_items[0]['sets']} 组 × {new_items[0]['reps']}。"
             ),
-            "wins": [resolved_name],
+            "wins": [name for _, name in resolved],
             "watchouts": watchouts,
             "actions": [],
         },
@@ -340,7 +403,7 @@ def resolve(
     new_name = None
     swap_match = _SWAP.search(message)
     if swap_match:
-        new_name = swap_match.group(1).strip(" 动作。.！!")
+        new_name = _clean_exercise_name(swap_match.group(1))
         exercise, resolved_name = _resolve_exercise(db, new_name)
         if exercise is None:
             return {
@@ -351,6 +414,11 @@ def resolve(
         new_name = resolved_name
 
     remove = bool(_REMOVE.search(message))
+    if remove and len(day.exercises) <= 1:
+        return {
+            "ready": False,
+            "questions": ["这是当天最后一个动作，先加一个替代动作再删除。"],
+        }
     after = _parse_after(message, current, new_slug)
     if remove:
         after = None

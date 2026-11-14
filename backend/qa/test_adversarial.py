@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import pytest
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -128,7 +128,7 @@ def turn(db, message, context):
 
 
 def test_swap_with_parameters_should_keep_new_exercise_and_sets(db):
-    _, day, context = seed_chest_day(db)
+    _, _day, context = seed_chest_day(db)
     result = turn(db, "把哑铃卧推换成杠铃卧推 4组8次", context)
     assert result["intent"] == "training.edit_day_exercise"
     assert result["pending"] is not None, result
@@ -139,14 +139,14 @@ def test_swap_with_parameters_should_keep_new_exercise_and_sets(db):
 
 
 def test_swap_with_comma_parameters_should_route_to_single_edit(db):
-    _, day, context = seed_chest_day(db)
+    _, _day, context = seed_chest_day(db)
     result = turn(db, "把哑铃卧推换成杠铃卧推，4组8次", context)
     assert result["intent"] == "training.edit_day_exercise", result
     assert result["pending"] is not None, result
 
 
 def test_add_with_sets_should_use_requested_sets(db):
-    _, day, context = seed_chest_day(db)
+    _, _day, context = seed_chest_day(db)
     result = turn(db, "给今天的练胸加一个蝴蝶机夹胸 3组12次", context)
     assert result["intent"] == "training.edit_day_exercise", result
     assert result["pending"] is not None, result
@@ -157,7 +157,7 @@ def test_add_with_sets_should_use_requested_sets(db):
 
 
 def test_add_with_comma_parameters_should_route_to_single_edit(db):
-    _, day, context = seed_chest_day(db)
+    _, _day, context = seed_chest_day(db)
     result = turn(db, "给今天的练胸加一个蝴蝶机夹胸，3组12次", context)
     assert result["intent"] == "training.edit_day_exercise", result
     assert result["pending"] is not None, result
@@ -173,7 +173,7 @@ def test_remove_last_exercise_must_not_create_empty_day(db):
 
 
 def test_add_multiple_exercises_should_not_silently_drop_one(db):
-    _, day, context = seed_chest_day(db)
+    _, _day, context = seed_chest_day(db)
     result = turn(
         db,
         "给今天的练胸加一个蝴蝶机夹胸和绳索夹胸",
@@ -185,7 +185,7 @@ def test_add_multiple_exercises_should_not_silently_drop_one(db):
 
 
 def test_add_duplicate_exercise_should_ask_instead_of_duplicate(db):
-    _, day, context = seed_chest_day(db)
+    _, _day, context = seed_chest_day(db)
     result = turn(db, "给今天的练胸加一个哑铃卧推", context)
     assert result["pending"] is None
     assert "已经" in result["reply"]

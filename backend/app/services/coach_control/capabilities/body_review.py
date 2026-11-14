@@ -124,11 +124,25 @@ def resolve(db: Session, user_id: str) -> dict:
     if goal is not None and goal.target_weight_kg is not None:
         target = float(goal.target_weight_kg)
         remaining = end_weight - target
-        direction = "还差" if remaining > 0 else "已低于目标"
-        summary += (
-            f"目标 {_fmt(target)} kg，"
-            f"{direction} {_fmt(abs(remaining))} kg。"
-        )
+        if abs(remaining) < 0.05:
+            summary += f"目标 {_fmt(target)} kg，已达到目标。"
+        elif goal.type == "build_muscle":
+            if remaining > 0:
+                summary += (
+                    f"目标 {_fmt(target)} kg，"
+                    f"已超过目标 {_fmt(remaining)} kg。"
+                )
+            else:
+                summary += (
+                    f"目标 {_fmt(target)} kg，"
+                    f"还差 {_fmt(abs(remaining))} kg。"
+                )
+        else:
+            direction = "还差" if remaining > 0 else "已低于目标"
+            summary += (
+                f"目标 {_fmt(target)} kg，"
+                f"{direction} {_fmt(abs(remaining))} kg。"
+            )
         if start_weight != target:
             if target < start_weight:
                 progress = (start_weight - end_weight) / (start_weight - target)

@@ -136,6 +136,22 @@ extension AppStore {
             of: #"[、,，;；/]"#,
             options: .regularExpression
         ) != nil
+        let hasHardList = value.range(
+            of: #"[、/]"#,
+            options: .regularExpression
+        ) != nil
+        let planWithComma = value.range(
+            of: #"计划|训练"#,
+            options: .regularExpression
+        ) != nil
+            && value.range(
+                of: #"[，,；;]"#,
+                options: .regularExpression
+            ) != nil
+            && value.range(
+                of: #"改成|换成|替换|加"#,
+                options: .regularExpression
+            ) != nil
         let exerciseEdit = value.range(
             of: #"改成|换成|换为|替换为|替换成"#,
             options: .regularExpression
@@ -145,7 +161,7 @@ extension AppStore {
                 options: .regularExpression
             ) != nil
             && hasList
-        if exerciseName && !hasList && (changeVerb || paramVerb) {
+        if exerciseName && !hasHardList && !planWithComma && (changeVerb || paramVerb) {
             return true
         }
         if exerciseEdit {

@@ -221,6 +221,10 @@ def _current_week_index(program: Program, today: date) -> int:
     if not program.start_date:
         return 1
     week_start = program.start_date - timedelta(days=program.start_date.weekday())
+    if week_start < program.start_date:
+        week_start += timedelta(days=7)
+    if today < week_start:
+        return 1
     week = (today - week_start).days // 7 + 1
     return max(1, min(int(program.weeks or 1), week))
 

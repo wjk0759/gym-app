@@ -1192,16 +1192,13 @@ def test_reschedule_uses_server_plan_dates_without_client_context(db):
 
     today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
     monday = today - timedelta(days=today.weekday())
-    # Start on a Tuesday in the previous week. The current week is week 2,
-    # and the day must still resolve to today after Monday normalization.
-    start_date = monday - timedelta(days=6)
     program = Program(
         user_id="user-1",
         title="测试计划",
         goal_type="recomp",
         version=1,
         status="active",
-        start_date=start_date,
+        start_date=monday,
         weeks=4,
     )
     db.add(program)
@@ -1209,7 +1206,7 @@ def test_reschedule_uses_server_plan_dates_without_client_context(db):
     db.add(
         ProgramDay(
             program_id=program.id,
-            week_index=2,
+            week_index=1,
             weekday=today.isoweekday(),
             title="上肢",
         )
@@ -1759,6 +1756,39 @@ def test_week_schedule_lists_next_week(db):
     assert "下周" in turn["reply"]
     assert any("胸" in item for item in turn["pending"]["payload"]["wins"])
     assert any("背" in item for item in turn["pending"]["payload"]["wins"])
+
+
+def test_context_week_one_starts_next_monday_for_midweek_plan(db):
+    from app.services.coach_control.context import with_plan_context
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    monday = today - timedelta(days=today.weekday())
+    start = monday + timedelta(days=2)
+    next_monday = monday + timedelta(days=7)
+    program = Program(
+        user_id="user-1",
+        title="周三开始的计划",
+        goal_type="recomp",
+        version=1,
+        status="active",
+        start_date=start,
+        weeks=4,
+    )
+    db.add(program)
+    db.flush()
+    db.add(
+        ProgramDay(
+            program_id=program.id,
+            week_index=1,
+            weekday=1,
+            title="胸",
+        )
+    )
+    db.commit()
+
+    context = with_plan_context(db, "user-1", {})
+    day = context["plan"]["days"][0]
+    assert day["date"] == next_monday.isoformat()
 
 
 def test_routing_eval_covers_deterministic_capabilities(db):

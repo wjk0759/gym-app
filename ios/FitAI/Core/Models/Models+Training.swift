@@ -111,25 +111,40 @@ struct TrainingPlan: Codable, Identifiable, Hashable {
 
     var displayDate: Date { updatedAt ?? createdAt }
 
-    func date(week: Int, weekday: Int) -> Date? {
+    var planStartDate: Date {
         let calendar = Calendar.current
         let start = calendar.startOfDay(for: createdAt)
         let startWeekday = calendar.component(.weekday, from: start)
         let mondayOffset = startWeekday == 1 ? -6 : 2 - startWeekday
-        guard let monday = calendar.date(byAdding: .day, value: mondayOffset, to: start) else {
-            return nil
+        guard var monday = calendar.date(
+            byAdding: .day,
+            value: mondayOffset,
+            to: start
+        ) else {
+            return start
         }
+        if monday < start {
+            monday = calendar.date(byAdding: .day, value: 7, to: monday) ?? monday
+        }
+        return monday
+    }
+
+    func date(week: Int, weekday: Int) -> Date? {
+        let calendar = Calendar.current
         let safeWeek = max(1, week)
         let safeWeekday = min(max(1, weekday), 7)
         return calendar.date(
             byAdding: .day,
             value: (safeWeek - 1) * 7 + safeWeekday - 1,
-            to: monday
+            to: planStartDate
         )
     }
 
     func scheduledDate(for day: PlanDay) -> Date? {
-        day.date ?? date(week: day.weekIndex, weekday: day.weekday)
+        if let date = day.date, date >= planStartDate {
+            return date
+        }
+        return date(week: day.weekIndex, weekday: day.weekday)
     }
 
     func day(on date: Date) -> PlanDay? {

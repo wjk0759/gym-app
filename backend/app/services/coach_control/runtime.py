@@ -222,7 +222,13 @@ def _looks_like_batch_exercise_edit(message: str) -> bool:
 
 
 def _looks_like_single_exercise_edit(message: str) -> bool:
-    if re.search(r"[、,，;；/]", message):
+    if re.search(r"[、/]", message):
+        return False
+    if (
+        re.search(r"计划|训练", message)
+        and re.search(r"[，,；;]", message)
+        and re.search(r"改成|换成|替换|加", message)
+    ):
         return False
     if not re.search(
         r"卧推|深蹲|硬拉|划船|推举|飞鸟|弯举|下压|引体|"

@@ -174,6 +174,7 @@ def resolve(
         return {"ready": False, "questions": ["没有找到这一天的训练。"]}
 
     resolved: list[dict] = []
+    seen: set[str] = set()
     watchouts: list[str] = []
     if re.search(r"今天|今日", message) and str(day.get("date") or "") != today.isoformat():
         watchouts.append(
@@ -186,6 +187,10 @@ def resolve(
                 "ready": False,
                 "questions": [f"没有找到「{name}」这个动作，换个说法或从动作库选择。"],
             }
+        if exercise.slug in seen:
+            watchouts.append(f"重复动作「{resolved_name}」已合并。")
+            continue
+        seen.add(exercise.slug)
         if resolved_name != name:
             watchouts.append(f"「{name}」按「{resolved_name}」处理。")
         resolved.append(
