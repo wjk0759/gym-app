@@ -363,7 +363,7 @@ extension AppStore {
         guard AuthTokenStore.shared.accessToken != nil else { return }
         Task { @MainActor [weak self] in
             guard let self else { return }
-            if let response = try? await APIClient.shared.coachInbox() {
+            if let response = try? await APIClient.shared.coachInbox(limit: 100) {
                 self.coachInbox = response.items
             }
         }
