@@ -79,6 +79,9 @@ struct PlanScheduleView: View {
                         loadingCard
                     } else {
                         overview
+                        if !earlyDays.isEmpty {
+                            earlyDayCard
+                        }
                         board
                         feedback
 
@@ -418,6 +421,60 @@ struct PlanScheduleView: View {
             Text("正在获取云端训练日期…")
                 .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+    }
+
+    /// A coach-added session can fall before the plan's first Monday (for
+    /// example, training on the Sunday before week 1). It is not one of the
+    /// 7-column week slots, but it is still a real scheduled workout.
+    private var earlyDays: [PlanDay] {
+        guard let plan = store.plan, let firstStart = blocks.first?.start else {
+            return []
+        }
+        return plan.days
+            .filter { day in
+                guard let date = day.date else { return false }
+                return FitnessDate.startOfDay(date) < firstStart
+            }
+            .sorted { ($0.date ?? .distantFuture) < ($1.date ?? .distantFuture) }
+    }
+
+    private var earlyDayCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("首周之前")
+                .font(AppType.caption.weight(.semibold))
+                .foregroundStyle(Theme.ink)
+
+            Text("这些日期不在 4 周日期板内，已作为额外训练保留。")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(Theme.tertiaryText)
+                .fixedSize(horizontal: false, vertical: true)
+
+            ForEach(earlyDays) { day in
+                HStack(spacing: 6) {
+                    Image(systemName: day.skippedAt == nil
+                        ? "checkmark.circle.fill"
+                        : "circle")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(day.skippedAt == nil ? Theme.cobalt : Theme.tertiaryText)
+                    Text("\(day.date.map(FitnessDate.short) ?? "--") · \(day.title)")
+                        .font(AppType.caption)
+                        .foregroundStyle(Theme.ink)
+                    Spacer(minLength: 4)
+                    if day.skippedAt != nil {
+                        Text("已跳过")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(Theme.tertiaryText)
+                    }
+                }
+            }
+
+            Text("想临时加练，直接对教练说「今天我想练背」。")
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(Theme.tertiaryText)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .card()
