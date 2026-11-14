@@ -41,7 +41,7 @@ def _strategy(message: str) -> str:
     for strategy in DIET_STRATEGIES.values():
         if strategy.label in message:
             return strategy.id
-    if re.search(r"16\s*[:：]\s*8|168", message):
+    if re.search(r"16\s*[:：]\s*8|168|轻断食|断食", message):
         return "time_restricted_16_8"
     return "balanced"
 
@@ -139,6 +139,12 @@ async def resolve(db: Session, user_id: str, message: str) -> dict:
     days = [item for item in result.get("days") or [] if isinstance(item, dict)]
     if not days:
         return {"ready": False, "questions": ["这周餐单没有生成成功，稍后再试。"]}
+    generated_by = result.get("generated_by")
+    model = result.get("model")
+    for day in days:
+        day["generated_by"] = generated_by
+        if result.get("warning"):
+            day["warning"] = result["warning"]
 
     total_kcal = sum(
         float((day.get("targets") or {}).get("target_kcal") or 0)
@@ -155,6 +161,7 @@ async def resolve(db: Session, user_id: str, message: str) -> dict:
             "week_start": week_start.isoformat(),
             "strategy": strategy_id,
             "access_mode": access_mode,
+            "model": model,
             "days": days,
             "summary": (
                 f"{week_start.month}月{week_start.day}日起一周饮食草案："
@@ -191,7 +198,7 @@ def execute(
             day,
             strategy=str(payload.get("strategy") or "balanced"),
             generated_by=day.get("generated_by"),
-            model_name=day.get("model"),
+            model_name=payload.get("model"),
         )
     if payload.get("access_mode") == "trial":
         access.consume_trial(
