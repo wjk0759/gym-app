@@ -53,8 +53,11 @@ def resolve(message: str) -> dict:
         weight = float(weight_match.group(1))
         if weight_match.group(2) == "斤":
             weight = weight / 2
-    elif "体重" in message or "称重" in message:
-        weight = _match(message, r"体重\s*(?:是|为|:|：)?\s*(\d{2,3}(?:\.\d+)?)")
+    elif any(word in message for word in ("体重", "称重", "称了", "称一下")):
+        weight = _match(
+            message,
+            r"(?:体重|称重|称了|称一下)\s*(?:是|为|:|：)?\s*(\d{2,3}(?:\.\d+)?)",
+        )
 
     body_fat = _match(
         message,
