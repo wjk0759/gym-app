@@ -49,6 +49,7 @@ TRAINING = "training.reschedule"
 SKIP_TRAINING = "training.skip"
 CARDIO = "training.log_cardio"
 PREVIEW = "training.preview_next"
+EDIT_EXERCISES = "training.edit_day_exercises"
 STRENGTH = "training.log_strength"
 WEIGHT = "body.log_weight"
 BODY_REVIEW = "body.review_trend"
@@ -177,6 +178,33 @@ def _looks_like_plan_adjust(message: str) -> bool:
         or (
             re.search(r"减量|加量|降低重量|减重|轻一点|太累|恢复不过来", message)
             and re.search(r"计划|训练", message)
+        )
+    )
+
+
+def _looks_like_exercise_edit(message: str) -> bool:
+    if not re.search(r"改成|换成|换为|替换为|替换成", message):
+        return False
+    if not re.search(
+        r"计划|训练|练胸|练背|练腿|练肩|练手臂|胸|背|腿|肩|手臂",
+        message,
+    ):
+        return False
+    # A full-day replacement is a list. A single swap ("卧推换成杠铃卧推")
+    # stays on the legacy modify_workout path.
+    return bool(re.search(r"[、,，;；/]", message))
+
+
+def _looks_like_plan_edit(message: str) -> bool:
+    if re.search(r"改到|改期|顺延|挪到|换到|调到", message):
+        return False
+    if re.search(r"减量|加量|降低重量|减重|轻一点|太累|恢复不过来", message):
+        return False
+    return bool(
+        re.search(
+            r"(?:改|修改|调整).{0,8}(?:训练)?计划|"
+            r"(?:训练)?计划.{0,8}(?:改|修改|调整)",
+            message,
         )
     )
 
@@ -501,6 +529,67 @@ async def handle_turn(
             else:
                 text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
                 intent_override = GOAL
+
+    if intent_override is None and _looks_like_exercise_edit(text):
+        from .capabilities.training_edit import (
+            resolve as resolve_exercise_edit,
+        )
+
+        resolution = resolve_exercise_edit(db, user_id, text, context)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            set_pending(
+                db,
+                session,
+                kind="proposal",
+                capability_id=EDIT_EXERCISES,
+                payload=payload,
+            )
+            reply = f"{payload.get('summary') or '动作调整草案好了。'}确认后生效。"
+        else:
+            reply = (
+                resolution.get("questions") or ["动作调整暂时不能生成。"]
+            )[0]
+        turn.intent = EDIT_EXERCISES
+        turn.status = "completed"
+        turn.reply = reply
+        turn.latency_ms = int((time.perf_counter() - started) * 1000)
+        session.last_turn_at = utcnow()
+        session.updated_at = utcnow()
+        db.commit()
+        active = get_active_pending(db, user_id, session.id)
+        return {
+            "session": serialize_session(session, active),
+            "turn_id": turn.id,
+            "intent": turn.intent,
+            "status": turn.status,
+            "reply": reply,
+            "pending": serialize_pending(active),
+        }
+
+    if intent_override is None and _looks_like_plan_edit(text):
+        reply = (
+            "可以。你想改哪一类？\n"
+            "1. 改训练日：把周三的训练改到周五\n"
+            "2. 换动作：把哑铃卧推换成杠铃卧推\n"
+            "3. 调强度：计划太累，减量\n"
+            "直接说具体改法，我会生成待确认卡。"
+        )
+        turn.intent = "training.edit_plan"
+        turn.status = "completed"
+        turn.reply = reply
+        turn.latency_ms = int((time.perf_counter() - started) * 1000)
+        session.last_turn_at = utcnow()
+        session.updated_at = utcnow()
+        db.commit()
+        return {
+            "session": serialize_session(session, None),
+            "turn_id": turn.id,
+            "intent": turn.intent,
+            "status": turn.status,
+            "reply": reply,
+            "pending": None,
+        }
 
     if intent_override is None and _looks_like_correction(text):
         last_capability = _last_action_capability(
@@ -1342,6 +1431,23 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "DietPlanGenerated"
         entity_type = "meal_plan"
         entity_id = str(pending.payload.get("date") or "")
+    elif pending.capability_id == EDIT_EXERCISES:
+        from .capabilities.training_edit import (
+            execute as execute_exercise_edit,
+        )
+
+        result = execute_exercise_edit(db, user_id, action_id, pending.payload)
+        after = result.get("plan") or {}
+        before = result.get("before") or {}
+        receipt = {
+            "summary": f"已更新「{pending.payload.get('title')}」的动作",
+            "plan_id": pending.payload.get("plan_id"),
+            "day_id": pending.payload.get("day_id"),
+            "deep_link": "fitai://plan",
+        }
+        event_type = "TrainingPlanAdjusted"
+        entity_type = "program"
+        entity_id = str(pending.payload.get("plan_id") or "")
     elif pending.capability_id in {PLANNED, SKIP_MEAL, RESTORE_MEAL, SWAP_MEAL}:
         from .capabilities import diet as diet_capability
 
@@ -1413,7 +1519,9 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         "action_id": action_id,
         "status": "executed",
         "receipt": receipt,
-        "plan": after if pending.capability_id in {PLAN, ADJUST_PLAN} else None,
+        "plan": after
+        if pending.capability_id in {PLAN, ADJUST_PLAN, EDIT_EXERCISES}
+        else None,
         "idempotent": False,
     }
 
@@ -1496,6 +1604,15 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
         from .capabilities.diet_plan import undo as undo_diet_plan
 
         result = undo_diet_plan(db, user_id, record.before or {}, record.payload)
+    elif record.capability_id == EDIT_EXERCISES:
+        from .capabilities.training_edit import undo as undo_exercise_edit
+
+        result = undo_exercise_edit(
+            db,
+            user_id,
+            record.before or {},
+            record.payload,
+        )
     elif record.capability_id == PLANNED:
         from .capabilities.diet import undo_planned
 

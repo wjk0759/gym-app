@@ -153,15 +153,49 @@ def _source_day(
             if str(item.get("id")) == day_id:
                 return item
 
+    source_text = re.split(
+        r"改到|改期到|顺延到|挪到|换到|调到",
+        message,
+        maxsplit=1,
+    )[0]
     source_date = today
-    if re.search(r"后天", message):
+    if re.search(r"后天", source_text):
         source_date = today + timedelta(days=2)
-    elif re.search(r"明天|明日", message):
+    elif re.search(r"明天|明日", source_text):
         source_date = today + timedelta(days=1)
+    elif re.search(r"今天|今日", source_text):
+        source_date = today
+
+    weekday = re.search(r"(?:周|星期|礼拜)([一二三四五六日天])", source_text)
+    if weekday:
+        target_weekday = _WEEKDAYS[weekday.group(1)]
+        candidates: list[tuple[date, dict]] = []
+        for item in days:
+            raw_date = str(item.get("date") or "")
+            candidate_date = None
+            if raw_date:
+                try:
+                    candidate_date = date.fromisoformat(raw_date)
+                except ValueError:
+                    candidate_date = None
+            if candidate_date is not None:
+                if candidate_date.weekday() == target_weekday:
+                    candidates.append((candidate_date, item))
+            elif (
+                item.get("weekday") is not None
+                and int(item["weekday"]) - 1 == target_weekday
+            ):
+                candidates.append((today, item))
+        if candidates:
+            upcoming = [item for item in candidates if item[0] >= today]
+            pool = upcoming or candidates
+            pool.sort(key=lambda item: item[0])
+            return pool[0][1]
+
     for item in days:
         if str(item.get("date") or "") == source_date.isoformat():
             return item
-    if not re.search(r"今天|今日|明天|明日|后天", message):
+    if not re.search(r"今天|今日|明天|明日|后天", source_text):
         for item in days:
             if str(item.get("date") or "") == today.isoformat():
                 return item

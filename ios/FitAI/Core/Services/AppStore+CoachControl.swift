@@ -48,6 +48,33 @@ extension AppStore {
         ) != nil
         if reschedule && hasDate { return true }
 
+        let planEdit = value.range(
+            of: #"(?:改|修改|调整).{0,8}(?:训练)?计划|(?:训练)?计划.{0,8}(?:改|修改|调整)"#,
+            options: .regularExpression
+        ) != nil
+        let exerciseEdit = value.range(
+            of: #"改成|换成|换为|替换为|替换成"#,
+            options: .regularExpression
+        ) != nil
+            && value.range(
+                of: #"计划|训练|练胸|练背|练腿|练肩|练手臂|胸|背|腿|肩|手臂"#,
+                options: .regularExpression
+            ) != nil
+            && value.range(
+                of: #"[、,，;；/]"#,
+                options: .regularExpression
+            ) != nil
+        if exerciseEdit {
+            return true
+        }
+        let planEditReschedule = value.range(
+            of: #"改到|改期|顺延|挪到|换到|调到"#,
+            options: .regularExpression
+        ) != nil
+        if planEdit && !planEditReschedule {
+            return true
+        }
+
         let correction = value.range(
             of: #"记错|不是|改成|应该是|修正|改一下"#,
             options: .regularExpression
@@ -352,7 +379,8 @@ extension AppStore {
                 }
                 if let plan = response.plan {
                     if pending.capabilityID == "training.generate_plan"
-                        || pending.capabilityID == "training.adjust_plan" {
+                        || pending.capabilityID == "training.adjust_plan"
+                        || pending.capabilityID == "training.edit_day_exercises" {
                         self.coachPlanBefore = self.plan
                     }
                     self.plan = plan
@@ -430,7 +458,8 @@ extension AppStore {
                     self.coachWeightBefore = nil
                 }
                 if receipt?.capabilityID == "training.generate_plan"
-                    || receipt?.capabilityID == "training.adjust_plan" {
+                    || receipt?.capabilityID == "training.adjust_plan"
+                    || receipt?.capabilityID == "training.edit_day_exercises" {
                     self.plan = self.coachPlanBefore
                     self.coachPlanBefore = nil
                     self.planNeedsServerSync = false

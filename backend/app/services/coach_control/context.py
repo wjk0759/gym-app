@@ -8,7 +8,7 @@ action, plus a deterministic plan fallback when the client does not send
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import date, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -93,19 +93,48 @@ def with_plan_context(
     days = plan.get("days")
     if not isinstance(days, list) or not days:
         return context
+    states = {
+        str(item.get("day_id")): item
+        for item in (plan.get("day_states") or [])
+        if isinstance(item, dict)
+    }
+    try:
+        start = date.fromisoformat(str(plan.get("start_date")))
+    except (TypeError, ValueError):
+        start = None
+    normalized = []
+    for item in days:
+        if not isinstance(item, dict):
+            continue
+        day_id = str(item.get("id") or "")
+        state = states.get(day_id) or {}
+        assigned = state.get("assigned_date")
+        computed = None
+        if start is not None:
+            week_index = int(item.get("week_index") or 1)
+            weekday = int(item.get("weekday") or 1)
+            computed = start + timedelta(
+                days=(week_index - 1) * 7 + weekday - 1
+            )
+        normalized.append(
+            {
+                "id": item.get("id"),
+                "date": assigned or (computed.isoformat() if computed else None),
+                "week_index": item.get("week_index"),
+                "weekday": item.get("weekday"),
+                "title": item.get("title"),
+                "focus": item.get("focus") or [],
+                "completed": item.get("completed", False),
+                "skipped": state.get(
+                    "skipped",
+                    item.get("skipped", False),
+                ),
+            }
+        )
     context["plan"] = {
         "id": plan.get("id"),
         "version": plan.get("version"),
-        "days": [
-            {
-                "id": item.get("id"),
-                "date": item.get("date"),
-                "title": item.get("title"),
-                "completed": item.get("completed", False),
-                "skipped": item.get("skipped", False),
-            }
-            for item in days
-            if isinstance(item, dict)
-        ],
+        "start_date": plan.get("start_date"),
+        "days": normalized,
     }
     return context

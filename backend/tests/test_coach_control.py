@@ -19,7 +19,10 @@ from app.models import (
     FoodLog,
     Goal,
     PlanDayState,
+    PlanExercise,
     Profile,
+    Program,
+    ProgramDay,
     User,
 )
 from app.services.coach_control import runtime
@@ -1168,6 +1171,148 @@ def test_diet_plan_generation_confirm_and_undo(db, monkeypatch):
     runtime.undo_action(db, "user-1", confirmed["action_id"])
     restored = db.execute(select(MealPlan)).scalar_one()
     assert restored.plan.get("marker") == "old"
+
+
+def test_general_plan_edit_asks_for_specific_change(db):
+    import asyncio
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "帮我改一下训练计划")
+    )
+    assert turn["intent"] == "training.edit_plan"
+    assert turn["pending"] is None
+    assert "改训练日" in turn["reply"]
+    assert "换动作" in turn["reply"]
+    assert "调强度" in turn["reply"]
+
+
+def test_reschedule_uses_server_plan_dates_without_client_context(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    monday = today - timedelta(days=today.weekday())
+    program = Program(
+        user_id="user-1",
+        title="测试计划",
+        goal_type="recomp",
+        version=1,
+        status="active",
+        start_date=monday,
+        weeks=4,
+    )
+    db.add(program)
+    db.flush()
+    db.add(
+        ProgramDay(
+            program_id=program.id,
+            week_index=1,
+            weekday=today.isoweekday(),
+            title="上肢",
+        )
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "把今天的训练改到明天")
+    )
+    assert turn["intent"] == "training.reschedule"
+    assert turn["pending"]["kind"] == "card"
+    assert turn["pending"]["payload"]["to_date"] == (
+        today + timedelta(days=1)
+    ).isoformat()
+
+
+def test_edit_day_exercises_confirm_and_undo(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    monday = today - timedelta(days=today.weekday())
+    exercises = [
+        ("bench_press", "杠铃卧推"),
+        ("vital-incline-barbell-bench-press", "上斜杠铃卧推"),
+        ("vital-seated-machine-chest-press", "器械推胸"),
+        ("vital-machine-pec-deck-fly", "蝴蝶机夹胸"),
+        ("old-dumbbell-press", "哑铃卧推"),
+    ]
+    for slug, name in exercises:
+        db.add(
+            Exercise(
+                slug=slug,
+                name_zh=name,
+                name_en=slug,
+                muscle_group="chest",
+                equipment="barbell",
+                is_compound=True,
+                contraindications=[],
+            )
+        )
+    db.commit()
+
+    program = Program(
+        user_id="user-1",
+        title="测试胸计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=monday,
+        weeks=4,
+    )
+    db.add(program)
+    db.flush()
+    day = ProgramDay(
+        program_id=program.id,
+        week_index=1,
+        weekday=today.isoweekday(),
+        title="胸",
+    )
+    db.add(day)
+    db.flush()
+    db.add(
+        PlanExercise(
+            program_day_id=day.id,
+            exercise_slug="old-dumbbell-press",
+            order_index=1,
+            sets=3,
+            reps="8-12",
+            rest_sec=90,
+        )
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "今天的练胸计划帮我改成："
+            "杠铃卧推、上斜杠铃卧推、器械推胸、蝴蝶机",
+        )
+    )
+    assert turn["intent"] == "training.edit_day_exercises"
+    assert turn["pending"]["kind"] == "proposal"
+    payload = turn["pending"]["payload"]
+    assert [item["slug"] for item in payload["exercises"]] == [
+        "bench_press",
+        "vital-incline-barbell-bench-press",
+        "vital-seated-machine-chest-press",
+        "vital-machine-pec-deck-fly",
+    ]
+    assert any("蝴蝶机" in item for item in payload["watchouts"])
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    updated = db.get(ProgramDay, day.id)
+    assert [item.exercise_slug for item in updated.exercises] == [
+        "bench_press",
+        "vital-incline-barbell-bench-press",
+        "vital-seated-machine-chest-press",
+        "vital-machine-pec-deck-fly",
+    ]
+    assert confirmed["plan"]["id"] == program.id
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    restored = db.get(ProgramDay, day.id)
+    assert [item.exercise_slug for item in restored.exercises] == [
+        "old-dumbbell-press"
+    ]
 
 
 def test_routing_eval_covers_deterministic_capabilities(db):
