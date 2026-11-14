@@ -511,6 +511,19 @@ extension AppStore {
                     self.deferredPlanPreview = nil
                     self.rescheduleNotifications()
                 }
+                if pending.capabilityID == "training.add_plan_day",
+                   let raw = pending.payload?.date,
+                   let date = FitnessDate.date(from: raw),
+                   var updated = self.plan,
+                   let dayID = response.receipt?.dayID,
+                   let index = updated.days.firstIndex(where: {
+                       $0.id.uuidString.lowercased() == dayID.lowercased()
+                   }) {
+                    updated.days[index].date = FitnessDate.startOfDay(date)
+                    updated.days[index].weekday = FitnessDate.weekdayNumber(date)
+                    updated.days[index].scheduleUpdatedAt = Date()
+                    self.plan = updated
+                }
                 self.chat.append(
                     ChatMessage(
                         role: .assistant,
@@ -522,6 +535,9 @@ extension AppStore {
                     server: response.refreshDomains
                 )
                 Task {
+                    if domains.contains(.schedule) {
+                        await self.pushPlanSchedule()
+                    }
                     await self.refreshDomains(domains)
                 }
                 if domains.contains(.diet) {
@@ -605,6 +621,9 @@ extension AppStore {
                     server: response.refreshDomains
                 )
                 Task {
+                    if domains.contains(.schedule) {
+                        await self.pushPlanSchedule()
+                    }
                     await self.refreshDomains(domains)
                 }
                 if domains.contains(.diet) {
@@ -759,7 +778,20 @@ extension AppStore {
               let index = updated.days.firstIndex(where: {
                   $0.id.uuidString.lowercased() == dayID.lowercased()
               }) else { return }
-        updated.days[index].date = date
+        let day = FitnessDate.startOfDay(date)
+        updated.days[index].date = day
+        updated.days[index].weekday = FitnessDate.weekdayNumber(day)
+        if let start = updated.date(week: 1, weekday: 1) {
+            let diff = FitnessDate.calendar.dateComponents(
+                [.day],
+                from: start,
+                to: day
+            ).day ?? 0
+            let week = max(1, diff / 7 + 1)
+            updated.days[index].weekIndex = week
+            updated.weeks = max(updated.weeks, week)
+        }
+        updated.days[index].skippedAt = nil
         updated.days[index].scheduleUpdatedAt = Date()
         updated.updatedAt = Date()
         plan = updated

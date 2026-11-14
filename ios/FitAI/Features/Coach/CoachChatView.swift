@@ -61,7 +61,7 @@ struct CoachChatView: View {
 
     private func scrollToBottom(_ proxy: ScrollViewProxy) {
         // Let the lazy list lay out the newly merged turns before scrolling.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             proxy.scrollTo(coachBottomID, anchor: .bottom)
         }
     }

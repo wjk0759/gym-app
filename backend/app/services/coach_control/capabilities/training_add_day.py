@@ -10,10 +10,10 @@ import re
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from ....models import PlanExercise, Program, ProgramDay
+from ....models import PlanDayState, PlanExercise, Program, ProgramDay, utcnow
 from ...serializers import serialize_program
 from ..registry import Capability, register
 from .training import parse_training_date
@@ -219,6 +219,18 @@ def execute(
     )
     db.add(day)
     db.flush()
+    target = payload.get("date")
+    if target:
+        db.add(
+            PlanDayState(
+                user_id=user_id,
+                plan_id=program.id.lower(),
+                day_id=str(day.id).lower(),
+                plan_version=program.version,
+                assigned_date=date.fromisoformat(str(target)),
+                client_updated_at=utcnow(),
+            )
+        )
     for index, item in enumerate(payload.get("exercises") or [], start=1):
         day.exercises.append(
             PlanExercise(
@@ -252,6 +264,18 @@ def undo(
     day_id = str((before or {}).get("created_day_id") or "")
     day = db.get(ProgramDay, day_id) if day_id else None
     if day is not None and day.program_id == program.id:
+        states = (
+            db.execute(
+                select(PlanDayState).where(
+                    PlanDayState.user_id == user_id,
+                    func.lower(PlanDayState.day_id) == day_id.lower(),
+                )
+            )
+            .scalars()
+            .all()
+        )
+        for state in states:
+            db.delete(state)
         db.delete(day)
         db.flush()
     return {"removed": day is not None, "plan": serialize_program(program)}

@@ -1688,9 +1688,19 @@ def test_add_plan_day_copies_focus_template_and_undo(db):
     assert created is not None
     assert created.weekday == today.isoweekday()
     assert [item.exercise_slug for item in created.exercises] == ["bench_press"]
+    state = db.execute(
+        select(PlanDayState).where(PlanDayState.day_id == day_id)
+    ).scalar_one()
+    assert state.assigned_date == today
 
     runtime.undo_action(db, "user-1", confirmed["action_id"])
     assert db.get(ProgramDay, day_id) is None
+    assert (
+        db.execute(
+            select(PlanDayState).where(PlanDayState.day_id == day_id)
+        ).scalar_one_or_none()
+        is None
+    )
 
 
 def test_edit_multiple_exercise_params(db):

@@ -225,7 +225,7 @@ extension AppStore {
         }
     }
 
-    private func pushPlanSchedule() async {
+    func pushPlanSchedule() async {
         guard let plan else { return }
         let uploads = plan.days.map { day in
             PlanScheduleUploadDay(
