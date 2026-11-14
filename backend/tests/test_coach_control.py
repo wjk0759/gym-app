@@ -444,6 +444,26 @@ def test_inbox_unread_filter_and_read_all(db):
     assert [item["kind"] for item in read] == ["workout"]
 
 
+def test_skipped_meal_creates_an_actionable_inbox_item(db):
+    from app.services.coach_control.consumers import consume_event
+    from app.services.coach_control.events import emit_event
+
+    event = emit_event(
+        db,
+        "user-1",
+        "PlannedMealSkipped",
+        entity_type="food_log",
+        payload={},
+    )
+    consume_event(db, event)
+    db.commit()
+
+    item = db.execute(
+        select(CoachInbox).where(CoachInbox.kind == "diet")
+    ).scalar_one()
+    assert item.payload["prompt"] == "今天饮食还缺什么？"
+
+
 def test_client_diagnostic_is_audited(db):
     from app.routers.coach_control import ClientDiagnosticIn, upload_client_diagnostic
 

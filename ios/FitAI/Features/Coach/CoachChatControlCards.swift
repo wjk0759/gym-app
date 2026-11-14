@@ -37,6 +37,27 @@ extension CoachChatView {
                             .font(AppType.micro.weight(.semibold))
                             .foregroundStyle(Theme.cobalt)
                             .buttonStyle(.plain)
+                        } else if let prompt = item.payload?.prompt, !prompt.isEmpty {
+                            Button("问教练") {
+                                Task {
+                                    try? await APIClient.shared.markCoachInboxRead(id: item.id)
+                                }
+                                send(prompt)
+                            }
+                            .font(AppType.micro.weight(.semibold))
+                            .foregroundStyle(Theme.cobalt)
+                            .buttonStyle(.plain)
+                        } else if item.kind == "plan" {
+                            Button("打开训练手账") {
+                                Task {
+                                    try? await APIClient.shared.markCoachInboxRead(id: item.id)
+                                }
+                                store.selectedTab = 1
+                                store.refreshCoachInbox()
+                            }
+                            .font(AppType.micro.weight(.semibold))
+                            .foregroundStyle(Theme.cobalt)
+                            .buttonStyle(.plain)
                         }
                     }
                     .padding(10)

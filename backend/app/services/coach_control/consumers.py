@@ -29,3 +29,16 @@ def consume_event(db: Session, event: DomainEvent) -> None:
             body="新版本计划已经生效，打开训练手账查看。",
             payload={"event_id": event.id, "event_type": event.type},
         )
+        return
+    if event.type == "PlannedMealSkipped":
+        create_inbox_item(
+            db,
+            event.user_id,
+            kind="diet",
+            title="今天有一餐跳过了",
+            body="想看看今天还缺多少热量和蛋白质吗？",
+            payload={
+                "event_id": event.id,
+                "prompt": "今天饮食还缺什么？",
+            },
+        )

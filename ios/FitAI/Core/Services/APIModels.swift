@@ -393,6 +393,8 @@ struct AgentActionPayload: Codable, Hashable {
     let actions: [String]?
     let generatedAt: String?
     let plan: TrainingPlan?
+    /// Inbox cards can hand the user a one-tap prompt for the coach.
+    let prompt: String?
 
     enum CodingKeys: String, CodingKey {
         case dayID = "day_id"
@@ -430,6 +432,7 @@ struct AgentActionPayload: Codable, Hashable {
         case actions
         case generatedAt = "generated_at"
         case plan
+        case prompt
     }
 }
 
