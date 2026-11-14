@@ -2117,6 +2117,8 @@ def test_update_and_delete_food_log_via_control_plane(db):
         runtime.handle_turn(db, "user-1", "删掉午饭的鸡胸肉")
     )
     assert turn["intent"] == "diet.delete_log"
+    assert turn["pending"]["payload"]["food_name"] == "鸡胸肉"
+    assert turn["pending"]["payload"]["meal"] == "lunch"
     confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
     assert (
         db.execute(
@@ -2166,6 +2168,7 @@ def test_update_and_delete_workout_via_control_plane(db):
     )
     assert turn["intent"] == "training.update_workout"
     assert turn["pending"]["payload"]["duration_minutes"] == 40
+    assert turn["pending"]["payload"]["title"] == "跑步"
 
     confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
     db.refresh(session)
@@ -2178,6 +2181,7 @@ def test_update_and_delete_workout_via_control_plane(db):
         runtime.handle_turn(db, "user-1", "删掉今天跑步记录")
     )
     assert turn["intent"] == "training.delete_workout"
+    assert turn["pending"]["payload"]["title"] == "跑步"
     confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
     assert db.get(WorkoutSession, session.id) is None
     runtime.undo_action(db, "user-1", confirmed["action_id"])

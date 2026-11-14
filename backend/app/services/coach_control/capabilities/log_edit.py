@@ -243,7 +243,12 @@ def resolve_delete_food(db: Session, user_id: str, message: str) -> dict:
         return {"ready": False, "questions": [error or "没有找到要删除的记录。"]}
     return {
         "ready": True,
-        "payload": {"client_id": log.client_id},
+        "payload": {
+            "client_id": log.client_id,
+            "food_name": log.food_name,
+            "date": log.logged_at.astimezone(DIET_TZ).date().isoformat(),
+            "meal": log.meal,
+        },
         "summary": f"准备删除「{log.food_name}」这条饮食记录。",
     }
 
@@ -364,8 +369,8 @@ def resolve_update_workout(db: Session, user_id: str, message: str) -> dict:
     updates, update_error = _workout_updates(db, session, message)
     if update_error:
         return {"ready": False, "questions": [update_error]}
-    payload = {"session_id": session.id, **updates}
     title = _workout_title(db, session)
+    payload = {"session_id": session.id, "title": title, **updates}
     detail = []
     if "duration_minutes" in updates:
         detail.append(f"{updates['duration_minutes']} 分钟")
@@ -382,10 +387,11 @@ def resolve_delete_workout(db: Session, user_id: str, message: str) -> dict:
     session, error = _find_workout(db, user_id, message)
     if session is None:
         return {"ready": False, "questions": [error or "没有找到训练记录。"]}
+    title = _workout_title(db, session)
     return {
         "ready": True,
-        "payload": {"session_id": session.id},
-        "summary": f"准备删除「{_workout_title(db, session)}」这条训练记录。",
+        "payload": {"session_id": session.id, "title": title},
+        "summary": f"准备删除「{title}」这条训练记录。",
     }
 
 

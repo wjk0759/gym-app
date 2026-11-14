@@ -242,7 +242,11 @@ extension CoachChatView {
         let payload = pending.payload
         let isDelete = pending.capabilityID == "training.delete_workout"
         return VStack(alignment: .leading, spacing: 6) {
-            Text(isDelete ? "删除这条训练记录" : "修改训练记录")
+            Text(
+                isDelete
+                    ? "删除「\(payload?.title ?? "这条训练记录")」"
+                    : "修改「\(payload?.title ?? "训练记录")」"
+            )
                 .font(AppType.callout.weight(.semibold))
                 .foregroundStyle(Theme.ink)
             if !isDelete {
