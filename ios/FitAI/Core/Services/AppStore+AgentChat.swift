@@ -40,7 +40,8 @@ extension AppStore {
         if pendingDraft != nil {
             cancelPendingDraft()
         }
-        chat.removeAll()        planAdjustmentStage = 0
+        chat.removeAll()
+        planAdjustmentStage = 0
         planAdjustmentProposal = nil
         planAdjustmentRequested = false
         agentSessionID = nil
