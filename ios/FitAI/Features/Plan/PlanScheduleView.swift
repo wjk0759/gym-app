@@ -102,6 +102,9 @@ struct PlanScheduleView: View {
                 }
             }
             .onAppear(perform: load)
+            .onChange(of: store.plan?.updatedAt) { _, _ in
+                load()
+            }
         }
     }
 
@@ -354,12 +357,13 @@ struct PlanScheduleView: View {
     // MARK: - Data
 
     private func load() {
-        guard !didLoad else { return }
-        didLoad = true
         guard let plan = store.plan, !plan.days.isEmpty else {
             message = "当前计划没有可调整的训练日期"
             return
         }
+        guard !didLoad else { return }
+        didLoad = true
+        message = ""
         daysPerWeek = min(7, max(1, plan.weeklyDays ?? max(1, plan.days.count / max(1, plan.weeks))))
         startDate = FitnessDate.startOfDay(Date())
         let offsets = defaultOffsets[daysPerWeek] ?? [0]
@@ -421,7 +425,8 @@ struct PlanScheduleView: View {
         if store.applyPlanSchedule(selection) {
             dismiss()
         } else {
-            message = "保存失败，请检查所选日期后重试"
+            message = store.lastScheduleSaveError
+                ?? "保存失败，请检查所选日期后重试"
         }
     }
 

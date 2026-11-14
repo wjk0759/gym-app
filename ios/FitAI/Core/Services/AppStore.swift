@@ -64,6 +64,8 @@ final class AppStore {
     /// Set when the current plan was produced locally and has not reached the
     /// server yet. Retried on the next user-data sync.
     var planNeedsServerSync = false
+    /// Human-readable reason for the last plan-schedule save failure.
+    var lastScheduleSaveError: String?
     var planHistory: [TrainingPlan] = []
     var sessions: [WorkoutSession] = []
     /// 当前训练中的本地草稿；只保留一个，避免同一天出现多份进度。
@@ -240,6 +242,7 @@ final class AppStore {
         pendingPlanPreview = nil
         deferredPlanPreview = nil
         planNeedsServerSync = false
+        lastScheduleSaveError = nil
         planHistory = []
         sessions = []
         workoutDraft = nil

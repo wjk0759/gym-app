@@ -253,15 +253,26 @@ extension AppStore {
     // MARK: - Plan schedule
 
     func applyPlanSchedule(_ selection: [Int: [Date]]) -> Bool {
-        guard var current = plan else { return false }
+        lastScheduleSaveError = nil
+        guard var current = plan else {
+            lastScheduleSaveError = "当前没有训练计划"
+            return false
+        }
         let now = Date()
         let planWeeklyDays = current.weeklyDays
             ?? max(1, current.days.count / max(1, current.weeks))
         let target = max(1, min(7, planWeeklyDays))
         for week in 1...current.weeks {
-            guard let dates = selection[week],
-                  dates.count <= target,
-                  Set(dates).count == dates.count else {
+            guard let dates = selection[week] else {
+                lastScheduleSaveError = "第 \(week) 周日期不完整"
+                return false
+            }
+            if dates.count > target {
+                lastScheduleSaveError = "第 \(week) 周最多选 \(target) 天"
+                return false
+            }
+            if Set(dates).count != dates.count {
+                lastScheduleSaveError = "第 \(week) 周有重复日期"
                 return false
             }
         }
@@ -274,7 +285,10 @@ extension AppStore {
                     return left < right
                 }
             let dates = (selection[week] ?? []).sorted()
-            guard dates.count <= indices.count else { return false }
+            guard dates.count <= indices.count else {
+                lastScheduleSaveError = "第 \(week) 周只有 \(indices.count) 个训练位"
+                return false
+            }
             for (slot, index) in indices.enumerated() {
                 if slot < dates.count {
                     current.days[index].date = FitnessDate.startOfDay(dates[slot])
@@ -296,6 +310,7 @@ extension AppStore {
         }
         current.updatedAt = now
         plan = current
+        lastScheduleSaveError = nil
         toast = "训练日期已更新"
         persist()
         rescheduleNotifications()
