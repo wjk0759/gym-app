@@ -1791,6 +1791,52 @@ def test_context_week_one_starts_next_monday_for_midweek_plan(db):
     assert day["date"] == next_monday.isoformat()
 
 
+def test_edit_single_day_diet_strategy_and_undo(db, monkeypatch):
+    import asyncio
+
+    from app.config import settings
+    from app.services.meal_plans import save_day_plan
+
+    monkeypatch.setattr(settings, "llm_provider", "mock")
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    target = today + timedelta(days=(2 - today.weekday()) % 7 or 7)
+    save_day_plan(
+        db,
+        "user-1",
+        target,
+        {"marker": "old", "targets": {}, "meals": []},
+        strategy="balanced",
+        generated_by="template",
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "把周三的餐单改成低碳",
+        )
+    )
+    assert turn["intent"] == "diet.edit_day_strategy"
+    assert turn["pending"]["kind"] == "proposal"
+    assert turn["pending"]["payload"]["date"] == target.isoformat()
+    assert turn["pending"]["payload"]["strategy"] == "low_carb"
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    record = db.execute(
+        select(MealPlan).where(MealPlan.plan_date == target)
+    ).scalar_one()
+    assert record.strategy == "low_carb"
+    assert record.plan.get("marker") != "old"
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    restored = db.execute(
+        select(MealPlan).where(MealPlan.plan_date == target)
+    ).scalar_one()
+    assert restored.plan.get("marker") == "old"
+    assert restored.strategy == "balanced"
+
+
 def test_routing_eval_covers_deterministic_capabilities(db):
     """A small regression matrix for the intents the control plane owns.
 

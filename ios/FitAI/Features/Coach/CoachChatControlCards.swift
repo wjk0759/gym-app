@@ -110,7 +110,8 @@ extension CoachChatView {
                             || pending.capabilityID == "body.review_trend" {
                     reviewPendingContent(pending)
                 } else if pending.capabilityID == "diet.generate_day"
-                            || pending.capabilityID == "diet.generate_week" {
+                            || pending.capabilityID == "diet.generate_week"
+                            || pending.capabilityID == "diet.edit_day_strategy" {
                     dietPlanPendingContent(pending)
                 } else if pending.capabilityID == "training.generate_plan",
                           let plan = pending.payload?.plan {

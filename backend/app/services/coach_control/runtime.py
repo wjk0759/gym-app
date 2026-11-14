@@ -41,6 +41,7 @@ from .state import (
 DIET = "diet.log_food"
 DIET_PLAN = "diet.generate_day"
 DIET_WEEK = "diet.generate_week"
+DIET_DAY_STRATEGY = "diet.edit_day_strategy"
 DIET_REVIEW = "diet.review_day"
 PLANNED = "diet.log_planned_meal"
 SKIP_MEAL = "diet.skip_planned_meal"
@@ -163,6 +164,8 @@ def _last_action_capability(
 
 
 def _looks_like_correction(message: str) -> bool:
+    if _looks_like_diet_strategy_edit(message):
+        return False
     return bool(re.search(r"记错|不是|改成|应该是|修正|改一下", message))
 
 
@@ -287,6 +290,21 @@ def _looks_like_goal(message: str) -> bool:
 
 def _looks_like_review(message: str) -> bool:
     return bool(re.search(r"复盘|本周总结|这周怎么样|这周状态|周报", message))
+
+
+def _looks_like_diet_strategy_edit(message: str) -> bool:
+    if not re.search(
+        r"均衡|碳循环|低碳|高蛋白|地中海|素食|16\s*[:：]\s*8|168|轻断食",
+        message,
+    ):
+        return False
+    if not re.search(
+        r"今天|明天|后天|昨天|周[一二三四五六日天]|星期[一二三四五六日天]|"
+        r"礼拜[一二三四五六日天]|\d{1,2}月\d{1,2}[日号]",
+        message,
+    ):
+        return False
+    return bool(re.search(r"改成|换成|改为|调整|餐单|饮食", message))
 
 
 def _looks_like_diet_week(message: str) -> bool:
@@ -892,6 +910,43 @@ async def handle_turn(
         )
         reply = payload.get("summary") or "下一练已经整理好。"
         turn.intent = PREVIEW
+        turn.status = "completed"
+        turn.reply = reply
+        turn.latency_ms = int((time.perf_counter() - started) * 1000)
+        session.last_turn_at = utcnow()
+        session.updated_at = utcnow()
+        db.commit()
+        active = get_active_pending(db, user_id, session.id)
+        return {
+            "session": serialize_session(session, active),
+            "turn_id": turn.id,
+            "intent": turn.intent,
+            "status": turn.status,
+            "reply": reply,
+            "pending": serialize_pending(active),
+        }
+
+    if intent_override is None and _looks_like_diet_strategy_edit(text):
+        from .capabilities.diet_day_strategy import (
+            resolve as resolve_day_strategy,
+        )
+
+        resolution = await resolve_day_strategy(db, user_id, text)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            set_pending(
+                db,
+                session,
+                kind="proposal",
+                capability_id=DIET_DAY_STRATEGY,
+                payload=payload,
+            )
+            reply = f"{payload.get('summary') or '单日饮食草案好了。'}确认后保存。"
+        else:
+            reply = (
+                resolution.get("questions") or ["单日饮食策略暂时不能调整。"]
+            )[0]
+        turn.intent = DIET_DAY_STRATEGY
         turn.status = "completed"
         turn.reply = reply
         turn.latency_ms = int((time.perf_counter() - started) * 1000)
@@ -1646,6 +1701,26 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "BodyMetricLogged"
         entity_type = "body_metric"
         entity_id = action_id
+    elif pending.capability_id == DIET_DAY_STRATEGY:
+        from .capabilities.diet_day_strategy import (
+            execute as execute_day_strategy,
+        )
+
+        result = execute_day_strategy(db, user_id, action_id, pending.payload)
+        before = result.get("before") or {}
+        receipt = {
+            "summary": (
+                f"已保存 {pending.payload.get('date')} 的"
+                f"「{pending.payload.get('strategy')}」餐单"
+            ),
+            "capability_id": DIET_DAY_STRATEGY,
+            "date": pending.payload.get("date"),
+            "target_kcal": result.get("target_kcal"),
+            "deep_link": "fitai://nutrition",
+        }
+        event_type = "DietPlanGenerated"
+        entity_type = "meal_plan"
+        entity_id = str(pending.payload.get("date") or "")
     elif pending.capability_id == DIET_WEEK:
         from .capabilities.diet_week import execute as execute_diet_week
 
@@ -1870,6 +1945,17 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
         from .capabilities.body import undo as undo_weight
 
         result = undo_weight(db, user_id, action_id, record.payload)
+    elif record.capability_id == DIET_DAY_STRATEGY:
+        from .capabilities.diet_day_strategy import (
+            undo as undo_day_strategy,
+        )
+
+        result = undo_day_strategy(
+            db,
+            user_id,
+            record.before or {},
+            record.payload,
+        )
     elif record.capability_id == DIET_WEEK:
         from .capabilities.diet_week import undo as undo_diet_week
 
