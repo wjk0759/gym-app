@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`f998cd1`（控制平面 + V38；安全护栏/额度豁免、Inbox 未读闭环与跳餐提醒、历史分页、确定性路由评测、MetricKit 诊断、客户端漏斗埋点；后端 **409 passed**；`Backend Tests`、`iOS Build` 在 `2ddc364` 通过，`iOS Build` 在 `f998cd1` 通过；生产已部署 backend `b765b0c` + Flyway **V38**、iOS `a724db0`；macOS 已验证 `FitAITests` **81/81**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`5846339`（控制平面 + V38；安全护栏/额度豁免、Inbox 未读闭环与跳餐提醒、历史分页、确定性路由评测、MetricKit 诊断、客户端漏斗埋点；后端 **409 passed**；`Backend Tests` 在 `5846339` 通过，`iOS Build` 在 `f998cd1` 通过；生产已部署 backend `b765b0c` + Flyway **V38**、iOS `a724db0`；macOS 已验证 `FitAITests` **81/81**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -28,12 +28,13 @@
 
 ### 2026-11-14 · Windows（客户端漏斗埋点）
 
-- 代码提交：`2ddc364`、`f998cd1`
+- 代码提交：`2ddc364`、`f998cd1`、`5846339`
 - 新增：
   - `POST /telemetry/events` 批量接收客户端漏斗事件
   - 事件写入现有 `DomainEvent`（`type=ClientEvent`），无新迁移
   - iOS 本地持久化队列，最多 100 条，每批 20 条，失败下次前台重试
   - 登录后、回前台、切后台自动 flush
+  - 服务端只接受固定事件白名单，未知事件和超大属性直接丢弃
 - 已埋点：
   - `app_open`
   - `onboarding_completed`
@@ -48,10 +49,10 @@
   - 只带版本、目标类型、能力 ID、状态等枚举字段
 - 验证：
   - 后端 **409 passed**，Ruff 通过
-  - `Backend Tests`、`iOS Build` 在 `2ddc364` 通过
+  - `Backend Tests` 在 `5846339` 通过
   - `iOS Build` 在 `f998cd1` 通过
 - 部署：
-  - 无新迁移；部署 backend `2ddc364` + iOS `f998cd1`
+  - 无新迁移；部署 backend `5846339` + iOS `f998cd1`
 - 已知限制：
   - 还没有漏斗看板/SQL 报表
   - 购买事件未埋（IAP 仍 BLOCKED）
