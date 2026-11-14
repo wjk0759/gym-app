@@ -261,6 +261,10 @@ struct WorkoutSessionView: View {
             }
             .keyboardDoneToolbar()
             .onAppear {
+                Telemetry.shared.track(
+                    "workout_started",
+                    properties: ["day": day.title]
+                )
                 UIApplication.shared.isIdleTimerDisabled = true
                 loadDraftIfNeeded()
                 prefetchExerciseMedia()

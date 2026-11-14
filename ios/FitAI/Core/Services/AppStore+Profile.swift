@@ -4,6 +4,17 @@ extension AppStore {
     func completeOnboarding(_ draft: UserProfile) {
         var value = draft
         value.isOnboarded = true
+        let goal = value.goalType.rawValue
+        let weeklyDays = String(value.weeklyDays)
+        Task { @MainActor in
+            Telemetry.shared.track(
+                "onboarding_completed",
+                properties: [
+                    "goal": goal,
+                    "weekly_days": weeklyDays,
+                ]
+            )
+        }
         normalizeGoalStart(&value)
         profile = value
         appendBodyMetric(

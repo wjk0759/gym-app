@@ -202,8 +202,22 @@ extension AppStore {
                 assistant.isSafety = response.intent == "safety"
                 assistant.serverMessageID = "coach-\(response.turnID)-assistant"
                 self.chat.append(assistant)
+                Telemetry.shared.track(
+                    "coach_turn_completed",
+                    properties: [
+                        "intent": response.intent ?? "unknown",
+                        "status": response.status,
+                    ]
+                )
+                if response.intent == "safety" {
+                    Telemetry.shared.track("coach_safety_block")
+                }
                 self.persist()
             } catch {
+                Telemetry.shared.track(
+                    "coach_turn_failed",
+                    properties: ["stage": "turn"]
+                )
                 self.chat.append(
                     ChatMessage(
                         role: .assistant,
@@ -265,8 +279,16 @@ extension AppStore {
                 self.syncPendingUserData()
                 self.refreshWeeklyReview(force: true)
                 Task { await self.refreshDailyNutritionTargets() }
+                Telemetry.shared.track(
+                    "coach_pending_confirmed",
+                    properties: ["capability": pending.capabilityID]
+                )
                 self.persist()
             } catch {
+                Telemetry.shared.track(
+                    "coach_pending_confirm_failed",
+                    properties: ["capability": pending.capabilityID]
+                )
                 self.toast = "执行失败：\(error.localizedDescription)"
             }
         }
@@ -276,6 +298,12 @@ extension AppStore {
         guard let pending = coachPending, !isCoachControlWorking else { return }
         coachPending = nil
         persist()
+        Task { @MainActor in
+            Telemetry.shared.track(
+                "coach_pending_cancelled",
+                properties: ["capability": pending.capabilityID]
+            )
+        }
         Task {
             try? await APIClient.shared.cancelCoachPending(id: pending.id)
         }
@@ -322,11 +350,19 @@ extension AppStore {
                 self.refreshWeeklyReview(force: true)
                 Task { await self.refreshDailyNutritionTargets() }
                 self.toast = "已撤销"
+                Telemetry.shared.track(
+                    "coach_action_undone",
+                    properties: ["capability": receipt?.capabilityID ?? "unknown"]
+                )
                 self.chat.append(
                     ChatMessage(role: .assistant, text: "已撤销刚才的操作。")
                 )
                 self.persist()
             } catch {
+                Telemetry.shared.track(
+                    "coach_action_undo_failed",
+                    properties: ["capability": receipt?.capabilityID ?? "unknown"]
+                )
                 self.coachUndoActionID = actionID
                 self.coachReceipt = receipt
                 self.toast = "撤销失败：\(error.localizedDescription)"

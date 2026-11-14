@@ -236,6 +236,11 @@ extension APIClient {
         try await sendVoid(path: "coach/diagnostics", method: "POST", body: body)
     }
 
+    func sendClientEvents(_ events: [TelemetryEvent]) async throws {
+        let body = try JSONEncoder().encode(TelemetryEventBatch(events: events))
+        try await sendVoid(path: "telemetry/events", method: "POST", body: body)
+    }
+
     func coachHistory(
         sessionID: UUID,
         limit: Int = 50,

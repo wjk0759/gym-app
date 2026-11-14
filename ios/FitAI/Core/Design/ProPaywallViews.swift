@@ -97,5 +97,11 @@ struct ProPaywallSheet: View {
 
     var body: some View {
         PaywallView()
+            .onAppear {
+                Telemetry.shared.track(
+                    "paywall_shown",
+                    properties: ["feature": feature.rawValue]
+                )
+            }
     }
 }

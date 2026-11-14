@@ -504,6 +504,44 @@ def test_unsupported_turn_releases_free_quota(db):
     assert used == 0
 
 
+def test_client_events_are_ingested_and_excluded_from_context(db):
+    from app.routers.telemetry import (
+        ClientEventBatchIn,
+        ClientEventIn,
+        ingest_client_events,
+    )
+    from app.services.coach_control.context import build_control_context
+
+    result = ingest_client_events(
+        ClientEventBatchIn(
+            events=[
+                ClientEventIn(
+                    name="app_open",
+                    properties={"version": "0.1.0"},
+                ),
+                ClientEventIn(
+                    name="paywall_shown",
+                    properties={"feature": "coach"},
+                ),
+            ]
+        ),
+        "user-1",
+        db,
+    )
+    assert result == {"ok": True, "accepted": 2}
+
+    events = db.execute(
+        select(DomainEvent).where(DomainEvent.type == "ClientEvent")
+    ).scalars().all()
+    assert [event.payload["name"] for event in events] == [
+        "app_open",
+        "paywall_shown",
+    ]
+
+    context = build_control_context(db, "user-1")
+    assert all(item["type"] != "ClientEvent" for item in context["recent_events"])
+
+
 def test_client_diagnostic_is_audited(db):
     from app.routers.coach_control import ClientDiagnosticIn, upload_client_diagnostic
 

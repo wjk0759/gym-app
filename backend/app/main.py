@@ -30,6 +30,7 @@ from .routers import (
     plans,
     profile,
     schedule,
+    telemetry,
     videos,
     watch,
     workouts,
@@ -182,6 +183,7 @@ for module in (
     watch,
     schedule,
     iap,
+    telemetry,
 ):
     app.include_router(module.router, prefix=API_PREFIX)
 

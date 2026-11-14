@@ -67,9 +67,14 @@ struct RootView: View {
             isAuthenticated
         }
         .task {
+            Telemetry.shared.track(
+                "app_open",
+                properties: ["version": AppConfig.appVersion]
+            )
             WatchSyncManager.shared.activate()
             await auth.restoreIfNeeded()
             refreshSession()
+            Telemetry.shared.flush()
         }
         .onReceive(phaseTimer) { date in
             phaseNow = date
@@ -164,8 +169,10 @@ struct RootView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase != .active {
                 store.flushPersistence()
+                Telemetry.shared.flush()
             } else {
                 phaseNow = Date()
+                Telemetry.shared.flush()
                 if auth.isAuthenticated {
                     store.syncPendingWorkouts()
                     store.syncRemoteWorkouts()
