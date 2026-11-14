@@ -850,6 +850,71 @@ def test_card_and_draft_are_mutually_exclusive(db):
     assert db.execute(select(CoachSession)).scalar_one().pending_id == active[0].id
 
 
+def test_diet_day_review_is_deterministic_and_read_only(db):
+    import asyncio
+
+    from app.models import FoodLog
+
+    noon = datetime.now(ZoneInfo("Asia/Shanghai")).replace(
+        hour=12, minute=0, second=0, microsecond=0
+    )
+    db.add(
+        FoodLog(
+            user_id="user-1",
+            client_id="log-1",
+            logged_at=noon,
+            meal="lunch",
+            food_name="鸡胸肉",
+            grams=150,
+            kcal=250,
+            protein=35,
+            carbs=0,
+            fat=5,
+            fiber=0,
+            source="manual",
+        )
+    )
+    db.add(
+        FoodLog(
+            user_id="user-1",
+            client_id="log-2",
+            logged_at=noon,
+            meal="lunch",
+            food_name="米饭",
+            grams=200,
+            kcal=260,
+            protein=5,
+            carbs=58,
+            fat=1,
+            fiber=1,
+            source="manual",
+        )
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "今天饮食还缺什么？")
+    )
+    assert turn["intent"] == "diet.review_day"
+    assert turn["pending"]["kind"] == "insight"
+    assert turn["pending"]["capability_id"] == "diet.review_day"
+    assert "kcal" in turn["reply"]
+    assert "蛋白质" in turn["reply"]
+    assert len(turn["pending"]["payload"]["wins"]) == 3
+    assert db.execute(select(FoodLog)).scalars().all()
+
+    empty = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "昨天饮食怎么样",
+            session_id=turn["session"]["id"],
+        )
+    )
+    assert empty["intent"] == "diet.review_day"
+    assert "还没有饮食记录" in empty["reply"]
+
+
 def test_routing_eval_covers_deterministic_capabilities(db):
     """A small regression matrix for the intents the control plane owns.
 
@@ -894,6 +959,8 @@ def test_routing_eval_covers_deterministic_capabilities(db):
         ("深蹲 100 公斤 5 组 5 次", "training.log_strength"),
         ("体重 73.5kg", "body.log_weight"),
         ("帮我复盘本周", "review.weekly"),
+        ("今天饮食还缺什么", "diet.review_day"),
+        ("蛋白质够吗", "diet.review_day"),
         ("帮我生成一个 4 周计划", "training.generate_plan"),
         ("计划太累了，减量", "training.adjust_plan"),
         ("我想减脂，目标 72kg", "profile.update_goal"),

@@ -94,7 +94,8 @@ extension CoachChatView {
                     Text("还需要补充一点信息，直接在输入框回复即可。")
                         .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
-                } else if pending.capabilityID == "review.weekly" {
+                } else if pending.capabilityID == "review.weekly"
+                            || pending.capabilityID == "diet.review_day" {
                     reviewPendingContent(pending)
                 } else if pending.capabilityID == "training.generate_plan",
                           let plan = pending.payload?.plan {

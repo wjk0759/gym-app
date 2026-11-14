@@ -90,6 +90,22 @@ extension AppStore {
             return true
         }
 
+        let dietReview = value.range(
+            of: #"饮食|吃了|摄入|热量|卡路里|蛋白|营养|碳水|脂肪"#,
+            options: .regularExpression
+        ) != nil
+        let dietQuestion = value.range(
+            of: #"多少|怎么样|如何|够|缺|看看|总结|复盘|超"#,
+            options: .regularExpression
+        ) != nil
+        let weeklyReview = value.range(
+            of: #"本周|这周|一周|周报"#,
+            options: .regularExpression
+        ) != nil
+        if dietReview && dietQuestion && !weeklyReview {
+            return true
+        }
+
         if value.range(
             of: #"多少|热量|卡路里|为什么|怎么|吗|？|\?"#,
             options: .regularExpression

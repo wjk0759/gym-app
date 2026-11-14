@@ -39,6 +39,7 @@ from .state import (
 )
 
 DIET = "diet.log_food"
+DIET_REVIEW = "diet.review_day"
 PLANNED = "diet.log_planned_meal"
 SKIP_MEAL = "diet.skip_planned_meal"
 RESTORE_MEAL = "diet.restore_planned_meal"
@@ -188,6 +189,21 @@ def _looks_like_goal(message: str) -> bool:
 
 def _looks_like_review(message: str) -> bool:
     return bool(re.search(r"复盘|本周总结|这周怎么样|这周状态|周报", message))
+
+
+def _looks_like_diet_review(message: str) -> bool:
+    if re.search(r"本周|这周|一周|周报", message):
+        return False
+    return bool(
+        re.search(
+            r"饮食|吃了|摄入|热量|卡路里|蛋白|营养|碳水|脂肪",
+            message,
+        )
+        and re.search(
+            r"多少|怎么样|如何|够|缺|看看|总结|复盘|超",
+            message,
+        )
+    )
 
 
 def _looks_like_skip_training(message: str) -> bool:
@@ -490,6 +506,36 @@ async def handle_turn(
                 "reply": reply,
                 "pending": None,
             }
+
+    if intent_override is None and _looks_like_diet_review(text):
+        from .capabilities.diet_review import resolve as resolve_diet_review
+
+        resolution = resolve_diet_review(db, user_id, text)
+        payload = resolution["payload"]
+        set_pending(
+            db,
+            session,
+            kind="insight",
+            capability_id=DIET_REVIEW,
+            payload=payload,
+        )
+        reply = payload.get("summary") or "今天的饮食复盘已经生成。"
+        turn.intent = DIET_REVIEW
+        turn.status = "completed"
+        turn.reply = reply
+        turn.latency_ms = int((time.perf_counter() - started) * 1000)
+        session.last_turn_at = utcnow()
+        session.updated_at = utcnow()
+        db.commit()
+        active = get_active_pending(db, user_id, session.id)
+        return {
+            "session": serialize_session(session, active),
+            "turn_id": turn.id,
+            "intent": turn.intent,
+            "status": turn.status,
+            "reply": reply,
+            "pending": serialize_pending(active),
+        }
 
     if intent_override is None and _looks_like_review(text):
         from .capabilities.review import resolve as resolve_review
