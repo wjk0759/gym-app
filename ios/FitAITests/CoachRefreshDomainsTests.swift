@@ -37,6 +37,10 @@ final class CoachRefreshDomainsTests: XCTestCase {
             CoachRefreshDomains.domains(for: "training.configure_plan"),
             [.plan, .schedule, .workouts, .diet]
         )
+        XCTAssertEqual(
+            CoachRefreshDomains.domains(for: "memory.remember"),
+            [.profile]
+        )
     }
 
     func testUnknownCapabilityRefreshesNothing() {
