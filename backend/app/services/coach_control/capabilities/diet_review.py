@@ -48,12 +48,29 @@ def _day_label(value: date, today: date) -> str:
     return f"{value.month}月{value.day}日"
 
 
-def _targets(db: Session, user_id: str, profile: Profile | None) -> dict:
+def _targets(
+    db: Session,
+    user_id: str,
+    profile: Profile | None,
+    target_date: date,
+) -> dict:
     plan = db.execute(
         select(MealPlan)
-        .where(MealPlan.user_id == user_id)
+        .where(
+            MealPlan.user_id == user_id,
+            MealPlan.plan_date <= target_date,
+        )
         .order_by(MealPlan.plan_date.desc())
     ).scalars().first()
+    if plan is None:
+        plan = db.execute(
+            select(MealPlan)
+            .where(
+                MealPlan.user_id == user_id,
+                MealPlan.plan_date > target_date,
+            )
+            .order_by(MealPlan.plan_date.asc())
+        ).scalars().first()
     if plan is not None and plan.target_kcal:
         return {
             "target_kcal": int(plan.target_kcal),
@@ -90,7 +107,7 @@ def parse_target_date(message: str) -> date:
 def resolve(db: Session, user_id: str, message: str) -> dict:
     target_date = parse_target_date(message)
     profile = db.get(Profile, user_id)
-    targets = _targets(db, user_id, profile)
+    targets = _targets(db, user_id, profile, target_date)
     start = datetime.combine(
         target_date, time.min, tzinfo=DIET_TZ
     ).astimezone(timezone.utc)

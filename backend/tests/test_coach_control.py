@@ -915,6 +915,59 @@ def test_diet_day_review_is_deterministic_and_read_only(db):
     assert "还没有饮食记录" in empty["reply"]
 
 
+def test_diet_review_uses_the_plan_for_the_requested_day(db):
+    from app.models import MealPlan
+    from app.services.coach_control.capabilities import diet_review
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    db.add(
+        MealPlan(
+            user_id="user-1",
+            plan_date=today,
+            target_kcal=1800,
+            target_protein_g=120,
+            target_carb_g=180,
+            target_fat_g=60,
+            plan={},
+        )
+    )
+    db.add(
+        MealPlan(
+            user_id="user-1",
+            plan_date=today + timedelta(days=1),
+            target_kcal=2500,
+            target_protein_g=200,
+            target_carb_g=250,
+            target_fat_g=80,
+            plan={},
+        )
+    )
+    db.commit()
+    db.add(
+        FoodLog(
+            user_id="user-1",
+            client_id="review-log-1",
+            logged_at=datetime.now(ZoneInfo("Asia/Shanghai")).replace(
+                hour=12, minute=0, second=0, microsecond=0
+            ),
+            meal="lunch",
+            food_name="鸡胸肉",
+            grams=150,
+            kcal=250,
+            protein=35,
+            carbs=0,
+            fat=5,
+            fiber=0,
+            source="manual",
+        )
+    )
+    db.commit()
+
+    payload = diet_review.resolve(db, "user-1", "今天饮食怎么样")["payload"]
+    assert "1800 kcal" in payload["summary"]
+    assert "120 g" in payload["summary"]
+
+
 def test_routing_eval_covers_deterministic_capabilities(db):
     """A small regression matrix for the intents the control plane owns.
 
