@@ -5,6 +5,7 @@ from . import (  # noqa: F401
     body_review,
     coach_answer,
     diet,
+    diet_plan,
     diet_review,
     plan,
     profile,

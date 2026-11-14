@@ -90,6 +90,13 @@ extension AppStore {
             return true
         }
 
+        if value.range(
+            of: #"排.*餐|安排.*餐|安排.*饮食|饮食.*安排|饮食计划|餐单|食谱|明天吃什么|今天吃什么|一周.*餐"#,
+            options: .regularExpression
+        ) != nil {
+            return true
+        }
+
         let dietReview = value.range(
             of: #"饮食|吃了|摄入|热量|卡路里|蛋白|营养|碳水|脂肪"#,
             options: .regularExpression

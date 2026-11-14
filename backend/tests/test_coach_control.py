@@ -1127,6 +1127,49 @@ def test_body_composition_metrics_confirm_and_undo(db):
     assert db.execute(select(BodyMetric)).scalars().all() == []
 
 
+def test_diet_plan_generation_confirm_and_undo(db, monkeypatch):
+    import asyncio
+
+    from app.config import settings
+    from app.models import MealPlan
+    from app.services.meal_plans import save_day_plan
+
+    monkeypatch.setattr(settings, "llm_provider", "mock")
+    tomorrow = datetime.now(ZoneInfo("Asia/Shanghai")).date() + timedelta(days=1)
+    save_day_plan(
+        db,
+        "user-1",
+        tomorrow,
+        {"marker": "old", "targets": {}, "meals": []},
+        strategy="balanced",
+        generated_by="template",
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "帮我排明天的餐")
+    )
+    assert turn["intent"] == "diet.generate_day"
+    assert turn["pending"]["kind"] == "proposal"
+    payload = turn["pending"]["payload"]
+    assert payload["date"] == tomorrow.isoformat()
+    assert payload["diet_plan"]["meals"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert confirmed["status"] == "executed"
+    assert "饮食计划" in confirmed["receipt"]["summary"]
+    record = db.execute(select(MealPlan)).scalar_one()
+    assert record.plan.get("marker") != "old"
+    assert record.target_kcal
+    assert db.execute(
+        select(DomainEvent).where(DomainEvent.type == "DietPlanGenerated")
+    ).scalar_one()
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    restored = db.execute(select(MealPlan)).scalar_one()
+    assert restored.plan.get("marker") == "old"
+
+
 def test_routing_eval_covers_deterministic_capabilities(db):
     """A small regression matrix for the intents the control plane owns.
 
