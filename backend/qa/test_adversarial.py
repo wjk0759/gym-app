@@ -312,3 +312,44 @@ def test_week_schedule_understands_next_next_week(db):
     assert result["intent"] == "training.week_schedule", result
     expected = (this_monday + timedelta(days=14)).isoformat()
     assert expected[5:] in result["reply"] or "第3周训练" in result["reply"], result["reply"]
+
+
+def test_plan_day_state_ids_are_case_insensitive(db):
+    from app.models import PlanDayState, Program, ProgramDay
+    from app.services.coach_control.context import with_plan_context
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    program = Program(
+        id="qa-plan-case",
+        user_id="user-1",
+        title="大小写测试",
+        goal_type="recomp",
+        version=1,
+        status="active",
+        start_date=today - timedelta(days=1),
+        weeks=4,
+    )
+    day = ProgramDay(
+        id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+        program_id=program.id,
+        week_index=1,
+        weekday=1,
+        title="胸",
+        focus=["chest"],
+    )
+    db.add(program)
+    db.add(day)
+    db.add(
+        PlanDayState(
+            user_id="user-1",
+            plan_id=program.id,
+            day_id=day.id.upper(),
+            assigned_date=today + timedelta(days=5),
+            client_updated_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+        )
+    )
+    db.commit()
+    context = with_plan_context(db, "user-1", None)
+    actual = context.get("plan", {}).get("days", [{}])[0].get("date")
+    assert actual == (today + timedelta(days=5)).isoformat(), actual
