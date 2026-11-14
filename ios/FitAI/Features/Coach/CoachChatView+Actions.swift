@@ -185,21 +185,11 @@ extension CoachChatView {
         input = ""
         focused = false
         KeyboardDismiss.dismiss()
-        if store.canRouteToCoachControl(trimmed) {
-            store.sendCoachControlTurn(trimmed)
-            return
-        }
-        if store.planAdjustmentStage == 0,
-           store.shouldUseCoachFreeChat(trimmed),
-           store.canUseRemoteAI || !store.hasProAccess {
-            store.sendCoachControlTurn(trimmed)
-            return
-        }
         if store.canUseRemoteAI || !store.hasProAccess {
-            // 免费用户一律先交给 Agent：文字教练只受每日额度约束，
-            // 不能因为“像计划调整”就在发送前弹订阅。
-            store.sendChat(trimmed)
-        } else if store.planAdjustmentStage > 0 {
+            store.sendCoachControlTurn(trimmed)
+            return
+        }
+        if store.planAdjustmentStage > 0 {
             guard store.requirePro(.trainingPlan) else { return }
             store.sendPlanAdjustmentMessage(trimmed)
         } else if store.isPlanScheduleRequest(trimmed) {

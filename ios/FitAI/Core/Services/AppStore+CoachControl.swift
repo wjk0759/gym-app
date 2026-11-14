@@ -39,6 +39,64 @@ extension AppStore {
     func canRouteToCoachControl(_ text: String) -> Bool {
         let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !value.isEmpty else { return false }
+
+        let deleteVerb = value.range(
+            of: #"删掉|删除|去掉|移除"#,
+            options: .regularExpression
+        ) != nil
+        let editVerb = value.range(
+            of: #"改成|改为|修正|应该是|改一下|调整"#,
+            options: .regularExpression
+        ) != nil
+        let foodWords = value.range(
+            of: #"早餐|午饭|午餐|晚饭|晚餐|加餐|夜宵|吃了|喝的|食物|鸡|牛|猪|鱼|蛋|奶|饭|面|菜|果|肉"#,
+            options: .regularExpression
+        ) != nil
+        if foodWords && (deleteVerb || editVerb) {
+            return true
+        }
+        let workoutWords = value.range(
+            of: #"训练记录|跑步|有氧|运动|时长|分钟|组|重量|kg|公斤"#,
+            options: [.regularExpression, .caseInsensitive]
+        ) != nil
+        let bodyWords = value.range(
+            of: #"体重|体脂|腰围|臂围|腿围|身体"#,
+            options: .regularExpression
+        ) != nil
+        if workoutWords && (deleteVerb || editVerb) && !bodyWords {
+            return true
+        }
+        let planShape = value.range(
+            of: #"每周\s*\d|[1-5]\s*分化|推拉腿|周[一二三四五六日天].*周[一二三四五六日天]"#,
+            options: .regularExpression
+        ) != nil
+        let planMinutes = value.range(
+            of: #"\d{2,3}\s*分钟"#,
+            options: .regularExpression
+        ) != nil
+        if planShape && (value.contains("计划") || value.contains("每周") || value.contains("分化")) {
+            return true
+        }
+        if planMinutes && value.contains("计划") && (editVerb || value.contains("安排") || value.contains("调")) {
+            return true
+        }
+        if value.range(
+            of: #"开始训练|开始今天|带我练|开始练|练起来|开始今天的训练"#,
+            options: .regularExpression
+        ) != nil {
+            return true
+        }
+        if value.range(
+            of: #"打开|进入|跳到|去一下"#,
+            options: .regularExpression
+        ) != nil,
+           value.range(
+               of: #"训练记录|训练历史|训练安排|日程|饮食|身体|体型|设置|档案|计划|教练|器械|记忆|经期|今天"#,
+               options: .regularExpression
+           ) != nil {
+            return true
+        }
+
         let reschedule = value.range(
             of: #"改到|改期|顺延|换到|挪到|调到"#,
             options: .regularExpression
@@ -483,6 +541,20 @@ extension AppStore {
                 self.coachReceipt = response.receipt
                 self.coachUndoActionID = response.actionID
                 self.scheduleCoachUndoDismissal()
+                if pending.capabilityID.hasPrefix("ui.") {
+                    self.coachUndoActionID = nil
+                    self.coachUndoExpiresAt = nil
+                }
+                if pending.capabilityID == "ui.start_training",
+                   let raw = pending.payload?.dayID,
+                   let dayID = UUID(uuidString: raw),
+                   let day = self.plan?.days.first(where: { $0.id == dayID }) {
+                    self.selectedTab = AppTab.today.rawValue
+                    self.workoutLaunchDayID = day.id
+                }
+                if pending.capabilityID == "ui.open_screen" {
+                    self.openCoachScreen(pending.payload?.screen)
+                }
                 if pending.capabilityID == "training.reschedule" {
                     self.applyCoachPlanDate(
                         dayID: pending.payload?.dayID,
@@ -796,6 +868,45 @@ extension AppStore {
         updated.updatedAt = Date()
         plan = updated
         persist()
+    }
+
+    private func openCoachScreen(_ screen: String?) {
+        guard let screen else { return }
+        switch screen {
+        case "today":
+            selectedTab = AppTab.today.rawValue
+        case "plan":
+            selectedTab = AppTab.record.rawValue
+        case "coach":
+            selectedTab = AppTab.coach.rawValue
+        case "equipment":
+            selectedTab = AppTab.discover.rawValue
+        case "profile":
+            selectedTab = AppTab.profile.rawValue
+        case "profile_edit":
+            selectedTab = AppTab.profile.rawValue
+            pendingRoute = .profileEdit
+        case "training_schedule":
+            selectedTab = AppTab.record.rawValue
+            pendingRoute = .trainingSchedule
+        case "nutrition":
+            selectedTab = AppTab.today.rawValue
+            pendingRoute = .nutrition
+        case "body_checkin":
+            selectedTab = AppTab.today.rawValue
+            pendingRoute = .bodyCheckIn
+        case "workout_history":
+            selectedTab = AppTab.record.rawValue
+            pendingRoute = .workoutHistory
+        case "agent_memory":
+            selectedTab = AppTab.profile.rawValue
+            pendingRoute = .agentMemory
+        case "period_schedule":
+            selectedTab = AppTab.record.rawValue
+            pendingRoute = .periodSchedule
+        default:
+            break
+        }
     }
 
     private func applyCoachGoal(pending: CoachPendingState) {

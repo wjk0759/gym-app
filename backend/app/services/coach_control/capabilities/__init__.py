@@ -9,7 +9,10 @@ from . import (  # noqa: F401
     diet_plan,
     diet_review,
     diet_week,
+    log_edit,
+    memory,
     plan,
+    plan_configure,
     profile,
     review,
     training,
@@ -18,4 +21,5 @@ from . import (  # noqa: F401
     training_exercise_edit,
     training_preview,
     training_week,
+    ui_actions,
 )

@@ -337,7 +337,7 @@ extension APIClient {
 
     func agentWeeklyReview() async throws -> AgentWeeklyReview {
         try await send(
-            path: "agent/reviews/weekly",
+            path: "coach/reviews/weekly",
             method: "POST",
             body: try JSONSerialization.data(withJSONObject: [:])
         )
@@ -362,7 +362,7 @@ extension APIClient {
 
     func agentMemories() async throws -> [AgentMemory] {
         let response: AgentMemoryResponse = try await send(
-            path: "agent/memories",
+            path: "coach/memories",
             method: "GET",
             body: nil
         )
@@ -371,7 +371,7 @@ extension APIClient {
 
     func deleteAgentMemory(id: String) async throws {
         try await sendVoid(
-            path: "agent/memories/\(id)",
+            path: "coach/memories/\(id)",
             method: "DELETE",
             body: nil
         )

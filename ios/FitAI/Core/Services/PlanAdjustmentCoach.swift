@@ -46,6 +46,10 @@ extension AppStore {
 
     func beginPlanAdjustment() {
         planAdjustmentRequested = false
+        if canUseRemoteAI || !hasProAccess {
+            sendCoachControlTurn("我想调整训练计划")
+            return
+        }
         guard planAdjustmentStage == 0 else { return }
         planAdjustmentStage = 1
         planAdjustmentIssue = ""

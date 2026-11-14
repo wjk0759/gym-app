@@ -113,9 +113,28 @@ extension CoachChatView {
                             || pending.capabilityID == "diet.generate_week"
                             || pending.capabilityID == "diet.edit_day_strategy" {
                     dietPlanPendingContent(pending)
-                } else if pending.capabilityID == "training.generate_plan",
+                } else if pending.capabilityID == "training.generate_plan"
+                            || pending.capabilityID == "training.configure_plan",
                           let plan = pending.payload?.plan {
                     planPendingContent(plan)
+                } else if pending.capabilityID == "diet.update_log"
+                            || pending.capabilityID == "diet.delete_log" {
+                    dietEditPendingContent(pending)
+                } else if pending.capabilityID == "training.update_workout"
+                            || pending.capabilityID == "training.delete_workout" {
+                    workoutEditPendingContent(pending)
+                } else if pending.capabilityID == "ui.start_training" {
+                    Text("开始「\(pending.payload?.title ?? "训练")」")
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                } else if pending.capabilityID == "ui.open_screen" {
+                    Text("打开「\(pending.payload?.title ?? "页面")」")
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                } else if pending.capabilityID == "memory.remember" {
+                    Text("记住「\(pending.payload?.content ?? "")」")
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
                 } else if pending.capabilityID == "diet.log_food" {
                     dietPendingContent(pending)
                 } else if pending.capabilityID == "training.reschedule" {
@@ -189,6 +208,56 @@ extension CoachChatView {
             parts.append("腿围 \(String(format: "%.1f", value)) cm")
         }
         return parts.isEmpty ? "准备记录身体数据" : parts.joined(separator: " · ")
+    }
+
+    private func dietEditPendingContent(_ pending: CoachPendingState) -> some View {
+        let payload = pending.payload
+        let name = payload?.foodName ?? "饮食记录"
+        let isDelete = pending.capabilityID == "diet.delete_log"
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(isDelete ? "删除「\(name)」" : "修改「\(name)」")
+                .font(AppType.callout.weight(.semibold))
+                .foregroundStyle(Theme.ink)
+            if let date = payload?.date {
+                Text("\(date) · \(mealLabel(payload?.meal))")
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.secondaryText)
+            }
+            if !isDelete {
+                HStack(spacing: 8) {
+                    if let grams = payload?.grams {
+                        Text("\(grams.formatted(.number.precision(.fractionLength(0...1)))) g")
+                    }
+                    if let kcal = payload?.kcal {
+                        Text("约 \(kcal.formatted(.number.precision(.fractionLength(0)))) kcal")
+                    }
+                }
+                .font(AppType.caption)
+                .foregroundStyle(Theme.secondaryText)
+            }
+        }
+    }
+
+    private func workoutEditPendingContent(_ pending: CoachPendingState) -> some View {
+        let payload = pending.payload
+        let isDelete = pending.capabilityID == "training.delete_workout"
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(isDelete ? "删除这条训练记录" : "修改训练记录")
+                .font(AppType.callout.weight(.semibold))
+                .foregroundStyle(Theme.ink)
+            if !isDelete {
+                HStack(spacing: 8) {
+                    if let minutes = payload?.durationMinutes {
+                        Text("时长 \(minutes) 分钟")
+                    }
+                    if let sets = payload?.sets, !sets.isEmpty {
+                        Text("更新 \(sets.count) 组")
+                    }
+                }
+                .font(AppType.caption)
+                .foregroundStyle(Theme.secondaryText)
+            }
+        }
     }
 
     private func dietPendingContent(_ pending: CoachPendingState) -> some View {
@@ -426,7 +495,9 @@ extension CoachChatView {
             VStack(alignment: .leading, spacing: 9) {
                 CoachCardHeader(
                     eyebrow: "COACH / 已完成",
-                    status: store.coachUndoExpiresAt == nil ? "可撤销" : "5 秒内可撤销"
+                    status: store.coachUndoActionID == nil
+                        ? "已完成"
+                        : (store.coachUndoExpiresAt == nil ? "可撤销" : "5 秒内可撤销")
                 )
                 Text(receipt.summary ?? "操作已完成")
                     .font(AppType.callout)
@@ -436,7 +507,8 @@ extension CoachChatView {
                         .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }
-                if let deadline = store.coachUndoExpiresAt {
+                if store.coachUndoActionID != nil,
+                   let deadline = store.coachUndoExpiresAt {
                     TimelineView(.periodic(from: .now, by: 0.1)) { context in
                         let remaining = max(0, deadline.timeIntervalSince(context.date))
                         ProgressView(value: remaining, total: 5)

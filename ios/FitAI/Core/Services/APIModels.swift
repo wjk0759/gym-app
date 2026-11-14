@@ -375,6 +375,13 @@ struct AgentActionPayload: Codable, Hashable {
     let waistCM: Double?
     let armCM: Double?
     let thighCM: Double?
+    let foodName: String?
+    let grams: Double?
+    let kcal: Double?
+    let proteinG: Double?
+    let carbsG: Double?
+    let fatG: Double?
+    let fiberG: Double?
     let strategy: String?
     let weekStart: String?
     var meal: String?
@@ -397,6 +404,8 @@ struct AgentActionPayload: Codable, Hashable {
     let plan: TrainingPlan?
     /// Inbox cards can hand the user a one-tap prompt for the coach.
     let prompt: String?
+    /// Memory capability payload.
+    let content: String?
 
     enum CodingKeys: String, CodingKey {
         case dayID = "day_id"
@@ -416,6 +425,13 @@ struct AgentActionPayload: Codable, Hashable {
         case waistCM = "waist_cm"
         case armCM = "arm_cm"
         case thighCM = "thigh_cm"
+        case foodName = "food_name"
+        case grams
+        case kcal
+        case proteinG = "protein_g"
+        case carbsG = "carbs_g"
+        case fatG = "fat_g"
+        case fiberG = "fiber_g"
         case strategy
         case weekStart = "week_start"
         case meal
@@ -437,6 +453,7 @@ struct AgentActionPayload: Codable, Hashable {
         case generatedAt = "generated_at"
         case plan
         case prompt
+        case content
     }
 }
 

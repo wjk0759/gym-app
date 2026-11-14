@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta, timezone
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -24,7 +25,9 @@ from app.models import (
     Profile,
     Program,
     ProgramDay,
+    SetLog,
     User,
+    WorkoutSession,
 )
 from app.services.coach_control import runtime
 
@@ -1284,7 +1287,7 @@ def test_write_capabilities_declare_refresh_domains():
     from app.services.coach_control.registry import CAPABILITIES
 
     for capability in CAPABILITIES.values():
-        if capability.kind == "write":
+        if capability.kind == "write" and not capability.id.startswith("ui."):
             assert capability.refreshes, capability.id
 
 
@@ -2058,3 +2061,250 @@ def test_routing_eval_covers_deterministic_capabilities(db):
             mismatches.append((message, expected, turn["intent"], turn["reply"]))
 
     assert not mismatches, mismatches
+
+
+def test_update_and_delete_food_log_via_control_plane(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    client_id = str(uuid4())
+    db.add(
+        FoodLog(
+            user_id="user-1",
+            client_id=client_id,
+            logged_at=datetime.combine(
+                today, datetime.min.time().replace(hour=12),
+                tzinfo=ZoneInfo("Asia/Shanghai"),
+            ).astimezone(timezone.utc),
+            meal="lunch",
+            food_name="鸡胸肉",
+            grams=100,
+            kcal=120,
+            protein=20,
+            carbs=2,
+            fat=3,
+            fiber=1,
+            source="manual",
+        )
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "把午饭的鸡胸肉改成150g")
+    )
+    assert turn["intent"] == "diet.update_log"
+    assert turn["pending"]["kind"] == "card"
+    payload = turn["pending"]["payload"]
+    assert payload["grams"] == 150
+    assert payload["kcal"] == 180
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert confirmed["status"] == "executed"
+    log = db.execute(
+        select(FoodLog).where(FoodLog.client_id == client_id)
+    ).scalar_one()
+    assert log.grams == 150
+    assert log.kcal == 180
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    log = db.execute(
+        select(FoodLog).where(FoodLog.client_id == client_id)
+    ).scalar_one()
+    assert log.grams == 100
+    assert log.kcal == 120
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "删掉午饭的鸡胸肉")
+    )
+    assert turn["intent"] == "diet.delete_log"
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert (
+        db.execute(
+            select(FoodLog).where(FoodLog.client_id == client_id)
+        ).scalar_one_or_none()
+        is None
+    )
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert (
+        db.execute(
+            select(FoodLog).where(FoodLog.client_id == client_id)
+        ).scalar_one_or_none()
+        is not None
+    )
+
+
+def test_update_and_delete_workout_via_control_plane(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    started = datetime.combine(
+        today, datetime.min.time().replace(hour=8),
+        tzinfo=ZoneInfo("Asia/Shanghai"),
+    ).astimezone(timezone.utc)
+    session = WorkoutSession(
+        user_id="user-1",
+        source="phone",
+        started_at=started,
+        finished_at=started + timedelta(minutes=30),
+        duration_min=30,
+        notes="跑步",
+        sets=[
+            SetLog(
+                exercise_slug="bench_press",
+                set_index=1,
+                weight_kg=40,
+                reps=10,
+                completed=True,
+            )
+        ],
+    )
+    db.add(session)
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "把今天跑步改成40分钟")
+    )
+    assert turn["intent"] == "training.update_workout"
+    assert turn["pending"]["payload"]["duration_minutes"] == 40
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    db.refresh(session)
+    assert session.duration_min == 40
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    db.refresh(session)
+    assert session.duration_min == 30
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "删掉今天跑步记录")
+    )
+    assert turn["intent"] == "training.delete_workout"
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert db.get(WorkoutSession, session.id) is None
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.get(WorkoutSession, session.id) is not None
+
+
+def test_configure_plan_parses_shape_and_activates(db, monkeypatch):
+    import asyncio
+
+    from app.services import access
+    from app.services.coach_control.capabilities import plan_configure
+
+    monkeypatch.setattr(access, "has_pro", lambda db, user_id: True)
+    captured = {}
+
+    def fake_build(db, profile, goal_type, **kwargs):
+        captured.update(kwargs)
+        return {
+            "title": "测试配置计划",
+            "weeks": 4,
+            "days": [
+                {
+                    "week_index": 1,
+                    "weekday": 2,
+                    "title": "胸",
+                    "focus": ["chest"],
+                    "exercises": [
+                        {
+                            "slug": "bench_press",
+                            "order_index": 1,
+                            "sets": 3,
+                            "reps": "8-10",
+                            "rest_sec": 90,
+                            "weight_kg": 20,
+                            "rpe": 7,
+                        }
+                    ],
+                }
+            ],
+        }
+
+    monkeypatch.setattr(plan_configure, "build_template_plan", fake_build)
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "把计划改成每周3练，二四六，45分钟，3分化",
+        )
+    )
+    assert turn["intent"] == "training.configure_plan"
+    assert turn["pending"]["kind"] == "proposal"
+    assert captured["weekly_days"] == 3
+    assert captured["weekdays"] == [2, 4, 6]
+    assert captured["session_minutes"] == 45
+    assert captured["split"] == "3分化"
+
+    program_id = turn["pending"]["payload"]["program_id"]
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert confirmed["status"] == "executed"
+    program = db.get(Program, program_id)
+    assert program.status == "active"
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.get(Program, program_id).status == "archived"
+
+
+def test_start_training_and_open_screen_via_control_plane(db):
+    import asyncio
+
+    context = {
+        "plan": {
+            "id": "plan-1",
+            "days": [
+                {
+                    "id": "day-1",
+                    "date": "2026-11-16",
+                    "title": "胸",
+                    "completed": False,
+                    "skipped": False,
+                }
+            ],
+        }
+    }
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "开始训练",
+            app_context=context,
+        )
+    )
+    assert turn["intent"] == "ui.start_training"
+    assert turn["pending"]["kind"] == "card"
+    assert turn["pending"]["payload"]["day_id"] == "day-1"
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert confirmed["status"] == "executed"
+    assert confirmed["receipt"]["day_id"] == "day-1"
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "打开训练记录")
+    )
+    assert turn["intent"] == "ui.open_screen"
+    assert turn["pending"]["payload"]["screen"] == "workout_history"
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert confirmed["status"] == "executed"
+    assert confirmed["receipt"]["screen"] == "workout_history"
+
+
+def test_remember_preference_via_control_plane(db):
+    import asyncio
+
+    from app.models import AIMemory
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "记住我每周二四六练")
+    )
+    assert turn["intent"] == "memory.remember"
+    assert turn["pending"]["kind"] == "card"
+    assert turn["pending"]["payload"]["content"] == "我每周二四六练"
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert confirmed["status"] == "executed"
+    memory = db.execute(select(AIMemory)).scalar_one()
+    assert memory.content == "我每周二四六练"
+    assert memory.active is True
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    db.refresh(memory)
+    assert memory.active is False

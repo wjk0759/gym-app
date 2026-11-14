@@ -296,10 +296,12 @@ func detailSection<Content: View>(
 
 func coachCard(for item: EquipmentItem) -> some View {
         Button {
-            store.sendChat(
-                "请用简单步骤讲解\(item.name)的起始位置、发力顺序和常见错误。",
-                skill: .trainer
-            )
+            let prompt = "请用简单步骤讲解\(item.name)的起始位置、发力顺序和常见错误。"
+            if store.canUseRemoteAI || !store.hasProAccess {
+                store.sendCoachControlTurn(prompt)
+            } else {
+                store.sendChat(prompt, skill: .trainer)
+            }
             showCoach = true
         } label: {
             HStack(spacing: 10) {

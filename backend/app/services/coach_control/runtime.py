@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ...models import (
+    AgentActionEvent,
     CoachActionRecord,
     CoachPending,
     CoachSession,
@@ -40,6 +41,8 @@ from .state import (
 )
 
 DIET = "diet.log_food"
+DIET_UPDATE = "diet.update_log"
+DIET_DELETE = "diet.delete_log"
 DIET_PLAN = "diet.generate_day"
 DIET_WEEK = "diet.generate_week"
 DIET_DAY_STRATEGY = "diet.edit_day_strategy"
@@ -51,6 +54,8 @@ SWAP_MEAL = "diet.swap_meal"
 TRAINING = "training.reschedule"
 SKIP_TRAINING = "training.skip"
 CARDIO = "training.log_cardio"
+UPDATE_WORKOUT = "training.update_workout"
+DELETE_WORKOUT = "training.delete_workout"
 PREVIEW = "training.preview_next"
 WEEK_SCHEDULE = "training.week_schedule"
 EDIT_EXERCISES = "training.edit_day_exercises"
@@ -63,6 +68,10 @@ REVIEW = "review.weekly"
 GOAL = "profile.update_goal"
 PLAN = "training.generate_plan"
 ADJUST_PLAN = "training.adjust_plan"
+CONFIGURE_PLAN = "training.configure_plan"
+START_TRAINING_UI = "ui.start_training"
+OPEN_SCREEN_UI = "ui.open_screen"
+MEMORY = "memory.remember"
 
 
 def _looks_like_reschedule(message: str) -> bool:
@@ -167,7 +176,95 @@ def _last_action_capability(
 def _looks_like_correction(message: str) -> bool:
     if _looks_like_diet_strategy_edit(message):
         return False
+    if (
+        _looks_like_food_update(message)
+        or _looks_like_food_delete(message)
+        or _looks_like_workout_update(message)
+        or _looks_like_workout_delete(message)
+        or _looks_like_plan_configure(message)
+    ):
+        return False
     return bool(re.search(r"记错|不是|改成|应该是|修正|改一下", message))
+
+
+def _looks_like_food_delete(message: str) -> bool:
+    return bool(
+        re.search(r"删掉|删除|去掉|移除", message)
+        and re.search(
+            r"饮食|早餐|午饭|午餐|晚饭|晚餐|加餐|夜宵|吃了|喝的|食物|"
+            r"鸡|牛|猪|鱼|蛋|奶|饭|面|菜|果|肉",
+            message,
+        )
+    )
+
+
+def _looks_like_food_update(message: str) -> bool:
+    return bool(
+        re.search(r"改成|改为|修正|应该是|改一下|调整", message)
+        and re.search(
+            r"早餐|午饭|午餐|晚饭|晚餐|加餐|夜宵|吃了|喝的|食物|"
+            r"鸡|牛|猪|鱼|蛋|奶|饭|面|菜|果|肉|克|"
+            r"kcal|千卡|大卡",
+            message,
+            flags=re.IGNORECASE,
+        )
+    )
+
+
+def _looks_like_workout_delete(message: str) -> bool:
+    return bool(
+        re.search(r"删掉|删除|去掉|移除", message)
+        and re.search(r"训练|跑步|有氧|运动|记录|这条|那次", message)
+    )
+
+
+def _looks_like_workout_update(message: str) -> bool:
+    return bool(
+        re.search(r"改成|改为|修正|改一下|调整", message)
+        and re.search(
+            r"训练记录|跑步|有氧|运动|时长|分钟|组|重量|kg|公斤",
+            message,
+            flags=re.IGNORECASE,
+        )
+    )
+
+
+def _looks_like_plan_configure(message: str) -> bool:
+    has_shape = bool(
+        re.search(
+            r"每周\s*\d|[1-5]\s*分化|推拉腿|"
+            r"周[一二三四五六日天].*周[一二三四五六日天]",
+            message,
+        )
+    )
+    has_minutes = bool(re.search(r"\d{2,3}\s*分钟", message))
+    has_plan = "计划" in message
+    if has_shape and (has_plan or "每周" in message or "分化" in message):
+        return True
+    return has_plan and has_minutes and bool(re.search(r"改|调|安排", message))
+
+
+def _looks_like_memory(message: str) -> bool:
+    return bool(
+        re.match(r"^(?:请)?(?:帮我)?(?:记住|记一下|记下)", message.strip())
+    )
+
+
+def _looks_like_start_training(message: str) -> bool:
+    return bool(
+        re.search(r"开始训练|开始今天|带我练|开始练|练起来|开始今天的训练", message)
+    )
+
+
+def _looks_like_open_screen(message: str) -> bool:
+    return bool(
+        re.search(r"打开|进入|跳到|去一下", message)
+        and re.search(
+            r"训练记录|训练历史|训练安排|日程|饮食|身体|体型|设置|档案|"
+            r"计划|教练|器械|记忆|经期|今天",
+            message,
+        )
+    )
 
 
 def _looks_like_plan(message: str) -> bool:
@@ -459,6 +556,50 @@ def _pending_draft(
     )
 
 
+def _finish_pending(
+    db: Session,
+    session: CoachSession,
+    turn: CoachTurn,
+    started: float,
+    *,
+    capability_id: str,
+    payload: dict,
+    reply: str,
+    kind: str = "card",
+) -> dict:
+    if kind == "proposal":
+        set_pending(
+            db,
+            session,
+            kind="proposal",
+            capability_id=capability_id,
+            payload=payload,
+        )
+    else:
+        _pending_card(
+            db,
+            session,
+            capability_id=capability_id,
+            payload=payload,
+        )
+    turn.intent = capability_id
+    turn.status = "completed"
+    turn.reply = reply
+    turn.latency_ms = int((time.perf_counter() - started) * 1000)
+    session.last_turn_at = utcnow()
+    session.updated_at = utcnow()
+    db.commit()
+    active = get_active_pending(db, session.user_id, session.id)
+    return {
+        "session": serialize_session(session, active),
+        "turn_id": turn.id,
+        "intent": turn.intent,
+        "status": turn.status,
+        "reply": reply,
+        "pending": serialize_pending(active),
+    }
+
+
 def _food_reply(resolution: dict) -> str:
     items = resolution.get("items") or []
     kcal = round(sum(float(item.get("kcal") or 0) for item in items))
@@ -489,6 +630,32 @@ def _training_reply(payload: dict) -> str:
         f"准备把「{payload.get('title') or '训练'}」"
         f"从 {payload.get('from_date')} 改到 {payload.get('to_date')}。确认后生效。"
     )
+
+
+def _finish_reply(
+    db: Session,
+    session: CoachSession,
+    turn: CoachTurn,
+    started: float,
+    *,
+    intent: str,
+    reply: str,
+) -> dict:
+    turn.intent = intent
+    turn.status = "completed"
+    turn.reply = reply
+    turn.latency_ms = int((time.perf_counter() - started) * 1000)
+    session.last_turn_at = utcnow()
+    session.updated_at = utcnow()
+    db.commit()
+    return {
+        "session": serialize_session(session, None),
+        "turn_id": turn.id,
+        "intent": turn.intent,
+        "status": turn.status,
+        "reply": reply,
+        "pending": None,
+    }
 
 
 async def handle_turn(
@@ -638,6 +805,102 @@ async def handle_turn(
             else:
                 text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
                 intent_override = GOAL
+
+    if intent_override is None and _looks_like_plan_configure(text):
+        from .capabilities.plan_configure import resolve as resolve_configure
+
+        resolution = resolve_configure(db, user_id, text)
+        if resolution.get("ready"):
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=CONFIGURE_PLAN,
+                payload={
+                    "program_id": resolution["program_id"],
+                    "plan": resolution["plan"],
+                },
+                reply=resolution.get("summary") or "计划已重新排好，确认后激活。",
+                kind="proposal",
+            )
+        return _finish_reply(
+            db,
+            session,
+            turn,
+            started,
+            intent=CONFIGURE_PLAN,
+            reply=(resolution.get("questions") or ["想怎么调整计划？"])[0],
+        )
+
+    if intent_override is None and _looks_like_memory(text):
+        from .capabilities.memory import resolve as resolve_memory
+
+        resolution = resolve_memory(text)
+        if resolution.get("ready"):
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=MEMORY,
+                payload=resolution["payload"],
+                reply=resolution.get("summary") or "确认后记住这条偏好。",
+            )
+        return _finish_reply(
+            db,
+            session,
+            turn,
+            started,
+            intent=MEMORY,
+            reply=(resolution.get("questions") or ["想让我记住什么？"])[0],
+        )
+
+    if intent_override is None and _looks_like_start_training(text):
+        from .capabilities.ui_actions import resolve_start
+
+        resolution = resolve_start(db, user_id, context)
+        if resolution.get("ready"):
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=START_TRAINING_UI,
+                payload=resolution["payload"],
+                reply=resolution.get("summary") or "确认后开始训练。",
+            )
+        return _finish_reply(
+            db,
+            session,
+            turn,
+            started,
+            intent=START_TRAINING_UI,
+            reply=(resolution.get("questions") or ["现在没有可开始的训练。"])[0],
+        )
+
+    if intent_override is None and _looks_like_open_screen(text):
+        from .capabilities.ui_actions import resolve_open
+
+        resolution = resolve_open(text)
+        if resolution.get("ready"):
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=OPEN_SCREEN_UI,
+                payload=resolution["payload"],
+                reply=resolution.get("summary") or "确认后打开页面。",
+            )
+        return _finish_reply(
+            db,
+            session,
+            turn,
+            started,
+            intent=OPEN_SCREEN_UI,
+            reply=(resolution.get("questions") or ["想打开哪个页面？"])[0],
+        )
 
     if intent_override is None and _looks_like_add_day(text):
         from .capabilities.training_add_day import resolve as resolve_add_day
@@ -1211,6 +1474,98 @@ async def handle_turn(
             "pending": serialize_pending(active),
         }
 
+    if intent_override is None and _looks_like_food_delete(text):
+        from .capabilities.log_edit import resolve_delete_food
+
+        resolution = resolve_delete_food(db, user_id, text)
+        if resolution.get("ready"):
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=DIET_DELETE,
+                payload=resolution["payload"],
+                reply=resolution.get("summary") or "确认后删除这条饮食记录。",
+            )
+        return _finish_reply(
+            db,
+            session,
+            turn,
+            started,
+            intent=DIET_DELETE,
+            reply=(resolution.get("questions") or ["要删除哪条饮食记录？"])[0],
+        )
+
+    if intent_override is None and _looks_like_food_update(text):
+        from .capabilities.log_edit import resolve_update_food
+
+        resolution = resolve_update_food(db, user_id, text)
+        if resolution.get("ready"):
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=DIET_UPDATE,
+                payload=resolution["payload"],
+                reply=resolution.get("summary") or "确认后修改这条饮食记录。",
+            )
+        return _finish_reply(
+            db,
+            session,
+            turn,
+            started,
+            intent=DIET_UPDATE,
+            reply=(resolution.get("questions") or ["要改成多少？"])[0],
+        )
+
+    if intent_override is None and _looks_like_workout_delete(text):
+        from .capabilities.log_edit import resolve_delete_workout
+
+        resolution = resolve_delete_workout(db, user_id, text)
+        if resolution.get("ready"):
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=DELETE_WORKOUT,
+                payload=resolution["payload"],
+                reply=resolution.get("summary") or "确认后删除这条训练记录。",
+            )
+        return _finish_reply(
+            db,
+            session,
+            turn,
+            started,
+            intent=DELETE_WORKOUT,
+            reply=(resolution.get("questions") or ["要删除哪条训练记录？"])[0],
+        )
+
+    if intent_override is None and _looks_like_workout_update(text):
+        from .capabilities.log_edit import resolve_update_workout
+
+        resolution = resolve_update_workout(db, user_id, text)
+        if resolution.get("ready"):
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=UPDATE_WORKOUT,
+                payload=resolution["payload"],
+                reply=resolution.get("summary") or "确认后修改这条训练记录。",
+            )
+        return _finish_reply(
+            db,
+            session,
+            turn,
+            started,
+            intent=UPDATE_WORKOUT,
+            reply=(resolution.get("questions") or ["要改时长、重量还是备注？"])[0],
+        )
+
     meal_capability: str | None = None
     if intent_override in {PLANNED, SKIP_MEAL, RESTORE_MEAL}:
         meal_capability = intent_override
@@ -1517,7 +1872,11 @@ def _discard_pending_resource(
     user_id: str,
     pending: CoachPending | None,
 ) -> None:
-    if pending is None or pending.capability_id not in {PLAN, ADJUST_PLAN}:
+    if pending is None or pending.capability_id not in {
+        PLAN,
+        ADJUST_PLAN,
+        CONFIGURE_PLAN,
+    }:
         return
     program_id = str((pending.payload or {}).get("program_id") or "")
     if program_id:
@@ -1566,7 +1925,7 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
     receipt: dict
     before: dict = {}
     after: dict = {}
-    if pending.capability_id in {PLAN, ADJUST_PLAN}:
+    if pending.capability_id in {PLAN, ADJUST_PLAN, CONFIGURE_PLAN}:
         from .capabilities.plan import activate as activate_plan
 
         result = activate_plan(
@@ -1606,6 +1965,113 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "FoodLogged"
         entity_type = "food_log"
         entity_id = action_id
+    elif pending.capability_id in {DIET_UPDATE, DIET_DELETE}:
+        from .capabilities import log_edit
+
+        if pending.capability_id == DIET_UPDATE:
+            result = log_edit.execute_update_food(
+                db, user_id, action_id, pending.payload
+            )
+            summary = "已修改饮食记录"
+            event_type = "FoodLogUpdated"
+        else:
+            result = log_edit.execute_delete_food(
+                db, user_id, action_id, pending.payload
+            )
+            summary = "已删除饮食记录"
+            event_type = "FoodLogDeleted"
+        after = result
+        db.add(
+            AgentActionEvent(
+                user_id=user_id,
+                action_id=action_id,
+                action_type=pending.capability_id,
+                status="executed",
+                detail={"result": result},
+            )
+        )
+        db.flush()
+        receipt = {
+            "summary": summary,
+            "client_id": pending.payload.get("client_id"),
+            "date": pending.payload.get("date"),
+            "meal": pending.payload.get("meal"),
+            "deep_link": (
+                f"fitai://nutrition/{pending.payload.get('date')}"
+                if pending.payload.get("date")
+                else "fitai://nutrition"
+            ),
+        }
+        entity_type = "food_log"
+        entity_id = action_id
+    elif pending.capability_id in {UPDATE_WORKOUT, DELETE_WORKOUT}:
+        from .capabilities import log_edit
+
+        if pending.capability_id == UPDATE_WORKOUT:
+            result = log_edit.execute_update_workout(
+                db, user_id, action_id, pending.payload
+            )
+            summary = "已修改训练记录"
+            event_type = "WorkoutUpdated"
+        else:
+            result = log_edit.execute_delete_workout(
+                db, user_id, action_id, pending.payload
+            )
+            summary = "已删除训练记录"
+            event_type = "WorkoutDeleted"
+        after = result
+        db.add(
+            AgentActionEvent(
+                user_id=user_id,
+                action_id=action_id,
+                action_type=pending.capability_id,
+                status="executed",
+                detail={"result": result},
+            )
+        )
+        db.flush()
+        receipt = {
+            "summary": summary,
+            "session_id": pending.payload.get("session_id"),
+            "deep_link": "fitai://workout_history",
+        }
+        entity_type = "workout"
+        entity_id = str(pending.payload.get("session_id") or action_id)
+    elif pending.capability_id in {START_TRAINING_UI, OPEN_SCREEN_UI}:
+        from .capabilities.ui_actions import execute_ui
+
+        result = execute_ui(db, user_id, action_id, pending.payload)
+        after = result
+        summary = (
+            f"已准备开始「{pending.payload.get('title') or '训练'}」"
+            if pending.capability_id == START_TRAINING_UI
+            else f"已准备打开「{pending.payload.get('title') or '页面'}」"
+        )
+        receipt = {
+            "summary": summary,
+            "day_id": pending.payload.get("day_id"),
+            "screen": pending.payload.get("screen"),
+            "deep_link": (
+                "fitai://workout"
+                if pending.capability_id == START_TRAINING_UI
+                else f"fitai://screen/{pending.payload.get('screen') or 'today'}"
+            ),
+        }
+        event_type = "UIActionRequested"
+        entity_type = "coach_action"
+        entity_id = action_id
+    elif pending.capability_id == MEMORY:
+        from .capabilities.memory import execute as execute_memory
+
+        result = execute_memory(db, user_id, action_id, pending.payload)
+        after = result
+        receipt = {
+            "summary": f"已记住：{str(result.get('content') or '')[:80]}",
+            "deep_link": "fitai://profile",
+        }
+        event_type = "MemoryRemembered"
+        entity_type = "memory"
+        entity_id = str(result.get("memory_id") or action_id)
     elif pending.capability_id == TRAINING:
         from .capabilities.training import execute as execute_training
 
@@ -1868,6 +2334,7 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         if pending.capability_id in {
             PLAN,
             ADJUST_PLAN,
+            CONFIGURE_PLAN,
             EDIT_EXERCISES,
             EDIT_EXERCISE,
             ADD_DAY,
@@ -1905,6 +2372,32 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
         from .capabilities.diet import undo as undo_diet
 
         result = undo_diet(db, user_id, action_id, record.payload)
+    elif record.capability_id in {DIET_UPDATE, DIET_DELETE}:
+        from .capabilities import log_edit
+
+        if record.capability_id == DIET_UPDATE:
+            result = log_edit.undo_update_food(
+                db, user_id, action_id, record.payload
+            )
+        else:
+            result = log_edit.undo_delete_food(
+                db, user_id, action_id, record.payload
+            )
+    elif record.capability_id in {UPDATE_WORKOUT, DELETE_WORKOUT}:
+        from .capabilities import log_edit
+
+        if record.capability_id == UPDATE_WORKOUT:
+            result = log_edit.undo_update_workout(
+                db, user_id, action_id, record.payload
+            )
+        else:
+            result = log_edit.undo_delete_workout(
+                db, user_id, action_id, record.payload
+            )
+    elif record.capability_id == MEMORY:
+        from .capabilities.memory import undo as undo_memory
+
+        result = undo_memory(db, user_id, action_id, record.payload)
     elif record.capability_id == TRAINING:
         from .capabilities.training import undo as undo_training
 
@@ -1915,7 +2408,7 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
             record.payload,
             record.before or {},
         )
-    elif record.capability_id in {PLAN, ADJUST_PLAN}:
+    elif record.capability_id in {PLAN, ADJUST_PLAN, CONFIGURE_PLAN}:
         from .capabilities.plan import undo_activate
 
         result = undo_activate(

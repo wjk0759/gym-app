@@ -15,6 +15,7 @@ from sqlalchemy import and_, func, or_, select
 
 from ..deps import CurrentUser, DBSession
 from ..models import (
+    AIMemory,
     CoachActionRecord,
     CoachInbox,
     CoachPending,
@@ -319,6 +320,57 @@ def undo_action(
     except ValueError as exc:
         db.rollback()
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/reviews/weekly")
+def coach_weekly_review(user_id: CurrentUser, db: DBSession):
+    access.require_feature(db, user_id, access.FEATURE_ADVANCED_REVIEW)
+    from ..services.agent import generate_weekly_review
+
+    try:
+        return generate_weekly_review(db, user_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/memories")
+def coach_memories(user_id: CurrentUser, db: DBSession):
+    rows = (
+        db.execute(
+            select(AIMemory)
+            .where(AIMemory.user_id == user_id, AIMemory.active.is_(True))
+            .order_by(AIMemory.updated_at.desc())
+            .limit(50)
+        )
+        .scalars()
+        .all()
+    )
+    return {
+        "items": [
+            {
+                "id": item.id,
+                "kind": item.kind,
+                "key": item.memory_key,
+                "content": item.content,
+                "source": item.source,
+                "confidence": item.confidence,
+                "updated_at": (
+                    item.updated_at.isoformat() if item.updated_at else None
+                ),
+            }
+            for item in rows
+        ]
+    }
+
+
+@router.delete("/memories/{memory_id}")
+def delete_coach_memory(memory_id: str, user_id: CurrentUser, db: DBSession):
+    item = db.get(AIMemory, memory_id)
+    if item is None or item.user_id != user_id:
+        raise HTTPException(status_code=404, detail="记忆不存在")
+    db.delete(item)
+    db.commit()
+    return {"deleted": True}
 
 
 @router.get("/inbox")

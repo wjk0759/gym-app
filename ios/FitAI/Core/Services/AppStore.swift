@@ -371,8 +371,11 @@ final class AppStore {
         chat = state.chat
         agentSessionID = state.agentSessionID
         coachSessionID = state.coachSessionID
-        agentActions = state.agentActions ?? []
-        pendingDraft = state.pendingDraft
+        // The legacy agent cards/state are no longer a user-facing path.
+        agentActions = []
+        agentProposal = nil
+        pendingDraft = nil
+        pendingUndo = nil
         foodLogs = state.foodLogs ?? []
         dailyNutritionTargets = state.dailyNutritionTargets
         dailyNutritionTargetsKey = state.dailyNutritionTargetsKey
