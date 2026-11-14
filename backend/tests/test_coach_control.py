@@ -2308,6 +2308,9 @@ def test_configure_plan_undo_restores_profile_shape(db, monkeypatch):
         )
     )
     assert turn["intent"] == "training.configure_plan"
+    profile = db.get(Profile, "user-1")
+    assert profile.weekly_days == 3
+    assert profile.session_minutes == 45
     confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
     profile = db.get(Profile, "user-1")
     assert profile.weekly_days == 4

@@ -172,6 +172,10 @@ def resolve(db: Session, user_id: str, message: str) -> dict:
     plan_doc = result.get("plan") if isinstance(result, dict) else None
     if not isinstance(plan_doc, dict):
         plan_doc = result
+    profile_after = {
+        "weekly_days": weekly_days,
+        "session_minutes": minutes or profile.session_minutes or 45,
+    }
     program = save_plan(
         db,
         user_id,
@@ -181,10 +185,8 @@ def resolve(db: Session, user_id: str, message: str) -> dict:
         model_name="template",
         status="pending",
     )
-    # Keep the profile in sync so later plan generations use the same shape.
-    profile.weekly_days = weekly_days
-    if minutes is not None:
-        profile.session_minutes = minutes
+    # Do not touch the profile until the card is confirmed: cancelling the
+    # proposal must leave the current plan and profile exactly as they were.
     db.flush()
 
     data = serialize_program(program)
@@ -202,6 +204,7 @@ def resolve(db: Session, user_id: str, message: str) -> dict:
         "plan": data,
         "summary": summary,
         "profile_before": profile_before,
+        "profile_after": profile_after,
     }
 
 

@@ -837,6 +837,7 @@ async def handle_turn(
                     "program_id": resolution["program_id"],
                     "plan": resolution["plan"],
                     "profile_before": resolution.get("profile_before") or {},
+                    "profile_after": resolution.get("profile_after") or {},
                 },
                 reply=resolution.get("summary") or "计划已重新排好，确认后激活。",
                 kind="proposal",
@@ -1953,6 +1954,14 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
             user_id,
             str(pending.payload.get("program_id") or ""),
         )
+        if pending.capability_id == CONFIGURE_PLAN:
+            profile_after = pending.payload.get("profile_after") or {}
+            profile = db.get(Profile, user_id)
+            if profile is not None and isinstance(profile_after, dict):
+                for field in ("weekly_days", "session_minutes"):
+                    if field in profile_after:
+                        setattr(profile, field, profile_after[field])
+                db.flush()
         after = result.get("plan") or {}
         before = {
             "previous_program_id": result.get("previous_program_id"),
