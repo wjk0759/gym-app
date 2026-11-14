@@ -6,6 +6,7 @@ This is the new session/capability/action surface. The legacy ``/agent`` and
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -16,6 +17,7 @@ from ..deps import CurrentUser, DBSession
 from ..models import (
     CoachActionRecord,
     CoachInbox,
+    CoachPending,
     CoachSession,
     CoachTurn,
     DomainEvent,
@@ -70,6 +72,26 @@ def coach_stats(
         .where(DomainEvent.user_id == user_id)
         .group_by(DomainEvent.type)
     ).all()
+    intent_rows = db.execute(
+        select(CoachTurn.intent, func.count())
+        .where(CoachTurn.user_id == user_id)
+        .group_by(CoachTurn.intent)
+    ).all()
+    pending_rows = db.execute(
+        select(CoachPending.status, func.count())
+        .where(CoachPending.user_id == user_id)
+        .group_by(CoachPending.status)
+    ).all()
+    day = func.date(CoachTurn.created_at)
+    daily_rows = db.execute(
+        select(day, func.count())
+        .where(
+            CoachTurn.user_id == user_id,
+            CoachTurn.created_at >= utcnow() - timedelta(days=7),
+        )
+        .group_by(day)
+        .order_by(day)
+    ).all()
     unread = db.execute(
         select(func.count()).where(
             CoachInbox.user_id == user_id,
@@ -78,8 +100,13 @@ def coach_stats(
     ).scalar_one()
     return {
         "turns": {str(key): int(value) for key, value in turn_rows},
+        "intents": {str(key or "unknown"): int(value) for key, value in intent_rows},
+        "pending": {str(key): int(value) for key, value in pending_rows},
         "actions": {str(key): int(value) for key, value in action_rows},
         "events": {str(key): int(value) for key, value in event_rows},
+        "daily_turns": [
+            {"date": str(key), "count": int(value)} for key, value in daily_rows
+        ],
         "inbox_unread": int(unread or 0),
     }
 

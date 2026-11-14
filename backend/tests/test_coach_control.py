@@ -444,6 +444,19 @@ def test_inbox_unread_filter_and_read_all(db):
     assert [item["kind"] for item in read] == ["workout"]
 
 
+def test_stats_include_intents_pending_and_daily_counts(db):
+    import asyncio
+
+    from app.routers.coach_control import coach_stats
+
+    asyncio.run(runtime.handle_turn(db, "user-1", "复盘本周"))
+    stats = coach_stats("user-1", db)
+    assert stats["intents"]["review.weekly"] == 1
+    assert stats["pending"]["pending"] == 1
+    assert stats["daily_turns"][-1]["count"] >= 1
+    assert stats["inbox_unread"] == 0
+
+
 def test_coach_history_paginates_with_cursor(db):
     from app.routers.coach_control import coach_history
 
