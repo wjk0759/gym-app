@@ -7,7 +7,7 @@ This is the new session/capability/action surface. The legacy ``/agent`` and
 from __future__ import annotations
 
 from datetime import timedelta
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
 from pydantic import BaseModel, Field
@@ -53,6 +53,11 @@ class ClientDiagnosticIn(BaseModel):
     kind: str = Field(default="metrickit", max_length=40)
     app_version: str | None = Field(default=None, max_length=40)
     data_base64: str = Field(min_length=1, max_length=400_000)
+
+
+class CoachTurnFeedbackIn(BaseModel):
+    rating: Literal["up", "down"]
+    reason: str | None = Field(default=None, max_length=40)
 
 
 @router.post("/diagnostics")
@@ -206,6 +211,44 @@ async def create_turn(
             status_code=503,
             detail="教练暂时不可用，请重试",
         ) from exc
+
+
+@router.post("/turns/{turn_id}/feedback")
+def coach_turn_feedback(
+    turn_id: str,
+    payload: CoachTurnFeedbackIn,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    turn = db.get(CoachTurn, turn_id)
+    if turn is None or turn.user_id != user_id or not turn.reply:
+        raise HTTPException(status_code=404, detail="消息不存在")
+    existing = (
+        db.execute(
+            select(DomainEvent).where(
+                DomainEvent.user_id == user_id,
+                DomainEvent.type == "CoachTurnFeedback",
+                DomainEvent.entity_id == turn_id,
+            )
+        )
+        .scalars()
+        .first()
+    )
+    if existing is None:
+        emit_event(
+            db,
+            user_id,
+            "CoachTurnFeedback",
+            entity_type="coach_turn",
+            entity_id=turn_id,
+            payload={
+                "rating": payload.rating,
+                "reason": payload.reason,
+                "intent": turn.intent,
+            },
+        )
+        db.commit()
+    return {"status": "recorded", "turn_id": turn_id}
 
 
 @router.post("/turns/vision")

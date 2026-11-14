@@ -242,6 +242,21 @@ extension APIClient {
         try await sendVoid(path: "coach/sessions/reset", method: "POST", body: nil)
     }
 
+    func coachTurnFeedback(
+        turnID: String,
+        rating: String,
+        reason: String? = nil
+    ) async throws {
+        var payload: [String: Any] = ["rating": rating]
+        if let reason { payload["reason"] = reason }
+        let body = try JSONSerialization.data(withJSONObject: payload)
+        try await sendVoid(
+            path: "coach/turns/\(turnID)/feedback",
+            method: "POST",
+            body: body
+        )
+    }
+
     func uploadClientDiagnostic(kind: String, data: Data) async throws {
         let payload: [String: Any] = [
             "kind": kind,

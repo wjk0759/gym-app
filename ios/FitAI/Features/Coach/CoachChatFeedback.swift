@@ -13,8 +13,7 @@ extension CoachChatView {
         VStack(alignment: .leading, spacing: 4) {
             bubbleContent(message)
             if message.role == .assistant,
-               let messageID = message.serverMessageID,
-               !messageID.hasPrefix("coach-") {
+               message.serverMessageID != nil {
                 coachFeedbackRow(message)
                     .padding(.leading, 10)
             }

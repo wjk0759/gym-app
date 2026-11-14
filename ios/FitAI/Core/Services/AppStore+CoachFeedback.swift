@@ -1,5 +1,21 @@
 import Foundation
 
+enum CoachTurnMessageID {
+    /// Control-plane history IDs look like `coach-<uuid>-assistant`.
+    static func turnID(from serverID: String) -> String? {
+        let prefix = "coach-"
+        let suffix = "-assistant"
+        guard serverID.hasPrefix(prefix), serverID.hasSuffix(suffix) else {
+            return nil
+        }
+        let start = serverID.index(serverID.startIndex, offsetBy: prefix.count)
+        let end = serverID.index(serverID.endIndex, offsetBy: -suffix.count)
+        guard start < end else { return nil }
+        let value = String(serverID[start..<end])
+        return UUID(uuidString: value) == nil ? nil : value
+    }
+}
+
 extension AppStore {
     func submitCoachFeedback(
         messageID: UUID,
@@ -20,12 +36,20 @@ extension AppStore {
 
         Task { @MainActor in
             do {
-                try await APIClient.shared.agentFeedback(
-                    messageID: serverID,
-                    runID: runID,
-                    rating: rating,
-                    reason: reason
-                )
+                if let turnID = CoachTurnMessageID.turnID(from: serverID) {
+                    try await APIClient.shared.coachTurnFeedback(
+                        turnID: turnID,
+                        rating: rating,
+                        reason: reason
+                    )
+                } else {
+                    try await APIClient.shared.agentFeedback(
+                        messageID: serverID,
+                        runID: runID,
+                        rating: rating,
+                        reason: reason
+                    )
+                }
                 toast = rating == "up"
                     ? "已记录：有帮助"
                     : "已记录：会用于改进教练"

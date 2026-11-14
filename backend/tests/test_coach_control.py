@@ -2510,6 +2510,55 @@ def test_reset_sessions_closes_history_and_latest_stays_empty(db):
     assert turn["session"]["status"] != "closed"
 
 
+def test_coach_turn_feedback_records_once(db):
+    from app.models import CoachSession, CoachTurn
+    from app.routers.coach_control import CoachTurnFeedbackIn, coach_turn_feedback
+
+    session = CoachSession(user_id="user-1", status="active")
+    db.add(session)
+    db.flush()
+    turn = CoachTurn(
+        session_id=session.id,
+        user_id="user-1",
+        input_text="今天练什么",
+        intent="coach.answer",
+        status="completed",
+        reply="今天练胸。",
+    )
+    db.add(turn)
+    db.commit()
+
+    first = coach_turn_feedback(
+        turn.id,
+        CoachTurnFeedbackIn(rating="up"),
+        "user-1",
+        db,
+    )
+    assert first["status"] == "recorded"
+    events = db.execute(
+        select(DomainEvent).where(
+            DomainEvent.type == "CoachTurnFeedback",
+            DomainEvent.entity_id == turn.id,
+        )
+    ).scalars().all()
+    assert len(events) == 1
+    assert events[0].payload["rating"] == "up"
+
+    coach_turn_feedback(
+        turn.id,
+        CoachTurnFeedbackIn(rating="down", reason="inaccurate"),
+        "user-1",
+        db,
+    )
+    events = db.execute(
+        select(DomainEvent).where(
+            DomainEvent.type == "CoachTurnFeedback",
+            DomainEvent.entity_id == turn.id,
+        )
+    ).scalars().all()
+    assert len(events) == 1
+
+
 def test_coach_answer_receives_body_and_equipment_context(db, monkeypatch):
     import asyncio
 
