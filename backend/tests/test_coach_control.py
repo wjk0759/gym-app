@@ -144,6 +144,73 @@ def test_planned_meal_log_and_skip_loop(db):
     assert "dinner" not in record.plan.get("skipped_meals", [])
 
 
+def test_plan_generation_confirm_activates_program(db, monkeypatch):
+    import asyncio
+
+    from app.models import Exercise, Program
+    from app.services import access
+    from app.services.coach_control.capabilities import plan as plan_capability
+
+    db.add(
+        Exercise(
+            slug="barbell-bench-press",
+            name_zh="杠铃卧推",
+            name_en="barbell bench press",
+            muscle_group="chest",
+            equipment="barbell",
+            is_compound=True,
+            contraindications=[],
+        )
+    )
+    db.commit()
+
+    async def fake_generate(db, profile, **kwargs):
+        return {
+            "plan": {
+                "title": "测试四周计划",
+                "weeks": 4,
+                "days": [
+                    {
+                        "week_index": 1,
+                        "weekday": 1,
+                        "title": "上肢",
+                        "focus": ["chest"],
+                        "exercises": [
+                            {
+                                "slug": "barbell-bench-press",
+                                "order_index": 1,
+                                "sets": 3,
+                                "reps": "8",
+                                "weight_kg": 40,
+                                "rest_sec": 60,
+                                "rpe": 7,
+                            }
+                        ],
+                    }
+                ],
+            },
+            "generated_by": "ai",
+            "model": "test",
+            "warnings": [],
+        }
+
+    monkeypatch.setattr(plan_capability, "generate_plan", fake_generate)
+    monkeypatch.setattr(access, "has_pro", lambda db, user_id: True)
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "帮我生成一个 4 周计划")
+    )
+    assert turn["intent"] == "training.generate_plan"
+    assert turn["pending"]["kind"] == "proposal"
+    program_id = turn["pending"]["payload"]["program_id"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert confirmed["status"] == "executed"
+    assert confirmed["plan"]["title"] == "测试四周计划"
+    program = db.get(Program, program_id)
+    assert program.status == "active"
+
+
 def test_strength_log_confirm_and_undo(db):
     import asyncio
 

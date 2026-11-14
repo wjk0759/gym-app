@@ -41,6 +41,7 @@ STRENGTH = "training.log_strength"
 WEIGHT = "body.log_weight"
 REVIEW = "review.weekly"
 GOAL = "profile.update_goal"
+PLAN = "training.generate_plan"
 
 
 def _looks_like_reschedule(message: str) -> bool:
@@ -144,6 +145,16 @@ def _last_action_capability(
 
 def _looks_like_correction(message: str) -> bool:
     return bool(re.search(r"记错|不是|改成|应该是|修正|改一下", message))
+
+
+def _looks_like_plan(message: str) -> bool:
+    return bool(
+        re.search(
+            r"生成.{0,6}计划|重新.{0,4}计划|重排.{0,4}计划|排.{0,4}计划|"
+            r"4周计划|新的训练计划|给我.*计划",
+            message,
+        )
+    )
 
 
 def _looks_like_goal(message: str) -> bool:
@@ -279,6 +290,7 @@ async def handle_turn(
 
     pending = get_active_pending(db, user_id, session.id)
     if pending is not None and re.search(r"取消|不要了|算了|不记了", text):
+        _discard_pending_resource(db, user_id, pending)
         cancel_pending(db, session, pending)
         turn.status = "completed"
         turn.intent = pending.capability_id
@@ -296,7 +308,8 @@ async def handle_turn(
         }
     # A new user turn supersedes an old card. Confirmation/cancel should use
     # the dedicated endpoints; typing a new request means the old card is stale.
-    if pending is not None and pending.kind in {"card", "insight"}:
+    if pending is not None and pending.kind in {"card", "insight", "proposal"}:
+        _discard_pending_resource(db, user_id, pending)
         cancel_active_pending(db, session)
         pending = None
 
@@ -439,6 +452,45 @@ async def handle_turn(
         )
         reply = payload.get("summary") or "本周复盘已经生成。"
         turn.intent = REVIEW
+        turn.status = "completed"
+        turn.reply = reply
+        turn.latency_ms = int((time.perf_counter() - started) * 1000)
+        session.last_turn_at = utcnow()
+        session.updated_at = utcnow()
+        db.commit()
+        active = get_active_pending(db, user_id, session.id)
+        return {
+            "session": serialize_session(session, active),
+            "turn_id": turn.id,
+            "intent": turn.intent,
+            "status": turn.status,
+            "reply": reply,
+            "pending": serialize_pending(active),
+        }
+
+    if intent_override is None and _looks_like_plan(text):
+        from .capabilities.plan import resolve as resolve_plan
+
+        resolution = await resolve_plan(db, user_id)
+        if resolution.get("ready"):
+            plan_data = resolution["plan"]
+            set_pending(
+                db,
+                session,
+                kind="proposal",
+                capability_id=PLAN,
+                payload={
+                    "program_id": resolution["program_id"],
+                    "plan": plan_data,
+                },
+            )
+            reply = (
+                f"计划排好了：{plan_data.get('title') or '训练计划'}，"
+                f"{plan_data.get('weeks') or 4} 周。确认后激活。"
+            )
+        else:
+            reply = (resolution.get("questions") or ["计划暂时生成不了。"])[0]
+        turn.intent = PLAN
         turn.status = "completed"
         turn.reply = reply
         turn.latency_ms = int((time.perf_counter() - started) * 1000)
@@ -733,6 +785,20 @@ async def handle_turn(
     }
 
 
+def _discard_pending_resource(
+    db: Session,
+    user_id: str,
+    pending: CoachPending | None,
+) -> None:
+    if pending is None or pending.capability_id != PLAN:
+        return
+    program_id = str((pending.payload or {}).get("program_id") or "")
+    if program_id:
+        from .capabilities.plan import discard
+
+        discard(db, user_id, program_id)
+
+
 def _load_pending(db: Session, user_id: str, pending_id: str) -> tuple[CoachSession, CoachPending]:
     pending = db.get(CoachPending, pending_id)
     if pending is None or pending.user_id != user_id:
@@ -745,7 +811,7 @@ def _load_pending(db: Session, user_id: str, pending_id: str) -> tuple[CoachSess
 
 def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
     session, pending = _load_pending(db, user_id, pending_id)
-    if pending.status != "pending" or pending.kind != "card":
+    if pending.status != "pending" or pending.kind not in {"card", "proposal"}:
         raise ValueError("这个操作已经处理或不是待确认卡片")
     action_id = pending.action_id or str(uuid4())
 
@@ -768,7 +834,24 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
     receipt: dict
     before: dict = {}
     after: dict = {}
-    if pending.capability_id == DIET:
+    if pending.capability_id == PLAN:
+        from .capabilities.plan import activate as activate_plan
+
+        result = activate_plan(
+            db,
+            user_id,
+            str(pending.payload.get("program_id") or ""),
+        )
+        after = result.get("plan") or {}
+        receipt = {
+            "summary": f"已激活计划「{after.get('title') or '训练计划'}」",
+            "plan_id": result.get("program_id"),
+            "deep_link": "fitai://plan",
+        }
+        event_type = "TrainingPlanGenerated"
+        entity_type = "program"
+        entity_id = str(result.get("program_id") or "")
+    elif pending.capability_id == DIET:
         from .capabilities.diet import execute as execute_diet
 
         result = execute_diet(db, user_id, action_id, pending.payload)
@@ -950,6 +1033,7 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         "action_id": action_id,
         "status": "executed",
         "receipt": receipt,
+        "plan": after if pending.capability_id == PLAN else None,
         "idempotent": False,
     }
 
@@ -958,6 +1042,7 @@ def cancel(db: Session, user_id: str, pending_id: str) -> dict:
     session, pending = _load_pending(db, user_id, pending_id)
     if pending.status != "pending":
         return {"ok": True, "already": True}
+    _discard_pending_resource(db, user_id, pending)
     cancel_pending(db, session, pending)
     db.commit()
     return {"ok": True, "pending_id": pending_id}

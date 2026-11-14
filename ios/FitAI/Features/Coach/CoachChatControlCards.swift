@@ -25,6 +25,9 @@ extension CoachChatView {
                         .foregroundStyle(Theme.secondaryText)
                 } else if pending.capabilityID == "review.weekly" {
                     reviewPendingContent(pending)
+                } else if pending.capabilityID == "training.generate_plan",
+                          let plan = pending.payload?.plan {
+                    planPendingContent(plan)
                 } else if pending.capabilityID == "diet.log_food" {
                     dietPendingContent(pending)
                 } else if pending.capabilityID == "training.reschedule" {
@@ -51,7 +54,7 @@ extension CoachChatView {
                         .foregroundStyle(Theme.ink)
                 }
 
-                if pending.kind == "card" {
+                if pending.kind == "card" || pending.kind == "proposal" {
                     HStack(spacing: 8) {
                         Button {
                             store.confirmCoachPending()
@@ -111,6 +114,22 @@ extension CoachChatView {
                     .fontWeight(.semibold)
             }
             .font(AppType.caption)
+        }
+    }
+
+    private func planPendingContent(_ plan: TrainingPlan) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(plan.title)
+                .font(AppType.callout.weight(.semibold))
+                .foregroundStyle(Theme.ink)
+            Text("\(plan.weeks) 周 · \(plan.days.count) 个训练日")
+                .font(AppType.caption)
+                .foregroundStyle(Theme.secondaryText)
+            if let first = plan.days.first {
+                Text("\(first.title) · \(first.exercises.count) 个动作")
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.tertiaryText)
+            }
         }
     }
 

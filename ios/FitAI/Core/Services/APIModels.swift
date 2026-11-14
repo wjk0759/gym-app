@@ -392,6 +392,7 @@ struct AgentActionPayload: Codable, Hashable {
     let watchouts: [String]?
     let actions: [String]?
     let generatedAt: String?
+    let plan: TrainingPlan?
 
     enum CodingKeys: String, CodingKey {
         case dayID = "day_id"
@@ -428,6 +429,7 @@ struct AgentActionPayload: Codable, Hashable {
         case watchouts
         case actions
         case generatedAt = "generated_at"
+        case plan
     }
 }
 
@@ -605,12 +607,14 @@ struct CoachConfirmResponse: Decodable {
     let actionID: String
     let status: String
     let receipt: CoachReceipt?
+    let plan: TrainingPlan?
     let idempotent: Bool?
 
     enum CodingKeys: String, CodingKey {
         case actionID = "action_id"
         case status
         case receipt
+        case plan
         case idempotent
     }
 }

@@ -48,6 +48,13 @@ extension AppStore {
         }
 
         if value.range(
+            of: #"生成.*计划|重新.*计划|重排.*计划|4周计划|新的训练计划"#,
+            options: .regularExpression
+        ) != nil {
+            return true
+        }
+
+        if value.range(
             of: #"多少|热量|卡路里|为什么|怎么|吗|？|\?"#,
             options: .regularExpression
         ) != nil {
@@ -187,6 +194,12 @@ extension AppStore {
                         receipt: response.receipt,
                         actionID: response.actionID
                     )
+                }
+                if let plan = response.plan {
+                    self.plan = plan
+                    self.planNeedsServerSync = false
+                    self.deferredPlanPreview = nil
+                    self.rescheduleNotifications()
                 }
                 self.chat.append(
                     ChatMessage(
