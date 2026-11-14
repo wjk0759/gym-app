@@ -42,11 +42,26 @@ async def resolve(
     program: Program | None,
     history: Iterable[HistoryMessage],
     message: str,
+    app_context: dict | None = None,
 ) -> dict:
+    context_parts: list[str] = []
+    if isinstance(app_context, dict):
+        body_context = str(app_context.get("body_analysis_context") or "").strip()
+        if body_context:
+            context_parts.append("体型分析：\n" + body_context)
+        equipment = app_context.get("equipment_context")
+        if isinstance(equipment, dict) and equipment.get("name"):
+            detail = str(equipment.get("description") or "").strip()
+            context_parts.append(
+                "器械识别："
+                + str(equipment.get("name"))
+                + (f"。{detail}" if detail else "")
+            )
     return await coach_reply(
         db,
         profile,
         program,
         list(history),
         message,
+        context="\n\n".join(context_parts) or None,
     )

@@ -2476,3 +2476,41 @@ def test_latest_session_returns_the_most_recent_one(db):
     payload = coach_control.latest_session("user-1", db)
     assert payload["session"]["id"] == newer.id
     assert payload["pending"] is None
+
+
+def test_coach_answer_receives_body_and_equipment_context(db, monkeypatch):
+    import asyncio
+
+    from app.models import Profile
+    from app.services.coach_control.capabilities import coach_answer
+
+    captured: dict[str, str | None] = {}
+
+    async def fake_reply(db, profile, program, history, message, **kwargs):
+        captured["context"] = kwargs.get("context")
+        return {"reply": "收到", "safety_flag": None, "citations": []}
+
+    monkeypatch.setattr(coach_answer, "coach_reply", fake_reply)
+
+    result = asyncio.run(
+        coach_answer.resolve(
+            db,
+            db.get(Profile, "user-1"),
+            None,
+            [],
+            "这个器械怎么练",
+            app_context={
+                "body_analysis_context": "重点放在背部和臀部。",
+                "equipment_context": {
+                    "name": "坐姿划船",
+                    "description": "背部器械，主要练背阔肌。",
+                },
+            },
+        )
+    )
+
+    assert result["reply"] == "收到"
+    assert captured["context"] is not None
+    assert "重点放在背部和臀部" in captured["context"]
+    assert "坐姿划船" in captured["context"]
+    assert "背阔肌" in captured["context"]

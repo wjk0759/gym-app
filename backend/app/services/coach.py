@@ -255,7 +255,7 @@ async def coach_reply(
             messages.append(
                 {
                     "role": "system",
-                    "content": "最近一次体型分析结果如下，回答时结合它：\n" + context,
+                    "content": "最近的体型或器械分析结果如下，回答时结合它：\n" + context,
                 }
             )
         if decision.caution:

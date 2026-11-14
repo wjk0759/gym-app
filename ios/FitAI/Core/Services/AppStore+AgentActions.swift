@@ -45,6 +45,24 @@ extension AppStore {
                 "updated_at": APIDateCoding.iso8601WithFractionalSeconds.string(from: visual.updatedAt),
             ]
         }
+        if let coachContext,
+           !coachContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            context["body_analysis_context"] = coachContext
+        }
+        if let equipment = coachEquipmentResult {
+            context["equipment_context"] = [
+                "name": equipment.name,
+                "description": equipment.description,
+                "confidence": equipment.confidence ?? 0,
+                "candidates": equipment.candidates.prefix(3).map { item in
+                    [
+                        "slug": item.exercise.slug,
+                        "name": item.exercise.nameZH,
+                        "confidence": item.confidence,
+                    ] as [String: Any]
+                },
+            ] as [String: Any]
+        }
         guard let plan else { return context }
         let days: [[String: Any]] = plan.days.map { day in
             let date = plan.scheduledDate(for: day)

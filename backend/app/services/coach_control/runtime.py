@@ -1843,6 +1843,7 @@ async def handle_turn(
                     active_program(db, user_id),
                     history,
                     text,
+                    app_context=context,
                 )
             except Exception as exc:  # noqa: BLE001 - keep failed turns auditable
                 turn.status = "failed"
