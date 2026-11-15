@@ -256,9 +256,6 @@ def main() -> int:
             "coach_knowledge.jsonl": len(coach),
             "equipment_knowledge.jsonl": len(equipment),
         },
-        "removed": {
-            "food_nutrition": "Removed after answer-level A/B; not used by vision.",
-        },
     }
     _write_json(OUT_DIR / "manifest.json", manifest)
     print(json.dumps(manifest["counts"], ensure_ascii=False, indent=2))

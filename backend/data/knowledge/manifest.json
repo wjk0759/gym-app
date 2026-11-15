@@ -11,9 +11,6 @@
     "equipment_knowledge.jsonl": 95
   },
   "generated_at": "2026-11-15",
-  "removed": {
-    "food_nutrition": "Removed after answer-level A/B; not used by vision."
-  },
   "rounds": {
     "build": {
       "coach_final": 782,
