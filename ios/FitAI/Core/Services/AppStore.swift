@@ -108,6 +108,8 @@ final class AppStore {
     var removedDislikedSlugs: Set<String> = []
     /// Preferences changed locally and not yet acknowledged by /sync.
     var preferencesDirty = false
+    /// Cycle dates/mode changed locally and not yet acknowledged by /sync.
+    var cycleDirty = false
     @ObservationIgnored var isSyncingCloudExtras = false
     var equipmentLibrary: [EquipmentItem] = []
     /// 通用器械勾选（徒手/哑铃/杠铃...）。
@@ -130,6 +132,7 @@ final class AppStore {
     var isSyncingUserData = false
     var scheduleSyncRequested = false
     @ObservationIgnored var draftPersistWorkItem: DispatchWorkItem?
+    @ObservationIgnored var draftCloudPushWorkItem: DispatchWorkItem?
     @ObservationIgnored var agentChatTask: Task<Void, Never>?
     @ObservationIgnored var agentChatWatchdog: Task<Void, Never>?
     @ObservationIgnored var agentChatRequestID: UUID?
@@ -272,6 +275,7 @@ final class AppStore {
         removedFavoriteKeys = []
         removedDislikedSlugs = []
         preferencesDirty = false
+        cycleDirty = false
         notificationsEnabled = false
         restLiveActivityEnabled = true
         restNotificationsEnabled = true
@@ -404,6 +408,7 @@ final class AppStore {
         // their local settings are uploaded once instead of being replaced by
         // server defaults on the first pull.
         preferencesDirty = state.preferencesDirty ?? true
+        cycleDirty = state.cycleDirty ?? !state.profile.periodDates.isEmpty
         reminderHour = state.reminderHour
         reminderMinute = state.reminderMinute
         notificationsEnabled = state.notificationsEnabled
@@ -467,6 +472,7 @@ final class AppStore {
             removedFavoriteKeys: Array(removedFavoriteKeys).sorted(),
             removedDislikedSlugs: Array(removedDislikedSlugs).sorted(),
             preferencesDirty: preferencesDirty,
+            cycleDirty: cycleDirty,
             reminderHour: reminderHour,
             reminderMinute: reminderMinute,
             notificationsEnabled: notificationsEnabled,
@@ -590,6 +596,7 @@ final class AppStore {
         var removedFavoriteKeys: [String]?
         var removedDislikedSlugs: [String]?
         var preferencesDirty: Bool?
+        var cycleDirty: Bool?
         var reminderHour: Int
         var reminderMinute: Int
         var notificationsEnabled: Bool

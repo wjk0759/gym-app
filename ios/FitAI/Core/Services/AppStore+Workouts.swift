@@ -166,7 +166,7 @@ extension AppStore {
             source: source
         )
         if workoutDraft?.dayID == day.id {
-            workoutDraft = nil
+            clearWorkoutDraft(dayID: day.id)
         }
         sessions.insert(session, at: 0)
         persist()
@@ -206,6 +206,7 @@ extension AppStore {
     func saveWorkoutDraft(_ draft: WorkoutDraft, persistImmediately: Bool = false) {
         let isNewDraft = workoutDraft?.dayID != draft.dayID
         workoutDraft = draft
+        scheduleDraftCloudPush(draft, immediate: persistImmediately || isNewDraft)
 
         if persistImmediately || isNewDraft {
             draftPersistWorkItem?.cancel()
@@ -230,7 +231,60 @@ extension AppStore {
         if let dayID {
             guard workoutDraft?.dayID == dayID else { return }
         }
+        let clearedDayID = workoutDraft?.dayID ?? dayID
         workoutDraft = nil
+        draftCloudPushWorkItem?.cancel()
+        draftCloudPushWorkItem = nil
+        persist()
+        if let clearedDayID {
+            Task {
+                try? await APIClient.shared.deleteWorkoutDraft(dayID: clearedDayID)
+            }
+        }
+    }
+
+    private func scheduleDraftCloudPush(
+        _ draft: WorkoutDraft,
+        immediate: Bool
+    ) {
+        draftCloudPushWorkItem?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            self?.draftCloudPushWorkItem = nil
+            Task {
+                try? await APIClient.shared.pushWorkoutDraft(draft)
+            }
+        }
+        if immediate {
+            work.perform()
+        } else {
+            draftCloudPushWorkItem = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 10, execute: work)
+        }
+    }
+
+    /// Restore an in-progress workout from another device, or upload the
+    /// local draft when it is newer. The draft is intentionally last-write-wins.
+    func pullWorkoutDraftFromCloud() async {
+        guard AuthTokenStore.shared.accessToken != nil else { return }
+        let remote: RemoteWorkoutDraft?
+        do {
+            remote = try await APIClient.shared.fetchWorkoutDraft()
+        } catch {
+            remote = nil
+        }
+        guard let remote else {
+            if let local = workoutDraft {
+                try? await APIClient.shared.pushWorkoutDraft(local)
+            }
+            return
+        }
+        let remoteDraft = remote.payload
+        if let local = workoutDraft,
+           local.updatedAt >= remoteDraft.updatedAt {
+            try? await APIClient.shared.pushWorkoutDraft(local)
+            return
+        }
+        workoutDraft = remoteDraft
         persist()
     }
 

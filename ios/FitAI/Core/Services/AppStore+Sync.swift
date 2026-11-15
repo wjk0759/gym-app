@@ -195,6 +195,7 @@ extension AppStore {
             await self.pushPendingFoodLogs()
             await self.pushPendingBodyMetrics()
             await self.pushPendingEquipment()
+            await self.pullWorkoutDraftFromCloud()
             if self.profileSyncPending {
                 await self.pushProfileAndGoal()
             }

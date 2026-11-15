@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from ..models import (
     UserCustomFood,
+    UserCycleSettings,
     UserExerciseDislike,
     UserFoodFavorite,
     UserPreference,
@@ -77,6 +78,18 @@ def _dislike_dict(item: UserExerciseDislike) -> dict:
     }
 
 
+def _cycle_dict(item: UserCycleSettings | None) -> dict | None:
+    if item is None:
+        return None
+    return {
+        "range_start": item.range_start.isoformat() if item.range_start else None,
+        "range_end": item.range_end.isoformat() if item.range_end else None,
+        "dates": item.dates or [],
+        "training_mode": item.training_mode,
+        "updated_at": item.updated_at.isoformat(),
+    }
+
+
 def sync_snapshot(db: Session, user_id: str) -> dict:
     preferences = ensure_preferences(db, user_id)
     custom_foods = (
@@ -115,12 +128,14 @@ def sync_snapshot(db: Session, user_id: str) -> dict:
         .scalars()
         .all()
     )
+    cycle = db.get(UserCycleSettings, user_id)
     return {
         "server_time": datetime.now(timezone.utc).isoformat(),
         "preferences": preferences_dict(preferences),
         "custom_foods": [_custom_food_dict(item) for item in custom_foods],
         "favorites": [_favorite_dict(item) for item in favorites],
         "disliked_exercises": [_dislike_dict(item) for item in dislikes],
+        "cycle": _cycle_dict(cycle),
     }
 
 
@@ -213,6 +228,18 @@ def _apply_dislikes(db: Session, user_id: str, items) -> None:
         item.updated_at = utcnow()
 
 
+def _apply_cycle(db: Session, user_id: str, payload) -> None:
+    item = db.get(UserCycleSettings, user_id)
+    if item is None:
+        item = UserCycleSettings(user_id=user_id, dates=[])
+        db.add(item)
+    item.range_start = payload.range_start
+    item.range_end = payload.range_end
+    item.dates = list(payload.dates)
+    item.training_mode = payload.training_mode
+    item.updated_at = utcnow()
+
+
 def apply_sync(db: Session, user_id: str, payload: SyncIn) -> dict:
     # A client snapshot can contain the same key twice if local merging or a
     # retry went wrong. The last value wins; never insert two rows and let the
@@ -232,5 +259,7 @@ def apply_sync(db: Session, user_id: str, payload: SyncIn) -> dict:
     _apply_custom_foods(db, user_id, custom_foods)
     _apply_favorites(db, user_id, favorites)
     _apply_dislikes(db, user_id, dislikes)
+    if payload.cycle is not None:
+        _apply_cycle(db, user_id, payload.cycle)
     db.commit()
     return sync_snapshot(db, user_id)

@@ -35,8 +35,8 @@
 | 不喜欢动作 | `user_exercise_dislikes` | 本地 `dislikedSlugs` 缓存 | B | 已上云，移除用 tombstone |
 | 体型分析 | iOS 本地 | 无 | D | 待上云：元数据 + 照片 |
 | 计划历史 | 服务端 Program | 本地 `planHistory` 缓存 | B | 已补 `GET /plans/history` 并合并 |
-| 训练草稿 | iOS 本地 | 无 | D | 待上云，跨设备恢复 |
-| 经期/周期 | `UserProfile` 本地 | 无 | D | 待上云，用户隔离 + 服务端加密 |
+| 训练草稿 | `workout_drafts` | 本地 `workoutDraft` 缓存 | B | 已上云，按 `updated_at` 最新者胜 |
+| 经期/周期 | `cycle_settings` | 本地 `UserProfile.period*` 缓存 | B | 已上云，用户隔离 + 标准服务端存储 |
 | 会员 | 服务端 entitlement + StoreKit | 本地 `SubscriptionManager` | C | 不合并：StoreKit 是购买结果，服务端是权益权威 |
 | 教练 pending/receipt | 服务端 | 本地 `coachPending/coachReceipt` | B | 本地是缓存；服务端权威 |
 
@@ -100,7 +100,6 @@
 
 1. 非今日营养目标的日期级统一
 2. 器械统一只读快照（不合并底层三个状态）
-3. 体型分析元数据 + 照片上云（私有对象存储、签名 URL）
-4. 训练草稿上云（跨设备恢复，最新 `updated_at` 胜）
-5. 经期数据上云（用户隔离 + 服务端加密；默认不进教练上下文）
-6. 清理未使用的 `NotificationSchedule` 表，或正式接入
+3. 体型分析照片查看 UI（元数据和私有存储已完成）
+4. 训练草稿/经期的真机双设备验证
+5. 清理未使用的 `NotificationSchedule` 表，或正式接入

@@ -1454,3 +1454,43 @@ class BodyAnalysisRecord(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class WorkoutDraftRecord(Base):
+    """One active in-progress workout per user, shared across devices."""
+
+    __tablename__ = "workout_drafts"
+
+    user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    day_id: Mapped[str] = mapped_column(String(36))
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
+class UserCycleSettings(Base):
+    """Cycle dates and training mode; standard server-side user isolation."""
+
+    __tablename__ = "cycle_settings"
+
+    user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    range_start: Mapped[date | None] = mapped_column(Date)
+    range_end: Mapped[date | None] = mapped_column(Date)
+    dates: Mapped[list] = mapped_column(JSON, default=list)
+    training_mode: Mapped[str] = mapped_column(String(20), default="light")
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
+

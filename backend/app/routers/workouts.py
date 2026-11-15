@@ -7,10 +7,16 @@ from sqlalchemy.orm import selectinload
 
 from ..deps import CurrentUser, DBSession
 from ..models import Exercise, Profile, Program, ProgramDay, SetLog, WorkoutSession
-from ..schemas import WorkoutIn
+from ..schemas import WorkoutDraftIn, WorkoutIn
 from ..services.coach_control.consumers import consume_event
 from ..services.coach_control.events import emit_event
 from ..services.training_stage import refresh_training_stage
+from ..services.workout_draft import (
+    clear_draft,
+    draft_dict,
+    get_draft,
+    upsert_draft,
+)
 
 router = APIRouter(prefix="/workouts", tags=["workouts"])
 
@@ -302,6 +308,30 @@ def summary(user_id: CurrentUser, db: DBSession, weeks: int = Query(default=4, g
         "avg_duration_min": round(sum(durations) / len(durations)) if durations else 0,
         "by_week": [by_week[key] for key in sorted(by_week)],
     }
+
+
+@router.get("/draft")
+def read_workout_draft(user_id: CurrentUser, db: DBSession):
+    return {"draft": draft_dict(get_draft(db, user_id))}
+
+
+@router.put("/draft")
+def write_workout_draft(
+    payload: WorkoutDraftIn,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    accepted, draft = upsert_draft(db, user_id, payload)
+    return {"accepted": accepted, "draft": draft}
+
+
+@router.delete("/draft")
+def delete_workout_draft(
+    user_id: CurrentUser,
+    db: DBSession,
+    day_id: str | None = Query(default=None, max_length=36),
+):
+    return {"deleted": clear_draft(db, user_id, day_id)}
 
 
 @router.get("/{workout_id}")

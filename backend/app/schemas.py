@@ -327,6 +327,14 @@ class SyncIn(BaseModel):
     disliked_exercises: list[ExerciseDislikeSyncIn] = Field(
         default_factory=list, max_length=500
     )
+    cycle: CycleSyncIn | None = None
+
+
+class CycleSyncIn(BaseModel):
+    range_start: date | None = None
+    range_end: date | None = None
+    dates: list[str] = Field(default_factory=list, max_length=120)
+    training_mode: str = Field(default="light", max_length=20)
 
 
 
@@ -382,6 +390,12 @@ class BodyMetricIn(BaseModel):
 
 class BodyAnalysisAppliedIn(BaseModel):
     applied_to_plan: bool = True
+
+
+class WorkoutDraftIn(BaseModel):
+    day_id: str = Field(min_length=1, max_length=36)
+    updated_at: datetime
+    payload: dict = Field(default_factory=dict)
 
 
 class EquipmentLibraryIn(BaseModel):

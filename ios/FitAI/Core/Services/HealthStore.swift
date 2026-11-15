@@ -286,8 +286,10 @@ extension AppStore {
         profile.periodRangeEnd = FitnessDate.key(rangeEnd)
         profile.periodDates = dates
         profile.periodTrainingMode = mode
+        cycleDirty = true
         toast = "经期区间已保存"
         persist()
+        Task { @MainActor in await self.syncCloudExtras() }
         return true
     }
 

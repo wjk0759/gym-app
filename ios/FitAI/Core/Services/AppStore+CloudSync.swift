@@ -21,6 +21,7 @@ extension AppStore {
             removedFavoriteKeys.removeAll()
             removedDislikedSlugs.removeAll()
             preferencesDirty = false
+            cycleDirty = false
             persist()
         } catch {
             // Keep local state and retry on the next foreground/login sync.
@@ -73,6 +74,16 @@ extension AppStore {
             }
             if let value = preferences.bodyCheckinDay {
                 bodyCheckInDay = value
+            }
+        }
+
+        if let cycle = remote.cycle, !cycleDirty {
+            profile.periodRangeStart = cycle.rangeStart
+            profile.periodRangeEnd = cycle.rangeEnd
+            profile.periodDates = cycle.dates
+            if let raw = cycle.trainingMode,
+               let mode = PeriodTrainingMode(rawValue: raw) {
+                profile.periodTrainingMode = mode
             }
         }
 
@@ -219,6 +230,19 @@ extension AppStore {
                 "body_checkin_weekday": bodyCheckInWeekday,
                 "body_checkin_day": bodyCheckInDay,
             ] as [String: Any]
+        }
+        if cycleDirty {
+            var cycle: [String: Any] = [
+                "dates": profile.periodDates,
+                "training_mode": profile.periodTrainingMode.rawValue,
+            ]
+            if let start = profile.periodRangeStart {
+                cycle["range_start"] = start
+            }
+            if let end = profile.periodRangeEnd {
+                cycle["range_end"] = end
+            }
+            payload["cycle"] = cycle
         }
         return payload
     }

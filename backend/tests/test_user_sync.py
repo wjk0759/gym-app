@@ -9,6 +9,7 @@ from app.db import Base
 from app.models import User
 from app.schemas import (
     CustomFoodSyncIn,
+    CycleSyncIn,
     ExerciseDislikeSyncIn,
     FavoriteFoodSyncIn,
     PreferencesIn,
@@ -117,6 +118,24 @@ def test_sync_upserts_and_deletes_reusable_data(db):
     assert deleted["custom_foods"] == []
     assert deleted["favorites"] == []
     assert deleted["disliked_exercises"] == []
+
+
+def test_sync_cycle_dates(db):
+    result = apply_sync(
+        db,
+        "user-1",
+        SyncIn(
+            cycle=CycleSyncIn(
+                range_start="2026-11-16",
+                range_end="2026-11-20",
+                dates=["2026-11-16", "2026-11-17", "2026-11-18"],
+                training_mode="light",
+            )
+        ),
+    )
+    assert result["cycle"]["range_start"] == "2026-11-16"
+    assert result["cycle"]["dates"] == ["2026-11-16", "2026-11-17", "2026-11-18"]
+    assert result["cycle"]["training_mode"] == "light"
 
 
 def test_sync_replaces_custom_food_by_client_id(db):

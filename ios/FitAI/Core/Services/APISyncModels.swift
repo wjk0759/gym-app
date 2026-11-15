@@ -67,6 +67,7 @@ struct RemoteCloudSync: Decodable {
     let customFoods: [RemoteCloudFood]
     let favorites: [RemoteCloudFavorite]
     let dislikedExercises: [RemoteCloudDislike]
+    let cycle: RemoteCloudCycle?
 
     enum CodingKeys: String, CodingKey {
         case serverTime = "server_time"
@@ -74,6 +75,23 @@ struct RemoteCloudSync: Decodable {
         case customFoods = "custom_foods"
         case favorites
         case dislikedExercises = "disliked_exercises"
+        case cycle
+    }
+}
+
+struct RemoteCloudCycle: Codable, Equatable {
+    let rangeStart: String?
+    let rangeEnd: String?
+    let dates: [String]
+    let trainingMode: String?
+    let updatedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case rangeStart = "range_start"
+        case rangeEnd = "range_end"
+        case dates
+        case trainingMode = "training_mode"
+        case updatedAt = "updated_at"
     }
 }
 
@@ -179,5 +197,21 @@ struct RemoteBodyAnalysis: Decodable {
 
 struct BodyAnalysisHistoryResponse: Decodable {
     let items: [RemoteBodyAnalysis]
+}
+
+struct RemoteWorkoutDraft: Decodable {
+    let dayID: String
+    let payload: WorkoutDraft
+    let updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case dayID = "day_id"
+        case payload
+        case updatedAt = "updated_at"
+    }
+}
+
+struct RemoteWorkoutDraftEnvelope: Decodable {
+    let draft: RemoteWorkoutDraft?
 }
 
