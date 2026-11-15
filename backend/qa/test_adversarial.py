@@ -9,6 +9,7 @@ from sqlalchemy.pool import StaticPool
 from app.db import Base
 from app.models import (
     Exercise,
+    PlanDayState,
     PlanExercise,
     Profile,
     Program,
@@ -457,3 +458,42 @@ def test_cycle_sync_round_trips_valid_snapshot(db):
     cycle = result.get("cycle") or {}
     assert cycle.get("training_mode") == "light"
     assert cycle.get("dates") == ["2026-11-01", "2026-11-02", "2026-11-03"]
+
+
+def test_batch_confirm_rolls_back_when_second_action_fails(db):
+    from app.models import CoachPending, FoodLog
+    from sqlalchemy import select
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    context = {
+        "plan": {
+            "id": "plan-qa-batch",
+            "version": 1,
+            "days": [
+                {
+                    "id": "day-qa-batch",
+                    "date": today.isoformat(),
+                    "title": "上肢",
+                    "completed": False,
+                    "skipped": False,
+                }
+            ],
+        }
+    }
+    result = turn(db, "记午饭鸡胸肉200g，再把今天的训练改到11月20日", context)
+    assert result["pending"] is not None, result
+    pending = db.get(CoachPending, result["pending"]["id"])
+    assert pending is not None
+    batch = pending.payload.get("batch")
+    assert isinstance(batch, list) and len(batch) >= 2
+    # Break the second item. The first food write must be rolled back.
+    batch[1]["payload"]["day_id"] = "missing-day"
+    batch[1]["payload"]["plan_id"] = "missing-plan"
+    try:
+        runtime.confirm_pending(db, "user-1", pending.id)
+    except Exception:
+        pass
+    logs = db.execute(select(FoodLog)).scalars().all()
+    states = db.execute(select(PlanDayState)).scalars().all()
+    assert logs == []
+    assert states == []

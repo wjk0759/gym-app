@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`2e8f9a8`（全局 pending 上下文 + 多餐饮食解析 + 目标/有氧卡原地更新 + 跨能力多动作 batch；生产后端仍是 `a5b93ca` + Flyway **V42**，iOS 已装 `39c1131`；新代码后端 **506 passed**、QA **21/21**、Ruff 通过、iOS Build `2e8f9a8` ✓；**新代码尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`2e8f9a8`（跨能力批量动作；生产已部署 `52c3b77` + Flyway **V42**、iOS `52c3b77`；`FitAITests` **110/110**、UI **4/4**、后端 **506 passed**；批处理压力测试发现子动作伪造 plan/day 仍报成功并写入幽灵状态，**2e8f9a8 暂停部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -49,6 +49,33 @@
 - 不要恢复：
   - 不要让 batch 半执行后不回滚。
   - 不要把超过 3 个动作或未完成槽位的请求硬塞进 batch。
+### 2026-11-16 · macOS（52c3b77 部署 + 批处理压力测试阻断 2e8f9a8）
+
+- 已部署：
+  - 后端 `52c3b77`
+  - iOS `52c3b77`
+  - Flyway **V42**
+- 基线：
+  - `FitAITests` **110/110**
+  - `FitAIUITests` **4/4**
+  - 后端 **506 passed**
+  - QA 原有 **21/21**
+- 批处理压力测试（新功能）：
+  - 正常的跨能力 batch 能生成一张卡并确认/撤销
+  - 但我把 batch 第二个子动作的 `plan_id/day_id` 改成不存在的值后：
+    - `confirm_pending` 仍返回 `已执行 2 项操作`
+    - 第一条饮食记录被写入
+    - 第二条改期也“成功”，并写入 `plan_id=missing-plan` / `day_id=missing-day` 的幽灵 `PlanDayState`
+    - 没有触发回滚
+  - 根因方向：batch 确认直接信任 pending payload 里的子动作，没有重新校验 plan/day 是否存在；子动作 execute 也没有拒绝未知计划
+  - 测试：`backend/qa/test_adversarial.py::test_batch_confirm_rolls_back_when_second_action_fails`
+- 结论：
+  - **2e8f9a8 不部署**
+  - 生产保持 `52c3b77` / V42 / iOS `52c3b77`
+- Windows 下一步：
+  - batch 确认前对每个子能力做真实存在性/版本校验
+  - 子动作失败必须回滚整批，不能只 `except` 后继续
+  - 禁止写入不存在的 plan/day；补伪造 payload 回归测试
 
 ### 2026-11-16 · Windows（全局 pending 上下文 + 多餐饮食修复）
 
