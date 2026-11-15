@@ -24,7 +24,7 @@ stays small and the knowledge remains auditable.
 Every record carries a safety note because the source has no contraindications
 or rehabilitation guidance. Do not treat it as medical advice.
 
-## 2. Four-domain knowledge base
+## 2. Three-domain knowledge base
 
 `knowledge/` is built by `scripts/build_knowledge_base.py` from audited open
 sources. It is committed so production does not rebuild it at boot.
@@ -32,10 +32,13 @@ sources. It is committed so production does not rebuild it at boot.
 | File | Records | Purpose |
 |---|---:|---|
 | `food_nutrition.jsonl` | 2,017 | Chinese food composition, per 100g |
-| `food_categories.jsonl` | 32 | Food taxonomy + visual recognition cues |
 | `coach_knowledge.jsonl` | 782 | 736 exercise technique cards + 46 curated cards |
 | `equipment_knowledge.jsonl` | 95 | Gym equipment, muscles, recognition cues |
 | `manifest.json` | — | source/license/counts/cleaning stats |
+
+> The food-category taxonomy was removed. It is for a future user-facing food
+> picker, not for the vision model or coach RAG. Do not inject it into the
+> food-photo prompt.
 
 ### Sources and licenses
 
@@ -44,7 +47,7 @@ sources. It is committed so production does not rebuild it at boot.
 | Taiwan FDA Food Nutrition Database (2015) | food composition | OGDL 1.0 |
 | `hasaneyldrm/exercises-dataset` | exercise technique | MIT text; media excluded |
 | FitAI equipment catalog v2 | equipment records | internal |
-| FitAI curated cards / taxonomy | coach, categories, equipment cues | original summaries |
+| FitAI curated cards | coach, equipment cues | original summaries |
 
 The Taiwan dataset is distributed under the Taiwan government open data
 license (OGDL 1.0), which permits commercial use with attribution. Keep the
@@ -64,7 +67,7 @@ source and license fields on every record and in the manifest.
    - drop invalid rows and collapse identical near-duplicates
 3. **Enrich + shape for retrieval**
    - add aliases (parentheses, average labels, common mainland synonyms)
-   - add category cards, serving hints, quality scores
+   - add serving hints, quality scores
    - build deterministic search text and source metadata
 
 Rebuild:

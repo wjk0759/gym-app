@@ -1,4 +1,4 @@
-"""Coverage for the four-domain knowledge base and lexical RAG baseline."""
+"""Coverage for the coach/food/equipment knowledge bases and lexical RAG."""
 
 from __future__ import annotations
 
@@ -16,7 +16,6 @@ def test_knowledge_base_minimum_coverage():
     assert counts["food"] >= 1500
     assert counts["coach"] >= 700
     assert counts["equipment"] >= 90
-    assert counts["food_category"] >= 25
 
 
 def test_every_knowledge_record_has_source_and_license():
@@ -70,16 +69,10 @@ def test_search_coach_posture_and_nutrition():
     assert "蛋白质" in protein[0]["title"]
 
 
-def test_search_food_and_category():
+def test_search_food_nutrition():
     foods = search_knowledge("鸡胸肉热量", domain="food", limit=3)
     assert foods
     assert "鸡胸肉" in foods[0]["title"]
-
-    categories = search_knowledge(
-        "珍珠奶茶属于什么", domain="food_category", limit=3
-    )
-    assert categories
-    assert categories[0]["title"] in {"奶茶/饮品", "嗜好性饮料类"}
 
 
 def test_search_equipment_uses_recognition_cues():

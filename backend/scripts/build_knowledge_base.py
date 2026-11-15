@@ -21,7 +21,6 @@ import json
 import re
 import sys
 import unicodedata
-from collections import Counter, defaultdict
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -218,19 +217,7 @@ def _aliases_for_food(name: str, synonyms: dict[str, list[str]]) -> list[str]:
     return aliases[:12]
 
 
-def _example_ok(name: str) -> bool:
-    blocked = ("平均值", "取样", "進口", "进口", "台湾", "冷凍", "冷冻", "罐头", "罐頭")
-    return not any(token in name for token in blocked)
-
-
-def _category_id(name: str, seed_categories: list[dict]) -> str:
-    for item in seed_categories:
-        if item["name_zh"] == name:
-            return item["id"]
-    return "foodcat-" + re.sub(r"[^0-9a-z\u4e00-\u9fff]+", "-", name).strip("-")
-
-
-def round1_food(csv_path: Path, seed: dict) -> tuple[list[dict], dict]:
+def round1_food(csv_path: Path) -> tuple[list[dict], dict]:
     cc = _opencc()
     stats = {"input_rows": 0, "parsed_rows": 0, "empty_name": 0, "exact_dup": 0}
     rows: list[dict] = []
@@ -390,10 +377,8 @@ def round2_food(rows: list[dict]) -> tuple[list[dict], dict]:
 def round3_food(
     rows: list[dict],
     seed: dict,
-    category_counts: Counter,
-) -> tuple[list[dict], list[dict], dict]:
+) -> tuple[list[dict], dict]:
     synonyms = seed.get("food_synonyms") or {}
-    seed_categories = seed.get("food_categories") or []
     stats = {"aliases_added": 0, "quality_high": 0, "quality_partial": 0}
     output: list[dict] = []
     for row in rows:
@@ -423,7 +408,6 @@ def round3_food(
                 "name_tw": row["name_tw"],
                 "aliases": aliases,
                 "category": row["category"],
-                "category_id": _category_id(row["category"], seed_categories),
                 "kcal": _round(row.get("kcal")),
                 "protein_g": _round(row.get("protein_g")),
                 "fat_g": _round(row.get("fat_g")),
@@ -447,60 +431,8 @@ def round3_food(
             }
         )
 
-    # Category cards: Taiwan categories plus curated dish categories.
-    by_category: dict[str, list[dict]] = defaultdict(list)
-    for row in output:
-        by_category[row["category"]].append(row)
-    categories: list[dict] = []
-    used_ids: set[str] = set()
-    for item in seed_categories:
-        name = item["name_zh"]
-        count = category_counts.get(name, 0)
-        examples = list(item.get("examples") or [])
-        for row in sorted(
-            by_category.get(name, []),
-            key=lambda r: (-(r.get("quality") or 0), len(r["name_zh"])),
-        ):
-            if not _example_ok(row["name_zh"]):
-                continue
-            if row["name_zh"] not in examples:
-                examples.append(row["name_zh"])
-            if len(examples) >= 12:
-                break
-        examples = examples[:12]
-        category_id = item["id"]
-        if category_id in used_ids:
-            continue
-        used_ids.add(category_id)
-        text = (
-            f"{name}。"
-            f"常见：{'、'.join(examples[:8]) or '暂无'}。"
-            f"识别线索：{'；'.join(item.get('visual_cues') or [])}。"
-            f"易混淆：{'、'.join(item.get('confusions') or [])}。"
-            f"{item.get('note') or ''}"
-        )
-        categories.append(
-            {
-                "id": f"foodcat-{category_id}",
-                "domain": "food_category",
-                "title": name,
-                "name_zh": name,
-                "aliases": list(item.get("aliases") or []),
-                "examples": examples,
-                "visual_cues": list(item.get("visual_cues") or []),
-                "confusions": list(item.get("confusions") or []),
-                "note": item.get("note") or "",
-                "food_count": count,
-                "text": text,
-                "search_text": " ".join(
-                    [name, " ".join(item.get("aliases") or []), " ".join(examples)]
-                ),
-                "source": "FitAI curated food taxonomy",
-                "source_url": "https://consumer.fda.gov.tw/Food/TFND.aspx?nodeID=178",
-                "license": "original-summary",
-            }
-        )
-    return output, categories, stats
+    return output, stats
+
 
 
 def build_coach(seed: dict) -> tuple[list[dict], dict]:
@@ -649,15 +581,13 @@ def main() -> int:
         raise SystemExit(f"missing seed: {SEED_JSON}")
     seed = _read_json(SEED_JSON)
 
-    food_r1, r1_stats = round1_food(FOOD_CSV, seed)
+    food_r1, r1_stats = round1_food(FOOD_CSV)
     food_r2, r2_stats = round2_food(food_r1)
-    category_counts = Counter(row["category"] for row in food_r2)
-    food, categories, r3_stats = round3_food(food_r2, seed, category_counts)
+    food, r3_stats = round3_food(food_r2, seed)
     coach, coach_stats = build_coach(seed)
     equipment, equipment_stats = build_equipment(seed)
 
     _write_jsonl(OUT_DIR / "food_nutrition.jsonl", food)
-    _write_jsonl(OUT_DIR / "food_categories.jsonl", categories)
     _write_jsonl(OUT_DIR / "coach_knowledge.jsonl", coach)
     _write_jsonl(OUT_DIR / "equipment_knowledge.jsonl", equipment)
 
@@ -687,7 +617,7 @@ def main() -> int:
                 "raw_file": "../../app/services/equipment_catalog_v2.py",
             },
             {
-                "name": "FitAI curated coach cards and taxonomy",
+                "name": "FitAI curated coach cards",
                 "url": "",
                 "license": "original-summary",
                 "raw_file": "knowledge_seed.json",
@@ -701,14 +631,12 @@ def main() -> int:
                 **coach_stats,
                 **equipment_stats,
                 "food_final": len(food),
-                "food_categories_final": len(categories),
                 "coach_final": len(coach),
                 "equipment_final": len(equipment),
             },
         },
         "counts": {
             "food_nutrition": len(food),
-            "food_categories": len(categories),
             "coach_knowledge": len(coach),
             "equipment_knowledge": len(equipment),
             "coach_exercises": coach_stats["exercise_rows"],
@@ -716,7 +644,6 @@ def main() -> int:
         },
         "files": {
             "food_nutrition.jsonl": len(food),
-            "food_categories.jsonl": len(categories),
             "coach_knowledge.jsonl": len(coach),
             "equipment_knowledge.jsonl": len(equipment),
         },

@@ -5,13 +5,11 @@
     "coach_exercises": 736,
     "coach_knowledge": 782,
     "equipment_knowledge": 95,
-    "food_categories": 32,
     "food_nutrition": 2017
   },
   "files": {
     "coach_knowledge.jsonl": 782,
     "equipment_knowledge.jsonl": 95,
-    "food_categories.jsonl": 32,
     "food_nutrition.jsonl": 2017
   },
   "generated_at": "2026-11-15",
@@ -48,7 +46,6 @@
       "equipment_rows": 95,
       "exercise_dropped": 0,
       "exercise_rows": 736,
-      "food_categories_final": 32,
       "food_final": 2017,
       "quality_high": 1874,
       "quality_partial": 143
@@ -77,7 +74,7 @@
     },
     {
       "license": "original-summary",
-      "name": "FitAI curated coach cards and taxonomy",
+      "name": "FitAI curated coach cards",
       "raw_file": "knowledge_seed.json",
       "url": ""
     }

@@ -1,4 +1,4 @@
-"""Small retrieval smoke benchmark for the four knowledge domains.
+"""Small retrieval smoke benchmark for the coach/food/equipment knowledge domains.
 
 This is deliberately not a leaderboard. It catches obvious routing regressions
 (e.g. a food query returning coach cards) before a larger labelled set exists.
@@ -27,10 +27,6 @@ CASES = [
     ("food", "苹果碳水", ("苹果",)),
     ("food", "酸奶热量", ("发酵乳", "酸奶")),
     ("food", "西兰花纤维", ("青花菜", "西兰花")),
-    ("food_category", "珍珠奶茶属于什么", ("奶茶",)),
-    ("food_category", "火锅和烧烤怎么区分", ("火锅", "烧烤")),
-    ("food_category", "蛋糕属于哪一类", ("糕", "甜品")),
-    ("food_category", "沙拉酱热量高吗", ("沙拉",)),
     ("equipment", "坐姿划船机怎么辨认", ("坐姿划船机",)),
     ("equipment", "哈克深蹲和史密斯机区别", ("哈克深蹲", "史密斯")),
     ("equipment", "蝴蝶机和反向飞鸟区别", ("蝴蝶机", "反向飞鸟")),

@@ -1,12 +1,14 @@
-"""Lexical retrieval over the four audited coach knowledge bases.
+"""Lexical retrieval over the audited coach knowledge bases.
 
 This is the first RAG baseline: no vector store, no network calls. Each module
 can ask for its own domain and receive compact, source-attributed records:
 
 - ``coach``: exercise technique, posture, training principles, nutrition, safety
 - ``food``: per-100g Chinese food composition
-- ``food_category``: food taxonomy with recognition cues
 - ``equipment``: gym equipment, muscles and visual recognition cues
+
+The food-category taxonomy was deliberately removed: it is for a future
+user-facing food picker, not for the vision model or coach RAG.
 
 The lexical scorer is intentionally shared with ``exercise_search.py`` in
 spirit, but the corpus is split by domain so a food query cannot outrank a
@@ -29,7 +31,6 @@ MAX_TEXT = 900
 DOMAIN_FILES = {
     "coach": "coach_knowledge.jsonl",
     "food": "food_nutrition.jsonl",
-    "food_category": "food_categories.jsonl",
     "equipment": "equipment_knowledge.jsonl",
 }
 DOMAINS = tuple(DOMAIN_FILES)
