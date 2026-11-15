@@ -7,6 +7,7 @@ extension AppStore {
         foodLogs.insert(log, at: 0)
         persist()
         syncPendingUserData()
+        dataDidChange(.foodLog, refreshReview: false)
     }
 
     func addFoodLogs(_ logs: [FoodLog]) {
@@ -14,6 +15,7 @@ extension AppStore {
         foodLogs.insert(contentsOf: logs, at: 0)
         persist()
         syncPendingUserData()
+        dataDidChange(.foodLog, refreshReview: false)
     }
 
     /// One daily target for every screen. Prefer the server-confirmed cache
@@ -46,6 +48,15 @@ extension AppStore {
             dailyNutritionTargetsKey = key
         }
         persist()
+    }
+
+    /// Profile/body/plan changes can alter every date's target. Drop the
+    /// persisted per-date cache so visible screens re-fetch instead of showing
+    /// yesterday's formula until the next app launch.
+    func invalidateNutritionTargetCaches() {
+        nutritionTargetsByDate.removeAll()
+        dailyNutritionTargets = nil
+        dailyNutritionTargetsKey = nil
     }
 
     func addCustomFood(_ food: FoodItem) {
@@ -180,6 +191,7 @@ extension AppStore {
         foodLogs.sort { $0.date > $1.date }
         persist()
         syncPendingUserData()
+        dataDidChange(.foodLog, refreshReview: false)
     }
 
     func removeFoodLog(_ id: UUID) {
@@ -191,5 +203,6 @@ extension AppStore {
         }
         persist()
         syncPendingUserData()
+        dataDidChange(.foodLog, refreshReview: false)
     }
 }

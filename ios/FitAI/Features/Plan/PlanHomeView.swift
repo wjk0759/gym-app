@@ -139,6 +139,11 @@ struct PlanHomeView: View {
                 .task(id: selectedDate) {
                     await store.refreshNutritionTargets(for: selectedDate)
                 }
+                .onChange(of: store.revision(.diet)) { _, _ in
+                    Task {
+                        await store.refreshNutritionTargets(for: selectedDate)
+                    }
+                }
             }
         }
     }

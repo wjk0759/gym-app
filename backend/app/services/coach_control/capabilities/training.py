@@ -51,7 +51,7 @@ SKIP = register(
         requires_confirmation=True,
         undo=True,
         events=("TrainingSkipped",),
-        refreshes=("plan", "schedule"),
+        refreshes=("plan", "schedule", "review"),
     )
 )
 STRENGTH = register(

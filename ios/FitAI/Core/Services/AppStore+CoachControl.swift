@@ -639,7 +639,13 @@ extension AppStore {
                     }
                     await self.refreshDomains(domains)
                 }
-                if domains.contains(.diet) {
+                if domains.contains(.diet)
+                    || domains.contains(.body)
+                    || domains.contains(.profile)
+                    || domains.contains(.schedule) {
+                    self.invalidateNutritionTargetCaches()
+                    self.bump([.diet])
+                    self.persist()
                     Task { await self.refreshNutritionTargets() }
                 }
                 Telemetry.shared.track(
@@ -725,7 +731,13 @@ extension AppStore {
                     }
                     await self.refreshDomains(domains)
                 }
-                if domains.contains(.diet) {
+                if domains.contains(.diet)
+                    || domains.contains(.body)
+                    || domains.contains(.profile)
+                    || domains.contains(.schedule) {
+                    self.invalidateNutritionTargetCaches()
+                    self.bump([.diet])
+                    self.persist()
                     Task { await self.refreshNutritionTargets() }
                 }
                 self.toast = "已撤销"

@@ -115,6 +115,7 @@ extension AppStore {
         appendBodyMetric(metric)
         persist()
         syncPendingUserData()
+        dataDidChange(.bodyMetric)
         return metric
     }
 
@@ -133,6 +134,7 @@ extension AppStore {
             try? await APIClient.shared.deleteBodyMetric(id: id)
         }
         syncPendingUserData()
+        dataDidChange(.bodyMetric)
     }
 
     func dismissBodyCheckIn() {
@@ -315,7 +317,7 @@ extension AppStore {
             plan = updated
             toast = "训练日期已更新"
             persist()
-            rescheduleNotifications()
+            dataDidChange(.plan)
             syncPendingUserData()
             return true
         case .failure(let error):

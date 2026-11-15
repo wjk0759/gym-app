@@ -37,6 +37,9 @@ struct PlanReviewView: View {
         .task(id: period) {
             await loadReview()
         }
+        .onChange(of: store.revision(.review)) { _, _ in
+            Task { await loadReview() }
+        }
     }
 
     private var reviewHeaderPlaceholder: some View {

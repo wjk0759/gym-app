@@ -30,6 +30,7 @@ extension AppStore {
         )
         persist()
         syncPendingUserData()
+        dataDidChange(.profile)
         generatePlan(onboarding: true)
 
         Task { @MainActor in
@@ -86,6 +87,7 @@ extension AppStore {
         persist()
         syncPendingUserData()
         syncProfileAndGoal()
+        dataDidChange(.profile)
         if planSettingsChanged, hasPlanEquipment, regeneratePlan {
             generatePlan(force: true)
         } else {

@@ -85,6 +85,7 @@ extension AppStore {
         guard let remoteID = sessions.first(where: { $0.id == id })?.remoteID else {
             sessions.removeAll { $0.id == id }
             persist()
+            dataDidChange(.workout)
             return
         }
         sessions.removeAll { $0.id == id }
@@ -93,6 +94,7 @@ extension AppStore {
         }
         persist()
         syncPendingWorkouts()
+        dataDidChange(.workout, refreshReview: false)
     }
 
     /// 拉取服务端近 90 天训练历史，按 remoteID 合并；本地未上传的修改优先。
@@ -485,9 +487,21 @@ extension AppStore {
                 refreshed.insert(.profile)
             }
         }
+        let targetsDependOnRefresh = refreshed.contains(.body)
+            || refreshed.contains(.profile)
+            || refreshed.contains(.schedule)
+        if targetsDependOnRefresh {
+            invalidateNutritionTargetCaches()
+            refreshed.insert(.diet)
+        }
         bump(refreshed)
         if !refreshed.isEmpty {
             persist()
+        }
+        if targetsDependOnRefresh {
+            Task { @MainActor in
+                await self.refreshNutritionTargets()
+            }
         }
     }
 

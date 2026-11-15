@@ -128,7 +128,7 @@ extension AppStore {
                 }
                 self.isGenerating = false
                 self.persist()
-                self.rescheduleNotifications()
+                self.dataDidChange(.plan)
                 self.syncPendingUserData()
             }
             return
@@ -159,7 +159,7 @@ extension AppStore {
             self.lastPlanGeneratedAt = Date()
             self.isGenerating = false
             self.persist()
-            self.rescheduleNotifications()
+            self.dataDidChange(.plan)
             self.syncPendingUserData()
             if onboarding {
                 Task { @MainActor in
@@ -278,7 +278,7 @@ extension AppStore {
         planNeedsServerSync = true
         toast = "已恢复计划 v\(restored.version)"
         persist()
-        rescheduleNotifications()
+        dataDidChange(.plan)
         syncPendingUserData()
     }
 
@@ -319,7 +319,7 @@ extension AppStore {
             self.plan = pending
             self.planNeedsServerSync = needsServerImport || self.planNeedsServerSync
             self.persist()
-            self.rescheduleNotifications()
+            self.dataDidChange(.plan)
             self.syncPendingUserData()
             if openRecord {
                 self.selectedTab = 1

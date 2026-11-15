@@ -171,6 +171,7 @@ extension AppStore {
         sessions.insert(session, at: 0)
         persist()
         syncPendingWorkouts()
+        dataDidChange(.workout, refreshReview: false)
 
         if healthKitEnabled {
             let end = endedAt ?? Date()
@@ -188,6 +189,7 @@ extension AppStore {
         sessions.insert(session, at: 0)
         persist()
         syncPendingWorkouts()
+        dataDidChange(.workout)
     }
 
     // MARK: - 训练草稿
@@ -299,5 +301,6 @@ extension AppStore {
         sessions[index] = updated
         persist()
         syncPendingWorkouts()
+        dataDidChange(.workout, refreshReview: false)
     }
 }

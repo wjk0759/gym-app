@@ -1834,6 +1834,11 @@ def test_write_capabilities_declare_refresh_domains():
     for capability in CAPABILITIES.values():
         if capability.kind == "write" and not capability.id.startswith("ui."):
             assert capability.refreshes, capability.id
+    assert "diet" in CAPABILITIES["body.log_weight"].refreshes
+    assert "review" in CAPABILITIES["diet.log_planned_meal"].refreshes
+    assert "review" in CAPABILITIES["diet.skip_planned_meal"].refreshes
+    assert "review" in CAPABILITIES["training.skip"].refreshes
+    assert "review" in CAPABILITIES["training.add_plan_day"].refreshes
 
 
 def test_unmatched_action_emits_a_coverage_gap_event(db, monkeypatch):

@@ -115,6 +115,7 @@ extension AppStore {
             }
             persist()
             syncPendingUserData()
+            dataDidChange(.bodyMetric)
             return granted
         } catch {
             healthKitEnabled = false

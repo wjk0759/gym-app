@@ -6,6 +6,7 @@ extension AppStore {
     func addBodyAnalysis(_ analysis: BodyAnalysis) {
         bodyAnalyses.insert(analysis, at: 0)
         persist()
+        dataDidChange(.bodyAnalysis)
     }
 
     /// Delete the cloud record and its private photo, then remove the local
@@ -24,6 +25,7 @@ extension AppStore {
         }
         bodyAnalyses.removeAll { $0.id == analysis.id }
         persist()
+        dataDidChange(.bodyAnalysis)
         return true
     }
 
@@ -67,6 +69,7 @@ extension AppStore {
 
         toast = "已应用体型分析：重点部位每周增加 1 组"
         persist()
+        dataDidChange(.plan)
         Task {
             try? await APIClient.shared.markBodyAnalysisApplied(
                 clientID: analysis.id,
