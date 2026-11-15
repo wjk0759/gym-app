@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`4fd1569`（控制平面全量迁移 + 50 轮上下文/记忆书 + 指代解析/会话摘要/关键词记忆；照片/体型/器械/改删/频率/记忆/开始训练；后端生产已部署 `4fd1569` + Flyway **V38**，视觉已切 **DeepSeek V4.1 Flash**，Qwen 已退出且不再接回；iOS 已装 `c8eca16`；macOS 已验证后端 **480 passed**、QA **16/16**、iOS **108/108**、UI **4/4**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`0eb9519`（控制平面全量迁移 + 50 轮上下文/记忆书 + 34 个能力的 `ActionSpec` 清单 + `CoachActionGap` 缺口事件 + 训练提醒能力；后端 **484 passed**、QA **16/16**、Ruff 通过；iOS Build CI 通过；生产后端仍部署 `4fd1569` + Flyway **V38**（视觉 **DeepSeek V4.1 Flash**，Qwen 已退出），本轮未部署；iOS 真机仍 `c8eca16`，提醒能力待 Mac 验证）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +26,32 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-15 · Windows（动作清单 + 缺口遥测 + 训练提醒）
+
+- 提交：`0eb9519`，已推 `develop`；Backend Tests ✓，iOS Build ✓。
+- 做了什么：
+  - 新增 `backend/app/services/coach_control/manifest.py`：34 个能力的 `ActionSpec`（示例语句 / 槽位 / 卡片类型），`capability_payloads()` 现在返回 examples/slots/card；单测强制能力与清单一一对应。
+  - 新增 `docs/60-coach-action-coverage.md`：训练、饮食、身体、计划、器械、复盘、设置/账户的覆盖状态和缺口。
+  - `CoachActionGap`：动作型文本落到自由聊天或兜底澄清时写 `DomainEvent`，给后续补能力/看板用。
+  - `ui.configure_reminders`：识别“早上8点 / 20:30 / 晚上8点半 / 关闭提醒”，缺时间会追问；确认回执带 `enabled/hour/minute`；iOS 确认后调用 `enableReminders(hour:minute:)` 或 `disableReminders()`，无通知权限或无计划时追加说明；新增提醒待确认卡。
+  - 通用待确认卡兜底改为显示 `payload.summary`。
+  - 更新交接和覆盖文档。
+- 验证：
+  - 后端 **484 passed**；QA **16/16**；Ruff `app/tests/scripts/qa` 通过。
+  - 新增路由、确认、关闭、时间变体单测。
+  - iOS Build CI 通过（只编译，未跑 `FitAITests`）。
+- 未验证：
+  - 真机通知授权弹窗、提醒实际送达、拒绝权限/无计划文案；提醒卡和回执卡视觉。
+  - Mac `FitAITests` / UI 测试。
+  - 生产未部署 `0eb9519`，生产后端仍是 `4fd1569`。
+- 对方（Mac）要做：
+  - `git pull` → `xcodegen generate` → 构建 / `FitAITests` / UI。
+  - 真机验证：“把训练提醒改成早上8点”“关闭训练提醒”“训练提醒”（应追问时间）；确认卡、回执卡、系统通知送达；拒绝通知权限后的提示。
+  - 验证长对话记忆，以及 `CoachActionGap` 不再把“导出训练数据 / 改昵称”当普通聊天静默吞掉。
+- 禁止恢复：
+  - Qwen/DashScope。
+  - 不要为提醒新开独立设置流程，保持教练为主入口。
 
 ### 2026-11-15 · Windows（embedding 小评测：BGE-M3 vs 关键词）
 
