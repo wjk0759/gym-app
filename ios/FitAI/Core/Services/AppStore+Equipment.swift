@@ -1,5 +1,27 @@
 import Foundation
 
+/// Read-only projection of the three equipment sources. It deliberately keeps
+/// them separate: onboarding types, the physical equipment library, and the
+/// universal-equipment checkboxes still have different write paths.
+struct EquipmentSnapshot {
+    let profileTypes: [Equipment]
+    let libraryItems: [EquipmentItem]
+    let universalItems: [UniversalEquipment]
+    let planPoolSlugs: [String]
+
+    var profileTypeSummary: String {
+        profileTypes.isEmpty
+            ? "未选择"
+            : profileTypes.map(\.label).joined(separator: " / ")
+    }
+
+    var universalSummary: String {
+        universalItems.isEmpty
+            ? "未勾选"
+            : universalItems.map(\.name).joined(separator: " / ")
+    }
+}
+
 extension AppStore {
     // MARK: - 计划池
 
@@ -32,6 +54,20 @@ extension AppStore {
     /// 计划池覆盖的部位。
     var planPoolBodyParts: Set<String> {
         Set(planPoolSlugs.compactMap { ExerciseLibrary.exercise(slug: $0)?.bodyPart })
+    }
+
+    /// All equipment state in one display-only object. Consumers should read
+    /// counts/labels from here instead of mixing the three stores themselves;
+    /// edits still go through the dedicated methods below.
+    var equipmentSnapshot: EquipmentSnapshot {
+        EquipmentSnapshot(
+            profileTypes: profile.equipment,
+            libraryItems: equipmentLibrary,
+            universalItems: ExerciseLibrary.universalEquipment.filter {
+                selectedUniversalSlugs.contains($0.slug)
+            },
+            planPoolSlugs: planPoolSlugs
+        )
     }
 
     // MARK: - 器械库（物理器械）

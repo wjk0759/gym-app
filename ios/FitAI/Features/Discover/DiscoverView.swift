@@ -109,7 +109,7 @@ struct DiscoverView: View {
                             .foregroundStyle(Theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
 
-                        Text("已录入 \(store.equipmentLibrary.count) 件 · 计划池 \(store.planPoolSlugs.count) 个动作")
+                        Text("已录入 \(store.equipmentSnapshot.libraryItems.count) 件 · 计划池 \(store.equipmentSnapshot.planPoolSlugs.count) 个动作")
                             .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                             .fixedSize(horizontal: false, vertical: true)

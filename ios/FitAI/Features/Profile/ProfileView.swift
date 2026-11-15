@@ -426,7 +426,7 @@ struct ProfileView: View {
                     Text("我的器械库")
                         .font(AppType.headline)
                         .foregroundStyle(Theme.ink)
-                    Text("已录入 \(store.equipmentLibrary.count) 件 · \(AppConfig.exerciseVideosEnabled ? "教学视频与计划" : "动作与计划")")
+                    Text("档案 \(store.equipmentSnapshot.profileTypes.count) 类 · 器械 \(store.equipmentSnapshot.libraryItems.count) 件 · 通用 \(store.equipmentSnapshot.universalItems.count) 项")
                         .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
                 }

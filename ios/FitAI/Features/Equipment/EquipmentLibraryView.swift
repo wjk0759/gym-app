@@ -148,7 +148,8 @@ struct EquipmentLibraryView: View {
     }
 
     private var overviewCard: some View {
-        VStack(spacing: 0) {
+        let snapshot = store.equipmentSnapshot
+        return VStack(spacing: 0) {
             HStack(spacing: 14) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -167,7 +168,7 @@ struct EquipmentLibraryView: View {
                         .foregroundStyle(Theme.secondaryText)
 
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text("\(store.equipmentLibrary.count)")
+                        Text("\(snapshot.libraryItems.count)")
                             .font(.system(size: 34, weight: .bold, design: .default))
                             .foregroundStyle(Theme.ink)
                             .lineLimit(1)
@@ -176,6 +177,9 @@ struct EquipmentLibraryView: View {
                             .foregroundStyle(Theme.secondaryText)
                     }
 
+                    Text("档案 \(snapshot.profileTypes.count) 类 · 通用 \(snapshot.universalItems.count) 项")
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(Theme.tertiaryText)
                 }
 
                 Spacer(minLength: 0)
@@ -192,7 +196,7 @@ struct EquipmentLibraryView: View {
                         .font(AppType.callout.weight(.semibold))
                         .foregroundStyle(Theme.ink)
                     Spacer()
-                    Text("\(store.planPoolSlugs.count) 个动作")
+                    Text("\(snapshot.planPoolSlugs.count) 个动作")
                         .font(.system(size: 11, weight: .bold, design: .monospaced))
                         .foregroundStyle(Theme.cobalt)
                 }
@@ -200,6 +204,10 @@ struct EquipmentLibraryView: View {
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
                     .fixedSize(horizontal: false, vertical: true)
+                Text("档案器械：\(snapshot.profileTypeSummary)")
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(Theme.tertiaryText)
+                    .lineLimit(2)
             }
 
             Toggle(isOn: strictModeBinding) {
@@ -227,7 +235,7 @@ struct EquipmentLibraryView: View {
                     .font(AppType.callout.weight(.semibold))
                     .foregroundStyle(Theme.ink)
                 Spacer()
-                Text("\(store.selectedUniversalSlugs.count) 项")
+                Text("\(store.equipmentSnapshot.universalItems.count) 项")
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
