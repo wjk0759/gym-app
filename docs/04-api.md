@@ -465,6 +465,23 @@ review.weekly（只读洞察）
 
 确认后返回 `receipt`、`action_id` 和 `deep_link`；撤销走 `/coach/actions/{id}/undo`。卡片和草稿互斥，同一 session 最多一个 `pending`。
 
+`diet.log_food` 的 payload 可以同时带 `meals`：
+
+```json
+{
+  "date": "2026-11-15",
+  "meal": "breakfast",
+  "items": [],
+  "meals": [
+    {"meal": "breakfast", "items": [{"name": "麦片", "grams": 200}]},
+    {"meal": "lunch", "items": [{"name": "干蒸牛肉", "grams": 120}]},
+    {"meal": "dinner", "items": [{"name": "炒米粉", "grams": 250}]}
+  ]
+}
+```
+
+旧的 `meal + items` 仍然兼容；有 `meals` 时服务端按每餐写入，并一次撤销整组记录。用户在当前卡片上补充“还有/再加/另外”，或补充另一餐时，服务端更新同一 pending，不丢弃已识别内容；改期卡也支持直接补充新日期。
+
 #### `POST /coach/chat`
 
 ```json

@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`a5b93ca`（数据收敛 + V39 云端同步 + V40–V42 体型分析/训练草稿/经期上云；生产后端已部署 `a5b93ca` + Flyway **V42**；iOS 已装 `39c1131`；`FitAITests` **110/110**、UI **4/4**、后端 **492 passed**、QA **19/19**；私有照片目录已挂载并验证；生产仍健康）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`46c5db7`（新增全局 pending 上下文 + 多餐饮食解析；生产后端仍是 `a5b93ca` + Flyway **V42**，iOS 已装 `39c1131`；新代码后端 **502 passed**、QA **19/19**、Ruff 通过、smoke OK、iOS Build `46c5db7` ✓；**`46c5db7` 尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +26,32 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-16 · Windows（全局 pending 上下文 + 多餐饮食修复）
+
+- 提交：`46c5db7`，已推 `develop`；后端 **502 passed**、QA **19/19**、Ruff 通过、smoke OK、iOS Build `46c5db7` ✓（Backend Tests / iOS Build CI 均成功）。
+- 做了什么：
+  - 饮食解析改为“所有标点/空格先切 token，再重组数字/单位/日期/时间/范围”。新增 `split_meal_clauses`，按餐次标签分组，支持“牛肉、腊肠、米饭是中午吃的”和“早饭…午饭…晚饭…”一句话多餐。
+  - `diet.log_food` payload 支持 `meals`；服务端按每餐写入，一次确认、一次撤销整组；旧 `meal + items` 保持兼容。
+  - iOS 教练卡支持多餐分组展示（`AgentActionPayload.meals`）。
+  - 全局 pending follow-up：体重卡可直接“记错了 74kg”原地更新；饮食卡“还有一杯奶茶/晚餐吃了…”会合并并保留旧餐；改期卡“改到周四”原地更新；其他卡片遇到修改/追加时先保留卡，不再静默丢弃。
+  - 补充 `麦片/炒米粉/紫薯/玉米肠` 规则识别，避免生产账号的三种食物只能靠 LLM。
+- 生产账号验证（只读）：
+  - 账号 `13428104171` 的 11-15 会话里，原始三句话被拆成多次单餐；5 项晚饭卡包含早/午餐 items，麦片重复。
+  - 新代码的本地回归已覆盖同类三句话，会生成早餐/午餐/晚餐一张多餐卡。
+- Mac 要做：
+  - 拉 `46c5db7`，跑 `FitAITests` / `FitAIUITests`。
+  - **先 build/安装 iOS `46c5db7`，再部署后端 `46c5db7`**；旧 iOS 不认 `meals`，只部署后端会出现“多餐数据 + 单餐卡片”的割裂展示。
+  - 后端 `46c5db7` 不需要新迁移，V42 保持。
+  - 真机复测账号：
+    - `我昨天早上吃了200g麦片、中午吃的是干蒸牛肉+腊肠+200g米饭、晚饭吃了250g炒米粉+60g紫薯+100g玉米肠` → 一张三 meal 卡。
+    - 卡片 pending 时说 `还有一杯奶茶` → 合并到当前餐，不丢卡。
+    - 体重卡 pending 时说 `记错了 今天是74kg` → 更新同一张体重卡。
+    - 改期卡 pending 时说 `改到周四` → 更新目标日期。
+  - 数据清理：撤销 11-15 的 5 项错误晚饭 action `fcb3677f-4ef1-4dac-a1b1-bf99d823bc59`，保留早餐 `64209a9a-6880-437a-92e2-2664cd1026e3`；再用新版本重记午饭和晚饭。先 dry-run 再执行。
+- 不要恢复：
+  - 不要回到“单 meal payload + 新消息直接丢弃 pending”的旧逻辑。
+  - 多餐卡确认后必须按 action_id 一次撤销整组，不要只删第一餐。
 
 ### 2026-11-16 · macOS（V40–V42 部署 + 草稿/经期压力验证）
 
