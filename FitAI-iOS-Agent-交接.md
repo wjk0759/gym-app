@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`a3158f6`（控制平面全量迁移 + 50 轮上下文/指代解析/会话摘要/关键词记忆；后端生产已部署 `4fd1569` + Flyway **V38**；iOS 保持 `c8eca16`；macOS 已验证后端 **480 passed**、QA **16/16**，iOS **108/108**、UI **4/4**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`4fd1569`（控制平面全量迁移 + 50 轮上下文/记忆书 + 指代解析/会话摘要/关键词记忆；照片/体型/器械/改删/频率/记忆/开始训练；后端生产已部署 `4fd1569` + Flyway **V38**，视觉已切 **DeepSeek V4.1 Flash**；iOS 已装 `c8eca16`；macOS 已验证后端 **480 passed**、QA **16/16**、iOS **108/108**、UI **4/4**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -60,6 +60,33 @@
 - 备注：
   - RAG/向量检索未做，Windows 建议先用关键词记忆评测
   - 生产 `coach_control.bak-*` 目录仍在代码目录，本轮 rsync 已排除，不影响运行
+### 2026-11-15 · Windows（视觉切 DeepSeek V4.1 Flash）
+
+- 配置变更（无代码提交）：生产 `/opt/fitai/.env`
+  - `VISION_MODEL=deepseek-flash`
+  - `VISION_BASE_URL=`（空，回落 `LLM_BASE_URL`）
+  - `VISION_API_KEY=`（空，回落 `LLM_API_KEY`）
+  - 备份：`/opt/fitai/.env.bak-20261115-195656`
+  - 已 `docker compose up -d --build api`，`/health/ready` 200
+- 评测（7 张器械图，通用 prompt）：
+  - DeepSeek V4.1 Flash：2 个准确 + 2 个接近
+  - 豆包 2.1 Lite：1 个准确 + 2 个接近
+  - 豆包 2.1 Turbo：0 个准确 + 2–3 个接近
+  - Doubao Pro（2.1 Pro）在这把 Ark key 上 `ModelNotOpen`，没测到
+  - Qwen3-VL-Plus：1 个准确
+- 生产烟测：
+  - 器械图 `/coach/turns/vision` 200，`mode=equipment`，JSON 正常
+  - 食物图 200，`mode=nutrition`，返回约 380–450 kcal、蛋白质 40–45g
+  - 第三张训练图 429，是视觉 6 次/分钟限流，不是模型失败
+- 未验证：
+  - 体型/训练动作两类图片
+  - 真机拍照、长图/多图、超时和成本
+  - DeepSeek 的 reasoning token 成本（单张约 900–1800）与 5–13 秒延迟
+- 回滚：
+  - 恢复 `/opt/fitai/.env.bak-20261115-195656` 后重启 API，即回到 `qwen3-vl-plus` + DashScope
+- 备注：
+  - 视觉切 DeepSeek 不影响 RAG embedding 选型；embedding 仍按 Qwen/豆包/BGE-M3 评测
+  - Ark key 已出现在聊天里，测试后建议轮换
 
 ### 2026-11-15 · Windows（上下文接缝 / 摘要 / 关键词记忆，RAG 前）
 
