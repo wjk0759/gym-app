@@ -11,13 +11,11 @@ import json
 import re
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
-from functools import lru_cache
 from zoneinfo import ZoneInfo
 
 from ..config import settings
 from . import llm
 from .food_vision import FOODS
-from .knowledge_search import food_names, lookup_food
 from .prompt_registry import prompt_version
 
 DIET_TZ = ZoneInfo("Asia/Shanghai")
@@ -368,48 +366,14 @@ def _match_food(segment: str) -> tuple[str, str] | None:
     for alias in sorted(ALIASES, key=len, reverse=True):
         if alias in segment:
             return alias, ALIASES[alias]
-    for name in _known_food_names():
-        index = segment.find(name)
-        if index < 0:
-            continue
-        after = segment[index + len(name) :]
-        if after and after[0] in _PRODUCT_CHARS:
-            combined = name + after[:2]
-            if combined not in _known_food_set():
-                # "牛筋" + "肉肠" is a different food, not 80g of beef tendon.
-                continue
-        return name, name
+    for name in sorted(FOODS, key=len, reverse=True):
+        if name in segment:
+            return name, name
     return None
 
 
-@lru_cache(maxsize=1)
-def _known_food_names() -> tuple[str, ...]:
-    return tuple(
-        sorted(set(FOODS) | set(food_names()), key=lambda name: (-len(name), name))
-    )
-
-
-@lru_cache(maxsize=1)
-def _known_food_set() -> set[str]:
-    return set(_known_food_names())
-
-
-_PRODUCT_CHARS = set("肠肉丸饼排脯干酱汁粉面饭汤包饺糕酥条片丝丁块串")
-
-
 def _macros(base: str, grams: float) -> dict:
-    per_100 = FOODS.get(base)
-    if per_100 is None:
-        item = lookup_food(base)
-        if item is None:
-            per_100 = (0.0, 0.0, 0.0, 0.0)
-        else:
-            per_100 = (
-                item.get("kcal") or 0.0,
-                item.get("protein_g") or 0.0,
-                item.get("carbs_g") or 0.0,
-                item.get("fat_g") or 0.0,
-            )
+    per_100 = FOODS[base]
     factor = grams / 100.0
     return {
         "kcal": round(per_100[0] * factor, 1),
@@ -531,14 +495,7 @@ def resolve_food_rules(text: str) -> FoodResolution:
         grams, portion_text = _portion(segment)
         explicit_portion = grams is not None
         if grams is None:
-            grams = DEFAULT_GRAMS.get(base)
-            if grams is None:
-                item = lookup_food(base)
-                grams = (
-                    float(item["serving_g"])
-                    if item and item.get("serving_g")
-                    else 200.0
-                )
+            grams = DEFAULT_GRAMS.get(base, 200.0)
         elif portion_text and "杯" in portion_text and base in CUP_GRAMS:
             grams = CUP_GRAMS[base] * (grams / PORTION_UNITS["杯"])
         grams = max(5.0, min(2000.0, grams))
@@ -812,9 +769,6 @@ def _canonical_food_name(name: str) -> str:
         if value == alias or alias in value:
             return ALIASES[alias].lower()
     for base in sorted(FOODS, key=len, reverse=True):
-        if value == base or base in value or value in base:
-            return base.lower()
-    for base in food_names():
         if value == base or base in value or value in base:
             return base.lower()
     return value

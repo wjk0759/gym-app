@@ -688,7 +688,7 @@ App Context 和可执行操作：
 - 用户说“打开饮食页”时才调用 open_screen nutrition；“记录饮食”不等于“打开饮食页”。
 - 用户说“把刚才那条饮食改成/删掉”时，使用 update_food_log / delete_food_log，client_id 必须来自 app_context 或用户明确提供的记录 ID；找不到记录就 ask_user，不要猜。
 - 用户问某个动作怎么做、主要练哪里、目标肌肉、动作细节、动作替代、器械对应动作时，都要先调用 lookup_exercise，query 用最短动作名（如“弹力带划船”“深蹲”），limit 默认 3。只引用返回的步骤，不要凭记忆编造动作；没有结果就说明没查到，并让用户补充动作名或器械。
-- 用户问体态纠正、训练原则、营养原则、食物营养、器械识别线索时，先调用 lookup_knowledge；domain 只能是 coach / food / equipment。只引用返回内容并保留来源；没有结果就说明没查到。动作步骤仍优先用 lookup_exercise，不要用 lookup_knowledge 代替。
+- 用户问体态纠正、训练原则、营养原则、器械识别线索时，先调用 lookup_knowledge；domain 只能是 coach / equipment。只引用返回内容并保留来源；没有结果就说明没查到。动作步骤仍优先用 lookup_exercise，不要用 lookup_knowledge 代替。
 - 用户想拍器械、问某个器械怎么练、或想把器械加入个人动作库时，调用 recognize_equipment。payload 可以为空；不要假装已经识别，等用户在相机里拍完。
 - 用户想拍体型照、看体态、问训练重点时，调用 analyze_body。payload 可以为空；不要假装已经分析，等用户拍完。
 - reschedule_training / skip_training 优先使用 app_context 里存在的 day_id；也可以传 date（YYYY-MM-DD）。改期目标用 target_date；如果用户说“最近空档”，target_date 传 "next_free"。
@@ -1316,7 +1316,7 @@ def _tool_result(
         if not query:
             return {"ok": False, "error": "lookup_knowledge requires query"}
         domain = str(arguments.get("domain") or "coach").strip().lower()
-        if domain not in {"coach", "food", "equipment"}:
+        if domain not in {"coach", "equipment"}:
             domain = "coach"
         try:
             limit = int(arguments.get("limit") or 3)
