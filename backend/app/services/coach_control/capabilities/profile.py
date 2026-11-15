@@ -45,7 +45,8 @@ def resolve(message: str) -> dict:
             break
     weight = None
     match = re.search(
-        r"(?:目标(?:体重)?|减到|增到|降到|涨到)\s*"
+        r"(?:目标(?:体重)?(?:改成|改为|调整到|设成|定到|到)?|"
+        r"减到|增到|降到|涨到)\s*"
         r"(\d{2,3}(?:\.\d+)?)\s*(kg|公斤|斤)?",
         message,
         flags=re.IGNORECASE,

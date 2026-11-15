@@ -833,6 +833,75 @@ def test_training_reschedule_card_accepts_a_new_date(db):
     assert len(active) == 1
 
 
+def test_batch_diet_and_reschedule_confirm_and_undo(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    context = {
+        "plan": {
+            "id": "plan-1",
+            "version": 3,
+            "days": [
+                {
+                    "id": "day-1",
+                    "date": today.isoformat(),
+                    "title": "上肢",
+                    "completed": False,
+                    "skipped": False,
+                }
+            ],
+        }
+    }
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "记午饭鸡胸肉200g，再把今天的训练改到11月20日",
+            app_context=context,
+        )
+    )
+    assert turn["pending"]["capability_id"] == "coach.batch"
+    batch = turn["pending"]["payload"]["batch"]
+    assert [item["capability_id"] for item in batch] == [
+        "diet.log_food",
+        "training.reschedule",
+    ]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert confirmed["status"] == "executed"
+    assert len(db.execute(select(FoodLog)).scalars().all()) == 1
+    assert db.execute(select(PlanDayState)).scalar_one().assigned_date == date(
+        today.year, 11, 20
+    )
+
+    undone = runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert undone["restored"] is True
+    assert db.execute(select(FoodLog)).scalars().all() == []
+    assert db.execute(select(PlanDayState)).scalars().all() == []
+
+
+def test_batch_weight_and_goal_confirm_and_undo(db):
+    import asyncio
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "今天体重73kg，目标改成70kg")
+    )
+    assert turn["pending"]["capability_id"] == "coach.batch"
+    assert [
+        item["capability_id"] for item in turn["pending"]["payload"]["batch"]
+    ] == ["body.log_weight", "profile.update_goal"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    goals = db.execute(select(Goal)).scalars().all()
+    assert goals[0].target_weight_kg == 70
+    metrics = db.execute(select(BodyMetric)).scalars().all()
+    assert metrics[0].weight_kg == 73
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(Goal)).scalars().all() == []
+    assert db.execute(select(BodyMetric)).scalars().all() == []
+
+
 def test_dinner_reference_uses_prior_turns_and_full_history(db, monkeypatch):
     import asyncio
     import json

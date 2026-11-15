@@ -7,6 +7,7 @@ executes through the action ledger.
 
 from __future__ import annotations
 
+import contextlib
 import re
 import time
 from datetime import datetime, timezone
@@ -34,6 +35,7 @@ from .conversation import build_conversation_context
 from .events import emit_event
 from .registry import CAPABILITIES
 from .state import (
+    PENDING_TTL,
     cancel_active_pending,
     cancel_pending,
     consume_pending,
@@ -78,6 +80,7 @@ START_TRAINING_UI = "ui.start_training"
 OPEN_SCREEN_UI = "ui.open_screen"
 REMINDERS_UI = "ui.configure_reminders"
 MEMORY = "memory.remember"
+BATCH = "coach.batch"
 
 
 def _looks_like_reschedule(message: str) -> bool:
@@ -999,6 +1002,143 @@ async def _pending_card_followup(
     return None
 
 
+def _split_batch_clauses(message: str) -> list[str]:
+    parts = re.split(
+        r"(?:然后|再|顺便|另外|还要|同时|并且|以及)",
+        message,
+    )
+    if len([part for part in parts if part.strip()]) < 2:
+        parts = re.split(r"[，,；;]\s*", message)
+    return [
+        part.strip(" ，,。；;")
+        for part in parts
+        if part.strip(" ，,。；;")
+    ]
+
+
+async def _try_batch_turn(
+    db: Session,
+    user_id: str,
+    message: str,
+    context,
+    conversation,
+) -> dict | None:
+    """Resolve two or more independent actions into one confirmation card.
+
+    This is intentionally conservative: every clause must resolve cleanly.
+    If any clause needs clarification, fall back to the normal single-intent
+    path so the user does not get a half-understood batch.
+    """
+    clauses = _split_batch_clauses(message)
+    if len(clauses) < 2:
+        return None
+
+    actions: list[dict] = []
+    seen: set[str] = set()
+    for clause in clauses:
+        action: dict | None = None
+        if _looks_like_reschedule(clause):
+            from .capabilities.training import resolve as resolve_training
+
+            resolution = resolve_training(db, user_id, clause, context)
+            if resolution.get("ready"):
+                payload = resolution["payload"]
+                action = {
+                    "capability_id": TRAINING,
+                    "payload": payload,
+                    "summary": _training_reply(payload),
+                }
+        elif _looks_like_weight(clause):
+            from .capabilities.body import resolve as resolve_weight
+
+            resolution = resolve_weight(clause)
+            if resolution.get("ready"):
+                payload = resolution["payload"]
+                action = {
+                    "capability_id": WEIGHT,
+                    "payload": payload,
+                    "summary": _body_metric_reply(payload),
+                }
+        elif _looks_like_goal(clause):
+            from .capabilities.profile import resolve as resolve_goal
+
+            resolution = resolve_goal(clause)
+            if resolution.get("ready"):
+                action = {
+                    "capability_id": GOAL,
+                    "payload": resolution["payload"],
+                    "summary": "更新目标",
+                }
+        elif _looks_like_cardio(clause):
+            from .capabilities.training import resolve_cardio
+
+            resolution = resolve_cardio(clause)
+            if resolution.get("ready"):
+                payload = resolution["payload"]
+                action = {
+                    "capability_id": CARDIO,
+                    "payload": payload,
+                    "summary": (
+                        f"记录{payload.get('title')} "
+                        f"{payload.get('duration_minutes')} 分钟"
+                    ),
+                }
+        elif _looks_like_food(clause):
+            from .capabilities.diet import resolve as resolve_diet
+
+            resolution = await resolve_diet(
+                db,
+                user_id,
+                clause,
+                history_context=conversation.reference_context(),
+            )
+            if not resolution.get("questions") and not resolution.get(
+                "missing_slots"
+            ):
+                meals = resolution.get("meals") or []
+                payload = {
+                    "date": resolution["date"],
+                    "meal": resolution["meal"],
+                    "raw_text": clause[:500],
+                    "items": resolution.get("items") or [],
+                }
+                if meals:
+                    payload["meals"] = meals
+                action = {
+                    "capability_id": DIET,
+                    "payload": payload,
+                    "summary": (
+                        _food_reply_multi(meals)
+                        if meals
+                        else _food_reply(resolution)
+                    ),
+                }
+        if action is None:
+            return None
+        capability = action["capability_id"]
+        if capability in seen:
+            # Multiple food clauses are handled by the multi-meal parser; do
+            # not turn them into two separate write cards.
+            return None
+        seen.add(capability)
+        actions.append(action)
+        if len(actions) > 3:
+            return None
+
+    if len(actions) < 2:
+        return None
+    lines = [
+        f"{index + 1}. {action['summary']}"
+        for index, action in enumerate(actions)
+    ]
+    reply = "我会一起处理这几项：\n" + "\n".join(lines) + "\n确认后一起执行。"
+    return {
+        "summary": f"{len(actions)} 项操作",
+        "batch": actions,
+        "reply": reply,
+    }
+
+
 def _finish_reply(
     db: Session,
     session: CoachSession,
@@ -1204,6 +1344,20 @@ async def handle_turn(
             else:
                 text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
                 intent_override = GOAL
+
+    if intent_override is None:
+        batch = await _try_batch_turn(db, user_id, text, context, conversation)
+        if batch is not None:
+            batch_reply = str(batch.pop("reply") or "")
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=BATCH,
+                payload=batch,
+                reply=batch_reply,
+            )
 
     if intent_override is None and _looks_like_plan_configure(text):
         from .capabilities.plan_configure import resolve as resolve_configure
@@ -2369,6 +2523,99 @@ def _load_pending(db: Session, user_id: str, pending_id: str) -> tuple[CoachSess
     return session, pending
 
 
+def _confirm_batch(
+    db: Session,
+    user_id: str,
+    session: CoachSession,
+    pending: CoachPending,
+    action_id: str,
+) -> dict:
+    actions = pending.payload.get("batch")
+    if not isinstance(actions, list) or len(actions) < 2:
+        raise ValueError("批量操作内容不完整")
+
+    executed_ids: list[str] = []
+    sub_pending_ids: list[str] = []
+    results: list[dict] = []
+    try:
+        for item in actions[:3]:
+            if not isinstance(item, dict):
+                raise ValueError("批量操作内容不完整")
+            capability_id = str(item.get("capability_id") or "")
+            sub_payload = item.get("payload")
+            if not capability_id or capability_id == BATCH:
+                raise ValueError("批量操作包含不支持的能力")
+            if not isinstance(sub_payload, dict):
+                sub_payload = {}
+            sub_id = str(uuid4())
+            sub_pending = CoachPending(
+                id=str(uuid4()),
+                session_id=session.id,
+                user_id=user_id,
+                kind="card",
+                capability_id=capability_id,
+                payload=sub_payload,
+                status="pending",
+                action_id=sub_id,
+                expires_at=utcnow() + PENDING_TTL,
+            )
+            db.add(sub_pending)
+            db.flush()
+            sub_pending_ids.append(sub_pending.id)
+            result = confirm_pending(db, user_id, sub_pending.id)
+            executed_ids.append(str(result.get("action_id") or sub_id))
+            results.append(result)
+    except Exception as exc:  # noqa: BLE001 - roll back partial batch
+        for sub_id in executed_ids:
+            with contextlib.suppress(Exception):
+                undo_action(db, user_id, sub_id)
+        for sub_pending_id in sub_pending_ids:
+            sub_pending = db.get(CoachPending, sub_pending_id)
+            if sub_pending is not None and sub_pending.status == "pending":
+                sub_pending.status = "cancelled"
+        db.commit()
+        raise ValueError("批量操作执行失败，已回滚已完成项") from exc
+
+    domains = sorted(
+        {
+            domain
+            for result in results
+            for domain in result.get("refresh_domains") or []
+        }
+    )
+    receipt = {
+        "summary": f"已执行 {len(results)} 项操作",
+        "actions": [result.get("receipt") or {} for result in results],
+        "capability_id": BATCH,
+        "action_id": action_id,
+        "refresh_domains": domains,
+    }
+    record = CoachActionRecord(
+        id=action_id,
+        user_id=user_id,
+        session_id=session.id,
+        capability_id=BATCH,
+        status="executed",
+        payload=pending.payload,
+        before={"sub_action_ids": executed_ids},
+        after={"sub_action_ids": executed_ids},
+        receipt=receipt,
+        undo_token=action_id,
+        idempotency_key=action_id,
+        executed_at=utcnow(),
+    )
+    db.add(record)
+    consume_pending(db, session, pending)
+    db.commit()
+    return {
+        "action_id": action_id,
+        "status": "executed",
+        "receipt": receipt,
+        "refresh_domains": domains,
+        "idempotent": False,
+    }
+
+
 def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
     session, pending = _load_pending(db, user_id, pending_id)
     if pending.status != "pending" or pending.kind not in {"card", "proposal"}:
@@ -2389,12 +2636,15 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
             "refresh_domains": list(
                 CAPABILITIES[existing.capability_id].refreshes
                 if existing.capability_id in CAPABILITIES
-                else ()
+                else (existing.receipt or {}).get("refresh_domains", [])
             ),
             "idempotent": True,
         }
     if existing is not None and existing.status == "undone":
         raise ValueError("这次操作已经撤销，请重新生成")
+
+    if pending.capability_id == BATCH:
+        return _confirm_batch(db, user_id, session, pending, action_id)
 
     receipt: dict
     before: dict = {}
@@ -2871,6 +3121,34 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
     ).scalar_one_or_none()
     if record is None or record.status != "executed":
         raise LookupError("这个操作已经不能撤销")
+    if record.capability_id == BATCH:
+        sub_ids = [
+            str(value)
+            for value in (record.before or {}).get("sub_action_ids") or []
+            if str(value).strip()
+        ]
+        undone: list[dict] = []
+        for sub_id in sub_ids:
+            try:
+                undone.append(undo_action(db, user_id, sub_id))
+            except Exception:  # noqa: BLE001 - undo the rest of the batch
+                continue
+        record.status = "undone"
+        record.undone_at = utcnow()
+        db.commit()
+        domains = sorted(
+            {
+                domain
+                for item in undone
+                for domain in item.get("refresh_domains") or []
+            }
+        )
+        return {
+            "restored": True,
+            "undone": undone,
+            "refresh_domains": domains,
+        }
+
     if record.capability_id == DIET:
         from .capabilities.diet import undo as undo_diet
 

@@ -98,6 +98,8 @@ extension CoachChatView {
                     Text("还需要补充一点信息，直接在输入框回复即可。")
                         .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
+                } else if let batch = pending.payload?.batch, !batch.isEmpty {
+                    batchPendingContent(batch)
                 } else if pending.capabilityID == "training.preview_next"
                             || pending.capabilityID == "training.week_schedule" {
                     trainingPreviewPendingContent(pending)
@@ -191,6 +193,27 @@ extension CoachChatView {
                     .buttonStyle(SecondaryButtonStyle())
                 }
             }
+        }
+    }
+
+    private func batchPendingContent(_ actions: [AgentBatchAction]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(Array(actions.enumerated()), id: \.offset) { index, action in
+                HStack(alignment: .top, spacing: 8) {
+                    Text("\(index + 1)")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Theme.onAccent)
+                        .frame(width: 18, height: 18)
+                        .background(Theme.cobalt, in: Circle())
+                    Text(action.summary ?? "执行一项操作")
+                        .font(AppType.caption)
+                        .foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Text("确认后会按顺序一起执行，可整组撤销。")
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(Theme.tertiaryText)
         }
     }
 

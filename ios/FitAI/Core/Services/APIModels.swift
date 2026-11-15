@@ -368,6 +368,16 @@ struct AgentFoodMeal: Codable, Hashable {
     let items: [AgentFoodItem]
 }
 
+struct AgentBatchAction: Codable, Hashable {
+    let capabilityID: String
+    let summary: String?
+
+    enum CodingKeys: String, CodingKey {
+        case capabilityID = "capability_id"
+        case summary
+    }
+}
+
 struct AgentActionPayload: Codable, Hashable {
     let dayID: String?
     let planID: String?
@@ -399,6 +409,7 @@ struct AgentActionPayload: Codable, Hashable {
     let rawText: String?
     var items: [AgentFoodItem]?
     var meals: [AgentFoodMeal]?
+    let batch: [AgentBatchAction]?
     let title: String?
     let durationMinutes: Int?
     let kind: String?
@@ -454,6 +465,7 @@ struct AgentActionPayload: Codable, Hashable {
         case rawText = "raw_text"
         case items
         case meals
+        case batch
         case title
         case durationMinutes = "duration_minutes"
         case kind
