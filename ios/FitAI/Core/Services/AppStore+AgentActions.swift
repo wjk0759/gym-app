@@ -455,7 +455,7 @@ extension AppStore {
                 }
                 syncPendingUserData()
                 refreshWeeklyReview(force: true)
-                await refreshDailyNutritionTargets()
+                await refreshNutritionTargets()
                 if action.type == "log_food" || action.type == "log_planned_meal" {
                     undo = .foodLogAction(actionID: action.id)
                 } else if action.type == "update_food_log" || action.type == "delete_food_log" {

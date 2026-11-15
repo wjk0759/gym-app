@@ -400,7 +400,7 @@ extension PlanHomeView {
     var dayNutritionSection: some View {
         let logs = foodLogs(on: selectedDate)
         let totals = nutritionTotals(logs)
-        let targets = DietPlanner.targets(profile: store.profile)
+        let targets = store.nutritionTargets(for: selectedDate)
 
         return VStack(alignment: .leading, spacing: 9) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {

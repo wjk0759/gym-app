@@ -138,7 +138,7 @@ extension AppStore {
                 persist()
                 syncPendingUserData()
                 refreshWeeklyReview(force: true)
-                await refreshDailyNutritionTargets()
+                await refreshNutritionTargets()
                 toast = "已撤销饮食记录"
                 return true
             } catch {
@@ -172,7 +172,7 @@ extension AppStore {
                 _ = try await APIClient.shared.undoAgentAction(id: actionID)
                 syncPendingUserData()
                 refreshWeeklyReview(force: true)
-                await refreshDailyNutritionTargets()
+                await refreshNutritionTargets()
                 toast = "已撤销饮食记录修改"
                 return true
             } catch {

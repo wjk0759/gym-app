@@ -152,7 +152,7 @@ struct HomeV2View: View {
             }
             .task {
                 store.refreshWeeklyReview()
-                await store.refreshDailyNutritionTargets()
+                await store.refreshNutritionTargets()
             }
             .onAppear {
                 presentLaunchIfNeeded()
@@ -164,7 +164,7 @@ struct HomeV2View: View {
                 }
             }
             .onChange(of: store.profile.goalType) { _, _ in
-                Task { await store.refreshDailyNutritionTargets() }
+                Task { await store.refreshNutritionTargets() }
             }
             .onChange(of: store.bodyCheckInFrequency) { _, _ in
                 if store.bodyCheckInDue {

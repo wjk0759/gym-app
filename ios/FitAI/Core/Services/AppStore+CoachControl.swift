@@ -640,7 +640,7 @@ extension AppStore {
                     await self.refreshDomains(domains)
                 }
                 if domains.contains(.diet) {
-                    Task { await self.refreshDailyNutritionTargets() }
+                    Task { await self.refreshNutritionTargets() }
                 }
                 Telemetry.shared.track(
                     "coach_pending_confirmed",
@@ -726,7 +726,7 @@ extension AppStore {
                     await self.refreshDomains(domains)
                 }
                 if domains.contains(.diet) {
-                    Task { await self.refreshDailyNutritionTargets() }
+                    Task { await self.refreshNutritionTargets() }
                 }
                 self.toast = "已撤销"
                 Telemetry.shared.track(

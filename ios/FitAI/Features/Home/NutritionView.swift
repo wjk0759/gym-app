@@ -55,7 +55,7 @@ struct NutritionView: View {
     }
 
     var targets: NutritionTargets {
-        serverTargets ?? DietPlanner.targets(profile: store.profile)
+        serverTargets ?? store.nutritionTargets(for: date)
     }
 
     var isToday: Bool {
@@ -105,9 +105,7 @@ struct NutritionView: View {
             profile: store.profile
         ) else { return }
         serverTargets = resolved
-        if isToday {
-            store.cacheDailyNutritionTargets(resolved, dateString: dateString)
-        }
+        store.cacheNutritionTargets(resolved, for: date)
     }
 
     @MainActor

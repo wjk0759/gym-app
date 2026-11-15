@@ -20,11 +20,32 @@ extension AppStore {
     /// for today; fall back to the local estimate only when offline or before
     /// the first server refresh.
     var currentNutritionTargets: NutritionTargets {
-        if dailyNutritionTargetsKey == FitnessDate.key(Date()),
-           let cached = dailyNutritionTargets {
+        let key = FitnessDate.key(Date())
+        if let cached = nutritionTargetsByDate[key] {
+            return cached
+        }
+        if dailyNutritionTargetsKey == key, let cached = dailyNutritionTargets {
             return cached
         }
         return DietPlanner.targets(profile: profile)
+    }
+
+    func nutritionTargets(for date: Date) -> NutritionTargets {
+        let key = FitnessDate.key(date)
+        if let cached = nutritionTargetsByDate[key] {
+            return cached
+        }
+        return DietPlanner.targets(profile: profile)
+    }
+
+    func cacheNutritionTargets(_ targets: NutritionTargets, for date: Date) {
+        let key = FitnessDate.key(date)
+        nutritionTargetsByDate[key] = targets
+        if key == FitnessDate.key(Date()) {
+            dailyNutritionTargets = targets
+            dailyNutritionTargetsKey = key
+        }
+        persist()
     }
 
     func addCustomFood(_ food: FoodItem) {
@@ -70,10 +91,10 @@ extension AppStore {
         return result
     }
 
-    /// One-tap planned-meal logging shared by the nutrition page and the coach
-    /// diet card. Duplicate checks live here so every entry point behaves the same.
+    /// Refresh the server-confirmed target for a concrete date. Any date is
+    /// cached, so the plan page, nutrition page and coach cards agree.
     @MainActor
-    func refreshDailyNutritionTargets(date: Date = Date()) async {
+    func refreshNutritionTargets(for date: Date = Date()) async {
         guard AuthTokenStore.shared.accessToken != nil else { return }
         let key = FitnessDate.key(date)
         guard let response = try? await NutritionService().fetchTargets(
@@ -82,19 +103,11 @@ extension AppStore {
             remote: response.targets,
             profile: profile
         ) else { return }
-        guard key == FitnessDate.key(Date()) else { return }
-        dailyNutritionTargets = targets
-        dailyNutritionTargetsKey = key
-        persist()
+        cacheNutritionTargets(targets, for: date)
     }
 
-    func cacheDailyNutritionTargets(_ targets: NutritionTargets, dateString: String) {
-        guard dateString == FitnessDate.key(Date()) else { return }
-        dailyNutritionTargets = targets
-        dailyNutritionTargetsKey = dateString
-        persist()
-    }
-
+    /// One-tap planned-meal logging shared by the nutrition page and the coach
+    /// diet card. Duplicate checks live here so every entry point behaves the same.
     @discardableResult
     func logPlannedMeal(
         date: Date,

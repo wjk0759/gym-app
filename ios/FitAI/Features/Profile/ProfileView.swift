@@ -380,7 +380,7 @@ struct ProfileView: View {
                     }
                 }
             } else {
-                Text("照片只用于本次分析，不写入训练记录。分析结果仅作训练重点参考。")
+                Text("照片压缩后存私有目录，仅你本人可读；分析结果仅作训练重点参考。")
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
                     .fixedSize(horizontal: false, vertical: true)

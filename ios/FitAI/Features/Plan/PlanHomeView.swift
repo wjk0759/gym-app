@@ -136,6 +136,9 @@ struct PlanHomeView: View {
                 .onAppear {
                     consumePendingRecordDate()
                 }
+                .task(id: selectedDate) {
+                    await store.refreshNutritionTargets(for: selectedDate)
+                }
             }
         }
     }
