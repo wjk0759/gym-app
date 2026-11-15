@@ -2366,7 +2366,10 @@ def test_reschedule_explains_a_day_without_training(db):
                 "days": [
                     {
                         "id": "day-1",
-                        "date": "2026-11-16",
+                        "date": (
+                            datetime.now(ZoneInfo("Asia/Shanghai")).date()
+                            + timedelta(days=1)
+                        ).isoformat(),
                         "title": "胸",
                     }
                 ],
