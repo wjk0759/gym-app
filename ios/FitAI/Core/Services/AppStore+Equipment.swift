@@ -61,7 +61,7 @@ extension AppStore {
     /// edits still go through the dedicated methods below.
     var equipmentSnapshot: EquipmentSnapshot {
         EquipmentSnapshot(
-            profileTypes: profile.equipment,
+            profileTypes: Equipment.allCases.filter { profile.equipment.contains($0) },
             libraryItems: equipmentLibrary,
             universalItems: ExerciseLibrary.universalEquipment.filter {
                 selectedUniversalSlugs.contains($0.slug)
