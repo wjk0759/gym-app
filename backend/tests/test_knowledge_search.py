@@ -40,11 +40,11 @@ def test_food_lookup_resolves_common_chinese_names():
 
     milk = lookup_food("牛奶")
     assert milk is not None
-    assert milk["category"] == "乳品类"
+    assert "鲜乳" in milk["name_zh"]
 
     salmon = lookup_food("三文鱼")
     assert salmon is not None
-    assert salmon["category"] == "鱼贝类"
+    assert "鲑鱼" in salmon["name_zh"]
 
     # A prefix must not silently become a different food.
     assert lookup_food("鸡腿") is None

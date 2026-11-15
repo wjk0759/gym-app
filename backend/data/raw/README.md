@@ -6,6 +6,8 @@
   - mirror used for this build: https://github.com/hanksudo/food-nutrition-data
   - license: Taiwan government open data license (OGDL 1.0)
   - note: 2015 edition; Traditional Chinese converted to Simplified during build.
+    The vendored copy has the source `食品分類` column removed because food
+    category data is not used by the AI or coach retrieval.
 
 - `knowledge_seed.json`
   - FitAI original food synonyms, food-category cues, equipment recognition

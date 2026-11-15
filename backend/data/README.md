@@ -37,8 +37,8 @@ sources. It is committed so production does not rebuild it at boot.
 | `manifest.json` | — | source/license/counts/cleaning stats |
 
 > The food-category taxonomy was removed. It is for a future user-facing food
-> picker, not for the vision model or coach RAG. Do not inject it into the
-> food-photo prompt.
+> picker, not for the vision model or coach RAG. Food records also no longer
+> carry a `category` field; do not inject category data into the food-photo prompt.
 
 ### Sources and licenses
 

@@ -160,7 +160,6 @@ def _compact(item: dict[str, Any]) -> dict[str, Any]:
         "domain": domain,
         "title": item.get("title"),
         "kind": item.get("kind"),
-        "category": item.get("category"),
         "aliases": (item.get("aliases") or [])[:8],
         "text": text[:MAX_TEXT],
         "source": item.get("source"),
@@ -327,29 +326,42 @@ def lookup_food(name: str) -> dict[str, Any] | None:
     if not candidates:
         return None
 
-    # Food aliases can legitimately point to several products ("牛奶" also
-    # appears in "牛奶凤梨"). Prefer the category that most candidates agree
-    # on, then rank within it.
     unique: dict[str, dict[str, Any]] = {}
     for item in candidates:
         unique[str(item.get("id") or item.get("title"))] = item
     candidates = list(unique.values())
-    category_scores: dict[str, int] = {}
-    for item in candidates:
-        category = str(item.get("category") or "")
-        category_scores[category] = category_scores.get(category, 0) + 1
-    if category_scores:
-        best_category = max(category_scores, key=lambda name: category_scores[name])
-        same_category = [
-            item for item in candidates if str(item.get("category") or "") == best_category
-        ]
-        if same_category:
-            candidates = same_category
 
     def rank(item: dict[str, Any]) -> tuple:
         title = str(item.get("title") or "")
         exact = _norm_key(title) == key
-        processed = isinstance(item.get("category"), str) and item["category"] == "加工调理食品类"
+        processed = any(
+            token in title
+            for token in (
+                "松",
+                "罐头",
+                "罐頭",
+                "酱",
+                "醬",
+                "丸",
+                "饼",
+                "餅",
+                "汤",
+                "湯",
+                "粉",
+                "浓缩",
+                "濃縮",
+                "腌",
+                "醃",
+                "熏",
+                "燻",
+                "蜜饯",
+                "蜜餞",
+                "果酱",
+                "果醬",
+                "饮料",
+                "飲料",
+            )
+        )
         noisy = any(token in title for token in ("取样",))
         representative = any(token in title for token in ("平均值", "代表值"))
         wants_light = any(
@@ -375,7 +387,6 @@ def lookup_food(name: str) -> dict[str, Any] | None:
     return {
         "name_zh": item.get("title"),
         "aliases": item.get("aliases") or [],
-        "category": item.get("category"),
         "kcal": item.get("kcal"),
         "protein_g": item.get("protein_g"),
         "fat_g": item.get("fat_g"),

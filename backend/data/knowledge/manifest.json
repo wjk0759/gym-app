@@ -35,7 +35,7 @@
       "input_rows": 2081,
       "macro_mismatch_flagged": 4,
       "near_dup_dropped": 60,
-      "partial_macros": 142
+      "partial_macros": 442
     },
     "round3_enrich_shape": {
       "aliases_added": 965,
@@ -47,8 +47,8 @@
       "exercise_dropped": 0,
       "exercise_rows": 736,
       "food_final": 2017,
-      "quality_high": 1874,
-      "quality_partial": 143
+      "quality_high": 1586,
+      "quality_partial": 431
     }
   },
   "sources": [

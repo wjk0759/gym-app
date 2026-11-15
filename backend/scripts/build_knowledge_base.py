@@ -6,7 +6,7 @@ The pipeline is intentionally boring and reproducible. It runs three rounds:
    Chinese, normalize names, coerce numbers, drop exact duplicates.
 2. validate + filter: enforce nutrient ranges, flag macro/energy mismatches,
    drop unusable rows, collapse near-duplicates that have identical macros.
-3. enrich + shape for RAG: add aliases, serving hints, category cards, search
+3. enrich + shape for RAG: add aliases, serving hints, search
    text and a quality score; write JSONL plus a manifest with source/licensing.
 
 Outputs live in ``backend/data/knowledge`` and are committed so the API does
@@ -41,26 +41,7 @@ EXERCISE_SOURCE = "hasaneyldrm/exercises-dataset"
 EXERCISE_SOURCE_URL = "https://github.com/hasaneyldrm/exercises-dataset"
 EXERCISE_LICENSE = "MIT (text); media excluded"
 
-DEFAULT_SERVING_G = {
-    "谷物类": 150,
-    "豆类": 100,
-    "蔬菜类": 150,
-    "水果类": 150,
-    "肉类": 100,
-    "鱼贝类": 100,
-    "蛋类": 50,
-    "乳品类": 250,
-    "菇类": 100,
-    "藻类": 50,
-    "坚果及种子类": 25,
-    "油脂类": 10,
-    "淀粉类": 100,
-    "糖类": 10,
-    "调味料及香辛料类": 10,
-    "加工调理食品类": 100,
-    "糕饼点心类": 80,
-    "嗜好性饮料类": 350,
-}
+DEFAULT_SERVING_G = 100.0
 
 # Round 2 bounds are deliberately wide: the source is a composition table, not
 # a diet plan, so pure oils and salt are valid. Anything outside is a parse bug.
@@ -230,8 +211,7 @@ def round1_food(csv_path: Path) -> tuple[list[dict], dict]:
                 stats["empty_name"] += 1
                 continue
             name = cc.convert(name_tw)
-            category = cc.convert(_norm_space(raw.get("食品分類") or "未分类"))
-            key = (_exact_key(name), category)
+            key = _exact_key(name)
             if key in seen:
                 stats["exact_dup"] += 1
                 continue
@@ -243,7 +223,6 @@ def round1_food(csv_path: Path) -> tuple[list[dict], dict]:
                     "domain": "food",
                     "name_zh": name,
                     "name_tw": name_tw,
-                    "category": category,
                     "kcal": _num(raw.get("修正熱量-成分值(kcal)"))
                     or _num(raw.get("熱量-成分值(kcal)")),
                     "protein_g": _num(raw.get("粗蛋白-成分值(g)")),
@@ -293,34 +272,6 @@ def round2_food(rows: list[dict]) -> tuple[list[dict], dict]:
             continue
 
         flags: list[str] = []
-        # Composition tables often leave "0" blank for pure macro categories.
-        # Fill only when the category makes the value unambiguous.
-        category = row.get("category") or ""
-        if (
-            row.get("carbs_g") is None
-            and row.get("protein_g") is not None
-            and row.get("fat_g") is not None
-            and category in {"肉类", "鱼贝类", "蛋类"}
-        ):
-            row["carbs_g"] = 0.0
-            flags.append("carbs_zero_filled")
-        if (
-            row.get("fat_g") is None
-            and row.get("protein_g") is not None
-            and row.get("carbs_g") is not None
-            and category in {"谷物类", "水果类", "蔬菜类", "豆类"}
-        ):
-            row["fat_g"] = 0.0
-            flags.append("fat_zero_filled")
-        if (
-            row.get("protein_g") is None
-            and row.get("fat_g") is not None
-            and row.get("carbs_g") is not None
-            and category in {"油脂类", "糖类"}
-        ):
-            row["protein_g"] = 0.0
-            flags.append("protein_zero_filled")
-
         macros = [row.get("protein_g"), row.get("fat_g"), row.get("carbs_g")]
         if any(value is None for value in macros):
             stats["partial_macros"] += 1
@@ -384,7 +335,7 @@ def round3_food(
     for row in rows:
         aliases = _aliases_for_food(row["name_zh"], synonyms)
         stats["aliases_added"] += len(aliases)
-        serving = DEFAULT_SERVING_G.get(row["category"], 100)
+        serving = DEFAULT_SERVING_G
         flags = list(row.get("flags") or [])
         if "partial_macros" in flags or "macro_mismatch" in flags:
             quality = 0.6
@@ -396,7 +347,6 @@ def round3_food(
             [
                 row["name_zh"],
                 " ".join(aliases),
-                row["category"],
             ]
         )
         output.append(
@@ -407,7 +357,6 @@ def round3_food(
                 "name_zh": row["name_zh"],
                 "name_tw": row["name_tw"],
                 "aliases": aliases,
-                "category": row["category"],
                 "kcal": _round(row.get("kcal")),
                 "protein_g": _round(row.get("protein_g")),
                 "fat_g": _round(row.get("fat_g")),
