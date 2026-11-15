@@ -17,6 +17,11 @@ private struct WorkoutActionExecuteRequest: Encodable {
 extension APIClient {
     // MARK: - 健康检查
 
+    func fetchMe() async throws -> RemoteMe {
+        let data = try await send(path: "me", method: "GET", body: nil)
+        return try decode(RemoteMe.self, from: data)
+    }
+
     func healthStatus() async throws -> HealthStatus {
         let root = baseURL
             .deletingLastPathComponent()

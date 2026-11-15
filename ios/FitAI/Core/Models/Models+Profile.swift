@@ -42,6 +42,16 @@ enum GoalType: String, Codable, CaseIterable, Identifiable {
     case recomp
     case endurance
 
+    init?(apiValue: String) {
+        switch apiValue {
+        case "lose_fat": self = .loseFat
+        case "build_muscle": self = .buildMuscle
+        case "recomp": self = .recomp
+        case "endurance": self = .endurance
+        default: return nil
+        }
+    }
+
     var id: String { rawValue }
 
     var label: String {

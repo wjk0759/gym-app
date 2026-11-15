@@ -195,6 +195,9 @@ extension AppStore {
             await self.pushPendingFoodLogs()
             await self.pushPendingBodyMetrics()
             await self.pushPendingEquipment()
+            if self.profileSyncPending {
+                await self.pushProfileAndGoal()
+            }
             await self.syncPlanIfNeeded()
             await self.pushPlanSchedule()
             await self.pullCloudUserData()
@@ -382,7 +385,7 @@ extension AppStore {
 
     @MainActor
     private func pullCloudUserData() async {
-        await refreshDomains([.plan, .schedule, .diet, .body, .equipment])
+        await refreshDomains([.plan, .schedule, .diet, .body, .equipment, .profile])
     }
 
     // MARK: - Domain refresh
@@ -462,13 +465,87 @@ extension AppStore {
             refreshed.insert(.inbox)
         }
         if domains.contains(.profile) {
-            // Goal updates are applied from the confirmed pending payload.
-            refreshed.insert(.profile)
+            if let remote = try? await APIClient.shared.fetchMe(),
+               currentUserID == account {
+                mergeRemoteMe(remote)
+                refreshed.insert(.profile)
+            }
         }
         bump(refreshed)
         if !refreshed.isEmpty {
             persist()
         }
+    }
+
+    private func mergeRemoteMe(_ remote: RemoteMe) {
+        // A local edit that has not been acknowledged must win. The pending
+        // flag is persisted so a crash/relaunch cannot silently lose it.
+        guard !profileSyncPending else { return }
+        var merged = profile
+        if let data = remote.profile {
+            merged.nickname = data.nickname ?? merged.nickname
+            if let raw = data.sex, let sex = Sex(rawValue: raw) {
+                merged.sex = sex
+            }
+            if let age = data.age {
+                merged.age = age
+            } else if let text = data.birthDate,
+                      let birth = APIDateCoding.date(from: text) {
+                merged.age = Calendar.current.dateComponents(
+                    [.year],
+                    from: birth,
+                    to: Date()
+                ).year ?? merged.age
+            }
+            merged.heightCM = data.heightCM ?? merged.heightCM
+            merged.chestCM = data.chestCM ?? merged.chestCM
+            merged.hipCM = data.hipCM ?? merged.hipCM
+            if let raw = data.experience,
+               let experience = Experience(rawValue: raw) {
+                merged.experience = experience
+            }
+            if let raw = data.trainingStage,
+               let stage = Experience(rawValue: raw) {
+                merged.trainingStage = stage
+            }
+            if let injuries = data.injuries {
+                merged.injuries = injuries.joined(separator: "、")
+            }
+            if let equipment = data.equipment {
+                let values = equipment.compactMap { Equipment(rawValue: $0) }
+                if !values.isEmpty {
+                    merged.equipment = Set(values)
+                }
+            }
+            merged.weeklyDays = data.weeklyDays ?? merged.weeklyDays
+            merged.sessionMinutes = data.sessionMinutes ?? merged.sessionMinutes
+            merged.isOnboarded = data.onboarded ?? merged.isOnboarded
+
+            // BodyMetric owns weight/body fat/waist. The profile fields are a
+            // bootstrap fallback only when no metric has been synced yet.
+            if bodyMetrics.isEmpty {
+                merged.weightKG = data.weightKG ?? merged.weightKG
+                merged.bodyFatPCT = data.bodyFatPCT ?? merged.bodyFatPCT
+                merged.waistCM = data.waistCM ?? merged.waistCM
+            }
+        }
+        if let goal = remote.goal {
+            if let raw = goal.type, let type = GoalType(apiValue: raw) {
+                merged.goalType = type
+            }
+            merged.targetWeightKG = goal.targetWeightKG ?? merged.targetWeightKG
+            merged.targetBodyFatPCT = goal.targetBodyFatPCT ?? merged.targetBodyFatPCT
+            merged.targetWaistCM = goal.targetWaistCM ?? merged.targetWaistCM
+            if let text = goal.targetDate,
+               let date = APIDateCoding.date(from: text) {
+                merged.targetDate = date
+            }
+        }
+        profile = merged
+        if bodyMetrics.isEmpty {
+            seedBodyMetricsIfNeeded()
+        }
+        persist()
     }
 
     private func mergeRemoteBodyMetrics(_ remote: [RemoteBodyMetric]) {

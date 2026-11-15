@@ -56,6 +56,9 @@ final class AppStore {
     ]
 
     var profile = UserProfile()
+    /// Set when a local profile/goal edit has not reached the server yet.
+    /// Prevents a pull from overwriting an unsynced local edit.
+    var profileSyncPending = false
     var plan: TrainingPlan?
     /// Onboarding plan waiting for the user's confirmation.
     var pendingPlanPreview: TrainingPlan?
@@ -242,6 +245,7 @@ final class AppStore {
         draftPersistWorkItem?.cancel()
         draftPersistWorkItem = nil
         profile = UserProfile()
+        profileSyncPending = false
         plan = nil
         pendingPlanPreview = nil
         deferredPlanPreview = nil
@@ -361,6 +365,7 @@ final class AppStore {
 #endif
         var persistAfterMigration = false
         profile = state.profile
+        profileSyncPending = state.profileSyncPending ?? false
         plan = state.plan
         pendingPlanPreview = state.pendingPlanPreview
         deferredPlanPreview = state.deferredPlanPreview
@@ -423,6 +428,7 @@ final class AppStore {
         draftPersistWorkItem = nil
         let state = PersistedState(
             profile: profile,
+            profileSyncPending: profileSyncPending,
             plan: plan,
             pendingPlanPreview: pendingPlanPreview,
             deferredPlanPreview: deferredPlanPreview,
@@ -542,6 +548,7 @@ final class AppStore {
 
     private struct PersistedState: Codable {
         var profile: UserProfile
+        var profileSyncPending: Bool?
         var plan: TrainingPlan?
         var pendingPlanPreview: TrainingPlan?
         var deferredPlanPreview: TrainingPlan?

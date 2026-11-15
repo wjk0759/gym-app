@@ -17,6 +17,7 @@ extension AppStore {
         }
         normalizeGoalStart(&value)
         profile = value
+        profileSyncPending = true
         appendBodyMetric(
             BodyMetric(
                 date: Date(),
@@ -34,8 +35,7 @@ extension AppStore {
         Task { @MainActor in
             // The onboarding plan may be generated locally. Ensure the
             // profile exists server-side before recording its one-time trial.
-            try? await APIClient.shared.syncProfile(value)
-            try? await APIClient.shared.syncGoal(value)
+            await self.pushProfileAndGoal()
             self.syncPendingUserData()
             let granted = await NotificationScheduler.shared.requestAuthorization()
             self.notificationsEnabled = granted
@@ -81,6 +81,7 @@ extension AppStore {
                 )
             )
         }
+        profileSyncPending = true
         persist()
         syncPendingUserData()
         syncProfileAndGoal()
@@ -98,11 +99,26 @@ extension AppStore {
     /// active goal immediately so a later coach turn or plan generation cannot
     /// read an older server copy.
     private func syncProfileAndGoal() {
+        Task { @MainActor in
+            await pushProfileAndGoal()
+        }
+    }
+
+    /// Push both the profile and active goal. Also used by the foreground
+    /// retry path when an earlier edit failed to reach the server.
+    func pushProfileAndGoal() async {
         guard AuthTokenStore.shared.accessToken != nil else { return }
         let snapshot = profile
-        Task { @MainActor in
-            try? await APIClient.shared.syncProfile(snapshot)
-            try? await APIClient.shared.syncGoal(snapshot)
+        do {
+            try await APIClient.shared.syncProfile(snapshot)
+            try await APIClient.shared.syncGoal(snapshot)
+            if self.profile == snapshot {
+                self.profileSyncPending = false
+                self.persist()
+            }
+        } catch {
+            // Keep profileSyncPending so the next foreground sync retries
+            // and a remote pull cannot overwrite the local edit.
         }
     }
 }

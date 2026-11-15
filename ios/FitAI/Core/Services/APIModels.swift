@@ -1010,3 +1010,64 @@ struct TokenRefreshResponse: Decodable {
 struct WorkoutCreateResponse: Decodable {
     let id: String
 }
+
+struct RemoteMe: Decodable {
+    let profile: RemoteMeProfile?
+    let goal: RemoteMeGoal?
+}
+
+struct RemoteMeProfile: Decodable {
+    let nickname: String?
+    let sex: String?
+    let birthDate: String?
+    let age: Int?
+    let heightCM: Double?
+    let weightKG: Double?
+    let bodyFatPCT: Double?
+    let chestCM: Double?
+    let waistCM: Double?
+    let hipCM: Double?
+    let experience: String?
+    let trainingStage: String?
+    let injuries: [String]?
+    let equipment: [String]?
+    let weeklyDays: Int?
+    let sessionMinutes: Int?
+    let onboarded: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case nickname
+        case sex
+        case birthDate = "birth_date"
+        case age
+        case heightCM = "height_cm"
+        case weightKG = "weight_kg"
+        case bodyFatPCT = "body_fat_pct"
+        case chestCM = "chest_cm"
+        case waistCM = "waist_cm"
+        case hipCM = "hip_cm"
+        case experience
+        case trainingStage = "training_stage"
+        case injuries
+        case equipment
+        case weeklyDays = "weekly_days"
+        case sessionMinutes = "session_minutes"
+        case onboarded
+    }
+}
+
+struct RemoteMeGoal: Decodable {
+    let type: String?
+    let targetWeightKG: Double?
+    let targetBodyFatPCT: Double?
+    let targetWaistCM: Double?
+    let targetDate: String?
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case targetWeightKG = "target_weight_kg"
+        case targetBodyFatPCT = "target_body_fat_pct"
+        case targetWaistCM = "target_waist_cm"
+        case targetDate = "target_date"
+    }
+}
