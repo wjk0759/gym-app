@@ -925,6 +925,64 @@ async def _pending_card_followup(
             reply=_training_reply(new_payload),
         )
 
+    if capability == GOAL:
+        from .capabilities.profile import resolve as resolve_goal
+
+        resolution = resolve_goal(text)
+        if not resolution.get("ready"):
+            reply = (resolution.get("questions") or ["想怎么改目标？"])[0]
+            return _pending_reply(
+                db,
+                session,
+                turn,
+                started,
+                pending,
+                intent=GOAL,
+                reply=reply,
+            )
+        new_payload = {**payload, **resolution["payload"]}
+        update_pending(db, session, pending, payload=new_payload)
+        return _pending_reply(
+            db,
+            session,
+            turn,
+            started,
+            pending,
+            intent=GOAL,
+            reply="目标改好了，确认后更新。",
+        )
+
+    if capability == CARDIO:
+        from .capabilities.training import resolve_cardio
+
+        title = str(payload.get("title") or "").strip()
+        resolution = resolve_cardio(f"{title} {text}".strip() if title else text)
+        if not resolution.get("ready"):
+            reply = (resolution.get("questions") or ["这次练了多久？"])[0]
+            return _pending_reply(
+                db,
+                session,
+                turn,
+                started,
+                pending,
+                intent=CARDIO,
+                reply=reply,
+            )
+        new_payload = {**payload, **resolution["payload"]}
+        update_pending(db, session, pending, payload=new_payload)
+        return _pending_reply(
+            db,
+            session,
+            turn,
+            started,
+            pending,
+            intent=CARDIO,
+            reply=(
+                f"改好了，准备记录{new_payload.get('title')} "
+                f"{new_payload.get('duration_minutes')} 分钟。确认后写入。"
+            ),
+        )
+
     if correction or addition:
         # Do not silently lose a write card just because its capability does
         # not have an in-place merge handler yet.

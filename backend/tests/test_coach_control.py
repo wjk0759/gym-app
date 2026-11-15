@@ -353,6 +353,48 @@ def test_cardio_log_confirm_and_undo(db):
     assert db.execute(select(WorkoutSession)).scalars().all() == []
 
 
+def test_cardio_card_accepts_a_new_duration(db):
+    import asyncio
+
+    first = asyncio.run(runtime.handle_turn(db, "user-1", "昨天跑了 30 分钟"))
+    assert first["pending"]["payload"]["duration_minutes"] == 30
+    second = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "改成 40 分钟",
+            session_id=first["session"]["id"],
+        )
+    )
+    assert second["pending"]["capability_id"] == "training.log_cardio"
+    assert second["pending"]["payload"]["duration_minutes"] == 40
+    active = db.execute(
+        select(CoachPending).where(CoachPending.status == "pending")
+    ).scalars().all()
+    assert len(active) == 1
+
+
+def test_goal_card_accepts_a_new_target(db):
+    import asyncio
+
+    first = asyncio.run(runtime.handle_turn(db, "user-1", "目标体重 68kg"))
+    assert first["pending"]["payload"]["target_weight_kg"] == 68
+    second = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "减到 70kg",
+            session_id=first["session"]["id"],
+        )
+    )
+    assert second["pending"]["capability_id"] == "profile.update_goal"
+    assert second["pending"]["payload"]["target_weight_kg"] == 70
+    active = db.execute(
+        select(CoachPending).where(CoachPending.status == "pending")
+    ).scalars().all()
+    assert len(active) == 1
+
+
 def test_correction_without_context_does_not_create_a_food_draft(db):
     import asyncio
 
