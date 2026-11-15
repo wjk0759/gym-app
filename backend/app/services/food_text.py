@@ -192,16 +192,6 @@ PORTION_UNITS = {
     "毫升": 1.0,
 }
 
-# A "cup" of milk/coffee is not the same as a 500ml bubble tea cup. Keep the
-# generic unit for drinks where a large cup is common, override the staples.
-CUP_GRAMS = {
-    "牛奶": 250.0,
-    "豆浆": 250.0,
-    "酸奶": 200.0,
-    "美式咖啡": 350.0,
-    "拿铁": 300.0,
-}
-
 NUMBER_WORDS = {
     "半": 0.5,
     "一": 1.0,
@@ -383,14 +373,15 @@ def _macros(base: str, grams: float) -> dict:
     }
 
 
-_PORTION_PATTERN = (
-    r"(\d+(?:\.\d+)?|半|一|两|二|三|四|五|六|七|八|九|十)\s*"
-    r"(杯|份|碗|个|片|勺|盒|瓶|(?<!k)g|克|ml|毫升)"
-)
-
-
 def _has_portion(segment: str) -> bool:
-    return bool(re.search(_PORTION_PATTERN, segment, flags=re.IGNORECASE))
+    return bool(
+        re.search(
+            r"(\d+(?:\.\d+)?|半|一|两|二|三|四|五|六|七|八|九|十)\s*"
+            r"(杯|份|碗|个|片|勺|盒|瓶|(?<!k)g|克|ml|毫升)",
+            segment,
+            flags=re.IGNORECASE,
+        )
+    )
 
 
 _DISCOURSE_ONLY = re.compile(
@@ -428,28 +419,11 @@ def _is_food_segment(segment: str) -> bool:
 
 
 def _food_segments(text: str) -> list[str]:
-    segments: list[str] = []
-    for chunk in re.split(r"[，,、;；。！!？?\n+＋]+", text):
-        for part in re.split(r"(?:和|跟|还有|以及|外加)", chunk):
-            part = part.strip()
-            if not part:
-                continue
-            # "两个鸡蛋一杯牛奶" has no punctuation. Split before a second
-            # portion when both sides resolve to a food, so the first portion
-            # is not paired with the second food.
-            matches = list(re.finditer(_PORTION_PATTERN, part, flags=re.IGNORECASE))
-            if len(matches) <= 1:
-                segments.append(part)
-                continue
-            start = 0
-            for match in matches[1:]:
-                left = part[start : match.start()].strip()
-                right = part[match.start() :].strip()
-                if left and right and _match_food(left) and _match_food(right):
-                    segments.append(left)
-                    start = match.start()
-            segments.append(part[start:].strip())
-    return [segment for segment in segments if segment]
+    return [
+        segment.strip()
+        for segment in re.split(r"[，,、;；。！!？?\n+＋]+", text)
+        if segment.strip()
+    ]
 
 
 def meal_analysis(text: str) -> dict:
@@ -496,8 +470,6 @@ def resolve_food_rules(text: str) -> FoodResolution:
         explicit_portion = grams is not None
         if grams is None:
             grams = DEFAULT_GRAMS.get(base, 200.0)
-        elif portion_text and "杯" in portion_text and base in CUP_GRAMS:
-            grams = CUP_GRAMS[base] * (grams / PORTION_UNITS["杯"])
         grams = max(5.0, min(2000.0, grams))
         item = {
             "name": display_name,
