@@ -2318,6 +2318,30 @@ def test_update_and_delete_workout_via_control_plane(db):
     assert db.get(WorkoutSession, session.id) is not None
 
 
+def test_reschedule_explains_a_day_without_training(db):
+    from app.services.coach_control.capabilities.training import resolve
+
+    result = resolve(
+        db,
+        "user-1",
+        "把今天训练改到明天",
+        {
+            "plan": {
+                "id": "plan-1",
+                "days": [
+                    {
+                        "id": "day-1",
+                        "date": "2026-11-16",
+                        "title": "胸",
+                    }
+                ],
+            }
+        },
+    )
+    assert result["ready"] is False
+    assert "今天没有安排训练" in result["questions"][0]
+
+
 def test_plan_adjust_recognizes_time_and_recovery_words():
     assert runtime._looks_like_plan_adjust("最近太忙，训练计划帮我调整一下")
     assert runtime._looks_like_plan_adjust("计划太满，坚持不下来")

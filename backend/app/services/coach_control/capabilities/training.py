@@ -219,7 +219,19 @@ def resolve(
     source = _source_day(message, context, today=today)
     target_date = parse_training_date(message, today=today)
 
-    if not plan_id or source is None:
+    if not plan_id:
+        return {
+            "ready": False,
+            "questions": ["还没有训练计划；先让教练生成一份，或从训练手账里选择一天。"],
+        }
+    if source is None:
+        if re.search(r"今天|今日", message):
+            return {
+                "ready": False,
+                "questions": [
+                    "今天没有安排训练。要改哪一天？可以打开训练手账选一天。"
+                ],
+            }
         return {
             "ready": False,
             "questions": ["你想改哪一天的训练？告诉我日期，或从训练手账里选一天。"],
