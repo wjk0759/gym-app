@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`2e8f9a8`（跨能力批量动作；生产已部署 `52c3b77` + Flyway **V42**、iOS `52c3b77`；`FitAITests` **110/110**、UI **4/4**、后端 **506 passed**；批处理压力测试发现子动作伪造 plan/day 仍报成功并写入幽灵状态，**2e8f9a8 暂停部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`d5979cf`（跨能力批量动作 + batch 上下文校验；生产后端 `52c3b77` + Flyway **V42**、iOS `52c3b77`；`FitAITests` **110/110**、UI **4/4**、后端 **508 passed**、QA **22/22**；Mac 的 batch 回滚压力测试已由 `d5979cf` 修复并通过；**batch 代码尚未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -29,7 +29,7 @@
 
 ### 2026-11-16 · Windows（跨能力多动作 batch）
 
-- 提交：`2e8f9a8`，已推 `develop`；后端 **506 passed**、QA **21/21**、Ruff 通过、iOS Build `2e8f9a8` ✓（Backend Tests / iOS Build CI 均成功）。
+- 提交：`2e8f9a8` + `d5979cf`，已推 `develop`；后端 **508 passed**、QA **22/22**、Ruff 通过、iOS Build `2e8f9a8` ✓（Backend Tests `d5979cf` 成功）。
 - 做了什么：
   - 新增 `coach.batch` pending：最多 3 个独立动作，一张卡一次确认。
   - 支持组合：饮食、改期、体重、目标、有氧。任一动作缺槽位时退回单动作澄清，不做半懂不懂的 batch。
@@ -37,9 +37,10 @@
   - iOS `AgentActionPayload.batch` + batch 卡展示；确认 receipt 汇总“已执行 N 项操作”。
   - 目标解析支持“目标改成70kg”。
   - 新增测试：饮食+改期 batch、体重+目标 batch；覆盖确认和整组撤销。
+  - `d5979cf`：确认前校验 batch 里训练动作的 plan_id/day_id 与生成卡片时的 context 一致；计划已变化时拒绝执行，避免写入幽灵 plan/day 状态；Mac 的 QA 回滚用例通过。
 - 未验证 / 未部署：
-  - 生产仍是 `a5b93ca` / V42 / iOS `39c1131`。
-  - batch 依赖新 iOS 卡片，必须先装 iOS `2e8f9a8` 再部署后端。
+  - 生产是 `52c3b77` / V42 / iOS `52c3b77`；batch 代码尚未部署。
+  - batch 依赖新 iOS 卡片，必须先装 iOS `d5979cf` 再部署后端 `d5979cf`。
 - Mac 要做：
   - 拉 `2e8f9a8`，跑 FitAITests/UI。
   - build/安装 iOS `2e8f9a8`，再部署后端 `2e8f9a8`。
