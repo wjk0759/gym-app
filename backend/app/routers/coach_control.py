@@ -633,7 +633,11 @@ def coach_memories(user_id: CurrentUser, db: DBSession):
     rows = (
         db.execute(
             select(AIMemory)
-            .where(AIMemory.user_id == user_id, AIMemory.active.is_(True))
+            .where(
+                AIMemory.user_id == user_id,
+                AIMemory.active.is_(True),
+                AIMemory.kind != "session_summary",
+            )
             .order_by(AIMemory.updated_at.desc())
             .limit(50)
         )

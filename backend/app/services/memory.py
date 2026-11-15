@@ -9,13 +9,15 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..config import settings
-from ..models import AIMemory, utcnow
+from ..models import AIMemory, CoachTurn, utcnow
 from . import llm
 from .prompt_registry import prompt_version
 
@@ -37,6 +39,16 @@ REPLACE_KEYS = {
     "goal",
 }
 MAX_MEMORIES = 80
+SESSION_SUMMARY_KIND = "session_summary"
+SESSION_SUMMARY_SOURCE = "coach_summary"
+SESSION_SUMMARY_PROMPT = """你是「叫练」的会话摘要器。
+把下面最近一段教练对话压缩成 4–6 句中文，供之后的教练继续对话使用。
+保留：用户目标/偏好/约束、已确认的计划或饮食变更、未完成事项、重要决定。
+不要编造，不要写寒暄，不要输出 Markdown，只输出摘要正文。"""
+SESSION_SUMMARY_PROMPT_VERSION = prompt_version(
+    "session_summary",
+    SESSION_SUMMARY_PROMPT,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -301,3 +313,225 @@ def _log_background_failure(task: asyncio.Task) -> None:
     exc = task.exception()
     if exc is not None:
         logger.warning("Agent memory task failed: %s", exc)
+
+
+def _as_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def latest_session_summary(
+    db: Session,
+    user_id: str,
+    session_id: str,
+) -> str | None:
+    item = db.execute(
+        select(AIMemory).where(
+            AIMemory.user_id == user_id,
+            AIMemory.memory_key == f"session:{session_id}"[:80],
+            AIMemory.kind == SESSION_SUMMARY_KIND,
+            AIMemory.active.is_(True),
+        )
+    ).scalars().first()
+    return item.content if item is not None else None
+
+
+async def summarize_session(
+    db: Session,
+    user_id: str,
+    session_id: str,
+) -> AIMemory | None:
+    """Compress the latest turns into one durable session summary."""
+    turns = (
+        db.execute(
+            select(CoachTurn)
+            .where(
+                CoachTurn.user_id == user_id,
+                CoachTurn.session_id == session_id,
+            )
+            .order_by(CoachTurn.created_at.desc(), CoachTurn.id.desc())
+            .limit(20)
+        )
+        .scalars()
+        .all()
+    )
+    if not turns:
+        return None
+    turns.reverse()
+    last_turn = turns[-1]
+    key = f"session:{session_id}"[:80]
+    existing = db.execute(
+        select(AIMemory).where(
+            AIMemory.user_id == user_id,
+            AIMemory.memory_key == key,
+            AIMemory.kind == SESSION_SUMMARY_KIND,
+        )
+    ).scalars().first()
+    if (
+        existing is not None
+        and existing.active
+        and _as_utc(existing.updated_at) is not None
+        and _as_utc(existing.updated_at) >= _as_utc(last_turn.created_at)
+    ):
+        return existing
+
+    transcript = "\n".join(
+        line
+        for turn in turns
+        for line in (
+            [f"用户：{turn.input_text[:500]}"]
+            + ([f"教练：{turn.reply[:500]}"] if turn.reply else [])
+        )
+    )
+    if settings.use_mock_llm:
+        summary = "；".join(turn.input_text[:80] for turn in turns[-4:])
+        summary = f"最近对话：{summary}"[:1500]
+    else:
+        db.commit()
+        try:
+            summary = await llm.complete_text(
+                SESSION_SUMMARY_PROMPT,
+                transcript,
+                temperature=0.2,
+                db=db,
+                user_id=user_id,
+                kind="session_summary",
+                prompt_version=SESSION_SUMMARY_PROMPT_VERSION,
+            )
+        except Exception:  # background summary must not break the coach
+            logger.exception("Session summary generation failed")
+            return existing
+        summary = " ".join(summary.split())[:2000]
+
+    if existing is None:
+        existing = AIMemory(
+            user_id=user_id,
+            kind=SESSION_SUMMARY_KIND,
+            memory_key=key,
+            content=summary,
+            source=SESSION_SUMMARY_SOURCE,
+            confidence=0.8,
+            active=True,
+            updated_at=utcnow(),
+        )
+        db.add(existing)
+    else:
+        existing.content = summary
+        existing.source = SESSION_SUMMARY_SOURCE
+        existing.confidence = max(float(existing.confidence or 0), 0.8)
+        existing.active = True
+        existing.updated_at = utcnow()
+    db.commit()
+    return existing
+
+
+async def _summarize_background(user_id: str, session_id: str) -> None:
+    from ..db import SessionLocal
+
+    with SessionLocal() as db:
+        try:
+            await summarize_session(db, user_id, session_id)
+        except Exception:  # pragma: no cover - conservative background failure
+            logger.exception("Session summary background task failed")
+            db.rollback()
+
+
+def schedule_session_summary(user_id: str, session_id: str) -> None:
+    try:
+        task = asyncio.create_task(
+            _summarize_background(user_id, session_id)
+        )
+        task.add_done_callback(_log_background_failure)
+    except RuntimeError:
+        return
+
+
+_QUERY_STOPWORDS = {
+    "我们",
+    "你们",
+    "这个",
+    "那个",
+    "一下",
+    "今天",
+    "明天",
+    "后天",
+    "怎么",
+    "什么",
+    "可以",
+    "还是",
+    "然后",
+    "就是",
+    "现在",
+    "刚才",
+    "刚刚",
+}
+
+
+def _query_tokens(query: str) -> set[str]:
+    tokens: set[str] = set()
+    for chunk in re.findall(r"[\u4e00-\u9fff]{2,}", query):
+        if len(chunk) <= 4:
+            tokens.add(chunk)
+        else:
+            for size in (2, 3):
+                for index in range(0, len(chunk) - size + 1):
+                    tokens.add(chunk[index : index + size])
+    return {token for token in tokens if token not in _QUERY_STOPWORDS}
+
+
+def read_relevant_memories(
+    db: Session,
+    user_id: str,
+    query: str,
+    *,
+    limit: int = 4,
+) -> list[str]:
+    """Keyword retrieval over durable memories; no vector store required."""
+    rows = (
+        db.execute(
+            select(AIMemory)
+            .where(AIMemory.user_id == user_id, AIMemory.active.is_(True))
+            .order_by(AIMemory.updated_at.desc())
+            .limit(120)
+        )
+        .scalars()
+        .all()
+    )
+    if not rows:
+        return []
+    tokens = _query_tokens(query)
+    now = datetime.now(timezone.utc)
+    scored: list[tuple[float, str]] = []
+    for item in rows:
+        content = str(item.content or "").strip()
+        if not content:
+            continue
+        score = 0.0
+        if tokens:
+            score += sum(2.0 for token in tokens if token in content)
+        if item.kind in {"preference", "constraint", "injury", "goal"}:
+            score += 1.0
+        updated = _as_utc(item.updated_at)
+        if updated is not None:
+            age_days = max(
+                0.0,
+                (now - updated).total_seconds() / 86400,
+            )
+            score += max(0.0, 3.0 - age_days / 30.0)
+        if score <= 0:
+            continue
+        scored.append((score, content))
+    scored.sort(key=lambda item: item[0], reverse=True)
+    result: list[str] = []
+    seen: set[str] = set()
+    for _, content in scored:
+        if content in seen:
+            continue
+        seen.add(content)
+        result.append(content)
+        if len(result) >= max(1, min(8, limit)):
+            break
+    return result

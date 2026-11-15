@@ -98,6 +98,29 @@ def resolve(db: Session, user_id: str, context: dict) -> dict:
         and not item.get("skipped")
         and str(item.get("date") or "") >= today.isoformat()
     ]
+    references = context.get("references") if isinstance(context, dict) else None
+    target_date = (
+        str(references.get("date") or "")
+        if isinstance(references, dict)
+        else ""
+    )
+    if target_date:
+        candidates = [
+            item
+            for item in candidates
+            if str(item.get("date") or "") == target_date
+        ]
+        if not candidates:
+            return {
+                "ready": True,
+                "payload": {
+                    "summary": f"{_day_label(target_date, today)}没有安排训练。",
+                    "wins": [],
+                    "watchouts": ["可以看下一练，或把某一天改到这天。"],
+                    "actions": [],
+                    "generated_at": utcnow().isoformat(),
+                },
+            }
     if not candidates:
         open_days = [
             item

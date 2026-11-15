@@ -206,6 +206,15 @@ def _source_day(
     return None
 
 
+def _day_on_date(days: list[dict], value: str | None) -> dict | None:
+    if not value:
+        return None
+    for item in days:
+        if str(item.get("date") or "") == value:
+            return item
+    return None
+
+
 def resolve(
     db: Session,
     user_id: str,
@@ -216,8 +225,20 @@ def resolve(
     today = datetime.now(DIET_TZ).date()
     plan = context.get("plan") if isinstance(context.get("plan"), dict) else {}
     plan_id = str(plan.get("id") or "")
+    references = context.get("references")
+    references = references if isinstance(references, dict) else {}
     source = _source_day(message, context, today=today)
+    if source is None:
+        source = _day_on_date(
+            _plan_days(context),
+            str(references.get("previous_date") or "") or None,
+        )
     target_date = parse_training_date(message, today=today)
+    if target_date is None and references.get("date"):
+        try:
+            target_date = date.fromisoformat(str(references["date"]))
+        except ValueError:
+            target_date = None
 
     if not plan_id:
         return {

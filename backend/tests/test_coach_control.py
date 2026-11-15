@@ -2737,6 +2737,114 @@ def test_plan_edit_is_not_a_weight_correction():
     assert runtime._looks_like_exercise_edit(message) is True
 
 
+def test_reference_resolution_inherits_dates_meals_and_metrics():
+    from types import SimpleNamespace
+
+    from app.services.coach_control.references import resolve_references
+
+    turn = SimpleNamespace(
+        input_text="今天练什么",
+        reply="下一练是周二：推。",
+        intent="training.preview_next",
+    )
+    refs = resolve_references("那明天呢", [turn])
+    assert refs.intent == "training.preview_next"
+    assert refs.date is not None
+
+    refs = resolve_references("那体脂呢", [])
+    assert refs.metric == "body_fat"
+
+    refs = resolve_references("那午饭呢", [])
+    assert refs.meal == "lunch"
+
+
+def test_training_preview_uses_the_referenced_date(db):
+    from app.services.coach_control.capabilities.training_preview import resolve
+
+    tomorrow = (datetime.now(ZoneInfo("Asia/Shanghai")).date() + timedelta(days=1)).isoformat()
+    result = resolve(
+        db,
+        "user-1",
+        {
+            "plan": {
+                "days": [
+                    {"id": "d1", "date": tomorrow, "title": "胸", "completed": False, "skipped": False},
+                    {"id": "d2", "date": "2026-12-01", "title": "腿", "completed": False, "skipped": False},
+                ]
+            },
+            "references": {"date": tomorrow},
+        },
+    )
+    assert "胸" in result["payload"]["summary"]
+    assert "明天" in result["payload"]["summary"]
+
+
+def test_session_summary_is_written_and_excluded_from_the_memory_book(db, monkeypatch):
+    import asyncio
+    from types import SimpleNamespace
+
+    from app.models import CoachSession, CoachTurn
+    from app.services import memory
+
+    session = CoachSession(user_id="user-1", status="active")
+    db.add(session)
+    db.flush()
+    for index in range(3):
+        db.add(
+            CoachTurn(
+                session_id=session.id,
+                user_id="user-1",
+                input_text=f"我想每周二四六练 {index}",
+                intent="coach.answer",
+                status="completed",
+                reply="记住了。",
+            )
+        )
+    db.commit()
+
+    async def fake_complete_text(*args, **kwargs):
+        return "用户想每周二四六训练；当前没有未完成事项。"
+
+    monkeypatch.setattr(
+        memory,
+        "settings",
+        SimpleNamespace(use_mock_llm=False),
+    )
+    monkeypatch.setattr(memory.llm, "complete_text", fake_complete_text)
+
+    saved = asyncio.run(
+        memory.summarize_session(db, "user-1", session.id)
+    )
+    assert saved is not None
+    assert saved.kind == "session_summary"
+    assert memory.latest_session_summary(db, "user-1", session.id) == saved.content
+
+    from app.services.coach_control.conversation import build_memory_book
+
+    assert saved.content not in build_memory_book(db, "user-1")
+
+
+def test_keyword_memory_retrieval_finds_old_constraints(db):
+    from app.models import AIMemory
+    from app.services.memory import read_relevant_memories
+
+    db.add(
+        AIMemory(
+            user_id="user-1",
+            kind="constraint",
+            memory_key="knee",
+            content="膝盖不舒服，深蹲不要上大重量。",
+            source="agent",
+            confidence=0.9,
+            active=True,
+        )
+    )
+    db.commit()
+
+    results = read_relevant_memories(db, "user-1", "最近膝盖疼深蹲怎么办")
+    assert any("膝盖" in item for item in results)
+
+
 def test_conversation_context_keeps_fifty_turns_and_memory(db):
     from app.models import AIMemory, CoachSession, CoachTurn
     from app.services.coach_control.conversation import (

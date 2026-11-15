@@ -26,6 +26,7 @@ from ...models import (
 )
 from ..safety import assess_safety
 from . import capabilities  # noqa: F401 - registers capabilities
+from .capability_context import CapabilityContext
 from .consumers import consume_event
 from .context import with_plan_context
 from .conversation import build_conversation_context
@@ -736,13 +737,13 @@ async def handle_turn(
         session.id,
         exclude_turn_id=turn.id,
         max_turns=50,
+        query=text,
     )
-    context["conversation_text"] = conversation.prompt_text(
-        max_turns=12,
-        max_chars=6000,
-    )
-    context["task_state"] = conversation.task_state_text()
-    context["memory_book"] = conversation.memory_book
+    context = CapabilityContext(context, conversation, text)
+    if len(conversation.turns) >= 10 and len(conversation.turns) % 10 == 0:
+        from ..memory import schedule_session_summary
+
+        schedule_session_summary(user_id, session.id)
 
     pending = get_active_pending(db, user_id, session.id)
 
@@ -1897,7 +1898,7 @@ async def handle_turn(
                     history,
                     text,
                     app_context=context,
-                    memory_book=conversation.memory_book,
+                    memory_book=conversation.memory_context_text(),
                 )
             except Exception as exc:  # noqa: BLE001 - keep failed turns auditable
                 turn.status = "failed"

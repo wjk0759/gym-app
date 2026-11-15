@@ -120,7 +120,19 @@ def resolve(
     if focus is None:
         return {"ready": False, "questions": ["想加哪个部位？胸、背、腿、肩或手臂。"]}
     today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
-    target = parse_training_date(message, today=today) or today
+    references = context.get("references") if isinstance(context, dict) else None
+    reference_date = (
+        str(references.get("date") or "")
+        if isinstance(references, dict)
+        else ""
+    )
+    target = parse_training_date(message, today=today)
+    if target is None and reference_date:
+        try:
+            target = date.fromisoformat(reference_date)
+        except ValueError:
+            target = None
+    target = target or today
     week_index = _week_index(program, target)
     existing = db.execute(
         select(ProgramDay).where(

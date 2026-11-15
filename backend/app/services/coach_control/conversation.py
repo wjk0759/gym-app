@@ -19,7 +19,7 @@ turns are also rendered as a bounded prompt string, never as raw JSON.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
@@ -34,6 +34,7 @@ from ...models import (
     CoachTurn,
     Profile,
 )
+from ..memory import latest_session_summary, read_relevant_memories
 from ..queries import active_goal, active_program
 from .state import get_active_pending
 
@@ -65,6 +66,27 @@ class ConversationContext:
     pending: CoachPending | None
     last_action: CoachActionRecord | None
     memory_book: str
+    summary: str | None = None
+    retrieved_memories: list[str] = field(default_factory=list)
+
+    def memory_context_text(self) -> str:
+        parts: list[str] = []
+        if self.memory_book:
+            parts.append(self.memory_book)
+        if self.summary:
+            parts.append("[更早会话摘要]\n" + self.summary)
+        seen = {part.strip() for part in parts if part.strip()}
+        for content in self.retrieved_memories:
+            text = content.strip()
+            if not text or text in seen:
+                continue
+            if self.summary and text in self.summary:
+                continue
+            if text in self.memory_book:
+                continue
+            seen.add(text)
+            parts.append("- " + text)
+        return "\n\n".join(parts)[:9000]
 
     def history_items(self, *, max_turns: int | None = None) -> list[HistoryItem]:
         rows = self.turns[-max_turns:] if max_turns else self.turns
@@ -172,7 +194,11 @@ def build_memory_book(db: Session, user_id: str) -> str:
     memories = (
         db.execute(
             select(AIMemory)
-            .where(AIMemory.user_id == user_id, AIMemory.active.is_(True))
+            .where(
+                AIMemory.user_id == user_id,
+                AIMemory.active.is_(True),
+                AIMemory.kind != "session_summary",
+            )
             .order_by(AIMemory.updated_at.desc())
             .limit(24)
         )
@@ -193,6 +219,7 @@ def build_conversation_context(
     *,
     exclude_turn_id: str | None = None,
     max_turns: int = DEFAULT_MAX_TURNS,
+    query: str | None = None,
 ) -> ConversationContext:
     statement = select(CoachTurn).where(
         CoachTurn.user_id == user_id,
@@ -243,4 +270,10 @@ def build_conversation_context(
         pending=pending,
         last_action=last_action,
         memory_book=build_memory_book(db, user_id),
+        summary=latest_session_summary(db, user_id, session_id),
+        retrieved_memories=(
+            read_relevant_memories(db, user_id, query, limit=4)
+            if query and len(turns) >= 6
+            else []
+        ),
     )
