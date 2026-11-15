@@ -531,7 +531,14 @@ def resolve_food_rules(text: str) -> FoodResolution:
         grams, portion_text = _portion(segment)
         explicit_portion = grams is not None
         if grams is None:
-            grams = DEFAULT_GRAMS.get(base, 200.0)
+            grams = DEFAULT_GRAMS.get(base)
+            if grams is None:
+                item = lookup_food(base)
+                grams = (
+                    float(item["serving_g"])
+                    if item and item.get("serving_g")
+                    else 200.0
+                )
         elif portion_text and "杯" in portion_text and base in CUP_GRAMS:
             grams = CUP_GRAMS[base] * (grams / PORTION_UNITS["杯"])
         grams = max(5.0, min(2000.0, grams))
