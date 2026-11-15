@@ -8,6 +8,7 @@ executes through the action ledger.
 from __future__ import annotations
 
 import contextlib
+import copy
 import re
 import time
 from datetime import datetime, timezone
@@ -210,6 +211,18 @@ def _looks_like_correction(message: str) -> bool:
     ):
         return False
     return bool(re.search(r"记错|不是|改成|应该是|修正|改一下", message))
+
+
+def _correction_food_text(message: str) -> str:
+    """Remove conversational correction framing before food resolution."""
+    replaced = re.search(r"不是(.+?)[，,。；;]?\s*是(.+)", message)
+    if replaced is not None:
+        return replaced.group(2).strip()
+    return re.sub(
+        r"^(记错了|不是|改成|改为|换成|修正|应该是|改一下)[，,。；;\s]*",
+        "",
+        message.strip(),
+    ).strip()
 
 
 def _looks_like_food_delete(message: str) -> bool:
@@ -826,7 +839,7 @@ async def _pending_card_followup(
             return None
         from .capabilities.diet import resolve as resolve_diet
 
-        draft = dict(payload)
+        draft = copy.deepcopy(payload)
         if not draft.get("meals") and draft.get("meal"):
             draft["meals"] = [
                 {
@@ -835,10 +848,27 @@ async def _pending_card_followup(
                     "items": draft.get("items") or [],
                 }
             ]
+        resolve_text = text
+        if correction:
+            replaced = re.search(r"不是(.+?)[，,。；;]?\s*是", text)
+            if replaced is not None:
+                old_phrase = replaced.group(1)
+                for group in draft.get("meals") or [draft]:
+                    if not isinstance(group, dict):
+                        continue
+                    group["items"] = [
+                        item
+                        for item in group.get("items") or []
+                        if not (
+                            str(item.get("name") or "").strip()
+                            and str(item.get("name") or "").strip() in old_phrase
+                        )
+                    ]
+            resolve_text = _correction_food_text(text) or text
         resolution = await resolve_diet(
             db,
             user_id,
-            text,
+            resolve_text,
             history_context=conversation.reference_context(),
             draft=draft,
         )
@@ -1281,6 +1311,7 @@ async def handle_turn(
 
     intent_override: str | None = None
     diet_draft: dict | None = None
+    correction_prefix: str | None = None
     if pending is not None and pending.kind == "draft":
         if pending.capability_id == DIET:
             if not _looks_like_diet_slot_answer(text):
@@ -1670,6 +1701,29 @@ async def handle_turn(
                 "reply": reply,
                 "pending": serialize_pending(active),
             }
+        if last_capability == DIET and last_action is not None:
+            payload = dict(last_action.payload or {})
+            meals = payload.get("meals") or []
+            item_count = (
+                sum(len(meal.get("items") or []) for meal in meals)
+                if meals
+                else len(payload.get("items") or [])
+            )
+            if (
+                item_count == 1
+                and _looks_like_food(text)
+                and not re.search(r"\d+\s*(kg|公斤|斤)", text)
+            ):
+                undone = True
+                try:
+                    undo_action(db, user_id, last_action.id)
+                except Exception:  # noqa: BLE001 - fall through to normal flow
+                    undone = False
+                if undone:
+                    diet_draft = None
+                    text = _correction_food_text(text) or text
+                    intent_override = DIET
+                    correction_prefix = "已撤销上一条记录。"
         if last_capability is None:
             emit_event(
                 db,
@@ -2479,6 +2533,8 @@ async def handle_turn(
 
     if turn.status != "blocked":
         turn.status = "completed"
+    if correction_prefix:
+        reply = f"{correction_prefix}{reply}"
     turn.reply = reply
     turn.latency_ms = int((time.perf_counter() - started) * 1000)
     session.last_turn_at = utcnow()

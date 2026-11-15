@@ -902,6 +902,53 @@ def test_batch_weight_and_goal_confirm_and_undo(db):
     assert db.execute(select(BodyMetric)).scalars().all() == []
 
 
+def test_diet_correction_after_confirm_replaces_old_log(db):
+    import asyncio
+
+    first = asyncio.run(runtime.handle_turn(db, "user-1", "午餐吃了100g鸡胸肉"))
+    confirmed = runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    logs = db.execute(select(FoodLog)).scalars().all()
+    assert len(logs) == 1 and float(logs[0].grams) == 100
+
+    corrected = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "记错了 午饭吃了150g鸡胸肉",
+            session_id=first["session"]["id"],
+        )
+    )
+    assert corrected["pending"]["kind"] == "card"
+    assert corrected["reply"].startswith("已撤销上一条记录。")
+    assert db.execute(select(FoodLog)).scalars().all() == []
+
+    runtime.confirm_pending(db, "user-1", corrected["pending"]["id"])
+    logs = db.execute(select(FoodLog)).scalars().all()
+    assert len(logs) == 1
+    assert float(logs[0].grams) == 150
+    assert logs[0].source_action_id != confirmed["action_id"]
+
+
+def test_food_card_can_replace_an_item(db):
+    import asyncio
+
+    first = asyncio.run(runtime.handle_turn(db, "user-1", "午餐吃了100g鸡胸肉"))
+    assert first["pending"]["payload"]["items"][0]["name"] == "鸡胸肉"
+    second = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "不是鸡胸肉，是150g牛肉",
+            session_id=first["session"]["id"],
+        )
+    )
+    payload = second["pending"]["payload"]
+    assert payload["meal"] == "lunch"
+    assert [(item["name"], item["grams"]) for item in payload["items"]] == [
+        ("牛肉", 150)
+    ]
+
+
 def test_dinner_reference_uses_prior_turns_and_full_history(db, monkeypatch):
     import asyncio
     import json
