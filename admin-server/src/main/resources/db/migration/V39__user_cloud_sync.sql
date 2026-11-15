@@ -1,4 +1,5 @@
 -- Durable per-user settings and reusable food/exercise preferences.
+-- P0: preferences, custom foods, favorites, disliked exercises.
 CREATE TABLE user_preferences (
     user_id VARCHAR(36) NOT NULL,
     strict_equipment_mode BOOLEAN NOT NULL DEFAULT FALSE,
