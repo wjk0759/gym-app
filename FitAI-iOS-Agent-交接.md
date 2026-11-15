@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`b9e5334`（控制平面 + 34 能力 ActionSpec + 训练提醒 + 四域知识库：食物 2,017 / 品类 32 / 教练 782 / 器械 95，接入 `lookup_knowledge`；后端 **494 passed**、QA **16/16**、Ruff 通过；Backend Tests ✓、Coach Eval ✓；iOS Build 最新仍为 `0eb9519` ✓；生产后端仍部署 `4fd1569` + Flyway **V38**（视觉 **DeepSeek V4.1 Flash**，Qwen 已退出），本轮未部署；iOS 真机仍 `c8eca16`，提醒和知识库工具待 Mac 验证）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`cad24c5`（控制平面 + 34 能力 ActionSpec + 训练提醒 + 三域知识库：食物 2,017 / 教练 782 / 器械 95，接入 `lookup_knowledge`；食物品类知识库已删除，避免进入视觉/教练 RAG；后端 **494 passed**、QA **16/16**、Ruff 通过；Backend Tests ✓、Coach Eval ✓；iOS Build 最新仍为 `0eb9519` ✓；生产后端仍部署 `4fd1569` + Flyway **V38**（视觉 **DeepSeek V4.1 Flash**，Qwen 已退出），本轮未部署；iOS 真机仍 `c8eca16`，提醒和知识库工具待 Mac 验证）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -27,24 +27,49 @@
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
 
-### 2026-11-15 · Windows（四域知识库 + 三轮清洗 + lookup_knowledge）
+### 2026-11-15 · Windows（删除食物品类知识库，隔离视觉链路）
+
+- 提交：`cad24c5`，已推 `develop`；Backend Tests 待跑/见 CI；iOS 无代码变更。
+- 背景：用户确认「食物品类库」是给用户自选饮食用的，不是识别辅助；AI 照片识别已经稳定，担心新增品类影响判断。
+- 做了什么：
+  - 删除 `backend/data/knowledge/food_categories.jsonl`。
+  - 从 `knowledge_seed.json` 删除 `food_categories` 整段，构建脚本不再生成品类卡。
+  - `knowledge_search` 只保留 `coach / food / equipment` 三个域；`lookup_knowledge` 不再接受 `food_category`。
+  - 食物营养记录去掉 `category_id`，只保留来源表的 `category` 字符串，用于文字解析时消歧；不进入视觉 prompt。
+  - 更新 `docs/61-knowledge-base.md`、`backend/data/README.md`、测试和评测脚本。
+- 关键确认：
+  - 照片识别路径 `routers/diet.py → food_vision.analyze()` 从未引用品类知识库；`food_vision.py` 的 prompt 和 `FOODS` 没有改。
+  - 这次删除不会改变照片识别，只是移除一个可能被未来误接入的入口。
+- 验证：
+  - 后端 **494 passed**；QA **16/16**；Ruff `app/tests/scripts/qa` 通过。
+  - 知识检索冒烟集改为 21 条（教练 9、食物 7、器械 5）：Hit@1 **1.00**、Hit@3 **1.00**。
+- 未验证：
+  - 生产未部署 `cad24c5`；iOS 真机未验证（本轮无 iOS 代码）。
+  - 用户自选饮食目录还没做，后续要单独设计分类/搜索/份量，不能复用视觉线索。
+- 对方（Mac）要做：
+  - 拉取后确认教练不再出现 `food_category` 域；拍照识别行为与之前一致。
+  - 继续验证上一轮训练提醒和知识库工具。
+- 禁止恢复：
+  - 不要把食物品类/2,017 条食物注入 `food_vision` prompt。
+  - 用户自选目录必须与 AI 识别链路隔离。
+
+### 2026-11-15 · Windows（知识库 + 三轮清洗 + lookup_knowledge；食物品类后已删）
 
 - 提交：`e486fdb` + `b9e5334`，已推 `develop`；Backend Tests ✓，Coach Eval ✓；iOS 无代码变更，Build 仍以 `0eb9519` 为准。
 - 做了什么：
-  - 新增四域知识库：
+  - 新增知识库（食物品类知识库后已删除）：
     - `food_nutrition.jsonl` **2,017** 条（1,874 条宏量完整，143 条部分营养）
-    - `food_categories.jsonl` **32** 条（18 大类 + 14 中式菜品/饮品）
     - `coach_knowledge.jsonl` **782** 条（736 动作 + 46 体态/训练/营养/安全卡）
     - `equipment_knowledge.jsonl` **95** 条（名称/别名/肌群/识别线索/易混淆/使用要点）
   - 数据源：台湾 FDA 食品营养成分数据库 2015（OGDL 1.0，需署名）、`hasaneyldrm/exercises-dataset`（MIT 文本，媒体未引入）、现有器械目录、FitAI 原创摘要。
-  - 三轮清洗脚本 `backend/scripts/build_knowledge_base.py`：接入/繁转简/去重 → 范围校验/宏量一致性/近似去重 → 别名/分类卡/检索文本/质量分。
-  - 新增 `knowledge_search.py`：关键词 RAG 基线，支持 `coach / food / food_category / equipment`，标题/别名加权、查询同义词扩展、食物品类多数投票。
+  - 三轮清洗脚本 `backend/scripts/build_knowledge_base.py`：接入/繁转简/去重 → 范围校验/宏量一致性/近似去重 → 别名/检索文本/质量分。
+  - 新增 `knowledge_search.py`：关键词 RAG 基线，支持 `coach / food / equipment`，标题/别名加权、查询同义词扩展、食物分类字段多数投票。
   - `food_text.py` 接入 `lookup_food`：确定性饮食记录从 25 条扩到 2,017 条；修复“两个鸡蛋一杯牛奶”“米饭150g和西兰花200g”拆分，以及“牛筋”误配“牛筋肉肠”；隐式份量优先用知识库 `serving_g`（三文鱼 100g、酸奶 250g）。
   - 教练新增 `lookup_knowledge` 工具；动作步骤仍走 `lookup_exercise`。
   - 新增 `docs/61-knowledge-base.md`、`backend/data/README.md`、`scripts/eval_knowledge.py`。
 - 验证：
   - 后端 **494 passed**；QA **16/16**；Ruff `app/tests/scripts/qa` 通过。
-  - 知识检索冒烟集 25 条：Hit@1 **1.00**、Hit@3 **1.00**（人工构造，小样本，不等于生产准确率）。
+  - 知识检索冒烟集 21 条（教练 9、食物 7、器械 5）：Hit@1 **1.00**、Hit@3 **1.00**（人工构造，小样本，不等于生产准确率）。
   - 食物单测：米饭/鸡胸肉/牛奶/三文鱼/酸奶/奶酪/菠萝可解析；“鸡腿”不会误配“鸡腿菇”。
 - 未验证：
   - 真实匿名用户问法、跨域混合检索、embedding 对比；当前只有关键词基线。
@@ -53,7 +78,7 @@
   - 生产未部署 `e486fdb`；iOS 真机未验证 `lookup_knowledge` 工具调用。
 - 对方（Mac）要做：
   - `git pull` → `xcodegen generate` → 构建 / `FitAITests` / UI（本轮无 iOS 代码，主要确认后端工具接入后对话不回归）。
-  - 部署后问教练：“米饭热量”“鸡胸肉蛋白质”“深蹲膝盖内扣怎么纠正”“坐姿划船机怎么辨认”“珍珠奶茶属于什么”，确认返回来源/许可且不编造；再验证“牛筋肉肠”会追问而不是记成牛筋。
+  - 部署后问教练：“米饭热量”“鸡胸肉蛋白质”“深蹲膝盖内扣怎么纠正”“坐姿划船机怎么辨认”，确认返回来源/许可且不编造；再验证“牛筋肉肠”会追问而不是记成牛筋。
   - 继续验证上一轮训练提醒真机流程。
 - 禁止恢复 / 注意：
   - Qwen/DashScope。
