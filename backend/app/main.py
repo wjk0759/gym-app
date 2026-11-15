@@ -30,6 +30,7 @@ from .routers import (
     plans,
     profile,
     schedule,
+    sync,
     telemetry,
     videos,
     watch,
@@ -186,6 +187,7 @@ for module in (
     videos,
     watch,
     schedule,
+    sync,
     iap,
     telemetry,
 ):

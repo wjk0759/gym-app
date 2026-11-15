@@ -54,10 +54,7 @@ struct EquipmentLibraryView: View {
     private var strictModeBinding: Binding<Bool> {
         Binding(
             get: { store.strictEquipmentMode },
-            set: {
-                store.strictEquipmentMode = $0
-                store.persist()
-            }
+            set: { store.setStrictEquipmentMode($0) }
         )
     }
 

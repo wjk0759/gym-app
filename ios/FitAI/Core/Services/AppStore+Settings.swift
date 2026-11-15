@@ -8,6 +8,7 @@ extension AppStore {
         guard granted else {
             notificationsEnabled = false
             persist()
+            markPreferencesDirty()
             return 0
         }
         let count = await NotificationScheduler.shared.schedule(
@@ -17,6 +18,7 @@ extension AppStore {
         )
         notificationsEnabled = granted
         persist()
+        markPreferencesDirty()
         return count
     }
 
@@ -24,6 +26,7 @@ extension AppStore {
         notificationsEnabled = false
         NotificationScheduler.shared.cancelWorkoutReminders()
         persist()
+        markPreferencesDirty()
     }
 
     // MARK: - 休息提醒

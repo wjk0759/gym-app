@@ -1071,3 +1071,96 @@ struct RemoteMeGoal: Decodable {
         case targetDate = "target_date"
     }
 }
+
+struct RemoteCloudSync: Decodable {
+    let serverTime: String?
+    let preferences: RemoteCloudPreferences?
+    let customFoods: [RemoteCloudFood]
+    let favorites: [RemoteCloudFavorite]
+    let dislikedExercises: [RemoteCloudDislike]
+
+    enum CodingKeys: String, CodingKey {
+        case serverTime = "server_time"
+        case preferences
+        case customFoods = "custom_foods"
+        case favorites
+        case dislikedExercises = "disliked_exercises"
+    }
+}
+
+struct RemoteCloudPreferences: Codable, Equatable {
+    let strictEquipmentMode: Bool?
+    let useRemoteAI: Bool?
+    let reminderHour: Int?
+    let reminderMinute: Int?
+    let notificationsEnabled: Bool?
+    let bodyCheckinFrequency: String?
+    let bodyCheckinWeekday: Int?
+    let bodyCheckinDay: Int?
+    let updatedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case strictEquipmentMode = "strict_equipment_mode"
+        case useRemoteAI = "use_remote_ai"
+        case reminderHour = "reminder_hour"
+        case reminderMinute = "reminder_minute"
+        case notificationsEnabled = "notifications_enabled"
+        case bodyCheckinFrequency = "body_checkin_frequency"
+        case bodyCheckinWeekday = "body_checkin_weekday"
+        case bodyCheckinDay = "body_checkin_day"
+        case updatedAt = "updated_at"
+    }
+}
+
+struct RemoteCloudFood: Decodable {
+    let clientID: String
+    let name: String
+    let category: String?
+    let kcal: Double?
+    let protein: Double?
+    let carbs: Double?
+    let fat: Double?
+    let fiber: Double?
+    let defaultGrams: Double?
+    let updatedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clientID = "client_id"
+        case name
+        case category
+        case kcal
+        case protein
+        case carbs
+        case fat
+        case fiber
+        case defaultGrams = "default_grams"
+        case updatedAt = "updated_at"
+    }
+}
+
+struct RemoteCloudFavorite: Decodable {
+    let foodKey: String
+    let name: String
+    let updatedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case foodKey = "food_key"
+        case name
+        case updatedAt = "updated_at"
+    }
+}
+
+struct RemoteCloudDislike: Decodable {
+    let slug: String
+    let updatedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case slug
+        case updatedAt = "updated_at"
+    }
+}
+
+struct PlanHistoryResponse: Decodable {
+    let items: [TrainingPlan]
+}
+

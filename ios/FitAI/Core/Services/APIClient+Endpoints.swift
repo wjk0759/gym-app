@@ -22,6 +22,11 @@ extension APIClient {
         return try decode(RemoteMe.self, from: data)
     }
 
+    func fetchPlanHistory() async throws -> [TrainingPlan] {
+        let data: Data = try await send(path: "plans/history", method: "GET", body: nil)
+        return try decode(PlanHistoryResponse.self, from: data).items
+    }
+
     func healthStatus() async throws -> HealthStatus {
         let root = baseURL
             .deletingLastPathComponent()

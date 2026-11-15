@@ -1319,3 +1319,99 @@ class AIRuntimeControl(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
     )
+
+
+class UserPreference(Base):
+    """Durable settings that must follow the user across devices."""
+
+    __tablename__ = "user_preferences"
+
+    user_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    strict_equipment_mode: Mapped[bool] = mapped_column(Boolean, default=False)
+    use_remote_ai: Mapped[bool] = mapped_column(Boolean, default=True)
+    reminder_hour: Mapped[int] = mapped_column(Integer, default=19)
+    reminder_minute: Mapped[int] = mapped_column(Integer, default=0)
+    notifications_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    body_checkin_frequency: Mapped[str] = mapped_column(String(20), default="off")
+    body_checkin_weekday: Mapped[int] = mapped_column(Integer, default=1)
+    body_checkin_day: Mapped[int] = mapped_column(Integer, default=1)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
+class UserCustomFood(Base):
+    __tablename__ = "user_custom_foods"
+    __table_args__ = (
+        UniqueConstraint("user_id", "client_id", name="uq_custom_foods_user_client"),
+        Index("ix_custom_foods_user_updated", "user_id", "updated_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    client_id: Mapped[str] = mapped_column(String(36))
+    name: Mapped[str] = mapped_column(String(120))
+    category: Mapped[str] = mapped_column(String(40), default="自定义")
+    kcal: Mapped[float] = mapped_column(Numeric(7, 1, asdecimal=False), default=0)
+    protein: Mapped[float] = mapped_column(Numeric(6, 1, asdecimal=False), default=0)
+    carbs: Mapped[float] = mapped_column(Numeric(6, 1, asdecimal=False), default=0)
+    fat: Mapped[float] = mapped_column(Numeric(6, 1, asdecimal=False), default=0)
+    fiber: Mapped[float | None] = mapped_column(Numeric(6, 1, asdecimal=False))
+    default_grams: Mapped[float | None] = mapped_column(Numeric(7, 1, asdecimal=False))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class UserFoodFavorite(Base):
+    __tablename__ = "user_food_favorites"
+    __table_args__ = (
+        UniqueConstraint("user_id", "food_key", name="uq_food_favorites_user_key"),
+        Index("ix_food_favorites_user_updated", "user_id", "updated_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    food_key: Mapped[str] = mapped_column(String(160))
+    name: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class UserExerciseDislike(Base):
+    __tablename__ = "user_exercise_dislikes"
+    __table_args__ = (
+        UniqueConstraint("user_id", "slug", name="uq_exercise_dislikes_user_slug"),
+        Index("ix_exercise_dislikes_user_updated", "user_id", "updated_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    slug: Mapped[str] = mapped_column(String(60))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+

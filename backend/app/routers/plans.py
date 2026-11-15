@@ -167,6 +167,24 @@ async def generate(
     return data
 
 
+@router.get("/history")
+def history(user_id: CurrentUser, db: DBSession):
+    rows = (
+        db.execute(
+            select(Program)
+            .where(Program.user_id == user_id)
+            .options(
+                selectinload(Program.days).selectinload(ProgramDay.exercises)
+            )
+            .order_by(Program.created_at.desc())
+            .limit(20)
+        )
+        .scalars()
+        .all()
+    )
+    return {"items": [serialize_program(item) for item in rows]}
+
+
 @router.get("/current")
 def current(user_id: CurrentUser, db: DBSession):
     program = _active_program(db, user_id)

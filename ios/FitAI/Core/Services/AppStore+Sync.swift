@@ -200,6 +200,7 @@ extension AppStore {
             }
             await self.syncPlanIfNeeded()
             await self.pushPlanSchedule()
+            await self.syncCloudExtras()
             await self.pullCloudUserData()
             if hadFoodWork {
                 self.refreshWeeklyReview(force: true)
@@ -423,6 +424,12 @@ extension AppStore {
                 refreshed.insert(.plan)
             }
         }
+        if domains.contains(.plan),
+           let history = try? await APIClient.shared.fetchPlanHistory(),
+           currentUserID == account {
+            mergeServerPlanHistory(history)
+            refreshed.insert(.plan)
+        }
         if domains.contains(.schedule), await refreshPlanSchedule() {
             refreshed.insert(.schedule)
         }
@@ -475,6 +482,19 @@ extension AppStore {
         if !refreshed.isEmpty {
             persist()
         }
+    }
+
+    private func mergeServerPlanHistory(_ plans: [TrainingPlan]) {
+        var byID = Dictionary(uniqueKeysWithValues: planHistory.map { ($0.id, $0) })
+        for item in plans where item.id != plan?.id {
+            byID[item.id] = item
+        }
+        planHistory = Array(
+            byID.values
+                .sorted { $0.displayDate > $1.displayDate }
+                .prefix(10)
+        )
+        persist()
     }
 
     private func mergeRemoteMe(_ remote: RemoteMe) {

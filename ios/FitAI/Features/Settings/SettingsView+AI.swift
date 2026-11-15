@@ -55,10 +55,7 @@ extension SettingsView {
     var remoteBinding: Binding<Bool> {
         Binding(
             get: { store.useRemoteAI },
-            set: {
-                store.useRemoteAI = $0
-                store.persist()
-            }
+            set: { store.setUseRemoteAI($0) }
         )
     }
 

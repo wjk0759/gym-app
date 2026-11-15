@@ -3,6 +3,9 @@ import Foundation
 struct FoodItem: Identifiable, Hashable, Codable {
     var id: String { name }
 
+    /// Stable key for cloud sync. Built-in/library foods leave this nil and
+    /// use their name; custom foods get a UUID when first uploaded.
+    var clientID: UUID? = nil
     let name: String
     let category: String
     /// 每 100g（或 100ml）估算值
@@ -23,8 +26,10 @@ struct FoodItem: Identifiable, Hashable, Codable {
         carbs: Double,
         fat: Double,
         fiber: Double? = nil,
-        defaultGrams: Double? = nil
+        defaultGrams: Double? = nil,
+        clientID: UUID? = nil
     ) {
+        self.clientID = clientID
         self.name = name
         self.category = category
         self.kcal = kcal

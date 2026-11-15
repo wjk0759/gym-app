@@ -103,6 +103,12 @@ final class AppStore {
     /// Saved food-library items shown above search results in AddFoodView.
     var favoriteFoods: [FoodItem] = []
     var dislikedSlugs: Set<String> = []
+    /// Items removed locally whose server tombstone still needs to be sent.
+    var removedFavoriteKeys: Set<String> = []
+    var removedDislikedSlugs: Set<String> = []
+    /// Preferences changed locally and not yet acknowledged by /sync.
+    var preferencesDirty = false
+    @ObservationIgnored var isSyncingCloudExtras = false
     var equipmentLibrary: [EquipmentItem] = []
     /// 通用器械勾选（徒手/哑铃/杠铃...）。
     var selectedUniversalSlugs: [String] = ["bodyweight"]
@@ -263,6 +269,9 @@ final class AppStore {
         customFoods = []
         favoriteFoods = []
         dislikedSlugs = []
+        removedFavoriteKeys = []
+        removedDislikedSlugs = []
+        preferencesDirty = false
         notificationsEnabled = false
         restLiveActivityEnabled = true
         restNotificationsEnabled = true
@@ -389,6 +398,12 @@ final class AppStore {
         customFoods = state.customFoods ?? []
         favoriteFoods = state.favoriteFoods ?? []
         dislikedSlugs = Set(state.dislikedSlugs ?? [])
+        removedFavoriteKeys = Set(state.removedFavoriteKeys ?? [])
+        removedDislikedSlugs = Set(state.removedDislikedSlugs ?? [])
+        // Existing installs predate cloud extras. Mark preferences dirty so
+        // their local settings are uploaded once instead of being replaced by
+        // server defaults on the first pull.
+        preferencesDirty = state.preferencesDirty ?? true
         reminderHour = state.reminderHour
         reminderMinute = state.reminderMinute
         notificationsEnabled = state.notificationsEnabled
@@ -449,6 +464,9 @@ final class AppStore {
             customFoods: customFoods,
             favoriteFoods: favoriteFoods,
             dislikedSlugs: Array(dislikedSlugs).sorted(),
+            removedFavoriteKeys: Array(removedFavoriteKeys).sorted(),
+            removedDislikedSlugs: Array(removedDislikedSlugs).sorted(),
+            preferencesDirty: preferencesDirty,
             reminderHour: reminderHour,
             reminderMinute: reminderMinute,
             notificationsEnabled: notificationsEnabled,
@@ -569,6 +587,9 @@ final class AppStore {
         var customFoods: [FoodItem]?
         var favoriteFoods: [FoodItem]?
         var dislikedSlugs: [String]?
+        var removedFavoriteKeys: [String]?
+        var removedDislikedSlugs: [String]?
+        var preferencesDirty: Bool?
         var reminderHour: Int
         var reminderMinute: Int
         var notificationsEnabled: Bool

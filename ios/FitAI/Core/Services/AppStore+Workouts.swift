@@ -125,14 +125,18 @@ extension AppStore {
             rpe: 7
         )
         dislikedSlugs.remove(exercise.slug)
+        removedDislikedSlugs.insert(exercise.slug)
         current.days[dayIndex].exercises.append(item)
         plan = current
         persist()
+        Task { @MainActor in await self.syncCloudExtras() }
     }
 
     func clearPreferences() {
+        removedDislikedSlugs.formUnion(dislikedSlugs)
         dislikedSlugs.removeAll()
         persist()
+        Task { @MainActor in await self.syncCloudExtras() }
     }
 
     // MARK: - 训练与对话

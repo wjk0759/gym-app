@@ -282,6 +282,54 @@ class StoreKitNotificationIn(BaseModel):
     )
 
 
+class PreferencesIn(BaseModel):
+    strict_equipment_mode: bool | None = None
+    use_remote_ai: bool | None = None
+    reminder_hour: int | None = Field(default=None, ge=0, le=23)
+    reminder_minute: int | None = Field(default=None, ge=0, le=59)
+    notifications_enabled: bool | None = None
+    body_checkin_frequency: str | None = Field(default=None, max_length=20)
+    body_checkin_weekday: int | None = Field(default=None, ge=1, le=7)
+    body_checkin_day: int | None = Field(default=None, ge=1, le=28)
+
+
+class CustomFoodSyncIn(BaseModel):
+    client_id: str = Field(min_length=1, max_length=36)
+    name: str = Field(min_length=1, max_length=120)
+    category: str = Field(default="自定义", max_length=40)
+    kcal: float = Field(default=0, ge=0, le=10000)
+    protein: float = Field(default=0, ge=0, le=1000)
+    carbs: float = Field(default=0, ge=0, le=1000)
+    fat: float = Field(default=0, ge=0, le=1000)
+    fiber: float | None = Field(default=None, ge=0, le=1000)
+    default_grams: float | None = Field(default=None, ge=0, le=5000)
+    deleted: bool = False
+    updated_at: datetime | None = None
+
+
+class FavoriteFoodSyncIn(BaseModel):
+    food_key: str = Field(min_length=1, max_length=160)
+    name: str = Field(min_length=1, max_length=120)
+    deleted: bool = False
+    updated_at: datetime | None = None
+
+
+class ExerciseDislikeSyncIn(BaseModel):
+    slug: str = Field(min_length=1, max_length=60)
+    deleted: bool = False
+    updated_at: datetime | None = None
+
+
+class SyncIn(BaseModel):
+    preferences: PreferencesIn | None = None
+    custom_foods: list[CustomFoodSyncIn] = Field(default_factory=list, max_length=500)
+    favorites: list[FavoriteFoodSyncIn] = Field(default_factory=list, max_length=500)
+    disliked_exercises: list[ExerciseDislikeSyncIn] = Field(
+        default_factory=list, max_length=500
+    )
+
+
+
 class StoreKitReconcileIn(BaseModel):
     transaction_ids: list[str] = Field(default_factory=list, max_length=200)
     limit: int = Field(default=200, ge=1, le=500)

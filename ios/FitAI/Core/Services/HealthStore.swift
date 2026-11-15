@@ -151,17 +151,20 @@ extension AppStore {
         bodyCheckInAnchor = FitnessDate.monday(of: Date())
         bodyCheckInDismissedDate = nil
         persist()
+        markPreferencesDirty()
     }
 
     func setBodyCheckInWeekday(_ weekday: Int) {
         bodyCheckInWeekday = min(max(weekday, 1), 7)
         bodyCheckInAnchor = FitnessDate.monday(of: Date())
         persist()
+        markPreferencesDirty()
     }
 
     func setBodyCheckInDay(_ day: Int) {
         bodyCheckInDay = min(max(day, 1), 28)
         persist()
+        markPreferencesDirty()
     }
 
     var bodyCheckInFrequencyLabel: String {

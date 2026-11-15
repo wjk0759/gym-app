@@ -40,6 +40,7 @@ extension AppStore {
             let granted = await NotificationScheduler.shared.requestAuthorization()
             self.notificationsEnabled = granted
             self.persist()
+            self.markPreferencesDirty()
             self.rescheduleNotifications()
         }
     }

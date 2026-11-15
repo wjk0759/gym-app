@@ -304,7 +304,6 @@ struct RootView: View {
 
     private func enableRemoteMode() {
         guard !store.useRemoteAI else { return }
-        store.useRemoteAI = true
-        store.persist()
+        store.setUseRemoteAI(true)
     }
 }

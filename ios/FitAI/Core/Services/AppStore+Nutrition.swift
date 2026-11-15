@@ -31,6 +31,7 @@ extension AppStore {
         customFoods.removeAll { $0.name == food.name }
         customFoods.insert(food, at: 0)
         persist()
+        Task { @MainActor in await self.syncCloudExtras() }
     }
 
     func isFavoriteFood(_ food: FoodItem) -> Bool {
@@ -38,13 +39,17 @@ extension AppStore {
     }
 
     func toggleFavoriteFood(_ food: FoodItem) {
+        let key = favoriteKey(for: food)
         if isFavoriteFood(food) {
             favoriteFoods.removeAll { $0.name == food.name }
+            removedFavoriteKeys.insert(key)
         } else {
             favoriteFoods.removeAll { $0.name == food.name }
             favoriteFoods.insert(food, at: 0)
+            removedFavoriteKeys.remove(key)
         }
         persist()
+        Task { @MainActor in await self.syncCloudExtras() }
     }
 
     /// Most recently logged foods, resolved back to library items so they keep

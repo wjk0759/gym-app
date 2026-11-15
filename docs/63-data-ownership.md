@@ -40,6 +40,19 @@
 
 ## 3. 这次已经收敛的
 
+### P0 云端同步：自定义食物/收藏/不喜欢动作/设置
+
+- 新增 `GET /sync` 和 `POST /sync`：快照式同步，服务端 upsert。
+- 新增表：`user_preferences`、`user_custom_foods`、`user_food_favorites`、`user_exercise_dislikes`。
+- iOS `FoodItem` 增加稳定 `clientID`，自定义食物跨设备按 `client_id` 合并。
+- 收藏食物按 `custom:<client_id>` / `library:<name>` 同步；取消收藏写 tombstone。
+- 不喜欢动作同步，并在本地移除时写 tombstone。
+- 提醒/身体打卡/器械模式/远程 AI 作为 `user_preferences` 同步。
+- iOS 同步入口 `AppStore.syncCloudExtras()`：拉快照 → 合并 → 推本地快照 → 清理 tombstone。
+- 计划历史新增 `GET /plans/history`，客户端合并服务端 Program 历史。
+
+> 注意：收藏/不喜欢动作目前是“全量快照 + deleted tombstone”，不是逐条增量 cursor；数据量小，先保证跨设备可用。
+
 ### 体重/身体数据读取
 
 新增 `AppStore` 投影：
