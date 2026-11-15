@@ -2,13 +2,21 @@ import uuid
 from datetime import date, datetime, time, timedelta, timezone
 
 from fastapi import APIRouter, File, Header, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 
 from ..deps import CurrentUser, DBSession
-from ..models import BodyMetric
-from ..schemas import BodyMetricIn
+from ..models import BodyAnalysisRecord, BodyMetric
+from ..schemas import BodyAnalysisAppliedIn, BodyMetricIn
 from ..services import access, generation, photo_cache
 from ..services.body_analysis import analyze
+from ..services.body_analysis_store import (
+    delete_analysis,
+    list_analyses,
+    mark_applied,
+    photo_path,
+    save_analysis,
+)
 from ..services.body_metrics import (
     body_metric_dict,
     delete_metric,
@@ -31,6 +39,9 @@ async def analyze_body(
     idempotency_key: str | None = Header(
         default=None, alias="Idempotency-Key", max_length=64
     ),
+    x_client_id: str | None = Header(
+        default=None, alias="X-Client-ID", max_length=36
+    ),
 ):
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(status_code=415, detail="仅支持 jpeg/png/webp/heic 图片")
@@ -51,41 +62,119 @@ async def analyze_body(
         ) from error
 
     feature_key = access.FEATURE_BODY_PHOTO
-    key = photo_cache.normalize_key(idempotency_key)
+    key = photo_cache.normalize_key(
+        idempotency_key if isinstance(idempotency_key, str) else None
+    )
+    raw_client_id = x_client_id if isinstance(x_client_id, str) else None
+    client_key = (raw_client_id or "").strip().lower()
+    if not client_key:
+        client_key = (
+            str(uuid.uuid5(uuid.NAMESPACE_URL, f"body:{user_id}:{key}"))
+            if key
+            else str(uuid.uuid4())
+        )
+    try:
+        uuid.UUID(client_key)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="X-Client-ID 必须是 UUID") from exc
+
     cached = photo_cache.get_cached_result(
         db, user_id, feature_key, key
     )
     if cached is not None:
-        return cached
+        result = dict(cached)
+    else:
+        lease = generation.begin_generation(
+            db,
+            user_id,
+            feature_key,
+            idempotency_key=key,
+            cooldown_seconds=5,
+        )
+        try:
+            result = await analyze(
+                data,
+                file.filename or "body.jpg",
+                db=db,
+                user_id=user_id,
+            )
+            photo_cache.store_cached_result(
+                db, user_id, feature_key, key, result
+            )
+        except Exception:
+            generation.abort_generation(db, lease, user_id=user_id)
+            raise
+        generation.complete_generation(
+            db,
+            lease,
+            user_id=user_id,
+            result_ref=uuid.uuid4().hex,
+        )
 
-    lease = generation.begin_generation(
+    saved = save_analysis(
         db,
         user_id,
-        feature_key,
-        idempotency_key=key,
-        cooldown_seconds=5,
+        client_key,
+        result,
+        data,
     )
-    try:
-        # 原图不落盘、不入库；只缓存脱敏后的分析文本供短时重试
-        result = await analyze(
-            data,
-            file.filename or "body.jpg",
-            db=db,
-            user_id=user_id,
+    return {
+        **result,
+        "client_id": client_key,
+        "analysis_id": saved.id,
+        "created_at": saved.created_at.isoformat(),
+        "has_photo": bool(saved.image_key),
+    }
+
+
+@router.get("/analyses")
+def list_body_analyses(
+    user_id: CurrentUser,
+    db: DBSession,
+    limit: int = Query(default=50, ge=1, le=100),
+):
+    return {"items": list_analyses(db, user_id, limit)}
+
+
+@router.get("/analyses/{client_id}/photo")
+def body_analysis_photo(client_id: str, user_id: CurrentUser, db: DBSession):
+    item = db.execute(
+        select(BodyAnalysisRecord).where(
+            BodyAnalysisRecord.user_id == user_id,
+            BodyAnalysisRecord.client_id == client_id.lower(),
+            BodyAnalysisRecord.deleted_at.is_(None),
         )
-        photo_cache.store_cached_result(
-            db, user_id, feature_key, key, result
-        )
-    except Exception:
-        generation.abort_generation(db, lease, user_id=user_id)
-        raise
-    generation.complete_generation(
-        db,
-        lease,
-        user_id=user_id,
-        result_ref=uuid.uuid4().hex,
+    ).scalar_one_or_none()
+    path = photo_path(item.image_key if item else None)
+    if path is None:
+        raise HTTPException(status_code=404, detail="照片不存在")
+    return FileResponse(
+        path,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "private, max-age=3600"},
     )
-    return result
+
+
+@router.patch("/analyses/{client_id}")
+def update_body_analysis(
+    client_id: str,
+    payload: BodyAnalysisAppliedIn,
+    user_id: CurrentUser,
+    db: DBSession,
+):
+    item = mark_applied(
+        db, user_id, client_id.lower(), payload.applied_to_plan
+    )
+    if item is None:
+        raise HTTPException(status_code=404, detail="体型分析不存在")
+    return item
+
+
+@router.delete("/analyses/{client_id}")
+def remove_body_analysis(client_id: str, user_id: CurrentUser, db: DBSession):
+    if not delete_analysis(db, user_id, client_id.lower()):
+        raise HTTPException(status_code=404, detail="体型分析不存在")
+    return {"status": "deleted", "client_id": client_id.lower()}
 
 
 @router.post("/metrics", status_code=201)

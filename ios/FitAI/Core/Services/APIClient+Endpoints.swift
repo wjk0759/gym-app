@@ -709,22 +709,50 @@ extension APIClient {
 
     func analyzeBody(
         imageData: Data,
+        clientID: UUID,
         idempotencyKey: String? = nil
     ) async throws -> BodyAnalysis {
+        var headers = idempotencyHeaders(idempotencyKey)
+        headers["X-Client-ID"] = clientID.uuidString.lowercased()
         let data = try await upload(
             path: "body/analyze",
             imageData: imageData,
             filename: "body.jpg",
-            headers: idempotencyHeaders(idempotencyKey)
+            headers: headers
         )
         let response = try decode(BodyAnalysisResponse.self, from: data)
         return BodyAnalysis(
+            id: clientID,
             summary: response.summary,
             focusAreas: response.focusAreas.compactMap { MuscleGroup(rawValue: $0) },
             recommendations: response.recommendations,
             confidence: response.confidence,
             disclaimer: response.disclaimer
         )
+    }
+
+    func fetchBodyAnalyses() async throws -> [RemoteBodyAnalysis] {
+        let data: Data = try await send(
+            path: "body/analyses",
+            method: "GET",
+            body: nil
+        )
+        return try decode(BodyAnalysisHistoryResponse.self, from: data).items
+    }
+
+    func markBodyAnalysisApplied(
+        clientID: UUID,
+        applied: Bool
+    ) async throws -> RemoteBodyAnalysis {
+        let body = try JSONSerialization.data(
+            withJSONObject: ["applied_to_plan": applied]
+        )
+        let data: Data = try await send(
+            path: "body/analyses/\(clientID.uuidString.lowercased())",
+            method: "PATCH",
+            body: body
+        )
+        return try decode(RemoteBodyAnalysis.self, from: data)
     }
 
     // MARK: - 饮食 / 外卖

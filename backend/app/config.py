@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     thread_pool_size: int = 64
     # 后台上传的视频/封面。生产环境建议指向独立数据盘，或替换为 OSS/COS + CDN。
     media_root: str = "media"
+    # Body-analysis photos are private: never mount this under /media.
+    private_media_root: str = "media_private"
 
     # mock | deepseek | doubao
     # 默认接入 DeepSeek；未配置 LLM_API_KEY 时自动回退到本地 Mock/规则。

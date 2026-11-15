@@ -42,6 +42,7 @@ preview/fix-*.png
 *.sketch
 *.fig
 backend/media/
+backend/media_private/
 backend/smoke_media/
 backend/eval/results/
 backend/eval/state/

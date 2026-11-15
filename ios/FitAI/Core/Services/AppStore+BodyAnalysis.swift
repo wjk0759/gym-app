@@ -48,6 +48,12 @@ extension AppStore {
 
         toast = "已应用体型分析：重点部位每周增加 1 组"
         persist()
+        Task {
+            try? await APIClient.shared.markBodyAnalysisApplied(
+                clientID: analysis.id,
+                applied: true
+            )
+        }
         syncPendingUserData()
     }
 

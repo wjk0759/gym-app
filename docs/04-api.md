@@ -763,7 +763,9 @@ delete_workout_log
 
 `multipart/form-data`，字段 `file`（jpeg/png，≤8MB）。可选请求头
 `Idempotency-Key`：5 分钟内同 key 重试返回同一份脱敏文本结果，不重复调用
-视觉模型。Pro 校验始终先于缓存回放，免费用户仍返回 403 `PRO_REQUIRED`。
+视觉模型。可选请求头 `X-Client-ID`（UUID）：客户端生成的分析 ID，用于
+多端同步和照片归属。Pro 校验始终先于缓存回放，免费用户仍返回 403
+`PRO_REQUIRED`。
 
 ```json
 {
@@ -775,16 +777,21 @@ delete_workout_log
   ],
   "confidence": 0.82,
   "disclaimer": "照片分析仅用于训练重点参考，不构成体脂率、体态诊断或医疗建议。",
-  "model": "mock"
+  "model": "mock",
+  "client_id": "0b8d...",
+  "analysis_id": "0b8d...",
+  "created_at": "2026-11-16T00:00:00+00:00",
+  "has_photo": true
 }
 ```
 
 规则：
 
-- 原图不落盘、不入库；只短暂缓存脱敏后的文本结果用于幂等重试
+- 照片压缩后存入 `private_media_root`，不进入公开 `/media`；只能通过
+  `GET /body/analyses/{client_id}/photo` 本人鉴权读取
 - 不做体脂率、体态诊断或医疗建议
 - 客户端必须单独同意后才上传；远程模式需在隐私政策中说明
-- 真实视觉模型上线前完成敏感个人信息单独同意与内容安全评估
+- 删除分析或注销账号时删除对应照片
 
 ### 2.8 饮食
 

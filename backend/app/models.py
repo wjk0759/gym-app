@@ -1415,3 +1415,42 @@ class UserExerciseDislike(Base):
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
+
+class BodyAnalysisRecord(Base):
+    """Cloud history for photo-based body analysis.
+
+    The photo bytes live in the private media directory, never under the
+    publicly mounted ``/media`` path. ``image_key`` is resolved only by an
+    authenticated owner-checked endpoint.
+    """
+
+    __tablename__ = "body_analyses"
+    __table_args__ = (
+        UniqueConstraint("user_id", "client_id", name="uq_body_analyses_user_client"),
+        Index("ix_body_analyses_user_created", "user_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    client_id: Mapped[str] = mapped_column(String(36))
+    summary: Mapped[str] = mapped_column(Text, default="")
+    focus_areas: Mapped[list] = mapped_column(JSON, default=list)
+    recommendations: Mapped[list] = mapped_column(JSON, default=list)
+    confidence: Mapped[float | None] = mapped_column(Float)
+    disclaimer: Mapped[str] = mapped_column(Text, default="")
+    safety_flag: Mapped[str | None] = mapped_column(String(60))
+    model: Mapped[str | None] = mapped_column(String(80))
+    image_key: Mapped[str | None] = mapped_column(String(255))
+    thumbnail_key: Mapped[str | None] = mapped_column(String(255))
+    applied_to_plan: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+

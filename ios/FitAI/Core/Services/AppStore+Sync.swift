@@ -451,6 +451,12 @@ extension AppStore {
             mergeRemoteBodyMetrics(remote)
             refreshed.insert(.body)
         }
+        if domains.contains(.body),
+           let analyses = try? await APIClient.shared.fetchBodyAnalyses(),
+           currentUserID == account {
+            mergeRemoteBodyAnalyses(analyses)
+            refreshed.insert(.body)
+        }
         if domains.contains(.equipment),
            let remote = try? await APIClient.shared.fetchEquipmentItems(),
            currentUserID == account {
@@ -565,6 +571,31 @@ extension AppStore {
         if bodyMetrics.isEmpty {
             seedBodyMetricsIfNeeded()
         }
+        persist()
+    }
+
+    private func mergeRemoteBodyAnalyses(_ remote: [RemoteBodyAnalysis]) {
+        for item in remote {
+            guard let id = UUID(uuidString: item.clientID) else { continue }
+            let value = BodyAnalysis(
+                id: id,
+                createdAt: APIDateCoding.date(from: item.createdAt) ?? Date(),
+                summary: item.summary,
+                focusAreas: item.focusAreas.compactMap {
+                    MuscleGroup(rawValue: $0)
+                },
+                recommendations: item.recommendations,
+                confidence: item.confidence ?? 0,
+                disclaimer: item.disclaimer,
+                appliedToPlan: item.appliedToPlan ?? false
+            )
+            if let index = bodyAnalyses.firstIndex(where: { $0.id == id }) {
+                bodyAnalyses[index] = value
+            } else {
+                bodyAnalyses.append(value)
+            }
+        }
+        bodyAnalyses.sort { $0.createdAt > $1.createdAt }
         persist()
     }
 

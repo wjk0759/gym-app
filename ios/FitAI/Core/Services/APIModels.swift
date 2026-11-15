@@ -187,6 +187,9 @@ struct BodyAnalysisResponse: Decodable {
     let recommendations: [String]
     let confidence: Double
     let disclaimer: String
+    let clientID: String?
+    let createdAt: String?
+    let hasPhoto: Bool?
 
     enum CodingKeys: String, CodingKey {
         case summary
@@ -194,6 +197,9 @@ struct BodyAnalysisResponse: Decodable {
         case recommendations
         case confidence
         case disclaimer
+        case clientID = "client_id"
+        case createdAt = "created_at"
+        case hasPhoto = "has_photo"
     }
 }
 

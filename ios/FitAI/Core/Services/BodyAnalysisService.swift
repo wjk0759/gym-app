@@ -55,10 +55,12 @@ enum BodyAnalysisService {
 
     static func analyzeRemote(
         imageData: Data,
+        clientID: UUID,
         idempotencyKey: String?
     ) async throws -> BodyAnalysis {
         try await APIClient.shared.analyzeBody(
             imageData: imageData,
+            clientID: clientID,
             idempotencyKey: idempotencyKey
         )
     }

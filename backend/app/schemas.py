@@ -376,8 +376,12 @@ class BodyMetricIn(BaseModel):
                 self.thigh_cm,
             )
         ):
-            raise ValueError("至少填写一项身体数据")
+            raise ValueError("At least one measurement is required")
         return self
+
+
+class BodyAnalysisAppliedIn(BaseModel):
+    applied_to_plan: bool = True
 
 
 class EquipmentLibraryIn(BaseModel):

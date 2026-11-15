@@ -153,3 +153,31 @@ struct PlanHistoryResponse: Decodable {
     let items: [TrainingPlan]
 }
 
+struct RemoteBodyAnalysis: Decodable {
+    let clientID: String
+    let createdAt: String
+    let summary: String
+    let focusAreas: [String]
+    let recommendations: [String]
+    let confidence: Double?
+    let disclaimer: String
+    let appliedToPlan: Bool?
+    let hasPhoto: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case clientID = "client_id"
+        case createdAt = "created_at"
+        case summary
+        case focusAreas = "focus_areas"
+        case recommendations
+        case confidence
+        case disclaimer
+        case appliedToPlan = "applied_to_plan"
+        case hasPhoto = "has_photo"
+    }
+}
+
+struct BodyAnalysisHistoryResponse: Decodable {
+    let items: [RemoteBodyAnalysis]
+}
+

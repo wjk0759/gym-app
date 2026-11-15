@@ -348,6 +348,7 @@ struct BodyPhotoAnalysisView: View {
                 do {
                     let result = try await BodyAnalysisService.analyzeRemote(
                         imageData: imageData,
+                        clientID: UUID(uuidString: analysisKey) ?? UUID(),
                         idempotencyKey: analysisKey
                     )
                     finish(result)
