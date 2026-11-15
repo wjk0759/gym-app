@@ -23,7 +23,15 @@ from ...coach_actions.schemas import (
     SkipPlannedMealPayload,
 )
 from ...diet_swap import swap_planned_meal, undo_planned_meal
-from ...food_text import food_log_context, parse_meal, resolve_food_text
+from ...food_text import (
+    FoodResolution,
+    food_log_context,
+    meal_analysis,
+    parse_food_date,
+    parse_meal,
+    resolve_food_text,
+    rule_resolution_by_meal,
+)
 from ..registry import Capability, register
 
 CAPABILITY = register(
@@ -118,20 +126,50 @@ async def resolve(
     db: Session,
     user_id: str,
     message: str,
+    *,
+    history_context: str | None = None,
+    draft: dict | None = None,
 ) -> dict:
+    draft = draft or {}
     context = food_log_context(message)
+    parsed_date = parse_food_date(message)
+    if parsed_date is None:
+        raw_date = draft.get("date") or context["date"]
+        parsed_date = (
+            date.fromisoformat(raw_date)
+            if isinstance(raw_date, str)
+            else raw_date
+        )
+    analysis = meal_analysis(message)
+    parsed_meal = analysis.get("meal") or draft.get("meal") or context["meal"]
+    groups = rule_resolution_by_meal(message)
+    main_rules = None
+    if analysis.get("mentions"):
+        main_rules = groups.get(parsed_meal) or FoodResolution()
+    blocked_names = [
+        str(item.get("name") or "")
+        for meal, resolution in groups.items()
+        if meal != parsed_meal
+        for item in resolution.items
+    ]
     resolution = await resolve_food_text(
         db,
         user_id,
         message,
-        meal=context["meal"],
-        target_date=context["date"],
+        meal=parsed_meal,
+        target_date=parsed_date,
+        history_context=history_context,
+        draft=draft,
+        rule_resolution=main_rules,
+        blocked_names=blocked_names,
     )
     return {
         **resolution,
-        "date": context["date"],
-        "meal": context["meal"],
+        "date": parsed_date.isoformat(),
+        "meal": parsed_meal,
         "text": message,
+        "meal_mentions": analysis.get("mentions")
+        or ([draft.get("meal")] if draft.get("meal") else []),
     }
 
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 import time
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from sqlalchemy import select
@@ -27,6 +28,7 @@ from ..safety import assess_safety
 from . import capabilities  # noqa: F401 - registers capabilities
 from .consumers import consume_event
 from .context import with_plan_context
+from .conversation import build_conversation_context
 from .events import emit_event
 from .registry import CAPABILITIES
 from .state import (
@@ -173,6 +175,16 @@ def _last_action_capability(
     return record.capability_id if record is not None else None
 
 
+def _minutes_since(value: datetime | None) -> int | None:
+    if value is None:
+        return None
+    moment = value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+    return max(
+        0,
+        int((datetime.now(timezone.utc) - moment.astimezone(timezone.utc)).total_seconds() // 60),
+    )
+
+
 def _looks_like_correction(message: str) -> bool:
     if _looks_like_diet_strategy_edit(message):
         return False
@@ -182,6 +194,12 @@ def _looks_like_correction(message: str) -> bool:
         or _looks_like_workout_update(message)
         or _looks_like_workout_delete(message)
         or _looks_like_plan_configure(message)
+        or _looks_like_plan_edit(message)
+        or _looks_like_exercise_edit(message)
+        or _looks_like_batch_exercise_edit(message)
+        or _looks_like_single_exercise_edit(message)
+        or _looks_like_reschedule(message)
+        or _looks_like_weight(message)
     ):
         return False
     return bool(re.search(r"记错|不是|改成|应该是|修正|改一下", message))
@@ -528,15 +546,17 @@ def _looks_like_weight(message: str) -> bool:
 
 
 def _looks_like_food(message: str) -> bool:
+    if re.search(r"体重|体脂|腰围|臂围|腿围|训练计划|计划改成|卧推|深蹲|硬拉|划船|推举|飞鸟|弯举|下压|引体", message):
+        return False
     if re.search(r"不想吃|没吃|不吃|吃不下|没胃口|不想喝|没喝", message):
         return False
     if re.search(r"多少|热量|卡路里|为什么|怎么|吗|？|\?", message):
         return False
-    if re.search(r"吃|喝|餐|零食|夜宵|记录饮食|记饮食", message):
+    if re.search(r"吃|喝|餐|饭|零食|夜宵|记录饮食|记饮食", message):
         return True
     return bool(
         re.search(
-            r"\d+(?:\.\d+)?\s*(g|克|ml|毫升|杯|份|碗|个|片|勺|盒|瓶)",
+            r"\d+(?:\.\d+)?\s*(?:杯|份|碗|个|片|勺|盒|瓶|(?<!k)g|克|ml|毫升)",
             message,
             flags=re.IGNORECASE,
         )
@@ -703,6 +723,20 @@ async def handle_turn(
     db.add(turn)
     db.flush()
 
+    conversation = build_conversation_context(
+        db,
+        user_id,
+        session.id,
+        exclude_turn_id=turn.id,
+        max_turns=50,
+    )
+    context["conversation_text"] = conversation.prompt_text(
+        max_turns=12,
+        max_chars=6000,
+    )
+    context["task_state"] = conversation.task_state_text()
+    context["memory_book"] = conversation.memory_book
+
     pending = get_active_pending(db, user_id, session.id)
 
     # Hard safety boundaries run before any capability can build or confirm a
@@ -762,13 +796,14 @@ async def handle_turn(
         pending = None
 
     intent_override: str | None = None
+    diet_draft: dict | None = None
     if pending is not None and pending.kind == "draft":
         if pending.capability_id == DIET:
             if not _looks_like_diet_slot_answer(text):
                 cancel_pending(db, session, pending)
                 pending = None
             else:
-                text = f"{pending.payload.get('text') or ''} {text}".strip()[:2000]
+                diet_draft = dict(pending.payload or {})
                 intent_override = DIET
         elif pending.capability_id == TRAINING:
             if not _looks_like_training_slot_answer(text):
@@ -1063,9 +1098,19 @@ async def handle_turn(
         }
 
     if intent_override is None and _looks_like_correction(text):
-        last_capability = _last_action_capability(
-            db, user_id, session.id
-        ) or session.active_topic
+        last_action = conversation.last_action
+        last_age = (
+            _minutes_since(last_action.created_at)
+            if last_action is not None
+            else None
+        )
+        session_age = _minutes_since(session.last_turn_at)
+        if last_action is not None and last_age is not None and last_age <= 15:
+            last_capability = last_action.capability_id
+        elif session_age is not None and session_age <= 15:
+            last_capability = session.active_topic
+        else:
+            last_capability = None
         if last_capability == WEIGHT:
             from .capabilities.body import resolve as resolve_weight
 
@@ -1772,7 +1817,13 @@ async def handle_turn(
     ):
         from .capabilities.diet import resolve as resolve_diet
 
-        resolution = await resolve_diet(db, user_id, text)
+        resolution = await resolve_diet(
+            db,
+            user_id,
+            text,
+            history_context=conversation.reference_context(),
+            draft=diet_draft,
+        )
         if resolution.get("questions") or resolution.get("missing_slots"):
             question = (resolution.get("questions") or ["这餐还需要补充信息。"])[0]
             _pending_draft(
@@ -1783,6 +1834,8 @@ async def handle_turn(
                     "text": text,
                     "date": resolution.get("date"),
                     "meal": resolution.get("meal"),
+                    "items": resolution.get("items") or [],
+                    "missing_slots": resolution.get("missing_slots") or [],
                     "questions": resolution.get("questions") or [],
                 },
             )
@@ -1802,6 +1855,18 @@ async def handle_turn(
                 payload=payload,
             )
             reply = _food_reply(resolution)
+            from ..food_text import MEAL_LABELS
+
+            other_meals = [
+                item
+                for item in resolution.get("meal_mentions") or []
+                if item != resolution.get("meal")
+            ]
+            if other_meals:
+                labels = "、".join(
+                    MEAL_LABELS.get(item, item) for item in other_meals
+                )
+                reply += f" 另外看到你提到{labels}，确认这餐后我再帮你记。"
             turn.intent = DIET
     else:
         profile = db.get(Profile, user_id)
@@ -1813,39 +1878,10 @@ async def handle_turn(
             from ..memory import schedule_memory_extraction
             from ..queries import active_program
             from .capabilities.coach_answer import (
-                HistoryMessage,
-            )
-            from .capabilities.coach_answer import (
                 resolve as resolve_answer,
             )
 
-            history_rows = (
-                db.execute(
-                    select(CoachTurn)
-                    .where(
-                        CoachTurn.session_id == session.id,
-                        CoachTurn.user_id == user_id,
-                        CoachTurn.id != turn.id,
-                    )
-                    .order_by(
-                        CoachTurn.created_at.desc(),
-                        CoachTurn.id.desc(),
-                    )
-                    .limit(10)
-                )
-                .scalars()
-                .all()
-            )
-            history_rows.reverse()
-            history: list[HistoryMessage] = []
-            for item in history_rows:
-                history.append(
-                    HistoryMessage(role="user", content=item.input_text)
-                )
-                if item.reply:
-                    history.append(
-                        HistoryMessage(role="assistant", content=item.reply)
-                    )
+            history = conversation.history_items()
             try:
                 result = await resolve_answer(
                     db,
@@ -1854,6 +1890,7 @@ async def handle_turn(
                     history,
                     text,
                     app_context=context,
+                    memory_book=conversation.memory_book,
                 )
             except Exception as exc:  # noqa: BLE001 - keep failed turns auditable
                 turn.status = "failed"

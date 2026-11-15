@@ -27,6 +27,31 @@ CoachSkill = Literal["trainer", "rehab", "nutrition"]
 COACH_PROMPT_VERSION = prompt_version("coach", coach_core_prompt())
 WATCH_PROMPT_VERSION = prompt_version("coach_watch", watch_voice_system_prompt())
 logger = logging.getLogger(__name__)
+MAX_HISTORY_MESSAGES = 100
+MAX_HISTORY_CHARS = 24_000
+
+
+def _fit_history(history: list[ChatMessage]) -> list[ChatMessage]:
+    """Keep up to 50 turns (100 messages) under a compact character budget.
+
+    The control plane now passes the recent 50 turns. Old sessions may contain
+    much more; trimming from the oldest side keeps the current conversation
+    coherent without letting a single long plan reply crowd out the rest.
+    """
+    selected: list[ChatMessage] = []
+    used = 0
+    for item in reversed(history):
+        if item.role not in {"user", "assistant"}:
+            continue
+        content = item.content or ""
+        if selected and used + len(content) > MAX_HISTORY_CHARS:
+            break
+        selected.append(item)
+        used += len(content)
+        if len(selected) >= MAX_HISTORY_MESSAGES:
+            break
+    selected.reverse()
+    return selected
 
 
 def _review_or_none(profile: Profile, reply: str):
@@ -237,6 +262,7 @@ async def coach_reply(
     message: str,
     skill: CoachSkill = "trainer",
     context: str | None = None,
+    memory_book: str | None = None,
 ) -> dict:
     # 当前产品只保留一个 AI 私人健身教练人设；旧 skill 参数仅用于兼容。
     skill = "trainer"
@@ -251,6 +277,14 @@ async def coach_reply(
             {"role": "system", "content": _system_prompt(skill)},
             {"role": "system", "content": _context(db, profile, program)},
         ]
+        if memory_book:
+            messages.append(
+                {
+                    "role": "system",
+                    "content": "教练记忆书（长期事实与偏好，回答时优先参考）：\n"
+                    + memory_book,
+                }
+            )
         if context:
             messages.append(
                 {
@@ -272,7 +306,7 @@ async def coach_reply(
             )
         messages.extend(
             {"role": item.role, "content": item.content}
-            for item in history[-10:]
+            for item in _fit_history(history)
             if item.role in {"user", "assistant"}
         )
         messages.append({"role": "user", "content": message})

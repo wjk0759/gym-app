@@ -747,6 +747,136 @@ def test_training_reschedule_confirm_and_undo(db):
     assert db.execute(select(PlanDayState)).scalars().all() == []
 
 
+def test_dinner_reference_uses_prior_turns_and_full_history(db, monkeypatch):
+    import asyncio
+    import json
+    from types import SimpleNamespace
+
+    from app.models import CoachSession, CoachTurn
+    from app.services import food_text
+
+    session = CoachSession(user_id="user-1", status="active")
+    db.add(session)
+    db.flush()
+    db.add_all(
+        [
+            CoachTurn(
+                session_id=session.id,
+                user_id="user-1",
+                input_text="图片里的菜加250g米饭，热量是多少？",
+                intent="coach.vision",
+                status="completed",
+                reply="干蒸牛肉约120g、腊肠约80g、米饭250g，合计约825kcal。",
+            ),
+            CoachTurn(
+                session_id=session.id,
+                user_id="user-1",
+                input_text="菜是干蒸牛肉+腊肠",
+                intent="coach.answer",
+                status="completed",
+                reply="按干蒸牛肉120g、腊肠80g重算，约825kcal。",
+            ),
+        ]
+    )
+    db.commit()
+
+    captured: dict[str, str] = {}
+
+    async def fake_complete_json(system, user, **kwargs):
+        captured["payload"] = user
+        return {
+            "items": [
+                {"name": "干蒸牛肉", "grams": 120, "kcal": 220, "protein_g": 25, "carbs_g": 0, "fat_g": 14},
+                {"name": "腊肠", "grams": 80, "kcal": 330, "protein_g": 10, "carbs_g": 2, "fat_g": 28},
+                {"name": "米饭", "grams": 250, "kcal": 275, "protein_g": 6, "carbs_g": 60, "fat_g": 1},
+            ],
+            "questions": [],
+        }
+
+    monkeypatch.setattr(
+        food_text,
+        "settings",
+        SimpleNamespace(use_mock_llm=False),
+    )
+    monkeypatch.setattr(food_text.llm, "complete_json", fake_complete_json)
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "这是我今天的晚饭，中午吃了300g燕麦+一杯冰美式",
+            session_id=session.id,
+        )
+    )
+    payload = turn["pending"]["payload"]
+    names = [item["name"] for item in payload["items"]]
+    prompt = json.loads(captured["payload"])
+
+    assert "干蒸牛肉" in prompt["history"]
+    assert "250g" in prompt["history"]
+    assert "干蒸牛肉" in names
+    assert "米饭" in names
+    assert payload["meal"] == "dinner"
+    assert "另外看到你提到午饭" in turn["reply"]
+    assert all("这是我今天的晚饭" not in q for q in payload.get("questions", []))
+
+
+def test_dinner_reference_only_uses_history_items(db, monkeypatch):
+    import asyncio
+    from types import SimpleNamespace
+
+    from app.models import CoachSession, CoachTurn
+    from app.services import food_text
+
+    session = CoachSession(user_id="user-1", status="active")
+    db.add(session)
+    db.flush()
+    db.add(
+        CoachTurn(
+            session_id=session.id,
+            user_id="user-1",
+            input_text="菜是干蒸牛肉+腊肠",
+            intent="coach.answer",
+            status="completed",
+            reply="按干蒸牛肉120g、腊肠80g、米饭250g重算，约825kcal。",
+        )
+    )
+    db.commit()
+
+    async def fake_complete_json(system, user, **kwargs):
+        return {
+            "items": [
+                {"name": "干蒸牛肉", "grams": 120, "kcal": 220, "protein_g": 25, "carbs_g": 0, "fat_g": 14},
+                {"name": "腊肠", "grams": 80, "kcal": 330, "protein_g": 10, "carbs_g": 2, "fat_g": 28},
+                {"name": "米饭", "grams": 250, "kcal": 275, "protein_g": 6, "carbs_g": 60, "fat_g": 1},
+            ],
+            "questions": [],
+        }
+
+    monkeypatch.setattr(
+        food_text,
+        "settings",
+        SimpleNamespace(use_mock_llm=False),
+    )
+    monkeypatch.setattr(food_text.llm, "complete_json", fake_complete_json)
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "这是我今天的晚饭",
+            session_id=session.id,
+        )
+    )
+    payload = turn["pending"]["payload"]
+    names = [item["name"] for item in payload["items"]]
+
+    assert payload["meal"] == "dinner"
+    assert "干蒸牛肉" in names
+    assert "米饭" in names
+    assert not payload.get("questions")
+
+
 def test_food_draft_can_be_completed_in_a_second_turn(db):
     import asyncio
 
@@ -2472,6 +2602,167 @@ def test_memory_undo_handles_duplicate_content(db):
         )
     ).scalars().all()
     assert len(active) == 1
+
+
+def test_food_rules_ignore_narrative_segments():
+    from app.services.food_text import meal_analysis, parse_meal, resolve_food_rules
+
+    result = resolve_food_rules("这是我今天的晚饭，中午吃了300g燕麦+一杯冰美式")
+    questions = " ".join(result.questions)
+    names = [item["name"] for item in result.items]
+    analysis = meal_analysis("这是我今天的晚饭，中午吃了300g燕麦+一杯冰美式")
+
+    assert "这是我今天的晚饭" not in questions
+    assert "燕麦" in names
+    assert "冰美式" in names
+    assert parse_meal("这是我今天的晚饭，中午吃了300g燕麦") == "dinner"
+    assert analysis["meal"] == "dinner"
+    assert analysis["mentions"] == ["dinner", "lunch"]
+    assert analysis["explicit"] == ["lunch"]
+
+
+def test_food_resolution_receives_history_and_draft(db, monkeypatch):
+    import asyncio
+    import json
+    from types import SimpleNamespace
+
+    from app.services import food_text
+
+    captured: dict[str, str] = {}
+
+    async def fake_complete_json(system, user, **kwargs):
+        captured["payload"] = user
+        return {
+            "items": [
+                {
+                    "name": "干蒸牛肉",
+                    "grams": 120,
+                    "kcal": 220,
+                    "protein_g": 25,
+                    "carbs_g": 0,
+                    "fat_g": 14,
+                    "confidence": 0.8,
+                },
+                {
+                    "name": "腊肠",
+                    "grams": 80,
+                    "kcal": 330,
+                    "protein_g": 10,
+                    "carbs_g": 2,
+                    "fat_g": 28,
+                    "confidence": 0.8,
+                },
+                {
+                    "name": "米饭",
+                    "grams": 250,
+                    "kcal": 275,
+                    "protein_g": 6,
+                    "carbs_g": 60,
+                    "fat_g": 1,
+                    "confidence": 0.9,
+                },
+            ],
+            "questions": [],
+        }
+
+    monkeypatch.setattr(
+        food_text,
+        "settings",
+        SimpleNamespace(use_mock_llm=False),
+    )
+    monkeypatch.setattr(food_text.llm, "complete_json", fake_complete_json)
+
+    result = asyncio.run(
+        food_text.resolve_food_text(
+            db,
+            "user-1",
+            "这是我今天的晚饭，中午吃了300g燕麦+一杯冰美式",
+            meal="dinner",
+            history_context=(
+                "17:55 用户：图片里的菜加250g米饭热量多少？\n"
+                "17:55 教练：干蒸牛肉120g、腊肠80g、米饭250g。"
+            ),
+        )
+    )
+
+    payload = json.loads(captured["payload"])
+    assert "干蒸牛肉" in payload["history"]
+    assert "250g" in payload["history"]
+    assert "不要把‘这是我今天的晚饭" in "\n".join(payload["rules"])
+    assert any(item["name"] == "米饭" and item["grams"] == 250 for item in result["items"])
+    assert all("这是我今天的晚饭" not in q for q in result["questions"])
+
+
+def test_kg_is_not_a_food_unit():
+    assert runtime._looks_like_food("记错了 今天是74kg") is False
+    assert runtime._looks_like_weight("记错了 体重是74kg") is True
+
+
+def test_plan_edit_is_not_a_weight_correction():
+    message = "今天的练胸计划帮我改成：杠铃卧推、上斜杠铃卧推、器械推胸、蝴蝶机"
+    assert runtime._looks_like_correction(message) is False
+    assert runtime._looks_like_exercise_edit(message) is True
+
+
+def test_conversation_context_keeps_fifty_turns_and_memory(db):
+    from app.models import AIMemory, CoachSession, CoachTurn
+    from app.services.coach_control.conversation import (
+        build_conversation_context,
+        build_memory_book,
+    )
+
+    session = CoachSession(user_id="user-1", status="active")
+    db.add(session)
+    db.flush()
+    for index in range(60):
+        db.add(
+            CoachTurn(
+                session_id=session.id,
+                user_id="user-1",
+                input_text=f"turn-{index}",
+                intent="coach.answer",
+                status="completed",
+                reply=f"reply-{index}",
+            )
+        )
+    db.add(
+        AIMemory(
+            user_id="user-1",
+            kind="preference",
+            memory_key="explicit:test",
+            content="我每周二四六练",
+            source="coach_control",
+            confidence=1.0,
+            active=True,
+        )
+    )
+    db.commit()
+
+    context = build_conversation_context(
+        db,
+        "user-1",
+        session.id,
+        max_turns=50,
+    )
+    assert len(context.turns) == 50
+    assert context.turns[0].input_text == "turn-10"
+    assert context.turns[-1].input_text == "turn-59"
+    assert "我每周二四六练" in build_memory_book(db, "user-1")
+    assert len(context.history_items()) == 100
+
+
+def test_fit_history_keeps_fifty_turns():
+    from app.models import ChatMessage
+    from app.services.coach import _fit_history
+
+    history = [
+        ChatMessage(role="user" if index % 2 == 0 else "assistant", content=f"m{index}")
+        for index in range(120)
+    ]
+    fitted = _fit_history(history)
+    assert len(fitted) == 100
+    assert fitted[0].content == "m20"
+    assert fitted[-1].content == "m119"
 
 
 def test_vision_turn_is_recorded_in_the_control_plane(db, monkeypatch):

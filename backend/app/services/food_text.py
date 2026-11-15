@@ -38,17 +38,41 @@ def _safe_float(value: object, default: float = 0.0) -> float:
         return default
 
 
-def parse_meal(text: str) -> str | None:
+MEAL_PATTERNS = [
+    ("breakfast", r"早餐|早饭|早上|清晨"),
+    ("lunch", r"午餐|午饭|中饭|中午|晌午"),
+    ("snack", r"加餐|夜宵|宵夜|零食|下午茶|小吃"),
+    ("dinner", r"晚餐|晚饭|晚上|傍晚|昨晚|夜里"),
+]
+MEAL_LABELS = {
+    "breakfast": "早饭",
+    "lunch": "午饭",
+    "dinner": "晚饭",
+    "snack": "加餐",
+}
+
+
+def parse_meal_mentions(text: str) -> list[str]:
     value = text.strip()
-    if re.search(r"早餐|早饭|早上|清晨", value):
-        return "breakfast"
-    if re.search(r"午餐|午饭|中饭|中午|晌午", value):
-        return "lunch"
-    if re.search(r"加餐|夜宵|宵夜|零食|下午茶|小吃", value):
-        return "snack"
-    if re.search(r"晚餐|晚饭|晚上|傍晚|昨晚|夜里", value):
-        return "dinner"
-    return None
+    found: list[tuple[int, str]] = []
+    for meal, pattern in MEAL_PATTERNS:
+        match = re.search(pattern, value)
+        if match is not None:
+            found.append((match.start(), meal))
+    ordered: list[str] = []
+    for _, meal in sorted(found, key=lambda item: item[0]):
+        if meal not in ordered:
+            ordered.append(meal)
+    return ordered
+
+
+def parse_meal(text: str) -> str | None:
+    mentions = parse_meal_mentions(text)
+    if not mentions:
+        return None
+    # "这是我今天的晚饭，中午吃了..." must stay dinner: the first meal
+    # mention is the user's framing, not whichever enum we checked first.
+    return mentions[0]
 
 
 def _default_meal(now: datetime) -> str:
@@ -130,6 +154,13 @@ ALIASES = {
     "白米饭": "米饭",
     "糙米饭": "糙米饭",
     "鸡胸肉": "鸡胸肉",
+    "牛肉": "牛肉",
+    "干蒸牛肉": "牛肉",
+    "腊肠": "腊肠",
+    "燕麦": "燕麦（干）",
+    "燕麦片": "燕麦（干）",
+    "冰美式": "美式咖啡",
+    "美式": "美式咖啡",
     "鸡蛋": "鸡蛋",
     "水煮蛋": "鸡蛋",
     "煎蛋": "鸡蛋",
@@ -191,8 +222,12 @@ DEFAULT_GRAMS = {
     "奶茶": 500.0,
     "米饭": 150.0,
     "糙米饭": 150.0,
+    "燕麦（干）": 60.0,
     "鸡蛋": 50.0,
     "鸡胸肉": 150.0,
+    "牛肉": 120.0,
+    "腊肠": 80.0,
+    "美式咖啡": 350.0,
     "牛奶": 250.0,
     "豆腐": 150.0,
     "西兰花": 200.0,
@@ -210,6 +245,10 @@ _SYSTEM_PROMPT = (
     '"questions":[]}。'
     "grams、kcal、protein_g、carbs_g、fat_g、confidence 必须是数字，不要带单位。"
     "饮料没有克数时用 volume_ml 表示毫升；不要省略份量。"
+    "只输出 meal 这一餐的食物；用户提到其他餐时不要为其他餐生成 items 或 questions，"
+    "系统会单独提醒用户稍后记录。"
+    "主餐食物可以从 history 中取；当前句子只提到其他餐时，不要拿其他餐的食物充数。"
+    "用户说‘这是我的晚饭/就刚刚说的/和刚才一样’时，如果 history 里已经有这餐的食物和份量，直接复用，不要留空。"
     "只有确实无法估算的食物才放进 questions，并说明缺少什么。"
 )
 _PROMPT_VERSION = prompt_version("food_text", _SYSTEM_PROMPT)
@@ -245,7 +284,7 @@ def _number(value: str) -> float | None:
 def _portion(segment: str) -> tuple[float | None, str | None]:
     match = re.search(
         r"(\d+(?:\.\d+)?|半|一|两|二|三|四|五|六|七|八|九|十)\s*"
-        r"(杯|份|碗|个|片|勺|盒|瓶|g|克|ml|毫升)",
+        r"(杯|份|碗|个|片|勺|盒|瓶|(?<!k)g|克|ml|毫升)",
         segment,
         flags=re.IGNORECASE,
     )
@@ -262,7 +301,7 @@ def parse_amount_grams(text: str) -> float | None:
     """Parse a short slot answer such as 250ml, 半杯 or just 250."""
     value = text.strip()
     match = re.search(
-        r"(\d+(?:\.\d+)?)\s*(g|克|ml|毫升)",
+        r"(\d+(?:\.\d+)?)\s*((?<!k)g|克|ml|毫升)",
         value,
         flags=re.IGNORECASE,
     )
@@ -287,7 +326,7 @@ def _unknown_food_name(segment: str) -> str:
     ).strip()
     value = re.sub(
         r"(\d+(?:\.\d+)?|半|一|两|二|三|四|五|六|七|八|九|十)\s*"
-        r"(杯|份|碗|个|片|勺|盒|瓶|g|克|ml|毫升)",
+        r"(杯|份|碗|个|片|勺|盒|瓶|(?<!k)g|克|ml|毫升)",
         "",
         value,
         flags=re.IGNORECASE,
@@ -300,7 +339,7 @@ def _unknown_food_question(segment: str) -> str:
     has_amount = bool(
         re.search(
             r"(\d+(?:\.\d+)?|半|一|两|二|三|四|五|六|七|八|九|十)\s*"
-            r"(杯|份|碗|个|片|勺|盒|瓶|g|克|ml|毫升)",
+            r"(杯|份|碗|个|片|勺|盒|瓶|(?<!k)g|克|ml|毫升)",
             segment,
             flags=re.IGNORECASE,
         )
@@ -334,18 +373,94 @@ def _macros(base: str, grams: float) -> dict:
     }
 
 
-def resolve_food_rules(text: str) -> FoodResolution:
-    """Rule-only resolution, also used by tests without an LLM."""
-    segments = [
+def _has_portion(segment: str) -> bool:
+    return bool(
+        re.search(
+            r"(\d+(?:\.\d+)?|半|一|两|二|三|四|五|六|七|八|九|十)\s*"
+            r"(杯|份|碗|个|片|勺|盒|瓶|(?<!k)g|克|ml|毫升)",
+            segment,
+            flags=re.IGNORECASE,
+        )
+    )
+
+
+_DISCOURSE_ONLY = re.compile(
+    r"我|刚刚|刚才|就|说|的|这|那|是|今天|昨天|前天|早上|中午|晚上|"
+    r"早餐|午餐|晚餐|加餐|夜宵|零食|吃|喝|了|和|跟|一样|上面|照片|里|"
+    r"顿|餐|饭|菜|还有|另外|帮我|记|一下|记录|补|到|去|吧|呢|啊|呀|哦|嗯|好|"
+    r"大概|大约|左右|差不多|晚|早"
+)
+
+
+def _is_pure_discourse(segment: str) -> bool:
+    value = _DISCOURSE_ONLY.sub("", segment).strip(" ，,、。;；!！?？+")
+    return not value
+
+
+def _is_food_segment(segment: str) -> bool:
+    """Only ask about segments that actually mention food or a portion.
+
+    Before this guard, "这是我今天的晚饭" and "就我刚刚说的" became unknown
+    foods, so the coach asked the same nonsense question on every retry.
+    """
+    if _is_pure_discourse(segment):
+        return False
+    if _match_food(segment) is not None:
+        return True
+    if _has_portion(segment):
+        return True
+    return bool(
+        re.search(
+            r"鸡|牛|猪|鱼|虾|蛋|奶|饭|面|肠|肉|菜|果|豆|薯|饼|粥|汤|"
+            r"咖啡|茶|酒|水|汁|粉|包|饺|燕麦|美式|腊肠|干蒸|食|物",
+            segment,
+        )
+    )
+
+
+def _food_segments(text: str) -> list[str]:
+    return [
         segment.strip()
-        for segment in re.split(r"[，,、;；。！!？?\n]+", text)
+        for segment in re.split(r"[，,、;；。！!？?\n+＋]+", text)
         if segment.strip()
     ]
+
+
+def meal_analysis(text: str) -> dict:
+    """Return the meal with actual food plus every meal mentioned.
+
+    "这是我今天的晚饭，中午吃了300g燕麦" mentions dinner first but only the
+    lunch clause contains food. Logging the oats as dinner would be silently
+    wrong, so explicit food wins over the first mention.
+    """
+    mentions = parse_meal_mentions(text)
+    explicit: list[str] = []
+    for clause in re.split(r"[，,。；;\n]+", text):
+        meal = parse_meal(clause)
+        if meal is None:
+            continue
+        if (
+            any(_is_food_segment(segment) for segment in _food_segments(clause))
+            and meal not in explicit
+        ):
+            explicit.append(meal)
+    return {
+        "meal": mentions[0] if mentions else None,
+        "mentions": mentions,
+        "explicit": explicit,
+    }
+
+
+def resolve_food_rules(text: str) -> FoodResolution:
+    """Rule-only resolution, also used by tests without an LLM."""
+    segments = _food_segments(text)
     items: list[dict] = []
     questions: list[str] = []
     missing_slots: list[dict] = []
 
     for segment in segments:
+        if not _is_food_segment(segment):
+            continue
         matched = _match_food(segment)
         if matched is None:
             questions.append(_unknown_food_question(segment))
@@ -441,6 +556,7 @@ def _normalize_llm_result(raw: dict | list) -> FoodResolution:
                 "confidence": max(
                     0.0, min(1.0, _safe_float(item.get("confidence"), 0.55))
                 ),
+                "explicit_portion": bool(portion_text),
             }
         )
 
@@ -480,14 +596,43 @@ def _merge_resolutions(
 
     items = [dict(item) for item in llm_result.items]
     indexes = {
-        str(item.get("name") or "").strip().lower(): index
+        _canonical_food_name(item.get("name") or ""): index
         for index, item in enumerate(items)
     }
     for item in rules.items:
-        key = str(item.get("name") or "").strip().lower()
+        key = _canonical_food_name(item.get("name") or "")
         if key and key in indexes:
-            # Keep the deterministic macro table for foods it already knows.
-            items[indexes[key]] = dict(item)
+            existing = items[indexes[key]]
+            implicit = str(item.get("portion") or "").startswith("约")
+            rule_grams = float(item.get("grams") or 0)
+            llm_grams = float(existing.get("grams") or 0)
+            if not implicit:
+                # Explicit grams in the current text are deterministic.
+                items[indexes[key]] = dict(item)
+            elif rule_grams > 0 and llm_grams > 0 and abs(llm_grams - rule_grams) > 1:
+                # The rule table has accurate macros but only a default
+                # portion. Let the model's context-aware grams win and scale
+                # the table macros to it.
+                scaled = dict(item)
+                ratio = llm_grams / rule_grams
+                scaled["grams"] = round(llm_grams)
+                scaled["portion"] = existing.get("portion") or f"约{round(llm_grams)}g"
+                for macro in (
+                    "kcal",
+                    "protein_g",
+                    "carbs_g",
+                    "fat_g",
+                    "fiber_g",
+                ):
+                    if scaled.get(macro) is not None:
+                        scaled[macro] = round(float(scaled[macro]) * ratio, 1)
+                scaled["confidence"] = max(
+                    float(item.get("confidence") or 0),
+                    float(existing.get("confidence") or 0),
+                )
+                items[indexes[key]] = scaled
+            else:
+                items[indexes[key]] = dict(item)
         else:
             if key:
                 indexes[key] = len(items)
@@ -510,7 +655,40 @@ def _merge_resolutions(
             target = _unknown_food_name(match.group(1)) if match else ""
             if target and not covered(target) and question not in questions:
                 questions.append(question)
-    missing_slots = llm_result.missing_slots
+    missing_slots = [dict(slot) for slot in llm_result.missing_slots]
+    missing_names = {
+        str(items[int(slot.get("item_index") or 0)].get("name") or "").strip().lower()
+        for slot in missing_slots
+        if 0 <= int(slot.get("item_index") or 0) < len(items)
+    }
+    for index, rule_item in enumerate(rules.items):
+        name = str(rule_item.get("name") or "").strip().lower()
+        if not name or name in missing_names:
+            continue
+        merged = next(
+            (
+                candidate
+                for candidate in items
+                if str(candidate.get("name") or "").strip().lower() == name
+            ),
+            None,
+        )
+        if merged is None:
+            continue
+        # A rule default ("约500g") is not a real answer. Keep asking unless
+        # the current turn supplied an explicit portion or the model's
+        # context-aware grams clearly differ from the default.
+        explicit = bool(merged.get("explicit_portion"))
+        grams_changed = abs(
+            float(merged.get("grams") or 0) - float(rule_item.get("grams") or 0)
+        ) > 1
+        if explicit or grams_changed:
+            continue
+        for slot in rules.missing_slots:
+            if int(slot.get("item_index") or 0) == index:
+                missing_slots.append(dict(slot))
+                missing_names.add(name)
+                break
     confidence = (
         round(sum(float(item.get("confidence") or 0) for item in items) / len(items), 2)
         if items
@@ -525,6 +703,176 @@ def _merge_resolutions(
     )
 
 
+def rule_resolution_by_meal(text: str) -> dict[str, FoodResolution]:
+    """Associate deterministic food matches with the meal they belong to.
+
+    Commas are clause boundaries, but a clause without its own meal label
+    inherits the previous one ("晚饭吃了米饭，鸡胸肉").
+    """
+    groups: dict[str, FoodResolution] = {}
+    current_meal: str | None = None
+    for clause in re.split(r"[，,。；;\n]+", text):
+        clause = clause.strip()
+        if not clause:
+            continue
+        meal = parse_meal(clause)
+        if meal is not None:
+            current_meal = meal
+        if current_meal is None:
+            continue
+        resolution = resolve_food_rules(clause)
+        if not resolution.items and not resolution.questions:
+            continue
+        existing = groups.get(current_meal)
+        if existing is None:
+            groups[current_meal] = resolution
+            continue
+        existing.items.extend(resolution.items)
+        existing.questions.extend(resolution.questions)
+        existing.missing_slots.extend(resolution.missing_slots)
+    return groups
+
+
+def _canonical_food_name(name: str) -> str:
+    value = str(name or "").strip().lower()
+    if not value:
+        return ""
+    for alias in sorted(ALIASES, key=len, reverse=True):
+        if value == alias or alias in value:
+            return ALIASES[alias].lower()
+    for base in sorted(FOODS, key=len, reverse=True):
+        if value == base or base in value or value in base:
+            return base.lower()
+    return value
+
+
+def _draft_item_map(draft: dict | None) -> dict[str, dict]:
+    result: dict[str, dict] = {}
+    for item in (draft or {}).get("items") or []:
+        if not isinstance(item, dict):
+            continue
+        name = _canonical_food_name(item.get("name") or "")
+        if name:
+            result[name] = dict(item)
+    return result
+
+
+def _is_amount_only(text: str) -> bool:
+    value = text.strip()
+    if re.fullmatch(r"\d+(?:\.\d+)?", value):
+        return True
+    stripped = re.sub(
+        r"(\d+(?:\.\d+)?|半|一|两|二|三|四|五|六|七|八|九|十)\s*"
+        r"(杯|份|碗|个|片|勺|盒|瓶|(?<!k)g|克|ml|毫升)",
+        "",
+        value,
+        flags=re.IGNORECASE,
+    )
+    return not _DISCOURSE_ONLY.sub("", stripped).strip(" ，,、。;；!！?？+")
+
+
+def _apply_draft_amount(draft: dict | None, text: str) -> FoodResolution | None:
+    items = [dict(item) for item in (draft or {}).get("items") or [] if isinstance(item, dict)]
+    if not items:
+        return None
+    amount = parse_amount_grams(text)
+    if amount is None:
+        return None
+    missing = [
+        dict(item)
+        for item in (draft or {}).get("missing_slots") or []
+        if isinstance(item, dict)
+    ]
+    target_index = None
+    if missing:
+        target_index = int(missing[0].get("item_index") or 0)
+    if target_index is None or target_index >= len(items):
+        target_index = len(items) - 1
+    item = items[target_index]
+    old_grams = float(item.get("grams") or 0)
+    ratio = amount / old_grams if old_grams > 0 else 1.0
+    item["grams"] = round(amount)
+    item["portion"] = f"{round(amount)}g"
+    for macro_field in ("kcal", "protein_g", "carbs_g", "fat_g", "fiber_g"):
+        if item.get(macro_field) is not None:
+            item[macro_field] = round(float(item[macro_field]) * ratio, 1)
+    missing = [slot for slot in missing if int(slot.get("item_index") or 0) != target_index]
+    questions = [str(slot.get("question")) for slot in missing if slot.get("question")]
+    return FoodResolution(
+        items=items,
+        questions=questions,
+        missing_slots=missing,
+        source="draft",
+        confidence=0.8,
+    )
+
+
+def _merge_draft(
+    result: FoodResolution,
+    draft: dict | None,
+) -> FoodResolution:
+    items = [dict(item) for item in result.items]
+    known = {_canonical_food_name(item.get("name") or "") for item in items}
+    for name, item in _draft_item_map(draft).items():
+        if name not in known:
+            items.append(item)
+            known.add(name)
+    draft_missing = [
+        dict(slot)
+        for slot in (draft or {}).get("missing_slots") or []
+        if isinstance(slot, dict)
+    ]
+    item_names = {
+        _canonical_food_name(item.get("name") or "")
+        for item in items
+    }
+    current_items = {
+        _canonical_food_name(item.get("name") or "")
+        for item in result.items
+    }
+    missing = [dict(slot) for slot in result.missing_slots]
+    for slot in draft_missing:
+        index = int(slot.get("item_index") or 0)
+        draft_items = list((draft or {}).get("items") or [])
+        name = (
+            str(draft_items[index].get("name") or "").strip().lower()
+            if 0 <= index < len(draft_items)
+            else ""
+        )
+        # If the current turn produced a fresh estimate for that item, the
+        # old missing-slot question is stale.
+        if name and name in current_items:
+            continue
+        if name and name not in item_names:
+            continue
+        missing.append(slot)
+    questions = list(result.questions)
+    for slot in missing:
+        question = str(slot.get("question") or "")
+        if question and question not in questions:
+            questions.append(question)
+    if not items and not questions and draft:
+        return FoodResolution(
+            items=list((draft or {}).get("items") or []),
+            questions=[],
+            missing_slots=[],
+            source="draft",
+            confidence=float((draft or {}).get("confidence") or 0.6),
+        )
+    confidence = (
+        round(sum(float(item.get("confidence") or 0) for item in items) / len(items), 2)
+        if items
+        else 0.0
+    )
+    return FoodResolution(
+        items=items,
+        questions=questions,
+        missing_slots=missing,
+        source=result.source,
+        confidence=confidence,
+    )
+
+
 async def resolve_food_text(
     db,
     user_id: str,
@@ -533,12 +881,44 @@ async def resolve_food_text(
     meal: str = "lunch",
     target_date: date | None = None,
     prefer_llm: bool = False,
+    history_context: str | None = None,
+    draft: dict | None = None,
+    rule_resolution: FoodResolution | None = None,
+    blocked_names: list[str] | None = None,
 ) -> dict:
-    rules = resolve_food_rules(text)
-    if rules.items and not rules.questions and not rules.missing_slots:
+    draft = draft or {}
+    draft_items = [
+        dict(item) for item in draft.get("items") or [] if isinstance(item, dict)
+    ]
+    if draft_items and _is_amount_only(text):
+        applied = _apply_draft_amount(draft, text)
+        if applied is not None:
+            return applied.as_dict()
+
+    rules = (
+        rule_resolution
+        if rule_resolution is not None
+        else resolve_food_rules(text)
+    )
+    if (
+        rules.items
+        and not rules.questions
+        and not rules.missing_slots
+        and not history_context
+        and not draft_items
+    ):
         return rules.as_dict()
+    if not rules.items and not rules.questions and rule_resolution is not None:
+        rules = FoodResolution(
+            questions=[f"{MEAL_LABELS.get(meal, meal)}吃了什么？"],
+        )
+    blocked = {
+        _canonical_food_name(name)
+        for name in (blocked_names or [])
+        if _canonical_food_name(name)
+    }
     if settings.use_mock_llm:
-        return rules.as_dict()
+        return _merge_draft(rules, draft).as_dict()
 
     usage: dict[str, int] = {}
     try:
@@ -552,10 +932,21 @@ async def resolve_food_text(
                         target_date or datetime.now(DIET_TZ).date()
                     ).isoformat(),
                     "known_foods": sorted(FOODS),
+                    "history": (history_context or "")[:5000],
+                    "draft": {
+                        "meal": draft.get("meal"),
+                        "items": draft_items[:20],
+                        "missing_slots": draft.get("missing_slots") or [],
+                    },
                     "rules": [
                         "只输出用户说出的食物",
                         "每项给 grams、kcal、protein_g、carbs_g、fat_g",
                         "份量不确定时放进 questions，不要猜成很精确",
+                        "用户说‘刚刚说的/上面那个/和刚才一样’时，从 history 中取食物和份量",
+                        "用户说‘这是我的晚饭’时，从 history 中找这餐的食物，直接复用，不要留空",
+                        "不要把‘这是我今天的晚饭/就我刚刚说的’当成食物名",
+                        "只解析 meal 这一餐；其他餐不要放进 items 或 questions",
+                        "已经有克数的食物只补缺失项，不要重复提问",
                     ],
                 },
                 ensure_ascii=False,
@@ -568,12 +959,27 @@ async def resolve_food_text(
             prompt_version=_PROMPT_VERSION,
         )
         result = _normalize_llm_result(raw)
+        if blocked:
+            result.items = [
+                item
+                for item in result.items
+                if _canonical_food_name(item.get("name") or "") not in blocked
+            ]
+        if not result.items and rule_resolution is not None:
+            result.questions = [
+                question
+                for question in result.questions
+                if "这道菜我还没有估算出来" not in question
+            ]
+        if not result.items and result.questions:
+            rules.questions = result.questions + rules.questions
         if result.items:
-            return _merge_resolutions(
+            merged = _merge_resolutions(
                 rules,
                 result,
                 keep_rule_questions=not prefer_llm,
-            ).as_dict()
+            )
+            return _merge_draft(merged, draft).as_dict()
     except Exception:  # noqa: BLE001 - resolution must degrade to a question
         pass
-    return rules.as_dict()
+    return _merge_draft(rules, draft).as_dict()

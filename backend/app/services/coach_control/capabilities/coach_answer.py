@@ -43,6 +43,7 @@ async def resolve(
     history: Iterable[HistoryMessage],
     message: str,
     app_context: dict | None = None,
+    memory_book: str | None = None,
 ) -> dict:
     context_parts: list[str] = []
     if isinstance(app_context, dict):
@@ -64,4 +65,5 @@ async def resolve(
         list(history),
         message,
         context="\n\n".join(context_parts) or None,
+        memory_book=memory_book,
     )
