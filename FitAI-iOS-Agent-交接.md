@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`c8eca16`（控制平面全量迁移 + Ring 2 入口收口；照片/体型/器械/改删/频率/记忆/开始训练；后端生产已部署后端最新 `dd34bcd` + Flyway **V38**；iOS 已装 `c8eca16`；`FitAITests` **108/108**、`FitAIUITests` **4/4**、后端 **466 passed**、QA **16/16**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`ffb54ad`（控制平面全量迁移 + 50 轮上下文/记忆书；照片/体型/器械/改删/频率/记忆/开始训练；后端生产已部署 `ffb54ad` + Flyway **V38**；iOS 已装 `c8eca16`；`FitAITests` **108/108**、`FitAIUITests` **4/4**、后端 **475 passed**、QA **16/16**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -25,6 +25,36 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-15 · Windows（50 轮上下文 / 记忆书 / 饮食指代）
+
+- 提交：`f292ce5`（50 轮上下文 + 饮食状态）、`ffb54ad`（单菜/照片问题不再被饮食复盘吞掉），均已推 `develop`；生产后端已部署到 `ffb54ad`。
+- 做了什么：
+  - 新增 `coach_control/conversation.py`：每轮统一构建最近 **50 轮**、当前 pending、上一动作、结构化记忆书。
+  - `coach_reply` 从最近 10 条消息改为最多 **100 条消息 / 24k 字符**，保留 user + assistant + 能力回执。
+  - 所有能力拿到同一份 conversation context；饮食额外拿到最近指代上下文和草稿 items/missing_slots。
+  - 饮食规则过滤叙述句：“这是我今天的晚饭/就我刚刚说的”不再被当成食物名。
+  - 按 meal 分组规则匹配；主餐没有明确食物时从 history 取，不再把午饭的燕麦/冰美式塞进晚饭。
+  - 草稿保存 `items/missing_slots`，后续只补缺失项；`就刚刚说的` 可复用上一轮份量。
+  - 修 `74kg` 被当成 `74g` 食物、计划编辑被旧 `body.log_weight` correction 带偏、correction 只看几小时前动作等问题。
+  - `图片里的菜热量多少` 这类单菜/照片问题改走 `coach.answer`，不再返回“今天还没有饮食记录”。
+- 已验证：
+  - 后端 **475 passed**、QA **16/16**、Ruff app/tests/scripts/qa 全绿。
+  - 单测覆盖：50 轮上下文、100 条消息上限、记忆书、叙述句过滤、meal 分组、晚饭指代、`kg` 非食物、计划编辑非体重 correction。
+  - 生产烟测（`test_reviewer`）：`菜是干蒸牛肉+腊肠` 能引用上一轮 250g 米饭；`这是我今天的晚饭，中午吃了300g燕麦+一杯冰美式` → 晚饭卡 3 项（干蒸牛肉/米饭/腊肠，约 820kcal），meal=dinner，并提示午饭稍后记；不再重复问“这是我今天的晚饭是什么食物”。
+- 未验证：
+  - 真机长对话（50 轮）实际体感、首 token 延迟和成本。
+  - 多餐一次确认：当前只生成主餐卡，另一餐在回复里提示稍后单独记；还没有“一张卡同时写两餐”。
+  - 生产用户 `13428104171` 旧版 pending draft（无 items）下一次发言会按新逻辑重解析，未手动清空。
+- 对方需要做：
+  1. `git pull`；后端已是 `ffb54ad`，iOS 代码无新增改动，已装 `c8eca16` 可直接真机验证。
+  2. 真机复测：晚饭指代、50 轮长对话、图片 → 文字纠正 → 记饭的连续链路。
+  3. 若要“一顿消息同时记两餐”，单独排期做多餐卡。
+- 禁止恢复：
+  - 不要把 50 轮原始 JSON 直接塞 prompt；用 `conversation.prompt_text` 的紧凑文本。
+  - 不要只带用户消息；必须带 assistant 回复和能力回执。
+  - 不要把叙述句当食物名，也不要把 `kg` 当 `g`。
+  - 不要用旧 correction 逻辑覆盖明确的计划编辑/体重/食物修改。
 
 ### 2026-11-15 · macOS（c8eca16 控制平面全量迁移部署）
 
