@@ -152,10 +152,8 @@ def main() -> None:
         assert response.json()["days"][0]["assigned_date"] == "2026-10-27"
         print("schedule last-write-wins: ok")
 
-        workout_started = datetime.now(timezone.utc).replace(
-            hour=0, minute=1, second=0, microsecond=0
-        )
-        workout_finished = workout_started + timedelta(minutes=45)
+        workout_started = datetime.now(timezone.utc)
+        workout_finished = workout_started
         workout = {
             "client_id": "smoke-workout-01",
             "program_day_id": day["id"],
