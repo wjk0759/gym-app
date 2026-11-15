@@ -21,6 +21,7 @@ from ..models import (
     utcnow,
 )
 from ..schemas import SyncIn
+from .locking import lock_user
 
 
 def ensure_preferences(db: Session, user_id: str) -> UserPreference:
@@ -213,10 +214,23 @@ def _apply_dislikes(db: Session, user_id: str, items) -> None:
 
 
 def apply_sync(db: Session, user_id: str, payload: SyncIn) -> dict:
+    # A client snapshot can contain the same key twice if local merging or a
+    # retry went wrong. The last value wins; never insert two rows and let the
+    # unique constraint turn the whole sync into a 500.
+    custom_foods = list(
+        {item.client_id: item for item in payload.custom_foods}.values()
+    )
+    favorites = list(
+        {item.food_key: item for item in payload.favorites}.values()
+    )
+    dislikes = list(
+        {item.slug: item for item in payload.disliked_exercises}.values()
+    )
+    lock_user(db, user_id)
     if payload.preferences is not None:
         _apply_preferences(db, user_id, payload.preferences)
-    _apply_custom_foods(db, user_id, payload.custom_foods)
-    _apply_favorites(db, user_id, payload.favorites)
-    _apply_dislikes(db, user_id, payload.disliked_exercises)
+    _apply_custom_foods(db, user_id, custom_foods)
+    _apply_favorites(db, user_id, favorites)
+    _apply_dislikes(db, user_id, dislikes)
     db.commit()
     return sync_snapshot(db, user_id)

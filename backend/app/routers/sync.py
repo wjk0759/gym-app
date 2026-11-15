@@ -1,4 +1,5 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from sqlalchemy.exc import IntegrityError
 
 from ..deps import CurrentUser, DBSession
 from ..schemas import SyncIn
@@ -16,4 +17,14 @@ def read_sync(user_id: CurrentUser, db: DBSession):
 
 @router.post("")
 def write_sync(payload: SyncIn, user_id: CurrentUser, db: DBSession):
-    return apply_sync(db, user_id, payload)
+    try:
+        return apply_sync(db, user_id, payload)
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "SYNC_CONFLICT",
+                "message": "同步数据存在重复键，请重试。",
+            },
+        ) from exc
