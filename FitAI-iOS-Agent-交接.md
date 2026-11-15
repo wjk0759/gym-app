@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`859f60e`（数据收敛 + P0 云端同步；macOS 压力测试发现的 `/sync` 重复 key 500 已修：写入前按 `client_id`/`food_key`/`slug` 去重、last-wins、用户锁、IntegrityError 409；后端 **487 passed**、QA **19/19**、Ruff 通过；**V39/859f60e 仍待 Mac 复测后部署**；生产仍为 backend `4fd1569` + Flyway **V38**、iOS `c8eca16`；iOS `FitAITests` **108/108**、UI **4/4**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`d87ef57`（数据收敛 + P0 云端同步；`/sync` 重复 key 已修复，QA **19/19**；但后端 **486/487**，唯一失败是测试硬编码 `2026-11-16`，今天恰好是 11-16；**V39/859f60e 暂缓部署**；生产仍 backend `4fd1569` + V38、iOS `c8eca16`；iOS `FitAITests` **108/108**、UI **4/4**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +26,33 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-16 · macOS（同步修复复测：19/19 QA，但 1 条日期敏感测试阻断部署）
+
+- 拉取：`65b24ad..d87ef57`
+- 目标：后端 `859f60e` + V39、iOS `e81c4fb`
+- 云端同步压力复测：
+  - QA **19/19 passed**
+  - 100 条自定义食物 × 20 次快照：无重复增长
+  - 删除后重新添加同一 `client_id`：正常复活
+  - 同一快照重复 `client_id`：不再 500
+  - 说明 Windows 的 `/sync` 去重和 409 兜底有效
+- 基础测试：
+  - iOS `FitAITests` **108/108**
+  - iOS `FitAIUITests` **4/4**
+  - 后端 **486 passed / 1 failed**
+- 唯一失败：
+  - `tests/test_coach_control.py::test_reschedule_explains_a_day_without_training`
+  - 测试硬编码计划日 `2026-11-16`；今天正好是 11-16
+  - 输入“把今天训练改到明天”现在正确匹配到今天，所以 `ready=True`；测试仍断言 `ready=False`
+  - 这是**日期敏感测试失效**，不是改期逻辑回归
+- 结论：
+  - **V39 和 `859f60e` 暂不部署**
+  - 生产保持 backend `4fd1569` / V38、iOS `c8eca16`
+  - 数据库未执行 V39
+- Windows 下一步：
+  - 把该测试改为动态 today（或冻结时钟到固定日期）
+  - 重跑后端 487/487 后再部署 V39 + `859f60e` + iOS `e81c4fb`
 
 ### 2026-11-15 · Windows（修复 /sync 重复 key 500，等待 Mac 复测）
 
