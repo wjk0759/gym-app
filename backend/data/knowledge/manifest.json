@@ -1,0 +1,86 @@
+{
+  "build_date": "2026-11-15",
+  "counts": {
+    "coach_curated_cards": 46,
+    "coach_exercises": 736,
+    "coach_knowledge": 782,
+    "equipment_knowledge": 95,
+    "food_categories": 32,
+    "food_nutrition": 2017
+  },
+  "files": {
+    "coach_knowledge.jsonl": 782,
+    "equipment_knowledge.jsonl": 95,
+    "food_categories.jsonl": 32,
+    "food_nutrition.jsonl": 2017
+  },
+  "generated_at": "2026-11-15",
+  "quality_rules": {
+    "food_energy_range": [
+      0.0,
+      950.0
+    ],
+    "macro_mismatch_tolerance": "max(150 kcal, 35%)",
+    "near_duplicate": "same normalized name + same 5 kcal/2 g macro bucket",
+    "safety": "coach cards are educational summaries, not medical advice"
+  },
+  "rounds": {
+    "round1_ingest_normalize": {
+      "empty_name": 0,
+      "exact_dup": 1,
+      "input_rows": 2082,
+      "parsed_rows": 2081
+    },
+    "round2_validate_filter": {
+      "dropped_missing_energy": 0,
+      "dropped_out_of_range": 4,
+      "input_rows": 2081,
+      "macro_mismatch_flagged": 4,
+      "near_dup_dropped": 60,
+      "partial_macros": 142
+    },
+    "round3_enrich_shape": {
+      "aliases_added": 965,
+      "coach_final": 782,
+      "curated_cards": 46,
+      "curated_cues": 30,
+      "equipment_final": 95,
+      "equipment_rows": 95,
+      "exercise_dropped": 0,
+      "exercise_rows": 736,
+      "food_categories_final": 32,
+      "food_final": 2017,
+      "quality_high": 1874,
+      "quality_partial": 143
+    }
+  },
+  "sources": [
+    {
+      "license": "OGDL 1.0 (Taiwan government open data license)",
+      "name": "Taiwan FDA Food Nutrition Database (2015)",
+      "note": "2015 edition; Traditional Chinese converted to Simplified.",
+      "raw_file": "tw_food_2015.csv",
+      "url": "https://consumer.fda.gov.tw/Food/TFND.aspx?nodeID=178"
+    },
+    {
+      "license": "MIT (text); media excluded",
+      "name": "hasaneyldrm/exercises-dataset",
+      "note": "Media excluded; safety note retained.",
+      "raw_file": "../exercises_rag.jsonl",
+      "url": "https://github.com/hasaneyldrm/exercises-dataset"
+    },
+    {
+      "license": "internal",
+      "name": "FitAI equipment catalog v2",
+      "raw_file": "../../app/services/equipment_catalog_v2.py",
+      "url": ""
+    },
+    {
+      "license": "original-summary",
+      "name": "FitAI curated coach cards and taxonomy",
+      "raw_file": "knowledge_seed.json",
+      "url": ""
+    }
+  ],
+  "version": 1
+}

@@ -65,6 +65,7 @@ from .food_text import (
     parse_meal,
     resolve_food_text,
 )
+from .knowledge_search import knowledge_payload
 from .memory import remember_facts, schedule_memory_extraction
 from .plan_generator import build_template_plan, validate_plan_for_user
 from .plan_validator import PlanValidationError
@@ -91,6 +92,7 @@ ALLOWED_TOOLS = {
     "get_exercise_history",
     "get_workout_detail",
     "lookup_exercise",
+    "lookup_knowledge",
     "resolve_food",
     "propose_plan",
     "propose_app_actions",
@@ -608,6 +610,7 @@ AGENT_INSTRUCTIONS = """你可以读取用户状态、读取训练记录、生�
 {"action":"tool","tool":"get_context","arguments":{}}
 {"action":"tool","tool":"get_recent_training","arguments":{"days":30}}
 {"action":"tool","tool":"lookup_exercise","arguments":{"query":"弹力带划船","limit":3}}
+{"action":"tool","tool":"lookup_knowledge","arguments":{"domain":"coach","query":"深蹲膝盖内扣怎么纠正","limit":3}}
 {"action":"tool","tool":"resolve_food","arguments":{"text":"湿炒螺蛳粉一份，半杯奶茶","meal":"lunch","date":"2026-11-13"}}
 {"action":"tool","tool":"get_exercise_history","arguments":{"slug":"bench_press","limit":5}}
 {"action":"tool","tool":"get_workout_detail","arguments":{"session_id":"训练记录ID"}}
@@ -634,7 +637,7 @@ AGENT_INSTRUCTIONS = """你可以读取用户状态、读取训练记录、生�
 2. 只有用户明确描述训练安排或要求改计划时才调用 propose_plan。计划参数默认沿用用户档案，只修改用户明确提出的部分。
 3. propose_plan 成功后会返回 proposal_id 和 changes。你要在 final 中告诉用户这是待确认草案，不能声称已经应用。
 - 用户明确说想重点练某 1–2 个部位时，propose_plan 的 focus 只能是 chest / back / legs / glutes / shoulders / arms / core；没有明确重点就不要传，也不要用 propose_app_actions 代替。
-4. 用户只是问知识、动作、疼痛或恢复建议时，直接 final，不要为了使用工具而使用工具。
+4. 用户只是问知识、动作、疼痛或恢复建议时，先按需调用 lookup_knowledge（体态/营养/食物/器械）或 lookup_exercise（动作步骤），再 final；不要为了使用工具而使用工具。
 5. 疼痛、胸闷、晕厥、呼吸困难、孕期/术后等情况必须建议就医或停止相关训练，不做医疗诊断。用户提到腰突、半月板损伤、肩峰撞击、足底筋膜炎等已知诊断时，不能只给动作替换；先建议找医生/康复师评估，再给无痛范围内的替代。夜间痛、静息痛、持续肿胀或疼痛超过一周，也要建议专业评估。给出“先停/先别练”后，必须补一句什么时候需要专业评估，不能只反问。
 6. 不要编造工具、动作 slug、训练记录或用户信息。信息不足时用 ask_user。
 7. 不要输出 JSON 以外的内容。
@@ -685,6 +688,7 @@ App Context 和可执行操作：
 - 用户说“打开饮食页”时才调用 open_screen nutrition；“记录饮食”不等于“打开饮食页”。
 - 用户说“把刚才那条饮食改成/删掉”时，使用 update_food_log / delete_food_log，client_id 必须来自 app_context 或用户明确提供的记录 ID；找不到记录就 ask_user，不要猜。
 - 用户问某个动作怎么做、主要练哪里、目标肌肉、动作细节、动作替代、器械对应动作时，都要先调用 lookup_exercise，query 用最短动作名（如“弹力带划船”“深蹲”），limit 默认 3。只引用返回的步骤，不要凭记忆编造动作；没有结果就说明没查到，并让用户补充动作名或器械。
+- 用户问体态纠正、训练原则、营养原则、食物营养/分类、器械识别线索时，先调用 lookup_knowledge；domain 只能是 coach / food / food_category / equipment。只引用返回内容并保留来源；没有结果就说明没查到。动作步骤仍优先用 lookup_exercise，不要用 lookup_knowledge 代替。
 - 用户想拍器械、问某个器械怎么练、或想把器械加入个人动作库时，调用 recognize_equipment。payload 可以为空；不要假装已经识别，等用户在相机里拍完。
 - 用户想拍体型照、看体态、问训练重点时，调用 analyze_body。payload 可以为空；不要假装已经分析，等用户拍完。
 - reschedule_training / skip_training 优先使用 app_context 里存在的 day_id；也可以传 date（YYYY-MM-DD）。改期目标用 target_date；如果用户说“最近空档”，target_date 传 "next_free"。
@@ -1306,6 +1310,19 @@ def _tool_result(
         except (TypeError, ValueError):
             limit = 3
         return search_exercise_payload(query, limit)
+
+    if tool == "lookup_knowledge":
+        query = str(arguments.get("query") or "").strip()
+        if not query:
+            return {"ok": False, "error": "lookup_knowledge requires query"}
+        domain = str(arguments.get("domain") or "coach").strip().lower()
+        if domain not in {"coach", "food", "food_category", "equipment"}:
+            domain = "coach"
+        try:
+            limit = int(arguments.get("limit") or 3)
+        except (TypeError, ValueError):
+            limit = 3
+        return knowledge_payload(query, domain=domain, limit=limit)
 
     if tool == "propose_plan":
         profile = db.get(Profile, user_id)
