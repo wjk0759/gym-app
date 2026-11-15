@@ -46,7 +46,8 @@ def _match(
 def resolve(message: str) -> dict:
     weight = None
     weight_match = re.search(
-        r"(?:体重|称重|称了|称一下)?\s*(\d{2,3}(?:\.\d+)?)\s*(kg|公斤|斤)",
+        r"(?:体重|称重|称了|称一下|上秤|过秤)?\s*"
+        r"(\d{2,3}(?:\.\d+)?)\s*(kg|公斤|斤)",
         message,
         flags=re.IGNORECASE,
     )
@@ -54,10 +55,14 @@ def resolve(message: str) -> dict:
         weight = float(weight_match.group(1))
         if weight_match.group(2) == "斤":
             weight = weight / 2
-    elif any(word in message for word in ("体重", "称重", "称了", "称一下")):
+    elif any(
+        word in message
+        for word in ("体重", "称重", "称了", "称一下", "上秤", "过秤")
+    ):
         weight = _match(
             message,
-            r"(?:体重|称重|称了|称一下)\s*(?:是|为|:|：)?\s*(\d{2,3}(?:\.\d+)?)",
+            r"(?:体重|称重|称了|称一下|上秤|过秤)\s*"
+            r"(?:是|为|:|：)?\s*(\d{2,3}(?:\.\d+)?)",
         )
 
     body_fat = _match(

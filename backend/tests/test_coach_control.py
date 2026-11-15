@@ -395,6 +395,15 @@ def test_goal_card_accepts_a_new_target(db):
     assert len(active) == 1
 
 
+def test_weight_paraphrase_uses_scale_wording(db):
+    import asyncio
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "我今天上秤73.5"))
+    assert turn["intent"] == "body.log_weight"
+    assert turn["pending"]["kind"] == "card"
+    assert turn["pending"]["payload"]["weight_kg"] == 73.5
+
+
 def test_correction_without_context_does_not_create_a_food_draft(db):
     import asyncio
 
@@ -900,6 +909,36 @@ def test_batch_weight_and_goal_confirm_and_undo(db):
     runtime.undo_action(db, "user-1", confirmed["action_id"])
     assert db.execute(select(Goal)).scalars().all() == []
     assert db.execute(select(BodyMetric)).scalars().all() == []
+
+
+def test_semantic_router_dispatches_a_paraphrased_food_log(db, monkeypatch):
+    import asyncio
+    from types import SimpleNamespace
+
+    from app.services.coach_control import router
+
+    async def fake_router(system, user, **kwargs):
+        return {
+            "capability_id": "diet.log_food",
+            "confidence": 0.93,
+            "reason": "记录烧烤",
+        }
+
+    monkeypatch.setattr(
+        router,
+        "settings",
+        SimpleNamespace(use_mock_llm=False),
+    )
+    monkeypatch.setattr(router.llm, "complete_json", fake_router)
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "今晚那顿烧烤帮我算进去")
+    )
+    assert turn["intent"] == "diet.log_food"
+    assert turn["pending"]["kind"] == "card"
+    assert [item["name"] for item in turn["pending"]["payload"]["items"]] == [
+        "烧烤"
+    ]
 
 
 def test_diet_correction_after_confirm_replaces_old_log(db):

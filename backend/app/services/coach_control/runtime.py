@@ -331,6 +331,25 @@ def _looks_like_analysis_screen(message: str) -> bool:
     return bool(re.search(r"体型|体态|身材|器械|设备", message))
 
 
+def _should_try_semantic_route(message: str) -> bool:
+    """Cheap gate before spending a model call on intent routing."""
+    value = message.strip()
+    if not value or len(value) > 120:
+        return False
+    if re.search(r"怎么|为什么|如何|什么是|吗|？|\?", value):
+        return False
+    if re.search(
+        r"记|改|换|加|删|安排|开始|打开|设置|设到|取消|恢复|跳过|完成|"
+        r"上传|拍照|识别|绑定|导出|删除|调整|生成|重排|顺延|挪|放到|算|"
+        r"调|称|量",
+        value,
+    ):
+        return True
+    if re.search(r"\d", value):
+        return True
+    return bool(re.search(r"帮我|我想|我要|能不能|可以帮", value))
+
+
 def _looks_like_action_request(message: str) -> bool:
     """Action-like text that fell through to free chat is a coverage gap."""
     if re.search(r"怎么|为什么|为何|吗|？|\?|什么|多少|如何|哪个", message):
@@ -588,7 +607,7 @@ def _looks_like_strength(message: str) -> bool:
 def _looks_like_weight(message: str) -> bool:
     return bool(
         re.search(
-            r"体重|称重|称了|称一下|体脂|腰围|臂围|手臂围|腿围|大腿围",
+            r"体重|称重|称了|称一下|上秤|过秤|体脂|腰围|臂围|手臂围|腿围|大腿围",
             message,
         )
         and re.search(r"\d", message)
@@ -662,6 +681,21 @@ def _finish_pending(
             db,
             session,
             kind="proposal",
+            capability_id=capability_id,
+            payload=payload,
+        )
+    elif kind == "insight":
+        set_pending(
+            db,
+            session,
+            kind="insight",
+            capability_id=capability_id,
+            payload=payload,
+        )
+    elif kind == "draft":
+        _pending_draft(
+            db,
+            session,
             capability_id=capability_id,
             payload=payload,
         )
@@ -1182,6 +1216,373 @@ async def _try_batch_turn(
     if batch_context:
         payload["context"] = batch_context
     return payload
+
+
+async def _dispatch_semantic_capability(
+    db: Session,
+    user_id: str,
+    session: CoachSession,
+    turn: CoachTurn,
+    started: float,
+    text: str,
+    context,
+    conversation,
+    capability_id: str,
+) -> dict | None:
+    """Execute a capability selected by the semantic fallback router."""
+    if capability_id == DIET:
+        from .capabilities.diet import resolve as resolve_diet
+
+        resolution = await resolve_diet(
+            db,
+            user_id,
+            text,
+            history_context=conversation.reference_context(),
+        )
+        meals = resolution.get("meals") or []
+        questions = [
+            str(question)
+            for meal in meals
+            for question in meal.get("questions") or []
+            if str(question).strip()
+        ] + [
+            str(question)
+            for question in resolution.get("questions") or []
+            if str(question).strip()
+        ]
+        missing = [
+            slot
+            for meal in meals
+            for slot in meal.get("missing_slots") or []
+            if isinstance(slot, dict)
+        ]
+        if questions or missing:
+            payload = {
+                "text": text,
+                "date": resolution.get("date"),
+                "meal": resolution.get("meal"),
+                "items": resolution.get("items") or [],
+                "meals": meals or None,
+                "questions": list(dict.fromkeys(questions)),
+                "missing_slots": missing,
+            }
+            reply = (
+                _food_question_text(meals)
+                if meals
+                else (questions[0] if questions else "这餐还需要补充信息。")
+            )
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=DIET,
+                payload=payload,
+                reply=reply,
+                kind="draft",
+            )
+        if not resolution.get("items") and not meals:
+            return None
+        payload = {
+            "date": resolution["date"],
+            "meal": resolution["meal"],
+            "raw_text": text[:500],
+            "items": resolution.get("items") or [],
+        }
+        if meals:
+            payload["meals"] = meals
+        reply = _food_reply_multi(meals) if meals else _food_reply(resolution)
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=DIET,
+            payload=payload,
+            reply=reply,
+        )
+
+    if capability_id == WEIGHT:
+        from .capabilities.body import resolve as resolve_weight
+
+        resolution = resolve_weight(text)
+        if not resolution.get("ready"):
+            question = (resolution.get("questions") or ["体重大概多少公斤？"])[0]
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=WEIGHT,
+                payload={"message": text},
+                reply=question,
+                kind="draft",
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=WEIGHT,
+            payload=payload,
+            reply=_body_metric_reply(payload),
+        )
+
+    if capability_id == GOAL:
+        from .capabilities.profile import resolve as resolve_goal
+
+        resolution = resolve_goal(text)
+        if not resolution.get("ready"):
+            question = (resolution.get("questions") or ["想怎么改目标？"])[0]
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=GOAL,
+                payload={"message": text},
+                reply=question,
+                kind="draft",
+            )
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=GOAL,
+            payload=resolution["payload"],
+            reply="目标改好了，确认后更新。",
+        )
+
+    if capability_id == TRAINING:
+        from .capabilities.training import resolve as resolve_training
+
+        resolution = resolve_training(db, user_id, text, context)
+        if not resolution.get("ready"):
+            question = (resolution.get("questions") or ["要把哪一天改到哪天？"])[0]
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=TRAINING,
+                payload={"message": text, "app_context": context},
+                reply=question,
+                kind="draft",
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=TRAINING,
+            payload=payload,
+            reply=_training_reply(payload),
+        )
+
+    if capability_id == SKIP_TRAINING:
+        from .capabilities.training import resolve_skip
+
+        resolution = resolve_skip(db, user_id, text, context)
+        if not resolution.get("ready"):
+            question = (resolution.get("questions") or ["要跳过哪一天？"])[0]
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=SKIP_TRAINING,
+                payload={"message": text, "app_context": context},
+                reply=question,
+                kind="draft",
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=SKIP_TRAINING,
+            payload=payload,
+            reply=f"准备跳过「{payload.get('title') or '训练'}」。确认后生效。",
+        )
+
+    if capability_id == CARDIO:
+        from .capabilities.training import resolve_cardio
+
+        resolution = resolve_cardio(text)
+        if not resolution.get("ready"):
+            question = (resolution.get("questions") or ["这次练了多久？"])[0]
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=CARDIO,
+                payload={"message": text},
+                reply=question,
+                kind="draft",
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=CARDIO,
+            payload=payload,
+            reply=(
+                f"准备记录{payload.get('title')} "
+                f"{payload.get('duration_minutes')} 分钟。确认后写入。"
+            ),
+        )
+
+    if capability_id == STRENGTH:
+        from .capabilities.training import resolve_strength
+
+        resolution = resolve_strength(db, text)
+        if not resolution.get("ready"):
+            question = (resolution.get("questions") or ["记录哪个动作？"])[0]
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=STRENGTH,
+                payload={"message": text},
+                reply=question,
+                kind="draft",
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=STRENGTH,
+            payload=payload,
+            reply=(
+                f"准备记录{payload.get('title')} "
+                f"{len(payload.get('sets') or [])} 组。确认后写入。"
+            ),
+        )
+
+    if capability_id == PREVIEW:
+        from .capabilities.training_preview import resolve as resolve_preview
+
+        resolution = resolve_preview(db, user_id, context)
+        payload = resolution.get("payload") or {}
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=PREVIEW,
+            payload=payload,
+            reply=payload.get("summary") or "训练预览已整理好。",
+            kind="insight",
+        )
+
+    if capability_id == WEEK_SCHEDULE:
+        from .capabilities.training_week import resolve as resolve_week
+
+        resolution = resolve_week(db, user_id, text, context)
+        payload = resolution.get("payload") or {}
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=WEEK_SCHEDULE,
+            payload=payload,
+            reply=payload.get("summary") or "本周安排已整理好。",
+            kind="insight",
+        )
+
+    if capability_id == DIET_REVIEW:
+        from .capabilities.diet_review import resolve as resolve_diet_review
+
+        resolution = resolve_diet_review(db, user_id, text)
+        payload = resolution.get("payload") or {}
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=DIET_REVIEW,
+            payload=payload,
+            reply=payload.get("summary") or "饮食复盘已整理好。",
+            kind="insight",
+        )
+
+    if capability_id == REVIEW:
+        from .capabilities.review import resolve as resolve_review
+
+        resolution = resolve_review(db, user_id)
+        payload = resolution.get("payload") or {}
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=REVIEW,
+            payload=payload,
+            reply=payload.get("summary") or "本周复盘已整理好。",
+            kind="insight",
+        )
+
+    if capability_id == MEMORY:
+        from .capabilities.memory import resolve as resolve_memory
+
+        resolution = resolve_memory(text)
+        if not resolution.get("ready"):
+            question = (resolution.get("questions") or ["想让我记住什么？"])[0]
+            return _finish_reply(
+                db,
+                session,
+                turn,
+                started,
+                intent=MEMORY,
+                reply=question,
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=MEMORY,
+            payload=payload,
+            reply=f"记住「{str(payload.get('content') or '')[:80]}」",
+        )
+
+    if capability_id == REMINDERS_UI:
+        from .capabilities.ui_actions import resolve_reminders
+
+        resolution = resolve_reminders(text)
+        if not resolution.get("ready"):
+            question = (resolution.get("questions") or ["提醒设到几点？"])[0]
+            return _finish_reply(
+                db,
+                session,
+                turn,
+                started,
+                intent=REMINDERS_UI,
+                reply=question,
+            )
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=REMINDERS_UI,
+            payload=resolution["payload"],
+            reply=resolution.get("summary") or "训练提醒已更新。",
+        )
+
+    return None
 
 
 def _finish_reply(
@@ -2500,6 +2901,30 @@ async def handle_turn(
             reply = "先完成个人档案，我才能给你更准确的建议。"
             turn.intent = "unsupported"
         else:
+            if _should_try_semantic_route(text):
+                from .router import route_intent
+
+                routed = await route_intent(
+                    db,
+                    user_id,
+                    text,
+                    history_context=conversation.reference_context(),
+                )
+                if routed is not None:
+                    dispatched = await _dispatch_semantic_capability(
+                        db,
+                        user_id,
+                        session,
+                        turn,
+                        started,
+                        text,
+                        context,
+                        conversation,
+                        routed,
+                    )
+                    if dispatched is not None:
+                        return dispatched
+
             from ...config import settings
             from ..memory import schedule_memory_extraction
             from ..queries import active_program
