@@ -27,6 +27,26 @@
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
 
+### 2026-11-15 · Windows（embedding 小评测：BGE-M3 vs 关键词）
+
+- 数据集：200 条合成健身记忆、80 条中文查询，覆盖伤病、日程、目标、饮食、器械、计划变更、经期、出差等。
+- 评测：离线 NumPy cosine，top-10；无需 Qdrant。
+- 结果：
+  - 关键词：Recall@5 0.4854，Hit@5 0.925，Topic@5 0.95，MRR@5 0.785
+  - BGE-M3：Recall@5 0.5979，Hit@5 0.95，Topic@5 0.9875，MRR@5 0.8375
+  - BGE-M3 比关键词：Hit@5 +2.5pp，Topic@5 +3.75pp，MRR +5.25pp
+  - hard-negative top-1：关键词 3.75%，BGE-M3 0%
+- 结论：
+  - BGE-M3 确实更好，但关键词基线已经很强，**暂不急着上纯向量 RAG**
+  - 如果做 RAG，建议 **关键词 + BGE-M3 混合检索**，不是纯向量
+  - 严格 Recall@5 未到 0.85，主要因为同一主题有多条合理记忆；Hit@5/Topic@5 更接近真实体验
+- 阻塞：
+  - 豆包 embedding 在这把 Ark key 上全部 `ModelNotOpen`/NotFound，未测到
+  - OpenAI/Cohere/Jina 没有可用 key，未测
+- 备注：
+  - BGE-M3 在 Windows CPU 上加载约 52s，280 条文本编码约 23s
+  - 评测脚本在临时目录，未进仓库；如需长期回归，建议后续放到 `backend/scripts/embedding_eval.py`
+
 ### 2026-11-15 · macOS（4fd1569 上下文/记忆书部署）
 
 - 部署：
