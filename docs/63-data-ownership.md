@@ -94,12 +94,13 @@
 - `.profile` 刷新现在会拉 `/me`，合并服务端 profile + 当前 Goal
 - 体重/体脂/腰围只在本地还没有 BodyMetric 时才从 `/me` 的 profile 缓存回填
 
-### 今日营养目标
+### 营养目标（按日期）
 
-- 新增 `AppStore.currentNutritionTargets`
-- 今日优先服务端缓存，离线才回退本地 `DietPlanner`
-- 首页、食物库目标卡改为读同一投影
-- `PlanReviewView` / `PlanHomeView+SelectedDay` 仍按周期/日期使用本地估算，待日期级接口统一后再切
+- `AppStore.nutritionTargetsByDate` 按 `YYYY-MM-DD` 缓存服务端目标
+- `AppStore.currentNutritionTargets` 供今日/周期回顾使用；`nutritionTargets(for:)` 供任意日期使用
+- 首页、饮食页、记录页选中日期、周期回顾统一读同一投影
+- 记录页选中日期变化时拉取该日目标；离线或首次加载才回退本地 `DietPlanner`
+- `PlanReviewView` 显示周期平均摄入对应的当前目标，不按天拆分
 
 ## 4. 明确不合并的
 
@@ -111,8 +112,7 @@
 
 ## 5. 后续优先级
 
-1. 非今日营养目标的日期级统一
-2. 器械统一只读快照（不合并底层三个状态）
-3. 体型分析照片查看 UI（元数据和私有存储已完成）
-4. 训练草稿/经期的真机双设备验证
-5. 清理未使用的 `NotificationSchedule` 表，或正式接入
+1. 器械统一只读快照（不合并底层三个状态）
+2. 体型分析照片查看 UI（元数据和私有存储已完成）
+3. 训练草稿/经期的真机双设备验证
+4. 清理未使用的 `NotificationSchedule` 表，或正式接入

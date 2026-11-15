@@ -264,7 +264,7 @@ struct PlanReviewView: View {
 
     private func nutritionCard(_ review: ReviewData) -> some View {
         let current = review.current
-        let targets = DietPlanner.targets(profile: store.profile)
+        let targets = store.currentNutritionTargets
         let fiberValue = current.hasNutrition
             ? "\(Int(current.totalFiber / Double(max(1, current.loggedFoodDays))))"
             : "—"
