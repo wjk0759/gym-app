@@ -34,17 +34,25 @@ def register(capability: Capability) -> Capability:
 
 
 def capability_payloads() -> list[dict]:
-    return [
-        {
-            "id": item.id,
-            "domain": item.domain,
-            "kind": item.kind,
-            "title": item.title,
-            "description": item.description,
-            "requires_confirmation": item.requires_confirmation,
-            "undo": item.undo,
-            "events": list(item.events),
-            "refreshes": list(item.refreshes),
-        }
-        for item in CAPABILITIES.values()
-    ]
+    from .manifest import spec_for
+
+    items = []
+    for item in CAPABILITIES.values():
+        spec = spec_for(item.id)
+        items.append(
+            {
+                "id": item.id,
+                "domain": item.domain,
+                "kind": item.kind,
+                "title": item.title,
+                "description": item.description,
+                "requires_confirmation": item.requires_confirmation,
+                "undo": item.undo,
+                "events": list(item.events),
+                "refreshes": list(item.refreshes),
+                "examples": list(spec.examples) if spec else [],
+                "slots": list(spec.slots) if spec else [],
+                "card": spec.card if spec else "generic",
+            }
+        )
+    return items

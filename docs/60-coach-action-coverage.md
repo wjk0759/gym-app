@@ -1,0 +1,119 @@
+# 60 · 教练动作覆盖清单
+
+> 目标：用户在 AI 教练里说什么，都能被识别、补槽、确认、执行或明确引导；
+> 不要求用户先跳页面手动操作。
+>
+> 状态：
+> - ✅ 控制平面可直接执行
+> - ◐ 已在教练内打开入口，但动作仍在 sheet/页面完成
+> - ○ 目前只能页面操作
+> - ✗ 尚无教练入口
+
+## 1. 训练
+
+| 动作 | 能力 | 状态 |
+|---|---|---|
+| 今天/明天练什么 | `training.preview_next` | ✅ |
+| 本周/下周安排 | `training.week_schedule` | ✅ |
+| 开始训练 | `ui.start_training` | ✅ |
+| 改训练日期 | `training.reschedule` | ✅ |
+| 跳过训练 | `training.skip` | ✅ |
+| 补一次训练 | `training.add_plan_day` | ✅ |
+| 记录力量训练 | `training.log_strength` | ✅ |
+| 记录有氧 | `training.log_cardio` | ✅ |
+| 修改训练记录 | `training.update_workout` | ✅ |
+| 删除训练记录 | `training.delete_workout` | ✅ |
+| 生成/调整/配置计划 | `training.generate_plan` / `adjust_plan` / `configure_plan` | ✅ |
+| 整天换动作 | `training.edit_day_exercises` | ✅ |
+| 单个动作替换 | `training.edit_day_exercise` | ✅ |
+| 训练中逐组记录/休息计时 | — | ○ |
+| 历史计划恢复 | — | ○ |
+| 从指定训练日开始 | `ui.start_training` 只选下一练 | ◐ |
+
+## 2. 饮食
+
+| 动作 | 能力 | 状态 |
+|---|---|---|
+| 记录一餐 | `diet.log_food` | ✅ |
+| 按计划吃/跳过/恢复/换餐 | `diet.log_planned_meal` 等 | ✅ |
+| 改饮食策略 | `diet.edit_day_strategy` | ✅ |
+| 生成单日/一周餐单 | `diet.generate_day` / `generate_week` | ✅ |
+| 饮食复盘 | `diet.review_day` | ✅ |
+| 修改/删除饮食记录 | `diet.update_log` / `delete_log` | ✅ |
+| 自定义食物库 | — | ○ |
+| 收藏/不喜欢食物 | — | ○ |
+| 查看菜谱详情 | — | ○ |
+| 拍照估算食物 | 教练照片 / `ui.open_screen` 饮食入口 | ◐ |
+
+## 3. 身体
+
+| 动作 | 能力 | 状态 |
+|---|---|---|
+| 记录体重/体脂/腰围 | `body.log_weight` | ✅ |
+| 身体趋势复盘 | `body.review_trend` | ✅ |
+| 体型照片分析 | `ui.open_screen` → `body_analysis` | ◐ |
+| 应用体型分析到计划 | BodyPhotoAnalysisView | ○ |
+| 删除身体记录 | — | ○ |
+
+## 4. 计划/目标
+
+| 动作 | 能力 | 状态 |
+|---|---|---|
+| 修改目标 | `profile.update_goal` | ✅ |
+| 修改昵称/性别/身高/经验 | — | ○ |
+| 修改器械/伤病 | — | ○ |
+| 计划历史恢复 | — | ○ |
+
+## 5. 器械
+
+| 动作 | 能力 | 状态 |
+|---|---|---|
+| 识别器械 | `ui.open_screen` → `equipment_scan` | ◐ |
+| 加入个人器械库 | EquipmentRecognitionView | ○ |
+| 编辑/删除个人器械 | — | ○ |
+| 查看器械库 | `ui.open_screen` → `equipment` | ◐ |
+
+## 6. 复盘/记忆/反馈
+
+| 动作 | 能力 | 状态 |
+|---|---|---|
+| 周复盘 | `review.weekly` | ✅ |
+| 记住偏好 | `memory.remember` | ✅ |
+| 查看/删除记忆 | 记忆页 | ○ |
+| 反馈 | `/coach/turns/{id}/feedback` | ✅（非卡片动作） |
+
+## 7. 设置/账户/外部
+
+| 动作 | 能力 | 状态 |
+|---|---|---|
+| 提醒开关/时间 | `ui.configure_reminders` | ✅ |
+| 远程 AI 开关 | — | ○ |
+| 单位/语言 | — | ○ |
+| 会员/订阅 | — | ○ |
+| 隐私/导出/删除账号 | — | ○ |
+| 通知中心/已读 | — | ◐（inbox 有接口） |
+| Watch 语音/同步 | — | ○ |
+| 设备管理 | — | ○ |
+
+## 8. 当前最大缺口
+
+1. **多动作一句话**：单 pending，不能同时“记午饭 + 改训练日期”。
+2. **设置/账户类**：远程 AI、会员、隐私还没有教练 action。
+3. **个人资料字段**：昵称、性别、身高、经验、器械、伤病只能页面改。
+4. **训练中操作**：逐组、休息计时、动作替换仍要页面。
+5. **通用卡片**：每加能力仍要写新 SwiftUI 卡片。
+6. **缺口闭环**：已记录 `CoachActionGap`，但还没有自动转成待补能力或运营看板。
+
+## 9. 新能力接入标准
+
+新增一个教练动作时，必须同时补：
+
+1. `Capability`（id/domain/kind/refresh/undo/events）
+2. `manifest.py` 的 `ActionSpec`（examples/slots/card）
+3. resolve / execute / undo
+4. 确认卡/结果卡（优先复用通用卡）
+5. 权限与安全边界
+6. 单测：路由、槽位、确认、撤销、刷新域
+7. 生产烟测
+
+不允许只加页面、不加教练 action。

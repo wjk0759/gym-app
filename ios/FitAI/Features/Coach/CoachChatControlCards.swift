@@ -131,6 +131,10 @@ extension CoachChatView {
                     Text("打开「\(pending.payload?.title ?? "页面")」")
                         .font(AppType.callout.weight(.semibold))
                         .foregroundStyle(Theme.ink)
+                } else if pending.capabilityID == "ui.configure_reminders" {
+                    Text(reminderPendingText(pending))
+                        .font(AppType.callout.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
                 } else if pending.capabilityID == "memory.remember" {
                     Text("记住「\(pending.payload?.content ?? "")」")
                         .font(AppType.callout.weight(.semibold))
@@ -156,7 +160,7 @@ extension CoachChatView {
                 } else if pending.capabilityID == "profile.update_goal" {
                     goalPendingContent(pending)
                 } else {
-                    Text("准备执行一项操作。")
+                    Text(pending.payload?.summary ?? "准备执行一项操作。")
                         .font(AppType.callout)
                         .foregroundStyle(Theme.ink)
                 }
@@ -208,6 +212,15 @@ extension CoachChatView {
             parts.append("腿围 \(String(format: "%.1f", value)) cm")
         }
         return parts.isEmpty ? "准备记录身体数据" : parts.joined(separator: " · ")
+    }
+
+    private func reminderPendingText(_ pending: CoachPendingState) -> String {
+        guard pending.payload?.enabled != false else {
+            return "关闭训练提醒"
+        }
+        let hour = pending.payload?.hour ?? 19
+        let minute = pending.payload?.minute ?? 0
+        return String(format: "每天 %02d:%02d 提醒训练", hour, minute)
     }
 
     private func dietEditPendingContent(_ pending: CoachPendingState) -> some View {

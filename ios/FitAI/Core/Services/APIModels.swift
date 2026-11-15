@@ -406,6 +406,10 @@ struct AgentActionPayload: Codable, Hashable {
     let prompt: String?
     /// Memory capability payload.
     let content: String?
+    /// Reminder UI payload.
+    let enabled: Bool?
+    let hour: Int?
+    let minute: Int?
 
     enum CodingKeys: String, CodingKey {
         case dayID = "day_id"
@@ -454,6 +458,9 @@ struct AgentActionPayload: Codable, Hashable {
         case plan
         case prompt
         case content
+        case enabled
+        case hour
+        case minute
     }
 }
 
@@ -648,6 +655,9 @@ struct CoachReceipt: Decodable, Hashable {
     let armCM: Double?
     let thighCM: Double?
     let clientID: String?
+    let enabled: Bool?
+    let hour: Int?
+    let minute: Int?
 
     enum CodingKeys: String, CodingKey {
         case summary
@@ -667,6 +677,9 @@ struct CoachReceipt: Decodable, Hashable {
         case armCM = "arm_cm"
         case thighCM = "thigh_cm"
         case clientID = "client_id"
+        case enabled
+        case hour
+        case minute
     }
 }
 

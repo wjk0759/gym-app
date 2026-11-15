@@ -74,6 +74,7 @@ ADJUST_PLAN = "training.adjust_plan"
 CONFIGURE_PLAN = "training.configure_plan"
 START_TRAINING_UI = "ui.start_training"
 OPEN_SCREEN_UI = "ui.open_screen"
+REMINDERS_UI = "ui.configure_reminders"
 MEMORY = "memory.remember"
 
 
@@ -273,6 +274,16 @@ def _looks_like_memory(message: str) -> bool:
     )
 
 
+def _looks_like_reminders(message: str) -> bool:
+    return bool(
+        re.search(r"提醒|闹钟", message)
+        and re.search(
+            r"改|设|开|关|点|每天|早上|上午|中午|下午|晚上|点半|[0-9]",
+            message,
+        )
+    )
+
+
 def _looks_like_start_training(message: str) -> bool:
     return bool(
         re.search(r"开始训练|开始今天|带我练|开始练|练起来|开始今天的训练", message)
@@ -300,6 +311,19 @@ def _looks_like_analysis_screen(message: str) -> bool:
     if not re.search(r"分析|评估|看看|识别|扫描|拍照|拍张|照片", message):
         return False
     return bool(re.search(r"体型|体态|身材|器械|设备", message))
+
+
+def _looks_like_action_request(message: str) -> bool:
+    """Action-like text that fell through to free chat is a coverage gap."""
+    if re.search(r"怎么|为什么|为何|吗|？|\?|什么|多少|如何|哪个", message):
+        return False
+    return bool(
+        re.search(
+            r"记|改|换|加|删|安排|开始|打开|设置|提醒|会员|订阅|"
+            r"取消|恢复|跳过|完成|上传|拍照|识别|绑定|导出|删除",
+            message,
+        )
+    )
 
 
 def _looks_like_plan(message: str) -> bool:
@@ -898,6 +922,29 @@ async def handle_turn(
             reply=(resolution.get("questions") or ["想怎么调整计划？"])[0],
         )
 
+    if intent_override is None and _looks_like_reminders(text):
+        from .capabilities.ui_actions import resolve_reminders
+
+        resolution = resolve_reminders(text)
+        if resolution.get("ready"):
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=REMINDERS_UI,
+                payload=resolution["payload"],
+                reply=resolution.get("summary") or "确认后设置提醒。",
+            )
+        return _finish_reply(
+            db,
+            session,
+            turn,
+            started,
+            intent=REMINDERS_UI,
+            reply=(resolution.get("questions") or ["提醒设在几点？"])[0],
+        )
+
     if intent_override is None and _looks_like_memory(text):
         from .capabilities.memory import resolve as resolve_memory
 
@@ -1158,6 +1205,14 @@ async def handle_turn(
                 "pending": serialize_pending(active),
             }
         if last_capability is None:
+            emit_event(
+                db,
+                user_id,
+                "CoachActionGap",
+                entity_type="coach_turn",
+                entity_id=turn.id,
+                payload={"message": text[:500], "stage": "clarification"},
+            )
             reply = "你想改的是体重、饮食，还是训练？直接告诉我新的数值或内容。"
             turn.intent = "clarification"
             turn.status = "completed"
@@ -1890,6 +1945,15 @@ async def handle_turn(
             )
 
             history = conversation.history_items()
+            if _looks_like_action_request(text):
+                emit_event(
+                    db,
+                    user_id,
+                    "CoachActionGap",
+                    entity_type="coach_turn",
+                    entity_id=turn.id,
+                    payload={"message": text[:500]},
+                )
             try:
                 result = await resolve_answer(
                     db,
@@ -2116,24 +2180,44 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         }
         entity_type = "workout"
         entity_id = str(pending.payload.get("session_id") or action_id)
-    elif pending.capability_id in {START_TRAINING_UI, OPEN_SCREEN_UI}:
+    elif pending.capability_id in {
+        START_TRAINING_UI,
+        OPEN_SCREEN_UI,
+        REMINDERS_UI,
+    }:
         from .capabilities.ui_actions import execute_ui
 
         result = execute_ui(db, user_id, action_id, pending.payload)
         after = result
-        summary = (
-            f"已准备开始「{pending.payload.get('title') or '训练'}」"
-            if pending.capability_id == START_TRAINING_UI
-            else f"已准备打开「{pending.payload.get('title') or '页面'}」"
-        )
+        if pending.capability_id == START_TRAINING_UI:
+            summary = f"已准备开始「{pending.payload.get('title') or '训练'}」"
+        elif pending.capability_id == OPEN_SCREEN_UI:
+            summary = f"已准备打开「{pending.payload.get('title') or '页面'}」"
+        else:
+            summary = (
+                "训练提醒已关闭。"
+                if pending.payload.get("enabled") is False
+                else (
+                    "训练提醒已设为 "
+                    f"{int(pending.payload.get('hour') or 0):02d}:"
+                    f"{int(pending.payload.get('minute') or 0):02d}。"
+                )
+            )
         receipt = {
             "summary": summary,
             "day_id": pending.payload.get("day_id"),
             "screen": pending.payload.get("screen"),
+            "enabled": pending.payload.get("enabled"),
+            "hour": pending.payload.get("hour"),
+            "minute": pending.payload.get("minute"),
             "deep_link": (
                 "fitai://workout"
                 if pending.capability_id == START_TRAINING_UI
-                else f"fitai://screen/{pending.payload.get('screen') or 'today'}"
+                else (
+                    f"fitai://screen/{pending.payload.get('screen') or 'today'}"
+                    if pending.capability_id == OPEN_SCREEN_UI
+                    else "fitai://settings"
+                )
             ),
         }
         event_type = "UIActionRequested"

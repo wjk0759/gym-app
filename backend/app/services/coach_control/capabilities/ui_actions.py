@@ -37,6 +37,18 @@ OPEN_SCREEN = register(
         events=("UIActionRequested",),
     )
 )
+CONFIGURE_REMINDERS = register(
+    Capability(
+        id="ui.configure_reminders",
+        domain="ui",
+        kind="write",
+        title="设置提醒",
+        description="打开/关闭训练提醒并设置时间",
+        requires_confirmation=True,
+        undo=False,
+        events=("UIActionRequested",),
+    )
+)
 
 SCREENS = {
     "今天": "today",
@@ -127,6 +139,57 @@ def resolve_open(message: str) -> dict:
         "questions": [
             "想打开哪个页面？训练记录、训练安排、饮食、身体、计划或设置。"
         ],
+    }
+
+
+def _reminder_time(message: str) -> tuple[int, int] | None:
+    clock = re.search(r"(\d{1,2})\s*[:：]\s*(\d{1,2})", message)
+    if clock is not None:
+        hour, minute = int(clock.group(1)), int(clock.group(2))
+        if 0 <= hour <= 23 and 0 <= minute <= 59:
+            return hour, minute
+        return None
+    point = re.search(
+        r"(早上|上午|中午|下午|晚上|傍晚)?\s*(\d{1,2})\s*点\s*(半|\d{1,2})?",
+        message,
+    )
+    if point is None:
+        return None
+    hour = int(point.group(2))
+    minute = 30 if point.group(3) == "半" else int(point.group(3) or 0)
+    period = point.group(1) or ""
+    if period in {"下午", "晚上", "傍晚"} and hour < 12:
+        hour += 12
+    if period == "中午" and hour < 11:
+        hour += 12
+    if 0 <= hour <= 23 and 0 <= minute <= 59:
+        return hour, minute
+    return None
+
+
+def resolve_reminders(message: str) -> dict:
+    enabled = not bool(re.search(r"关闭|关掉|不要|取消", message))
+    if not enabled:
+        return {
+            "ready": True,
+            "payload": {"enabled": False},
+            "summary": "准备关闭训练提醒。",
+        }
+    parsed = _reminder_time(message)
+    if parsed is None:
+        return {
+            "ready": False,
+            "questions": ["提醒设在几点？可以说“早上7点”或“20:30”。"],
+        }
+    hour, minute = parsed
+    return {
+        "ready": True,
+        "payload": {
+            "enabled": True,
+            "hour": hour,
+            "minute": minute,
+        },
+        "summary": f"准备把训练提醒设为 {hour:02d}:{minute:02d}。",
     }
 
 

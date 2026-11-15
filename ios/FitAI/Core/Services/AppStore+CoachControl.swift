@@ -545,6 +545,7 @@ extension AppStore {
                     self.coachUndoActionID = nil
                     self.coachUndoExpiresAt = nil
                 }
+                var reminderNotice: String?
                 if pending.capabilityID == "ui.start_training",
                    let raw = pending.payload?.dayID,
                    let dayID = UUID(uuidString: raw),
@@ -554,6 +555,27 @@ extension AppStore {
                 }
                 if pending.capabilityID == "ui.open_screen" {
                     self.openCoachScreen(pending.payload?.screen)
+                }
+                if pending.capabilityID == "ui.configure_reminders" {
+                    if response.receipt?.enabled == false {
+                        self.disableReminders()
+                    } else {
+                        let hour = response.receipt?.hour
+                            ?? pending.payload?.hour
+                            ?? self.reminderHour
+                        let minute = response.receipt?.minute
+                            ?? pending.payload?.minute
+                            ?? self.reminderMinute
+                        let count = await self.enableReminders(
+                            hour: hour,
+                            minute: minute
+                        )
+                        if !self.notificationsEnabled {
+                            reminderNotice = "没有获得通知权限，提醒暂时不会推送。请到「设置 → 通知 → 叫练」中开启。"
+                        } else if count == 0 {
+                            reminderNotice = "通知权限已开启，但当前还没有训练计划。生成计划后会自动安排提醒。"
+                        }
+                    }
                 }
                 if pending.capabilityID == "training.reschedule" {
                     self.applyCoachPlanDate(
@@ -602,6 +624,11 @@ extension AppStore {
                         text: response.receipt?.summary ?? "已执行，可以在下方撤销。"
                     )
                 )
+                if let reminderNotice {
+                    self.chat.append(
+                        ChatMessage(role: .assistant, text: reminderNotice)
+                    )
+                }
                 let domains = CoachRefreshDomains.domains(
                     for: pending.capabilityID,
                     server: response.refreshDomains

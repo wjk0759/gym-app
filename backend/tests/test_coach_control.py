@@ -1421,6 +1421,41 @@ def test_write_capabilities_declare_refresh_domains():
             assert capability.refreshes, capability.id
 
 
+def test_unmatched_action_emits_a_coverage_gap_event(db, monkeypatch):
+    import asyncio
+
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "llm_provider", "mock")
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "帮我导出训练数据")
+    )
+    assert turn["intent"] == "coach.answer"
+
+    clarified = asyncio.run(
+        runtime.handle_turn(db, "user-1", "把昵称改成小王")
+    )
+    assert clarified["intent"] == "clarification"
+
+    events = db.execute(
+        select(DomainEvent).where(DomainEvent.type == "CoachActionGap")
+    ).scalars().all()
+    assert len(events) == 2
+    assert events[0].payload["message"] == "帮我导出训练数据"
+    assert events[1].payload["message"] == "把昵称改成小王"
+
+
+def test_every_capability_has_a_declarative_action_spec():
+    from app.services.coach_control.manifest import ACTION_SPECS
+    from app.services.coach_control.registry import CAPABILITIES
+
+    assert set(ACTION_SPECS) == set(CAPABILITIES)
+    for spec in ACTION_SPECS.values():
+        assert spec.examples, spec.id
+        assert all(example.strip() for example in spec.examples)
+        assert spec.card
+
+
 def test_edit_day_exercises_confirm_and_undo(db):
     import asyncio
 
@@ -2537,6 +2572,59 @@ def test_start_training_and_open_screen_via_control_plane(db):
     turn = asyncio.run(runtime.handle_turn(db, "user-1", "打开身体打卡"))
     assert turn["intent"] == "ui.open_screen"
     assert turn["pending"]["payload"]["screen"] == "body_checkin"
+
+
+def test_reminders_via_control_plane(db):
+    import asyncio
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "把训练提醒改成早上8点")
+    )
+    assert turn["intent"] == "ui.configure_reminders"
+    assert turn["pending"]["kind"] == "card"
+    assert turn["pending"]["payload"]["enabled"] is True
+    assert turn["pending"]["payload"]["hour"] == 8
+    assert turn["pending"]["payload"]["minute"] == 0
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert confirmed["status"] == "executed"
+    assert confirmed["receipt"]["enabled"] is True
+    assert confirmed["receipt"]["hour"] == 8
+    assert confirmed["receipt"]["minute"] == 0
+    assert confirmed["receipt"]["deep_link"] == "fitai://settings"
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "关闭训练提醒"))
+    assert turn["intent"] == "ui.configure_reminders"
+    assert turn["pending"]["payload"]["enabled"] is False
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert confirmed["status"] == "executed"
+    assert confirmed["receipt"]["enabled"] is False
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "提醒改成晚上8点半"))
+    assert turn["intent"] == "ui.configure_reminders"
+    assert turn["pending"]["payload"]["hour"] == 20
+    assert turn["pending"]["payload"]["minute"] == 30
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "训练提醒"))
+    assert turn["intent"] == "coach.answer"
+
+
+def test_reminder_resolution_variants():
+    from app.services.coach_control.capabilities.ui_actions import (
+        resolve_reminders,
+    )
+
+    assert resolve_reminders("每天20:30提醒我训练")["payload"] == {
+        "enabled": True,
+        "hour": 20,
+        "minute": 30,
+    }
+    assert resolve_reminders("早上7点提醒")["payload"]["hour"] == 7
+    assert resolve_reminders("下午3点提醒")["payload"]["hour"] == 15
+    assert resolve_reminders("关闭提醒")["payload"] == {"enabled": False}
+    missing = resolve_reminders("帮我设置训练提醒")
+    assert missing["ready"] is False
+    assert "几点" in missing["questions"][0]
 
 
 def test_remember_preference_via_control_plane(db):
