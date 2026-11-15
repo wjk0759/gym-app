@@ -44,13 +44,17 @@ extension AppStore {
                 hour: reminderHour,
                 minute: reminderMinute
             )
-            notificationsEnabled = true
-            persist()
+            if !notificationsEnabled {
+                notificationsEnabled = true
+                persist()
+            }
             return
         }
-        notificationsEnabled = false
         NotificationScheduler.shared.cancelWorkoutReminders()
-        persist()
+        if notificationsEnabled {
+            notificationsEnabled = false
+            persist()
+        }
     }
 
     // MARK: - 休息提醒

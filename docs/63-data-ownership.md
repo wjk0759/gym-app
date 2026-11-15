@@ -20,15 +20,15 @@
 | 体重/体脂/腰围/臂围/大腿围 | `BodyMetric` | `UserProfile` 同名字段、页面 fallback | A/B | `BodyMetric` 唯一事实；Profile 只做启动/离线缓存；所有写走 `appendBodyMetric` |
 | 胸围/臀围 | `UserProfile` | 无 BodyMetric 字段 | A/D | 先保留在 Profile；若要做趋势，再加入 BodyMetric |
 | 目标 | 服务端 `Goal` | `UserProfile.goalType/target*` | A | 服务端为权威；本地是缓存；手动编辑立即 push，`profileSyncPending` 防覆盖，`.profile` 拉 `/me` |
-| 营养目标 | 服务端 `/diet/targets` | 本地 `DietPlanner.targets` | A/B | 今日优先服务端缓存；本地只做离线 fallback |
+| 营养目标 | 服务端 `/diet/targets` | 本地 `DietPlanner.targets` | A/B | 按日期优先服务端缓存；本地只做离线 fallback |
 | 训练计划结构 | `Program / ProgramDay / PlanExercise`（服务端） | 本地 `TrainingPlan` | B | 保留离线缓存，`planNeedsServerSync` 负责上传 |
 | 训练日程/跳过 | `PlanDayState`（服务端） | 本地 `TrainingPlan.days.date/skippedAt` | B | 保留，按 `clientUpdatedAt` 合并 |
 | 训练记录 | `WorkoutSession / SetLog`（服务端） | 本地 `sessions`、outbox | B | 保留缓存和待删队列 |
 | 饮食记录 | `FoodLog`（服务端） | 本地 `foodLogs`、outbox | B | 保留缓存和待删/待改队列 |
 | 计划餐 | `MealPlan`（服务端） | 本地 `dietWeekPlan`、`FoodLog.planMeal` | B | 保留；实际吃的是 FoodLog，计划餐是计划 |
-| 器械类型 | `Profile.equipment` | 本地 `profile.equipment` | B | 保留，服务端为计划生成依据 |
-| 自定义器械 | `EquipmentLibraryItem` | 本地 `equipmentLibrary` | B | 保留缓存 |
-| 通用器械勾选 | `UserUniversalEquipment` | 本地 `selectedUniversalSlugs` | B | 保留缓存 |
+| 器械类型 | `Profile.equipment` | 本地 `profile.equipment` | B | 保留，服务端为计划生成依据；展示走 `EquipmentSnapshot` |
+| 自定义器械 | `EquipmentLibraryItem` | 本地 `equipmentLibrary` | B | 保留缓存；展示走 `EquipmentSnapshot` |
+| 通用器械勾选 | `UserUniversalEquipment` | 本地 `selectedUniversalSlugs` | B | 保留缓存；展示走 `EquipmentSnapshot` |
 | 提醒 | `user_preferences.notifications_enabled` + iOS 本地通知 | 服务端 `NotificationSchedule` 表未使用 | B/D | `remindersEnabled` 是账号意图并上云；`notificationsEnabled` 是本机权限态，不上云；排程仍是设备级；服务端表保留未接 |
 | 自定义食物 | `user_custom_foods` | 本地 `customFoods` 缓存 | B | 已上云，按 `client_id` 合并 |
 | 收藏食物 | `user_food_favorites` | 本地 `favoriteFoods` 缓存 | B | 已上云，收藏用 tombstone 删除 |
