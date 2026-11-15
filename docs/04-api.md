@@ -482,6 +482,34 @@ review.weekly（只读洞察）
 
 旧的 `meal + items` 仍然兼容；有 `meals` 时服务端按每餐写入，并一次撤销整组记录。用户在当前卡片上补充“还有/再加/另外”，或补充另一餐时，服务端更新同一 pending，不丢弃已识别内容；改期卡也支持直接补充新日期。
 
+跨能力多动作使用 `coach.batch` pending：
+
+```json
+{
+  "summary": "2 项操作",
+  "batch": [
+    {
+      "capability_id": "diet.log_food",
+      "payload": {"date": "2026-11-16", "meal": "lunch", "items": []},
+      "summary": "记录午饭 1 种食物"
+    },
+    {
+      "capability_id": "training.reschedule",
+      "payload": {"day_id": "day-1", "to_date": "2026-11-20"},
+      "summary": "把「上肢」改到 11-20"
+    }
+  ]
+}
+```
+
+规则：
+
+- 最多 3 个动作
+- 每个动作必须先独立解析完成；任一动作缺槽位则退回单动作澄清
+- 确认时按顺序执行，任一失败回滚已完成项
+- 撤销 batch action 时撤销整组子动作
+- 目前支持饮食、改期、体重、目标、有氧的组合
+
 #### `POST /coach/chat`
 
 ```json
