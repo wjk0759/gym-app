@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`e486fdb`（控制平面 + 34 能力 ActionSpec + 训练提醒 + 四域知识库：食物 2,017 / 品类 32 / 教练 782 / 器械 95，接入 `lookup_knowledge`；后端 **494 passed**、QA **16/16**、Ruff 通过；Backend Tests ✓、Coach Eval ✓；iOS Build 最新仍为 `0eb9519` ✓；生产后端仍部署 `4fd1569` + Flyway **V38**（视觉 **DeepSeek V4.1 Flash**，Qwen 已退出），本轮未部署；iOS 真机仍 `c8eca16`，提醒和知识库工具待 Mac 验证）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`b9e5334`（控制平面 + 34 能力 ActionSpec + 训练提醒 + 四域知识库：食物 2,017 / 品类 32 / 教练 782 / 器械 95，接入 `lookup_knowledge`；后端 **494 passed**、QA **16/16**、Ruff 通过；Backend Tests ✓、Coach Eval ✓；iOS Build 最新仍为 `0eb9519` ✓；生产后端仍部署 `4fd1569` + Flyway **V38**（视觉 **DeepSeek V4.1 Flash**，Qwen 已退出），本轮未部署；iOS 真机仍 `c8eca16`，提醒和知识库工具待 Mac 验证）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -29,7 +29,7 @@
 
 ### 2026-11-15 · Windows（四域知识库 + 三轮清洗 + lookup_knowledge）
 
-- 提交：`e486fdb`，已推 `develop`；Backend Tests ✓，Coach Eval ✓；iOS 无代码变更，Build 仍以 `0eb9519` 为准。
+- 提交：`e486fdb` + `b9e5334`，已推 `develop`；Backend Tests ✓，Coach Eval ✓；iOS 无代码变更，Build 仍以 `0eb9519` 为准。
 - 做了什么：
   - 新增四域知识库：
     - `food_nutrition.jsonl` **2,017** 条（1,874 条宏量完整，143 条部分营养）
@@ -39,7 +39,7 @@
   - 数据源：台湾 FDA 食品营养成分数据库 2015（OGDL 1.0，需署名）、`hasaneyldrm/exercises-dataset`（MIT 文本，媒体未引入）、现有器械目录、FitAI 原创摘要。
   - 三轮清洗脚本 `backend/scripts/build_knowledge_base.py`：接入/繁转简/去重 → 范围校验/宏量一致性/近似去重 → 别名/分类卡/检索文本/质量分。
   - 新增 `knowledge_search.py`：关键词 RAG 基线，支持 `coach / food / food_category / equipment`，标题/别名加权、查询同义词扩展、食物品类多数投票。
-  - `food_text.py` 接入 `lookup_food`：确定性饮食记录从 25 条扩到 2,017 条；修复“两个鸡蛋一杯牛奶”“米饭150g和西兰花200g”拆分，以及“牛筋”误配“牛筋肉肠”。
+  - `food_text.py` 接入 `lookup_food`：确定性饮食记录从 25 条扩到 2,017 条；修复“两个鸡蛋一杯牛奶”“米饭150g和西兰花200g”拆分，以及“牛筋”误配“牛筋肉肠”；隐式份量优先用知识库 `serving_g`（三文鱼 100g、酸奶 250g）。
   - 教练新增 `lookup_knowledge` 工具；动作步骤仍走 `lookup_exercise`。
   - 新增 `docs/61-knowledge-base.md`、`backend/data/README.md`、`scripts/eval_knowledge.py`。
 - 验证：
