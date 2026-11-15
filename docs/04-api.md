@@ -793,6 +793,14 @@ delete_workout_log
 - 客户端必须单独同意后才上传；远程模式需在隐私政策中说明
 - 删除分析或注销账号时删除对应照片
 
+### 2.7.1 训练草稿
+
+- `GET /workouts/draft`：返回当前活动草稿，没有则 `draft: null`
+- `PUT /workouts/draft`：`{day_id, updated_at, payload}`，按 `updated_at` 最新者胜
+- `DELETE /workouts/draft?day_id=...`：训练完成/取消后清除
+
+草稿只保存进行中的训练，不生成正式 `WorkoutSession`。
+
 ### 2.8 饮食
 
 #### `POST /diet/analyze`

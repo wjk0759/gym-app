@@ -33,7 +33,7 @@
 | 自定义食物 | `user_custom_foods` | 本地 `customFoods` 缓存 | B | 已上云，按 `client_id` 合并 |
 | 收藏食物 | `user_food_favorites` | 本地 `favoriteFoods` 缓存 | B | 已上云，收藏用 tombstone 删除 |
 | 不喜欢动作 | `user_exercise_dislikes` | 本地 `dislikedSlugs` 缓存 | B | 已上云，移除用 tombstone |
-| 体型分析 | iOS 本地 | 无 | D | 待上云：元数据 + 照片 |
+| 体型分析 | `body_analyses` + 私有照片目录 | 本地 `bodyAnalyses` 缓存 | B | 元数据/照片已上云，照片仅本人鉴权读取 |
 | 计划历史 | 服务端 Program | 本地 `planHistory` 缓存 | B | 已补 `GET /plans/history` 并合并 |
 | 训练草稿 | `workout_drafts` | 本地 `workoutDraft` 缓存 | B | 已上云，按 `updated_at` 最新者胜 |
 | 经期/周期 | `cycle_settings` | 本地 `UserProfile.period*` 缓存 | B | 已上云，用户隔离 + 标准服务端存储 |
@@ -54,6 +54,19 @@
 - 计划历史新增 `GET /plans/history`，客户端合并服务端 Program 历史。
 
 > 注意：收藏/不喜欢动作目前是“全量快照 + deleted tombstone”，不是逐条增量 cursor；数据量小，先保证跨设备可用。
+
+### P1 体型分析
+
+- 新增 `body_analyses` 表；`POST /body/analyze` 支持 `X-Client-ID`。
+- 照片压缩后写入 `private_media_root/body/...`，不进入公开 `/media`。
+- `GET /body/analyses/{id}/photo` 仅本人可读；删除分析会删照片。
+- iOS 同步历史，并把 `applied_to_plan` 回写服务端。
+
+### P1/P2 训练草稿与经期
+
+- `workout_drafts`：每用户一个活动草稿，`updated_at` 最新者胜；训练完成后删除。
+- `cycle_settings`：经期日期/范围/训练模式，用户隔离 + 标准服务端存储。
+- 两者都通过 `/sync` 快照同步；`cycleDirty` 防止未上传编辑被覆盖。
 
 ### 体重/身体数据读取
 
