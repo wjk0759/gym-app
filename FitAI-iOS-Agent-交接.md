@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`4946ad5`（控制平面 + 34 能力 ActionSpec + 训练提醒 + 三域知识库：食物 2,017（1,586 完整宏量）/ 教练 782 / 器械 95；食物品类和 category 字段已全部删除；新增知识库 A/B 评测：器械偏正向、教练略正向但多平局、食物仍负向；后端 **496 passed**、QA **16/16**、Ruff 通过；Backend Tests ✓、Coach Eval ✓；iOS Build 最新仍为 `0eb9519` ✓；生产后端仍部署 `4fd1569` + Flyway **V38**，本轮未部署；iOS 真机仍 `c8eca16`，提醒和知识库工具待 Mac 验证）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`0b475e7`（控制平面 + 34 能力 ActionSpec + 训练提醒 + 两域知识库：教练 782 / 器械 95；食物营养知识库已彻底删除，`food_text` 回到 25 条人工表 + LLM 兜底；新增知识库 A/B：器械正向、教练略正向但多平局；后端 **493 passed**、QA **16/16**、Ruff 通过；Backend Tests ✓、Coach Eval ✓；iOS Build 最新仍为 `0eb9519` ✓；生产后端仍部署 `4fd1569` + Flyway **V38**，本轮未部署；iOS 真机仍 `c8eca16`，提醒和知识库工具待 Mac 验证）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +26,39 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-15 · Windows（彻底删除食物营养知识库）
+
+- 提交：`0b475e7`，已推 `develop`；Backend Tests ✓，Coach Eval ✓；iOS 无代码变更。
+- 背景：A/B 评测显示食物营养库在自由问答中 0/6 负、修正后仍 3/7 负；用户决定彻底删除。
+- 删除：
+  - `backend/data/knowledge/food_nutrition.jsonl`（2,017 条）
+  - `backend/data/raw/tw_food_2015.csv`
+  - `knowledge_seed.json` 里的 `food_synonyms`（以及之前的品类）
+  - `knowledge_search` 的 `food` 域、`lookup_food`、食物多实体检索
+  - `agent.py` 的 `lookup_knowledge` 不再接受 `food`
+  - 食物营养测试、A/B 食物 case、文档食物章节、`opencc` 构建依赖
+- 保留：
+  - 照片识别 `food_vision.py` 和 `FOODS` 25 条不变。
+  - 文字饮食记录仍用 25 条人工表 + LLM 兜底；保留“两个鸡蛋一杯牛奶”拆分和杯量修正。
+  - `coach_knowledge` 782 条、`equipment_knowledge` 95 条。
+- 当前评测（12 条：教练 6 + 器械 6）：
+  - KB 6 胜、baseline 3 胜、3 平。
+  - 教练 2/1/3，器械 4/2/0。
+  - 样本小，方向与之前一致，不能当生产结论。
+- 验证：
+  - 后端 **493 passed**；QA **16/16**；Ruff `app/tests/scripts/qa` 通过。
+  - 检索冒烟 24 条（教练 14 + 器械 10）：Hit@1 / Hit@3 / MRR@3 均 1.00。
+- 未验证：
+  - 生产未部署 `0b475e7`；iOS 未验证。
+  - 文字饮食记录里的 25 条表仍是旧估算，没有重新做准确率评测。
+- 对方（Mac）要做：
+  - 拉取后确认教练不再出现 food 域；拍食物照片识别行为不变。
+  - 抽测文字记录：“午饭鸡胸肉200g”“两个鸡蛋一杯牛奶”“奶茶”，确认仍能走人工表/LLM 兜底。
+  - 继续验证训练提醒和器械知识。
+- 禁止恢复：
+  - 不要把食物营养表/食物品类重新接回知识库或视觉 prompt。
+  - 如未来要做用户自选饮食，单独设计目录，不要复用这次被删的数据。
 
 ### 2026-11-15 · Windows（知识库 A/B：器械正向、教练混合、食物负向）
 
