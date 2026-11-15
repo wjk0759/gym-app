@@ -141,7 +141,14 @@ async def resolve(
             else raw_date
         )
     analysis = meal_analysis(message)
-    parsed_meal = analysis.get("meal") or draft.get("meal") or context["meal"]
+    draft_text = str(draft.get("text") or "")
+    draft_analysis = meal_analysis(draft_text) if draft_text else {}
+    draft_meal = draft.get("meal")
+    if not draft.get("items") and draft_analysis.get("meal"):
+        # Old drafts stored only raw text; repair the meal from that text so a
+        # stale lunch label cannot turn a dinner reference into lunch.
+        draft_meal = draft_analysis["meal"]
+    parsed_meal = analysis.get("meal") or draft_meal or context["meal"]
     groups = rule_resolution_by_meal(message)
     main_rules = None
     if analysis.get("mentions"):
