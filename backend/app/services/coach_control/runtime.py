@@ -467,13 +467,15 @@ def _looks_like_diet_plan(message: str) -> bool:
 def _looks_like_diet_review(message: str) -> bool:
     if re.search(r"本周|这周|一周|周报", message):
         return False
+    if re.search(r"图片|照片|刚才|刚刚|上面|这张|那张|这道菜|这个菜", message):
+        return False
     return bool(
         re.search(
             r"饮食|吃了|摄入|热量|卡路里|蛋白|营养|碳水|脂肪",
             message,
         )
         and re.search(
-            r"多少|什么|怎么样|如何|够|缺|看看|总结|复盘|超",
+            r"缺|复盘|总结|看看|怎么样|够不够|够吗|超标|摄入|吃了多少|吃了什么|吃什么",
             message,
         )
     )

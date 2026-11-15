@@ -2693,6 +2693,13 @@ def test_food_resolution_receives_history_and_draft(db, monkeypatch):
     assert all("这是我今天的晚饭" not in q for q in result["questions"])
 
 
+def test_diet_review_does_not_swallow_photo_questions():
+    assert not runtime._looks_like_diet_review(
+        "图片里的菜加250g米饭热量是多少"
+    )
+    assert runtime._looks_like_diet_review("今天饮食还缺什么")
+
+
 def test_kg_is_not_a_food_unit():
     assert runtime._looks_like_food("记错了 今天是74kg") is False
     assert runtime._looks_like_weight("记错了 体重是74kg") is True
