@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`9a5987d`（控制平面全量迁移 + 50 轮上下文/记忆书；照片/体型/器械/改删/频率/记忆/开始训练；后端生产已部署 `9a5987d` + Flyway **V38**；iOS 已装 `c8eca16`；`FitAITests` **108/108**、`FitAIUITests` **4/4**、后端 **475 passed**、QA **16/16**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`b5ca3d7`（控制平面全量迁移 + 50 轮上下文/记忆书；照片/体型/器械/改删/频率/记忆/开始训练；后端生产已部署 `b5ca3d7` + Flyway **V38**；iOS 已装 `c8eca16`；`FitAITests` **108/108**、`FitAIUITests` **4/4**、后端 **475 passed**、QA **16/16**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -28,7 +28,7 @@
 
 ### 2026-11-15 · Windows（50 轮上下文 / 记忆书 / 饮食指代）
 
-- 提交：`f292ce5`（50 轮上下文 + 饮食状态）、`ffb54ad`（单菜/照片问题不再被饮食复盘吞掉）、`6b1c4b9`（计划撤销先归档再恢复）、`0b5eb47`（旧草稿 meal 修复）、`9a5987d`（周计划太满转调整），均已推 `develop`；生产后端已部署到 `9a5987d`。
+- 提交：`f292ce5`（50 轮上下文 + 饮食状态）、`ffb54ad`（单菜/照片问题不再被饮食复盘吞掉）、`6b1c4b9`（计划撤销先归档再恢复）、`0b5eb47`（旧草稿 meal 修复）、`9a5987d`（周计划太满转调整）、`b5ca3d7`（空训练日文案），均已推 `develop`；生产后端已部署到 `b5ca3d7`。
 - 做了什么：
   - 新增 `coach_control/conversation.py`：每轮统一构建最近 **50 轮**、当前 pending、上一动作、结构化记忆书。
   - `coach_reply` 从最近 10 条消息改为最多 **100 条消息 / 24k 字符**，保留 user + assistant + 能力回执。
