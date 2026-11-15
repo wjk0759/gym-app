@@ -539,7 +539,7 @@ async def _apply_row_gate(
 ) -> dict:
     """Second opinion for the row-vs-leg confusion.
 
-    Qwen3-VL-Plus often returns hack_squat/leg_press for a seated row. The
+    The previous vision model often returned hack_squat/leg_press for a seated row. The
     activated Doubao lite model answers the much simpler binary question
     reliably and quickly. Only run for ambiguous leg machines, and only when
     OCR did not already provide a specific machine name.

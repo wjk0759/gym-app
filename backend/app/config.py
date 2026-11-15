@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     # 后台上传的视频/封面。生产环境建议指向独立数据盘，或替换为 OSS/COS + CDN。
     media_root: str = "media"
 
-    # mock | deepseek | qwen | doubao
+    # mock | deepseek | doubao
     # 默认接入 DeepSeek；未配置 LLM_API_KEY 时自动回退到本地 Mock/规则。
     llm_provider: str = "deepseek"
     llm_api_key: str = ""

@@ -71,7 +71,7 @@ users 1─n ai_jobs / ai_memories
 ### ai_jobs / ai_memories
 
 - `ai_jobs` 用于成本、延迟、失败率观测；不存完整 prompt（隐私）。
-- `ai_memories.embedding` 维度 1024，对应通义 `text-embedding-v3` 或 BGE-M3。换模型需重建索引。
+- `ai_memories.embedding` 由 BGE-M3（1024 维）或豆包 embedding 生成；当前 RAG 规划使用 Qdrant。换模型需新建 collection 并重建索引。
 - 记忆分四类：`preference`（不喜欢/偏爱动作）、`injury`、`summary`（阶段总结）、`feedback`（用户对计划的反馈）。
 
 ## 4. 索引与性能

@@ -181,9 +181,8 @@ SHUA、Precor 等）做评测，人工校正标签后对比几种方案：
 - 椭圆机 / 健身车 / 爬楼机混淆
 - 山羊挺身 / 高位下拉 / 坐姿划船混淆
 
-结论：**`deepseek-flash` 是当前准确率上限**。继续调 prompt 的收益已经很小，
-下一档提升需要换更强的视觉模型（Qwen-VL / Doubao Vision / GPT-4o 级）或
-用真实健身房照片重新训练专用分类器/检测器。
+结论：**通用 prompt 下，单一视觉模型都不够稳**。当前主模型是 DeepSeek V4.1 Flash，
+但仍需 **器械目录约束 + OCR 标签 + top-2 候选 + 用户确认**，不能只靠模型自由识别。
 
 ## 4.2 已落地的补充：设备端 OCR 标签
 
@@ -206,9 +205,31 @@ CHEST PRESS 标签    → chest_press_machine    0.93
 
 这条链路不增加模型成本，对带标签的器械提升明显；没有标签的器械仍依赖视觉模型。
 
-## 4.3 生产视觉模型切换：Qwen3-VL-Plus（2026-11-08）
+## 4.3 当前生产视觉模型：DeepSeek V4.1 Flash（2026-11-15 起）
 
-生产视觉识别已从 `deepseek-flash` 切到 **Qwen3-VL-Plus**，文本教练/计划仍用
+2026-11-15 起视觉切回 **DeepSeek V4.1 Flash**，Qwen 退出本项目选型：
+
+```env
+VISION_MODEL=deepseek-flash
+# VISION_BASE_URL / VISION_API_KEY 留空，回落 LLM_BASE_URL / LLM_API_KEY
+LLM_MODEL=deepseek-flash
+```
+
+- 7 张器械图通用 prompt 对比：
+  - DeepSeek V4.1 Flash：2 个准确 + 2 个接近
+  - 豆包 2.1 Lite：1 个准确 + 2 个接近
+  - 豆包 2.1 Turbo：0 个准确 + 2–3 个接近
+  - Qwen3-VL-Plus（历史）：1 个准确
+  - 豆包 2.1 Pro：当时 Ark 账号未开通，未测到
+- 生产烟测：器械图 `mode=equipment`、食物图 `mode=nutrition` 均返回 200。
+- 仍会把上斜飞鸟认成推胸、腰带深蹲认成哈克深蹲；**器械识别仍需目录 + OCR + 候选确认**。
+- DeepSeek 单张约 900–1800 reasoning token、5–13 秒；需监控成本和超时。
+
+## 4.3.1 历史：Qwen3-VL-Plus（2026-11-08 至 2026-11-15，已停用）
+
+> 以下为历史记录，2026-11-15 已停用，不要恢复。当前主模型见 4.3。
+
+生产视觉识别曾从 `deepseek-flash` 切到 **Qwen3-VL-Plus**，文本教练/计划仍用
 DeepSeek：
 
 ```env
@@ -254,7 +275,7 @@ iOS 识别结果页现在显示：
 
 点第二个候选会切换下面的动作列表，不会强行只给一个错误答案。
 
-18 张缩略图实测（Qwen3-VL-Plus + OCR）：
+18 张缩略图实测（历史 Qwen3-VL-Plus + OCR）：
 
 ```text
 top-1：11/18 = 61%
@@ -274,8 +295,7 @@ top-2 提升主要来自“第二个候选”兜底，不是模型本身变准�
 
 - iOS CI 编译已通过（`iOS Build` success @ `23e41c8`）；真机相机/相册 HEIC/大图/
   弱网仍需 Mac 验证。
-- 更强视觉模型：`qwen3-vl-plus` 已接入生产；`qwen3.8-max` / `qwen3.7-plus`
-  作为高精度备选，需用同一批高分辨率照片 A/B。
+- 更强视觉模型：当前生产 `deepseek-flash`；豆包视觉作为备选，需用同一批高分辨率照片 A/B。Qwen 已停用。
 - 真实数据闭环：建议每类收集 100+ 张真实健身房照片，训练检测器/分类器；
   公开产品图数据集（HF `suc1dalspinach/Gym_machines_Image_dataset`，MIT）
   与真实场景差异较大，直接线性探针效果差。

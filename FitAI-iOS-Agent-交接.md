@@ -14,7 +14,8 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`4fd1569`（控制平面全量迁移 + 50 轮上下文/记忆书 + 指代解析/会话摘要/关键词记忆；照片/体型/器械/改删/频率/记忆/开始训练；后端生产已部署 `4fd1569` + Flyway **V38**，视觉已切 **DeepSeek V4.1 Flash**；iOS 已装 `c8eca16`；macOS 已验证后端 **480 passed**、QA **16/16**、iOS **108/108**、UI **4/4**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`4fd1569`（控制平面全量迁移 + 50 轮上下文/记忆书 + 指代解析/会话摘要/关键词记忆；照片/体型/器械/改删/频率/记忆/开始训练；后端生产已部署 `4fd1569` + Flyway **V38**，视觉已切 **DeepSeek V4.1 Flash**，Qwen 已退出且不再接回；iOS 已装 `c8eca16`；macOS 已验证后端 **480 passed**、QA **16/16**、iOS **108/108**、UI **4/4**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
 - macOS 最新完成（2026-11-11）：全局 UI 交互打磨（`684cd64` + 后续 4 列快捷区提交）：悬浮 Tab Bar 底部留白、相机入口改 4 列一行快捷卡、教练权益 loading/retry 状态；Debug build 成功，`FitAITests` **65/65**，iPhone 17 / iPhone SE / 深色模式截图通过，教练权益超时 UI test 通过，器械目录 UI test 通过；此前完成器械目录 v3 UI 验证（`0dbdbcd`）、equipment v2 编译修复（`6556b0a`）、taxonomy v2 测试（`827ea94`）等
@@ -73,7 +74,7 @@
   - 豆包 2.1 Lite：1 个准确 + 2 个接近
   - 豆包 2.1 Turbo：0 个准确 + 2–3 个接近
   - Doubao Pro（2.1 Pro）在这把 Ark key 上 `ModelNotOpen`，没测到
-  - Qwen3-VL-Plus：1 个准确
+  - Qwen3-VL-Plus（历史）：1 个准确
 - 生产烟测：
   - 器械图 `/coach/turns/vision` 200，`mode=equipment`，JSON 正常
   - 食物图 200，`mode=nutrition`，返回约 380–450 kcal、蛋白质 40–45g
@@ -83,9 +84,9 @@
   - 真机拍照、长图/多图、超时和成本
   - DeepSeek 的 reasoning token 成本（单张约 900–1800）与 5–13 秒延迟
 - 回滚：
-  - 恢复 `/opt/fitai/.env.bak-20261115-195656` 后重启 API，即回到 `qwen3-vl-plus` + DashScope
+  - 不回滚；Qwen 已退出本项目选型，`.env.bak-20261115-195656` 已删除
 - 备注：
-  - 视觉切 DeepSeek 不影响 RAG embedding 选型；embedding 仍按 Qwen/豆包/BGE-M3 评测
+  - 视觉切 DeepSeek 不影响 RAG embedding 选型；embedding 在 BGE-M3 / 豆包中评测，不再考虑 Qwen
   - Ark key 已出现在聊天里，测试后建议轮换
 
 ### 2026-11-15 · Windows（上下文接缝 / 摘要 / 关键词记忆，RAG 前）
@@ -4436,7 +4437,7 @@ V25 迁移已应用、1,394 动作 / 1,572 媒体已导入、媒体 1.3G 已上�
   - TestFlight / 真机 Watch 验收
 - 不要恢复：
   - 不要把 `develop` 回退到 `48ad5f0` 之前
-  - 不要删除器械识别 OCR / top-2 / Qwen 配置
+  - 不要恢复 Qwen 视觉配置；视觉主模型是 DeepSeek，Qwen 已退出本项目选型。
 
 ### 2026-11-08 · Windows / OpenCode（器械 top-2 候选 + 混淆兜底）
 
@@ -4466,7 +4467,7 @@ V25 迁移已应用、1,394 动作 / 1,572 媒体已导入、媒体 1.3G 已上�
   - 不要把第二候选说成“模型确定结果”；它只是混淆兜底
   - 不要删除 `CONFUSABLES`，否则 top-2 会退回 61%
 
-### 2026-11-08 · Windows / OpenCode（生产视觉切 Qwen3-VL-Plus）
+### 2026-11-08 · Windows / OpenCode（历史：生产视觉曾切 Qwen3-VL-Plus，已停用）
 
 - 分支：`feature/watch-standalone-workout`
 - 做了什么：
@@ -4521,7 +4522,7 @@ V25 迁移已应用、1,394 动作 / 1,572 媒体已导入、媒体 1.3G 已上�
   - 不要删除 OCR 字段；旧客户端不传时后端必须兼容（已用 `Form(default="")`）
   - 不要把 OCR 文本直接当唯一结果；它只是强证据，背景标签要忽略
 - 仍 BLOCKED：
-  - 更强视觉模型（Qwen-VL / Doubao / GPT-4o 级）和 API Key
+  - 更强视觉模型（DeepSeek / 豆包 / 专用检测器）和 API Key
   - 每类 100+ 张真实健身房照片的检测/分类训练集
 
 ### 2026-11-07 · Windows / OpenCode（器械识别修复 + 生产动作库 57 条）

@@ -14,7 +14,7 @@
 │  auth · profile · plans · workouts · coach · equipment · diet                │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │  AI Orchestrator                                                             │
-│  ├─ 模型网关（DeepSeek / 通义 / 豆包，OpenAI 兼容协议）                       │
+│  ├─ 模型网关（DeepSeek / 豆包，OpenAI 兼容协议）                       │
 │  ├─ Prompt 版本管理 + JSON Schema 结构化输出                                  │
 │  ├─ 计划校验器（动作库 / 器械 / 伤病 / 负荷）                                 │
 │  ├─ RAG（动作库 + 运动解剖 + FAQ，pgvector）                                  │
@@ -92,7 +92,7 @@
 ```
 用户 → 阿里云/腾讯云 SLB → FastAPI（2 实例）→ RDS PostgreSQL / Redis
                                    ├─ OSS + CDN（图片、视频，防盗链）
-                                   └─ 百炼/火山/DeepSeek API（境内）
+                                   └─ 火山/DeepSeek API（境内）
 ```
 
 - 域名需 ICP 备案；App 需工信部 App 备案。

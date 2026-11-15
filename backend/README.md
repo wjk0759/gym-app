@@ -33,7 +33,7 @@ LLM_MODEL=deepseek-flash
 LLM_REASONING_EFFORT=high
 ```
 
-任何 OpenAI 兼容接口都可以（通义、豆包、DeepSeek）。没有 Key 时自动使用规则模板，不影响调试。
+任何 OpenAI 兼容接口都可以（豆包、DeepSeek）。没有 Key 时自动使用规则模板，不影响调试。Qwen 已退出本项目选型。
 
 ## 切 MySQL
 

@@ -25,7 +25,7 @@
 - [ ] 注册 Apple Developer（公司账号需 D-U-N-S，预留 2 周）
 - [ ] 准备 Mac 或云 Mac（MacinCloud / MacStadium）
 - [ ] Figma 画 8 个核心页面
-- [ ] 申请 DeepSeek / 通义 / 豆包 API
+- [ ] 申请 DeepSeek / 豆包 API
 - [ ] 启动 App 备案、ICP 备案
 - [ ] 确认教学视频方案（自拍/采购）
 
