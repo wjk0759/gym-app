@@ -352,3 +352,63 @@ def test_plan_day_state_ids_are_case_insensitive(db):
     context = with_plan_context(db, "user-1", None)
     actual = context.get("plan", {}).get("days", [{}])[0].get("date")
     assert actual == (today + timedelta(days=5)).isoformat(), actual
+
+
+def test_sync_repeated_snapshots_are_idempotent(db):
+    from app.schemas import CustomFoodSyncIn, ExerciseDislikeSyncIn, FavoriteFoodSyncIn, SyncIn
+    from app.services.user_sync import apply_sync
+
+    foods = [
+        CustomFoodSyncIn(client_id=f"stress-food-{i}", name=f"压力食物{i}", kcal=100 + i)
+        for i in range(100)
+    ]
+    favorites = [
+        FavoriteFoodSyncIn(food_key=f"custom:stress-food-{i}", name=f"压力食物{i}")
+        for i in range(100)
+    ]
+    dislikes = [ExerciseDislikeSyncIn(slug=f"stress-slug-{i}") for i in range(100)]
+    payload = SyncIn(custom_foods=foods, favorites=favorites, disliked_exercises=dislikes)
+    for _ in range(20):
+        result = apply_sync(db, "user-1", payload)
+    assert len(result["custom_foods"]) == 100
+    assert len(result["favorites"]) == 100
+    assert len(result["disliked_exercises"]) == 100
+    assert len({item["client_id"] for item in result["custom_foods"]}) == 100
+
+
+def test_sync_duplicate_items_in_one_snapshot_do_not_crash(db):
+    from app.schemas import CustomFoodSyncIn, ExerciseDislikeSyncIn, FavoriteFoodSyncIn, SyncIn
+    from app.services.user_sync import apply_sync
+
+    result = apply_sync(
+        db,
+        "user-1",
+        SyncIn(
+            custom_foods=[
+                CustomFoodSyncIn(client_id="dup-food", name="第一份", kcal=100),
+                CustomFoodSyncIn(client_id="dup-food", name="第二份", kcal=200),
+            ],
+            favorites=[
+                FavoriteFoodSyncIn(food_key="dup-key", name="第一份"),
+                FavoriteFoodSyncIn(food_key="dup-key", name="第二份"),
+            ],
+            disliked_exercises=[
+                ExerciseDislikeSyncIn(slug="dup-slug"),
+                ExerciseDislikeSyncIn(slug="dup-slug"),
+            ],
+        ),
+    )
+    assert len(result["custom_foods"]) == 1
+    assert len(result["favorites"]) == 1
+    assert len(result["disliked_exercises"]) == 1
+
+
+def test_sync_tombstone_can_be_revived(db):
+    from app.schemas import CustomFoodSyncIn, SyncIn
+    from app.services.user_sync import apply_sync
+
+    apply_sync(db, "user-1", SyncIn(custom_foods=[CustomFoodSyncIn(client_id="revive-food", name="旧", kcal=100)]))
+    apply_sync(db, "user-1", SyncIn(custom_foods=[CustomFoodSyncIn(client_id="revive-food", name="旧", deleted=True)]))
+    result = apply_sync(db, "user-1", SyncIn(custom_foods=[CustomFoodSyncIn(client_id="revive-food", name="新", kcal=120)]))
+    assert len(result["custom_foods"]) == 1
+    assert result["custom_foods"][0]["name"] == "新"
