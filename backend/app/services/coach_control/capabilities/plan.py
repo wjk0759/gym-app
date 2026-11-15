@@ -172,16 +172,19 @@ def undo_activate(
     previous_program_id: str | None,
 ) -> dict:
     current = db.get(Program, program_id)
-    if current is not None and current.user_id == user_id:
-        current.status = "archived"
     previous = db.get(Program, previous_program_id) if previous_program_id else None
     if previous is not None and previous.user_id == user_id:
+        # Archive every active row first: MySQL enforces one active program
+        # per user, and ORM flush order may otherwise activate the old plan
+        # before archiving the new one.
+        archive_active_plans(db, user_id)
         previous.status = "active"
-    db.flush()
-    return {
-        "restored": previous is not None,
-        "program_id": previous.id if previous is not None else None,
-    }
+        db.flush()
+        return {"restored": True, "program_id": previous.id}
+    if current is not None and current.user_id == user_id:
+        current.status = "archived"
+        db.flush()
+    return {"restored": False, "program_id": None}
 
 
 def discard(db: Session, user_id: str, program_id: str) -> None:
