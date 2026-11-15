@@ -789,6 +789,8 @@ delete_workout_log
 
 - 照片压缩后存入 `private_media_root`，不进入公开 `/media`；只能通过
   `GET /body/analyses/{client_id}/photo` 本人鉴权读取
+- 照片接口支持 `?size=full|thumb`，列表缩略图用 `thumb`，详情用 `full`
+- 照片响应使用 `Cache-Control: no-store`，客户端只在内存缓存
 - 不做体脂率、体态诊断或医疗建议
 - 客户端必须单独同意后才上传；远程模式需在隐私政策中说明
 - 删除分析或注销账号时删除对应照片

@@ -588,7 +588,8 @@ extension AppStore {
                 recommendations: item.recommendations,
                 confidence: item.confidence ?? 0,
                 disclaimer: item.disclaimer,
-                appliedToPlan: item.appliedToPlan ?? false
+                appliedToPlan: item.appliedToPlan ?? false,
+                hasPhoto: item.hasPhoto ?? false
             )
             if let index = bodyAnalyses.firstIndex(where: { $0.id == id }) {
                 bodyAnalyses[index] = value

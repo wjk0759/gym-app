@@ -59,8 +59,9 @@
 
 - 新增 `body_analyses` 表；`POST /body/analyze` 支持 `X-Client-ID`。
 - 照片压缩后写入 `private_media_root/body/...`，不进入公开 `/media`。
-- `GET /body/analyses/{id}/photo` 仅本人可读；删除分析会删照片。
+- `GET /body/analyses/{id}/photo` 仅本人可读，支持 `size=thumb`；删除分析会删照片。
 - iOS 同步历史，并把 `applied_to_plan` 回写服务端。
+- iOS 体型分析历史页可查看私有照片（缩略图 + 详情大图），照片通过鉴权接口加载。
 
 ### P1/P2 训练草稿与经期
 
@@ -113,6 +114,5 @@
 ## 5. 后续优先级
 
 1. 器械统一只读快照（不合并底层三个状态）
-2. 体型分析照片查看 UI（元数据和私有存储已完成）
-3. 训练草稿/经期的真机双设备验证
-4. 清理未使用的 `NotificationSchedule` 表，或正式接入
+2. 训练草稿/经期的真机双设备验证
+3. 清理未使用的 `NotificationSchedule` 表，或正式接入

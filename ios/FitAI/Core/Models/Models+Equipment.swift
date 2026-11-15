@@ -67,4 +67,7 @@ struct BodyAnalysis: Codable, Identifiable, Hashable {
     var confidence: Double
     var disclaimer: String
     var appliedToPlan: Bool = false
+    /// Whether the private server-side photo can be fetched by its client ID.
+    /// Local-only analyses keep this false because no photo leaves the device.
+    var hasPhoto: Bool? = nil
 }

@@ -7,6 +7,7 @@ struct ProfileView: View {
     @Binding var navigationPath: NavigationPath
 
     @State private var showBodyAnalysis = false
+    @State private var showBodyAnalysisHistory = false
     @State private var showBodyCheckIn = false
     @State private var showFocusAreas = false
 
@@ -44,6 +45,9 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showBodyAnalysis) {
                 BodyPhotoAnalysisView()
+            }
+            .sheet(isPresented: $showBodyAnalysisHistory) {
+                BodyAnalysisHistoryView()
             }
         }
     }
@@ -386,13 +390,23 @@ struct ProfileView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Button("拍照分析体型") {
-                Haptics.tap()
-                if store.requirePro(.bodyPhoto) {
-                    showBodyAnalysis = true
+            HStack(spacing: 10) {
+                Button("拍照分析体型") {
+                    Haptics.tap()
+                    if store.requirePro(.bodyPhoto) {
+                        showBodyAnalysis = true
+                    }
+                }
+                .buttonStyle(SecondaryButtonStyle())
+
+                if !store.bodyAnalyses.isEmpty {
+                    Button("查看历史") {
+                        Haptics.tap()
+                        showBodyAnalysisHistory = true
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
                 }
             }
-            .buttonStyle(SecondaryButtonStyle())
         }
         .card()
     }

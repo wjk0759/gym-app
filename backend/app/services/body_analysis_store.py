@@ -94,6 +94,26 @@ def photo_path(key: str | None) -> Path | None:
     return path if path.exists() else None
 
 
+def photo_for(
+    db: Session,
+    user_id: str,
+    client_id: str,
+    thumbnail: bool = False,
+) -> Path | None:
+    """Resolve a private photo only for its owner; thumbnails keep list views light."""
+    item = db.execute(
+        select(BodyAnalysisRecord).where(
+            BodyAnalysisRecord.user_id == user_id,
+            BodyAnalysisRecord.client_id == client_id.lower(),
+            BodyAnalysisRecord.deleted_at.is_(None),
+        )
+    ).scalar_one_or_none()
+    if item is None:
+        return None
+    key = item.thumbnail_key if thumbnail else item.image_key
+    return photo_path(key)
+
+
 def analysis_dict(item: BodyAnalysisRecord) -> dict:
     return {
         "client_id": item.client_id,

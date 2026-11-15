@@ -79,7 +79,7 @@ struct BodyPhotoAnalysisView: View {
                     .tracking(1.5)
                     .foregroundStyle(Theme.cobalt)
                 Spacer()
-                Label("不保存原图", systemImage: "lock.shield")
+                Label("私有保存", systemImage: "lock.shield")
                     .font(.system(size: 9, weight: .medium))
                     .foregroundStyle(Theme.tertiaryText)
             }
@@ -90,7 +90,7 @@ struct BodyPhotoAnalysisView: View {
                 .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text("照片只用于本次训练建议，不给体脂率、不诊断体态，也不会写进训练记录。")
+            Text("照片会私密保存，方便你回看训练变化；不给体脂率、不诊断体态，也不会写进训练记录。")
                 .font(AppType.body)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
@@ -295,14 +295,14 @@ struct BodyPhotoAnalysisView: View {
     private var consentCard: some View {
         VStack(alignment: .leading, spacing: 9) {
             Toggle(isOn: $consent) {
-                Text("我同意将照片用于本次训练分析")
+                Text("我同意上传照片并私密保存分析记录")
                     .font(AppType.callout)
                     .foregroundStyle(Theme.ink)
             }
             .tint(Theme.primary)
 
             Text(store.canUseRemoteAI
-                 ? "照片会发送到后端做一次性分析，不保存原图。"
+                 ? "照片会发送到后端分析，并存入私有目录；仅你本人登录后可查看。"
                  : "当前为本地模式：照片只在设备内处理，不联网、不保存。")
                 .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)

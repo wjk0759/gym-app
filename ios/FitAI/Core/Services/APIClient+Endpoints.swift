@@ -727,7 +727,17 @@ extension APIClient {
             focusAreas: response.focusAreas.compactMap { MuscleGroup(rawValue: $0) },
             recommendations: response.recommendations,
             confidence: response.confidence,
-            disclaimer: response.disclaimer
+            disclaimer: response.disclaimer,
+            hasPhoto: response.hasPhoto ?? false
+        )
+    }
+
+    func fetchBodyAnalysisPhoto(clientID: UUID, thumbnail: Bool = false) async throws -> Data {
+        let size = thumbnail ? "thumb" : "full"
+        return try await perform(
+            path: "body/analyses/\(clientID.uuidString.lowercased())/photo?size=\(size)",
+            method: "GET",
+            body: nil
         )
     }
 
@@ -738,6 +748,14 @@ extension APIClient {
             body: nil
         )
         return try decode(BodyAnalysisHistoryResponse.self, from: data).items
+    }
+
+    func deleteBodyAnalysis(clientID: UUID) async throws {
+        try await sendVoid(
+            path: "body/analyses/\(clientID.uuidString.lowercased())",
+            method: "DELETE",
+            body: nil
+        )
     }
 
     func markBodyAnalysisApplied(

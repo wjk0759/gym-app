@@ -8,6 +8,25 @@ extension AppStore {
         persist()
     }
 
+    /// Delete the cloud record and its private photo, then remove the local
+    /// cache. A 404 means the analysis was local-only, which is still removable.
+    @MainActor
+    func deleteBodyAnalysis(_ analysis: BodyAnalysis) async -> Bool {
+        if AuthTokenStore.shared.accessToken != nil {
+            do {
+                try await APIClient.shared.deleteBodyAnalysis(clientID: analysis.id)
+            } catch let error as APIError where error.statusCode == 404 {
+                // Never reached the server.
+            } catch {
+                toast = "删除失败，请检查网络后重试"
+                return false
+            }
+        }
+        bodyAnalyses.removeAll { $0.id == analysis.id }
+        persist()
+        return true
+    }
+
     func applyBodyAnalysis(_ analysis: BodyAnalysis) {
         guard var current = plan else {
             toast = "先生成训练计划，再应用体型分析"

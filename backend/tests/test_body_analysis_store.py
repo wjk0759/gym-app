@@ -69,6 +69,12 @@ def test_body_analysis_is_private_and_lifecycle(db, tmp_path, monkeypatch):
     assert rows[0]["focus_areas"] == ["back", "glutes"]
     assert rows[0]["has_photo"] is True
 
+    full = body_analysis_store.photo_for(db, "user-1", "analysis-1")
+    thumb = body_analysis_store.photo_for(db, "user-1", "analysis-1", thumbnail=True)
+    assert full is not None and full.name == "original.jpg"
+    assert thumb is not None and thumb.name == "thumb.jpg"
+    assert body_analysis_store.photo_for(db, "user-2", "analysis-1") is None
+
     applied = body_analysis_store.mark_applied(
         db, "user-1", "analysis-1", True
     )

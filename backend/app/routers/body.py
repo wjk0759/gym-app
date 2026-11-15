@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy import select
 
 from ..deps import CurrentUser, DBSession
-from ..models import BodyAnalysisRecord, BodyMetric
+from ..models import BodyMetric
 from ..schemas import BodyAnalysisAppliedIn, BodyMetricIn
 from ..services import access, generation, photo_cache
 from ..services.body_analysis import analyze
@@ -14,7 +14,7 @@ from ..services.body_analysis_store import (
     delete_analysis,
     list_analyses,
     mark_applied,
-    photo_path,
+    photo_for,
     save_analysis,
 )
 from ..services.body_metrics import (
@@ -137,21 +137,21 @@ def list_body_analyses(
 
 
 @router.get("/analyses/{client_id}/photo")
-def body_analysis_photo(client_id: str, user_id: CurrentUser, db: DBSession):
-    item = db.execute(
-        select(BodyAnalysisRecord).where(
-            BodyAnalysisRecord.user_id == user_id,
-            BodyAnalysisRecord.client_id == client_id.lower(),
-            BodyAnalysisRecord.deleted_at.is_(None),
-        )
-    ).scalar_one_or_none()
-    path = photo_path(item.image_key if item else None)
+def body_analysis_photo(
+    client_id: str,
+    user_id: CurrentUser,
+    db: DBSession,
+    size: str = Query(default="full", pattern="^(full|thumb)$"),
+):
+    path = photo_for(db, user_id, client_id, thumbnail=size == "thumb")
     if path is None:
         raise HTTPException(status_code=404, detail="照片不存在")
+    # Sensitive photo: keep it out of URLSession/disk caches; the app caches
+    # decoded images in memory for the current session only.
     return FileResponse(
         path,
         media_type="image/jpeg",
-        headers={"Cache-Control": "private, max-age=3600"},
+        headers={"Cache-Control": "no-store"},
     )
 
 
