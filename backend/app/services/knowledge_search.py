@@ -173,8 +173,14 @@ def search_knowledge(
     *,
     domain: str | None = None,
     limit: int = 3,
+    include_exercises: bool = False,
 ) -> list[dict[str, Any]]:
-    """Return the most relevant records for a query and optional domain."""
+    """Return the most relevant records for a query and optional domain.
+
+    Exercise technique cards are excluded by default so ``lookup_exercise``
+    remains the single source for movement steps. Set ``include_exercises`` for
+    offline analysis that explicitly wants the raw coach corpus.
+    """
 
     query = _norm(query)
     if not query:
@@ -193,6 +199,12 @@ def search_knowledge(
     scored: list[tuple[float, int, dict[str, Any]]] = []
     for current in domains:
         for item in load_domain(current):
+            if (
+                current == "coach"
+                and not include_exercises
+                and item.get("kind") == "exercise"
+            ):
+                continue
             text = _search_text(item)
             score = sum(1 for term in terms if term in text)
             if not score:
@@ -237,6 +249,35 @@ def knowledge_payload(
     domain: str | None = None,
     limit: int = 3,
 ) -> dict[str, Any]:
+    if domain == "food":
+        food_results: list[dict[str, Any]] = []
+        seen_food: set[str] = set()
+        for mention in _food_mentions(query):
+            item = lookup_food(mention)
+            if item is None:
+                continue
+            key = str(item.get("name_zh") or "")
+            if key in seen_food:
+                continue
+            seen_food.add(key)
+            food_results.append(
+                _compact(
+                    {
+                        **item,
+                        "id": f"food-{key}",
+                        "domain": "food",
+                        "title": key,
+                    }
+                )
+            )
+        if food_results:
+            return {
+                "ok": True,
+                "query": query,
+                "domain": domain,
+                "results": food_results[: max(1, min(MAX_RESULTS, int(limit)))],
+            }
+
     results = search_knowledge(query, domain=domain, limit=limit)
     if not results:
         return {
@@ -251,6 +292,28 @@ def knowledge_payload(
         "domain": domain,
         "results": results,
     }
+
+
+@lru_cache(maxsize=1)
+def _food_mentions_index() -> tuple[str, ...]:
+    names = [
+        name for name in food_names() if len(_norm_key(name)) >= 2
+    ]
+    return tuple(sorted(set(names), key=lambda name: (-len(name), name)))
+
+
+def _food_mentions(query: str) -> list[str]:
+    text = _norm(query)
+    found: list[str] = []
+    for name in _food_mentions_index():
+        if name not in text:
+            continue
+        if any(name in existing for existing in found):
+            continue
+        found.append(name)
+        if len(found) >= 4:
+            break
+    return found
 
 
 @lru_cache(maxsize=1)

@@ -75,6 +75,28 @@ def test_search_food_nutrition():
     assert "鸡胸肉" in foods[0]["title"]
 
 
+def test_food_payload_resolves_multiple_foods():
+    payload = knowledge_payload(
+        "牛奶和酸奶哪个蛋白质更高", domain="food", limit=4
+    )
+    titles = [item["title"] for item in payload["results"]]
+    assert any("鲜乳" in title for title in titles)
+    assert any("发酵乳" in title for title in titles)
+
+
+def test_coach_knowledge_does_not_duplicate_exercise_lookup():
+    filtered = search_knowledge("杠铃卧推", domain="coach", limit=3)
+    assert all(result["kind"] != "exercise" for result in filtered)
+
+    raw = search_knowledge(
+        "杠铃卧推",
+        domain="coach",
+        limit=3,
+        include_exercises=True,
+    )
+    assert any(result["kind"] == "exercise" for result in raw)
+
+
 def test_search_equipment_uses_recognition_cues():
     results = search_knowledge(
         "坐姿划船机怎么辨认", domain="equipment", limit=3

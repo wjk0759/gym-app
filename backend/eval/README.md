@@ -170,6 +170,24 @@ cache miss tokens, then prices them with the off-peak CNY rate card:
 
 Update `PRICE_*` in `runner.py` only when the official rate card changes.
 
+## Knowledge A/B
+
+`eval/knowledge_ab.py` measures whether retrieved knowledge changes answer quality:
+
+```powershell
+$env:PYTHONPATH="$PWD"
+.\.venv\Scripts\python.exe -m eval.knowledge_ab --limit 18 --concurrency 4
+```
+
+It generates a baseline answer and a knowledge-grounded answer for each case,
+then runs a blind judge twice with swapped A/B order. Results go to
+`eval/results/knowledge_ab.json` (gitignored). The case file is
+`eval/knowledge_ab_cases.json`; see `docs/62-knowledge-impact-eval.md` for the
+first 18-case result.
+
+This is not the full Agent flow: it isolates the value of the retrieved text,
+not tool selection or persona state.
+
 ## Media upload tests
 
 `backend/tests/test_coach_media_limits.py` covers:
