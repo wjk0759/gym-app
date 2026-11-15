@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`eb2539e`（数据收敛 + P0 云端同步 + P1 体型分析/训练草稿/经期上云 + 非今日营养目标按日期统一 + 体型分析照片历史；生产仍后端 `774c95e` / Flyway **V39** / iOS `e81c4fb`；新代码后端 **492 passed**、QA **19/19**、Ruff 通过、iOS Build `eb2539e` ✓；**V40/V41/V42 未部署**，待 Mac 验证 MySQL 迁移和真机双设备；生产 `health/ready` 200、`/sync` 与 `/plans/history` 未登录 401、`/docs` 404）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`a5b93ca`（数据收敛 + P0 云端同步 + P1 体型分析/训练草稿/经期上云 + 非今日营养目标按日期统一 + 体型分析照片历史 + 器械只读快照 + 提醒设置区分账号意图/本机权限；生产仍后端 `774c95e` / Flyway **V39** / iOS `e81c4fb`；新代码后端 **492 passed**、QA **19/19**、Ruff 通过、iOS Build `39c1131` ✓（其后 `a5b93ca` 仅后端注释/回退）；**V40/V41/V42 未部署**，待 Mac 验证 MySQL 迁移和真机双设备；生产 `health/ready` 200、`/sync` 与 `/plans/history` 未登录 401、`/docs` 404）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +26,42 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-16 · Windows（提醒设置：账号意图 vs 本机权限）
+
+- 提交：`c503478` + `39c1131` + `a5b93ca`，已推 `develop`；iOS Build `39c1131` ✓、Backend Tests `a5b93ca` ✓、Ruff 通过。
+- 做了什么：
+  - `remindersEnabled` 表示账号级提醒意图，通过 `user_preferences.notifications_enabled` 同步。
+  - `notificationsEnabled` 只表示当前设备已授权且已安排，不再上云。
+  - `/sync` 拉到 `notifications_enabled=true` 只设置账号意图；本机未授权时显示“已在账号中开启；本机未允许通知”，不会误报为已开启。
+  - 同步后/打开设置时重新核对系统通知权限并安排本地提醒；账号关闭提醒会取消本机 workout 提醒。
+  - 设置页“关闭”按钮按账号意图显示；新增无计划时的状态文案。
+  - `NotificationSchedule` 表仍保留未接入，模型加注释禁止在推送方案确定前写入 `/sync`。
+- 验证：
+  - iOS Build `39c1131` CI 成功；本机无法跑真机通知。
+- Mac 要做：
+  - 拉 `a5b93ca`，跑 FitAITests/UI。
+  - 双设备：A 开启提醒，B 登录后应显示“本机未允许通知”；B 授权后能按训练日收到本地通知；任意一端关闭后另一端回前台应取消。
+  - 系统设置里撤销通知权限，再打开 App 设置页，应显示未开启而不是假开启。
+- 不要恢复：
+  - 不要把 `notificationsEnabled` 再写进 `/sync`；账号意图用 `remindersEnabled`。
+  - 不要在同步合并时直接信任远端为“本机已授权”。
+
+### 2026-11-16 · Windows（器械统一只读快照）
+
+- 提交：`95c6bf1` + `b1e85fc`，已推 `develop`；iOS Build `b1e85fc` ✓。
+- 做了什么：
+  - 新增 `EquipmentSnapshot`：档案器械类型、器械库、通用器械勾选、计划池动作的统一只读投影。
+  - 三类数据仍分开存储/写入，不合并模型。
+  - 器械库顶部显示器械库数量、档案类型数、通用器械数、档案类型标签；Profile/Discover 改用快照计数。
+  - 新增 `EquipmentSnapshotTests` 覆盖来源不合并和空状态文案。
+- 验证：
+  - iOS Build `b1e85fc` CI 成功；本机无法跑 FitAITests。
+- Mac 要做：
+  - 拉 `a5b93ca`，跑 `FitAITests`（含新增 `EquipmentSnapshotTests`）。
+  - 检查器械库、Profile、Discover 的数量一致；修改档案器械/器械库/通用勾选后三处同步更新。
+- 不要恢复：
+  - 不要把 `profile.equipment`、`equipmentLibrary`、`selectedUniversalSlugs` 合成一个可写字段；快照只读。
 
 ### 2026-11-16 · Windows（体型分析照片历史 + 删除）
 
@@ -39,7 +75,7 @@
   - 拍照页文案从“不保存原图”改为“私有保存”，避免与真实行为不一致。
 - 验证：
   - 后端保存/私有路径/缩略图解析测试通过；本机无法跑 iOS 单测/UI。
-  - iOS Build `eb2539e` CI 成功。
+  - iOS Build `eb2539e` CI 成功；后续 `a5b93ca` 增加“缩略图缺失回退原图”测试，Backend Tests 成功。
 - Mac 要做：
   - 拉 `eb2539e`，跑 FitAITests/UI。
   - 部署时后端必须用 `eb2539e` 或更新（包含 `size` 参数与 `no-store`），不要只部署到 `120a734`。
