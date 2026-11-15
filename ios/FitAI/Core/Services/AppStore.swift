@@ -188,6 +188,10 @@ final class AppStore {
     var toast: String?
     var reminderHour = 19
     var reminderMinute = 0
+    /// Cloud-synced user intent: reminders should be on for this account.
+    var remindersEnabled = false
+    /// Device-effective state: intent is on and this device granted permission.
+    /// Never push this to the server; it differs per device.
     var notificationsEnabled = false
     var restLiveActivityEnabled = true
     var restNotificationsEnabled = true
@@ -280,6 +284,7 @@ final class AppStore {
         removedDislikedSlugs = []
         preferencesDirty = false
         cycleDirty = false
+        remindersEnabled = false
         notificationsEnabled = false
         restLiveActivityEnabled = true
         restNotificationsEnabled = true
@@ -416,6 +421,7 @@ final class AppStore {
         cycleDirty = state.cycleDirty ?? !state.profile.periodDates.isEmpty
         reminderHour = state.reminderHour
         reminderMinute = state.reminderMinute
+        remindersEnabled = state.remindersEnabled ?? state.notificationsEnabled
         notificationsEnabled = state.notificationsEnabled
         restLiveActivityEnabled = state.restLiveActivityEnabled ?? true
         restNotificationsEnabled = state.restNotificationsEnabled ?? true
@@ -481,6 +487,7 @@ final class AppStore {
             cycleDirty: cycleDirty,
             reminderHour: reminderHour,
             reminderMinute: reminderMinute,
+            remindersEnabled: remindersEnabled,
             notificationsEnabled: notificationsEnabled,
             restLiveActivityEnabled: restLiveActivityEnabled,
             restNotificationsEnabled: restNotificationsEnabled,
@@ -606,6 +613,7 @@ final class AppStore {
         var cycleDirty: Bool?
         var reminderHour: Int
         var reminderMinute: Int
+        var remindersEnabled: Bool?
         var notificationsEnabled: Bool
         var restLiveActivityEnabled: Bool?
         var restNotificationsEnabled: Bool?

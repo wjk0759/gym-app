@@ -14,8 +14,8 @@ extension SettingsView {
                         .foregroundStyle(Theme.secondaryText)
                 }
                 Spacer()
-                Image(systemName: store.notificationsEnabled ? "bell.badge.fill" : "bell.slash")
-                    .foregroundStyle(store.notificationsEnabled ? Theme.cobalt : Theme.tertiaryText)
+                Image(systemName: store.remindersEnabled ? "bell.badge.fill" : "bell.slash")
+                    .foregroundStyle(store.remindersEnabled ? Theme.cobalt : Theme.tertiaryText)
             }
 
             DatePicker(
@@ -31,7 +31,7 @@ extension SettingsView {
                 }
                 .buttonStyle(PrimaryButtonStyle())
 
-                if store.notificationsEnabled {
+                if store.remindersEnabled {
                     Button("关闭") {
                         store.disableReminders()
                         message = "已关闭训练提醒。"
@@ -41,9 +41,7 @@ extension SettingsView {
                 }
             }
 
-            Text(store.notificationsEnabled
-                 ? "已开启：共 \(store.plan?.firstWeek.count ?? 0) 个训练日。"
-                 : "未开启；请允许系统通知。")
+            Text(reminderStatusText)
                 .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
         }
@@ -128,6 +126,19 @@ extension SettingsView {
         }
     }
 
+    var reminderStatusText: String {
+        if store.notificationsEnabled {
+            let days = store.plan?.firstWeek.count ?? 0
+            return days > 0
+                ? "已开启：共 \(days) 个训练日。"
+                : "已开启；生成计划后会自动安排提醒。"
+        }
+        if store.remindersEnabled {
+            return "已在账号中开启；本机未允许通知，请在系统设置中允许「叫练」通知。"
+        }
+        return "未开启；请允许系统通知。"
+    }
+
     func syncReminder() {
         reminderDate = Calendar.current.date(
             bySettingHour: store.reminderHour,
@@ -148,6 +159,8 @@ extension SettingsView {
                 message = "已为 \(count) 个训练日设置 \(String(format: "%02d:%02d", hour, minute)) 的提醒。"
             } else if store.notificationsEnabled {
                 message = "通知权限已开启，但当前还没有训练计划。生成计划后会自动安排提醒。"
+            } else if store.remindersEnabled {
+                message = "提醒已同步到账号，但本机没有通知权限。请到「设置 → 通知 → 叫练」中开启。"
             } else {
                 message = "没有获得通知权限。请到「设置 → 通知 → 叫练」中开启。"
             }

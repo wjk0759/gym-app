@@ -29,7 +29,7 @@
 | 器械类型 | `Profile.equipment` | 本地 `profile.equipment` | B | 保留，服务端为计划生成依据 |
 | 自定义器械 | `EquipmentLibraryItem` | 本地 `equipmentLibrary` | B | 保留缓存 |
 | 通用器械勾选 | `UserUniversalEquipment` | 本地 `selectedUniversalSlugs` | B | 保留缓存 |
-| 提醒 | `user_preferences` + iOS 本地通知 | 服务端 `NotificationSchedule` 表未使用 | B/D | 偏好上云；通知权限/排程仍是设备级；服务端表要么删要么接 |
+| 提醒 | `user_preferences.notifications_enabled` + iOS 本地通知 | 服务端 `NotificationSchedule` 表未使用 | B/D | `remindersEnabled` 是账号意图并上云；`notificationsEnabled` 是本机权限态，不上云；排程仍是设备级；服务端表保留未接 |
 | 自定义食物 | `user_custom_foods` | 本地 `customFoods` 缓存 | B | 已上云，按 `client_id` 合并 |
 | 收藏食物 | `user_food_favorites` | 本地 `favoriteFoods` 缓存 | B | 已上云，收藏用 tombstone 删除 |
 | 不喜欢动作 | `user_exercise_dislikes` | 本地 `dislikedSlugs` 缓存 | B | 已上云，移除用 tombstone |
@@ -50,6 +50,7 @@
 - 收藏食物按 `custom:<client_id>` / `library:<name>` 同步；取消收藏写 tombstone。
 - 不喜欢动作同步，并在本地移除时写 tombstone。
 - 提醒/身体打卡/器械模式/远程 AI 作为 `user_preferences` 同步。
+- 提醒区分账号意图与本机状态：`remindersEnabled` 同步，`notificationsEnabled` 只表示当前设备已授权且已安排；同步后若本机未授权，不显示为已开启。
 - iOS 同步入口 `AppStore.syncCloudExtras()`：拉快照 → 合并 → 推本地快照 → 清理 tombstone。
 - 计划历史新增 `GET /plans/history`，客户端合并服务端 Program 历史。
 

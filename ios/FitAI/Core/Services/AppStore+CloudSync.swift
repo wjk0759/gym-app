@@ -23,6 +23,7 @@ extension AppStore {
             preferencesDirty = false
             cycleDirty = false
             persist()
+            await refreshNotificationDeviceState()
         } catch {
             // Keep local state and retry on the next foreground/login sync.
         }
@@ -63,7 +64,9 @@ extension AppStore {
                 reminderMinute = value
             }
             if let value = preferences.notificationsEnabled {
-                notificationsEnabled = value
+                // `notifications_enabled` stores account intent, not whether
+                // this particular device can post notifications.
+                remindersEnabled = value
             }
             if let raw = preferences.bodyCheckinFrequency,
                let frequency = BodyCheckInFrequency(rawValue: raw) {
@@ -225,7 +228,7 @@ extension AppStore {
                 "use_remote_ai": useRemoteAI,
                 "reminder_hour": reminderHour,
                 "reminder_minute": reminderMinute,
-                "notifications_enabled": notificationsEnabled,
+                "notifications_enabled": remindersEnabled,
                 "body_checkin_frequency": bodyCheckInFrequency.rawValue,
                 "body_checkin_weekday": bodyCheckInWeekday,
                 "body_checkin_day": bodyCheckInDay,

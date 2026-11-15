@@ -79,6 +79,7 @@ struct SettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: syncReminder)
         .task {
+            await store.refreshNotificationDeviceState()
 #if DEBUG
             await checkService()
 #endif

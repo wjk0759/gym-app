@@ -4,6 +4,7 @@ extension AppStore {
     func enableReminders(hour: Int, minute: Int) async -> Int {
         reminderHour = hour
         reminderMinute = minute
+        remindersEnabled = true
         let granted = await NotificationScheduler.shared.requestAuthorization()
         guard granted else {
             notificationsEnabled = false
@@ -23,10 +24,33 @@ extension AppStore {
     }
 
     func disableReminders() {
+        remindersEnabled = false
         notificationsEnabled = false
         NotificationScheduler.shared.cancelWorkoutReminders()
         persist()
         markPreferencesDirty()
+    }
+
+    /// Reconcile the account-level reminder intent with this device's
+    /// notification permission and current plan. Called after cloud sync and
+    /// when opening settings, so a device that never granted permission cannot
+    /// show "on" just because another device enabled reminders.
+    @MainActor
+    func refreshNotificationDeviceState() async {
+        let authorized = await NotificationScheduler.shared.isAuthorized()
+        if remindersEnabled, authorized {
+            _ = await NotificationScheduler.shared.schedule(
+                plan: plan,
+                hour: reminderHour,
+                minute: reminderMinute
+            )
+            notificationsEnabled = true
+            persist()
+            return
+        }
+        notificationsEnabled = false
+        NotificationScheduler.shared.cancelWorkoutReminders()
+        persist()
     }
 
     // MARK: - 休息提醒
