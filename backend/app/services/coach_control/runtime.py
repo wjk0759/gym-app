@@ -496,6 +496,11 @@ def _looks_like_week_schedule(message: str) -> bool:
         return False
     if re.search(r"饮食|餐|营养|食谱|餐单", message):
         return False
+    if re.search(
+        r"太满|太累|太忙|减量|加量|降低重量|减重|轻一点|恢复不过来|调整",
+        message,
+    ):
+        return False
     return bool(
         re.search(r"下周|本周|这周|一周|上周", message)
         and re.search(r"练什么|训练安排|计划|日程|安排", message)

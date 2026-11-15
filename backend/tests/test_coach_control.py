@@ -2322,6 +2322,8 @@ def test_plan_adjust_recognizes_time_and_recovery_words():
     assert runtime._looks_like_plan_adjust("最近太忙，训练计划帮我调整一下")
     assert runtime._looks_like_plan_adjust("计划太满，坚持不下来")
     assert runtime._looks_like_plan_adjust("计划太累了，减量")
+    assert runtime._looks_like_plan_adjust("这周计划太满")
+    assert not runtime._looks_like_week_schedule("这周计划太满")
 
 
 def test_configure_plan_parses_chinese_frequency_and_split():
