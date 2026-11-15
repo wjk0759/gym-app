@@ -412,3 +412,48 @@ def test_sync_tombstone_can_be_revived(db):
     result = apply_sync(db, "user-1", SyncIn(custom_foods=[CustomFoodSyncIn(client_id="revive-food", name="新", kcal=120)]))
     assert len(result["custom_foods"]) == 1
     assert result["custom_foods"][0]["name"] == "新"
+
+
+def test_workout_draft_rapid_updates_keep_one_row(db):
+    from datetime import datetime, timedelta, timezone
+    from app.schemas import WorkoutDraftIn
+    from app.services.workout_draft import get_draft, upsert_draft
+
+    now = datetime.now(timezone.utc)
+    for index in range(200):
+        accepted, _ = upsert_draft(
+            db,
+            "user-1",
+            WorkoutDraftIn(
+                day_id="day-rapid",
+                updated_at=now + timedelta(seconds=index),
+                payload={"currentIndex": index},
+            ),
+        )
+        assert accepted is True
+    item = get_draft(db, "user-1")
+    assert item is not None
+    assert item.payload["currentIndex"] == 199
+    assert item.day_id == "day-rapid"
+
+
+def test_cycle_sync_round_trips_valid_snapshot(db):
+    from datetime import date
+    from app.schemas import CycleSyncIn, SyncIn
+    from app.services.user_sync import apply_sync
+
+    result = apply_sync(
+        db,
+        "user-1",
+        SyncIn(
+            cycle=CycleSyncIn(
+                range_start=date(2026, 11, 1),
+                range_end=date(2026, 11, 5),
+                dates=["2026-11-01", "2026-11-02", "2026-11-03"],
+                training_mode="light",
+            )
+        ),
+    )
+    cycle = result.get("cycle") or {}
+    assert cycle.get("training_mode") == "light"
+    assert cycle.get("dates") == ["2026-11-01", "2026-11-02", "2026-11-03"]
