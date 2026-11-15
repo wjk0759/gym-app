@@ -1162,11 +1162,26 @@ async def _try_batch_turn(
         for index, action in enumerate(actions)
     ]
     reply = "我会一起处理这几项：\n" + "\n".join(lines) + "\n确认后一起执行。"
-    return {
+    plan = context.get("plan") if hasattr(context, "get") else None
+    plan = plan if isinstance(plan, dict) else {}
+    batch_context = {}
+    if str(plan.get("id") or "").strip():
+        batch_context = {
+            "plan_id": str(plan.get("id")),
+            "day_ids": [
+                str(day.get("id"))
+                for day in plan.get("days") or []
+                if isinstance(day, dict) and str(day.get("id") or "").strip()
+            ],
+        }
+    payload = {
         "summary": f"{len(actions)} 项操作",
         "batch": actions,
         "reply": reply,
     }
+    if batch_context:
+        payload["context"] = batch_context
+    return payload
 
 
 def _finish_reply(
@@ -2589,6 +2604,27 @@ def _confirm_batch(
     actions = pending.payload.get("batch")
     if not isinstance(actions, list) or len(actions) < 2:
         raise ValueError("批量操作内容不完整")
+
+    batch_context = pending.payload.get("context") or {}
+    allowed_plan = str(batch_context.get("plan_id") or "").strip()
+    allowed_days = {
+        str(day_id)
+        for day_id in batch_context.get("day_ids") or []
+        if str(day_id).strip()
+    }
+    for item in actions[:3]:
+        if not isinstance(item, dict):
+            raise ValueError("批量操作内容不完整")
+        if str(item.get("capability_id") or "") == TRAINING:
+            sub_payload = item.get("payload")
+            sub_payload = sub_payload if isinstance(sub_payload, dict) else {}
+            if allowed_plan and str(sub_payload.get("plan_id") or "") != allowed_plan:
+                raise ValueError("训练计划已变化，请重新生成这张卡")
+            if (
+                allowed_days
+                and str(sub_payload.get("day_id") or "") not in allowed_days
+            ):
+                raise ValueError("训练日已变化，请重新生成这张卡")
 
     executed_ids: list[str] = []
     sub_pending_ids: list[str] = []

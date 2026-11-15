@@ -1,3 +1,4 @@
+import contextlib
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -417,6 +418,7 @@ def test_sync_tombstone_can_be_revived(db):
 
 def test_workout_draft_rapid_updates_keep_one_row(db):
     from datetime import datetime, timedelta, timezone
+
     from app.schemas import WorkoutDraftIn
     from app.services.workout_draft import get_draft, upsert_draft
 
@@ -440,6 +442,7 @@ def test_workout_draft_rapid_updates_keep_one_row(db):
 
 def test_cycle_sync_round_trips_valid_snapshot(db):
     from datetime import date
+
     from app.schemas import CycleSyncIn, SyncIn
     from app.services.user_sync import apply_sync
 
@@ -461,8 +464,9 @@ def test_cycle_sync_round_trips_valid_snapshot(db):
 
 
 def test_batch_confirm_rolls_back_when_second_action_fails(db):
-    from app.models import CoachPending, FoodLog
     from sqlalchemy import select
+
+    from app.models import CoachPending, FoodLog
 
     today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
     context = {
@@ -489,10 +493,8 @@ def test_batch_confirm_rolls_back_when_second_action_fails(db):
     # Break the second item. The first food write must be rolled back.
     batch[1]["payload"]["day_id"] = "missing-day"
     batch[1]["payload"]["plan_id"] = "missing-plan"
-    try:
+    with contextlib.suppress(Exception):
         runtime.confirm_pending(db, "user-1", pending.id)
-    except Exception:
-        pass
     logs = db.execute(select(FoodLog)).scalars().all()
     states = db.execute(select(PlanDayState)).scalars().all()
     assert logs == []
