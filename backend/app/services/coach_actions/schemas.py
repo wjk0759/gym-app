@@ -18,11 +18,19 @@ class FoodItemIn(BaseModel):
     confidence: float | None = Field(default=None, ge=0, le=1)
 
 
+class FoodMealIn(BaseModel):
+    meal: Literal["breakfast", "lunch", "dinner", "snack"]
+    items: list[FoodItemIn] = Field(min_length=1, max_length=20)
+
+
 class LogFoodPayload(BaseModel):
     date: dt_date
     meal: Literal["breakfast", "lunch", "dinner", "snack"]
     raw_text: str | None = Field(default=None, max_length=500)
     items: list[FoodItemIn] = Field(min_length=1, max_length=20)
+    # Multi-meal cards keep the flat meal/items fields for older clients, while
+    # the server executes the per-meal groups when present.
+    meals: list[FoodMealIn] | None = Field(default=None, max_length=4)
 
 
 class LogPlannedMealPayload(BaseModel):

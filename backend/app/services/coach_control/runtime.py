@@ -24,6 +24,7 @@ from ...models import (
     Profile,
     utcnow,
 )
+from ..food_text import MEAL_LABELS
 from ..safety import assess_safety
 from . import capabilities  # noqa: F401 - registers capabilities
 from .capability_context import CapabilityContext
@@ -41,6 +42,7 @@ from .state import (
     serialize_pending,
     serialize_session,
     set_pending,
+    update_pending,
 )
 
 DIET = "diet.log_food"
@@ -678,6 +680,37 @@ def _food_reply(resolution: dict) -> str:
     return f"已识别 {len(items)} 种食物，约 {kcal} kcal。确认后写入。"
 
 
+def _food_reply_multi(meals: list[dict]) -> str:
+    items = [
+        item
+        for meal in meals
+        for item in (meal.get("items") or [])
+    ]
+    kcal = round(sum(float(item.get("kcal") or 0) for item in items))
+    labels = "、".join(
+        MEAL_LABELS.get(str(meal.get("meal") or ""), str(meal.get("meal") or ""))
+        for meal in meals
+    )
+    return (
+        f"已识别 {labels}，共 {len(items)} 种食物，约 {kcal} kcal。"
+        "确认后一次写入。"
+    )
+
+
+def _food_question_text(meals: list[dict]) -> str:
+    questions: list[str] = []
+    for meal in meals:
+        for question in meal.get("questions") or []:
+            text = str(question).strip()
+            if text and text not in questions:
+                questions.append(text)
+    if not questions:
+        return "这餐还需要补充信息。"
+    if len(questions) == 1:
+        return questions[0]
+    return "还需要确认：" + "；".join(questions[:4])
+
+
 def _body_metric_parts(payload: dict) -> list[str]:
     parts: list[str] = []
     if payload.get("weight_kg") is not None:
@@ -702,6 +735,210 @@ def _training_reply(payload: dict) -> str:
         f"准备把「{payload.get('title') or '训练'}」"
         f"从 {payload.get('from_date')} 改到 {payload.get('to_date')}。确认后生效。"
     )
+
+
+def _pending_reply(
+    db: Session,
+    session: CoachSession,
+    turn: CoachTurn,
+    started: float,
+    pending: CoachPending,
+    *,
+    intent: str,
+    reply: str,
+) -> dict:
+    turn.intent = intent
+    turn.status = "completed"
+    turn.reply = reply
+    turn.latency_ms = int((time.perf_counter() - started) * 1000)
+    session.last_turn_at = utcnow()
+    session.updated_at = utcnow()
+    db.commit()
+    return {
+        "session": serialize_session(session, pending),
+        "turn_id": turn.id,
+        "intent": turn.intent,
+        "status": turn.status,
+        "reply": reply,
+        "pending": serialize_pending(pending),
+    }
+
+
+async def _pending_card_followup(
+    db: Session,
+    user_id: str,
+    session: CoachSession,
+    turn: CoachTurn,
+    pending: CoachPending,
+    text: str,
+    conversation,
+    started: float,
+) -> dict | None:
+    """Update an existing card instead of silently throwing it away.
+
+    This is the global context rule: additions and corrections first look at
+    the active pending. Only an explicit cancel or an unrelated new intent
+    should replace the card.
+    """
+    capability = pending.capability_id
+    payload = dict(pending.payload or {})
+    correction = bool(
+        re.search(r"记错|不是|改成|改为|换成|应该是|修正|改一下", text)
+    )
+    addition = bool(
+        re.search(r"还有|再加|另外|加上|补充|再记|顺便|加一个|加一份", text)
+    )
+
+    if capability == WEIGHT:
+        if not (correction or addition or re.fullmatch(r"[\d.]+", text.strip())):
+            return None
+        from .capabilities.body import resolve as resolve_weight
+
+        resolution = resolve_weight(text)
+        if not resolution.get("ready"):
+            reply = (resolution.get("questions") or ["新的体重大概多少公斤？"])[0]
+            return _pending_reply(
+                db,
+                session,
+                turn,
+                started,
+                pending,
+                intent=WEIGHT,
+                reply=reply,
+            )
+        new_payload = {**payload, **resolution["payload"]}
+        update_pending(db, session, pending, payload=new_payload)
+        return _pending_reply(
+            db,
+            session,
+            turn,
+            started,
+            pending,
+            intent=WEIGHT,
+            reply=_body_metric_reply(new_payload),
+        )
+
+    if capability == DIET:
+        if not (addition or correction or _looks_like_food(text)):
+            return None
+        from .capabilities.diet import resolve as resolve_diet
+
+        draft = dict(payload)
+        if not draft.get("meals") and draft.get("meal"):
+            draft["meals"] = [
+                {
+                    "meal": draft["meal"],
+                    "date": draft.get("date"),
+                    "items": draft.get("items") or [],
+                }
+            ]
+        resolution = await resolve_diet(
+            db,
+            user_id,
+            text,
+            history_context=conversation.reference_context(),
+            draft=draft,
+        )
+        meals = resolution.get("meals") or []
+        questions = [
+            str(question)
+            for meal in meals
+            for question in meal.get("questions") or []
+            if str(question).strip()
+        ] + [
+            str(question)
+            for question in resolution.get("questions") or []
+            if str(question).strip()
+        ]
+        missing_slots = [
+            slot
+            for meal in meals
+            for slot in meal.get("missing_slots") or []
+            if isinstance(slot, dict)
+        ] + [
+            slot
+            for slot in resolution.get("missing_slots") or []
+            if isinstance(slot, dict)
+        ]
+        if questions or missing_slots:
+            new_payload = {
+                "text": text,
+                "date": resolution.get("date") or payload.get("date"),
+                "meal": resolution.get("meal") or payload.get("meal"),
+                "items": resolution.get("items") or payload.get("items") or [],
+                "meals": meals or None,
+                "questions": list(dict.fromkeys(questions)),
+                "missing_slots": missing_slots,
+            }
+            update_pending(db, session, pending, kind="draft", payload=new_payload)
+            reply = (
+                _food_question_text(meals)
+                if meals
+                else (questions[0] if questions else "这餐还需要补充信息。")
+            )
+            return _pending_reply(
+                db,
+                session,
+                turn,
+                started,
+                pending,
+                intent=DIET,
+                reply=reply,
+            )
+        if not resolution.get("items") and not meals:
+            return None
+        new_payload = {
+            "date": resolution.get("date") or payload.get("date"),
+            "meal": resolution.get("meal") or payload.get("meal"),
+            "raw_text": text[:500],
+            "items": resolution.get("items") or [],
+        }
+        if meals:
+            new_payload["meals"] = meals
+        update_pending(db, session, pending, payload=new_payload)
+        reply = _food_reply_multi(meals) if meals else _food_reply(resolution)
+        return _pending_reply(
+            db,
+            session,
+            turn,
+            started,
+            pending,
+            intent=DIET,
+            reply=reply,
+        )
+
+    if capability == TRAINING:
+        from .capabilities.training import parse_training_date
+
+        target = parse_training_date(text)
+        if target is None:
+            return None
+        new_payload = {**payload, "to_date": target.isoformat()}
+        update_pending(db, session, pending, payload=new_payload)
+        return _pending_reply(
+            db,
+            session,
+            turn,
+            started,
+            pending,
+            intent=TRAINING,
+            reply=_training_reply(new_payload),
+        )
+
+    if correction or addition:
+        # Do not silently lose a write card just because its capability does
+        # not have an in-place merge handler yet.
+        return _pending_reply(
+            db,
+            session,
+            turn,
+            started,
+            pending,
+            intent=capability,
+            reply="我先保留这张卡。你是要修改它，还是先确认/取消？",
+        )
+
+    return None
 
 
 def _finish_reply(
@@ -820,6 +1057,23 @@ async def handle_turn(
             "reply": turn.reply,
             "pending": None,
         }
+    # Additions and corrections must be applied to the active card before any
+    # generic "new turn supersedes old card" rule. Otherwise "还有一杯奶茶"
+    # or "记错了 74kg" silently loses the pending write.
+    if pending is not None and pending.kind == "card":
+        followup = await _pending_card_followup(
+            db,
+            user_id,
+            session,
+            turn,
+            pending,
+            text,
+            conversation,
+            started,
+        )
+        if followup is not None:
+            return followup
+
     # A new user turn supersedes an old card. Confirmation/cancel should use
     # the dedicated endpoints; typing a new request means the old card is stale.
     if pending is not None and pending.kind in {"card", "insight", "proposal"}:
@@ -1887,8 +2141,30 @@ async def handle_turn(
             history_context=conversation.reference_context(),
             draft=diet_draft,
         )
-        if resolution.get("questions") or resolution.get("missing_slots"):
-            question = (resolution.get("questions") or ["这餐还需要补充信息。"])[0]
+        meals = resolution.get("meals") or []
+        all_questions = [
+            str(question)
+            for meal in meals
+            for question in meal.get("questions") or []
+            if str(question).strip()
+        ]
+        if resolution.get("questions"):
+            all_questions.extend(
+                str(question)
+                for question in resolution.get("questions") or []
+                if str(question).strip()
+            )
+        all_missing = [
+            slot
+            for meal in meals
+            for slot in meal.get("missing_slots") or []
+            if isinstance(slot, dict)
+        ] + [
+            slot
+            for slot in resolution.get("missing_slots") or []
+            if isinstance(slot, dict)
+        ]
+        if all_questions or all_missing:
             _pending_draft(
                 db,
                 session,
@@ -1898,11 +2174,14 @@ async def handle_turn(
                     "date": resolution.get("date"),
                     "meal": resolution.get("meal"),
                     "items": resolution.get("items") or [],
-                    "missing_slots": resolution.get("missing_slots") or [],
-                    "questions": resolution.get("questions") or [],
+                    "meals": meals or None,
+                    "missing_slots": all_missing,
+                    "questions": all_questions,
                 },
             )
-            reply = question
+            reply = _food_question_text(meals) if meals else (
+                all_questions[0] if all_questions else "这餐还需要补充信息。"
+            )
             turn.intent = DIET
         else:
             payload = {
@@ -1911,25 +2190,28 @@ async def handle_turn(
                 "raw_text": text[:500],
                 "items": resolution.get("items") or [],
             }
+            if meals:
+                payload["meals"] = meals
             _pending_card(
                 db,
                 session,
                 capability_id=DIET,
                 payload=payload,
             )
-            reply = _food_reply(resolution)
-            from ..food_text import MEAL_LABELS
-
-            other_meals = [
-                item
-                for item in resolution.get("meal_mentions") or []
-                if item != resolution.get("meal")
-            ]
-            if other_meals:
-                labels = "、".join(
-                    MEAL_LABELS.get(item, item) for item in other_meals
-                )
-                reply += f" 另外看到你提到{labels}，确认这餐后我再帮你记。"
+            if meals:
+                reply = _food_reply_multi(meals)
+            else:
+                reply = _food_reply(resolution)
+                other_meals = [
+                    item
+                    for item in resolution.get("meal_mentions") or []
+                    if item != resolution.get("meal")
+                ]
+                if other_meals:
+                    labels = "、".join(
+                        MEAL_LABELS.get(item, item) for item in other_meals
+                    )
+                    reply += f" 另外看到你提到{labels}，确认这餐后我再帮你记。"
             turn.intent = DIET
     else:
         profile = db.get(Profile, user_id)

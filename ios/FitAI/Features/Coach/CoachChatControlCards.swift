@@ -278,27 +278,32 @@ extension CoachChatView {
     }
 
     private func dietPendingContent(_ pending: CoachPendingState) -> some View {
-        let items = pending.payload?.items ?? []
+        let meals = pending.payload?.meals ?? []
+        let items = meals.isEmpty
+            ? (pending.payload?.items ?? [])
+            : meals.flatMap(\.items)
         let total = items.reduce(0) { $0 + $1.kcal }
         return VStack(alignment: .leading, spacing: 7) {
-            Text("记录 \(pending.payload?.date ?? "") · \(mealLabel(pending.payload?.meal))")
-                .font(AppType.caption.weight(.semibold))
-                .foregroundStyle(Theme.ink)
-            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
-                HStack(spacing: 6) {
-                    Text(item.name)
-                        .foregroundStyle(Theme.ink)
-                        .lineLimit(1)
-                    if let portion = item.portion, !portion.isEmpty {
-                        Text(portion)
-                            .foregroundStyle(Theme.tertiaryText)
-                    }
-                    Spacer(minLength: 0)
-                    Text("\(Int(item.kcal)) kcal")
-                        .foregroundStyle(Theme.cobalt)
+            Text(
+                meals.isEmpty
+                    ? "记录 \(pending.payload?.date ?? "") · \(mealLabel(pending.payload?.meal))"
+                    : "记录 \(pending.payload?.date ?? "") · \(meals.count) 餐"
+            )
+            .font(AppType.caption.weight(.semibold))
+            .foregroundStyle(Theme.ink)
+
+            if meals.isEmpty {
+                foodItemRows(items)
+            } else {
+                ForEach(meals, id: \.meal) { meal in
+                    Text(mealLabel(meal.meal))
+                        .font(.system(size: 9.5, weight: .semibold))
+                        .foregroundStyle(Theme.secondaryText)
+                        .padding(.top, 2)
+                    foodItemRows(meal.items)
                 }
-                .font(AppType.caption)
             }
+
             HStack {
                 Text("合计")
                     .foregroundStyle(Theme.secondaryText)
@@ -306,6 +311,24 @@ extension CoachChatView {
                 Text("\(Int(total)) kcal")
                     .foregroundStyle(Theme.cobalt)
                     .fontWeight(.semibold)
+            }
+            .font(AppType.caption)
+        }
+    }
+
+    private func foodItemRows(_ items: [AgentFoodItem]) -> some View {
+        ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+            HStack(spacing: 6) {
+                Text(item.name)
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(1)
+                if let portion = item.portion, !portion.isEmpty {
+                    Text(portion)
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+                Spacer(minLength: 0)
+                Text("\(Int(item.kcal)) kcal")
+                    .foregroundStyle(Theme.cobalt)
             }
             .font(AppType.caption)
         }

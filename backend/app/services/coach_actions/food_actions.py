@@ -14,6 +14,7 @@ from ..meal_plans import get_day
 from .registry import ActionSpec, register
 from .schemas import (
     DeleteFoodLogPayload,
+    FoodMealIn,
     LogFoodPayload,
     LogPlannedMealPayload,
     SkipPlannedMealPayload,
@@ -110,26 +111,30 @@ def execute_log_food(
 ) -> dict:
     group_id = str(uuid4())
     created: list[FoodLog] = []
-    for item in payload.items:
-        log = FoodLog(
-            user_id=user_id,
-            client_id=str(uuid4()),
-            logged_at=_meal_time(payload.date, payload.meal),
-            meal=payload.meal,
-            food_name=item.name,
-            grams=item.grams,
-            kcal=item.kcal,
-            protein=item.protein_g,
-            carbs=item.carbs_g,
-            fat=item.fat_g,
-            fiber=item.fiber_g,
-            source="coach",
-            source_action_id=action_id,
-            source_group_id=group_id,
-            estimate_confidence=item.confidence,
-        )
-        db.add(log)
-        created.append(log)
+    groups = payload.meals or [
+        FoodMealIn(meal=payload.meal, items=payload.items)
+    ]
+    for group in groups:
+        for item in group.items:
+            log = FoodLog(
+                user_id=user_id,
+                client_id=str(uuid4()),
+                logged_at=_meal_time(payload.date, group.meal),
+                meal=group.meal,
+                food_name=item.name,
+                grams=item.grams,
+                kcal=item.kcal,
+                protein=item.protein_g,
+                carbs=item.carbs_g,
+                fat=item.fat_g,
+                fiber=item.fiber_g,
+                source="coach",
+                source_action_id=action_id,
+                source_group_id=group_id,
+                estimate_confidence=item.confidence,
+            )
+            db.add(log)
+            created.append(log)
     db.flush()
     return {
         "group_id": group_id,

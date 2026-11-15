@@ -363,6 +363,11 @@ struct AgentLoggedSet: Codable, Hashable {
     }
 }
 
+struct AgentFoodMeal: Codable, Hashable {
+    let meal: String
+    let items: [AgentFoodItem]
+}
+
 struct AgentActionPayload: Codable, Hashable {
     let dayID: String?
     let planID: String?
@@ -393,6 +398,7 @@ struct AgentActionPayload: Codable, Hashable {
     var meal: String?
     let rawText: String?
     var items: [AgentFoodItem]?
+    var meals: [AgentFoodMeal]?
     let title: String?
     let durationMinutes: Int?
     let kind: String?
@@ -447,6 +453,7 @@ struct AgentActionPayload: Codable, Hashable {
         case meal
         case rawText = "raw_text"
         case items
+        case meals
         case title
         case durationMinutes = "duration_minutes"
         case kind

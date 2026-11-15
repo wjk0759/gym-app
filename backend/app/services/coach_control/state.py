@@ -110,6 +110,29 @@ def set_pending(
     return pending
 
 
+def update_pending(
+    db: Session,
+    session: CoachSession,
+    pending: CoachPending,
+    *,
+    payload: dict | None = None,
+    kind: str | None = None,
+) -> CoachPending:
+    """Update the active pending in place instead of cancelling and replacing it."""
+    if payload is not None:
+        pending.payload = payload
+    if kind is not None:
+        pending.kind = kind
+    pending.updated_at = utcnow()
+    pending.expires_at = utcnow() + PENDING_TTL
+    session.pending_id = pending.id
+    session.status = "waiting"
+    session.active_topic = pending.capability_id
+    session.updated_at = utcnow()
+    db.flush()
+    return pending
+
+
 def consume_pending(db: Session, session: CoachSession, pending: CoachPending) -> None:
     pending.status = "consumed"
     pending.updated_at = utcnow()

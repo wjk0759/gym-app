@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -159,6 +160,10 @@ ALIASES = {
     "腊肠": "腊肠",
     "燕麦": "燕麦（干）",
     "燕麦片": "燕麦（干）",
+    "麦片": "燕麦（干）",
+    "炒米粉": "炒米粉",
+    "紫薯": "紫薯",
+    "玉米肠": "玉米肠",
     "冰美式": "美式咖啡",
     "美式": "美式咖啡",
     "鸡蛋": "鸡蛋",
@@ -223,6 +228,9 @@ DEFAULT_GRAMS = {
     "米饭": 150.0,
     "糙米饭": 150.0,
     "燕麦（干）": 60.0,
+    "炒米粉": 250.0,
+    "紫薯": 100.0,
+    "玉米肠": 100.0,
     "鸡蛋": 50.0,
     "鸡胸肉": 150.0,
     "牛肉": 120.0,
@@ -385,7 +393,7 @@ def _has_portion(segment: str) -> bool:
 
 
 _DISCOURSE_ONLY = re.compile(
-    r"我|刚刚|刚才|就|说|的|这|那|是|今天|昨天|前天|早上|中午|晚上|"
+    r"我|刚刚|刚才|就|又|还|再|也|说|的|这|那|是|今天|昨天|前天|早上|中午|晚上|"
     r"早餐|午餐|晚餐|加餐|夜宵|零食|吃|喝|了|和|跟|一样|上面|照片|里|"
     r"顿|餐|饭|菜|还有|另外|帮我|记|一下|记录|补|到|去|吧|呢|啊|呀|哦|嗯|好|"
     r"大概|大约|左右|差不多|晚|早"
@@ -412,18 +420,168 @@ def _is_food_segment(segment: str) -> bool:
     return bool(
         re.search(
             r"鸡|牛|猪|鱼|虾|蛋|奶|饭|面|肠|肉|菜|果|豆|薯|饼|粥|汤|"
-            r"咖啡|茶|酒|水|汁|粉|包|饺|燕麦|美式|腊肠|干蒸|食|物",
+            r"咖啡|茶|酒|水|汁|粉|包|饺|麦|燕麦|美式|腊肠|干蒸|食|物",
             segment,
         )
     )
 
 
+def split_meal_clauses(text: str) -> list[tuple[str | None, str]]:
+    """Split a turn into meal-labelled clauses.
+
+    Punctuation and spaces are item/field separators, not meal boundaries.
+    Meal labels are the only hard grouping signal:
+    - labels before each group: "早上麦片、中午牛肉、晚上炒米粉"
+    - a trailing label: "牛肉、腊肠、米饭是中午吃的"
+    - narrative framing: "这是我今天的晚饭，中午吃了..." keeps only lunch
+    """
+    value = unicodedata.normalize("NFKC", text).replace("\u3000", " ")
+    sentences = re.split(r"[。；;\n!?！？]+", value)
+    result: list[tuple[str | None, str]] = []
+    current_meal: str | None = None
+
+    for sentence in sentences:
+        sentence = sentence.strip()
+        if not sentence:
+            continue
+        matches = [
+            (match.start(), match.end(), meal)
+            for meal, pattern in MEAL_PATTERNS
+            for match in re.finditer(pattern, sentence)
+        ]
+        matches.sort(key=lambda item: (item[0], -(item[1] - item[0])))
+        unique: list[tuple[int, int, str]] = []
+        for start, end, meal in matches:
+            if unique and start < unique[-1][1]:
+                continue
+            unique.append((start, end, meal))
+
+        if not unique:
+            result.append((current_meal, sentence))
+            continue
+
+        if len(unique) == 1:
+            meal = unique[0][2]
+            result.append((meal, sentence))
+            current_meal = meal
+            continue
+
+        prefix = sentence[: unique[0][0]].strip(" ，,、")
+        if prefix and _food_segments(prefix):
+            result.append((unique[0][2], prefix))
+        for index, (start, _end, meal) in enumerate(unique):
+            end = unique[index + 1][0] if index + 1 < len(unique) else len(sentence)
+            clause = sentence[start:end].strip(" ，,、")
+            if clause:
+                result.append((meal, clause))
+            current_meal = meal
+    return result
+
+
+_NUMBER_TOKEN = r"(?:\d+(?:\.\d+)?|半|一|两|二|三|四|五|六|七|八|九|十)"
+_UNIT_TOKEN = r"(?:kg|g|克|ml|毫升|杯|份|碗|个|片|勺|盒|瓶)"
+_PROTECTED_FOOD_TOKEN = re.compile(
+    r"\d{4}[-/.]\d{1,2}[-/.]\d{1,2}"
+    r"|\d{1,2}:\d{2}"
+    rf"|{_NUMBER_TOKEN}\s*[-~～至到]\s*{_NUMBER_TOKEN}\s*{_UNIT_TOKEN}?"
+    rf"|{_NUMBER_TOKEN}\s*{_UNIT_TOKEN}",
+    flags=re.IGNORECASE,
+)
+_QUANTITY_TOKEN = re.compile(
+    rf"^{_NUMBER_TOKEN}\s*{_UNIT_TOKEN}$",
+    flags=re.IGNORECASE,
+)
+_RANGE_TOKEN = re.compile(
+    rf"^{_NUMBER_TOKEN}\s*[-~～至到]\s*{_NUMBER_TOKEN}\s*{_UNIT_TOKEN}?$",
+    flags=re.IGNORECASE,
+)
+_ITEM_BOUNDARY = re.compile(r"[，,、；;。！!？?：:\n+＋|｜/\\~～&]+")
+
+
+def _is_item_boundary(char: str) -> bool:
+    return bool(_ITEM_BOUNDARY.fullmatch(char)) or (
+        unicodedata.category(char).startswith("P")
+    )
+
+
+def _merge_chunk_tokens(tokens: list[str]) -> list[str]:
+    """Attach quantities to the food they describe.
+
+    Spaces are separators, so ``鸡胸肉 200 g 米饭`` arrives as four tokens.
+    Reattaching ``200 g`` to the preceding food preserves the user's intent
+    without treating number/unit fragments as unknown dishes.
+    """
+    merged: list[str] = []
+    pending_quantity: str | None = None
+    for token in tokens:
+        value = token.strip()
+        if not value:
+            continue
+        if _QUANTITY_TOKEN.fullmatch(value) or _RANGE_TOKEN.fullmatch(value):
+            if pending_quantity is not None:
+                merged.append(pending_quantity)
+                pending_quantity = None
+            if merged:
+                merged[-1] = f"{merged[-1]} {value}"
+            else:
+                pending_quantity = value
+            continue
+        if pending_quantity is not None:
+            merged.append(f"{pending_quantity} {value}")
+            pending_quantity = None
+            continue
+        if _is_pure_discourse(value):
+            continue
+        merged.append(value)
+    if pending_quantity is not None:
+        merged.append(pending_quantity)
+    return merged
+
+
 def _food_segments(text: str) -> list[str]:
-    return [
-        segment.strip()
-        for segment in re.split(r"[，,、;；。！!？?\n+＋]+", text)
-        if segment.strip()
-    ]
+    """Split on every punctuation mark and whitespace, then reassemble units.
+
+    Punctuation and spaces are all candidate boundaries. Protected spans
+    (dates, times, ranges and number+unit) stay whole; a number/unit is then
+    attached to the adjacent food token.
+    """
+    value = unicodedata.normalize("NFKC", text).replace("\u3000", " ")
+    segments: list[str] = []
+    chunk: list[str] = []
+    buffer: list[str] = []
+    index = 0
+
+    def flush_buffer() -> None:
+        if buffer:
+            chunk.append("".join(buffer).strip())
+            buffer.clear()
+
+    def flush_chunk() -> None:
+        flush_buffer()
+        if chunk:
+            segments.extend(_merge_chunk_tokens(chunk))
+            chunk.clear()
+
+    while index < len(value):
+        protected = _PROTECTED_FOOD_TOKEN.match(value, index)
+        if protected is not None:
+            flush_buffer()
+            chunk.append(protected.group(0))
+            index = protected.end()
+            continue
+        char = value[index]
+        if char.isspace():
+            flush_buffer()
+            index += 1
+            continue
+        if _is_item_boundary(char):
+            flush_chunk()
+            index += 1
+            continue
+        buffer.append(char)
+        index += 1
+    flush_chunk()
+    return [segment for segment in segments if segment.strip()]
 
 
 def meal_analysis(text: str) -> dict:
@@ -435,14 +593,10 @@ def meal_analysis(text: str) -> dict:
     """
     mentions = parse_meal_mentions(text)
     explicit: list[str] = []
-    for clause in re.split(r"[，,。；;\n]+", text):
-        meal = parse_meal(clause)
-        if meal is None:
+    for meal, clause in split_meal_clauses(text):
+        if meal is None or meal in explicit:
             continue
-        if (
-            any(_is_food_segment(segment) for segment in _food_segments(clause))
-            and meal not in explicit
-        ):
+        if any(_is_food_segment(segment) for segment in _food_segments(clause)):
             explicit.append(meal)
     return {
         "meal": mentions[0] if mentions else None,
@@ -711,21 +865,21 @@ def rule_resolution_by_meal(text: str) -> dict[str, FoodResolution]:
     """
     groups: dict[str, FoodResolution] = {}
     current_meal: str | None = None
-    for clause in re.split(r"[，,。；;\n]+", text):
+    for meal, clause in split_meal_clauses(text):
         clause = clause.strip()
         if not clause:
             continue
-        meal = parse_meal(clause)
         if meal is not None:
             current_meal = meal
-        if current_meal is None:
-            continue
+        target = meal or current_meal
+        if target is None:
+            target = "__default__"
         resolution = resolve_food_rules(clause)
         if not resolution.items and not resolution.questions:
             continue
-        existing = groups.get(current_meal)
+        existing = groups.get(target)
         if existing is None:
-            groups[current_meal] = resolution
+            groups[target] = resolution
             continue
         existing.items.extend(resolution.items)
         existing.questions.extend(resolution.questions)

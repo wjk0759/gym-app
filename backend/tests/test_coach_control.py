@@ -747,6 +747,50 @@ def test_training_reschedule_confirm_and_undo(db):
     assert db.execute(select(PlanDayState)).scalars().all() == []
 
 
+def test_training_reschedule_card_accepts_a_new_date(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    context = {
+        "plan": {
+            "id": "plan-1",
+            "version": 3,
+            "days": [
+                {
+                    "id": "day-1",
+                    "date": today.isoformat(),
+                    "title": "上肢",
+                    "completed": False,
+                    "skipped": False,
+                }
+            ],
+        }
+    }
+    first = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "把今天的训练改到 11月20日",
+            app_context=context,
+        )
+    )
+    assert first["pending"]["payload"]["to_date"].endswith("-11-20")
+    second = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "改到 11月22日",
+            session_id=first["session"]["id"],
+        )
+    )
+    assert second["pending"]["capability_id"] == "training.reschedule"
+    assert second["pending"]["payload"]["to_date"].endswith("-11-22")
+    active = db.execute(
+        select(CoachPending).where(CoachPending.status == "pending")
+    ).scalars().all()
+    assert len(active) == 1
+
+
 def test_dinner_reference_uses_prior_turns_and_full_history(db, monkeypatch):
     import asyncio
     import json
@@ -816,9 +860,183 @@ def test_dinner_reference_uses_prior_turns_and_full_history(db, monkeypatch):
     assert "250g" in prompt["history"]
     assert "干蒸牛肉" in names
     assert "米饭" in names
-    assert payload["meal"] == "dinner"
-    assert "另外看到你提到午饭" in turn["reply"]
+    assert payload["meal"] == "lunch"
+    assert "另外看到你提到晚饭" in turn["reply"]
     assert all("这是我今天的晚饭" not in q for q in payload.get("questions", []))
+
+
+def test_multi_meal_turn_builds_one_card(db, monkeypatch):
+    import asyncio
+    import json
+    from types import SimpleNamespace
+
+    from app.services import food_text
+
+    async def fake_complete_json(system, user, **kwargs):
+        payload = json.loads(user)
+        text = payload.get("text") or ""
+        if "麦片" in text:
+            return {
+                "items": [
+                    {
+                        "name": "麦片",
+                        "grams": 200,
+                        "kcal": 760,
+                        "protein_g": 26,
+                        "carbs_g": 132,
+                        "fat_g": 13,
+                    }
+                ],
+                "questions": [],
+            }
+        if "炒米粉" in text:
+            return {
+                "items": [
+                    {
+                        "name": "炒米粉",
+                        "grams": 250,
+                        "kcal": 425,
+                        "protein_g": 10,
+                        "carbs_g": 55,
+                        "fat_g": 13.8,
+                    },
+                    {
+                        "name": "紫薯",
+                        "grams": 60,
+                        "kcal": 80,
+                        "protein_g": 1,
+                        "carbs_g": 18,
+                        "fat_g": 0.1,
+                    },
+                    {
+                        "name": "玉米肠",
+                        "grams": 100,
+                        "kcal": 240,
+                        "protein_g": 12,
+                        "carbs_g": 8,
+                        "fat_g": 18,
+                    },
+                ],
+                "questions": [],
+            }
+        return {"items": [], "questions": []}
+
+    monkeypatch.setattr(
+        food_text,
+        "settings",
+        SimpleNamespace(use_mock_llm=False),
+    )
+    monkeypatch.setattr(food_text.llm, "complete_json", fake_complete_json)
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "我昨天早上吃了200g麦片、中午吃的是干蒸牛肉+腊肠+200g米饭、"
+            "晚饭吃了250g炒米粉+60g紫薯+100g玉米肠",
+        )
+    )
+    payload = turn["pending"]["payload"]
+    meals = {item["meal"]: item for item in payload["meals"]}
+    assert set(meals) == {"breakfast", "lunch", "dinner"}
+    assert [item["name"] for item in meals["breakfast"]["items"]] == ["麦片"]
+    assert {item["name"] for item in meals["lunch"]["items"]} == {
+        "干蒸牛肉",
+        "腊肠",
+        "米饭",
+    }
+    assert {item["name"] for item in meals["dinner"]["items"]} == {
+        "炒米粉",
+        "紫薯",
+        "玉米肠",
+    }
+    assert "一餐" not in turn["reply"]
+    assert "一次写入" in turn["reply"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    logs = db.execute(
+        select(FoodLog).where(FoodLog.user_id == "user-1")
+    ).scalars().all()
+    by_meal: dict[str, set[str]] = {}
+    for log in logs:
+        by_meal.setdefault(log.meal, set()).add(log.food_name)
+    assert by_meal["breakfast"] == {"麦片"}
+    assert by_meal["lunch"] == {"干蒸牛肉", "腊肠", "米饭"}
+    assert by_meal["dinner"] == {"炒米粉", "紫薯", "玉米肠"}
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(
+        select(FoodLog).where(FoodLog.user_id == "user-1")
+    ).scalars().all() == []
+
+
+def test_weight_card_accepts_a_correction_without_losing_context(db):
+    import asyncio
+
+    first = asyncio.run(runtime.handle_turn(db, "user-1", "今天体重73kg"))
+    assert first["pending"]["kind"] == "card"
+    assert first["pending"]["payload"]["weight_kg"] == 73.0
+
+    second = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "记错了 今天是74kg",
+            session_id=first["session"]["id"],
+        )
+    )
+    assert second["pending"]["capability_id"] == "body.log_weight"
+    assert second["pending"]["kind"] == "card"
+    assert second["pending"]["payload"]["weight_kg"] == 74.0
+    active = db.execute(
+        select(CoachPending).where(CoachPending.status == "pending")
+    ).scalars().all()
+    assert len(active) == 1
+    assert active[0].id == first["pending"]["id"]
+
+
+def test_food_card_merges_a_follow_up_item(db):
+    import asyncio
+
+    first = asyncio.run(runtime.handle_turn(db, "user-1", "午餐吃了100g鸡胸肉"))
+    assert first["pending"]["kind"] == "card"
+    assert first["pending"]["payload"]["meal"] == "lunch"
+
+    second = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "还有一杯奶茶",
+            session_id=first["session"]["id"],
+        )
+    )
+    payload = second["pending"]["payload"]
+    assert payload["meal"] == "lunch"
+    assert {item["name"] for item in payload["items"]} == {"鸡胸肉", "奶茶"}
+    active = db.execute(
+        select(CoachPending).where(CoachPending.status == "pending")
+    ).scalars().all()
+    assert len(active) == 1
+
+
+def test_food_card_merges_a_second_meal(db):
+    import asyncio
+
+    first = asyncio.run(runtime.handle_turn(db, "user-1", "午餐吃了100g鸡胸肉"))
+    second = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "晚餐吃了100g米饭",
+            session_id=first["session"]["id"],
+        )
+    )
+    payload = second["pending"]["payload"]
+    meals = {item["meal"]: item for item in payload["meals"]}
+    assert set(meals) == {"lunch", "dinner"}
+    assert [item["name"] for item in meals["lunch"]["items"]] == ["鸡胸肉"]
+    assert [item["name"] for item in meals["dinner"]["items"]] == ["米饭"]
+    assert "一次写入" in second["reply"]
 
 
 def test_dinner_reference_only_uses_history_items(db, monkeypatch):
