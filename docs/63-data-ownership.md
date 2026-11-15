@@ -19,7 +19,7 @@
 |---|---|---|---|---|
 | 体重/体脂/腰围/臂围/大腿围 | `BodyMetric` | `UserProfile` 同名字段、页面 fallback | A/B | `BodyMetric` 唯一事实；Profile 只做启动/离线缓存；所有写走 `appendBodyMetric` |
 | 胸围/臀围 | `UserProfile` | 无 BodyMetric 字段 | A/D | 先保留在 Profile；若要做趋势，再加入 BodyMetric |
-| 目标 | 服务端 `Goal`（设计） | `UserProfile.goalType/target*` | A | 服务端为权威；本地是缓存；手动编辑立即 push，后续补 pull |
+| 目标 | 服务端 `Goal` | `UserProfile.goalType/target*` | A | 服务端为权威；本地是缓存；手动编辑立即 push，`profileSyncPending` 防覆盖，`.profile` 拉 `/me` |
 | 营养目标 | 服务端 `/diet/targets` | 本地 `DietPlanner.targets` | A/B | 今日优先服务端缓存；本地只做离线 fallback |
 | 训练计划结构 | `Program / ProgramDay / PlanExercise`（服务端） | 本地 `TrainingPlan` | B | 保留离线缓存，`planNeedsServerSync` 负责上传 |
 | 训练日程/跳过 | `PlanDayState`（服务端） | 本地 `TrainingPlan.days.date/skippedAt` | B | 保留，按 `clientUpdatedAt` 合并 |
@@ -29,12 +29,14 @@
 | 器械类型 | `Profile.equipment` | 本地 `profile.equipment` | B | 保留，服务端为计划生成依据 |
 | 自定义器械 | `EquipmentLibraryItem` | 本地 `equipmentLibrary` | B | 保留缓存 |
 | 通用器械勾选 | `UserUniversalEquipment` | 本地 `selectedUniversalSlugs` | B | 保留缓存 |
-| 提醒 | iOS 本地通知 | 服务端 `NotificationSchedule` 表未使用 | D | 暂定本地唯一来源；服务端表标记为未使用，别误接 |
-| 自定义食物/收藏/不喜欢 | iOS 本地 | 无 | D | 产品决定是否跨设备；未决定前不强行上云 |
-| 体型分析 | iOS 本地 | 无 | D | 同上 |
-| 计划历史 | iOS 本地 | 服务端 Program 历史未拉取 | D/B | 先保留本地，后续补服务端历史 |
-| 训练草稿 | iOS 本地 | 无 | D | 保留；跨设备恢复是后续需求 |
-| 经期/周期 | `UserProfile` 本地 | 无 | D | 敏感数据，单独决策 |
+| 提醒 | `user_preferences` + iOS 本地通知 | 服务端 `NotificationSchedule` 表未使用 | B/D | 偏好上云；通知权限/排程仍是设备级；服务端表要么删要么接 |
+| 自定义食物 | `user_custom_foods` | 本地 `customFoods` 缓存 | B | 已上云，按 `client_id` 合并 |
+| 收藏食物 | `user_food_favorites` | 本地 `favoriteFoods` 缓存 | B | 已上云，收藏用 tombstone 删除 |
+| 不喜欢动作 | `user_exercise_dislikes` | 本地 `dislikedSlugs` 缓存 | B | 已上云，移除用 tombstone |
+| 体型分析 | iOS 本地 | 无 | D | 待上云：元数据 + 照片 |
+| 计划历史 | 服务端 Program | 本地 `planHistory` 缓存 | B | 已补 `GET /plans/history` 并合并 |
+| 训练草稿 | iOS 本地 | 无 | D | 待上云，跨设备恢复 |
+| 经期/周期 | `UserProfile` 本地 | 无 | D | 待上云，用户隔离 + 服务端加密 |
 | 会员 | 服务端 entitlement + StoreKit | 本地 `SubscriptionManager` | C | 不合并：StoreKit 是购买结果，服务端是权益权威 |
 | 教练 pending/receipt | 服务端 | 本地 `coachPending/coachReceipt` | B | 本地是缓存；服务端权威 |
 
@@ -96,8 +98,9 @@
 
 ## 5. 后续优先级
 
-1. 今日营养目标全页面统一；非今日日期继续用日期级接口
+1. 非今日营养目标的日期级统一
 2. 器械统一只读快照（不合并底层三个状态）
-3. 决定本地独有数据是否上云：自定义食物、收藏、体型分析、计划历史
-4. 清理未使用的 `NotificationSchedule` 表，或正式接入
-5. 让 `.profile` pull 覆盖更多网络恢复场景（登录、回前台、弱网重试）
+3. 体型分析元数据 + 照片上云（私有对象存储、签名 URL）
+4. 训练草稿上云（跨设备恢复，最新 `updated_at` 胜）
+5. 经期数据上云（用户隔离 + 服务端加密；默认不进教练上下文）
+6. 清理未使用的 `NotificationSchedule` 表，或正式接入
