@@ -71,9 +71,19 @@ extension AppStore {
             let granted = try await HealthKitService.shared.requestAuthorization()
             healthKitEnabled = granted
             if granted, let weight = try? await HealthKitService.shared.latestBodyMassKG() {
-                profile.weightKG = weight
+                var metric = bodyMetrics.first(where: {
+                    $0.dateKey == FitnessDate.key(Date())
+                }) ?? BodyMetric(
+                    date: Date(),
+                    weightKG: nil,
+                    bodyFatPCT: nil,
+                    waistCM: nil
+                )
+                metric.weightKG = weight
+                appendBodyMetric(metric)
             }
             persist()
+            syncPendingUserData()
             return granted
         } catch {
             healthKitEnabled = false

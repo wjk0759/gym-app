@@ -7,6 +7,44 @@ extension AppStore {
         bodyMetrics.sorted { $0.date > $1.date }.first
     }
 
+    /// Canonical current body values for every screen.
+    /// BodyMetric is the source of truth; `profile` fields are the legacy
+    /// bootstrap/offline fallback used only when no metric exists yet.
+    var currentWeightKG: Double {
+        latestBodyMetric?.weightKG ?? profile.weightKG
+    }
+
+    var currentBodyFatPCT: Double {
+        latestBodyMetric?.bodyFatPCT ?? profile.bodyFatPCT
+    }
+
+    var currentWaistCM: Double {
+        latestBodyMetric?.waistCM ?? profile.waistCM
+    }
+
+    var currentArmCM: Double {
+        latestBodyMetric?.armCM ?? profile.armCM
+    }
+
+    var currentThighCM: Double {
+        latestBodyMetric?.thighCM ?? profile.thighCM
+    }
+
+    var currentBMI: Double {
+        guard profile.heightCM > 0 else { return 0 }
+        let meters = profile.heightCM / 100
+        return (currentWeightKG / (meters * meters) * 10).rounded() / 10
+    }
+
+    var currentBMILabel: String {
+        switch currentBMI {
+        case ..<18.5: return "偏瘦"
+        case 18.5..<24: return "正常"
+        case 24..<28: return "偏高"
+        default: return "肥胖"
+        }
+    }
+
     var hasPlanEquipment: Bool {
         profile.equipment.contains { equipment in
             ExerciseLibrary.all.contains { exercise in

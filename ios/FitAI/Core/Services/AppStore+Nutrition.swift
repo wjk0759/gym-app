@@ -16,6 +16,17 @@ extension AppStore {
         syncPendingUserData()
     }
 
+    /// One daily target for every screen. Prefer the server-confirmed cache
+    /// for today; fall back to the local estimate only when offline or before
+    /// the first server refresh.
+    var currentNutritionTargets: NutritionTargets {
+        if dailyNutritionTargetsKey == FitnessDate.key(Date()),
+           let cached = dailyNutritionTargets {
+            return cached
+        }
+        return DietPlanner.targets(profile: profile)
+    }
+
     func addCustomFood(_ food: FoodItem) {
         customFoods.removeAll { $0.name == food.name }
         customFoods.insert(food, at: 0)

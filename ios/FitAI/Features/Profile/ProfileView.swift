@@ -169,30 +169,30 @@ struct ProfileView: View {
 
             HStack(spacing: 8) {
                 bodyStat(
-                    value: String(format: "%.1f", store.profile.weightKG),
+                    value: String(format: "%.1f", store.currentWeightKG),
                     label: "体重 · kg"
                 )
                 bodyStat(
-                    value: String(format: "%.1f", store.profile.bodyFatPCT),
+                    value: String(format: "%.1f", store.currentBodyFatPCT),
                     label: "体脂 · %"
                 )
                 bodyStat(
-                    value: String(format: "%.0f", store.profile.waistCM),
+                    value: String(format: "%.0f", store.currentWaistCM),
                     label: "腰围 · cm"
                 )
             }
 
             HStack(spacing: 8) {
                 bodyStat(
-                    value: String(format: "%.1f", store.profile.bmi),
-                    label: "BMI · \(store.profile.bmiLabel)"
+                    value: String(format: "%.1f", store.currentBMI),
+                    label: "BMI · \(store.currentBMILabel)"
                 )
                 bodyStat(
-                    value: String(format: "%.1f", store.profile.armCM),
+                    value: String(format: "%.1f", store.currentArmCM),
                     label: "臂围 · cm"
                 )
                 bodyStat(
-                    value: String(format: "%.1f", store.profile.thighCM),
+                    value: String(format: "%.1f", store.currentThighCM),
                     label: "大腿围 · cm"
                 )
             }

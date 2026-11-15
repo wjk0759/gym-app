@@ -159,7 +159,7 @@ struct DietLibraryView: View {
     }
 
     private var targetCard: some View {
-        let targets = DietPlanner.targets(profile: store.profile)
+        let targets = store.currentNutritionTargets
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Label("我的目标 · \(store.profile.goalType.label)", systemImage: "target")

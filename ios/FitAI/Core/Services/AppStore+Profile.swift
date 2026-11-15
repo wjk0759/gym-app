@@ -83,6 +83,7 @@ extension AppStore {
         }
         persist()
         syncPendingUserData()
+        syncProfileAndGoal()
         if planSettingsChanged, hasPlanEquipment, regeneratePlan {
             generatePlan(force: true)
         } else {
@@ -90,6 +91,18 @@ extension AppStore {
                 toast = "档案已更新；训练设置有变化，需要重排计划时请在训练手账重新生成"
             }
             rescheduleNotifications()
+        }
+    }
+
+    /// Manual profile edits are local-first. Push both the profile and the
+    /// active goal immediately so a later coach turn or plan generation cannot
+    /// read an older server copy.
+    private func syncProfileAndGoal() {
+        guard AuthTokenStore.shared.accessToken != nil else { return }
+        let snapshot = profile
+        Task { @MainActor in
+            try? await APIClient.shared.syncProfile(snapshot)
+            try? await APIClient.shared.syncGoal(snapshot)
         }
     }
 }
