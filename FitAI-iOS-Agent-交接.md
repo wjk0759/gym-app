@@ -65,9 +65,9 @@
 
 - 配置变更（无代码提交）：生产 `/opt/fitai/.env`
   - `VISION_MODEL=deepseek-flash`
-  - `VISION_BASE_URL=`（空，回落 `LLM_BASE_URL`）
-  - `VISION_API_KEY=`（空，回落 `LLM_API_KEY`）
-  - 备份：`/opt/fitai/.env.bak-20261115-195656`
+  - 已删除 `VISION_BASE_URL` / `VISION_API_KEY`，回落 `LLM_*`
+  - 备份：`/opt/fitai/.env.bak-20261115-195656` 已删除；保留当前 DeepSeek 配置备份 `.env.deepseek-20261115-200425`
+  - 本地 `backend/.env` 也已移除 Qwen 视觉配置
   - 已 `docker compose up -d --build api`，`/health/ready` 200
 - 评测（7 张器械图，通用 prompt）：
   - DeepSeek V4.1 Flash：2 个准确 + 2 个接近
@@ -79,6 +79,7 @@
   - 器械图 `/coach/turns/vision` 200，`mode=equipment`，JSON 正常
   - 食物图 200，`mode=nutrition`，返回约 380–450 kcal、蛋白质 40–45g
   - 第三张训练图 429，是视觉 6 次/分钟限流，不是模型失败
+  - `/equipment/scan` 200，但「分片式上斜飞鸟机」仍返回腿举候选（0.55），确认准确率问题未解决
 - 未验证：
   - 体型/训练动作两类图片
   - 真机拍照、长图/多图、超时和成本
