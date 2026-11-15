@@ -110,7 +110,7 @@ def photo_for(
     ).scalar_one_or_none()
     if item is None:
         return None
-    key = item.thumbnail_key if thumbnail else item.image_key
+    key = (item.thumbnail_key if thumbnail else item.image_key) or item.image_key
     return photo_path(key)
 
 

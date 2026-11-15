@@ -483,6 +483,12 @@ class SetLog(Base):
 
 
 class NotificationSchedule(Base):
+    """Reserved for future server-side reminders.
+
+    iOS currently schedules local notifications; no API reads or writes this
+    table. Do not include it in `/sync` until push delivery is designed.
+    """
+
     __tablename__ = "notification_schedules"
     __table_args__ = (
         UniqueConstraint(
