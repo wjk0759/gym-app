@@ -1052,6 +1052,22 @@ def test_duplicate_food_and_weight_cards_add_a_warning(db):
     assert repeated_weight["pending"]["payload"]["duplicate_warning"]
 
 
+def test_injury_partial_recovery_keeps_painful_area(db):
+    import asyncio
+
+    profile = db.get(Profile, "user-1")
+    profile.injuries = ["腰部旧伤", "膝盖有伤"]
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "膝盖好了但腰还疼")
+    )
+    assert turn["pending"]["payload"]["injuries"] == ["腰部旧伤"]
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    db.refresh(profile)
+    assert profile.injuries == ["腰部旧伤"]
+
+
 def test_body_weight_confirm_and_undo(db):
     import asyncio
 

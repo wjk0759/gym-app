@@ -257,24 +257,71 @@ def resolve_injuries(
         if re.search(r"没有伤病|都好了|全好了|伤好了|康复了|恢复了", message):
             remaining: list[str] = []
         else:
-            parts = [
-                keyword
-                for keyword in ("膝", "腰", "肩", "腕", "踝", "肘", "半月板")
-                if keyword in message
-            ]
-            if parts:
-                remaining = [
-                    item
-                    for item in before
-                    if not any(part in item for part in parts)
+            contrast = re.split(r"但(?:是)?|不过", message, maxsplit=1)
+            if len(contrast) == 2:
+                recover_text, pain_text = contrast
+                remove_parts = [
+                    keyword
+                    for keyword in (
+                        "膝",
+                        "腰",
+                        "肩",
+                        "腕",
+                        "踝",
+                        "肘",
+                        "半月板",
+                    )
+                    if keyword in recover_text
                 ]
-            elif len(before) == 1:
-                remaining = []
+                keep_parts = [
+                    keyword
+                    for keyword in (
+                        "膝",
+                        "腰",
+                        "肩",
+                        "腕",
+                        "踝",
+                        "肘",
+                        "半月板",
+                    )
+                    if keyword in pain_text
+                ]
+                if remove_parts:
+                    remaining = [
+                        item
+                        for item in before
+                        if any(part in item for part in keep_parts)
+                        or not any(part in item for part in remove_parts)
+                    ]
+                else:
+                    remaining = list(before)
             else:
-                return {
-                    "ready": False,
-                    "questions": ["是哪一处不疼了？例如“膝盖不疼了”。"],
-                }
+                parts = [
+                    keyword
+                    for keyword in (
+                        "膝",
+                        "腰",
+                        "肩",
+                        "腕",
+                        "踝",
+                        "肘",
+                        "半月板",
+                    )
+                    if keyword in message
+                ]
+                if parts:
+                    remaining = [
+                        item
+                        for item in before
+                        if not any(part in item for part in parts)
+                    ]
+                elif len(before) == 1:
+                    remaining = []
+                else:
+                    return {
+                        "ready": False,
+                        "questions": ["是哪一处不疼了？例如“膝盖不疼了”。"],
+                    }
         if remaining == before:
             return {
                 "ready": False,
