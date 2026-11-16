@@ -156,11 +156,20 @@ def _cn_number(value: str) -> int | None:
 
 
 def resolve_forget(db: Session, user_id: str, message: str) -> dict:
+    ordinal = re.search(r"第\s*([一二两三四五六七八九十\d]+)\s*条", message)
+    ordinal_index = (
+        _cn_number(ordinal.group(1)) if ordinal is not None else None
+    )
     target = re.sub(
         r"^.*?(?:忘掉|忘记|删除|删掉|去掉|别再记(?:住)?|不要记(?:住)?)"
         r"[：:，,\s]*",
         "",
         message.strip(),
+    )
+    target = re.sub(
+        r"第\s*[一二两三四五六七八九十\d]+\s*条",
+        "",
+        target,
     )
     target = re.sub(
         r"^(?:关于|有关|我那条|那条|这条|我的)\s*",
@@ -185,23 +194,6 @@ def resolve_forget(db: Session, user_id: str, message: str) -> dict:
     )
     if not memories:
         return {"ready": False, "questions": ["还没有可删除的长期记忆。"]}
-    ordinal = re.search(r"第\s*([一二两三四五六七八九十\d]+)\s*条", message)
-    if ordinal is not None:
-        index = _cn_number(ordinal.group(1))
-        if index is None or not 1 <= index <= len(memories):
-            return {
-                "ready": False,
-                "questions": ["没有这一条记忆，重新说一个序号试试。"],
-            }
-        item = memories[index - 1]
-        return {
-            "ready": True,
-            "payload": {
-                "memory_id": item.id,
-                "content": item.content,
-                "summary": f"准备删除记忆「{item.content[:60]}」",
-            },
-        }
     if target:
         normalized = _normalize_memory(target)
         matches = [
@@ -233,6 +225,21 @@ def resolve_forget(db: Session, user_id: str, message: str) -> dict:
         return {
             "ready": False,
             "questions": ["没找到这条记忆，可以说得更具体一点。"],
+        }
+    if ordinal is not None:
+        if ordinal_index is None or not 1 <= ordinal_index <= len(matches):
+            return {
+                "ready": False,
+                "questions": ["没有这一条记忆，重新说一个序号试试。"],
+            }
+        item = matches[ordinal_index - 1]
+        return {
+            "ready": True,
+            "payload": {
+                "memory_id": item.id,
+                "content": item.content,
+                "summary": f"准备删除记忆「{item.content[:60]}」",
+            },
         }
     if len(matches) > 1:
         examples = "；".join(

@@ -541,9 +541,11 @@ def _looks_like_memory_selection(message: str) -> bool:
     value = message.strip()
     if re.match(r"^(早上好|晚上好|早安|晚安)", value):
         return False
-    return len(value) <= 20 and bool(
+    if len(value) > 20:
+        return False
+    return bool(
         re.search(
-            r"那条|这条|第[一二三四五六七八九十\d]+条|早上|晚上",
+            r"第[一二两三四五六七八九十\d]+条|(?:早上|晚上)?(?:那条|这条)",
             value,
         )
     )
@@ -2630,8 +2632,26 @@ async def handle_turn(
         and (_minutes_since(session.last_turn_at) or 0) <= 15
         and _looks_like_memory_selection(text)
     ):
+        previous = (
+            db.execute(
+                select(CoachTurn)
+                .where(
+                    CoachTurn.session_id == session.id,
+                    CoachTurn.user_id == user_id,
+                    CoachTurn.intent == FORGET_MEMORY,
+                )
+                .order_by(CoachTurn.created_at.desc())
+            )
+            .scalars()
+            .first()
+        )
+        base = (
+            previous.input_text
+            if previous is not None and previous.input_text
+            else "删除记忆"
+        )
         intent_override = FORGET_MEMORY
-        text = f"删除记忆 {text}".strip()[:2000]
+        text = f"{base} {text}".strip()[:2000]
 
     if intent_override is None:
         batch = await _try_batch_turn(db, user_id, text, context, conversation)
