@@ -964,6 +964,55 @@ def test_batch_diet_and_reschedule_confirm_and_undo(db):
     assert db.execute(select(PlanDayState)).scalars().all() == []
 
 
+def test_batch_food_delete_and_reschedule_confirm_and_undo(db):
+    import asyncio
+
+    first = asyncio.run(
+        runtime.handle_turn(db, "user-1", "午餐吃了100g鸡胸肉")
+    )
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    assert len(db.execute(select(FoodLog)).scalars().all()) == 1
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    context = {
+        "plan": {
+            "id": "plan-1",
+            "version": 3,
+            "days": [
+                {
+                    "id": "day-1",
+                    "date": today.isoformat(),
+                    "title": "上肢",
+                    "completed": False,
+                    "skipped": False,
+                }
+            ],
+        }
+    }
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "删掉午餐鸡胸肉，再把今天的训练改到11月20日",
+            app_context=context,
+        )
+    )
+    assert turn["pending"]["capability_id"] == "coach.batch"
+    assert [
+        item["capability_id"] for item in turn["pending"]["payload"]["batch"]
+    ] == ["diet.delete_log", "training.reschedule"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert db.execute(select(FoodLog)).scalars().all() == []
+    assert db.execute(select(PlanDayState)).scalar_one().assigned_date == date(
+        today.year, 11, 20
+    )
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert len(db.execute(select(FoodLog)).scalars().all()) == 1
+    assert db.execute(select(PlanDayState)).scalars().all() == []
+
+
 def test_batch_weight_and_goal_confirm_and_undo(db):
     import asyncio
 

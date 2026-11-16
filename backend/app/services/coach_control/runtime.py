@@ -1563,6 +1563,28 @@ async def _try_batch_turn(
                         f"{payload.get('duration_minutes')} 分钟"
                     ),
                 }
+        elif _looks_like_food_delete(clause):
+            from .capabilities.log_edit import resolve_delete_food
+
+            resolution = resolve_delete_food(db, user_id, clause)
+            if resolution.get("ready"):
+                action = {
+                    "capability_id": DIET_DELETE,
+                    "payload": resolution["payload"],
+                    "summary": resolution.get("summary")
+                    or "删除饮食记录",
+                }
+        elif _looks_like_food_update(clause):
+            from .capabilities.log_edit import resolve_update_food
+
+            resolution = resolve_update_food(db, user_id, clause)
+            if resolution.get("ready"):
+                action = {
+                    "capability_id": DIET_UPDATE,
+                    "payload": resolution["payload"],
+                    "summary": resolution.get("summary")
+                    or "修改饮食记录",
+                }
         elif _looks_like_food(clause):
             from .capabilities.diet import resolve as resolve_diet
 
