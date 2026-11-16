@@ -1504,6 +1504,20 @@ def _split_batch_clauses(message: str) -> list[str]:
     ]
 
 
+def _discard_batch_programs(
+    db: Session,
+    user_id: str,
+    program_ids: list[str],
+) -> None:
+    if not program_ids:
+        return
+    from .capabilities.plan import discard
+
+    for program_id in program_ids:
+        discard(db, user_id, program_id)
+    db.commit()
+
+
 async def _try_batch_turn(
     db: Session,
     user_id: str,
@@ -1523,6 +1537,7 @@ async def _try_batch_turn(
 
     actions: list[dict] = []
     seen: set[str] = set()
+    created_program_ids: list[str] = []
     for clause in clauses:
         action: dict | None = None
         meal_capability = None
@@ -1564,6 +1579,27 @@ async def _try_batch_turn(
                     "capability_id": RESTORE_PLAN,
                     "payload": payload,
                     "summary": payload.get("summary") or "恢复历史计划",
+                }
+        elif _looks_like_plan_configure(clause):
+            from .capabilities.plan_configure import (
+                resolve as resolve_configure,
+            )
+
+            resolution = resolve_configure(db, user_id, clause)
+            if resolution.get("ready"):
+                created_program_ids.append(
+                    str(resolution.get("program_id") or "")
+                )
+                action = {
+                    "capability_id": CONFIGURE_PLAN,
+                    "payload": {
+                        "program_id": resolution["program_id"],
+                        "plan": resolution.get("plan") or {},
+                        "profile_before": resolution.get("profile_before") or {},
+                        "profile_after": resolution.get("profile_after") or {},
+                        "summary": resolution.get("summary") or "",
+                    },
+                    "summary": resolution.get("summary") or "调整计划频率",
                 }
         elif _looks_like_reschedule(clause):
             from .capabilities.training import resolve as resolve_training
@@ -1752,6 +1788,7 @@ async def _try_batch_turn(
                     ),
                 }
         if action is None:
+            _discard_batch_programs(db, user_id, created_program_ids)
             return None
         capability = action["capability_id"]
         # Multiple planned-meal actions are useful (skip lunch and dinner),
@@ -1768,13 +1805,16 @@ async def _try_batch_turn(
                 f"{capability}:{action['payload'].get('client_id')}"
             )
         if action_key in seen:
+            _discard_batch_programs(db, user_id, created_program_ids)
             return None
         seen.add(action_key)
         actions.append(action)
         if len(actions) > 3:
+            _discard_batch_programs(db, user_id, created_program_ids)
             return None
 
     if len(actions) < 2:
+        _discard_batch_programs(db, user_id, created_program_ids)
         return None
     lines = [
         f"{index + 1}. {action['summary']}"
@@ -3777,11 +3817,27 @@ def _discard_pending_resource(
     user_id: str,
     pending: CoachPending | None,
 ) -> None:
-    if pending is None or pending.capability_id not in {
-        PLAN,
-        ADJUST_PLAN,
-        CONFIGURE_PLAN,
-    }:
+    if pending is None:
+        return
+    if pending.capability_id == BATCH:
+        from .capabilities.plan import discard
+
+        for action in (pending.payload or {}).get("batch") or []:
+            if not isinstance(action, dict):
+                continue
+            if str(action.get("capability_id") or "") not in {
+                PLAN,
+                ADJUST_PLAN,
+                CONFIGURE_PLAN,
+            }:
+                continue
+            program_id = str(
+                (action.get("payload") or {}).get("program_id") or ""
+            )
+            if program_id:
+                discard(db, user_id, program_id)
+        return
+    if pending.capability_id not in {PLAN, ADJUST_PLAN, CONFIGURE_PLAN}:
         return
     program_id = str((pending.payload or {}).get("program_id") or "")
     if program_id:
@@ -3885,6 +3941,7 @@ def _confirm_batch(
         for sub_pending_id in sub_pending_ids:
             sub_pending = db.get(CoachPending, sub_pending_id)
             if sub_pending is not None and sub_pending.status == "pending":
+                _discard_pending_resource(db, user_id, sub_pending)
                 sub_pending.status = "cancelled"
         db.commit()
         raise ValueError("批量操作执行失败，已回滚已完成项") from exc

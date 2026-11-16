@@ -1413,6 +1413,109 @@ def test_batch_plan_restore_and_weight_confirm_and_undo(db):
     assert db.execute(select(BodyMetric)).scalars().all() == []
 
 
+def test_batch_plan_configure_and_weight_confirm_and_undo(db, monkeypatch):
+    import asyncio
+
+    from app.services import access
+    from app.services.coach_control.capabilities import plan_configure
+
+    monkeypatch.setattr(access, "has_pro", lambda db, user_id: True)
+
+    def fake_build(db, profile, goal_type, **kwargs):
+        return {
+            "title": "批量配置计划",
+            "weeks": 4,
+            "days": [
+                {
+                    "week_index": 1,
+                    "weekday": 2,
+                    "title": "胸",
+                    "focus": ["chest"],
+                    "exercises": [
+                        {
+                            "slug": "bench_press",
+                            "order_index": 1,
+                            "sets": 3,
+                            "reps": "8-10",
+                            "rest_sec": 90,
+                            "weight_kg": 20,
+                            "rpe": 7,
+                        }
+                    ],
+                }
+            ],
+        }
+
+    monkeypatch.setattr(plan_configure, "build_template_plan", fake_build)
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "每周3练，二四六，45分钟，3分化，再称体重73kg",
+        )
+    )
+    assert turn["pending"]["capability_id"] == "coach.batch"
+    assert [
+        item["capability_id"] for item in turn["pending"]["payload"]["batch"]
+    ] == ["training.configure_plan", "body.log_weight"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    program = db.execute(
+        select(Program).where(Program.status == "active")
+    ).scalar_one()
+    assert program.title == "批量配置计划"
+    profile = db.get(Profile, "user-1")
+    assert profile.weekly_days == 3
+    assert db.execute(select(BodyMetric)).scalar_one().weight_kg == 73
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(
+        select(Program).where(Program.status == "active")
+    ).scalar_one_or_none() is None
+    assert db.execute(select(BodyMetric)).scalars().all() == []
+
+
+def test_cancelling_batch_plan_configure_discards_pending_program(db, monkeypatch):
+    import asyncio
+
+    from app.services import access
+    from app.services.coach_control.capabilities import plan_configure
+
+    monkeypatch.setattr(access, "has_pro", lambda db, user_id: True)
+    monkeypatch.setattr(
+        plan_configure,
+        "build_template_plan",
+        lambda db, profile, goal_type, **kwargs: {
+            "title": "待取消计划",
+            "weeks": 4,
+            "days": [],
+        },
+    )
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "每周3练，二四六，45分钟，再称体重73kg",
+        )
+    )
+    assert turn["pending"]["capability_id"] == "coach.batch"
+    assert len(db.execute(select(Program)).scalars().all()) == 1
+
+    runtime.cancel(db, "user-1", turn["pending"]["id"])
+    assert (
+        db.execute(
+            select(Program).where(Program.status == "pending")
+        )
+        .scalars()
+        .all()
+        == []
+    )
+    archived = db.execute(select(Program)).scalar_one()
+    assert archived.status == "archived"
+
+
 def test_batch_weight_and_goal_confirm_and_undo(db):
     import asyncio
 
