@@ -1538,3 +1538,19 @@ def test_undo_custom_food_removes_orphan_favorite(db):
         )
     ).scalar_one_or_none()
     assert orphan is None or orphan.deleted_at is not None, orphan
+
+
+def test_injury_partial_recovery_keeps_the_still_painful_injury(db):
+    profile = db.get(Profile, "user-1")
+    profile.injuries = ["腰部旧伤", "膝盖有伤"]
+    db.commit()
+    result = coach_turn(db, "膝盖好了但腰还疼")
+    pending = result["pending"]
+    assert pending is not None, result
+    if pending["kind"] != "card":
+        return
+    runtime.confirm_pending(db, "user-1", pending["id"])
+    profile = db.get(Profile, "user-1")
+    joined = " ".join(profile.injuries or [])
+    assert "腰" in joined, profile.injuries
+    assert "膝" not in joined, profile.injuries
