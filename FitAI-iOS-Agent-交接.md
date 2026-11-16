@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`12afc97`（batch 扩展到计划餐/跳过/加练 + 语义分发；iOS 代码到 `71fce9d`；生产后端 `b667668` + Flyway **V42**；iOS 已装 `b667668`；`FitAITests` **110/110**、UI **4/4**、后端 **516 passed**、QA **22/22**；iOS Build `71fce9d` ✓；器械/级联/batch 扩展尚未部署）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`bbf5e85`（batch 扩展到计划餐/跳过/加练 + 语义分发；后端代码 `12afc97` 已部署生产，iOS 代码到 `71fce9d`；生产后端 `12afc97` + Flyway **V42**；iOS 已装 `b667668`；`FitAITests` **110/110**、UI **4/4**、后端 **516 passed**、QA **22/22**；iOS Build `71fce9d` ✓；器械/级联/batch 的 iOS 端尚未部署）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -36,12 +36,14 @@
   - batch 上下文校验从只管改期扩展到 skip/add day：plan_id 必须一致；改期/跳过的 day_id 必须在生成卡时的 days 里。
   - 语义分发新增 add_plan_day 和四种计划餐能力；模型选到这些能力时不再落回聊天。
   - `training.add_plan_day` 执行前再次检查同周同星期是否已有训练，过期卡不会写出重复训练日；batch 失败时整组回滚。
-- 验证：
-  - 后端 **516 passed**、Ruff 通过。
+- 部署与验证：
+  - 后端 **516 passed**、Ruff 通过；QA **22/22**；GitHub Backend Tests #311（`bbf5e85`）成功。
+  - `12afc97` 后端代码已部署生产：`/opt/fitai/backend/app` 与本地 `runtime.py` SHA-256 一致；`fitai-api` healthy；`https://hk-api.jiaolianfit.cn/health/ready` 返回 `{"status":"ready"}`。
+  - 无新迁移，Flyway 仍 V42；未用登录真机跑过新 batch 话术，不能声称端到端已验证。
   - 新增测试：计划餐+体重 batch、跳过+加练 batch、双餐跳过 batch、语义分发加练。
-- 未部署：
-  - 生产后端仍是 `b667668`；`12afc97` 需后端部署后才能在真机生效。
-  - iOS 代码仍停在 `71fce9d`；Mac 仍按上一节 build/install，本轮无 iOS 改动。
+- Mac 要做：
+  - iOS 仍需按上一节 build/install `71fce9d`（本轮无 iOS 改动）。
+  - 装好后用生产后端验证：“记录计划午餐，再称体重73kg”、“跳过午餐，再跳过晚餐”、“今天不练了，然后加一次练胸”三张 batch 卡的确认/撤销。
 - 不要恢复：
   - 不要按 capability 去重把“跳过午餐+晚餐”判成重复。
   - 不要移除 add day 执行前的重复训练日检查。
