@@ -254,6 +254,10 @@ def resolve_injuries(
         r"不疼|不痛|好了|康复|没事了|没有伤病|伤好了|恢复了",
         message,
     )
+    ongoing = re.search(
+        r"疼|痛|不舒服|难受|发紧|酸|没好|还没好|未好",
+        message,
+    )
     if resolution is not None:
         if not before:
             return {
@@ -350,6 +354,22 @@ def resolve_injuries(
                 "conflicts": conflicts,
             },
         }
+    if ongoing is not None:
+        parts = _injury_body_parts(message)
+        matches = [
+            item
+            for item in before
+            if any(part in item for part in parts)
+        ]
+        if matches:
+            return {
+                "ready": False,
+                "terminal": True,
+                "questions": [
+                    f"已经记着「{'、'.join(matches)}」还在恢复；"
+                    "好了以后说“膝盖好了”，我再移除。"
+                ],
+            }
     content = _injury_text(message)
     if len(content) < 2 or not re.search(
         r"伤|疼|痛|不舒服|不能|避免|半月板|腰|膝|肩|腕|踝|肘",
@@ -360,7 +380,14 @@ def resolve_injuries(
             "questions": ["想记录哪里的伤病？例如“膝盖有伤”。"],
         }
     append = bool(
-        before and re.search(r"也|还有|又|新增|另外", message)
+        before
+        and (
+            re.search(r"也|还有|又|新增|另外", message)
+            or (
+                ongoing is not None
+                and not re.search(r"改成|改为|更新为|我的伤病是", message)
+            )
+        )
     )
     final = (
         _dedupe_injuries([*before, content])

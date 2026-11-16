@@ -1229,6 +1229,46 @@ def test_injury_partial_recovery_keeps_not_healed_area(db):
     assert turn["pending"]["payload"]["injuries"] == ["腰部旧伤"]
 
 
+def test_injury_pain_statement_does_not_replace_other_injuries(db):
+    import asyncio
+
+    profile = db.get(Profile, "user-1")
+    profile.injuries = ["腰部旧伤", "膝盖有伤"]
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "膝盖不舒服")
+    )
+    assert turn["pending"]["kind"] == "draft"
+    assert "膝盖" in turn["reply"]
+    db.refresh(profile)
+    assert profile.injuries == ["腰部旧伤", "膝盖有伤"]
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "腰还没好")
+    )
+    assert turn["pending"]["kind"] == "draft"
+    assert "腰部旧伤" in turn["reply"]
+    db.refresh(profile)
+    assert profile.injuries == ["腰部旧伤", "膝盖有伤"]
+
+    new_area = asyncio.run(
+        runtime.handle_turn(db, "user-1", "肩膀不舒服")
+    )
+    assert new_area["pending"]["payload"]["injuries"] == [
+        "腰部旧伤",
+        "膝盖有伤",
+        "肩膀不舒服",
+    ]
+    runtime.confirm_pending(db, "user-1", new_area["pending"]["id"])
+    db.refresh(profile)
+    assert profile.injuries == [
+        "腰部旧伤",
+        "膝盖有伤",
+        "肩膀不舒服",
+    ]
+
+
 def test_dislike_exercise_confirm_undo_and_plan_filter(db):
     import asyncio
 
