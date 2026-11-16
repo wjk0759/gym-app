@@ -158,6 +158,7 @@ async def resolve(
     *,
     history_context: str | None = None,
     draft: dict | None = None,
+    default_meal: str | None = None,
 ) -> dict:
     draft = draft or {}
     context = food_log_context(message)
@@ -197,6 +198,7 @@ async def resolve(
         if explicit
         else analysis.get("meal")
         or inferred_draft_meal
+        or default_meal
         or context["meal"]
     )
 
@@ -206,6 +208,7 @@ async def resolve(
             clause_meal
             or inferred_draft_meal
             or (parsed_meal if len(clauses) == 1 else None)
+            or default_meal
             or context["meal"]
         )
         group_draft = draft_groups.get(target_meal) or {}
