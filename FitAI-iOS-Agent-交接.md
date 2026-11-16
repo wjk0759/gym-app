@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`894ad2b`（计划恢复加入 batch + 计划历史恢复 + 指定训练日/多动作编辑修复；生产后端 `894ad2b` 已部署；iOS 已构建 `0c50167`，已装 `73e517c`；生产后端 `894ad2b` + Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **537 passed**、QA **44/44**；iOS Build `0c50167` ✓）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`19fb23f`（batch 计划配置 + 计划恢复 + 指定训练日/多动作编辑修复；生产后端 `19fb23f` 已部署；iOS 已构建 `0c50167`，已装 `73e517c`；生产后端 `19fb23f` + Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **539 passed**、QA **44/44**；iOS Build `0c50167` ✓）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -110,6 +110,35 @@
   - 不要让 profile 缓存继续指向已删除或未写入的 body metric。
   - 不要按纠错文本里的新日期搬动旧 action 的全部 logs。
   - 不要把 `diet.update_log` / `diet.delete_log` 只按 capability 去重。
+
+### 2026-11-16 · Windows（batch 计划配置 + 清理）
+
+- 提交：`19fb23f`，已推 `develop`；后端已部署 `19fb23f`；无迁移。
+- 做了什么：
+  - `coach.batch` 新增 `training.configure_plan`。
+  - 支持“每周3练，二四六，45分钟，3分化，再称体重73kg”这类组合；一张卡确认，整组撤销。
+  - batch 失败、取消或被新消息取代时，会清理未激活的 pending 计划，避免遗留脏 Program。
+  - batch 执行中途失败时，未执行的计划配置子动作也会 discard。
+- 验证：
+  - 后端 **539 passed**
+  - QA **44/44**
+  - Ruff app/tests/qa 通过
+  - GitHub Backend Tests `19fb23f` 成功
+  - 新增测试：batch 计划配置 + 体重，确认与整组撤销；取消 batch 后不留下 pending 计划。
+- 生产：
+  - 后端 `19fb23f` 已部署；`runtime.py` SHA-256 与本地一致
+  - `fitai-api` healthy；`/health/ready` 返回 `{"status":"ready"}`；Flyway 仍 V42
+- iOS：
+  - 本轮无 iOS 变更；`0c50167` 已构建成功，未安装；已装仍是 `73e517c`。
+- Mac 要做：
+  - 安装 `0c50167`，跑 `FitAITests` 121/121、UI 4/4。
+  - 真机验证：
+    - “每周3练，二四六，45分钟，3分化，再称体重73kg” → 一张 batch 卡；确认后新计划激活、体重写入；撤销都恢复。
+    - 生成后取消 batch → 不应留下 pending/active 新计划。
+    - “恢复上一版计划，再称体重73kg” → 计划和体重一起执行/撤销。
+- 不要恢复：
+  - 不要在取消/失败 batch 后留下 pending Program。
+  - 不要把计划配置拆成两张卡。
 
 ### 2026-11-16 · Windows（batch 计划恢复 + iOS Build 通过）
 
