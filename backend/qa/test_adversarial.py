@@ -1396,3 +1396,66 @@ def test_batch_configure_then_reschedule_targets_new_plan(db, monkeypatch):
     state = db.execute(select(PlanDayState)).scalar_one_or_none()
     if state is not None:
         assert state.plan_id == active.id, state.plan_id
+
+
+def test_memory_forget_ordinal_only_selects_visible_candidates(db):
+    """'第一条' must mean the first item in the ambiguity prompt, not the
+    newest global memory."""
+    now = datetime.now(timezone.utc)
+    coffee = AIMemory(
+        user_id="user-1",
+        kind="preference",
+        memory_key="explicit:coffee",
+        content="我喜欢喝咖啡",
+        source="coach_control",
+        active=True,
+        created_at=now,
+        updated_at=now,
+    )
+    morning = AIMemory(
+        user_id="user-1",
+        kind="preference",
+        memory_key="explicit:morning",
+        content="我更喜欢早上训练",
+        source="coach_control",
+        active=True,
+        created_at=now - timedelta(hours=1),
+        updated_at=now - timedelta(hours=1),
+    )
+    evening = AIMemory(
+        user_id="user-1",
+        kind="preference",
+        memory_key="explicit:evening",
+        content="我更喜欢晚上训练",
+        source="coach_control",
+        active=True,
+        created_at=now - timedelta(hours=2),
+        updated_at=now - timedelta(hours=2),
+    )
+    db.add_all([coffee, morning, evening])
+    db.commit()
+    first = coach_turn(db, "删除训练记忆")
+    assert first["pending"] is None, first
+    follow = coach_turn(
+        db,
+        "第一条",
+        session_id=first["session"]["id"],
+    )
+    assert follow["pending"] is not None, follow
+    assert follow["pending"]["payload"]["memory_id"] in {
+        morning.id,
+        evening.id,
+    }, follow
+
+
+def test_memory_forget_follow_up_normal_question_is_not_a_deletion(db):
+    _seed_memories(db)
+    first = coach_turn(db, "删除训练记忆")
+    assert first["pending"] is None, first
+    follow = coach_turn(
+        db,
+        "早上练什么",
+        session_id=first["session"]["id"],
+    )
+    assert follow["intent"] != "memory.forget", follow
+    assert follow["pending"] is None, follow
