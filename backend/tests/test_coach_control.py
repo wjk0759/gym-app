@@ -1553,6 +1553,81 @@ def test_apply_food_avoidance_rewrites_meal_name():
     assert "鸡胸肉" not in text
 
 
+def test_batch_preferences_and_body_writes(db):
+    import asyncio
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "不喜欢吃鸡胸肉，再称体重73kg",
+        )
+    )
+    assert turn["pending"]["capability_id"] == "coach.batch"
+    assert [
+        item["capability_id"] for item in turn["pending"]["payload"]["batch"]
+    ] == ["diet.dislike_food", "body.log_weight"]
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert db.execute(select(UserFoodDislike)).scalar_one().deleted_at is None
+    assert db.execute(select(BodyMetric)).scalars().all()
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(UserFoodDislike)).scalars().all() == []
+    assert db.execute(select(BodyMetric)).scalars().all() == []
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "我有哑铃和弹力带，再称体重73kg",
+        )
+    )
+    assert turn["pending"]["capability_id"] == "coach.batch"
+    assert [
+        item["capability_id"] for item in turn["pending"]["payload"]["batch"]
+    ] == ["profile.update_equipment", "body.log_weight"]
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    profile = db.get(Profile, "user-1")
+    assert profile.equipment == ["bodyweight", "dumbbell", "band"]
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    db.refresh(profile)
+    assert profile.equipment == ["bodyweight"]
+
+
+def test_batch_supports_more_than_three_actions(db):
+    import asyncio
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "不喜欢吃鸡胸肉，再称体重73kg，再记录跑步30分钟，"
+            "再目标改成70kg",
+        )
+    )
+    assert turn["pending"]["capability_id"] == "coach.batch"
+    assert len(turn["pending"]["payload"]["batch"]) == 4
+    assert [
+        item["capability_id"] for item in turn["pending"]["payload"]["batch"]
+    ] == [
+        "diet.dislike_food",
+        "body.log_weight",
+        "training.log_cardio",
+        "profile.update_goal",
+    ]
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert db.execute(select(UserFoodDislike)).scalars().all()
+    assert db.execute(select(BodyMetric)).scalars().all()
+    assert db.execute(select(WorkoutSession)).scalars().all()
+    goal = db.execute(select(Goal)).scalar_one()
+    assert goal.target_weight_kg == 70
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(UserFoodDislike)).scalars().all() == []
+    assert db.execute(select(BodyMetric)).scalars().all() == []
+    assert db.execute(select(WorkoutSession)).scalars().all() == []
+    assert db.execute(select(Goal)).scalars().all() == []
+
+
 def test_dislike_exercise_confirm_undo_and_plan_filter(db):
     import asyncio
 

@@ -102,6 +102,7 @@ REMINDERS_UI = "ui.configure_reminders"
 MEMORY = "memory.remember"
 FORGET_MEMORY = "memory.forget"
 BATCH = "coach.batch"
+MAX_BATCH_ACTIONS = 5
 
 
 def _looks_like_reschedule(message: str) -> bool:
@@ -879,6 +880,11 @@ def _looks_like_food_dislike(message: str) -> bool:
 
 def _looks_like_profile_equipment(message: str) -> bool:
     if re.search(r"怎么|如何|为什么|多少|吗|？|\?", message):
+        return False
+    if re.search(
+        r"动作|计划|卧推|深蹲|硬拉|划船|推举|飞鸟|弯举|下压|引体",
+        message,
+    ) and re.search(r"改成|换成|改为|调整", message):
         return False
     if re.search(
         r"器械库|个人器械|加入器械|添加器械|存到器械|识别器械|拍照|改名|"
@@ -2078,6 +2084,52 @@ async def _try_batch_turn(
                     "payload": payload,
                     "summary": f"跳过 {payload.get('date')} 的「{payload.get('title')}」",
                 }
+        elif (
+            _looks_like_exercise_dislike(clause)
+            and not _prefers_food_dislike(clause)
+        ):
+            from .capabilities.exercise_preferences import (
+                resolve as resolve_exercise_dislike,
+            )
+
+            resolution = resolve_exercise_dislike(db, user_id, clause)
+            if resolution.get("ready"):
+                payload = resolution["payload"]
+                action = {
+                    "capability_id": DISLIKE_EXERCISE,
+                    "payload": payload,
+                    "summary": payload.get("summary") or "更新避开动作",
+                }
+        elif _looks_like_food_dislike(clause):
+            from .capabilities.food_dislikes import (
+                resolve as resolve_food_dislike,
+            )
+
+            resolution = resolve_food_dislike(db, user_id, clause)
+            if resolution.get("ready"):
+                payload = resolution["payload"]
+                action = {
+                    "capability_id": DISLIKE_FOOD,
+                    "payload": payload,
+                    "summary": payload.get("summary") or "更新避开食物",
+                }
+        elif _looks_like_profile_equipment(clause) and not (
+            _looks_like_single_exercise_edit(clause)
+            or _looks_like_batch_exercise_edit(clause)
+            or _looks_like_exercise_edit(clause)
+        ):
+            from .capabilities.profile_equipment import (
+                resolve as resolve_profile_equipment,
+            )
+
+            resolution = resolve_profile_equipment(db, user_id, clause)
+            if resolution.get("ready"):
+                payload = resolution["payload"]
+                action = {
+                    "capability_id": UPDATE_EQUIPMENT,
+                    "payload": payload,
+                    "summary": payload.get("summary") or "更新档案器械",
+                }
         elif _looks_like_weight(clause):
             from .capabilities.body import resolve as resolve_weight
 
@@ -2247,12 +2299,16 @@ async def _try_batch_turn(
             action_key = (
                 f"{capability}:{action['payload'].get('client_id')}"
             )
+        elif capability == DISLIKE_FOOD:
+            action_key = f"{capability}:{action['payload'].get('food_key')}"
+        elif capability == DISLIKE_EXERCISE:
+            action_key = f"{capability}:{action['payload'].get('slug')}"
         if action_key in seen:
             _discard_batch_programs(db, user_id, created_program_ids)
             return None
         seen.add(action_key)
         actions.append(action)
-        if len(actions) > 3:
+        if len(actions) > MAX_BATCH_ACTIONS:
             _discard_batch_programs(db, user_id, created_program_ids)
             return None
 
@@ -5199,9 +5255,9 @@ def _confirm_batch(
         isinstance(item, dict)
         and str(item.get("capability_id") or "")
         in {RESTORE_PLAN, CONFIGURE_PLAN}
-        for item in actions[:3]
+        for item in actions[:MAX_BATCH_ACTIONS]
     )
-    for item in actions[:3]:
+    for item in actions[:MAX_BATCH_ACTIONS]:
         if not isinstance(item, dict):
             raise ValueError("批量操作内容不完整")
         if has_plan_change:
@@ -5239,7 +5295,7 @@ def _confirm_batch(
     results: list[dict] = []
     retarget_program: Program | None = None
     try:
-        for item in actions[:3]:
+        for item in actions[:MAX_BATCH_ACTIONS]:
             if not isinstance(item, dict):
                 raise ValueError("批量操作内容不完整")
             capability_id = str(item.get("capability_id") or "")
