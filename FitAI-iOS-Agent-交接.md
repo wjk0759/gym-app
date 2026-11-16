@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`4165df5`（文档 `660bc4e`；餐单/菜谱查看 + 伤病“不舒服/没好”/单说疼痛不覆盖；生产后端 `4165df5`，`runtime.py` / `profile.py` / `diet_meal_detail.py` SHA-256 与本地一致；iOS 已装 `9eb1411`；Flyway **V42**；`FitAITests` **121/121**、UI **4/4**；后端 **573 passed**、QA **66 passed / 2 failed**；**后端发布阻断**：`今晚吃什么`/`今早吃什么` 返回整日餐单，不选晚餐/早餐）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`bf1d41b`（不喜欢食物 + 今晚/今早餐单详情；生产后端 `bf1d41b`，`diet.py` / `diet_preferences.py` / `food_dislikes.py` / `user_sync.py` / `runtime.py` SHA-256 与本地一致；iOS 已装 `9eb1411`；Flyway **V43**；`FitAITests` **121/121**、UI **4/4**；后端 **576 passed**、QA **69/69**；本轮无 iOS 代码变化，iOS Build 不触发）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -62,6 +62,39 @@
 - 不要恢复：
   - 不要把“今晚/今早”当成没有指定餐次。
   - 不要在这两个词下返回整日餐单。
+
+### 2026-11-17 · Windows（不喜欢食物 + 今晚/今早餐单详情）
+
+- 提交：`d16b4e2` + `bf1d41b`，已推 `develop`；生产后端 `bf1d41b`；Flyway **V43** 已应用。
+- 新增 `diet.dislike_food`：
+  - 支持“不喜欢吃鸡胸肉”“以后别安排西兰花”“可以吃鸡胸肉了”。
+  - 普通食物、自定义食物匹配；确认写入，撤销恢复；重复添加/移除只提示，不写重复行。
+  - 生成单日/一周餐单时，提示词 + 确定性后置过滤都会排除该食物；用同类食材替换，菜名、食材、菜谱步骤都清理。
+  - 历史已保存餐单不自动改，重新生成后生效。
+  - `/sync` 增加 `disliked_foods`；旧 iOS 不发送该字段不会清空服务端记录。
+- 修复 Mac 新 QA：
+  - `今晚吃什么` → 晚餐；`今早吃什么` → 早餐，不再返回整日概览。
+- 验证：
+  - 后端 **576 passed**
+  - QA **69/69**
+  - Ruff app/tests/qa 通过
+  - 新增测试：食物避开确认/撤销、自定义食物、计划过滤、sync、今晚/今早。
+- 生产：
+  - 后端 `bf1d41b` 已部署；`diet.py`、`diet_preferences.py`、`food_dislikes.py`、`user_sync.py`、`runtime.py` SHA-256 与本地一致
+  - Flyway **V43** `food dislikes` 已应用；`user_food_dislikes` 表已建
+  - 迁移前备份：`/opt/fitai/backups/fitai-pre-v43-*.sql`
+  - `fitai-api` healthy；`/health/ready` 返回 `{"status":"ready"}`
+- iOS：
+  - 本轮无 iOS 代码变化，iOS Build 不触发；最新可安装仍是 `9eb1411`。
+- Mac 要做：
+  - 拉 `bf1d41b`，重跑 QA 69/69、`FitAITests`。
+  - 真机验证：
+    - “不喜欢吃鸡胸肉” → 确认 → 重新生成餐单不出现鸡胸肉。
+    - “鸡胸肉可以吃了” → 取消避开 → 重新生成可恢复。
+    - “今晚吃什么 / 今早吃什么” → 只显示对应餐次。
+- 不要恢复：
+  - 不要在生成餐单时跳过 disliked foods 过滤。
+  - 不要让旧 iOS 同步清空 `disliked_foods`。
 
 ### 2026-11-17 · Windows（伤病单说疼痛不覆盖其他记录）
 
