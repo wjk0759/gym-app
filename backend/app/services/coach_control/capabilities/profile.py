@@ -231,6 +231,13 @@ def _dedupe_injuries(values: list[str]) -> list[str]:
     return result
 
 
+INJURY_BODY_PARTS = ("膝", "腰", "肩", "腕", "踝", "肘", "半月板")
+
+
+def _injury_body_parts(text: str) -> list[str]:
+    return [part for part in INJURY_BODY_PARTS if part in text]
+
+
 def resolve_injuries(
     db: Session,
     user_id: str,
@@ -254,38 +261,19 @@ def resolve_injuries(
                 "terminal": True,
                 "questions": ["目前没有伤病记录，不需要清除。"],
             }
-        if re.search(r"没有伤病|都好了|全好了|伤好了|康复了|恢复了", message):
-            remaining: list[str] = []
-        else:
-            contrast = re.split(r"但(?:是)?|不过", message, maxsplit=1)
-            if len(contrast) == 2:
-                recover_text, pain_text = contrast
-                remove_parts = [
-                    keyword
-                    for keyword in (
-                        "膝",
-                        "腰",
-                        "肩",
-                        "腕",
-                        "踝",
-                        "肘",
-                        "半月板",
-                    )
-                    if keyword in recover_text
-                ]
-                keep_parts = [
-                    keyword
-                    for keyword in (
-                        "膝",
-                        "腰",
-                        "肩",
-                        "腕",
-                        "踝",
-                        "肘",
-                        "半月板",
-                    )
-                    if keyword in pain_text
-                ]
+        contrast = re.split(
+            r"但(?:是)?|不过|[，,；;、]",
+            message,
+            maxsplit=1,
+        )
+        if len(contrast) == 2:
+            recover_text, pain_text = contrast
+            pain_active = bool(re.search(r"疼|痛", pain_text)) and not re.search(
+                r"不疼|不痛", pain_text
+            )
+            if pain_active:
+                remove_parts = _injury_body_parts(recover_text)
+                keep_parts = _injury_body_parts(pain_text)
                 if remove_parts:
                     remaining = [
                         item
@@ -296,32 +284,41 @@ def resolve_injuries(
                 else:
                     remaining = list(before)
             else:
-                parts = [
-                    keyword
-                    for keyword in (
-                        "膝",
-                        "腰",
-                        "肩",
-                        "腕",
-                        "踝",
-                        "肘",
-                        "半月板",
-                    )
-                    if keyword in message
-                ]
+                parts = _injury_body_parts(message)
                 if parts:
                     remaining = [
                         item
                         for item in before
                         if not any(part in item for part in parts)
                     ]
-                elif len(before) == 1:
+                elif re.search(
+                    r"没有伤病|都好了|全好了|伤好了|康复了|恢复了",
+                    message,
+                ) or len(before) == 1:
                     remaining = []
                 else:
                     return {
                         "ready": False,
                         "questions": ["是哪一处不疼了？例如“膝盖不疼了”。"],
                     }
+        else:
+            parts = _injury_body_parts(message)
+            if parts:
+                remaining = [
+                    item
+                    for item in before
+                    if not any(part in item for part in parts)
+                ]
+            elif re.search(
+                r"没有伤病|都好了|全好了|伤好了|康复了|恢复了",
+                message,
+            ) or len(before) == 1:
+                remaining = []
+            else:
+                return {
+                    "ready": False,
+                    "questions": ["是哪一处不疼了？例如“膝盖不疼了”。"],
+                }
         if remaining == before:
             return {
                 "ready": False,

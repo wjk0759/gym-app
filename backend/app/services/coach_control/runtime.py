@@ -823,7 +823,10 @@ def _looks_like_injury_update(message: str) -> bool:
     if re.search(r"怎么办|怎么|为什么|如何|吗|？|\?", message):
         return False
     return bool(
-        re.search(r"伤病|受伤|有伤|疼|痛|不舒服|不能练|避免", message)
+        re.search(
+            r"伤病|受伤|有伤|伤好了|伤恢复|疼|痛|不舒服|不能练|避免",
+            message,
+        )
     )
 
 
@@ -1248,8 +1251,10 @@ def _pending_card(
                 sub_capability,
                 sub_payload,
             )
-            if warning and warning not in warnings:
-                warnings.append(warning)
+            if warning:
+                action["duplicate_warning"] = warning
+                if warning not in warnings:
+                    warnings.append(warning)
     else:
         warning = _duplicate_warning(
             db, session.user_id, capability_id, new_payload

@@ -1111,6 +1111,34 @@ def test_duplicate_workout_and_batch_cards_add_a_warning(db):
     warning = batch["pending"]["payload"]["duplicate_warning"]
     assert "相同食物" in warning
     assert "力量训练" in warning
+    assert any(
+        item.get("duplicate_warning")
+        for item in batch["pending"]["payload"]["batch"]
+    )
+
+
+def test_batch_duplicate_food_and_weight_warns(db):
+    import asyncio
+
+    first = asyncio.run(
+        runtime.handle_turn(db, "user-1", "记午饭鸡胸肉200g，再称体重73kg")
+    )
+    assert first["pending"] is not None
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+
+    second = asyncio.run(
+        runtime.handle_turn(db, "user-1", "记午饭鸡胸肉200g，再称体重73kg")
+    )
+    pending = second["pending"]
+    assert pending["capability_id"] == "coach.batch"
+    warnings = [
+        str(item.get("duplicate_warning") or "")
+        + str((item.get("payload") or {}).get("duplicate_warning") or "")
+        for item in pending["payload"].get("batch") or []
+        if isinstance(item, dict)
+    ]
+    assert any(warnings), pending
+    assert pending["payload"]["duplicate_warning"]
 
 
 def test_injury_partial_recovery_keeps_painful_area(db):
@@ -1127,6 +1155,49 @@ def test_injury_partial_recovery_keeps_painful_area(db):
     runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
     db.refresh(profile)
     assert profile.injuries == ["腰部旧伤"]
+
+
+def test_injury_comma_partial_recovery_keeps_pain(db):
+    import asyncio
+
+    profile = db.get(Profile, "user-1")
+    profile.injuries = ["腰部旧伤", "膝盖有伤"]
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "膝盖好了，腰还疼")
+    )
+    assert turn["pending"]["payload"]["injuries"] == ["腰部旧伤"]
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    db.refresh(profile)
+    assert profile.injuries == ["腰部旧伤"]
+
+
+def test_injury_recovered_word_partial_does_not_clear_all(db):
+    import asyncio
+
+    profile = db.get(Profile, "user-1")
+    profile.injuries = ["腰部旧伤", "膝盖有伤"]
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "膝盖恢复了但腰还疼")
+    )
+    assert turn["pending"]["payload"]["injuries"] == ["腰部旧伤"]
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    db.refresh(profile)
+    assert profile.injuries == ["腰部旧伤"]
+
+
+def test_injury_named_recovery_keeps_other_areas(db):
+    import asyncio
+
+    profile = db.get(Profile, "user-1")
+    profile.injuries = ["腰部旧伤", "膝盖有伤"]
+    db.commit()
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "膝盖伤好了"))
+    assert turn["pending"]["payload"]["injuries"] == ["腰部旧伤"]
 
 
 def test_dislike_exercise_confirm_undo_and_plan_filter(db):
