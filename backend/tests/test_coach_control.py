@@ -3787,6 +3787,95 @@ def test_diet_review_uses_the_plan_for_the_requested_day(db):
     assert "120 g" in payload["summary"]
 
 
+def test_meal_detail_reads_saved_recipe_and_meals(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    db.add(
+        MealPlan(
+            user_id="user-1",
+            plan_date=today,
+            strategy="balanced",
+            generated_by="ai",
+            plan={
+                "meals": [
+                    {
+                        "meal": "lunch",
+                        "name": "香煎鸡胸饭",
+                        "kcal": 620,
+                        "protein_g": 45,
+                        "carbs_g": 60,
+                        "fat_g": 18,
+                        "items": ["鸡胸肉 150g", "糙米饭 150g", "西兰花 100g"],
+                        "dishes": [
+                            {
+                                "name": "香煎鸡胸饭",
+                                "items": ["鸡胸肉 150g", "糙米饭 150g"],
+                                "recipe": {
+                                    "title": "香煎鸡胸饭",
+                                    "ingredients": ["鸡胸肉 150g", "糙米饭 150g"],
+                                    "steps": [
+                                        "鸡胸肉腌十分钟。",
+                                        "中火煎熟后配饭装盘。",
+                                    ],
+                                },
+                            }
+                        ],
+                    },
+                    {
+                        "meal": "dinner",
+                        "name": "番茄牛肉面",
+                        "kcal": 700,
+                        "items": ["牛肉 120g", "面条 150g"],
+                    },
+                ]
+            },
+        )
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "今天午餐吃什么")
+    )
+    assert turn["intent"] == "diet.meal_detail"
+    assert turn["pending"]["kind"] == "insight"
+    summary = turn["pending"]["payload"]["summary"]
+    assert "香煎鸡胸饭" in summary
+    assert "鸡胸肉 150g" in summary
+    assert "做法" in summary
+    assert "番茄牛肉面" not in summary
+
+    both = asyncio.run(
+        runtime.handle_turn(db, "user-1", "今天的午餐和晚餐吃什么")
+    )
+    both_summary = both["pending"]["payload"]["summary"]
+    assert "香煎鸡胸饭" in both_summary
+    assert "番茄牛肉面" in both_summary
+
+    overview = asyncio.run(
+        runtime.handle_turn(db, "user-1", "看看今天的餐单")
+    )
+    assert overview["intent"] == "diet.meal_detail"
+    overview_summary = overview["pending"]["payload"]["summary"]
+    assert "午餐：香煎鸡胸饭" in overview_summary
+    assert "晚餐：番茄牛肉面" in overview_summary
+
+
+def test_meal_detail_without_a_saved_plan_offers_generation(db):
+    import asyncio
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "明天午餐吃什么")
+    )
+    assert turn["intent"] == "diet.meal_detail"
+    assert "还没有保存的餐单" in turn["pending"]["payload"]["summary"]
+
+    review = asyncio.run(
+        runtime.handle_turn(db, "user-1", "今天午餐吃了什么")
+    )
+    assert review["intent"] == "diet.review_day"
+
+
 def test_body_trend_review_uses_metrics_and_goal(db):
     import asyncio
 

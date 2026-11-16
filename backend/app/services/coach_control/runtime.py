@@ -60,6 +60,7 @@ DIET_PLAN = "diet.generate_day"
 DIET_WEEK = "diet.generate_week"
 DIET_DAY_STRATEGY = "diet.edit_day_strategy"
 DIET_REVIEW = "diet.review_day"
+MEAL_DETAIL = "diet.meal_detail"
 PLANNED = "diet.log_planned_meal"
 SKIP_MEAL = "diet.skip_planned_meal"
 RESTORE_MEAL = "diet.restore_planned_meal"
@@ -926,6 +927,32 @@ def _looks_like_diet_plan(message: str) -> bool:
         re.search(
             r"排.*餐|安排.*餐|安排.*饮食|饮食.*安排|饮食计划|餐单|食谱|"
             r"明天吃什么|今天吃什么|一周.*餐",
+            message,
+        )
+    )
+
+
+def _looks_like_meal_detail(message: str) -> bool:
+    if re.search(
+        r"吃了|喝了|记录|记一下|安排|生成|排一下|计划|改成|换成|删除|改期",
+        message,
+    ):
+        return False
+    if re.search(r"菜谱|食谱|做法|配料|食材|怎么做|怎么弄", message):
+        return True
+    if re.search(r"餐单|菜单", message) and re.search(
+        r"看看|看一下|查看|有什么|是什么",
+        message,
+    ):
+        return True
+    return bool(
+        re.search(
+            r"早餐|早饭|午餐|午饭|晚餐|晚饭|加餐|零食|"
+            r"早上|中午|晚上|今晚|今早",
+            message,
+        )
+        and re.search(
+            r"吃什么|吃啥|吃点什么|有什么|看看|看一下|是什么|配什么",
             message,
         )
     )
@@ -2904,6 +2931,22 @@ async def _dispatch_semantic_capability(
             kind="insight",
         )
 
+    if capability_id == MEAL_DETAIL:
+        from .capabilities.diet_meal_detail import resolve as resolve_meal_detail
+
+        resolution = resolve_meal_detail(db, user_id, text)
+        payload = resolution.get("payload") or {}
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=MEAL_DETAIL,
+            payload=payload,
+            reply=payload.get("summary") or "这份餐单暂时没有详情。",
+            kind="insight",
+        )
+
     if capability_id == DIET_REVIEW:
         from .capabilities.diet_review import resolve as resolve_diet_review
 
@@ -3851,7 +3894,11 @@ async def handle_turn(
             "pending": serialize_pending(active),
         }
 
-    if intent_override is None and _looks_like_diet_plan(text):
+    if (
+        intent_override is None
+        and _looks_like_diet_plan(text)
+        and not _looks_like_meal_detail(text)
+    ):
         from .capabilities.diet_plan import resolve as resolve_diet_plan
 
         resolution = await resolve_diet_plan(db, user_id, text)
@@ -3883,6 +3930,22 @@ async def handle_turn(
             "reply": reply,
             "pending": serialize_pending(active),
         }
+
+    if intent_override is None and _looks_like_meal_detail(text):
+        from .capabilities.diet_meal_detail import resolve as resolve_meal_detail
+
+        resolution = resolve_meal_detail(db, user_id, text)
+        payload = resolution.get("payload") or {}
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=MEAL_DETAIL,
+            payload=payload,
+            reply=payload.get("summary") or "这份餐单暂时没有详情。",
+            kind="insight",
+        )
 
     if intent_override is None and _looks_like_diet_review(text):
         from .capabilities.diet_review import resolve as resolve_diet_review

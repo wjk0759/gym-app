@@ -124,6 +124,12 @@ ACTION_SPECS: dict[str, ActionSpec] = {
         ("date",),
         "insight",
     ),
+    "diet.meal_detail": ActionSpec(
+        "diet.meal_detail",
+        ("今天午餐吃什么", "晚餐菜谱怎么做", "看看明天的早餐"),
+        ("date", "meal"),
+        "insight",
+    ),
     "diet.generate_week": ActionSpec(
         "diet.generate_week",
         ("排一周饮食", "生成下周餐单", "做七天饮食计划"),
