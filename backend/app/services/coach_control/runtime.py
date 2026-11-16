@@ -1549,6 +1549,35 @@ async def _try_batch_turn(
                     "payload": resolution["payload"],
                     "summary": "更新目标",
                 }
+        elif (
+            _looks_like_single_exercise_edit(clause)
+            or _looks_like_batch_exercise_edit(clause)
+        ):
+            from .capabilities.training_exercise_edit import (
+                resolve as resolve_exercise_edit,
+            )
+
+            resolution = resolve_exercise_edit(db, user_id, clause, context)
+            if resolution.get("ready"):
+                payload = resolution["payload"]
+                action = {
+                    "capability_id": EDIT_EXERCISE,
+                    "payload": payload,
+                    "summary": payload.get("summary") or "调整单个动作",
+                }
+        elif _looks_like_exercise_edit(clause):
+            from .capabilities.training_edit import (
+                resolve as resolve_day_edit,
+            )
+
+            resolution = resolve_day_edit(db, user_id, clause, context)
+            if resolution.get("ready"):
+                payload = resolution["payload"]
+                action = {
+                    "capability_id": EDIT_EXERCISES,
+                    "payload": payload,
+                    "summary": payload.get("summary") or "调整当天动作",
+                }
         elif _looks_like_workout_delete(clause):
             from .capabilities.log_edit import resolve_delete_workout
 
@@ -3664,14 +3693,26 @@ def _confirm_batch(
         if not isinstance(item, dict):
             raise ValueError("批量操作内容不完整")
         capability_id = str(item.get("capability_id") or "")
-        if capability_id not in {TRAINING, SKIP_TRAINING, ADD_DAY}:
+        if capability_id not in {
+            TRAINING,
+            SKIP_TRAINING,
+            ADD_DAY,
+            EDIT_EXERCISE,
+            EDIT_EXERCISES,
+        }:
             continue
         sub_payload = item.get("payload")
         sub_payload = sub_payload if isinstance(sub_payload, dict) else {}
         if allowed_plan and str(sub_payload.get("plan_id") or "") != allowed_plan:
             raise ValueError("训练计划已变化，请重新生成这张卡")
         if (
-            capability_id in {TRAINING, SKIP_TRAINING}
+            capability_id
+            in {
+                TRAINING,
+                SKIP_TRAINING,
+                EDIT_EXERCISE,
+                EDIT_EXERCISES,
+            }
             and allowed_days
             and str(sub_payload.get("day_id") or "") not in allowed_days
         ):

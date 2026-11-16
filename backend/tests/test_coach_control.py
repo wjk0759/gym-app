@@ -1013,6 +1013,215 @@ def test_batch_food_delete_and_reschedule_confirm_and_undo(db):
     assert db.execute(select(PlanDayState)).scalars().all() == []
 
 
+def test_batch_exercise_swap_and_reschedule_confirm_and_undo(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    monday = today - timedelta(days=today.weekday())
+    db.add_all(
+        [
+            Exercise(
+                slug="barbell-bench-press",
+                name_zh="杠铃卧推",
+                name_en="barbell bench press",
+                muscle_group="chest",
+                equipment="barbell",
+                is_compound=True,
+                contraindications=[],
+            ),
+            Exercise(
+                slug="dumbbell-bench-press",
+                name_zh="哑铃卧推",
+                name_en="dumbbell bench press",
+                muscle_group="chest",
+                equipment="dumbbell",
+                is_compound=True,
+                contraindications=[],
+            ),
+        ]
+    )
+    db.commit()
+    program = Program(
+        user_id="user-1",
+        title="测试胸计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=monday,
+        weeks=4,
+    )
+    db.add(program)
+    db.flush()
+    day = ProgramDay(
+        program_id=program.id,
+        week_index=1,
+        weekday=today.isoweekday(),
+        title="胸",
+        focus=["chest"],
+    )
+    db.add(day)
+    db.flush()
+    db.add(
+        PlanExercise(
+            program_day_id=day.id,
+            exercise_slug="barbell-bench-press",
+            order_index=1,
+            sets=3,
+            reps="8-12",
+            rest_sec=90,
+        )
+    )
+    db.commit()
+
+    context = {
+        "plan": {
+            "id": program.id,
+            "version": program.version,
+            "days": [
+                {
+                    "id": day.id,
+                    "date": today.isoformat(),
+                    "title": "胸",
+                    "completed": False,
+                    "skipped": False,
+                }
+            ],
+        }
+    }
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "把卧推换成哑铃卧推，再把今天的训练改到11月20日",
+            app_context=context,
+        )
+    )
+    assert turn["pending"]["capability_id"] == "coach.batch"
+    assert [
+        item["capability_id"] for item in turn["pending"]["payload"]["batch"]
+    ] == ["training.edit_day_exercise", "training.reschedule"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    db.refresh(day)
+    assert [item.exercise_slug for item in day.exercises] == [
+        "dumbbell-bench-press"
+    ]
+    assert db.execute(select(PlanDayState)).scalar_one().assigned_date == date(
+        today.year, 11, 20
+    )
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    db.refresh(day)
+    assert [item.exercise_slug for item in day.exercises] == [
+        "barbell-bench-press"
+    ]
+    assert db.execute(select(PlanDayState)).scalars().all() == []
+
+
+def test_batch_day_exercises_and_weight_confirm_and_undo(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    monday = today - timedelta(days=today.weekday())
+    db.add_all(
+        [
+            Exercise(
+                slug="barbell-bench-press",
+                name_zh="杠铃卧推",
+                name_en="barbell bench press",
+                muscle_group="chest",
+                equipment="barbell",
+                is_compound=True,
+                contraindications=[],
+            ),
+            Exercise(
+                slug="incline-bench-press",
+                name_zh="上斜卧推",
+                name_en="incline bench press",
+                muscle_group="chest",
+                equipment="barbell",
+                is_compound=True,
+                contraindications=[],
+            ),
+        ]
+    )
+    db.commit()
+    program = Program(
+        user_id="user-1",
+        title="测试胸计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=monday,
+        weeks=4,
+    )
+    db.add(program)
+    db.flush()
+    day = ProgramDay(
+        program_id=program.id,
+        week_index=1,
+        weekday=today.isoweekday(),
+        title="胸",
+        focus=["chest"],
+    )
+    db.add(day)
+    db.flush()
+    db.add(
+        PlanExercise(
+            program_day_id=day.id,
+            exercise_slug="barbell-bench-press",
+            order_index=1,
+            sets=3,
+            reps="8-12",
+            rest_sec=90,
+        )
+    )
+    db.commit()
+
+    context = {
+        "plan": {
+            "id": program.id,
+            "version": program.version,
+            "days": [
+                {
+                    "id": day.id,
+                    "date": today.isoformat(),
+                    "title": "胸",
+                    "completed": False,
+                    "skipped": False,
+                }
+            ],
+        }
+    }
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "把今天的训练换成杠铃卧推、上斜卧推，再称体重73kg",
+            app_context=context,
+        )
+    )
+    assert turn["pending"]["capability_id"] == "coach.batch"
+    assert [
+        item["capability_id"] for item in turn["pending"]["payload"]["batch"]
+    ] == ["training.edit_day_exercises", "body.log_weight"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    db.refresh(day)
+    assert [item.exercise_slug for item in day.exercises] == [
+        "barbell-bench-press",
+        "incline-bench-press",
+    ]
+    assert db.execute(select(BodyMetric)).scalar_one().weight_kg == 73
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    db.refresh(day)
+    assert [item.exercise_slug for item in day.exercises] == [
+        "barbell-bench-press"
+    ]
+    assert db.execute(select(BodyMetric)).scalars().all() == []
+
+
 def test_batch_workout_delete_and_weight_confirm_and_undo(db):
     import asyncio
 
