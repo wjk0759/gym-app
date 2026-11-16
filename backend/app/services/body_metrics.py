@@ -85,20 +85,29 @@ def recompute_profile_cache(db: Session, user_id: str) -> None:
     profile = db.get(Profile, user_id)
     if profile is None:
         return
-    latest = db.execute(
-        select(BodyMetric)
-        .where(BodyMetric.user_id == user_id)
-        .order_by(BodyMetric.measured_at.desc(), BodyMetric.created_at.desc())
-        .limit(1)
-    ).scalar_one_or_none()
-    if latest is None:
-        return
-    if latest.weight_kg is not None:
-        profile.weight_kg = latest.weight_kg
-    if latest.body_fat_pct is not None:
-        profile.body_fat_pct = latest.body_fat_pct
-    if latest.waist_cm is not None:
-        profile.waist_cm = latest.waist_cm
+    # Recompute each cached field from the newest metric that actually has it.
+    # A row can carry weight + body fat; clearing one field must not keep an
+    # older cached value or borrow another field's timestamp.
+    for field, profile_field in (
+        ("weight_kg", "weight_kg"),
+        ("body_fat_pct", "body_fat_pct"),
+        ("waist_cm", "waist_cm"),
+    ):
+        column = getattr(BodyMetric, field)
+        latest = db.execute(
+            select(BodyMetric)
+            .where(
+                BodyMetric.user_id == user_id,
+                column.is_not(None),
+            )
+            .order_by(
+                BodyMetric.measured_at.desc(),
+                BodyMetric.created_at.desc(),
+            )
+            .limit(1)
+        ).scalar_one_or_none()
+        if latest is not None:
+            setattr(profile, profile_field, getattr(latest, field))
 
 
 def upsert_metric(db: Session, user_id: str, payload: BodyMetricIn) -> BodyMetric:

@@ -73,6 +73,7 @@ ADD_DAY = "training.add_plan_day"
 STRENGTH = "training.log_strength"
 WEIGHT = "body.log_weight"
 BODY_REVIEW = "body.review_trend"
+DELETE_METRIC = "body.delete_metric"
 REVIEW = "review.weekly"
 GOAL = "profile.update_goal"
 PLAN = "training.generate_plan"
@@ -460,6 +461,12 @@ def _looks_like_food_update(message: str) -> bool:
 
 
 def _looks_like_workout_delete(message: str) -> bool:
+    if re.search(
+        r"体重|体脂|腰围|臂围|腿围|身体记录|身体数据|"
+        r"饮食|早餐|午餐|晚餐|加餐|食物",
+        message,
+    ):
+        return False
     return bool(
         re.search(r"删掉|删除|去掉|移除", message)
         and re.search(r"训练|跑步|有氧|运动|记录|这条|那次", message)
@@ -754,10 +761,22 @@ def _looks_like_diet_review(message: str) -> bool:
 
 
 def _looks_like_body_review(message: str) -> bool:
+    if _looks_like_body_delete(message):
+        return False
     return bool(
         re.search(r"体重|体脂|腰围|身体|身材|目标进度", message)
         and re.search(
             r"变化|趋势|怎么样|怎么|如何|进度|最近|几周|吗|？|\?",
+            message,
+        )
+    )
+
+
+def _looks_like_body_delete(message: str) -> bool:
+    return bool(
+        re.search(r"删|删除|去掉|清掉|清除", message)
+        and re.search(
+            r"体重|体脂|腰围|臂围|腿围|身体记录|身体数据|称重",
             message,
         )
     )
@@ -1732,6 +1751,35 @@ async def _dispatch_semantic_capability(
             reply=_body_metric_reply(payload),
         )
 
+    if capability_id == DELETE_METRIC:
+        from .capabilities.body import resolve_delete
+
+        resolution = resolve_delete(db, user_id, text)
+        if not resolution.get("ready"):
+            question = (
+                resolution.get("questions") or ["要删哪条身体记录？"]
+            )[0]
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=DELETE_METRIC,
+                payload={"message": text},
+                reply=question,
+                kind="draft",
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=DELETE_METRIC,
+            payload=payload,
+            reply=f"{payload['summary']}？确认后删除。",
+        )
+
     if capability_id == GOAL:
         from .capabilities.profile import resolve as resolve_goal
 
@@ -2223,6 +2271,21 @@ async def handle_turn(
             else:
                 text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
                 intent_override = pending.capability_id
+        elif pending.capability_id == DELETE_METRIC:
+            if not (
+                _looks_like_training_slot_answer(text)
+                or re.search(
+                    r"体重|体脂|腰围|臂围|腿围|最近|最新",
+                    text,
+                )
+            ):
+                cancel_pending(db, session, pending)
+                pending = None
+            else:
+                text = (
+                    f"{pending.payload.get('message') or ''} {text}"
+                ).strip()[:2000]
+                intent_override = DELETE_METRIC
         elif pending.capability_id == WEIGHT:
             if not re.search(r"\d", text):
                 cancel_pending(db, session, pending)
@@ -3248,6 +3311,33 @@ async def handle_turn(
             )
             reply = question
         turn.intent = STRENGTH
+    elif intent_override == DELETE_METRIC or (
+        intent_override is None and _looks_like_body_delete(text)
+    ):
+        from .capabilities.body import resolve_delete
+
+        resolution = resolve_delete(db, user_id, text)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            _pending_card(
+                db,
+                session,
+                capability_id=DELETE_METRIC,
+                payload=payload,
+            )
+            reply = f"{payload['summary']}？确认后删除。"
+        else:
+            question = (
+                resolution.get("questions") or ["要删哪条身体记录？"]
+            )[0]
+            _pending_draft(
+                db,
+                session,
+                capability_id=DELETE_METRIC,
+                payload={"message": text},
+            )
+            reply = question
+        turn.intent = DELETE_METRIC
     elif intent_override == WEIGHT or (
         intent_override is None and _looks_like_weight(text)
     ):
@@ -4041,6 +4131,27 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "BodyMetricLogged"
         entity_type = "body_metric"
         entity_id = action_id
+    elif pending.capability_id == DELETE_METRIC:
+        from .capabilities.body import execute_delete
+
+        result = execute_delete(db, user_id, action_id, pending.payload)
+        before = result.get("before") or {}
+        after = {
+            key: value
+            for key, value in result.items()
+            if key != "before"
+        }
+        receipt = {
+            "summary": (
+                pending.payload.get("summary") or "已删除身体记录"
+            ),
+            "date": pending.payload.get("date"),
+            "metric_id": pending.payload.get("metric_id"),
+            "deep_link": "fitai://body",
+        }
+        event_type = "BodyMetricDeleted"
+        entity_type = "body_metric"
+        entity_id = str(pending.payload.get("metric_id") or "")
     elif pending.capability_id == DIET_DAY_STRATEGY:
         from .capabilities.diet_day_strategy import (
             execute as execute_day_strategy,
@@ -4361,6 +4472,15 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
         from .capabilities.body import undo as undo_weight
 
         result = undo_weight(db, user_id, action_id, record.payload)
+    elif record.capability_id == DELETE_METRIC:
+        from .capabilities.body import undo_delete
+
+        result = undo_delete(
+            db,
+            user_id,
+            record.before or {},
+            record.payload,
+        )
     elif record.capability_id == DIET_DAY_STRATEGY:
         from .capabilities.diet_day_strategy import (
             undo as undo_day_strategy,

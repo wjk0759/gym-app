@@ -469,6 +469,81 @@ def test_body_weight_confirm_and_undo(db):
     assert db.execute(select(BodyMetric)).scalars().all() == []
 
 
+def test_body_metric_delete_only_clears_named_field_and_undo_restores(db):
+    import asyncio
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "今天体重73kg，体脂22%")
+    )
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    metric = db.execute(select(BodyMetric)).scalar_one()
+    assert metric.weight_kg == 73
+    assert metric.body_fat_pct == 22
+
+    deleted = asyncio.run(
+        runtime.handle_turn(db, "user-1", "删掉今天的体重记录")
+    )
+    assert deleted["intent"] == "body.delete_metric"
+    assert deleted["pending"]["kind"] == "card"
+    assert "体重 73" in deleted["pending"]["payload"]["summary"]
+
+    confirmed = runtime.confirm_pending(
+        db, "user-1", deleted["pending"]["id"]
+    )
+    metric = db.execute(select(BodyMetric)).scalar_one()
+    assert metric.weight_kg is None
+    assert metric.body_fat_pct == 22
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    metric = db.execute(select(BodyMetric)).scalar_one()
+    assert metric.weight_kg == 73
+    assert metric.body_fat_pct == 22
+
+
+def test_body_metric_delete_whole_row_and_undo_recreates(db):
+    import asyncio
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "今天体重73kg"))
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    metric_id = db.execute(select(BodyMetric)).scalar_one().id
+
+    deleted = asyncio.run(
+        runtime.handle_turn(db, "user-1", "删除今天的体重记录")
+    )
+    confirmed = runtime.confirm_pending(
+        db, "user-1", deleted["pending"]["id"]
+    )
+    assert db.execute(select(BodyMetric)).scalars().all() == []
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    restored = db.execute(select(BodyMetric)).scalar_one()
+    assert restored.id == metric_id
+    assert restored.weight_kg == 73
+
+
+def test_body_metric_delete_recent_picks_latest_record(db):
+    import asyncio
+
+    yesterday = asyncio.run(
+        runtime.handle_turn(db, "user-1", "昨天体重72kg")
+    )
+    runtime.confirm_pending(db, "user-1", yesterday["pending"]["id"])
+    today = asyncio.run(runtime.handle_turn(db, "user-1", "今天体重73kg"))
+    runtime.confirm_pending(db, "user-1", today["pending"]["id"])
+
+    deleted = asyncio.run(
+        runtime.handle_turn(db, "user-1", "删除最近一条体重记录")
+    )
+    assert "体重 73" in deleted["pending"]["payload"]["summary"]
+    runtime.confirm_pending(db, "user-1", deleted["pending"]["id"])
+    remaining = db.execute(select(BodyMetric)).scalars().all()
+    assert len(remaining) == 1
+    assert remaining[0].weight_kg == 72
+    profile = db.get(Profile, "user-1")
+    assert profile is not None
+    assert profile.weight_kg == 72
+
+
 def test_inbox_unread_filter_and_read_all(db):
     from app.models import utcnow
     from app.services.coach_control.events import create_inbox_item, list_inbox

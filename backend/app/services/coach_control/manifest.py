@@ -31,6 +31,16 @@ ACTION_SPECS: dict[str, ActionSpec] = {
         ("metric", "range"),
         "insight",
     ),
+    "body.delete_metric": ActionSpec(
+        "body.delete_metric",
+        (
+            "删掉今天的体重记录",
+            "删除最近一条体脂记录",
+            "把昨天腰围记录去掉",
+        ),
+        ("date", "metric_id", "fields"),
+        "generic",
+    ),
     "coach.answer": ActionSpec(
         "coach.answer",
         ("减脂怎么吃", "今天状态不好怎么办", "深蹲膝盖疼正常吗"),

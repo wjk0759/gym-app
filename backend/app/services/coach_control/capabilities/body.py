@@ -8,7 +8,8 @@ from datetime import date, datetime, time, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ....models import BodyMetric
+from ....models import BodyMetric, utcnow
+from ...body_metrics import recompute_profile_cache
 from ...food_text import DIET_TZ, food_log_context
 from ..registry import Capability, register
 
@@ -32,6 +33,28 @@ METRIC_FIELDS = {
     "waist_cm": "腰围",
     "arm_cm": "臂围",
     "thigh_cm": "腿围",
+}
+
+DELETE_CAPABILITY = register(
+    Capability(
+        id="body.delete_metric",
+        domain="body",
+        kind="write",
+        title="删除身体数据",
+        description="删除某一天的一条体重、体脂或围度记录",
+        requires_confirmation=True,
+        undo=True,
+        events=("BodyMetricDeleted",),
+        refreshes=("body", "profile", "diet", "review"),
+    )
+)
+
+DELETE_FIELD_WORDS = {
+    "weight_kg": ("体重", "称重", "称了", "上秤", "过秤"),
+    "body_fat_pct": ("体脂",),
+    "waist_cm": ("腰围",),
+    "arm_cm": ("臂围", "手臂围"),
+    "thigh_cm": ("腿围", "大腿围"),
 }
 
 
@@ -171,3 +194,175 @@ def undo(
         db.delete(metric)
         db.flush()
     return {"deleted": metric is not None}
+
+
+def _metric_snapshot(metric: BodyMetric) -> dict:
+    return {
+        "id": metric.id,
+        "client_id": metric.client_id,
+        "measured_at": metric.measured_at.isoformat(),
+        "created_at": (
+            metric.created_at.isoformat() if metric.created_at else None
+        ),
+        **{
+            field: getattr(metric, field)
+            for field in METRIC_FIELDS
+        },
+    }
+
+
+def _metric_local_date(metric: BodyMetric) -> date:
+    measured = metric.measured_at
+    if measured.tzinfo is None:
+        measured = measured.replace(tzinfo=timezone.utc)
+    return measured.astimezone(DIET_TZ).date()
+
+
+def resolve_delete(
+    db: Session,
+    user_id: str,
+    message: str,
+) -> dict:
+    if re.search(r"所有|全部|批量|清空", message):
+        return {
+            "ready": False,
+            "questions": ["一次只能删一条身体记录；告诉我是哪一天、哪一项。"],
+        }
+    fields = [
+        field
+        for field, words in DELETE_FIELD_WORDS.items()
+        if any(word in message for word in words)
+    ]
+    target = food_log_context(message)["date"]
+    recent = bool(re.search(r"最近|最新|上一条|上次", message))
+    rows = (
+        db.execute(
+            select(BodyMetric)
+            .where(BodyMetric.user_id == user_id)
+            .order_by(
+                BodyMetric.measured_at.desc(),
+                BodyMetric.created_at.desc(),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    chosen: BodyMetric | None = None
+    for metric in rows:
+        if fields and all(
+            getattr(metric, field) is None for field in fields
+        ):
+            continue
+        local_date = _metric_local_date(metric).isoformat()
+        if not recent and local_date != target:
+            continue
+        chosen = metric
+        break
+    if chosen is None:
+        label = (
+            "、".join(METRIC_FIELDS[field] for field in fields)
+            if fields
+            else "身体"
+        )
+        when = "最近" if recent else target
+        return {
+            "ready": False,
+            "questions": [f"没找到{when}的{label}记录。"],
+        }
+    local_date = _metric_local_date(chosen)
+    selected_fields = fields or list(METRIC_FIELDS)
+    parts = [
+        f"{METRIC_FIELDS[field]} {getattr(chosen, field):g}"
+        for field in selected_fields
+        if getattr(chosen, field) is not None
+    ]
+    return {
+        "ready": True,
+        "payload": {
+            "metric_id": chosen.id,
+            "client_id": chosen.client_id,
+            "fields": fields,
+            "date": local_date.isoformat(),
+            "summary": (
+                f"删除 {local_date.month}月{local_date.day}日 的"
+                + "、".join(parts)
+                + "记录"
+            ),
+        },
+    }
+
+
+def execute_delete(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: dict,
+) -> dict:
+    metric = db.get(BodyMetric, str(payload.get("metric_id") or ""))
+    if metric is None or metric.user_id != user_id:
+        raise LookupError("身体记录不存在")
+    before = {"metric": _metric_snapshot(metric)}
+    fields = [
+        field
+        for field in payload.get("fields") or []
+        if field in METRIC_FIELDS
+    ]
+    if fields:
+        for field in fields:
+            setattr(metric, field, None)
+        removed_row = all(
+            getattr(metric, field) is None for field in METRIC_FIELDS
+        )
+        if removed_row:
+            db.delete(metric)
+    else:
+        removed_row = True
+        db.delete(metric)
+    db.flush()
+    recompute_profile_cache(db, user_id)
+    return {
+        "before": before,
+        "deleted": removed_row,
+        "cleared_fields": fields,
+    }
+
+
+def undo_delete(
+    db: Session,
+    user_id: str,
+    before: dict,
+    payload: dict,
+) -> dict:
+    snapshot = (before or {}).get("metric") or {}
+    metric_id = str(snapshot.get("id") or "")
+    if not metric_id:
+        return {"restored": False}
+    values = {
+        field: snapshot.get(field)
+        for field in METRIC_FIELDS
+    }
+    metric = db.get(BodyMetric, metric_id)
+    if metric is None:
+        if not snapshot.get("client_id") or not snapshot.get("measured_at"):
+            return {"restored": False}
+        created_at = snapshot.get("created_at")
+        metric = BodyMetric(
+            id=metric_id,
+            user_id=user_id,
+            client_id=str(snapshot["client_id"]),
+            measured_at=datetime.fromisoformat(str(snapshot["measured_at"])),
+            created_at=(
+                datetime.fromisoformat(str(created_at))
+                if created_at
+                else utcnow()
+            ),
+            **values,
+        )
+        db.add(metric)
+    else:
+        for field, value in values.items():
+            setattr(metric, field, value)
+    db.flush()
+    recompute_profile_cache(db, user_id)
+    return {"restored": True}
+
