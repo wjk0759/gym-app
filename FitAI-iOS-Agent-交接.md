@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`f5b4bfd`（已执行多条饮食记录纠错；后端代码 `f5b4bfd` 已部署生产，iOS 已装 `71fce9d`；生产后端 `f5b4bfd` + Flyway **V42**；`FitAITests` **115/115**、UI **4/4**、后端 **520 passed**、QA **22/22**；batch/器械/依赖级联已部署，真机完整验收仍未完成）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`f5b4bfd`（已执行多条饮食记录纠错；生产后端 `f5b4bfd` + Flyway **V42**；iOS 已装 `71fce9d`；`FitAITests` **115/115**、UI **4/4**、后端 **520 passed**、QA **24 passed / 5 failed**；**本轮发布阻断**：替换后撤销会清空旧记录，另有 4 个纠错边界未通过；生产仍保留 Windows 已部署的 `f5b4bfd`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +26,41 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-16 · macOS（饮食多条目纠错压力测试：阻断发布）
+
+- 拉取：`f5b4bfd`；生产 `runtime.py` SHA-256 与本地一致，确认 Windows 已部署该后端；macOS **本轮未重新部署**。
+- 测试：
+  - 后端完整测试 **520 passed**
+  - QA 对抗 **29 条：24 passed / 5 failed**
+  - iOS 无代码变更，沿用 `FitAITests` **115/115**、UI **4/4**
+- 阻断问题（均可复现）：
+  1. **替换后撤销会清空全部记录**：午餐鸡胸肉 200g + 米饭 150g → “记错了，鸡胸肉是150g” → 确认替换 → 撤销。实际 0 条；期望恢复旧记录（鸡胸肉 200g + 米饭 150g）。`test_undo_replacement_restores_previous_food_logs`
+  2. **追问“哪一餐”后没有纠正上下文**：午餐/晚餐都有鸡胸肉 → “记错了，鸡胸肉是150g” → 回复“午餐”。实际变成“午饭吃了什么？”的新草稿，不会替换原记录。`test_ambiguous_meal_correction_follow_up_stays_a_correction`
+  3. **batch 内的饮食纠错会重复且写错餐次**：`记午饭鸡胸肉200g，再称体重73kg` 确认后纠错“鸡胸肉是150g”。实际保留午餐 200g，又新增晚餐 150g；期望只把午餐改成 150g。`test_batch_food_correction_does_not_duplicate_or_move_meal`
+  4. **“不是旧值，是新值”不更新重量**：`记错了，鸡胸肉不是200g，是150g`。卡片仍是鸡胸肉 200g，却提示“改好了”。`test_food_correction_understands_explicit_old_value`
+  5. **替换会复活用户已删除的条目**：确认两条记录后手动删除米饭，再纠错鸡胸肉。替换卡仍从旧 payload 带回米饭，确认后米饭复活。`test_food_correction_does_not_resurrect_deleted_item`
+- 已通过并锁定的边界：
+  - 取消替换保留旧记录：`test_cancel_food_replacement_keeps_previous_logs`
+  - 正常记录下一餐不会被误判为替换：`test_next_meal_after_diet_log_is_not_a_replacement`
+  - 多餐纠正保留其他餐、跨日期纠正保持原日期、同一食物多餐时先追问（现有用例）
+- 生产：
+  - `fitai-api` healthy，`/health/ready` 200
+  - Flyway 仍 **V42**，无新迁移
+  - 未安装新 iOS（本轮 iOS 无变更）
+- 备份：
+  - macOS 本轮未部署，未新增备份；生产当前为 Windows 部署的 `f5b4bfd`
+- Windows 需要做：
+  - 替换后撤销必须恢复旧 action 与旧 logs；或禁止撤销替换卡并明确提示，不能只删新 logs。
+  - 追问餐次后继续保持纠正上下文（pending 携带 `replace_action_id`），或直接生成包含全部餐次的替换卡。
+  - batch 内的 diet 子动作必须参与纠错；否则明确拒绝并提示拆开记录，不能静默新增一条错误餐次。
+  - 解析“食物 + 不是旧值 + 是 新值”时按食物名和旧值定位，卡片必须反映新 grams。
+  - 替换前重读当前 logs/当前 action，不能从旧 payload 复活用户已删除或已编辑的条目。
+  - 修好后把这 5 条移入 `backend/tests`，QA 必须回到全绿再重新部署。
+- 不要恢复：
+  - 不要在替换后撤销时只删新 logs、不恢复旧 logs。
+  - 不要用旧 action payload 盲写已删除条目。
+  - 不要在 batch 纠错时猜一个默认餐次。
 
 ### 2026-11-16 · Windows（已执行多条饮食记录纠错）
 

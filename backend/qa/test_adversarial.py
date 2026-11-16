@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 from app.db import Base
 from app.models import (
     Exercise,
+    FoodLog,
     PlanDayState,
     PlanExercise,
     Profile,
@@ -127,6 +128,35 @@ def turn(db, message, context):
     return asyncio.run(
         runtime.handle_turn(db, "user-1", message, app_context=context)
     )
+
+
+def diet_turn(db, message, session_id=None):
+    import asyncio
+
+    return asyncio.run(
+        runtime.handle_turn(db, "user-1", message, session_id=session_id)
+    )
+
+
+def food_logs(db):
+    from sqlalchemy import select
+
+    return sorted(
+        (
+            log.meal,
+            log.food_name,
+            float(log.grams),
+            log.logged_at.date().isoformat(),
+        )
+        for log in db.execute(select(FoodLog)).scalars().all()
+    )
+
+
+def shanghai_today():
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    return datetime.now(ZoneInfo("Asia/Shanghai")).date().isoformat()
 
 
 def test_swap_with_parameters_should_keep_new_exercise_and_sets(db):
@@ -499,3 +529,149 @@ def test_batch_confirm_rolls_back_when_second_action_fails(db):
     states = db.execute(select(PlanDayState)).scalars().all()
     assert logs == []
     assert states == []
+
+
+def test_undo_replacement_restores_previous_food_logs(db):
+    """Undoing a correction must not erase both the old and new records."""
+    first = diet_turn(db, "午餐吃了200g鸡胸肉，150g米饭")
+    confirmed = runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    corrected = diet_turn(
+        db,
+        "记错了，鸡胸肉是150g",
+        session_id=first["session"]["id"],
+    )
+    assert corrected["pending"] is not None, corrected
+    replaced = runtime.confirm_pending(
+        db, "user-1", corrected["pending"]["id"]
+    )
+    runtime.undo_action(db, "user-1", replaced["action_id"])
+    assert food_logs(db) == [
+        ("lunch", "米饭", 150.0, shanghai_today()),
+        ("lunch", "鸡胸肉", 200.0, shanghai_today()),
+    ], food_logs(db)
+    assert confirmed["action_id"] != replaced["action_id"]
+
+
+def test_ambiguous_meal_correction_follow_up_stays_a_correction(db):
+    """After asking which meal, a one-word answer must not start a new draft."""
+    first = diet_turn(db, "午餐吃了200g鸡胸肉，晚餐吃了150g鸡胸肉")
+    confirmed = runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    ambiguous = diet_turn(
+        db,
+        "记错了，鸡胸肉是150g",
+        session_id=first["session"]["id"],
+    )
+    assert "哪一餐" in ambiguous["reply"], ambiguous
+
+    follow = diet_turn(
+        db,
+        "午餐",
+        session_id=first["session"]["id"],
+    )
+    assert follow["pending"] is not None, follow
+    payload = follow["pending"]["payload"]
+    assert payload.get("replace_action_id") == confirmed["action_id"], payload
+    if follow["pending"]["kind"] == "card":
+        runtime.confirm_pending(db, "user-1", follow["pending"]["id"])
+        assert food_logs(db) == [
+            ("dinner", "鸡胸肉", 150.0, shanghai_today()),
+            ("lunch", "鸡胸肉", 150.0, shanghai_today()),
+        ], food_logs(db)
+
+
+def test_batch_food_correction_does_not_duplicate_or_move_meal(db):
+    """A batch that logged lunch must still be correctable as lunch."""
+    first = diet_turn(db, "记午饭鸡胸肉200g，再称体重73kg")
+    assert first["pending"] is not None, first
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    assert food_logs(db) == [
+        ("lunch", "鸡胸肉", 200.0, shanghai_today())
+    ], food_logs(db)
+
+    corrected = diet_turn(
+        db,
+        "记错了，鸡胸肉是150g",
+        session_id=first["session"]["id"],
+    )
+    assert corrected["pending"] is not None, corrected
+    if corrected["pending"]["kind"] == "card":
+        runtime.confirm_pending(
+            db, "user-1", corrected["pending"]["id"]
+        )
+    assert food_logs(db) == [
+        ("lunch", "鸡胸肉", 150.0, shanghai_today())
+    ], food_logs(db)
+
+
+def test_food_correction_understands_explicit_old_value(db):
+    """'不是200g，是150g' must update the named food's grams."""
+    first = diet_turn(db, "午餐吃了200g鸡胸肉，150g米饭")
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    corrected = diet_turn(
+        db,
+        "记错了，鸡胸肉不是200g，是150g",
+        session_id=first["session"]["id"],
+    )
+    assert corrected["pending"] is not None, corrected
+    items = corrected["pending"]["payload"].get("items") or []
+    assert sorted((item["name"], item["grams"]) for item in items) == [
+        ("米饭", 150),
+        ("鸡胸肉", 150),
+    ], items
+
+
+def test_food_correction_does_not_resurrect_deleted_item(db):
+    """Replacing one food must not recreate another log deleted by the user."""
+    first = diet_turn(db, "午餐吃了200g鸡胸肉，150g米饭")
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    from sqlalchemy import select
+
+    rice = db.execute(
+        select(FoodLog).where(FoodLog.food_name == "米饭")
+    ).scalar_one()
+    db.delete(rice)
+    db.commit()
+
+    corrected = diet_turn(
+        db,
+        "记错了，鸡胸肉是150g",
+        session_id=first["session"]["id"],
+    )
+    assert corrected["pending"] is not None, corrected
+    runtime.confirm_pending(db, "user-1", corrected["pending"]["id"])
+    assert food_logs(db) == [
+        ("lunch", "鸡胸肉", 150.0, shanghai_today())
+    ], food_logs(db)
+
+
+def test_cancel_food_replacement_keeps_previous_logs(db):
+    first = diet_turn(db, "午餐吃了200g鸡胸肉，150g米饭")
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    corrected = diet_turn(
+        db,
+        "记错了，鸡胸肉是150g",
+        session_id=first["session"]["id"],
+    )
+    runtime.cancel(db, "user-1", corrected["pending"]["id"])
+    assert food_logs(db) == [
+        ("lunch", "米饭", 150.0, shanghai_today()),
+        ("lunch", "鸡胸肉", 200.0, shanghai_today()),
+    ], food_logs(db)
+
+
+def test_next_meal_after_diet_log_is_not_a_replacement(db):
+    first = diet_turn(db, "午餐吃了200g鸡胸肉，150g米饭")
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    second = diet_turn(
+        db,
+        "晚餐吃了150g牛肉",
+        session_id=first["session"]["id"],
+    )
+    assert second["pending"] is not None, second
+    assert "replace_action_id" not in second["pending"]["payload"]
+    runtime.confirm_pending(db, "user-1", second["pending"]["id"])
+    assert food_logs(db) == [
+        ("dinner", "牛肉", 150.0, shanghai_today()),
+        ("lunch", "米饭", 150.0, shanghai_today()),
+        ("lunch", "鸡胸肉", 200.0, shanghai_today()),
+    ], food_logs(db)
