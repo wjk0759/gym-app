@@ -23,7 +23,7 @@ final class CoachRefreshDomainsTests: XCTestCase {
         )
         XCTAssertEqual(
             CoachRefreshDomains.domains(for: "body.log_weight"),
-            [.body, .profile, .review]
+            [.body, .profile, .diet, .review]
         )
         XCTAssertEqual(
             CoachRefreshDomains.domains(for: "diet.delete_log"),
