@@ -1361,6 +1361,58 @@ def test_restore_plan_can_pick_an_explicit_version(db):
     assert turn["pending"]["payload"]["program_id"] == plans[1].id
 
 
+def test_batch_plan_restore_and_weight_confirm_and_undo(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    active = Program(
+        user_id="user-1",
+        title="当前计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=today,
+        weeks=4,
+    )
+    archived = Program(
+        user_id="user-1",
+        title="上一版计划",
+        goal_type="build_muscle",
+        version=2,
+        status="archived",
+        start_date=today,
+        weeks=4,
+    )
+    db.add_all([active, archived])
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "恢复上一版计划，再称体重73kg",
+        )
+    )
+    assert turn["pending"]["capability_id"] == "coach.batch"
+    assert [
+        item["capability_id"] for item in turn["pending"]["payload"]["batch"]
+    ] == ["training.restore_plan", "body.log_weight"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    db.refresh(active)
+    db.refresh(archived)
+    assert archived.status == "active"
+    assert active.status == "archived"
+    assert db.execute(select(BodyMetric)).scalar_one().weight_kg == 73
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    db.refresh(active)
+    db.refresh(archived)
+    assert active.status == "active"
+    assert archived.status == "archived"
+    assert db.execute(select(BodyMetric)).scalars().all() == []
+
+
 def test_batch_weight_and_goal_confirm_and_undo(db):
     import asyncio
 

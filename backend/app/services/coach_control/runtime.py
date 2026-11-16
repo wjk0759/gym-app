@@ -1554,6 +1554,17 @@ async def _try_batch_turn(
                         f"{MEAL_LABELS.get(payload['meal'], payload['meal'])}"
                     ),
                 }
+        elif _looks_like_plan_restore(clause):
+            from .capabilities.plan import resolve_restore
+
+            resolution = resolve_restore(db, user_id, clause)
+            if resolution.get("ready"):
+                payload = resolution["payload"]
+                action = {
+                    "capability_id": RESTORE_PLAN,
+                    "payload": payload,
+                    "summary": payload.get("summary") or "恢复历史计划",
+                }
         elif _looks_like_reschedule(clause):
             from .capabilities.training import resolve as resolve_training
 
