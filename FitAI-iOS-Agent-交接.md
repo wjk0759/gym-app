@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`7799c35`（batch 力量/训练改删 + 饮食改删 + 记忆页刷新 + 身体记录删除；生产后端 `a21b82a` + Flyway **V42**；iOS 已装 `73e517c`；`FitAITests` **121/121**、UI **4/4**、后端 **531 passed**、QA **31 passed / 9 failed**；**后端发布阻断**：profile 缓存不同步、纠错跨日期会搬记录、batch 双食物编辑未通过；生产后端仍为 Windows 已部署的 `a21b82a`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`b1877a1`（batch 计划动作编辑 + 身体缓存/纠错 QA 回归修复；生产后端 `b1877a1` + Flyway **V42**；iOS 已装 `73e517c`；`FitAITests` **121/121**、UI **4/4**、后端 **533 passed**、QA **40/40**；上一轮 9 条 QA 回归已修复并部署）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -72,6 +72,42 @@
   - 不要让 profile 缓存继续指向已删除或未写入的 body metric。
   - 不要按纠错文本里的新日期搬动旧 action 的全部 logs。
   - 不要把 `diet.update_log` / `diet.delete_log` 只按 capability 去重。
+
+### 2026-11-16 · Windows（batch 计划动作编辑 + QA 回归修复）
+
+- 提交：`0d63277` + `b1877a1`，已推 `develop`；后端已部署 `b1877a1`；无迁移。
+- 做了什么：
+  - `coach.batch` 新增 `training.edit_day_exercise`（单个动作替换/改组数）和 `training.edit_day_exercises`（整天动作替换）。
+  - batch 上下文校验扩展到动作编辑：plan_id / day_id 必须和生成卡时一致。
+  - 修复 Mac QA 新发现的回归：
+    1. 教练记录体重后现在会同步更新 profile 缓存；撤销/删除后回退或清空。
+    2. 纠正记录即使说“昨天”也保持原记录日期，不会把今天记录搬到昨天。
+    3. “不是200g，是150g”没有食物名时先追问，不再错误提示成功。
+    4. 同一 batch 允许修改/删除两条不同饮食记录（按 client_id 去重）。
+    5. 动作编辑识别排除鸡胸肉/米饭等食物词，避免饮食修改被路由成训练计划编辑。
+- 验证：
+  - 后端 **533 passed**
+  - QA **40/40**（Mac 新增 11 条回归用例全绿）
+  - Ruff app/tests/qa 通过
+  - GitHub Backend Tests `b1877a1` 成功
+  - 新增测试：batch 单个动作替换+改期、整天动作替换+体重、饮食修改/删除两条记录、profile 缓存回退/清空。
+- 生产：
+  - 后端 `b1877a1` 已部署；`runtime.py`、`body_metrics.py`、`capabilities/body.py` SHA-256 与本地一致
+  - `fitai-api` healthy；`/health/ready` 返回 `{"status":"ready"}`；Flyway 仍 V42
+- iOS：
+  - 本轮无 iOS 变更；最新已构建 `73e517c`，未安装；已装仍是 `ad0674f`。
+- Mac 要做：
+  - 装 `73e517c` 后跑 `FitAITests` 121/121、UI 4/4。
+  - 真机验证：
+    - “把卧推换成哑铃卧推，再把今天的训练改到11月20日” → batch 卡；确认后动作和日期都变；撤销都恢复。
+    - “把今天的训练换成杠铃卧推、上斜卧推，再称体重73kg” → 当天动作替换 + 体重写入；撤销都恢复。
+    - 记录体重 → profile/计划生成读取新体重；撤销或删除后回退/清空。
+    - 同一句改两条饮食记录、删两条饮食记录。
+- 不要恢复：
+  - 不要让饮食修改被识别成训练计划编辑。
+  - 不要在纠正时用文本里的“昨天”改变原记录日期。
+  - 不要在删除最后一条身体指标后保留旧 profile 缓存。
+  - 不要在 batch 里按 capability 粗暴去重饮食修改/删除。
 
 ### 2026-11-16 · Windows（batch 扩展到力量/训练改删）
 
