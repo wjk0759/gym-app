@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`df7f390`（收藏食物教练动作；生产后端 `df7f390`，`runtime.py` / `food_preferences.py` SHA-256 与本地一致；iOS 已装 `3c8c499`，已构建 `48bc4d5`；Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **554 passed**、QA **55/55**；iOS Build `df7f390` ✓）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`c424b09`（文档 `dd5bc4d`；档案/伤病、器械库、体型分析应用、收藏/自定义食物；生产后端 `c424b09`，`runtime.py` / `custom_food.py` / `food_preferences.py` SHA-256 与本地一致；iOS 已装 `c424b09`；Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **556 passed**、QA **55 passed / 6 failed**；**后端发布阻断**：伤病覆盖/把“好了”记成新伤、身高问题被当改资料、自然收藏话术、自定义食物“每日坚果”、撤销自定义食物留下孤立收藏）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +26,48 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-17 · macOS（档案伤病 / 器械 / 体型分析 / 收藏自定义食物压力测试：阻断）
+
+- 拉取：`c424b09`；生产后端已由 Windows 部署到 `c424b09`，`runtime.py` / `custom_food.py` / `food_preferences.py` SHA-256 与本地一致；macOS **本轮未重新部署后端**。
+- 测试：
+  - 后端完整测试 **556 passed**
+  - QA 对抗 **61 条：55 passed / 6 failed**
+  - iOS `c424b09`：`FitAITests` **121/121**、UI **4/4**
+  - iOS 已安装并启动 Wu-Tang；今天 11-17 显示「背日」
+- 新阻断问题：
+  1. **新增伤病会覆盖旧伤**：已有“腰部旧伤”，说 `我膝盖也有伤`，确认后 `profile.injuries` 只剩“我膝盖也有伤”，腰部旧伤丢失。`test_injury_update_with_also_keeps_existing_injury`
+  2. **伤病恢复被记录成新伤**：已有“膝盖有伤”，说 `膝盖不疼了` / `没有伤病了`，会生成“准备记录膝盖不疼了”的卡；确认后把“不疼了”当伤病保存。应清除或明确询问是否移除伤病。`test_injury_resolution_does_not_record_the_resolution_as_injury`
+  3. **资料问题被当成修改资料**：`身高会影响减脂吗` 生成 `profile.update` 草稿“想改昵称、性别、身高还是训练经验”，应正常回答。`test_profile_question_about_height_is_not_an_edit`
+  4. **自然收藏话术不识别**：`把鸡胸肉加入收藏` 落到普通聊天；只支持“收藏鸡胸肉/加入收藏：鸡胸肉”等词序。`test_favorite_food_natural_phrase_understands_food_before_verb`
+  5. **自定义食物名含“每”被截断**：`添加自定义食物每日坚果，每100g 600kcal…` 无法解析出“每日坚果”，只问“想创建什么食物”。名称解析不应在任意“每”处截断。`test_custom_food_name_with_daily_prefix_is_not_truncated`
+  6. **撤销自定义食物会留下孤立收藏**：创建“鸡胸肉丸”→收藏→撤销创建，`UserCustomFood` 已删除，但 `custom:<client_id>` 的收藏仍 active；收藏页会出现指向不存在食物的条目。`test_undo_custom_food_removes_orphan_favorite`
+- 额外观察（未单独阻断）：
+  - 器械改名允许重名，之后“删掉坐姿划船机”只能提示多个匹配；建议限制重名或让删除支持按位置/ID 选择。
+  - “把划船机加入器械库”会被已有“坐姿划船机”按子串判定为重复，可能阻止用户添加不同器械。
+- 已通过并锁定：
+  - 档案字段更新（昵称/性别/身高/经验）、BMI 保护、撤销
+  - 器械添加/改名/删除/撤销恢复启用动作、删除后同步修剪
+  - 体型分析应用 focus、组数 +1、旧计划归档、applied 标记、撤销恢复
+  - 收藏增删/撤销、自定义食物 key、自定义食物创建/撤销
+- 生产：
+  - `fitai-api` healthy，`/health/ready` 200
+  - Flyway 仍 **V42**，无新迁移
+  - iOS `c424b09` 已安装 Wu-Tang
+- 备份：
+  - 本轮未重部署，未新增备份；生产后端为 Windows 部署的 `c424b09`
+- Windows 需要做：
+  - 伤病更新要区分“新增/还有/也有”与“替换”，新增时保留旧伤；检测“好了/不疼了/没有伤病了”时清除或追问，不能存成新伤。
+  - `_looks_like_profile_update` 先排除疑问句，避免“身高会影响…吗”被当成修改。
+  - 收藏解析支持“把/将 + 食物 + 加入/加到收藏”。
+  - 自定义食物名称只在“每 100g/每份/kcal”等营养段前截断，不能按任意“每”拆。
+  - 撤销自定义食物时同步停用/删除 `custom:<client_id>` 的收藏。
+  - 修好后把这 6 条移入 `backend/tests`，QA 61 条必须全绿再部署后端。
+- 不要恢复：
+  - 不要用一条新伤病覆盖用户已有伤病列表。
+  - 不要把“不疼了/好了/没有伤病了”保存成伤病。
+  - 不要在撤销自定义食物后留下孤立收藏。
+  - 不要在任意“每”字处截断食物名。
 
 ### 2026-11-16 · macOS（记忆候选 / batch 配置回归复测：通过）
 

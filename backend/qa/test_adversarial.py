@@ -17,6 +17,8 @@ from app.models import (
     PlanExercise,
     Profile,
     Program,
+    UserCustomFood,
+    UserFoodFavorite,
     ProgramDay,
     User,
 )
@@ -1459,3 +1461,80 @@ def test_memory_forget_follow_up_normal_question_is_not_a_deletion(db):
     )
     assert follow["intent"] != "memory.forget", follow
     assert follow["pending"] is None, follow
+
+
+def test_injury_update_with_also_keeps_existing_injury(db):
+    profile = db.get(Profile, "user-1")
+    profile.injuries = ["腰部旧伤"]
+    db.commit()
+    result = coach_turn(db, "我膝盖也有伤")
+    assert result["pending"] is not None, result
+    runtime.confirm_pending(db, "user-1", result["pending"]["id"])
+    profile = db.get(Profile, "user-1")
+    joined = " ".join(profile.injuries or [])
+    assert "腰部旧伤" in joined, profile.injuries
+    assert "膝盖" in joined, profile.injuries
+
+
+def test_injury_resolution_does_not_record_the_resolution_as_injury(db):
+    profile = db.get(Profile, "user-1")
+    profile.injuries = ["膝盖有伤"]
+    db.commit()
+    result = coach_turn(db, "膝盖不疼了")
+    pending = result["pending"]
+    if pending is None:
+        return
+    if pending["kind"] != "card":
+        return
+    runtime.confirm_pending(db, "user-1", pending["id"])
+    profile = db.get(Profile, "user-1")
+    assert profile.injuries == [], profile.injuries
+
+
+def test_profile_question_about_height_is_not_an_edit(db):
+    result = coach_turn(db, "身高会影响减脂吗")
+    assert result["intent"] != "profile.update", result
+    assert result["pending"] is None, result
+
+
+def test_favorite_food_natural_phrase_understands_food_before_verb(db):
+    result = coach_turn(db, "把鸡胸肉加入收藏")
+    assert result["intent"] == "diet.favorite_food", result
+    assert result["pending"] is not None, result
+    assert result["pending"]["payload"]["food_key"] == "library:鸡胸肉", result
+
+
+
+def test_custom_food_name_with_daily_prefix_is_not_truncated(db):
+    result = coach_turn(
+        db,
+        "添加自定义食物每日坚果，每100g 600kcal，蛋白质20g，碳水20g，脂肪50g",
+    )
+    assert result["pending"] is not None, result
+    assert result["pending"]["payload"]["name"] == "每日坚果", result
+
+
+def test_undo_custom_food_removes_orphan_favorite(db):
+    created = coach_turn(
+        db,
+        "添加自定义食物鸡胸肉丸，每100g 150kcal，蛋白质20g，碳水10g，脂肪3g",
+    )
+    assert created["pending"] is not None, created
+    assert created["pending"]["kind"] == "card", created
+    created_confirm = runtime.confirm_pending(
+        db, "user-1", created["pending"]["id"]
+    )
+    food = db.execute(select(UserCustomFood)).scalar_one()
+
+    favorite = coach_turn(db, "收藏鸡胸肉丸")
+    assert favorite["pending"] is not None, favorite
+    runtime.confirm_pending(db, "user-1", favorite["pending"]["id"])
+
+    runtime.undo_action(db, "user-1", created_confirm["action_id"])
+    assert db.execute(select(UserCustomFood)).scalars().all() == []
+    orphan = db.execute(
+        select(UserFoodFavorite).where(
+            UserFoodFavorite.food_key == f"custom:{food.client_id}"
+        )
+    ).scalar_one_or_none()
+    assert orphan is None or orphan.deleted_at is not None, orphan
