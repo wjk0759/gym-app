@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`a21b82a`（batch 扩展到力量/训练修改/训练删除 + 饮食修改/删除 + 记忆页刷新 + 身体记录删除；后端 `a21b82a` 已部署生产；iOS 代码到 `73e517c`，已装 `ad0674f`；生产后端 `a21b82a` + Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **531 passed**、QA **29/29**；iOS Build `73e517c` ✓）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`7799c35`（batch 力量/训练改删 + 饮食改删 + 记忆页刷新 + 身体记录删除；生产后端 `a21b82a` + Flyway **V42**；iOS 已装 `73e517c`；`FitAITests` **121/121**、UI **4/4**、后端 **531 passed**、QA **31 passed / 9 failed**；**后端发布阻断**：profile 缓存不同步、纠错跨日期会搬记录、batch 双食物编辑未通过；生产后端仍为 Windows 已部署的 `a21b82a`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +26,52 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-16 · macOS（身体数据删除 / 批量饮食编辑压力测试：阻断）
+
+- 拉取：`7799c35`；生产后端已由 Windows 部署到 `a21b82a`，`runtime.py` / `body.py` / `body_metrics.py` SHA-256 与本地一致；macOS **本轮未重新部署后端**。
+- Windows 新推 batch 训练删除/修改、力量记录：后端 **531 passed**，本轮未单独发现新阻断。
+- 测试：
+  - 后端完整测试 **531 passed**
+  - QA 对抗 **40 条：31 passed / 9 failed**
+  - iOS `73e517c`：`FitAITests` **121/121**、UI **4/4**
+  - iOS 已安装并启动 Wu-Tang；首页正常显示 11-16「胸日」
+- 上一轮 5 个纠错阻断已确认修复：
+  - 替换后撤销恢复旧 logs
+  - 歧义餐次追问后继续纠正
+  - batch 单饮食纠错保留午餐
+  - “鸡胸肉不是200g，是150g” 更新到 150g
+  - 删除米饭后纠错不复活
+- 新阻断问题（均可复现）：
+  1. **教练记录体重/体脂不更新 profile 缓存**：`今天体重73kg` 确认后 `profiles.weight_kg` 仍是 72；`今天体脂22%` 后仍是 18。`test_coach_weight_log_updates_profile_cache`
+  2. **撤销体重记录不恢复 profile 缓存**：先有 70，记录 73 后撤销；删除 metric 时不重算 profile。`test_coach_weight_undo_restores_previous_profile_cache`
+  3. **删除最后一条体重不清空缓存**：唯一体重 73 被删除后 `profiles.weight_kg` 仍是 73/旧值。`test_delete_last_weight_clears_profile_cache`
+  4. **删除最后一条体脂不清空缓存**：`profiles.body_fat_pct` 保留已删除值。`test_delete_last_body_fat_clears_profile_cache`
+  5. **整行删除身体记录不清空缓存**：体重/体脂/腰围整行删光后 profile 三字段仍是旧值。`test_delete_whole_body_row_clears_profile_cache`
+  6. **纠错带不同日期会把整条记录搬走**：今天午餐鸡胸肉 200g + 米饭 150g，说 `记错了，昨天午餐鸡胸肉是150g`，确认后两条都变成昨天，今天记录消失。`test_food_correction_with_different_date_does_not_move_record`
+  7. **“不是200g，是150g” 未指明食物仍生成未修改卡**：提示“改好了”，卡片鸡胸肉仍是 200g。`test_food_correction_without_food_name_asks`
+  8. **batch 两个食物改量被误路由到训练**：`把午餐鸡胸肉改成150g，再把午餐米饭改成100g` → 回复“还没有可修改的训练计划”，无确认卡。`test_batch_two_food_updates_should_not_route_to_training`
+  9. **batch 两个食物删除无法合并**：`删掉午餐鸡胸肉，再删掉午餐米饭` → “找到多条记录…请说得更具体”，无确认卡。`test_batch_two_food_deletes_should_resolve_both`
+- 已通过并锁定：
+  - batch 食物改量 + 改训练日期：确认/整组撤销
+  - batch 食物删除 + 记体重：确认/整组撤销
+  - 删除指定字段保留同条其他指标、最近一条选择、整行删除后撤销
+  - 取消替换保留旧记录、正常记录下一餐不误判为替换
+- 生产：
+  - `fitai-api` healthy，`/health/ready` 200
+  - Flyway 仍 **V42**，无新迁移
+- 备份：
+  - macOS 本轮未部署后端，未新增备份；生产后端当前为 Windows 部署的 `a21b82a`
+- Windows 需要做：
+  - `body.log_weight` 执行后、撤销后调用 `recompute_profile_cache`；`recompute_profile_cache` 在某个字段没有任何记录时把 profile 字段设为 `None`，不能保留旧值。
+  - 纠错日期与上一动作日期不一致时，按旧 action 日期处理或明确追问，不能把整条记录搬到新日期。
+  - “不是旧值，是新值”缺少食物名时先问是哪样食物，不能生成未修改卡并提示成功。
+  - batch 的 diet update/delete 去重键要包含食物/条目身份，而不是只用 capability；两项不同食物必须能合并，fallback 也不能误路由到训练。
+  - 修好后把这 9 条移入 `backend/tests`，QA 40 条必须全绿再部署后端。
+- 不要恢复：
+  - 不要让 profile 缓存继续指向已删除或未写入的 body metric。
+  - 不要按纠错文本里的新日期搬动旧 action 的全部 logs。
+  - 不要把 `diet.update_log` / `diet.delete_log` 只按 capability 去重。
 
 ### 2026-11-16 · Windows（batch 扩展到力量/训练改删）
 

@@ -3,12 +3,13 @@ from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db import Base
 from app.models import (
+    BodyMetric,
     Exercise,
     FoodLog,
     PlanDayState,
@@ -138,9 +139,22 @@ def diet_turn(db, message, session_id=None):
     )
 
 
-def food_logs(db):
-    from sqlalchemy import select
+def coach_turn(db, message, session_id=None):
+    return diet_turn(db, message, session_id=session_id)
 
+
+def today_metric_time(hour=7):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    return (
+        datetime.now(ZoneInfo("Asia/Shanghai"))
+        .replace(hour=hour, minute=0, second=0, microsecond=0)
+        .astimezone(timezone.utc)
+    )
+
+
+def food_logs(db):
     return sorted(
         (
             log.meal,
@@ -494,8 +508,6 @@ def test_cycle_sync_round_trips_valid_snapshot(db):
 
 
 def test_batch_confirm_rolls_back_when_second_action_fails(db):
-    from sqlalchemy import select
-
     from app.models import CoachPending, FoodLog
 
     today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
@@ -624,8 +636,6 @@ def test_food_correction_does_not_resurrect_deleted_item(db):
     """Replacing one food must not recreate another log deleted by the user."""
     first = diet_turn(db, "午餐吃了200g鸡胸肉，150g米饭")
     runtime.confirm_pending(db, "user-1", first["pending"]["id"])
-    from sqlalchemy import select
-
     rice = db.execute(
         select(FoodLog).where(FoodLog.food_name == "米饭")
     ).scalar_one()
@@ -675,3 +685,250 @@ def test_next_meal_after_diet_log_is_not_a_replacement(db):
         ("lunch", "米饭", 150.0, shanghai_today()),
         ("lunch", "鸡胸肉", 200.0, shanghai_today()),
     ], food_logs(db)
+
+
+def test_coach_weight_log_updates_profile_cache(db):
+    """A coach weight log must feed the profile cache used by plan/nutrition."""
+    turn = coach_turn(db, "今天体重73kg")
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    profile = db.get(Profile, "user-1")
+    assert profile is not None
+    assert profile.weight_kg == 73, profile.weight_kg
+
+
+def test_coach_weight_undo_restores_previous_profile_cache(db):
+    old = BodyMetric(
+        user_id="user-1",
+        client_id="old-weight",
+        measured_at=today_metric_time() - timedelta(days=1),
+        weight_kg=70,
+    )
+    db.add(old)
+    profile = db.get(Profile, "user-1")
+    profile.weight_kg = 70
+    db.commit()
+
+    turn = coach_turn(db, "今天体重73kg")
+    confirmed = runtime.confirm_pending(
+        db, "user-1", turn["pending"]["id"]
+    )
+    profile = db.get(Profile, "user-1")
+    assert profile.weight_kg == 73, profile.weight_kg
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    profile = db.get(Profile, "user-1")
+    assert profile.weight_kg == 70, profile.weight_kg
+
+
+def test_delete_last_weight_clears_profile_cache(db):
+    db.add(
+        BodyMetric(
+            user_id="user-1",
+            client_id="today-weight-fat",
+            measured_at=today_metric_time(),
+            weight_kg=73,
+            body_fat_pct=22,
+        )
+    )
+    profile = db.get(Profile, "user-1")
+    profile.weight_kg = 73
+    profile.body_fat_pct = 22
+    db.commit()
+
+    turn = coach_turn(db, "删掉今天的体重记录")
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    metric = db.execute(select(BodyMetric)).scalar_one()
+    assert metric.weight_kg is None
+    assert metric.body_fat_pct == 22
+    profile = db.get(Profile, "user-1")
+    assert profile.weight_kg is None, profile.weight_kg
+    assert profile.body_fat_pct == 22, profile.body_fat_pct
+
+
+def test_delete_last_body_fat_clears_profile_cache(db):
+    db.add(
+        BodyMetric(
+            user_id="user-1",
+            client_id="today-fat",
+            measured_at=today_metric_time(),
+            body_fat_pct=22,
+        )
+    )
+    profile = db.get(Profile, "user-1")
+    profile.body_fat_pct = 22
+    db.commit()
+
+    turn = coach_turn(db, "删掉今天的体脂记录")
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert db.execute(select(BodyMetric)).scalars().all() == []
+    profile = db.get(Profile, "user-1")
+    assert profile.body_fat_pct is None, profile.body_fat_pct
+
+
+def test_delete_whole_body_row_clears_profile_cache(db):
+    db.add(
+        BodyMetric(
+            user_id="user-1",
+            client_id="today-row",
+            measured_at=today_metric_time(),
+            weight_kg=73,
+            body_fat_pct=22,
+            waist_cm=82,
+        )
+    )
+    profile = db.get(Profile, "user-1")
+    profile.weight_kg = 73
+    profile.body_fat_pct = 22
+    profile.waist_cm = 82
+    db.commit()
+
+    turn = coach_turn(db, "删掉今天的身体记录")
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert db.execute(select(BodyMetric)).scalars().all() == []
+    profile = db.get(Profile, "user-1")
+    assert profile.weight_kg is None, profile.weight_kg
+    assert profile.body_fat_pct is None, profile.body_fat_pct
+    assert profile.waist_cm is None, profile.waist_cm
+
+
+def test_food_correction_with_different_date_does_not_move_record(db):
+    """Correcting with '昨天' must not silently move today's whole record."""
+    first = diet_turn(db, "午餐吃了200g鸡胸肉，150g米饭")
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    corrected = diet_turn(
+        db,
+        "记错了，昨天午餐鸡胸肉是150g",
+        session_id=first["session"]["id"],
+    )
+    if corrected["pending"] is not None:
+        assert corrected["pending"]["kind"] == "card", corrected["pending"]
+        runtime.confirm_pending(
+            db, "user-1", corrected["pending"]["id"]
+        )
+    today_key = shanghai_today()
+    current = food_logs(db)
+    assert current in (
+        [
+            ("lunch", "米饭", 150.0, today_key),
+            ("lunch", "鸡胸肉", 150.0, today_key),
+        ],
+        [
+            ("lunch", "米饭", 150.0, today_key),
+            ("lunch", "鸡胸肉", 200.0, today_key),
+        ],
+    ), current
+
+
+def test_food_correction_without_food_name_asks(db):
+    """'不是200g，是150g' does not identify which food; never claim success."""
+    first = diet_turn(db, "午餐吃了200g鸡胸肉，150g米饭")
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    corrected = diet_turn(
+        db,
+        "记错了，不是200g，是150g",
+        session_id=first["session"]["id"],
+    )
+    assert (
+        corrected["pending"] is None
+        or corrected["pending"]["kind"] == "draft"
+    ), corrected["pending"]
+
+
+def test_batch_food_update_and_reschedule_confirm_and_undo(db):
+    first = diet_turn(db, "午餐吃了200g鸡胸肉，150g米饭")
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    target = today + timedelta(days=5)
+    context = {
+        "plan": {
+            "id": "plan-batch-food-update",
+            "version": 1,
+            "days": [
+                {
+                    "id": "day-batch-food-update",
+                    "date": today.isoformat(),
+                    "title": "上肢",
+                    "completed": False,
+                    "skipped": False,
+                }
+            ],
+        }
+    }
+    result = turn(
+        db,
+        f"把午餐鸡胸肉改成150g，再把今天的训练改到{target.month}月{target.day}日",
+        context,
+    )
+    assert result["pending"] is not None, result
+    assert result["pending"]["capability_id"] == "coach.batch", result
+    assert [
+        item["capability_id"] for item in result["pending"]["payload"]["batch"]
+    ] == ["diet.update_log", "training.reschedule"], result
+    confirmed = runtime.confirm_pending(
+        db, "user-1", result["pending"]["id"]
+    )
+    assert food_logs(db) == [
+        ("lunch", "米饭", 150.0, shanghai_today()),
+        ("lunch", "鸡胸肉", 150.0, shanghai_today()),
+    ], food_logs(db)
+    state = db.execute(select(PlanDayState)).scalar_one()
+    assert state.assigned_date == target
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert food_logs(db) == [
+        ("lunch", "米饭", 150.0, shanghai_today()),
+        ("lunch", "鸡胸肉", 200.0, shanghai_today()),
+    ], food_logs(db)
+    assert db.execute(select(PlanDayState)).scalars().all() == []
+
+
+def test_batch_food_delete_and_weight_confirm_and_undo(db):
+    first = diet_turn(db, "午餐吃了200g鸡胸肉，150g米饭")
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    result = diet_turn(db, "删掉午餐鸡胸肉，再称体重73kg")
+    assert result["pending"] is not None, result
+    assert result["pending"]["capability_id"] == "coach.batch", result
+    assert [
+        item["capability_id"] for item in result["pending"]["payload"]["batch"]
+    ] == ["diet.delete_log", "body.log_weight"], result
+    confirmed = runtime.confirm_pending(
+        db, "user-1", result["pending"]["id"]
+    )
+    assert food_logs(db) == [
+        ("lunch", "米饭", 150.0, shanghai_today())
+    ], food_logs(db)
+    assert db.execute(select(BodyMetric)).scalar_one().weight_kg == 73
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert food_logs(db) == [
+        ("lunch", "米饭", 150.0, shanghai_today()),
+        ("lunch", "鸡胸肉", 200.0, shanghai_today()),
+    ], food_logs(db)
+    assert db.execute(select(BodyMetric)).scalars().all() == []
+
+
+def test_batch_two_food_updates_should_not_route_to_training(db):
+    first = diet_turn(db, "午餐吃了200g鸡胸肉，150g米饭")
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    result = diet_turn(db, "把午餐鸡胸肉改成150g，再把午餐米饭改成100g")
+    assert result["pending"] is not None, result
+    assert result["pending"]["capability_id"] == "coach.batch", result
+    assert [
+        item["capability_id"] for item in result["pending"]["payload"]["batch"]
+    ] == ["diet.update_log", "diet.update_log"], result
+    runtime.confirm_pending(db, "user-1", result["pending"]["id"])
+    assert food_logs(db) == [
+        ("lunch", "米饭", 100.0, shanghai_today()),
+        ("lunch", "鸡胸肉", 150.0, shanghai_today()),
+    ], food_logs(db)
+
+
+def test_batch_two_food_deletes_should_resolve_both(db):
+    first = diet_turn(db, "午餐吃了200g鸡胸肉，150g米饭")
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    result = diet_turn(db, "删掉午餐鸡胸肉，再删掉午餐米饭")
+    assert result["pending"] is not None, result
+    assert result["pending"]["capability_id"] == "coach.batch", result
+    assert [
+        item["capability_id"] for item in result["pending"]["payload"]["batch"]
+    ] == ["diet.delete_log", "diet.delete_log"], result
+    runtime.confirm_pending(db, "user-1", result["pending"]["id"])
+    assert food_logs(db) == [], food_logs(db)
