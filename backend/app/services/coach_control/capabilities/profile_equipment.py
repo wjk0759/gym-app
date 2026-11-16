@@ -1,0 +1,213 @@
+"""Profile equipment from the coach.
+
+This is the onboarding/profile equipment list, not the personal equipment
+library. The library remains the precise source; this capability is for users
+who say "我有哑铃" or "家里只有弹力带" before they maintain a library.
+"""
+
+from __future__ import annotations
+
+import re
+
+from sqlalchemy.orm import Session
+
+from ....models import Exercise, Profile
+from ...equipment import available_equipment_types
+from ...queries import active_program
+from ...serializers import load_program
+from ..registry import Capability, register
+
+CAPABILITY = register(
+    Capability(
+        id="profile.update_equipment",
+        domain="profile",
+        kind="write",
+        title="更新档案器械",
+        description="修改档案里可用的器械条件，后续计划按此调整",
+        requires_confirmation=True,
+        undo=True,
+        events=("ProfileEquipmentUpdated",),
+        refreshes=("profile",),
+    )
+)
+
+EQUIPMENT_LABELS = {
+    "bodyweight": "徒手",
+    "dumbbell": "哑铃",
+    "barbell": "杠铃",
+    "machine": "固定器械",
+    "cable": "龙门架/绳索",
+    "band": "弹力带",
+    "kettlebell": "壶铃",
+    "other": "其他器械",
+}
+EQUIPMENT_ALIASES = {
+    "bodyweight": ("徒手", "自重", "无器械", "没器械", "没有器械", "不去健身房"),
+    "dumbbell": ("哑铃",),
+    "barbell": ("杠铃", "奥杆"),
+    "machine": ("固定器械", "综合器械", "史密斯", "健身房器械"),
+    "cable": ("龙门架", "绳索", "拉力器", "缆绳"),
+    "band": ("弹力带", "阻力带", "弹力绳"),
+    "kettlebell": ("壶铃",),
+    "other": ("单杠", "双杠", "trx", "其他器械", "其他"),
+}
+REPLACE = re.compile(
+    r"只有|只用|只练|只做|改成|换成|改为|我的器械是|设备是|器材是|"
+    r"家里只有|现在只有"
+)
+REMOVE = re.compile(r"没有|没|不用|不需要|去掉|移除|删掉|不练")
+
+
+def _mentioned(message: str) -> list[str]:
+    text = message.lower()
+    found: list[str] = []
+    for value, aliases in EQUIPMENT_ALIASES.items():
+        if any(alias.lower() in text for alias in aliases):
+            found.append(value)
+    return found
+
+
+def _removed(message: str) -> list[str]:
+    text = message.lower()
+    result: list[str] = []
+    for value, aliases in EQUIPMENT_ALIASES.items():
+        for alias in aliases:
+            if re.search(
+                rf"(?:没有|没|不用|不需要|去掉|移除|删掉|不练)"
+                rf"\s*[^，,。；;]{{0,4}}{re.escape(alias.lower())}",
+                text,
+            ) or re.search(
+                rf"{re.escape(alias.lower())}\s*(?:没有|没了|不用了|去掉了)",
+                text,
+            ):
+                result.append(value)
+                break
+    return result
+
+
+def _current(profile: Profile) -> list[str]:
+    values = [
+        str(item)
+        for item in profile.equipment or []
+        if str(item) in EQUIPMENT_LABELS
+    ]
+    if "bodyweight" not in values:
+        values.append("bodyweight")
+    return values
+
+
+def _equipment_conflicts(
+    db: Session,
+    user_id: str,
+    equipment: list[str],
+) -> list[dict]:
+    program = active_program(db, user_id)
+    if program is None:
+        return []
+    program = load_program(db, program.id) or program
+    effective = set(available_equipment_types(db, user_id, equipment))
+    conflicts: list[dict] = []
+    seen: set[str] = set()
+    for day in program.days:
+        for item in day.exercises:
+            exercise = db.get(Exercise, item.exercise_slug)
+            if exercise is None or exercise.equipment in effective:
+                continue
+            name = exercise.name_zh or exercise.slug
+            if name in seen:
+                continue
+            seen.add(name)
+            conflicts.append({"day": day.title, "exercise": name})
+    return conflicts
+
+
+def _summary(values: list[str]) -> str:
+    labels = "、".join(EQUIPMENT_LABELS.get(item, item) for item in values)
+    return f"准备把档案器械更新为「{labels}」"
+
+
+def resolve(db: Session, user_id: str, message: str) -> dict:
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        return {"ready": False, "questions": ["请先完成个人档案。"]}
+    current = _current(profile)
+    mentioned = _mentioned(message)
+    removed = _removed(message)
+    if not mentioned and not removed:
+        return {
+            "ready": False,
+            "questions": [
+                "想更新成什么器械？可以说“我有哑铃和弹力带”"
+                "或“家里没有器械，只有徒手”。"
+            ],
+        }
+
+    positive = [item for item in mentioned if item not in removed]
+    no_gear = re.search(r"没有器械|没器械|无器械|不去健身房", message)
+    if no_gear and not (set(positive) - {"bodyweight"}):
+        base: list[str] = []
+        positive = ["bodyweight"]
+    elif REPLACE.search(message):
+        base = []
+    else:
+        base = list(current)
+    values = [item for item in base if item not in removed]
+    values.extend(positive)
+    values = list(dict.fromkeys(values))
+    if "bodyweight" not in values:
+        values.append("bodyweight")
+    values.sort(key=list(EQUIPMENT_LABELS).index)
+    if values == current:
+        labels = "、".join(EQUIPMENT_LABELS.get(item, item) for item in values)
+        return {
+            "ready": False,
+            "terminal": True,
+            "questions": [f"档案器械已经是「{labels}」了。"],
+        }
+
+    summary = _summary(values)
+    conflicts = _equipment_conflicts(db, user_id, values)
+    if conflicts:
+        names = "、".join(item["exercise"] for item in conflicts[:3])
+        summary += (
+            f"；当前计划有 {len(conflicts)} 个动作需要其他器械（{names}）"
+        )
+    return {
+        "ready": True,
+        "payload": {
+            "equipment": values,
+            "summary": summary,
+            "conflicts": conflicts,
+        },
+    }
+
+
+def execute(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: dict,
+) -> dict:
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        profile = Profile(user_id=user_id)
+        db.add(profile)
+    before = list(profile.equipment or [])
+    profile.equipment = list(payload.get("equipment") or ["bodyweight"])
+    db.flush()
+    return {"before": {"equipment": before}, "after": {"equipment": profile.equipment}}
+
+
+def undo(
+    db: Session,
+    user_id: str,
+    before: dict,
+    payload: dict,
+) -> dict:
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        profile = Profile(user_id=user_id)
+        db.add(profile)
+    profile.equipment = list((before or {}).get("equipment") or ["bodyweight"])
+    db.flush()
+    return {"restored": True}

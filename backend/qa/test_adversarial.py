@@ -1661,6 +1661,8 @@ def test_meal_detail_this_morning_selects_breakfast(db):
     summary = result["pending"]["payload"]["summary"]
     assert "燕麦鸡蛋" in summary, summary
     assert "香煎鸡胸饭" not in summary, summary
+
+
 def test_food_dislike_stays_out_of_generated_meals(db):
     from app.services import diet
     from app.services.diet_preferences import active_disliked_food_names
@@ -1721,3 +1723,20 @@ def test_food_avoidance_rewrites_meal_name_that_contains_disliked_food(db):
     apply_food_avoidance(plan, ["鸡胸肉"])
     text = json.dumps(plan, ensure_ascii=False)
     assert "鸡胸肉" not in text, plan
+def test_profile_equipment_update_from_coach(db):
+    result = coach_turn(db, "我有哑铃和弹力带")
+    pending = result["pending"]
+    assert pending is not None, result
+    assert pending["capability_id"] == "profile.update_equipment", result
+    runtime.confirm_pending(db, "user-1", pending["id"])
+    profile = db.get(Profile, "user-1")
+    assert profile.equipment == ["bodyweight", "dumbbell", "band"]
+
+    result = coach_turn(db, "我的器械是徒手")
+    pending = result["pending"]
+    assert pending is not None, result
+    assert pending["capability_id"] == "profile.update_equipment", result
+    assert pending["payload"]["equipment"] == ["bodyweight"], pending
+    runtime.confirm_pending(db, "user-1", pending["id"])
+    profile = db.get(Profile, "user-1")
+    assert profile.equipment == ["bodyweight"]

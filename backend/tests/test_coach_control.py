@@ -1407,6 +1407,122 @@ def test_apply_food_avoidance_filters_items_recipes_and_week():
     assert "三文鱼 120g" in text
 
 
+def test_profile_equipment_add_remove_and_undo(db):
+    import asyncio
+
+    profile = db.get(Profile, "user-1")
+    assert profile.equipment == ["bodyweight"]
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "我有哑铃和弹力带")
+    )
+    assert turn["intent"] == "profile.update_equipment"
+    assert turn["pending"]["payload"]["equipment"] == [
+        "bodyweight",
+        "dumbbell",
+        "band",
+    ]
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    db.refresh(profile)
+    assert profile.equipment == ["bodyweight", "dumbbell", "band"]
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "去掉弹力带")
+    )
+    assert turn["pending"]["payload"]["equipment"] == [
+        "bodyweight",
+        "dumbbell",
+    ]
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    db.refresh(profile)
+    assert profile.equipment == ["bodyweight", "dumbbell"]
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    db.refresh(profile)
+    assert profile.equipment == ["bodyweight"]
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "家里没有器械")
+    )
+    assert turn["pending"] is None
+    assert "已经是" in turn["reply"]
+
+    profile.equipment = ["bodyweight", "dumbbell"]
+    db.commit()
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "家里没有器械")
+    )
+    assert turn["pending"]["payload"]["equipment"] == ["bodyweight"]
+
+
+def test_profile_equipment_conflict_warns_about_current_plan(db):
+    import asyncio
+
+    profile = db.get(Profile, "user-1")
+    profile.equipment = ["bodyweight", "barbell"]
+    db.commit()
+    db.add(
+        Exercise(
+            slug="barbell-squat",
+            name_zh="杠铃深蹲",
+            name_en="barbell squat",
+            muscle_group="legs",
+            equipment="barbell",
+            is_compound=True,
+            contraindications=[],
+        )
+    )
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    program = Program(
+        user_id="user-1",
+        title="测试腿计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=today,
+        weeks=4,
+    )
+    db.add(program)
+    db.flush()
+    day = ProgramDay(
+        program_id=program.id,
+        week_index=1,
+        weekday=today.isoweekday(),
+        title="腿",
+        focus=["legs"],
+    )
+    db.add(day)
+    db.flush()
+    db.add(
+        PlanExercise(
+            program_day_id=day.id,
+            exercise_slug="barbell-squat",
+            order_index=1,
+            sets=3,
+            reps="8-12",
+            rest_sec=90,
+        )
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "我的器械是徒手")
+    )
+    assert turn["intent"] == "profile.update_equipment"
+    payload = turn["pending"]["payload"]
+    assert payload["equipment"] == ["bodyweight"]
+    assert [item["exercise"] for item in payload["conflicts"]] == ["杠铃深蹲"]
+    assert "杠铃深蹲" in payload["summary"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    db.refresh(db.get(Profile, "user-1"))
+    assert db.get(Profile, "user-1").equipment == ["bodyweight"]
+    assert confirmed["receipt"]["conflicts"][0]["exercise"] == "杠铃深蹲"
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    db.refresh(db.get(Profile, "user-1"))
+    assert db.get(Profile, "user-1").equipment == ["bodyweight", "barbell"]
+
+
 def test_dislike_exercise_confirm_undo_and_plan_filter(db):
     import asyncio
 

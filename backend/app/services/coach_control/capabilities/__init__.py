@@ -21,6 +21,7 @@ from . import (  # noqa: F401
     plan,
     plan_configure,
     profile,
+    profile_equipment,
     review,
     training,
     training_add_day,

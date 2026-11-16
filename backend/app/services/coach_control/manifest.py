@@ -254,6 +254,16 @@ ACTION_SPECS: dict[str, ActionSpec] = {
         ("content",),
         "profile",
     ),
+    "profile.update_equipment": ActionSpec(
+        "profile.update_equipment",
+        (
+            "我有哑铃和弹力带",
+            "家里只有徒手",
+            "把杠铃从档案器械里去掉",
+        ),
+        ("equipment",),
+        "generic",
+    ),
     "profile.update_goal": ActionSpec(
         "profile.update_goal",
         ("我想减脂到72kg", "目标改成增肌", "目标体重75kg，明年2月前"),

@@ -85,6 +85,7 @@ REVIEW = "review.weekly"
 GOAL = "profile.update_goal"
 UPDATE_PROFILE = "profile.update"
 UPDATE_INJURIES = "profile.update_injuries"
+UPDATE_EQUIPMENT = "profile.update_equipment"
 EQUIPMENT_ADD = "equipment.add"
 EQUIPMENT_UPDATE = "equipment.update"
 EQUIPMENT_DELETE = "equipment.delete"
@@ -871,6 +872,29 @@ def _looks_like_food_dislike(message: str) -> bool:
         re.search(
             r"不喜欢吃|不喜欢|讨厌吃|别安排|别推荐|以后别做|避开|"
             r"可以吃|恢复吃|不讨厌|取消不喜欢|不用避开",
+            message,
+        )
+    )
+
+
+def _looks_like_profile_equipment(message: str) -> bool:
+    if re.search(r"怎么|如何|为什么|多少|吗|？|\?", message):
+        return False
+    if re.search(
+        r"器械库|个人器械|加入器械|添加器械|存到器械|识别器械|拍照|改名|"
+        r"删除器械",
+        message,
+    ):
+        return False
+    return bool(
+        re.search(
+            r"哑铃|杠铃|壶铃|弹力带|阻力带|龙门架|绳索|固定器械|综合器械|"
+            r"徒手|自重|健身|器械|设备|器材",
+            message,
+        )
+        and re.search(
+            r"我有|我的|家里|只有|只用|只练|只做|没有|去掉|移除|改成|"
+            r"换成|更新|档案|健身",
             message,
         )
     )
@@ -2679,6 +2703,44 @@ async def _dispatch_semantic_capability(
             capability_id=EQUIPMENT_DELETE,
             payload=payload,
             reply=f"{payload['summary']}？确认后删除。",
+        )
+
+    if capability_id == UPDATE_EQUIPMENT:
+        from .capabilities.profile_equipment import resolve as resolve_equipment
+
+        resolution = resolve_equipment(db, user_id, text)
+        if not resolution.get("ready"):
+            question = (
+                resolution.get("questions") or ["想更新成什么器械？"]
+            )[0]
+            if resolution.get("terminal"):
+                return _finish_reply(
+                    db,
+                    session,
+                    turn,
+                    started,
+                    intent=UPDATE_EQUIPMENT,
+                    reply=question,
+                )
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=UPDATE_EQUIPMENT,
+                payload={"message": text},
+                reply=question,
+                kind="draft",
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=UPDATE_EQUIPMENT,
+            payload=payload,
+            reply=f"{payload['summary']}？确认后更新。",
         )
 
     if capability_id == UPDATE_PROFILE:
@@ -4490,6 +4552,32 @@ async def handle_turn(
             )
             reply = question
         turn.intent = STRENGTH
+    elif _looks_like_profile_equipment(text):
+        from .capabilities.profile_equipment import resolve as resolve_profile_equipment
+
+        resolution = resolve_profile_equipment(db, user_id, text)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            _pending_card(
+                db,
+                session,
+                capability_id=UPDATE_EQUIPMENT,
+                payload=payload,
+            )
+            reply = f"{payload['summary']}？确认后更新。"
+        else:
+            question = (
+                resolution.get("questions") or ["想更新成什么器械？"]
+            )[0]
+            if not resolution.get("terminal"):
+                _pending_draft(
+                    db,
+                    session,
+                    capability_id=UPDATE_EQUIPMENT,
+                    payload={"message": text},
+                )
+            reply = question
+        turn.intent = UPDATE_EQUIPMENT
     elif intent_override == EQUIPMENT_ADD or (
         intent_override is None and _looks_like_equipment_add(text)
     ):
@@ -5771,6 +5859,22 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "ProfileInjuriesUpdated"
         entity_type = "profile"
         entity_id = user_id
+    elif pending.capability_id == UPDATE_EQUIPMENT:
+        from .capabilities.profile_equipment import execute as execute_equipment
+
+        result = execute_equipment(db, user_id, action_id, pending.payload)
+        before = result.get("before") or {}
+        after = result.get("after") or {}
+        conflicts = pending.payload.get("conflicts") or []
+        receipt = {
+            "summary": pending.payload.get("summary") or "已更新档案器械",
+            "equipment": after.get("equipment"),
+            "conflicts": conflicts,
+            "deep_link": "fitai://profile",
+        }
+        event_type = "ProfileEquipmentUpdated"
+        entity_type = "profile"
+        entity_id = user_id
     elif pending.capability_id == APPLY_ANALYSIS:
         from .capabilities.body_analysis import execute as execute_analysis
 
@@ -6252,6 +6356,15 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
         from .capabilities.profile import undo_injuries
 
         result = undo_injuries(db, user_id, record.before or {})
+    elif record.capability_id == UPDATE_EQUIPMENT:
+        from .capabilities.profile_equipment import undo as undo_equipment
+
+        result = undo_equipment(
+            db,
+            user_id,
+            record.before or {},
+            record.payload,
+        )
     elif record.capability_id == APPLY_ANALYSIS:
         from .capabilities.body_analysis import undo as undo_analysis
 
