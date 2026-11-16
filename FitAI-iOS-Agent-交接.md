@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`f5b4bfd`（已执行多条饮食记录纠错；生产后端 `f5b4bfd` + Flyway **V42**；iOS 已装 `71fce9d`；`FitAITests` **115/115**、UI **4/4**、后端 **520 passed**、QA **24 passed / 5 failed**；**本轮发布阻断**：替换后撤销会清空旧记录，另有 4 个纠错边界未通过；生产仍保留 Windows 已部署的 `f5b4bfd`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`ad0674f`（饮食多条目纠错 + 器械变化重排提示；生产后端 `f5b4bfd` + Flyway **V42**；iOS 已装 `ad0674f`；`FitAITests` **121/121**、UI **4/4**、后端 **520 passed**、QA **24 passed / 5 failed**；**后端发布阻断**：替换后撤销会清空旧记录，另有 4 个纠错边界未通过；生产后端仍为 Windows 已部署的 `f5b4bfd`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -33,7 +33,12 @@
 - 测试：
   - 后端完整测试 **520 passed**
   - QA 对抗 **29 条：24 passed / 5 failed**
-  - iOS 无代码变更，沿用 `FitAITests` **115/115**、UI **4/4**
+  - iOS `ad0674f`：`FitAITests` **121/121**、UI **4/4**
+- iOS 追加部署：
+  - Windows 在压力测试期间推了 `ad0674f`（器械变化触发计划重排提示）
+  - 已安装并启动 Wu-Tang；首页正常显示 11-16「胸日」
+  - 该能力只改本地器械/计划状态，不依赖本轮后端改动
+  - 未验证真机 strict 模式下的重排卡、忽略、重新生成
 - 阻断问题（均可复现）：
   1. **替换后撤销会清空全部记录**：午餐鸡胸肉 200g + 米饭 150g → “记错了，鸡胸肉是150g” → 确认替换 → 撤销。实际 0 条；期望恢复旧记录（鸡胸肉 200g + 米饭 150g）。`test_undo_replacement_restores_previous_food_logs`
   2. **追问“哪一餐”后没有纠正上下文**：午餐/晚餐都有鸡胸肉 → “记错了，鸡胸肉是150g” → 回复“午餐”。实际变成“午饭吃了什么？”的新草稿，不会替换原记录。`test_ambiguous_meal_correction_follow_up_stays_a_correction`
@@ -47,9 +52,9 @@
 - 生产：
   - `fitai-api` healthy，`/health/ready` 200
   - Flyway 仍 **V42**，无新迁移
-  - 未安装新 iOS（本轮 iOS 无变更）
+  - iOS `ad0674f` 已安装并启动 Wu-Tang
 - 备份：
-  - macOS 本轮未部署，未新增备份；生产当前为 Windows 部署的 `f5b4bfd`
+  - macOS 本轮未部署后端，未新增备份；生产后端当前为 Windows 部署的 `f5b4bfd`
 - Windows 需要做：
   - 替换后撤销必须恢复旧 action 与旧 logs；或禁止撤销替换卡并明确提示，不能只删新 logs。
   - 追问餐次后继续保持纠正上下文（pending 携带 `replace_action_id`），或直接生成包含全部餐次的替换卡。
