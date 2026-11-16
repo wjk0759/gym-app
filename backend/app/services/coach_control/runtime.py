@@ -797,6 +797,8 @@ def _looks_like_goal(message: str) -> bool:
 
 
 def _looks_like_profile_update(message: str) -> bool:
+    if re.search(r"怎么|如何|为什么|吗|？|\?", message):
+        return False
     if re.search(r"目标|体重|体脂|腰围|减脂|增肌|计划", message) and not re.search(
         r"身高|昵称|叫我|性别|女生|男生",
         message,

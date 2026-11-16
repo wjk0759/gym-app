@@ -280,6 +280,43 @@ def test_food_favorite_uses_custom_food_key(db):
     assert favorite.food_key == "custom:custom-food-1"
 
 
+def test_favorite_food_natural_phrase_and_custom_food_cleanup(db):
+    import asyncio
+
+    natural = asyncio.run(
+        runtime.handle_turn(db, "user-1", "把鸡胸肉加入收藏")
+    )
+    assert natural["intent"] == "diet.favorite_food"
+    assert natural["pending"]["payload"]["food_key"] == "library:鸡胸肉"
+
+    created = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "添加自定义食物每日坚果，每100g 600kcal，蛋白质20g，碳水50g，脂肪40g",
+        )
+    )
+    assert created["pending"]["payload"]["name"] == "每日坚果"
+    created_confirm = runtime.confirm_pending(
+        db, "user-1", created["pending"]["id"]
+    )
+    food = db.execute(
+        select(UserCustomFood).where(UserCustomFood.name == "每日坚果")
+    ).scalar_one()
+
+    favorite = asyncio.run(
+        runtime.handle_turn(db, "user-1", "收藏每日坚果")
+    )
+    runtime.confirm_pending(db, "user-1", favorite["pending"]["id"])
+    runtime.undo_action(db, "user-1", created_confirm["action_id"])
+    orphan = db.execute(
+        select(UserFoodFavorite).where(
+            UserFoodFavorite.food_key == f"custom:{food.client_id}"
+        )
+    ).scalar_one_or_none()
+    assert orphan is None or orphan.deleted_at is not None
+
+
 def test_plan_generation_confirm_activates_program(db, monkeypatch):
     import asyncio
 
@@ -902,6 +939,47 @@ def test_apply_body_analysis_adjusts_focus_and_undo(db):
     assert new is not None and new.status == "archived"
     db.refresh(analysis)
     assert analysis.applied_to_plan is False
+
+
+def test_injury_update_appends_and_resolution_clears_one_area(db):
+    import asyncio
+
+    profile = db.get(Profile, "user-1")
+    profile.injuries = ["腰部旧伤"]
+    db.commit()
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "我膝盖也有伤"))
+    assert turn["pending"]["payload"]["injuries"] == [
+        "腰部旧伤",
+        "我膝盖也有伤",
+    ]
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    db.refresh(profile)
+    assert profile.injuries == ["腰部旧伤", "我膝盖也有伤"]
+
+    resolved = asyncio.run(runtime.handle_turn(db, "user-1", "膝盖不疼了"))
+    assert resolved["pending"]["payload"]["injuries"] == ["腰部旧伤"]
+    runtime.confirm_pending(db, "user-1", resolved["pending"]["id"])
+    db.refresh(profile)
+    assert profile.injuries == ["腰部旧伤"]
+
+    cleared = asyncio.run(
+        runtime.handle_turn(db, "user-1", "没有伤病了")
+    )
+    assert cleared["pending"]["payload"]["injuries"] == []
+    runtime.confirm_pending(db, "user-1", cleared["pending"]["id"])
+    db.refresh(profile)
+    assert profile.injuries == []
+
+
+def test_profile_question_about_height_is_not_an_edit(db):
+    import asyncio
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "身高会影响减脂吗")
+    )
+    assert turn["intent"] != "profile.update"
+    assert turn["pending"] is None
 
 
 def test_body_weight_confirm_and_undo(db):

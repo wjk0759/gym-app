@@ -8,7 +8,7 @@ from uuid import uuid4
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from ....models import UserCustomFood
+from ....models import UserCustomFood, UserFoodFavorite, utcnow
 from ..registry import Capability, register
 
 CAPABILITY = register(
@@ -42,7 +42,7 @@ def _name(message: str) -> str:
         return match.group(1).strip(" ，,。；;：:")[:120]
     raw = match.group(1).strip(" ，,。；;：:")
     name = re.split(
-        r"(?:每|kcal|千卡|大卡|蛋白质|碳水|脂肪|纤维|热量|gi)",
+        r"(?:每\s*\d+\s*(?:g|克|份)?|每份|kcal|千卡|大卡|蛋白质|碳水|脂肪|纤维|热量|gi)",
         raw,
         maxsplit=1,
         flags=re.IGNORECASE,
@@ -185,5 +185,14 @@ def undo(
     ).scalar_one_or_none()
     if item is not None:
         db.delete(item)
+        db.flush()
+    favorite = db.execute(
+        select(UserFoodFavorite).where(
+            UserFoodFavorite.user_id == user_id,
+            UserFoodFavorite.food_key == f"custom:{client_id}",
+        )
+    ).scalar_one_or_none()
+    if favorite is not None and favorite.deleted_at is None:
+        favorite.deleted_at = utcnow()
         db.flush()
     return {"removed": item is not None}

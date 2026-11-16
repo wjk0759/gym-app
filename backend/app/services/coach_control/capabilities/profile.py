@@ -222,6 +222,15 @@ def _injury_conflicts(
     return conflicts
 
 
+def _dedupe_injuries(values: list[str]) -> list[str]:
+    result: list[str] = []
+    for value in values:
+        text = str(value).strip()
+        if text and text not in result:
+            result.append(text)
+    return result
+
+
 def resolve_injuries(
     db: Session,
     user_id: str,
@@ -232,6 +241,65 @@ def resolve_injuries(
             "ready": False,
             "questions": ["这是想让我记录成伤病限制吗？可以直接说“记录膝盖有伤”。"],
         }
+    profile = db.get(Profile, user_id)
+    before = list(profile.injuries or []) if profile is not None else []
+    resolution = re.search(
+        r"不疼|不痛|好了|康复|没事了|没有伤病|伤好了|恢复了",
+        message,
+    )
+    if resolution is not None:
+        if not before:
+            return {
+                "ready": False,
+                "terminal": True,
+                "questions": ["目前没有伤病记录，不需要清除。"],
+            }
+        if re.search(r"没有伤病|都好了|全好了|伤好了|康复了|恢复了", message):
+            remaining: list[str] = []
+        else:
+            parts = [
+                keyword
+                for keyword in ("膝", "腰", "肩", "腕", "踝", "肘", "半月板")
+                if keyword in message
+            ]
+            if parts:
+                remaining = [
+                    item
+                    for item in before
+                    if not any(part in item for part in parts)
+                ]
+            elif len(before) == 1:
+                remaining = []
+            else:
+                return {
+                    "ready": False,
+                    "questions": ["是哪一处不疼了？例如“膝盖不疼了”。"],
+                }
+        if remaining == before:
+            return {
+                "ready": False,
+                "terminal": True,
+                "questions": ["没找到对应的伤病记录。"],
+            }
+        summary = (
+            "准备清除伤病限制"
+            if not remaining
+            else f"准备把伤病更新为「{'、'.join(remaining)}」"
+        )
+        conflicts = _injury_conflicts(db, user_id, remaining)
+        if conflicts:
+            names = "、".join(item["exercise"] for item in conflicts[:3])
+            summary += (
+                f"；当前计划有 {len(conflicts)} 个动作可能不适合（{names}）"
+            )
+        return {
+            "ready": True,
+            "payload": {
+                "injuries": remaining,
+                "summary": summary,
+                "conflicts": conflicts,
+            },
+        }
     content = _injury_text(message)
     if len(content) < 2 or not re.search(
         r"伤|疼|痛|不舒服|不能|避免|半月板|腰|膝|肩|腕|踝|肘",
@@ -241,14 +309,21 @@ def resolve_injuries(
             "ready": False,
             "questions": ["想记录哪里的伤病？例如“膝盖有伤”。"],
         }
-    profile = db.get(Profile, user_id)
-    before = list(profile.injuries or []) if profile is not None else []
-    conflicts = _injury_conflicts(db, user_id, [content])
-    summary = (
-        f"准备把伤病从「{'、'.join(before)}」改为「{content}」"
-        if before
-        else f"准备记录伤病「{content}」"
+    append = bool(
+        before and re.search(r"也|还有|又|新增|另外", message)
     )
+    final = (
+        _dedupe_injuries([*before, content])
+        if append
+        else [content]
+    )
+    if append:
+        summary = f"准备在原有伤病中追加「{content}」"
+    elif before:
+        summary = f"准备把伤病从「{'、'.join(before)}」改为「{content}」"
+    else:
+        summary = f"准备记录伤病「{content}」"
+    conflicts = _injury_conflicts(db, user_id, final)
     if conflicts:
         names = "、".join(item["exercise"] for item in conflicts[:3])
         summary += f"；当前计划有 {len(conflicts)} 个动作可能不适合（{names}）"
@@ -256,6 +331,7 @@ def resolve_injuries(
         "ready": True,
         "payload": {
             "content": content,
+            "injuries": final,
             "summary": summary,
             "conflicts": conflicts,
         },
@@ -325,10 +401,15 @@ def execute_injuries(
         profile = Profile(user_id=user_id)
         db.add(profile)
     before = list(profile.injuries or [])
-    content = str(payload.get("content") or "").strip()[:200]
-    if not content:
-        raise ValueError("伤病内容不能为空")
-    profile.injuries = [content]
+    raw = payload.get("injuries")
+    if raw is None:
+        content = str(payload.get("content") or "").strip()[:200]
+        if not content:
+            raise ValueError("伤病内容不能为空")
+        final = [content]
+    else:
+        final = _dedupe_injuries([str(item) for item in raw])
+    profile.injuries = final
     db.flush()
     conflicts = _injury_conflicts(db, user_id, profile.injuries)
     return {

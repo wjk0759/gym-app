@@ -36,11 +36,17 @@ REMOVE = re.compile(
 
 
 def _name(message: str, match: re.Match | None) -> str:
-    if match is None:
-        return ""
-    value = match.group(1).strip(" ，,。；;：:")
-    value = re.sub(r"^(?:这个|这道|食物)\s*", "", value)
-    return value[:120]
+    if match is not None:
+        value = match.group(1).strip(" ，,。；;：:")
+        value = re.sub(r"^(?:这个|这道|食物)\s*", "", value)
+        return value[:120]
+    natural = re.search(
+        r"把\s*(.+?)\s*(?:加入|加到|放到|放进)\s*收藏",
+        message,
+    )
+    if natural is not None:
+        return natural.group(1).strip(" ，,。；;：:")[:120]
+    return ""
 
 
 def _favorite(

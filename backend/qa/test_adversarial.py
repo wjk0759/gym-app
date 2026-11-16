@@ -17,10 +17,10 @@ from app.models import (
     PlanExercise,
     Profile,
     Program,
-    UserCustomFood,
-    UserFoodFavorite,
     ProgramDay,
     User,
+    UserCustomFood,
+    UserFoodFavorite,
 )
 from app.services.coach_control import runtime
 
