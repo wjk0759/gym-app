@@ -14,7 +14,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session
 
 from ..registry import Capability, register
-from .training import _source_day
+from .training import _source_day, parse_training_date
 
 START_TRAINING = register(
     Capability(
@@ -107,7 +107,18 @@ def resolve_start(
     ]
     target = None
     if message and _DATE_HINT.search(message):
-        target = _source_day(message, context, today=today)
+        parsed = parse_training_date(message, today=today)
+        if parsed is not None:
+            target = next(
+                (
+                    item
+                    for item in all_days
+                    if str(item.get("date") or "") == parsed.isoformat()
+                ),
+                None,
+            )
+        else:
+            target = _source_day(message, context, today=today)
         if target is None:
             return {
                 "ready": False,

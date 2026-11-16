@@ -531,6 +531,12 @@ def _looks_like_reminders(message: str) -> bool:
 
 
 def _looks_like_start_training(message: str) -> bool:
+    if re.search(
+        r"新的训练计划|调整训练计划|修改训练计划|生成.*计划|"
+        r"重排.*计划|计划调整|计划配置",
+        message,
+    ):
+        return False
     return bool(
         re.search(
             r"开始训练|开始今天|开始.*(?:训练|练)|"

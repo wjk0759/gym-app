@@ -386,6 +386,41 @@ def resolve(
     context: dict,
 ) -> dict:
     today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    segments = [
+        item.strip()
+        for item in _BATCH_SPLIT.split(message)
+        if item.strip()
+    ]
+    structural = [
+        item
+        for item in segments
+        if _EXERCISE_HINT.search(item)
+        and (
+            _SWAP.search(item)
+            or _ADD.search(item)
+            or _REMOVE.search(item)
+        )
+    ]
+    changes = [
+        item
+        for item in segments
+        if _EXERCISE_HINT.search(item)
+        and (
+            _SWAP.search(item)
+            or _ADD.search(item)
+            or _REMOVE.search(item)
+            or _BATCH_CHANGE.search(item)
+        )
+    ]
+    if len(structural) >= 2 or (
+        structural and len(changes) >= 2
+    ):
+        return {
+            "ready": False,
+            "questions": [
+                "一条消息里只改一个动作；多个动作请分两次说。"
+            ],
+        }
     batch = _resolve_batch(db, user_id, message, context, today)
     if batch is not None:
         return batch
