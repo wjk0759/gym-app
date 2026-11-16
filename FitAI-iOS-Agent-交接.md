@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`c424b09`（文档 `dd5bc4d`；档案/伤病、器械库、体型分析应用、收藏/自定义食物；生产后端 `c424b09`，`runtime.py` / `custom_food.py` / `food_preferences.py` SHA-256 与本地一致；iOS 已装 `c424b09`；Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **556 passed**、QA **55 passed / 6 failed**；**后端发布阻断**：伤病覆盖/把“好了”记成新伤、身高问题被当改资料、自然收藏话术、自定义食物“每日坚果”、撤销自定义食物留下孤立收藏）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`54329cb`（档案/食物偏好 QA 修复；生产后端 `54329cb`，`runtime.py` / `profile.py` / `food_preferences.py` / `custom_food.py` SHA-256 与本地一致；iOS 已装 `c424b09`；Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **559 passed**、QA **61/61**；iOS Build `54329cb` ✓）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +26,43 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-17 · Windows（档案/食物偏好 QA 修复）
+
+- 提交：`54329cb`，已推 `develop`；后端已部署 `54329cb`；无迁移。
+- 修复 Mac QA 新发现的 6 条：
+  1. 伤病用“也/还有/又/新增”时追加到旧列表，不再覆盖腰部旧伤。
+  2. “膝盖不疼了/没有伤病了”按恢复处理：清除对应或全部伤病，不保存成新伤。
+  3. “身高会影响减脂吗”等疑问句不再被当成改资料。
+  4. “把鸡胸肉加入收藏”支持食物在动词前的自然语序。
+  5. 自定义食物名称只在“每100g/每份/kcal”等营养段前截断，“每日坚果”不再被截成“日坚果”。
+  6. 撤销自定义食物时同时停用 `custom:<client_id>` 收藏，避免孤立收藏。
+  - 顺便修正 QA 文件 import 排序，Ruff 全绿。
+- 验证：
+  - 后端 **559 passed**
+  - QA **61/61**
+  - Ruff app/tests/qa 通过
+  - GitHub Backend Tests `54329cb` 成功
+  - 已把关键回归移入 `backend/tests`
+- 生产：
+  - 后端 `54329cb` 已部署；`runtime.py`、`profile.py`、`food_preferences.py`、`custom_food.py` SHA-256 与本地一致
+  - `fitai-api` healthy；`/health/ready` 返回 `{"status":"ready"}`；Flyway 仍 V42
+- iOS：
+  - 本轮无生产 iOS 代码变更；iOS Build `54329cb` ✓（测试映射改动）。
+- Mac 要做：
+  - 拉 `54329cb`，重跑 QA 61/61。
+  - 真机验证：
+    - 已有“腰部旧伤” → “我膝盖也有伤” → 两条都保留。
+    - “膝盖不疼了” → 只移除膝盖；“没有伤病了” → 全部清除。
+    - “身高会影响减脂吗” → 普通回答，不生成资料卡。
+    - “把鸡胸肉加入收藏” → 收藏卡。
+    - “添加自定义食物每日坚果…” → 名称是“每日坚果”。
+    - 创建自定义食物 → 收藏 → 撤销创建 → 收藏不残留。
+- 不要恢复：
+  - 不要用新伤病覆盖旧列表。
+  - 不要把“好了/不疼了”存成伤病。
+  - 不要在撤销自定义食物后留下 active 收藏。
+  - 不要在任意“每”处截断名称。
 
 ### 2026-11-17 · macOS（档案伤病 / 器械 / 体型分析 / 收藏自定义食物压力测试：阻断）
 
