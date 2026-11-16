@@ -33,6 +33,7 @@ from app.models import (
     User,
     UserCustomFood,
     UserExerciseDislike,
+    UserFoodDislike,
     UserFoodFavorite,
     WorkoutSession,
 )
@@ -1267,6 +1268,143 @@ def test_injury_pain_statement_does_not_replace_other_injuries(db):
         "膝盖有伤",
         "肩膀不舒服",
     ]
+
+
+def test_food_dislike_confirm_undo_and_plan_filter(db):
+    import asyncio
+    import json
+
+    from app.services import diet
+    from app.services.diet_preferences import active_disliked_food_names
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "我不喜欢吃鸡胸肉")
+    )
+    assert turn["intent"] == "diet.dislike_food"
+    payload = turn["pending"]["payload"]
+    assert payload["name"] == "鸡胸肉"
+    assert payload["food_key"] == "library:鸡胸肉"
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    dislike = db.execute(select(UserFoodDislike)).scalar_one()
+    assert dislike.deleted_at is None
+    assert active_disliked_food_names(db, "user-1") == ["鸡胸肉"]
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    profile = db.get(Profile, "user-1")
+    plan = diet.build_plan(
+        profile,
+        "maintain",
+        today,
+        active_disliked_food_names(db, "user-1"),
+    )
+    text = json.dumps(plan, ensure_ascii=False)
+    assert "鸡胸肉" not in text
+    assert "北豆腐" in text
+
+    duplicate = asyncio.run(
+        runtime.handle_turn(db, "user-1", "我不喜欢吃鸡胸肉")
+    )
+    assert duplicate["pending"] is None
+    assert "已经记住" in duplicate["reply"]
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(UserFoodDislike)).scalars().all() == []
+
+    db.add(
+        UserFoodDislike(
+            user_id="user-1",
+            food_key="library:鸡胸肉",
+            name="鸡胸肉",
+        )
+    )
+    db.commit()
+    allowed = asyncio.run(
+        runtime.handle_turn(db, "user-1", "鸡胸肉可以吃了")
+    )
+    assert allowed["intent"] == "diet.dislike_food"
+    assert allowed["pending"]["payload"]["dislike"] is False
+    restored = runtime.confirm_pending(
+        db, "user-1", allowed["pending"]["id"]
+    )
+    dislike = db.execute(select(UserFoodDislike)).scalar_one()
+    assert dislike.deleted_at is not None
+    runtime.undo_action(db, "user-1", restored["action_id"])
+    db.refresh(dislike)
+    assert dislike.deleted_at is None
+
+
+def test_food_dislike_matches_custom_food(db):
+    import asyncio
+
+    db.add(
+        UserCustomFood(
+            user_id="user-1",
+            client_id="custom-food-1",
+            name="我的手作鸡肉丸",
+            category="自定义",
+            kcal=150,
+            protein=20,
+            carbs=10,
+            fat=3,
+        )
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "不喜欢吃我的手作鸡肉丸")
+    )
+    assert turn["intent"] == "diet.dislike_food"
+    assert turn["pending"]["payload"]["food_key"] == "custom:custom-food-1"
+    assert turn["pending"]["payload"]["name"] == "我的手作鸡肉丸"
+
+
+def test_apply_food_avoidance_filters_items_recipes_and_week():
+    import json
+
+    from app.services.diet_preferences import apply_food_avoidance
+
+    plan = {
+        "meals": [
+            {
+                "meal": "lunch",
+                "name": "午餐",
+                "kcal": 620,
+                "items": ["鸡胸肉 150g", "糙米饭 150g", "西兰花 100g"],
+                "dishes": [
+                    {
+                        "name": "西兰花炒鸡胸",
+                        "items": ["鸡胸肉 150g", "西兰花 100g"],
+                        "recipe": {
+                            "title": "西兰花炒鸡胸",
+                            "ingredients": ["鸡胸肉 150g", "西兰花 100g"],
+                            "steps": ["西兰花焯水，鸡胸肉切片炒熟。"],
+                        },
+                    }
+                ],
+            }
+        ],
+        "days": [
+            {
+                "date": "2026-11-18",
+                "meals": [
+                    {
+                        "meal": "dinner",
+                        "name": "晚餐",
+                        "items": ["三文鱼 120g", "红薯 150g"],
+                        "dishes": [],
+                    }
+                ],
+            }
+        ],
+    }
+    apply_food_avoidance(plan, ["鸡胸肉", "西兰花"])
+    text = json.dumps(plan, ensure_ascii=False)
+    assert "鸡胸肉" not in text
+    assert "西兰花" not in text
+    assert "北豆腐" in text
+    assert "家常餐" in text
+    assert "三文鱼 120g" in text
 
 
 def test_dislike_exercise_confirm_undo_and_plan_filter(db):

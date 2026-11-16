@@ -15,6 +15,10 @@ from pathlib import Path
 from ..config import settings
 from ..models import Profile
 from . import llm
+from .diet_preferences import (
+    active_disliked_food_names,
+    apply_food_avoidance,
+)
 from .prompt_registry import prompt_version
 
 logger = logging.getLogger(__name__)
@@ -122,7 +126,12 @@ def _meal_macros(targets: dict, ratio: float) -> dict:
     }
 
 
-def build_plan(profile: Profile, goal_type: str, plan_date: date) -> dict:
+def build_plan(
+    profile: Profile,
+    goal_type: str,
+    plan_date: date,
+    avoid_terms: list[str] | None = None,
+) -> dict:
     targets = calculate_targets(profile, goal_type)
     meals = []
     for template in MEAL_TEMPLATE:
@@ -134,13 +143,14 @@ def build_plan(profile: Profile, goal_type: str, plan_date: date) -> dict:
         }
         meal.update(_meal_macros(targets, template["ratio"]))
         meals.append(meal)
-    return {
+    plan = {
         "date": plan_date.isoformat(),
         "targets": targets,
         "meals": meals,
         "disclaimer": DISCLAIMER,
         "generated_by": "template",
     }
+    return apply_food_avoidance(plan, list(avoid_terms or []))
 
 
 def _system_prompt() -> str:
@@ -149,7 +159,12 @@ def _system_prompt() -> str:
     return "你是运动营养师。只输出 JSON，不做疾病饮食处方，不承诺快速减重。"
 
 
-def _user_prompt(profile: Profile, goal_type: str, targets: dict) -> str:
+def _user_prompt(
+    profile: Profile,
+    goal_type: str,
+    targets: dict,
+    avoid_foods: list[str] | None = None,
+) -> str:
     payload = {
         "user": {
             "sex": profile.sex,
@@ -164,6 +179,7 @@ def _user_prompt(profile: Profile, goal_type: str, targets: dict) -> str:
             "injuries": profile.injuries or [],
             "goal_type": goal_type,
         },
+        "avoid_foods": list(avoid_foods or []),
         "targets": targets,
         "output_rules": {
             "meals": ["breakfast", "lunch", "dinner", "snack"],
@@ -175,7 +191,12 @@ def _user_prompt(profile: Profile, goal_type: str, targets: dict) -> str:
     return json.dumps(payload, ensure_ascii=False)
 
 
-def _normalize_ai_plan(raw: dict, targets: dict, plan_date: date) -> dict:
+def _normalize_ai_plan(
+    raw: dict,
+    targets: dict,
+    plan_date: date,
+    avoid_terms: list[str] | None = None,
+) -> dict:
     meals = []
     for item in raw.get("meals") or []:
         if not isinstance(item, dict):
@@ -229,20 +250,23 @@ def _normalize_ai_plan(raw: dict, targets: dict, plan_date: date) -> dict:
     total_carbs = round(sum(meal.get("carbs_g") or 0 for meal in meals), 1)
     total_fat = round(sum(meal.get("fat_g") or 0 for meal in meals), 1)
 
-    return {
-        "date": plan_date.isoformat(),
-        "targets": targets,
-        "meals": meals,
-        "total_kcal": total_kcal,
-        "total_protein_g": total_protein,
-        "total_carbs_g": total_carbs,
-        "total_fat_g": total_fat,
-        "tips": tips,
-        "note": note,
-        "disclaimer": DISCLAIMER,
-        "generated_by": "ai",
-        "model": settings.llm_model,
-    }
+    return apply_food_avoidance(
+        {
+            "date": plan_date.isoformat(),
+            "targets": targets,
+            "meals": meals,
+            "total_kcal": total_kcal,
+            "total_protein_g": total_protein,
+            "total_carbs_g": total_carbs,
+            "total_fat_g": total_fat,
+            "tips": tips,
+            "note": note,
+            "disclaimer": DISCLAIMER,
+            "generated_by": "ai",
+            "model": settings.llm_model,
+        },
+        list(avoid_terms or []),
+    )
 
 
 def _meal_name(key: str) -> str:
@@ -316,8 +340,9 @@ async def build_ai_plan(
 ) -> dict:
     """AI 个性化饮食计划；失败时回退规则模板，保证页面始终有结果。"""
     targets = calculate_targets(profile, goal_type)
+    avoid_terms = active_disliked_food_names(db, profile.user_id)
     if settings.use_mock_llm:
-        return build_plan(profile, goal_type, plan_date)
+        return build_plan(profile, goal_type, plan_date, avoid_terms)
 
     system_prompt = _system_prompt()
     system_version = prompt_version("diet_plan", system_prompt)
@@ -325,18 +350,18 @@ async def build_ai_plan(
     try:
         raw = await llm.complete_json(
             system_prompt,
-            _user_prompt(profile, goal_type, targets),
+            _user_prompt(profile, goal_type, targets, avoid_terms),
             usage=usage,
             db=db,
             user_id=getattr(profile, "user_id", None),
             kind="diet_plan",
             prompt_version=system_version,
         )
-        result = _normalize_ai_plan(raw, targets, plan_date)
+        result = _normalize_ai_plan(raw, targets, plan_date, avoid_terms)
         return result
     except Exception as exc:  # noqa: BLE001 - 任何失败都回退模板
         logger.warning("AI diet plan failed, fallback to template: %s", exc)
-        result = build_plan(profile, goal_type, plan_date)
+        result = build_plan(profile, goal_type, plan_date, avoid_terms)
         result["warning"] = "AI 生成失败，已使用规则模板"
         with suppress(Exception):
             llm.record_job(
@@ -367,6 +392,7 @@ def _week_user_prompt(
     goal_type: str,
     strategy: DietStrategy,
     fallback: dict,
+    avoid_foods: list[str] | None = None,
 ) -> str:
     payload = {
         "user": {
@@ -380,6 +406,7 @@ def _week_user_prompt(
             "injuries": profile.injuries or [],
             "goal_type": goal_type,
         },
+        "avoid_foods": list(avoid_foods or []),
         "strategy": {
             "id": strategy.id,
             "label": strategy.label,
@@ -522,8 +549,14 @@ async def build_ai_diet_week(
     training_days: list[int] | None = None,
 ) -> dict:
     """AI week menu with recipes; template fallback keeps the page usable."""
+    avoid_terms = active_disliked_food_names(db, profile.user_id)
     fallback = build_diet_week(
-        profile, goal_type, strategy_id, week_start, training_days
+        profile,
+        goal_type,
+        strategy_id,
+        week_start,
+        training_days,
+        avoid_terms,
     )
     if settings.use_mock_llm:
         return fallback
@@ -535,7 +568,13 @@ async def build_ai_diet_week(
     try:
         raw = await llm.complete_json(
             system_prompt,
-            _week_user_prompt(profile, goal_type, strategy, fallback),
+            _week_user_prompt(
+                profile,
+                goal_type,
+                strategy,
+                fallback,
+                avoid_terms,
+            ),
             reasoning_effort="low",
             usage=usage,
             db=db,
@@ -544,7 +583,7 @@ async def build_ai_diet_week(
             prompt_version=system_version,
         )
         result = _normalize_ai_week(raw, fallback)
-        return result
+        return apply_food_avoidance(result, avoid_terms)
     except Exception as exc:  # noqa: BLE001 - fallback keeps the feature usable
         logger.warning("AI diet week failed, fallback to template: %s", exc)
         fallback["generated_by"] = "template"
@@ -1021,6 +1060,7 @@ def build_diet_week(
     strategy_id: str,
     week_start: date,
     training_days: list[int] | None = None,
+    avoid_terms: list[str] | None = None,
 ) -> dict:
     """One week of the diet plan. Reuses meal_plans; no separate feature."""
     strategy = _strategy(strategy_id)
@@ -1055,16 +1095,19 @@ def build_diet_week(
             }
         )
 
-    return {
-        "week_start": week_start.isoformat(),
-        "strategy": {
-            "id": strategy.id,
-            "label": strategy.label,
-            "description": strategy.description,
-            "caution": strategy.caution,
+    return apply_food_avoidance(
+        {
+            "week_start": week_start.isoformat(),
+            "strategy": {
+                "id": strategy.id,
+                "label": strategy.label,
+                "description": strategy.description,
+                "caution": strategy.caution,
+            },
+            "training_days": training,
+            "days": days,
+            "disclaimer": DISCLAIMER,
+            "generated_by": "template",
         },
-        "training_days": training,
-        "days": days,
-        "disclaimer": DISCLAIMER,
-        "generated_by": "template",
-    }
+        list(avoid_terms or []),
+    )

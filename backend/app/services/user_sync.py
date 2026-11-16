@@ -17,6 +17,7 @@ from ..models import (
     UserCustomFood,
     UserCycleSettings,
     UserExerciseDislike,
+    UserFoodDislike,
     UserFoodFavorite,
     UserPreference,
     utcnow,
@@ -78,6 +79,14 @@ def _dislike_dict(item: UserExerciseDislike) -> dict:
     }
 
 
+def _food_dislike_dict(item: UserFoodDislike) -> dict:
+    return {
+        "food_key": item.food_key,
+        "name": item.name,
+        "updated_at": item.updated_at.isoformat(),
+    }
+
+
 def _cycle_dict(item: UserCycleSettings | None) -> dict | None:
     if item is None:
         return None
@@ -128,6 +137,18 @@ def sync_snapshot(db: Session, user_id: str) -> dict:
         .scalars()
         .all()
     )
+    food_dislikes = (
+        db.execute(
+            select(UserFoodDislike)
+            .where(
+                UserFoodDislike.user_id == user_id,
+                UserFoodDislike.deleted_at.is_(None),
+            )
+            .order_by(UserFoodDislike.updated_at.desc())
+        )
+        .scalars()
+        .all()
+    )
     cycle = db.get(UserCycleSettings, user_id)
     return {
         "server_time": datetime.now(timezone.utc).isoformat(),
@@ -135,6 +156,7 @@ def sync_snapshot(db: Session, user_id: str) -> dict:
         "custom_foods": [_custom_food_dict(item) for item in custom_foods],
         "favorites": [_favorite_dict(item) for item in favorites],
         "disliked_exercises": [_dislike_dict(item) for item in dislikes],
+        "disliked_foods": [_food_dislike_dict(item) for item in food_dislikes],
         "cycle": _cycle_dict(cycle),
     }
 
@@ -228,6 +250,29 @@ def _apply_dislikes(db: Session, user_id: str, items) -> None:
         item.updated_at = utcnow()
 
 
+def _apply_food_dislikes(db: Session, user_id: str, items) -> None:
+    for payload in items:
+        item = db.execute(
+            select(UserFoodDislike).where(
+                UserFoodDislike.user_id == user_id,
+                UserFoodDislike.food_key == payload.food_key,
+            )
+        ).scalar_one_or_none()
+        if item is None:
+            item = UserFoodDislike(
+                user_id=user_id,
+                food_key=payload.food_key,
+                name=payload.name,
+            )
+            db.add(item)
+        if payload.deleted:
+            item.deleted_at = utcnow()
+            continue
+        item.name = payload.name
+        item.deleted_at = None
+        item.updated_at = utcnow()
+
+
 def _apply_cycle(db: Session, user_id: str, payload) -> None:
     item = db.get(UserCycleSettings, user_id)
     if item is None:
@@ -253,12 +298,16 @@ def apply_sync(db: Session, user_id: str, payload: SyncIn) -> dict:
     dislikes = list(
         {item.slug: item for item in payload.disliked_exercises}.values()
     )
+    food_dislikes = list(
+        {item.food_key: item for item in payload.disliked_foods}.values()
+    )
     lock_user(db, user_id)
     if payload.preferences is not None:
         _apply_preferences(db, user_id, payload.preferences)
     _apply_custom_foods(db, user_id, custom_foods)
     _apply_favorites(db, user_id, favorites)
     _apply_dislikes(db, user_id, dislikes)
+    _apply_food_dislikes(db, user_id, food_dislikes)
     if payload.cycle is not None:
         _apply_cycle(db, user_id, payload.cycle)
     db.commit()

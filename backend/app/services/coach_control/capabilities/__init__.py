@@ -14,6 +14,7 @@ from . import (  # noqa: F401
     diet_week,
     equipment,
     exercise_preferences,
+    food_dislikes,
     food_preferences,
     log_edit,
     memory,

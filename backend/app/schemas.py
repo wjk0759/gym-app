@@ -320,11 +320,21 @@ class ExerciseDislikeSyncIn(BaseModel):
     updated_at: datetime | None = None
 
 
+class FoodDislikeSyncIn(BaseModel):
+    food_key: str = Field(min_length=1, max_length=160)
+    name: str = Field(min_length=1, max_length=120)
+    deleted: bool = False
+    updated_at: datetime | None = None
+
+
 class SyncIn(BaseModel):
     preferences: PreferencesIn | None = None
     custom_foods: list[CustomFoodSyncIn] = Field(default_factory=list, max_length=500)
     favorites: list[FavoriteFoodSyncIn] = Field(default_factory=list, max_length=500)
     disliked_exercises: list[ExerciseDislikeSyncIn] = Field(
+        default_factory=list, max_length=500
+    )
+    disliked_foods: list[FoodDislikeSyncIn] = Field(
         default_factory=list, max_length=500
     )
     cycle: CycleSyncIn | None = None

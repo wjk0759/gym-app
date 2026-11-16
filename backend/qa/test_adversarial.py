@@ -1,4 +1,5 @@
 import contextlib
+import json
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -1660,3 +1661,33 @@ def test_meal_detail_this_morning_selects_breakfast(db):
     summary = result["pending"]["payload"]["summary"]
     assert "燕麦鸡蛋" in summary, summary
     assert "香煎鸡胸饭" not in summary, summary
+def test_food_dislike_stays_out_of_generated_meals(db):
+    from app.services import diet
+    from app.services.diet_preferences import active_disliked_food_names
+
+    result = coach_turn(db, "我不喜欢吃鸡胸肉")
+    pending = result["pending"]
+    assert pending is not None, result
+    assert pending["capability_id"] == "diet.dislike_food", result
+    runtime.confirm_pending(db, "user-1", pending["id"])
+
+    names = active_disliked_food_names(db, "user-1")
+    assert names == ["鸡胸肉"], names
+    profile = db.get(Profile, "user-1")
+    plan = diet.build_plan(
+        profile,
+        "maintain",
+        datetime.now(ZoneInfo("Asia/Shanghai")).date(),
+        names,
+    )
+    text = json.dumps(plan, ensure_ascii=False)
+    assert "鸡胸肉" not in text, plan
+    assert "北豆腐" in text, plan
+
+    allowed = coach_turn(db, "鸡胸肉可以吃了")
+    pending = allowed["pending"]
+    assert pending is not None, allowed
+    assert pending["capability_id"] == "diet.dislike_food", allowed
+    assert pending["payload"]["dislike"] is False, allowed
+    runtime.confirm_pending(db, "user-1", pending["id"])
+    assert active_disliked_food_names(db, "user-1") == []

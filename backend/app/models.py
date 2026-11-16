@@ -1401,6 +1401,28 @@ class UserFoodFavorite(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class UserFoodDislike(Base):
+    __tablename__ = "user_food_dislikes"
+    __table_args__ = (
+        UniqueConstraint("user_id", "food_key", name="uq_food_dislikes_user_key"),
+        Index("ix_food_dislikes_user_updated", "user_id", "updated_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    food_key: Mapped[str] = mapped_column(String(160))
+    name: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class UserExerciseDislike(Base):
     __tablename__ = "user_exercise_dislikes"
     __table_args__ = (

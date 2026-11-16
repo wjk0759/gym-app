@@ -12,6 +12,7 @@ from app.schemas import (
     CycleSyncIn,
     ExerciseDislikeSyncIn,
     FavoriteFoodSyncIn,
+    FoodDislikeSyncIn,
     PreferencesIn,
     SyncIn,
 )
@@ -46,6 +47,7 @@ def test_sync_snapshot_creates_default_preferences(db):
     assert snapshot["custom_foods"] == []
     assert snapshot["favorites"] == []
     assert snapshot["disliked_exercises"] == []
+    assert snapshot["disliked_foods"] == []
 
 
 def test_sync_upserts_and_deletes_reusable_data(db):
@@ -81,6 +83,12 @@ def test_sync_upserts_and_deletes_reusable_data(db):
                 )
             ],
             disliked_exercises=[ExerciseDislikeSyncIn(slug="burpee")],
+            disliked_foods=[
+                FoodDislikeSyncIn(
+                    food_key="library:鸡胸肉",
+                    name="鸡胸肉",
+                )
+            ],
         ),
     )
 
@@ -90,6 +98,7 @@ def test_sync_upserts_and_deletes_reusable_data(db):
     assert result["custom_foods"][0]["name"] == "自制鸡肉饭"
     assert result["favorites"][0]["food_key"] == "custom:food-1"
     assert result["disliked_exercises"][0]["slug"] == "burpee"
+    assert result["disliked_foods"][0]["food_key"] == "library:鸡胸肉"
 
     deleted = apply_sync(
         db,
@@ -112,12 +121,20 @@ def test_sync_upserts_and_deletes_reusable_data(db):
             disliked_exercises=[
                 ExerciseDislikeSyncIn(slug="burpee", deleted=True)
             ],
+            disliked_foods=[
+                FoodDislikeSyncIn(
+                    food_key="library:鸡胸肉",
+                    name="鸡胸肉",
+                    deleted=True,
+                )
+            ],
         ),
     )
 
     assert deleted["custom_foods"] == []
     assert deleted["favorites"] == []
     assert deleted["disliked_exercises"] == []
+    assert deleted["disliked_foods"] == []
 
 
 def test_sync_cycle_dates(db):

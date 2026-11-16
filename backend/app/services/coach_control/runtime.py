@@ -89,6 +89,7 @@ EQUIPMENT_ADD = "equipment.add"
 EQUIPMENT_UPDATE = "equipment.update"
 EQUIPMENT_DELETE = "equipment.delete"
 FAVORITE_FOOD = "diet.favorite_food"
+DISLIKE_FOOD = "diet.dislike_food"
 CUSTOM_FOOD = "diet.custom_food"
 PLAN = "training.generate_plan"
 ADJUST_PLAN = "training.adjust_plan"
@@ -839,6 +840,18 @@ def _looks_like_injury_update(message: str) -> bool:
     )
 
 
+def _prefers_food_dislike(message: str) -> bool:
+    if re.search(
+        r"吃|食物|餐|菜|肉|鱼|蛋|奶|饭|面|果|豆|粉|燕麦|红薯|西兰花",
+        message,
+    ):
+        return True
+    from ..food_text import ALIASES
+    from ..food_vision import FOODS
+
+    return any(name in message for name in (*FOODS, *ALIASES))
+
+
 def _looks_like_exercise_dislike(message: str) -> bool:
     if re.search(r"怎么|如何|为什么|吗|？|\?", message):
         return False
@@ -846,6 +859,18 @@ def _looks_like_exercise_dislike(message: str) -> bool:
         re.search(
             r"不喜欢|不想练|讨厌|别安排|避开|不要安排|"
             r"可以安排|恢复安排|不讨厌",
+            message,
+        )
+    )
+
+
+def _looks_like_food_dislike(message: str) -> bool:
+    if re.search(r"怎么|如何|为什么|多少|热量|吗|？|\?", message):
+        return False
+    return bool(
+        re.search(
+            r"不喜欢吃|不喜欢|讨厌吃|别安排|别推荐|以后别做|避开|"
+            r"可以吃|恢复吃|不讨厌|取消不喜欢|不用避开",
             message,
         )
     )
@@ -2295,6 +2320,44 @@ async def _dispatch_semantic_capability(
             turn,
             started,
             capability_id=DISLIKE_EXERCISE,
+            payload=payload,
+            reply=f"{payload['summary']}？确认后更新。",
+        )
+
+    if capability_id == DISLIKE_FOOD:
+        from .capabilities.food_dislikes import resolve as resolve_food_dislike
+
+        resolution = resolve_food_dislike(db, user_id, text)
+        if not resolution.get("ready"):
+            question = (
+                resolution.get("questions") or ["想避开哪样食物？"]
+            )[0]
+            if resolution.get("terminal"):
+                return _finish_reply(
+                    db,
+                    session,
+                    turn,
+                    started,
+                    intent=DISLIKE_FOOD,
+                    reply=question,
+                )
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=DISLIKE_FOOD,
+                payload={"message": text},
+                reply=question,
+                kind="draft",
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=DISLIKE_FOOD,
             payload=payload,
             reply=f"{payload['summary']}？确认后更新。",
         )
@@ -4509,8 +4572,13 @@ async def handle_turn(
             )
             reply = question
         turn.intent = EQUIPMENT_DELETE
-    elif intent_override == DISLIKE_EXERCISE or (
-        intent_override is None and _looks_like_exercise_dislike(text)
+    elif (
+        intent_override == DISLIKE_EXERCISE
+        and not _prefers_food_dislike(text)
+    ) or (
+        intent_override is None
+        and _looks_like_exercise_dislike(text)
+        and not _prefers_food_dislike(text)
     ):
         from .capabilities.exercise_preferences import resolve as resolve_dislike
 
@@ -4537,6 +4605,34 @@ async def handle_turn(
                 )
             reply = question
         turn.intent = DISLIKE_EXERCISE
+    elif intent_override == DISLIKE_FOOD or (
+        intent_override is None and _looks_like_food_dislike(text)
+    ):
+        from .capabilities.food_dislikes import resolve as resolve_food_dislike
+
+        resolution = resolve_food_dislike(db, user_id, text)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            _pending_card(
+                db,
+                session,
+                capability_id=DISLIKE_FOOD,
+                payload=payload,
+            )
+            reply = f"{payload['summary']}？确认后更新。"
+        else:
+            question = (
+                resolution.get("questions") or ["想避开哪样食物？"]
+            )[0]
+            if not resolution.get("terminal"):
+                _pending_draft(
+                    db,
+                    session,
+                    capability_id=DISLIKE_FOOD,
+                    payload={"message": text},
+                )
+            reply = question
+        turn.intent = DISLIKE_FOOD
     elif intent_override == UPDATE_PROFILE or (
         intent_override is None and _looks_like_profile_update(text)
     ):
@@ -5365,6 +5461,21 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "ExerciseDislikeUpdated"
         entity_type = "exercise"
         entity_id = str(after.get("slug") or action_id)
+    elif pending.capability_id == DISLIKE_FOOD:
+        from .capabilities.food_dislikes import execute as execute_food_dislike
+
+        result = execute_food_dislike(db, user_id, action_id, pending.payload)
+        before = result.get("before") or {}
+        after = result.get("after") or {}
+        receipt = {
+            "summary": pending.payload.get("summary") or "已更新避开食物",
+            "food_key": after.get("food_key"),
+            "name": after.get("name"),
+            "deep_link": "fitai://nutrition",
+        }
+        event_type = "FoodDislikeUpdated"
+        entity_type = "food"
+        entity_id = str(after.get("food_key") or action_id)
     elif pending.capability_id == CUSTOM_FOOD:
         from .capabilities.custom_food import execute as execute_custom_food
 
@@ -6005,6 +6116,15 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
         from .capabilities.exercise_preferences import undo as undo_dislike
 
         result = undo_dislike(
+            db,
+            user_id,
+            record.before or {},
+            record.payload,
+        )
+    elif record.capability_id == DISLIKE_FOOD:
+        from .capabilities.food_dislikes import undo as undo_food_dislike
+
+        result = undo_food_dislike(
             db,
             user_id,
             record.before or {},
