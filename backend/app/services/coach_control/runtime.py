@@ -11,7 +11,7 @@ import contextlib
 import copy
 import re
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from uuid import uuid4
 
 from sqlalchemy import select
@@ -25,6 +25,8 @@ from ...models import (
     CoachTurn,
     FoodLog,
     Profile,
+    Program,
+    ProgramDay,
     utcnow,
 )
 from ..food_text import MEAL_LABELS, parse_meal
@@ -522,12 +524,26 @@ def _looks_like_memory(message: str) -> bool:
 
 
 def _looks_like_memory_forget(message: str) -> bool:
+    if not re.search(
+        r"忘掉|忘记|删除|删掉|去掉|别再记|不要记",
+        message,
+    ):
+        return False
+    if re.search(r"记忆|偏好|记住|关于|那条|这条", message):
+        return True
     return bool(
+        re.search(r"忘掉|忘记|别再记|不要记", message)
+        and re.search(r"我.*(?:练|训练|早|晚|吃|睡)", message)
+    )
+
+
+def _looks_like_memory_selection(message: str) -> bool:
+    value = message.strip()
+    return len(value) <= 20 and bool(
         re.search(
-            r"忘掉|忘记|删除|删掉|去掉|别再记|不要记",
-            message,
+            r"那条|这条|第[一二三四五六七八九十]条|早上|晚上",
+            value,
         )
-        and re.search(r"记忆|偏好|记住|关于|那条|这条", message)
     )
 
 
@@ -1827,6 +1843,15 @@ async def _try_batch_turn(
     if len(actions) < 2:
         _discard_batch_programs(db, user_id, created_program_ids)
         return None
+    if any(
+        item["capability_id"] == RESTORE_PLAN for item in actions
+    ):
+        # Restore changes the plan that later schedule edits must target.
+        actions.sort(
+            key=lambda item: (
+                0 if item["capability_id"] == RESTORE_PLAN else 1
+            )
+        )
     lines = [
         f"{index + 1}. {action['summary']}"
         for index, action in enumerate(actions)
@@ -2594,6 +2619,15 @@ async def handle_turn(
                 text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
                 intent_override = GOAL
 
+    if (
+        intent_override is None
+        and session.active_topic == FORGET_MEMORY
+        and (_minutes_since(session.last_turn_at) or 0) <= 15
+        and _looks_like_memory_selection(text)
+    ):
+        intent_override = FORGET_MEMORY
+        text = f"删除记忆 {text}".strip()[:2000]
+
     if intent_override is None:
         batch = await _try_batch_turn(db, user_id, text, context, conversation)
         if batch is not None:
@@ -2675,6 +2709,7 @@ async def handle_turn(
                 payload=payload,
                 reply=f"{payload['summary']}？确认后删除。",
             )
+        session.active_topic = FORGET_MEMORY
         return _finish_reply(
             db,
             session,
@@ -3656,6 +3691,25 @@ async def handle_turn(
             )
             reply = question
         turn.intent = DELETE_METRIC
+    elif intent_override == FORGET_MEMORY:
+        from .capabilities.memory import resolve_forget
+
+        resolution = resolve_forget(db, user_id, text)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            _pending_card(
+                db,
+                session,
+                capability_id=FORGET_MEMORY,
+                payload=payload,
+            )
+            reply = f"{payload['summary']}？确认后删除。"
+        else:
+            session.active_topic = FORGET_MEMORY
+            reply = (
+                resolution.get("questions") or ["要删哪条记忆？"]
+            )[0]
+        turn.intent = FORGET_MEMORY
     elif intent_override == WEIGHT or (
         intent_override is None and _looks_like_weight(text)
     ):
@@ -3918,6 +3972,45 @@ def _load_pending(db: Session, user_id: str, pending_id: str) -> tuple[CoachSess
     return session, pending
 
 
+def _batch_program_day_for_date(
+    db: Session,
+    program: Program,
+    value: str | None,
+) -> ProgramDay | None:
+    try:
+        target = date.fromisoformat(str(value))
+    except (TypeError, ValueError):
+        return None
+    start = program.start_date or target
+    monday = start - timedelta(days=start.weekday())
+    week_index = (target - monday).days // 7 + 1
+    week_index = max(1, min(int(program.weeks or 1), week_index))
+    return db.execute(
+        select(ProgramDay).where(
+            ProgramDay.program_id == program.id,
+            ProgramDay.week_index == week_index,
+            ProgramDay.weekday == target.isoweekday(),
+        )
+    ).scalar_one_or_none()
+
+
+def _retarget_batch_plan_action(
+    db: Session,
+    capability_id: str,
+    payload: dict,
+    program: Program,
+) -> dict:
+    data = dict(payload)
+    data["plan_id"] = program.id
+    data["plan_version"] = program.version
+    raw_date = data.get("from_date") or data.get("date")
+    day = _batch_program_day_for_date(db, program, raw_date)
+    if day is None:
+        raise ValueError("恢复后的计划里没有这一天，请重新生成这张卡")
+    data["day_id"] = day.id
+    return data
+
+
 def _confirm_batch(
     db: Session,
     user_id: str,
@@ -3936,9 +4029,18 @@ def _confirm_batch(
         for day_id in batch_context.get("day_ids") or []
         if str(day_id).strip()
     }
+    has_restore = any(
+        isinstance(item, dict)
+        and str(item.get("capability_id") or "") == RESTORE_PLAN
+        for item in actions[:3]
+    )
     for item in actions[:3]:
         if not isinstance(item, dict):
             raise ValueError("批量操作内容不完整")
+        if has_restore:
+            # The restored program is not the one in the card context; the
+            # plan-bound actions are retargeted after the restore executes.
+            continue
         capability_id = str(item.get("capability_id") or "")
         if capability_id not in {
             TRAINING,
@@ -3968,6 +4070,7 @@ def _confirm_batch(
     executed_ids: list[str] = []
     sub_pending_ids: list[str] = []
     results: list[dict] = []
+    restored_program: Program | None = None
     try:
         for item in actions[:3]:
             if not isinstance(item, dict):
@@ -3978,6 +4081,22 @@ def _confirm_batch(
                 raise ValueError("批量操作包含不支持的能力")
             if not isinstance(sub_payload, dict):
                 sub_payload = {}
+            if restored_program is not None:
+                if capability_id in {TRAINING, SKIP_TRAINING}:
+                    sub_payload = _retarget_batch_plan_action(
+                        db,
+                        capability_id,
+                        sub_payload,
+                        restored_program,
+                    )
+                elif capability_id in {
+                    ADD_DAY,
+                    EDIT_EXERCISE,
+                    EDIT_EXERCISES,
+                }:
+                    raise ValueError(
+                        "恢复计划后，加练或改动作请分开执行"
+                    )
             sub_id = str(uuid4())
             sub_pending = CoachPending(
                 id=str(uuid4()),
@@ -3996,6 +4115,14 @@ def _confirm_batch(
             result = confirm_pending(db, user_id, sub_pending.id)
             executed_ids.append(str(result.get("action_id") or sub_id))
             results.append(result)
+            if capability_id == RESTORE_PLAN:
+                restored_id = str(
+                    (result.get("receipt") or {}).get("plan_id")
+                    or sub_payload.get("program_id")
+                    or ""
+                )
+                if restored_id:
+                    restored_program = db.get(Program, restored_id)
     except Exception as exc:  # noqa: BLE001 - roll back partial batch
         for sub_id in executed_ids:
             with contextlib.suppress(Exception):

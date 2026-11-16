@@ -146,7 +146,9 @@ def resolve_forget(db: Session, user_id: str, message: str) -> dict:
         "",
         target,
     )
-    target = re.sub(r"(?:这条|那条)?(?:记忆|偏好)$", "", target)
+    target = re.sub(r"(?:这条|那条)$", "", target)
+    target = re.sub(r"(?:记忆|偏好)$", "", target)
+    target = re.sub(r"的$", "", target)
     target = target.strip(" 。.")
     memories = (
         db.execute(
@@ -171,15 +173,22 @@ def resolve_forget(db: Session, user_id: str, message: str) -> dict:
         ]
         if not matches:
             keywords = _memory_keywords(target)
-            matches = [
-                item
-                for item in memories
-                if keywords
-                and any(
-                    keyword in _normalize_memory(item.content)
-                    for keyword in keywords
+            scored = [
+                (
+                    sum(
+                        1
+                        for keyword in keywords
+                        if keyword in _normalize_memory(item.content)
+                    ),
+                    item,
                 )
+                for item in memories
             ]
+            best = max((score for score, _ in scored), default=0)
+            if best > 0:
+                matches = [
+                    item for score, item in scored if score == best
+                ]
     else:
         matches = list(memories)
     if not matches:

@@ -190,6 +190,11 @@ def resolve_restore(db: Session, user_id: str, message: str) -> dict:
             (item for item in archived if item.version == version),
             None,
         )
+        if chosen is None:
+            return {
+                "ready": False,
+                "questions": [f"没有找到版本 {version} 的历史计划。"],
+            }
     if chosen is None:
         for item in archived:
             if item.title and item.title in message:

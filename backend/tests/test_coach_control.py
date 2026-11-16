@@ -1517,6 +1517,133 @@ def test_cancelling_batch_plan_configure_discards_pending_program(db, monkeypatc
     assert archived.status == "archived"
 
 
+def test_restore_plan_unknown_or_active_version_does_not_fallback(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    db.add_all(
+        [
+            Program(
+                user_id="user-1",
+                title="当前计划 v1",
+                goal_type="build_muscle",
+                version=1,
+                status="active",
+                start_date=today,
+                weeks=4,
+            ),
+            Program(
+                user_id="user-1",
+                title="历史计划 v2",
+                goal_type="build_muscle",
+                version=2,
+                status="archived",
+                start_date=today,
+                weeks=4,
+            ),
+            Program(
+                user_id="user-1",
+                title="历史计划 v3",
+                goal_type="build_muscle",
+                version=3,
+                status="archived",
+                start_date=today,
+                weeks=4,
+            ),
+        ]
+    )
+    db.commit()
+
+    unknown = asyncio.run(
+        runtime.handle_turn(db, "user-1", "恢复版本99")
+    )
+    assert unknown["pending"] is None
+    assert "没有找到" in unknown["reply"]
+
+    active = asyncio.run(
+        runtime.handle_turn(db, "user-1", "恢复版本1")
+    )
+    assert active["pending"] is None
+    assert "没有找到" in active["reply"]
+
+
+def test_batch_restore_then_reschedule_targets_restored_plan(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    target = today + timedelta(days=2)
+    active = Program(
+        user_id="user-1",
+        title="当前计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=today,
+        weeks=4,
+    )
+    archived = Program(
+        user_id="user-1",
+        title="上一版计划",
+        goal_type="build_muscle",
+        version=2,
+        status="archived",
+        start_date=today,
+        weeks=4,
+    )
+    db.add_all([active, archived])
+    db.flush()
+    active_day = ProgramDay(
+        program_id=active.id,
+        week_index=1,
+        weekday=today.isoweekday(),
+        title="胸",
+    )
+    archived_day = ProgramDay(
+        program_id=archived.id,
+        week_index=1,
+        weekday=today.isoweekday(),
+        title="背",
+    )
+    db.add_all([active_day, archived_day])
+    db.commit()
+    context = {
+        "plan": {
+            "id": active.id,
+            "version": active.version,
+            "days": [
+                {
+                    "id": active_day.id,
+                    "date": today.isoformat(),
+                    "title": "胸",
+                    "completed": False,
+                    "skipped": False,
+                }
+            ],
+        }
+    }
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            f"恢复上一版计划，再把今天的训练改到{target.month}月{target.day}日",
+            app_context=context,
+        )
+    )
+    assert [
+        item["capability_id"] for item in turn["pending"]["payload"]["batch"]
+    ] == ["training.restore_plan", "training.reschedule"]
+
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    db.refresh(active)
+    db.refresh(archived)
+    assert archived.status == "active"
+    assert active.status == "archived"
+    state = db.execute(select(PlanDayState)).scalar_one()
+    assert state.plan_id == archived.id
+    assert state.day_id == archived_day.id
+    assert state.assigned_date == target
+
+
 def test_batch_weight_and_goal_confirm_and_undo(db):
     import asyncio
 
@@ -4420,6 +4547,55 @@ def test_forget_memory_ambiguous_asks_for_more_detail(db):
     assert turn["intent"] == "memory.forget"
     assert turn["pending"] is None
     assert "找到 2 条" in turn["reply"]
+
+
+def test_forget_memory_follow_up_and_natural_phrases(db):
+    import asyncio
+
+    morning = AIMemory(
+        user_id="user-1",
+        kind="preference",
+        memory_key="explicit:morning",
+        content="我更喜欢早上训练",
+        source="coach_control",
+        active=True,
+    )
+    evening = AIMemory(
+        user_id="user-1",
+        kind="preference",
+        memory_key="explicit:evening",
+        content="我更喜欢晚上训练",
+        source="coach_control",
+        active=True,
+    )
+    db.add_all([morning, evening])
+    db.commit()
+
+    first = asyncio.run(runtime.handle_turn(db, "user-1", "删除训练记忆"))
+    assert first["pending"] is None
+    follow = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "早上那条",
+            session_id=first["session"]["id"],
+        )
+    )
+    assert follow["pending"]["payload"]["memory_id"] == morning.id
+
+    specific = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "删除关于早上训练的记忆",
+        )
+    )
+    assert specific["pending"]["payload"]["memory_id"] == morning.id
+
+    natural = asyncio.run(
+        runtime.handle_turn(db, "user-1", "忘掉我早上训练")
+    )
+    assert natural["intent"] == "memory.forget"
 
 
 def test_remember_does_not_collide_with_the_general_memory(db):
