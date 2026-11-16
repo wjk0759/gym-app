@@ -46,6 +46,7 @@ extension AppStore {
     func setStrictEquipmentMode(_ enabled: Bool) {
         guard strictEquipmentMode != enabled else { return }
         strictEquipmentMode = enabled
+        noteEquipmentMutation()
         markPreferencesDirty()
     }
 

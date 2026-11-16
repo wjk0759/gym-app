@@ -22,8 +22,76 @@ struct EquipmentSnapshot {
     }
 }
 
+/// One plan/equipment mismatch that deserves a replan prompt.
+struct PlanEquipmentIssue: Equatable {
+    let planID: UUID
+    let planVersion: Int
+    let unavailableSlugs: [String]
+
+    var count: Int { unavailableSlugs.count }
+
+    var signature: String {
+        "\(planID.uuidString):\(planVersion):\(unavailableSlugs.joined(separator: ","))"
+    }
+}
+
+enum PlanEquipmentCheck {
+    /// Strict mode means the plan must only use the current equipment pool.
+    /// Non-strict plans intentionally fall back, so they are not flagged.
+    static func issue(
+        plan: TrainingPlan?,
+        strictEquipment: Bool,
+        planPoolSlugs: [String],
+        today: Date = Date()
+    ) -> PlanEquipmentIssue? {
+        guard strictEquipment, let plan else { return nil }
+        let pool = Set(planPoolSlugs)
+        let start = Calendar.current.startOfDay(for: today)
+        var unavailable: [String] = []
+        var seen = Set<String>()
+        for day in plan.days {
+            if day.skippedAt != nil { continue }
+            if let date = day.date,
+               Calendar.current.startOfDay(for: date) < start {
+                continue
+            }
+            for row in day.exercises {
+                guard !pool.contains(row.slug) else { continue }
+                // Unknown slugs are not judged: the local catalog cannot say
+                // which equipment they need.
+                guard ExerciseLibrary.exercise(slug: row.slug) != nil else {
+                    continue
+                }
+                if seen.insert(row.slug).inserted {
+                    unavailable.append(row.slug)
+                }
+            }
+        }
+        guard !unavailable.isEmpty else { return nil }
+        return PlanEquipmentIssue(
+            planID: plan.id,
+            planVersion: plan.version,
+            unavailableSlugs: unavailable.sorted()
+        )
+    }
+}
+
 extension AppStore {
     // MARK: - 计划池
+
+    var planEquipmentIssue: PlanEquipmentIssue? {
+        PlanEquipmentCheck.issue(
+            plan: plan,
+            strictEquipment: strictEquipmentMode,
+            planPoolSlugs: planPoolSlugs
+        )
+    }
+
+    func dismissEquipmentReplanPrompt() {
+        guard let issue = planEquipmentIssue else { return }
+        dismissedEquipmentReplanSignature = issue.signature
+        persist()
+    }
 
     /// 所有固定器械启用的动作并集（去重）。
     var enabledExerciseSlugs: [String] {
@@ -72,11 +140,22 @@ extension AppStore {
 
     // MARK: - 器械库（物理器械）
 
+    func noteEquipmentMutation() {
+        if dismissedEquipmentReplanSignature != nil {
+            dismissedEquipmentReplanSignature = nil
+            persist()
+        }
+        if let issue = planEquipmentIssue {
+            toast = "器械库变了，当前计划有 \(issue.count) 个动作需要重排"
+        }
+    }
+
     func addEquipment(_ item: EquipmentItem) {
         equipmentLibrary.insert(item, at: 0)
         persist()
         syncPendingUserData()
         dataDidChange(.equipment)
+        noteEquipmentMutation()
     }
 
     /// 保存一件物理器械（拍照识别结果或手动添加）。
@@ -111,6 +190,7 @@ extension AppStore {
         persist()
         syncPendingUserData()
         dataDidChange(.equipment)
+        noteEquipmentMutation()
         return item
     }
 
@@ -140,6 +220,7 @@ extension AppStore {
         persist()
         syncPendingUserData()
         dataDidChange(.equipment)
+        noteEquipmentMutation()
     }
 
     func removeEquipment(_ id: UUID) {
@@ -150,6 +231,7 @@ extension AppStore {
         }
         persist()
         dataDidChange(.equipment)
+        noteEquipmentMutation()
         syncPendingUserData()
     }
 
@@ -170,6 +252,7 @@ extension AppStore {
         persist()
         syncPendingUserData()
         dataDidChange(.equipment)
+        noteEquipmentMutation()
     }
 
     func replaceEquipmentExercises(_ itemID: UUID, slugs: [String]) {
@@ -181,6 +264,7 @@ extension AppStore {
         persist()
         syncPendingUserData()
         dataDidChange(.equipment)
+        noteEquipmentMutation()
     }
 
     // MARK: - 通用器械勾选
@@ -190,6 +274,7 @@ extension AppStore {
         universalEquipmentDirty = true
         persist()
         dataDidChange(.equipment)
+        noteEquipmentMutation()
         syncPendingUserData()
     }
 

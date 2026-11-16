@@ -58,6 +58,7 @@ struct PlanHomeView: View {
                         topBar
                         header
                         quickActions
+                        equipmentReplanBanner
 
                         if store.isGenerating {
                             generatingCard

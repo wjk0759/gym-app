@@ -122,6 +122,8 @@ final class AppStore {
     var universalEquipmentDirty = false
     /// 计划模式：true = 只用我的器械；false = 优先我的器械，不足回退。
     var strictEquipmentMode = false
+    /// 用户已暂时忽略的“器械变化需重排计划”提示签名。
+    var dismissedEquipmentReplanSignature: String?
     var bodyAnalyses: [BodyAnalysis] = []
     var bodyMetrics: [BodyMetric] = []
     var bodyCheckInFrequency: BodyCheckInFrequency = .off
@@ -298,6 +300,7 @@ final class AppStore {
         selectedUniversalSlugs = ["bodyweight"]
         universalEquipmentDirty = false
         strictEquipmentMode = false
+        dismissedEquipmentReplanSignature = nil
         bodyAnalyses = []
         bodyMetrics = []
         bodyCheckInFrequency = .off
@@ -445,6 +448,7 @@ final class AppStore {
         selectedUniversalSlugs = state.selectedUniversalSlugs ?? ["bodyweight"]
         universalEquipmentDirty = state.universalEquipmentDirty ?? false
         strictEquipmentMode = state.strictEquipmentMode ?? false
+        dismissedEquipmentReplanSignature = state.dismissedEquipmentReplanSignature
         bodyAnalyses = state.bodyAnalyses ?? []
         bodyMetrics = state.bodyMetrics ?? []
         bodyCheckInFrequency = state.bodyCheckInFrequency ?? .off
@@ -505,6 +509,7 @@ final class AppStore {
             selectedUniversalSlugs: selectedUniversalSlugs,
             universalEquipmentDirty: universalEquipmentDirty,
             strictEquipmentMode: strictEquipmentMode,
+            dismissedEquipmentReplanSignature: dismissedEquipmentReplanSignature,
             bodyAnalyses: bodyAnalyses,
             bodyMetrics: bodyMetrics,
             bodyCheckInFrequency: bodyCheckInFrequency,
@@ -633,6 +638,7 @@ final class AppStore {
         var selectedUniversalSlugs: [String]?
         var universalEquipmentDirty: Bool?
         var strictEquipmentMode: Bool?
+        var dismissedEquipmentReplanSignature: String?
         var bodyAnalyses: [BodyAnalysis]?
         var bodyMetrics: [BodyMetric]?
         var bodyCheckInFrequency: BodyCheckInFrequency?
