@@ -40,6 +40,12 @@ _CATEGORY_WORDS = (
     ("fruit", ("果", "莓", "橙", "苹果", "香蕉", "猕猴桃", "梨")),
 )
 _GENERIC_MEAL_ITEM = "同类食材 适量"
+_MEAL_LABELS = {
+    "breakfast": "早餐",
+    "lunch": "午餐",
+    "dinner": "晚餐",
+    "snack": "加餐",
+}
 
 
 def _normalize(value: str) -> str:
@@ -144,6 +150,12 @@ def _apply_to_meals(meals: list, terms: list[str]) -> None:
     for meal in meals:
         if not isinstance(meal, dict):
             continue
+        name = str(meal.get("name") or "")
+        if name and matches_avoid(name, terms):
+            meal["name"] = _MEAL_LABELS.get(
+                str(meal.get("meal") or ""),
+                "家常餐",
+            )
         items = [
             str(item)
             for item in meal.get("items") or []

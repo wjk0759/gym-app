@@ -1523,6 +1523,26 @@ def test_profile_equipment_conflict_warns_about_current_plan(db):
     assert db.get(Profile, "user-1").equipment == ["bodyweight", "barbell"]
 
 
+def test_apply_food_avoidance_rewrites_meal_name():
+    import json
+
+    from app.services.diet_preferences import apply_food_avoidance
+
+    plan = {
+        "meals": [
+            {
+                "meal": "lunch",
+                "name": "鸡胸肉沙拉",
+                "items": ["鸡胸肉 150g", "米饭 150g"],
+            }
+        ]
+    }
+    apply_food_avoidance(plan, ["鸡胸肉"])
+    assert plan["meals"][0]["name"] == "午餐"
+    text = json.dumps(plan, ensure_ascii=False)
+    assert "鸡胸肉" not in text
+
+
 def test_dislike_exercise_confirm_undo_and_plan_filter(db):
     import asyncio
 
