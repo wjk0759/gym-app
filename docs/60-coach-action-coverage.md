@@ -52,7 +52,7 @@
 | 记录体重/体脂/腰围 | `body.log_weight` | ✅ |
 | 身体趋势复盘 | `body.review_trend` | ✅ |
 | 体型照片分析 | `ui.open_screen` → `body_analysis` | ◐ |
-| 应用体型分析到计划 | BodyPhotoAnalysisView | ○ |
+| 应用体型分析到计划 | `body.apply_analysis` | ✅ |
 | 删除身体记录 | `body.delete_metric` | ✅ |
 
 ## 4. 计划/目标
@@ -125,6 +125,7 @@
 - `memory.forget` 支持“忘掉早睡这条记忆”“删除关于早上的记忆”；多条匹配时先追问，删除可撤销。
 - `profile.update` 支持昵称、性别、身高、经验；`profile.update_injuries` 支持伤病更新，并检查当前计划是否有冲突动作。
 - `equipment.add` 支持把识别结果或说出的器械加入个人库；`equipment.update` 支持改名；`equipment.delete` 支持删除并撤销。删除后会修剪 iOS 已同步缓存。
+- `body.apply_analysis` 支持把最近一次体型分析应用到当前计划：按分析重点给对应动作 +1 组，生成新版本计划；可撤销并恢复分析的 applied 状态。
 - 加练执行前会再次检查同一周/星期是否已有训练，过期卡不会写出重复训练日。
 - 仍未做：多动作超过 3 个、更多能力加入 batch、器械/训练中/资料设置类动作、全局重复写入检测。
 

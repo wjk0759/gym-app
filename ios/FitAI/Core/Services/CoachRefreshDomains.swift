@@ -39,6 +39,7 @@ enum CoachRefreshDomains {
         "diet.generate_week": [.diet],
         "body.log_weight": [.body, .profile, .diet, .review],
         "body.delete_metric": [.body, .profile, .diet, .review],
+        "body.apply_analysis": [.body, .plan, .schedule, .workouts, .review],
         "profile.update_goal": [.profile, .diet, .review],
         "profile.update": [.profile, .body, .diet, .review],
         "profile.update_injuries": [.profile, .review],

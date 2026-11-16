@@ -76,6 +76,7 @@ STRENGTH = "training.log_strength"
 WEIGHT = "body.log_weight"
 BODY_REVIEW = "body.review_trend"
 DELETE_METRIC = "body.delete_metric"
+APPLY_ANALYSIS = "body.apply_analysis"
 REVIEW = "review.weekly"
 GOAL = "profile.update_goal"
 UPDATE_PROFILE = "profile.update"
@@ -609,6 +610,8 @@ def _looks_like_analysis_screen(message: str) -> bool:
     """
     if not re.search(r"分析|评估|看看|识别|扫描|拍照|拍张|照片", message):
         return False
+    if _looks_like_apply_body_analysis(message):
+        return False
     if (
         _looks_like_equipment_add(message)
         or _looks_like_equipment_update(message)
@@ -923,6 +926,15 @@ def _looks_like_body_delete(message: str) -> bool:
             r"体重|体脂|腰围|臂围|腿围|身体记录|身体数据|称重",
             message,
         )
+    )
+
+
+def _looks_like_apply_body_analysis(message: str) -> bool:
+    if re.search(r"怎么|如何|为什么|吗|？|\?", message):
+        return False
+    return bool(
+        re.search(r"体型|体态|身材", message)
+        and re.search(r"应用|用到|按|根据|调整|计划", message)
     )
 
 
@@ -2276,6 +2288,33 @@ async def _dispatch_semantic_capability(
             reply=f"{payload['summary']}？确认后更新。",
         )
 
+    if capability_id == APPLY_ANALYSIS:
+        from .capabilities.body_analysis import resolve as resolve_analysis
+
+        resolution = resolve_analysis(db, user_id)
+        if not resolution.get("ready"):
+            question = (
+                resolution.get("questions") or ["要应用哪次体型分析？"]
+            )[0]
+            return _finish_reply(
+                db,
+                session,
+                turn,
+                started,
+                intent=APPLY_ANALYSIS,
+                reply=question,
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=APPLY_ANALYSIS,
+            payload=payload,
+            reply=f"{payload['summary']}？确认后调整。",
+        )
+
     if capability_id == GOAL:
         from .capabilities.profile import resolve as resolve_goal
 
@@ -3548,6 +3587,30 @@ async def handle_turn(
             "reply": reply,
             "pending": serialize_pending(active),
         }
+
+    if intent_override is None and _looks_like_apply_body_analysis(text):
+        from .capabilities.body_analysis import resolve as resolve_analysis
+
+        resolution = resolve_analysis(db, user_id)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=APPLY_ANALYSIS,
+                payload=payload,
+                reply=f"{payload['summary']}？确认后调整。",
+            )
+        return _finish_reply(
+            db,
+            session,
+            turn,
+            started,
+            intent=APPLY_ANALYSIS,
+            reply=(resolution.get("questions") or ["要应用哪次体型分析？"])[0],
+        )
 
     if intent_override is None and _looks_like_plan_adjust(text):
         from .capabilities.plan import resolve_adjust
@@ -5042,6 +5105,21 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "ProfileInjuriesUpdated"
         entity_type = "profile"
         entity_id = user_id
+    elif pending.capability_id == APPLY_ANALYSIS:
+        from .capabilities.body_analysis import execute as execute_analysis
+
+        result = execute_analysis(db, user_id, action_id, pending.payload)
+        before = result.get("before") or {}
+        after = result.get("after") or {}
+        receipt = {
+            "summary": pending.payload.get("summary") or "已应用体型分析",
+            "plan_id": after.get("program_id"),
+            "analysis_id": after.get("analysis_id"),
+            "deep_link": "fitai://plan",
+        }
+        event_type = "BodyAnalysisApplied"
+        entity_type = "body_analysis"
+        entity_id = str(after.get("analysis_id") or action_id)
     elif pending.capability_id == GOAL:
         from .capabilities.profile import execute as execute_goal
 
@@ -5472,6 +5550,15 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
         from .capabilities.profile import undo_injuries
 
         result = undo_injuries(db, user_id, record.before or {})
+    elif record.capability_id == APPLY_ANALYSIS:
+        from .capabilities.body_analysis import undo as undo_analysis
+
+        result = undo_analysis(
+            db,
+            user_id,
+            record.before or {},
+            record.payload,
+        )
     elif record.capability_id == GOAL:
         from .capabilities.profile import undo as undo_goal
 

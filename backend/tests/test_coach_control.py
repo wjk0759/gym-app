@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 from app.db import Base
 from app.models import (
     AIMemory,
+    BodyAnalysisRecord,
     BodyMetric,
     CoachActionRecord,
     CoachInbox,
@@ -661,6 +662,123 @@ def test_equipment_rename_and_delete_confirm_and_undo(db):
     restored = db.execute(select(EquipmentLibraryItem)).scalar_one()
     assert restored.client_id == "equipment-1"
     assert restored.name == "坐姿划船机"
+
+
+def test_apply_body_analysis_adjusts_focus_and_undo(db):
+    import asyncio
+
+    db.add_all(
+        [
+            Exercise(
+                slug="bench_press",
+                name_zh="杠铃卧推",
+                name_en="bench press",
+                muscle_group="chest",
+                equipment="barbell",
+                is_compound=True,
+                contraindications=[],
+            ),
+            Exercise(
+                slug="lat_pulldown",
+                name_zh="高位下拉",
+                name_en="lat pulldown",
+                muscle_group="back",
+                equipment="cable",
+                is_compound=True,
+                contraindications=[],
+            ),
+        ]
+    )
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    program = Program(
+        user_id="user-1",
+        title="测试计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=today,
+        weeks=4,
+    )
+    db.add(program)
+    db.flush()
+    day = ProgramDay(
+        program_id=program.id,
+        week_index=1,
+        weekday=today.isoweekday(),
+        title="上肢",
+        focus=["chest", "back"],
+    )
+    db.add(day)
+    db.flush()
+    db.add_all(
+        [
+            PlanExercise(
+                program_day_id=day.id,
+                exercise_slug="bench_press",
+                order_index=1,
+                sets=3,
+                reps="8-12",
+                rest_sec=90,
+            ),
+            PlanExercise(
+                program_day_id=day.id,
+                exercise_slug="lat_pulldown",
+                order_index=2,
+                sets=3,
+                reps="8-12",
+                rest_sec=90,
+            ),
+        ]
+    )
+    analysis = BodyAnalysisRecord(
+        user_id="user-1",
+        client_id="analysis-1",
+        summary="胸背发展不均衡，胸需要加强",
+        focus_areas=["chest"],
+        recommendations=["增加胸部训练量"],
+        applied_to_plan=False,
+    )
+    db.add(analysis)
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "把刚才的体型分析应用到计划",
+        )
+    )
+    assert turn["intent"] == "body.apply_analysis"
+    assert turn["pending"]["payload"]["affected_count"] == 1
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    active = db.execute(
+        select(Program).where(Program.status == "active")
+    ).scalar_one()
+    assert active.id != program.id
+    exercises = {
+        item.exercise_slug: item.sets
+        for item in db.execute(
+            select(PlanExercise).join(ProgramDay).where(
+                ProgramDay.program_id == active.id
+            )
+        ).scalars().all()
+    }
+    assert exercises["bench_press"] == 4
+    assert exercises["lat_pulldown"] == 3
+    db.refresh(analysis)
+    assert analysis.applied_to_plan is True
+    assert db.execute(select(DomainEvent)).scalars().all()[-1].type == (
+        "BodyAnalysisApplied"
+    )
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    old = db.get(Program, program.id)
+    assert old is not None and old.status == "active"
+    new = db.get(Program, active.id)
+    assert new is not None and new.status == "archived"
+    db.refresh(analysis)
+    assert analysis.applied_to_plan is False
 
 
 def test_body_weight_confirm_and_undo(db):

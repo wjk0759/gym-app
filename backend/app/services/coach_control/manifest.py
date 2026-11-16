@@ -41,6 +41,16 @@ ACTION_SPECS: dict[str, ActionSpec] = {
         ("date", "metric_id", "fields"),
         "generic",
     ),
+    "body.apply_analysis": ActionSpec(
+        "body.apply_analysis",
+        (
+            "把刚才的体型分析应用到计划",
+            "按体型分析调整训练计划",
+            "用这次分析重排计划",
+        ),
+        ("analysis_id", "focus_areas"),
+        "plan",
+    ),
     "coach.answer": ActionSpec(
         "coach.answer",
         ("减脂怎么吃", "今天状态不好怎么办", "深蹲膝盖疼正常吗"),
