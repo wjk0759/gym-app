@@ -268,8 +268,14 @@ def resolve_injuries(
         )
         if len(contrast) == 2:
             recover_text, pain_text = contrast
-            pain_active = bool(re.search(r"疼|痛", pain_text)) and not re.search(
-                r"不疼|不痛", pain_text
+            pain_active = bool(
+                re.search(
+                    r"疼|痛|不舒服|难受|发紧|酸|没好|还没好|未好",
+                    pain_text,
+                )
+            ) and not re.search(
+                r"不疼|不痛|不难受|没有不舒服|不酸|不发紧",
+                pain_text,
             )
             if pain_active:
                 remove_parts = _injury_body_parts(recover_text)

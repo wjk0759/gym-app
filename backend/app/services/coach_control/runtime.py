@@ -823,9 +823,15 @@ def _looks_like_profile_update(message: str) -> bool:
 def _looks_like_injury_update(message: str) -> bool:
     if re.search(r"怎么办|怎么|为什么|如何|吗|？|\?", message):
         return False
+    if re.search(
+        r"伤病|受伤|有伤|伤好了|伤恢复|疼|痛|不舒服|不能练|避免",
+        message,
+    ):
+        return True
     return bool(
         re.search(
-            r"伤病|受伤|有伤|伤好了|伤恢复|疼|痛|不舒服|不能练|避免",
+            r"(?:好了|恢复).{0,12}(?:没好|还没好|未好)|"
+            r"(?:没好|还没好|未好).{0,12}(?:好了|恢复)",
             message,
         )
     )
