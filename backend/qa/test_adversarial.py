@@ -1620,3 +1620,43 @@ def test_injury_partial_recovery_keeps_uncomfortable_area(db):
     joined = " ".join(profile.injuries or [])
     assert "腰" in joined, profile.injuries
     assert "膝" not in joined, profile.injuries
+
+
+def _seed_meal_plan(db):
+    from app.models import MealPlan
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    db.add(
+        MealPlan(
+            user_id="user-1",
+            plan_date=today,
+            strategy="balanced",
+            generated_by="ai",
+            plan={
+                "meals": [
+                    {"meal": "breakfast", "name": "燕麦鸡蛋", "kcal": 400},
+                    {"meal": "lunch", "name": "香煎鸡胸饭", "kcal": 620},
+                    {"meal": "dinner", "name": "番茄牛肉面", "kcal": 700},
+                ]
+            },
+        )
+    )
+    db.commit()
+
+
+def test_meal_detail_tonight_selects_dinner(db):
+    _seed_meal_plan(db)
+    result = coach_turn(db, "今晚吃什么")
+    assert result["intent"] == "diet.meal_detail", result
+    summary = result["pending"]["payload"]["summary"]
+    assert "番茄牛肉面" in summary, summary
+    assert "香煎鸡胸饭" not in summary, summary
+
+
+def test_meal_detail_this_morning_selects_breakfast(db):
+    _seed_meal_plan(db)
+    result = coach_turn(db, "今早吃什么")
+    assert result["intent"] == "diet.meal_detail", result
+    summary = result["pending"]["payload"]["summary"]
+    assert "燕麦鸡蛋" in summary, summary
+    assert "香煎鸡胸饭" not in summary, summary
