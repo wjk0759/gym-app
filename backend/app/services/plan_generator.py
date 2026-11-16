@@ -16,6 +16,7 @@ from ..models import (
     Exercise,
     Profile,
     UserEquipmentExercise,
+    UserExerciseDislike,
     UserUniversalEquipment,
 )
 from . import llm
@@ -192,13 +193,28 @@ def _normalize_focus(focus: list[str] | None) -> list[str]:
     return [] if len(deduped) >= len(_FOCUS_MUSCLES) else deduped
 
 
+def disliked_exercise_slugs(db: Session, user_id: str) -> set[str]:
+    return set(
+        db.execute(
+            select(UserExerciseDislike.slug).where(
+                UserExerciseDislike.user_id == user_id,
+                UserExerciseDislike.deleted_at.is_(None),
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+
 def _allowed_exercises(
     db: Session,
     injuries: list[str] | None,
     plan_pool_slugs: list[str] | None = None,
     strict_equipment: bool = False,
+    disliked_slugs: set[str] | None = None,
 ) -> list[Exercise]:
     banned = injury_tags(injuries)
+    disliked = disliked_slugs or set()
 
     rows = (
         db.execute(select(Exercise).where(Exercise.is_active.is_(True)))
@@ -213,6 +229,7 @@ def _allowed_exercises(
         picked = [
             e for e in rows
             if e.slug in pool
+            and e.slug not in disliked
             and not (banned & set(e.contraindications or []))
         ]
         if strict_equipment or len(picked) >= 8:
@@ -222,6 +239,7 @@ def _allowed_exercises(
     result: list[Exercise] = [
         e for e in rows
         if e.plan_eligible
+        and e.slug not in disliked
         and not (banned & set(e.contraindications or []))
     ]
 
@@ -248,7 +266,12 @@ def validate_plan_for_user(
         db, user_id, profile.equipment
     )
     plan_pool_slugs = user_plan_pool_slugs(db, user_id)
-    allowed = _allowed_exercises(db, profile.injuries, plan_pool_slugs)
+    allowed = _allowed_exercises(
+        db,
+        profile.injuries,
+        plan_pool_slugs,
+        disliked_slugs=disliked_exercise_slugs(db, user_id),
+    )
     if plan_pool_slugs and allowed:
         equipment_types = sorted({item.equipment for item in allowed})
 
@@ -435,6 +458,7 @@ def build_template_plan(
         profile.injuries,
         plan_pool_slugs,
         strict_equipment,
+        disliked_slugs=disliked_exercise_slugs(db, profile.user_id),
     )
     if plan_pool_slugs and available:
         equipment_types = sorted({item.equipment for item in available})
@@ -599,6 +623,7 @@ async def generate_plan(
         profile.injuries,
         plan_pool_slugs,
         strict_equipment,
+        disliked_slugs=disliked_exercise_slugs(db, profile.user_id),
     )
     if plan_pool_slugs and available:
         equipment_types = sorted({item.equipment for item in available})

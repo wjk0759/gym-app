@@ -640,7 +640,8 @@ extension AppStore {
                     await self.refreshDomains(domains)
                 }
                 if pending.capabilityID == "diet.favorite_food"
-                    || pending.capabilityID == "diet.custom_food" {
+                    || pending.capabilityID == "diet.custom_food"
+                    || pending.capabilityID == "training.dislike_exercise" {
                     Task { await self.syncCloudExtras() }
                 }
                 if domains.contains(.diet)
@@ -736,7 +737,8 @@ extension AppStore {
                     await self.refreshDomains(domains)
                 }
                 if receipt?.capabilityID == "diet.favorite_food"
-                    || receipt?.capabilityID == "diet.custom_food" {
+                    || receipt?.capabilityID == "diet.custom_food"
+                    || receipt?.capabilityID == "training.dislike_exercise" {
                     Task { await self.syncCloudExtras() }
                 }
                 if domains.contains(.diet)

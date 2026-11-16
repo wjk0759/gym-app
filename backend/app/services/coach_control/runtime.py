@@ -74,6 +74,7 @@ EDIT_EXERCISES = "training.edit_day_exercises"
 EDIT_EXERCISE = "training.edit_day_exercise"
 ADD_DAY = "training.add_plan_day"
 STRENGTH = "training.log_strength"
+DISLIKE_EXERCISE = "training.dislike_exercise"
 WEIGHT = "body.log_weight"
 BODY_REVIEW = "body.review_trend"
 DELETE_METRIC = "body.delete_metric"
@@ -822,6 +823,18 @@ def _looks_like_injury_update(message: str) -> bool:
         return False
     return bool(
         re.search(r"伤病|受伤|有伤|疼|痛|不舒服|不能练|避免", message)
+    )
+
+
+def _looks_like_exercise_dislike(message: str) -> bool:
+    if re.search(r"怎么|如何|为什么|吗|？|\?", message):
+        return False
+    return bool(
+        re.search(
+            r"不喜欢|不想练|讨厌|别安排|避开|不要安排|"
+            r"可以安排|恢复安排|不讨厌",
+            message,
+        )
     )
 
 
@@ -2136,6 +2149,44 @@ async def _dispatch_semantic_capability(
     capability_id: str,
 ) -> dict | None:
     """Execute a capability selected by the semantic fallback router."""
+    if capability_id == DISLIKE_EXERCISE:
+        from .capabilities.exercise_preferences import resolve as resolve_dislike
+
+        resolution = resolve_dislike(db, user_id, text)
+        if not resolution.get("ready"):
+            question = (
+                resolution.get("questions") or ["要避开哪个动作？"]
+            )[0]
+            if resolution.get("terminal"):
+                return _finish_reply(
+                    db,
+                    session,
+                    turn,
+                    started,
+                    intent=DISLIKE_EXERCISE,
+                    reply=question,
+                )
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=DISLIKE_EXERCISE,
+                payload={"message": text},
+                reply=question,
+                kind="draft",
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=DISLIKE_EXERCISE,
+            payload=payload,
+            reply=f"{payload['summary']}？确认后更新。",
+        )
+
     if capability_id == CUSTOM_FOOD:
         from .capabilities.custom_food import resolve as resolve_custom_food
 
@@ -3112,6 +3163,7 @@ async def handle_turn(
             EQUIPMENT_DELETE,
             FAVORITE_FOOD,
             CUSTOM_FOOD,
+            DISLIKE_EXERCISE,
         }:
             if len(text.strip()) > 40:
                 cancel_pending(db, session, pending)
@@ -4309,6 +4361,34 @@ async def handle_turn(
             )
             reply = question
         turn.intent = EQUIPMENT_DELETE
+    elif intent_override == DISLIKE_EXERCISE or (
+        intent_override is None and _looks_like_exercise_dislike(text)
+    ):
+        from .capabilities.exercise_preferences import resolve as resolve_dislike
+
+        resolution = resolve_dislike(db, user_id, text)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            _pending_card(
+                db,
+                session,
+                capability_id=DISLIKE_EXERCISE,
+                payload=payload,
+            )
+            reply = f"{payload['summary']}？确认后更新。"
+        else:
+            question = (
+                resolution.get("questions") or ["要避开哪个动作？"]
+            )[0]
+            if not resolution.get("terminal"):
+                _pending_draft(
+                    db,
+                    session,
+                    capability_id=DISLIKE_EXERCISE,
+                    payload={"message": text},
+                )
+            reply = question
+        turn.intent = DISLIKE_EXERCISE
     elif intent_override == UPDATE_PROFILE or (
         intent_override is None and _looks_like_profile_update(text)
     ):
@@ -5121,6 +5201,22 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "TrainingPlanRestored"
         entity_type = "program"
         entity_id = str(result.get("program_id") or "")
+    elif pending.capability_id == DISLIKE_EXERCISE:
+        from .capabilities.exercise_preferences import (
+            execute as execute_dislike,
+        )
+
+        result = execute_dislike(db, user_id, action_id, pending.payload)
+        before = result.get("before") or {}
+        after = result.get("after") or {}
+        receipt = {
+            "summary": pending.payload.get("summary") or "已更新避开动作",
+            "slug": after.get("slug"),
+            "deep_link": "fitai://settings",
+        }
+        event_type = "ExerciseDislikeUpdated"
+        entity_type = "exercise"
+        entity_id = str(after.get("slug") or action_id)
     elif pending.capability_id == CUSTOM_FOOD:
         from .capabilities.custom_food import execute as execute_custom_food
 
@@ -5757,6 +5853,15 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
             "refresh_domains": domains,
         }
 
+    elif record.capability_id == DISLIKE_EXERCISE:
+        from .capabilities.exercise_preferences import undo as undo_dislike
+
+        result = undo_dislike(
+            db,
+            user_id,
+            record.before or {},
+            record.payload,
+        )
     elif record.capability_id == CUSTOM_FOOD:
         from .capabilities.custom_food import undo as undo_custom_food
 

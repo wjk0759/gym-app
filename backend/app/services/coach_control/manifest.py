@@ -274,6 +274,12 @@ ACTION_SPECS: dict[str, ActionSpec] = {
         ("date", "title", "sets"),
         "training",
     ),
+    "training.dislike_exercise": ActionSpec(
+        "training.dislike_exercise",
+        ("不喜欢深蹲", "以后别安排硬拉", "可以安排卧推了"),
+        ("slug", "dislike"),
+        "generic",
+    ),
     "training.add_plan_day": ActionSpec(
         "training.add_plan_day",
         ("今天想练背", "明天加一次腿", "补一次胸"),

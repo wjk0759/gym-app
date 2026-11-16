@@ -32,6 +32,7 @@ from app.models import (
     SetLog,
     User,
     UserCustomFood,
+    UserExerciseDislike,
     UserFoodFavorite,
     WorkoutSession,
 )
@@ -1066,6 +1067,66 @@ def test_injury_partial_recovery_keeps_painful_area(db):
     runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
     db.refresh(profile)
     assert profile.injuries == ["腰部旧伤"]
+
+
+def test_dislike_exercise_confirm_undo_and_plan_filter(db):
+    import asyncio
+
+    from app.services import plan_generator
+
+    db.add(
+        Exercise(
+            slug="barbell-squat",
+            name_zh="杠铃深蹲",
+            name_en="barbell squat",
+            muscle_group="legs",
+            equipment="barbell",
+            is_compound=True,
+            contraindications=[],
+        )
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "我不喜欢深蹲")
+    )
+    assert turn["intent"] == "training.dislike_exercise"
+    assert turn["pending"]["payload"]["slug"] == "barbell-squat"
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    dislike = db.execute(select(UserExerciseDislike)).scalar_one()
+    assert dislike.deleted_at is None
+    assert plan_generator.disliked_exercise_slugs(db, "user-1") == {
+        "barbell-squat"
+    }
+    allowed = plan_generator._allowed_exercises(
+        db,
+        [],
+        [],
+        False,
+        disliked_slugs={"barbell-squat"},
+    )
+    assert all(item.slug != "barbell-squat" for item in allowed)
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(UserExerciseDislike)).scalars().all() == []
+
+    db.add(
+        UserExerciseDislike(user_id="user-1", slug="barbell-squat")
+    )
+    db.commit()
+    allowed_again = asyncio.run(
+        runtime.handle_turn(db, "user-1", "可以安排深蹲了")
+    )
+    assert allowed_again["intent"] == "training.dislike_exercise"
+    restored = runtime.confirm_pending(
+        db, "user-1", allowed_again["pending"]["id"]
+    )
+    dislike = db.execute(select(UserExerciseDislike)).scalar_one()
+    assert dislike.deleted_at is not None
+    runtime.undo_action(db, "user-1", restored["action_id"])
+    db.refresh(dislike)
+    assert dislike.deleted_at is None
 
 
 def test_body_weight_confirm_and_undo(db):
