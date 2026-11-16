@@ -641,6 +641,12 @@ extension AppStore {
     }
 
     private func mergeRemoteBodyMetrics(_ remote: [RemoteBodyMetric]) {
+        let remoteIDs = Set(remote.compactMap { UUID(uuidString: $0.clientID) })
+        // Deletions done by the coach or another device must disappear locally;
+        // only unsynced local rows are allowed to survive a full refresh.
+        bodyMetrics.removeAll { item in
+            item.syncedAt != nil && !remoteIDs.contains(item.id)
+        }
         for item in remote {
             guard let id = UUID(uuidString: item.clientID) else { continue }
             let value = BodyMetric(
