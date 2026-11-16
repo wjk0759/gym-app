@@ -8,7 +8,7 @@ final class AppDataDependencyTests: XCTestCase {
 
         XCTAssertEqual(
             dependency.domains,
-            [.body, .profile, .diet, .review]
+            Set([.body, .profile, .diet, .review])
         )
         XCTAssertTrue(dependency.invalidatesTargets)
         XCTAssertFalse(dependency.reschedulesNotifications)
@@ -19,7 +19,7 @@ final class AppDataDependencyTests: XCTestCase {
 
         XCTAssertEqual(
             dependency.domains,
-            [.profile, .body, .diet, .review]
+            Set([.profile, .body, .diet, .review])
         )
         XCTAssertTrue(dependency.invalidatesTargets)
     }
@@ -27,11 +27,11 @@ final class AppDataDependencyTests: XCTestCase {
     func testFoodAndWorkoutUpdatesRefreshReview() {
         XCTAssertEqual(
             AppDataChange.foodLog.dependency.domains,
-            [.diet, .review]
+            Set([.diet, .review])
         )
         XCTAssertEqual(
             AppDataChange.workout.dependency.domains,
-            [.workouts, .plan, .schedule, .review]
+            Set([.workouts, .plan, .schedule, .review])
         )
     }
 
@@ -40,7 +40,7 @@ final class AppDataDependencyTests: XCTestCase {
 
         XCTAssertEqual(
             dependency.domains,
-            [.plan, .schedule, .diet, .workouts, .review]
+            Set([.plan, .schedule, .diet, .workouts, .review])
         )
         XCTAssertTrue(dependency.invalidatesTargets)
         XCTAssertTrue(dependency.reschedulesNotifications)
@@ -49,11 +49,11 @@ final class AppDataDependencyTests: XCTestCase {
     func testEquipmentAndBodyAnalysisStaySeparate() {
         XCTAssertEqual(
             AppDataChange.equipment.dependency.domains,
-            [.equipment, .plan]
+            Set([.equipment, .plan])
         )
         XCTAssertEqual(
             AppDataChange.bodyAnalysis.dependency.domains,
-            [.body, .profile, .review]
+            Set([.body, .profile, .review])
         )
     }
 }
