@@ -4007,6 +4007,12 @@ def test_meal_detail_reads_saved_recipe_and_meals(db):
             plan={
                 "meals": [
                     {
+                        "meal": "breakfast",
+                        "name": "燕麦鸡蛋",
+                        "kcal": 400,
+                        "items": ["燕麦 50g", "鸡蛋 2 个"],
+                    },
+                    {
                         "meal": "lunch",
                         "name": "香煎鸡胸饭",
                         "kcal": 620,
@@ -4066,6 +4072,20 @@ def test_meal_detail_reads_saved_recipe_and_meals(db):
     overview_summary = overview["pending"]["payload"]["summary"]
     assert "午餐：香煎鸡胸饭" in overview_summary
     assert "晚餐：番茄牛肉面" in overview_summary
+
+    tonight = asyncio.run(
+        runtime.handle_turn(db, "user-1", "今晚吃什么")
+    )
+    tonight_summary = tonight["pending"]["payload"]["summary"]
+    assert "番茄牛肉面" in tonight_summary
+    assert "香煎鸡胸饭" not in tonight_summary
+
+    morning = asyncio.run(
+        runtime.handle_turn(db, "user-1", "今早吃什么")
+    )
+    morning_summary = morning["pending"]["payload"]["summary"]
+    assert "燕麦鸡蛋" in morning_summary
+    assert "香煎鸡胸饭" not in morning_summary
 
 
 def test_meal_detail_without_a_saved_plan_offers_generation(db):
