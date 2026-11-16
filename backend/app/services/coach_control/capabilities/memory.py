@@ -24,6 +24,19 @@ CAPABILITY = register(
         refreshes=("profile",),
     )
 )
+FORGET_CAPABILITY = register(
+    Capability(
+        id="memory.forget",
+        domain="profile",
+        kind="write",
+        title="删除记忆",
+        description="停用一条长期记忆，教练不再主动引用",
+        requires_confirmation=True,
+        undo=True,
+        events=("MemoryForgotten",),
+        refreshes=("profile",),
+    )
+)
 
 
 def resolve(message: str) -> dict:
@@ -108,3 +121,136 @@ def undo(
         item.active = False
         db.flush()
     return {"restored": True}
+
+
+def _normalize_memory(value: str) -> str:
+    return re.sub(r"[\s，,。；;、：:！!？?]+", "", value).lower()
+
+
+def _memory_keywords(value: str) -> set[str]:
+    text = _normalize_memory(value)
+    if len(text) <= 2:
+        return {text} if text else set()
+    return {text[index : index + 2] for index in range(len(text) - 1)}
+
+
+def resolve_forget(db: Session, user_id: str, message: str) -> dict:
+    target = re.sub(
+        r"^.*?(?:忘掉|忘记|删除|删掉|去掉|别再记(?:住)?|不要记(?:住)?)"
+        r"[：:，,\s]*",
+        "",
+        message.strip(),
+    )
+    target = re.sub(
+        r"^(?:关于|有关|我那条|那条|这条|我的)\s*",
+        "",
+        target,
+    )
+    target = re.sub(r"(?:这条|那条)?(?:记忆|偏好)$", "", target)
+    target = target.strip(" 。.")
+    memories = (
+        db.execute(
+            select(AIMemory)
+            .where(
+                AIMemory.user_id == user_id,
+                AIMemory.active.is_(True),
+            )
+            .order_by(AIMemory.updated_at.desc(), AIMemory.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+    if not memories:
+        return {"ready": False, "questions": ["还没有可删除的长期记忆。"]}
+    if target:
+        normalized = _normalize_memory(target)
+        matches = [
+            item
+            for item in memories
+            if normalized and normalized in _normalize_memory(item.content)
+        ]
+        if not matches:
+            keywords = _memory_keywords(target)
+            matches = [
+                item
+                for item in memories
+                if keywords
+                and any(
+                    keyword in _normalize_memory(item.content)
+                    for keyword in keywords
+                )
+            ]
+    else:
+        matches = list(memories)
+    if not matches:
+        return {
+            "ready": False,
+            "questions": ["没找到这条记忆，可以说得更具体一点。"],
+        }
+    if len(matches) > 1:
+        examples = "；".join(
+            item.content[:30] for item in matches[:3]
+        )
+        return {
+            "ready": False,
+            "questions": [
+                f"找到 {len(matches)} 条相关记忆（{examples}），要删哪一条？"
+            ],
+        }
+    item = matches[0]
+    return {
+        "ready": True,
+        "payload": {
+            "memory_id": item.id,
+            "content": item.content,
+            "summary": f"准备删除记忆「{item.content[:60]}」",
+        },
+    }
+
+
+def execute_forget(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: dict,
+) -> dict:
+    item = db.get(AIMemory, str(payload.get("memory_id") or ""))
+    if item is None or item.user_id != user_id or not item.active:
+        raise LookupError("记忆不存在")
+    before = {
+        "memory": {
+            "id": item.id,
+            "content": item.content,
+            "kind": item.kind,
+            "memory_key": item.memory_key,
+            "source": item.source,
+            "confidence": item.confidence,
+        }
+    }
+    item.active = False
+    db.flush()
+    return {
+        "before": before,
+        "memory_id": item.id,
+        "content": item.content,
+    }
+
+
+def undo_forget(
+    db: Session,
+    user_id: str,
+    before: dict,
+    payload: dict,
+) -> dict:
+    memory_id = str(
+        (before or {}).get("memory", {}).get("id")
+        or payload.get("memory_id")
+        or ""
+    )
+    item = db.get(AIMemory, memory_id)
+    if item is None or item.user_id != user_id:
+        raise LookupError("记忆不存在")
+    item.active = True
+    db.flush()
+    return {"restored": True, "memory_id": item.id}
+

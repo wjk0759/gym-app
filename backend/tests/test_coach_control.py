@@ -9,6 +9,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.db import Base
 from app.models import (
+    AIMemory,
     BodyMetric,
     CoachActionRecord,
     CoachInbox,
@@ -4354,6 +4355,71 @@ def test_remember_preference_via_control_plane(db):
     runtime.undo_action(db, "user-1", confirmed["action_id"])
     db.refresh(memory)
     assert memory.active is False
+
+
+def test_forget_memory_confirm_and_undo(db):
+    import asyncio
+
+    memory = AIMemory(
+        user_id="user-1",
+        kind="preference",
+        memory_key="explicit:morning",
+        content="我更喜欢早上训练",
+        source="coach_control",
+        confidence=1.0,
+        active=True,
+    )
+    db.add(memory)
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "删掉早上训练那条记忆")
+    )
+    assert turn["intent"] == "memory.forget"
+    assert turn["pending"]["kind"] == "card"
+    assert turn["pending"]["payload"]["memory_id"] == memory.id
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    db.refresh(memory)
+    assert memory.active is False
+    assert db.execute(select(DomainEvent)).scalars().all()[-1].type == (
+        "MemoryForgotten"
+    )
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    db.refresh(memory)
+    assert memory.active is True
+
+
+def test_forget_memory_ambiguous_asks_for_more_detail(db):
+    import asyncio
+
+    db.add_all(
+        [
+            AIMemory(
+                user_id="user-1",
+                kind="preference",
+                memory_key="explicit:morning",
+                content="我更喜欢早上训练",
+                source="coach_control",
+                active=True,
+            ),
+            AIMemory(
+                user_id="user-1",
+                kind="preference",
+                memory_key="explicit:evening",
+                content="我更喜欢晚上训练",
+                source="coach_control",
+                active=True,
+            ),
+        ]
+    )
+    db.commit()
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "删除训练记忆"))
+    assert turn["intent"] == "memory.forget"
+    assert turn["pending"] is None
+    assert "找到 2 条" in turn["reply"]
 
 
 def test_remember_does_not_collide_with_the_general_memory(db):

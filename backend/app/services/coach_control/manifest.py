@@ -131,6 +131,12 @@ ACTION_SPECS: dict[str, ActionSpec] = {
         ("content",),
         "memory",
     ),
+    "memory.forget": ActionSpec(
+        "memory.forget",
+        ("忘掉早睡这条记忆", "删除关于早上的记忆", "不要记住我周二四六练"),
+        ("memory_id",),
+        "generic",
+    ),
     "training.generate_plan": ActionSpec(
         "training.generate_plan",
         ("帮我生成一个4周计划", "重新做一份训练计划", "给我新的训练计划"),

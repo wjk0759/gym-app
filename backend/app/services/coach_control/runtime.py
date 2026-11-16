@@ -84,6 +84,7 @@ START_TRAINING_UI = "ui.start_training"
 OPEN_SCREEN_UI = "ui.open_screen"
 REMINDERS_UI = "ui.configure_reminders"
 MEMORY = "memory.remember"
+FORGET_MEMORY = "memory.forget"
 BATCH = "coach.batch"
 
 
@@ -517,6 +518,16 @@ def _looks_like_plan_configure(message: str) -> bool:
 def _looks_like_memory(message: str) -> bool:
     return bool(
         re.match(r"^(?:请)?(?:帮我)?(?:记住|记一下|记下)", message.strip())
+    )
+
+
+def _looks_like_memory_forget(message: str) -> bool:
+    return bool(
+        re.search(
+            r"忘掉|忘记|删除|删掉|去掉|别再记|不要记",
+            message,
+        )
+        and re.search(r"记忆|偏好|记住|关于|那条|这条", message)
     )
 
 
@@ -2279,6 +2290,33 @@ async def _dispatch_semantic_capability(
             kind="insight",
         )
 
+    if capability_id == FORGET_MEMORY:
+        from .capabilities.memory import resolve_forget
+
+        resolution = resolve_forget(db, user_id, text)
+        if not resolution.get("ready"):
+            question = (
+                resolution.get("questions") or ["要删哪条记忆？"]
+            )[0]
+            return _finish_reply(
+                db,
+                session,
+                turn,
+                started,
+                intent=FORGET_MEMORY,
+                reply=question,
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=FORGET_MEMORY,
+            payload=payload,
+            reply=f"{payload['summary']}？确认后删除。",
+        )
+
     if capability_id == MEMORY:
         from .capabilities.memory import resolve as resolve_memory
 
@@ -2620,6 +2658,30 @@ async def handle_turn(
             started,
             intent=REMINDERS_UI,
             reply=(resolution.get("questions") or ["提醒设在几点？"])[0],
+        )
+
+    if intent_override is None and _looks_like_memory_forget(text):
+        from .capabilities.memory import resolve_forget
+
+        resolution = resolve_forget(db, user_id, text)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=FORGET_MEMORY,
+                payload=payload,
+                reply=f"{payload['summary']}？确认后删除。",
+            )
+        return _finish_reply(
+            db,
+            session,
+            turn,
+            started,
+            intent=FORGET_MEMORY,
+            reply=(resolution.get("questions") or ["要删哪条记忆？"])[0],
         )
 
     if intent_override is None and _looks_like_memory(text):
@@ -4336,6 +4398,23 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "MemoryRemembered"
         entity_type = "memory"
         entity_id = str(result.get("memory_id") or action_id)
+    elif pending.capability_id == FORGET_MEMORY:
+        from .capabilities.memory import execute_forget
+
+        result = execute_forget(db, user_id, action_id, pending.payload)
+        before = result.get("before") or {}
+        after = {
+            "memory_id": result.get("memory_id"),
+            "content": result.get("content"),
+        }
+        receipt = {
+            "summary": pending.payload.get("summary") or "已删除记忆",
+            "memory_id": result.get("memory_id"),
+            "deep_link": "fitai://profile",
+        }
+        event_type = "MemoryForgotten"
+        entity_type = "memory"
+        entity_id = str(result.get("memory_id") or action_id)
     elif pending.capability_id == TRAINING:
         from .capabilities.training import execute as execute_training
 
@@ -4719,6 +4798,15 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
         from .capabilities.memory import undo as undo_memory
 
         result = undo_memory(db, user_id, action_id, record.payload)
+    elif record.capability_id == FORGET_MEMORY:
+        from .capabilities.memory import undo_forget
+
+        result = undo_forget(
+            db,
+            user_id,
+            record.before or {},
+            record.payload,
+        )
     elif record.capability_id == TRAINING:
         from .capabilities.training import undo as undo_training
 
