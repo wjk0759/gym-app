@@ -911,6 +911,305 @@ def test_batch_weight_and_goal_confirm_and_undo(db):
     assert db.execute(select(BodyMetric)).scalars().all() == []
 
 
+def test_batch_planned_meal_and_weight_confirm_and_undo(db):
+    import asyncio
+
+    from app.services.meal_plans import save_day_plan
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    save_day_plan(
+        db,
+        "user-1",
+        today,
+        {
+            "meals": [
+                {
+                    "meal": "lunch",
+                    "name": "鸡胸饭",
+                    "kcal": 600,
+                    "protein_g": 40,
+                    "carb_g": 70,
+                    "fat_g": 15,
+                }
+            ]
+        },
+        strategy="balanced",
+        generated_by="template",
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "记录今天的计划午餐，再称体重73kg",
+        )
+    )
+    assert turn["pending"]["capability_id"] == "coach.batch"
+    assert [
+        item["capability_id"] for item in turn["pending"]["payload"]["batch"]
+    ] == ["diet.log_planned_meal", "body.log_weight"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert confirmed["status"] == "executed"
+    assert db.execute(select(FoodLog)).scalar_one().plan_meal == "lunch"
+    assert db.execute(select(BodyMetric)).scalar_one().weight_kg == 73
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(FoodLog)).scalars().all() == []
+    assert db.execute(select(BodyMetric)).scalars().all() == []
+
+
+def test_batch_skip_and_add_day_confirm_and_undo(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    monday = today - timedelta(days=today.weekday())
+    db.add(
+        Exercise(
+            slug="bench_press",
+            name_zh="杠铃卧推",
+            name_en="bench_press",
+            muscle_group="chest",
+            equipment="barbell",
+            is_compound=True,
+            contraindications=[],
+        )
+    )
+    db.commit()
+    program = Program(
+        user_id="user-1",
+        title="测试胸计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=monday,
+        weeks=4,
+    )
+    db.add(program)
+    db.flush()
+    source = ProgramDay(
+        program_id=program.id,
+        week_index=2,
+        weekday=1,
+        title="胸",
+        focus=["chest"],
+    )
+    db.add(source)
+    db.flush()
+    db.add(
+        PlanExercise(
+            program_day_id=source.id,
+            exercise_slug="bench_press",
+            order_index=1,
+            sets=3,
+            reps="8-12",
+            rest_sec=90,
+        )
+    )
+    db.commit()
+
+    context = {
+        "plan": {
+            "id": program.id,
+            "version": program.version,
+            "days": [
+                {
+                    "id": "day-1",
+                    "date": today.isoformat(),
+                    "title": "下肢",
+                    "completed": False,
+                    "skipped": False,
+                }
+            ],
+        }
+    }
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "今天不练了，然后加一次练胸",
+            app_context=context,
+        )
+    )
+    assert turn["pending"]["capability_id"] == "coach.batch"
+    assert [
+        item["capability_id"] for item in turn["pending"]["payload"]["batch"]
+    ] == ["training.skip", "training.add_plan_day"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert confirmed["status"] == "executed"
+    skipped = db.execute(
+        select(PlanDayState).where(PlanDayState.day_id == "day-1")
+    ).scalar_one()
+    assert skipped.skipped_at is not None
+    created = db.execute(
+        select(ProgramDay).where(ProgramDay.program_id == program.id)
+    ).scalars().all()
+    added = [day for day in created if day.title == "胸" and day.id != source.id]
+    assert len(added) == 1
+    assert [item.exercise_slug for item in added[0].exercises] == ["bench_press"]
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.get(ProgramDay, added[0].id) is None
+    assert (
+        db.execute(
+            select(PlanDayState).where(PlanDayState.day_id == "day-1")
+        ).scalar_one_or_none()
+        is None
+    )
+
+    stale = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "今天不练了，然后加一次练胸",
+            app_context=context,
+        )
+    )
+    duplicate = ProgramDay(
+        program_id=program.id,
+        week_index=1,
+        weekday=today.isoweekday(),
+        title="腿",
+        focus=["legs"],
+    )
+    db.add(duplicate)
+    db.commit()
+    with pytest.raises(ValueError):
+        runtime.confirm_pending(db, "user-1", stale["pending"]["id"])
+    assert (
+        db.execute(
+            select(PlanDayState).where(PlanDayState.day_id == "day-1")
+        ).scalar_one_or_none()
+        is None
+    )
+
+
+def test_batch_skips_two_planned_meals(db):
+    import asyncio
+
+    from app.models import MealPlan
+    from app.services.meal_plans import save_day_plan
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    save_day_plan(
+        db,
+        "user-1",
+        today,
+        {
+            "meals": [
+                {"meal": "lunch", "name": "鸡胸饭", "kcal": 600},
+                {"meal": "dinner", "name": "牛肉饭", "kcal": 650},
+            ]
+        },
+        strategy="balanced",
+        generated_by="template",
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "跳过午餐，再跳过晚餐")
+    )
+    assert turn["pending"]["capability_id"] == "coach.batch"
+    assert [
+        item["capability_id"] for item in turn["pending"]["payload"]["batch"]
+    ] == ["diet.skip_planned_meal", "diet.skip_planned_meal"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    record = db.execute(select(MealPlan)).scalar_one()
+    assert sorted(record.plan.get("skipped_meals", [])) == ["dinner", "lunch"]
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    db.refresh(record)
+    assert record.plan.get("skipped_meals", []) == []
+
+
+def test_semantic_router_dispatches_add_plan_day(db, monkeypatch):
+    import asyncio
+    from types import SimpleNamespace
+
+    from app.services.coach_control import router
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    monday = today - timedelta(days=today.weekday())
+    db.add(
+        Exercise(
+            slug="bench_press",
+            name_zh="杠铃卧推",
+            name_en="bench_press",
+            muscle_group="chest",
+            equipment="barbell",
+            is_compound=True,
+            contraindications=[],
+        )
+    )
+    db.commit()
+    program = Program(
+        user_id="user-1",
+        title="测试胸计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=monday,
+        weeks=4,
+    )
+    db.add(program)
+    db.flush()
+    source = ProgramDay(
+        program_id=program.id,
+        week_index=2,
+        weekday=1,
+        title="胸",
+        focus=["chest"],
+    )
+    db.add(source)
+    db.flush()
+    db.add(
+        PlanExercise(
+            program_day_id=source.id,
+            exercise_slug="bench_press",
+            order_index=1,
+            sets=3,
+            reps="8-12",
+            rest_sec=90,
+        )
+    )
+    db.commit()
+
+    async def fake_router(system, user, **kwargs):
+        return {
+            "capability_id": "training.add_plan_day",
+            "confidence": 0.9,
+            "reason": "多安排一次训练",
+        }
+
+    monkeypatch.setattr(
+        router,
+        "settings",
+        SimpleNamespace(use_mock_llm=False),
+    )
+    monkeypatch.setattr(router.llm, "complete_json", fake_router)
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "帮我多安排一次胸部训练",
+            app_context={
+                "plan": {
+                    "id": program.id,
+                    "version": program.version,
+                    "days": [],
+                }
+            },
+        )
+    )
+    assert turn["intent"] == "training.add_plan_day"
+    assert turn["pending"]["kind"] == "proposal"
+    assert turn["pending"]["payload"]["focus"] == ["chest"]
+
+
 def test_semantic_router_dispatches_a_paraphrased_food_log(db, monkeypatch):
     import asyncio
     from types import SimpleNamespace

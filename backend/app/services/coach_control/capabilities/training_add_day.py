@@ -222,6 +222,15 @@ def execute(
     program = db.get(Program, str(payload.get("plan_id") or ""))
     if program is None or program.user_id != user_id:
         raise LookupError("计划不存在")
+    existing = db.execute(
+        select(ProgramDay).where(
+            ProgramDay.program_id == program.id,
+            ProgramDay.week_index == int(payload["week_index"]),
+            ProgramDay.weekday == int(payload["weekday"]),
+        )
+    ).scalar_one_or_none()
+    if existing is not None:
+        raise ValueError("这一天已经有训练了，请重新生成这张卡")
     day = ProgramDay(
         program_id=program.id,
         week_index=int(payload["week_index"]),

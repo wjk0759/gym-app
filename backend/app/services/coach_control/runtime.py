@@ -1101,7 +1101,36 @@ async def _try_batch_turn(
     seen: set[str] = set()
     for clause in clauses:
         action: dict | None = None
-        if _looks_like_reschedule(clause):
+        meal_capability = None
+        if _looks_like_restore_meal(clause):
+            meal_capability = RESTORE_MEAL
+        elif _looks_like_skip_meal(clause):
+            meal_capability = SKIP_MEAL
+        elif _looks_like_swap_meal(clause):
+            meal_capability = SWAP_MEAL
+        elif _looks_like_planned_meal(clause):
+            meal_capability = PLANNED
+        if meal_capability is not None:
+            from .capabilities.diet import resolve_planned
+
+            resolution = resolve_planned(clause, require_explicit_meal=True)
+            if resolution.get("ready"):
+                payload = resolution["payload"]
+                labels = {
+                    PLANNED: "记录计划餐",
+                    SKIP_MEAL: "跳过计划餐",
+                    RESTORE_MEAL: "恢复计划餐",
+                    SWAP_MEAL: "换一餐",
+                }
+                action = {
+                    "capability_id": meal_capability,
+                    "payload": payload,
+                    "summary": (
+                        f"{labels[meal_capability]}：{payload['date']} "
+                        f"{MEAL_LABELS.get(payload['meal'], payload['meal'])}"
+                    ),
+                }
+        elif _looks_like_reschedule(clause):
             from .capabilities.training import resolve as resolve_training
 
             resolution = resolve_training(db, user_id, clause, context)
@@ -1111,6 +1140,29 @@ async def _try_batch_turn(
                     "capability_id": TRAINING,
                     "payload": payload,
                     "summary": _training_reply(payload),
+                }
+        elif _looks_like_add_day(clause):
+            from .capabilities.training_add_day import resolve as resolve_add_day
+
+            resolution = resolve_add_day(db, user_id, clause, context)
+            if resolution.get("ready"):
+                payload = resolution["payload"]
+                action = {
+                    "capability_id": ADD_DAY,
+                    "payload": payload,
+                    "summary": payload.get("summary")
+                    or f"增加 {payload.get('date')} 的{payload.get('title')}训练",
+                }
+        elif _looks_like_skip_training(clause):
+            from .capabilities.training import resolve_skip
+
+            resolution = resolve_skip(db, user_id, clause, context)
+            if resolution.get("ready"):
+                payload = resolution["payload"]
+                action = {
+                    "capability_id": SKIP_TRAINING,
+                    "payload": payload,
+                    "summary": f"跳过 {payload.get('date')} 的「{payload.get('title')}」",
                 }
         elif _looks_like_weight(clause):
             from .capabilities.body import resolve as resolve_weight
@@ -1180,11 +1232,17 @@ async def _try_batch_turn(
         if action is None:
             return None
         capability = action["capability_id"]
-        if capability in seen:
-            # Multiple food clauses are handled by the multi-meal parser; do
-            # not turn them into two separate write cards.
+        # Multiple planned-meal actions are useful (skip lunch and dinner),
+        # but two writes to the exact same meal would duplicate work.
+        action_key = capability
+        if capability in {PLANNED, SKIP_MEAL, RESTORE_MEAL, SWAP_MEAL}:
+            action_key = (
+                f"{capability}:{action['payload'].get('date')}:"
+                f"{action['payload'].get('meal')}"
+            )
+        if action_key in seen:
             return None
-        seen.add(capability)
+        seen.add(action_key)
         actions.append(action)
         if len(actions) > 3:
             return None
@@ -1407,6 +1465,70 @@ async def _dispatch_semantic_capability(
             capability_id=SKIP_TRAINING,
             payload=payload,
             reply=f"准备跳过「{payload.get('title') or '训练'}」。确认后生效。",
+        )
+
+    if capability_id == ADD_DAY:
+        from .capabilities.training_add_day import resolve as resolve_add_day
+
+        resolution = resolve_add_day(db, user_id, text, context)
+        if not resolution.get("ready"):
+            question = (
+                resolution.get("questions") or ["暂时不能增加训练日。"]
+            )[0]
+            return _finish_reply(
+                db,
+                session,
+                turn,
+                started,
+                intent=ADD_DAY,
+                reply=question,
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=ADD_DAY,
+            payload=payload,
+            reply=f"{payload.get('summary') or '加练草案好了。'}确认后生效。",
+            kind="proposal",
+        )
+
+    if capability_id in {PLANNED, SKIP_MEAL, RESTORE_MEAL, SWAP_MEAL}:
+        from .capabilities.diet import resolve_planned
+
+        resolution = resolve_planned(text, require_explicit_meal=True)
+        if not resolution.get("ready"):
+            question = (resolution.get("questions") or ["哪一餐？"])[0]
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=capability_id,
+                payload={"message": text},
+                reply=question,
+                kind="draft",
+            )
+        payload = resolution["payload"]
+        labels = {
+            PLANNED: "记录计划餐",
+            SKIP_MEAL: "跳过计划餐",
+            RESTORE_MEAL: "恢复计划餐",
+            SWAP_MEAL: "换一餐",
+        }
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=capability_id,
+            payload=payload,
+            reply=(
+                f"准备{labels[capability_id]}：{payload['date']} "
+                f"{MEAL_LABELS.get(payload['meal'], payload['meal'])}。确认后生效。"
+            ),
         )
 
     if capability_id == CARDIO:
@@ -3040,16 +3162,19 @@ def _confirm_batch(
     for item in actions[:3]:
         if not isinstance(item, dict):
             raise ValueError("批量操作内容不完整")
-        if str(item.get("capability_id") or "") == TRAINING:
-            sub_payload = item.get("payload")
-            sub_payload = sub_payload if isinstance(sub_payload, dict) else {}
-            if allowed_plan and str(sub_payload.get("plan_id") or "") != allowed_plan:
-                raise ValueError("训练计划已变化，请重新生成这张卡")
-            if (
-                allowed_days
-                and str(sub_payload.get("day_id") or "") not in allowed_days
-            ):
-                raise ValueError("训练日已变化，请重新生成这张卡")
+        capability_id = str(item.get("capability_id") or "")
+        if capability_id not in {TRAINING, SKIP_TRAINING, ADD_DAY}:
+            continue
+        sub_payload = item.get("payload")
+        sub_payload = sub_payload if isinstance(sub_payload, dict) else {}
+        if allowed_plan and str(sub_payload.get("plan_id") or "") != allowed_plan:
+            raise ValueError("训练计划已变化，请重新生成这张卡")
+        if (
+            capability_id in {TRAINING, SKIP_TRAINING}
+            and allowed_days
+            and str(sub_payload.get("day_id") or "") not in allowed_days
+        ):
+            raise ValueError("训练日已变化，请重新生成这张卡")
 
     executed_ids: list[str] = []
     sub_pending_ids: list[str] = []
