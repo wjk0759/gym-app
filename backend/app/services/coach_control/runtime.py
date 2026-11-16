@@ -35,6 +35,7 @@ from ..food_text import DIET_TZ, MEAL_LABELS, parse_meal
 from ..safety import assess_safety
 from . import capabilities  # noqa: F401 - registers capabilities
 from .capability_context import CapabilityContext
+from .claims import claim_conflicts
 from .consumers import consume_event
 from .context import with_plan_context
 from .conversation import build_conversation_context
@@ -2087,6 +2088,7 @@ async def _try_batch_turn(
         elif (
             _looks_like_exercise_dislike(clause)
             and not _prefers_food_dislike(clause)
+            and not claim_conflicts(clause, DISLIKE_EXERCISE)
         ):
             from .capabilities.exercise_preferences import (
                 resolve as resolve_exercise_dislike,
@@ -2100,7 +2102,9 @@ async def _try_batch_turn(
                     "payload": payload,
                     "summary": payload.get("summary") or "更新避开动作",
                 }
-        elif _looks_like_food_dislike(clause):
+        elif _looks_like_food_dislike(clause) and not claim_conflicts(
+            clause, DISLIKE_FOOD
+        ):
             from .capabilities.food_dislikes import (
                 resolve as resolve_food_dislike,
             )
@@ -2117,7 +2121,7 @@ async def _try_batch_turn(
             _looks_like_single_exercise_edit(clause)
             or _looks_like_batch_exercise_edit(clause)
             or _looks_like_exercise_edit(clause)
-        ):
+        ) and not claim_conflicts(clause, UPDATE_EQUIPMENT):
             from .capabilities.profile_equipment import (
                 resolve as resolve_profile_equipment,
             )
@@ -3728,7 +3732,7 @@ async def handle_turn(
     if intent_override is None and (
         _looks_like_single_exercise_edit(text)
         or _looks_like_batch_exercise_edit(text)
-    ):
+    ) and not claim_conflicts(text, EDIT_EXERCISE):
         from .capabilities.training_exercise_edit import (
             resolve as resolve_single_exercise_edit,
         )
@@ -3765,7 +3769,11 @@ async def handle_turn(
             "pending": serialize_pending(active),
         }
 
-    if intent_override is None and _looks_like_exercise_edit(text):
+    if (
+        intent_override is None
+        and _looks_like_exercise_edit(text)
+        and not claim_conflicts(text, EDIT_EXERCISES)
+    ):
         from .capabilities.training_edit import (
             resolve as resolve_exercise_edit,
         )
@@ -4087,6 +4095,7 @@ async def handle_turn(
         intent_override is None
         and _looks_like_diet_plan(text)
         and not _looks_like_meal_detail(text)
+        and not claim_conflicts(text, DIET_PLAN)
     ):
         from .capabilities.diet_plan import resolve as resolve_diet_plan
 
@@ -4120,7 +4129,11 @@ async def handle_turn(
             "pending": serialize_pending(active),
         }
 
-    if intent_override is None and _looks_like_meal_detail(text):
+    if (
+        intent_override is None
+        and _looks_like_meal_detail(text)
+        and not claim_conflicts(text, MEAL_DETAIL)
+    ):
         from .capabilities.diet_meal_detail import resolve as resolve_meal_detail
 
         resolution = resolve_meal_detail(db, user_id, text)
@@ -4608,7 +4621,13 @@ async def handle_turn(
             )
             reply = question
         turn.intent = STRENGTH
-    elif _looks_like_profile_equipment(text):
+    elif (
+        not claim_conflicts(text, UPDATE_EQUIPMENT)
+        and (
+            intent_override == UPDATE_EQUIPMENT
+            or _looks_like_profile_equipment(text)
+        )
+    ):
         from .capabilities.profile_equipment import resolve as resolve_profile_equipment
 
         resolution = resolve_profile_equipment(db, user_id, text)
@@ -4717,13 +4736,16 @@ async def handle_turn(
             reply = question
         turn.intent = EQUIPMENT_DELETE
     elif (
-        intent_override == DISLIKE_EXERCISE
-        and not _prefers_food_dislike(text)
-    ) or (
-        intent_override is None
-        and _looks_like_exercise_dislike(text)
-        and not _prefers_food_dislike(text)
-    ):
+        (
+            intent_override == DISLIKE_EXERCISE
+            and not _prefers_food_dislike(text)
+        )
+        or (
+            intent_override is None
+            and _looks_like_exercise_dislike(text)
+            and not _prefers_food_dislike(text)
+        )
+    ) and not claim_conflicts(text, DISLIKE_EXERCISE):
         from .capabilities.exercise_preferences import resolve as resolve_dislike
 
         resolution = resolve_dislike(db, user_id, text)
@@ -4749,9 +4771,10 @@ async def handle_turn(
                 )
             reply = question
         turn.intent = DISLIKE_EXERCISE
-    elif intent_override == DISLIKE_FOOD or (
-        intent_override is None and _looks_like_food_dislike(text)
-    ):
+    elif (
+        intent_override == DISLIKE_FOOD
+        or (intent_override is None and _looks_like_food_dislike(text))
+    ) and not claim_conflicts(text, DISLIKE_FOOD):
         from .capabilities.food_dislikes import resolve as resolve_food_dislike
 
         resolution = resolve_food_dislike(db, user_id, text)
