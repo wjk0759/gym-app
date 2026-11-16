@@ -286,7 +286,7 @@ def resolve_delete(
             "summary": (
                 f"删除 {local_date.month}月{local_date.day}日 的"
                 + "、".join(parts)
-                + "记录"
+                + " 记录"
             ),
         },
     }
