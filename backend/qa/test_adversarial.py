@@ -9,6 +9,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.db import Base
 from app.models import (
+    AIMemory,
     BodyMetric,
     Exercise,
     FoodLog,
@@ -1076,3 +1077,210 @@ def test_start_training_phrase_does_not_hijack_plan_management(db):
     for message in ("开始新的训练计划", "开始调整训练计划"):
         result = turn(db, message, context)
         assert result["intent"] != "ui.start_training", (message, result)
+
+
+def test_restore_plan_unknown_version_does_not_fallback(db):
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    db.add_all(
+        [
+            Program(
+                user_id="user-1",
+                title="当前计划",
+                goal_type="build_muscle",
+                version=1,
+                status="active",
+                start_date=today,
+                weeks=4,
+            ),
+            Program(
+                user_id="user-1",
+                title="历史计划 v2",
+                goal_type="build_muscle",
+                version=2,
+                status="archived",
+                start_date=today,
+                weeks=4,
+            ),
+            Program(
+                user_id="user-1",
+                title="历史计划 v3",
+                goal_type="build_muscle",
+                version=3,
+                status="archived",
+                start_date=today,
+                weeks=4,
+            ),
+        ]
+    )
+    db.commit()
+    result = coach_turn(db, "恢复版本99")
+    assert result["pending"] is None or (
+        result["pending"]["payload"].get("version") == 99
+    ), result
+    if result["pending"] is None:
+        assert "没有" in result["reply"] or "找不到" in result["reply"], result
+
+
+def test_restore_plan_active_version_does_not_fallback(db):
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    db.add_all(
+        [
+            Program(
+                user_id="user-1",
+                title="当前计划 v2",
+                goal_type="build_muscle",
+                version=2,
+                status="active",
+                start_date=today,
+                weeks=4,
+            ),
+            Program(
+                user_id="user-1",
+                title="历史计划 v1",
+                goal_type="build_muscle",
+                version=1,
+                status="archived",
+                start_date=today,
+                weeks=4,
+            ),
+            Program(
+                user_id="user-1",
+                title="历史计划 v3",
+                goal_type="build_muscle",
+                version=3,
+                status="archived",
+                start_date=today,
+                weeks=4,
+            ),
+        ]
+    )
+    db.commit()
+    result = coach_turn(db, "恢复版本2")
+    assert result["pending"] is None or (
+        result["pending"]["payload"].get("version") == 2
+    ), result
+
+
+def test_batch_restore_then_reschedule_targets_restored_plan(db):
+    """After restoring an archived plan, a following schedule change must
+    apply to the restored plan, not the plan that was just archived."""
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    target = today + timedelta(days=2)
+    active = Program(
+        user_id="user-1",
+        title="当前计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=today,
+        weeks=4,
+    )
+    archived = Program(
+        user_id="user-1",
+        title="上一版计划",
+        goal_type="build_muscle",
+        version=2,
+        status="archived",
+        start_date=today,
+        weeks=4,
+    )
+    db.add_all([active, archived])
+    db.flush()
+    active_day = ProgramDay(
+        program_id=active.id,
+        week_index=1,
+        weekday=today.isoweekday(),
+        title="胸",
+    )
+    archived_day = ProgramDay(
+        program_id=archived.id,
+        week_index=1,
+        weekday=today.isoweekday(),
+        title="背",
+    )
+    db.add_all([active_day, archived_day])
+    db.commit()
+    context = {
+        "plan": {
+            "id": active.id,
+            "version": active.version,
+            "days": [
+                {
+                    "id": active_day.id,
+                    "date": today.isoformat(),
+                    "title": "胸",
+                    "completed": False,
+                    "skipped": False,
+                }
+            ],
+        }
+    }
+    result = turn(
+        db,
+        f"恢复上一版计划，再把今天的训练改到{target.month}月{target.day}日",
+        context,
+    )
+    assert result["pending"] is not None, result
+    assert result["pending"]["capability_id"] == "coach.batch", result
+    assert [
+        item["capability_id"] for item in result["pending"]["payload"]["batch"]
+    ] == ["training.restore_plan", "training.reschedule"], result
+    runtime.confirm_pending(db, "user-1", result["pending"]["id"])
+    db.refresh(active)
+    db.refresh(archived)
+    assert archived.status == "active"
+    assert active.status == "archived"
+    state = db.execute(select(PlanDayState)).scalar_one()
+    assert state.plan_id == archived.id, state.plan_id
+    assert state.day_id == archived_day.id, state.day_id
+    assert state.assigned_date == target
+
+
+
+def _seed_memories(db):
+    morning = AIMemory(
+        user_id="user-1",
+        kind="preference",
+        memory_key="explicit:morning",
+        content="我更喜欢早上训练",
+        source="coach_control",
+        active=True,
+    )
+    evening = AIMemory(
+        user_id="user-1",
+        kind="preference",
+        memory_key="explicit:evening",
+        content="我更喜欢晚上训练",
+        source="coach_control",
+        active=True,
+    )
+    db.add_all([morning, evening])
+    db.commit()
+    return morning, evening
+
+
+def test_memory_forget_ambiguous_follow_up_can_pick_one(db):
+    morning, _evening = _seed_memories(db)
+    first = coach_turn(db, "删除训练记忆")
+    assert first["intent"] == "memory.forget", first
+    assert first["pending"] is None, first
+    follow = coach_turn(
+        db,
+        "早上那条",
+        session_id=first["session"]["id"],
+    )
+    assert follow["pending"] is not None, follow
+    assert follow["pending"]["payload"]["memory_id"] == morning.id, follow
+
+
+def test_memory_forget_specific_phrase_does_not_match_other_memory(db):
+    morning, _evening = _seed_memories(db)
+    result = coach_turn(db, "删除关于早上训练的记忆")
+    assert result["pending"] is not None, result
+    assert result["pending"]["payload"]["memory_id"] == morning.id, result
+
+
+def test_memory_forget_natural_phrase_routes_to_memory(db):
+    _seed_memories(db)
+    result = coach_turn(db, "忘掉我早上训练")
+    assert result["intent"] == "memory.forget", result

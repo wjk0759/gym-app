@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`3c8c499`（教练删除长期记忆 + batch 计划配置 + 计划恢复 + 指定训练日/多动作编辑修复；生产后端 `3c8c499` 已部署；iOS 已构建 `0c50167`，已装 `73e517c`；生产后端 `3c8c499` + Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **541 passed**、QA **44/44**；iOS Build `3c8c499` 在 macOS runner 排队）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`3c8c499`（文档 `7878414`；计划恢复 + batch 计划配置/恢复 + 记忆删除 + 指定训练日修复；生产后端 `3c8c499` + Flyway **V42**；iOS 已装 `3c8c499`；`FitAITests` **121/121**、UI **4/4**、后端 **541 passed**、QA **44 passed / 6 failed**；**后端发布阻断**：恢复指定版本会静默恢复最新归档、batch 恢复后改期写到旧计划、记忆删除歧义/匹配/自然话术未通过；上一轮 4 条已修复并全绿）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +26,51 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-16 · macOS（计划恢复 / 记忆删除压力测试：阻断）
+
+- 拉取：`3c8c499`；生产后端已由 Windows 部署到 `3c8c499`，`runtime.py` / `plan.py` SHA-256 与本地一致；macOS **本轮未重新部署后端**。
+- 测试：
+  - 后端完整测试 **541 passed**
+  - QA 对抗 **50 条：44 passed / 6 failed**
+  - iOS `3c8c499`：`FitAITests` **121/121**、UI **4/4**
+  - iOS 已安装并启动 Wu-Tang；首页正常显示 11-16「胸日」
+- 上一轮 4 条已确认修复：
+  - “从明天/明确日期开练”覆盖 `today_day`
+  - 计划管理话术不再被误判为开练
+  - 一句话两个动作替换会要求拆开，不再生成混错单卡
+  - batch 动作编辑 + 改期/体重/饮食改量
+- 新阻断问题：
+  1. **恢复不存在的版本会静默恢复最新归档**：`恢复版本99` 实际生成 `v3` 恢复卡；应提示没有 v99，不能回退到 `archived[0]`。`test_restore_plan_unknown_version_does_not_fallback`
+  2. **恢复当前版本也会静默恢复其他归档**：v2 是当前计划，`恢复版本2` 实际生成 v3 恢复卡；应提示已是当前版本/没有可恢复的 v2。`test_restore_plan_active_version_does_not_fallback`
+  3. **batch 恢复计划后再改期写到旧计划**：`恢复上一版计划，再把今天的训练改到+X日`，恢复成功，但 `PlanDayState` 的 `plan_id/day_id` 仍指向刚被归档的旧计划；恢复后的计划没有改期。`test_batch_restore_then_reschedule_targets_restored_plan`
+  4. **记忆删除歧义追问后丢上下文**：`删除训练记忆` 回复“找到 2 条…要删哪一条？”，再回复 `早上那条` 变成普通聊天，没有生成删除卡。`test_memory_forget_ambiguous_follow_up_can_pick_one`
+  5. **明确“关于早上训练”仍匹配两条**：`删除关于早上训练的记忆` 回复找到 2 条；目标尾部的“的”未清理，精确匹配失败后退化为“训练”二元词，晚上训练也被命中。`test_memory_forget_specific_phrase_does_not_match_other_memory`
+  6. **自然“忘掉…”话术不进入记忆删除**：`忘掉我早上训练` 未识别为 `memory.forget`，落到普通聊天；应生成删除卡或追问。`test_memory_forget_natural_phrase_routes_to_memory`
+- 额外观察（未单独阻断）：
+  - 删除一条记忆后重新记住相同内容，再撤销删除，会出现两条 active 相同内容、不同 `memory_key`；建议恢复时停用冲突条目或去重。
+- 已通过并锁定：
+  - `恢复上一版计划` / `恢复版本2` 确认与撤销
+  - batch 恢复计划 + 体重
+  - batch 计划配置 + 体重、取消 batch 清理 pending 计划
+  - 指定训练日、双动作替换拆开、计划管理话术
+- 生产：
+  - `fitai-api` healthy，`/health/ready` 200
+  - Flyway 仍 **V42**，无新迁移
+- 备份：
+  - macOS 本轮未部署后端，未新增备份；生产后端当前为 Windows 部署的 `3c8c499`
+- Windows 需要做：
+  - `resolve_restore` 显式版本/标题未命中时返回追问，不能 `chosen = archived[0]`；显式版本是当前计划时也要明确提示。
+  - batch 中 restore/configure 后的后续改期/编辑必须针对新 active 计划；做不到就拒绝这类组合并提示拆开。
+  - 记忆删除歧义要保存待选候选（pending draft），让“早上那条/第一条”能继续。
+  - 清理目标尾部“的/记忆/偏好”，精确子串命中优先；二元词 fallback 要避免“早上训练”命中“晚上训练”。
+  - `_looks_like_memory_forget` 支持“忘掉/忘记 + 内容”这类自然话术。
+  - 修好后把这 6 条移入 `backend/tests`，QA 50 条必须全绿再部署后端。
+- 不要恢复：
+  - 不要在显式版本找不到时回退到最新归档计划。
+  - 不要在恢复计划后用旧 plan_id/day_id 写日程状态。
+  - 不要丢掉记忆删除的候选上下文。
+  - 不要让“早上训练”的删除请求命中“晚上训练”。
 
 ### 2026-11-16 · macOS（指定计划日开练 / batch 动作编辑压力测试：阻断）
 
