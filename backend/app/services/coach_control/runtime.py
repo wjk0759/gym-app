@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from ...models import (
     AgentActionEvent,
+    BodyMetric,
     CoachActionRecord,
     CoachPending,
     CoachSession,
@@ -29,7 +30,7 @@ from ...models import (
     ProgramDay,
     utcnow,
 )
-from ..food_text import MEAL_LABELS, parse_meal
+from ..food_text import DIET_TZ, MEAL_LABELS, parse_meal
 from ..safety import assess_safety
 from . import capabilities  # noqa: F401 - registers capabilities
 from .capability_context import CapabilityContext
@@ -1040,6 +1041,125 @@ def _looks_like_food(message: str) -> bool:
     )
 
 
+def _day_utc_bounds(value: str | None):
+    try:
+        day = date.fromisoformat(str(value))
+    except (TypeError, ValueError):
+        return None
+    start = datetime.combine(
+        day,
+        datetime.min.time(),
+        tzinfo=DIET_TZ,
+    ).astimezone(timezone.utc)
+    return start, start + timedelta(days=1)
+
+
+def _duplicate_warning(
+    db: Session,
+    user_id: str,
+    capability_id: str,
+    payload: dict,
+) -> str | None:
+    if payload.get("replace_action_id"):
+        return None
+    if capability_id == DIET:
+        bounds = _day_utc_bounds(payload.get("date"))
+        if bounds is None:
+            return None
+        start, end = bounds
+        logs = (
+            db.execute(
+                select(FoodLog).where(
+                    FoodLog.user_id == user_id,
+                    FoodLog.logged_at >= start,
+                    FoodLog.logged_at < end,
+                )
+            )
+            .scalars()
+            .all()
+        )
+        groups: list[tuple[str, list[dict]]] = []
+        if payload.get("meals"):
+            groups.extend(
+                (
+                    str(meal.get("meal") or ""),
+                    [
+                        item
+                        for item in meal.get("items") or []
+                        if isinstance(item, dict)
+                    ],
+                )
+                for meal in payload.get("meals") or []
+                if isinstance(meal, dict)
+            )
+        elif payload.get("meal"):
+            groups.append(
+                (
+                    str(payload.get("meal") or ""),
+                    [
+                        item
+                        for item in payload.get("items") or []
+                        if isinstance(item, dict)
+                    ],
+                )
+            )
+        count = 0
+        for meal, items in groups:
+            for item in items:
+                name = str(item.get("name") or "").strip()
+                grams = float(item.get("grams") or 0)
+                if not name:
+                    continue
+                if any(
+                    log.meal == meal
+                    and log.food_name == name
+                    and abs(float(log.grams or 0) - grams) <= 0.1
+                    for log in logs
+                ):
+                    count += 1
+        if count:
+            return (
+                f"今天这餐已经记过 {count} 条相同食物；"
+                "确认会再记一次。"
+            )
+        return None
+    if capability_id == WEIGHT:
+        day_key = str(payload.get("date") or "")
+        fields = [
+            field
+            for field in (
+                "weight_kg",
+                "body_fat_pct",
+                "waist_cm",
+                "arm_cm",
+                "thigh_cm",
+            )
+            if payload.get(field) is not None
+        ]
+        if not day_key or not fields:
+            return None
+        metrics = (
+            db.execute(
+                select(BodyMetric).where(BodyMetric.user_id == user_id)
+            )
+            .scalars()
+            .all()
+        )
+        for metric in metrics:
+            measured = metric.measured_at
+            if measured.tzinfo is None:
+                measured = measured.replace(tzinfo=timezone.utc)
+            if measured.astimezone(DIET_TZ).date().isoformat() != day_key:
+                continue
+            if all(
+                abs(float(getattr(metric, field) or 0) - float(payload[field]))
+                <= 0.1
+                for field in fields
+            ):
+                return "今天已经记过相同身体数据；确认会再记一次。"
+    return None
+
+
 def _pending_card(
     db: Session,
     session: CoachSession,
@@ -1047,12 +1167,18 @@ def _pending_card(
     capability_id: str,
     payload: dict,
 ) -> CoachPending:
+    new_payload = dict(payload)
+    warning = _duplicate_warning(
+        db, session.user_id, capability_id, new_payload
+    )
+    if warning:
+        new_payload["duplicate_warning"] = warning
     return set_pending(
         db,
         session,
         kind="card",
         capability_id=capability_id,
-        payload=payload,
+        payload=new_payload,
         action_id=str(uuid4()),
     )
 

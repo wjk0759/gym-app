@@ -167,6 +167,13 @@ extension CoachChatView {
                         .foregroundStyle(Theme.ink)
                 }
 
+                if let warning = pending.payload?.duplicateWarning {
+                    Text(warning)
+                        .font(AppType.caption)
+                        .foregroundStyle(Theme.danger)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 if pending.kind == "card" || pending.kind == "proposal" {
                     HStack(spacing: 8) {
                         Button {

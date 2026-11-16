@@ -429,6 +429,8 @@ struct AgentActionPayload: Codable, Hashable {
     let prompt: String?
     /// Memory capability payload.
     let content: String?
+    /// Duplicate-write warning from the server (food/body cards).
+    let duplicateWarning: String?
     /// Reminder UI payload.
     let enabled: Bool?
     let hour: Int?
@@ -483,6 +485,7 @@ struct AgentActionPayload: Codable, Hashable {
         case plan
         case prompt
         case content
+        case duplicateWarning = "duplicate_warning"
         case enabled
         case hour
         case minute

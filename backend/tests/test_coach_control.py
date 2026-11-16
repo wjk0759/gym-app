@@ -1026,6 +1026,32 @@ def test_equipment_add_allows_substring_name_and_rename_rejects_duplicate(db):
     assert "同名" in renamed["reply"]
 
 
+def test_duplicate_food_and_weight_cards_add_a_warning(db):
+    import asyncio
+
+    first_food = asyncio.run(
+        runtime.handle_turn(db, "user-1", "午餐吃了100g鸡胸肉")
+    )
+    runtime.confirm_pending(db, "user-1", first_food["pending"]["id"])
+    repeated_food = asyncio.run(
+        runtime.handle_turn(db, "user-1", "午餐吃了100g鸡胸肉")
+    )
+    assert repeated_food["pending"]["payload"]["duplicate_warning"]
+    runtime.confirm_pending(
+        db, "user-1", repeated_food["pending"]["id"]
+    )
+    assert len(db.execute(select(FoodLog)).scalars().all()) == 2
+
+    first_weight = asyncio.run(
+        runtime.handle_turn(db, "user-1", "今天体重73kg")
+    )
+    runtime.confirm_pending(db, "user-1", first_weight["pending"]["id"])
+    repeated_weight = asyncio.run(
+        runtime.handle_turn(db, "user-1", "今天体重73kg")
+    )
+    assert repeated_weight["pending"]["payload"]["duplicate_warning"]
+
+
 def test_body_weight_confirm_and_undo(db):
     import asyncio
 
