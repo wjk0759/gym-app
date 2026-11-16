@@ -1636,7 +1636,7 @@ def _seed_meal_plan(db):
             plan={
                 "meals": [
                     {"meal": "breakfast", "name": "燕麦鸡蛋", "kcal": 400},
-                    {"meal": "lunch", "name": "香煎鸡胸饭", "kcal": 620},
+                    {"meal": "lunch", "name": "鸡胸肉沙拉", "kcal": 620},
                     {"meal": "dinner", "name": "番茄牛肉面", "kcal": 700},
                 ]
             },
@@ -1691,3 +1691,33 @@ def test_food_dislike_stays_out_of_generated_meals(db):
     assert pending["payload"]["dislike"] is False, allowed
     runtime.confirm_pending(db, "user-1", pending["id"])
     assert active_disliked_food_names(db, "user-1") == []
+
+
+def test_food_avoidance_rewrites_meal_name_that_contains_disliked_food(db):
+    import json
+
+    from app.services.diet_preferences import apply_food_avoidance
+
+    plan = {
+        "meals": [
+            {
+                "meal": "lunch",
+                "name": "鸡胸肉沙拉",
+                "items": ["鸡胸肉 150g", "米饭 150g"],
+                "dishes": [
+                    {
+                        "name": "鸡胸肉沙拉",
+                        "items": ["鸡胸肉 150g", "米饭 150g"],
+                        "recipe": {
+                            "title": "鸡胸肉沙拉",
+                            "ingredients": ["鸡胸肉 150g", "米饭 150g"],
+                            "steps": ["鸡胸肉煎熟，配米饭。"],
+                        },
+                    }
+                ],
+            }
+        ]
+    }
+    apply_food_avoidance(plan, ["鸡胸肉"])
+    text = json.dumps(plan, ensure_ascii=False)
+    assert "鸡胸肉" not in text, plan
