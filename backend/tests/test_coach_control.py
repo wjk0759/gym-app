@@ -1437,6 +1437,16 @@ def test_profile_equipment_add_remove_and_undo(db):
     db.refresh(profile)
     assert profile.equipment == ["bodyweight", "dumbbell"]
 
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "我买了壶铃")
+    )
+    assert turn["pending"]["payload"]["equipment"] == [
+        "bodyweight",
+        "dumbbell",
+        "kettlebell",
+    ]
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+
     runtime.undo_action(db, "user-1", confirmed["action_id"])
     db.refresh(profile)
     assert profile.equipment == ["bodyweight"]

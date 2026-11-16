@@ -894,7 +894,7 @@ def _looks_like_profile_equipment(message: str) -> bool:
         )
         and re.search(
             r"我有|我的|家里|只有|只用|只练|只做|没有|去掉|移除|改成|"
-            r"换成|更新|档案|健身",
+            r"换成|更新|档案|健身|买了|新增|多了|也有|还有|加上|卖了|没了",
             message,
         )
     )
