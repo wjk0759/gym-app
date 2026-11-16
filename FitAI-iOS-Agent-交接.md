@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`b5bdb73`（数据依赖级联 P0 + 器械删除墓碑/通用器械重试；生产后端 `b667668` + Flyway **V42**；iOS 已装 `b667668`；`FitAITests` **110/110**、UI **4/4**、后端 **512 passed**、QA **22/22**；iOS Build `b5bdb73` ✓；器械级联尚未部署）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`71fce9d`（数据依赖级联 P0 + 器械删除墓碑/通用器械重试 + 依赖图单测；生产后端 `b667668` + Flyway **V42**；iOS 已装 `b667668`；`FitAITests` **110/110**、UI **4/4**、后端 **512 passed**、QA **22/22**；iOS Build `71fce9d` ✓；器械/级联尚未部署）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -29,7 +29,11 @@
 
 ### 2026-11-16 · Windows（器械删除墓碑 + 通用器械重试）
 
-- 提交：`b5bdb73`，已推 `develop`；iOS Build `b5bdb73` ✓（仅 iOS 改动，无后端/迁移）。
+- 提交：`b5bdb73` + `4fa9182` + `8edcbec` + `71fce9d`，已推 `develop`；iOS Build `71fce9d` ✓（仅 iOS 改动，无后端/迁移）。
+- 测试覆盖：
+  - 新增 `AppDataDependencyTests`，覆盖 body/profile/food/workout/plan/equipment/bodyAnalysis 的依赖域、目标失效、通知重排。
+  - `CoachRefreshDomainsTests` 增加计划餐/跳过/加练的 review 断言。
+  - `4fa9182` 首次 iOS Build 因 macOS runner 容量被取消；`71fce9d` 重跑成功。
 - 做了什么：
   - `EquipmentItem` 删除改为本地先删 + `pendingEquipmentDeletionIDs` 墓碑；后台删除成功/404 才清墓碑，失败保留重试。
   - `mergeRemoteEquipmentItems` 跳过墓碑，避免下一次拉取把删除项复活。
@@ -41,8 +45,9 @@
 - 未部署：
   - 生产后端/ iOS 仍是 `b667668`；`b5bdb73` 是 iOS-only，需 Mac build/install。
 - Mac 要做：
-  - 拉 `b5bdb73`，跑 FitAITests/UI。
+  - 拉 `71fce9d`，跑 FitAITests/UI。
   - 真机：断网删除器械 → 重连后不被拉回；断网切换通用器械 → 重连后补推；器械库/Profile/Discover 计数和计划池一致。
+  - 跑新增 `AppDataDependencyTests` 和更新后的 `CoachRefreshDomainsTests`。
 - 不要恢复：
   - 不要重新用 fire-and-forget 删除器械；必须保留墓碑直到服务端确认。
   - 不要在 `universalEquipmentDirty` 时用远端覆盖本机勾选。
