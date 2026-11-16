@@ -70,8 +70,8 @@
 | 动作 | 能力 | 状态 |
 |---|---|---|
 | 识别器械 | `ui.open_screen` → `equipment_scan` | ◐ |
-| 加入个人器械库 | EquipmentRecognitionView | ○ |
-| 编辑/删除个人器械 | — | ○ |
+| 加入个人器械库 | `equipment.add` | ✅ |
+| 编辑/删除个人器械 | `equipment.update` / `equipment.delete` | ✅ |
 | 查看器械库 | `ui.open_screen` → `equipment` | ◐ |
 
 ## 6. 复盘/记忆/反馈
@@ -124,6 +124,7 @@
 - 计划历史恢复支持“恢复上一版计划”“回到之前那版训练计划”“恢复版本2”；确认后切换，撤销恢复原计划。
 - `memory.forget` 支持“忘掉早睡这条记忆”“删除关于早上的记忆”；多条匹配时先追问，删除可撤销。
 - `profile.update` 支持昵称、性别、身高、经验；`profile.update_injuries` 支持伤病更新，并检查当前计划是否有冲突动作。
+- `equipment.add` 支持把识别结果或说出的器械加入个人库；`equipment.update` 支持改名；`equipment.delete` 支持删除并撤销。删除后会修剪 iOS 已同步缓存。
 - 加练执行前会再次检查同一周/星期是否已有训练，过期卡不会写出重复训练日。
 - 仍未做：多动作超过 3 个、更多能力加入 batch、器械/训练中/资料设置类动作、全局重复写入检测。
 

@@ -169,6 +169,34 @@ ACTION_SPECS: dict[str, ActionSpec] = {
         ("program_id", "version"),
         "plan",
     ),
+    "equipment.add": ActionSpec(
+        "equipment.add",
+        (
+            "把坐姿划船机加入器械库",
+            "把刚才识别的器械加入器械库",
+            "添加一台史密斯机",
+        ),
+        ("name", "equipment_type"),
+        "equipment",
+    ),
+    "equipment.update": ActionSpec(
+        "equipment.update",
+        (
+            "把坐姿划船机改名为坐姿划船",
+            "器械名称改成卧推架",
+        ),
+        ("client_id", "name"),
+        "equipment",
+    ),
+    "equipment.delete": ActionSpec(
+        "equipment.delete",
+        (
+            "删掉坐姿划船机",
+            "从器械库移除卧推架",
+        ),
+        ("client_id",),
+        "equipment",
+    ),
     "profile.update": ActionSpec(
         "profile.update",
         ("以后叫我小王", "身高178", "我是女生", "我是中级训练者"),

@@ -54,6 +54,8 @@ extension AppStore {
                 "name": equipment.name,
                 "description": equipment.description,
                 "confidence": equipment.confidence ?? 0,
+                "equipment_name": equipment.equipmentName ?? "",
+                "equipment_type": equipment.equipmentOptions.first?.slug ?? "",
                 "candidates": equipment.candidates.prefix(3).map { item in
                     [
                         "slug": item.exercise.slug,

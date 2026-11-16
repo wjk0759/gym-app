@@ -42,6 +42,9 @@ enum CoachRefreshDomains {
         "profile.update_goal": [.profile, .diet, .review],
         "profile.update": [.profile, .body, .diet, .review],
         "profile.update_injuries": [.profile, .review],
+        "equipment.add": [.equipment, .plan, .profile],
+        "equipment.update": [.equipment, .plan, .profile],
+        "equipment.delete": [.equipment, .plan, .profile],
         "memory.remember": [.profile],
         "memory.forget": [.profile]
     ]

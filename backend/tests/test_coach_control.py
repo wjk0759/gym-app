@@ -17,6 +17,8 @@ from app.models import (
     CoachSession,
     CoachTurn,
     DomainEvent,
+    EquipmentLibraryItem,
+    EquipmentType,
     Exercise,
     FoodLog,
     Goal,
@@ -569,6 +571,96 @@ def test_injury_update_checks_current_plan_and_undo(db):
     runtime.undo_action(db, "user-1", confirmed["action_id"])
     db.refresh(profile)
     assert profile.injuries == []
+
+
+def test_equipment_add_from_recognition_context_and_undo(db):
+    import asyncio
+
+    db.add(
+        EquipmentType(
+            slug="seated_row",
+            name_zh="坐姿划船机",
+            name_en="seated row",
+            category="machine",
+            exercise_group="back",
+        )
+    )
+    db.commit()
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "把刚才识别的器械加入器械库",
+            app_context={
+                "equipment_context": {
+                    "name": "坐姿划船机",
+                    "equipment_name": "坐姿划船机",
+                    "equipment_type": "seated_row",
+                }
+            },
+        )
+    )
+    assert turn["intent"] == "equipment.add"
+    assert turn["pending"]["payload"]["equipment_type"] == "seated_row"
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    item = db.execute(select(EquipmentLibraryItem)).scalar_one()
+    assert item.name == "坐姿划船机"
+    assert item.equipment_type == "seated_row"
+    assert db.execute(select(DomainEvent)).scalars().all()[-1].type == (
+        "EquipmentAdded"
+    )
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(EquipmentLibraryItem)).scalars().all() == []
+
+
+def test_equipment_rename_and_delete_confirm_and_undo(db):
+    import asyncio
+
+    item = EquipmentLibraryItem(
+        user_id="user-1",
+        client_id="equipment-1",
+        name="坐姿划船机",
+        equipment_type="seated_row",
+        category="machine",
+        equipment="machine",
+        source="manual",
+    )
+    db.add(item)
+    db.commit()
+
+    renamed = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "把坐姿划船机改名为坐姿划船",
+        )
+    )
+    assert renamed["intent"] == "equipment.update"
+    confirmed = runtime.confirm_pending(
+        db, "user-1", renamed["pending"]["id"]
+    )
+    db.refresh(item)
+    assert item.name == "坐姿划船"
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    db.refresh(item)
+    assert item.name == "坐姿划船机"
+
+    deleted = asyncio.run(
+        runtime.handle_turn(db, "user-1", "删掉坐姿划船机")
+    )
+    assert deleted["intent"] == "equipment.delete"
+    deleted_confirm = runtime.confirm_pending(
+        db, "user-1", deleted["pending"]["id"]
+    )
+    assert db.execute(select(EquipmentLibraryItem)).scalars().all() == []
+
+    runtime.undo_action(db, "user-1", deleted_confirm["action_id"])
+    restored = db.execute(select(EquipmentLibraryItem)).scalar_one()
+    assert restored.client_id == "equipment-1"
+    assert restored.name == "坐姿划船机"
 
 
 def test_body_weight_confirm_and_undo(db):

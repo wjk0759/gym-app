@@ -677,6 +677,12 @@ extension AppStore {
 
     private func mergeRemoteEquipmentItems(_ remote: [RemoteEquipmentItem]) {
         let tombstones = Set(pendingEquipmentDeletionIDs.map { $0.lowercased() })
+        let remoteIDs = Set(remote.compactMap { UUID(uuidString: $0.clientID) })
+        equipmentLibrary.removeAll { item in
+            item.syncedAt != nil
+                && !remoteIDs.contains(item.id)
+                && !tombstones.contains(item.id.uuidString.lowercased())
+        }
         for item in remote {
             guard !tombstones.contains(item.clientID.lowercased()) else { continue }
             guard let id = UUID(uuidString: item.clientID) else { continue }

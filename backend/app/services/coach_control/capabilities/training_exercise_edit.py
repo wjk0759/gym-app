@@ -115,6 +115,7 @@ def _find_day_and_exercise(
     today: date,
 ):
     plan = context.get("plan") if isinstance(context, dict) else {}
+    plan = plan if isinstance(plan, dict) else {}
     plan_id = str(plan.get("id") or "")
     program = db.get(Program, plan_id) if plan_id else None
     if program is None or program.user_id != user_id or program.status != "active":
