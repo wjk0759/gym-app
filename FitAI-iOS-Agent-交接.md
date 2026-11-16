@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`bf1d41b`（文档 `790d925`；不喜欢食物 + 今晚/今早餐单详情；生产后端 `bf1d41b`，`diet.py` / `diet_preferences.py` / `food_dislikes.py` SHA-256 与本地一致；iOS 已装 `9eb1411`；Flyway **V43**；`FitAITests` **121/121**、UI **4/4**；后端 **576 passed**、QA **69 passed / 1 failed**；**后端发布阻断**：生成餐单的菜名仍可能保留被避开食物名）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`0bdc737`（文档 `790d925`；档案器械教练更新 + 不喜欢食物菜名过滤；生产后端 `0bdc737`，`diet_preferences.py` / `profile_equipment.py` / `runtime.py` / `manifest.py` SHA-256 与本地一致；iOS 已装 `9eb1411`；Flyway **V43**；`FitAITests` **121/121**、UI **4/4**；后端 **579 passed**、QA **71/71**；本轮无 iOS 代码变化，iOS Build 不触发）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -94,6 +94,35 @@
 - 不要恢复：
   - 不要把“今晚/今早”当成没有指定餐次。
   - 不要在这两个词下返回整日餐单。
+
+### 2026-11-17 · Windows（档案器械 + 菜名避开食物）
+
+- 提交：`b4c27b8` + `0bdc737`，已推 `develop`；生产后端 `0bdc737`；无新迁移（仍 V43）。
+- 新增 `profile.update_equipment`：
+  - 支持“我有哑铃和弹力带”“我的器械是徒手”“去掉弹力带”“家里没有器械”。
+  - 普通档案器械更新，确认后可撤销；个人器械库仍是精确器械来源。
+  - 若当前计划有动作需要被移除的器械，卡上提示，不自动改计划。
+- 修复 Mac 新 QA：
+  - 生成餐单的菜名（meal.name）若包含不喜欢食物，也会改写成“午餐/晚餐”等通用名，不再残留“鸡胸肉沙拉”。
+- 验证：
+  - 后端 **579 passed**
+  - QA **71/71**
+  - Ruff app/tests/qa 通过
+  - 新增测试：档案器械增删改撤销、计划冲突提示、菜名过滤。
+- 生产：
+  - 后端 `0bdc737` 已部署；`diet_preferences.py`、`profile_equipment.py`、`runtime.py`、`manifest.py` SHA-256 与本地一致
+  - Flyway 仍 **V43**；`fitai-api` healthy；`/health/ready` 返回 `{"status":"ready"}`
+- iOS：
+  - 无代码变化，iOS Build 不触发；最新可安装仍是 `9eb1411`。
+- Mac 要做：
+  - 拉 `0bdc737`，重跑 QA 71/71、`FitAITests`。
+  - 真机验证：
+    - “我有哑铃和弹力带” → 档案器械更新，撤销恢复。
+    - 当前计划含杠铃动作时说“我的器械是徒手” → 卡上提示冲突。
+    - 不喜欢鸡胸肉后重新生成餐单 → 菜名、食材、做法都不出现鸡胸肉。
+- 不要恢复：
+  - 不要用档案器械更新代替个人器械库。
+  - 不要只过滤食材、放过菜名。
 
 ### 2026-11-17 · Windows（不喜欢食物 + 今晚/今早餐单详情）
 
