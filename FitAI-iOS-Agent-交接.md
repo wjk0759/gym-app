@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`19fb23f`（batch 计划配置 + 计划恢复 + 指定训练日/多动作编辑修复；生产后端 `19fb23f` 已部署；iOS 已构建 `0c50167`，已装 `73e517c`；生产后端 `19fb23f` + Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **539 passed**、QA **44/44**；iOS Build `0c50167` ✓）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`3c8c499`（教练删除长期记忆 + batch 计划配置 + 计划恢复 + 指定训练日/多动作编辑修复；生产后端 `3c8c499` 已部署；iOS 已构建 `0c50167`，已装 `73e517c`；生产后端 `3c8c499` + Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **541 passed**、QA **44/44**；iOS Build `3c8c499` 在 macOS runner 排队）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -110,6 +110,35 @@
   - 不要让 profile 缓存继续指向已删除或未写入的 body metric。
   - 不要按纠错文本里的新日期搬动旧 action 的全部 logs。
   - 不要把 `diet.update_log` / `diet.delete_log` 只按 capability 去重。
+
+### 2026-11-16 · Windows（教练删除长期记忆）
+
+- 提交：`3c8c499`，已推 `develop`；后端已部署 `3c8c499`；无迁移。
+- 做了什么：
+  - 新增 `memory.forget`：支持“忘掉早睡这条记忆”“删除关于早上的记忆”“不要记住我周二四六练”。
+  - 多条匹配时先追问，不会误删。
+  - 确认后停用记忆；撤销恢复。
+  - AI 记忆页已监听 `.profile` revision，删除/恢复后会刷新。
+- 验证：
+  - 后端 **541 passed**
+  - QA **44/44**
+  - Ruff app/tests/qa 通过
+  - GitHub Backend Tests `3c8c499` 成功
+  - 新增测试：删除记忆确认/撤销、多条匹配先追问。
+- 生产：
+  - 后端 `3c8c499` 已部署；`runtime.py`、`memory.py`、`manifest.py` SHA-256 与本地一致
+  - `fitai-api` healthy；`/health/ready` 返回 200；Flyway 仍 V42
+- iOS：
+  - `CoachRefreshDomains` 增加 `memory.forget`；iOS Build `3c8c499` 在 macOS runner 排队。
+- Mac 要做：
+  - 等/重跑 iOS Build `3c8c499`，安装最新 iOS。
+  - 真机验证：
+    - “忘掉早睡这条记忆” → 确认后记忆页少一条；撤销恢复。
+    - 两条相似记忆 → 应先追问具体哪一条。
+    - 记忆页在删除/恢复后自动刷新。
+- 不要恢复：
+  - 不要按关键词直接硬删多条记忆。
+  - 不要让删除结果只在后端生效、记忆页不刷新。
 
 ### 2026-11-16 · Windows（batch 计划配置 + 清理）
 
