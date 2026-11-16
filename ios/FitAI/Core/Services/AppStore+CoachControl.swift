@@ -639,6 +639,9 @@ extension AppStore {
                     }
                     await self.refreshDomains(domains)
                 }
+                if pending.capabilityID == "diet.favorite_food" {
+                    Task { await self.syncCloudExtras() }
+                }
                 if domains.contains(.diet)
                     || domains.contains(.body)
                     || domains.contains(.profile)
@@ -730,6 +733,9 @@ extension AppStore {
                         await self.pushPlanSchedule()
                     }
                     await self.refreshDomains(domains)
+                }
+                if receipt?.capabilityID == "diet.favorite_food" {
+                    Task { await self.syncCloudExtras() }
                 }
                 if domains.contains(.diet)
                     || domains.contains(.body)

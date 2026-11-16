@@ -84,6 +84,7 @@ UPDATE_INJURIES = "profile.update_injuries"
 EQUIPMENT_ADD = "equipment.add"
 EQUIPMENT_UPDATE = "equipment.update"
 EQUIPMENT_DELETE = "equipment.delete"
+FAVORITE_FOOD = "diet.favorite_food"
 PLAN = "training.generate_plan"
 ADJUST_PLAN = "training.adjust_plan"
 CONFIGURE_PLAN = "training.configure_plan"
@@ -848,6 +849,14 @@ def _looks_like_equipment_delete(message: str) -> bool:
         re.search(r"删|删除|移除|去掉", message)
         and _mentions_equipment_thing(message)
     )
+
+
+def _looks_like_food_favorite(message: str) -> bool:
+    if re.search(r"怎么|如何|为什么|吗|？|\?", message):
+        return False
+    if re.search(r"收藏夹|我的收藏|收藏在哪|收藏页", message):
+        return False
+    return bool(re.search(r"收藏|取消收藏", message))
 
 
 def _looks_like_review(message: str) -> bool:
@@ -1987,6 +1996,35 @@ async def _dispatch_semantic_capability(
     capability_id: str,
 ) -> dict | None:
     """Execute a capability selected by the semantic fallback router."""
+    if capability_id == FAVORITE_FOOD:
+        from .capabilities.food_preferences import resolve as resolve_favorite
+
+        resolution = resolve_favorite(db, user_id, text)
+        if not resolution.get("ready"):
+            question = (
+                resolution.get("questions") or ["想收藏哪样食物？"]
+            )[0]
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=FAVORITE_FOOD,
+                payload={"message": text},
+                reply=question,
+                kind="draft",
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=FAVORITE_FOOD,
+            payload=payload,
+            reply=f"{payload['summary']}？确认后更新。",
+        )
+
     if capability_id == DIET:
         from .capabilities.diet import resolve as resolve_diet
 
@@ -2885,6 +2923,7 @@ async def handle_turn(
             EQUIPMENT_ADD,
             EQUIPMENT_UPDATE,
             EQUIPMENT_DELETE,
+            FAVORITE_FOOD,
         }:
             if len(text.strip()) > 40:
                 cancel_pending(db, session, pending)
@@ -4206,6 +4245,33 @@ async def handle_turn(
             )
             reply = question
         turn.intent = WEIGHT
+    elif intent_override == FAVORITE_FOOD or (
+        intent_override is None and _looks_like_food_favorite(text)
+    ):
+        from .capabilities.food_preferences import resolve as resolve_favorite
+
+        resolution = resolve_favorite(db, user_id, text)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            _pending_card(
+                db,
+                session,
+                capability_id=FAVORITE_FOOD,
+                payload=payload,
+            )
+            reply = f"{payload['summary']}？确认后更新。"
+        else:
+            question = (
+                resolution.get("questions") or ["想收藏哪样食物？"]
+            )[0]
+            _pending_draft(
+                db,
+                session,
+                capability_id=FAVORITE_FOOD,
+                payload={"message": text},
+            )
+            reply = question
+        turn.intent = FAVORITE_FOOD
     elif intent_override == DIET or (
         intent_override is None and _looks_like_food(text)
     ):
@@ -4838,6 +4904,20 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "TrainingPlanRestored"
         entity_type = "program"
         entity_id = str(result.get("program_id") or "")
+    elif pending.capability_id == FAVORITE_FOOD:
+        from .capabilities.food_preferences import execute as execute_favorite
+
+        result = execute_favorite(db, user_id, action_id, pending.payload)
+        before = result.get("before") or {}
+        after = result.get("after") or {}
+        receipt = {
+            "summary": pending.payload.get("summary") or "已更新收藏",
+            "food_key": pending.payload.get("food_key"),
+            "deep_link": "fitai://nutrition",
+        }
+        event_type = "FoodFavoriteUpdated"
+        entity_type = "food_favorite"
+        entity_id = str(pending.payload.get("food_key") or action_id)
     elif pending.capability_id == DIET:
         from .capabilities.diet import execute as execute_diet
 
@@ -5446,7 +5526,16 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
             "refresh_domains": domains,
         }
 
-    if record.capability_id == DIET:
+    elif record.capability_id == FAVORITE_FOOD:
+        from .capabilities.food_preferences import undo as undo_favorite
+
+        result = undo_favorite(
+            db,
+            user_id,
+            record.before or {},
+            record.payload,
+        )
+    elif record.capability_id == DIET:
         replaced_id = str(
             (record.before or {}).get("replaced_action_id") or ""
         ).strip()

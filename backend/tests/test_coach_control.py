@@ -31,6 +31,8 @@ from app.models import (
     ProgramDay,
     SetLog,
     User,
+    UserCustomFood,
+    UserFoodFavorite,
     WorkoutSession,
 )
 from app.services.coach_control import runtime
@@ -155,6 +157,63 @@ def test_planned_meal_log_and_skip_loop(db):
     runtime.confirm_pending(db, "user-1", restored["pending"]["id"])
     db.refresh(record)
     assert "dinner" not in record.plan.get("skipped_meals", [])
+
+
+def test_food_favorite_add_and_remove_with_undo(db):
+    import asyncio
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "收藏鸡胸肉"))
+    assert turn["intent"] == "diet.favorite_food"
+    assert turn["pending"]["payload"]["food_key"] == "library:鸡胸肉"
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    favorite = db.execute(select(UserFoodFavorite)).scalar_one()
+    assert favorite.name == "鸡胸肉"
+    assert favorite.deleted_at is None
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(UserFoodFavorite)).scalars().all() == []
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "收藏鸡胸肉"))
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    removed = asyncio.run(
+        runtime.handle_turn(db, "user-1", "取消收藏鸡胸肉")
+    )
+    assert removed["intent"] == "diet.favorite_food"
+    removed_confirm = runtime.confirm_pending(
+        db, "user-1", removed["pending"]["id"]
+    )
+    favorite = db.execute(select(UserFoodFavorite)).scalar_one()
+    assert favorite.deleted_at is not None
+
+    runtime.undo_action(db, "user-1", removed_confirm["action_id"])
+    db.refresh(favorite)
+    assert favorite.deleted_at is None
+
+
+def test_food_favorite_uses_custom_food_key(db):
+    import asyncio
+
+    db.add(
+        UserCustomFood(
+            user_id="user-1",
+            client_id="custom-food-1",
+            name="自制鸡肉丸",
+            category="自定义",
+            kcal=150,
+            protein=20,
+            carbs=10,
+            fat=3,
+        )
+    )
+    db.commit()
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "收藏自制鸡肉丸")
+    )
+    assert turn["pending"]["payload"]["food_key"] == "custom:custom-food-1"
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    favorite = db.execute(select(UserFoodFavorite)).scalar_one()
+    assert favorite.food_key == "custom:custom-food-1"
 
 
 def test_plan_generation_confirm_activates_program(db, monkeypatch):

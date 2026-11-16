@@ -57,6 +57,16 @@ ACTION_SPECS: dict[str, ActionSpec] = {
         (),
         "text",
     ),
+    "diet.favorite_food": ActionSpec(
+        "diet.favorite_food",
+        (
+            "收藏鸡胸肉",
+            "把牛肉加入收藏",
+            "取消收藏米饭",
+        ),
+        ("food_key", "name", "favorite"),
+        "generic",
+    ),
     "diet.log_food": ActionSpec(
         "diet.log_food",
         ("午饭吃了鸡胸肉200g", "早餐两个鸡蛋一杯牛奶", "晚饭干蒸牛肉加米饭"),
