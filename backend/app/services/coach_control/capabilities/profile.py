@@ -10,10 +10,10 @@ from sqlalchemy.orm import Session
 
 from ....models import Exercise, Goal, Profile
 from ...food_text import parse_food_date
-from ...lexicon import BODY_PART_ALIASES
 from ...plan_validator import injury_tags
 from ...queries import active_goal, active_program
 from ...serializers import load_program
+from ..injury_parse import parse_injury_message
 from ..registry import Capability, register
 
 CAPABILITY = register(
@@ -176,22 +176,6 @@ def resolve_update(message: str) -> dict:
     }
 
 
-def _injury_text(message: str) -> str:
-    value = re.sub(
-        r"^(?:请)?(?:帮我)?"
-        r"(?:记录一下|记录|记一下|更新|修改|调整|以后|记得|注意)"
-        r"[，,：:\s]*",
-        "",
-        message.strip(),
-    )
-    value = re.sub(
-        r"^(?:我的)?伤病(?:是|为|改成|改为|变成)?[，,：:\s]*",
-        "",
-        value,
-    )
-    return value.strip(" 。.!！")
-
-
 def _injury_conflicts(
     db: Session,
     user_id: str,
@@ -232,14 +216,6 @@ def _dedupe_injuries(values: list[str]) -> list[str]:
     return result
 
 
-def _injury_body_parts(text: str) -> list[str]:
-    return [
-        part
-        for part, aliases in BODY_PART_ALIASES.items()
-        if any(alias in text for alias in aliases)
-    ]
-
-
 def resolve_injuries(
     db: Session,
     user_id: str,
@@ -252,97 +228,106 @@ def resolve_injuries(
         }
     profile = db.get(Profile, user_id)
     before = list(profile.injuries or []) if profile is not None else []
-    resolution = re.search(
-        r"不疼|不痛|好了|康复|没事了|没有伤病|伤好了|恢复了",
-        message,
-    )
-    ongoing = re.search(
-        r"疼|痛|不舒服|难受|发紧|酸|没好|还没好|未好",
-        message,
-    )
-    if resolution is not None:
+    parsed = parse_injury_message(message)
+
+    remaining: list[str] | None
+    if parsed.explicit_replace:
+        remaining = None
+    elif parsed.global_clear:
+        remaining = []
+    elif parsed.mentions:
+        remaining = list(before)
+        changed = False
+        for part in parsed.recovered_parts:
+            filtered = [item for item in remaining if part not in item]
+            if len(filtered) != len(remaining):
+                changed = True
+            remaining = filtered
+        new_texts: list[str] = []
+        for mention in parsed.mentions:
+            if mention.state != "ongoing":
+                continue
+            if any(mention.part in item for item in remaining):
+                continue
+            if mention.text and mention.text not in new_texts:
+                new_texts.append(mention.text)
+        if new_texts:
+            remaining = _dedupe_injuries([*remaining, *new_texts])
+            changed = True
+        if not changed:
+            if not before and parsed.recovered_parts and not parsed.ongoing_parts:
+                return {
+                    "ready": False,
+                    "terminal": True,
+                    "questions": ["目前没有伤病记录，不需要清除。"],
+                }
+            matches = [
+                item
+                for item in before
+                if any(
+                    part in item
+                    for part in [
+                        *parsed.recovered_parts,
+                        *parsed.ongoing_parts,
+                    ]
+                )
+            ]
+            if matches:
+                return {
+                    "ready": False,
+                    "terminal": True,
+                    "questions": [
+                        f"已经记着「{'、'.join(matches)}」还在恢复；"
+                        "好了以后说“膝盖好了”，我再移除。"
+                    ],
+                }
+            return {
+                "ready": False,
+                "terminal": True,
+                "questions": ["没找到对应的伤病记录。"],
+            }
+    elif parsed.has_recovery:
         if not before:
             return {
                 "ready": False,
                 "terminal": True,
                 "questions": ["目前没有伤病记录，不需要清除。"],
             }
-        contrast = re.split(
-            r"但(?:是)?|不过|[，,；;、]",
-            message,
-            maxsplit=1,
-        )
-        if len(contrast) == 2:
-            recover_text, pain_text = contrast
-            pain_active = bool(
-                re.search(
-                    r"疼|痛|不舒服|难受|发紧|酸|没好|还没好|未好",
-                    pain_text,
-                )
-            ) and not re.search(
-                r"不疼|不痛|不难受|没有不舒服|不酸|不发紧",
-                pain_text,
-            )
-            if pain_active:
-                remove_parts = _injury_body_parts(recover_text)
-                keep_parts = _injury_body_parts(pain_text)
-                if remove_parts:
-                    remaining = [
-                        item
-                        for item in before
-                        if any(part in item for part in keep_parts)
-                        or not any(part in item for part in remove_parts)
-                    ]
-                else:
-                    remaining = list(before)
-            else:
-                parts = _injury_body_parts(message)
-                if parts:
-                    remaining = [
-                        item
-                        for item in before
-                        if not any(part in item for part in parts)
-                    ]
-                elif re.search(
-                    r"没有伤病|都好了|全好了|伤好了|康复了|恢复了",
-                    message,
-                ) or len(before) == 1:
-                    remaining = []
-                else:
-                    return {
-                        "ready": False,
-                        "questions": ["是哪一处不疼了？例如“膝盖不疼了”。"],
-                    }
+        if len(before) == 1:
+            remaining = []
         else:
-            parts = _injury_body_parts(message)
-            if parts:
-                remaining = [
-                    item
-                    for item in before
-                    if not any(part in item for part in parts)
-                ]
-            elif re.search(
-                r"没有伤病|都好了|全好了|伤好了|康复了|恢复了",
-                message,
-            ) or len(before) == 1:
-                remaining = []
-            else:
-                return {
-                    "ready": False,
-                    "questions": ["是哪一处不疼了？例如“膝盖不疼了”。"],
-                }
-        if remaining == before:
             return {
                 "ready": False,
-                "terminal": True,
-                "questions": ["没找到对应的伤病记录。"],
+                "questions": ["是哪一处不疼了？例如“膝盖不疼了”。"],
             }
-        summary = (
-            "准备清除伤病限制"
-            if not remaining
-            else f"准备把伤病更新为「{'、'.join(remaining)}」"
+    else:
+        remaining = None
+
+    if remaining is None:
+        content = parsed.content
+        if len(content) < 2 or not re.search(
+            r"伤|疼|痛|不舒服|不能|避免|半月板|腰|膝|肩|腕|踝|肘",
+            content,
+        ):
+            return {
+                "ready": False,
+                "questions": ["想记录哪里的伤病？例如“膝盖有伤”。"],
+            }
+        append = bool(
+            before and re.search(r"也|还有|又|新增|另外", message)
         )
-        conflicts = _injury_conflicts(db, user_id, remaining)
+        final = (
+            _dedupe_injuries([*before, content])
+            if append
+            else [content]
+        )
+        if append:
+            summary = f"准备在原有伤病中追加「{content}」"
+        elif before:
+            summary = f"准备把伤病从「{'、'.join(before)}」改为「{content}」"
+        else:
+            summary = f"准备记录伤病「{content}」"
+        conflicts = _injury_conflicts(db, user_id, final)
         if conflicts:
             names = "、".join(item["exercise"] for item in conflicts[:3])
             summary += (
@@ -351,66 +336,44 @@ def resolve_injuries(
         return {
             "ready": True,
             "payload": {
-                "injuries": remaining,
+                "content": content,
+                "injuries": final,
                 "summary": summary,
                 "conflicts": conflicts,
             },
         }
-    if ongoing is not None:
-        parts = _injury_body_parts(message)
-        matches = [
-            item
-            for item in before
-            if any(part in item for part in parts)
-        ]
-        if matches:
-            return {
-                "ready": False,
-                "terminal": True,
-                "questions": [
-                    f"已经记着「{'、'.join(matches)}」还在恢复；"
-                    "好了以后说“膝盖好了”，我再移除。"
-                ],
-            }
-    content = _injury_text(message)
-    if len(content) < 2 or not re.search(
-        r"伤|疼|痛|不舒服|不能|避免|半月板|腰|膝|肩|腕|踝|肘",
-        content,
+
+    if not before and (
+        parsed.global_clear
+        or parsed.has_recovery
+        or parsed.recovered_parts
     ):
         return {
             "ready": False,
-            "questions": ["想记录哪里的伤病？例如“膝盖有伤”。"],
+            "terminal": True,
+            "questions": ["目前没有伤病记录，不需要清除。"],
         }
-    append = bool(
-        before
-        and (
-            re.search(r"也|还有|又|新增|另外", message)
-            or (
-                ongoing is not None
-                and not re.search(r"改成|改为|更新为|我的伤病是", message)
-            )
-        )
+    if remaining == before:
+        return {
+            "ready": False,
+            "terminal": True,
+            "questions": ["没找到对应的伤病记录。"],
+        }
+    summary = (
+        "准备清除伤病限制"
+        if not remaining
+        else f"准备把伤病更新为「{'、'.join(remaining)}」"
     )
-    final = (
-        _dedupe_injuries([*before, content])
-        if append
-        else [content]
-    )
-    if append:
-        summary = f"准备在原有伤病中追加「{content}」"
-    elif before:
-        summary = f"准备把伤病从「{'、'.join(before)}」改为「{content}」"
-    else:
-        summary = f"准备记录伤病「{content}」"
-    conflicts = _injury_conflicts(db, user_id, final)
+    conflicts = _injury_conflicts(db, user_id, remaining)
     if conflicts:
         names = "、".join(item["exercise"] for item in conflicts[:3])
-        summary += f"；当前计划有 {len(conflicts)} 个动作可能不适合（{names}）"
+        summary += (
+            f"；当前计划有 {len(conflicts)} 个动作可能不适合（{names}）"
+        )
     return {
         "ready": True,
         "payload": {
-            "content": content,
-            "injuries": final,
+            "injuries": remaining,
             "summary": summary,
             "conflicts": conflicts,
         },
