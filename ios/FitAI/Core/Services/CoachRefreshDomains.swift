@@ -40,6 +40,8 @@ enum CoachRefreshDomains {
         "body.log_weight": [.body, .profile, .diet, .review],
         "body.delete_metric": [.body, .profile, .diet, .review],
         "profile.update_goal": [.profile, .diet, .review],
+        "profile.update": [.profile, .body, .diet, .review],
+        "profile.update_injuries": [.profile, .review],
         "memory.remember": [.profile],
         "memory.forget": [.profile]
     ]

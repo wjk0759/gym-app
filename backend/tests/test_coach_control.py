@@ -453,6 +453,124 @@ def test_goal_update_confirm_and_undo(db):
     assert db.execute(select(Goal)).scalars().all() == []
 
 
+def test_profile_update_confirm_and_undo(db):
+    import asyncio
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "以后叫我小王，身高180，我是女生，中级训练者",
+        )
+    )
+    assert turn["intent"] == "profile.update"
+    payload = turn["pending"]["payload"]
+    assert payload["nickname"] == "小王"
+    assert payload["height_cm"] == 180
+    assert payload["sex"] == "female"
+    assert payload["experience"] == "intermediate"
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    profile = db.get(Profile, "user-1")
+    assert profile.nickname == "小王"
+    assert profile.height_cm == 180
+    assert profile.sex == "female"
+    assert profile.experience == "intermediate"
+    assert db.execute(select(DomainEvent)).scalars().all()[-1].type == (
+        "ProfileUpdated"
+    )
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    db.refresh(profile)
+    assert profile.nickname == "测试"
+    assert profile.height_cm == 178
+    assert profile.sex == "male"
+    assert profile.experience == "beginner"
+
+
+def test_profile_update_blocks_unsafe_bmi_with_lose_fat_goal(db):
+    import asyncio
+
+    profile = db.get(Profile, "user-1")
+    profile.height_cm = 178
+    profile.weight_kg = 45
+    db.add(Goal(user_id="user-1", type="lose_fat", status="active"))
+    db.commit()
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "身高190"))
+    with pytest.raises(ValueError):
+        runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    db.rollback()
+    profile = db.get(Profile, "user-1")
+    assert profile.height_cm == 178
+
+
+def test_injury_update_checks_current_plan_and_undo(db):
+    import asyncio
+
+    db.add(
+        Exercise(
+            slug="barbell-squat",
+            name_zh="杠铃深蹲",
+            name_en="barbell squat",
+            muscle_group="legs",
+            equipment="barbell",
+            is_compound=True,
+            contraindications=["knee_pain"],
+        )
+    )
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    program = Program(
+        user_id="user-1",
+        title="测试腿计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=today,
+        weeks=4,
+    )
+    db.add(program)
+    db.flush()
+    day = ProgramDay(
+        program_id=program.id,
+        week_index=1,
+        weekday=today.isoweekday(),
+        title="腿",
+        focus=["legs"],
+    )
+    db.add(day)
+    db.flush()
+    db.add(
+        PlanExercise(
+            program_day_id=day.id,
+            exercise_slug="barbell-squat",
+            order_index=1,
+            sets=3,
+            reps="8-12",
+            rest_sec=90,
+        )
+    )
+    db.commit()
+
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "我膝盖有伤"))
+    assert turn["intent"] == "profile.update_injuries"
+    payload = turn["pending"]["payload"]
+    assert payload["content"] == "我膝盖有伤"
+    assert [item["exercise"] for item in payload["conflicts"]] == ["杠铃深蹲"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    profile = db.get(Profile, "user-1")
+    assert profile.injuries == ["我膝盖有伤"]
+    assert confirmed["receipt"]["conflicts"][0]["exercise"] == "杠铃深蹲"
+    assert db.execute(select(DomainEvent)).scalars().all()[-1].type == (
+        "ProfileInjuriesUpdated"
+    )
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    db.refresh(profile)
+    assert profile.injuries == []
+
+
 def test_body_weight_confirm_and_undo(db):
     import asyncio
 

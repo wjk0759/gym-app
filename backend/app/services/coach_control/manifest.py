@@ -169,6 +169,18 @@ ACTION_SPECS: dict[str, ActionSpec] = {
         ("program_id", "version"),
         "plan",
     ),
+    "profile.update": ActionSpec(
+        "profile.update",
+        ("以后叫我小王", "身高178", "我是女生", "我是中级训练者"),
+        ("nickname", "sex", "height_cm", "experience"),
+        "profile",
+    ),
+    "profile.update_injuries": ActionSpec(
+        "profile.update_injuries",
+        ("记录膝盖有伤", "我腰椎不好", "伤病改成右肩疼"),
+        ("content",),
+        "profile",
+    ),
     "profile.update_goal": ActionSpec(
         "profile.update_goal",
         ("我想减脂到72kg", "目标改成增肌", "目标体重75kg，明年2月前"),

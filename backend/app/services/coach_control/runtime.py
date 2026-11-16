@@ -78,6 +78,8 @@ BODY_REVIEW = "body.review_trend"
 DELETE_METRIC = "body.delete_metric"
 REVIEW = "review.weekly"
 GOAL = "profile.update_goal"
+UPDATE_PROFILE = "profile.update"
+UPDATE_INJURIES = "profile.update_injuries"
 PLAN = "training.generate_plan"
 ADJUST_PLAN = "training.adjust_plan"
 CONFIGURE_PLAN = "training.configure_plan"
@@ -767,6 +769,32 @@ def _looks_like_goal(message: str) -> bool:
     return bool(
         re.search(r"目标|减脂|减肥|增肌|塑形|重塑|耐力|体能", message)
         and re.search(r"\d|月|日|前", message)
+    )
+
+
+def _looks_like_profile_update(message: str) -> bool:
+    if re.search(r"目标|体重|体脂|腰围|减脂|增肌|计划", message) and not re.search(
+        r"身高|昵称|叫我|性别|女生|男生",
+        message,
+    ):
+        return False
+    if re.search(
+        r"^(?:请)?(?:以后)?叫我|昵称|名字\s*(?:改成|改为)|"
+        r"性别|我是(?:男|女)|身高",
+        message.strip(),
+    ):
+        return True
+    return bool(
+        re.search(r"新手|初级|中级|高级|入门|进阶|老手", message)
+        and re.search(r"训练|练|健身|水平|经验|我是", message)
+    )
+
+
+def _looks_like_injury_update(message: str) -> bool:
+    if re.search(r"怎么办|怎么|为什么|如何|吗|？|\?", message):
+        return False
+    return bool(
+        re.search(r"伤病|受伤|有伤|疼|痛|不舒服|不能练|避免", message)
     )
 
 
@@ -2054,6 +2082,64 @@ async def _dispatch_semantic_capability(
             kind="proposal",
         )
 
+    if capability_id == UPDATE_PROFILE:
+        from .capabilities.profile import resolve_update
+
+        resolution = resolve_update(text)
+        if not resolution.get("ready"):
+            question = (
+                resolution.get("questions") or ["想改哪项资料？"]
+            )[0]
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=UPDATE_PROFILE,
+                payload={"message": text},
+                reply=question,
+                kind="draft",
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=UPDATE_PROFILE,
+            payload=payload,
+            reply=f"{payload.get('summary') or '资料改好了'}？确认后更新。",
+        )
+
+    if capability_id == UPDATE_INJURIES:
+        from .capabilities.profile import resolve_injuries
+
+        resolution = resolve_injuries(db, user_id, text)
+        if not resolution.get("ready"):
+            question = (
+                resolution.get("questions") or ["想记录哪里的伤病？"]
+            )[0]
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=UPDATE_INJURIES,
+                payload={"message": text},
+                reply=question,
+                kind="draft",
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=UPDATE_INJURIES,
+            payload=payload,
+            reply=f"{payload['summary']}？确认后更新。",
+        )
+
     if capability_id == GOAL:
         from .capabilities.profile import resolve as resolve_goal
 
@@ -2618,6 +2704,15 @@ async def handle_turn(
                     context = {**stored, **context}
                 text = f"{pending.payload.get('message') or ''} {text}".strip()[:2000]
                 intent_override = SKIP_TRAINING
+        elif pending.capability_id in {UPDATE_PROFILE, UPDATE_INJURIES}:
+            if len(text.strip()) > 40:
+                cancel_pending(db, session, pending)
+                pending = None
+            else:
+                text = (
+                    f"{pending.payload.get('message') or ''} {text}"
+                ).strip()[:2000]
+                intent_override = pending.capability_id
         elif pending.capability_id == GOAL:
             if not _looks_like_goal(text) and not re.search(r"\d", text):
                 cancel_pending(db, session, pending)
@@ -3700,6 +3795,60 @@ async def handle_turn(
             )
             reply = question
         turn.intent = STRENGTH
+    elif intent_override == UPDATE_PROFILE or (
+        intent_override is None and _looks_like_profile_update(text)
+    ):
+        from .capabilities.profile import resolve_update
+
+        resolution = resolve_update(text)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            _pending_card(
+                db,
+                session,
+                capability_id=UPDATE_PROFILE,
+                payload=payload,
+            )
+            reply = f"{payload.get('summary') or '资料改好了'}？确认后更新。"
+        else:
+            question = (
+                resolution.get("questions") or ["想改哪项资料？"]
+            )[0]
+            _pending_draft(
+                db,
+                session,
+                capability_id=UPDATE_PROFILE,
+                payload={"message": text},
+            )
+            reply = question
+        turn.intent = UPDATE_PROFILE
+    elif intent_override == UPDATE_INJURIES or (
+        intent_override is None and _looks_like_injury_update(text)
+    ):
+        from .capabilities.profile import resolve_injuries
+
+        resolution = resolve_injuries(db, user_id, text)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            _pending_card(
+                db,
+                session,
+                capability_id=UPDATE_INJURIES,
+                payload=payload,
+            )
+            reply = f"{payload['summary']}？确认后更新。"
+        else:
+            question = (
+                resolution.get("questions") or ["想记录哪里的伤病？"]
+            )[0]
+            _pending_draft(
+                db,
+                session,
+                capability_id=UPDATE_INJURIES,
+                payload={"message": text},
+            )
+            reply = question
+        turn.intent = UPDATE_INJURIES
     elif intent_override == DELETE_METRIC or (
         intent_override is None and _looks_like_body_delete(text)
     ):
@@ -4598,6 +4747,37 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "TrainingRescheduled"
         entity_type = "plan_day"
         entity_id = str(pending.payload.get("day_id") or "")
+    elif pending.capability_id == UPDATE_PROFILE:
+        from .capabilities.profile import execute_update
+
+        result = execute_update(db, user_id, action_id, pending.payload)
+        before = result.get("before") or {}
+        after = result.get("after") or {}
+        receipt = {
+            "summary": pending.payload.get("summary") or "已更新个人资料",
+            "deep_link": "fitai://profile",
+        }
+        event_type = "ProfileUpdated"
+        entity_type = "profile"
+        entity_id = user_id
+    elif pending.capability_id == UPDATE_INJURIES:
+        from .capabilities.profile import execute_injuries
+
+        result = execute_injuries(db, user_id, action_id, pending.payload)
+        before = result.get("before") or {}
+        after = result.get("after") or {}
+        conflicts = result.get("conflicts") or []
+        summary = pending.payload.get("summary") or "已更新伤病限制"
+        if conflicts:
+            summary += f"；当前计划有 {len(conflicts)} 个动作可能不适合"
+        receipt = {
+            "summary": summary,
+            "conflicts": conflicts,
+            "deep_link": "fitai://profile",
+        }
+        event_type = "ProfileInjuriesUpdated"
+        entity_type = "profile"
+        entity_id = user_id
     elif pending.capability_id == GOAL:
         from .capabilities.profile import execute as execute_goal
 
@@ -5003,6 +5183,14 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
                     if field in profile_before:
                         setattr(profile, field, profile_before[field])
                 db.flush()
+    elif record.capability_id == UPDATE_PROFILE:
+        from .capabilities.profile import undo_update
+
+        result = undo_update(db, user_id, record.before or {})
+    elif record.capability_id == UPDATE_INJURIES:
+        from .capabilities.profile import undo_injuries
+
+        result = undo_injuries(db, user_id, record.before or {})
     elif record.capability_id == GOAL:
         from .capabilities.profile import undo as undo_goal
 

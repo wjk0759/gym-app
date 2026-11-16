@@ -1,4 +1,4 @@
-"""Goal update capability."""
+"""Profile, goal and injury update capabilities."""
 
 from __future__ import annotations
 
@@ -8,8 +8,11 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ....models import Goal
+from ....models import Exercise, Goal, Profile
 from ...food_text import parse_food_date
+from ...plan_validator import injury_tags
+from ...queries import active_goal, active_program
+from ...serializers import load_program
 from ..registry import Capability, register
 
 CAPABILITY = register(
@@ -25,6 +28,329 @@ CAPABILITY = register(
         refreshes=("profile", "diet", "review"),
     )
 )
+UPDATE_CAPABILITY = register(
+    Capability(
+        id="profile.update",
+        domain="profile",
+        kind="write",
+        title="修改个人资料",
+        description="修改昵称、性别、身高或经验等级",
+        requires_confirmation=True,
+        undo=True,
+        events=("ProfileUpdated",),
+        refreshes=("profile", "body", "diet", "review"),
+    )
+)
+INJURY_CAPABILITY = register(
+    Capability(
+        id="profile.update_injuries",
+        domain="profile",
+        kind="write",
+        title="更新伤病限制",
+        description="记录或修改伤病，并检查当前计划冲突",
+        requires_confirmation=True,
+        undo=True,
+        events=("ProfileInjuriesUpdated",),
+        refreshes=("profile", "review"),
+    )
+)
+
+PROFILE_LABELS = {
+    "nickname": "昵称",
+    "sex": "性别",
+    "height_cm": "身高",
+    "experience": "经验",
+}
+EXPERIENCE_WORDS = {
+    "beginner": ("新手", "入门", "刚开始"),
+    "intermediate": ("中级", "进阶"),
+    "advanced": ("高级", "老手", "很多年"),
+}
+
+
+def _extract_nickname(message: str) -> str | None:
+    value = message.strip()
+    match = re.match(
+        r"^(?:请)?(?:以后)?叫我\s*([^\s，,。；;！!？?]{1,20})",
+        value,
+    )
+    if match is not None:
+        return match.group(1)
+    match = re.search(
+        r"昵称\s*(?:改成|改为|叫)?\s*([^\s，,。；;！!？?]{1,20})",
+        value,
+    )
+    if match is not None:
+        return match.group(1)
+    match = re.search(
+        r"名字\s*(?:改成|改为)\s*([^\s，,。；;！!？?]{1,20})",
+        value,
+    )
+    return match.group(1) if match is not None else None
+
+
+def _extract_height(message: str) -> float | None:
+    match = re.search(
+        r"身高\s*(?:是|为|改成|改为|调到)?\s*"
+        r"(\d{3})(?:\s*(?:cm|厘米))?",
+        message,
+        flags=re.IGNORECASE,
+    )
+    if match is not None:
+        return float(match.group(1))
+    match = re.search(r"(\d)\s*米\s*(\d{1,2})", message)
+    if match is not None:
+        return float(int(match.group(1)) * 100 + int(match.group(2)))
+    match = re.search(r"(\d\.\d{1,2})\s*米", message)
+    if match is not None:
+        return round(float(match.group(1)) * 100, 1)
+    return None
+
+
+def _extract_sex(message: str) -> str | None:
+    if re.search(r"女生|女的|女性|性别.*女", message):
+        return "female"
+    if re.search(r"男生|男的|男性|性别.*男", message):
+        return "male"
+    return None
+
+
+def _extract_experience(message: str) -> str | None:
+    for value, words in EXPERIENCE_WORDS.items():
+        if any(word in message for word in words) and re.search(
+            r"训练|练|健身|水平|经验|我是",
+            message,
+        ):
+            return value
+    if re.search(r"练了\s*[1-3一二三]\s*年", message):
+        return "intermediate"
+    if re.search(r"练了\s*(?:[4-9四五六七八九]|十|很多)\s*年", message):
+        return "advanced"
+    return None
+
+
+def resolve_update(message: str) -> dict:
+    payload: dict = {}
+    nickname = _extract_nickname(message)
+    if nickname:
+        payload["nickname"] = nickname
+    height = _extract_height(message)
+    if height is not None:
+        if not 100 <= height <= 250:
+            return {
+                "ready": False,
+                "questions": ["身高看起来不太对，再确认一下？"],
+            }
+        payload["height_cm"] = round(height, 1)
+    sex = _extract_sex(message)
+    if sex:
+        payload["sex"] = sex
+    experience = _extract_experience(message)
+    if experience:
+        payload["experience"] = experience
+    if not payload:
+        return {
+            "ready": False,
+            "questions": [
+                "想改昵称、性别、身高还是训练经验？例如“身高178”。"
+            ],
+        }
+    labels = []
+    for field in ("nickname", "sex", "height_cm", "experience"):
+        if field in payload:
+            value = payload[field]
+            if field == "sex":
+                value = "女" if value == "female" else "男"
+            elif field == "experience":
+                value = {
+                    "beginner": "新手",
+                    "intermediate": "中级",
+                    "advanced": "高级",
+                }.get(value, value)
+            labels.append(f"{PROFILE_LABELS[field]} {value}")
+    return {
+        "ready": True,
+        "payload": payload,
+        "summary": "准备更新" + "、".join(labels),
+    }
+
+
+def _injury_text(message: str) -> str:
+    value = re.sub(
+        r"^(?:请)?(?:帮我)?"
+        r"(?:记录一下|记录|记一下|更新|修改|调整|以后|记得|注意)"
+        r"[，,：:\s]*",
+        "",
+        message.strip(),
+    )
+    value = re.sub(
+        r"^(?:我的)?伤病(?:是|为|改成|改为|变成)?[，,：:\s]*",
+        "",
+        value,
+    )
+    return value.strip(" 。.!！")
+
+
+def _injury_conflicts(
+    db: Session,
+    user_id: str,
+    injuries: list[str],
+) -> list[dict]:
+    tags = injury_tags(injuries)
+    if not tags:
+        return []
+    program = active_program(db, user_id)
+    if program is None:
+        return []
+    program = load_program(db, program.id) or program
+    conflicts: list[dict] = []
+    seen: set[str] = set()
+    for day in program.days:
+        for item in day.exercises:
+            exercise = db.get(Exercise, item.exercise_slug)
+            if exercise is None:
+                continue
+            if not (tags & set(exercise.contraindications or [])):
+                continue
+            name = exercise.name_zh or exercise.slug
+            if name in seen:
+                continue
+            seen.add(name)
+            conflicts.append(
+                {"day": day.title, "exercise": name}
+            )
+    return conflicts
+
+
+def resolve_injuries(
+    db: Session,
+    user_id: str,
+    message: str,
+) -> dict:
+    if re.search(r"怎么办|怎么|为什么|如何|吗|？|\?", message):
+        return {
+            "ready": False,
+            "questions": ["这是想让我记录成伤病限制吗？可以直接说“记录膝盖有伤”。"],
+        }
+    content = _injury_text(message)
+    if len(content) < 2 or not re.search(
+        r"伤|疼|痛|不舒服|不能|避免|半月板|腰|膝|肩|腕|踝|肘",
+        content,
+    ):
+        return {
+            "ready": False,
+            "questions": ["想记录哪里的伤病？例如“膝盖有伤”。"],
+        }
+    profile = db.get(Profile, user_id)
+    before = list(profile.injuries or []) if profile is not None else []
+    conflicts = _injury_conflicts(db, user_id, [content])
+    summary = (
+        f"准备把伤病从「{'、'.join(before)}」改为「{content}」"
+        if before
+        else f"准备记录伤病「{content}」"
+    )
+    if conflicts:
+        names = "、".join(item["exercise"] for item in conflicts[:3])
+        summary += f"；当前计划有 {len(conflicts)} 个动作可能不适合（{names}）"
+    return {
+        "ready": True,
+        "payload": {
+            "content": content,
+            "summary": summary,
+            "conflicts": conflicts,
+        },
+    }
+
+
+def _profile_snapshot(profile: Profile, fields: tuple[str, ...]) -> dict:
+    return {field: getattr(profile, field) for field in fields}
+
+
+def execute_update(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: dict,
+) -> dict:
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        profile = Profile(user_id=user_id)
+        db.add(profile)
+    fields = ("nickname", "sex", "height_cm", "experience")
+    before = _profile_snapshot(profile, fields)
+    for field in fields:
+        if field in payload:
+            setattr(profile, field, payload[field])
+    db.flush()
+    goal = active_goal(db, user_id)
+    if (
+        goal is not None
+        and goal.type == "lose_fat"
+        and profile.bmi is not None
+        and profile.bmi < 18.5
+    ):
+        raise ValueError(
+            "当前 BMI 低于 18.5，不建议以减脂为目标；先调整目标或身高后再试。"
+        )
+    return {
+        "before": before,
+        "after": _profile_snapshot(profile, fields),
+    }
+
+
+def undo_update(
+    db: Session,
+    user_id: str,
+    before: dict,
+) -> dict:
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        profile = Profile(user_id=user_id)
+        db.add(profile)
+    for field, value in (before or {}).items():
+        if field in {"nickname", "sex", "height_cm", "experience"}:
+            setattr(profile, field, value)
+    db.flush()
+    return {"restored": True}
+
+
+def execute_injuries(
+    db: Session,
+    user_id: str,
+    action_id: str,
+    payload: dict,
+) -> dict:
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        profile = Profile(user_id=user_id)
+        db.add(profile)
+    before = list(profile.injuries or [])
+    content = str(payload.get("content") or "").strip()[:200]
+    if not content:
+        raise ValueError("伤病内容不能为空")
+    profile.injuries = [content]
+    db.flush()
+    conflicts = _injury_conflicts(db, user_id, profile.injuries)
+    return {
+        "before": {"injuries": before},
+        "after": {"injuries": profile.injuries},
+        "conflicts": conflicts,
+    }
+
+
+def undo_injuries(
+    db: Session,
+    user_id: str,
+    before: dict,
+) -> dict:
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        profile = Profile(user_id=user_id)
+        db.add(profile)
+    profile.injuries = list((before or {}).get("injuries") or [])
+    db.flush()
+    return {"restored": True}
+
 
 GOAL_TYPES = {
     "减脂": "lose_fat",
