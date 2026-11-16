@@ -8,10 +8,13 @@ iOS app executes after the user confirms.
 from __future__ import annotations
 
 import re
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
 from ..registry import Capability, register
+from .training import _source_day
 
 START_TRAINING = register(
     Capability(
@@ -82,31 +85,80 @@ def _plan(context: dict) -> dict:
     return plan if isinstance(plan, dict) else {}
 
 
-def resolve_start(db: Session, user_id: str, context: dict) -> dict:
+_DATE_HINT = re.compile(
+    r"今天|今日|明天|明日|后天|"
+    r"周[一二三四五六日天]|星期[一二三四五六日天]|礼拜[一二三四五六日天]|"
+    r"\d{1,2}月\d{1,2}[日号]|\d{4}[-/.]\d{1,2}[-/.]\d{1,2}"
+)
+
+
+def resolve_start(
+    db: Session,
+    user_id: str,
+    context: dict,
+    message: str = "",
+) -> dict:
     plan = _plan(context)
-    days = [
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    all_days = [
         item
         for item in (plan.get("days") or [])
         if isinstance(item, dict)
-        and not item.get("skipped")
+    ]
+    target = None
+    if message and _DATE_HINT.search(message):
+        target = _source_day(message, context, today=today)
+        if target is None:
+            return {
+                "ready": False,
+                "questions": ["那天没有训练安排，换一天试试。"],
+            }
+        if target.get("completed"):
+            return {
+                "ready": False,
+                "questions": ["那天的训练已经完成了，换一天试试。"],
+            }
+        if target.get("skipped"):
+            return {
+                "ready": False,
+                "questions": ["那天已经跳过训练，换一天试试。"],
+            }
+    days = [
+        item
+        for item in all_days
+        if not item.get("skipped")
         and not item.get("completed")
         and item.get("date")
     ]
-    if not days:
-        return {
-            "ready": False,
-            "questions": ["当前没有可开始的训练，先看看计划安排。"],
-        }
-    days.sort(key=lambda item: str(item.get("date")))
-    today = days[0]
+    if target is not None:
+        if not target.get("date") or target not in days:
+            return {
+                "ready": False,
+                "questions": ["那天没有可开始的训练，先看看计划安排。"],
+            }
+        chosen = target
+    else:
+        if not days:
+            return {
+                "ready": False,
+                "questions": ["当前没有可开始的训练，先看看计划安排。"],
+            }
+        days.sort(key=lambda item: str(item.get("date")))
+        chosen = days[0]
+    date_label = str(chosen.get("date") or "")
+    title = chosen.get("title") or "训练"
     return {
         "ready": True,
         "payload": {
-            "day_id": today.get("id"),
-            "title": today.get("title") or "训练",
-            "date": today.get("date"),
+            "day_id": chosen.get("id"),
+            "title": title,
+            "date": date_label,
         },
-        "summary": f"准备开始「{today.get('title') or '训练'}」。",
+        "summary": (
+            f"准备开始 {date_label} 的「{title}」。"
+            if date_label
+            else f"准备开始「{title}」。"
+        ),
     }
 
 

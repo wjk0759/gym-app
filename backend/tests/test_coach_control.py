@@ -3948,6 +3948,54 @@ def test_configure_plan_undo_restores_profile_shape(db, monkeypatch):
     assert profile.session_minutes == 45
 
 
+def test_start_training_can_target_a_specific_day(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    dates = [today, today + timedelta(days=2), today + timedelta(days=4)]
+    context = {
+        "plan": {
+            "id": "plan-1",
+            "days": [
+                {
+                    "id": f"day-{index}",
+                    "date": value.isoformat(),
+                    "title": title,
+                    "completed": False,
+                    "skipped": False,
+                }
+                for index, (value, title) in enumerate(
+                    zip(dates, ["胸", "背", "腿"], strict=False),
+                    start=1,
+                )
+            ],
+        }
+    }
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "从后天的训练开始",
+            app_context=context,
+        )
+    )
+    assert turn["intent"] == "ui.start_training"
+    assert turn["pending"]["payload"]["day_id"] == "day-2"
+    assert turn["pending"]["payload"]["title"] == "背"
+
+    context["plan"]["days"][1]["completed"] = True
+    done = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "开始后天的训练",
+            app_context=context,
+        )
+    )
+    assert done["pending"] is None
+    assert "完成" in done["reply"]
+
+
 def test_start_training_and_open_screen_via_control_plane(db):
     import asyncio
 

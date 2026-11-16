@@ -531,7 +531,12 @@ def _looks_like_reminders(message: str) -> bool:
 
 def _looks_like_start_training(message: str) -> bool:
     return bool(
-        re.search(r"开始训练|开始今天|带我练|开始练|练起来|开始今天的训练", message)
+        re.search(
+            r"开始训练|开始今天|开始.*(?:训练|练)|"
+            r"从.+?(?:训练|练|计划).*开始|"
+            r"带我练|开始练|练起来|开始今天的训练|练今天|练明天",
+            message,
+        )
     )
 
 
@@ -2548,7 +2553,7 @@ async def handle_turn(
     if intent_override is None and _looks_like_start_training(text):
         from .capabilities.ui_actions import resolve_start
 
-        resolution = resolve_start(db, user_id, context)
+        resolution = resolve_start(db, user_id, context, text)
         if resolution.get("ready"):
             return _finish_pending(
                 db,
