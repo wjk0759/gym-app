@@ -252,6 +252,16 @@ def _correction_food_text(message: str) -> str:
     return _diet_correction_parts(message)[0]
 
 
+def _is_amount_only_correction(value: str) -> bool:
+    return bool(
+        re.fullmatch(
+            r"\s*\d+(?:\.\d+)?\s*(?:g|克|ml|毫升|kg|公斤|斤)?\s*",
+            value,
+            flags=re.IGNORECASE,
+        )
+    )
+
+
 def _diet_draft_from_payload(payload: dict) -> dict:
     """Turn an executed food action payload into a resolver draft."""
     draft = copy.deepcopy(payload or {})
@@ -668,6 +678,11 @@ def _looks_like_single_exercise_edit(message: str) -> bool:
 
 
 def _looks_like_exercise_edit(message: str) -> bool:
+    if re.search(
+        r"鸡胸肉|牛肉|猪肉|鱼肉|米饭|早餐|午餐|晚餐|加餐|吃了|食物",
+        message,
+    ):
+        return False
     if not re.search(r"改成|换成|换为|替换为|替换成", message):
         return False
     if not re.search(
@@ -1104,12 +1119,31 @@ async def _handle_executed_diet_correction(
         text,
         parse_meal(text) or default_meal,
     )
+    resolve_text = _correction_food_text(text) or text
+    if _is_amount_only_correction(resolve_text):
+        item_count = sum(
+            len(group.get("items") or [])
+            for group in draft.get("meals") or []
+            if isinstance(group, dict)
+        )
+        if item_count > 1:
+            return _finish_reply(
+                db,
+                session,
+                turn,
+                started,
+                intent=DIET,
+                reply=(
+                    "要改哪样食物？可以说“鸡胸肉不是200g，"
+                    "是150g”。"
+                ),
+            )
     from .capabilities.diet import resolve as resolve_diet
 
     resolution = await resolve_diet(
         db,
         user_id,
-        _correction_food_text(text) or text,
+        resolve_text,
         history_context=conversation.reference_context(),
         draft=draft,
         default_meal=default_meal,
@@ -1138,12 +1172,17 @@ async def _handle_executed_diet_correction(
     new_payload = {
         "replace_action_id": last_action.id,
         "replaces_previous": True,
-        "date": resolution.get("date") or payload.get("date"),
+        "date": payload.get("date") or resolution.get("date"),
         "meal": resolution.get("meal") or payload.get("meal"),
         "items": resolution.get("items") or [],
         "raw_text": text[:500],
     }
     if meals:
+        # A correction is about the existing record, not a new day. Keep the
+        # original action date even if the user says "昨天" while correcting.
+        for meal in meals:
+            if isinstance(meal, dict):
+                meal["date"] = new_payload["date"]
         new_payload["meals"] = meals
     if questions or missing_slots:
         new_payload.update(
@@ -1690,6 +1729,11 @@ async def _try_batch_turn(
             action_key = (
                 f"{capability}:{action['payload'].get('date')}:"
                 f"{action['payload'].get('meal')}"
+            )
+        elif capability in {DIET_UPDATE, DIET_DELETE}:
+            # Editing or deleting two different food rows is a valid batch.
+            action_key = (
+                f"{capability}:{action['payload'].get('client_id')}"
             )
         if action_key in seen:
             return None

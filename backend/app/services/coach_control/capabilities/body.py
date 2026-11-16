@@ -166,6 +166,7 @@ def execute(
         )
         db.add(existing)
         db.flush()
+    recompute_profile_cache(db, user_id)
     return {
         "created_metric": {
             "date": payload["date"],
@@ -193,6 +194,7 @@ def undo(
     if metric is not None:
         db.delete(metric)
         db.flush()
+    recompute_profile_cache(db, user_id)
     return {"deleted": metric is not None}
 
 

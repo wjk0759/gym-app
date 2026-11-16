@@ -108,6 +108,8 @@ def recompute_profile_cache(db: Session, user_id: str) -> None:
         ).scalar_one_or_none()
         if latest is not None:
             setattr(profile, profile_field, getattr(latest, field))
+        else:
+            setattr(profile, profile_field, None)
 
 
 def upsert_metric(db: Session, user_id: str, payload: BodyMetricIn) -> BodyMetric:
