@@ -1013,6 +1013,71 @@ def test_batch_food_delete_and_reschedule_confirm_and_undo(db):
     assert db.execute(select(PlanDayState)).scalars().all() == []
 
 
+def test_batch_workout_delete_and_weight_confirm_and_undo(db):
+    import asyncio
+
+    cardio = asyncio.run(runtime.handle_turn(db, "user-1", "昨天跑了 30 分钟"))
+    runtime.confirm_pending(db, "user-1", cardio["pending"]["id"])
+    assert len(db.execute(select(WorkoutSession)).scalars().all()) == 1
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "删掉昨天那条跑步记录，再称体重73kg",
+        )
+    )
+    assert turn["pending"]["capability_id"] == "coach.batch"
+    assert [
+        item["capability_id"] for item in turn["pending"]["payload"]["batch"]
+    ] == ["training.delete_workout", "body.log_weight"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert db.execute(select(WorkoutSession)).scalars().all() == []
+    assert db.execute(select(BodyMetric)).scalar_one().weight_kg == 73
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert len(db.execute(select(WorkoutSession)).scalars().all()) == 1
+    assert db.execute(select(BodyMetric)).scalars().all() == []
+
+
+def test_batch_strength_and_food_confirm_and_undo(db):
+    import asyncio
+
+    db.add(
+        Exercise(
+            slug="barbell-bench-press",
+            name_zh="杠铃卧推",
+            name_en="barbell bench press",
+            muscle_group="chest",
+            equipment="barbell",
+            is_compound=True,
+            contraindications=[],
+        )
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "午餐吃了100g鸡胸肉，再记录卧推60kg 8次 3组",
+        )
+    )
+    assert turn["pending"]["capability_id"] == "coach.batch"
+    assert [
+        item["capability_id"] for item in turn["pending"]["payload"]["batch"]
+    ] == ["diet.log_food", "training.log_strength"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert len(db.execute(select(FoodLog)).scalars().all()) == 1
+    assert len(db.execute(select(WorkoutSession)).scalars().all()) == 1
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(FoodLog)).scalars().all() == []
+    assert db.execute(select(WorkoutSession)).scalars().all() == []
+
+
 def test_batch_weight_and_goal_confirm_and_undo(db):
     import asyncio
 

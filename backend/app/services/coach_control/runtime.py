@@ -1549,6 +1549,42 @@ async def _try_batch_turn(
                     "payload": resolution["payload"],
                     "summary": "更新目标",
                 }
+        elif _looks_like_workout_delete(clause):
+            from .capabilities.log_edit import resolve_delete_workout
+
+            resolution = resolve_delete_workout(db, user_id, clause)
+            if resolution.get("ready"):
+                action = {
+                    "capability_id": DELETE_WORKOUT,
+                    "payload": resolution["payload"],
+                    "summary": resolution.get("summary")
+                    or "删除训练记录",
+                }
+        elif _looks_like_workout_update(clause):
+            from .capabilities.log_edit import resolve_update_workout
+
+            resolution = resolve_update_workout(db, user_id, clause)
+            if resolution.get("ready"):
+                action = {
+                    "capability_id": UPDATE_WORKOUT,
+                    "payload": resolution["payload"],
+                    "summary": resolution.get("summary")
+                    or "修改训练记录",
+                }
+        elif _looks_like_strength(clause):
+            from .capabilities.training import resolve_strength
+
+            resolution = resolve_strength(db, clause)
+            if resolution.get("ready"):
+                payload = resolution["payload"]
+                action = {
+                    "capability_id": STRENGTH,
+                    "payload": payload,
+                    "summary": (
+                        f"记录{payload.get('title')} "
+                        f"{len(payload.get('sets') or [])} 组"
+                    ),
+                }
         elif _looks_like_cardio(clause):
             from .capabilities.training import resolve_cardio
 
