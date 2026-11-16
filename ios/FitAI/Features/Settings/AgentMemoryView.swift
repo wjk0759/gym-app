@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AgentMemoryView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppStore.self) private var store
 
     @State private var items: [AgentMemory] = []
     @State private var isLoading = false
@@ -53,6 +54,9 @@ struct AgentMemoryView: View {
                 }
             }
             .task { await load() }
+            .onChange(of: store.revision(.profile)) { _, _ in
+                Task { await load() }
+            }
             .alert("删除这条记忆？", isPresented: Binding(
                 get: { pendingDelete != nil },
                 set: { if !$0 { pendingDelete = nil } }
