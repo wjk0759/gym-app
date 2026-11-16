@@ -1644,6 +1644,91 @@ def test_batch_restore_then_reschedule_targets_restored_plan(db):
     assert state.assigned_date == target
 
 
+def test_batch_plan_configure_then_reschedule_targets_new_plan(db, monkeypatch):
+    import asyncio
+
+    from app.services import access
+    from app.services.coach_control.capabilities import plan_configure
+
+    monkeypatch.setattr(access, "has_pro", lambda db, user_id: True)
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    target = today + timedelta(days=1)
+
+    def fake_build(db, profile, goal_type, **kwargs):
+        return {
+            "title": "重排后的计划",
+            "weeks": 4,
+            "days": [
+                {
+                    "week_index": 1,
+                    "weekday": today.isoweekday(),
+                    "title": "胸",
+                    "focus": ["chest"],
+                    "exercises": [],
+                }
+            ],
+        }
+
+    monkeypatch.setattr(plan_configure, "build_template_plan", fake_build)
+    old = Program(
+        user_id="user-1",
+        title="旧计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=today,
+        weeks=4,
+    )
+    db.add(old)
+    db.flush()
+    old_day = ProgramDay(
+        program_id=old.id,
+        week_index=1,
+        weekday=today.isoweekday(),
+        title="胸",
+    )
+    db.add(old_day)
+    db.commit()
+    context = {
+        "plan": {
+            "id": old.id,
+            "version": old.version,
+            "days": [
+                {
+                    "id": old_day.id,
+                    "date": today.isoformat(),
+                    "title": "胸",
+                    "completed": False,
+                    "skipped": False,
+                }
+            ],
+        }
+    }
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            (
+                "每周3练，二四六，45分钟，3分化，"
+                f"再把今天的训练改到{target.month}月{target.day}日"
+            ),
+            app_context=context,
+        )
+    )
+    assert [
+        item["capability_id"] for item in turn["pending"]["payload"]["batch"]
+    ] == ["training.configure_plan", "training.reschedule"]
+
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    active = db.execute(
+        select(Program).where(Program.status == "active")
+    ).scalar_one()
+    assert active.id != old.id
+    state = db.execute(select(PlanDayState)).scalar_one()
+    assert state.plan_id == active.id
+    assert state.assigned_date == target
+
+
 def test_batch_weight_and_goal_confirm_and_undo(db):
     import asyncio
 
@@ -4596,6 +4681,56 @@ def test_forget_memory_follow_up_and_natural_phrases(db):
         runtime.handle_turn(db, "user-1", "忘掉我早上训练")
     )
     assert natural["intent"] == "memory.forget"
+
+
+def test_forget_memory_follow_up_rejects_greeting_and_accepts_ordinal(db):
+    import asyncio
+
+    morning = AIMemory(
+        user_id="user-1",
+        kind="preference",
+        memory_key="explicit:morning",
+        content="我更喜欢早上训练",
+        source="coach_control",
+        active=True,
+    )
+    evening = AIMemory(
+        user_id="user-1",
+        kind="preference",
+        memory_key="explicit:evening",
+        content="我更喜欢晚上训练",
+        source="coach_control",
+        active=True,
+    )
+    db.add_all([morning, evening])
+    db.commit()
+
+    first = asyncio.run(runtime.handle_turn(db, "user-1", "删除训练记忆"))
+    greeting = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "早上好",
+            session_id=first["session"]["id"],
+        )
+    )
+    assert greeting["intent"] != "memory.forget"
+    assert greeting["pending"] is None
+
+    second = asyncio.run(runtime.handle_turn(db, "user-1", "删除训练记忆"))
+    ordinal = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "第一条",
+            session_id=second["session"]["id"],
+        )
+    )
+    assert ordinal["pending"] is not None
+    assert ordinal["pending"]["payload"]["memory_id"] in {
+        morning.id,
+        evening.id,
+    }
 
 
 def test_remember_does_not_collide_with_the_general_memory(db):
