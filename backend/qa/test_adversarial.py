@@ -932,3 +932,147 @@ def test_batch_two_food_deletes_should_resolve_both(db):
     ] == ["diet.delete_log", "diet.delete_log"], result
     runtime.confirm_pending(db, "user-1", result["pending"]["id"])
     assert food_logs(db) == [], food_logs(db)
+
+
+def test_two_single_exercise_edits_do_not_merge_wrong_exercises(db):
+    """Two swaps in one sentence must be a batch or a clarification, never a
+    single proposal that mixes the first target with the second source."""
+    _, day, context = seed_chest_day(db)
+    db.add(
+        PlanExercise(
+            program_day_id=day.id,
+            exercise_slug="vital-machine-pec-deck-fly",
+            order_index=2,
+            sets=3,
+            reps="8-12",
+            rest_sec=90,
+        )
+    )
+    db.commit()
+    result = turn(
+        db,
+        "把哑铃卧推换成杠铃卧推，再把蝴蝶机夹胸换成绳索夹胸",
+        context,
+    )
+    pending = result["pending"]
+    assert pending is None or pending["capability_id"] == "coach.batch", pending
+    if pending is not None:
+        assert [
+            item["capability_id"]
+            for item in pending["payload"]["batch"]
+        ] == [
+            "training.edit_day_exercise",
+            "training.edit_day_exercise",
+        ], pending
+        runtime.confirm_pending(db, "user-1", pending["id"])
+        db.refresh(day)
+        assert [item.exercise_slug for item in day.exercises] == [
+            "bench_press",
+            "vital-cable-fly",
+        ]
+
+
+def test_start_training_specific_day_beats_today_context(db):
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    tomorrow = today + timedelta(days=1)
+    context = {
+        "plan": {
+            "id": "plan-start-specific",
+            "days": [
+                {
+                    "id": "day-today",
+                    "date": today.isoformat(),
+                    "title": "胸",
+                    "completed": False,
+                    "skipped": False,
+                },
+                {
+                    "id": "day-tomorrow",
+                    "date": tomorrow.isoformat(),
+                    "title": "背",
+                    "completed": False,
+                    "skipped": False,
+                },
+            ],
+        },
+        # The iOS app always sends today_day when today has a plan day.
+        "today_day": {
+            "id": "day-today",
+            "title": "胸",
+            "date": today.isoformat(),
+            "completed": False,
+        },
+    }
+    result = turn(db, "从明天的训练开始", context)
+    assert result["intent"] == "ui.start_training", result
+    assert result["pending"] is not None, result
+    assert result["pending"]["payload"]["day_id"] == "day-tomorrow", result
+    assert result["pending"]["payload"]["title"] == "背", result
+
+
+def test_start_training_explicit_date_uses_that_day(db):
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    target = today + timedelta(days=3)
+    context = {
+        "plan": {
+            "id": "plan-start-explicit",
+            "days": [
+                {
+                    "id": "day-today",
+                    "date": today.isoformat(),
+                    "title": "胸",
+                    "completed": False,
+                    "skipped": False,
+                },
+                {
+                    "id": "day-target",
+                    "date": target.isoformat(),
+                    "title": "腿",
+                    "completed": False,
+                    "skipped": False,
+                },
+            ],
+        },
+        "today_day": {
+            "id": "day-today",
+            "title": "胸",
+            "date": today.isoformat(),
+            "completed": False,
+        },
+    }
+    result = turn(
+        db,
+        f"开始{target.month}月{target.day}日的训练",
+        context,
+    )
+    assert result["intent"] == "ui.start_training", result
+    assert result["pending"] is not None, result
+    assert result["pending"]["payload"]["day_id"] == "day-target", result
+
+
+def test_start_training_phrase_does_not_hijack_plan_management(db):
+    """Plan-management wording must not become a today's-workout card."""
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    context = {
+        "plan": {
+            "id": "plan-start-new",
+            "days": [
+                {
+                    "id": "day-today",
+                    "date": today.isoformat(),
+                    "title": "胸",
+                    "completed": False,
+                    "skipped": False,
+                }
+            ],
+        },
+        "today_day": {
+            "id": "day-today",
+            "title": "胸",
+            "date": today.isoformat(),
+            "completed": False,
+        },
+    }
+    for message in ("开始新的训练计划", "开始调整训练计划"):
+        result = turn(db, message, context)
+        assert result["intent"] != "ui.start_training", (message, result)

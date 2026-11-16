@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`493ead9`（从指定训练日开始 + batch 计划动作编辑 + 身体缓存/纠错 QA 回归修复；生产后端 `493ead9` 已部署；iOS 已装 `73e517c`；生产后端 `493ead9` + Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **534 passed**、QA **40/40**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`493ead9`（文档 `0ae5dc3`；指定计划日开练 + batch 动作编辑 + 身体缓存/纠错修复；生产后端 `493ead9` + Flyway **V42**；iOS 已装 `73e517c`；`FitAITests` **121/121**、UI **4/4**、后端 **534 passed**、QA **40 passed / 4 failed**；**后端发布阻断**：同一句两个动作替换会合成错误动作，指定明天/明确日期开练仍指向今天，计划类话术被误判为开练；上一轮 9 条已修复并全绿）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +26,44 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-16 · macOS（指定计划日开练 / batch 动作编辑压力测试：阻断）
+
+- 拉取：`493ead9`；生产后端已由 Windows 部署到 `493ead9`，`runtime.py` / `ui_actions.py` SHA-256 与本地一致；macOS **本轮未重新部署后端**。
+- 测试：
+  - 后端完整测试 **534 passed**
+  - QA 对抗 **44 条：40 passed / 4 failed**
+  - iOS `73e517c`：`FitAITests` **121/121**、UI **4/4**；本轮无新 iOS 变更，已装 Wu-Tang
+- 上一轮 9 条阻断已确认修复：
+  - profile 缓存记录/撤销/删除/清空
+  - 纠错跨日期不再搬记录
+  - “不是200g，是150g”无食物名会追问
+  - batch 双食物改量/删除可合并
+  - 全部对应 QA 用例转绿
+- 新阻断问题：
+  1. **同一句两个单动作替换被合成错误 proposal**：`把哑铃卧推换成杠铃卧推，再把蝴蝶机夹胸换成绳索夹胸` → 实际只生成一张 `training.edit_day_exercise`，proposal 是“把蝴蝶机夹胸换成杠铃卧推”，把第一个目标套到第二个来源上。应生成两张 batch 卡，或明确追问“一次改一个”。`test_two_single_exercise_edits_do_not_merge_wrong_exercises`
+  2. **真实 iOS context 下指定明天开练仍指向今天**：context 带 `today_day`（iOS 每天有训练时都会传），`从明天的训练开始` 返回 `day-today`；应为 `day-tomorrow`。`test_start_training_specific_day_beats_today_context`
+  3. **明确日期开练仍指向今天**：`开始11月20日的训练`（或今天+N 的月日）在 `today_day` 存在时返回今天的 day；应为目标日期。根因是 `_source_day` 先返回 `app_context.day_id` / `today_day`，且不解析 `月/日`。`test_start_training_explicit_date_uses_that_day`
+  4. **计划管理话术被误判为开练**：`开始新的训练计划` / `开始调整训练计划` 都返回“准备开始今天的胸日”卡；应进入计划生成/调整或追问，不能直接开练。`test_start_training_phrase_does_not_hijack_plan_management`
+- 已通过并锁定：
+  - batch 单动作替换 + 改训练日期：确认/整组撤销
+  - batch 整天动作替换 + 记体重：确认/整组撤销
+  - batch 单动作编辑 + 饮食改量：确认/整组撤销
+  - batch 训练删除 + 体重、饮食改删、力量记录
+- 生产：
+  - `fitai-api` healthy，`/health/ready` 200
+  - Flyway 仍 **V42**，无新迁移
+- 备份：
+  - macOS 本轮未部署后端，未新增备份；生产后端当前为 Windows 部署的 `493ead9`
+- Windows 需要做：
+  - 显式日期/明天/后天开练必须覆盖 `today_day` / `day_id`；`_source_day` 增加 `月/日`、ISO 日期解析，或让 `resolve_start` 直接按日期选 day，不能先返回今天。
+  - 两个单动作替换要么生成两个独立 batch 子动作并顺序执行，要么明确追问；不能把第一个目标套到第二个来源上。
+  - 收紧 `_looks_like_start_training`，不要用 `开始.*训练` 吞掉“开始新的训练计划/开始调整训练计划”。
+  - 补一条使用 `today_day` 的真实 iOS context 测试；QA 44 条必须全绿再部署后端。
+  - 修好后把这 4 条移入 `backend/tests`。
+- 不要恢复：
+  - 不要让 `today_day` / `day_id` 覆盖用户明确说的明天、后天或具体日期。
+  - 不要把两个 `换成` 子句合并成一个错误的单动作替换。
 
 ### 2026-11-16 · macOS（身体数据删除 / 批量饮食编辑压力测试：阻断）
 
