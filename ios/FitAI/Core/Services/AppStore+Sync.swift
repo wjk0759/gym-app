@@ -358,6 +358,20 @@ extension AppStore {
     }
 
     private func pushPendingEquipment() async {
+        for key in pendingEquipmentDeletionIDs {
+            guard let id = UUID(uuidString: key) else {
+                pendingEquipmentDeletionIDs.removeAll { $0 == key }
+                continue
+            }
+            do {
+                try await APIClient.shared.deleteEquipmentItem(id: id)
+                pendingEquipmentDeletionIDs.removeAll { $0 == key }
+            } catch let error as APIError where error.statusCode == 404 {
+                pendingEquipmentDeletionIDs.removeAll { $0 == key }
+            } catch {
+                // Keep the tombstone; the next sync retries the delete.
+            }
+        }
         for item in equipmentLibrary {
             let needsSync = item.syncedAt == nil
             let needsPhoto = item.photoData != nil && item.photoURL == nil
@@ -383,6 +397,16 @@ extension AppStore {
                 }
             } catch {
                 // Keep pending: the next sync retries both the item and photo.
+            }
+        }
+        if universalEquipmentDirty {
+            do {
+                try await APIClient.shared.replaceUniversalEquipment(
+                    slugs: selectedUniversalSlugs
+                )
+                universalEquipmentDirty = false
+            } catch {
+                // Keep dirty so the next sync retries instead of being overwritten.
             }
         }
     }
@@ -467,6 +491,7 @@ extension AppStore {
             refreshed.insert(.equipment)
         }
         if domains.contains(.equipment),
+           !universalEquipmentDirty,
            let remote = try? await APIClient.shared.fetchUniversalEquipment(),
            currentUserID == account {
             selectedUniversalSlugs = remote.filter(\.enabled).map(\.slug)
@@ -645,7 +670,9 @@ extension AppStore {
     }
 
     private func mergeRemoteEquipmentItems(_ remote: [RemoteEquipmentItem]) {
+        let tombstones = Set(pendingEquipmentDeletionIDs.map { $0.lowercased() })
         for item in remote {
+            guard !tombstones.contains(item.clientID.lowercased()) else { continue }
             guard let id = UUID(uuidString: item.clientID) else { continue }
             var value = EquipmentItem(
                 id: id,

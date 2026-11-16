@@ -115,8 +115,11 @@ final class AppStore {
     var cycleDirty = false
     @ObservationIgnored var isSyncingCloudExtras = false
     var equipmentLibrary: [EquipmentItem] = []
+    /// 已本地删除、等待服务端确认的器械；防止下一次拉取把删除项复活。
+    var pendingEquipmentDeletionIDs: [String] = []
     /// 通用器械勾选（徒手/哑铃/杠铃...）。
     var selectedUniversalSlugs: [String] = ["bodyweight"]
+    var universalEquipmentDirty = false
     /// 计划模式：true = 只用我的器械；false = 优先我的器械，不足回退。
     var strictEquipmentMode = false
     var bodyAnalyses: [BodyAnalysis] = []
@@ -291,7 +294,9 @@ final class AppStore {
         useRemoteAI = AppConfig.useRemoteAI
         healthKitEnabled = false
         equipmentLibrary = []
+        pendingEquipmentDeletionIDs = []
         selectedUniversalSlugs = ["bodyweight"]
+        universalEquipmentDirty = false
         strictEquipmentMode = false
         bodyAnalyses = []
         bodyMetrics = []
@@ -436,7 +441,9 @@ final class AppStore {
 #endif
         healthKitEnabled = state.healthKitEnabled ?? false
         equipmentLibrary = state.equipmentLibrary ?? []
+        pendingEquipmentDeletionIDs = state.pendingEquipmentDeletionIDs ?? []
         selectedUniversalSlugs = state.selectedUniversalSlugs ?? ["bodyweight"]
+        universalEquipmentDirty = state.universalEquipmentDirty ?? false
         strictEquipmentMode = state.strictEquipmentMode ?? false
         bodyAnalyses = state.bodyAnalyses ?? []
         bodyMetrics = state.bodyMetrics ?? []
@@ -494,7 +501,9 @@ final class AppStore {
             useRemoteAI: useRemoteAI,
             healthKitEnabled: healthKitEnabled,
             equipmentLibrary: equipmentLibrary,
+            pendingEquipmentDeletionIDs: pendingEquipmentDeletionIDs,
             selectedUniversalSlugs: selectedUniversalSlugs,
+            universalEquipmentDirty: universalEquipmentDirty,
             strictEquipmentMode: strictEquipmentMode,
             bodyAnalyses: bodyAnalyses,
             bodyMetrics: bodyMetrics,
@@ -620,7 +629,9 @@ final class AppStore {
         var useRemoteAI: Bool?
         var healthKitEnabled: Bool?
         var equipmentLibrary: [EquipmentItem]?
+        var pendingEquipmentDeletionIDs: [String]?
         var selectedUniversalSlugs: [String]?
+        var universalEquipmentDirty: Bool?
         var strictEquipmentMode: Bool?
         var bodyAnalyses: [BodyAnalysis]?
         var bodyMetrics: [BodyMetric]?

@@ -76,6 +76,7 @@ extension AppStore {
         equipmentLibrary.insert(item, at: 0)
         persist()
         syncPendingUserData()
+        dataDidChange(.equipment)
     }
 
     /// 保存一件物理器械（拍照识别结果或手动添加）。
@@ -109,6 +110,7 @@ extension AppStore {
         equipmentLibrary.insert(item, at: 0)
         persist()
         syncPendingUserData()
+        dataDidChange(.equipment)
         return item
     }
 
@@ -137,14 +139,18 @@ extension AppStore {
         equipmentLibrary[index].syncedAt = nil
         persist()
         syncPendingUserData()
+        dataDidChange(.equipment)
     }
 
     func removeEquipment(_ id: UUID) {
         equipmentLibrary.removeAll { $0.id == id }
-        persist()
-        Task {
-            try? await APIClient.shared.deleteEquipmentItem(id: id)
+        let key = id.uuidString
+        if !pendingEquipmentDeletionIDs.contains(key) {
+            pendingEquipmentDeletionIDs.append(key)
         }
+        persist()
+        dataDidChange(.equipment)
+        syncPendingUserData()
     }
 
     // MARK: - 固定器械动作选择
@@ -163,6 +169,7 @@ extension AppStore {
         equipmentLibrary[index].syncedAt = nil
         persist()
         syncPendingUserData()
+        dataDidChange(.equipment)
     }
 
     func replaceEquipmentExercises(_ itemID: UUID, slugs: [String]) {
@@ -173,16 +180,17 @@ extension AppStore {
         equipmentLibrary[index].syncedAt = nil
         persist()
         syncPendingUserData()
+        dataDidChange(.equipment)
     }
 
     // MARK: - 通用器械勾选
 
     func setUniversalEquipment(_ slugs: [String]) {
         selectedUniversalSlugs = slugs
+        universalEquipmentDirty = true
         persist()
-        Task {
-            try? await APIClient.shared.replaceUniversalEquipment(slugs: slugs)
-        }
+        dataDidChange(.equipment)
+        syncPendingUserData()
     }
 
     func toggleUniversalEquipment(_ slug: String) {
@@ -203,6 +211,20 @@ extension AppStore {
         guard AuthTokenStore.shared.accessToken != nil else { return false }
 
         var complete = true
+        for key in pendingEquipmentDeletionIDs {
+            guard let id = UUID(uuidString: key) else {
+                pendingEquipmentDeletionIDs.removeAll { $0 == key }
+                continue
+            }
+            do {
+                try await APIClient.shared.deleteEquipmentItem(id: id)
+                pendingEquipmentDeletionIDs.removeAll { $0 == key }
+            } catch let error as APIError where error.statusCode == 404 {
+                pendingEquipmentDeletionIDs.removeAll { $0 == key }
+            } catch {
+                complete = false
+            }
+        }
         for item in equipmentLibrary {
             do {
                 try await APIClient.shared.syncEquipmentItem(item)
@@ -217,6 +239,7 @@ extension AppStore {
             try await APIClient.shared.replaceUniversalEquipment(
                 slugs: selectedUniversalSlugs
             )
+            universalEquipmentDirty = false
         } catch {
             complete = false
         }
