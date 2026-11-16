@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`e05447c`（batch 重复警告 + 伤病分句恢复；生产后端 `e05447c`，`runtime.py` / `profile.py` SHA-256 与本地一致；iOS 已装 `9eb1411`；Flyway **V42**；`FitAITests` **121/121**、UI **4/4**；后端 **568 passed**、QA **65/65**；iOS Build `e05447c` 构建中）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`e05447c`（batch 重复警告 + 伤病分句恢复；生产后端 `e05447c`，`runtime.py` / `profile.py` SHA-256 与本地一致；iOS 已装 `9eb1411`；Flyway **V42**；`FitAITests` **121/121**、UI **4/4**；后端 **568 passed**、QA **65/65**；本轮无 iOS 代码变化，iOS Build 不触发）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -46,7 +46,7 @@
   - 后端 `e05447c` 已部署；`runtime.py`、`profile.py` SHA-256 与本地一致
   - `fitai-api` healthy；`/health/ready` 返回 `{"status":"ready"}`；Flyway 仍 V42
 - iOS：
-  - 本轮无 iOS 代码变化；iOS 已装 `9eb1411`；iOS Build `e05447c` 由 CI 触发。
+  - 本轮无 iOS 代码变化，iOS Build 不触发；最新可安装仍是 `9eb1411`（Mac 已装）。
 - Mac 要做：
   - 拉 `e05447c`，重跑 QA 65/65、`FitAITests`。
   - 真机验证：逗号/“恢复了”部分恢复、batch 重复警告、单卡力量/有氧重复警告。
