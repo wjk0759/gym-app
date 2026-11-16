@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`48bc4d5`（体型分析应用到计划；生产后端 `48bc4d5`，`runtime.py` / `body_analysis.py` SHA-256 与本地一致；iOS 已装 `3c8c499`；Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **552 passed**、QA **55/55**；iOS Build `48bc4d5` ✓）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`df7f390`（收藏食物教练动作；生产后端 `df7f390`，`runtime.py` / `food_preferences.py` SHA-256 与本地一致；iOS 已装 `3c8c499`，已构建 `48bc4d5`；Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **554 passed**、QA **55/55**；iOS Build `df7f390` ✓）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -123,6 +123,34 @@
 - 不要恢复：
   - 不要用全局记忆顺序解释“第一条”。
   - 不要把“早上练什么/晚上吃什么”这类正常问题当成记忆删除选择。
+
+### 2026-11-16 · Windows（收藏食物）
+
+- 提交：`df7f390`，已推 `develop`；后端已部署 `df7f390`；无迁移。
+- 做了什么：
+  - 新增 `diet.favorite_food`：收藏/取消收藏食物。
+  - 自定义食物按 `custom:<client_id>` 收藏，普通食物按 `library:<name>`。
+  - 确认/撤销支持；iOS 确认或撤销后会调用 `syncCloudExtras`，让收藏列表刷新。
+- 验证：
+  - 后端 **554 passed**
+  - QA **55/55**
+  - Ruff app/tests/qa 通过
+  - GitHub Backend Tests `df7f390` 成功
+  - 新增测试：收藏/取消收藏/撤销、自定义食物 key。
+- 生产：
+  - 后端 `df7f390` 已部署；`runtime.py`、`food_preferences.py` SHA-256 与本地一致
+  - `fitai-api` healthy；`/health/ready` 返回 `{"status":"ready"}`；Flyway 仍 V42
+- iOS：
+  - `CoachRefreshDomains` 和 `AppStore+CoachControl` 接入收藏同步；iOS Build `df7f390` ✓。
+- Mac 要做：
+  - 等/重跑 iOS Build `df7f390`，安装最新 iOS。
+  - 真机验证：
+    - “收藏鸡胸肉” → 确认后收藏列表出现；撤销移除。
+    - “取消收藏鸡胸肉” → 收藏列表移除；撤销恢复。
+    - 自定义食物收藏 key 正确，重进 App/另一设备同步后仍在。
+- 不要恢复：
+  - 不要在收藏后不刷新 cloud extras。
+  - 不要把自定义食物错误写成 library key。
 
 ### 2026-11-16 · Windows（体型分析应用到计划）
 
