@@ -28,6 +28,7 @@ from ...models import (
     Profile,
     Program,
     ProgramDay,
+    WorkoutSession,
     utcnow,
 )
 from ..food_text import DIET_TZ, MEAL_LABELS, parse_meal
@@ -1170,6 +1171,57 @@ def _duplicate_warning(
                 for field in fields
             ):
                 return "今天已经记过相同身体数据；确认会再记一次。"
+        return None
+    kind = str(payload.get("kind") or "")
+    if capability_id in {STRENGTH, CARDIO} and kind in {"strength", "cardio"}:
+        bounds = _day_utc_bounds(payload.get("date"))
+        if bounds is None:
+            return None
+        start, end = bounds
+        sessions = (
+            db.execute(
+                select(WorkoutSession).where(
+                    WorkoutSession.user_id == user_id,
+                    WorkoutSession.started_at >= start,
+                    WorkoutSession.started_at < end,
+                )
+            )
+            .scalars()
+            .all()
+        )
+        if kind == "strength":
+            wanted = sorted(
+                (
+                    str(item.get("slug") or ""),
+                    round(float(item.get("weight_kg") or 0), 1),
+                    int(item.get("reps") or 0),
+                )
+                for item in payload.get("sets") or []
+                if isinstance(item, dict)
+            )
+            if not wanted:
+                return None
+            for session in sessions:
+                actual = sorted(
+                    (
+                        str(item.exercise_slug or ""),
+                        round(float(item.weight_kg or 0), 1),
+                        int(item.reps or 0),
+                    )
+                    for item in session.sets
+                )
+                if actual == wanted:
+                    return "今天已经记过相同的力量训练；确认会再记一次。"
+            return None
+        duration = int(payload.get("duration_minutes") or 0)
+        if not duration:
+            return None
+        for session in sessions:
+            if session.sets:
+                continue
+            if int(session.duration_min or 0) == duration:
+                return "今天已经记过同样时长的有氧训练；确认会再记一次。"
+        return None
     return None
 
 
@@ -1181,11 +1233,31 @@ def _pending_card(
     payload: dict,
 ) -> CoachPending:
     new_payload = dict(payload)
-    warning = _duplicate_warning(
-        db, session.user_id, capability_id, new_payload
-    )
-    if warning:
-        new_payload["duplicate_warning"] = warning
+    warnings: list[str] = []
+    if capability_id == BATCH:
+        for action in new_payload.get("batch") or []:
+            if not isinstance(action, dict):
+                continue
+            sub_capability = str(action.get("capability_id") or "")
+            sub_payload = action.get("payload")
+            if not sub_capability or not isinstance(sub_payload, dict):
+                continue
+            warning = _duplicate_warning(
+                db,
+                session.user_id,
+                sub_capability,
+                sub_payload,
+            )
+            if warning and warning not in warnings:
+                warnings.append(warning)
+    else:
+        warning = _duplicate_warning(
+            db, session.user_id, capability_id, new_payload
+        )
+        if warning:
+            warnings.append(warning)
+    if warnings:
+        new_payload["duplicate_warning"] = "\n".join(warnings[:3])
     return set_pending(
         db,
         session,

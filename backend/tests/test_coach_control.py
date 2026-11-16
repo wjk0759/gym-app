@@ -1053,6 +1053,66 @@ def test_duplicate_food_and_weight_cards_add_a_warning(db):
     assert repeated_weight["pending"]["payload"]["duplicate_warning"]
 
 
+def test_duplicate_workout_and_batch_cards_add_a_warning(db):
+    import asyncio
+
+    db.add(
+        Exercise(
+            slug="barbell-bench-press",
+            name_zh="杠铃卧推",
+            name_en="barbell bench press",
+            muscle_group="chest",
+            equipment="barbell",
+            is_compound=True,
+            contraindications=[],
+        )
+    )
+    db.commit()
+
+    first_strength = asyncio.run(
+        runtime.handle_turn(db, "user-1", "杠铃卧推 60kg 8次 3组")
+    )
+    runtime.confirm_pending(db, "user-1", first_strength["pending"]["id"])
+    repeated_strength = asyncio.run(
+        runtime.handle_turn(db, "user-1", "杠铃卧推 60kg 8次 3组")
+    )
+    assert "力量训练" in repeated_strength["pending"]["payload"][
+        "duplicate_warning"
+    ]
+    runtime.confirm_pending(
+        db, "user-1", repeated_strength["pending"]["id"]
+    )
+
+    first_cardio = asyncio.run(
+        runtime.handle_turn(db, "user-1", "慢跑 30 分钟")
+    )
+    runtime.confirm_pending(db, "user-1", first_cardio["pending"]["id"])
+    repeated_cardio = asyncio.run(
+        runtime.handle_turn(db, "user-1", "慢跑 30 分钟")
+    )
+    assert "有氧训练" in repeated_cardio["pending"]["payload"][
+        "duplicate_warning"
+    ]
+    runtime.confirm_pending(db, "user-1", repeated_cardio["pending"]["id"])
+
+    first_food = asyncio.run(
+        runtime.handle_turn(db, "user-1", "午餐吃了100g鸡胸肉")
+    )
+    runtime.confirm_pending(db, "user-1", first_food["pending"]["id"])
+
+    batch = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "午餐吃了100g鸡胸肉，再记录杠铃卧推 60kg 8次 3组",
+        )
+    )
+    assert batch["pending"]["capability_id"] == "coach.batch"
+    warning = batch["pending"]["payload"]["duplicate_warning"]
+    assert "相同食物" in warning
+    assert "力量训练" in warning
+
+
 def test_injury_partial_recovery_keeps_painful_area(db):
     import asyncio
 
