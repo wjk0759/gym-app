@@ -1447,6 +1447,24 @@ def test_profile_equipment_add_remove_and_undo(db):
     ]
     runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
 
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "我把壶铃卖了")
+    )
+    assert turn["pending"]["payload"]["equipment"] == [
+        "bodyweight",
+        "dumbbell",
+    ]
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "我把哑铃换成杠铃")
+    )
+    assert turn["pending"]["payload"]["equipment"] == [
+        "bodyweight",
+        "barbell",
+    ]
+    runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+
     runtime.undo_action(db, "user-1", confirmed["action_id"])
     db.refresh(profile)
     assert profile.equipment == ["bodyweight"]

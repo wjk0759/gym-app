@@ -77,12 +77,28 @@ def _removed(message: str) -> list[str]:
                 rf"\s*[^，,。；;]{{0,4}}{re.escape(alias.lower())}",
                 text,
             ) or re.search(
-                rf"{re.escape(alias.lower())}\s*(?:没有|没了|不用了|去掉了)",
+                rf"{re.escape(alias.lower())}\s*"
+                rf"(?:没有|没了|不用了|去掉了|卖了|卖掉了|丢了|坏了|送人了)",
                 text,
             ):
                 result.append(value)
                 break
     return result
+
+
+def _replaced_out(message: str) -> list[str]:
+    match = re.search(
+        r"(?:把|将)?(.+?)(?:换成|换为|替换成|改为|改成)(.+)",
+        message,
+    )
+    if match is None:
+        return []
+    before = match.group(1)
+    return [
+        value
+        for value, aliases in EQUIPMENT_ALIASES.items()
+        if any(alias in before for alias in aliases)
+    ]
 
 
 def _current(profile: Profile) -> list[str]:
@@ -132,7 +148,7 @@ def resolve(db: Session, user_id: str, message: str) -> dict:
         return {"ready": False, "questions": ["请先完成个人档案。"]}
     current = _current(profile)
     mentioned = _mentioned(message)
-    removed = _removed(message)
+    removed = list(dict.fromkeys([*_removed(message), *_replaced_out(message)]))
     if not mentioned and not removed:
         return {
             "ready": False,
