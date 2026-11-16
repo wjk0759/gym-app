@@ -1604,3 +1604,19 @@ def test_batch_duplicate_food_and_weight_warns(db):
         if isinstance(item, dict)
     ]
     assert any(warnings), pending
+
+
+def test_injury_partial_recovery_keeps_uncomfortable_area(db):
+    profile = db.get(Profile, "user-1")
+    profile.injuries = ["腰部旧伤", "膝盖有伤"]
+    db.commit()
+    result = coach_turn(db, "膝盖好了，腰不舒服")
+    pending = result["pending"]
+    assert pending is not None, result
+    if pending["kind"] != "card":
+        return
+    runtime.confirm_pending(db, "user-1", pending["id"])
+    profile = db.get(Profile, "user-1")
+    joined = " ".join(profile.injuries or [])
+    assert "腰" in joined, profile.injuries
+    assert "膝" not in joined, profile.injuries

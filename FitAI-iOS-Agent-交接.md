@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`e05447c`（batch 重复警告 + 伤病分句恢复；生产后端 `e05447c`，`runtime.py` / `profile.py` SHA-256 与本地一致；iOS 已装 `9eb1411`；Flyway **V42**；`FitAITests` **121/121**、UI **4/4**；后端 **568 passed**、QA **65/65**；本轮无 iOS 代码变化，iOS Build 不触发）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`e05447c`（文档 `a9acb72`；batch 重复警告 + 伤病分句恢复；生产后端 `e05447c`，`runtime.py` / `profile.py` SHA-256 与本地一致；iOS 已装 `9eb1411`；Flyway **V42**；`FitAITests` **121/121**、UI **4/4**；后端 **568 passed**、QA **65 passed / 1 failed**；**后端发布阻断**：`膝盖好了，腰不舒服` 仍会把腰部伤病一起清掉；本轮无 iOS 代码变化，iOS Build 不触发）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +26,43 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-17 · macOS（伤病“不舒服/没好”语义压力测试：阻断）
+
+- 拉取：`e05447c`；生产后端已由 Windows 部署到 `e05447c`，`runtime.py` / `profile.py` SHA-256 与本地一致；macOS **本轮未重新部署后端**。
+- 测试：
+  - 后端完整测试 **568 passed**
+  - QA 对抗 **66 条：65 passed / 1 failed**
+  - iOS `9eb1411`：`FitAITests` **121/121**、UI **4/4**；已装 Wu-Tang
+- 上一轮 3 条已确认修复：
+  - `膝盖好了，腰还疼` 只移除膝盖
+  - `膝盖恢复了但腰还疼` 保留腰
+  - batch 食物+体重重复记录有 `duplicate_warning`
+- 新阻断问题：
+  1. **“不舒服”仍被视为已恢复**：已有“腰部旧伤”+“膝盖有伤”，说 `膝盖好了，腰不舒服`，确认后 `profile.injuries` 为空数组；应只移除膝盖、保留腰部。
+     - 根因：分句后的 `pain_active` 只识别“疼/痛”，没有识别“不舒服/还没好/酸/仍/还”。
+     - 测试：`test_injury_partial_recovery_keeps_uncomfortable_area`
+- 额外观察：
+  - `膝盖好了，腰还没好` 没有“疼/痛/不舒服”等触发词，整句落到普通回答，不会进入伤病更新；建议把“没好/还没好/仍不舒服”纳入识别。
+- 已通过并锁定：
+  - 单卡/力量/有氧/batch 重复写入警告
+  - “膝盖好了，腰还疼”“膝盖恢复了但腰还疼”保留腰
+  - 避开动作 `training.dislike_exercise` 添加/撤销、计划池过滤
+  - 器械、收藏、自定义食物、体型分析等上一轮回归
+- 生产：
+  - `fitai-api` healthy，`/health/ready` 200
+  - Flyway 仍 **V42**，无新迁移
+  - iOS `9eb1411` 已安装 Wu-Tang
+- 备份：
+  - 本轮未重部署，未新增备份；生产后端为 Windows 部署的 `e05447c`
+- Windows 需要做：
+  - 伤病部分恢复的“仍在疼”判断要覆盖 `不舒服/没好/还没好/酸/仍/还`，不能只看 `疼/痛`。
+  - `_looks_like_injury_update` 要把“没好/还没好/仍不舒服”纳入触发词，避免整句落到普通回答。
+  - 先做分句与恢复/仍痛区分，再决定全清；只移除明确恢复的部位。
+  - 修好后把这条移入 `backend/tests`，QA 66 条必须全绿再部署后端。
+- 不要恢复：
+  - 不要因为“好了/恢复了”清空仍在不适的部位。
+  - 不要只把“疼/痛”当作未恢复；不舒服、没好也是未恢复。
 
 ### 2026-11-17 · Windows（batch 重复警告 + 伤病分句恢复）
 
