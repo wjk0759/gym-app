@@ -1554,3 +1554,53 @@ def test_injury_partial_recovery_keeps_the_still_painful_injury(db):
     joined = " ".join(profile.injuries or [])
     assert "腰" in joined, profile.injuries
     assert "膝" not in joined, profile.injuries
+
+
+def test_injury_comma_partial_recovery_keeps_pain(db):
+    profile = db.get(Profile, "user-1")
+    profile.injuries = ["腰部旧伤", "膝盖有伤"]
+    db.commit()
+    result = coach_turn(db, "膝盖好了，腰还疼")
+    pending = result["pending"]
+    assert pending is not None, result
+    if pending["kind"] != "card":
+        return
+    runtime.confirm_pending(db, "user-1", pending["id"])
+    profile = db.get(Profile, "user-1")
+    joined = " ".join(profile.injuries or [])
+    assert "腰" in joined, profile.injuries
+    assert "膝" not in joined, profile.injuries
+
+
+def test_injury_recovered_word_partial_does_not_clear_all(db):
+    profile = db.get(Profile, "user-1")
+    profile.injuries = ["腰部旧伤", "膝盖有伤"]
+    db.commit()
+    result = coach_turn(db, "膝盖恢复了但腰还疼")
+    pending = result["pending"]
+    assert pending is not None, result
+    if pending["kind"] != "card":
+        return
+    runtime.confirm_pending(db, "user-1", pending["id"])
+    profile = db.get(Profile, "user-1")
+    joined = " ".join(profile.injuries or [])
+    assert "腰" in joined, profile.injuries
+    assert "膝" not in joined, profile.injuries
+
+
+def test_batch_duplicate_food_and_weight_warns(db):
+    first = coach_turn(db, "记午饭鸡胸肉200g，再称体重73kg")
+    assert first["pending"] is not None, first
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+
+    second = coach_turn(db, "记午饭鸡胸肉200g，再称体重73kg")
+    pending = second["pending"]
+    assert pending is not None, second
+    assert pending["capability_id"] == "coach.batch", second
+    warnings = [
+        str(item.get("duplicate_warning") or "")
+        + str((item.get("payload") or {}).get("duplicate_warning") or "")
+        for item in pending["payload"].get("batch") or []
+        if isinstance(item, dict)
+    ]
+    assert any(warnings), pending
