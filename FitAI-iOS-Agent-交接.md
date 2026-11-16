@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`e05447c`（文档 `a9acb72`；batch 重复警告 + 伤病分句恢复；生产后端 `e05447c`，`runtime.py` / `profile.py` SHA-256 与本地一致；iOS 已装 `9eb1411`；Flyway **V42**；`FitAITests` **121/121**、UI **4/4**；后端 **568 passed**、QA **65 passed / 1 failed**；**后端发布阻断**：`膝盖好了，腰不舒服` 仍会把腰部伤病一起清掉；本轮无 iOS 代码变化，iOS Build 不触发）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`fef2e2f`（餐单/菜谱查看 + 伤病“不舒服/没好”修复；生产后端 `f9b633c`，`runtime.py` / `profile.py` / `diet_meal_detail.py` SHA-256 与本地一致；iOS 已装 `9eb1411`；Flyway **V42**；`FitAITests` **121/121**、UI **4/4**；后端 **572 passed**、QA **66/66**；本轮无 iOS 代码变化，iOS Build 不触发）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +26,40 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-17 · Windows（餐单/菜谱查看 + 伤病“不舒服/没好”）
+
+- 提交：`f1f2d55` + `f9b633c`（文档 `fef2e2f`），已推 `develop`；后端已部署 `f9b633c`；无迁移。
+- 修复 Mac 阻断：
+  - `膝盖好了，腰不舒服` → 只移除膝盖，保留腰。
+  - `膝盖好了，腰还没好` → 只移除膝盖，保留腰；`没好/还没好/未好` 已纳入伤病更新触发词。
+  - “还在疼”判断覆盖 `疼/痛/不舒服/难受/发紧/酸/没好`。
+- 新增 `diet.meal_detail`：
+  - 支持“今天午餐吃什么”“晚餐菜谱怎么做”“看看今天的餐单”。
+  - 读取已保存餐单的食材、配料和做法；没有保存餐单时提示先生成，不凭空编菜谱。
+  - 支持同时看多餐（“午餐和晚餐吃什么”）和整日餐单概览。
+- 额外修复：
+  - 语义路由清单改为导入即注册全部 47 个能力；此前 `custom_food/equipment/favorite/dislike/body_analysis` 要等规则先命中后才进入清单，语义 fallback 可能选不到。
+- 验证：
+  - 后端 **572 passed**
+  - QA **66/66**
+  - Ruff app/tests/qa 通过
+  - Mac 的 QA 已移入 `backend/tests`
+  - 新增测试：餐单/菜谱读取、无餐单提示、伤病“不舒服/没好”保留。
+- 生产：
+  - 后端 `f9b633c` 已部署；`runtime.py`、`profile.py`、`diet_meal_detail.py` SHA-256 与本地一致
+  - `fitai-api` healthy；`/health/ready` 返回 `{"status":"ready"}`；Flyway 仍 V42
+- iOS：
+  - 本轮无 iOS 代码变化，iOS Build 不触发；最新可安装仍是 `9eb1411`（Mac 已装）。
+- Mac 要做：
+  - 拉 `fef2e2f`，重跑 QA 66/66、`FitAITests`。
+  - 真机验证：
+    - “今天午餐吃什么” → 显示已保存餐单的食材/做法。
+    - 没有餐单的日期 → 提示先生成，不显示编造菜谱。
+    - “膝盖好了，腰不舒服/腰还没好” → 只移除膝盖。
+- 不要恢复：
+  - 不要把“查看餐单”做成生成新计划。
+  - 不要把“不舒服/没好”当作已恢复。
 
 ### 2026-11-17 · macOS（伤病“不舒服/没好”语义压力测试：阻断）
 
