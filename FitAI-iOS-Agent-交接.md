@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`1159083`（资料/伤病教练修改；生产后端 `1159083`，`runtime.py` / `profile.py` SHA-256 与本地一致；iOS 已装 `3c8c499`；Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **549 passed**、QA **55/55**；iOS Build `1159083` ✓）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`3d5e01d`（器械库教练写入；生产后端 `3d5e01d`，`runtime.py` / `equipment.py` SHA-256 与本地一致；iOS 已装 `3c8c499`；Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **551 passed**、QA **55/55**；iOS Build `3d5e01d` ✓）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -123,6 +123,42 @@
 - 不要恢复：
   - 不要用全局记忆顺序解释“第一条”。
   - 不要把“早上练什么/晚上吃什么”这类正常问题当成记忆删除选择。
+
+### 2026-11-16 · Windows（器械库教练写入）
+
+- 提交：`3d5e01d`，已推 `develop`；后端已部署 `3d5e01d`；无迁移。
+- 做了什么：
+  - 新增 `equipment.add`：把识别结果或说出的器械加入个人器械库；命中器械目录时自动带出可用动作。
+  - 新增 `equipment.update`：修改个人器械名称。
+  - 新增 `equipment.delete`：删除个人器械，支持撤销恢复，包括启用的动作。
+  - 器械写入后刷新 profile 器械缓存和计划池。
+  - iOS agent context 增加 `equipment_name` / `equipment_type`，识别后可以直接说“把刚才识别的器械加入器械库”。
+  - iOS 远端器械同步增加删除修剪：服务端已删除的已同步器械会移除，未同步本地记录和墓碑保留。
+- 验证：
+  - 后端 **551 passed**
+  - QA **55/55**
+  - Ruff app/tests/qa 通过
+  - GitHub Backend Tests `3d5e01d` 成功
+  - 新增测试：识别上下文加入、改名、删除/撤销、删除后本地同步。
+- 生产：
+  - 后端 `3d5e01d` 已部署；`runtime.py`、`equipment.py` SHA-256 与本地一致
+  - `fitai-api` healthy；`/health/ready` 返回 `{"status":"ready"}`；Flyway 仍 V42
+- iOS：
+  - `CoachRefreshDomains` 增加器械写能力；`AppStore+AgentActions` 补充器械上下文；`AppStore+Sync` 增加删除修剪。
+  - iOS Build `3d5e01d` ✓。
+- Mac 要做：
+  - 等/重跑 iOS Build `3d5e01d`，安装最新 iOS。
+  - 真机验证：
+    - 识别器械后说“把刚才识别的器械加入器械库” → 确认后出现在器械库。
+    - “把坐姿划船机改名为坐姿划船” → 改名成功，撤销恢复。
+    - “删掉坐姿划船机” → 删除成功，撤销恢复。
+    - 删除后重进/刷新器械库，不应被远端拉回。
+    - 断网删除器械 → 重连后不复活。
+    - 器械变化后计划池/严格模式重排提示正常。
+- 不要恢复：
+  - 不要让远端刷新把已删除器械复活。
+  - 不要在加入器械时跳过 profile 器械缓存刷新。
+  - 不要在删除时丢掉启用的动作，撤销要能恢复。
 
 ### 2026-11-16 · Windows（资料/伤病教练修改）
 
