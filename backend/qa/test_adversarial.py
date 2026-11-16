@@ -1763,3 +1763,13 @@ def test_profile_equipment_replace_phrase_removes_old_equipment(db):
     values = pending["payload"]["equipment"]
     assert "barbell" in values, values
     assert "dumbbell" not in values, values
+
+
+def test_profile_equipment_i_sold_phrase_removes_equipment(db):
+    profile = db.get(Profile, "user-1")
+    profile.equipment = ["bodyweight", "kettlebell"]
+    db.commit()
+    result = coach_turn(db, "我卖了壶铃")
+    pending = result["pending"]
+    assert pending is not None, result
+    assert "kettlebell" not in pending["payload"]["equipment"], pending
