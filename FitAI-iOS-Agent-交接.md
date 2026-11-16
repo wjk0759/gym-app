@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`94aed7b`（饮食多条目纠错 + 器械变化重排提示 + 5 个纠错阻断修复；生产后端 `94aed7b` 已部署，iOS 已装 `ad0674f`；生产后端 `94aed7b` + Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **525 passed**、QA **29/29**；上一轮 5 个纠错阻断已修复并部署）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`b94991b`（教练删除身体记录 + 删除同步；后端 `b94991b` 已部署生产；iOS 代码到 `30adeb2`，已装 `ad0674f`；生产后端 `b94991b` + Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **528 passed**、QA **29/29**；iOS Build `30adeb2` 仍在 macOS runner 排队）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +26,42 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-16 · Windows（教练删除身体记录 + 删除同步）
+
+- 提交：`f0bebfd` + `30adeb2` + `b94991b`，已推 `develop`；后端已部署 `b94991b`；无迁移。
+- 做了什么：
+  - 新增 `body.delete_metric`：支持“删掉今天的体重记录”“删除最近一条体脂记录”“把昨天腰围记录去掉”。
+  - 只清除用户点名的指标；同一行还有体脂/腰围时保留；整行删空才移除记录。
+  - 删除卡确认后执行，可撤销恢复字段或整行。
+  - `recompute_profile_cache` 改为每个字段取“最近一条含该字段的记录”，避免删体重后 profile 缓存仍是旧值。
+  - iOS `mergeRemoteBodyMetrics` 会移除服务端已不存在的已同步记录；未同步本地记录保留。
+  - `CoachRefreshDomains` 增加 `body.delete_metric` → `.body/.profile/.diet/.review`。
+- 验证：
+  - 后端 **528 passed**
+  - QA **29/29**
+  - Ruff app/tests/qa 通过
+  - GitHub Backend Tests `30adeb2` 成功
+  - 新增测试：只删体重保留体脂、整行删除后撤销重建、最近一条选择最新记录、profile 缓存回退到上一条。
+  - iOS Build `30adeb2` 仍在 macOS runner 排队，尚未得到构建结果。
+- 生产：
+  - 后端 `b94991b` 已部署；`body.py` SHA-256 与本地一致
+  - `fitai-api` healthy；`/health/ready` 返回 `{"status":"ready"}`；Flyway 仍 V42
+- 未验证：
+  - iOS 删除记录的远端同步刷新（需 Mac 构建后真机确认）
+  - 没有用登录真机跑删除/撤销
+- Mac 要做：
+  - 拉 `b94991b`；等 iOS Build `30adeb2` 结果；build/install 最新 iOS。
+  - 跑 `FitAITests`（121/121）和 UI 4/4。
+  - 用生产验证：
+    - “今天体重73kg，体脂22%” → “删掉今天的体重记录” → 只剩体脂 22，体重清空
+    - 再撤销 → 体重 73 恢复
+    - “删除最近一条体重记录” → 最新一条消失
+    - 删除后刷新身体页/重进 App，被删记录不应回来
+- 不要恢复：
+  - 不要因为删体重就删掉同一条里的体脂/腰围。
+  - 不要在远端刷新时删除未同步的本地记录。
+  - 不要让 profile 缓存继续指向已删除的最新记录。
 
 ### 2026-11-16 · Windows（饮食纠错 5 个阻断修复）
 
