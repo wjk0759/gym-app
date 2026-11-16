@@ -380,9 +380,13 @@ def export_me(user_id: CurrentUser, db: DBSession):
         .all()
     )
 
+    profile_data = profile_to_dict(profile) if profile else None
+    if profile_data is not None:
+        profile_data["equipment"] = effective_equipment_types(db, user_id)
+
     return {
         "user_id": user_id,
-        "profile": profile_to_dict(profile) if profile else None,
+        "profile": profile_data,
         "goal": goal_to_dict(goal),
         "programs": [serialize_program(item) for item in programs],
         "workouts": [
