@@ -17,6 +17,7 @@ from zoneinfo import ZoneInfo
 from ..config import settings
 from . import llm
 from .food_vision import FOODS
+from .lexicon import MEAL_LABELS, MEAL_PATTERNS
 from .prompt_registry import prompt_version
 
 DIET_TZ = ZoneInfo("Asia/Shanghai")
@@ -37,20 +38,6 @@ def _safe_float(value: object, default: float = 0.0) -> float:
         return float(match.group(0))
     except ValueError:
         return default
-
-
-MEAL_PATTERNS = [
-    ("breakfast", r"早餐|早饭|早上|清晨"),
-    ("lunch", r"午餐|午饭|中饭|中午|晌午"),
-    ("snack", r"加餐|夜宵|宵夜|零食|下午茶|小吃"),
-    ("dinner", r"晚餐|晚饭|晚上|傍晚|昨晚|夜里"),
-]
-MEAL_LABELS = {
-    "breakfast": "早饭",
-    "lunch": "午饭",
-    "dinner": "晚饭",
-    "snack": "加餐",
-}
 
 
 def parse_meal_mentions(text: str) -> list[str]:

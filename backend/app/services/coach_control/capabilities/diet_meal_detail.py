@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from ....models import utcnow
 from ...food_text import DIET_TZ, parse_food_date
+from ...lexicon import MEAL_ALIASES, MEAL_LABELS
 from ...meal_plans import get_day
 from ..registry import Capability, register
 
@@ -29,20 +30,6 @@ CAPABILITY = register(
     )
 )
 
-MEAL_LABELS = {
-    "breakfast": "早餐",
-    "lunch": "午餐",
-    "dinner": "晚餐",
-    "snack": "加餐",
-}
-MEAL_WORDS = (
-    ("breakfast", ("早餐", "早饭", "早上", "今早", "早晨", "一早")),
-    ("lunch", ("午餐", "午饭", "中午")),
-    ("dinner", ("晚餐", "晚饭", "晚上", "今晚", "夜里")),
-    ("snack", ("加餐", "零食", "下午茶")),
-)
-
-
 def _day_label(value, today) -> str:
     if value == today:
         return "今天"
@@ -56,7 +43,7 @@ def _day_label(value, today) -> str:
 def _meal_keys(message: str) -> list[str]:
     return [
         key
-        for key, words in MEAL_WORDS
+        for key, words in MEAL_ALIASES.items()
         if any(word in message for word in words)
     ]
 

@@ -11,14 +11,9 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 
 from .diet import ensure_meal_macros
+from .lexicon import MEAL_LABELS
 
 DIET_TZ = timezone(timedelta(hours=8))
-MEAL_LABELS = {
-    "breakfast": "早餐",
-    "lunch": "午餐",
-    "dinner": "晚餐",
-    "snack": "加餐",
-}
 
 
 def _log_date(log) -> date:

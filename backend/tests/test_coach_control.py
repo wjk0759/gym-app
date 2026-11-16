@@ -3759,7 +3759,7 @@ def test_dinner_reference_uses_prior_turns_and_full_history(db, monkeypatch):
     assert "干蒸牛肉" in names
     assert "米饭" in names
     assert payload["meal"] == "lunch"
-    assert "另外看到你提到晚饭" in turn["reply"]
+    assert "另外看到你提到晚餐" in turn["reply"]
     assert all("这是我今天的晚饭" not in q for q in payload.get("questions", []))
 
 

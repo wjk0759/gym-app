@@ -13,16 +13,11 @@ from sqlalchemy.orm import Session
 
 from ....models import FoodLog, MealPlan, Profile, utcnow
 from ...diet import calculate_targets
+from ...lexicon import MEAL_LABELS
 from ...queries import active_goal
 from ..registry import Capability, register
 
 DIET_TZ = timezone(timedelta(hours=8))
-MEAL_LABELS = {
-    "breakfast": "早餐",
-    "lunch": "午餐",
-    "dinner": "晚餐",
-    "snack": "加餐",
-}
 
 CAPABILITY = register(
     Capability(

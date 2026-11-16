@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from ....models import Exercise, Profile
 from ...equipment import available_equipment_types
+from ...lexicon import EQUIPMENT_ALIASES, EQUIPMENT_LABELS
 from ...queries import active_program
 from ...serializers import load_program
 from ..registry import Capability, register
@@ -31,26 +32,6 @@ CAPABILITY = register(
     )
 )
 
-EQUIPMENT_LABELS = {
-    "bodyweight": "徒手",
-    "dumbbell": "哑铃",
-    "barbell": "杠铃",
-    "machine": "固定器械",
-    "cable": "龙门架/绳索",
-    "band": "弹力带",
-    "kettlebell": "壶铃",
-    "other": "其他器械",
-}
-EQUIPMENT_ALIASES = {
-    "bodyweight": ("徒手", "自重", "无器械", "没器械", "没有器械", "不去健身房"),
-    "dumbbell": ("哑铃",),
-    "barbell": ("杠铃", "奥杆"),
-    "machine": ("固定器械", "综合器械", "史密斯", "健身房器械"),
-    "cable": ("龙门架", "绳索", "拉力器", "缆绳"),
-    "band": ("弹力带", "阻力带", "弹力绳"),
-    "kettlebell": ("壶铃",),
-    "other": ("单杠", "双杠", "trx", "其他器械", "其他"),
-}
 REPLACE = re.compile(
     r"只有|只用|只练|只做|改成|换成|改为|我的器械是|设备是|器材是|"
     r"家里只有|现在只有"

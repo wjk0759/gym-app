@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from ....models import Exercise, Goal, Profile
 from ...food_text import parse_food_date
+from ...lexicon import BODY_PART_ALIASES
 from ...plan_validator import injury_tags
 from ...queries import active_goal, active_program
 from ...serializers import load_program
@@ -231,11 +232,12 @@ def _dedupe_injuries(values: list[str]) -> list[str]:
     return result
 
 
-INJURY_BODY_PARTS = ("膝", "腰", "肩", "腕", "踝", "肘", "半月板")
-
-
 def _injury_body_parts(text: str) -> list[str]:
-    return [part for part in INJURY_BODY_PARTS if part in text]
+    return [
+        part
+        for part, aliases in BODY_PART_ALIASES.items()
+        if any(alias in text for alias in aliases)
+    ]
 
 
 def resolve_injuries(
