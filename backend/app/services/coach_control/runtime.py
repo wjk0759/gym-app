@@ -23,6 +23,7 @@ from ...models import (
     CoachPending,
     CoachSession,
     CoachTurn,
+    FoodLog,
     Profile,
     utcnow,
 )
@@ -213,16 +214,41 @@ def _looks_like_correction(message: str) -> bool:
     return bool(re.search(r"记错|不是|改成|应该是|修正|改一下", message))
 
 
-def _correction_food_text(message: str) -> str:
-    """Remove conversational correction framing before food resolution."""
-    replaced = re.search(r"不是(.+?)[，,。；;]?\s*是(.+)", message)
-    if replaced is not None:
-        return replaced.group(2).strip()
-    return re.sub(
-        r"^(记错了|不是|改成|改为|换成|修正|应该是|改一下)[，,。；;\s]*",
+def _diet_correction_parts(message: str) -> tuple[str, list[str]]:
+    """Split a correction into resolver text and old terms to remove.
+
+    Supports both "不是鸡胸肉，是牛肉" and
+    "鸡胸肉不是200g，是150g"; the latter keeps the food name in the resolver
+    text so the new grams land on the right item.
+    """
+    value = re.sub(
+        r"^(记错了|修正|改一下|应该是)[，,。；;\s]*",
         "",
         message.strip(),
     ).strip()
+    replaced = re.search(
+        r"(?P<prefix>[^，,。；;]*?)不是(?P<old>[^，,。；;]+?)"
+        r"[，,。；;]?\s*是(?P<new>.+)",
+        value,
+    )
+    if replaced is not None:
+        prefix = replaced.group("prefix").strip(" ，,。；;")
+        old = replaced.group("old").strip(" ，,。；;")
+        new = replaced.group("new").strip(" ，,。；;")
+        terms = [item for item in (prefix, old) if item]
+        resolve_text = f"{prefix} {new}".strip() if prefix else new
+        return resolve_text, terms
+    fallback = re.sub(
+        r"^(不是|改成|改为|换成|修正|应该是|改一下)[，,。；;\s]*",
+        "",
+        value,
+    ).strip()
+    return fallback, []
+
+
+def _correction_food_text(message: str) -> str:
+    """Remove conversational correction framing before food resolution."""
+    return _diet_correction_parts(message)[0]
 
 
 def _diet_draft_from_payload(payload: dict) -> dict:
@@ -243,23 +269,128 @@ def _diet_draft_from_payload(payload: dict) -> dict:
     return draft
 
 
-def _strip_replaced_diet_items(draft: dict, text: str) -> None:
-    """Drop old items named by a '不是 X，是 Y' correction."""
-    replaced = re.search(r"不是(.+?)[，,。；;]?\s*是", text)
-    if replaced is None:
-        return
-    old_phrase = replaced.group(1)
+def _diet_draft_from_logs(
+    db: Session,
+    user_id: str,
+    action: CoachActionRecord,
+) -> dict:
+    """Build a correction draft from the logs that still exist."""
+    logs = (
+        db.execute(
+            select(FoodLog)
+            .where(
+                FoodLog.user_id == user_id,
+                FoodLog.source_action_id == action.id,
+            )
+            .order_by(FoodLog.logged_at, FoodLog.id)
+        )
+        .scalars()
+        .all()
+    )
+    payload = action.payload if isinstance(action.payload, dict) else {}
+    groups: dict[str, dict] = {}
+    for log in logs:
+        meal = str(log.meal or payload.get("meal") or "lunch")
+        group = groups.setdefault(
+            meal,
+            {"meal": meal, "date": payload.get("date"), "items": []},
+        )
+        grams = float(log.grams or 0)
+        group["items"].append(
+            {
+                "name": log.food_name,
+                "grams": grams,
+                "kcal": float(log.kcal or 0),
+                "protein_g": float(log.protein or 0),
+                "carbs_g": float(log.carbs or 0),
+                "fat_g": float(log.fat or 0),
+                "fiber_g": float(log.fiber or 0),
+                "portion": f"{round(grams)}g",
+                "confidence": float(log.estimate_confidence or 0.7),
+            }
+        )
+    return {
+        "date": payload.get("date"),
+        "meal": payload.get("meal") or next(iter(groups), None),
+        "items": [
+            item for group in groups.values() for item in group["items"]
+        ],
+        "meals": list(groups.values()),
+    }
+
+
+def _diet_action_for_correction(
+    db: Session,
+    user_id: str,
+    last_action: CoachActionRecord | None,
+) -> CoachActionRecord | None:
+    """Find the food sub-action when the latest action was a batch."""
+    if last_action is None:
+        return None
+    if last_action.capability_id == DIET:
+        return last_action
+    if last_action.capability_id != BATCH:
+        return None
+    sub_ids = [
+        str(value)
+        for value in (last_action.after or {}).get("sub_action_ids") or []
+        if str(value).strip()
+    ]
+    if not sub_ids:
+        return None
+    records = (
+        db.execute(
+            select(CoachActionRecord).where(
+                CoachActionRecord.user_id == user_id,
+                CoachActionRecord.id.in_(sub_ids),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    diet_records = [
+        record
+        for record in records
+        if record.capability_id == DIET and record.status == "executed"
+    ]
+    return diet_records[0] if len(diet_records) == 1 else None
+
+
+def _strip_diet_items_by_terms(
+    draft: dict,
+    terms: list[str],
+    meal: str | None = None,
+) -> list[str]:
+    if not terms:
+        return []
+    removed: list[str] = []
     for group in draft.get("meals") or [draft]:
         if not isinstance(group, dict):
             continue
-        group["items"] = [
-            item
-            for item in group.get("items") or []
-            if not (
-                str(item.get("name") or "").strip()
-                and str(item.get("name") or "").strip() in old_phrase
-            )
-        ]
+        if meal and str(group.get("meal") or "") != meal:
+            continue
+        kept = []
+        for item in group.get("items") or []:
+            name = str(item.get("name") or "").strip()
+            if name and any(
+                term in name or name in term for term in terms
+            ):
+                removed.append(name)
+            else:
+                kept.append(item)
+        group["items"] = kept
+    return removed
+
+
+def _strip_replaced_diet_items(
+    draft: dict,
+    text: str,
+    meal: str | None = None,
+) -> list[str]:
+    """Drop old items named by a '不是 X，是 Y' correction."""
+    _, terms = _diet_correction_parts(text)
+    return _strip_diet_items_by_terms(draft, terms, meal or parse_meal(text))
+
 
 
 def _infer_diet_draft_meal(
@@ -914,21 +1045,46 @@ async def _handle_executed_diet_correction(
     if not _looks_like_food(text) or re.search(r"\d+\s*(kg|公斤|斤)", text):
         return None
     payload = last_action.payload if isinstance(last_action.payload, dict) else {}
-    draft = _diet_draft_from_payload(payload)
-    default_meal, ambiguous = _infer_diet_draft_meal(draft, text)
-    if ambiguous:
+    # Read the logs that still exist, not the original action payload. A food
+    # the user deleted or edited outside this action must not be resurrected.
+    draft = _diet_draft_from_logs(db, user_id, last_action)
+    if not draft.get("meals"):
         return _finish_reply(
             db,
             session,
             turn,
             started,
             intent=DIET,
+            reply="这条饮食记录已经不在了，直接重新告诉我吃了什么就好。",
+        )
+    default_meal, ambiguous = _infer_diet_draft_meal(draft, text)
+    if ambiguous:
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=DIET,
+            payload={
+                **draft,
+                "replace_action_id": last_action.id,
+                "replaces_previous": True,
+                "message": _correction_food_text(text) or text,
+                "strip_terms": _diet_correction_parts(text)[1],
+                "text": text,
+                "needs_meal": True,
+            },
             reply=(
                 "这个食物在多餐里都有。告诉我改哪一餐，"
                 "比如“记错了，午餐鸡胸肉是150g”。"
             ),
+            kind="draft",
         )
-    _strip_replaced_diet_items(draft, text)
+    _strip_replaced_diet_items(
+        draft,
+        text,
+        parse_meal(text) or default_meal,
+    )
     from .capabilities.diet import resolve as resolve_diet
 
     resolution = await resolve_diet(
@@ -1078,7 +1234,11 @@ async def _pending_card_followup(
         resolve_text = text
         if correction:
             default_meal, _ = _infer_diet_draft_meal(draft, text)
-            _strip_replaced_diet_items(draft, text)
+            _strip_replaced_diet_items(
+                draft,
+                text,
+                parse_meal(text) or default_meal,
+            )
             resolve_text = _correction_food_text(text) or text
         resolution = await resolve_diet(
             db,
@@ -2040,6 +2200,10 @@ async def handle_turn(
                 cancel_pending(db, session, pending)
                 pending = None
             else:
+                if pending.payload.get("needs_meal"):
+                    text = (
+                        f"{pending.payload.get('message') or ''} {text}"
+                    ).strip()[:2000]
                 diet_draft = dict(pending.payload or {})
                 intent_override = DIET
         elif pending.capability_id == TRAINING:
@@ -2423,19 +2587,21 @@ async def handle_turn(
                 "reply": reply,
                 "pending": serialize_pending(active),
             }
-        if last_capability == DIET and last_action is not None:
-            handled = await _handle_executed_diet_correction(
-                db,
-                user_id,
-                session,
-                turn,
-                started,
-                text,
-                last_action,
-                conversation,
-            )
-            if handled is not None:
-                return handled
+        if last_capability in {DIET, BATCH} and last_action is not None:
+            diet_action = _diet_action_for_correction(db, user_id, last_action)
+            if diet_action is not None:
+                handled = await _handle_executed_diet_correction(
+                    db,
+                    user_id,
+                    session,
+                    turn,
+                    started,
+                    text,
+                    diet_action,
+                    conversation,
+                )
+                if handled is not None:
+                    return handled
         if last_capability is None:
             emit_event(
                 db,
@@ -3112,6 +3278,18 @@ async def handle_turn(
     ):
         from .capabilities.diet import resolve as resolve_diet
 
+        if diet_draft:
+            strip_terms = [
+                str(value)
+                for value in diet_draft.get("strip_terms") or []
+                if str(value).strip()
+            ]
+            if strip_terms:
+                _strip_diet_items_by_terms(
+                    diet_draft,
+                    strip_terms,
+                    parse_meal(text),
+                )
         resolution = await resolve_diet(
             db,
             user_id,
@@ -3437,12 +3615,13 @@ def _replace_previous_coach_action(
     db: Session,
     user_id: str,
     action_id: str,
-) -> None:
-    """Mark an executed food action undone without committing.
+) -> list[dict]:
+    """Mark an executed food action undone and snapshot its current logs.
 
     Used when a correction card is confirmed. Keeping this in the same
     transaction as the new inserts means a failed write leaves the old logs
-    intact.
+    intact. The snapshot is what undo restores, so a food the user deleted
+    before correcting is not resurrected.
     """
     record = db.execute(
         select(CoachActionRecord).where(
@@ -3453,13 +3632,27 @@ def _replace_previous_coach_action(
     if record is None:
         raise LookupError("要替换的记录不存在")
     if record.status == "undone":
-        return
+        return []
     if record.status != "executed":
         raise ValueError("上一条记录已经不能替换")
     if record.capability_id != DIET:
         raise ValueError("只能替换饮食记录")
+    from ..coach_actions.food_actions import _food_log_payload
     from .capabilities.diet import undo as undo_diet
 
+    logs = (
+        db.execute(
+            select(FoodLog)
+            .where(
+                FoodLog.user_id == user_id,
+                FoodLog.source_action_id == record.id,
+            )
+            .order_by(FoodLog.logged_at, FoodLog.id)
+        )
+        .scalars()
+        .all()
+    )
+    snapshot = [_food_log_payload(log) for log in logs]
     undo_diet(db, user_id, record.id, record.payload)
     record.status = "undone"
     record.undone_at = utcnow()
@@ -3472,6 +3665,53 @@ def _replace_previous_coach_action(
         payload={"capability_id": record.capability_id, "replaced": True},
     )
     db.flush()
+    return snapshot
+
+
+def _undo_diet_replacement(
+    db: Session,
+    user_id: str,
+    record: CoachActionRecord,
+    replaced_id: str,
+) -> dict:
+    """Undo a replacement and restore the logs it replaced."""
+    from ..coach_actions.food_actions import _restore_food_log
+    from .capabilities.diet import undo as undo_diet
+
+    result = undo_diet(db, user_id, record.id, record.payload)
+    snapshots = [
+        item
+        for item in (record.before or {}).get("previous_logs") or []
+        if isinstance(item, dict)
+    ]
+    existing_client_ids = {
+        str(log.client_id)
+        for log in db.execute(
+            select(FoodLog).where(
+                FoodLog.user_id == user_id,
+                FoodLog.source_action_id == replaced_id,
+            )
+        )
+        .scalars()
+        .all()
+    }
+    restored = 0
+    for snapshot in snapshots:
+        client_id = str(snapshot.get("client_id") or "")
+        if client_id and client_id in existing_client_ids:
+            continue
+        db.add(_restore_food_log(db, user_id, snapshot))
+        restored += 1
+    old = db.get(CoachActionRecord, replaced_id)
+    if old is not None and old.user_id == user_id:
+        old.status = "executed"
+        old.undone_at = None
+    db.flush()
+    return {
+        **result,
+        "replaced_action_id": replaced_id,
+        "restored_previous": restored,
+    }
 
 
 def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
@@ -3548,8 +3788,13 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
             pending.payload.get("replace_action_id") or ""
         ).strip()
         if replace_action_id:
-            _replace_previous_coach_action(db, user_id, replace_action_id)
-            before = {"replaced_action_id": replace_action_id}
+            previous_logs = _replace_previous_coach_action(
+                db, user_id, replace_action_id
+            )
+            before = {
+                "replaced_action_id": replace_action_id,
+                "previous_logs": previous_logs,
+            }
         result = execute_diet(db, user_id, action_id, pending.payload)
         receipt = {
             "summary": (
@@ -4020,9 +4265,17 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
         }
 
     if record.capability_id == DIET:
-        from .capabilities.diet import undo as undo_diet
+        replaced_id = str(
+            (record.before or {}).get("replaced_action_id") or ""
+        ).strip()
+        if replaced_id:
+            result = _undo_diet_replacement(
+                db, user_id, record, replaced_id
+            )
+        else:
+            from .capabilities.diet import undo as undo_diet
 
-        result = undo_diet(db, user_id, action_id, record.payload)
+            result = undo_diet(db, user_id, action_id, record.payload)
     elif record.capability_id in {DIET_UPDATE, DIET_DELETE}:
         from .capabilities import log_edit
 

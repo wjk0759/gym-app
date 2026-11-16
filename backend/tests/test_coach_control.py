@@ -1391,7 +1391,7 @@ def test_multi_meal_correction_asks_when_item_is_ambiguous(db):
             "午餐吃了200g鸡胸肉，晚餐吃了150g鸡胸肉",
         )
     )
-    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    confirmed = runtime.confirm_pending(db, "user-1", first["pending"]["id"])
     assert len(db.execute(select(FoodLog)).scalars().all()) == 2
 
     corrected = asyncio.run(
@@ -1402,9 +1402,178 @@ def test_multi_meal_correction_asks_when_item_is_ambiguous(db):
             session_id=first["session"]["id"],
         )
     )
-    assert corrected["pending"] is None
+    assert corrected["pending"]["kind"] == "draft"
+    assert corrected["pending"]["payload"]["replace_action_id"] == confirmed["action_id"]
     assert "哪一餐" in corrected["reply"]
     assert len(db.execute(select(FoodLog)).scalars().all()) == 2
+
+    follow = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "午餐",
+            session_id=first["session"]["id"],
+        )
+    )
+    assert follow["pending"]["kind"] == "card"
+    assert follow["pending"]["payload"]["replace_action_id"] == confirmed["action_id"]
+    runtime.confirm_pending(db, "user-1", follow["pending"]["id"])
+    logs = db.execute(select(FoodLog)).scalars().all()
+    assert sorted((log.meal, log.food_name, float(log.grams)) for log in logs) == [
+        ("dinner", "鸡胸肉", 150.0),
+        ("lunch", "鸡胸肉", 150.0),
+    ]
+
+
+def test_undo_diet_replacement_restores_previous_logs(db):
+    import asyncio
+
+    first = asyncio.run(
+        runtime.handle_turn(db, "user-1", "午餐吃了200g鸡胸肉，150g米饭")
+    )
+    confirmed = runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    corrected = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "记错了，鸡胸肉是150g",
+            session_id=first["session"]["id"],
+        )
+    )
+    replaced = runtime.confirm_pending(
+        db, "user-1", corrected["pending"]["id"]
+    )
+
+    runtime.undo_action(db, "user-1", replaced["action_id"])
+    logs = db.execute(select(FoodLog)).scalars().all()
+    assert sorted((log.food_name, float(log.grams)) for log in logs) == [
+        ("米饭", 150.0),
+        ("鸡胸肉", 200.0),
+    ]
+    old = db.get(CoachActionRecord, confirmed["action_id"])
+    assert old.status == "executed"
+    new = db.get(CoachActionRecord, replaced["action_id"])
+    assert new.status == "undone"
+
+
+def test_batch_diet_sub_action_can_be_corrected_in_place(db):
+    import asyncio
+
+    first = asyncio.run(
+        runtime.handle_turn(db, "user-1", "记午饭鸡胸肉200g，再称体重73kg")
+    )
+    assert first["pending"]["capability_id"] == "coach.batch"
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    assert [
+        (log.meal, log.food_name, float(log.grams))
+        for log in db.execute(select(FoodLog)).scalars().all()
+    ] == [("lunch", "鸡胸肉", 200.0)]
+
+    corrected = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "记错了，鸡胸肉是150g",
+            session_id=first["session"]["id"],
+        )
+    )
+    assert corrected["pending"]["kind"] == "card"
+    runtime.confirm_pending(db, "user-1", corrected["pending"]["id"])
+    assert [
+        (log.meal, log.food_name, float(log.grams))
+        for log in db.execute(select(FoodLog)).scalars().all()
+    ] == [("lunch", "鸡胸肉", 150.0)]
+    assert db.execute(select(BodyMetric)).scalar_one().weight_kg == 73
+
+
+def test_diet_correction_understands_explicit_old_value(db):
+    import asyncio
+
+    first = asyncio.run(
+        runtime.handle_turn(db, "user-1", "午餐吃了200g鸡胸肉，150g米饭")
+    )
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    corrected = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "记错了，鸡胸肉不是200g，是150g",
+            session_id=first["session"]["id"],
+        )
+    )
+    items = corrected["pending"]["payload"]["items"]
+    assert sorted((item["name"], item["grams"]) for item in items) == [
+        ("米饭", 150),
+        ("鸡胸肉", 150),
+    ]
+
+
+def test_diet_correction_does_not_resurrect_deleted_log(db):
+    import asyncio
+
+    first = asyncio.run(
+        runtime.handle_turn(db, "user-1", "午餐吃了200g鸡胸肉，150g米饭")
+    )
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    rice = db.execute(
+        select(FoodLog).where(FoodLog.food_name == "米饭")
+    ).scalar_one()
+    db.delete(rice)
+    db.commit()
+
+    corrected = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "记错了，鸡胸肉是150g",
+            session_id=first["session"]["id"],
+        )
+    )
+    runtime.confirm_pending(db, "user-1", corrected["pending"]["id"])
+    logs = db.execute(select(FoodLog)).scalars().all()
+    assert [
+        (log.meal, log.food_name, float(log.grams)) for log in logs
+    ] == [("lunch", "鸡胸肉", 150.0)]
+
+
+def test_ambiguous_food_replacement_only_changes_the_named_meal(db):
+    import asyncio
+
+    first = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "午餐吃了200g鸡胸肉，晚餐吃了150g鸡胸肉",
+        )
+    )
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    corrected = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "记错了，不是鸡胸肉，是150g牛肉",
+            session_id=first["session"]["id"],
+        )
+    )
+    assert corrected["pending"]["kind"] == "draft"
+    assert "哪一餐" in corrected["reply"]
+
+    follow = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "午餐",
+            session_id=first["session"]["id"],
+        )
+    )
+    runtime.confirm_pending(db, "user-1", follow["pending"]["id"])
+    logs = db.execute(select(FoodLog)).scalars().all()
+    assert sorted(
+        (log.meal, log.food_name, float(log.grams)) for log in logs
+    ) == [
+        ("dinner", "鸡胸肉", 150.0),
+        ("lunch", "牛肉", 150.0),
+    ]
 
 
 def test_food_card_can_replace_an_item(db):
