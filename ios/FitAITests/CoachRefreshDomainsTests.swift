@@ -30,6 +30,14 @@ final class CoachRefreshDomainsTests: XCTestCase {
             [.body, .profile, .diet, .review]
         )
         XCTAssertEqual(
+            CoachRefreshDomains.domains(for: "diet.favorite_food"),
+            [.profile]
+        )
+        XCTAssertEqual(
+            CoachRefreshDomains.domains(for: "diet.custom_food"),
+            [.profile]
+        )
+        XCTAssertEqual(
             CoachRefreshDomains.domains(for: "diet.delete_log"),
             [.diet, .review]
         )
