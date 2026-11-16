@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`0bdc737`（文档 `790d925`；档案器械教练更新 + 不喜欢食物菜名过滤；生产后端 `0bdc737`，`diet_preferences.py` / `profile_equipment.py` / `runtime.py` / `manifest.py` SHA-256 与本地一致；iOS 已装 `9eb1411`；Flyway **V43**；`FitAITests` **121/121**、UI **4/4**；后端 **579 passed**、QA **71/71**；本轮无 iOS 代码变化，iOS Build 不触发）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`cfdaa90`（文档 `e75f047`；档案器械教练更新 + 不喜欢食物菜名过滤；生产后端 `cfdaa90`，`diet_preferences.py` / `profile_equipment.py` / `runtime.py` / `manifest.py` SHA-256 与本地一致；iOS 已装 `9eb1411`；Flyway **V43**；`FitAITests` **121/121**、UI **4/4**；后端 **579 passed**、QA **71/71**；本轮无 iOS 代码变化，iOS Build 不触发）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -97,9 +97,9 @@
 
 ### 2026-11-17 · Windows（档案器械 + 菜名避开食物）
 
-- 提交：`b4c27b8` + `0bdc737`，已推 `develop`；生产后端 `0bdc737`；无新迁移（仍 V43）。
+- 提交：`b4c27b8` + `0bdc737` + `cfdaa90`，已推 `develop`；生产后端 `cfdaa90`；无新迁移（仍 V43）。
 - 新增 `profile.update_equipment`：
-  - 支持“我有哑铃和弹力带”“我的器械是徒手”“去掉弹力带”“家里没有器械”。
+  - 支持“我有哑铃和弹力带”“我的器械是徒手”“去掉弹力带”“家里没有器械”“我买了壶铃”。
   - 普通档案器械更新，确认后可撤销；个人器械库仍是精确器械来源。
   - 若当前计划有动作需要被移除的器械，卡上提示，不自动改计划。
 - 修复 Mac 新 QA：
