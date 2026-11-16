@@ -539,9 +539,11 @@ def _looks_like_memory_forget(message: str) -> bool:
 
 def _looks_like_memory_selection(message: str) -> bool:
     value = message.strip()
+    if re.match(r"^(早上好|晚上好|早安|晚安)", value):
+        return False
     return len(value) <= 20 and bool(
         re.search(
-            r"那条|这条|第[一二三四五六七八九十]条|早上|晚上",
+            r"那条|这条|第[一二三四五六七八九十\d]+条|早上|晚上",
             value,
         )
     )
@@ -1844,12 +1846,15 @@ async def _try_batch_turn(
         _discard_batch_programs(db, user_id, created_program_ids)
         return None
     if any(
-        item["capability_id"] == RESTORE_PLAN for item in actions
+        item["capability_id"] in {RESTORE_PLAN, CONFIGURE_PLAN}
+        for item in actions
     ):
-        # Restore changes the plan that later schedule edits must target.
+        # Restore/configure changes the plan that later schedule edits target.
         actions.sort(
             key=lambda item: (
-                0 if item["capability_id"] == RESTORE_PLAN else 1
+                0
+                if item["capability_id"] in {RESTORE_PLAN, CONFIGURE_PLAN}
+                else 1
             )
         )
     lines = [
@@ -4029,17 +4034,18 @@ def _confirm_batch(
         for day_id in batch_context.get("day_ids") or []
         if str(day_id).strip()
     }
-    has_restore = any(
+    has_plan_change = any(
         isinstance(item, dict)
-        and str(item.get("capability_id") or "") == RESTORE_PLAN
+        and str(item.get("capability_id") or "")
+        in {RESTORE_PLAN, CONFIGURE_PLAN}
         for item in actions[:3]
     )
     for item in actions[:3]:
         if not isinstance(item, dict):
             raise ValueError("批量操作内容不完整")
-        if has_restore:
-            # The restored program is not the one in the card context; the
-            # plan-bound actions are retargeted after the restore executes.
+        if has_plan_change:
+            # The newly activated plan is not the one in the card context;
+            # plan-bound actions are retargeted after it executes.
             continue
         capability_id = str(item.get("capability_id") or "")
         if capability_id not in {
@@ -4070,7 +4076,7 @@ def _confirm_batch(
     executed_ids: list[str] = []
     sub_pending_ids: list[str] = []
     results: list[dict] = []
-    restored_program: Program | None = None
+    retarget_program: Program | None = None
     try:
         for item in actions[:3]:
             if not isinstance(item, dict):
@@ -4081,13 +4087,13 @@ def _confirm_batch(
                 raise ValueError("批量操作包含不支持的能力")
             if not isinstance(sub_payload, dict):
                 sub_payload = {}
-            if restored_program is not None:
+            if retarget_program is not None:
                 if capability_id in {TRAINING, SKIP_TRAINING}:
                     sub_payload = _retarget_batch_plan_action(
                         db,
                         capability_id,
                         sub_payload,
-                        restored_program,
+                        retarget_program,
                     )
                 elif capability_id in {
                     ADD_DAY,
@@ -4095,7 +4101,7 @@ def _confirm_batch(
                     EDIT_EXERCISES,
                 }:
                     raise ValueError(
-                        "恢复计划后，加练或改动作请分开执行"
+                        "切换计划后，加练或改动作请分开执行"
                     )
             sub_id = str(uuid4())
             sub_pending = CoachPending(
@@ -4115,14 +4121,14 @@ def _confirm_batch(
             result = confirm_pending(db, user_id, sub_pending.id)
             executed_ids.append(str(result.get("action_id") or sub_id))
             results.append(result)
-            if capability_id == RESTORE_PLAN:
-                restored_id = str(
+            if capability_id in {RESTORE_PLAN, CONFIGURE_PLAN}:
+                active_id = str(
                     (result.get("receipt") or {}).get("plan_id")
                     or sub_payload.get("program_id")
                     or ""
                 )
-                if restored_id:
-                    restored_program = db.get(Program, restored_id)
+                if active_id:
+                    retarget_program = db.get(Program, active_id)
     except Exception as exc:  # noqa: BLE001 - roll back partial batch
         for sub_id in executed_ids:
             with contextlib.suppress(Exception):

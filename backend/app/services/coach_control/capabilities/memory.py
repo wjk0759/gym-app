@@ -134,6 +134,27 @@ def _memory_keywords(value: str) -> set[str]:
     return {text[index : index + 2] for index in range(len(text) - 1)}
 
 
+_CN_NUMBERS = {
+    "一": 1,
+    "二": 2,
+    "两": 2,
+    "三": 3,
+    "四": 4,
+    "五": 5,
+    "六": 6,
+    "七": 7,
+    "八": 8,
+    "九": 9,
+    "十": 10,
+}
+
+
+def _cn_number(value: str) -> int | None:
+    if value.isdigit():
+        return int(value)
+    return _CN_NUMBERS.get(value)
+
+
 def resolve_forget(db: Session, user_id: str, message: str) -> dict:
     target = re.sub(
         r"^.*?(?:忘掉|忘记|删除|删掉|去掉|别再记(?:住)?|不要记(?:住)?)"
@@ -164,6 +185,23 @@ def resolve_forget(db: Session, user_id: str, message: str) -> dict:
     )
     if not memories:
         return {"ready": False, "questions": ["还没有可删除的长期记忆。"]}
+    ordinal = re.search(r"第\s*([一二两三四五六七八九十\d]+)\s*条", message)
+    if ordinal is not None:
+        index = _cn_number(ordinal.group(1))
+        if index is None or not 1 <= index <= len(memories):
+            return {
+                "ready": False,
+                "questions": ["没有这一条记忆，重新说一个序号试试。"],
+            }
+        item = memories[index - 1]
+        return {
+            "ready": True,
+            "payload": {
+                "memory_id": item.id,
+                "content": item.content,
+                "summary": f"准备删除记忆「{item.content[:60]}」",
+            },
+        }
     if target:
         normalized = _normalize_memory(target)
         matches = [
