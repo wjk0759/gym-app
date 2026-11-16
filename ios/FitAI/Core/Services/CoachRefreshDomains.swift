@@ -17,6 +17,7 @@ enum CoachRefreshDomains {
         "training.generate_plan": [.plan, .schedule, .workouts, .diet],
         "training.adjust_plan": [.plan, .schedule, .workouts, .diet],
         "training.configure_plan": [.plan, .schedule, .workouts, .diet],
+        "training.restore_plan": [.plan, .schedule, .workouts, .diet],
         "training.edit_day_exercises": [.plan, .schedule, .workouts],
         "training.edit_day_exercise": [.plan, .schedule, .workouts],
         "training.add_plan_day": [.plan, .schedule, .workouts, .review],

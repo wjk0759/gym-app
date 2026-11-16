@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import re
+
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ....models import Profile, Program
@@ -40,6 +43,19 @@ ADJUST = register(
         requires_confirmation=True,
         undo=True,
         events=("TrainingPlanAdjusted",),
+        refreshes=("plan", "schedule", "workouts", "diet"),
+    )
+)
+RESTORE = register(
+    Capability(
+        id="training.restore_plan",
+        domain="training",
+        kind="write",
+        title="恢复历史计划",
+        description="把之前的计划版本恢复为当前计划",
+        requires_confirmation=True,
+        undo=True,
+        events=("TrainingPlanRestored",),
         refreshes=("plan", "schedule", "workouts", "diet"),
     )
 )
@@ -145,6 +161,60 @@ def resolve_adjust(db: Session, user_id: str, message: str) -> dict:
         "program_id": pending.id,
         "plan": data,
         "summary": f"已生成调整草案：{data.get('title') or '训练计划'}",
+    }
+
+
+def resolve_restore(db: Session, user_id: str, message: str) -> dict:
+    archived = (
+        db.execute(
+            select(Program)
+            .where(
+                Program.user_id == user_id,
+                Program.status == "archived",
+            )
+            .order_by(Program.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+    if not archived:
+        return {
+            "ready": False,
+            "questions": ["还没有可恢复的历史计划。"],
+        }
+    chosen: Program | None = None
+    version_match = re.search(r"(?:v|版本|第)\s*(\d+)\s*版?", message, re.I)
+    if version_match:
+        version = int(version_match.group(1))
+        chosen = next(
+            (item for item in archived if item.version == version),
+            None,
+        )
+    if chosen is None:
+        for item in archived:
+            if item.title and item.title in message:
+                chosen = item
+                break
+    if chosen is None:
+        chosen = archived[0]
+    created = chosen.created_at
+    date_label = (
+        f"{created.month}月{created.day}日"
+        if created is not None
+        else ""
+    )
+    summary = (
+        f"准备恢复 v{chosen.version}「{chosen.title}」"
+        + (f"（{date_label}）" if date_label else "")
+    )
+    return {
+        "ready": True,
+        "payload": {
+            "program_id": chosen.id,
+            "title": chosen.title,
+            "version": chosen.version,
+            "summary": summary,
+        },
     }
 
 

@@ -153,6 +153,16 @@ ACTION_SPECS: dict[str, ActionSpec] = {
         ("weekly_days", "weekdays", "session_minutes", "split"),
         "plan",
     ),
+    "training.restore_plan": ActionSpec(
+        "training.restore_plan",
+        (
+            "恢复上一版计划",
+            "回到之前那版训练计划",
+            "恢复版本2",
+        ),
+        ("program_id", "version"),
+        "plan",
+    ),
     "profile.update_goal": ActionSpec(
         "profile.update_goal",
         ("我想减脂到72kg", "目标改成增肌", "目标体重75kg，明年2月前"),

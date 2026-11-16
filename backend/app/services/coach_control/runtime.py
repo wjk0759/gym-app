@@ -79,6 +79,7 @@ GOAL = "profile.update_goal"
 PLAN = "training.generate_plan"
 ADJUST_PLAN = "training.adjust_plan"
 CONFIGURE_PLAN = "training.configure_plan"
+RESTORE_PLAN = "training.restore_plan"
 START_TRAINING_UI = "ui.start_training"
 OPEN_SCREEN_UI = "ui.open_screen"
 REMINDERS_UI = "ui.configure_reminders"
@@ -602,6 +603,15 @@ def _looks_like_plan(message: str) -> bool:
             r"4周计划|新的训练计划|给我.*计划",
             message,
         )
+    )
+
+
+def _looks_like_plan_restore(message: str) -> bool:
+    if re.search(r"恢复.*(?:餐|饮食)|计划餐", message):
+        return False
+    return bool(
+        re.search(r"恢复|回到|切回|换回|找回", message)
+        and re.search(r"计划|版本|上一版|上一份|历史", message)
     )
 
 
@@ -1916,6 +1926,34 @@ async def _dispatch_semantic_capability(
             reply=f"{payload['summary']}？确认后删除。",
         )
 
+    if capability_id == RESTORE_PLAN:
+        from .capabilities.plan import resolve_restore
+
+        resolution = resolve_restore(db, user_id, text)
+        if not resolution.get("ready"):
+            question = (
+                resolution.get("questions") or ["想恢复哪一版计划？"]
+            )[0]
+            return _finish_reply(
+                db,
+                session,
+                turn,
+                started,
+                intent=RESTORE_PLAN,
+                reply=question,
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=RESTORE_PLAN,
+            payload=payload,
+            reply=f"{payload['summary']}？确认后切换。",
+            kind="proposal",
+        )
+
     if capability_id == GOAL:
         from .capabilities.profile import resolve as resolve_goal
 
@@ -3123,6 +3161,31 @@ async def handle_turn(
             "pending": serialize_pending(active),
         }
 
+    if intent_override is None and _looks_like_plan_restore(text):
+        from .capabilities.plan import resolve_restore
+
+        resolution = resolve_restore(db, user_id, text)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=RESTORE_PLAN,
+                payload=payload,
+                reply=f"{payload['summary']}？确认后切换。",
+                kind="proposal",
+            )
+        return _finish_reply(
+            db,
+            session,
+            turn,
+            started,
+            intent=RESTORE_PLAN,
+            reply=(resolution.get("questions") or ["想恢复哪一版计划？"])[0],
+        )
+
     if intent_override is None and _looks_like_plan(text):
         from .capabilities.plan import resolve as resolve_plan
 
@@ -4019,6 +4082,27 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         )
         entity_type = "program"
         entity_id = str(result.get("program_id") or "")
+    elif pending.capability_id == RESTORE_PLAN:
+        from .capabilities.plan import activate as activate_plan
+
+        result = activate_plan(
+            db,
+            user_id,
+            str(pending.payload.get("program_id") or ""),
+        )
+        after = result.get("plan") or {}
+        before = {
+            "previous_program_id": result.get("previous_program_id"),
+            "program_id": result.get("program_id"),
+        }
+        receipt = {
+            "summary": f"已恢复计划「{after.get('title') or '训练计划'}」",
+            "plan_id": result.get("program_id"),
+            "deep_link": "fitai://plan",
+        }
+        event_type = "TrainingPlanRestored"
+        entity_type = "program"
+        entity_id = str(result.get("program_id") or "")
     elif pending.capability_id == DIET:
         from .capabilities.diet import execute as execute_diet
 
@@ -4571,7 +4655,12 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
             record.payload,
             record.before or {},
         )
-    elif record.capability_id in {PLAN, ADJUST_PLAN, CONFIGURE_PLAN}:
+    elif record.capability_id in {
+        PLAN,
+        ADJUST_PLAN,
+        CONFIGURE_PLAN,
+        RESTORE_PLAN,
+    }:
         from .capabilities.plan import undo_activate
 
         result = undo_activate(

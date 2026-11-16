@@ -1287,6 +1287,80 @@ def test_batch_strength_and_food_confirm_and_undo(db):
     assert db.execute(select(WorkoutSession)).scalars().all() == []
 
 
+def test_restore_archived_plan_confirm_and_undo(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    active = Program(
+        user_id="user-1",
+        title="当前计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=today,
+        weeks=4,
+    )
+    archived = Program(
+        user_id="user-1",
+        title="上一版计划",
+        goal_type="build_muscle",
+        version=2,
+        status="archived",
+        start_date=today,
+        weeks=4,
+    )
+    db.add_all([active, archived])
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "恢复上一版计划")
+    )
+    assert turn["intent"] == "training.restore_plan"
+    assert turn["pending"]["kind"] == "proposal"
+    assert turn["pending"]["payload"]["program_id"] == archived.id
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    db.refresh(active)
+    db.refresh(archived)
+    assert archived.status == "active"
+    assert active.status == "archived"
+    assert db.execute(select(DomainEvent)).scalars().all()[-1].type == (
+        "TrainingPlanRestored"
+    )
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    db.refresh(active)
+    db.refresh(archived)
+    assert active.status == "active"
+    assert archived.status == "archived"
+
+
+def test_restore_plan_can_pick_an_explicit_version(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    plans = [
+        Program(
+            user_id="user-1",
+            title=f"计划 v{version}",
+            goal_type="build_muscle",
+            version=version,
+            status="active" if version == 1 else "archived",
+            start_date=today,
+            weeks=4,
+        )
+        for version in (1, 2, 3)
+    ]
+    db.add_all(plans)
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "恢复版本2")
+    )
+    assert turn["intent"] == "training.restore_plan"
+    assert turn["pending"]["payload"]["program_id"] == plans[1].id
+
+
 def test_batch_weight_and_goal_confirm_and_undo(db):
     import asyncio
 
