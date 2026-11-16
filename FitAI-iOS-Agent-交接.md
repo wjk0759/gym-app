@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`3d5e01d`（器械库教练写入；生产后端 `3d5e01d`，`runtime.py` / `equipment.py` SHA-256 与本地一致；iOS 已装 `3c8c499`；Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **551 passed**、QA **55/55**；iOS Build `3d5e01d` ✓）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`48bc4d5`（体型分析应用到计划；生产后端 `48bc4d5`，`runtime.py` / `body_analysis.py` SHA-256 与本地一致；iOS 已装 `3c8c499`；Flyway **V42**；`FitAITests` **121/121**、UI **4/4**、后端 **552 passed**、QA **55/55**；iOS Build `48bc4d5` ✓）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -123,6 +123,38 @@
 - 不要恢复：
   - 不要用全局记忆顺序解释“第一条”。
   - 不要把“早上练什么/晚上吃什么”这类正常问题当成记忆删除选择。
+
+### 2026-11-16 · Windows（体型分析应用到计划）
+
+- 提交：`48bc4d5`，已推 `develop`；后端已部署 `48bc4d5`；无迁移。
+- 做了什么：
+  - 新增 `body.apply_analysis`：把最近一次体型分析应用到当前训练计划。
+  - 按分析 focus_areas 找到对应动作，每个动作 +1 组，最多 6 组。
+  - 生成新版本计划并归档旧计划，标记分析 `applied_to_plan=true`。
+  - 确认卡显示重点部位和受影响动作数；撤销恢复旧计划并清除 applied 标记。
+  - 已应用过的分析会提示，不重复应用。
+- 验证：
+  - 后端 **552 passed**
+  - QA **55/55**
+  - Ruff app/tests/qa 通过
+  - GitHub Backend Tests `48bc4d5` 成功
+  - 新增测试：应用分析只调整重点动作、旧计划归档、分析 applied、撤销恢复。
+- 生产：
+  - 后端 `48bc4d5` 已部署；`runtime.py`、`body_analysis.py` SHA-256 与本地一致
+  - `fitai-api` healthy；`/health/ready` 返回 `{"status":"ready"}`；Flyway 仍 V42
+- iOS：
+  - `CoachRefreshDomains` 增加 `body.apply_analysis`；iOS Build `48bc4d5` ✓。
+- Mac 要做：
+  - 等/重跑 iOS Build `48bc4d5`，安装最新 iOS。
+  - 真机验证：
+    - 做完体型分析后说“把刚才的体型分析应用到计划” → 确认卡；确认后重点动作 +1 组，旧计划归档。
+    - 撤销 → 恢复旧计划，分析恢复未应用。
+    - 已应用分析再说一次 → 提示已应用，不重复。
+    - 没有计划/没有分析/重点无匹配动作 → 明确提示。
+- 不要恢复：
+  - 不要重复应用同一份分析。
+  - 不要在应用后不标记 applied。
+  - 不要撤销后不恢复旧计划和 applied 状态。
 
 ### 2026-11-16 · Windows（器械库教练写入）
 
