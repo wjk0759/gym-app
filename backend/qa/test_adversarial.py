@@ -1284,3 +1284,115 @@ def test_memory_forget_natural_phrase_routes_to_memory(db):
     _seed_memories(db)
     result = coach_turn(db, "忘掉我早上训练")
     assert result["intent"] == "memory.forget", result
+
+
+def test_memory_forget_follow_up_greeting_is_not_a_deletion(db):
+    _seed_memories(db)
+    first = coach_turn(db, "删除训练记忆")
+    assert first["pending"] is None, first
+    follow = coach_turn(
+        db,
+        "早上好",
+        session_id=first["session"]["id"],
+    )
+    assert follow["intent"] != "memory.forget", follow
+    assert follow["pending"] is None, follow
+
+
+def test_memory_forget_follow_up_ordinal_can_select_a_candidate(db):
+    morning, evening = _seed_memories(db)
+    first = coach_turn(db, "删除训练记忆")
+    assert first["pending"] is None, first
+    follow = coach_turn(
+        db,
+        "第一条",
+        session_id=first["session"]["id"],
+    )
+    assert follow["pending"] is not None, follow
+    assert follow["pending"]["payload"]["memory_id"] in {
+        morning.id,
+        evening.id,
+    }, follow
+
+
+def test_batch_configure_then_reschedule_targets_new_plan(db, monkeypatch):
+    """A plan configuration followed by a schedule edit must either target the
+    newly active plan or reject the batch; it must not write the old plan."""
+    import contextlib
+
+    from app.services import access
+    from app.services.coach_control.capabilities import plan_configure
+
+    monkeypatch.setattr(access, "has_pro", lambda db, user_id: True)
+
+    def fake_build(db, profile, goal_type, **kwargs):
+        today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+        return {
+            "title": "批量新计划",
+            "weeks": 4,
+            "days": [
+                {
+                    "week_index": 1,
+                    "weekday": today.isoweekday(),
+                    "title": "胸",
+                    "focus": ["chest"],
+                    "exercises": [],
+                }
+            ],
+        }
+
+    monkeypatch.setattr(plan_configure, "build_template_plan", fake_build)
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    target = today + timedelta(days=1)
+    old = Program(
+        user_id="user-1",
+        title="旧计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=today,
+        weeks=4,
+    )
+    db.add(old)
+    db.flush()
+    old_day = ProgramDay(
+        program_id=old.id,
+        week_index=1,
+        weekday=today.isoweekday(),
+        title="胸",
+    )
+    db.add(old_day)
+    db.commit()
+    context = {
+        "plan": {
+            "id": old.id,
+            "version": old.version,
+            "days": [
+                {
+                    "id": old_day.id,
+                    "date": today.isoformat(),
+                    "title": "胸",
+                    "completed": False,
+                    "skipped": False,
+                }
+            ],
+        }
+    }
+    result = turn(
+        db,
+        f"每周3练，二四六，45分钟，3分化，再把今天的训练改到{target.month}月{target.day}日",
+        context,
+    )
+    pending = result["pending"]
+    if pending is None:
+        return
+    assert pending["capability_id"] == "coach.batch", pending
+    with contextlib.suppress(ValueError):
+        runtime.confirm_pending(db, "user-1", pending["id"])
+    active = db.execute(
+        select(Program).where(Program.status == "active")
+    ).scalar_one()
+    assert active.id != old.id
+    state = db.execute(select(PlanDayState)).scalar_one_or_none()
+    if state is not None:
+        assert state.plan_id == active.id, state.plan_id
