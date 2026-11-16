@@ -58,7 +58,8 @@ def _removed(message: str) -> list[str]:
     for value, aliases in EQUIPMENT_ALIASES.items():
         for alias in aliases:
             if re.search(
-                rf"(?:没有|没|不用|不需要|去掉|移除|删掉|不练)"
+                rf"(?:没有|没|不用|不需要|去掉|移除|删掉|不练|"
+                rf"卖了|卖掉了|丢了|坏了|送人了)"
                 rf"\s*[^，,。；;]{{0,4}}{re.escape(alias.lower())}",
                 text,
             ) or re.search(

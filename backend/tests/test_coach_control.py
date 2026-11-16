@@ -1487,6 +1487,18 @@ def test_profile_equipment_add_remove_and_undo(db):
     assert turn["pending"]["payload"]["equipment"] == ["bodyweight"]
 
 
+def test_profile_equipment_prefix_sold_removes_equipment(db):
+    import asyncio
+
+    from app.services.equipment_inventory import replace_profile_equipment
+
+    replace_profile_equipment(db, "user-1", ["bodyweight", "kettlebell"])
+    db.commit()
+    turn = asyncio.run(runtime.handle_turn(db, "user-1", "我卖了壶铃"))
+    assert turn["intent"] == "profile.update_equipment"
+    assert turn["pending"]["payload"]["equipment"] == ["bodyweight"]
+
+
 def test_profile_equipment_conflict_warns_about_current_plan(db):
     import asyncio
 
