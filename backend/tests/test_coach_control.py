@@ -4717,6 +4717,20 @@ def test_forget_memory_follow_up_rejects_greeting_and_accepts_ordinal(db):
     assert greeting["intent"] != "memory.forget"
     assert greeting["pending"] is None
 
+    question_seed = asyncio.run(
+        runtime.handle_turn(db, "user-1", "删除训练记忆")
+    )
+    question = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "早上练什么",
+            session_id=question_seed["session"]["id"],
+        )
+    )
+    assert question["intent"] != "memory.forget"
+    assert question["pending"] is None
+
     second = asyncio.run(runtime.handle_turn(db, "user-1", "删除训练记忆"))
     ordinal = asyncio.run(
         runtime.handle_turn(

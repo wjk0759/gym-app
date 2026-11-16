@@ -2653,6 +2653,17 @@ async def handle_turn(
         intent_override = FORGET_MEMORY
         text = f"{base} {text}".strip()[:2000]
 
+    if (
+        intent_override is None
+        and session.active_topic == FORGET_MEMORY
+        and (_minutes_since(session.last_turn_at) or 0) <= 15
+        and re.search(r"怎么|什么|为什么|如何|吗|？|\?", text)
+    ):
+        # After a clarification, a normal question should be answered, not
+        # turned into another action card.
+        session.active_topic = None
+        intent_override = "coach.answer"
+
     if intent_override is None:
         batch = await _try_batch_turn(db, user_id, text, context, conversation)
         if batch is not None:
