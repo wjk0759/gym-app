@@ -191,6 +191,70 @@ def test_food_favorite_add_and_remove_with_undo(db):
     assert favorite.deleted_at is None
 
 
+def test_custom_food_create_confirm_and_undo(db):
+    import asyncio
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "添加自定义食物鸡胸肉丸，每100g 150kcal，蛋白质20g，碳水10g，脂肪3g",
+        )
+    )
+    assert turn["intent"] == "diet.custom_food"
+    payload = turn["pending"]["payload"]
+    assert payload["name"] == "鸡胸肉丸"
+    assert payload["kcal"] == 150
+    assert payload["protein"] == 20
+    assert payload["carbs"] == 10
+    assert payload["fat"] == 3
+    assert payload["default_grams"] == 100
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    item = db.execute(select(UserCustomFood)).scalar_one()
+    assert item.name == "鸡胸肉丸"
+    assert item.kcal == 150
+    assert db.execute(select(DomainEvent)).scalars().all()[-1].type == (
+        "CustomFoodCreated"
+    )
+
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(UserCustomFood)).scalars().all() == []
+
+
+def test_custom_food_requires_nutrition_and_rejects_duplicate(db):
+    import asyncio
+
+    missing = asyncio.run(
+        runtime.handle_turn(db, "user-1", "添加自定义食物鸡胸肉丸")
+    )
+    assert missing["pending"]["kind"] == "draft"
+    assert "营养值" in missing["reply"]
+
+    db.add(
+        UserCustomFood(
+            user_id="user-1",
+            client_id="custom-existing",
+            name="鸡胸肉丸",
+            category="自定义",
+            kcal=150,
+            protein=20,
+            carbs=10,
+            fat=3,
+        )
+    )
+    db.commit()
+    duplicate = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "添加自定义食物鸡胸肉丸，每100g 150kcal，蛋白质20g",
+        )
+    )
+    assert duplicate["pending"] is None
+    assert "已经有" in duplicate["reply"]
+
+
 def test_food_favorite_uses_custom_food_key(db):
     import asyncio
 

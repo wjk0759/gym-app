@@ -57,6 +57,15 @@ ACTION_SPECS: dict[str, ActionSpec] = {
         (),
         "text",
     ),
+    "diet.custom_food": ActionSpec(
+        "diet.custom_food",
+        (
+            "添加自定义食物鸡胸肉丸，每100g 150kcal，蛋白质20g",
+            "把自制鸡肉丸加到自定义食物，碳水10g",
+        ),
+        ("name", "kcal", "protein", "carbs", "fat", "default_grams"),
+        "generic",
+    ),
     "diet.favorite_food": ActionSpec(
         "diet.favorite_food",
         (

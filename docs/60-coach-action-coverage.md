@@ -40,7 +40,7 @@
 | 生成单日/一周餐单 | `diet.generate_day` / `generate_week` | ✅ |
 | 饮食复盘 | `diet.review_day` | ✅ |
 | 修改/删除饮食记录 | `diet.update_log` / `delete_log` | ✅ |
-| 自定义食物库 | — | ○ |
+| 自定义食物库 | `diet.custom_food` | ✅ |
 | 收藏食物 | `diet.favorite_food` | ✅ |
 | 不喜欢食物/动作 | — | ○ |
 | 查看菜谱详情 | — | ○ |
@@ -128,6 +128,7 @@
 - `equipment.add` 支持把识别结果或说出的器械加入个人库；`equipment.update` 支持改名；`equipment.delete` 支持删除并撤销。删除后会修剪 iOS 已同步缓存。
 - `body.apply_analysis` 支持把最近一次体型分析应用到当前计划：按分析重点给对应动作 +1 组，生成新版本计划；可撤销并恢复分析的 applied 状态。
 - `diet.favorite_food` 支持“收藏鸡胸肉”“取消收藏米饭”；自定义食物会按 custom key 收藏，结果通过 cloud extras 同步。
+- `diet.custom_food` 支持从一句话创建自定义食物：名称 + 每100g 热量/蛋白质/碳水/脂肪；确认后写入自定义食物库，撤销删除。
 - 加练执行前会再次检查同一周/星期是否已有训练，过期卡不会写出重复训练日。
 - 仍未做：多动作超过 3 个、更多能力加入 batch、器械/训练中/资料设置类动作、全局重复写入检测。
 

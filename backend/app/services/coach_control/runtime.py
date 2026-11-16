@@ -85,6 +85,7 @@ EQUIPMENT_ADD = "equipment.add"
 EQUIPMENT_UPDATE = "equipment.update"
 EQUIPMENT_DELETE = "equipment.delete"
 FAVORITE_FOOD = "diet.favorite_food"
+CUSTOM_FOOD = "diet.custom_food"
 PLAN = "training.generate_plan"
 ADJUST_PLAN = "training.adjust_plan"
 CONFIGURE_PLAN = "training.configure_plan"
@@ -857,6 +858,17 @@ def _looks_like_food_favorite(message: str) -> bool:
     if re.search(r"收藏夹|我的收藏|收藏在哪|收藏页", message):
         return False
     return bool(re.search(r"收藏|取消收藏", message))
+
+
+def _looks_like_custom_food(message: str) -> bool:
+    if re.search(r"怎么|如何|为什么|吗|？|\?", message):
+        return False
+    if re.search(r"自定义食物|新建食物|创建食物|添加食物", message):
+        return True
+    return bool(
+        re.search(r"把.+?(?:加到|加入|添加进?)", message)
+        and re.search(r"自定义食物", message)
+    )
 
 
 def _looks_like_review(message: str) -> bool:
@@ -1996,6 +2008,44 @@ async def _dispatch_semantic_capability(
     capability_id: str,
 ) -> dict | None:
     """Execute a capability selected by the semantic fallback router."""
+    if capability_id == CUSTOM_FOOD:
+        from .capabilities.custom_food import resolve as resolve_custom_food
+
+        resolution = resolve_custom_food(db, user_id, text)
+        if not resolution.get("ready"):
+            question = (
+                resolution.get("questions") or ["想创建什么食物？"]
+            )[0]
+            if resolution.get("terminal"):
+                return _finish_reply(
+                    db,
+                    session,
+                    turn,
+                    started,
+                    intent=CUSTOM_FOOD,
+                    reply=question,
+                )
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=CUSTOM_FOOD,
+                payload={"message": text},
+                reply=question,
+                kind="draft",
+            )
+        payload = resolution["payload"]
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=CUSTOM_FOOD,
+            payload=payload,
+            reply=f"{payload['summary']}？确认后保存。",
+        )
+
     if capability_id == FAVORITE_FOOD:
         from .capabilities.food_preferences import resolve as resolve_favorite
 
@@ -2924,6 +2974,7 @@ async def handle_turn(
             EQUIPMENT_UPDATE,
             EQUIPMENT_DELETE,
             FAVORITE_FOOD,
+            CUSTOM_FOOD,
         }:
             if len(text.strip()) > 40:
                 cancel_pending(db, session, pending)
@@ -4245,6 +4296,34 @@ async def handle_turn(
             )
             reply = question
         turn.intent = WEIGHT
+    elif intent_override == CUSTOM_FOOD or (
+        intent_override is None and _looks_like_custom_food(text)
+    ):
+        from .capabilities.custom_food import resolve as resolve_custom_food
+
+        resolution = resolve_custom_food(db, user_id, text)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            _pending_card(
+                db,
+                session,
+                capability_id=CUSTOM_FOOD,
+                payload=payload,
+            )
+            reply = f"{payload['summary']}？确认后保存。"
+        else:
+            question = (
+                resolution.get("questions") or ["想创建什么食物？"]
+            )[0]
+            if not resolution.get("terminal"):
+                _pending_draft(
+                    db,
+                    session,
+                    capability_id=CUSTOM_FOOD,
+                    payload={"message": text},
+                )
+            reply = question
+        turn.intent = CUSTOM_FOOD
     elif intent_override == FAVORITE_FOOD or (
         intent_override is None and _looks_like_food_favorite(text)
     ):
@@ -4904,6 +4983,20 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         event_type = "TrainingPlanRestored"
         entity_type = "program"
         entity_id = str(result.get("program_id") or "")
+    elif pending.capability_id == CUSTOM_FOOD:
+        from .capabilities.custom_food import execute as execute_custom_food
+
+        result = execute_custom_food(db, user_id, action_id, pending.payload)
+        before = result.get("before") or {}
+        after = result.get("after") or {}
+        receipt = {
+            "summary": pending.payload.get("summary") or "已创建自定义食物",
+            "client_id": after.get("client_id"),
+            "deep_link": "fitai://nutrition",
+        }
+        event_type = "CustomFoodCreated"
+        entity_type = "custom_food"
+        entity_id = str(after.get("client_id") or action_id)
     elif pending.capability_id == FAVORITE_FOOD:
         from .capabilities.food_preferences import execute as execute_favorite
 
@@ -5526,6 +5619,15 @@ def undo_action(db: Session, user_id: str, action_id: str) -> dict:
             "refresh_domains": domains,
         }
 
+    elif record.capability_id == CUSTOM_FOOD:
+        from .capabilities.custom_food import undo as undo_custom_food
+
+        result = undo_custom_food(
+            db,
+            user_id,
+            record.before or {},
+            record.payload,
+        )
     elif record.capability_id == FAVORITE_FOOD:
         from .capabilities.food_preferences import undo as undo_favorite
 

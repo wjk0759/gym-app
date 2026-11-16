@@ -31,6 +31,7 @@ enum CoachRefreshDomains {
         "diet.update_log": [.diet, .review],
         "diet.delete_log": [.diet, .review],
         "diet.favorite_food": [.profile],
+        "diet.custom_food": [.profile],
         "diet.log_planned_meal": [.diet, .review],
         "diet.skip_planned_meal": [.diet, .review],
         "diet.restore_planned_meal": [.diet, .review],
