@@ -1775,3 +1775,27 @@ def test_profile_equipment_i_sold_phrase_removes_equipment(db):
     pending = result["pending"]
     assert pending is not None, result
     assert "kettlebell" not in pending["payload"]["equipment"], pending
+
+
+def test_profile_equipment_update_reaches_unified_inventory(db):
+    from app.services.equipment_inventory import effective_equipment_types
+
+    profile = db.get(Profile, "user-1")
+    profile.equipment = ["bodyweight"]
+    db.commit()
+    result = coach_turn(db, "我有哑铃和弹力带")
+    pending = result["pending"]
+    assert pending is not None, result
+    runtime.confirm_pending(db, "user-1", pending["id"])
+    types = set(effective_equipment_types(db, "user-1"))
+    assert {"dumbbell", "band"} <= types, types
+    profile = db.get(Profile, "user-1")
+    assert {"dumbbell", "band"} <= set(profile.equipment or []), profile.equipment
+
+    result = coach_turn(db, "我卖了哑铃")
+    pending = result["pending"]
+    assert pending is not None, result
+    runtime.confirm_pending(db, "user-1", pending["id"])
+    types = set(effective_equipment_types(db, "user-1"))
+    assert "dumbbell" not in types, types
+    assert "band" in types, types

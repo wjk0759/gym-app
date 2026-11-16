@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`0932e89`（文档 `c6aa06a`；稳定性收口：词表/餐单不变量/伤病解析/统一器械库存/路由 claims/batch 注册表；生产后端 `0932e89`，`equipment_inventory.py` / `injury_parse.py` / `lexicon.py` / `claims.py` / `batch.py` SHA-256 与本地一致；iOS 已装 `9eb1411`；Flyway **V44**；`FitAITests` **121/121**、UI **4/4**；后端 **604 passed**、QA **74/74**；本轮无 iOS 代码变化，iOS Build 不触发）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`0932e89`（文档 `d3184e8`；稳定性收口：词表/餐单不变量/伤病解析/统一器械库存/路由 claims/batch 注册表；生产后端 `0932e89`，`equipment_inventory.py` / `injury_parse.py` / `lexicon.py` / `claims.py` / `batch.py` SHA-256 与本地一致；iOS 已装 `9eb1411`；Flyway **V44**；`FitAITests` **121/121**、UI **4/4**；后端 **604 passed**、QA **75/75**；本轮无 iOS 代码变化，iOS Build 不触发）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +26,32 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-17 · macOS（稳定性重构 / V44 统一库存复测：通过）
+
+- 拉取：`0932e89`；生产后端 `equipment_inventory.py` / `injury_parse.py` / `lexicon.py` / `claims.py` / `batch.py` SHA-256 与本地一致；Flyway **V44** 已应用；macOS 本轮未重部署后端（Windows 已部署同 hash）。
+- 测试：
+  - 后端完整测试 **604 passed**
+  - QA 对抗 **75/75 passed**
+  - iOS `9eb1411`：`FitAITests` **121/121**、UI **4/4**；已装 Wu-Tang
+- 上一轮 1 条已确认修复：
+  - `我卖了壶铃` 前置出售语序会移除壶铃
+- 额外复测通过：
+  - 教练档案器械 `我有哑铃和弹力带` → 统一库存 entries、profile 缓存、`effective_equipment_types` 同步
+  - `我卖了哑铃` → 统一库存移除、弹力带保留
+  - 餐单全树（含未知嵌套字段）不出现不喜欢食物
+  - 伤病结构化解析、路由 claims、batch 注册表/5 动作
+  - 收藏/自定义食物、餐单详情、重复警告、避开动作
+- 生产：
+  - `fitai-api` healthy，`/health/ready` 200
+  - Flyway **V44** `unified equipment inventory` 已应用；回填 profile 6 / universal 6 / library 35，共 47 条
+  - iOS `9eb1411` 已安装 Wu-Tang
+- 备份：
+  - Windows 迁移前备份 `/opt/fitai/backups/fitai-pre-v44-*.sql`
+  - macOS 本轮未重部署，未新增备份
+- 未验证：
+  - 登录真机完整走 V44 统一库存、AI 餐单全树过滤、5 动作 batch
+  - 双设备同步/旧客户端兼容
 
 ### 2026-11-17 · Windows（稳定性收口：六项根因治理）
 
