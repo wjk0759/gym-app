@@ -19,6 +19,7 @@ from .diet_preferences import (
     active_disliked_food_names,
     apply_food_avoidance,
 )
+from .diet_schema import validate_diet_plan
 from .prompt_registry import prompt_version
 
 logger = logging.getLogger(__name__)
@@ -150,7 +151,9 @@ def build_plan(
         "disclaimer": DISCLAIMER,
         "generated_by": "template",
     }
-    return apply_food_avoidance(plan, list(avoid_terms or []))
+    plan = apply_food_avoidance(plan, list(avoid_terms or []))
+    validate_diet_plan(plan)
+    return plan
 
 
 def _system_prompt() -> str:
@@ -250,7 +253,7 @@ def _normalize_ai_plan(
     total_carbs = round(sum(meal.get("carbs_g") or 0 for meal in meals), 1)
     total_fat = round(sum(meal.get("fat_g") or 0 for meal in meals), 1)
 
-    return apply_food_avoidance(
+    result = apply_food_avoidance(
         {
             "date": plan_date.isoformat(),
             "targets": targets,
@@ -267,6 +270,8 @@ def _normalize_ai_plan(
         },
         list(avoid_terms or []),
     )
+    validate_diet_plan(result)
+    return result
 
 
 def _meal_name(key: str) -> str:
@@ -583,7 +588,9 @@ async def build_ai_diet_week(
             prompt_version=system_version,
         )
         result = _normalize_ai_week(raw, fallback)
-        return apply_food_avoidance(result, avoid_terms)
+        result = apply_food_avoidance(result, avoid_terms)
+        validate_diet_plan(result)
+        return result
     except Exception as exc:  # noqa: BLE001 - fallback keeps the feature usable
         logger.warning("AI diet week failed, fallback to template: %s", exc)
         fallback["generated_by"] = "template"
@@ -1095,7 +1102,7 @@ def build_diet_week(
             }
         )
 
-    return apply_food_avoidance(
+    result = apply_food_avoidance(
         {
             "week_start": week_start.isoformat(),
             "strategy": {
@@ -1111,3 +1118,5 @@ def build_diet_week(
         },
         list(avoid_terms or []),
     )
+    validate_diet_plan(result)
+    return result

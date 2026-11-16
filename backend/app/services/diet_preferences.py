@@ -181,6 +181,34 @@ def _apply_to_meals(meals: list, terms: list[str]) -> None:
         meal["dishes"] = kept or [_fallback_dish(filtered)]
 
 
+def _replace_terms(text: str, terms: list[str]) -> str:
+    result = text
+    for term in terms:
+        for variant in _term_variants(term):
+            result = re.sub(
+                re.escape(variant),
+                "同类食材",
+                result,
+                flags=re.IGNORECASE,
+            )
+    return result
+
+
+def _scrub_tree(value, terms: list[str]):
+    if isinstance(value, str):
+        return _replace_terms(value, terms) if matches_avoid(value, terms) else value
+    if isinstance(value, list):
+        cleaned = [_scrub_tree(item, terms) for item in value]
+        return [
+            item
+            for item in cleaned
+            if not (isinstance(item, str) and not item.strip())
+        ]
+    if isinstance(value, dict):
+        return {key: _scrub_tree(item, terms) for key, item in value.items()}
+    return value
+
+
 def apply_food_avoidance(plan: dict, terms: list[str]) -> dict:
     if not terms or not isinstance(plan, dict):
         return plan
@@ -195,4 +223,10 @@ def apply_food_avoidance(plan: dict, terms: list[str]) -> dict:
             day_meals = day.get("meals")
             if isinstance(day_meals, list):
                 _apply_to_meals(day_meals, terms)
-    return plan
+    # Final invariant: no string anywhere in the nested plan may keep an
+    # avoided term. This covers unknown fields added by future AI output.
+    return _scrub_tree(plan, terms)
+
+
+sanitize_diet_plan = apply_food_avoidance
+

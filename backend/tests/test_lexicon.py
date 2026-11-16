@@ -27,9 +27,11 @@ def test_domain_vocabulary_has_one_definition():
         if path == LEXICON:
             continue
         text = path.read_text(encoding="utf-8")
-        for marker in FORBIDDEN:
-            if marker in text:
-                duplicates.append(f"{path.relative_to(APP_ROOT)}: {marker}")
+        duplicates.extend(
+            f"{path.relative_to(APP_ROOT)}: {marker}"
+            for marker in FORBIDDEN
+            if marker in text
+        )
     assert duplicates == []
 
 
