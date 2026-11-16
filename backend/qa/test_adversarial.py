@@ -1740,3 +1740,26 @@ def test_profile_equipment_update_from_coach(db):
     runtime.confirm_pending(db, "user-1", pending["id"])
     profile = db.get(Profile, "user-1")
     assert profile.equipment == ["bodyweight"]
+
+
+def test_profile_equipment_sold_phrase_removes_equipment(db):
+    profile = db.get(Profile, "user-1")
+    profile.equipment = ["bodyweight", "kettlebell"]
+    db.commit()
+    result = coach_turn(db, "我把壶铃卖了")
+    pending = result["pending"]
+    assert pending is not None, result
+    assert "kettlebell" not in pending["payload"]["equipment"], pending
+    assert "bodyweight" in pending["payload"]["equipment"], pending
+
+
+def test_profile_equipment_replace_phrase_removes_old_equipment(db):
+    profile = db.get(Profile, "user-1")
+    profile.equipment = ["bodyweight", "dumbbell"]
+    db.commit()
+    result = coach_turn(db, "我把哑铃换成杠铃")
+    pending = result["pending"]
+    assert pending is not None, result
+    values = pending["payload"]["equipment"]
+    assert "barbell" in values, values
+    assert "dumbbell" not in values, values
