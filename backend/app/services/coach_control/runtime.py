@@ -34,6 +34,7 @@ from ...models import (
 from ..food_text import DIET_TZ, MEAL_LABELS, parse_meal
 from ..safety import assess_safety
 from . import capabilities  # noqa: F401 - registers capabilities
+from .batch import BATCHABLE, MAX_BATCH_ACTIONS, key_for
 from .capability_context import CapabilityContext
 from .claims import claim_conflicts
 from .consumers import consume_event
@@ -103,7 +104,6 @@ REMINDERS_UI = "ui.configure_reminders"
 MEMORY = "memory.remember"
 FORGET_MEMORY = "memory.forget"
 BATCH = "coach.batch"
-MAX_BATCH_ACTIONS = 5
 
 
 def _looks_like_reschedule(message: str) -> bool:
@@ -2290,23 +2290,10 @@ async def _try_batch_turn(
             _discard_batch_programs(db, user_id, created_program_ids)
             return None
         capability = action["capability_id"]
-        # Multiple planned-meal actions are useful (skip lunch and dinner),
-        # but two writes to the exact same meal would duplicate work.
-        action_key = capability
-        if capability in {PLANNED, SKIP_MEAL, RESTORE_MEAL, SWAP_MEAL}:
-            action_key = (
-                f"{capability}:{action['payload'].get('date')}:"
-                f"{action['payload'].get('meal')}"
-            )
-        elif capability in {DIET_UPDATE, DIET_DELETE}:
-            # Editing or deleting two different food rows is a valid batch.
-            action_key = (
-                f"{capability}:{action['payload'].get('client_id')}"
-            )
-        elif capability == DISLIKE_FOOD:
-            action_key = f"{capability}:{action['payload'].get('food_key')}"
-        elif capability == DISLIKE_EXERCISE:
-            action_key = f"{capability}:{action['payload'].get('slug')}"
+        if capability not in BATCHABLE:
+            _discard_batch_programs(db, user_id, created_program_ids)
+            return None
+        action_key = key_for(capability, action["payload"])
         if action_key in seen:
             _discard_batch_programs(db, user_id, created_program_ids)
             return None
