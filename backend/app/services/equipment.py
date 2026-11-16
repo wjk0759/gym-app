@@ -17,45 +17,15 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..models import (
-    EquipmentLibraryItem,
     EquipmentType,
     EquipmentTypeExercise,
     Exercise,
-    Profile,
-    UserUniversalEquipment,
 )
 from . import llm
+from .equipment_inventory import effective_equipment_types, sync_profile_cache
 from .prompt_registry import prompt_version
 
 logger = logging.getLogger(__name__)
-
-_TYPE_TO_EQUIPMENT = {
-    "dumbbell": "dumbbell",
-    "barbell": "barbell",
-    "kettlebell": "kettlebell",
-    "band": "band",
-    "bodyweight": "bodyweight",
-}
-_CATEGORY_TO_EQUIPMENT = {
-    "machine": "machine",
-    "multi": "machine",
-    "cable": "cable",
-    "cardio": "bodyweight",
-    "accessory": "other",
-    "bodyweight": "bodyweight",
-}
-_UNIVERSAL_TO_EQUIPMENT = {
-    "bodyweight": "bodyweight",
-    "dumbbell": "dumbbell",
-    "barbell": "barbell",
-    "kettlebell": "kettlebell",
-    "band": "band",
-    "pullup": "bodyweight",
-    "dip": "bodyweight",
-    "battle_rope": "other",
-    "medicine_ball": "other",
-    "sled": "other",
-}
 
 _LEG_MACHINE_SLUGS = {
     "hack_squat",
@@ -190,62 +160,15 @@ def available_equipment_types(
 ) -> list[str]:
     """Exercise-equipment categories the user can actually use.
 
-    ``user_equipment`` stores the equipment-type category (machine/cable/multi/
-    free_weight/...), while ``exercises.equipment`` uses the exercise category
-    (machine/cable/dumbbell/barbell/...). This maps the former to the latter so
-    plan validation and fallback use the same vocabulary.
+    Reads the unified equipment inventory. ``profile_equipment`` is only a
+    legacy fallback when a user has no inventory rows yet.
     """
-    rows = (
-        db.execute(
-            select(
-                EquipmentLibraryItem.equipment_type,
-                EquipmentLibraryItem.category,
-                EquipmentLibraryItem.equipment,
-            ).where(EquipmentLibraryItem.user_id == user_id)
-        )
-        .all()
-    )
-    types: set[str] = set()
-    for type_slug, category, equipment in rows:
-        mapped = _TYPE_TO_EQUIPMENT.get(str(type_slug or ""))
-        if mapped is None:
-            mapped = _CATEGORY_TO_EQUIPMENT.get(str(category or ""))
-        if mapped is None and equipment:
-            mapped = str(equipment)
-        if mapped:
-            types.add(mapped)
-
-    universal = (
-        db.execute(
-            select(UserUniversalEquipment.equipment_slug).where(
-                UserUniversalEquipment.user_id == user_id,
-                UserUniversalEquipment.enabled.is_(True),
-            )
-        )
-        .scalars()
-        .all()
-    )
-    for slug in universal:
-        mapped = _UNIVERSAL_TO_EQUIPMENT.get(str(slug))
-        if mapped:
-            types.add(mapped)
-
-    if types:
-        types.add("bodyweight")
-        return sorted(types)
-    types.update(str(value) for value in (profile_equipment or []) if value)
-    types.add("bodyweight")
-    return sorted(types)
+    return effective_equipment_types(db, user_id, profile_equipment)
 
 
 def refresh_profile_equipment_cache(db: Session, user_id: str) -> None:
-    """Keep the profile equipment list in sync with the personal library."""
-    profile = db.get(Profile, user_id)
-    if profile is None:
-        return
-    profile.equipment = available_equipment_types(
-        db, user_id, profile.equipment
-    )
+    """Keep the compatibility profile list in sync with the inventory."""
+    sync_profile_cache(db, user_id)
 
 
 def _active_exercises(db: Session) -> list[Exercise]:

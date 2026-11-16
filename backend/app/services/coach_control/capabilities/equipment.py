@@ -14,6 +14,10 @@ from ...equipment import (
     match_name,
     refresh_profile_equipment_cache,
 )
+from ...equipment_inventory import (
+    delete_library_entry,
+    sync_library_entry,
+)
 from ..registry import Capability, register
 
 ADD_CAPABILITY = register(
@@ -317,6 +321,7 @@ def execute_add(
             )
         )
     db.flush()
+    sync_library_entry(db, user_id, item)
     refresh_profile_equipment_cache(db, user_id)
     return {"client_id": client_id, "name": name}
 
@@ -337,6 +342,7 @@ def undo_add(
     if item is not None:
         db.delete(item)
         db.flush()
+        delete_library_entry(db, user_id, client_id)
         refresh_profile_equipment_cache(db, user_id)
     return {"removed": item is not None}
 
@@ -358,6 +364,7 @@ def execute_update(
     before = {"name": item.name}
     item.name = str(payload.get("name") or item.name)[:120]
     db.flush()
+    sync_library_entry(db, user_id, item)
     refresh_profile_equipment_cache(db, user_id)
     return {"before": before, "after": {"name": item.name}}
 
@@ -377,6 +384,7 @@ def undo_update(
     if item is not None and before.get("name"):
         item.name = str(before["name"])[:120]
         db.flush()
+        sync_library_entry(db, user_id, item)
         refresh_profile_equipment_cache(db, user_id)
     return {"restored": item is not None}
 
@@ -421,6 +429,7 @@ def execute_delete(
     )
     db.delete(item)
     db.flush()
+    delete_library_entry(db, user_id, str(before.get("client_id") or ""))
     refresh_profile_equipment_cache(db, user_id)
     return {"before": before}
 
@@ -464,5 +473,6 @@ def undo_delete(
                 )
             )
         db.flush()
+    sync_library_entry(db, user_id, item)
     refresh_profile_equipment_cache(db, user_id)
     return {"restored": True}

@@ -17,6 +17,7 @@ from ..models import (
 )
 from ..schemas import PlanDayPatch, PlanGenerateIn, PlanImportIn
 from ..services import access, generation
+from ..services.equipment import available_equipment_types
 from ..services.load_progression import adjustment_multipliers
 from ..services.locking import lock_user
 from ..services.plan_generator import generate_plan, validate_plan_for_user
@@ -395,8 +396,13 @@ def update_day(
         raise HTTPException(status_code=404, detail="训练日不存在")
 
     profile = db.get(Profile, user_id)
-    equipment = set(profile.equipment or ["bodyweight"]) if profile else {"bodyweight"}
-    equipment.add("bodyweight")
+    equipment = set(
+        available_equipment_types(
+            db,
+            user_id,
+            profile.equipment if profile else ["bodyweight"],
+        )
+    )
     banned = injury_tags(profile.injuries if profile else [])
     exercise_slugs = {item.slug for item in payload.exercises}
     if len(exercise_slugs) != len(payload.exercises):

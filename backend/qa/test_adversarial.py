@@ -1743,8 +1743,9 @@ def test_profile_equipment_update_from_coach(db):
 
 
 def test_profile_equipment_sold_phrase_removes_equipment(db):
-    profile = db.get(Profile, "user-1")
-    profile.equipment = ["bodyweight", "kettlebell"]
+    from app.services.equipment_inventory import replace_profile_equipment
+
+    replace_profile_equipment(db, "user-1", ["bodyweight", "kettlebell"])
     db.commit()
     result = coach_turn(db, "我把壶铃卖了")
     pending = result["pending"]
@@ -1754,8 +1755,9 @@ def test_profile_equipment_sold_phrase_removes_equipment(db):
 
 
 def test_profile_equipment_replace_phrase_removes_old_equipment(db):
-    profile = db.get(Profile, "user-1")
-    profile.equipment = ["bodyweight", "dumbbell"]
+    from app.services.equipment_inventory import replace_profile_equipment
+
+    replace_profile_equipment(db, "user-1", ["bodyweight", "dumbbell"])
     db.commit()
     result = coach_turn(db, "我把哑铃换成杠铃")
     pending = result["pending"]

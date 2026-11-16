@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..models import Exercise, PlanExercise, Profile, Program, ProgramDay
+from .equipment import available_equipment_types
 from .plan_validator import injury_tags
 from .serializers import load_program, serialize_program
 
@@ -66,8 +67,13 @@ def _validate_exercises(
         ).scalars()
     }
     profile = db.get(Profile, user_id)
-    equipment = set(profile.equipment or ["bodyweight"]) if profile else {"bodyweight"}
-    equipment.add("bodyweight")
+    equipment = set(
+        available_equipment_types(
+            db,
+            user_id,
+            profile.equipment if profile else ["bodyweight"],
+        )
+    )
     banned = injury_tags(profile.injuries if profile else [])
 
     for slug in slugs:

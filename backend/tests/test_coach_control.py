@@ -1477,6 +1477,10 @@ def test_profile_equipment_add_remove_and_undo(db):
 
     profile.equipment = ["bodyweight", "dumbbell"]
     db.commit()
+    from app.services.equipment_inventory import replace_profile_equipment
+
+    replace_profile_equipment(db, "user-1", ["bodyweight", "dumbbell"])
+    db.commit()
     turn = asyncio.run(
         runtime.handle_turn(db, "user-1", "家里没有器械")
     )

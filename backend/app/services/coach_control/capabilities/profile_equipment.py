@@ -12,7 +12,11 @@ import re
 from sqlalchemy.orm import Session
 
 from ....models import Exercise, Profile
-from ...equipment import available_equipment_types
+from ...equipment_inventory import (
+    declared_profile_equipment,
+    effective_after_profile,
+    replace_profile_equipment,
+)
 from ...lexicon import EQUIPMENT_ALIASES, EQUIPMENT_LABELS
 from ...queries import active_program
 from ...serializers import load_program
@@ -82,11 +86,11 @@ def _replaced_out(message: str) -> list[str]:
     ]
 
 
-def _current(profile: Profile) -> list[str]:
+def _current(db: Session, user_id: str) -> list[str]:
     values = [
-        str(item)
-        for item in profile.equipment or []
-        if str(item) in EQUIPMENT_LABELS
+        item
+        for item in declared_profile_equipment(db, user_id)
+        if item in EQUIPMENT_LABELS
     ]
     if "bodyweight" not in values:
         values.append("bodyweight")
@@ -102,7 +106,7 @@ def _equipment_conflicts(
     if program is None:
         return []
     program = load_program(db, program.id) or program
-    effective = set(available_equipment_types(db, user_id, equipment))
+    effective = set(effective_after_profile(db, user_id, equipment))
     conflicts: list[dict] = []
     seen: set[str] = set()
     for day in program.days:
@@ -127,7 +131,7 @@ def resolve(db: Session, user_id: str, message: str) -> dict:
     profile = db.get(Profile, user_id)
     if profile is None:
         return {"ready": False, "questions": ["请先完成个人档案。"]}
-    current = _current(profile)
+    current = _current(db, user_id)
     mentioned = _mentioned(message)
     removed = list(dict.fromkeys([*_removed(message), *_replaced_out(message)]))
     if not mentioned and not removed:
@@ -163,6 +167,18 @@ def resolve(db: Session, user_id: str, message: str) -> dict:
         }
 
     summary = _summary(values)
+    remaining_types = (
+        set(effective_after_profile(db, user_id, values)) - set(values)
+    ) & set(removed)
+    if remaining_types:
+        names = "、".join(
+            EQUIPMENT_LABELS.get(item, item)
+            for item in sorted(remaining_types)
+        )
+        summary += (
+            f"；个人器械库/通用器械里仍保留「{names}」，"
+            "计划仍可能使用"
+        )
     conflicts = _equipment_conflicts(db, user_id, values)
     if conflicts:
         names = "、".join(item["exercise"] for item in conflicts[:3])
@@ -185,14 +201,17 @@ def execute(
     action_id: str,
     payload: dict,
 ) -> dict:
-    profile = db.get(Profile, user_id)
-    if profile is None:
-        profile = Profile(user_id=user_id)
-        db.add(profile)
-    before = list(profile.equipment or [])
-    profile.equipment = list(payload.get("equipment") or ["bodyweight"])
+    before = _current(db, user_id)
+    replace_profile_equipment(
+        db,
+        user_id,
+        list(payload.get("equipment") or ["bodyweight"]),
+    )
     db.flush()
-    return {"before": {"equipment": before}, "after": {"equipment": profile.equipment}}
+    return {
+        "before": {"equipment": before},
+        "after": {"equipment": _current(db, user_id)},
+    }
 
 
 def undo(
@@ -201,10 +220,10 @@ def undo(
     before: dict,
     payload: dict,
 ) -> dict:
-    profile = db.get(Profile, user_id)
-    if profile is None:
-        profile = Profile(user_id=user_id)
-        db.add(profile)
-    profile.equipment = list((before or {}).get("equipment") or ["bodyweight"])
+    replace_profile_equipment(
+        db,
+        user_id,
+        list((before or {}).get("equipment") or ["bodyweight"]),
+    )
     db.flush()
     return {"restored": True}

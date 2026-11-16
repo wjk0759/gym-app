@@ -15,6 +15,11 @@ from ..schemas import EquipmentExercisesIn, EquipmentLibraryIn, UniversalEquipme
 from ..services import access, equipment_photo, generation, photo_cache
 from ..services.equipment import recognize, refresh_profile_equipment_cache
 from ..services.equipment_catalog_v2 import get as get_equipment_type
+from ..services.equipment_inventory import (
+    delete_library_entry,
+    replace_universal_entries,
+    sync_library_entry,
+)
 from ..services.image_input import InvalidImageError, normalize_image_bytes
 from ..services.rate_limit import enforce as enforce_rate_limit
 
@@ -271,6 +276,8 @@ def upsert_equipment_item(
         item = EquipmentLibraryItem(user_id=user_id, client_id=payload.client_id)
         db.add(item)
     _apply_equipment_item(item, payload)
+    db.flush()
+    sync_library_entry(db, user_id, item)
     refresh_profile_equipment_cache(db, user_id)
     try:
         db.commit()
@@ -283,6 +290,8 @@ def upsert_equipment_item(
             )
         ).scalar_one()
         _apply_equipment_item(item, payload)
+        db.flush()
+        sync_library_entry(db, user_id, item)
         refresh_profile_equipment_cache(db, user_id)
         db.commit()
 
@@ -369,8 +378,10 @@ def delete_equipment_item(
     if item is None:
         raise HTTPException(status_code=404, detail="器械不存在")
     previous_photo = item.photo_url
+    item_client_id = item.client_id
     db.delete(item)
     db.flush()
+    delete_library_entry(db, user_id, item_client_id)
     refresh_profile_equipment_cache(db, user_id)
     db.commit()
     equipment_photo.delete_local(previous_photo)
@@ -446,6 +457,8 @@ def replace_universal_equipment(
                 enabled=True,
             )
         )
+    db.flush()
+    replace_universal_entries(db, user_id, slugs)
     refresh_profile_equipment_cache(db, user_id)
     db.commit()
     return {"enabled_slugs": slugs}

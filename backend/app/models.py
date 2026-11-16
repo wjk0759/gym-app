@@ -1147,6 +1147,49 @@ class UserUniversalEquipment(Base):
     )
 
 
+class UserEquipmentEntry(Base):
+    """Unified equipment availability entry.
+
+    Category rows describe declared conditions (onboarding/coach/universal);
+    item rows describe precise inventory entries from the equipment library.
+    Plan generation reads only this table.
+    """
+
+    __tablename__ = "user_equipment_entries"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "client_id",
+            name="uq_equipment_entries_user_client",
+        ),
+        Index(
+            "ix_equipment_entries_user_level",
+            "user_id",
+            "level",
+            "enabled",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    client_id: Mapped[str] = mapped_column(String(80))
+    level: Mapped[str] = mapped_column(String(20), default="item")
+    equipment_type: Mapped[str] = mapped_column(String(30))
+    name: Mapped[str] = mapped_column(String(120), default="")
+    source: Mapped[str] = mapped_column(String(20), default="manual")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class MealPlan(Base):
     __tablename__ = "meal_plans"
     __table_args__ = (

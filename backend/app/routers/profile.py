@@ -26,6 +26,10 @@ from ..models import (
 from ..schemas import GoalIn, ProfileIn, StoreKitTransactionIn
 from ..services import access, app_store
 from ..services import avatar as avatar_service
+from ..services.equipment_inventory import (
+    effective_equipment_types,
+    replace_profile_equipment,
+)
 from ..services.locking import lock_user
 from ..services.queries import active_goal
 from ..services.rate_limit import enforce as enforce_rate_limit
@@ -48,10 +52,13 @@ def get_me(user_id: CurrentUser, db: DBSession):
     user = db.get(User, user_id)
     profile = db.get(Profile, user_id)
     goal = _active_goal(db, user_id)
+    profile_data = profile_to_dict(profile) if profile else None
+    if profile_data is not None:
+        profile_data["equipment"] = effective_equipment_types(db, user_id)
     return {
         "user_id": user_id,
         "avatar_url": public_media_url(user.avatar_url) if user else None,
-        "profile": profile_to_dict(profile) if profile else None,
+        "profile": profile_data,
         "goal": goal_to_dict(goal),
     }
 
@@ -162,6 +169,7 @@ def upsert_profile(payload: ProfileIn, user_id: CurrentUser, db: DBSession):
         # The profile fields are a read cache owned by BodyMetricsService.
         for field in ("weight_kg", "body_fat_pct", "waist_cm"):
             data.pop(field, None)
+    equipment_values = data.pop("equipment", None)
     if data.get("birth_date"):
         age = date.today().year - data["birth_date"].year - (
             (date.today().month, date.today().day)
@@ -182,6 +190,9 @@ def upsert_profile(payload: ProfileIn, user_id: CurrentUser, db: DBSession):
     if profile.onboarded_at is None:
         profile.onboarded_at = utcnow()
 
+    if equipment_values is not None:
+        replace_profile_equipment(db, user_id, list(equipment_values))
+
     # 已存在减脂目标时，重新校验 BMI（提交前拦截，避免脏数据）
     goal = _active_goal(db, user_id)
     if goal and goal.type == "lose_fat" and profile.bmi and profile.bmi < 18.5:
@@ -196,7 +207,9 @@ def upsert_profile(payload: ProfileIn, user_id: CurrentUser, db: DBSession):
 
     db.commit()
 
-    return {"profile": profile_to_dict(profile)}
+    result = profile_to_dict(profile)
+    result["equipment"] = effective_equipment_types(db, user_id)
+    return {"profile": result}
 
 
 @router.put("/goal")

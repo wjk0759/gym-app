@@ -34,6 +34,7 @@ from ...models import (
     CoachTurn,
     Profile,
 )
+from ..equipment_inventory import effective_equipment_types
 from ..memory import latest_session_summary, read_relevant_memories
 from ..queries import active_goal, active_program
 from .state import get_active_pending
@@ -179,12 +180,13 @@ def build_memory_book(db: Session, user_id: str) -> str:
     goal = active_goal(db, user_id)
     program = active_program(db, user_id)
     if profile is not None:
+        equipment = effective_equipment_types(db, user_id)
         facts = [
             f"目标 {goal.type}" if goal is not None else "",
             f"每周 {profile.weekly_days} 练" if profile.weekly_days else "",
             f"每次 {profile.session_minutes} 分钟" if profile.session_minutes else "",
             f"伤病 {', '.join(profile.injuries or [])}" if profile.injuries else "",
-            f"器械 {', '.join(profile.equipment or [])}" if profile.equipment else "",
+            f"器械 {', '.join(equipment)}" if equipment else "",
         ]
         facts = [item for item in facts if item]
         if facts:
