@@ -8,7 +8,7 @@ final class AppDataDependencyTests: XCTestCase {
 
         XCTAssertEqual(
             dependency.domains,
-            Set([.body, .profile, .diet, .review])
+            Set<AppDataDomain>([.body, .profile, .diet, .review])
         )
         XCTAssertTrue(dependency.invalidatesTargets)
         XCTAssertFalse(dependency.reschedulesNotifications)
@@ -19,7 +19,7 @@ final class AppDataDependencyTests: XCTestCase {
 
         XCTAssertEqual(
             dependency.domains,
-            Set([.profile, .body, .diet, .review])
+            Set<AppDataDomain>([.profile, .body, .diet, .review])
         )
         XCTAssertTrue(dependency.invalidatesTargets)
     }
@@ -27,11 +27,11 @@ final class AppDataDependencyTests: XCTestCase {
     func testFoodAndWorkoutUpdatesRefreshReview() {
         XCTAssertEqual(
             AppDataChange.foodLog.dependency.domains,
-            Set([.diet, .review])
+            Set<AppDataDomain>([.diet, .review])
         )
         XCTAssertEqual(
             AppDataChange.workout.dependency.domains,
-            Set([.workouts, .plan, .schedule, .review])
+            Set<AppDataDomain>([.workouts, .plan, .schedule, .review])
         )
     }
 
@@ -40,7 +40,7 @@ final class AppDataDependencyTests: XCTestCase {
 
         XCTAssertEqual(
             dependency.domains,
-            Set([.plan, .schedule, .diet, .workouts, .review])
+            Set<AppDataDomain>([.plan, .schedule, .diet, .workouts, .review])
         )
         XCTAssertTrue(dependency.invalidatesTargets)
         XCTAssertTrue(dependency.reschedulesNotifications)
@@ -49,11 +49,11 @@ final class AppDataDependencyTests: XCTestCase {
     func testEquipmentAndBodyAnalysisStaySeparate() {
         XCTAssertEqual(
             AppDataChange.equipment.dependency.domains,
-            Set([.equipment, .plan])
+            Set<AppDataDomain>([.equipment, .plan])
         )
         XCTAssertEqual(
             AppDataChange.bodyAnalysis.dependency.domains,
-            Set([.body, .profile, .review])
+            Set<AppDataDomain>([.body, .profile, .review])
         )
     }
 }
