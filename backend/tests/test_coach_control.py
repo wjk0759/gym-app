@@ -982,6 +982,50 @@ def test_profile_question_about_height_is_not_an_edit(db):
     assert turn["pending"] is None
 
 
+def test_equipment_add_allows_substring_name_and_rename_rejects_duplicate(db):
+    import asyncio
+
+    db.add_all(
+        [
+            EquipmentLibraryItem(
+                user_id="user-1",
+                client_id="equipment-a",
+                name="坐姿划船机",
+                source="manual",
+            ),
+            EquipmentLibraryItem(
+                user_id="user-1",
+                client_id="equipment-b",
+                name="划船机",
+                source="manual",
+            ),
+        ]
+    )
+    db.commit()
+
+    added = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "把划船机加入器械库",
+        )
+    )
+    assert added["intent"] == "equipment.add"
+    assert added["pending"] is not None
+    runtime.confirm_pending(db, "user-1", added["pending"]["id"])
+    assert len(db.execute(select(EquipmentLibraryItem)).scalars().all()) == 3
+
+    renamed = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "把坐姿划船机改名为划船机",
+        )
+    )
+    assert renamed["pending"] is None
+    assert "同名" in renamed["reply"]
+
+
 def test_body_weight_confirm_and_undo(db):
     import asyncio
 

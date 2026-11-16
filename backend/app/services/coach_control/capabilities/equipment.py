@@ -70,6 +70,13 @@ def _library_item(db: Session, user_id: str, name: str):
         .scalars()
         .all()
     )
+    exact = [
+        item
+        for item in rows
+        if item.name.strip().lower() == normalized
+    ]
+    if exact:
+        return (exact[0] if len(exact) == 1 else None, exact)
     matches = [
         item
         for item in rows
@@ -77,6 +84,33 @@ def _library_item(db: Session, user_id: str, name: str):
         or item.name.lower() in normalized
     ]
     return (matches[0] if len(matches) == 1 else None, matches)
+
+
+def _exact_library_item(
+    db: Session,
+    user_id: str,
+    name: str,
+) -> EquipmentLibraryItem | None:
+    normalized = name.strip().lower()
+    if not normalized:
+        return None
+    rows = (
+        db.execute(
+            select(EquipmentLibraryItem).where(
+                EquipmentLibraryItem.user_id == user_id
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return next(
+        (
+            item
+            for item in rows
+            if item.name.strip().lower() == normalized
+        ),
+        None,
+    )
 
 
 def _explicit_name(message: str) -> str | None:
@@ -125,12 +159,6 @@ def resolve_add(
             "ready": False,
             "questions": ["要加入哪件器械？例如“把坐姿划船机加入器械库”。"],
         }
-    _, matches = _library_item(db, user_id, name)
-    if matches:
-        return {
-            "ready": False,
-            "questions": [f"器械库里已经有「{matches[0].name}」了。"],
-        }
     catalog = None
     if equipment_type:
         catalog = catalog_get(db, equipment_type)
@@ -156,6 +184,9 @@ def resolve_add(
             "enabled_exercise_slugs": [],
             "summary": f"准备把「{name}」作为自定义器械加入器械库",
         }
+    if _exact_library_item(db, user_id, name) is not None:
+        payload["duplicate_name"] = True
+        payload["summary"] += "；器械库已有同名器械，确认会再添加一台"
     return {"ready": True, "payload": payload}
 
 
@@ -188,6 +219,13 @@ def resolve_update(db: Session, user_id: str, message: str) -> dict:
         }
     if not new_name or len(new_name) > 120:
         return {"ready": False, "questions": ["新名字太短或太长，换一个试试。"]}
+    duplicate = _exact_library_item(db, user_id, new_name)
+    if duplicate is not None and duplicate.id != item.id:
+        return {
+            "ready": False,
+            "terminal": True,
+            "questions": [f"器械库里已经有同名器械「{duplicate.name}」了。"],
+        }
     return {
         "ready": True,
         "payload": {

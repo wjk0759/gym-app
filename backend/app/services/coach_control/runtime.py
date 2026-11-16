@@ -2270,6 +2270,15 @@ async def _dispatch_semantic_capability(
             question = (
                 resolution.get("questions") or ["想改哪件器械的名字？"]
             )[0]
+            if resolution.get("terminal"):
+                return _finish_reply(
+                    db,
+                    session,
+                    turn,
+                    started,
+                    intent=EQUIPMENT_UPDATE,
+                    reply=question,
+                )
             return _finish_pending(
                 db,
                 session,
@@ -4138,12 +4147,13 @@ async def handle_turn(
             question = (
                 resolution.get("questions") or ["想改哪件器械的名字？"]
             )[0]
-            _pending_draft(
-                db,
-                session,
-                capability_id=EQUIPMENT_UPDATE,
-                payload={"message": text},
-            )
+            if not resolution.get("terminal"):
+                _pending_draft(
+                    db,
+                    session,
+                    capability_id=EQUIPMENT_UPDATE,
+                    payload={"message": text},
+                )
             reply = question
         turn.intent = EQUIPMENT_UPDATE
     elif intent_override == EQUIPMENT_DELETE or (
