@@ -39,11 +39,13 @@ struct RootView: View {
                     && (isHydratingAccount || hydratedUserID != auth.userID) {
                     splash
                         .transition(.opacity)
-                } else if auth.isAuthenticated
-                    && auth.onboardingRequired
-                    && (auth.isNewUser || hydrationSucceeded)
-                    && !store.profile.isOnboarded
-                    && !qaBypassAuth {
+                } else if OnboardingRouting.shouldShowOnboarding(
+                    isAuthenticated: auth.isAuthenticated,
+                    onboardingRequired: auth.onboardingRequired,
+                    isNewUser: auth.isNewUser,
+                    hydrationSucceeded: hydrationSucceeded,
+                    profileOnboarded: store.profile.isOnboarded
+                ) && !qaBypassAuth {
                     CoachOnboardingView()
                         .transition(screenTransition)
                 } else {
