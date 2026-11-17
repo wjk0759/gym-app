@@ -24,7 +24,7 @@ struct LoginView: View {
     @State var legal: LegalDocumentKind?
     @State var showServerSettings = false
     @State var showPasswordReset = false
-    @State var registrationDraft: RegistrationDraft?
+    @State private var registrationDraft: RegistrationDraft?
     @State var showConsentPrompt = false
     @State var pendingConsentAction: PendingConsentAction?
     @Namespace var modeNamespace
