@@ -45,7 +45,7 @@
 | 不喜欢动作 | `training.dislike_exercise` | ✅ |
 | 不喜欢食物 | `diet.dislike_food` | ✅ |
 | 查看菜谱详情 | `diet.meal_detail` | ✅ |
-| 拍照估算食物 | 教练照片 / `ui.open_screen` 饮食入口 | ◐ |
+| 拍照估算食物 | 教练照片 → `diet.log_food` 确认卡 | ✅ |
 
 ## 3. 身体
 
@@ -147,6 +147,7 @@
 - 伤病结构化解析：`injury_parse.py` 把句子拆成 (部位, 恢复/持续) mention，再应用状态机；不再按单个说法堆 `elif`。
 - 器械统一库存 V44：`user_equipment_entries` 同时存 category（档案/通用）和 item（器械库）条目；计划可用性只读这一张表；`profile.equipment` 变成兼容缓存，由库存派生。
 - 路由优先级：`claims.py` 为动作替换 vs 档案器械、食物避开 vs 动作避开、餐单详情 vs 生成计划声明 positive/negative/priority；碰撞有矩阵测试。
+- 照片记录饮食：教练附件选择“记录饮食” → `POST /agent/photo/food` → 食物识别 → `diet.log_food` 确认卡。非食物、mock 回退、空结果都不建卡；原图不保存；确认/撤销复用现有饮食卡。
 - batch 注册表：`coach_control/batch.py` 统一 `MAX_BATCH_ACTIONS=5`、`BATCHABLE` 和去重 key；上限、切片、key 不再散落 runtime。
 
 ## 9. 新能力接入标准

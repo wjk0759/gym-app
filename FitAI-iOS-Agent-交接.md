@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`0932e89`（文档 `d3184e8`；稳定性收口：词表/餐单不变量/伤病解析/统一器械库存/路由 claims/batch 注册表；生产后端 `0932e89`，`equipment_inventory.py` / `injury_parse.py` / `lexicon.py` / `claims.py` / `batch.py` SHA-256 与本地一致；iOS 已装 `9eb1411`；Flyway **V44**；`FitAITests` **121/121**、UI **4/4**；后端 **604 passed**、QA **75/75**；本轮无 iOS 代码变化，iOS Build 不触发）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`d2e4adc`（文档 `ee0de0e`；食物照片进教练 + 稳定性收口；生产后端 `e0d2c38`，`runtime.py` / `routers/agent.py` SHA-256 与本地一致；iOS 已装 `9eb1411`，iOS Build `d2e4adc` ✓；Flyway **V44**；`FitAITests` **121/121**、UI **4/4**；后端 **606 passed**、QA **75/75**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +26,42 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-17 · Windows（食物照片进教练）
+
+- 提交：`e0d2c38` + `d2e4adc`，已推 `develop`；生产后端 `e0d2c38`；无新迁移（仍 V44）。
+- 新增 `POST /agent/photo/food`：
+  - 教练附件选“记录饮食” → 食物识别 → `diet.log_food` 确认卡。
+  - 非食物、mock/回退、空结果都不建卡，只给诚实提示。
+  - 原图不保存；确认/撤销复用现有饮食卡。
+  - Pro 功能 `food_photo`，每分钟 5 次。
+- iOS：
+  - 附件草稿增加“教练点评 / 记录饮食”选择。
+  - 记录饮食一次一张；多图提示先移除。
+  - 新 API + `sendCoachFoodPhotos`，返回后直接渲染控制平面确认卡。
+- 验证：
+  - 后端 **606 passed**
+  - QA **75/75**
+  - Ruff app/tests/qa 通过
+  - GitHub Backend Tests `d2e4adc` 成功
+  - **iOS Build `d2e4adc` ✓**
+- 生产：
+  - 后端 `e0d2c38` 已部署；`runtime.py`、`routers/agent.py` SHA-256 与本地一致
+  - Flyway 仍 **V44**；`fitai-api` healthy；`/health/ready` 返回 `{"status":"ready"}`
+- iOS：
+  - Build `d2e4adc` 已通过，但尚未安装到真机；已装仍是 `9eb1411`。
+- Mac 要做：
+  - 拉 `d2e4adc`，安装最新 iOS。
+  - 真机验证：
+    - 拍照/相册 → 选“记录饮食” → 生成饮食卡 → 确认 → 饮食记录出现 → 撤销。
+    - caption “午餐/晚餐” → 餐次正确。
+    - 非食物照片 → 不建卡。
+    - 关闭远程 AI / 非 Pro → 明确提示。
+    - 多图选“记录饮食” → 提示先移除。
+- 不要恢复：
+  - 不要自动把任何照片都记成饮食。
+  - 不要在识别失败/mock 回退时生成估算卡。
+  - 不要保存原图。
 
 ### 2026-11-17 · macOS（稳定性重构 / V44 统一库存复测：通过）
 
