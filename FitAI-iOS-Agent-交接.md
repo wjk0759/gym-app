@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`83fc7b0`（iOS 代码 `839392d`，Build ✓；训练日期滚动从今天、计划生成 10 次/天 + 30 秒冷却、教练 Tab 红点移除；生产后端 `83fc7b0`，`/health/ready` **200**；Flyway **V44**；后端 **621 passed**、QA **76/76**、Ruff 通过；iOS 新单测待 Mac 跑；C1c 已通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`81d8b55`（onboarding 可选体型/体脂步骤已恢复；iOS Build `81d8b55` ✓；生产后端仍 `83fc7b0`，`/health/ready` **200**；Flyway **V44**；后端 **621 passed**、QA **76/76**、Ruff 通过；待 Mac 复测 onboarding / 训练日期 / 计划生成限制）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b 默认身体数据、C5 空 sets、C1c 昵称丢失均已修复并通过；本轮新增训练日期滚动/计划生成限制/Tab 红点改动，待 Mac 复测。
 - **待办（macOS → Windows）**：恢复 onboarding 的**可选**体型/体脂步骤，重新展示 3D 体型插画；**直接接回现有 `bodyTypeStep` / `bodyFatStep` 旧代码，不新写页面/组件**；不恢复 14 步必填。规格：`docs/51-onboarding-optional-body-step.md`。
@@ -65,6 +65,33 @@
   - 不要恢复“首周之前”卡片或 `managedEarlyKeys`。
   - 不要允许同一天超过 10 次 AI 计划生成，或把冷却改回 60 秒。
   - 不要给教练 Tab 加回红点。
+
+### 2026-11-18 · Windows（onboarding 可选体型/体脂步骤）
+
+- 提交：`81d8b55`，已推 `develop`；iOS Build `81d8b55` ✓；无后端变化（生产仍是 `83fc7b0`）。
+- 实现：
+  - 必填步骤仍为 1–8；新增显式索引 `bodyTypeStepIndex=9`、`bodyFatStepIndex=10`、`reportStepIndex=11`。
+  - 第 8 步后接回旧 `bodyTypeStep`，第 9 步后接回旧 `bodyFatStep`，再进报告。
+  - 复用现有 `CoachOnboardingView+BodySteps.swift`、`BodyFigure`、`BodyTypeThumbnail`、`BodyFatCard`，没有新增页面/组件。
+  - 进度：第 9/10 步显示 **“可选”**，不再出现 `9 / 8`；底部按钮改用 `isReportStep` / `reportStepIndex`，不再用 `inputSteps + 1`。
+  - 第 9 步底部：“下一步” + “跳过，使用默认参考”；跳过清 `bodyType` / `bodyFatID` 并直接进报告，`didSkipBodyType` 防止返回时自动补选。
+  - 第 10 步底部：“下一步” + “跳过体脂”；跳过只清 `bodyFatID`，保留 `bodyType`。
+  - 报告：有 `bodyType` 时显示 `BodyFigure`，并增加 **“体型 · 体脂”** 标签；体脂未选时显示“体脂未选”。
+  - 保存仍写 `storedBodyType` / `storedFocusAreas`，bodyFat 由已有 `draft.bodyFatPCT` 持久化。
+- 验证：
+  - GitHub iOS Build `81d8b55` ✓；Windows 未运行 `FitAITests` / UI。
+  - 无后端变化，生产 `/health/ready` 200。
+- Mac 需要做：
+  1. 拉 `81d8b55`；`xcodegen generate`；安装最新 iOS。
+  2. 新账号 onboarding：第 8 步后出现体型、体脂两步，进度显示“可选”。
+  3. 体型选择 → 下一步 → 体脂选择 → 报告显示 `BodyFigure` 和“体型 · 体脂”；保存后重进档案不丢。
+  4. 体型步骤点“跳过，使用默认参考” → 直接报告，无体型图，不出现 `9 / 8`；返回体型步不会自动补选。
+  5. 体脂步骤点“跳过体脂” → 报告保留体型，体脂显示未选。
+  6. 已有账号登录不进入 onboarding；`FitAITests`、UI 6/6。
+- 不要恢复：
+  - 不要新增 `optionalBodyStep` 或复制旧页面。
+  - 不要把可选步骤算进 8 个必填步骤，进度不要出现 `9 / 8`。
+  - 不要用 `inputSteps + 1` 判断报告页。
 
 ### 2026-11-18 · macOS（需求：onboarding 可选体型/体脂步骤，交 Windows）
 
