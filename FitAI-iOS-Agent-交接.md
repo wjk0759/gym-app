@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`4630a83`（测试/文档 `a4802c1`；F1 已通过；但 2026-11-17 第二轮 App+AI 教练压测发现 **1 P0 + 5 P1，阻断发布**；生产后端 `e0d2c38`，`/health/ready` 200；iOS Wu-Tang 仍为 `4630a83`；Flyway **V44**；`FitAITests` **121/121**、UI **6/6**；后端 app 代码无变化、QA **76/76**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`8fa8e3c`（C1–C6 修复；生产后端已部署同一份 5 个文件，`agent.py` / `equipment_inventory.py` / `food_text.py` / `plan_generator.py` / `plan_validator.py` SHA-256 与本地一致；`/health/ready` **200**；Flyway **V44** 未变；后端 **616 passed**、QA **76/76**、Ruff 通过；iOS Build 首次因 GitHub macOS runner 容量被取消，已随文档提交重跑；**C1/C2 仍待 Mac 真机复测，未通过前不发布**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；P0 = 新装登录已有账号被强制重新建档并覆盖服务端资料；P1 = 计划器械/训练日错误、双食物份量丢失、待确认卡份量修正失败、训练补录 slug 不存在、多意图丢失。**先修 C1/C2，未修复前不部署。**
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
@@ -28,6 +28,48 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-17 · Windows（C1–C6 修复 + 生产后端部署）
+
+- 提交：`8fa8e3c`，已推 `develop`；生产后端已替换 `agent.py` / `equipment_inventory.py` / `food_text.py` / `plan_generator.py` / `plan_validator.py`，SHA-256 与本地一致；`/health/ready` **200**；Flyway **V44**（无新迁移）。
+- C1 登录/onboarding 覆盖：
+  - `RootView` 不再用本地 `store.profile.isOnboarded` 决定登录后首屏；登录/注册响应先写 `auth.onboardingRequired`，新用户标记 `auth.isNewUser`。
+  - 登录后先 `hydrateProfileFromServer()` 拉 `/me`；只有 `onboardingRequired` 且（新用户或 `/me` 成功）才进 onboarding。`/me` 失败时不进 onboarding，避免覆盖服务端档案。
+  - onboarding 欢迎页新增“已有档案？恢复并进入”：拉 `/me`，有昵称或已 onboarded 就 `pushProfileAndGoal()` 标记服务端 onboarding 完成。
+- C2 计划器械/训练日：
+  - `replace_universal_entries()` 同时清除 profile 里被取消的自由重量类别（bodyweight / dumbbell / barbell / kettlebell / band），保留 machine / cable 等 onboarding 类别。
+  - `replace_profile_equipment()` 反向清除 legacy `UserUniversalEquipment` 和 universal entries，防止 `/me` 把刚取消的类别并回来。
+  - `_allowed_exercises()` 增加 `allowed_types`；计划池、模板、应用前复验都按当前可用器械过滤。空池不再回退全库，直接返回可读错误。
+  - `validate_plan(..., strict_schedule=True)` 用于所有生成/应用路径：单日动作不足 3 个直接失败；`weekly_days * weeks` 不匹配直接失败，不再静默丢训练日。
+- C3 双食物份量：
+  - `food_text._merge_chunk_tokens()` 把“和 / 跟 / 与 / 还有 / 以及”当食物边界；份量只挂到还没有份量的食物，第二个 `250g` 不再覆盖前一个食物。
+  - 覆盖 `100g鸡胸肉和250g米饭`、`100g米饭和250g牛肉`、`200g米饭和150g鸡胸肉`；保护“和牛肉”。
+- C4 份量修正：
+  - `_pending_food_replacement()` 在 `new_text` 只有份量（`250g`、`半碗`）时返回 None，交给 `_pending_action_correction()`，不再把“250g”当食物名。
+- C5 训练补录 slug：
+  - `propose_app_actions` 生成 `log_workout` 后校验每个 slug 存在且器械属于当前档案；错误返回可读提示 + 可用动作示例，让模型先 `lookup_exercise`，不再等到执行时 422。
+- C6 多意图：
+  - 新增 `_multi_intent_action_turn()`：识别“训练改期 + 饮食”两句，分别解析，生成 `reschedule_training` + `log_food` 两张卡；饮食日期/餐次只从饮食子句取，不再继承“明天”。
+  - 任一子句不确定时返回追问，不写入任何一张卡。
+  - `_forced_food_log_intent()` 遇到“改到 / 改期 / 挪到”不再抢成纯饮食。
+- 验证：
+  - 后端 **616 passed**；QA **76/76**；Ruff `app tests qa` 通过。
+  - 新增回归：C2 器械过滤/严格训练日、C3 双食物份量、C4 份量-only 修正、C5 未知/未拥有动作、C6 双卡与追问。
+  - 未在 Windows 跑 iOS 编译/单测；GitHub iOS Build 首次因 macOS runner 容量取消，非代码失败。
+- Mac 需要做：
+  1. 拉 `8fa8e3c` 或最新 docs 提交；`xcodegen generate`；确认 iOS Build 绿后安装。
+  2. **C1**：删 App 重装 → 登录 `macqa_coach` → 不应进 onboarding；对比 `/me` 年龄/体脂/目标/计划不变。再用新账号确认 onboarding 正常，欢迎页“已有档案？恢复并进入”可恢复。
+  3. **C2**：取消哑铃（`PUT /equipment/universal {"enabled_slugs":["bodyweight"]}`）→ `/me` 不再含 dumbbell；重生成计划标题 3 练、12 天、周一/三/五，动作无哑铃。只留徒手时若动作不足，应返回可读失败，不返回全库计划。
+  4. **C3**：分别记“100g鸡胸肉和250g米饭”“100g米饭和250g牛肉”，第二种份量必须是 250g。
+  5. **C4**：待确认卡说“米饭改成250g”“米饭改成半碗”，应更新份量而不是问“250g 是什么食物”。
+  6. **C5**：“刚练完深蹲 4组10次 60kg”（仅徒手/哑铃）不应生成 `barbell-full-squat` 卡；若模型先给非法动作，应提示并改成可用动作，不再 422。
+  7. **C6**：“今天训练改到明天，再记 200g 米饭”应出改期 + 饮食两张卡，米饭日期是今天（或饮食子句明确日期），不是明天加餐。
+  8. 回归 F1 Tab Bar；C7–C11 文案/记忆暂未动。
+- 不要恢复：
+  - 不要用本地 `store.profile.isOnboarded` 作为登录后唯一分流。
+  - 不要在空器械池回退全库动作。
+  - 不要把纯份量当食物名。
+  - 不要让多意图只执行一个，或把训练子句的日期带进饮食。
 
 ### 2026-11-17 · macOS（全 App + AI 教练压力测试：1 P0 + 5 P1，阻断发布）
 
