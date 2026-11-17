@@ -622,8 +622,15 @@ extension AppStore {
             }
         }
         profile = merged
-        if bodyMetrics.isEmpty {
-            seedBodyMetricsIfNeeded()
+        if BodyMetricSeedPolicy.shouldSeedAfterHydration(
+            isOnboarded: merged.isOnboarded,
+            hasServerBodyValues: remote.profile?.weightKG != nil
+                || remote.profile?.bodyFatPCT != nil,
+            hasLocalMetrics: !bodyMetrics.isEmpty
+        ) {
+            // The value comes from the hydrated server profile, so it is a
+            // baseline only: mark it synced and never push it as a new record.
+            seedBodyMetricsIfNeeded(markedSynced: true)
         }
         persist()
     }

@@ -233,7 +233,6 @@ final class AppStore {
 
     init() {
         load()
-        seedBodyMetricsIfNeeded()
     }
 
     // MARK: - 建档与计划
@@ -256,7 +255,6 @@ final class AppStore {
         currentUserID = userID
         resetInMemory()
         load()
-        seedBodyMetricsIfNeeded()
     }
 
     private func resetInMemory() {

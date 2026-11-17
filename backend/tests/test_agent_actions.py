@@ -175,6 +175,46 @@ def test_amount_only_correction_does_not_become_a_food_replacement():
     assert half_bowl["actions"][0]["payload"]["items"][1]["grams"] == 175
 
 
+def test_strength_workout_requires_at_least_one_set():
+    base = {
+        "type": "log_workout",
+        "title": "补录深蹲",
+        "payload": {
+            "date": "2026-11-17",
+            "title": "深蹲",
+            "duration_minutes": 45,
+            "kind": "strength",
+        },
+    }
+
+    with pytest.raises(ValueError, match="至少包含 1 个动作组"):
+        _normalize_app_actions([base])
+
+    cardio = {
+        "type": "log_workout",
+        "title": "补录跑步",
+        "payload": {
+            "date": "2026-11-17",
+            "title": "跑步",
+            "duration_minutes": 30,
+            "kind": "cardio",
+        },
+    }
+    assert _normalize_app_actions([cardio])[0]["payload"]["sets"] == []
+
+    strength = {
+        **base,
+        "payload": {
+            **base["payload"],
+            "sets": [
+                {"slug": "goblet-squat", "weight_kg": 60, "reps": 10, "rpe": 8}
+            ],
+        },
+    }
+    action = _normalize_app_actions([strength])[0]
+    assert action["payload"]["sets"][0]["slug"] == "goblet-squat"
+
+
 def test_log_food_action_requires_resolved_items():
     actions = _normalize_app_actions(
         [

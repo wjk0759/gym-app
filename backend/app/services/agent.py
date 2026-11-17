@@ -808,6 +808,7 @@ AGENT_INSTRUCTIONS = """你可以读取用户状态、读取训练记录、生�
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_planned_meal","title":"记录计划午餐","summary":"把今天计划里的午餐记为已吃","requires_confirmation":true,"payload":{"date":"2026-11-13","meal":"lunch"}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"skip_planned_meal","title":"跳过今晚计划餐","summary":"标记为主动跳过，不算漏记","requires_confirmation":true,"payload":{"date":"2026-11-13","meal":"dinner"}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_workout","title":"补录昨天跑步","summary":"30 分钟有氧，写入训练记录","requires_confirmation":true,"payload":{"date":"2026-11-12","title":"跑步","duration_minutes":30,"kind":"cardio"}}]}}
+{"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"log_workout","title":"补录深蹲","summary":"4 组 × 10 次，60kg","requires_confirmation":true,"payload":{"date":"2026-11-12","title":"深蹲","duration_minutes":45,"kind":"strength","sets":[{"slug":"goblet-squat","weight_kg":60,"reps":10,"rpe":8}]}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"update_workout_log","title":"修正昨天训练","summary":"把深蹲重量改成 60kg","requires_confirmation":true,"payload":{"session_id":"训练记录ID","sets":[{"slug":"goblet-squat","weight_kg":60,"reps":8,"rpe":8}]}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"recognize_equipment","title":"拍照识别器械","summary":"打开相机识别器械，可加入个人动作库","requires_confirmation":true,"payload":{}}]}}
 {"action":"tool","tool":"propose_app_actions","arguments":{"actions":[{"type":"analyze_body","title":"拍照分析体型","summary":"拍全身或半身照，给出训练重点","requires_confirmation":true,"payload":{}}]}}
@@ -867,7 +868,7 @@ App Context 和可执行操作：
 - 用户说“今晚这餐不吃了/跳过这顿计划餐”时，调用 skip_planned_meal，payload 包含 date 和 meal；跳过不等于漏记，饮食复盘会单独计数。已经记录过的餐不能跳过。
 - 用户说“恢复这餐/我没跳过”时，调用 restore_planned_meal，payload 包含 date 和 meal。
 - 用户说“我昨天跑了 30 分钟/今天补录一次训练/把刚才那次训练记上”时，调用 log_workout；payload 至少包含 date、title、duration_minutes，kind 用 strength 或 cardio。不要把“已经练完/补录”误判成 start_training。
-- log_workout 的记录日期不能是未来；动作型训练可以带 sets（slug、重量、次数、RPE），有氧可以只写 title + duration。
+- log_workout 的记录日期不能是未来；kind=strength 必须先用 lookup_exercise 确认真实动作 slug，并带至少 1 个 sets（slug、weight_kg、reps、rpe）；空 sets 会被拒绝。只有 kind=cardio 才可以只写 title + duration。
 - 用户要修改或删除已经记录的训练时，调用 update_workout_log / delete_workout_log；session_id 必须来自 recent_training.recent_sessions 或用户明确提供的记录 ID，不要猜。修改动作重量/次数时传完整 sets 列表。
 - 用户说“打开饮食页”时才调用 open_screen nutrition；“记录饮食”不等于“打开饮食页”。
 - 用户说“把刚才那条饮食改成/删掉”时，使用 update_food_log / delete_food_log，client_id 必须来自 app_context 或用户明确提供的记录 ID；找不到记录就 ask_user，不要猜。
@@ -1339,6 +1340,16 @@ def _normalize_app_actions(
         if action_type == "log_workout":
             if not valid_date(date_value):
                 payload["date"] = datetime.now(REVIEW_TZ).date().isoformat()
+            kind = str(payload.get("kind") or "strength").strip().lower()
+            sets = payload.get("sets")
+            if kind == "strength" and not (
+                isinstance(sets, list) and sets
+            ):
+                raise ValueError(
+                    "力量补录必须至少包含 1 个动作组（sets：slug、weight_kg、"
+                    "reps）；请先调用 lookup_exercise 选择真实动作，"
+                    "不要只写标题"
+                )
             try:
                 payload = LogWorkoutPayload.model_validate(payload).model_dump(
                     mode="json"

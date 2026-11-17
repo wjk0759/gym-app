@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date as dt_date
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class FoodItemIn(BaseModel):
@@ -77,6 +77,14 @@ class LogWorkoutPayload(BaseModel):
     notes: str | None = Field(default=None, max_length=500)
     program_day_id: str | None = Field(default=None, max_length=36)
     sets: list[WorkoutSetIn] = Field(default_factory=list, max_length=100)
+
+    @model_validator(mode="after")
+    def _strength_requires_sets(self) -> "LogWorkoutPayload":
+        if self.kind == "strength" and not self.sets:
+            raise ValueError(
+                "力量训练至少需要 1 个动作组（sets：slug、重量、次数）"
+            )
+        return self
 
 
 class UpdateWorkoutPayload(BaseModel):

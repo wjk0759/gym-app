@@ -133,6 +133,7 @@ extension AppStore {
         profile.nickname = profile.nickname.isEmpty ? "QA" : profile.nickname
         profile.isOnboarded = true
         profile.equipment = [.bodyweight, .dumbbell]
+        seedBodyMetricsIfNeeded(markedSynced: true)
         persist()
     }
     #endif

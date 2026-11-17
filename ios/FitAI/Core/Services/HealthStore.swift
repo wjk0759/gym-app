@@ -53,7 +53,7 @@ extension AppStore {
         }
     }
 
-    func seedBodyMetricsIfNeeded() {
+    func seedBodyMetricsIfNeeded(markedSynced: Bool = false) {
         guard bodyMetrics.isEmpty else { return }
         bodyMetrics = [
             BodyMetric(
@@ -62,9 +62,23 @@ extension AppStore {
                 bodyFatPCT: profile.bodyFatPCT,
                 waistCM: profile.waistCM,
                 armCM: profile.armCM,
-                thighCM: profile.thighCM
+                thighCM: profile.thighCM,
+                syncedAt: markedSynced ? Date() : nil
             )
         ]
+    }
+
+    /// A login must hydrate the server profile before a baseline body metric
+    /// can be derived. Seeding before `/me` created a fake 72kg/21% record and
+    /// pushed it over the real server history.
+    enum BodyMetricSeedPolicy {
+        static func shouldSeedAfterHydration(
+            isOnboarded: Bool,
+            hasServerBodyValues: Bool,
+            hasLocalMetrics: Bool
+        ) -> Bool {
+            isOnboarded && hasServerBodyValues && !hasLocalMetrics
+        }
     }
 
     func normalizeGoalStart(_ profile: inout UserProfile) {
