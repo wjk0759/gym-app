@@ -66,8 +66,8 @@ struct HomeV2View: View {
                     )
                     coachNote
                     todaySection
-                    nutritionPulse
                     quickActions
+                    nutritionPulse
                     if !store.missedPlanDays.isEmpty {
                         missedPlanCard
                     }

@@ -309,11 +309,11 @@ struct NutritionView: View {
             .appPageTopPadding()
             .padding(.bottom, 32)
         }
-        .appTabBarClearance()
         .background(AppBackground())
         .navigationTitle(isToday ? "今日饮食" : "饮食记录")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
+        .toolbar(.hidden, for: .tabBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("问教练") {

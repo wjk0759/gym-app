@@ -65,10 +65,10 @@ struct WeekDietPlanView: View {
                 .appPageTopPadding()
                 .padding(.bottom, 24)
             }
-            .appTabBarClearance()
             .background(AppBackground())
             .navigationTitle("本周饮食计划")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .tabBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("关闭") { dismiss() }

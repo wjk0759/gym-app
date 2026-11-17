@@ -152,10 +152,10 @@ struct PlanScheduleView: View {
                 .appPageTopPadding()
                 .padding(.bottom, 28)
             }
-            .appTabBarClearance()
             .background(AppBackground())
             .navigationTitle("训练日期")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .tabBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }

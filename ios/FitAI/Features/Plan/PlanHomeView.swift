@@ -63,10 +63,10 @@ struct PlanHomeView: View {
                         if store.isGenerating {
                             generatingCard
                         } else {
-                            monthCover
                             calendarCard(plan: store.plan)
                             selectedDayCard(plan: store.plan)
                                 .id("selected-day")
+                            monthCover
                             trainingDataCard
 
                             if let plan = store.plan {

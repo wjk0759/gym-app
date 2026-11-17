@@ -36,10 +36,10 @@ struct PlanHistoryView: View {
                 .appPageTopPadding()
                 .padding(.bottom, 24)
             }
-            .appTabBarClearance()
             .background(AppBackground())
             .navigationTitle("计划历史")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .tabBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("关闭") { dismiss() }

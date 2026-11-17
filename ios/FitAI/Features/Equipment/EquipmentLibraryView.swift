@@ -79,10 +79,10 @@ struct EquipmentLibraryView: View {
             .padding(20)
             .padding(.bottom, 24)
         }
-        .appTabBarClearance()
         .background(AppBackground())
         .navigationTitle("器械库")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {

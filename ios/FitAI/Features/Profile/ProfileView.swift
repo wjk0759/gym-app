@@ -17,8 +17,8 @@ struct ProfileView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     header
                     accountCard
-                    metricsCard
                     goalCard
+                    metricsCard
                     focusAreasCard
                     bodyAnalysisCard
                     equipmentLibraryCard

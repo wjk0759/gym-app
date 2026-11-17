@@ -102,11 +102,11 @@ struct ProgressOverviewView: View {
             .appPageTopPadding()
             .padding(.bottom, 28)
         }
-        .appTabBarClearance()
         .background(AppBackground())
         .navigationTitle("变化")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
+        .toolbar(.hidden, for: .tabBar)
         .sheet(isPresented: $showBodyCheckIn) {
             BodyCheckInSheet(manual: true)
                 .presentationDetents([.medium, .large])
