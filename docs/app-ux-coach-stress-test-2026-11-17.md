@@ -662,3 +662,33 @@ log_food: date=2026-11-18, meal=snack, 米饭 200g
 - iOS `9d340c8` + `95ad649` 已用 phone-only Release 安装 Wu-Tang，启动正常。
 - 后端 `5c47790` 已由 Windows 部署，`/health/ready` 200，本轮无后端变化。
 - 结论：C1b/C5/C1c 均通过，本轮部署完成；上述边界观察留作下一轮。
+
+## 二十一、2026-11-18 可选体型步骤复测：被新用户注册阻断
+
+- 拉取：iOS `81d8b55`（可选体型/体脂步骤）+ 后端 `83fc7b0`（滚动训练日期、计划生成限制）。
+- 回归：`FitAITests` **138/138**、`FitAIUITests` **6/6**；后端 `83fc7b0` 已部署，`/health/ready` 200。
+- **P1 新用户注册阻断（未部署）**：
+  - 全清空模拟器 → “账号密码” → 用未注册账号登录 → 进入“完成注册” → 填手机号/验证码 → 点“验证手机号并完成注册”。
+  - App 提示 **“请求参数不合法”**。
+  - 抓取 App 实际请求：
+
+```json
+{"account":"","code":"123456","phone":"13900000006","agreed_terms":true,"password":"","device_name":"iPhone 17e"}
+```
+
+`account` 和 `password` 都是空字符串；手机号、验证码正常。
+  - 同一组参数直接 `curl /auth/password/register` 能成功创建账号，说明服务端正常，问题在 App 传参。
+  - 根因方向：`LoginView` 用 `.sheet(isPresented: $showRegistration)`，而 `registrationAccount` / `registrationPassword` 与 `showRegistration` 在同一个 Task 里赋值；sheet 内容构建时拿到的是旧空值，`PasswordRegistrationView` 的 `account/password` 为空。
+  - 修复建议：改成 `sheet(item:)`，用一个 `RegistrationDraft { account, password }` 作为 item；先构造 draft 再触发 sheet。并补一条“未注册账号 → 完成注册 → 进入 onboarding”的 UI 回归。
+- **可选体型/体脂步骤**：
+  - 代码实现符合要求：步骤 9/10 已接回旧 `bodyTypeStep` / `bodyFatStep`，进度显示“可选”，有跳过按钮，报告显示 `BodyFigure` / “体型 · 体脂”。
+  - 由于注册阻断，本轮无法完成“新用户走完 onboarding 选择/跳过”的真实 UI 验证；不能据此验收。
+- **滚动训练日期 / 计划生成限制**：
+  - 单元测试已覆盖（`PlanScheduleEngineTests` 14 条、`PlanGenerationCooldownTests` 5 条），全部通过。
+  - 生产 API 尚未在本轮做 11 次生成/30 秒冷却的用户级验证；等注册修复后一起做。
+- **部署状态**：不部署；Wu-Tang 仍为 `9d340c8` + `95ad649`，后端仍 `83fc7b0`。
+
+### 结论
+
+- 可选体型步骤代码已就位，但新用户注册被 P1 阻断，真实用户无法进入 onboarding。
+- 必须先修注册传参，再复测“选择/跳过体型”和滚动日期/冷却，才能发版。

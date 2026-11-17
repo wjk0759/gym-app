@@ -14,10 +14,10 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`81d8b55`（onboarding 可选体型/体脂步骤已恢复；iOS Build `81d8b55` ✓；生产后端仍 `83fc7b0`，`/health/ready` **200**；Flyway **V44**；后端 **621 passed**、QA **76/76**、Ruff 通过；待 Mac 复测 onboarding / 训练日期 / 计划生成限制）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`81d8b55`（onboarding 可选体型/体脂步骤已恢复；iOS Build `81d8b55` ✓；生产后端仍 `83fc7b0`，`/health/ready` **200**；Flyway **V44**；`FitAITests` **138/138**、UI **6/6**；**新用户密码注册请求 account/password 为空，P1 阻断；Wu-Tang 仍 `9d340c8`，未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
-- **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b 默认身体数据、C5 空 sets、C1c 昵称丢失均已修复并通过；本轮新增训练日期滚动/计划生成限制/Tab 红点改动，待 Mac 复测。
-- **待办（macOS → Windows）**：恢复 onboarding 的**可选**体型/体脂步骤，重新展示 3D 体型插画；**直接接回现有 `bodyTypeStep` / `bodyFatStep` 旧代码，不新写页面/组件**；不恢复 14 步必填。规格：`docs/51-onboarding-optional-body-step.md`。
+- **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复并通过；本轮新增训练日期滚动/计划生成限制/Tab 红点改动，单元测试通过，待注册修复后做用户级复测。
+- **待办（macOS → Windows）**：先修新用户密码注册传参（account/password 空）；修好后再复测可选体型/体脂步骤、训练日期滚动、计划生成冷却/日限。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -65,6 +65,34 @@
   - 不要恢复“首周之前”卡片或 `managedEarlyKeys`。
   - 不要允许同一天超过 10 次 AI 计划生成，或把冷却改回 60 秒。
   - 不要给教练 Tab 加回红点。
+
+### 2026-11-18 · macOS（新用户注册阻断：account/password 为空；未部署）
+
+- 拉取：iOS `81d8b55`（可选体型/体脂）+ 后端 `83fc7b0`（滚动训练日期、计划生成 10/天 + 30 秒冷却 + 教练 Tab 红点移除）。
+- 回归：`FitAITests` **138/138**（含 PlanScheduleEngine 14、PlanGenerationCooldown 5）、`FitAIUITests` **6/6**；后端 `83fc7b0` 已部署，`/health/ready` 200。
+- **P1 新用户密码注册阻断**：
+  - 清空模拟器 → 登录页“账号密码” → 用未注册账号登录 → 进入“完成注册”。
+  - 填手机号/短信验证码（DB 插入测试码）→ 点“验证手机号并完成注册” → App 提示 **“请求参数不合法”**。
+  - 抓 App 实际请求 body：
+
+```json
+{"account":"","code":"123456","phone":"13900000006","agreed_terms":true,"password":"","device_name":"iPhone 17e"}
+```
+
+`account` 和 `password` 为空；手机号/验证码正常。用同一组参数直接 `curl /auth/password/register` 能成功创建账号（`is_new_user=true`），确认是 App 传参问题，不是服务端。
+  - 根因方向：`LoginView` 用 `.sheet(isPresented: $showRegistration)`，`registrationAccount` / `registrationPassword` 与 `showRegistration` 在同一个 Task 内赋值；sheet 构建时拿到旧空值，`PasswordRegistrationView` 的 account/password 为空。
+  - 修复建议：改成 `.sheet(item:)` + `RegistrationDraft { account, password }`，先构造 draft 再触发 sheet；补“未注册账号 → 完成注册 → 进入 onboarding”UI 回归。
+- **可选体型/体脂步骤**：
+  - 代码已按最小改动接回旧 `bodyTypeStep` / `bodyFatStep`（第 9/10 步），进度“可选”，有跳过按钮，报告显示 `BodyFigure` / “体型 · 体脂”。
+  - 因注册阻断，本轮无法完成“新用户走完 onboarding 选择/跳过”的真实 UI 验证；不能据此验收。
+- **滚动训练日期 / 计划生成限制**：
+  - `PlanScheduleEngineTests` 14 条、`PlanGenerationCooldownTests` 5 条全部通过。
+  - 生产 API 的 30 秒冷却 / 11 次日限尚未做用户级验证，等注册修复后一起复测。
+- **部署状态**：不部署；Wu-Tang 仍为 `9d340c8` + `95ad649`；后端仍 `83fc7b0`。
+- 禁止恢复：
+  - 不要让注册 sheet 用旧空 account/password。
+  - 不要绕过新用户注册 UI 回归。
+  - 不要在注册阻断未修复时发布本轮 iOS。
 
 ### 2026-11-18 · Windows（onboarding 可选体型/体脂步骤）
 
