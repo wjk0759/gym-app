@@ -24,9 +24,7 @@ struct LoginView: View {
     @State var legal: LegalDocumentKind?
     @State var showServerSettings = false
     @State var showPasswordReset = false
-    @State var showRegistration = false
-    @State var registrationAccount = ""
-    @State var registrationPassword = ""
+    @State var registrationDraft: RegistrationDraft?
     @State var showConsentPrompt = false
     @State var pendingConsentAction: PendingConsentAction?
     @Namespace var modeNamespace
@@ -98,10 +96,10 @@ struct LoginView: View {
             .sheet(isPresented: $showPasswordReset) {
                 PasswordResetView(prefillPhone: account.count == 11 ? account : phone)
             }
-            .sheet(isPresented: $showRegistration) {
+            .sheet(item: $registrationDraft) { draft in
                 PasswordRegistrationView(
-                    account: registrationAccount,
-                    password: registrationPassword
+                    account: draft.account,
+                    password: draft.password
                 )
             }
             .confirmationDialog(
@@ -185,6 +183,13 @@ struct LoginView: View {
     private func performLogin() {
         localError = nil
         auth.clearError()
+        let loginAccount = account.trimmingCharacters(in: .whitespacesAndNewlines)
+        let loginPassword = password
+        if mode == .password,
+           loginAccount.isEmpty || loginPassword.isEmpty {
+            localError = "请输入账号和密码"
+            return
+        }
         Task {
             do {
                 if mode == .phone {
@@ -194,13 +199,17 @@ struct LoginView: View {
                     }
                     try await auth.loginWithPhone(phone: phone, code: code)
                 } else {
-                    try await auth.loginWithPassword(account: account, password: password)
+                    try await auth.loginWithPassword(
+                        account: loginAccount,
+                        password: loginPassword
+                    )
                 }
             } catch {
                 if mode == .password, error.localizedDescription.contains("账号未注册") {
-                    registrationAccount = account
-                    registrationPassword = password
-                    showRegistration = true
+                    registrationDraft = RegistrationDraft(
+                        account: loginAccount,
+                        password: loginPassword
+                    )
                     localError = nil
                 } else {
                     localError = error.localizedDescription
@@ -220,6 +229,12 @@ struct LoginView: View {
             }
         }
     }
+}
+
+private struct RegistrationDraft: Identifiable {
+    let id = UUID()
+    let account: String
+    let password: String
 }
 
 private struct ServerSettingsView: View {
