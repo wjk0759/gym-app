@@ -15,6 +15,7 @@
 ### 最新状态
 
 - `develop` 代码 HEAD：`d2e4adc`（文档 `5ca2275`；食物照片进教练 + 稳定性收口；生产后端 `e0d2c38`，`runtime.py` / `routers/agent.py` SHA-256 与本地一致；iOS 已装 `d2e4adc`；Flyway **V44**；`FitAITests` **121/121**、UI **4/4**；后端 **606 passed**、QA **76/76**；本轮无新阻断）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；P1 = 悬浮 Tab Bar 遮挡内容 / 身体打卡输入无 label / 记录食物晚上默认早餐；建议修复后再发 TestFlight。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +27,23 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-17 · macOS（全 App UX / 用户路径压力测试）
+
+- 报告：`docs/app-ux-stress-test-2026-11-17.md`
+- 范围：今日、记录、教练、发现、我的、设置、器械库、动作库、变化、身体打卡、饮食计划/记录/添加食物、计划训练会话。
+- 结论：没有崩溃、白屏或导航死链；核心流程可完成。发现 9 项 UI/UX 问题，P1 三项：
+  1. **悬浮 Tab Bar 覆盖内容**：今日“记录身体”快捷卡与 Tab Bar 垂直重叠约 13pt；器械库空状态 CTA、变化页“拍一张/相册”、设置底部、我的当前目标卡首屏被遮。滚动后可恢复点击，但首屏主操作不可见/热区被压缩。
+  2. **身体打卡输入无无障碍 label**：三个 TextField 的 label 都是空，placeholder 都是“0”，VoiceOver 无法区分体重/体脂/腰围。
+  3. **记录食物默认早餐**：20:51 从“我的记录”打开“记录食物”，餐次仍默认早餐，容易把晚餐记到早餐。
+- P2：0% 宏量进度 track 用主色 20% 看起来像已填充；记录页选中今天仍显示“回到今天”；今日饮食默认“定制食谱”没有直接“添加食物”；“记录”Tab 实际是训练手账，命名与入口不一致；QA bypass 未设置 `isOnboarded` 导致“生成计划”静默无反馈；Debug 登录页显示开发服务器地址。
+- 已通过：五个 Tab、设置、器械库/动作库、变化、饮食计划/记录/添加食物、身体打卡 sheet、本地计划→安排训练→3 组记录→休息→训练总结、教练欢迎页；无崩溃。
+- 未验证：登录账号真实后端写入、IAP、Watch/HealthKit、相机相册权限、小屏真机。
+- 建议：F1/F2/F3 修复后再发 TestFlight；F8 QA bypass seed 修复后再恢复核心 UI 自动化覆盖。
+- 不要恢复：
+  - 不要把悬浮 Tab Bar 覆盖内容当作正常布局。
+  - 不要移除身体输入的无障碍 label。
+  - 不要让记录食物在晚上默认早餐。
 
 ### 2026-11-17 · macOS（食物照片进教练复测：通过）
 
