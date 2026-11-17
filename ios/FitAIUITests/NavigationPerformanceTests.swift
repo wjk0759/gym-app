@@ -10,22 +10,25 @@ final class NavigationPerformanceTests: XCTestCase {
         app.launchEnvironment["FITAI_QA_BYPASS_AUTH"] = "1"
         app.launch()
 
-        let profileTab = app.tabBars.buttons["我的"]
-        XCTAssertTrue(profileTab.waitForExistence(timeout: 10))
-        profileTab.tap()
+        let recordTab = app.tabBars.buttons["记录"]
+        XCTAssertTrue(recordTab.waitForExistence(timeout: 10))
+        recordTab.tap()
 
-        let settingsButton = app.buttons["设置"].firstMatch
-        XCTAssertTrue(settingsButton.waitForExistence(timeout: 5))
-        settingsButton.tap()
+        // 训练记录 is a pushed page that keeps the tab bar visible, so the
+        // cross-tab reset behavior can still be exercised. Settings now hides
+        // the tab bar by design, so it can no longer be used here.
+        let historyButton = app.buttons["训练记录"].firstMatch
+        XCTAssertTrue(historyButton.waitForExistence(timeout: 5))
+        historyButton.tap()
 
-        let settingsBar = app.navigationBars["设置"]
-        XCTAssertTrue(settingsBar.waitForExistence(timeout: 5))
+        let historyBar = app.navigationBars["训练记录"]
+        XCTAssertTrue(historyBar.waitForExistence(timeout: 5))
 
         app.tabBars.buttons["今日"].tap()
-        profileTab.tap()
+        recordTab.tap()
 
-        XCTAssertTrue(app.staticTexts["我的档案"].waitForExistence(timeout: 5))
-        XCTAssertFalse(settingsBar.exists)
+        XCTAssertTrue(app.staticTexts["训练手账"].waitForExistence(timeout: 5))
+        XCTAssertFalse(historyBar.exists)
     }
 
     func testTappingCurrentTabReturnsToSectionRoot() throws {
@@ -33,21 +36,21 @@ final class NavigationPerformanceTests: XCTestCase {
         app.launchEnvironment["FITAI_QA_BYPASS_AUTH"] = "1"
         app.launch()
 
-        let profileTab = app.tabBars.buttons["我的"]
-        XCTAssertTrue(profileTab.waitForExistence(timeout: 10))
-        profileTab.tap()
+        let recordTab = app.tabBars.buttons["记录"]
+        XCTAssertTrue(recordTab.waitForExistence(timeout: 10))
+        recordTab.tap()
 
-        let settingsButton = app.buttons["设置"].firstMatch
-        XCTAssertTrue(settingsButton.waitForExistence(timeout: 5))
-        settingsButton.tap()
+        let historyButton = app.buttons["训练记录"].firstMatch
+        XCTAssertTrue(historyButton.waitForExistence(timeout: 5))
+        historyButton.tap()
 
-        let settingsBar = app.navigationBars["设置"]
-        XCTAssertTrue(settingsBar.waitForExistence(timeout: 5))
+        let historyBar = app.navigationBars["训练记录"]
+        XCTAssertTrue(historyBar.waitForExistence(timeout: 5))
 
-        profileTab.tap()
+        recordTab.tap()
 
-        XCTAssertTrue(app.staticTexts["我的档案"].waitForExistence(timeout: 5))
-        XCTAssertFalse(settingsBar.exists)
+        XCTAssertTrue(app.staticTexts["训练手账"].waitForExistence(timeout: 5))
+        XCTAssertFalse(historyBar.exists)
     }
 
     func testProgressNavigationPerformance() throws {
