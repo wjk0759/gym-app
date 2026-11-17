@@ -14,9 +14,9 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`5c47790`（文档 `fc5e2de`；C1b/C5 修复；生产后端已部署 `5c47790` 的 `agent.py` + `coach_actions/schemas.py`，`/health/ready` **200**；Flyway **V44**；`FitAITests` **129/129**、UI **6/6**、C1 全新安装登录 **2/2**；**C1b/C5 已通过，但登录后昵称丢失（C1c）待修，Wu-Tang 仍为 `4630a83`，未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`95ad649`（C1c 昵称/onboarding hydration 修复；C1b/C5 已在上一轮修复；生产后端 `5c47790`，`/health/ready` **200**；Flyway **V44**；iOS Build `95ad649` ✓；后端 **617 passed**、QA **76/76**、Ruff 通过；**待 Mac 复测 C1c，未通过前不部署 iOS**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
-- **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b 默认身体数据、C5 空 sets 已修复并通过；C1c 登录后昵称丢失（服务端有 nickname，本地/Profile 为空）。**C1c 修好前不部署。**
+- **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b 默认身体数据、C5 空 sets 已修复并通过；C1c 登录后昵称丢失已由 Windows 修复，待 Mac 复测。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -28,6 +28,39 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-18 · Windows（C1c 昵称/onboarding hydration 修复）
+
+- 提交：`69366a2` + `95ad649`，已推 `develop`；无后端变化（生产仍是 `5c47790`）；iOS Build `95ad649` ✓。
+- 根因：
+  - `mergeRemoteMe()` 用 `guard !profileSyncPending` 整体跳过 `/me` profile；本地 pending 或 stale pending 时 nickname/isOnboarded 都不会写入。
+  - `AuthResponse` 原本不解析登录响应里的 `profile`，登录后只能等 `/me`。
+  - 本地 profile 从未 onboarded，但 pending 标记可能存在；导致空昵称被持久化，保存档案时还有清空服务端昵称的风险。
+- 修法：
+  - `AuthResponse` 增加 `profile` 解码；`AuthStore.loginProfile` 保存登录响应 profile；`RootView.refreshSession()` 在 `switchUser` 后立即 `store.applyRemoteIdentity(auth.loginProfile)`。
+  - `applyRemoteIdentity()` 在 pending 判断之前强制补：
+    - 本地 nickname 为空 → 服务端 nickname
+    - 本地 `isOnboarded=false` 且服务端 `onboarded=true` → 置 true
+    - 变更立即 `persist()`
+  - `ProfilePendingPolicy`：本地从未 onboarded、服务端已 onboarded 时清除 stale `profileSyncPending`，让完整 profile merge 继续，避免只补昵称但年龄/性别仍为默认值。
+  - 完整 merge 里的 nickname/isOnboarded 也改走同一策略，避免空服务端值覆盖本地。
+  - 新增 `ProfileHydrationPolicyTests` 6 条。
+- 验证：
+  - GitHub iOS Build `95ad649` ✓（SwiftLint + simulator build）。
+  - Windows 未运行 `FitAITests`；新增 6 条测试待 Mac 跑。
+  - 无后端变化，生产后端仍 `5c47790`，`/health/ready` 200。
+- Mac 需要做：
+  1. 拉 `95ad649`；`xcodegen generate`；安装最新 iOS。
+  2. 清空模拟器重装 → 登录 `macqa_coach` → “我的 → 我的档案”必须显示服务端昵称 `Mac QA`。
+  3. 检查本地 per-user state：`nickname="Mac QA"`、`isOnboarded=true`；身体数据仍 18%，没有 21% 伪记录。
+  4. 编辑档案 → 保存一次 → 服务端 nickname 不被清空。
+  5. 新账号 onboarding 仍正常。
+  6. 跑 `FitAITests`（原 129 + 新增 6 条）与 UI 6/6。
+- 不要恢复：
+  - 不要在 pending 时整体跳过 nickname/isOnboarded hydration。
+  - 不要让本地空昵称覆盖服务端昵称。
+  - 不要在 `/me` hydration 前 seed/推送默认身体数据。
+  - C1c 未通过前不要部署当前 iOS。
 
 ### 2026-11-18 · macOS（C1b/C5 通过；C1c 昵称丢失待修，未部署）
 
