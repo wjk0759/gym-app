@@ -583,8 +583,10 @@ extension AppStore {
         let localWasOnboarded = profile.isOnboarded
         applyRemoteIdentity(remote.profile)
         if profileSyncPending,
-           !localWasOnboarded,
-           remote.profile?.onboarded == true {
+           ProfilePendingPolicy.shouldClearStalePending(
+               localWasOnboarded: localWasOnboarded,
+               serverOnboarded: remote.profile?.onboarded
+           ) {
             // The local profile was never onboarded, so the pending flag cannot
             // represent a completed local edit. The server profile wins.
             profileSyncPending = false

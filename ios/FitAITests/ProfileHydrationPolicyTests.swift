@@ -55,4 +55,25 @@ final class ProfileHydrationPolicyTests: XCTestCase {
             )
         )
     }
+
+    func testStalePendingClearsWhenServerIsOnboarded() {
+        XCTAssertTrue(
+            ProfilePendingPolicy.shouldClearStalePending(
+                localWasOnboarded: false,
+                serverOnboarded: true
+            )
+        )
+        XCTAssertFalse(
+            ProfilePendingPolicy.shouldClearStalePending(
+                localWasOnboarded: true,
+                serverOnboarded: true
+            )
+        )
+        XCTAssertFalse(
+            ProfilePendingPolicy.shouldClearStalePending(
+                localWasOnboarded: false,
+                serverOnboarded: false
+            )
+        )
+    }
 }

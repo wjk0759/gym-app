@@ -16,3 +16,15 @@ enum RemoteProfileIdentityPolicy {
         local || server == true
     }
 }
+
+enum ProfilePendingPolicy {
+    /// A pending flag on a profile that was never onboarded locally cannot be a
+    /// completed user edit. When the server says the account is onboarded, the
+    /// stale flag must not block the full profile merge.
+    static func shouldClearStalePending(
+        localWasOnboarded: Bool,
+        serverOnboarded: Bool?
+    ) -> Bool {
+        !localWasOnboarded && serverOnboarded == true
+    }
+}
