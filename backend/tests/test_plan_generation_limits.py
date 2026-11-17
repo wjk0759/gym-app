@@ -71,7 +71,7 @@ def test_plan_generate_uses_30s_cooldown_and_daily_limit(monkeypatch):
             )
         )
 
-    assert calls["cooldown_seconds"] == 30
+    assert calls["cooldown_seconds"] == plans.PLAN_GENERATION_COOLDOWN_SECONDS
     assert exc.value.status_code == 429
     assert exc.value.detail["code"] == "PLAN_DAILY_LIMIT"
     assert exc.value.detail["retry_after"] > 0

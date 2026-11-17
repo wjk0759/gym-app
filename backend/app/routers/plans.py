@@ -5,6 +5,7 @@ from fastapi import APIRouter, Header, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from ..config import settings
 from ..deps import CurrentUser, DBSession
 from ..models import (
     Exercise,
@@ -41,7 +42,7 @@ from ..services.training_stage import refresh_training_stage
 
 router = APIRouter(prefix="/plans", tags=["plans"])
 
-PLAN_GENERATION_COOLDOWN_SECONDS = 30
+PLAN_GENERATION_COOLDOWN_SECONDS = settings.plan_generation_cooldown_seconds
 
 
 def _active_program(db: DBSession, user_id: str) -> Program | None:
