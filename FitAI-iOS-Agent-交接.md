@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`5c47790`（文档 `f343e74`；C1b/C5 修复；生产后端已部署 `5c47790` 的 `agent.py` + `coach_actions/schemas.py`，`/health/ready` **200**；Flyway **V44**；`FitAITests` **129/129**、UI **6/6**、C1 全新安装登录 **2/2**；**C1b/C5 已通过，但登录后昵称丢失（C1c）待修，Wu-Tang 仍为 `4630a83`，未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`5c47790`（文档 `fc5e2de`；C1b/C5 修复；生产后端已部署 `5c47790` 的 `agent.py` + `coach_actions/schemas.py`，`/health/ready` **200**；Flyway **V44**；`FitAITests` **129/129**、UI **6/6**、C1 全新安装登录 **2/2**；**C1b/C5 已通过，但登录后昵称丢失（C1c）待修，Wu-Tang 仍为 `4630a83`，未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b 默认身体数据、C5 空 sets 已修复并通过；C1c 登录后昵称丢失（服务端有 nickname，本地/Profile 为空）。**C1c 修好前不部署。**
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
