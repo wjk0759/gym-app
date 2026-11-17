@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`4630a83`（测试/文档 `2a1abc8`；F1 已通过；但 2026-11-17 第二轮 App+AI 教练压测发现 **1 P0 + 5 P1，阻断发布**；生产后端 `e0d2c38`，`/health/ready` 200；iOS Wu-Tang 仍为 `4630a83`；Flyway **V44**；`FitAITests` **121/121**、UI **6/6**；后端 app 代码无变化、QA **76/76**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`4630a83`（测试/文档 `a4802c1`；F1 已通过；但 2026-11-17 第二轮 App+AI 教练压测发现 **1 P0 + 5 P1，阻断发布**；生产后端 `e0d2c38`，`/health/ready` 200；iOS Wu-Tang 仍为 `4630a83`；Flyway **V44**；`FitAITests` **121/121**、UI **6/6**；后端 app 代码无变化、QA **76/76**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；P0 = 新装登录已有账号被强制重新建档并覆盖服务端资料；P1 = 计划器械/训练日错误、双食物份量丢失、待确认卡份量修正失败、训练补录 slug 不存在、多意图丢失。**先修 C1/C2，未修复前不部署。**
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
