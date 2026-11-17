@@ -1,6 +1,6 @@
 import asyncio
 import json
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -539,3 +539,62 @@ def test_unknown_food_question_does_not_ask_for_grams_again():
     assert "玉米肉肠" in resolution.questions[0]
     assert "热量" in resolution.questions[0]
     assert "多少克" not in resolution.questions[0]
+
+
+def test_multi_intent_reschedule_and_food_keep_their_own_context(db):
+    today = datetime.now(food_text.DIET_TZ).date()
+    context = {
+        "plan": {
+            "id": "plan-1",
+            "version": 1,
+            "days": [
+                {
+                    "id": "day-today",
+                    "date": today.isoformat(),
+                    "title": "全身 A",
+                },
+                {
+                    "id": "day-tomorrow",
+                    "date": (today + timedelta(days=1)).isoformat(),
+                    "title": "全身 B",
+                },
+            ],
+        },
+        "today_day": {"id": "day-today"},
+    }
+
+    result = asyncio.run(
+        agent_service._multi_intent_action_turn(
+            db,
+            "user-1",
+            "今天训练改到明天，再记 200g 米饭",
+            context,
+        )
+    )
+
+    assert result is not None
+    assert [action["type"] for action in result["actions"]] == [
+        "reschedule_training",
+        "log_food",
+    ]
+    training, food = result["actions"]
+    assert training["payload"]["target_date"] == (
+        today + timedelta(days=1)
+    ).isoformat()
+    assert food["payload"]["date"] == today.isoformat()
+    assert [item["grams"] for item in food["payload"]["items"]] == [200]
+
+
+def test_multi_intent_asks_before_writing_when_training_is_unresolved(db):
+    result = asyncio.run(
+        agent_service._multi_intent_action_turn(
+            db,
+            "user-1",
+            "今天训练改到明天，再记 200g 米饭",
+            {},
+        )
+    )
+
+    assert result is not None
+    assert result["actions"] == []
+    assert "饮食我先不写入" in result["reply"]

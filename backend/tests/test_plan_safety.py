@@ -16,6 +16,7 @@ from app.models import (
 )
 from app.services.agent import apply_proposal
 from app.services.plan_generator import validate_plan_for_user
+from app.services.plan_validator import PlanValidationError
 
 
 @pytest.fixture()
@@ -146,6 +147,35 @@ def test_revalidation_flags_new_injury(db, seeded):
         item["slug"] != "knee-extension"
         for item in cleaned["days"][0]["exercises"]
     )
+
+
+def test_revalidation_removes_exercises_for_unowned_equipment(db, seeded):
+    db.add(
+        Exercise(
+            slug="goblet-squat",
+            name_zh="高脚杯深蹲",
+            muscle_group="legs",
+            equipment="dumbbell",
+            is_active=True,
+            plan_eligible=True,
+            contraindications=[],
+        )
+    )
+    db.commit()
+
+    cleaned, _ = validate_plan_for_user(db, "user-1", _plan("goblet-squat"))
+    slugs = [item["slug"] for item in cleaned["days"][0]["exercises"]]
+    assert "goblet-squat" not in slugs
+    assert len(slugs) == 3
+
+
+def test_revalidation_fails_when_weekly_days_are_missing(db, seeded):
+    profile = db.get(Profile, "user-1")
+    profile.weekly_days = 3
+    db.commit()
+
+    with pytest.raises(PlanValidationError, match="训练日"):
+        validate_plan_for_user(db, "user-1", _plan())
 
 
 def test_apply_proposal_accepts_an_unchanged_plan(db, seeded):

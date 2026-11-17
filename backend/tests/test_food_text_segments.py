@@ -19,6 +19,10 @@ def test_food_segments_split_punctuation_and_spaces():
         "湿炒螺蛳粉 一份",
         "半杯 奶茶",
     ]
+    assert _food_segments("鸡胸肉 和 250g 米饭") == [
+        "鸡胸肉",
+        "250g 米饭",
+    ]
 
 
 def test_food_segments_keep_dates_times_and_ranges_whole():
@@ -64,3 +68,24 @@ def test_rule_resolution_groups_three_meals():
         "玉米肠",
     }
     assert all(not group.questions for group in groups.values())
+
+
+def test_two_foods_keep_their_own_explicit_portions():
+    from app.services.food_text import resolve_food_rules
+
+    cases = {
+        "午餐吃了100g鸡胸肉和250g米饭": {"鸡胸肉": 100, "米饭": 250},
+        "午餐吃了100g米饭和250g牛肉": {"米饭": 100, "牛肉": 250},
+        "午餐吃了200g米饭和150g鸡胸肉": {"米饭": 200, "鸡胸肉": 150},
+    }
+    for text, expected in cases.items():
+        items = resolve_food_rules(text).items
+        assert {item["name"]: item["grams"] for item in items} == expected
+
+
+def test_conjunction_split_does_not_break_wagyu():
+    from app.services.food_text import resolve_food_rules
+
+    assert _food_segments("和牛肉200g") == ["和牛肉 200g"]
+    items = resolve_food_rules("和牛肉200g").items
+    assert [(item["name"], item["grams"]) for item in items] == [("牛肉", 200)]

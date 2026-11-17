@@ -11,6 +11,7 @@ from app.models import (
     Profile,
     User,
     UserEquipmentEntry,
+    UserUniversalEquipment,
 )
 from app.services.equipment_inventory import (
     delete_library_entry,
@@ -97,6 +98,41 @@ def test_universal_entries_are_synced(db):
     types = effective_equipment_types(db, "user-1")
     assert "barbell" not in types
     assert "band" in types
+
+
+def test_universal_checklist_clears_only_matching_profile_categories(db):
+    replace_profile_equipment(
+        db, "user-1", ["bodyweight", "dumbbell", "machine"]
+    )
+    db.commit()
+
+    replace_universal_entries(db, "user-1", ["bodyweight"])
+    db.commit()
+
+    types = effective_equipment_types(db, "user-1")
+    assert "dumbbell" not in types
+    assert "bodyweight" in types
+    # Machine was declared during onboarding, not via the universal checklist.
+    assert "machine" in types
+
+
+def test_profile_removal_clears_legacy_universal_checkbox(db):
+    db.add(
+        UserUniversalEquipment(
+            user_id="user-1",
+            equipment_slug="dumbbell",
+            enabled=True,
+        )
+    )
+    db.commit()
+    assert "dumbbell" in effective_equipment_types(db, "user-1")
+
+    replace_profile_equipment(db, "user-1", ["bodyweight"])
+    db.commit()
+
+    assert "dumbbell" not in effective_equipment_types(db, "user-1")
+    legacy = db.execute(select(UserUniversalEquipment)).scalar_one()
+    assert legacy.enabled is False
 
 
 def test_legacy_profile_fallback_still_works(db):

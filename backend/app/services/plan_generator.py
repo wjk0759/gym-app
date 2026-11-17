@@ -212,9 +212,11 @@ def _allowed_exercises(
     plan_pool_slugs: list[str] | None = None,
     strict_equipment: bool = False,
     disliked_slugs: set[str] | None = None,
+    allowed_types: set[str] | None = None,
 ) -> list[Exercise]:
     banned = injury_tags(injuries)
     disliked = disliked_slugs or set()
+    equipment = {str(item) for item in (allowed_types or set()) if item}
 
     rows = (
         db.execute(select(Exercise).where(Exercise.is_active.is_(True)))
@@ -222,25 +224,28 @@ def _allowed_exercises(
         .all()
     )
 
+    def usable(item: Exercise) -> bool:
+        return (
+            item.slug not in disliked
+            and not (banned & set(item.contraindications or []))
+            and (not equipment or item.equipment in equipment)
+        )
+
     # 器械计划池：固定器械启用动作 + 通用器械动作。
     # >=8 条默认严格使用；strict_equipment 时不论多少都严格使用，不回退白名单。
     pool = set(plan_pool_slugs or [])
     if pool:
         picked = [
             e for e in rows
-            if e.slug in pool
-            and e.slug not in disliked
-            and not (banned & set(e.contraindications or []))
+            if e.slug in pool and usable(e)
         ]
         if strict_equipment or len(picked) >= 8:
             return picked
 
-    # 回退：只用「可进计划」的力量动作 + 伤病过滤。
+    # 回退：只用「可进计划」的力量动作 + 伤病/器械过滤。
     result: list[Exercise] = [
         e for e in rows
-        if e.plan_eligible
-        and e.slug not in disliked
-        and not (banned & set(e.contraindications or []))
+        if e.plan_eligible and usable(e)
     ]
 
     return result
@@ -271,6 +276,7 @@ def validate_plan_for_user(
         profile.injuries,
         plan_pool_slugs,
         disliked_slugs=disliked_exercise_slugs(db, user_id),
+        allowed_types=set(equipment_types),
     )
     if plan_pool_slugs and allowed:
         equipment_types = sorted({item.equipment for item in allowed})
@@ -290,6 +296,7 @@ def validate_plan_for_user(
         injuries=profile.injuries,
         weekly_days=profile.weekly_days,
         weeks=int(plan_doc.get("weeks") or 4),
+        strict_schedule=True,
     )
 
 
@@ -459,6 +466,7 @@ def build_template_plan(
         plan_pool_slugs,
         strict_equipment,
         disliked_slugs=disliked_exercise_slugs(db, profile.user_id),
+        allowed_types=set(equipment_types),
     )
     if plan_pool_slugs and available:
         equipment_types = sorted({item.equipment for item in available})
@@ -486,6 +494,7 @@ def build_template_plan(
         injuries=profile.injuries,
         weekly_days=effective_days,
         weeks=weeks,
+        strict_schedule=True,
     )
     apply_plan_weights(db, profile, cleaned, by_slug)
     return {
@@ -624,14 +633,13 @@ async def generate_plan(
         plan_pool_slugs,
         strict_equipment,
         disliked_slugs=disliked_exercise_slugs(db, profile.user_id),
+        allowed_types=set(equipment_types),
     )
     if plan_pool_slugs and available:
         equipment_types = sorted({item.equipment for item in available})
     if not available:
-        available = (
-            db.execute(select(Exercise).where(Exercise.is_active.is_(True)))
-            .scalars()
-            .all()
+        raise PlanValidationError(
+            "当前器械条件下没有可用动作，请先补充器械或调整档案"
         )
 
     by_slug = {item.slug: item for item in available}
@@ -672,6 +680,7 @@ async def generate_plan(
                 injuries=profile.injuries,
                 weekly_days=profile.weekly_days,
                 weeks=weeks,
+                strict_schedule=True,
             )
             apply_plan_weights(db, profile, cleaned, by_slug)
             return {
@@ -697,7 +706,13 @@ async def generate_plan(
             )
 
     raw = fallback_plan(
-        profile, goal_type, available, weeks=weeks, split=split, focus=focus
+        profile,
+        goal_type,
+        available,
+        weeks=weeks,
+        split=split,
+        weekly_days=profile.weekly_days,
+        focus=focus,
     )
     cleaned, fallback_warnings = validate_plan(
         raw,
@@ -706,6 +721,7 @@ async def generate_plan(
         injuries=profile.injuries,
         weekly_days=profile.weekly_days,
         weeks=weeks,
+        strict_schedule=True,
     )
     apply_plan_weights(db, profile, cleaned, by_slug)
     warnings.extend(fallback_warnings)

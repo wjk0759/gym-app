@@ -22,6 +22,7 @@ struct CoachOnboardingView: View {
     @State var location: TrainingLocation = .gym
     @State var welcomePhase = 0
     @State var showExitConfirm = false
+    @State var isRestoringProfile = false
     @State var alertMessage = ""
     @State var showAlert = false
     @FocusState var nameFocused: Bool

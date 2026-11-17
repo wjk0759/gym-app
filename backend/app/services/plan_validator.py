@@ -68,6 +68,7 @@ def validate_plan(
     injuries: list[str] | None,
     weekly_days: int | None = None,
     weeks: int = 4,
+    strict_schedule: bool = False,
 ) -> tuple[dict, list[str]]:
     """返回清理后的计划和警告列表；结构性问题直接抛异常。"""
     if not isinstance(plan, dict):
@@ -149,6 +150,10 @@ def validate_plan(
             )
 
         if len(cleaned_exercises) < 3:
+            if strict_schedule:
+                raise PlanValidationError(
+                    f"第 {week_index} 周星期 {weekday} 有效动作不足 3 个"
+                )
             warnings.append(
                 f"第 {week_index} 周星期 {weekday} 有效动作不足 3 个，已跳过"
             )
@@ -189,6 +194,14 @@ def validate_plan(
             per_week[day["week_index"]] = count + 1
             kept.append(day)
         cleaned_days = kept
+
+    if weekly_days and strict_schedule:
+        expected = weekly_days * weeks
+        if len(cleaned_days) != expected:
+            raise PlanValidationError(
+                f"每周 {weekly_days} 练、{weeks} 周应生成 {expected} 个训练日，"
+                f"实际只有 {len(cleaned_days)} 个"
+            )
 
     cleaned_days.sort(key=lambda item: (item["week_index"], item["weekday"]))
     title = str(plan.get("title") or "AI 训练计划")[:60]

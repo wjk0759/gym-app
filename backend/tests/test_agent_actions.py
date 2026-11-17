@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 
 import pytest
@@ -9,6 +10,7 @@ from app.services.agent import (
     _is_draft_answer,
     _normalize_app_actions,
     _pending_action_correction,
+    _pending_food_replacement,
 )
 
 
@@ -38,6 +40,7 @@ def test_food_log_intent_is_detected_without_misrouting_questions():
     assert not _forced_food_log_intent("我今天吃了什么")
     assert not _forced_food_log_intent("我今天吃了什么，还可以吃什么")
     assert not _forced_food_log_intent("我昨天跑了 30 分钟，帮我记一下")
+    assert not _forced_food_log_intent("今天训练改到明天，再记 200g 米饭")
     assert _forced_workout_log_intent("我昨天跑了 30 分钟")
     assert _forced_workout_log_intent("今天补录一次训练")
     assert not _forced_workout_log_intent("开始训练")
@@ -117,6 +120,59 @@ def test_multi_item_card_correction_asks_or_uses_ordinal():
     assert updated is not None
     assert updated["actions"][0]["payload"]["items"][1]["grams"] == 300
     assert updated["actions"][0]["payload"]["items"][0]["grams"] == 180
+
+
+def test_amount_only_correction_does_not_become_a_food_replacement():
+    context = {
+        "pending_action": {
+            "type": "log_food",
+            "payload": {
+                "date": "2026-11-17",
+                "meal": "lunch",
+                "items": [
+                    {
+                        "name": "鸡胸肉",
+                        "grams": 100,
+                        "kcal": 165,
+                        "protein_g": 31,
+                        "carbs_g": 0,
+                        "fat_g": 3.6,
+                    },
+                    {
+                        "name": "米饭",
+                        "grams": 200,
+                        "kcal": 232,
+                        "protein_g": 5.2,
+                        "carbs_g": 51.8,
+                        "fat_g": 0.6,
+                    },
+                ],
+            },
+        }
+    }
+
+    replacement = asyncio.run(
+        _pending_food_replacement(None, "user-1", context, "米饭改成250g")
+    )
+    assert replacement is None
+
+    corrected = _pending_action_correction(context, "米饭改成250g")
+    assert corrected is not None
+    items = corrected["actions"][0]["payload"]["items"]
+    assert [(item["name"], item["grams"]) for item in items] == [
+        ("鸡胸肉", 100),
+        ("米饭", 250),
+    ]
+
+    assert (
+        asyncio.run(
+            _pending_food_replacement(None, "user-1", context, "米饭改成半碗")
+        )
+        is None
+    )
+    half_bowl = _pending_action_correction(context, "米饭改成半碗")
+    assert half_bowl is not None
+    assert half_bowl["actions"][0]["payload"]["items"][1]["grams"] == 175
 
 
 def test_log_food_action_requires_resolved_items():

@@ -491,35 +491,111 @@ def _is_item_boundary(char: str) -> bool:
     )
 
 
+_FOOD_CONJUNCTIONS = ("还有", "以及", "外加", "另外", "和", "跟", "与")
+
+
+def _strip_leading_conjunction(value: str) -> str:
+    for conjunction in _FOOD_CONJUNCTIONS:
+        if value.startswith(conjunction):
+            return value[len(conjunction):].strip()
+    return value
+
+
+def _split_conjunction_token(token: str) -> list[str]:
+    """Split one food token on a conjunction without breaking 和牛.
+
+    A conjunction only separates foods when what follows is a quantity or a
+    known food. ``和牛`` and ``和风沙拉`` therefore stay intact, while
+    ``鸡胸肉和250g米饭`` becomes two items.
+    """
+    value = token.strip()
+    if not value:
+        return []
+    for index in range(1, len(value)):
+        for conjunction in _FOOD_CONJUNCTIONS:
+            if not value.startswith(conjunction, index):
+                continue
+            left = value[:index].strip()
+            right = value[index + len(conjunction):].strip()
+            if not left:
+                continue
+            if not right:
+                return _split_conjunction_token(left)
+            starts_with_portion = bool(
+                re.match(rf"^{_NUMBER_TOKEN}\s*{_UNIT_TOKEN}", right)
+            )
+            if (
+                starts_with_portion
+                or _match_food(right) is not None
+                or (_has_portion(left) and _is_food_segment(right))
+            ):
+                return _split_conjunction_token(left) + _split_conjunction_token(
+                    right
+                )
+    return [value]
+
+
+def _starts_with_conjunction(value: str) -> bool:
+    return any(value.startswith(item) for item in _FOOD_CONJUNCTIONS)
+
+
+def _ends_with_conjunction(value: str) -> bool:
+    return any(value.endswith(item) for item in _FOOD_CONJUNCTIONS)
+
+
 def _merge_chunk_tokens(tokens: list[str]) -> list[str]:
     """Attach quantities to the food they describe.
 
     Spaces are separators, so ``鸡胸肉 200 g 米饭`` arrives as four tokens.
     Reattaching ``200 g`` to the preceding food preserves the user's intent
     without treating number/unit fragments as unknown dishes.
+
+    A quantity only attaches to a food that does not already have one. In
+    ``100g 鸡胸肉和 250g 米饭`` the second quantity belongs to the next food,
+    not to the chicken.
     """
     merged: list[str] = []
     pending_quantity: str | None = None
+    boundary = False
     for token in tokens:
         value = token.strip()
         if not value:
             continue
-        if _QUANTITY_TOKEN.fullmatch(value) or _RANGE_TOKEN.fullmatch(value):
+        if value in _FOOD_CONJUNCTIONS:
+            boundary = True
+            continue
+        if (merged or pending_quantity is not None) and _starts_with_conjunction(
+            value
+        ):
+            boundary = True
+            value = _strip_leading_conjunction(value)
+        if not value:
+            continue
+        if _ends_with_conjunction(value):
+            boundary = True
+        for item in _split_conjunction_token(value):
+            item = item.strip()
+            if not item:
+                continue
+            if _QUANTITY_TOKEN.fullmatch(item) or _RANGE_TOKEN.fullmatch(item):
+                if pending_quantity is not None:
+                    merged.append(pending_quantity)
+                    pending_quantity = None
+                if not boundary and merged and not _has_portion(merged[-1]):
+                    merged[-1] = f"{merged[-1]} {item}"
+                else:
+                    pending_quantity = item
+                boundary = False
+                continue
             if pending_quantity is not None:
-                merged.append(pending_quantity)
+                merged.append(f"{pending_quantity} {item}")
                 pending_quantity = None
-            if merged:
-                merged[-1] = f"{merged[-1]} {value}"
-            else:
-                pending_quantity = value
-            continue
-        if pending_quantity is not None:
-            merged.append(f"{pending_quantity} {value}")
-            pending_quantity = None
-            continue
-        if _is_pure_discourse(value):
-            continue
-        merged.append(value)
+                boundary = False
+                continue
+            if _is_pure_discourse(item):
+                continue
+            merged.append(item)
+            boundary = False
     if pending_quantity is not None:
         merged.append(pending_quantity)
     return merged

@@ -263,6 +263,27 @@ def replace_profile_equipment(
             name=EQUIPMENT_LABELS.get(equipment_type, equipment_type),
             source="profile",
         )
+    # Removing a category in the profile/onboarding screen must also clear the
+    # legacy universal checklist and the unified universal entries. Otherwise
+    # `effective_equipment_types` unions the old value back into `/me` and the
+    # next plan still programs equipment the user just removed.
+    for row in db.execute(
+        select(UserUniversalEquipment).where(
+            UserUniversalEquipment.user_id == user_id
+        )
+    ).scalars():
+        if UNIVERSAL_TO_EQUIPMENT.get(row.equipment_slug) not in wanted:
+            row.enabled = False
+    for row in db.execute(
+        select(UserEquipmentEntry).where(
+            UserEquipmentEntry.user_id == user_id,
+            UserEquipmentEntry.source == "universal",
+        )
+    ).scalars():
+        slug = row.client_id.removeprefix("universal:")
+        if UNIVERSAL_TO_EQUIPMENT.get(slug, "other") not in wanted:
+            row.enabled = False
+            row.deleted_at = utcnow()
     sync_profile_cache(db, user_id)
 
 
@@ -334,4 +355,28 @@ def replace_universal_entries(
             name=slug,
             source="universal",
         )
+    # Saving the universal checklist is an explicit category choice for free
+    # weights. Clear the matching profile categories the user just unchecked,
+    # but leave machine/cable declarations from onboarding untouched.
+    wanted_types = {
+        UNIVERSAL_TO_EQUIPMENT.get(slug, "other") for slug in wanted
+    }
+    managed_types = {"bodyweight", "dumbbell", "barbell", "kettlebell", "band"}
+    profile_rows = list(
+        db.execute(
+            select(UserEquipmentEntry).where(
+                UserEquipmentEntry.user_id == user_id,
+                UserEquipmentEntry.source == "profile",
+            )
+        )
+        .scalars()
+        .all()
+    )
+    for row in profile_rows:
+        if (
+            row.equipment_type in managed_types
+            and row.equipment_type not in wanted_types
+        ):
+            row.enabled = False
+            row.deleted_at = utcnow()
     sync_profile_cache(db, user_id)

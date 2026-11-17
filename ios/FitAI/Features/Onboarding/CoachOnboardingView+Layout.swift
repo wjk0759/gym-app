@@ -63,6 +63,37 @@ extension CoachOnboardingView {
             .foregroundStyle(Theme.tertiaryText)
             .buttonStyle(SubtlePressStyle())
             .padding(.top, 14)
+
+            Button {
+                Task { @MainActor in
+                    isRestoringProfile = true
+                    defer { isRestoringProfile = false }
+                    await store.hydrateProfileFromServer()
+                    let nickname = store.profile.nickname
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    let hasExistingData = store.profile.isOnboarded
+                        || !nickname.isEmpty
+                    if hasExistingData {
+                        store.profile.isOnboarded = true
+                        await store.pushProfileAndGoal()
+                        auth.onboardingRequired = false
+                    } else {
+                        alertMessage = "这个账号还没有已保存的档案，请继续填写。"
+                        showAlert = true
+                    }
+                }
+            } label: {
+                Text(
+                    isRestoringProfile
+                        ? "正在恢复档案…"
+                        : "已有档案？恢复并进入"
+                )
+                .font(AppType.caption)
+                .foregroundStyle(Theme.tertiaryText)
+            }
+            .buttonStyle(SubtlePressStyle())
+            .disabled(isRestoringProfile)
+            .padding(.top, 8)
             .padding(.bottom, 24)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

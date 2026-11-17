@@ -11,6 +11,9 @@ struct RootView: View {
     @State private var splashPulse = false
     @State private var phaseNow = Date()
     @State private var syncedUserID: String?
+    @State private var hydratedUserID: String?
+    @State private var hydrationSucceeded = false
+    @State private var isHydratingAccount = false
     @State private var toastDismissTask: Task<Void, Never>?
 
     private let phaseTimer = Timer.publish(every: 300, on: .main, in: .common).autoconnect()
@@ -30,11 +33,21 @@ struct RootView: View {
                 } else if !auth.isAuthenticated && !qaBypassAuth {
                     LoginView()
                         .transition(screenTransition)
-                } else if store.profile.isOnboarded || qaBypassAuth {
-                    MainTabView()
+                } else if auth.isAuthenticated
+                    && auth.onboardingRequired
+                    && !qaBypassAuth
+                    && (isHydratingAccount || hydratedUserID != auth.userID) {
+                    splash
+                        .transition(.opacity)
+                } else if auth.isAuthenticated
+                    && auth.onboardingRequired
+                    && (auth.isNewUser || hydrationSucceeded)
+                    && !store.profile.isOnboarded
+                    && !qaBypassAuth {
+                    CoachOnboardingView()
                         .transition(screenTransition)
                 } else {
-                    CoachOnboardingView()
+                    MainTabView()
                         .transition(screenTransition)
                 }
             }
@@ -257,28 +270,46 @@ struct RootView: View {
 
     private func refreshSession() {
         store.switchUser(auth.userID)
-        guard auth.isAuthenticated else {
+        guard auth.isAuthenticated, let userID = auth.userID else {
             syncedUserID = nil
+            hydratedUserID = nil
+            hydrationSucceeded = false
+            isHydratingAccount = false
             return
         }
         if store.profile.trainingStage != auth.trainingStage {
             store.profile.trainingStage = auth.trainingStage
         }
-        guard syncedUserID != auth.userID else {
+        guard syncedUserID != userID else {
             activateWeatherIfNeeded()
             return
         }
-        syncedUserID = auth.userID
-        enableRemoteMode()
-        Task { await store.refreshAccess() }
-        store.syncPendingWorkouts()
-        store.syncRemoteWorkouts()
-        store.refreshWeeklyReview()
-        store.syncPendingUserData()
-        store.refreshCoachInbox()
-        ingestPendingWatchSessions()
-        preloadTodayForWatch()
-        activateWeatherIfNeeded()
+        syncedUserID = userID
+        hydratedUserID = nil
+        hydrationSucceeded = false
+        // Only an onboarding decision needs to wait for `/me`. Existing
+        // accounts can enter the app immediately and hydrate in the background.
+        isHydratingAccount = auth.onboardingRequired
+        Task { @MainActor in
+            // A fresh install logs in before `/auth/me` returns. Hydrate the
+            // server profile first so an existing account is never routed into
+            // onboarding and told to overwrite its real data.
+            let hydrated = await store.hydrateProfileFromServer()
+            guard auth.userID == userID else { return }
+            hydrationSucceeded = hydrated
+            hydratedUserID = userID
+            isHydratingAccount = false
+            enableRemoteMode()
+            await store.refreshAccess()
+            store.syncPendingWorkouts()
+            store.syncRemoteWorkouts()
+            store.refreshWeeklyReview()
+            store.syncPendingUserData()
+            store.refreshCoachInbox()
+            ingestPendingWatchSessions()
+            preloadTodayForWatch()
+            activateWeatherIfNeeded()
+        }
     }
 
     private func preloadTodayForWatch(force: Bool = false) {

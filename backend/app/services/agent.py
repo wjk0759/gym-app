@@ -24,6 +24,7 @@ from ..models import (
     AgentRun,
     AgentStep,
     ChatMessage,
+    Exercise,
     FoodLog,
     MealPlan,
     PlanDayState,
@@ -57,6 +58,7 @@ from .coach_actions.schemas import (
 from .coach_context import build_coach_context, recent_training
 from .coach_core import coach_core_prompt
 from .diet_review import build_diet_review, utc_window
+from .equipment import available_equipment_types
 from .exercise_search import search_exercise_payload
 from .food_text import (
     food_log_context,
@@ -161,6 +163,10 @@ def _forced_food_log_intent(message: str) -> bool:
     if any(token in text for token in ("打开饮食", "饮食页", "看看饮食")):
         return False
     if _forced_workout_log_intent(text):
+        return False
+    # "今天训练改到明天，再记..." mixes a schedule change with food. Do not
+    # let the food fast path inherit 明天 from the training clause.
+    if re.search(r"改到|改期|顺延到|挪到|换到|调到", text):
         return False
     if re.search(
         r"帮我记|记一下|记录一下|补记|帮我记录|记饮食|记录饮食|"
@@ -311,7 +317,9 @@ def _pending_action_correction(
 
 def _has_new_food_name(text: str) -> bool:
     cleaned = re.sub(
-        r"\d+(?:\.\d+)?\s*(g|克|ml|毫升|杯|份|碗|个|片|勺|盒|瓶)",
+        r"\d+(?:\.\d+)?\s*(g|克|ml|毫升|杯|份|碗|个|片|勺|盒|瓶)|"
+        r"(半|一|两|二|三|四|五|六|七|八|九|十)\s*"
+        r"(g|克|ml|毫升|杯|份|碗|个|片|勺|盒|瓶)",
         "",
         text,
         flags=re.IGNORECASE,
@@ -388,6 +396,10 @@ async def _pending_food_replacement(
 
     if target is None or not new_text:
         return None
+    # "米饭改成250g" is a portion correction, not a replacement with a food
+    # named "250g". Let the deterministic amount-only path handle it.
+    if not _has_new_food_name(new_text):
+        return None
 
     try:
         target_date = date.fromisoformat(str(payload.get("date") or ""))
@@ -443,6 +455,181 @@ async def _pending_food_replacement(
     return {
         "actions": _normalize_app_actions([raw]),
         "reply": "改好了，确认后按修正后的食物和份量写入。",
+    }
+
+
+def _looks_like_food_clause(clause: str) -> bool:
+    if re.search(r"体重|体脂|腰围|身体数据|目标|器械|计划", clause):
+        return False
+    if _forced_food_log_intent(clause):
+        return True
+    return bool(
+        re.search(
+            r"吃了|喝了|米饭|鸡|牛|鱼|虾|蛋|奶|面|菜|果|豆|薯|饼|粥|汤|"
+            r"咖啡|茶|酒|水|汁|粉|包|饺|麦|肉|肠|餐",
+            clause,
+        )
+    )
+
+
+async def _multi_intent_action_turn(
+    db: Session,
+    user_id: str,
+    message: str,
+    app_context: dict | None,
+) -> dict | None:
+    """Handle "reschedule training + log food" as one batch.
+
+    A forced food-log turn used to win the whole message, inherit "明天" from
+    the training clause, and silently drop the reschedule. Resolve each clause
+    separately and return both cards, or ask before writing either one.
+    """
+    from .coach_control.runtime import (
+        _looks_like_reschedule,
+        _split_batch_clauses,
+    )
+
+    clauses = _split_batch_clauses(message)
+    if len(clauses) < 2:
+        return None
+    training_clauses = [
+        clause for clause in clauses if _looks_like_reschedule(clause)
+    ]
+    if not training_clauses:
+        return None
+    if len(training_clauses) > 1:
+        # Multiple reschedules without a clear food clause are better handled
+        # by the normal multi-action path.
+        return None
+    training_clause = training_clauses[0]
+    food_clauses = [
+        clause
+        for clause in clauses
+        if clause != training_clause and _looks_like_food_clause(clause)
+    ]
+    other_clauses = [
+        clause
+        for clause in clauses
+        if clause != training_clause and clause not in food_clauses
+    ]
+    if not food_clauses:
+        # No food intent: leave multi-reschedule or ordinary follow-ups to the
+        # normal agent path.
+        return None
+    if other_clauses:
+        return {
+            "actions": [],
+            "reply": (
+                "这条消息里有改期、饮食和其他操作，先分开说会更稳："
+                "这次只确认改期和饮食，其他内容请再发一条。"
+            ),
+        }
+    if len(food_clauses) != 1:
+        return {
+            "actions": [],
+            "reply": "要把训练改到哪一天？饮食部分也请单独说一句，我一起确认。",
+        }
+    food_clause = food_clauses[0]
+
+    from .coach_control.capabilities.training import (
+        resolve as resolve_training,
+    )
+
+    training_resolution = resolve_training(
+        db,
+        user_id,
+        training_clause,
+        app_context,
+    )
+    if not training_resolution.get("ready"):
+        questions = training_resolution.get("questions") or []
+        question = (
+            str(questions[0])
+            if questions
+            else "没有找到要改期的训练，请从训练手账里选一天。"
+        )
+        return {
+            "actions": [],
+            "reply": (
+                f"{question} 饮食我先不写入，等训练改期确认后一起处理。"
+            ),
+        }
+
+    training_payload = training_resolution.get("payload") or {}
+    training_action = None
+    training_note = ""
+    if training_resolution.get("already"):
+        training_note = (
+            f"训练本来就在 {training_payload.get('to_date')}，无需改期；"
+        )
+    else:
+        from_date = str(training_payload.get("from_date") or "")
+        to_date = str(training_payload.get("to_date") or "")
+        title = str(training_payload.get("title") or "训练")
+        training_action = _normalize_app_actions(
+            [
+                {
+                    "type": "reschedule_training",
+                    "title": "调整训练日期",
+                    "summary": f"把 {from_date} 的「{title}」改到 {to_date}",
+                    "requires_confirmation": True,
+                    "payload": {
+                        "day_id": training_payload.get("day_id"),
+                        "date": from_date,
+                        "target_date": to_date,
+                    },
+                }
+            ],
+            app_context,
+        )[0]
+        training_note = (
+            f"把 {from_date} 的「{title}」改到 {to_date}，"
+        )
+
+    context = food_log_context(food_clause)
+    food_resolution = await resolve_food_text(
+        db,
+        user_id,
+        food_clause,
+        meal=context["meal"],
+        target_date=date.fromisoformat(context["date"]),
+    )
+    if (
+        food_resolution.get("questions")
+        or food_resolution.get("missing_slots")
+        or not food_resolution.get("items")
+    ):
+        question = _food_question_message(food_resolution)
+        return {
+            "actions": [],
+            "reply": (
+                f"训练改期我先不执行；饮食部分还需要确认：{question}"
+            ),
+        }
+    food_action = _build_food_log_action(
+        food_resolution,
+        food_clause,
+        context["date"],
+        context["meal"],
+    )
+    actions = (
+        [training_action, food_action]
+        if training_action is not None
+        else [food_action]
+    )
+    meal_label = {
+        "breakfast": "早餐",
+        "lunch": "午餐",
+        "dinner": "晚餐",
+        "snack": "加餐",
+    }.get(context["meal"], "这餐")
+    return {
+        "actions": actions,
+        "reply": (
+            f"{training_note}"
+            f"饮食按 {context['date']} {meal_label} 记录，"
+            f"{food_action.get('summary') or ''}。确认后一起执行。"
+        ).strip(),
     }
 
 
@@ -1201,6 +1388,88 @@ def _normalize_app_actions(
     return result
 
 
+def _validate_workout_log_exercises(
+    db: Session,
+    user_id: str,
+    actions: list[dict],
+) -> str | None:
+    """Reject workout logs that name an unknown or unowned exercise.
+
+    The model used to invent ``barbell-full-squat`` and only fail at execution
+    with a 422. Returning a readable tool error lets it call lookup_exercise
+    and retry before a confirmation card reaches the user.
+    """
+    profile = db.get(Profile, user_id)
+    if profile is None:
+        return None
+    equipment = set(
+        available_equipment_types(
+            db,
+            user_id,
+            list(profile.equipment or []),
+        )
+    )
+    examples = [
+        f"{row.name_zh}({row.slug})"
+        for row in db.execute(
+            select(Exercise)
+            .where(
+                Exercise.is_active.is_(True),
+                Exercise.plan_eligible.is_(True),
+                Exercise.equipment.in_(equipment),
+            )
+            .order_by(Exercise.is_compound.desc(), Exercise.name_zh)
+            .limit(8)
+        )
+        .scalars()
+        .all()
+    ]
+    example_text = "、".join(examples) or "暂无"
+    for action in actions:
+        if action.get("type") != "log_workout":
+            continue
+        payload = action.get("payload")
+        sets = payload.get("sets") if isinstance(payload, dict) else None
+        if not isinstance(sets, list):
+            continue
+        slugs = {
+            str(item.get("slug") or "")
+            for item in sets
+            if isinstance(item, dict) and item.get("slug")
+        }
+        if not slugs:
+            continue
+        rows = list(
+            db.execute(
+                select(Exercise).where(Exercise.slug.in_(slugs))
+            )
+            .scalars()
+            .all()
+        )
+        by_slug = {row.slug: row for row in rows}
+        missing = sorted(slugs - set(by_slug))
+        if missing:
+            return (
+                f"动作不存在：{'、'.join(missing)}。不要编造 slug；"
+                "请先调用 lookup_exercise 查真实动作。"
+                f"当前可用动作示例：{example_text}。"
+            )
+        blocked = [
+            row for row in rows if row.equipment not in equipment
+        ]
+        if blocked:
+            names = "、".join(
+                f"{row.name_zh}({row.slug})" for row in blocked
+            )
+            return (
+                f"{names} 需要当前档案没有的器械。"
+                f"当前可用器械：{'、'.join(sorted(equipment))}；"
+                f"可用动作示例：{example_text}。"
+                "请换成用户已有器械的动作，不要直接记录。"
+            )
+    return None
+
+
 def _food_question_message(result: dict) -> str:
     questions = [
         str(value).strip()
@@ -1391,6 +1660,11 @@ def _tool_result(
                 app_context,
                 food_resolution=food_resolution,
             )
+            workout_error = _validate_workout_log_exercises(
+                db, user_id, actions
+            )
+            if workout_error is not None:
+                return {"ok": False, "error": workout_error}
         except ValueError as exc:
             return {"ok": False, "error": str(exc)}
         return {"ok": True, "actions": actions}
@@ -1903,6 +2177,16 @@ async def run_agent(
     else:
         try:
             correction = _pending_action_correction(app_context, message)
+        except Exception:
+            correction = None
+    if correction is None:
+        try:
+            correction = await _multi_intent_action_turn(
+                db,
+                user_id,
+                message,
+                app_context,
+            )
         except Exception:
             correction = None
     if correction is not None:

@@ -12,6 +12,7 @@ from app.models import (
     ProgramDay,
     User,
 )
+from app.services.agent import _validate_workout_log_exercises
 from app.services.workout_actions import (
     WorkoutActionConflict,
     WorkoutActionError,
@@ -208,3 +209,42 @@ def test_prepare_rejects_bad_changes(db, seeded):
                 {"op": "remove", "slug": "seated_row"},
             ],
         )
+
+
+def test_log_workout_action_rejects_unknown_or_unowned_exercise(seeded):
+    def action(slug: str) -> list[dict]:
+        return [
+            {
+                "type": "log_workout",
+                "payload": {"sets": [{"slug": slug, "reps": 10, "weight_kg": 60}]},
+            }
+        ]
+
+    unknown = _validate_workout_log_exercises(
+        seeded, "user-1", action("barbell-full-squat")
+    )
+    assert unknown is not None
+    assert "动作不存在" in unknown
+
+    seeded.add(
+        Exercise(
+            slug="cable_fly",
+            name_zh="绳索夹胸",
+            muscle_group="chest",
+            equipment="cable",
+            plan_eligible=True,
+        )
+    )
+    seeded.commit()
+    unowned = _validate_workout_log_exercises(
+        seeded, "user-1", action("cable_fly")
+    )
+    assert unowned is not None
+    assert "没有的器械" in unowned
+
+    assert (
+        _validate_workout_log_exercises(
+            seeded, "user-1", action("bench_press")
+        )
+        is None
+    )

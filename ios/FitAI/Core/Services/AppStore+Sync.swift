@@ -418,6 +418,20 @@ extension AppStore {
 
     // MARK: - Domain refresh
 
+    /// Load `/me` and report whether the server actually answered. RootView
+    /// must not send an existing account into onboarding when hydration failed.
+    @MainActor
+    func hydrateProfileFromServer() async -> Bool {
+        let account = currentUserID
+        guard let remote = try? await APIClient.shared.fetchMe(),
+              currentUserID == account else {
+            return false
+        }
+        mergeRemoteMe(remote)
+        bump([.profile])
+        return true
+    }
+
     func revision(_ domain: AppDataDomain) -> Int {
         dataRevisions[domain] ?? 0
     }

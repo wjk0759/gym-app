@@ -15,6 +15,7 @@ final class AuthStore {
     var avatarURL: URL?
     var trainingStage: Experience = .beginner
     var onboardingRequired = false
+    var isNewUser = false
 
     private var didRestore = false
     private var webAuthSession: ASWebAuthenticationSession?
@@ -323,6 +324,7 @@ final class AuthStore {
         avatarURL = AppConfig.resolveMediaURL(response.avatarURL)
         trainingStage = Experience(rawValue: response.trainingStage ?? "") ?? .beginner
         onboardingRequired = response.onboardingRequired
+        isNewUser = response.isNewUser
         isAuthenticated = true
     }
 
@@ -334,6 +336,7 @@ final class AuthStore {
         avatarURL = nil
         trainingStage = .beginner
         onboardingRequired = false
+        isNewUser = false
         isAuthenticated = false
     }
 
@@ -347,6 +350,7 @@ final class AuthStore {
         }
         avatarURL = AppConfig.resolveMediaURL(response.avatarURL)
         trainingStage = Experience(rawValue: response.trainingStage ?? "") ?? .beginner
+        onboardingRequired = response.onboardingRequired
         return response
     }
 
