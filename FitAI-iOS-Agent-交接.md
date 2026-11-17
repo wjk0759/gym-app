@@ -17,7 +17,7 @@
 - `develop` 代码 HEAD：`95ad649`（C1c 昵称/onboarding hydration 修复；C1b/C5 已修复；生产后端 `5c47790`，`/health/ready` **200**；Flyway **V44**；`FitAITests` **135/135**、UI **6/6**、C1c 登录/Profile **1/1**；iOS `9d340c8` + `95ad649` 已装 Wu-Tang；后端 **617 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b 默认身体数据、C5 空 sets、C1c 昵称丢失均已修复并通过；仅剩 C7–C11 文案/记忆 P2 与“未完成 onboarding 的返回用户”边界观察。
-- **待办（macOS → Windows）**：恢复 onboarding 的**可选**体型/体脂步骤，重新展示 3D 体型插画；不恢复 14 步必填。规格：`docs/51-onboarding-optional-body-step.md`。
+- **待办（macOS → Windows）**：恢复 onboarding 的**可选**体型/体脂步骤，重新展示 3D 体型插画；**直接接回现有 `bodyTypeStep` / `bodyFatStep` 旧代码，不新写页面/组件**；不恢复 14 步必填。规格：`docs/51-onboarding-optional-body-step.md`。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -35,13 +35,13 @@
 - 来源：用户确认采用方案 2——在 onboarding 最后增加**可选**“完善体型参考”步骤，可跳过；不恢复 14 步必填。
 - 规格：`docs/51-onboarding-optional-body-step.md`
 - 现状：`0bc6509` 把 onboarding 从 14 步压到 8 步时移除了体型/体脂步骤；`BodyFigure` / `BodyTypeThumbnail` / `BodyFatCard`、`bodyTypeStep` / `bodyFatStep` 仍在代码里，但没有入口，报告里的 `if let bodyType` 也永远不成立。
-- 要求：
-  - 必填步骤 1–8 不变；第 8 步后新增 1 个可选“完善体型参考”页，再进报告。
-  - 页面显示 3D 体型大图、体型缩略图、体脂参考卡片；底部“跳过，使用默认参考”+“下一步”。
-  - 跳过：不写 `bodyType/bodyFatID`，报告不显示插画，计划生成不被阻塞。
-  - 选择：报告显示 `BodyFigure` 和“体型 · 体脂”标签；保存后不丢失。
-  - 进度显示 `可选`，不要出现 `9 / 8`；上一步可回第 8 步。
-  - 复用现有组件，不新增素材；不加必填训练地点/重点部位。
+- 要求（最小改动，**恢复旧代码，不要新写页面/组件**）：
+  - 必填步骤 1–8 不变；第 8 步后直接接回旧 `bodyTypeStep`（第 9 步）和旧 `bodyFatStep`（第 10 步），再进报告（第 11 步）。
+  - 复用 `CoachOnboardingView+BodySteps.swift` 里现有代码和 `BodyFigure` / `BodyTypeThumbnail` / `BodyFatCard`；不新增 `optionalBodyStep`、不复制页面、不重画素材。
+  - 第 9 步底部“跳过，使用默认参考”+“下一步”；跳过清 `bodyType/bodyFatID` 并直接进报告。
+  - 第 10 步底部“跳过体脂”+“下一步”；跳过只清 `bodyFatID`，保留体型。
+  - 进度显示 `可选`，不要 `9 / 8`；`bottomBar` 用明确 `reportStepIndex`/`isReportStep`，不再用 `inputSteps + 1`。
+  - 选择后报告显示 `BodyFigure` 和“体型 · 体脂”标签；保存后不丢失。
 - 验收：iPhone 17 + SE 3；跳过/选择两条路径；已有账号登录不受影响；`FitAITests` 全绿、UI 6/6。
 - 不阻塞当前发布；Windows 完成后 Mac 复测再合并/部署。
 
