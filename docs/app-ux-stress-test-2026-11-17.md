@@ -137,7 +137,7 @@ QA bypass 只绕过登录，不设置 `isOnboarded`，所以点“生成计划�
 | F5 | 通过 | 选中今天时不再显示“回到今天”。 |
 | F6 | 通过 | 计划模式新增“记一笔 / 已吃食物”。 |
 | F7 | 待产品确认 | 未改。 |
-| F8 | 通过 | QA bypass 会 seed 已建档 profile；“生成计划”未建档时有 toast。 |
+| F8 | 通过（生成仍需 Pro） | QA bypass 会 seed 已建档 profile；点“生成计划”不再静默，未授权账号会打开 Pro 付费墙。真实生成仍需 QA Pro 或 `test_reviewer` 登录。 |
 | F9 | 未修 | 仅 Debug 显示开发服务器地址，Release 不受影响。 |
 
 复测基线：`FitAITests` 121/121、`FitAIUITests` 4/4；iPhone 17 与 iPhone SE 3 模拟器完成。F1 修复前不部署 Wu-Tang。

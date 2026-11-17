@@ -33,11 +33,11 @@
 - 复测提交：代码 `9febc6a`、文档 `aa73cd7`；未部署，Wu-Tang 仍为 `d2e4adc`。
 - 通过（真机式 UI 复测 + 代码核对）：
   - **F2 身体打卡 label**：XCUITest 读到 `["体重，单位 kg", "体脂率，单位 %", "腰围，单位 cm"]`，VoiceOver 可区分。
-  - **F3 默认餐次**：`MealType.suggested()` 成为唯一策略；`NutritionView.selectedMeal`、“记一笔”、工具栏“添加食物”都使用它。复测 21:00 打开为晚餐/加餐，不再是早餐。
+  - **F3 默认餐次**：`MealType.suggested()` 成为唯一策略；`NutritionView.selectedMeal`、“记一笔”、工具栏“添加食物”都使用它。复测 21:33 打开“记录食物”，Picker 选中 **加餐**（`早餐/午餐/晚餐 selected=false`），不再是早餐。
   - **F4 宏量条**：track 已改 `Theme.stroke`，0% 不再像已填充。
   - **F5 回到今天**：选中今天时按钮隐藏，切到其他日期出现。
   - **F6 饮食记一笔**：计划模式工具行已有“记一笔 / 已吃食物”，点击直接进入记录食物。
-  - **F8 QA seed**：`FITAI_QA_BYPASS_AUTH=1` 会 seed 已建档 profile；未建档时 `generatePlan` 会 toast“请先完成个人档案”，不再静默返回。
+  - **F8 QA seed**：`FITAI_QA_BYPASS_AUTH=1` 会 seed 已建档 profile；未建档时 `generatePlan` 会 toast“请先完成个人档案”，不再静默返回。复测点“生成计划”会打开 **叫练 Pro 付费墙**（未授权账号的预期产品行为），说明不再无反馈；要自动化真实生成仍需 QA Pro 或 `test_reviewer` 登录。
 - **F1 仍未通过（P1，阻断）**：
   - 实测 iPhone 17（402×874）：今日 4 个快捷卡 `y=763.7...840.0`，Tab Bar `y=791...874`，**重叠 49pt**，卡片下半部被玻璃压住。
   - 实测 iPhone SE 3（375×667）：快捷卡 `y=558.0...634.5`，Tab Bar `y=584...667`，**重叠 50.5pt**，超过半张卡被遮。
