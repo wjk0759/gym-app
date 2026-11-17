@@ -8,8 +8,8 @@ import UIKit
 /// shape and body fat, recommends a starting point and ends with a report
 /// before the plan is generated.
 struct CoachOnboardingView: View {
-    @Environment(AppStore.self) private var store
-    @Environment(AuthStore.self) private var auth
+    @Environment(AppStore.self) var store
+    @Environment(AuthStore.self) var auth
 
     @State var draft = UserProfile()
     @State var step = 0
