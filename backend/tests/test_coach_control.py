@@ -1662,6 +1662,83 @@ def test_batch_supports_more_than_three_actions(db):
     assert db.execute(select(Goal)).scalars().all() == []
 
 
+def test_photo_food_creates_pending_and_undo(db):
+    analysis = {
+        "is_food": True,
+        "items": [
+            {
+                "name": "鸡胸肉",
+                "grams": 150,
+                "kcal": 250,
+                "protein_g": 35,
+                "carbs_g": 0,
+                "fat_g": 5,
+            },
+            {
+                "name": "米饭",
+                "grams": 200,
+                "kcal": 260,
+                "protein_g": 5,
+                "carbs_g": 58,
+                "fat_g": 1,
+            },
+        ],
+    }
+    turn = runtime.create_photo_food_turn(
+        db, "user-1", analysis, "午餐"
+    )
+    assert turn["is_food"] is True
+    assert turn["meal"] == "lunch"
+    assert turn["pending"]["capability_id"] == "diet.log_food"
+    payload = turn["pending"]["payload"]
+    assert payload["meal"] == "lunch"
+    assert [item["name"] for item in payload["items"]] == [
+        "鸡胸肉",
+        "米饭",
+    ]
+    assert "午餐" in turn["reply"]
+
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    assert len(db.execute(select(FoodLog)).scalars().all()) == 2
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    assert db.execute(select(FoodLog)).scalars().all() == []
+
+
+def test_photo_food_rejects_non_food_and_fallback(db):
+    turn = runtime.create_photo_food_turn(
+        db,
+        "user-1",
+        {"is_food": False, "items": []},
+        "",
+    )
+    assert turn["pending"] is None
+    assert turn["is_food"] is False
+    assert "没有识别到" in turn["reply"]
+
+    fallback = runtime.create_photo_food_turn(
+        db,
+        "user-1",
+        {
+            "is_food": True,
+            "warning": "视觉识别暂时不可用",
+            "items": [
+                {
+                    "name": "鸡胸肉",
+                    "grams": 100,
+                    "kcal": 160,
+                    "protein_g": 24,
+                    "carbs_g": 0,
+                    "fat_g": 4,
+                }
+            ],
+        },
+        "",
+    )
+    assert fallback["pending"] is None
+    assert fallback["is_food"] is False
+    assert "没有完成" in fallback["reply"]
+
+
 def test_dislike_exercise_confirm_undo_and_plan_filter(db):
     import asyncio
 

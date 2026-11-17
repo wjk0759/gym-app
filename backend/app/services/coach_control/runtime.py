@@ -31,7 +31,7 @@ from ...models import (
     WorkoutSession,
     utcnow,
 )
-from ..food_text import DIET_TZ, MEAL_LABELS, parse_meal
+from ..food_text import DIET_TZ, MEAL_LABELS, food_log_context, parse_meal
 from ..safety import assess_safety
 from . import capabilities  # noqa: F401 - registers capabilities
 from .batch import BATCHABLE, MAX_BATCH_ACTIONS, key_for
@@ -3262,6 +3262,143 @@ def _finish_reply(
         "reply": reply,
         "pending": None,
     }
+
+
+def create_photo_food_turn(
+    db: Session,
+    user_id: str,
+    analysis: dict,
+    caption: str = "",
+    *,
+    session_id: str | None = None,
+) -> dict:
+    """Create a confirmable food log from a photo analysis.
+
+    The image itself is never stored. A failed/fallback analysis returns an
+    honest reply instead of writing or proposing estimated food.
+    """
+    started = time.perf_counter()
+    session = get_or_create_session(db, user_id, session_id)
+    caption = str(caption or "").strip()[:500]
+    input_text = f"[食物照片] {caption}".strip()
+    turn = CoachTurn(
+        session_id=session.id,
+        user_id=user_id,
+        input_text=input_text[:4000],
+        status="running",
+    )
+    db.add(turn)
+    db.flush()
+
+    warning = str(analysis.get("warning") or "").strip()
+    raw_items = [
+        item
+        for item in analysis.get("items") or []
+        if isinstance(item, dict)
+    ]
+    if warning or not analysis.get("is_food") or not raw_items:
+        reply = (
+            "这次食物识别没有完成，先不生成记录。"
+            "可以换一张更清楚的，或直接用文字告诉我吃了什么。"
+            if warning
+            else "这张图里没有识别到可记录的食物。"
+            "可以换一张更清楚的，或直接用文字告诉我吃了什么。"
+        )
+        result = _finish_reply(
+            db,
+            session,
+            turn,
+            started,
+            intent="diet.photo",
+            reply=reply,
+        )
+        result.update(
+            {
+                "is_food": False,
+                "items": [],
+                "meal": None,
+                "date": None,
+            }
+        )
+        return result
+
+    context = food_log_context(caption or "食物照片")
+    items: list[dict] = []
+    for raw in raw_items[:20]:
+        name = str(raw.get("name") or "").strip()[:120]
+        if not name:
+            continue
+        item = {
+            "name": name,
+            "grams": max(0.0, round(float(raw.get("grams") or 0), 1)),
+            "kcal": max(0.0, round(float(raw.get("kcal") or 0), 1)),
+            "protein_g": max(
+                0.0, round(float(raw.get("protein_g") or 0), 1)
+            ),
+            "carbs_g": max(
+                0.0, round(float(raw.get("carbs_g") or 0), 1)
+            ),
+            "fat_g": max(0.0, round(float(raw.get("fat_g") or 0), 1)),
+        }
+        if raw.get("fiber_g") is not None:
+            item["fiber_g"] = max(0.0, round(float(raw["fiber_g"]), 1))
+        if raw.get("confidence") is not None:
+            item["confidence"] = float(raw["confidence"])
+        items.append(item)
+    if not items:
+        result = _finish_reply(
+            db,
+            session,
+            turn,
+            started,
+            intent="diet.photo",
+            reply=(
+                "这张图里没有识别到可记录的食物。"
+                "可以换一张更清楚的，或直接用文字告诉我吃了什么。"
+            ),
+        )
+        result.update(
+            {
+                "is_food": False,
+                "items": [],
+                "meal": None,
+                "date": None,
+            }
+        )
+        return result
+
+    total_kcal = round(sum(item["kcal"] for item in items))
+    meal_label = MEAL_LABELS.get(context["meal"], context["meal"])
+    names = "、".join(item["name"] for item in items[:3])
+    reply = (
+        f"从照片估算到 {len(items)} 种食物"
+        + (f"（{names}）" if names else "")
+        + f"，约 {total_kcal} kcal；准备记到{meal_label}。"
+        "这是估算值，确认后写入。"
+    )
+    result = _finish_pending(
+        db,
+        session,
+        turn,
+        started,
+        capability_id=DIET,
+        payload={
+            "date": context["date"],
+            "meal": context["meal"],
+            "raw_text": caption or "[食物照片]",
+            "items": items,
+        },
+        reply=reply,
+    )
+    result.update(
+        {
+            "is_food": True,
+            "items": items,
+            "meal": context["meal"],
+            "date": context["date"],
+        }
+    )
+    return result
 
 
 async def handle_turn(

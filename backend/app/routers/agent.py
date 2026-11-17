@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
@@ -23,7 +23,7 @@ from ..schemas import (
     AgentPendingActionPatchIn,
     WorkoutActionExecuteIn,
 )
-from ..services import access, generation
+from ..services import access, food_vision, generation, image_input
 from ..services.action_drafts import (
     cancel_draft,
     compact_draft,
@@ -54,6 +54,7 @@ from ..services.agent_requests import (
     get_agent_request,
 )
 from ..services.coach_actions.executor import execute_action, undo_action
+from ..services.coach_control import runtime as coach_runtime
 from ..services.coach_feedback import save_feedback
 from ..services.memory import list_memories
 from ..services.rate_limit import enforce as enforce_rate_limit
@@ -68,6 +69,60 @@ from ..services.workout_actions import (
 )
 
 router = APIRouter(prefix="/agent", tags=["agent"])
+
+MAX_FOOD_PHOTO_BYTES = 8 * 1024 * 1024
+ALLOWED_FOOD_PHOTO_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/heic",
+}
+
+
+@router.post("/photo/food")
+async def agent_food_photo(
+    user_id: CurrentUser,
+    db: DBSession,
+    file: UploadFile = File(...),
+    caption: str = Form(default=""),
+    session_id: str | None = Form(default=None),
+):
+    """Estimate a meal photo and create a confirmable diet card.
+
+    The raw image is never persisted. A failed or mock-fallback analysis
+    returns an honest reply instead of proposing fake food rows.
+    """
+    access.require_feature(db, user_id, access.FEATURE_FOOD_PHOTO)
+    enforce_rate_limit(db, "agent_food_photo", user_id, 5, 60)
+    if file.content_type not in ALLOWED_FOOD_PHOTO_TYPES:
+        raise HTTPException(
+            status_code=415,
+            detail="不支持 jpeg/png/webp/heic 图片",
+        )
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="图片为空")
+    if len(data) > MAX_FOOD_PHOTO_BYTES:
+        raise HTTPException(status_code=413, detail="图片不能超过 8MB")
+    try:
+        data = image_input.normalize_image_bytes(data)
+    except image_input.InvalidImageError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+    analysis = await food_vision.analyze(
+        data,
+        file.filename or "meal.jpg",
+        db=db,
+        user_id=user_id,
+    )
+    return coach_runtime.create_photo_food_turn(
+        db,
+        user_id,
+        analysis,
+        caption,
+        session_id=session_id,
+    )
+
 
 def _request_in_progress(exc: AgentRequestInProgress) -> HTTPException:
     return HTTPException(
