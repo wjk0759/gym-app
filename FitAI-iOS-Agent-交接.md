@@ -14,8 +14,8 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`9febc6a`（文档 `6afc052`；UX 压力测试 P1/P2 修复；生产后端 `e0d2c38`，`runtime.py` / `routers/agent.py` SHA-256 与本地一致；iOS 已装 `d2e4adc`，iOS Build `9febc6a` ✓；Flyway **V44**；后端 **606 passed**、QA **76/76**；本轮无后端变化）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
-- **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；P1 三项已修（Tab Bar 遮挡 / 身体打卡 label / 默认餐次），其余 P2 已修 F4/F5/F6/F8；F7 命名与 F9 Debug 横幅未动。
+- `develop` 代码 HEAD：`9febc6a`（文档 `aa73cd7`；UX 修复已复测，**F1 未通过，iOS 不部署**；生产后端 `e0d2c38`，`runtime.py` / `routers/agent.py` SHA-256 与本地一致；iOS 已装 `d2e4adc`；Flyway **V44**；`FitAITests` **121/121**、UI **4/4**；后端 app 代码无变化、QA **76/76**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F2/F3/F4/F5/F6/F8 已复测通过；**F1 悬浮 Tab Bar 首屏遮挡仍未解决，阻断 iOS 部署**；F7 命名与 F9 Debug 横幅未动。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -27,6 +27,34 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-17 · macOS（UX 修复复测：F2/F3/F4/F5/F6/F8 通过；F1 未通过，阻断 iOS 部署）
+
+- 复测提交：代码 `9febc6a`、文档 `aa73cd7`；未部署，Wu-Tang 仍为 `d2e4adc`。
+- 通过（真机式 UI 复测 + 代码核对）：
+  - **F2 身体打卡 label**：XCUITest 读到 `["体重，单位 kg", "体脂率，单位 %", "腰围，单位 cm"]`，VoiceOver 可区分。
+  - **F3 默认餐次**：`MealType.suggested()` 成为唯一策略；`NutritionView.selectedMeal`、“记一笔”、工具栏“添加食物”都使用它。复测 21:00 打开为晚餐/加餐，不再是早餐。
+  - **F4 宏量条**：track 已改 `Theme.stroke`，0% 不再像已填充。
+  - **F5 回到今天**：选中今天时按钮隐藏，切到其他日期出现。
+  - **F6 饮食记一笔**：计划模式工具行已有“记一笔 / 已吃食物”，点击直接进入记录食物。
+  - **F8 QA seed**：`FITAI_QA_BYPASS_AUTH=1` 会 seed 已建档 profile；未建档时 `generatePlan` 会 toast“请先完成个人档案”，不再静默返回。
+- **F1 仍未通过（P1，阻断）**：
+  - 实测 iPhone 17（402×874）：今日 4 个快捷卡 `y=763.7...840.0`，Tab Bar `y=791...874`，**重叠 49pt**，卡片下半部被玻璃压住。
+  - 实测 iPhone SE 3（375×667）：快捷卡 `y=558.0...634.5`，Tab Bar `y=584...667`，**重叠 50.5pt**，超过半张卡被遮。
+  - 设置页“训练提醒”标题 `y=799.7...821.3`，与 Tab Bar 重叠 21.7pt，`hittable=false`。
+  - 器械库空状态“从器械库添加”`y=846.7...898.0`，整个落在 Tab Bar 下方，`hittable=false`；上滑后到 `y=515.7` 才可点。
+  - 变化页“拍一张 / 相册”`y=847.7...884.3`，与 Tab Bar 重叠 26.3pt，`hittable=false`；上滑后可点。
+  - **根因**：`appTabBarClearance()` 把 `safeAreaInset(edge: .bottom)` 加在 `ScrollView` 上，只增加了滚动内容尾部的可滚动空间，**没有缩小可视容器**；首屏内容仍按原布局绘制在悬浮 Tab Bar 下方。滚动到底能避开，不代表首屏/热区通过，因此不接受“再加 padding / 再加大 inset”。
+- **Windows 需要做（按此验收，不接受替代解释）**：
+  1. 二级页 push 时隐藏 Tab Bar：设置、器械库、变化、饮食、训练日期、周餐单、计划历史用 `.toolbar(.hidden, for: .tabBar)`；至少保证 Tab Bar 区域不再压住交互控件。验收：滚动到“训练提醒 / 从器械库添加 / 拍一张”时，控件完整位于底部安全区上方且 `isHittable`。
+  2. 根页（今日/记录/发现/我的）不能只加底部 inset。今日需把快捷区整体抬到 Tab Bar 上方：iPhone 17 至少上移 49pt，SE 至少 50.5pt；可选做法是把 `quickActions` 移到 `nutritionPulse` 之前，或压缩 section spacing / 周条高度，保证 4 张卡完整可见。
+  3. 加 UI 回归：对今日 4 个快捷卡断言首屏 `element.frame.maxY <= tabBar.frame.minY`；对器械库 CTA、变化拍照按钮断言滚动到目标位置后完整可见且可点。不要只断言 `exists`。
+- 本轮测试：`FitAITests` **121/121**、`FitAIUITests` **4/4**、iOS Build ✓；后端 app 代码自 `e0d2c38` 无变化（仅 `backend/qa/test_adversarial.py` +27 行 QA 用例），生产后端和 Flyway V44 不动。
+- **部署状态**：F1 未通过，`9febc6a` 不安装 Wu-Tang；等 Windows 真修复并更新本文件后再复测部署。
+- 禁止恢复：
+  - 不要把 `ScrollView.safeAreaInset` 当容器级安全区。
+  - 不要把“上滑后能点到”当作 F1 通过。
+  - 不要为了过测试把快捷卡移出首屏或隐藏。
 
 ### 2026-11-17 · Windows（UX 压力测试 P1/P2 修复）
 

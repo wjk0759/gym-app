@@ -125,3 +125,19 @@ QA bypass 只绕过登录，不设置 `isOnboarded`，所以点“生成计划�
 5. **F8 QA bypass 种子**：恢复 UI 自动化对计划生成的覆盖。
 6. **F7 “记录”命名/信息架构**：需要产品确认，不急于改代码。
 7. **F9 Debug 开发服务器提示**：仅影响 Debug 包。
+
+## 七、2026-11-17 复测状态（iOS `9febc6a`）
+
+| ID | 状态 | 复测结论 |
+| --- | --- | --- |
+| F1 | **未通过 / 阻断** | iPhone 17 快捷卡与 Tab Bar 重叠 49pt；SE 重叠 50.5pt；设置/器械库/变化底部控件首屏 `hittable=false`。`safeAreaInset` 只增加滚动尾部空间，没有缩小可视容器。 |
+| F2 | 通过 | 三个输入框 label 为“体重，单位 kg / 体脂率，单位 % / 腰围，单位 cm”。 |
+| F3 | 通过 | `MealType.suggested()` 统一默认餐次；“记一笔”和工具栏“添加食物”都使用它。 |
+| F4 | 通过 | 0% 宏量条 track 改为 `Theme.stroke`。 |
+| F5 | 通过 | 选中今天时不再显示“回到今天”。 |
+| F6 | 通过 | 计划模式新增“记一笔 / 已吃食物”。 |
+| F7 | 待产品确认 | 未改。 |
+| F8 | 通过 | QA bypass 会 seed 已建档 profile；“生成计划”未建档时有 toast。 |
+| F9 | 未修 | 仅 Debug 显示开发服务器地址，Release 不受影响。 |
+
+复测基线：`FitAITests` 121/121、`FitAIUITests` 4/4；iPhone 17 与 iPhone SE 3 模拟器完成。F1 修复前不部署 Wu-Tang。
