@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`d2e4adc`（文档 `ee0de0e`；食物照片进教练 + 稳定性收口；生产后端 `e0d2c38`，`runtime.py` / `routers/agent.py` SHA-256 与本地一致；iOS 已装 `9eb1411`，iOS Build `d2e4adc` ✓；Flyway **V44**；`FitAITests` **121/121**、UI **4/4**；后端 **606 passed**、QA **75/75**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`d2e4adc`（文档 `5ca2275`；食物照片进教练 + 稳定性收口；生产后端 `e0d2c38`，`runtime.py` / `routers/agent.py` SHA-256 与本地一致；iOS 已装 `d2e4adc`；Flyway **V44**；`FitAITests` **121/121**、UI **4/4**；后端 **606 passed**、QA **76/76**；本轮无新阻断）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -26,6 +26,32 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-17 · macOS（食物照片进教练复测：通过）
+
+- 拉取：`d2e4adc`；生产后端 `e0d2c38`，`runtime.py` / `routers/agent.py` SHA-256 与本地一致；Flyway **V44**；macOS 本轮未重部署后端（Windows 已部署同 hash）。
+- 测试：
+  - 后端完整测试 **606 passed**
+  - QA 对抗 **76/76 passed**
+  - iOS `d2e4adc`：`FitAITests` **121/121**、UI **4/4**
+  - iOS 已安装并启动 Wu-Tang
+- 复测通过：
+  - 照片识别生成 `diet.log_food` 确认卡，确认/撤销复用现有饮食流程
+  - 非食物、识别失败/mock 回退不建卡，只给诚实提示
+  - caption “午餐/晚餐”落到正确餐次
+  - 原图不落服务端；Pro `food_photo` + 5 次/分钟限流
+  - 照片卡同一餐重复食物会带 `duplicate_warning`（新增 QA）
+  - iOS 附件“记录饮食/教练点评”用途选择、一次一张、多图提示
+- 生产：
+  - `fitai-api` healthy，`/health/ready` 200
+  - Flyway **V44**
+  - iOS `d2e4adc` 已安装 Wu-Tang
+- 备份：
+  - Windows 部署同 hash，本轮 macOS 未新增备份
+- 未验证：
+  - 登录真机完整拍照记录/撤销、Pro/免费/远程 AI 关闭提示
+  - 真实模型识别准确率和 5 次/分钟限流边界
+  - 多设备/教练历史同步
 
 ### 2026-11-17 · Windows（食物照片进教练）
 

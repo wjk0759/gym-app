@@ -1799,3 +1799,30 @@ def test_profile_equipment_update_reaches_unified_inventory(db):
     types = set(effective_equipment_types(db, "user-1"))
     assert "dumbbell" not in types, types
     assert "band" in types, types
+
+
+def test_photo_food_card_warns_when_same_meal_already_logged(db):
+    first = coach_turn(db, "午餐吃了150g鸡胸肉")
+    assert first["pending"] is not None, first
+    runtime.confirm_pending(db, "user-1", first["pending"]["id"])
+    photo = runtime.create_photo_food_turn(
+        db,
+        "user-1",
+        {
+            "is_food": True,
+            "items": [
+                {
+                    "name": "鸡胸肉",
+                    "grams": 150,
+                    "kcal": 199,
+                    "protein_g": 36,
+                    "carbs_g": 0,
+                    "fat_g": 7.5,
+                }
+            ],
+        },
+        "午餐",
+    )
+    pending = photo["pending"]
+    assert pending is not None, photo
+    assert pending["payload"].get("duplicate_warning"), pending
