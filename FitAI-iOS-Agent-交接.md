@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`8fa8e3c`（C1–C6 修复；生产后端已部署同一份 5 个文件，`agent.py` / `equipment_inventory.py` / `food_text.py` / `plan_generator.py` / `plan_validator.py` SHA-256 与本地一致；`/health/ready` **200**；Flyway **V44** 未变；后端 **616 passed**、QA **76/76**、Ruff 通过；iOS Build 首次因 GitHub macOS runner 容量被取消，已随文档提交重跑；**C1/C2 仍待 Mac 真机复测，未通过前不发布**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`8738d43`（C1–C6 修复；生产后端已部署 `8fa8e3c` 同一份 5 个文件，`agent.py` / `equipment_inventory.py` / `food_text.py` / `plan_generator.py` / `plan_validator.py` SHA-256 与本地一致；`/health/ready` **200**；Flyway **V44** 未变；后端 **616 passed**、QA **76/76**、Ruff 通过；iOS Build `8738d43` ✓；新增 `OnboardingRoutingTests` 5 条，Windows 未运行，待 Mac 跑 `FitAITests`；**C1/C2 仍待 Mac 真机复测，未通过前不发布**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；P0 = 新装登录已有账号被强制重新建档并覆盖服务端资料；P1 = 计划器械/训练日错误、双食物份量丢失、待确认卡份量修正失败、训练补录 slug 不存在、多意图丢失。**先修 C1/C2，未修复前不部署。**
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
@@ -31,7 +31,7 @@
 
 ### 2026-11-17 · Windows（C1–C6 修复 + 生产后端部署）
 
-- 提交：`8fa8e3c`，已推 `develop`；生产后端已替换 `agent.py` / `equipment_inventory.py` / `food_text.py` / `plan_generator.py` / `plan_validator.py`，SHA-256 与本地一致；`/health/ready` **200**；Flyway **V44**（无新迁移）。
+- 提交：`8fa8e3c` + `8738d43`，已推 `develop`；生产后端已替换 `agent.py` / `equipment_inventory.py` / `food_text.py` / `plan_generator.py` / `plan_validator.py`，SHA-256 与本地一致；`/health/ready` **200**；Flyway **V44**（无新迁移）；iOS Build `8738d43` ✓（仅 Node 20/macOS runner 容量两条 warning）。
 - C1 登录/onboarding 覆盖：
   - `RootView` 不再用本地 `store.profile.isOnboarded` 决定登录后首屏；登录/注册响应先写 `auth.onboardingRequired`，新用户标记 `auth.isNewUser`。
   - 登录后先 `hydrateProfileFromServer()` 拉 `/me`；只有 `onboardingRequired` 且（新用户或 `/me` 成功）才进 onboarding。`/me` 失败时不进 onboarding，避免覆盖服务端档案。
@@ -54,8 +54,8 @@
   - `_forced_food_log_intent()` 遇到“改到 / 改期 / 挪到”不再抢成纯饮食。
 - 验证：
   - 后端 **616 passed**；QA **76/76**；Ruff `app tests qa` 通过。
-  - 新增回归：C2 器械过滤/严格训练日、C3 双食物份量、C4 份量-only 修正、C5 未知/未拥有动作、C6 双卡与追问。
-  - 未在 Windows 跑 iOS 编译/单测；GitHub iOS Build 首次因 macOS runner 容量取消，非代码失败。
+  - 新增回归：C2 器械过滤/严格训练日、C3 双食物份量、C4 份量-only 修正、C5 未知/未拥有动作、C6 双卡与追问；iOS 新增 `OnboardingRoutingTests` 5 条（C1 分流矩阵）。
+  - Windows 未运行 iOS 编译/单测；GitHub iOS Build `8738d43` 已通过（SwiftLint + simulator build 成功）；`FitAITests` 需 Mac 跑。
 - Mac 需要做：
   1. 拉 `8fa8e3c` 或最新 docs 提交；`xcodegen generate`；确认 iOS Build 绿后安装。
   2. **C1**：删 App 重装 → 登录 `macqa_coach` → 不应进 onboarding；对比 `/me` 年龄/体脂/目标/计划不变。再用新账号确认 onboarding 正常，欢迎页“已有档案？恢复并进入”可恢复。
