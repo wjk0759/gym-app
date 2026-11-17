@@ -179,6 +179,52 @@ def test_coach_daily_quota_is_three_for_free_users():
     assert coach["can_send"] is False
 
 
+def test_plan_generation_daily_quota_is_ten():
+    db = _session()
+    user_id = "00000000-0000-0000-0000-000000000001"
+
+    for _ in range(access.PLAN_GENERATION_DAILY_LIMIT):
+        assert access.reserve_plan_generation(db, user_id)
+    assert not access.reserve_plan_generation(db, user_id)
+
+    used, _, _ = access.plan_generation_usage(db, user_id)
+    assert used == access.PLAN_GENERATION_DAILY_LIMIT
+
+    access.release_plan_generation(db, user_id)
+    used, _, _ = access.plan_generation_usage(db, user_id)
+    assert used == access.PLAN_GENERATION_DAILY_LIMIT - 1
+
+
+def test_plan_generation_quota_resets_at_next_beijing_day():
+    db = _session()
+    user_id = "00000000-0000-0000-0000-000000000001"
+    day = date(2026, 11, 6)
+    db.add(
+        FeatureUsage(
+            user_id=user_id,
+            feature_key=access.FEATURE_PLAN_GENERATION,
+            period_start=day,
+            used_count=access.PLAN_GENERATION_DAILY_LIMIT,
+        )
+    )
+    db.commit()
+
+    before = datetime(2026, 11, 6, 15, 59, tzinfo=timezone.utc)
+    used, period, _ = access.plan_generation_usage(db, user_id, now=before)
+    assert used == access.PLAN_GENERATION_DAILY_LIMIT
+    assert period == day
+
+    after = datetime(2026, 11, 6, 16, 1, tzinfo=timezone.utc)
+    used, period, _ = access.plan_generation_usage(db, user_id, now=after)
+    assert used == 0
+    assert period == date(2026, 11, 7)
+
+
+def test_plan_generation_reset_seconds_point_to_midnight():
+    now = datetime(2026, 11, 6, 15, 59, tzinfo=timezone.utc)
+    assert access.seconds_until_business_day_reset(now) == 60
+
+
 def test_coach_quota_resets_at_next_beijing_day():
     db = _session()
     user_id = "00000000-0000-0000-0000-000000000001"
@@ -192,7 +238,6 @@ def test_coach_quota_resets_at_next_beijing_day():
         )
     )
     db.commit()
-
     # 23:59 Beijing time: still the same quota day.
     before = datetime(2026, 11, 6, 15, 59, tzinfo=timezone.utc)
     used, period, reset = access.coach_usage(db, user_id, now=before)

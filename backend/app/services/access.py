@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
+from math import ceil
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -30,6 +31,8 @@ FEATURE_EQUIPMENT_SCAN = "equipment_scan"
 FEATURE_ADVANCED_REVIEW = "advanced_review"
 FEATURE_WATCH_TRAINING = "watch_training"
 COACH_DAILY_LIMIT = 3
+PLAN_GENERATION_DAILY_LIMIT = 10
+FEATURE_PLAN_GENERATION = "plan_generate_daily"
 
 
 @dataclass(frozen=True)
@@ -99,6 +102,33 @@ def coach_usage(
         period + timedelta(days=1), datetime.min.time(), tzinfo=BUSINESS_TZ
     )
     return used, period, reset.astimezone(timezone.utc)
+
+
+def plan_generation_usage(
+    db: Session,
+    user_id: str,
+    *,
+    now: datetime | None = None,
+) -> tuple[int, date, datetime]:
+    period = business_today(now)
+    row = db.get(FeatureUsage, (user_id, FEATURE_PLAN_GENERATION, period))
+    used = row.used_count if row else 0
+    reset = datetime.combine(
+        period + timedelta(days=1), datetime.min.time(), tzinfo=BUSINESS_TZ
+    )
+    return used, period, reset.astimezone(timezone.utc)
+
+
+def seconds_until_business_day_reset(
+    now: datetime | None = None,
+) -> int:
+    current = now or utcnow()
+    period = business_today(current)
+    reset = datetime.combine(
+        period + timedelta(days=1), datetime.min.time(), tzinfo=BUSINESS_TZ
+    )
+    remaining = (reset - current.astimezone(BUSINESS_TZ)).total_seconds()
+    return max(1, ceil(remaining))
 
 
 def access_snapshot(db: Session, user_id: str) -> dict:
@@ -282,6 +312,62 @@ def release_coach_message(db: Session, user_id: str, *, period: date) -> None:
             FeatureUsage.user_id == user_id,
             FeatureUsage.feature_key == FEATURE_COACH_AI,
             FeatureUsage.period_start == period,
+        )
+        .with_for_update()
+    ).scalar_one_or_none()
+    if row is not None and row.used_count > 0:
+        row.used_count -= 1
+        db.commit()
+
+
+def reserve_plan_generation(
+    db: Session,
+    user_id: str,
+    *,
+    period: date | None = None,
+) -> bool:
+    """Atomically reserve one of the ten daily AI plan generations."""
+    usage_period = period or business_today()
+    row = db.execute(
+        select(FeatureUsage)
+        .where(
+            FeatureUsage.user_id == user_id,
+            FeatureUsage.feature_key == FEATURE_PLAN_GENERATION,
+            FeatureUsage.period_start == usage_period,
+        )
+        .with_for_update()
+    ).scalar_one_or_none()
+    if row is None:
+        db.add(
+            FeatureUsage(
+                user_id=user_id,
+                feature_key=FEATURE_PLAN_GENERATION,
+                period_start=usage_period,
+                used_count=1,
+            )
+        )
+    elif row.used_count >= PLAN_GENERATION_DAILY_LIMIT:
+        return False
+    else:
+        row.used_count += 1
+    db.commit()
+    return True
+
+
+def release_plan_generation(
+    db: Session,
+    user_id: str,
+    *,
+    period: date | None = None,
+) -> None:
+    """Return a reserved plan generation after generation fails."""
+    usage_period = period or business_today()
+    row = db.execute(
+        select(FeatureUsage)
+        .where(
+            FeatureUsage.user_id == user_id,
+            FeatureUsage.feature_key == FEATURE_PLAN_GENERATION,
+            FeatureUsage.period_start == usage_period,
         )
         .with_for_update()
     ).scalar_one_or_none()

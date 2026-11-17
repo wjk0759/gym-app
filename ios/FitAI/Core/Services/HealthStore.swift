@@ -312,8 +312,7 @@ extension AppStore {
     // MARK: - Plan schedule
 
     func applyPlanSchedule(
-        _ selection: [Int: [Date]],
-        managedEarlyKeys: Set<String> = []
+        _ selection: [Int: [Date]]
     ) -> Bool {
         lastScheduleSaveError = nil
         guard let current = plan else {
@@ -324,7 +323,6 @@ extension AppStore {
         switch PlanScheduleEngine.apply(
             to: current,
             selection: selection,
-            managedEarlyKeys: managedEarlyKeys,
             now: now
         ) {
         case .success(let updated):
@@ -524,7 +522,7 @@ extension AppStore {
     }
 
     private func weekIndex(for date: Date, in plan: TrainingPlan) -> Int {
-        guard let start = plan.date(week: 1, weekday: 1) else { return 1 }
+        let start = plan.planStartDate
         let diff = FitnessDate.calendar.dateComponents(
             [.day],
             from: start,

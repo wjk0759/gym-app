@@ -16,31 +16,27 @@ extension AppStore {
 
     // MARK: - Derived state
 
-    /// Monday of the plan's first calendar week.
-    private var planStartMonday: Date? {
+    /// Start of the plan's rolling four-week window.
+    private var planAnchor: Date? {
         guard let plan else { return nil }
-        let calendar = Calendar.current
-        let start = calendar.startOfDay(for: plan.createdAt)
-        let startWeekday = calendar.component(.weekday, from: start)
-        let mondayOffset = startWeekday == 1 ? -6 : 2 - startWeekday
-        return calendar.date(byAdding: .day, value: mondayOffset, to: start)
+        return FitnessDate.startOfDay(plan.planStartDate)
     }
 
     var currentPlanWeek: Int {
-        guard let plan, let planMonday = planStartMonday else { return 1 }
+        guard let plan, let anchor = planAnchor else { return 1 }
         let calendar = Calendar.current
         let now = calendar.startOfDay(for: Date())
-        let days = calendar.dateComponents([.day], from: planMonday, to: now).day ?? 0
+        let days = calendar.dateComponents([.day], from: anchor, to: now).day ?? 0
         return min(max(1, days / 7 + 1), max(1, plan.weeks))
     }
 
     var currentPlanWeekInterval: DateInterval? {
-        guard let planMonday = planStartMonday else { return nil }
+        guard let anchor = planAnchor else { return nil }
         let calendar = Calendar.current
         guard let weekStart = calendar.date(
             byAdding: .day,
             value: (currentPlanWeek - 1) * 7,
-            to: planMonday
+            to: anchor
         ),
         let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) else {
             return nil

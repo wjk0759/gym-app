@@ -41,6 +41,8 @@ from ..services.training_stage import refresh_training_stage
 
 router = APIRouter(prefix="/plans", tags=["plans"])
 
+PLAN_GENERATION_COOLDOWN_SECONDS = 30
+
 
 def _active_program(db: DBSession, user_id: str) -> Program | None:
     return active_program(db, user_id)
@@ -76,6 +78,7 @@ async def generate(
         user_id,
         access.FEATURE_TRAINING_PLAN,
         idempotency_key=idempotency_key,
+        cooldown_seconds=PLAN_GENERATION_COOLDOWN_SECONDS,
     )
     if lease.is_replay:
         replayed = load_program(db, lease.replay_result_ref or "")
@@ -93,6 +96,7 @@ async def generate(
             user_id,
             access.FEATURE_TRAINING_PLAN,
             idempotency_key=None,
+            cooldown_seconds=PLAN_GENERATION_COOLDOWN_SECONDS,
         )
 
     try:
@@ -104,6 +108,24 @@ async def generate(
     except HTTPException:
         generation.abort_generation(db, lease, user_id=user_id)
         raise
+
+    plan_usage_period = access.business_today()
+    if not access.reserve_plan_generation(
+        db, user_id, period=plan_usage_period
+    ):
+        generation.abort_generation(db, lease, user_id=user_id)
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "code": "PLAN_DAILY_LIMIT",
+                "feature": access.FEATURE_TRAINING_PLAN,
+                "message": (
+                    f"今天已生成 {access.PLAN_GENERATION_DAILY_LIMIT} 次计划，"
+                    "请明天再试"
+                ),
+                "retry_after": access.seconds_until_business_day_reset(),
+            },
+        )
 
     goal = db.execute(
         select(Goal).where(Goal.user_id == user_id, Goal.status == "active")
@@ -137,6 +159,9 @@ async def generate(
         )
     except PlanValidationError as exc:
         generation.abort_generation(db, lease, user_id=user_id)
+        access.release_plan_generation(
+            db, user_id, period=plan_usage_period
+        )
         raise HTTPException(
             status_code=422,
             detail={
@@ -146,6 +171,9 @@ async def generate(
         ) from exc
     except Exception:
         generation.abort_generation(db, lease, user_id=user_id)
+        access.release_plan_generation(
+            db, user_id, period=plan_usage_period
+        )
         raise
 
     data = serialize_program(program)

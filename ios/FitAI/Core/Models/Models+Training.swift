@@ -112,30 +112,21 @@ struct TrainingPlan: Codable, Identifiable, Hashable {
     var displayDate: Date { updatedAt ?? createdAt }
 
     var planStartDate: Date {
-        let calendar = FitnessDate.calendar
-        let start = calendar.startOfDay(for: createdAt)
-        let startWeekday = calendar.component(.weekday, from: start)
-        let mondayOffset = startWeekday == 1 ? -6 : 2 - startWeekday
-        guard var monday = calendar.date(
-            byAdding: .day,
-            value: mondayOffset,
-            to: start
-        ) else {
-            return start
-        }
-        if monday < start {
-            monday = calendar.date(byAdding: .day, value: 7, to: monday) ?? monday
-        }
-        return monday
+        FitnessDate.startOfDay(createdAt)
     }
 
     func date(week: Int, weekday: Int) -> Date? {
         let calendar = FitnessDate.calendar
         let safeWeek = max(1, week)
         let safeWeekday = min(max(1, weekday), 7)
+        // The four-week board is a rolling window anchored on the generation
+        // day. Rotate ISO weekdays around that anchor so a Wednesday plan can
+        // still start on Wednesday instead of waiting for next Monday.
+        let startWeekday = FitnessDate.weekdayNumber(planStartDate)
+        let offset = (safeWeekday - startWeekday + 7) % 7
         return calendar.date(
             byAdding: .day,
-            value: (safeWeek - 1) * 7 + safeWeekday - 1,
+            value: (safeWeek - 1) * 7 + offset,
             to: planStartDate
         )
     }

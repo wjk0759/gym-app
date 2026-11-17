@@ -58,7 +58,6 @@ enum PlanScheduleEngine {
     static func apply(
         to plan: TrainingPlan,
         selection: [Int: [Date]],
-        managedEarlyKeys: Set<String> = [],
         now: Date = Date()
     ) -> Result<TrainingPlan, PlanScheduleValidationError> {
         guard !plan.days.isEmpty else { return .failure(.noPlan) }
@@ -83,39 +82,11 @@ enum PlanScheduleEngine {
                 .sorted { left, right in
                     sortByScheduledDate(left, right, in: current)
                 }
-            let weekStart = current.date(week: week, weekday: 1) ?? .distantPast
-            let early = allIndices.filter { index in
-                guard let date = current.days[index].date else { return false }
-                return date < weekStart
-            }
-            let earlyKeys = Set(early.compactMap { index in
-                current.days[index].date.map(FitnessDate.key)
-            })
             let dates = (selection[week] ?? []).sorted()
-            let selectedEarlyKeys = Set(
-                dates.map(FitnessDate.key).filter { earlyKeys.contains($0) }
-            )
-            // Early days that the board cannot represent are preserved. If the
-            // board explicitly selected today, that early date participates in
-            // matching and can be assigned to the day that lost its date.
-            let preservedEarly = early.filter { index in
-                guard let date = current.days[index].date else { return false }
-                let key = FitnessDate.key(date)
-                return !selectedEarlyKeys.contains(key)
-                    && !managedEarlyKeys.contains(key)
-            }
-            let activePreservedEarly = preservedEarly.filter {
-                current.days[$0].skippedAt == nil
-            }
-            let indices = allIndices.filter { !preservedEarly.contains($0) }
-
-            let regularDates = dates.filter {
-                !earlyKeys.contains(FitnessDate.key($0))
-            }
-            if regularDates.count > limit {
+            if dates.count > limit {
                 return .failure(.tooManyDays(week: week, limit: limit))
             }
-            guard dates.count + activePreservedEarly.count <= allIndices.count else {
+            guard dates.count <= allIndices.count else {
                 return .failure(
                     .notEnoughSlots(week: week, slots: allIndices.count)
                 )
@@ -124,8 +95,8 @@ enum PlanScheduleEngine {
             // Match dates the user kept to the days that already own them.
             // Active days go first so a duplicated date stays on the active
             // day instead of reviving a skipped one.
-            let active = indices.filter { current.days[$0].skippedAt == nil }
-            let skipped = indices.filter { current.days[$0].skippedAt != nil }
+            let active = allIndices.filter { current.days[$0].skippedAt == nil }
+            let skipped = allIndices.filter { current.days[$0].skippedAt != nil }
             var remaining = Set(dates.map { FitnessDate.key($0) })
             var assigned: [Int: Date] = [:]
             var unmatched: [Int] = []
@@ -156,7 +127,7 @@ enum PlanScheduleEngine {
                 assigned[orderedUnmatched[offset]] = date
             }
 
-            for index in indices {
+            for index in allIndices {
                 if let date = assigned[index] {
                     current.days[index].date = FitnessDate.startOfDay(date)
                     current.days[index].weekday = FitnessDate.weekdayNumber(date)

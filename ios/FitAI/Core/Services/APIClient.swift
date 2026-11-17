@@ -26,7 +26,7 @@ struct APIError: LocalizedError {
 
     var isRateLimited: Bool {
         code == "RATE_LIMITED" || code == "GENERATION_COOLDOWN"
-            || code == "GENERATION_IN_PROGRESS"
+            || code == "GENERATION_IN_PROGRESS" || code == "PLAN_DAILY_LIMIT"
     }
 }
 

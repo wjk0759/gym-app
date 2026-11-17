@@ -85,6 +85,23 @@ struct RootView: View {
         .sheet(item: $store.pendingPlanPreview) { plan in
             PlanPreviewSheet(plan: plan)
         }
+        .alert(
+            "生成计划",
+            isPresented: Binding(
+                get: { store.planGenerationNotice != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        store.planGenerationNotice = nil
+                    }
+                }
+            )
+        ) {
+            Button("知道了", role: .cancel) {
+                store.planGenerationNotice = nil
+            }
+        } message: {
+            Text(store.planGenerationNotice ?? "")
+        }
         .sensoryFeedback(.success, trigger: auth.isAuthenticated) { _, isAuthenticated in
             isAuthenticated
         }

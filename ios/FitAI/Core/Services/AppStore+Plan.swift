@@ -14,7 +14,10 @@ extension AppStore {
             toast = "请至少选择一种可用器械：徒手 / 哑铃 / 杠铃 / 固定器械 / 绳索"
             return
         }
-        guard !isGenerating else { return }
+        guard !isGenerating else {
+            planGenerationNotice = "计划正在生成中，请稍候"
+            return
+        }
         guard workoutDraft == nil else {
             toast = "你正在训练；请先保存或结束当前训练，再重新生成计划"
             return
@@ -23,14 +26,20 @@ extension AppStore {
             requestPro(.trainingPlan)
             return
         }
-        if !onboarding,
-           let last = lastPlanGeneratedAt,
-           Date().timeIntervalSince(last) < 60 {
-            toast = "计划刚刚生成，请稍后再试"
-            return
+        if !onboarding {
+            let remaining = PlanGenerationCooldown.remainingSeconds(
+                lastGeneratedAt: lastPlanGeneratedAt
+            )
+            if remaining > 0 {
+                planGenerationNotice = PlanGenerationCooldown.message(
+                    remaining: remaining
+                )
+                return
+            }
         }
         if plan != nil && !force { return }
 
+        planGenerationNotice = nil
         isGenerating = true
         let snapshot = profile
         let librarySlugs = equipmentSlugsForPlan
@@ -91,11 +100,17 @@ extension AppStore {
                 } catch let error as APIError where error.statusCode == 429 {
                     self.isGenerating = false
                     if error.code == "GENERATION_IN_PROGRESS" {
-                        self.toast = "计划正在生成中，请稍后查看"
+                        self.planGenerationNotice = "计划正在生成中，请稍候查看"
+                    } else if error.code == "PLAN_DAILY_LIMIT" {
+                        self.planGenerationNotice = error.message.isEmpty
+                            ? "今天已生成 10 次计划，请明天再试"
+                            : error.message
                     } else if let retry = error.retryAfter, retry > 0 {
-                        self.toast = "计划刚刚生成，请 \(retry) 秒后再试"
+                        self.planGenerationNotice = PlanGenerationCooldown.message(
+                            remaining: retry
+                        )
                     } else {
-                        self.toast = "计划生成太频繁，请稍后再试"
+                        self.planGenerationNotice = "计划生成太频繁，请稍后再试"
                     }
                     return
                 } catch let error as APIError where error.isProRequired {

@@ -132,6 +132,7 @@ final class AppStore {
     var bodyCheckInAnchor = Date()
     var bodyCheckInDismissedDate: String? = nil
     var isGenerating = false
+    var planGenerationNotice: String?
     var isReplying = false
     @ObservationIgnored var lastPlanGeneratedAt: Date?
     @ObservationIgnored var pendingPlanIdempotencyKey: String?
@@ -316,6 +317,7 @@ final class AppStore {
         reminderHour = 19
         reminderMinute = 0
         isAgentWorking = false
+        planGenerationNotice = nil
         agentSessionID = nil
         coachSessionID = nil
         coachSession = nil

@@ -913,16 +913,15 @@ extension AppStore {
         let day = FitnessDate.startOfDay(date)
         updated.days[index].date = day
         updated.days[index].weekday = FitnessDate.weekdayNumber(day)
-        if let start = updated.date(week: 1, weekday: 1) {
-            let diff = FitnessDate.calendar.dateComponents(
-                [.day],
-                from: start,
-                to: day
-            ).day ?? 0
-            let week = max(1, diff / 7 + 1)
-            updated.days[index].weekIndex = week
-            updated.weeks = max(updated.weeks, week)
-        }
+        let start = updated.planStartDate
+        let diff = FitnessDate.calendar.dateComponents(
+            [.day],
+            from: start,
+            to: day
+        ).day ?? 0
+        let week = max(1, diff / 7 + 1)
+        updated.days[index].weekIndex = week
+        updated.weeks = max(updated.weeks, week)
         updated.days[index].skippedAt = nil
         updated.days[index].scheduleUpdatedAt = Date()
         updated.updatedAt = Date()
