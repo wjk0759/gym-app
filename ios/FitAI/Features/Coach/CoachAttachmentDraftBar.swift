@@ -10,6 +10,7 @@ struct CoachAttachmentDraftBar: View {
     let video: CoachVideoAttachment?
     let isLoadingImages: Bool
     let isLoadingVideo: Bool
+    @Binding var imagePurpose: CoachImagePurpose
     let onClear: () -> Void
     let onRemoveImage: (UUID) -> Void
     let onRemoveVideo: () -> Void
@@ -38,6 +39,15 @@ struct CoachAttachmentDraftBar: View {
                 }
                 .font(AppType.caption.weight(.semibold))
                 .foregroundStyle(Theme.tertiaryText)
+            }
+
+            if !images.isEmpty, video == nil {
+                Picker("图片用途", selection: $imagePurpose) {
+                    ForEach(CoachImagePurpose.allCases) { purpose in
+                        Text(purpose.title).tag(purpose)
+                    }
+                }
+                .pickerStyle(.segmented)
             }
 
             if isLoadingVideo, video == nil {
@@ -149,7 +159,9 @@ struct CoachAttachmentDraftBar: View {
 
             Text(
                 !(video != nil || isLoadingVideo)
-                    ? "图片和视频只能二选一；可以先添加多张图片，写完说明后再发送。"
+                    ? (imagePurpose == .food
+                        ? "记录饮食一次一张；发送后生成可确认的饮食卡。"
+                        : "图片和视频只能二选一；可以先添加多张图片，写完说明后再发送。")
                     : "视频一次只能发送一个；发送时最多上传 6 个关键帧和本机姿态摘要，不上传原视频。"
             )
             .font(.system(size: 9.5, weight: .medium))

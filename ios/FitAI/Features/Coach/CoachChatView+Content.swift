@@ -4,6 +4,9 @@ import UIKit
 
 extension CoachChatView {
     var inputPlaceholder: String {
+        if imagePurpose == .food {
+            return "可选：午餐 / 晚餐 / 今天"
+        }
         if store.shouldShowCoachQuotaCard {
             return "今天的免费额度已用完，升级 Pro 继续聊"
         }
@@ -400,12 +403,17 @@ extension CoachChatView {
             video: draftVideo,
             isLoadingImages: isLoadingAttachments,
             isLoadingVideo: isLoadingVideo,
+            imagePurpose: $imagePurpose,
             onClear: {
                 draftAttachments = []
                 draftVideo = nil
+                imagePurpose = .review
             },
             onRemoveImage: { id in
                 draftAttachments.removeAll { $0.id == id }
+                if draftAttachments.isEmpty {
+                    imagePurpose = .review
+                }
             },
             onRemoveVideo: {
                 draftVideo = nil

@@ -47,9 +47,26 @@ extension CoachChatView {
             return
         }
 
-        guard store.requirePro(.coachVision) else { return }
         let images = draftAttachments.map(\.data)
         guard !images.isEmpty else { return }
+
+        if imagePurpose == .food {
+            guard images.count == 1 else {
+                attachmentError = "饮食记录一次一张，请先移除多余图片。"
+                return
+            }
+            guard store.requirePro(.foodPhoto) else { return }
+            Haptics.impact(.light)
+            input = ""
+            focused = false
+            KeyboardDismiss.dismiss()
+            draftAttachments = []
+            imagePurpose = .review
+            store.sendCoachFoodPhotos(images[0], caption: caption)
+            return
+        }
+
+        guard store.requirePro(.coachVision) else { return }
 
         Haptics.impact(.light)
         input = ""

@@ -179,6 +179,46 @@ struct CoachVisionResult: Decodable {
     }
 }
 
+struct CoachFoodPhotoItem: Decodable {
+    let name: String
+    let grams: Double?
+    let kcal: Double?
+    let proteinG: Double?
+    let carbsG: Double?
+    let fatG: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case grams
+        case kcal
+        case proteinG = "protein_g"
+        case carbsG = "carbs_g"
+        case fatG = "fat_g"
+    }
+}
+
+struct CoachFoodPhotoResult: Decodable {
+    let session: CoachSessionState
+    let turnID: String?
+    let reply: String
+    let pending: CoachPendingState?
+    let isFood: Bool
+    let items: [CoachFoodPhotoItem]?
+    let meal: String?
+    let date: String?
+
+    enum CodingKeys: String, CodingKey {
+        case session
+        case turnID = "turn_id"
+        case reply
+        case pending
+        case isFood = "is_food"
+        case items
+        case meal
+        case date
+    }
+}
+
 struct RemoteDietPlan: Decodable {
     struct Meal: Decodable {
         let meal: String

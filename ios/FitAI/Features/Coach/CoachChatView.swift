@@ -19,6 +19,7 @@ struct CoachChatView: View {
     @State var showDietLibrary = false
     @State var showVideoReview = false
     @State var draftAttachments: [CoachDraftImage] = []
+    @State var imagePurpose: CoachImagePurpose = .review
     @State var draftVideo: CoachVideoAttachment?
     @State var photoItems: [PhotosPickerItem] = []
     @State var videoItem: PhotosPickerItem?

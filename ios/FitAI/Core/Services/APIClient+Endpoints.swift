@@ -858,6 +858,29 @@ extension APIClient {
         return try decode(CoachVisionResult.self, from: data)
     }
 
+    func analyzeCoachFoodPhoto(
+        imageData: Data,
+        caption: String,
+        sessionID: UUID? = nil,
+        idempotencyKey: String? = nil
+    ) async throws -> CoachFoodPhotoResult {
+        var fields: [String: String] = [:]
+        if !caption.isEmpty {
+            fields["caption"] = caption
+        }
+        if let sessionID {
+            fields["session_id"] = sessionID.uuidString.lowercased()
+        }
+        let data = try await upload(
+            path: "agent/photo/food",
+            imageData: imageData,
+            filename: "meal.jpg",
+            fields: fields,
+            headers: idempotencyHeaders(idempotencyKey)
+        )
+        return try decode(CoachFoodPhotoResult.self, from: data)
+    }
+
     func fetchDietPlan(
         dateString: String,
         idempotencyKey: String? = nil

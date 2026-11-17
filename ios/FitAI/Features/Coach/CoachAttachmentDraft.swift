@@ -8,3 +8,17 @@ struct CoachDraftImage: Identifiable {
     let image: UIImage
     let data: Data
 }
+
+enum CoachImagePurpose: String, CaseIterable, Identifiable {
+    case review
+    case food
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .review: return "教练点评"
+        case .food: return "记录饮食"
+        }
+    }
+}

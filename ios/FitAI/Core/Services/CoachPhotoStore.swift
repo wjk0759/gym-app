@@ -139,6 +139,122 @@ extension AppStore {
         }
     }
 
+    /// 食物照片记录：识别后生成控制平面待确认卡，不直接写饮食日志。
+    func sendCoachFoodPhotos(
+        _ imageData: Data,
+        caption: String
+    ) {
+        let trimmed = caption.trimmingCharacters(in: .whitespacesAndNewlines)
+        if hasProAccess && !useRemoteAI {
+            toast = "已在设置中关闭远程 AI；食物照片识别需要远程模型。"
+            return
+        }
+
+        cancelActiveChatRequest()
+        removeTrailingChatTimeoutNotices()
+        agentProposal = nil
+        agentActions = []
+        agentRunID = nil
+        lastAgentRetryText = nil
+        pendingUndo = nil
+        let requestID = UUID()
+        let localUserMessageID = UUID()
+        chat.append(
+            ChatMessage(
+                id: localUserMessageID,
+                role: .user,
+                text: trimmed,
+                imageDataList: [imageData]
+            )
+        )
+
+        coachPhotoRequestID = requestID
+        isReplying = true
+        persist()
+
+        let task = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer {
+                if self.coachPhotoRequestID == requestID {
+                    self.coachPhotoRequestID = nil
+                    self.coachPhotoTask = nil
+                    self.coachPhotoWatchdog?.cancel()
+                    self.coachPhotoWatchdog = nil
+                    self.isReplying = false
+                    self.persist()
+                }
+            }
+            do {
+                let result = try await APIClient.shared.analyzeCoachFoodPhoto(
+                    imageData: imageData,
+                    caption: trimmed,
+                    sessionID: self.coachSessionID,
+                    idempotencyKey: requestID.uuidString
+                )
+                try Task.checkCancellation()
+                self.coachSessionID = result.session.id
+                self.coachSession = result.session
+                self.coachPending = result.pending
+                self.coachReceipt = nil
+                self.coachUndoActionID = nil
+                self.coachUndoExpiresAt = nil
+                if let turnID = result.turnID {
+                    let turnKey = turnID.lowercased()
+                    if let index = self.chat.firstIndex(where: {
+                        $0.id == localUserMessageID
+                    }) {
+                        self.chat[index].serverMessageID = "coach-\(turnKey)-user"
+                    }
+                    self.chat.append(
+                        ChatMessage(
+                            role: .assistant,
+                            text: result.reply,
+                            serverMessageID: "coach-\(turnKey)-assistant"
+                        )
+                    )
+                } else {
+                    self.chat.append(
+                        ChatMessage(role: .assistant, text: result.reply)
+                    )
+                }
+            } catch is CancellationError {
+                return
+            } catch let error as APIError where error.isProRequired {
+                await self.refreshAccess()
+                self.requestPro(.foodPhoto)
+            } catch {
+                guard !Task.isCancelled else { return }
+                self.chat.append(
+                    ChatMessage(
+                        role: .assistant,
+                        text: "照片收到了，但这次饮食识别没有完成。可以换一张更清楚的，或直接用文字告诉我吃了什么。"
+                    )
+                )
+            }
+        }
+        coachPhotoTask = task
+
+        coachPhotoWatchdog = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: AppStore.chatRequestTimeoutNanoseconds)
+            guard !Task.isCancelled,
+                  let self,
+                  self.coachPhotoRequestID == requestID,
+                  self.isReplying else { return }
+            self.coachPhotoRequestID = nil
+            task.cancel()
+            self.coachPhotoTask = nil
+            self.coachPhotoWatchdog = nil
+            self.isReplying = false
+            self.chat.append(
+                ChatMessage(
+                    role: .assistant,
+                    text: AppStore.photoTimeoutNotice
+                )
+            )
+            self.persist()
+        }
+    }
+
     private func formattedVisionReply(_ result: CoachVisionResult) -> String {
         var parts: [String] = []
         if result.safetyFlag == "medical_referral" {
