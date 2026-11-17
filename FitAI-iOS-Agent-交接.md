@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`9febc6a`（文档 `aa73cd7`；UX 修复已复测，**F1 未通过，iOS 不部署**；生产后端 `e0d2c38`，`runtime.py` / `routers/agent.py` SHA-256 与本地一致；iOS 已装 `d2e4adc`；Flyway **V44**；`FitAITests` **121/121**、UI **4/4**；后端 app 代码无变化、QA **76/76**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`9febc6a`（文档 `bcbb599`；UX 修复已复测，**F1 未通过，iOS 不部署**；生产后端 `e0d2c38`，`runtime.py` / `routers/agent.py` SHA-256 与本地一致；iOS 已装 `d2e4adc`；Flyway **V44**；`FitAITests` **121/121**、UI **4/4**；后端 app 代码无变化、QA **76/76**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F2/F3/F4/F5/F6/F8 已复测通过；**F1 悬浮 Tab Bar 首屏遮挡仍未解决，阻断 iOS 部署**；F7 命名与 F9 Debug 横幅未动。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
