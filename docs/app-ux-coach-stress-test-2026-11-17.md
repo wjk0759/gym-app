@@ -631,22 +631,34 @@ log_food: date=2026-11-18, meal=snack, 米饭 200g
 - 跑步等 cardio 仍可空 sets，符合预期。
 - 结论：力量补录空 sets 的 P1 已修复。
 
-### 新发现 C1c：登录后昵称丢失（P2，用户可见）
+### 当时结论
 
-- 服务端 `/me` 返回 `nickname="Mac QA"`。
-- 但 App 登录后“我的 → 我的档案”账号卡只显示：
+- C1b/C5 的阻断已解除；当时仍发现 C1c 昵称丢失，因此那一轮未部署。
 
-```text
-小白 · 增肌 · 每周 3 练
-```
+## 二十、2026-11-18 C1c 复测（9d340c8 + 95ad649）
 
-昵称为空；本地 per-user profile 也是 `nickname=""`、`isOnboarded=false`（身体数据和计划已加载）。
+- 环境：后端 `5c47790`；iOS `9d340c8` + `95ad649`；iPhone 17e 全清空后登录；Wu-Tang 真机已安装。
+- 测试：`FitAITests` **135/135**（含 ProfileHydrationPolicy 6 条）、`FitAIUITests` **6/6**、C1c UI **1/1**。
 
-- 全清空模拟器后连续复现 2 次，不是缓存。
-- 影响：老用户换机/重装后名字丢失；进入编辑档案时草稿昵称为空，若直接保存可能把服务端昵称清空，存在二次数据风险。
-- 建议：确认 `mergeRemoteMe()` 在登录 hydration 路径没有被 `profileSyncPending` 提前 return；hydration 成功后持久化 nickname/isOnboarded；补一条“登录已有账号 → Profile 显示服务端 nickname”的 UI 回归。
+### C1c：通过
 
-### 结论
+- 全清空模拟器重装 → 登录 `macqa_coach`：
+  - “我的 → 我的档案”显示服务端昵称 **Mac QA**。
+  - 本地 per-user state：`nickname="Mac QA"`、`isOnboarded=true`、`profileSyncPending=false`。
+  - 身体数据仍为 18%，没有 21% 伪记录。
+- 编辑档案：
+  - 昵称输入框值为 `Mac QA`。
+  - 点保存后返回 Profile，昵称仍为 `Mac QA`。
+  - 服务端 `/me` 昵称仍为 `Mac QA`，没有被空值覆盖。
 
-- C1b/C5 的阻断已解除；C1c 是新的登录资料展示/持久化问题，建议修复后再发。
-- 本轮 **未部署**，Wu-Tang 仍为 `4630a83`。
+### 边界观察（P2，未阻断）
+
+- 用一个手工创建的“无档案、`is_new_user=false`”账号登录，App 进入了主界面（显示“新用户”、无计划），没有进 onboarding。
+- 这不是正常注册路径（正常注册/首次登录 `is_new_user=true`，应进 onboarding）；但“注册后未完成 onboarding 就退出，再登录”的账号可能命中。建议后续补一条“未完成 onboarding 的返回用户”路由测试。
+- 本轮不把它作为 C1c 的阻断项，正常已有账号和正常注册路径不受影响。
+
+### 部署
+
+- iOS `9d340c8` + `95ad649` 已用 phone-only Release 安装 Wu-Tang，启动正常。
+- 后端 `5c47790` 已由 Windows 部署，`/health/ready` 200，本轮无后端变化。
+- 结论：C1b/C5/C1c 均通过，本轮部署完成；上述边界观察留作下一轮。
