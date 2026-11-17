@@ -272,6 +272,7 @@ struct RootView: View {
 
     private func refreshSession() {
         store.switchUser(auth.userID)
+        store.applyRemoteIdentity(auth.loginProfile)
         guard auth.isAuthenticated, let userID = auth.userID else {
             syncedUserID = nil
             hydratedUserID = nil

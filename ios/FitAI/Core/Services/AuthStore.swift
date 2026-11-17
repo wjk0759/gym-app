@@ -16,6 +16,7 @@ final class AuthStore {
     var trainingStage: Experience = .beginner
     var onboardingRequired = false
     var isNewUser = false
+    var loginProfile: RemoteMeProfile?
 
     private var didRestore = false
     private var webAuthSession: ASWebAuthenticationSession?
@@ -325,6 +326,7 @@ final class AuthStore {
         trainingStage = Experience(rawValue: response.trainingStage ?? "") ?? .beginner
         onboardingRequired = response.onboardingRequired
         isNewUser = response.isNewUser
+        loginProfile = response.profile
         isAuthenticated = true
     }
 
@@ -337,6 +339,7 @@ final class AuthStore {
         trainingStage = .beginner
         onboardingRequired = false
         isNewUser = false
+        loginProfile = nil
         isAuthenticated = false
     }
 
@@ -479,6 +482,7 @@ private struct AuthResponse: Decodable {
     let onboardingRequired: Bool
     let avatarURL: String?
     let trainingStage: String?
+    let profile: RemoteMeProfile?
 
     enum CodingKeys: String, CodingKey {
         case userID = "user_id"
@@ -489,6 +493,7 @@ private struct AuthResponse: Decodable {
         case onboardingRequired = "onboarding_required"
         case avatarURL = "avatar_url"
         case trainingStage = "training_stage"
+        case profile
     }
 }
 

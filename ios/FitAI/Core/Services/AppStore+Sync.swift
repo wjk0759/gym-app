@@ -557,13 +557,47 @@ extension AppStore {
         persist()
     }
 
+    func applyRemoteIdentity(_ remote: RemoteMeProfile?) {
+        guard let remote else { return }
+        let nickname = RemoteProfileIdentityPolicy.nickname(
+            local: profile.nickname,
+            server: remote.nickname
+        )
+        let onboarded = RemoteProfileIdentityPolicy.isOnboarded(
+            local: profile.isOnboarded,
+            server: remote.onboarded
+        )
+        guard nickname != profile.nickname
+            || onboarded != profile.isOnboarded else {
+            return
+        }
+        profile.nickname = nickname
+        profile.isOnboarded = onboarded
+        persist()
+    }
+
     private func mergeRemoteMe(_ remote: RemoteMe) {
+        // Identity must hydrate even when a pending local profile edit makes
+        // the rest of the merge local-first. Otherwise a reinstall/login can
+        // show an empty nickname and later save over the server nickname.
+        let localWasOnboarded = profile.isOnboarded
+        applyRemoteIdentity(remote.profile)
+        if profileSyncPending,
+           !localWasOnboarded,
+           remote.profile?.onboarded == true {
+            // The local profile was never onboarded, so the pending flag cannot
+            // represent a completed local edit. The server profile wins.
+            profileSyncPending = false
+        }
         // A local edit that has not been acknowledged must win. The pending
         // flag is persisted so a crash/relaunch cannot silently lose it.
         guard !profileSyncPending else { return }
         var merged = profile
         if let data = remote.profile {
-            merged.nickname = data.nickname ?? merged.nickname
+            merged.nickname = RemoteProfileIdentityPolicy.nickname(
+                local: merged.nickname,
+                server: data.nickname
+            )
             if let raw = data.sex, let sex = Sex(rawValue: raw) {
                 merged.sex = sex
             }
@@ -599,7 +633,10 @@ extension AppStore {
             }
             merged.weeklyDays = data.weeklyDays ?? merged.weeklyDays
             merged.sessionMinutes = data.sessionMinutes ?? merged.sessionMinutes
-            merged.isOnboarded = data.onboarded ?? merged.isOnboarded
+            merged.isOnboarded = RemoteProfileIdentityPolicy.isOnboarded(
+                local: merged.isOnboarded,
+                server: data.onboarded
+            )
 
             // BodyMetric owns weight/body fat/waist. The profile fields are a
             // bootstrap fallback only when no metric has been synced yet.
