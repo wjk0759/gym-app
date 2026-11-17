@@ -10,7 +10,7 @@ struct NutritionView: View {
     @State var showAddFood = false
     @State var showFoodPhoto = false
     @State var showWeekPlan = false
-    @State var selectedMeal: MealType = .breakfast
+    @State var selectedMeal: MealType = MealType.suggested()
     @State var pendingFoodDelete: FoodLog?
     @State var editingFoodLog: FoodLog?
     @State var aiMeals: [MealSuggestion]?
@@ -309,6 +309,7 @@ struct NutritionView: View {
             .appPageTopPadding()
             .padding(.bottom, 32)
         }
+        .appTabBarClearance()
         .background(AppBackground())
         .navigationTitle(isToday ? "今日饮食" : "饮食记录")
         .navigationBarTitleDisplayMode(.inline)
@@ -377,12 +378,6 @@ struct NutritionView: View {
     }
 
     var suggestedMeal: MealType {
-        let hour = Calendar.current.component(.hour, from: Date())
-        switch hour {
-        case 5..<11: return .breakfast
-        case 11..<15: return .lunch
-        case 17..<21: return .dinner
-        default: return .snack
-        }
+        MealType.suggested()
     }
 }

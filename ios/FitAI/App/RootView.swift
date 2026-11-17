@@ -39,6 +39,13 @@ struct RootView: View {
                 }
             }
         }
+        #if DEBUG
+        .onAppear {
+            if qaBypassAuth {
+                store.seedQABypassProfileIfNeeded()
+            }
+        }
+        #endif
         .environment(\.weatherAtmosphere, atmosphere)
         .fontDesign(.default)
         .tint(Theme.cobalt)

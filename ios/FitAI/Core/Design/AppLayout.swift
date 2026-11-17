@@ -27,6 +27,16 @@ enum AppLayout {
     static let controlCornerRadius: CGFloat = 14
 }
 
+private struct AppTabBarClearance: ViewModifier {
+    func body(content: Content) -> some View {
+        content.safeAreaInset(edge: .bottom, spacing: 0) {
+            Color.clear
+                .frame(height: AppLayout.tabBarContentInset)
+                .allowsHitTesting(false)
+        }
+    }
+}
+
 private struct AppPagePadding: ViewModifier {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -68,5 +78,10 @@ extension View {
     /// Centers page content at a readable width on iPad and landscape.
     func appReadableContent() -> some View {
         modifier(AppReadableContent())
+    }
+
+    /// Reserves the floating tab-bar height as a real scroll safe area.
+    func appTabBarClearance() -> some View {
+        modifier(AppTabBarClearance())
     }
 }

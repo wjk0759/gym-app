@@ -57,6 +57,15 @@ extension NutritionView {
             ) {
                 showWeekPlan = true
             }
+            toolTile(
+                title: "记一笔",
+                detail: "已吃食物",
+                symbol: "square.and.pencil",
+                accent: Theme.cobalt
+            ) {
+                selectedMeal = suggestedMeal
+                showAddFood = true
+            }
         }
     }
 
@@ -140,7 +149,7 @@ extension NutritionView {
                 .font(AppType.micro)
                 .foregroundStyle(Theme.tertiaryText)
             Capsule()
-                .fill(color.opacity(0.20))
+                .fill(Theme.stroke)
                 .frame(height: 3)
                 .overlay(alignment: .leading) {
                     GeometryReader { geo in

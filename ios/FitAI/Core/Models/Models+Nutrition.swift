@@ -83,6 +83,21 @@ enum MealType: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Time-aware default used by food entry screens. Keeping this in one place
+    /// avoids the breakfast/lunch/dinner drift between Nutrition and AddFood.
+    static func suggested(
+        for date: Date = Date(),
+        calendar: Calendar = .current
+    ) -> MealType {
+        let hour = calendar.component(.hour, from: date)
+        switch hour {
+        case 5..<11: return .breakfast
+        case 11..<15: return .lunch
+        case 17..<21: return .dinner
+        default: return .snack
+        }
+    }
+
     var label: String {
         switch self {
         case .breakfast: return "早餐"

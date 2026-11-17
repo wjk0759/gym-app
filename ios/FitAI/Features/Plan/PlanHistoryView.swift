@@ -36,6 +36,7 @@ struct PlanHistoryView: View {
                 .appPageTopPadding()
                 .padding(.bottom, 24)
             }
+            .appTabBarClearance()
             .background(AppBackground())
             .navigationTitle("计划历史")
             .navigationBarTitleDisplayMode(.inline)

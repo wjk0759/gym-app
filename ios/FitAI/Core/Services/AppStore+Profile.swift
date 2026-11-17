@@ -124,4 +124,16 @@ extension AppStore {
             // and a remote pull cannot overwrite the local edit.
         }
     }
+
+    #if DEBUG
+    /// QA auth bypass only skips login. Seed a valid profile so plan
+    /// generation and onboarding-dependent UI can actually be exercised.
+    func seedQABypassProfileIfNeeded() {
+        guard !profile.isOnboarded else { return }
+        profile.nickname = profile.nickname.isEmpty ? "QA" : profile.nickname
+        profile.isOnboarded = true
+        profile.equipment = [.bodyweight, .dumbbell]
+        persist()
+    }
+    #endif
 }

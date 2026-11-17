@@ -137,6 +137,7 @@ struct BodyCheckInSheet: View {
                     .font(.system(size: 24, weight: .bold, design: .monospaced))
                     .foregroundStyle(Theme.ink)
                     .tint(Theme.cobalt)
+                    .accessibilityLabel("\(title)，单位 \(unit)")
 
                 Text(unit)
                     .font(.system(size: 10, weight: .semibold))

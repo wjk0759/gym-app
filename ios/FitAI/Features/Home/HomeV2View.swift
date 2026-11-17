@@ -75,8 +75,8 @@ struct HomeV2View: View {
                 }
                 .padding(.horizontal, 20)
                 .appPageTopPadding()
-                .padding(.bottom, AppLayout.tabBarContentInset)
             }
+            .appTabBarClearance()
             .background(AppBackground())
             .navigationTitle("")
             .navigationBarHidden(true)

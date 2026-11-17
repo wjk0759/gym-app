@@ -152,6 +152,7 @@ struct PlanScheduleView: View {
                 .appPageTopPadding()
                 .padding(.bottom, 28)
             }
+            .appTabBarClearance()
             .background(AppBackground())
             .navigationTitle("训练日期")
             .navigationBarTitleDisplayMode(.inline)

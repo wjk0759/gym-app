@@ -74,6 +74,7 @@ struct SettingsView: View {
             .appPageTopPadding()
             .padding(.bottom, 28)
         }
+        .appTabBarClearance()
         .background(AppBackground())
         .navigationTitle("设置")
         .navigationBarTitleDisplayMode(.inline)

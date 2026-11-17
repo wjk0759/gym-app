@@ -25,8 +25,8 @@ struct ProfileView: View {
                 }
                 .appPagePadding()
                 .appPageTopPadding()
-                .padding(.bottom, AppLayout.tabBarContentInset)
             }
+            .appTabBarClearance()
             .background(AppBackground())
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)

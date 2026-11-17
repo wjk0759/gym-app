@@ -65,6 +65,7 @@ struct WeekDietPlanView: View {
                 .appPageTopPadding()
                 .padding(.bottom, 24)
             }
+            .appTabBarClearance()
             .background(AppBackground())
             .navigationTitle("本周饮食计划")
             .navigationBarTitleDisplayMode(.inline)

@@ -84,8 +84,8 @@ struct PlanHomeView: View {
                     .appPagePadding()
                     .appReadableContent()
                     .appPageTopPadding()
-                    .padding(.bottom, AppLayout.tabBarContentInset)
                 }
+                .appTabBarClearance()
                 .background(AppBackground())
                 .navigationTitle("")
                 .navigationBarHidden(true)

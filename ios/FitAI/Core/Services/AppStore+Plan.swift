@@ -6,7 +6,10 @@ extension AppStore {
         weeklyWeekdays: [Int]? = nil,
         onboarding: Bool = false
     ) {
-        guard profile.isOnboarded else { return }
+        guard profile.isOnboarded else {
+            toast = "请先完成个人档案，再生成训练计划"
+            return
+        }
         guard hasPlanEquipment else {
             toast = "请至少选择一种可用器械：徒手 / 哑铃 / 杠铃 / 固定器械 / 绳索"
             return

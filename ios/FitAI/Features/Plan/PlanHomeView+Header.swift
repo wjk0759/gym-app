@@ -5,24 +5,26 @@ extension PlanHomeView {
 
     var topBar: some View {
         HStack(spacing: 10) {
-            Button {
-                Haptics.tap()
-                withAnimation(Motion.smooth) {
-                    goToToday()
-                }
-            } label: {
-                Label("回到今天", systemImage: "arrow.uturn.backward")
-                    .font(AppType.micro)
-                    .foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 8)
-                    .background(Theme.paper, in: Capsule(style: .continuous))
-                    .overlay {
-                        Capsule(style: .continuous)
-                            .strokeBorder(Theme.stroke, lineWidth: 1)
+            if !Calendar.current.isDateInToday(selectedDate) {
+                Button {
+                    Haptics.tap()
+                    withAnimation(Motion.smooth) {
+                        goToToday()
                     }
+                } label: {
+                    Label("回到今天", systemImage: "arrow.uturn.backward")
+                        .font(AppType.micro)
+                        .foregroundStyle(Theme.ink)
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 8)
+                        .background(Theme.paper, in: Capsule(style: .continuous))
+                        .overlay {
+                            Capsule(style: .continuous)
+                                .strokeBorder(Theme.stroke, lineWidth: 1)
+                        }
+                }
+                .buttonStyle(SubtlePressStyle(scale: 0.96))
             }
-            .buttonStyle(SubtlePressStyle(scale: 0.96))
 
             Spacer(minLength: 0)
 

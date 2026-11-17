@@ -102,6 +102,7 @@ struct ProgressOverviewView: View {
             .appPageTopPadding()
             .padding(.bottom, 28)
         }
+        .appTabBarClearance()
         .background(AppBackground())
         .navigationTitle("变化")
         .navigationBarTitleDisplayMode(.inline)
