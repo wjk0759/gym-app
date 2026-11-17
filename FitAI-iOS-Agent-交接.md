@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`c60aa8e`（文档 `8486999`；C1–C6 修复；生产后端已部署 `c60aa8e`，`/health/ready` **200**；Flyway **V44**；`FitAITests` **126/126**、UI **6/6**、C1 全新安装登录 **1/1**；**C1b 身体数据污染 + C5 训练记录 0 组仍阻断，Wu-Tang 仍为 `4630a83`，未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`c60aa8e`（文档 `2067226`；C1–C6 修复；生产后端已部署 `c60aa8e`，`/health/ready` **200**；Flyway **V44**；`FitAITests` **126/126**、UI **6/6**、C1 全新安装登录 **1/1**；**C1b 身体数据污染 + C5 训练记录 0 组仍阻断，Wu-Tang 仍为 `4630a83`，未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 已通过；C1 主路径通过但会 seed 默认身体数据（C1b）；C5 训练补录 sets 为空（0 组）。**C1b/C5 修好前不部署。**
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
