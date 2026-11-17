@@ -14,8 +14,9 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`4630a83`（测试/文档 `2a1abc8`；F1 第二轮修复已复测通过；生产后端 `e0d2c38`，`/health/ready` 200；iOS `4630a83` 已装 Wu-Tang；Flyway **V44**；`FitAITests` **121/121**、UI **6/6**、SE TabBarClearance **2/2**；后端 app 代码无变化、QA **76/76**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`4630a83`（测试/文档 `2a1abc8`；F1 已通过；但 2026-11-17 第二轮 App+AI 教练压测发现 **1 P0 + 5 P1，阻断发布**；生产后端 `e0d2c38`，`/health/ready` 200；iOS Wu-Tang 仍为 `4630a83`；Flyway **V44**；`FitAITests` **121/121**、UI **6/6**；后端 app 代码无变化、QA **76/76**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
+- **macOS App + AI 教练压测（2026-11-17）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；P0 = 新装登录已有账号被强制重新建档并覆盖服务端资料；P1 = 计划器械/训练日错误、双食物份量丢失、待确认卡份量修正失败、训练补录 slug 不存在、多意图丢失。**先修 C1/C2，未修复前不部署。**
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -27,6 +28,49 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-17 · macOS（全 App + AI 教练压力测试：1 P0 + 5 P1，阻断发布）
+
+- 报告：`docs/app-ux-coach-stress-test-2026-11-17.md`
+- 环境：iPhone 17 / iPhone SE 3 模拟器；App `4630a83`；生产后端 `e0d2c38`；测试账号 `macqa_coach`（`is_test=true`，Pro 7 天，仅测试；密码不入库）。
+- **P0 登录/onboarding 覆盖资料**：
+  - 删除 App 重装，用已有账号密码登录；服务端 `/me` 返回 `profile.onboarded=true`、登录响应 `onboarding_required=false`。
+  - App 仍进入 `CoachOnboardingView`（“告诉我你的情况…”），20 秒后无 Tab Bar；点“开始”走完默认 onboarding 后，服务端档案从 31 岁/体脂 18%/目标 76→78 变成 30 岁/体脂 22.5%/目标 75，计划也被重排。
+  - 根因：`RootView` 用本地 `store.profile.isOnboarded` 分流；`AuthResponse` 不解析 profile，`switchUser` 只 load 本地文件；`/me` 异步回来后也不会自动离开 onboarding。
+  - 要求：登录后先拉 `/me`（或 AuthResponse 带 profile）再决定页面；用 `auth.onboardingRequired`/服务端档案状态分流；onboarding 提供“已有档案，跳过”，不得默认覆盖。
+- **P1 计划生成不遵守器械 + 静默丢训练日**：
+  - 取消哑铃（`PUT /equipment/universal {"enabled_slugs":["bodyweight"]}`）后，`/me` 的 `profile.equipment` 仍是 `["bodyweight","dumbbell"]`。
+  - `POST /plans/generate {"force":true}` 返回标题“每周 3 练”，实际 `days.length=4`、全是周一；warnings 大量“machine/barbell/band 已移除”“星期 3/5 有效动作不足 3 个，已跳过”；计划里仍有哑铃动作。另一次只选徒手直接 `422 UNSAFE_PLAN`。
+  - 器械池正确（徒手+哑铃）时生成 12 天、0 warning，说明触发条件是空池/旧缓存。
+  - 要求：`profile.equipment` 只从 inventory 派生并删除已取消项；空池按 profile 过滤；不足 3 个动作时从可用池补齐或明确失败；强校验 `weekly_days * weeks` 和动作器械。
+- **P1 双食物份量丢失**：
+  - “午餐吃了 100g 鸡胸肉和 250g 米饭” → 米饭 150g，执行后写入也是 150g；“100g 米饭和 250g 牛肉” → 牛肉 120g。
+  - “200g 米饭和 150g 鸡胸肉”“300g 米饭”正确；“三种食物”正确。第二种食物的显式份量经常被默认值覆盖。
+  - 要求：逐 item 保留份量；解析不到时追问，不要填默认；补两食物/顺序对调/三食物回归。
+- **P1 待确认卡份量修正失败**：
+  - 待确认卡“100g 鸡胸肉 + 200g 米饭”，说“米饭改成 250g” → 回复“250g 指的是哪种食物？”；说“米饭 250g”才生成修正卡。
+  - 根因：`_pending_food_replacement` 先把“250g”当新食物名，抢在 `_pending_action_correction` 前。
+  - 要求：数量-only 的“改成/换成”直接走份量修正；新文本含食物名才走替换。
+- **P1 训练补录 slug 不存在**：
+  - “刚练完深蹲 4组10次 60kg” → `log_workout` payload slug `barbell-full-squat`；`/agent/actions/{id}/run` 返回 **422 动作不存在：barbell-full-squat**；App 只显示“训练记录失败：参数不合法”。
+  - 用户器械只有徒手/哑铃，动作却选 barbell。
+  - 要求：生成前用动作库校验 slug + equipment；返回具体错误；补徒手/哑铃补录回归。
+- **P1 多意图丢意图**：
+  - “今天训练改到明天，再记 200g 米饭” → 只有 `log_food`，日期 11-18、meal=snack；训练改期完全丢失，米饭记到明天加餐。
+  - 要求：多 intent 要么出多个 action，要么明确追问；饮食默认今天，meal 用当前时间/追问。
+- **P2**：
+  - “记录卡已经准备好”但 `actions=[]`（“刚跑了 5 公里，30 分钟”第一次）；第二次才出卡。
+  - 确认前说“记上了/记好了”，实际 `needs_confirmation`。
+  - “明天我不练了，跳过全身 B”不出 skip 卡；“把明天全身 B 跳过”才出。
+  - 未确认的 78kg 目标已写入长期记忆；记忆把 A/B/C 记成 A/B 交替。
+  - “忘掉我不喜欢跑步”回复“这条我删不掉”，没有长期记忆入口。
+- 测试：`FitAITests` **121/121**、`FitAIUITests` **6/6**；本轮未改 App 代码；未部署，Wu-Tang 仍 `4630a83`。
+- 交付顺序：C1 登录 → C2 计划 → C3/C5 数据 → C4/C6 交互 → C7–C11 文案/记忆；修完 Mac 复测后再部署。
+- 禁止恢复：
+  - 不要用本地 `store.profile.isOnboarded` 作为登录后首屏唯一分流条件。
+  - 不要在空器械池时把全库动作塞给计划模型，也不要静默跳过训练日。
+  - 不要把“250g”当食物名，不要让多意图只执行一个。
+  - 不要部署 `4630a83` 作为本轮最终版本（已有阻断）。
 
 ### 2026-11-17 · macOS（F1 第二轮修复复测通过 + iOS 部署 Wu-Tang）
 
