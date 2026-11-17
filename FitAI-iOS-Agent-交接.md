@@ -14,8 +14,8 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`4630a83`（文档 `bfe614f`；F1 Tab Bar 第二轮修复，待 Mac 复测；生产后端 `e0d2c38`，`runtime.py` / `routers/agent.py` SHA-256 与本地一致；iOS 已装 `d2e4adc`，iOS Build `4630a83` ✓；Flyway **V44**；`FitAITests` **121/121**、UI 新增 frame/hittable 用例；后端 app 代码无变化、QA **76/76**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
-- **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F2/F3/F4/F5/F6/F8 已复测通过；F1 第二版修复已构建，**仍未真机复测前不能视为通过**；F7 命名与 F9 Debug 横幅未动。
+- `develop` 代码 HEAD：`4630a83`（测试/文档 `2a1abc8`；F1 第二轮修复已复测通过；生产后端 `e0d2c38`，`/health/ready` 200；iOS `4630a83` 已装 Wu-Tang；Flyway **V44**；`FitAITests` **121/121**、UI **6/6**、SE TabBarClearance **2/2**；后端 app 代码无变化、QA **76/76**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -27,6 +27,26 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-17 · macOS（F1 第二轮修复复测通过 + iOS 部署 Wu-Tang）
+
+- 复测：代码 `4630a83`，测试修正 `2a1abc8`；iPhone 17 / iPhone SE 3 模拟器 + Wu-Tang 真机。
+- **F1 通过**：
+  - iPhone 17：今日 4 个快捷卡 `y=503.3...579.7`，Tab Bar `y=791`，**重叠 0**，全部 `hittable=true`。
+  - iPhone SE 3：快捷卡 `y=462.0...538.5`，Tab Bar `y=584`，**重叠 0**，全部 `hittable=true`。
+  - 设置 / 器械库 / 变化 push 后 `app.tabBars.exists=false`；设置“训练提醒”、器械库“从器械库添加 / 拍照识别”、变化“拍一张 / 相册”滚动到目标位置后完整可见且可点；返回根页后 Tab Bar 恢复。
+  - 嵌套导航通过：今日→饮食→本周饮食计划→返回→返回；记录→训练日期→返回；`问教练` 快捷卡能切到教练 Tab。
+  - 记录页日历在 iPhone 17 首屏完整显示；我的页目标卡已上移。
+- 新增/修正测试：
+  - Windows 新增 `FitAIUITests/TabBarClearanceUITests.swift`：今日快捷卡 `maxY <= tabBar.minY`；器械库 push 后 Tab Bar 不存在。
+  - macOS 修正 `NavigationPerformanceTests`：设置页现在隐藏 Tab Bar，跨 Tab 回根改用“记录→训练记录”（保留 Tab Bar）继续覆盖原意图；不是削弱测试。
+- 测试结果：`FitAITests` **121/121**、`FitAIUITests` **6/6**（iPhone 17）；`TabBarClearanceUITests` **2/2**（iPhone SE 3）。
+- 部署：iOS `4630a83`（含测试修正 `2a1abc8`）已用 phone-only Release 安装 Wu-Tang，`com.wjk.fitai` 启动正常；后端 app 代码自 `e0d2c38` 无变化，生产 `/health/ready` **200**，Flyway **V44**，本轮不重部署后端。
+- 小屏残留（不阻断）：SE 上“今日饮食”卡和记录页日历最后一行仍在首屏折线附近被悬浮 Tab Bar 截断，滚动即完整可见；主快捷区已全部在栏上方。下一轮 UX 打磨可继续压缩首屏高度。
+- 禁止恢复：
+  - 不要撤销二级页 `.toolbar(.hidden, for: .tabBar)`。
+  - 不要把 `ScrollView.safeAreaInset` 加回来当容器级安全区。
+  - 不要让 `NavigationPerformanceTests` 再用“设置页 + Tab Bar 可见”的旧假设。
 
 ### 2026-11-17 · Windows（F1 Tab Bar 第二轮修复）
 
