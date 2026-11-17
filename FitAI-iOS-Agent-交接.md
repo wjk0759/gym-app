@@ -14,9 +14,9 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`95ad649`（C1c 昵称/onboarding hydration 修复；C1b/C5 已修复；生产后端 `5c47790`，`/health/ready` **200**；Flyway **V44**；`FitAITests` **135/135**、UI **6/6**、C1c 登录/Profile **1/1**；iOS `9d340c8` + `95ad649` 已装 Wu-Tang；后端 **617 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`83fc7b0`（iOS 代码 `839392d`，Build ✓；训练日期滚动从今天、计划生成 10 次/天 + 30 秒冷却、教练 Tab 红点移除；生产后端 `83fc7b0`，`/health/ready` **200**；Flyway **V44**；后端 **621 passed**、QA **76/76**、Ruff 通过；iOS 新单测待 Mac 跑；C1c 已通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
-- **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b 默认身体数据、C5 空 sets、C1c 昵称丢失均已修复并通过；仅剩 C7–C11 文案/记忆 P2 与“未完成 onboarding 的返回用户”边界观察。
+- **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b 默认身体数据、C5 空 sets、C1c 昵称丢失均已修复并通过；本轮新增训练日期滚动/计划生成限制/Tab 红点改动，待 Mac 复测。
 - **待办（macOS → Windows）**：恢复 onboarding 的**可选**体型/体脂步骤，重新展示 3D 体型插画；**直接接回现有 `bodyTypeStep` / `bodyFatStep` 旧代码，不新写页面/组件**；不恢复 14 步必填。规格：`docs/51-onboarding-optional-body-step.md`。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
@@ -29,6 +29,42 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-18 · Windows（训练日期从今天滚动 + 计划生成 10/天 + 30 秒冷却 + 教练 Tab 红点）
+
+- 提交：`839392d` + `83fc7b0`，已推 `develop`；iOS Build `839392d` ✓；生产后端已部署 `83fc7b0` 的 `config.py` / `routers/plans.py` / `services/access.py`，SHA-256 与本地一致；`/health/ready` **200**；Flyway **V44**（无新迁移）。
+- 训练日期：
+  - `TrainingPlan.planStartDate` 改为 `createdAt` 当天，不再取下一个周一。
+  - `date(week:weekday:)` 按起始星期旋转，形成从今天起的滚动 4 个 7 天窗口。
+  - `currentPlanWeek`、`PlanScheduleEngine.apply`、coach 改期/加计划的 weekIndex 都改用同一锚点。
+  - 删除 `PlanScheduleView+EarlyDay.swift`、`earlyDayCard`、`todaySlotVisible`、`earlyDays`、`managedEarlyKeys` 及日期页相关计数/保存分支；日期页只显示今天起 4 周，不再有“首周之前”。
+  - “补昨天训练”仍走 `log_workout` → `WorkoutSession`，不创建 `PlanDay`，因此不需要日期板兜底。
+- 计划生成限制：
+  - 后端新增 `PLAN_GENERATION_DAILY_LIMIT = 10`，使用 `FeatureUsage` 按北京时间自然日计数。
+  - 第 11 次返回 429 `PLAN_DAILY_LIMIT`，`retry_after` 指向次日 00:00。
+  - 生成失败 / `UNSAFE_PLAN` 会释放当天次数；成功才计数。
+  - 计划生成冷却改为 **30 秒**，通过 `PLAN_GENERATION_COOLDOWN_SECONDS` 配置；smoke 用 0 覆盖。
+  - iOS 新增 `PlanGenerationCooldown`、`planGenerationNotice` 和 RootView 全局 alert；30 秒内再点显示“还需 X 秒才能再次生成计划”，日限显示服务端提示。
+- 教练 Tab：
+  - 删除 `MainTabView` 的 `.badge(store.coachInboxUnreadCount)`，底部教练 Tab 不再有红点；收件箱内部未读数保留。
+- 验证：
+  - 后端 **621 passed**；QA **76/76**；Ruff 通过。
+  - GitHub Backend Tests `83fc7b0` 成功（本地 smoke 也通过；smoke 环境将计划冷却设为 0）。
+  - GitHub iOS Build `839392d` 成功；Windows 未运行 `FitAITests`。
+  - 新增 iOS `PlanGenerationCooldownTests` 5 条；滚动周测试替换旧的 early-day 测试。
+- Mac 需要做：
+  1. 拉 `83fc7b0`；`xcodegen generate`；安装最新 iOS。
+  2. 今天生成计划 → 第 1 周必须从今天开始，日期板 4 行 × 7 天，无“首周之前”卡片。
+  3. 教练说“昨天练了背，帮我记上” → 只进训练记录/历史，不在日期板创建 PlanDay。
+  4. 生成后 30 秒内再点“重新生成计划” → 弹窗显示剩余秒数；等 30 秒后可再次生成。
+  5. 连续生成到第 11 次 → 弹“今天已生成 10 次计划，请明天再试”。
+  6. 教练 Tab 无红点。
+  7. 跑 `FitAITests` 与 UI 6/6。
+- 不要恢复：
+  - 不要把计划锚点改回“下周一”。
+  - 不要恢复“首周之前”卡片或 `managedEarlyKeys`。
+  - 不要允许同一天超过 10 次 AI 计划生成，或把冷却改回 60 秒。
+  - 不要给教练 Tab 加回红点。
 
 ### 2026-11-18 · macOS（需求：onboarding 可选体型/体脂步骤，交 Windows）
 
