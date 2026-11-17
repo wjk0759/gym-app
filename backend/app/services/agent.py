@@ -1402,6 +1402,11 @@ def _validate_workout_log_exercises(
     profile = db.get(Profile, user_id)
     if profile is None:
         return None
+    workout_actions = [
+        action for action in actions if action.get("type") == "log_workout"
+    ]
+    if not workout_actions:
+        return None
     equipment = set(
         available_equipment_types(
             db,
@@ -1425,9 +1430,7 @@ def _validate_workout_log_exercises(
         .all()
     ]
     example_text = "、".join(examples) or "暂无"
-    for action in actions:
-        if action.get("type") != "log_workout":
-            continue
+    for action in workout_actions:
         payload = action.get("payload")
         sets = payload.get("sets") if isinstance(payload, dict) else None
         if not isinstance(sets, list):
