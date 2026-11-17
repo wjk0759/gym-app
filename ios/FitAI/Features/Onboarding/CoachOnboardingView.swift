@@ -15,6 +15,7 @@ struct CoachOnboardingView: View {
     @State var step = 0
     @State var bodyType: BodyType?
     @State var bodyFatID: String?
+    @State var didSkipBodyType = false
     @State var focusAreas: Set<BodyFocusArea> = []
     @State var injuries: Set<String> = []
     @State var noInjuries = true
@@ -30,9 +31,20 @@ struct CoachOnboardingView: View {
     @AppStorage("fitai_body_type") private var storedBodyType = ""
     @AppStorage("fitai_focus_areas") private var storedFocusAreas = ""
 
-    // Keep the first pass short. Body type, body-fat reference, focus areas and
-    // training location can be completed after the user has a usable plan.
+    // Keep the first pass short. Body type and body-fat reference are optional
+    // extra steps after the eight required inputs.
     let inputSteps = 8
+    let bodyTypeStepIndex = 9
+    let bodyFatStepIndex = 10
+    let reportStepIndex = 11
+
+    var isOptionalBodyStep: Bool {
+        step == bodyTypeStepIndex || step == bodyFatStepIndex
+    }
+
+    var isReportStep: Bool {
+        step == reportStepIndex
+    }
 
     enum TrainingLocation: String, CaseIterable, Identifiable {
         case gym
@@ -144,7 +156,13 @@ struct CoachOnboardingView: View {
         case 6:
             if draft.equipment.isEmpty { draft.equipment = [.bodyweight] }
         case inputSteps:
-            step = inputSteps + 1
+            withAnimation(Motion.smooth) { step = bodyTypeStepIndex }
+            return
+        case bodyTypeStepIndex:
+            withAnimation(Motion.smooth) { step = bodyFatStepIndex }
+            return
+        case bodyFatStepIndex:
+            withAnimation(Motion.smooth) { step = reportStepIndex }
             return
         default:
             break
@@ -154,6 +172,20 @@ struct CoachOnboardingView: View {
         withAnimation(Motion.smooth) {
             step += 1
         }
+    }
+
+    func skipBodyType() {
+        Haptics.tap()
+        bodyType = nil
+        bodyFatID = nil
+        didSkipBodyType = true
+        withAnimation(Motion.smooth) { step = reportStepIndex }
+    }
+
+    func skipBodyFat() {
+        Haptics.tap()
+        bodyFatID = nil
+        withAnimation(Motion.smooth) { step = reportStepIndex }
     }
 
     func save() {

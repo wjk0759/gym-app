@@ -145,7 +145,7 @@ extension CoachOnboardingView {
 
                 Spacer()
 
-                Text("\(min(step, inputSteps)) / \(inputSteps)")
+                Text(stepIndicatorText)
                     .font(AppType.micro)
                     .foregroundStyle(Theme.secondaryText)
                     .monospacedDigit()
@@ -179,6 +179,12 @@ extension CoachOnboardingView {
         .padding(.bottom, 10)
     }
 
+    var stepIndicatorText: String {
+        if isOptionalBodyStep { return "可选" }
+        if isReportStep { return "报告" }
+        return "\(min(step, inputSteps)) / \(inputSteps)"
+    }
+
     var progress: CGFloat {
         guard step > 0 else { return 0 }
         return min(1, CGFloat(step - 1) / CGFloat(max(1, inputSteps - 1)))
@@ -195,6 +201,8 @@ extension CoachOnboardingView {
         case 6: equipmentStep
         case 7: experienceStep
         case 8: frequencyDurationStep
+        case bodyTypeStepIndex: bodyTypeStep
+        case bodyFatStepIndex: bodyFatStep
         default: reportStep
         }
     }
@@ -202,29 +210,54 @@ extension CoachOnboardingView {
     var bottomBar: some View {
         VStack(spacing: 0) {
             InkDivider()
-            HStack(spacing: 10) {
-                if step > 1 && step <= inputSteps {
-                    Button("上一步") {
-                        withAnimation(Motion.quick) { step -= 1 }
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .frame(maxWidth: 108)
-                }
-
-                Button {
-                    if step == inputSteps + 1 {
-                        save()
-                    } else {
+            if isOptionalBodyStep {
+                VStack(spacing: 8) {
+                    Button("下一步") {
                         advance()
                     }
-                } label: {
-                    Text(step == inputSteps + 1 ? "生成我的计划" : "下一步")
+                    .buttonStyle(PrimaryButtonStyle())
+
+                    Button(
+                        step == bodyTypeStepIndex
+                            ? "跳过，使用默认参考"
+                            : "跳过体脂"
+                    ) {
+                        if step == bodyTypeStepIndex {
+                            skipBodyType()
+                        } else {
+                            skipBodyFat()
+                        }
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
                 }
-                .buttonStyle(PrimaryButtonStyle())
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+                .padding(.bottom, 8)
+            } else {
+                HStack(spacing: 10) {
+                    if step > 1 && step <= inputSteps {
+                        Button("上一步") {
+                            withAnimation(Motion.quick) { step -= 1 }
+                        }
+                        .buttonStyle(SecondaryButtonStyle())
+                        .frame(maxWidth: 108)
+                    }
+
+                    Button {
+                        if isReportStep {
+                            save()
+                        } else {
+                            advance()
+                        }
+                    } label: {
+                        Text(isReportStep ? "生成我的计划" : "下一步")
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+                .padding(.bottom, 8)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 10)
-            .padding(.bottom, 8)
         }
         .background(Theme.chrome)
     }

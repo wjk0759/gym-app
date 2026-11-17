@@ -59,6 +59,7 @@ extension CoachOnboardingView {
                             selected: bodyType == type
                         ) {
                             bodyType = type
+                            didSkipBodyType = false
                             if focusAreas.isEmpty {
                                 focusAreas = recommendedFocus
                             }
@@ -70,7 +71,7 @@ extension CoachOnboardingView {
             }
         }
         .onAppear {
-            guard bodyType == nil else { return }
+            guard !didSkipBodyType, bodyType == nil else { return }
             bodyType = recommendedBodyType
             if focusAreas.isEmpty {
                 focusAreas = recommendedFocus

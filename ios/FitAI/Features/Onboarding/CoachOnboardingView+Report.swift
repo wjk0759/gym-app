@@ -42,9 +42,16 @@ extension CoachOnboardingView {
                     .font(AppType.caption)
                     .foregroundStyle(Theme.secondaryText)
                 if let bodyType {
-                    Text("\(bodyType.label) · \(selectedBodyFatOption?.label ?? "体脂待选")")
-                        .font(AppType.micro)
+                    Text("体型 · 体脂")
+                        .font(AppType.overline)
+                        .tracking(1.2)
                         .foregroundStyle(Theme.cobalt)
+                    Text(
+                        "\(bodyType.label) · "
+                            + (selectedBodyFatOption?.label ?? "体脂未选")
+                    )
+                    .font(AppType.micro)
+                    .foregroundStyle(Theme.cobalt)
                     Text(bodyType.detail)
                         .font(AppType.micro)
                         .foregroundStyle(Theme.secondaryText)
