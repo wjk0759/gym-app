@@ -17,8 +17,9 @@
 - `develop` 代码 HEAD：`4b54019`（N1 通过；N2/N4/N5 复测通过；N3 文案与 N6 proposal 摘要仍为 P2；生产后端 `4b54019`，`/health/ready` **200**；Flyway **V44**；后端 **630 passed**、QA **76/76**、Ruff 通过；iOS 仍 `7618cb6`，已装 Wu-Tang，无新 iOS 包）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
-- **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2；N3/N4 提示词层不是硬校验。
-- **待办（macOS → Windows）**：无发布阻断；后续处理 N3/N6 与 C7–C11 文案/记忆。
+- **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
+- **macOS AI 教练三轮压测（2026-11-19）**：新增 **N7 P1：一次报体重+体脂+腰围被拒“多个身体数据”**；**N8 P1：无 pending 的“米饭改成200g”直接新记一条**；N9–N12 为 P2（整计划只出一张卡、声称记一笔但无卡、一周饮食计划无动作、proposal 摘要空）。本轮只压测，未部署。
+- **待办（macOS → Windows）**：优先 N7/N8；再处理 N3/N6/N9–N12 与 C7–C11。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -30,6 +31,27 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-19 · macOS（AI 教练三轮压测：N7/N8 P1）
+
+- 环境：生产后端 `4b54019`；iOS `7618cb6`；账号 `macqa_coach`；真实 12 天计划 + app_context。
+- 报告：`docs/app-ux-coach-stress-test-2026-11-17.md` 第二十八节。
+- **N7 P1：多身体指标一次记录被拒**
+  - 用户“今天体重72kg，体脂18%，腰围80”。
+  - 回复“这条消息里有多个身体数据，先告诉我这次记哪一项”，`actions=[]`。
+  - 应合并成一张 `log_body_metric`，同时写 weight/body_fat/waist；只有两个独立日期/多组记录才追问。
+- **N8 P1：无 pending 的“改成”变成新记录**
+  - 用户“把今天午餐的米饭改成200g”。
+  - 回复“已识别 1 种食物…确认后写入”，返回一条新的 `log_food` 200g 米饭。
+  - 已有午餐记录会因此重复；应追问“修改哪条/新记”，有记录时用 `update_food_log`。
+- **P2**：
+  - N9 “整个计划的深蹲都换前弓步”回复称 7 张卡，实际只返回 1 张。
+  - N10 “100 个俯卧撑分5组”回复“先给你记一笔”，`actions=[]`。
+  - N11 “一周高蛋白饮食计划”只给文字，没有 `create_diet_plan`，说下一轮再生成。
+  - N12 N6 proposal 摘要只有标题，`proposed.weekdays=[]`。
+  - N3 权限文案仍矛盾。
+- 已通过：N1/N2/N4/N5、双食物份量、单身体数据带日期、跑步 cardio、无器械杠铃拦截、前弓步真实 slug。
+- 本轮只压测，未改代码、未部署；App `7618cb6`，后端 `4b54019`。N7/N8 作为下一轮 P1。
 
 ### 2026-11-19 · macOS（N2/N4/N5 通过；N3/N6 仍 P2；生产后端已部署）
 
