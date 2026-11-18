@@ -29,6 +29,7 @@ from app.services.agent import (
 )
 from app.services.memory import (
     _fact_conflicts_with_plan,
+    is_pending_action_fact,
     list_memories,
     remember_facts,
     retire_goal_memories,
@@ -616,4 +617,81 @@ def test_goal_reply_and_card_are_aligned():
     assert actions[0]["payload"]["target_weight_kg"] == 68
     assert "68kg" in guarded
     assert "目标卡已按 68kg 准备" in guarded
+
+
+def test_goal_reply_soft_wording_is_aligned():
+    actions = [
+        {
+            "type": "update_goal",
+            "payload": {"target_weight_kg": 65},
+        }
+    ]
+    message = "6 周掉 7kg 太急，先摸到 67kg，之后稳住 67kg 左右。"
+
+    guarded = _guard_goal_action_consistency(message, actions)
+
+    assert actions[0]["payload"]["target_weight_kg"] == 67
+    assert "目标卡已按 67kg 准备" in guarded
+
+
+def test_pending_schedule_change_is_not_written(db):
+    saved = remember_facts(
+        db,
+        USER_ID,
+        [
+            {
+                "kind": "schedule",
+                "content": (
+                    "用户将全身 C 训练从周五调整到周六 11:00–21:00，"
+                    "训练内容不变。"
+                ),
+                "confidence": 0.9,
+            }
+        ],
+    )
+
+    assert saved == []
+    assert is_pending_action_fact(
+        "schedule",
+        "用户要求把周五全身C的深蹲改为4组×12次、20kg（待确认执行）",
+    )
+
+
+def test_soft_schedule_wish_is_still_allowed(db):
+    saved = remember_facts(
+        db,
+        USER_ID,
+        [
+            {
+                "kind": "schedule",
+                "content": "用户希望将周五全身 C 的深蹲替换为前弓步",
+                "confidence": 0.9,
+            }
+        ],
+    )
+
+    assert len(saved) == 1
+
+
+def test_pending_schedule_memory_is_hidden_from_list(db):
+    memory = AIMemory(
+        user_id=USER_ID,
+        kind="schedule",
+        memory_key="pending_change",
+        content=(
+            "用户将周一漏练的全身A改到明天，"
+            "原定明天的全身C已改到周六。"
+        ),
+        source="agent",
+        confidence=0.9,
+        active=True,
+    )
+    db.add(memory)
+    db.commit()
+
+    assert all(
+        not is_pending_action_fact(item.kind, item.content)
+        for item in list_memories(db, USER_ID)
+    )
+
 

@@ -67,7 +67,11 @@ from .food_text import (
     parse_meal,
     resolve_food_text,
 )
-from .memory import remember_facts, schedule_memory_extraction
+from .memory import (
+    is_pending_action_fact,
+    remember_facts,
+    schedule_memory_extraction,
+)
 from .plan_generator import build_template_plan, validate_plan_for_user
 from .plan_validator import PlanValidationError, injury_tags
 from .prompt_registry import prompt_version
@@ -1640,7 +1644,8 @@ def _guard_action_card_claims(
 
 
 _GOAL_REPLY_VALUE_RE = re.compile(
-    r"(?:改成|改为|先定|定为|建议|目标(?:是|为)?|控制在|定到)"
+    r"(?:改成|改为|先定|定为|建议(?:按|先)?|目标(?:是|为|放在)?|"
+    r"控制在|定到|摸到|先摸到|稳住|稳定在|先到|达到|降到|减到|增到|提升到)"
     r"\s*(\d{2,3}(?:\.\d+)?)\s*(?:kg|公斤)"
 )
 
@@ -3114,6 +3119,14 @@ def _tool_result(
                 "error": (
                     "目标变更请调用 propose_app_actions + update_goal，"
                     "确认后再更新；不要写入长期记忆。"
+                ),
+            }
+        if is_pending_action_fact(kind, content):
+            return {
+                "ok": False,
+                "error": (
+                    "这条描述的是未确认的训练/计划变更；"
+                    "等用户确认并执行后再写长期记忆。"
                 ),
             }
         # 身体数据是结构化 App 数据，不是长期记忆。模型有时会反复调用

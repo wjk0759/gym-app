@@ -134,7 +134,7 @@ def _fact_conflicts_with_plan(
 
 def list_memories(db: Session, user_id: str, limit: int = 20) -> list[AIMemory]:
     limit = max(1, min(50, int(limit)))
-    return list(
+    rows = list(
         db.execute(
             select(AIMemory)
             .where(
@@ -146,11 +146,16 @@ def list_memories(db: Session, user_id: str, limit: int = 20) -> list[AIMemory]:
                 AIMemory.updated_at.desc(),
                 AIMemory.created_at.desc(),
             )
-            .limit(limit)
+            .limit(max(limit * 4, 20))
         )
         .scalars()
         .all()
     )
+    return [
+        item
+        for item in rows
+        if not is_pending_action_fact(item.kind, item.content)
+    ][:limit]
 
 
 _GOAL_MEMORY_KEYS = (
@@ -162,6 +167,33 @@ _GOAL_MEMORY_KEYS = (
     "muscle_gain_phase",
     "fat_loss_target",
 )
+
+_PENDING_ACTION_FACT_RE = re.compile(
+    r"待确认执行|待确认|待执行|未确认|尚未执行|"
+    r"已改到|已调整|已跳过|已删除|已换成|已经改|已经调整|"
+    r"(?:将|把).{0,40}?(?:改到|调整到|改为|改成|换成|替换为|删掉|删除|跳过)|"
+    r"要求.{0,24}?(?:改为|改成|换成|删除|跳过)|"
+    r"要求.{0,24}?(?:增加|减少).{0,12}?(?:组|次|动作|训练|深蹲|卧推|硬拉|弓步)"
+)
+_SOFT_WISH_FACT_RE = re.compile(r"希望|想要|偏好|倾向于")
+_PENDING_MARKERS = r"待确认|待执行|已改到|已调整|已跳过|已删除|已换成"
+
+
+def is_pending_action_fact(kind: str, content: str) -> bool:
+    """True when a memory describes an unconfirmed/executed plan change.
+
+    The extractor used to write "已将周五 C 改到周六" after generating a
+    confirmation card, even though the user never confirmed it. Such facts
+    poison later schedule answers. A soft wish ("用户希望…") is allowed; an
+    asserted/executed change is not.
+    """
+    text = content or ""
+    if not _PENDING_ACTION_FACT_RE.search(text):
+        return False
+    return not (
+        _SOFT_WISH_FACT_RE.search(text)
+        and not re.search(_PENDING_MARKERS, text)
+    )
 
 
 def retire_goal_memories(db: Session, user_id: str) -> int:
@@ -242,6 +274,9 @@ def remember_facts(
         ):
             # Goals are canonical in the goals/profile tables. A memory row
             # would go stale as soon as the user confirms a new target.
+            continue
+        if is_pending_action_fact(kind, content):
+            # Never persist "已改到/待确认执行" from a confirmation card.
             continue
         if not content or len(content) < 4:
             continue
@@ -597,6 +632,11 @@ def read_relevant_memories(
         .scalars()
         .all()
     )
+    rows = [
+        item
+        for item in rows
+        if not is_pending_action_fact(item.kind, item.content)
+    ]
     if not rows:
         return []
     tokens = _query_tokens(query)
