@@ -14,12 +14,12 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`d9f8285`（N13–N16 通过；N1/N2/N4/N5/N7–N12/C7/C11 通过；**N17/N18/N19 P1、N20 P2 新发现**；生产后端 `d9f8285`，`/health/ready` **200**；后端 647 passed、QA 76/76；iOS 仍 `7618cb6`，未部署）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`d03c195`（N17–N20 已修；N13–N16 通过；N1/N2/N4/N5/N7–N12/C7/C11 通过；生产后端 `d03c195`，`/health/ready` **200**；Flyway **V44**；后端 **652 passed**、QA **76/76**、Ruff 通过；iOS 仍 `7618cb6`；待 Mac 复测 N17–N20）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
-- **macOS AI 教练四轮压测（2026-11-19）**：N17 体重+改期丢改期；N18 整周跳过不出卡；N19 未确认减脂目标写入记忆且与增肌冲突；N20 目标卡 65kg vs 回复建议 68kg。
-- **待办（macOS → Windows）**：优先 N17/N18/N19；N20 为 P2。
+- **macOS AI 教练四轮压测（2026-11-19）**：N13–N16 通过；N17–N20 已由 Windows 修复（`d03c195`），待 Mac 复测。
+- **待办（macOS → Windows）**：复测 N17–N20；有问题再按项回报。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -43,6 +43,44 @@
 - 后端 **647 passed**、QA **76/76**、Ruff 通过（Windows 报告）。
 - 部署：生产后端已是 `d9f8285`；iOS 无变化，无需重装；AI 教练本轮无阻断。
 - 剩余：C7–C11 文案/记忆类 P2（未在本轮全部重测）。
+
+### 2026-11-19 · Windows（N17–N20 修复）
+
+- 提交：`d03c195`，已推 `develop`；生产后端已部署 `agent.py` + `memory.py` + `routers/profile.py`，SHA-256 与本地一致；`/health/ready` **200**；Flyway **V44**；无 iOS 变化（iOS 仍 `7618cb6`）。
+- N17 身体数据 + 改期：
+  - 根因：N16 的 `_body_metric_action_turn()` 按整条消息解析，直接返回体重卡，吞掉了改期。
+  - 现在身体数据快路径遇到“改到/改期/跳过/删除”等动作词会退出；新增 `_body_reschedule_multi_intent_turn()`。
+  - “今天体重72kg，再把周五全身 C 改到周六” → `reschedule_training` + `log_body_metric` 两张卡。
+- N18 整周跳过：
+  - 根因：skip 只有单日路径；“这周/剩下/剩余”没有批量解析。
+  - 新增 `_skip_week_action_turn()`：按 iOS `day["date"]` 找本周剩余训练日，排除已完成/已跳过/进行中，最多 7 张 `skip_training`。
+  - “这周都不练了，帮我跳过剩下的训练” → 本周剩余训练各一张 skip 卡。
+- N19 目标记忆：
+  - 根因：`remember_facts` 会写 goal 事实；`remember` tool、agent 抽取、其他记忆入口没有统一拦截；旧目标记忆也不会因为新目标而失效。
+  - 现在：
+    - `remember_facts` 拒绝 `goal` 事实和 `training_goal/training_phase/weight_goal/...` 等目标类 key；
+    - `remember` tool 直接返回错误，要求用 `update_goal`；
+    - `list_memories` / 记忆检索不再返回 `goal` 记忆；
+    - 确认目标时 `PUT /me/goal` 调用 `retire_goal_memories()`，停用旧目标/阶段记忆。
+  - 生产库里的旧 `fat_loss_target` 已被读取层过滤；下次确认目标时会正式停用。
+- N20 目标卡与回复：
+  - 根因：回复文本和 action payload 独立生成，没有数值一致性校验。
+  - 新增 `_guard_goal_action_consistency()`：回复建议的目标值和卡片 payload 不一致时，把卡片对齐到最后建议值，并明确提示“目标卡已按 Xkg 准备；仍想 Ykg 先不要确认”。
+  - “建议 68kg、payload 65kg” → 卡片改为 68kg，回复与卡片一致。
+- 验证：
+  - 后端 **652 passed**；QA **76/76**；Ruff 通过。
+  - 新增回归：身体+改期双卡、整周批量 skip、goal 记忆不落库、旧目标记忆停用、目标卡/回复数值对齐。
+  - GitHub Backend Tests `d03c195` ✓。
+- Mac 需要做：
+  1. N17：“今天体重72kg，再把周五全身 C 改到周六” → 两张卡。
+  2. N18：“这周都不练了，帮我跳过剩下的训练” → 本周剩余训练各一张 skip 卡。
+  3. N19：发“我想改成减脂65kg，目标日期12月31日”后先不确认，检查 `/agent/memories` 不再出现新的减脂/增肌冲突目标；确认后再检查旧目标记忆被停用。
+  4. N20：回复建议 68kg 时，卡片 payload 也应为 68kg，并明确提示确认后生效。
+- 不要恢复：
+  - 不要让身体数据快路径吞掉改期/跳过/删除意图。
+  - 不要把整周跳过压成单日或只回复不出卡。
+  - 不要从任何记忆入口写 goal/目标/阶段事实；目标以 goals/profile 为准。
+  - 不要让回复建议值和 update_goal payload 不一致。
 
 ### 2026-11-19 · macOS（AI 教练四轮压测：N17/N18/N19 P1）
 
