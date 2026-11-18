@@ -102,6 +102,36 @@ def _dedupe_extracted_facts(facts: list[dict]) -> list[dict]:
     return filtered
 
 
+def _fact_conflicts_with_plan(
+    db: Session,
+    user_id: str,
+    content: str,
+) -> bool:
+    """Drop memories that contradict the user's actual active plan.
+
+    The extractor used to write "A/B 交替" while the real plan had A/B/C.
+    Plan facts are cheap to verify, so verify them instead of trusting the
+    model's paraphrase.
+    """
+    if not content or ("计划" not in content and "交替" not in content):
+        return False
+    from .queries import active_program
+
+    program = active_program(db, user_id)
+    if program is None:
+        return False
+    titles = " ".join(
+        str(day.title or "")
+        for day in program.days
+        if day.week_index == 1
+    )
+    actual = set(re.findall(r"[A-Z]", titles))
+    mentioned = set(re.findall(r"[A-Z]", content))
+    if mentioned and actual and not mentioned <= actual:
+        return True
+    return bool("交替" in content and len(actual) >= 3 and len(mentioned) <= 2)
+
+
 def list_memories(db: Session, user_id: str, limit: int = 20) -> list[AIMemory]:
     limit = max(1, min(50, int(limit)))
     return list(
@@ -247,10 +277,19 @@ async def extract_and_store(
         if not isinstance(facts, list):
             return []
         facts = [fact for fact in facts if isinstance(fact, dict)]
+        facts = [
+            fact
+            for fact in _dedupe_extracted_facts(facts)
+            if not _fact_conflicts_with_plan(
+                db,
+                user_id,
+                _normalize_content(fact.get("content")),
+            )
+        ]
         return remember_facts(
             db,
             user_id,
-            _dedupe_extracted_facts(facts),
+            facts,
             source=source,
         )
     except Exception:  # memory extraction must never break the coach reply

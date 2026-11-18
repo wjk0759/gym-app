@@ -23,6 +23,7 @@ from ..models import (
     AgentPlanProposal,
     AgentRun,
     AgentStep,
+    AIMemory,
     ChatMessage,
     Exercise,
     FoodLog,
@@ -727,6 +728,606 @@ def _food_correction_without_pending(
     return _looks_like_food_clause(message)
 
 
+def _looks_like_strength_log_message(message: str) -> bool:
+    if re.search(r"吃|喝|餐|饭|饮食|体重|体脂|腰围", message):
+        return False
+    if not re.search(r"\d+\s*(组|次|个)", message):
+        return False
+    return bool(
+        re.search(
+            r"俯卧撑|深蹲|卧推|硬拉|引体|划船|推举|弯举|弓步|臀桥|平板|"
+            r"蹲|推|拉|撑",
+            message,
+        )
+    )
+
+
+def _strength_log_action_turn(
+    db: Session,
+    user_id: str,
+    message: str,
+) -> dict | None:
+    if not _looks_like_strength_log_message(message):
+        return None
+    clean = re.sub(
+        r"\d+(?:\.\d+)?\s*(kg|公斤|斤|组|次|个|reps?)",
+        " ",
+        message,
+        flags=re.IGNORECASE,
+    )
+    clean = re.sub(
+        r"刚练完|练完|练了|做了|今天|昨天|前天|刚才|补录|记录|每组|大概|训练",
+        " ",
+        clean,
+    )
+    clean = re.sub(r"\s*分\s*$", "", clean).strip(" ，,。")
+    if not clean:
+        return None
+    exercise = db.execute(
+        select(Exercise).where(
+            Exercise.is_active.is_(True),
+            Exercise.name_zh == clean,
+        )
+    ).scalar_one_or_none()
+    if exercise is None:
+        exercise = db.execute(
+            select(Exercise)
+            .where(
+                Exercise.is_active.is_(True),
+                Exercise.name_zh.contains(clean),
+            )
+            .order_by(
+                Exercise.is_compound.desc(),
+                func.length(Exercise.name_zh),
+            )
+            .limit(1)
+        ).scalar_one_or_none()
+    if exercise is None:
+        return None
+
+    reps_match = re.search(r"(\d+)\s*(次|个|reps?)", message, re.IGNORECASE)
+    if reps_match is None:
+        return None
+    reps = max(1, min(200, int(reps_match.group(1))))
+    sets_match = re.search(r"(\d+)\s*组", message)
+    sets = max(1, min(10, int(sets_match.group(1)))) if sets_match else 3
+    weight = 0.0
+    weight_match = re.search(
+        r"(\d+(?:\.\d+)?)\s*(kg|公斤|斤)",
+        message,
+        flags=re.IGNORECASE,
+    )
+    if weight_match is not None:
+        weight = float(weight_match.group(1))
+        if weight_match.group(2) == "斤":
+            weight /= 2
+    target = parse_food_date(message) or datetime.now(REVIEW_TZ).date()
+    if target > datetime.now(REVIEW_TZ).date():
+        return None
+    try:
+        action = _normalize_app_actions(
+            [
+                {
+                    "type": "log_workout",
+                    "title": f"补录{exercise.name_zh}",
+                    "summary": f"{sets} 组 × {reps} 次",
+                    "requires_confirmation": True,
+                    "payload": {
+                        "date": target.isoformat(),
+                        "title": exercise.name_zh,
+                        "duration_minutes": max(15, sets * 4 + 5),
+                        "kind": "strength",
+                        "notes": message[:500],
+                        "sets": [
+                            {
+                                "slug": exercise.slug,
+                                "weight_kg": round(weight, 1),
+                                "reps": reps,
+                                "rpe": 7,
+                                "set_index": index,
+                            }
+                            for index in range(1, sets + 1)
+                        ],
+                    },
+                }
+            ]
+        )[0]
+    except ValueError:
+        return None
+    error = _validate_workout_log_exercises(db, user_id, [action])
+    if error is not None:
+        return {"actions": [], "reply": error}
+    return {
+        "actions": [action],
+        "reply": (
+            f"识别到 {sets} 组 × {reps} 次 {exercise.name_zh}。"
+            "确认后写入训练记录。"
+        ),
+    }
+
+
+def _looks_like_cardio_log_message(message: str) -> bool:
+    if re.search(r"吃|喝|餐|饭|饮食|体重|体脂|腰围", message):
+        return False
+    if not re.search(
+        r"跑|骑车|骑行|游泳|椭圆|划船机|有氧|徒步|爬山|跳绳",
+        message,
+    ):
+        return False
+    return bool(
+        re.search(
+            r"\d+(?:\.\d+)?\s*(分钟|min|小时|h|公里|km)",
+            message,
+            re.IGNORECASE,
+        )
+    )
+
+
+def _cardio_log_action_turn(
+    db: Session,
+    user_id: str,
+    message: str,
+) -> dict | None:
+    if not _looks_like_cardio_log_message(message):
+        return None
+    from .coach_control.capabilities.training import resolve_cardio
+
+    resolution = resolve_cardio(message)
+    if not resolution.get("ready"):
+        return None
+    payload = resolution.get("payload") or {}
+    try:
+        action = _normalize_app_actions(
+            [
+                {
+                    "type": "log_workout",
+                    "title": f"补录{payload.get('title') or '有氧训练'}",
+                    "summary": f"{payload.get('duration_minutes') or 30} 分钟",
+                    "requires_confirmation": True,
+                    "payload": payload,
+                }
+            ]
+        )[0]
+    except ValueError:
+        return None
+    error = _validate_workout_log_exercises(db, user_id, [action])
+    if error is not None:
+        return {"actions": [], "reply": error}
+    return {
+        "actions": [action],
+        "reply": (
+            f"识别到 {payload.get('title') or '有氧训练'} "
+            f"{payload.get('duration_minutes') or 30} 分钟。"
+            "确认后写入训练记录。"
+        ),
+    }
+
+
+def _diet_strategy(message: str) -> str | None:
+    from .diet import DIET_STRATEGIES
+
+    for strategy in DIET_STRATEGIES.values():
+        if strategy.label and strategy.label in message:
+            return strategy.id
+    if re.search(r"16\s*[:：]\s*8|168|轻断食", message):
+        return "time_restricted_16_8"
+    return None
+
+
+def _looks_like_week_diet_plan_request(message: str) -> bool:
+    if re.search(r"吃了|喝了|记录饮食|记一下|补记", message):
+        return False
+    if not re.search(
+        r"饮食计划|餐单|食谱|一周饮食|7\s*天饮食|七天饮食|"
+        r"排一周|安排一周|整周饮食",
+        message,
+    ):
+        return False
+    return _diet_strategy(message) is not None or "饮食计划" in message
+
+
+def _diet_plan_action_turn(db: Session, message: str) -> dict | None:
+    if not _looks_like_week_diet_plan_request(message):
+        return None
+    from .coach_control.capabilities.diet_week import _week_start
+    from .diet import DIET_STRATEGIES
+
+    strategy_id = _diet_strategy(message) or "balanced"
+    strategy = DIET_STRATEGIES.get(strategy_id, DIET_STRATEGIES["balanced"])
+    week_start = _week_start(message)
+    try:
+        action = _normalize_app_actions(
+            [
+                {
+                    "type": "create_diet_plan",
+                    "title": f"生成一周{strategy.label}饮食计划",
+                    "summary": f"{week_start.isoformat()} 起 7 天餐单",
+                    "requires_confirmation": True,
+                    "payload": {
+                        "strategy": strategy_id,
+                        "week_start": week_start.isoformat(),
+                    },
+                }
+            ]
+        )[0]
+    except ValueError:
+        return None
+    return {
+        "actions": [action],
+        "reply": (
+            f"按{strategy.label}策略排 {week_start.isoformat()} 起一周 7 天餐单。"
+            "确认后生成，生成后可撤销。"
+        ),
+    }
+
+
+_WEEKDAY_INDEX = {
+    "一": 1,
+    "二": 2,
+    "三": 3,
+    "四": 4,
+    "五": 5,
+    "六": 6,
+    "日": 7,
+    "天": 7,
+}
+
+
+def _message_target_date(message: str) -> date | None:
+    parsed = parse_food_date(message)
+    if parsed is not None:
+        return parsed
+    match = re.search(r"(?:周|星期|礼拜)([一二三四五六日天])", message)
+    if match is None:
+        return None
+    target = _WEEKDAY_INDEX[match.group(1)]
+    today = datetime.now(REVIEW_TZ).date()
+    delta = (target - today.isoweekday()) % 7
+    return today + timedelta(days=delta)
+
+
+def _match_plan_day(
+    app_context: dict | None,
+    message: str,
+) -> dict | None:
+    if not isinstance(app_context, dict):
+        return None
+    plan = app_context.get("plan")
+    if not isinstance(plan, dict):
+        return None
+    days = [item for item in plan.get("days") or [] if isinstance(item, dict)]
+    if not days:
+        return None
+    states = {
+        str(item.get("day_id")).lower(): str(item.get("assigned_date") or "")
+        for item in plan.get("day_states") or []
+        if isinstance(item, dict)
+    }
+    target_date = _message_target_date(message)
+    candidates = days
+    if target_date is not None:
+        target_key = target_date.isoformat()
+        dated = [
+            item
+            for item in days
+            if states.get(str(item.get("id")).lower()) == target_key
+        ]
+        weekday_matches = [
+            item
+            for item in days
+            if int(item.get("weekday") or 0) == target_date.isoweekday()
+        ]
+        current_week = int(plan.get("current_week") or 1)
+        current_week_matches = [
+            item
+            for item in weekday_matches
+            if int(item.get("week_index") or 1) == current_week
+        ]
+        candidates = dated or current_week_matches or weekday_matches
+    letters = {
+        letter.upper()
+        for letter in re.findall(r"全身\s*([A-Za-z])", message)
+    }
+    if letters:
+        candidates = [
+            item
+            for item in candidates
+            if any(
+                letter in str(item.get("title") or "").upper()
+                for letter in letters
+            )
+        ]
+    if not candidates:
+        return None
+    if len(candidates) == 1:
+        return candidates[0]
+    current_week = int(plan.get("current_week") or 1)
+    current = [
+        item
+        for item in candidates
+        if int(item.get("week_index") or 1) == current_week
+    ]
+    if len(current) == 1:
+        return current[0]
+    return None
+
+
+def _plan_day_label(day: dict) -> str:
+    weekday = day.get("weekday_label")
+    if not weekday:
+        try:
+            weekday = f"周{_weekday_label(int(day.get('weekday') or 0))}"
+        except (TypeError, ValueError):
+            weekday = "训练日"
+    return f"{weekday} {day.get('title') or '训练'}".strip()
+
+
+def _delete_last_exercise_turn(
+    db: Session,
+    user_id: str,
+    message: str,
+    app_context: dict | None,
+) -> dict | None:
+    if re.search(r"体重|体脂|腰围|饮食|吃了|喝了|记录饮食|补录饮食", message):
+        return None
+    if not re.search(r"删掉|删除|去掉|移除", message):
+        return None
+    if not re.search(r"最后(?:一个)?(?:动作)?|最后一项", message):
+        return None
+    day = _match_plan_day(app_context, message)
+    if day is None:
+        return None
+    exercises = [
+        item for item in day.get("exercises") or [] if isinstance(item, dict)
+    ]
+    if not exercises:
+        return None
+    last = exercises[-1]
+    slug = str(last.get("slug") or "")
+    if not slug:
+        return None
+    name = str(last.get("name_zh") or slug)
+    label = _plan_day_label(day)
+    try:
+        action = _normalize_app_actions(
+            [
+                {
+                    "type": "modify_workout",
+                    "title": "删除动作",
+                    "summary": f"从「{label}」删除「{name}」",
+                    "requires_confirmation": True,
+                    "payload": {
+                        "scope": "day",
+                        "day_id": day.get("id"),
+                        "changes": [{"op": "remove", "slug": slug}],
+                    },
+                }
+            ],
+            app_context,
+        )[0]
+    except ValueError:
+        return None
+    error = _modify_workout_validation_error(
+        db, user_id, [action], app_context
+    )
+    if error is not None:
+        return {"actions": [], "reply": error}
+    return {
+        "actions": [action],
+        "reply": (
+            f"准备从「{label}」删除最后一个动作「{name}」。"
+            "确认后生效。"
+        ),
+    }
+
+
+def _skip_training_action_turn(
+    db: Session,
+    user_id: str,
+    message: str,
+    app_context: dict | None,
+) -> dict | None:
+    if re.search(r"吃|喝|饮食|餐|体重|体脂|腰围|记录|补录", message):
+        return None
+    if not re.search(r"跳过|不练了|不练|休息一天|休一天|今天休息", message):
+        return None
+    day = _match_plan_day(app_context, message)
+    if day is None:
+        return None
+    target_date = _message_target_date(message)
+    label = _plan_day_label(day)
+    try:
+        action = _normalize_app_actions(
+            [
+                {
+                    "type": "skip_training",
+                    "title": "跳过训练",
+                    "summary": f"跳过「{label}」",
+                    "requires_confirmation": True,
+                    "payload": {
+                        "day_id": day.get("id"),
+                        "date": (
+                            target_date.isoformat()
+                            if target_date is not None
+                            else None
+                        ),
+                    },
+                }
+            ],
+            app_context,
+        )[0]
+    except ValueError:
+        return None
+    return {
+        "actions": [action],
+        "reply": (
+            f"准备把「{label}」标记为跳过。确认后生效。"
+        ),
+    }
+
+
+def _forget_memory_turn(
+    db: Session,
+    user_id: str,
+    message: str,
+) -> dict | None:
+    if not re.search(r"忘掉|忘记|删掉|删除|清除|清掉|别记|不要记", message):
+        return None
+    if not re.search(r"记忆|忘掉|忘记|别记|不要记|这条|那条", message):
+        return None
+    if re.search(r"删掉|删除|清除|清掉", message) and not re.search(
+        r"记忆|忘掉|忘记|这条|那条", message
+    ):
+        return None
+    clean = re.sub(
+        r"忘掉|忘记|删掉|删除|清除|清掉|别记|不要记|记住|这条|那条|"
+        r"记忆|关于|我|的|吧|了|一下|，|。|,|\.",
+        " ",
+        message,
+    )
+    tokens = {
+        token
+        for token in re.findall(r"[\u4e00-\u9fff]{2,}", clean)
+        if token not in {"记忆", "这条", "那条"}
+    }
+    if not tokens:
+        return None
+    rows = list(
+        db.execute(
+            select(AIMemory).where(
+                AIMemory.user_id == user_id,
+                AIMemory.active.is_(True),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    matched = [
+        row
+        for row in rows
+        if row.content
+        and any(token in row.content for token in tokens)
+    ]
+    if not matched:
+        try:
+            action = _normalize_app_actions(
+                [
+                    {
+                        "type": "open_screen",
+                        "title": "打开长期记忆",
+                        "summary": "在记忆列表里手动删除",
+                        "requires_confirmation": True,
+                        "payload": {"screen": "agent_memory"},
+                    }
+                ]
+            )[0]
+        except ValueError:
+            return None
+        return {
+            "actions": [action],
+            "reply": (
+                "没有找到能直接匹配的长期记忆。"
+                "已准备打开「AI 长期记忆」，你可以在里面删除对应条目。"
+            ),
+        }
+    for row in matched[:5]:
+        row.active = False
+    db.flush()
+    contents = "；".join(
+        f"「{str(row.content)[:60]}」" for row in matched[:3]
+    )
+    return {
+        "actions": [],
+        "reply": f"已删除长期记忆：{contents}",
+    }
+
+
+_WHOLE_PLAN_CHANGE_RE = re.compile(
+    r"整个计划|全部计划|所有训练日|每个训练日|每一天|以后都|全都|全部改|整周"
+)
+_PERMISSION_CLAIM_RE = re.compile(
+    r"权限|只拿到|只获得|先准备的是(?:饮食|记录)|"
+    r"这(?:一)?轮.{0,8}准备.{0,6}(?:饮食|记录)"
+)
+_CARD_CLAIM_RE = re.compile(
+    r"记录卡|操作卡|确认卡|改课卡|动作卡|卡片|(?:点|点击)确认"
+)
+
+
+def _looks_like_whole_plan_change(message: str) -> bool:
+    if re.search(r"饮食|餐|重新生成|重做|换一份|新计划", message):
+        return False
+    if not _WHOLE_PLAN_CHANGE_RE.search(message):
+        return False
+    if not re.search(r"换|改|调整|替换|删除|删掉|去掉", message):
+        return False
+    return bool(
+        re.search(
+            r"动作|训练|计划|深蹲|卧推|硬拉|弓步|俯卧撑|划船|推举",
+            message,
+        )
+    )
+
+
+def _guard_permission_claims(message: str) -> str:
+    if not _PERMISSION_CLAIM_RE.search(message):
+        return message
+    sentences = re.split(r"(?<=[。！？!?\n])", message)
+    kept = [
+        sentence
+        for sentence in sentences
+        if sentence.strip() and not _PERMISSION_CLAIM_RE.search(sentence)
+    ]
+    text = "".join(kept).strip()
+    if text:
+        return text
+    return (
+        "这轮没有生成可确认的操作卡，先不写入。"
+        "请告诉我要改哪一天、哪个动作。"
+    )
+
+
+def _guard_action_card_claims(
+    message: str,
+    actions: list[dict],
+    proposal: dict | None,
+    pending_draft: dict | None,
+) -> str:
+    if actions or proposal is not None or pending_draft is not None:
+        return message
+    if not _CARD_CLAIM_RE.search(message):
+        return message
+    return (
+        "这条还没有生成可确认的操作卡，先不写入。"
+        "请把要记录的内容再说具体一点："
+        "饮食说清食物和份量，训练说清动作、组数或时长。"
+    )
+
+
+def _deterministic_extra_turn(
+    db: Session,
+    user_id: str,
+    message: str,
+    app_context: dict | None,
+) -> dict | None:
+    forget = _forget_memory_turn(db, user_id, message)
+    if forget is not None:
+        return forget
+    diet = _diet_plan_action_turn(db, message)
+    if diet is not None:
+        return diet
+    if _looks_like_whole_plan_change(message):
+        return {
+            "actions": [],
+            "reply": (
+                "改课目前一次只能按一个训练日改，不能一次改整个计划。"
+                "你想先从哪一天开始？比如“先改周五全身 C”；"
+                "确认一天后，再继续改下一天。"
+            ),
+        }
+    return None
+
+
 async def _multi_intent_action_turn(
     db: Session,
     user_id: str,
@@ -756,6 +1357,23 @@ async def _multi_intent_action_turn(
                 "要新记，请说“新记 200g 米饭”。"
             ),
         }
+    if not re.search(r"再记|另外|还有|同时|顺便|并且|以及", message):
+        delete_result = _delete_last_exercise_turn(
+            db, user_id, message, app_context
+        )
+        if delete_result is not None:
+            return delete_result
+        skip_result = _skip_training_action_turn(
+            db, user_id, message, app_context
+        )
+        if skip_result is not None:
+            return skip_result
+        strength_result = _strength_log_action_turn(db, user_id, message)
+        if strength_result is not None:
+            return strength_result
+        cardio_result = _cardio_log_action_turn(db, user_id, message)
+        if cardio_result is not None:
+            return cardio_result
     if len(clauses) < 2:
         return None
     body_result = await _food_body_multi_intent_turn(
@@ -1326,6 +1944,11 @@ _PENDING_ACTION_CLAIMS = (
     ("已经更新", "准备更新"),
     ("已经改", "准备改"),
     ("已经生效", "确认后生效"),
+    ("已经写入", "准备写入"),
+    ("已经保存", "准备保存"),
+    ("已经记上", "准备记录"),
+    ("已经记好", "准备记录"),
+    ("已经记下", "准备记录"),
     ("已为你", "准备为你"),
     ("已帮你", "准备帮你"),
     ("已把", "准备把"),
@@ -1337,6 +1960,11 @@ _PENDING_ACTION_CLAIMS = (
     ("已写入", "准备写入"),
     ("已保存", "准备保存"),
     ("已生效", "确认后生效"),
+    ("记上了", "准备好了"),
+    ("记好了", "准备好了"),
+    ("已记上", "准备记录"),
+    ("已记好", "准备记录"),
+    ("已记下", "准备记录"),
 )
 
 def _guard_pending_action_claims(message: str) -> str:
@@ -2778,6 +3406,44 @@ async def run_agent(
             "error": None,
         }
 
+    deterministic = _deterministic_extra_turn(
+        db,
+        user_id,
+        message,
+        app_context,
+    )
+    if deterministic is not None:
+        actions = deterministic["actions"]
+        final_message = deterministic["reply"]
+        run.intent = "app_action" if actions else "clarification"
+        run.status = "needs_confirmation" if actions else "completed"
+        run.output_text = final_message
+        run.completed_at = utcnow()
+        _record_step(
+            db,
+            run,
+            "tool",
+            tool_name="deterministic_action",
+            input_data={"message": message[:200]},
+            output_data={"actions": actions},
+        )
+        if actions and session_id:
+            cancel_active_draft(db, user_id, session_id)
+        db.commit()
+        return {
+            "run_id": run.id,
+            "status": run.status,
+            "reply": final_message,
+            "proposal": None,
+            "actions": actions,
+            "safety_flag": None,
+            "citations": [],
+            "pending_draft": None,
+            "elapsed_ms": int((time.perf_counter() - started) * 1000),
+            "usage": usage,
+            "error": None,
+        }
+
     if _looks_like_regenerate_plan_request(message):
         proposal_result = _tool_result(
             db,
@@ -3196,6 +3862,13 @@ async def run_agent(
             run.status = "needs_confirmation"
         elif run.status == "running":
             run.status = "completed"
+        final_message = _guard_permission_claims(final_message)
+        final_message = _guard_action_card_claims(
+            final_message,
+            actions,
+            proposal,
+            compact_draft(get_active_draft(db, user_id, session_id)),
+        )
         if actions:
             run.intent = "app_action"
         elif proposal is not None:
@@ -3208,7 +3881,10 @@ async def run_agent(
         run.output_text = final_message[:4000]
         run.completed_at = utcnow()
         db.commit()
-        if not settings.use_mock_llm and run.status != "failed":
+        if (
+            not settings.use_mock_llm
+            and run.status not in {"failed", "needs_confirmation"}
+        ):
             schedule_memory_extraction(
                 user_id,
                 message,
