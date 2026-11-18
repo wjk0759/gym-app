@@ -14,10 +14,10 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`22da58b`（onboarding 体脂卡片布局修复 `1feee1a` + `a997bde`；iOS Build `22da58b` ✓；生产后端仍 `83fc7b0`，`/health/ready` **200**；Flyway **V44**；`FitAITests` **140/140**、UI **6/6**；**体脂卡片点击仍错位：点 `<12%` 选中 25–29%，P1 阻断，Wu-Tang 仍 `9d340c8`，未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`7618cb6`（身体脂卡片热区根因修复：`BodyFatCard` 不再用溢出的 torso 图；iOS Build `7618cb6` ✓；生产后端仍 `83fc7b0`，`/health/ready` **200**；Flyway **V44**；**体脂卡片命中未复测前不部署，Wu-Tang 仍 `9d340c8`**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复并通过；注册传参通过；可选体型/体脂步骤已出现，但体脂卡片 frame/点击热区仍错位（点 `<12%` 选中 25–29%）；训练日期滚动/计划限制单元测试通过。
-- **待办（macOS → Windows）**：修 `BodyFatCard` 点击/可访问性 frame，确保每张卡只覆盖自己的两列格子、互不重叠；逐档验证 6 个体脂档位与报告百分比；再复测跳过路径、训练日期滚动、30 秒冷却/日限。
+- **待办（macOS → Windows）**：体脂卡片热区根因已修（`843e001` / `7618cb6`：`BodyFatCard` 改用受限 full-body 图 + contentShape），待 Mac 复测 6 档点击/报告百分比与跳过路径；随后复测训练日期滚动、计划生成冷却/日限。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -65,6 +65,31 @@
   - 不要恢复“首周之前”卡片或 `managedEarlyKeys`。
   - 不要允许同一天超过 10 次 AI 计划生成，或把冷却改回 60 秒。
   - 不要给教练 Tab 加回红点。
+
+### 2026-11-18 · Windows（体脂卡片热区根因修复）
+
+- 提交：`843e001` / `7618cb6`，已推 `develop`；iOS Build `7618cb6` ✓；无后端变化（生产仍是 `83fc7b0`）。
+- 根因：
+  - `BodyFatCard` 使用 `BodyFigure(crop: .torso)`；`BodyFigureTorso` 内部把原图放大后 offset，再 `clipped()`，但放大后的 Image 仍参与 Button 的可访问性/热区 frame。
+  - Mac 读到 `<12%` 卡片 frame 为 `(-19.7, 208.7, 249.3, 415.3)`，跨两列，和 25–29% 等卡片重叠，所以点击落到错误的卡。
+- 修法：
+  - 体脂卡改用完整 `BodyFigure`（不再用 torso 放大图）。
+  - 图片约束为 `frame(maxWidth: .infinity)` + `frame(height: 170)` + `clipped()` + `contentShape(Rectangle())`。
+  - 卡片本身加 `frame(maxWidth: .infinity)` + `contentShape(RoundedRectangle(...))`，热区只覆盖自己的格子。
+  - 保留 `selectBodyFat(_:)` 与 `BodyFatSelectionTests`。
+- 验证：
+  - GitHub iOS Build `7618cb6` ✓（仅 Node 20 / runner 容量 warning）。
+  - Windows 未运行 `FitAITests` / UI。
+- Mac 需要做：
+  1. 拉 `7618cb6`；`xcodegen generate`；安装最新 iOS。
+  2. iPhone 17e + SE：读取 6 张体脂卡 frame，确认每张宽度约半屏、x 不跨列、互不重叠。
+  3. 逐张点击 `<12%`、12–15%、16–20%、21–24%、25–29%、>29%，确认选中态和报告百分比一一对应。
+  4. 复测体型/体脂跳过路径。
+  5. 注册 → onboarding → 训练日期滚动 → 30 秒冷却/10 次日限 → 教练 Tab 红点。
+  6. 跑 `FitAITests` / UI 6/6。
+- 不要恢复：
+  - 不要在 `BodyFatCard` 恢复 `crop: .torso` 的放大 overlay。
+  - 不要让图片或卡片热区超出自己的两列格子。
 
 ### 2026-11-18 · macOS（体脂卡片仍点错：`<12%` 选中 25–29%，未部署）
 
