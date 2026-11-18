@@ -471,6 +471,206 @@ def _looks_like_food_clause(clause: str) -> bool:
     )
 
 
+def _body_metric_payload(clause: str) -> dict | None:
+    weight_match = re.search(
+        r"(?:体重|称重)[^\d]{0,12}(\d{2,3}(?:\.\d+)?)\s*(公斤|kg|斤)?",
+        clause,
+        flags=re.IGNORECASE,
+    )
+    if weight_match is None:
+        weight_match = re.search(
+            r"(\d{2,3}(?:\.\d+)?)\s*(公斤|kg|斤)",
+            clause,
+            flags=re.IGNORECASE,
+        )
+    payload: dict = {}
+    if weight_match is not None:
+        value = float(weight_match.group(1))
+        if (weight_match.group(2) or "").lower() == "斤":
+            value /= 2
+        if 25 <= value <= 300:
+            payload["weight_kg"] = round(value, 1)
+    fat_match = re.search(
+        r"(?:体脂率?|体脂)[^\d]{0,8}(\d{1,2}(?:\.\d+)?)\s*%?",
+        clause,
+    )
+    if fat_match is not None:
+        value = float(fat_match.group(1))
+        if 3 <= value <= 60:
+            payload["body_fat_pct"] = round(value, 1)
+    waist_match = re.search(
+        r"(?:腰围)[^\d]{0,8}(\d{2,3}(?:\.\d+)?)\s*(cm|厘米)?",
+        clause,
+        flags=re.IGNORECASE,
+    )
+    if waist_match is not None:
+        value = float(waist_match.group(1))
+        if 30 <= value <= 200:
+            payload["waist_cm"] = round(value, 1)
+    return payload or None
+
+
+def _looks_like_body_metric_clause(clause: str) -> bool:
+    return bool(
+        re.search(r"体重|体脂|腰围|称重", clause)
+        and _body_metric_payload(clause)
+    )
+
+
+async def _food_action_for_clause(
+    db: Session,
+    user_id: str,
+    clause: str,
+    app_context: dict | None,
+) -> tuple[dict | None, str | None]:
+    pending = (
+        app_context.get("pending_action")
+        if isinstance(app_context, dict)
+        else None
+    )
+    if (
+        isinstance(pending, dict)
+        and pending.get("type") == "log_food"
+        and not re.search(r"再记|另外|还有|加一个|新记|补记", clause)
+    ):
+        try:
+            correction = _pending_action_correction(app_context, clause)
+        except Exception:
+            correction = None
+        if correction is not None:
+            actions = correction.get("actions") or []
+            if actions:
+                return actions[0], None
+            return None, str(correction.get("reply") or "需要确认改哪一项。")
+    if re.search(r"改成|换成|改为|修正", clause):
+        return (
+            None,
+            "你是想修改已经记录的这一餐，还是新记一笔？"
+            "如果要修改，请在饮食记录里点对应食物；要新记，请说“新记 200g 米饭”。",
+        )
+    context = food_log_context(clause)
+    resolution = await resolve_food_text(
+        db,
+        user_id,
+        clause,
+        meal=context["meal"],
+        target_date=date.fromisoformat(context["date"]),
+    )
+    if (
+        resolution.get("questions")
+        or resolution.get("missing_slots")
+        or not resolution.get("items")
+    ):
+        return None, _food_question_message(resolution)
+    return (
+        _build_food_log_action(
+            resolution,
+            clause,
+            context["date"],
+            context["meal"],
+        ),
+        None,
+    )
+
+
+async def _food_body_multi_intent_turn(
+    db: Session,
+    user_id: str,
+    clauses: list[str],
+    app_context: dict | None,
+) -> dict | None:
+    body_clauses = [
+        clause for clause in clauses if _looks_like_body_metric_clause(clause)
+    ]
+    if not body_clauses:
+        return None
+    if len(body_clauses) != 1:
+        return {
+            "actions": [],
+            "reply": "这条消息里有多个身体数据，先告诉我这次记哪一项。",
+        }
+    body_clause = body_clauses[0]
+    food_clauses = [
+        clause
+        for clause in clauses
+        if clause != body_clause and _looks_like_food_clause(clause)
+    ]
+    if not food_clauses:
+        return None
+    other_clauses = [
+        clause
+        for clause in clauses
+        if clause != body_clause and clause not in food_clauses
+    ]
+    if other_clauses or len(food_clauses) != 1:
+        return {
+            "actions": [],
+            "reply": (
+                "这条消息里除了身体数据还有别的操作，先分开说会更稳："
+                "这次只确认饮食和身体数据。"
+            ),
+        }
+    payload = _body_metric_payload(body_clause)
+    if payload is None:
+        return None
+    food_action, question = await _food_action_for_clause(
+        db,
+        user_id,
+        food_clauses[0],
+        app_context,
+    )
+    if food_action is None:
+        return {
+            "actions": [],
+            "reply": question or "饮食部分还需要确认，确认后一起写入。",
+        }
+    metric_title = "记录身体数据"
+    if "weight_kg" in payload:
+        metric_title = f"记录体重 {payload['weight_kg']:g}kg"
+    elif "body_fat_pct" in payload:
+        metric_title = f"记录体脂 {payload['body_fat_pct']:g}%"
+    elif "waist_cm" in payload:
+        metric_title = f"记录腰围 {payload['waist_cm']:g}cm"
+    try:
+        metric_action = _normalize_app_actions(
+            [
+                {
+                    "type": "log_body_metric",
+                    "title": metric_title,
+                    "summary": "写入今天身体数据",
+                    "requires_confirmation": True,
+                    "payload": payload,
+                }
+            ]
+        )[0]
+    except ValueError as exc:
+        return {"actions": [], "reply": str(exc)}
+    return {
+        "actions": [food_action, metric_action],
+        "reply": (
+            f"饮食和身体数据都识别好了：{food_action.get('summary') or '饮食'}；"
+            f"{metric_title}。确认后一起执行。"
+        ),
+    }
+
+
+def _looks_like_regenerate_plan_request(message: str) -> bool:
+    text = message.strip()
+    if re.search(
+        r"饮食|餐|每周|周[一二三四五六日天]|星期|分钟|分化|器械|部位|动作|"
+        r"kg|公斤|斤",
+        text,
+    ):
+        return False
+    return bool(
+        re.search(
+            r"(?:重新|重做|再|换).{0,8}(?:生成|做|来)?一份?.{0,4}(?:训练)?计划",
+            text,
+        )
+        or "重新生成计划" in text
+    )
+
+
 async def _multi_intent_action_turn(
     db: Session,
     user_id: str,
@@ -491,6 +691,14 @@ async def _multi_intent_action_turn(
     clauses = _split_batch_clauses(message)
     if len(clauses) < 2:
         return None
+    body_result = await _food_body_multi_intent_turn(
+        db,
+        user_id,
+        clauses,
+        app_context,
+    )
+    if body_result is not None:
+        return body_result
     training_clauses = [
         clause for clause in clauses if _looks_like_reschedule(clause)
     ]
@@ -829,12 +1037,15 @@ AGENT_INSTRUCTIONS = """你可以读取用户状态、读取训练记录、生�
 9. 不要用泛泛的“多喝水、坚持训练、循序渐进”凑字数。先给结论，再给 1–2 个具体动作/组数/重量/时间建议，并说明依据；用户没要完整方案时，不要扩成整套计划。列表最多 3 条，每条一句话。
 10. 如果用户的安排已经发生变化，直接指出哪一天、哪个动作或哪个参数需要改，不要重复整份计划。
 11. 用户要改今天/某天的动作、组数、次数、重量、休息，或删除/增加动作时，必须调用 propose_app_actions，type=modify_workout；不要只给文字建议，也不要用 propose_plan 代替单日改课。
-12. modify_workout 的 from_slug 必须来自 app_context.plan.days[].exercises[].slug；换动作/加动作前必须先调用 lookup_exercise，使用它返回的真实 slug，禁止把中文直译成英文 slug（例如“前弓步”不是 forward-lunge）。当前只支持 scope=day，不要用 scope=plan；用户说“以后都/整个计划”时先按当前训练日改，并说明可以逐日调整。最多 8 条改动；换动作后重量默认不沿用旧动作，需要指定时再加一条 weight。
+12. modify_workout 的 from_slug 必须来自 app_context.plan.days[].exercises[].slug；换动作/加动作前必须先调用 lookup_exercise，使用它返回的真实 slug，禁止把中文直译成英文 slug（例如“前弓步”不是 forward-lunge）。当前只支持 scope=day，不要用 scope=plan；用户说“以后都/整个计划”时先按当前训练日改，并说明可以逐日调整。最多 8 条改动；换动作后重量默认不沿用旧动作，需要指定时再加一条 weight。用户只要求改一天时，只能生成一张 reschedule_training，不要顺带改其他天。
 13. 改课是待确认操作；final 里要说明“确认后才会改”，不能声称已经改好。
 14. 如果 app_context.today_day.in_progress=true，说明训练已经开始；不要用 modify_workout 改当前这次训练，先让用户在训练页用“调整/替换”改本次训练；可以改之后的训练日。
 15. 用户问某个动作最近练得怎么样、为什么没进步、下次加不加重量、有没有退步时，先调用 get_exercise_history；用返回的真实每组数据回答，不要用计划目标代替实际完成。
 16. 用户问某天/某次训练的具体内容时，调用 get_workout_detail；只引用返回的数据，不要编造重量、次数或 RPE。
 17. 用户提到关节、腰、颈、肩、膝、肘、腕疼痛时，即使只是问“要不要停”，回答必须先说停止/减量，并补一句什么情况需要医生或康复师评估；不能只给替代动作。
+18. 不要声称自己“只有某种权限/只拿到某种权限”。本轮做不到就直说“这次先处理 X，稍后再处理 Y”，不要编造权限原因。
+19. 用户提出超过现有器械能力的重量（例如只有 8kg 哑铃却要 20kg）时，先明确确认或改成可用重量；不要生成超过用户器械能力的重量卡。
+20. 用户明确说“重新生成一份训练计划/换一份计划/重做计划”时，直接调用 propose_plan，参数沿用档案默认值，不要反问训练日、时长或动作；生成后说明确认后才会应用。
 
 App Context 和可执行操作：
 - state.coach_context 是服务端构建的版本化上下文，包含 profile、goal、current_plan（当前周训练）、recent_training、body_metrics、nutrition_7d、today_nutrition（今天的计划餐、实际摄入和剩余额度）、equipment_library 和 memories；它是回答事实问题的首选依据。回答“今天还能吃多少/计划餐完成了吗”必须读 today_nutrition。
@@ -1609,6 +1820,32 @@ def _modify_workout_validation_error(
     return None
 
 
+def _reschedule_batch_error(
+    run: AgentRun,
+    actions: list[dict],
+) -> str | None:
+    reschedules = [
+        action
+        for action in actions
+        if action.get("type") == "reschedule_training"
+    ]
+    if len(reschedules) <= 1:
+        return None
+    text = str(run.input_text or "")
+    requested = re.findall(
+        r"改到|改期|顺延到|挪到|换到|调到",
+        text,
+    )
+    if len(requested) >= 2:
+        return None
+    if re.search(r"都|分别|整周|每一天", text):
+        return None
+    return (
+        "用户只要求改一天；一次只能生成一张改期卡，"
+        "不要顺带改其他训练日。请只保留用户明确要求的那一天。"
+    )
+
+
 def _validate_workout_log_exercises(
     db: Session,
     user_id: str,
@@ -1894,6 +2131,9 @@ def _tool_result(
             )
             if modify_error is not None:
                 return {"ok": False, "error": modify_error}
+            reschedule_error = _reschedule_batch_error(run, actions)
+            if reschedule_error is not None:
+                return {"ok": False, "error": reschedule_error}
         except ValueError as exc:
             return {"ok": False, "error": str(exc)}
         return {"ok": True, "actions": actions}
@@ -2393,31 +2633,31 @@ async def run_agent(
             pass
 
     try:
-        replacement = await _pending_food_replacement(
+        correction = await _multi_intent_action_turn(
             db,
             user_id,
-            app_context,
             message,
+            app_context,
         )
     except Exception:
-        replacement = None
-    if replacement is not None:
-        correction = replacement
-    else:
-        try:
-            correction = _pending_action_correction(app_context, message)
-        except Exception:
-            correction = None
+        correction = None
     if correction is None:
         try:
-            correction = await _multi_intent_action_turn(
+            replacement = await _pending_food_replacement(
                 db,
                 user_id,
-                message,
                 app_context,
+                message,
             )
         except Exception:
-            correction = None
+            replacement = None
+        if replacement is not None:
+            correction = replacement
+        else:
+            try:
+                correction = _pending_action_correction(app_context, message)
+            except Exception:
+                correction = None
     if correction is not None:
         actions = correction["actions"]
         final_message = correction["reply"]
@@ -2449,6 +2689,51 @@ async def run_agent(
             "usage": usage,
             "error": None,
         }
+
+    if _looks_like_regenerate_plan_request(message):
+        proposal_result = _tool_result(
+            db,
+            run,
+            user_id,
+            "propose_plan",
+            {},
+            app_context,
+        )
+        if (
+            proposal_result.get("ok")
+            and isinstance(proposal_result.get("proposal"), dict)
+        ):
+            proposal_data = proposal_result["proposal"]
+            final_message = (
+                "新计划草案已经生成，确认后才会替换当前计划。"
+            )
+            run.intent = "plan_change"
+            run.status = "needs_confirmation"
+            run.output_text = final_message
+            run.completed_at = utcnow()
+            _record_step(
+                db,
+                run,
+                "tool",
+                tool_name="propose_plan",
+                output_data=proposal_result,
+            )
+            if session_id:
+                cancel_active_draft(db, user_id, session_id)
+            db.commit()
+            return {
+                "run_id": run.id,
+                "status": run.status,
+                "reply": final_message,
+                "proposal": proposal_data,
+                "actions": [],
+                "safety_flag": None,
+                "citations": [],
+                "pending_draft": None,
+                "elapsed_ms": int((time.perf_counter() - started) * 1000),
+                "usage": usage,
+                "error": None,
+            }
 
     try:
         if settings.use_mock_llm:

@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime
+from types import SimpleNamespace
 
 import pytest
 
@@ -8,9 +9,11 @@ from app.services.agent import (
     _forced_food_log_intent,
     _forced_workout_log_intent,
     _is_draft_answer,
+    _looks_like_regenerate_plan_request,
     _normalize_app_actions,
     _pending_action_correction,
     _pending_food_replacement,
+    _reschedule_batch_error,
 )
 
 
@@ -173,6 +176,34 @@ def test_amount_only_correction_does_not_become_a_food_replacement():
     half_bowl = _pending_action_correction(context, "米饭改成半碗")
     assert half_bowl is not None
     assert half_bowl["actions"][0]["payload"]["items"][1]["grams"] == 175
+
+
+def test_regenerate_plan_request_is_detected_without_hijacking_diet():
+    assert _looks_like_regenerate_plan_request("帮我重新生成一份训练计划")
+    assert _looks_like_regenerate_plan_request("换一份计划")
+    assert not _looks_like_regenerate_plan_request("重新生成饮食计划")
+    assert not _looks_like_regenerate_plan_request("重新生成训练计划，每周4练")
+
+
+def test_unrequested_second_reschedule_is_rejected():
+    actions = [
+        {"type": "reschedule_training", "payload": {"day_id": "a"}},
+        {"type": "reschedule_training", "payload": {"day_id": "b"}},
+    ]
+    error = _reschedule_batch_error(
+        SimpleNamespace(input_text="把周一没练的全身 A 挪到明天"),
+        actions,
+    )
+    assert error is not None
+    assert "只要求改一天" in error
+
+    explicit = _reschedule_batch_error(
+        SimpleNamespace(
+            input_text="把周一 A 挪到明天，把周三 C 挪到周五"
+        ),
+        actions,
+    )
+    assert explicit is None
 
 
 def test_strength_workout_requires_at_least_one_set():
