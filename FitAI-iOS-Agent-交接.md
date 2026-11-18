@@ -14,12 +14,12 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`d03c195`（N17/N18 通过；N19 goal 记忆已过滤；**N21 未确认改期/改课仍写入 schedule 记忆 P1；N20 目标卡 65 vs 回复 67 仍 P2**；生产后端 `d03c195`，`/health/ready` **200**；后端 652 passed、QA 76/76；iOS 仍 `7618cb6`，未部署）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`887efc1`（N20 目标卡/回复对齐已扩展“摸到/稳住”等表达；N21 未确认计划记忆已拦截；N17/N18 通过，N19 goal 记忆已过滤；生产后端 `887efc1`，`/health/ready` **200**；Flyway **V44**；后端 **656 passed**、QA **76/76**、Ruff 通过；iOS 仍 `7618cb6`；待 Mac 复测 N20/N21）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
-- **macOS AI 教练四轮压测（2026-11-19）**：N17/N18 通过；N19 goal 记忆已过滤；N21 未确认计划变更仍写 schedule 记忆；N20 目标卡/回复仍不一致。
-- **待办（macOS → Windows）**：优先 N21；N20 为 P2。
+- **macOS AI 教练四轮压测（2026-11-19）**：N17/N18/N19 通过；N20/N21 已由 Windows 修复（`887efc1`），待 Mac 复测。
+- **待办（macOS → Windows）**：复测 N20/N21；有问题再按项回报。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -43,6 +43,35 @@
 - 后端 **647 passed**、QA **76/76**、Ruff 通过（Windows 报告）。
 - 部署：生产后端已是 `d9f8285`；iOS 无变化，无需重装；AI 教练本轮无阻断。
 - 剩余：C7–C11 文案/记忆类 P2（未在本轮全部重测）。
+
+### 2026-11-19 · Windows（N20/N21 修复）
+
+- 提交：`887efc1`，已推 `develop`；生产后端已部署 `agent.py` + `memory.py`，SHA-256 与本地一致；`/health/ready` **200**；Flyway **V44**；无 iOS 变化（iOS 仍 `7618cb6`）。
+- N20 目标卡/回复不一致：
+  - 根因：`_guard_goal_action_consistency()` 只识别“改成/改为/先定/建议/控制在”等表达，没覆盖“摸到/稳住/建议按/目标放在/降到”等自然说法。
+  - 现在扩展数值识别；回复里最后一个建议目标与 payload 不一致时，把卡片对齐到该值，并明确提示“目标卡已按 Xkg 准备；仍想 Ykg 先不要确认”。
+  - “先摸到 67kg，稳住 67kg 左右” → 卡片 target 67kg。
+- N21 未确认计划变更写记忆：
+  - 根因：`remember_facts` 只拦了 goal 事实，schedule/plan 事实仍可写入“已改到/待确认执行”；`remember` tool、抽取、其他记忆入口也各走各的。
+  - 新增 `is_pending_action_fact()`：
+    - 拦截“待确认/待执行/已改到/已调整/已跳过/已删除/已换成”；
+    - 拦截“将/把…改到/调整到/改为/换成/替换为/删除/跳过”；
+    - 拦截“要求…改为/增加组次/减少组次”等动作请求；
+    - 保留“用户希望/想要/偏好…”这种纯意愿，不当作已执行。
+  - `remember_facts` 不再写入这类事实；`remember` tool 直接返回错误；`list_memories` 和记忆检索隐藏旧的这类记忆。
+  - 生产库里 N21 那几条 schedule 记忆不再出现在 `/agent/memories`，也不会进入教练上下文。
+- 验证：
+  - 后端 **656 passed**；QA **76/76**；Ruff 通过。
+  - 新增回归：摸到/稳住 67kg 对齐、pending schedule 不落库、纯意愿可保留、旧 pending 记忆不出现在列表。
+  - GitHub Backend Tests `887efc1` ✓。
+- Mac 需要做：
+  1. N20：“我想改成减脂65kg，目标日期12月31日” → 若回复建议 67kg，卡片 payload 也应为 67kg，并与回复一致。
+  2. N21：先只出改期/跳过/改课卡、不确认，检查 `/agent/memories` 不再出现“已改到/待确认执行”的 schedule 记忆。
+  3. 旧污染记忆应已从 `/agent/memories` 隐藏。
+- 不要恢复：
+  - 不要把“摸到/稳住/建议按 67kg”只写在回复里而卡片仍 65kg。
+  - 不要把 pending 的改期/改课/跳过写成“已改到/已调整”的长期记忆。
+  - 不要拦截“用户希望/想要/偏好”这类纯意愿。
 
 ### 2026-11-19 · macOS（N17/N18 通过；N21 未确认计划记忆污染，P1）
 
