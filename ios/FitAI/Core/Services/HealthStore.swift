@@ -99,11 +99,12 @@ extension AppStore {
         bodyMetrics.removeAll { $0.dateKey == key }
         bodyMetrics.append(value)
         bodyMetrics.sort { $0.date > $1.date }
-        if let weight = value.weightKG { profile.weightKG = weight }
-        if let bodyFat = value.bodyFatPCT { profile.bodyFatPCT = bodyFat }
-        if let waist = value.waistCM { profile.waistCM = waist }
-        if let arm = value.armCM, arm > 0 { profile.armCM = arm }
-        if let thigh = value.thighCM, thigh > 0 { profile.thighCM = thigh }
+        let isLatest = bodyMetrics.first?.dateKey == key
+        if isLatest, let weight = value.weightKG { profile.weightKG = weight }
+        if isLatest, let bodyFat = value.bodyFatPCT { profile.bodyFatPCT = bodyFat }
+        if isLatest, let waist = value.waistCM { profile.waistCM = waist }
+        if isLatest, let arm = value.armCM, arm > 0 { profile.armCM = arm }
+        if isLatest, let thigh = value.thighCM, thigh > 0 { profile.thighCM = thigh }
         if profile.goalStartWeight == nil || (profile.goalStartWeight ?? 0) <= 0,
            let weight = value.weightKG {
             profile.goalStartWeight = weight
@@ -116,10 +117,11 @@ extension AppStore {
     func saveBodyCheckIn(
         weightKG: Double?,
         bodyFatPCT: Double?,
-        waistCM: Double?
+        waistCM: Double?,
+        date: Date = Date()
     ) -> BodyMetric {
         let metric = BodyMetric(
-            date: Date(),
+            date: date,
             weightKG: weightKG.map { ($0 * 10).rounded() / 10 },
             bodyFatPCT: bodyFatPCT.map { ($0 * 10).rounded() / 10 },
             waistCM: waistCM.map { ($0 * 10).rounded() / 10 },

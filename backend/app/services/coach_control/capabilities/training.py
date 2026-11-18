@@ -152,49 +152,80 @@ def _source_day(
         today_day = app_context.get("today_day")
         if isinstance(today_day, dict) and not day_id:
             day_id = str(today_day.get("id") or "")
-    if day_id:
-        for item in days:
-            if str(item.get("id")) == day_id:
-                return item
 
     source_text = re.split(
         r"改到|改期到|顺延到|挪到|换到|调到",
         message,
         maxsplit=1,
     )[0]
-    source_date = today
-    if re.search(r"后天", source_text):
-        source_date = today + timedelta(days=2)
-    elif re.search(r"明天|明日", source_text):
-        source_date = today + timedelta(days=1)
-    elif re.search(r"今天|今日", source_text):
-        source_date = today
+    parsed_source = parse_food_date(source_text)
+    source_date = parsed_source or today
+    if parsed_source is None:
+        if re.search(r"后天", source_text):
+            source_date = today + timedelta(days=2)
+        elif re.search(r"明天|明日", source_text):
+            source_date = today + timedelta(days=1)
+        elif re.search(r"今天|今日", source_text):
+            source_date = today
 
-    weekday = re.search(r"(?:周|星期|礼拜)([一二三四五六日天])", source_text)
-    if weekday:
-        target_weekday = _WEEKDAYS[weekday.group(1)]
-        candidates: list[tuple[date, dict]] = []
+        weekday = re.search(
+            r"(?:周|星期|礼拜)([一二三四五六日天])",
+            source_text,
+        )
+        if weekday:
+            target_weekday = _WEEKDAYS[weekday.group(1)]
+            candidates: list[tuple[date, dict]] = []
+            for item in days:
+                raw_date = str(item.get("date") or "")
+                candidate_date = None
+                if raw_date:
+                    try:
+                        candidate_date = date.fromisoformat(raw_date)
+                    except ValueError:
+                        candidate_date = None
+                if candidate_date is not None:
+                    if candidate_date.weekday() == target_weekday:
+                        candidates.append((candidate_date, item))
+                elif (
+                    item.get("weekday") is not None
+                    and int(item["weekday"]) - 1 == target_weekday
+                ):
+                    candidates.append((today, item))
+            if candidates:
+                upcoming = [item for item in candidates if item[0] >= today]
+                pool = upcoming or candidates
+                pool.sort(key=lambda item: item[0])
+                return pool[0][1]
+
+    if parsed_source is not None:
         for item in days:
-            raw_date = str(item.get("date") or "")
-            candidate_date = None
-            if raw_date:
+            if str(item.get("date") or "") == source_date.isoformat():
+                return item
+
+    title_match = re.search(r"全身\s*([A-Za-z])", source_text)
+    if title_match:
+        letter = title_match.group(1).upper()
+        titled = [
+            item
+            for item in days
+            if letter in str(item.get("title") or "").upper()
+        ]
+        if titled:
+            dated = []
+            for item in titled:
+                raw_date = str(item.get("date") or "")
                 try:
-                    candidate_date = date.fromisoformat(raw_date)
+                    item_date = date.fromisoformat(raw_date)
                 except ValueError:
-                    candidate_date = None
-            if candidate_date is not None:
-                if candidate_date.weekday() == target_weekday:
-                    candidates.append((candidate_date, item))
-            elif (
-                item.get("weekday") is not None
-                and int(item["weekday"]) - 1 == target_weekday
-            ):
-                candidates.append((today, item))
-        if candidates:
-            upcoming = [item for item in candidates if item[0] >= today]
-            pool = upcoming or candidates
-            pool.sort(key=lambda item: item[0])
-            return pool[0][1]
+                    item_date = None
+                if item_date is not None:
+                    dated.append((item_date, item))
+            if dated:
+                upcoming = [item for item in dated if item[0] >= today]
+                pool = upcoming or dated
+                pool.sort(key=lambda item: item[0])
+                return pool[0][1]
+            return titled[0]
 
     for item in days:
         if str(item.get("date") or "") == source_date.isoformat():
@@ -202,6 +233,10 @@ def _source_day(
     if not re.search(r"今天|今日|明天|明日|后天", source_text):
         for item in days:
             if str(item.get("date") or "") == today.isoformat():
+                return item
+    if day_id:
+        for item in days:
+            if str(item.get("id")) == day_id:
                 return item
     return None
 

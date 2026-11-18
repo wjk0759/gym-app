@@ -368,11 +368,14 @@ extension AppStore {
             }
             let previousProfile = profile
             let todayKey = FitnessDate.key(Date())
-            let previousMetric = bodyMetrics.first { $0.dateKey == todayKey }
+            let dateKey = payload.date ?? todayKey
+            let metricDate = FitnessDate.date(from: dateKey) ?? Date()
+            let previousMetric = bodyMetrics.first { $0.dateKey == dateKey }
             let metric = saveBodyCheckIn(
                 weightKG: payload.weightKG,
                 bodyFatPCT: payload.bodyFatPCT,
-                waistCM: payload.waistCM
+                waistCM: payload.waistCM,
+                date: metricDate
             )
             undo = .bodyMetric(
                 metricID: metric.id,

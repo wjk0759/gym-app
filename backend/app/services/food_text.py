@@ -21,6 +21,16 @@ from .lexicon import MEAL_LABELS, MEAL_PATTERNS
 from .prompt_registry import prompt_version
 
 DIET_TZ = ZoneInfo("Asia/Shanghai")
+_WEEKDAY_NUMBERS = {
+    "一": 1,
+    "二": 2,
+    "三": 3,
+    "四": 4,
+    "五": 5,
+    "六": 6,
+    "日": 7,
+    "天": 7,
+}
 
 
 def _safe_float(value: object, default: float = 0.0) -> float:
@@ -97,6 +107,22 @@ def parse_food_date(
         return today + timedelta(days=1)
     if re.search(r"今天|今日|今晚", value):
         return today
+
+    weekday_match = re.search(
+        r"(上|下|这|本)\s*(?:周|星期|礼拜)\s*([一二三四五六日天])",
+        value,
+    )
+    if weekday_match is not None:
+        prefix, raw_weekday = weekday_match.groups()
+        target_weekday = _WEEKDAY_NUMBERS.get(raw_weekday)
+        if target_weekday is not None:
+            monday = today - timedelta(days=today.isoweekday() - 1)
+            week_offset = {"上": -1, "下": 1}.get(prefix, 0)
+            return (
+                monday
+                + timedelta(days=week_offset * 7)
+                + timedelta(days=target_weekday - 1)
+            )
 
     explicit = re.search(r"(20\d{2})[-/.](\d{1,2})[-/.](\d{1,2})", value)
     if explicit is not None:

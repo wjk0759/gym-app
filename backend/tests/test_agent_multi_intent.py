@@ -25,6 +25,7 @@ from app.services.agent import (
     _guard_action_card_claims,
     _guard_goal_action_consistency,
     _guard_pending_action_claims,
+    _message_target_date,
     _multi_intent_action_turn,
 )
 from app.services.memory import (
@@ -286,13 +287,14 @@ def test_natural_language_skip_creates_a_card(db):
     assert result["actions"][0]["payload"]["day_id"] == DAY_ID
 
 
-def _ios_week_context() -> dict:
+def _ios_week_context(week_offset: int = 0) -> dict:
     today = datetime.now(REVIEW_TZ).date()
     monday = today - timedelta(days=today.isoweekday() - 1)
+    monday += timedelta(days=week_offset * 7)
     days: list[dict] = []
     for index in range(7):
         target = monday + timedelta(days=index)
-        if target < today:
+        if week_offset == 0 and target < today:
             continue
         days.append(
             {
@@ -715,3 +717,340 @@ def test_pending_schedule_memory_is_hidden_from_list(db):
     )
 
 
+def _last_weekday(weekday: int) -> date:
+    today = datetime.now(REVIEW_TZ).date()
+    monday = today - timedelta(days=today.isoweekday() - 1)
+    return monday - timedelta(days=7) + timedelta(days=weekday - 1)
+
+
+def _weekday_in_week(week_offset: int, weekday: int) -> date:
+    today = datetime.now(REVIEW_TZ).date()
+    monday = today - timedelta(days=today.isoweekday() - 1)
+    return monday + timedelta(days=week_offset * 7 + weekday - 1)
+
+
+def test_last_friday_body_metric_keeps_the_date(db):
+    expected = _last_weekday(5)
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "上周五称的体重是72kg",
+            {},
+        )
+    )
+
+    assert result is not None
+    action = result["actions"][0]
+    assert action["type"] == "log_body_metric"
+    assert action["payload"]["date"] == expected.isoformat()
+
+
+def test_last_friday_cardio_keeps_the_date(db):
+    expected = _last_weekday(5)
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "上周五跑了5公里，30分钟",
+            {},
+        )
+    )
+
+    assert result is not None
+    action = result["actions"][0]
+    assert action["type"] == "log_workout"
+    assert action["payload"]["date"] == expected.isoformat()
+
+
+def test_last_friday_strength_keeps_the_date(db):
+    expected = _last_weekday(5)
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "上周五做了100个俯卧撑分5组",
+            {},
+        )
+    )
+
+    assert result is not None
+    action = result["actions"][0]
+    assert action["type"] == "log_workout"
+    assert action["payload"]["date"] == expected.isoformat()
+    assert action["payload"]["sets"][0]["reps"] == 20
+
+
+def test_next_friday_target_date_is_next_week():
+    expected = _weekday_in_week(1, 5)
+    assert _message_target_date("下周五") == expected
+
+
+def test_next_week_skip_uses_next_week_days(db):
+    context = _ios_week_context(week_offset=1)
+    expected = len(context["plan"]["days"])
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "下周都不练了，帮我跳过下周的训练",
+            context,
+        )
+    )
+
+    assert result is not None
+    assert [action["type"] for action in result["actions"]] == [
+        "skip_training"
+    ] * expected
+    assert "下周" in result["reply"]
+
+
+def test_next_week_all_training_skip_uses_next_week(db):
+    context = _ios_week_context(week_offset=1)
+    expected = len(context["plan"]["days"])
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "跳过下周的全部训练",
+            context,
+        )
+    )
+
+    assert result is not None
+    assert len(result["actions"]) == expected
+    assert all(
+        action["payload"]["date"] >= _weekday_in_week(1, 1).isoformat()
+        for action in result["actions"]
+    )
+
+
+def test_next_friday_single_skip_uses_next_week_date(db):
+    next_friday = _weekday_in_week(1, 5)
+    context = _ios_plan_context(5)
+    context["plan"]["days"][0]["date"] = next_friday.isoformat()
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "跳过下周五的训练",
+            context,
+        )
+    )
+
+    assert result is not None
+    action = result["actions"][0]
+    assert action["type"] == "skip_training"
+    assert action["payload"]["date"] == next_friday.isoformat()
+
+
+def test_food_and_workout_multi_intent_keeps_both(db):
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "午餐吃了200g米饭，刚跑了5公里30分钟",
+            {},
+        )
+    )
+
+    assert result is not None
+    assert [action["type"] for action in result["actions"]] == [
+        "log_food",
+        "log_workout",
+    ]
+
+
+def test_body_and_workout_multi_intent_keeps_both(db):
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "体重72kg，再记一下刚跑的5公里30分钟",
+            {},
+        )
+    )
+
+    assert result is not None
+    assert [action["type"] for action in result["actions"]] == [
+        "log_body_metric",
+        "log_workout",
+    ]
+
+
+def test_workout_and_reschedule_multi_intent_keeps_both(db):
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "刚跑了5公里30分钟，再把周五全身 C 改到周六",
+            _ios_plan_context(5),
+        )
+    )
+
+    assert result is not None
+    assert [action["type"] for action in result["actions"]] == [
+        "log_workout",
+        "reschedule_training",
+    ]
+
+
+def test_workout_and_skip_multi_intent_keeps_both(db):
+    tomorrow = datetime.now(REVIEW_TZ).date() + timedelta(days=1)
+    context = _ios_plan_context(5)
+    context["plan"]["days"][0]["date"] = tomorrow.isoformat()
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "刚跑了5公里30分钟，明天全身 C 不练了",
+            context,
+        )
+    )
+
+    assert result is not None
+    assert [action["type"] for action in result["actions"]] == [
+        "log_workout",
+        "skip_training",
+    ]
+
+
+def test_three_intents_keep_food_workout_and_body(db):
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "午餐吃了200g米饭，刚跑了5公里30分钟，体重72kg",
+            {},
+        )
+    )
+
+    assert result is not None
+    assert [action["type"] for action in result["actions"]] == [
+        "log_food",
+        "log_workout",
+        "log_body_metric",
+    ]
+
+
+def test_food_and_modify_asks_instead_of_dropping_modify(db):
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "午餐吃了200g米饭，另外把周五全身 C 的深蹲加一组",
+            _ios_plan_context(5),
+        )
+    )
+
+    assert result is not None
+    assert result["actions"] == []
+    assert "先分开确认" in result["reply"]
+
+
+def test_skip_and_reschedule_conflict_asks_which_one(db):
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "周五全身 C 不练了，挪到周日",
+            _ios_plan_context(5),
+        )
+    )
+
+    assert result is not None
+    assert result["actions"] == []
+    assert "跳过" in result["reply"]
+    assert "改到" in result["reply"]
+
+
+def test_single_reschedule_creates_a_card(db):
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "把周五全身 C 改到周六",
+            _ios_plan_context(5),
+        )
+    )
+
+    assert result is not None
+    assert [action["type"] for action in result["actions"]] == [
+        "reschedule_training"
+    ]
+
+
+def test_reschedule_explicit_title_does_not_use_today_day(db):
+    today = datetime.now(REVIEW_TZ).date()
+    tomorrow = today + timedelta(days=1)
+    a_id = "00000000-0000-0000-0000-0000000000a2"
+    c_id = "00000000-0000-0000-0000-0000000000c1"
+    context = {
+        "plan": {
+            "id": PROGRAM_ID,
+            "current_week": 1,
+            "days": [
+                {
+                    "id": a_id,
+                    "title": "全身 A",
+                    "date": tomorrow.isoformat(),
+                    "week_index": 1,
+                    "exercises": [],
+                },
+                {
+                    "id": c_id,
+                    "title": "全身 C",
+                    "date": today.isoformat(),
+                    "week_index": 1,
+                    "exercises": [],
+                },
+            ],
+        },
+        "today_day": {"id": c_id},
+    }
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "把全身 A 改到后天",
+            context,
+        )
+    )
+
+    assert result is not None
+    action = result["actions"][0]
+    assert action["type"] == "reschedule_training"
+    assert action["payload"]["day_id"] == a_id
+    assert action["payload"]["target_date"] == (
+        today + timedelta(days=2)
+    ).isoformat()
+
+
+def test_reschedule_card_claim_without_action_is_guarded():
+    text = _guard_action_card_claims(
+        "改期卡已经准备好了，确认后全身 A 就落到明天。",
+        [],
+        None,
+        None,
+    )
+
+    assert "改期卡" not in text
+    assert "没有生成可确认的操作卡" in text
+
+
+def test_goal_reply_with_ding_zai_is_aligned():
+    actions = [
+        {
+            "type": "update_goal",
+            "title": "目标改为减脂，65kg，12月31日",
+            "summary": "目标体重 65kg",
+            "payload": {"target_weight_kg": 65},
+        }
+    ]
+    message = "我更建议把 12 月 31 日先定在 68kg，你想保留 65kg，还是先按 68kg 定？"
+
+    _guard_goal_action_consistency(message, actions)
+
+    assert actions[0]["payload"]["target_weight_kg"] == 68
+    assert "68kg" in actions[0]["title"]
+    assert "65kg" not in actions[0]["summary"]

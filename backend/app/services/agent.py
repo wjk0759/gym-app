@@ -606,6 +606,7 @@ async def _food_body_multi_intent_turn(
             payload[key] = value
     if not payload:
         return None
+    body_target = _body_target_date(body_clauses[0])
 
     food_clauses = [
         clause
@@ -620,7 +621,7 @@ async def _food_body_multi_intent_turn(
     if not food_clauses:
         if other_clauses:
             return None
-        metric_action = _build_body_metric_action(payload)
+        metric_action = _build_body_metric_action(payload, body_target)
         if metric_action is None:
             return {
                 "actions": [],
@@ -630,7 +631,7 @@ async def _food_body_multi_intent_turn(
             "actions": [metric_action],
             "reply": (
                 f"身体数据识别好了：{_body_metric_summary(payload)}。"
-                "确认后写入今天身体数据。"
+                f"确认后写入{_body_date_label(body_target)}身体数据。"
             ),
         }
     if other_clauses or len(food_clauses) != 1:
@@ -652,7 +653,7 @@ async def _food_body_multi_intent_turn(
             "actions": [],
             "reply": question or "饮食部分还需要确认，确认后一起写入。",
         }
-    metric_action = _build_body_metric_action(payload)
+    metric_action = _build_body_metric_action(payload, body_target)
     if metric_action is None:
         return {
             "actions": [],
@@ -696,7 +697,8 @@ async def _body_reschedule_multi_intent_turn(
     metric_payload = _body_metric_payload(body_clause)
     if metric_payload is None:
         return None
-    metric_action = _build_body_metric_action(metric_payload)
+    body_target = _body_target_date(body_clause)
+    metric_action = _build_body_metric_action(metric_payload, body_target)
     if metric_action is None:
         return {
             "actions": [],
@@ -765,27 +767,42 @@ async def _body_reschedule_multi_intent_turn(
         "actions": actions,
         "reply": (
             f"{training_note}"
-            f"身体数据按今天记录：{_body_metric_summary(metric_payload)}。"
+            f"身体数据按{_body_date_label(body_target)}记录："
+            f"{_body_metric_summary(metric_payload)}。"
             "确认后一起执行。"
         ).strip(),
     }
 
 
-def _build_body_metric_action(payload: dict) -> dict | None:
+def _build_body_metric_action(
+    payload: dict,
+    target_date: date | None = None,
+) -> dict | None:
+    date_label = ""
+    if target_date is not None:
+        payload["date"] = target_date.isoformat()
+        today = datetime.now(REVIEW_TZ).date()
+        if target_date != today:
+            date_label = f"{target_date.month}月{target_date.day}日"
     title = "记录身体数据"
     if "weight_kg" in payload:
-        title = f"记录体重 {payload['weight_kg']:g}kg"
+        title = f"记录{date_label}体重 {payload['weight_kg']:g}kg"
     elif "body_fat_pct" in payload:
-        title = f"记录体脂 {payload['body_fat_pct']:g}%"
+        title = f"记录{date_label}体脂 {payload['body_fat_pct']:g}%"
     elif "waist_cm" in payload:
-        title = f"记录腰围 {payload['waist_cm']:g}cm"
+        title = f"记录{date_label}腰围 {payload['waist_cm']:g}cm"
+    summary = (
+        f"写入 {target_date.isoformat()} 身体数据"
+        if target_date is not None
+        else "写入今天身体数据"
+    )
     try:
         return _normalize_app_actions(
             [
                 {
                     "type": "log_body_metric",
                     "title": title,
-                    "summary": "写入今天身体数据",
+                    "summary": summary,
                     "requires_confirmation": True,
                     "payload": payload,
                 }
@@ -815,6 +832,17 @@ _BODY_QUESTION_TOKENS = re.compile(
 )
 
 
+def _body_target_date(clause: str) -> date:
+    return parse_food_date(clause) or datetime.now(REVIEW_TZ).date()
+
+
+def _body_date_label(target: date) -> str:
+    today = datetime.now(REVIEW_TZ).date()
+    if target == today:
+        return "今天"
+    return f"{target.month}月{target.day}日"
+
+
 def _body_metric_action_turn(message: str) -> dict | None:
     """Deterministic body-metric card for explicit logging turns.
 
@@ -836,12 +864,16 @@ def _body_metric_action_turn(message: str) -> dict | None:
         return None
     parsed_date = parse_food_date(message)
     today = datetime.now(REVIEW_TZ).date()
-    if parsed_date is not None and parsed_date != today:
-        return None
+    target = parsed_date or today
+    if target > today:
+        return {
+            "actions": [],
+            "reply": "未来日期的身体数据还不能记录，换一个日期？",
+        }
     payload = _body_metric_payload(message)
     if not payload:
         return None
-    action = _build_body_metric_action(payload)
+    action = _build_body_metric_action(payload, target)
     if action is None:
         return {
             "actions": [],
@@ -851,7 +883,7 @@ def _body_metric_action_turn(message: str) -> dict | None:
         "actions": [action],
         "reply": (
             f"身体数据识别好了：{_body_metric_summary(payload)}。"
-            "确认后写入今天身体数据。"
+            f"确认后写入{_body_date_label(target)}身体数据。"
         ),
     }
 
@@ -889,6 +921,12 @@ def _food_correction_without_pending(
     return _looks_like_food_clause(message)
 
 
+_OTHER_ACTION_MARKER_RE = re.compile(
+    r"改到|改期|顺延|挪到|换到|调到|跳过|不练了|删除|删掉|去掉|移除|"
+    r"加一组|减一组|再记|再帮|再加|另外|还有|同时|顺便|并且|以及"
+)
+
+
 def _looks_like_strength_log_message(message: str) -> bool:
     if re.search(r"吃|喝|餐|饭|饮食|体重|体脂|腰围", message):
         return False
@@ -908,6 +946,8 @@ def _strength_log_action_turn(
     user_id: str,
     message: str,
 ) -> dict | None:
+    if _OTHER_ACTION_MARKER_RE.search(message):
+        return None
     if not _looks_like_strength_log_message(message):
         return None
     clean = re.sub(
@@ -918,6 +958,11 @@ def _strength_log_action_turn(
     )
     clean = re.sub(
         r"刚练完|练完|练了|做了|今天|昨天|前天|刚才|补录|记录|每组|大概|训练",
+        " ",
+        clean,
+    )
+    clean = re.sub(
+        r"(?:上|下|这|本)?(?:周|星期|礼拜)[一二三四五六日天]",
         " ",
         clean,
     )
@@ -982,7 +1027,10 @@ def _strength_log_action_turn(
             weight /= 2
     target = parse_food_date(message) or datetime.now(REVIEW_TZ).date()
     if target > datetime.now(REVIEW_TZ).date():
-        return None
+        return {
+            "actions": [],
+            "reply": "未来的训练还不能记录，换一个日期？",
+        }
     try:
         action = _normalize_app_actions(
             [
@@ -1047,13 +1095,23 @@ def _cardio_log_action_turn(
     user_id: str,
     message: str,
 ) -> dict | None:
+    if _OTHER_ACTION_MARKER_RE.search(message):
+        return None
     if not _looks_like_cardio_log_message(message):
         return None
     from .coach_control.capabilities.training import resolve_cardio
 
     resolution = resolve_cardio(message)
     if not resolution.get("ready"):
-        return None
+        questions = resolution.get("questions") or []
+        return {
+            "actions": [],
+            "reply": str(
+                questions[0]
+                if questions
+                else "有氧训练还需要补充时长。"
+            ),
+        }
     payload = resolution.get("payload") or {}
     try:
         action = _normalize_app_actions(
@@ -1163,6 +1221,21 @@ def _message_target_date(message: str) -> date | None:
     today = datetime.now(REVIEW_TZ).date()
     delta = (target - today.isoweekday()) % 7
     return today + timedelta(days=delta)
+
+
+def _week_window(message: str) -> tuple[date, date, int]:
+    today = datetime.now(REVIEW_TZ).date()
+    monday = today - timedelta(days=today.isoweekday() - 1)
+    if re.search(r"下下周", message):
+        offset = 2
+    elif re.search(r"下周|下星期|下礼拜", message):
+        offset = 1
+    elif re.search(r"上周|上星期|上礼拜", message):
+        offset = -1
+    else:
+        offset = 0
+    start = monday + timedelta(days=offset * 7)
+    return start, start + timedelta(days=6), offset
 
 
 def _plan_day_date(day: dict, states: dict[str, str]) -> date | None:
@@ -1359,6 +1432,8 @@ def _skip_training_action_turn(
 ) -> dict | None:
     if re.search(r"吃|喝|饮食|餐|体重|体脂|腰围|记录|补录", message):
         return None
+    if re.search(r"跑了|跑步|骑车|骑行|游泳|公里|分钟|练完|做了", message):
+        return None
     date_refs = set(
         re.findall(
             r"今天|明天|后天|周[一二三四五六日天]|星期[一二三四五六日天]",
@@ -1405,27 +1480,51 @@ def _skip_training_action_turn(
     }
 
 
+def _skip_reschedule_conflict_turn(message: str) -> dict | None:
+    """A single training day cannot be both skipped and moved."""
+    if re.search(r"不练了|不练", message) and re.search(
+        r"挪到|改到|调整到|换到|顺延到",
+        message,
+    ):
+        return {
+            "actions": [],
+            "reply": (
+                "你是想直接跳过这次训练，还是改到另一天？"
+                "两者只能选一个，告诉我就按你选的生成确认卡。"
+            ),
+        }
+    return None
+
+
 def _skip_week_action_turn(
     db: Session,
     user_id: str,
     message: str,
     app_context: dict | None,
 ) -> dict | None:
-    """Skip every remaining training day in the current week."""
+    """Skip every training day in the requested week."""
     if re.search(
         r"吃|喝|饮食|餐|体重|体脂|腰围|记录|补录|"
         r"改到|改期|顺延|挪到|换到|调到",
         message,
     ):
         return None
-    if not re.search(r"这周|本周|这星期|剩下|剩余|全部|整周", message):
+    if not re.search(
+        r"这周|本周|这星期|下周|下星期|下礼拜|上周|上星期|上礼拜|"
+        r"剩下|剩余|全部|整周",
+        message,
+    ):
         return None
     if not re.search(r"跳过|不练了|不练|休息", message):
         return None
-    if re.search(
-        r"明天|后天|周[一二三四五六日天]|星期[一二三四五六日天]",
+    single_weekday = re.search(
+        r"(?:(?:上|下|这|本)\s*)?(?:周|星期|礼拜)\s*[一二三四五六日天]",
         message,
-    ) and not re.search(r"都|剩下|剩余|全部|整周", message):
+    )
+    if single_weekday and not re.search(
+        r"都|剩下|剩余|全部|整周|所有",
+        message,
+    ):
         return None
     if not isinstance(app_context, dict):
         return None
@@ -1441,8 +1540,10 @@ def _skip_week_action_turn(
         if isinstance(item, dict)
     }
     today = datetime.now(REVIEW_TZ).date()
-    week_end = today + timedelta(days=7 - today.isoweekday())
+    week_start, week_end, offset = _week_window(message)
+    week_label = "本周" if offset == 0 else ("下周" if offset > 0 else "上周")
     current_week = int(plan.get("current_week") or 1)
+    target_week_index = current_week + offset
     candidates: list[tuple[date, dict]] = []
     seen: set[tuple[str, str]] = set()
     for day in days:
@@ -1453,11 +1554,12 @@ def _skip_week_action_turn(
             weekday = _plan_day_weekday(day, states)
             if (
                 weekday is not None
-                and weekday >= today.isoweekday()
-                and int(day.get("week_index") or 1) == current_week
+                and int(day.get("week_index") or 1) == target_week_index
             ):
-                target = today + timedelta(days=weekday - today.isoweekday())
-        if target is None or target < today or target > week_end:
+                target = week_start + timedelta(days=weekday - 1)
+        if target is None or target < week_start or target > week_end:
+            continue
+        if offset == 0 and target < today:
             continue
         key = (target.isoformat(), str(day.get("title") or ""))
         if key in seen:
@@ -1467,7 +1569,9 @@ def _skip_week_action_turn(
     if not candidates:
         return {
             "actions": [],
-            "reply": "这周没有剩余训练可跳过，可能已经完成或已经跳过。",
+            "reply": (
+                f"{week_label}没有可跳过的训练，可能已经完成或已经跳过。"
+            ),
         }
     candidates.sort(key=lambda item: item[0])
     actions: list[dict] = []
@@ -1499,7 +1603,8 @@ def _skip_week_action_turn(
     return {
         "actions": actions,
         "reply": (
-            f"准备跳过本周剩余 {len(actions)} 次训练："
+            f"准备跳过{week_label}"
+            f"{'剩余 ' if offset == 0 else ''}{len(actions)} 次训练："
             f"{'、'.join(labels)}。确认后生效。"
         ),
     }
@@ -1589,7 +1694,8 @@ _PERMISSION_CLAIM_RE = re.compile(
     r"这(?:一)?轮.{0,8}准备.{0,6}(?:饮食|记录)"
 )
 _CARD_CLAIM_RE = re.compile(
-    r"记录卡|操作卡|确认卡|改课卡|动作卡|卡片|(?:点|点击)确认"
+    r"记录卡|操作卡|确认卡|改课卡|动作卡|改期卡|跳过卡|目标卡|"
+    r"饮食卡|训练卡|补录卡|卡片|(?:点|点击)确认"
 )
 
 
@@ -1644,8 +1750,9 @@ def _guard_action_card_claims(
 
 
 _GOAL_REPLY_VALUE_RE = re.compile(
-    r"(?:改成|改为|先定|定为|建议(?:按|先)?|目标(?:是|为|放在)?|"
-    r"控制在|定到|摸到|先摸到|稳住|稳定在|先到|达到|降到|减到|增到|提升到)"
+    r"(?:改成|改为|先定在|先定|定在|定为|建议(?:按|先)?|"
+    r"目标(?:是|为|放在)?|控制在|定到|摸到|先摸到|稳住|稳定在|"
+    r"先按|先到|达到|降到|减到|增到|提升到)"
     r"\s*(\d{2,3}(?:\.\d+)?)\s*(?:kg|公斤)"
 )
 
@@ -1745,6 +1852,219 @@ def _deterministic_extra_turn(
     return None
 
 
+def _body_action_for_clause(
+    clause: str,
+) -> tuple[dict | None, str | None]:
+    if not _looks_like_body_metric_clause(clause):
+        return None, None
+    payload = _body_metric_payload(clause)
+    if not payload:
+        return None, None
+    target = _body_target_date(clause)
+    if target > datetime.now(REVIEW_TZ).date():
+        return None, "身体数据不能记录到未来日期，换一个日期？"
+    action = _build_body_metric_action(payload, target)
+    if action is None:
+        return None, "这组身体数据超出可记录范围，请检查后再发。"
+    return action, None
+
+
+def _workout_action_for_clause(
+    db: Session,
+    user_id: str,
+    clause: str,
+) -> tuple[dict | None, str | None]:
+    for helper in (_strength_log_action_turn, _cardio_log_action_turn):
+        result = helper(db, user_id, clause)
+        if result is None:
+            continue
+        actions = result.get("actions") or []
+        if actions:
+            return actions[0], None
+        return None, str(
+            result.get("reply") or "训练补录还需要补充信息。"
+        )
+    return None, None
+
+
+def _reschedule_action_for_clause(
+    db: Session,
+    user_id: str,
+    clause: str,
+    app_context: dict | None,
+) -> tuple[dict | None, str | None]:
+    from .coach_control.runtime import _looks_like_reschedule
+
+    if not _looks_like_reschedule(clause):
+        return None, None
+    from .coach_control.capabilities.training import (
+        resolve as resolve_training,
+    )
+
+    resolution = resolve_training(db, user_id, clause, app_context)
+    if not resolution.get("ready"):
+        questions = resolution.get("questions") or []
+        return None, str(
+            questions[0]
+            if questions
+            else "没有找到要改期的训练，请从训练手账里选一天。"
+        )
+    payload = resolution.get("payload") or {}
+    if resolution.get("already"):
+        return None, f"训练本来就在 {payload.get('to_date')}，无需改期。"
+    from_date = str(payload.get("from_date") or "")
+    to_date = str(payload.get("to_date") or "")
+    title = str(payload.get("title") or "训练")
+    try:
+        action = _normalize_app_actions(
+            [
+                {
+                    "type": "reschedule_training",
+                    "title": "调整训练日期",
+                    "summary": f"把 {from_date} 的「{title}」改到 {to_date}",
+                    "requires_confirmation": True,
+                    "payload": {
+                        "day_id": payload.get("day_id"),
+                        "date": from_date,
+                        "target_date": to_date,
+                    },
+                }
+            ],
+            app_context,
+        )[0]
+    except ValueError as exc:
+        return None, str(exc)
+    return action, None
+
+
+def _clause_kind(clause: str) -> str:
+    from .coach_control.runtime import _looks_like_reschedule
+
+    if _looks_like_reschedule(clause):
+        return "reschedule"
+    if re.search(r"跳过|不练了|不练|休息一天|休一天", clause):
+        return "skip"
+    if _looks_like_body_metric_clause(clause):
+        return "body"
+    if _looks_like_strength_log_message(clause) or _looks_like_cardio_log_message(
+        clause
+    ):
+        return "workout"
+    if _looks_like_food_clause(clause):
+        return "food"
+    if re.search(r"删掉|删除|去掉|移除|加一组|减一组|改成|改为|换成|修改", clause):
+        return "modify"
+    return "unknown"
+
+
+async def _mixed_action_multi_intent_turn(
+    db: Session,
+    user_id: str,
+    clauses: list[str],
+    app_context: dict | None,
+) -> dict | None:
+    """Combine workout/food/body/skip clauses without silently dropping one."""
+    tagged: list[tuple[str, str]] = []
+    for clause in clauses:
+        kind = _clause_kind(clause)
+        if kind == "unknown":
+            return None
+        tagged.append((kind, clause))
+    kinds = {kind for kind, _ in tagged}
+    if sum(1 for kind, _ in tagged if kind == "skip") > 1:
+        # Multiple skip clauses are a batch; let the normal multi-action path
+        # handle them instead of producing duplicate single-day cards.
+        return None
+    if "modify" in kinds:
+        if len(tagged) > 1:
+            return {
+                "actions": [],
+                "reply": (
+                    "这条消息里有改课和其他操作，先分开确认："
+                    "这次先处理哪一件？"
+                ),
+            }
+        return None
+    if not (kinds & {"workout", "skip"}):
+        return None
+
+    actions: list[dict] = []
+    notes: list[str] = []
+    for kind, clause in tagged:
+        if kind == "food":
+            action, question = await _food_action_for_clause(
+                db,
+                user_id,
+                clause,
+                app_context,
+            )
+            if action is None:
+                return {
+                    "actions": [],
+                    "reply": question or "饮食部分还需要确认。",
+                }
+            actions.append(action)
+        elif kind == "body":
+            action, question = _body_action_for_clause(clause)
+            if action is None:
+                return {
+                    "actions": [],
+                    "reply": question or "身体数据还需要确认。",
+                }
+            actions.append(action)
+        elif kind == "workout":
+            action, question = _workout_action_for_clause(
+                db, user_id, clause
+            )
+            if action is None:
+                return {
+                    "actions": [],
+                    "reply": question or "训练补录还需要确认。",
+                }
+            actions.append(action)
+        elif kind == "reschedule":
+            action, note = _reschedule_action_for_clause(
+                db, user_id, clause, app_context
+            )
+            if action is not None:
+                actions.append(action)
+            if note:
+                notes.append(note)
+        elif kind == "skip":
+            result = _skip_training_action_turn(
+                db, user_id, clause, app_context
+            )
+            if result is None:
+                return {
+                    "actions": [],
+                    "reply": "跳过部分还需要确认是哪一天训练。",
+                }
+            skip_actions = result.get("actions") or []
+            if not skip_actions:
+                return {
+                    "actions": [],
+                    "reply": str(
+                        result.get("reply")
+                        or "跳过部分还需要确认是哪一天训练。"
+                    ),
+                }
+            actions.extend(skip_actions)
+    if not actions:
+        if notes:
+            return {"actions": [], "reply": " ".join(notes)}
+        return None
+    labels = [
+        str(action.get("summary") or action.get("title") or "操作")
+        for action in actions
+    ]
+    prefix = " ".join(notes)
+    reply = (
+        f"{prefix}识别到 {len(actions)} 个操作："
+        f"{'；'.join(labels)}。确认后一起执行。"
+    ).strip()
+    return {"actions": actions, "reply": reply}
+
+
 async def _multi_intent_action_turn(
     db: Session,
     user_id: str,
@@ -1774,12 +2094,18 @@ async def _multi_intent_action_turn(
                 "要新记，请说“新记 200g 米饭”。"
             ),
         }
+    conflict = _skip_reschedule_conflict_turn(message)
+    if conflict is not None:
+        return conflict
     skip_week_result = _skip_week_action_turn(
         db, user_id, message, app_context
     )
     if skip_week_result is not None:
         return skip_week_result
-    if not re.search(r"再记|再帮|再加|另外|还有|同时|顺便|并且|以及", message):
+    if not re.search(
+        r"再记|再帮|再加|再把|再改|再删|另外|还有|同时|顺便|并且|以及",
+        message,
+    ):
         body_result = _body_metric_action_turn(message)
         if body_result is not None:
             return body_result
@@ -1799,8 +2125,29 @@ async def _multi_intent_action_turn(
         cardio_result = _cardio_log_action_turn(db, user_id, message)
         if cardio_result is not None:
             return cardio_result
+    if len(clauses) == 1 and _looks_like_reschedule(message):
+        action, note = _reschedule_action_for_clause(
+            db, user_id, message, app_context
+        )
+        if action is not None:
+            return {
+                "actions": [action],
+                "reply": (
+                    f"{action.get('summary') or '训练改期'}。确认后生效。"
+                ),
+            }
+        if note:
+            return {"actions": [], "reply": note}
     if len(clauses) < 2:
         return None
+    mixed_result = await _mixed_action_multi_intent_turn(
+        db,
+        user_id,
+        clauses,
+        app_context,
+    )
+    if mixed_result is not None:
+        return mixed_result
     body_reschedule_result = await _body_reschedule_multi_intent_turn(
         db,
         user_id,
@@ -2608,6 +2955,13 @@ def _normalize_app_actions(
                 if fat < 3 or fat > 60:
                     raise ValueError("body_fat_pct out of range")
                 payload["body_fat_pct"] = fat
+            metric_date = str(payload.get("date") or "").strip()
+            if metric_date:
+                if not valid_date(metric_date):
+                    raise ValueError("body metric date must be YYYY-MM-DD")
+                if metric_date > datetime.now(REVIEW_TZ).date().isoformat():
+                    raise ValueError("future body metric dates are not allowed")
+                payload["date"] = metric_date
         if action_type == "create_diet_plan":
             strategy = str(payload.get("strategy") or "balanced").strip()
             if strategy not in {
