@@ -14,11 +14,11 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`f4ee701`（N1 `modify_workout` slug/器械前置校验已修并复测通过；生产后端 `f4ee701`，`/health/ready` **200**；Flyway **V44**；后端 **626 passed**、QA **76/76**、Ruff 通过；iOS 仍 `7618cb6`，已装 Wu-Tang；N1 修复只涉及后端，无新 iOS 包）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`4b54019`（N1 已通过；N2/N5 确定性修复 + N6 确定性计划 proposal + N3/N4 提示词收口；生产后端 `4b54019`，`/health/ready` **200**；Flyway **V44**；后端 **630 passed**、QA **76/76**、Ruff 通过；iOS 仍 `7618cb6`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
-- **macOS AI 教练二轮压测（2026-11-19）**：N1 P1 已由 Windows 修复并复测通过（前弓步→`vital-forward-lunges`，执行/撤销 200；无器械杠铃改走器械设置）。N2–N6 仍为 P2，不阻断。
-- **待办（macOS → Windows）**：无发布阻断；后续处理 N2–N6 与 C7–C11 文案/记忆。
+- **macOS AI 教练二轮压测（2026-11-19）**：N1 P1 已修复并复测通过；N2/N5 已做确定性修复，N6 已加确定性计划 proposal，N3/N4 已加提示词规则；N3/N4 仍非硬校验。
+- **待办（macOS → Windows）**：N2/N5/N6 已修，N3/N4 已加提示词；待 Mac 复测 N2–N6。C7–C11 仍未动。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -30,6 +30,43 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-19 · Windows（N2/N5/N6 + N3/N4 提示词收口）
+
+- 提交：`4b54019`，已推 `develop`；生产后端已部署 `agent.py`，SHA-256 与本地一致；`/health/ready` **200**；Flyway **V44**；无 iOS 变化（iOS 仍 `7618cb6`）。
+- N2 多余改期：
+  - 新增 `_reschedule_batch_error()`：用户只要求改一天时，出现多张 `reschedule_training` 直接返回工具错误。
+  - 用户明确说“都/分别/整周”或句中出现两次改期动词时放行。
+  - prompt 规则补充：只生成用户明确要求的那一天。
+- N5 食物 + 体重多意图：
+  - 新增 `_food_body_multi_intent_turn()` / `_food_action_for_clause()`。
+  - “午餐吃了200g米饭，再记体重72kg” → 生成 `log_food` + `log_body_metric` 两张卡。
+  - “把午餐米饭改成200g，再记体重72kg”且没有待确认卡 → 先追问“修改已记录还是新记一笔”，不再静默当新记录。
+  - 多意图 helper 现在先于 pending 修正执行；带“再记/新记”时跳过旧卡修正。
+- N6 重新生成计划：
+  - 新增 `_looks_like_regenerate_plan_request()` + 确定性 proposal 分支。
+  - “帮我重新生成一份训练计划” → 直接调用 `propose_plan` 生成草案，返回 proposal，不再反问训练日/时长/动作。
+  - 带具体参数（每周/分钟/动作等）时不劫持，交给模型。
+- N3 权限文案：
+  - prompt 新增：不要声称“只有某种权限/只拿到某种权限”；做不到就直说这轮先处理什么。
+- N4 超器械重量：
+  - prompt 新增：超过现有器械能力时先确认或改成可用重量，不生成超重卡。
+  - 目前是提示词层，不是硬校验。
+- 验证：
+  - 后端 **630 passed**；QA **76/76**；Ruff 通过。
+  - 新增/更新回归：多余改期守卫、食物+体重双卡、无 pending 的“改成”追问、重新生成计划意图、N1 modify 校验。
+  - GitHub Backend Tests `4b54019` ✓。
+- Mac 需要做：
+  1. 用生产 `/agent/chat` 复测 N2：“把周一没练的全身 A 挪到明天”只出一张改期卡。
+  2. N5：“午餐吃了200g米饭，再记体重72kg”出饮食 + 体重两张卡；再说“把午餐米饭改成200g，再记体重72kg”应追问而不是直接新记。
+  3. N6：“帮我重新生成一份训练计划”应返回计划 proposal。
+  4. N3：“删除动作”不应再出现“只有饮食权限”的矛盾文案。
+  5. N4：只有 8kg 哑铃时要求 20kg，应追问/改重量，不生成 20kg 卡（提示词层，重点看是否遵守）。
+- 不要恢复：
+  - 不要允许多余的第二张改期卡。
+  - 不要把“改成”在没有 pending 时静默当新记录。
+  - 不要让“重新生成计划”只反问不生成 proposal。
+  - 不要声称不存在的工具权限。
 
 ### 2026-11-19 · macOS（N1 复测通过；生产后端已部署）
 
