@@ -14,11 +14,11 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`7618cb6`（体脂卡片 frame 修复已复测通过；iOS Build `7618cb6` ✓；生产后端 `83fc7b0`，`/health/ready` **200**；Flyway **V44**；`FitAITests` **140/140**、UI **6/6**；体脂 6 档/跳过路径/生成冷却通过；iOS `7618cb6` 已装 Wu-Tang）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`f4ee701`（N1 `modify_workout` slug/器械前置校验已修；生产后端 `f4ee701`，`/health/ready` **200**；Flyway **V44**；后端 **626 passed**、QA **76/76**、Ruff 通过；iOS 仍 `7618cb6`，已装 Wu-Tang；**N1 未真机复测前不部署新版本**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过；仅剩 C7–C11 P2。
 - **macOS AI 教练二轮压测（2026-11-19）**：同一报告新增第二十五节；**N1 P1：`modify_workout` 换“前弓步”生成不存在 slug `forward-lunge`，执行 422**；另有未请求的第二次改期、权限文案矛盾、20kg 超过器械、多意图漏体重、重新生成计划无入口等 P2。本轮只压测，未改代码、未部署。
-- **待办（macOS → Windows）**：修 `modify_workout` 的 slug/器械校验（N1）；再处理 N2/N3/N4/N5/N6。修完 Mac 复测。
+- **待办（macOS → Windows）**：N1 已由 Windows 在服务端前置修复（`f4ee701`），待 Mac 复测；N2/N3/N4/N5/N6 仍待处理。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -30,6 +30,42 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-19 · Windows（N1 modify_workout 非法 slug 前置校验）
+
+- 提交：`f4ee701`，已推 `develop`；生产后端已部署 `agent.py`，SHA-256 与本地一致；`/health/ready` **200**；Flyway **V44**；无 iOS 变化（iOS 仍 `7618cb6`）。
+- 根因：
+  - `lookup_exercise` 走的是 `exercise_search` 的 RAG 文件结果，返回里**没有数据库真实 `slug`**。
+  - `_normalize_workout_changes()` 只校验 slug 格式，不查动作库。
+  - `propose_app_actions` 只对 `log_workout` 做 slug/器械校验，`modify_workout` 没有。
+  - 模型把“前弓步”直译成 `forward-lunge`，卡片生成成功，直到执行 `prepare_modify_workout → _validate_exercises` 才 422。
+- 修法：
+  - `lookup_exercise` 改为直接查 `Exercise` 表，返回真实 `slug`、中文名、英文名、器械、部位和说明。
+  - `propose_app_actions` 新增 `_modify_workout_validation_error()`：
+    - `from_slug` 必须在 `app_context.plan.days[].exercises[].slug` 中
+    - `to_slug` / `add.slug` 必须真实存在、启用、器械已拥有、无伤病冲突
+    - `sets/reps/weight/rest` 的 slug 必须是当天已有动作
+    - 失败返回工具错误 + 近似动作建议（如 `前弓步(vital-forward-lunges)`），让模型先 `lookup_exercise` 重试
+    - 当前 `scope` 只支持 `day`，提前拒绝 iOS 不支持的 `scope=plan`
+  - prompt 规则 12 更新：必须使用 `lookup_exercise` 返回的真实 slug，禁止直译英文。
+- 验证：
+  - 后端 **626 passed**；QA **76/76**；Ruff 通过。
+  - 新增 `test_agent_workout_modify_validation.py`：literal slug 拒绝、真实 slug 通过、from_slug 不在当天拒绝、未拥有器械拒绝、lookup 返回真实 slug。
+  - GitHub Backend Tests `f4ee701` ✓。
+  - 未在 Windows 真机验证。
+- Mac 需要做：
+  1. 直接用生产后端 `/agent/chat` 复测：“把周五全身 C 的深蹲换成前弓步”。
+  2. 预期不再生成 `forward-lunge` 死卡；模型应改用 `vital-forward-lunges`，或先返回可读工具错误再重试。
+  3. 确认卡执行成功，计划动作变成前弓步。
+  4. 另测：
+     - `from_slug` 不存在 → 不生成卡
+     - 换入用户没有的器械 → 不生成卡
+     - `lookup_exercise("前弓步")` 返回真实 slug
+  5. N2/N3/N4/N5/N6 仍按 P2 处理。
+- 不要恢复：
+  - 不要让 `lookup_exercise` 继续返回没有 slug 的 RAG-only 结果。
+  - 不要让 `modify_workout` 跳过 propose 阶段的 slug/器械校验。
+  - 不要接受 `forward-lunge` 这类直译 slug。
 
 ### 2026-11-19 · macOS（AI 教练二轮压测：modify_workout 非法 slug，P1）
 
