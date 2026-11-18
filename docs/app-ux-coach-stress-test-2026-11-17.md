@@ -1438,3 +1438,116 @@ N22 的 title/summary 同步已合并，但 `_GOAL_REPLY_VALUE_RE` 的“先定�
 - 本轮只压测，未改代码、未部署；生产后端 `c463943`，`/health/ready` 200。
 - iOS 源码已到 `9bfb979`（今日饮食工具行），但本轮未 build；真机仍 `7618cb6`。
 - N23/N24/N25 建议作为下一轮 P1；N26–N28 一并收口后再发布。
+
+## 三十五、2026-11-19 N23–N28 复测（e00708a）：通过并部署
+
+- 环境：生产后端 `e00708a`；iOS 源码 `e00708a`（含 `9bfb979` 饮食工具行）；真机 Wu-Tang；账号 `macqa_coach`；真实 12 天计划 + app_context。
+- 生产校验：`agent.py`、`food_text.py`、`coach_control/capabilities/training.py` 的 SHA-256 与本地一致；`/health/ready` 200。
+- 方式：生产 `/agent/chat`，除历史体重 iOS 写入外只生成待确认卡，不执行。
+
+### N23 通过：相对日期正确
+
+```text
+上周五称的体重是72kg
+→ log_body_metric {"weight_kg":72,"date":"2026-11-13"}
+→ 回复“写入11月13日身体数据”
+
+上周五跑了5公里，30分钟
+→ log_workout date=2026-11-13
+
+上周五深蹲 4组8次 20kg
+→ log_workout date=2026-11-13，4 组 × 8 次
+
+下周五跑了5公里，30分钟
+→ 不出卡，回复“未来的训练还不能记录，换一个日期？”
+```
+
+iOS `saveBodyCheckIn(date:)` 已编译通过：历史体重卡执行后写历史日期，只有最新一条才更新 profile；未来日期被拒绝。
+
+### N24 通过：下周跳过正确
+
+```text
+跳过下周五的训练 → date=2026-11-27
+下周都不练了，帮我跳过下周的训练
+→ 3 张 skip 卡：11-23 全身 A、11-25 全身 B、11-27 全身 C
+跳过下周的全部训练 → 同样 3 张卡
+下周三不练了 → 11-25
+这周都不练了，帮我跳过剩下的训练 → 仍只跳过本周五 11-20
+```
+
+### N25 通过：含 workout 的多意图合并
+
+```text
+午餐吃了200g米饭，刚跑了5公里30分钟
+→ log_food + log_workout 两张卡
+
+刚跑了5公里30分钟，再把周五 C 改到周六
+→ log_workout + reschedule_training 两张卡
+
+刚跑了5公里30分钟，明天 C 不练了
+→ log_workout + skip_training 两张卡
+
+体重72kg，再记一下刚跑的5公里30分钟
+→ log_body_metric + log_workout 两张卡；不再出现“这道菜…”
+
+午餐吃了200g米饭，刚跑了5公里30分钟，体重72kg
+→ log_food + log_workout + log_body_metric 三张卡
+
+午餐吃了200g米饭，另外把周五 C 的深蹲加一组
+→ actions=[]
+→ “这条消息里有改课和其他操作，先分开确认：这次先处理哪一件？”
+```
+
+改课与其他操作无法安全合并时明确追问，不再静默丢改课。
+
+### N26 通过：跳过+改期先追问
+
+```text
+周五 C 不练了，挪到周日
+→ actions=[]
+→ “你是想直接跳过这次训练，还是改到另一天？两者只能选一个…”
+```
+
+### N27 通过：改期卡不再空口
+
+```text
+把全身 A 改到明天
+→ reschedule_training，day_id=2026-11-23 全身 A，target_date=2026-11-20
+```
+
+额外函数级验证：
+
+```text
+_guard_action_card_claims("行，改期卡已经准备好了…", [], None, None)
+→ “这条还没有生成可确认的操作卡，先不写入…”
+```
+
+### N28/N22 通过：目标值同步
+
+函数级验证：
+
+```text
+回复“先定在 68kg 更稳”
+payload 65 → 68
+title “目标改为减脂，65kg…” → 68kg
+summary “目标体重 65kg…” → 68kg
+并追加“目标卡已按 68kg 准备；如果仍想 65kg，先不要确认”
+```
+
+“先摸到 67kg / 稳住 67kg”和“建议先按 68.5kg”也分别得到 67/68.5 的 payload/title/summary 一致。
+
+端到端重试“你直接说先定在多少公斤，然后出卡”也返回 `target_weight_kg=68`、title 68kg，不再出现建议 68、卡片 65。
+
+### 回归
+
+- N17 体重 + 改期仍出两张卡，身体数据日期为今天。
+- N18 本周批量跳过仍只跳过本周剩余训练。
+- N13 5 组 × 20 次、N14 删除最后动作、N15 自然语言跳过、N16 记体重、N7 多身体指标均通过。
+- `/agent/memories` 仍无新增“已改到/待确认”的 pending schedule 记忆。
+
+### 测试与部署
+
+- 后端：Windows 报告 **675 passed**、QA **76/76**、Ruff 通过；生产 `/health/ready` 200。
+- iOS：`FitAITests` **140/140**、`FitAIUITests` **6/6**；phone-only Release build 成功，已安装并启动 Wu-Tang `com.wjk.fitai`。
+- 生产后端已是 `e00708a`；iOS 新包已安装。
+- 本轮 N23–N28 全部通过，无新增阻断。历史 P2 文案类（N3/N6/C7–C11 等）未逐条重测。
