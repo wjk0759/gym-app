@@ -37,13 +37,7 @@ extension NutritionView {
     }
 
     var toolRow: some View {
-        LazyVGrid(
-            columns: Array(
-                repeating: GridItem(.flexible(), spacing: 8),
-                count: 3
-            ),
-            spacing: 8
-        ) {
+        HStack(alignment: .top, spacing: 8) {
             toolTile(
                 title: "拍照识别",
                 detail: "估算热量",

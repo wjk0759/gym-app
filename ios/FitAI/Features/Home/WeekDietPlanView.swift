@@ -270,7 +270,8 @@ struct WeekDietPlanView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            ForEach(week.days) { day in
+            ForEach(Array(week.days.enumerated()), id: \.offset) { pair in
+                let day = pair.element
                 DisclosureGroup {
                     VStack(alignment: .leading, spacing: 7) {
                         HStack(spacing: 8) {
@@ -281,7 +282,8 @@ struct WeekDietPlanView: View {
                         .font(.system(size: 9.5, weight: .semibold))
                         .foregroundStyle(Theme.tertiaryText)
 
-                        ForEach(day.meals) { meal in
+                        ForEach(Array(day.meals.enumerated()), id: \.offset) { pair in
+                            let meal = pair.element
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("\(meal.name) · \(meal.kcal) kcal")
                                     .font(AppType.caption.weight(.semibold))

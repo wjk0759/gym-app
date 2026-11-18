@@ -141,8 +141,8 @@ struct AddFoodView: View {
                 .foregroundStyle(Theme.tertiaryText)
                 .textCase(.uppercase)
 
-            ForEach(foods) { food in
-                foodRow(food)
+            ForEach(Array(foods.enumerated()), id: \.offset) { pair in
+                foodRow(pair.element)
             }
         }
     }

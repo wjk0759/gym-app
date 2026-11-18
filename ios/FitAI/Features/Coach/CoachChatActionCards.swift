@@ -347,12 +347,14 @@ extension CoachChatView {
                     .foregroundStyle(Theme.warning)
             }
 
-            ForEach(week.days) { day in
+            ForEach(Array(week.days.enumerated()), id: \.offset) { pair in
+                let day = pair.element
                 let dayDate = FitnessDate.date(from: day.date)
                 let isToday = dayDate.map { Calendar.current.isDateInToday($0) } ?? false
                 DisclosureGroup {
                     VStack(alignment: .leading, spacing: 7) {
-                        ForEach(day.meals) { meal in
+                        ForEach(Array(day.meals.enumerated()), id: \.offset) { pair in
+                            let meal = pair.element
                             let mealType = MealType(rawValue: meal.meal)
                             let alreadyLogged = store.foodLogs.contains { log in
                                 guard let planDate = log.planDate,

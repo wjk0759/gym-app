@@ -290,9 +290,12 @@ struct NutritionView: View {
 
                 if mode == .plan {
                     planHeader(snapshot: snapshot)
-                    ForEach(meals.indices, id: \.self) { index in
-                        let meal = meals[index]
-                        planMealPage(meal, index: index, logs: snapshot.byMeal[mealType(for: meal)] ?? [])
+                    ForEach(Array(meals.enumerated()), id: \.offset) { pair in
+                        planMealPage(
+                            pair.element,
+                            index: pair.offset,
+                            logs: snapshot.byMeal[pair.element.meal] ?? []
+                        )
                     }
                 } else {
                     logHeader(snapshot: snapshot)
