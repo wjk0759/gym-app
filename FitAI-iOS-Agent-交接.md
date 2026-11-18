@@ -14,10 +14,10 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`3293aa5`（新用户密码注册 account/password 传参已修并复测通过；iOS Build `3293aa5` ✓；生产后端仍 `83fc7b0`，`/health/ready` **200**；Flyway **V44**；`FitAITests` **138/138**、UI **6/6**；**可选体型/体脂第 10 步体脂卡片被底部栏遮挡、点击 16–20% 选中 25–29%，P1 阻断，Wu-Tang 仍 `9d340c8`，未部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`22da58b`（onboarding 体脂卡片被底部栏遮挡/点击错位已修；iOS Build `22da58b` ✓；生产后端仍 `83fc7b0`，`/health/ready` **200**；Flyway **V44**；注册修复已通过；**体脂布局未复测前不部署，Wu-Tang 仍 `9d340c8`**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复并通过；注册传参修复已通过；可选体型步骤已出现，但体脂卡片底部遮挡/点击错位待修；训练日期滚动/计划限制单元测试通过，用户级待复测。
-- **待办（macOS → Windows）**：修可选体型/体脂步骤底部安全区/点击错位；确保 16–20%、25–29% 等第三行卡片完整可见且点选正确；然后复测跳过路径、训练日期滚动、30 秒冷却/日限。
+- **待办（macOS → Windows）**：体脂卡片底部遮挡/点击错位已由 Windows 修复（`1feee1a` + `a997bde` + `22da58b`），待 Mac 复测逐张卡片命中/报告百分比与跳过路径；随后一起复测训练日期滚动、计划生成冷却/日限。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -65,6 +65,37 @@
   - 不要恢复“首周之前”卡片或 `managedEarlyKeys`。
   - 不要允许同一天超过 10 次 AI 计划生成，或把冷却改回 60 秒。
   - 不要给教练 Tab 加回红点。
+
+### 2026-11-18 · Windows（onboarding 体脂卡片遮挡/点击错位修复）
+
+- 提交：`1feee1a` + `a997bde` + `22da58b`，已推 `develop`；iOS Build `22da58b` ✓；无后端变化（生产仍是 `83fc7b0`）。
+- 原因：
+  - `mainFlow` 把 `bottomBar` 用 `.safeAreaInset(edge: .bottom)` 叠在 `VStack` 外层；可选体脂步骤的底部栏变成两个全宽按钮后更高，滚动内容最后一行仍落在栏下，热区被遮挡/偏移。
+- 修法：
+  - `bottomBar` 改为 `mainFlow` 的布局兄弟节点，不再覆盖滚动内容：
+    ```swift
+    VStack(spacing: 0) {
+        header
+        AppScrollView { ... }
+        bottomBar
+    }
+    ```
+  - 内容底部 padding：普通步骤 22，可选体脂/体型步骤 12，滚动区域止于操作栏上方。
+  - 抽 `selectBodyFat(_:)`，统一写 `bodyFatID` + `draft.bodyFatPCT`。
+  - 新增 `BodyFatSelectionTests`：16–20% → 18%、25–29% → 27%、ID 唯一。
+- 验证：
+  - GitHub iOS Build `22da58b` ✓（前两次因 macOS runner 容量取消，非代码失败）。
+  - Windows 未运行 `FitAITests` / UI。
+- Mac 需要做：
+  1. 拉 `22da58b`；`xcodegen generate`；安装最新 iOS。
+  2. 第 10 步体脂页：iPhone 17e + SE 上第三行完整可见，底部按钮不覆盖卡片。
+  3. 逐张点击 6 个体脂档位，确认选中态和报告百分比一一对应；重点复测 16–20% 不再选成 25–29%。
+  4. 复测体型/体脂两个跳过路径。
+  5. 注册 → onboarding → 滚动训练日期 → 30 秒冷却/10 次日限 → 教练 Tab 红点。
+  6. 跑 `FitAITests` / UI 6/6。
+- 不要恢复：
+  - 不要用 `.safeAreaInset` 把操作栏叠在体脂卡片上。
+  - 不要让“下一步/跳过体脂”栏挡住卡片热区。
 
 ### 2026-11-18 · macOS（注册修复通过；可选体脂步骤点击错位，未部署）
 
