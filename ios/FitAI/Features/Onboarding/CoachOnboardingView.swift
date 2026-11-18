@@ -188,6 +188,11 @@ struct CoachOnboardingView: View {
         withAnimation(Motion.smooth) { step = reportStepIndex }
     }
 
+    func selectBodyFat(_ option: BodyFatOption) {
+        bodyFatID = option.id
+        draft.bodyFatPCT = option.midpoint
+    }
+
     func save() {
         guard !draft.nickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             alertMessage = "先填一个称呼，方便教练在对话里叫你。"

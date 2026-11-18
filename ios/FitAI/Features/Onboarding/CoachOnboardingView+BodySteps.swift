@@ -23,8 +23,7 @@ extension CoachOnboardingView {
                         sex: draft.sex,
                         selected: bodyFatID == option.id
                     ) {
-                        bodyFatID = option.id
-                        draft.bodyFatPCT = option.midpoint
+                        selectBodyFat(option)
                     }
                 }
             }
