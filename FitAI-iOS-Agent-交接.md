@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`31cde33`（N3/N9/N10/N11 + C7–C11 收口；生产后端 `31cde33`，`/health/ready` **200**；Flyway **V44**；后端 **641 passed**、QA **76/76**、Ruff 通过；iOS 仍 `7618cb6`；待 Mac 一次性复测 N3/N7–N12 与 C7–C11）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`83227b4`（N3/N9/N10/N11 + C7–C11 收口；生产后端 `83227b4`，`/health/ready` **200**；Flyway **V44**；后端 **642 passed**、QA **76/76**、Ruff 通过；iOS 仍 `7618cb6`；待 Mac 一次性复测 N3/N7–N12 与 C7–C11）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -34,7 +34,7 @@
 
 ### 2026-11-19 · Windows（N3/N9/N10/N11 + C7–C11 收口）
 
-- 提交：`31cde33`，已推 `develop`；生产后端已部署 `agent.py` + `memory.py`，SHA-256 与本地一致；`/health/ready` **200**；Flyway **V44**；无 iOS 变化（iOS 仍 `7618cb6`）。
+- 提交：`83227b4`，已推 `develop`；生产后端已部署 `agent.py` + `memory.py`，SHA-256 与本地一致；`/health/ready` **200**；Flyway **V44**；无 iOS 变化（iOS 仍 `7618cb6`）。
 - N10 徒手训练补录：
   - “100个俯卧撑分5组” → 确定性生成 `log_workout`（5 组 × 100 次，真实 slug）。
   - 动作用数据库精确/包含匹配，不再依赖 RAG 名称猜测。
@@ -62,9 +62,9 @@
   - “忘掉我不喜欢跑步” → 直接停用匹配的长期记忆并回报内容；
   - 没匹配到时给 `open_screen agent_memory` 卡，不再回复“删不掉”。
 - 验证：
-  - 后端 **641 passed**；QA **76/76**；Ruff 通过。
-  - 新增回归：徒手 5×100、cardio、自然语言 skip、删除最后一个动作、一周高蛋白、整计划诚实降级、确认前文案、无卡承诺、记忆删除、A/B/C 记忆校验。
-  - GitHub Backend Tests `31cde33` ✓。
+  - 后端 **642 passed**；QA **76/76**；Ruff 通过。
+  - 新增回归：徒手 5×100、cardio、自然语言 skip、多日 skip 不被压成一天、删除最后一个动作、一周高蛋白、整计划诚实降级、确认前文案、无卡承诺、记忆删除、A/B/C 记忆校验。
+  - GitHub Backend Tests `83227b4` ✓。
 - Mac 需要做（一次性复测）：
   1. N3：“把周五全身 C 的最后一个动作删掉”应直接出删除卡，无权限矛盾文案。
   2. N7：“今天体重72kg，体脂18%，腰围80” → 一张身体数据卡。
