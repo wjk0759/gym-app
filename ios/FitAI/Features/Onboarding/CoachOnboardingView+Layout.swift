@@ -114,13 +114,11 @@ extension CoachOnboardingView {
                 stepContent
                     .padding(.horizontal, 20)
                     .padding(.top, 10)
-                    .padding(.bottom, 22)
+                    .padding(.bottom, isOptionalBodyStep ? 12 : 22)
             }
-        }
-        .background(AppBackground())
-        .safeAreaInset(edge: .bottom, spacing: 0) {
             bottomBar
         }
+        .background(AppBackground())
     }
 
     var header: some View {
