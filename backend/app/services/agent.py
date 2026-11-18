@@ -1650,6 +1650,16 @@ _GOAL_REPLY_VALUE_RE = re.compile(
 )
 
 
+_GOAL_VALUE_RE_TEMPLATE = r"(?<![\d.]){value}(?=\s*(?:kg|公斤|$|[，,。；;\s]))"
+
+
+def _rewrite_goal_value(text: str, old: float, new: float) -> str:
+    if not text:
+        return text
+    pattern = _GOAL_VALUE_RE_TEMPLATE.format(value=re.escape(f"{old:g}"))
+    return re.sub(pattern, f"{new:g}", text)
+
+
 def _guard_goal_action_consistency(
     message: str,
     actions: list[dict],
@@ -1692,6 +1702,16 @@ def _guard_goal_action_consistency(
         return message
     for action in goal_actions:
         action["payload"]["target_weight_kg"] = suggested
+        action["title"] = _rewrite_goal_value(
+            str(action.get("title") or ""),
+            payload_value,
+            suggested,
+        )
+        action["summary"] = _rewrite_goal_value(
+            str(action.get("summary") or ""),
+            payload_value,
+            suggested,
+        )
     note = (
         f"目标卡已按 {suggested:g}kg 准备；"
         f"如果你仍想 {payload_value:g}kg，先不要确认并告诉我。"

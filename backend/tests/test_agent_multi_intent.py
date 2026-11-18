@@ -634,6 +634,26 @@ def test_goal_reply_soft_wording_is_aligned():
     assert "目标卡已按 67kg 准备" in guarded
 
 
+def test_goal_action_title_and_summary_follow_payload():
+    actions = [
+        {
+            "type": "update_goal",
+            "title": "目标改为减脂，65kg，12月31日",
+            "summary": "目标类型由增肌改为减脂，目标体重 65kg，目标日期 2026-12-31",
+            "payload": {"target_weight_kg": 65},
+        }
+    ]
+    message = "6 周掉 7kg 太急，先摸到 68.5kg。"
+
+    _guard_goal_action_consistency(message, actions)
+
+    assert actions[0]["payload"]["target_weight_kg"] == 68.5
+    assert "68.5kg" in actions[0]["title"]
+    assert "65kg" not in actions[0]["title"]
+    assert "68.5kg" in actions[0]["summary"]
+    assert "65kg" not in actions[0]["summary"]
+
+
 def test_pending_schedule_change_is_not_written(db):
     saved = remember_facts(
         db,
