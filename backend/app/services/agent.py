@@ -15,7 +15,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from ..config import settings
@@ -59,7 +59,6 @@ from .coach_context import build_coach_context, recent_training
 from .coach_core import coach_core_prompt
 from .diet_review import build_diet_review, utc_window
 from .equipment import available_equipment_types
-from .exercise_search import search_exercise_payload
 from .food_text import (
     food_log_context,
     parse_amount_grams,
@@ -69,7 +68,7 @@ from .food_text import (
 )
 from .memory import remember_facts, schedule_memory_extraction
 from .plan_generator import build_template_plan, validate_plan_for_user
-from .plan_validator import PlanValidationError
+from .plan_validator import PlanValidationError, injury_tags
 from .prompt_registry import prompt_version
 from .queries import active_goal, active_program
 from .reply_guard import review_reply
@@ -830,7 +829,7 @@ AGENT_INSTRUCTIONS = """你可以读取用户状态、读取训练记录、生�
 9. 不要用泛泛的“多喝水、坚持训练、循序渐进”凑字数。先给结论，再给 1–2 个具体动作/组数/重量/时间建议，并说明依据；用户没要完整方案时，不要扩成整套计划。列表最多 3 条，每条一句话。
 10. 如果用户的安排已经发生变化，直接指出哪一天、哪个动作或哪个参数需要改，不要重复整份计划。
 11. 用户要改今天/某天的动作、组数、次数、重量、休息，或删除/增加动作时，必须调用 propose_app_actions，type=modify_workout；不要只给文字建议，也不要用 propose_plan 代替单日改课。
-12. modify_workout 的 from_slug/slug 必须是当前计划里已有的动作；换动作/加动作前先用 lookup_exercise 确认目标 slug，不要编造。默认 scope=day，只改指定训练日；用户明确说“以后都/整个计划”时才用 scope=plan。最多 8 条改动；换动作后重量默认不沿用旧动作，需要指定时再加一条 weight；add 只作用于指定训练日，不要用 scope=plan 批量加动作。
+12. modify_workout 的 from_slug 必须来自 app_context.plan.days[].exercises[].slug；换动作/加动作前必须先调用 lookup_exercise，使用它返回的真实 slug，禁止把中文直译成英文 slug（例如“前弓步”不是 forward-lunge）。当前只支持 scope=day，不要用 scope=plan；用户说“以后都/整个计划”时先按当前训练日改，并说明可以逐日调整。最多 8 条改动；换动作后重量默认不沿用旧动作，需要指定时再加一条 weight。
 13. 改课是待确认操作；final 里要说明“确认后才会改”，不能声称已经改好。
 14. 如果 app_context.today_day.in_progress=true，说明训练已经开始；不要用 modify_workout 改当前这次训练，先让用户在训练页用“调整/替换”改本次训练；可以改之后的训练日。
 15. 用户问某个动作最近练得怎么样、为什么没进步、下次加不加重量、有没有退步时，先调用 get_exercise_history；用返回的真实每组数据回答，不要用计划目标代替实际完成。
@@ -1399,6 +1398,217 @@ def _normalize_app_actions(
     return result
 
 
+def _exercise_lookup_item(row: Exercise) -> dict:
+    return {
+        "slug": row.slug,
+        "name_zh": row.name_zh,
+        "name_en": row.name_en,
+        "equipment": row.equipment,
+        "muscle_group": row.muscle_group,
+        "is_compound": row.is_compound,
+        "instructions": (row.instructions or "")[:600],
+    }
+
+
+def _lookup_exercise_payload(
+    db: Session,
+    query: str,
+    limit: int = 5,
+) -> dict:
+    value = query.strip()
+    if not value:
+        return {"ok": False, "error": "lookup_exercise requires query"}
+    pattern = f"%{value}%"
+    rows = (
+        db.execute(
+            select(Exercise)
+            .where(
+                Exercise.is_active.is_(True),
+                or_(
+                    Exercise.name_zh.contains(value),
+                    Exercise.name_en.ilike(pattern),
+                ),
+            )
+            .order_by(
+                Exercise.is_compound.desc(),
+                Exercise.difficulty,
+                Exercise.name_zh,
+            )
+            .limit(max(1, min(5, limit)))
+        )
+        .scalars()
+        .all()
+    )
+    if not rows:
+        return {
+            "ok": False,
+            "error": "没有找到匹配动作；不要编造 slug，请让用户补充动作名或器械。",
+            "query": value,
+        }
+    return {
+        "ok": True,
+        "query": value,
+        "exercises": [_exercise_lookup_item(row) for row in rows],
+    }
+
+
+def _exercise_slug_suggestions(
+    db: Session,
+    slug: str,
+    equipment: set[str],
+    limit: int = 4,
+) -> str:
+    tokens = [
+        token
+        for token in re.split(r"[-_\s]+", slug.lower())
+        if len(token) >= 3
+    ]
+    base = select(Exercise).where(
+        Exercise.is_active.is_(True),
+        Exercise.equipment.in_(equipment),
+    )
+    rows: list[Exercise] = []
+    if tokens:
+        conditions = [
+            or_(
+                Exercise.slug.contains(token),
+                Exercise.name_en.ilike(f"%{token}%"),
+            )
+            for token in tokens
+        ]
+        rows = (
+            db.execute(base.where(and_(*conditions)).limit(limit))
+            .scalars()
+            .all()
+        )
+    if not rows:
+        rows = (
+            db.execute(
+                base.order_by(
+                    Exercise.is_compound.desc(),
+                    Exercise.name_zh,
+                ).limit(limit)
+            )
+            .scalars()
+            .all()
+        )
+    return "、".join(
+        f"{row.name_zh}({row.slug})" for row in rows
+    ) or "暂无"
+
+
+def _modify_workout_validation_error(
+    db: Session,
+    user_id: str,
+    actions: list[dict],
+    app_context: dict | None,
+) -> str | None:
+    """Validate modify_workout slugs before a confirmation card reaches iOS."""
+    modify_actions = [
+        action for action in actions if action.get("type") == "modify_workout"
+    ]
+    if not modify_actions:
+        return None
+    profile = db.get(Profile, user_id)
+    equipment = set(
+        available_equipment_types(
+            db,
+            user_id,
+            list(profile.equipment or []) if profile else ["bodyweight"],
+        )
+    )
+    banned = injury_tags(profile.injuries if profile else [])
+
+    context = app_context if isinstance(app_context, dict) else {}
+    plan = context.get("plan") if isinstance(context.get("plan"), dict) else {}
+    days = plan.get("days") if isinstance(plan.get("days"), list) else []
+    day_by_id = {
+        str(item.get("id")).lower(): item
+        for item in days
+        if isinstance(item, dict) and item.get("id")
+    }
+    today_day = context.get("today_day")
+    today_id = (
+        str(today_day.get("id")).lower()
+        if isinstance(today_day, dict) and today_day.get("id")
+        else ""
+    )
+
+    for action in modify_actions:
+        payload = action.get("payload")
+        if not isinstance(payload, dict):
+            continue
+        scope = str(payload.get("scope") or "day").strip().lower()
+        if scope != "day":
+            return "目前只支持按训练日改课；请按具体训练日修改，不要用 scope=plan。"
+        target_id = str(payload.get("day_id") or today_id).lower()
+        target_day = day_by_id.get(target_id)
+        day_slugs = {
+            str(item.get("slug"))
+            for item in (target_day.get("exercises") or [])
+            if isinstance(item, dict) and item.get("slug")
+        } if isinstance(target_day, dict) else set()
+
+        changes = payload.get("changes")
+        if not isinstance(changes, list):
+            continue
+        for change in changes:
+            if not isinstance(change, dict):
+                continue
+            op = str(change.get("op") or "")
+            slugs_to_check: list[str] = []
+            if op == "swap":
+                from_slug = str(change.get("from_slug") or "")
+                to_slug = str(change.get("to_slug") or "")
+                if target_day is not None and from_slug not in day_slugs:
+                    return (
+                        f"当天计划里没有动作 {from_slug}；"
+                        "from_slug 必须来自 app_context.plan.days[].exercises[].slug。"
+                    )
+                if target_day is not None and to_slug in day_slugs:
+                    return f"目标动作 {to_slug} 已经在当天计划里，不能重复换入。"
+                slugs_to_check = [to_slug]
+            elif op == "add":
+                slug = str(change.get("slug") or "")
+                if target_day is not None and slug in day_slugs:
+                    return f"动作 {slug} 已经在当天计划里，不需要重复添加。"
+                slugs_to_check = [slug]
+            else:
+                slug = str(change.get("slug") or "")
+                if target_day is not None and slug not in day_slugs:
+                    return (
+                        f"当天计划里没有动作 {slug}；"
+                        "修改组数/次数/重量前必须使用当天已有的 slug。"
+                    )
+                slugs_to_check = [slug]
+
+            for slug in slugs_to_check:
+                if not slug:
+                    continue
+                exercise = db.get(Exercise, slug)
+                if exercise is None:
+                    suggestions = _exercise_slug_suggestions(
+                        db, slug, equipment
+                    )
+                    return (
+                        f"动作不存在：{slug}。真实动作可能包括：{suggestions}。"
+                        "请先调用 lookup_exercise 确认真实 slug，不要直译英文。"
+                    )
+                if not exercise.is_active:
+                    return f"动作 {slug} 已停用，请换一个可用动作。"
+                if exercise.equipment not in equipment:
+                    return (
+                        f"{exercise.name_zh}({slug}) 需要 {exercise.equipment}，"
+                        "当前档案没有这个器械。请换成用户已有器械的动作。"
+                    )
+                if banned & set(exercise.contraindications or []):
+                    return (
+                        f"{exercise.name_zh}({slug}) 与当前伤病限制冲突，"
+                        "请换一个安全动作。"
+                    )
+    return None
+
+
 def _validate_workout_log_exercises(
     db: Session,
     user_id: str,
@@ -1585,10 +1795,10 @@ def _tool_result(
         if not query:
             return {"ok": False, "error": "lookup_exercise requires query"}
         try:
-            limit = int(arguments.get("limit") or 3)
+            limit = int(arguments.get("limit") or 5)
         except (TypeError, ValueError):
-            limit = 3
-        return search_exercise_payload(query, limit)
+            limit = 5
+        return _lookup_exercise_payload(db, query, limit)
 
     if tool == "propose_plan":
         profile = db.get(Profile, user_id)
@@ -1679,6 +1889,11 @@ def _tool_result(
             )
             if workout_error is not None:
                 return {"ok": False, "error": workout_error}
+            modify_error = _modify_workout_validation_error(
+                db, user_id, actions, app_context
+            )
+            if modify_error is not None:
+                return {"ok": False, "error": modify_error}
         except ValueError as exc:
             return {"ok": False, "error": str(exc)}
         return {"ok": True, "actions": actions}
