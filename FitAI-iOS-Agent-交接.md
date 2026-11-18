@@ -14,12 +14,12 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`037adb2`（N7/N8 已修 + N12 proposal 摘要补全；生产后端 `037adb2`，`/health/ready` **200**；Flyway **V44**；后端 **632 passed**、QA **76/76**、Ruff 通过；iOS 仍 `7618cb6`；待 Mac 复测 N7/N8/N12）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`31cde33`（N3/N9/N10/N11 + C7–C11 收口；生产后端 `31cde33`，`/health/ready` **200**；Flyway **V44**；后端 **641 passed**、QA **76/76**、Ruff 通过；iOS 仍 `7618cb6`；待 Mac 一次性复测 N3/N7–N12 与 C7–C11）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
-- **macOS AI 教练三轮压测（2026-11-19）**：N7（一次体重+体脂+腰围被拒）与 N8（无 pending 的“改成”新记）已由 Windows 修复；N12 proposal 摘要已补；待 Mac 复测。N3/N9–N11 仍为 P2。
-- **待办（macOS → Windows）**：N7/N8/N12 已修，待 Mac 复测；N3/N9–N11 与 C7–C11 仍为 P2。
+- **macOS AI 教练三轮压测（2026-11-19）**：N3/N7–N12 与 C7–C11 已由 Windows 收口（`31cde33`），待 Mac 一次性复测；无 iOS 变化。
+- **待办（macOS → Windows）**：一并复测 N3/N7–N12 与 C7–C11；有问题再按项回报。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -31,6 +31,56 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-19 · Windows（N3/N9/N10/N11 + C7–C11 收口）
+
+- 提交：`31cde33`，已推 `develop`；生产后端已部署 `agent.py` + `memory.py`，SHA-256 与本地一致；`/health/ready` **200**；Flyway **V44**；无 iOS 变化（iOS 仍 `7618cb6`）。
+- N10 徒手训练补录：
+  - “100个俯卧撑分5组” → 确定性生成 `log_workout`（5 组 × 100 次，真实 slug）。
+  - 动作用数据库精确/包含匹配，不再依赖 RAG 名称猜测。
+  - “刚跑了5公里，30分钟” → 确定性 `log_workout`（cardio，30 分钟）。
+- N11 一周饮食计划：
+  - “一周高蛋白饮食计划”等明确策略 + 一周/餐单/食谱 → 确定性 `create_diet_plan` 卡。
+  - payload 带 `strategy` 和下周周一 `week_start`；iOS 现有执行逻辑直接生成。
+- N3 改课权限文案：
+  - “把周五全身 C 的最后一个动作删掉” → 确定性 `modify_workout` 删除卡，不再先声称“只拿到饮食权限”。
+  - 模型路径增加权限文案守卫：删除“权限/只拿到/先准备的是饮食”等句子；清空则改为诚实追问。
+- N9 整计划改课：
+  - “整个计划的深蹲都换成前弓步” → 不再声称多张卡；明确回复“一次只能按一个训练日改，先从哪一天开始”。
+  - 未实现 `scope=plan`；当前 iOS 也不支持。
+- C7 承诺卡但无卡：
+  - 模型回复声称“记录卡/操作卡/确认卡”但 `actions=[]` 且无 proposal/draft 时，确定性改写为“还没有生成可确认的操作卡，先不写入”。
+  - 常见“跑 5 公里”由 N10 cardio 路径直接出卡。
+- C8 确认前完成时：
+  - `_guard_pending_action_claims` 补充“记上了/记好了/已记上/已记好/已经写入”等替换。
+- C9 自然语言跳过：
+  - “明天全身 B 不练了”“明天我不练了，跳过全身 B” → 确定性 `skip_training` 卡（按 `day_id` + 日期）。
+- C10 长期记忆污染：
+  - `needs_confirmation` 轮次不再调度记忆抽取，未确认目标/动作不写长期记忆。
+  - 记忆计划事实与当前 active plan 校验；A/B/C 计划被记成 A/B 交替时直接丢弃。
+- C11 删除记忆：
+  - “忘掉我不喜欢跑步” → 直接停用匹配的长期记忆并回报内容；
+  - 没匹配到时给 `open_screen agent_memory` 卡，不再回复“删不掉”。
+- 验证：
+  - 后端 **641 passed**；QA **76/76**；Ruff 通过。
+  - 新增回归：徒手 5×100、cardio、自然语言 skip、删除最后一个动作、一周高蛋白、整计划诚实降级、确认前文案、无卡承诺、记忆删除、A/B/C 记忆校验。
+  - GitHub Backend Tests `31cde33` ✓。
+- Mac 需要做（一次性复测）：
+  1. N3：“把周五全身 C 的最后一个动作删掉”应直接出删除卡，无权限矛盾文案。
+  2. N7：“今天体重72kg，体脂18%，腰围80” → 一张身体数据卡。
+  3. N8：“把今天午餐的米饭改成200g” → 追问，不直接新记。
+  4. N9：“整个计划的深蹲都换成前弓步” → 诚实说明只能按天改，不声称 7 张卡。
+  5. N10：“100个俯卧撑分5组” → `log_workout` 卡。
+  6. N11：“一周高蛋白饮食计划” → `create_diet_plan` 卡。
+  7. N12：“重新生成一份训练计划” → proposal 摘要含训练日和每日动作数。
+  8. C7/C8：确认前不得声称“记上了/记好了”；声称卡但没有卡时应诚实改写。
+  9. C9：“明天全身 B 不练了” → `skip_training` 卡。
+  10. C10/C11：未确认目标不写记忆；“忘掉我不喜欢跑步”能删除或给记忆入口。
+- 不要恢复：
+  - 不要用 RAG 名称猜动作 slug；必须用数据库真实 slug。
+  - 不要承诺整计划一次改课，也不要声称不存在的权限。
+  - 不要在未确认时写“已记录/记好了”，不要把 pending 动作写进长期记忆。
+  - 不要恢复“删不掉记忆”的死路文案。
 
 ### 2026-11-19 · Windows（N7/N8/N12 修复）
 
