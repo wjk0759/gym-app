@@ -31,6 +31,7 @@ from ..services.equipment_inventory import (
     replace_profile_equipment,
 )
 from ..services.locking import lock_user
+from ..services.memory import retire_goal_memories
 from ..services.queries import active_goal
 from ..services.rate_limit import enforce as enforce_rate_limit
 from ..services.serializers import (
@@ -276,6 +277,7 @@ def upsert_goal(payload: GoalIn, user_id: CurrentUser, db: DBSession):
     for field, value in data.items():
         setattr(goal, field, value)
     goal.status = "active"
+    retire_goal_memories(db, user_id)
 
     db.commit()
     return {"goal": goal_to_dict(goal)}

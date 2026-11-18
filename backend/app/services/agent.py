@@ -663,6 +663,110 @@ async def _food_body_multi_intent_turn(
     }
 
 
+async def _body_reschedule_multi_intent_turn(
+    db: Session,
+    user_id: str,
+    clauses: list[str],
+    app_context: dict | None,
+) -> dict | None:
+    """Handle "log body metric + reschedule training" as one batch."""
+    from .coach_control.runtime import _looks_like_reschedule
+
+    body_clauses = [
+        clause for clause in clauses if _looks_like_body_metric_clause(clause)
+    ]
+    training_clauses = [
+        clause for clause in clauses if _looks_like_reschedule(clause)
+    ]
+    if len(body_clauses) != 1 or len(training_clauses) != 1:
+        return None
+    body_clause = body_clauses[0]
+    training_clause = training_clauses[0]
+    other_clauses = [
+        clause
+        for clause in clauses
+        if clause not in body_clauses and clause not in training_clauses
+    ]
+    if other_clauses:
+        return None
+    metric_payload = _body_metric_payload(body_clause)
+    if metric_payload is None:
+        return None
+    metric_action = _build_body_metric_action(metric_payload)
+    if metric_action is None:
+        return {
+            "actions": [],
+            "reply": "这组身体数据超出可记录范围，请检查后再发。",
+        }
+
+    from .coach_control.capabilities.training import (
+        resolve as resolve_training,
+    )
+
+    resolution = resolve_training(
+        db,
+        user_id,
+        training_clause,
+        app_context,
+    )
+    if not resolution.get("ready"):
+        questions = resolution.get("questions") or []
+        question = (
+            str(questions[0])
+            if questions
+            else "没有找到要改期的训练，请从训练手账里选一天。"
+        )
+        return {
+            "actions": [],
+            "reply": (
+                f"{question} 身体数据我先不写入，等训练改期确认后一起处理。"
+            ),
+        }
+    payload = resolution.get("payload") or {}
+    training_action = None
+    training_note = ""
+    if resolution.get("already"):
+        training_note = (
+            f"训练本来就在 {payload.get('to_date')}，无需改期；"
+        )
+    else:
+        from_date = str(payload.get("from_date") or "")
+        to_date = str(payload.get("to_date") or "")
+        title = str(payload.get("title") or "训练")
+        training_action = _normalize_app_actions(
+            [
+                {
+                    "type": "reschedule_training",
+                    "title": "调整训练日期",
+                    "summary": f"把 {from_date} 的「{title}」改到 {to_date}",
+                    "requires_confirmation": True,
+                    "payload": {
+                        "day_id": payload.get("day_id"),
+                        "date": from_date,
+                        "target_date": to_date,
+                    },
+                }
+            ],
+            app_context,
+        )[0]
+        training_note = (
+            f"把 {from_date} 的「{title}」改到 {to_date}，"
+        )
+    actions = (
+        [training_action, metric_action]
+        if training_action is not None
+        else [metric_action]
+    )
+    return {
+        "actions": actions,
+        "reply": (
+            f"{training_note}"
+            f"身体数据按今天记录：{_body_metric_summary(metric_payload)}。"
+            "确认后一起执行。"
+        ).strip(),
+    }
+
+
 def _build_body_metric_action(payload: dict) -> dict | None:
     title = "记录身体数据"
     if "weight_kg" in payload:
@@ -717,6 +821,12 @@ def _body_metric_action_turn(message: str) -> dict | None:
     if not _looks_like_body_metric_clause(message):
         return None
     if _FOOD_CLAUSE_TOKENS.search(message):
+        return None
+    if re.search(
+        r"改到|改期|顺延|挪到|换到|调到|跳过|不练了|删除|删掉|去掉|移除|"
+        r"加一组|减一组|改课|换成|改为|改成",
+        message,
+    ):
         return None
     if _BODY_QUESTION_TOKENS.search(message):
         return None
@@ -1291,6 +1401,106 @@ def _skip_training_action_turn(
     }
 
 
+def _skip_week_action_turn(
+    db: Session,
+    user_id: str,
+    message: str,
+    app_context: dict | None,
+) -> dict | None:
+    """Skip every remaining training day in the current week."""
+    if re.search(
+        r"吃|喝|饮食|餐|体重|体脂|腰围|记录|补录|"
+        r"改到|改期|顺延|挪到|换到|调到",
+        message,
+    ):
+        return None
+    if not re.search(r"这周|本周|这星期|剩下|剩余|全部|整周", message):
+        return None
+    if not re.search(r"跳过|不练了|不练|休息", message):
+        return None
+    if re.search(
+        r"明天|后天|周[一二三四五六日天]|星期[一二三四五六日天]",
+        message,
+    ) and not re.search(r"都|剩下|剩余|全部|整周", message):
+        return None
+    if not isinstance(app_context, dict):
+        return None
+    plan = app_context.get("plan")
+    if not isinstance(plan, dict):
+        return None
+    days = [item for item in plan.get("days") or [] if isinstance(item, dict)]
+    if not days:
+        return None
+    states = {
+        str(item.get("day_id")).lower(): str(item.get("assigned_date") or "")
+        for item in plan.get("day_states") or []
+        if isinstance(item, dict)
+    }
+    today = datetime.now(REVIEW_TZ).date()
+    week_end = today + timedelta(days=7 - today.isoweekday())
+    current_week = int(plan.get("current_week") or 1)
+    candidates: list[tuple[date, dict]] = []
+    seen: set[tuple[str, str]] = set()
+    for day in days:
+        if day.get("completed") or day.get("skipped") or day.get("in_progress"):
+            continue
+        target = _plan_day_date(day, states)
+        if target is None:
+            weekday = _plan_day_weekday(day, states)
+            if (
+                weekday is not None
+                and weekday >= today.isoweekday()
+                and int(day.get("week_index") or 1) == current_week
+            ):
+                target = today + timedelta(days=weekday - today.isoweekday())
+        if target is None or target < today or target > week_end:
+            continue
+        key = (target.isoformat(), str(day.get("title") or ""))
+        if key in seen:
+            continue
+        seen.add(key)
+        candidates.append((target, day))
+    if not candidates:
+        return {
+            "actions": [],
+            "reply": "这周没有剩余训练可跳过，可能已经完成或已经跳过。",
+        }
+    candidates.sort(key=lambda item: item[0])
+    actions: list[dict] = []
+    labels: list[str] = []
+    for target, day in candidates[:7]:
+        label = _plan_day_label(day)
+        try:
+            action = _normalize_app_actions(
+                [
+                    {
+                        "type": "skip_training",
+                        "title": "跳过训练",
+                        "summary": f"跳过 {target.month}月{target.day}日「{label}」",
+                        "requires_confirmation": True,
+                        "payload": {
+                            "day_id": day.get("id"),
+                            "date": target.isoformat(),
+                        },
+                    }
+                ],
+                app_context,
+            )[0]
+        except ValueError:
+            continue
+        actions.append(action)
+        labels.append(f"{target.month}月{target.day}日 {label}")
+    if not actions:
+        return None
+    return {
+        "actions": actions,
+        "reply": (
+            f"准备跳过本周剩余 {len(actions)} 次训练："
+            f"{'、'.join(labels)}。确认后生效。"
+        ),
+    }
+
+
 def _forget_memory_turn(
     db: Session,
     user_id: str,
@@ -1429,6 +1639,63 @@ def _guard_action_card_claims(
     )
 
 
+_GOAL_REPLY_VALUE_RE = re.compile(
+    r"(?:改成|改为|先定|定为|建议|目标(?:是|为)?|控制在|定到)"
+    r"\s*(\d{2,3}(?:\.\d+)?)\s*(?:kg|公斤)"
+)
+
+
+def _guard_goal_action_consistency(
+    message: str,
+    actions: list[dict],
+) -> str:
+    """Keep an update_goal card aligned with the reply's advice.
+
+    The model used to recommend 68kg in the text while the card still carried
+    the requested 65kg, so confirming applied the value the coach just advised
+    against. If the reply recommends a different target, align the card with
+    the recommendation and say so explicitly. The card still requires an
+    explicit confirmation.
+    """
+    goal_actions = [
+        action
+        for action in actions
+        if action.get("type") == "update_goal"
+        and isinstance(action.get("payload"), dict)
+        and action["payload"].get("target_weight_kg") is not None
+    ]
+    if not goal_actions:
+        return message
+    try:
+        payload_value = float(
+            goal_actions[0]["payload"]["target_weight_kg"]
+        )
+    except (TypeError, ValueError):
+        return message
+    suggestions: list[float] = []
+    for match in _GOAL_REPLY_VALUE_RE.finditer(message):
+        try:
+            value = float(match.group(1))
+        except ValueError:
+            continue
+        if 25 <= value <= 300:
+            suggestions.append(value)
+    if not suggestions:
+        return message
+    suggested = suggestions[-1]
+    if abs(suggested - payload_value) < 0.05:
+        return message
+    for action in goal_actions:
+        action["payload"]["target_weight_kg"] = suggested
+    note = (
+        f"目标卡已按 {suggested:g}kg 准备；"
+        f"如果你仍想 {payload_value:g}kg，先不要确认并告诉我。"
+    )
+    if note not in message:
+        message = f"{message.rstrip()}\n\n{note}"
+    return message
+
+
 def _deterministic_extra_turn(
     db: Session,
     user_id: str,
@@ -1482,6 +1749,11 @@ async def _multi_intent_action_turn(
                 "要新记，请说“新记 200g 米饭”。"
             ),
         }
+    skip_week_result = _skip_week_action_turn(
+        db, user_id, message, app_context
+    )
+    if skip_week_result is not None:
+        return skip_week_result
     if not re.search(r"再记|再帮|再加|另外|还有|同时|顺便|并且|以及", message):
         body_result = _body_metric_action_turn(message)
         if body_result is not None:
@@ -1504,6 +1776,14 @@ async def _multi_intent_action_turn(
             return cardio_result
     if len(clauses) < 2:
         return None
+    body_reschedule_result = await _body_reschedule_multi_intent_turn(
+        db,
+        user_id,
+        clauses,
+        app_context,
+    )
+    if body_reschedule_result is not None:
+        return body_reschedule_result
     body_result = await _food_body_multi_intent_turn(
         db,
         user_id,
@@ -2828,6 +3108,14 @@ def _tool_result(
         content = str(arguments.get("content", "")).strip()[:1000]
         if not content:
             return {"ok": False, "error": "memory content is empty"}
+        if kind == "goal":
+            return {
+                "ok": False,
+                "error": (
+                    "目标变更请调用 propose_app_actions + update_goal，"
+                    "确认后再更新；不要写入长期记忆。"
+                ),
+            }
         # 身体数据是结构化 App 数据，不是长期记忆。模型有时会反复调用
         # remember 试图记录体重，最终耗尽步骤；这里直接给出可恢复的错误。
         if kind in {"body_metric", "metric", "weight", "body"} or any(
@@ -3996,6 +4284,10 @@ async def run_agent(
             actions,
             proposal,
             compact_draft(get_active_draft(db, user_id, session_id)),
+        )
+        final_message = _guard_goal_action_consistency(
+            final_message,
+            actions,
         )
         if actions:
             run.intent = "app_action"

@@ -13,7 +13,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from ..config import settings
@@ -137,7 +137,11 @@ def list_memories(db: Session, user_id: str, limit: int = 20) -> list[AIMemory]:
     return list(
         db.execute(
             select(AIMemory)
-            .where(AIMemory.user_id == user_id, AIMemory.active.is_(True))
+            .where(
+                AIMemory.user_id == user_id,
+                AIMemory.active.is_(True),
+                AIMemory.kind != "goal",
+            )
             .order_by(
                 AIMemory.updated_at.desc(),
                 AIMemory.created_at.desc(),
@@ -147,6 +151,44 @@ def list_memories(db: Session, user_id: str, limit: int = 20) -> list[AIMemory]:
         .scalars()
         .all()
     )
+
+
+_GOAL_MEMORY_KEYS = (
+    "training_goal",
+    "training_phase",
+    "weight_goal",
+    "weight_loss_goal",
+    "muscle_gain_goal",
+    "muscle_gain_phase",
+    "fat_loss_target",
+)
+
+
+def retire_goal_memories(db: Session, user_id: str) -> int:
+    """Goal facts live in ``goals``/``profiles``, not in long-term memory.
+
+    Old rows used to duplicate the goal and could contradict a pending or
+    confirmed goal change. Retire them so the coach only reads the canonical
+    active goal.
+    """
+    rows = list(
+        db.execute(
+            select(AIMemory).where(
+                AIMemory.user_id == user_id,
+                AIMemory.active.is_(True),
+                or_(
+                    AIMemory.kind == "goal",
+                    AIMemory.memory_key.in_(_GOAL_MEMORY_KEYS),
+                ),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    for item in rows:
+        item.active = False
+    db.flush()
+    return len(rows)
 
 
 def _trim_old_memories(db: Session, user_id: str) -> None:
@@ -187,7 +229,20 @@ def remember_facts(
         kind = str(raw.get("kind", "preference")).strip().lower()
         if kind not in MEMORY_KINDS:
             continue
+        key = _normalize_key(raw.get("key"), kind)
         content = _normalize_content(raw.get("content"))
+        if (
+            kind == "goal"
+            or key in _GOAL_MEMORY_KEYS
+            or re.search(
+                r"目标改为|目标体重|体重目标|减脂目标|增肌目标|"
+                r"增肌期|减脂期|训练目标",
+                content,
+            )
+        ):
+            # Goals are canonical in the goals/profile tables. A memory row
+            # would go stale as soon as the user confirms a new target.
+            continue
         if not content or len(content) < 4:
             continue
         try:
@@ -196,7 +251,6 @@ def remember_facts(
             confidence = 1.0
         if confidence < 0.6:
             continue
-        key = _normalize_key(raw.get("key"), kind)
 
         existing = None
         if key in REPLACE_KEYS:
@@ -532,7 +586,11 @@ def read_relevant_memories(
     rows = (
         db.execute(
             select(AIMemory)
-            .where(AIMemory.user_id == user_id, AIMemory.active.is_(True))
+            .where(
+                AIMemory.user_id == user_id,
+                AIMemory.active.is_(True),
+                AIMemory.kind != "goal",
+            )
             .order_by(AIMemory.updated_at.desc())
             .limit(120)
         )

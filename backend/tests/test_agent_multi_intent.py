@@ -23,10 +23,16 @@ from app.services.agent import (
     _forced_food_log_intent,
     _forget_memory_turn,
     _guard_action_card_claims,
+    _guard_goal_action_consistency,
     _guard_pending_action_claims,
     _multi_intent_action_turn,
 )
-from app.services.memory import _fact_conflicts_with_plan
+from app.services.memory import (
+    _fact_conflicts_with_plan,
+    list_memories,
+    remember_facts,
+    retire_goal_memories,
+)
 
 USER_ID = "00000000-0000-0000-0000-000000000001"
 DAY_ID = "00000000-0000-0000-0000-0000000000d1"
@@ -279,6 +285,72 @@ def test_natural_language_skip_creates_a_card(db):
     assert result["actions"][0]["payload"]["day_id"] == DAY_ID
 
 
+def _ios_week_context() -> dict:
+    today = datetime.now(REVIEW_TZ).date()
+    monday = today - timedelta(days=today.isoweekday() - 1)
+    days: list[dict] = []
+    for index in range(7):
+        target = monday + timedelta(days=index)
+        if target < today:
+            continue
+        days.append(
+            {
+                "id": f"00000000-0000-0000-0000-0000000000{index:02d}",
+                "title": f"全身 {chr(65 + index % 3)}",
+                "date": target.isoformat(),
+                "week_index": 1,
+                "exercises": [{"slug": "push-up", "name_zh": "俯卧撑"}],
+                "completed": False,
+                "skipped": False,
+            }
+        )
+    return {
+        "plan": {
+            "id": PROGRAM_ID,
+            "current_week": 1,
+            "days": days,
+        },
+        "today_day": {"id": days[0]["id"]} if days else {},
+    }
+
+
+def test_body_metric_and_reschedule_become_two_cards(db):
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "今天体重72kg，再把周五全身 C 改到周六",
+            _ios_plan_context(5),
+        )
+    )
+
+    assert result is not None
+    assert [action["type"] for action in result["actions"]] == [
+        "reschedule_training",
+        "log_body_metric",
+    ]
+    assert result["actions"][1]["payload"]["weight_kg"] == 72
+
+
+def test_skip_remaining_week_creates_batch_cards(db):
+    context = _ios_week_context()
+    expected = len(context["plan"]["days"])
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "这周都不练了，帮我跳过剩下的训练",
+            context,
+        )
+    )
+
+    assert result is not None
+    assert [action["type"] for action in result["actions"]] == [
+        "skip_training"
+    ] * expected
+    assert "本周剩余" in result["reply"]
+
+
 def test_ios_context_skip_uses_day_date_field(db):
     tomorrow = datetime.now(REVIEW_TZ).date() + timedelta(days=1)
     context = _ios_plan_context(5)
@@ -478,3 +550,70 @@ def test_plan_fact_mismatch_is_rejected(db):
         USER_ID,
         "用户当前训练计划采用全身 A、B、C 循环安排",
     )
+
+
+def test_goal_facts_are_not_written_to_long_term_memory(db):
+    saved = remember_facts(
+        db,
+        USER_ID,
+        [
+            {
+                "kind": "goal",
+                "content": "用户目标改为减脂，体重目标 65kg",
+                "confidence": 0.95,
+            }
+        ],
+    )
+
+    assert saved == []
+    assert db.query(AIMemory).filter(AIMemory.kind == "goal").count() == 0
+
+
+def test_retire_goal_memories_keeps_non_goal_memories(db):
+    goal_memory = AIMemory(
+        user_id=USER_ID,
+        kind="goal",
+        memory_key="fat_loss_target",
+        content="用户目标改为减脂，体重目标 65kg",
+        source="agent",
+        confidence=0.9,
+        active=True,
+    )
+    preference = AIMemory(
+        user_id=USER_ID,
+        kind="preference",
+        memory_key="running",
+        content="用户更喜欢早上跑步",
+        source="agent",
+        confidence=0.9,
+        active=True,
+    )
+    db.add_all([goal_memory, preference])
+    db.commit()
+
+    retired = retire_goal_memories(db, USER_ID)
+    db.commit()
+
+    assert retired == 1
+    db.refresh(goal_memory)
+    db.refresh(preference)
+    assert goal_memory.active is False
+    assert preference.active is True
+    assert all(item.kind != "goal" for item in list_memories(db, USER_ID))
+
+
+def test_goal_reply_and_card_are_aligned():
+    actions = [
+        {
+            "type": "update_goal",
+            "payload": {"target_weight_kg": 65},
+        }
+    ]
+    message = "6 周掉 7kg 太急，先定 68kg 吧，要不要我把目标改成 68kg？"
+
+    guarded = _guard_goal_action_consistency(message, actions)
+
+    assert actions[0]["payload"]["target_weight_kg"] == 68
+    assert "68kg" in guarded
+    assert "目标卡已按 68kg 准备" in guarded
+
