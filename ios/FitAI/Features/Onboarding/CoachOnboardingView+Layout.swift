@@ -108,6 +108,8 @@ extension CoachOnboardingView {
     // MARK: - Main flow
 
     var mainFlow: some View {
+        // Keep the action bar in the layout instead of overlaying the scroll
+        // content. The body-fat grid's last row must stay tappable above it.
         VStack(spacing: 0) {
             header
             AppScrollView {
