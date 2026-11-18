@@ -14,13 +14,13 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`c463943`（N22 目标卡 title/summary 同步代码已合并；N21 通过；**N23/N24 P1、N25 P1/P2、N26–N28 P2 新发现**；生产后端 `c463943`，`/health/ready` **200**；Flyway **V44**；后端 **657 passed**、QA **76/76**、Ruff 通过；iOS 源码 `9bfb979`，真机仍 `7618cb6`、本轮未 build）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`e00708a`（N23–N28 已修；N22 title/summary 同步；生产后端 `e00708a`，`/health/ready` **200**；Flyway **V44**；后端 **675 passed**、QA **76/76**、Ruff 通过；iOS 源码新增相对日期体重写入 + 工具行，Mac 需重新 build，真机仍 `7618cb6`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
 - **macOS AI 教练四轮压测（2026-11-19）**：N17/N18/N19/N21 通过；N20 payload 已对齐，但“先定在”漏识别（见 N28）；N22 title/summary 同步代码已合并（`c463943`）。
-- **macOS AI 教练五轮压测（2026-11-19）**：N23“上周五/下周五”体重与训练写今天、N24“下周”跳过被解析成本周，均为 P1；N25 含训练补录的多意图丢意图/误判饮食；N26 跳过+改期无卡；N27“改期卡已准备好”无卡；N28“先定在 68kg”未对齐。
-- **待办（macOS → Windows）**：优先 N23/N24/N25；N26–N28 一并收口；iOS `9bfb979` 待 Mac build 看饮食工具行。
+- **macOS AI 教练五轮压测（2026-11-19）**：N23–N28 已由 Windows 修复（`e00708a`），待 Mac 复测；N17–N22/N21 之前已通过。
+- **待办（macOS → Windows）**：复测 N23–N28；build 后确认今日饮食工具行和 N23 历史体重卡。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -44,6 +44,45 @@
 - 后端 **647 passed**、QA **76/76**、Ruff 通过（Windows 报告）。
 - 部署：生产后端已是 `d9f8285`；iOS 无变化，无需重装；AI 教练本轮无阻断。
 - 剩余：C7–C11 文案/记忆类 P2（未在本轮全部重测）。
+
+### 2026-11-19 · Windows（N23–N28 修复）
+
+- 提交：`e00708a`，已推 `develop`；生产后端已部署 `agent.py` + `food_text.py` + `capabilities/training.py`，SHA-256 与本地一致；`/health/ready` **200**；Flyway **V44**；iOS 源码也改（历史体重日期 + 工具行），需 Mac 重新 build。
+- N23 相对日期：
+  - 根因：`parse_food_date()` 只认前天/昨天/今天/明天和显式日期，`上周五/下周五` 落回今天。
+  - 现在支持 `上/下/这/本 + 周X/星期X/礼拜X`；体重、cardio、strength 都使用正确历史/目标日期。
+  - `log_body_metric` payload 带 `date`；iOS `saveBodyCheckIn` 支持传入日期，历史体重不会覆盖当前 profile（只有最新一条才更新 profile）。
+  - 未来日期的体重/训练返回明确追问，不再静默写今天。
+- N24 下周跳过：
+  - 根因：`_message_target_date()` 和 `_skip_week_action_turn()` 只按当前周计算，忽略“下周”。
+  - 现在按 `下周/上周/这周 + 周偏移` 收集目标周；单日“下周五”走单日 skip，整周“下周都不练了/跳过下周全部训练”走批量 skip。
+- N25 多意图：
+  - 新增 `_mixed_action_multi_intent_turn()`，按子句分类 food/body/workout/reschedule/skip/modify。
+  - 支持 food+workout、body+workout、workout+reschedule、workout+skip、food+workout+body 同时出卡。
+  - 改课 + 其他操作无法安全合并时明确追问，不再静默丢改课。
+- N26 跳过+改期矛盾：
+  - “周五 C 不练了，挪到周日”现在先追问“跳过还是改到周日”，不再文字声称已挪但无卡。
+- N27 改期卡声明：
+  - `_CARD_CLAIM_RE` 增加改期卡/跳过卡/目标卡/饮食卡/训练卡/补录卡；无 action 时统一改写成“还没有生成可确认的操作卡”。
+  - 单日改期新增确定性卡路径，不再只靠模型。
+- N28 目标一致性：
+  - `_GOAL_REPLY_VALUE_RE` 增加“先定在/定在/先按”等；68kg 建议会同步 payload/title/summary。
+- 验证：
+  - 后端 **675 passed**；QA **76/76**；Ruff 通过。
+  - 新增回归：上周五体重/cardio/strength、下周五单日/整周 skip、food+workout、body+workout、workout+reschedule、workout+skip、三意图、food+modify 追问、skip+reschedule 矛盾、改期卡声明、先定在 68kg。
+  - GitHub Backend Tests `e00708a` ✓；iOS Build 由 CI 跑。
+- Mac 需要做：
+  1. N23：“上周五称的体重是72kg”/“上周五跑了5公里30分钟”→“上周五”日期；历史体重卡执行后写历史日期。
+  2. N24：“跳过下周五的训练”/“下周都不练了”→下周日期，不碰本周五。
+  3. N25：food+workout、body+workout、workout+reschedule、workout+skip、三意图均应多卡；food+改课应明确追问。
+  4. N26：“周五 C 不练了，挪到周日”应先问跳过还是改期。
+  5. N27：“把全身 A 改到明天”应出改期卡；无卡时不得说“改期卡已经准备好了”。
+  6. N28：“先定在 68kg”时 payload/title/summary 都应为 68kg。
+- 不要恢复：
+  - 不要忽略“上/下”周偏移。
+  - 不要让体重/训练快路径默认今天。
+  - 不要把含训练补录的多意图静默降成单一意图。
+  - 不要只改 payload 不改卡片文案。
 
 ### 2026-11-19 · macOS（AI 教练五轮压测：N23/N24 P1 + N25–N28）
 
