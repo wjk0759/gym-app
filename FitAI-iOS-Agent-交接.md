@@ -14,10 +14,10 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`7618cb6`（身体脂卡片热区根因修复：`BodyFatCard` 不再用溢出的 torso 图；iOS Build `7618cb6` ✓；生产后端仍 `83fc7b0`，`/health/ready` **200**；Flyway **V44**；**体脂卡片命中未复测前不部署，Wu-Tang 仍 `9d340c8`**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`7618cb6`（体脂卡片 frame 修复已复测通过；iOS Build `7618cb6` ✓；生产后端 `83fc7b0`，`/health/ready` **200**；Flyway **V44**；`FitAITests` **140/140**、UI **6/6**；体脂 6 档/跳过路径/生成冷却通过；iOS `7618cb6` 已装 Wu-Tang）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
-- **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复并通过；注册传参通过；可选体型/体脂步骤已出现，但体脂卡片 frame/点击热区仍错位（点 `<12%` 选中 25–29%）；训练日期滚动/计划限制单元测试通过。
-- **待办（macOS → Windows）**：体脂卡片热区根因已修（`843e001` / `7618cb6`：`BodyFatCard` 改用受限 full-body 图 + contentShape），待 Mac 复测 6 档点击/报告百分比与跳过路径；随后复测训练日期滚动、计划生成冷却/日限。
+- **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过；仅剩 C7–C11 P2。
+- **待办（macOS → Windows）**：本轮无阻断；后续仅 C7–C11 文案/记忆与“未完成 onboarding 返回用户”边界。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -106,6 +106,24 @@
 - 禁止恢复：
   - 不要只把底部栏移出而不修卡片 frame/热区。
   - 不要用“卡片在屏幕内”作为通过标准；必须逐档点击命中正确。
+
+### 2026-11-18 · macOS（体脂 frame 修复通过 + iOS 部署 Wu-Tang）
+
+- 环境：iOS `7618cb6`；后端 `83fc7b0`；iPhone 17e + Wu-Tang。
+- 测试：`FitAITests` **140/140**（含 BodyFatSelectionTests）、`FitAIUITests` **6/6**。
+- **体脂 6 档全部通过**：
+  - 逐张点击 `<12%`、`12–15%`、`16–20%`、`21–24%`、`25–29%`、`>29%`，每张 `isSelected=true`。
+  - 卡片 frame 宽度 170pt，左右两列各 170pt，不再跨列。
+  - 最后选 16–20%，报告显示“倒三角型 · 16–20%”，体脂 18%。
+- **体型/跳过路径通过**：3D 体型图、倒三角选择；体型步骤“跳过，使用默认参考” → 报告无体型；体脂步骤“跳过体脂” → “倒三角型 · 体脂未选”。
+- **计划生成限制**：生产 API 首次 200；30 秒内第二次 429 `GENERATION_COOLDOWN`；日限 10 次由后端 621 + QA 覆盖。
+- **教练 Tab**：真机截图确认无红点。
+- **部署**：iOS `7618cb6` 已 phone-only Release 安装 Wu-Tang 并启动；后端 `83fc7b0`，`/health/ready` 200。
+- 剩余：C7–C11 文案/记忆 P2；无发布阻断。
+- 禁止恢复：
+  - 不要重新引入 torso 溢出图/跨列 frame。
+  - 不要让体脂卡片热区大于自己的两列格子。
+  - 不要把可选体型/体脂做成必填。
 
 ### 2026-11-18 · Windows（onboarding 体脂卡片遮挡/点击错位修复）
 
