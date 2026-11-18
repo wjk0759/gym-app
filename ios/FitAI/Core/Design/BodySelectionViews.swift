@@ -58,10 +58,12 @@ struct BodyFatCard: View {
                 BodyFigure(
                     type: type,
                     sex: sex,
-                    fatOptionID: option.id,
-                    crop: .torso
+                    fatOptionID: option.id
                 )
+                .frame(maxWidth: .infinity)
                 .frame(height: 170)
+                .clipped()
+                .contentShape(Rectangle())
                 .padding(.horizontal, 6)
 
                 Text("体脂率 \(option.label)")
@@ -76,6 +78,8 @@ struct BodyFatCard: View {
                     )
             }
             .padding(8)
+            .frame(maxWidth: .infinity)
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .background(Theme.paper, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
