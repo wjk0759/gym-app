@@ -37,12 +37,18 @@ extension NutritionView {
     }
 
     var toolRow: some View {
-        HStack(spacing: 8) {
+        LazyVGrid(
+            columns: Array(
+                repeating: GridItem(.flexible(), spacing: 8),
+                count: 3
+            ),
+            spacing: 8
+        ) {
             toolTile(
                 title: "拍照识别",
                 detail: "估算热量",
                 symbol: "camera.viewfinder",
-                accent: Theme.lime
+                accent: Theme.primary
             ) {
                 if store.requirePro(.foodPhoto) {
                     showFoodPhoto = true
@@ -61,7 +67,7 @@ extension NutritionView {
                 title: "记一笔",
                 detail: "已吃食物",
                 symbol: "square.and.pencil",
-                accent: Theme.cobalt
+                accent: Theme.primary
             ) {
                 selectedMeal = suggestedMeal
                 showAddFood = true
@@ -81,30 +87,34 @@ extension NutritionView {
             Haptics.tap()
             action()
         } label: {
-            HStack(spacing: 9) {
+            VStack(alignment: .leading, spacing: 8) {
                 Image(systemName: symbol)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(foreground)
                     .frame(width: 32, height: 32)
                     .background(accent, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(title)
                         .font(AppType.caption.weight(.semibold))
                         .foregroundStyle(Theme.ink)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
                     Text(detail)
                         .font(AppType.micro)
                         .foregroundStyle(Theme.tertiaryText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
-                Spacer(minLength: 0)
             }
-            .padding(10)
-            .background(Theme.paper, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(11)
+            .background(Theme.paper, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .strokeBorder(Theme.stroke, lineWidth: 1)
             }
         }
-        .buttonStyle(CardPressStyle(scale: 0.98))
+        .buttonStyle(CardPressStyle(scale: 0.985))
     }
 
     func macroStrip(snapshot: DayLogsSnapshot, targets: NutritionTargets) -> some View {
