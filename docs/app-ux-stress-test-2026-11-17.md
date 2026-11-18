@@ -142,3 +142,22 @@ QA bypass 只绕过登录，不设置 `isOnboarded`，所以点“生成计划�
 | F9 | 未修 | 仅 Debug 显示开发服务器地址，Release 不受影响。 |
 
 复测基线：`FitAITests` 121/121、`FitAIUITests` 6/6；iPhone 17 与 iPhone SE 3 模拟器完成。F1 第二轮修复后已部署 Wu-Tang（`4630a83`）。
+
+## 八、2026-11-19 饮食入口崩溃加固复测（iOS `3b462d1`）
+
+- 环境：iOS 源码 `3b462d1`；后端仍 `e00708a`；iPhone 17 + iPhone SE 3（iOS 27.2 模拟器）；QA bypass 数据。
+- 修复内容：饮食工具行改回等宽 `HStack`；周计划/餐单/食物列表改用 `enumerated + offset` 稳定 ID；餐单不再二次索引。
+- 新增回归：`ios/FitAIUITests/DietEntrySmokeTests.swift`，覆盖：
+  1. 今日 → 今日饮食
+  2. 今日饮食 → 本周计划 → 关闭
+  3. 今日饮食 → 记一笔 → 取消
+  4. 发现 → 饮食方案 → 关闭
+- 结果：
+  - iPhone 17：新 smoke **1/1** 通过；`FitAIUITests` **7/7**、`FitAITests` **140/140**。
+  - iPhone SE 3：新 smoke **1/1** 通过。
+  - phone-only Release build 成功，已安装并启动 Wu-Tang `com.wjk.fitai`。
+- 未验证/限制：
+  - 没有用户崩溃栈，无法确认原始崩溃点；本轮按最可疑的布局/重复 ID 做加固。
+  - 模拟器使用 QA bypass 数据，没有用真实账号逐个点真机饮食入口；真机仅完成安装和启动。
+  - 没有做工具行像素级截图对比；只确认入口打开/关闭不崩。
+- 部署：后端无变化（`e00708a`）；iOS `3b462d1` 已安装。
