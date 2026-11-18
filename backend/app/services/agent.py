@@ -1070,6 +1070,15 @@ def _delete_last_exercise_turn(
 ) -> dict | None:
     if re.search(r"体重|体脂|腰围|饮食|吃了|喝了|记录饮食|补录饮食", message):
         return None
+    date_refs = set(
+        re.findall(
+            r"今天|明天|后天|周[一二三四五六日天]|星期[一二三四五六日天]",
+            message,
+        )
+    )
+    letters = set(re.findall(r"全身\s*([A-Za-z])", message))
+    if len(date_refs) > 1 or len(letters) > 1:
+        return None
     if not re.search(r"删掉|删除|去掉|移除", message):
         return None
     if not re.search(r"最后(?:一个)?(?:动作)?|最后一项", message):
@@ -1128,6 +1137,15 @@ def _skip_training_action_turn(
     app_context: dict | None,
 ) -> dict | None:
     if re.search(r"吃|喝|饮食|餐|体重|体脂|腰围|记录|补录", message):
+        return None
+    date_refs = set(
+        re.findall(
+            r"今天|明天|后天|周[一二三四五六日天]|星期[一二三四五六日天]",
+            message,
+        )
+    )
+    letters = set(re.findall(r"全身\s*([A-Za-z])", message))
+    if len(date_refs) > 1 or len(letters) > 1:
         return None
     if not re.search(r"跳过|不练了|不练|休息一天|休一天|今天休息", message):
         return None
@@ -1357,7 +1375,7 @@ async def _multi_intent_action_turn(
                 "要新记，请说“新记 200g 米饭”。"
             ),
         }
-    if not re.search(r"再记|另外|还有|同时|顺便|并且|以及", message):
+    if not re.search(r"再记|再帮|再加|另外|还有|同时|顺便|并且|以及", message):
         delete_result = _delete_last_exercise_turn(
             db, user_id, message, app_context
         )

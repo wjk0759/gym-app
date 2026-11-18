@@ -231,6 +231,19 @@ def test_natural_language_skip_creates_a_card(db):
     assert result["actions"][0]["payload"]["day_id"] == DAY_ID
 
 
+def test_two_skip_dates_are_not_silently_reduced_to_one(db):
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "明天全身 C 不练了，后天也不练了",
+            _plan_context(),
+        )
+    )
+
+    assert result is None
+
+
 def test_delete_last_exercise_creates_a_card_without_permission_claim(db):
     result = asyncio.run(
         _multi_intent_action_turn(
