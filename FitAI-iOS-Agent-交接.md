@@ -49,7 +49,7 @@
 
 - 环境：生产后端 `e00708a`；iOS 源码 `e00708a`（含 `9bfb979` 工具行）；Wu-Tang；账号 `macqa_coach`。
 - 生产校验：`agent.py`、`food_text.py`、`coach_control/capabilities/training.py` 的 SHA-256 与本地一致；`/health/ready` 200。
-- **N23 通过**：`上周五称的体重是72kg` → `date=2026-11-13`；`上周五跑了5公里` → `date=2026-11-13`；`上周五深蹲4组8次20kg` → `date=2026-11-13`；`下周五跑了5公里` → 明确拒绝未来训练。iOS `saveBodyCheckIn(date:)` 编译通过，历史体重不覆盖当前 profile。
+- **N23 通过**：`上周五称的体重是72kg` → `date=2026-11-13`；`上周五跑了5公里` → `date=2026-11-13`；`上周五深蹲4组8次20kg` → `date=2026-11-13`；`下周五跑了5公里` → 明确拒绝未来训练。iOS `saveBodyCheckIn(date:)` 编译通过，历史体重不覆盖当前 profile；未在真机手动点历史体重卡验证落库，只验证了 payload 日期 + 编译 + 单测。
 - **N24 通过**：`跳过下周五的训练` → 11-27；`下周都不练了`/`跳过下周的全部训练` → 11-23/25/27 三张 skip 卡；`下周三不练了` → 11-25；本周批量跳过仍只跳过 11-20。
 - **N25 通过**：food+workout、workout+reschedule、workout+skip、body+workout 均两张卡；三意图出三张卡；food+改课明确追问“先处理哪一件”，不静默丢改课。
 - **N26 通过**：`周五 C 不练了，挪到周日` → 先追问“跳过还是改到另一天”，不再先承诺后空卡。

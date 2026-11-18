@@ -1462,7 +1462,7 @@ N22 的 title/summary 同步已合并，但 `_GOAL_REPLY_VALUE_RE` 的“先定�
 → 不出卡，回复“未来的训练还不能记录，换一个日期？”
 ```
 
-iOS `saveBodyCheckIn(date:)` 已编译通过：历史体重卡执行后写历史日期，只有最新一条才更新 profile；未来日期被拒绝。
+iOS `saveBodyCheckIn(date:)` 已编译通过：历史体重卡执行后写历史日期，只有最新一条才更新 profile；未来日期被拒绝。未在真机手动点历史体重卡验证落库，只验证了 payload 日期 + 编译 + 单测。
 
 ### N24 通过：下周跳过正确
 
