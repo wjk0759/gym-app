@@ -14,12 +14,12 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`887efc1`（N21 未确认计划记忆已拦截并复测通过；N20 payload 已对齐 68.5kg，但 action title/summary 仍写 65kg → **N22 P2/P1，阻断发布**；生产后端 `887efc1`，`/health/ready` **200**；Flyway **V44**；后端 **656 passed**、QA **76/76**、Ruff 通过；iOS 仍 `7618cb6`，未发布）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`c463943`（N22 已修：目标卡 title/summary 与 payload 同步；N21 已通过；N20/N17/N18/N19 通过；生产后端 `c463943`，`/health/ready` **200**；Flyway **V44**；后端 **657 passed**、QA **76/76**、Ruff 通过；iOS 源码新增今日饮食工具行统一 `9bfb979`，Mac 需重新 build，旧安装仍是 `7618cb6`）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
-- **macOS AI 教练四轮压测（2026-11-19）**：N17/N18/N19 通过；N21 通过；N20 payload 已对齐 68.5kg，但用户可见 action title/summary 仍是 65kg → N22 P2/P1，阻断发布。
-- **待办（macOS → Windows）**：修 N22，目标卡 title/summary 必须与 payload 一致并补回归；Mac 复测后再发布。
+- **macOS AI 教练四轮压测（2026-11-19）**：N17/N18/N19/N21 通过；N20 已对齐；N22（目标卡 title/summary 仍旧值）已由 Windows 修复（`c463943`），待 Mac 复测；今日饮食工具行 UI 已统一（`9bfb979`），待 Mac build 后看截图。
+- **待办（macOS → Windows）**：复测 N20/N22；build 后确认今日饮食工具行 UI。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -43,6 +43,30 @@
 - 后端 **647 passed**、QA **76/76**、Ruff 通过（Windows 报告）。
 - 部署：生产后端已是 `d9f8285`；iOS 无变化，无需重装；AI 教练本轮无阻断。
 - 剩余：C7–C11 文案/记忆类 P2（未在本轮全部重测）。
+
+### 2026-11-19 · Windows（N22 目标卡 title/summary 同步 + 今日饮食工具行 UI）
+
+- 提交：`c463943`（后端 N22）+ `9bfb979`（iOS 工具行）；已推 `develop`；生产后端已部署 `agent.py`，SHA-256 与本地一致；`/health/ready` **200**；Flyway **V44**。
+- N22 目标卡可见文案：
+  - 根因：`_guard_goal_action_consistency()` 只改了 payload，没有改 `action.title` / `action.summary`；iOS 目标卡直接渲染这两个字段。
+  - 现在对齐 payload 后，同步把 title/summary 里的旧目标值替换为新值（支持 `65kg`、`65 kg`、`65公斤`）。
+  - 例：payload 65→68.5 时，title 从“目标改为减脂，65kg”变为“目标改为减脂，68.5kg”，summary 同步。
+  - 回归断言：payload / title / summary 三者一致。
+- 今日饮食工具行 UI：
+  - 根因：`NutritionView+Layout.swift` 用没有等宽约束的 `HStack`，中间“换饮食策略”更长；`记一笔` 用 `Theme.cobalt`（=ink）+ 默认 `onPrimary`，浅色模式黑底黑图标。
+  - 现在改成 3 列 `LazyVGrid`，复用首页快捷卡的纵向结构：图标在上、标题/说明在下、等宽、圆角 14、padding 11。
+  - 配色：拍照识别/记一笔 = `primary + onPrimary`，本周计划 = `ink + onAccent`。
+  - 标题/说明加 `lineLimit(1)` + `minimumScaleFactor`，SE 不换行。
+- 验证：
+  - 后端 **657 passed**；QA **76/76**；Ruff 通过。
+  - GitHub Backend Tests `c463943` ✓；iOS build 由 GitHub CI 跑。
+  - 本机是 Windows，未跑 Xcode；Mac 需要 `xcodegen generate` 后 build + 看截图。
+- Mac 需要做：
+  1. 重新 build/安装，看今日饮食页工具行：三张卡等宽、图标对比正常、iPhone 17 / SE 浅色/深色都不截断。
+  2. N22：目标建议 68.5kg 时，卡片 title/summary/payload 都应为 68.5kg。
+- 不要恢复：
+  - 不要只改 payload 而保留旧 title/summary。
+  - 不要恢复无等宽 `HStack` 或 `cobalt + onPrimary` 的黑底黑图标组合。
 
 ### 2026-11-19 · macOS（N21 通过；N20 卡片文案仍不一致 → N22）
 
