@@ -584,24 +584,47 @@ async def _food_body_multi_intent_turn(
     ]
     if not body_clauses:
         return None
-    if len(body_clauses) != 1:
-        return {
-            "actions": [],
-            "reply": "这条消息里有多个身体数据，先告诉我这次记哪一项。",
-        }
-    body_clause = body_clauses[0]
+    payload: dict = {}
+    for clause in body_clauses:
+        parsed = _body_metric_payload(clause)
+        if parsed is None:
+            continue
+        for key, value in parsed.items():
+            if key in payload and payload[key] != value:
+                return {
+                    "actions": [],
+                    "reply": "这条消息里有多个不一致的身体数据，先告诉我这次以哪个为准。",
+                }
+            payload[key] = value
+    if not payload:
+        return None
+
     food_clauses = [
         clause
         for clause in clauses
-        if clause != body_clause and _looks_like_food_clause(clause)
+        if clause not in body_clauses and _looks_like_food_clause(clause)
     ]
-    if not food_clauses:
-        return None
     other_clauses = [
         clause
         for clause in clauses
-        if clause != body_clause and clause not in food_clauses
+        if clause not in body_clauses and clause not in food_clauses
     ]
+    if not food_clauses:
+        if other_clauses:
+            return None
+        metric_action = _build_body_metric_action(payload)
+        if metric_action is None:
+            return {
+                "actions": [],
+                "reply": "这组身体数据超出可记录范围，请检查后再发。",
+            }
+        return {
+            "actions": [metric_action],
+            "reply": (
+                f"身体数据识别好了：{_body_metric_summary(payload)}。"
+                "确认后写入今天身体数据。"
+            ),
+        }
     if other_clauses or len(food_clauses) != 1:
         return {
             "actions": [],
@@ -610,9 +633,6 @@ async def _food_body_multi_intent_turn(
                 "这次只确认饮食和身体数据。"
             ),
         }
-    payload = _body_metric_payload(body_clause)
-    if payload is None:
-        return None
     food_action, question = await _food_action_for_clause(
         db,
         user_id,
@@ -624,34 +644,54 @@ async def _food_body_multi_intent_turn(
             "actions": [],
             "reply": question or "饮食部分还需要确认，确认后一起写入。",
         }
-    metric_title = "记录身体数据"
+    metric_action = _build_body_metric_action(payload)
+    if metric_action is None:
+        return {
+            "actions": [],
+            "reply": "这组身体数据超出可记录范围，请检查后再发。",
+        }
+    return {
+        "actions": [food_action, metric_action],
+        "reply": (
+            f"饮食和身体数据都识别好了：{food_action.get('summary') or '饮食'}；"
+            f"{_body_metric_summary(payload)}。确认后一起执行。"
+        ),
+    }
+
+
+def _build_body_metric_action(payload: dict) -> dict | None:
+    title = "记录身体数据"
     if "weight_kg" in payload:
-        metric_title = f"记录体重 {payload['weight_kg']:g}kg"
+        title = f"记录体重 {payload['weight_kg']:g}kg"
     elif "body_fat_pct" in payload:
-        metric_title = f"记录体脂 {payload['body_fat_pct']:g}%"
+        title = f"记录体脂 {payload['body_fat_pct']:g}%"
     elif "waist_cm" in payload:
-        metric_title = f"记录腰围 {payload['waist_cm']:g}cm"
+        title = f"记录腰围 {payload['waist_cm']:g}cm"
     try:
-        metric_action = _normalize_app_actions(
+        return _normalize_app_actions(
             [
                 {
                     "type": "log_body_metric",
-                    "title": metric_title,
+                    "title": title,
                     "summary": "写入今天身体数据",
                     "requires_confirmation": True,
                     "payload": payload,
                 }
             ]
         )[0]
-    except ValueError as exc:
-        return {"actions": [], "reply": str(exc)}
-    return {
-        "actions": [food_action, metric_action],
-        "reply": (
-            f"饮食和身体数据都识别好了：{food_action.get('summary') or '饮食'}；"
-            f"{metric_title}。确认后一起执行。"
-        ),
-    }
+    except ValueError:
+        return None
+
+
+def _body_metric_summary(payload: dict) -> str:
+    parts: list[str] = []
+    if "weight_kg" in payload:
+        parts.append(f"体重 {payload['weight_kg']:g}kg")
+    if "body_fat_pct" in payload:
+        parts.append(f"体脂 {payload['body_fat_pct']:g}%")
+    if "waist_cm" in payload:
+        parts.append(f"腰围 {payload['waist_cm']:g}cm")
+    return "、".join(parts) or "身体数据"
 
 
 def _looks_like_regenerate_plan_request(message: str) -> bool:
@@ -669,6 +709,22 @@ def _looks_like_regenerate_plan_request(message: str) -> bool:
         )
         or "重新生成计划" in text
     )
+
+
+def _food_correction_without_pending(
+    app_context: dict | None,
+    message: str,
+) -> bool:
+    if not isinstance(app_context, dict):
+        return False
+    pending = app_context.get("pending_action")
+    if isinstance(pending, dict) and pending.get("type") == "log_food":
+        return False
+    if not re.search(r"改成|换成|改为|修正", message):
+        return False
+    if re.search(r"新记|再记|另外|记一笔|补记|添加|加一个", message):
+        return False
+    return _looks_like_food_clause(message)
 
 
 async def _multi_intent_action_turn(
@@ -689,6 +745,17 @@ async def _multi_intent_action_turn(
     )
 
     clauses = _split_batch_clauses(message)
+    if len(clauses) == 1 and _food_correction_without_pending(
+        app_context, message
+    ):
+        return {
+            "actions": [],
+            "reply": (
+                "你是想修改已经记录的这一餐，还是新记一笔？"
+                "如果要修改，请在饮食记录里点对应食物；"
+                "要新记，请说“新记 200g 米饭”。"
+            ),
+        }
     if len(clauses) < 2:
         return None
     body_result = await _food_body_multi_intent_turn(
@@ -2079,13 +2146,34 @@ def _tool_result(
             split,
             focus,
         )
+        first_week_days = [
+            day
+            for day in plan.get("days", [])
+            if int(day.get("week_index") or 0) == 1
+        ]
+        first_week_summary = [
+            {
+                "weekday": int(day.get("weekday") or 0),
+                "title": str(day.get("title") or "训练"),
+                "focus": list(day.get("focus") or []),
+                "exercise_count": len(day.get("exercises") or []),
+            }
+            for day in first_week_days
+        ]
+        actual_weekdays = weekdays or [
+            item["weekday"] for item in first_week_summary if item["weekday"]
+        ]
         diff = {
             "changes": changes,
             "base": _program_summary(old_program),
             "proposed": {
                 "title": plan.get("title"),
-                "weekly_days": weekly_days,
-                "weekdays": weekdays,
+                "weekly_days": len(first_week_days) or weekly_days,
+                "weekdays": actual_weekdays,
+                "day_titles": [
+                    item["title"] for item in first_week_summary
+                ],
+                "days": first_week_summary,
                 "session_minutes": session_minutes or profile.session_minutes or 45,
                 "weeks": weeks,
                 "day_count": len(plan.get("days", [])),

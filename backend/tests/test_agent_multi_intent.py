@@ -62,6 +62,42 @@ def test_food_and_body_metric_become_two_cards(db):
     assert result["actions"][1]["payload"]["weight_kg"] == 72
 
 
+def test_multiple_body_metrics_merge_into_one_card(db):
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "今天体重72kg，体脂18%，腰围80",
+            {},
+        )
+    )
+
+    assert result is not None
+    assert [action["type"] for action in result["actions"]] == [
+        "log_body_metric"
+    ]
+    payload = result["actions"][0]["payload"]
+    assert payload["weight_kg"] == 72
+    assert payload["body_fat_pct"] == 18
+    assert payload["waist_cm"] == 80
+
+
+def test_food_correction_without_pending_asks_instead_of_new_log(db):
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "把今天午餐的米饭改成200g",
+            {},
+        )
+    )
+
+    assert result is not None
+    assert result["actions"] == []
+    assert "修改" in result["reply"]
+    assert "新记" in result["reply"]
+
+
 def test_food_correction_without_pending_card_asks_instead_of_new_log(db):
     result = asyncio.run(
         _multi_intent_action_turn(
