@@ -14,12 +14,12 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`887efc1`（N20 目标卡/回复对齐已扩展“摸到/稳住”等表达；N21 未确认计划记忆已拦截；N17/N18 通过，N19 goal 记忆已过滤；生产后端 `887efc1`，`/health/ready` **200**；Flyway **V44**；后端 **656 passed**、QA **76/76**、Ruff 通过；iOS 仍 `7618cb6`；待 Mac 复测 N20/N21）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`887efc1`（N21 未确认计划记忆已拦截并复测通过；N20 payload 已对齐 68.5kg，但 action title/summary 仍写 65kg → **N22 P2/P1，阻断发布**；生产后端 `887efc1`，`/health/ready` **200**；Flyway **V44**；后端 **656 passed**、QA **76/76**、Ruff 通过；iOS 仍 `7618cb6`，未发布）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
-- **macOS AI 教练四轮压测（2026-11-19）**：N17/N18/N19 通过；N20/N21 已由 Windows 修复（`887efc1`），待 Mac 复测。
-- **待办（macOS → Windows）**：复测 N20/N21；有问题再按项回报。
+- **macOS AI 教练四轮压测（2026-11-19）**：N17/N18/N19 通过；N21 通过；N20 payload 已对齐 68.5kg，但用户可见 action title/summary 仍是 65kg → N22 P2/P1，阻断发布。
+- **待办（macOS → Windows）**：修 N22，目标卡 title/summary 必须与 payload 一致并补回归；Mac 复测后再发布。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -43,6 +43,25 @@
 - 后端 **647 passed**、QA **76/76**、Ruff 通过（Windows 报告）。
 - 部署：生产后端已是 `d9f8285`；iOS 无变化，无需重装；AI 教练本轮无阻断。
 - 剩余：C7–C11 文案/记忆类 P2（未在本轮全部重测）。
+
+### 2026-11-19 · macOS（N21 通过；N20 卡片文案仍不一致 → N22）
+
+- 环境：生产后端 `887efc1`；iOS `7618cb6`；账号 `macqa_coach`；真实 12 天计划 + app_context。
+- 生产代码校验：`agent.py`、`memory.py`、`routers/profile.py` 的 SHA-256 与 Mac 本地 `887efc1` 一致；`/health/ready` 200。
+- **N21 通过**：
+  - 基线 `/agent/memories` 24 条，旧污染记忆（“已改到周六/待确认执行”）已隐藏。
+  - 连续生成改期、改课、跳过三类待确认卡但不执行；每次后重新拉取仍 24 条，无新增“已改到/已调整/待确认执行”的 schedule 记忆。
+  - “我这周五练什么？”返回周五全身 C 原始动作，没有被旧“改到周六”记忆污染。
+- **N20 仍未完全通过（N22 P2/P1）**：
+  - 用户“我想改成减脂65kg，目标日期12月31日”。
+  - 回复建议 68.5kg；payload 已对齐 `target_weight_kg=68.5`。
+  - 但同一 action 的 `title` 仍是“目标改为减脂，65kg，12月31日”，`summary` 仍写“目标体重 65kg”。
+  - iOS `CoachChatActionCards.swift` 直接渲染 `action.title` / `action.summary`，所以用户看到 65kg，点确认却写入 68.5kg。
+  - 需要 `_guard_goal_action_consistency()` 改 payload 后同步改 title/summary，或让 iOS 目标卡从 payload 渲染；补回归断言 title/summary/payload 三者一致。
+- 本轮未发布：生产后端仍为 Windows 已部署的 `887efc1`；iOS 无代码变化，`7618cb6` 重新构建/安装 Wu-Tang 仅验证可启动。
+- 不要恢复：
+  - 不要把卡片 title/summary 留在旧目标值而只改 payload。
+  - 不要因为 payload 对齐就判定 N20 通过；必须看用户可见文案。
 
 ### 2026-11-19 · Windows（N20/N21 修复）
 

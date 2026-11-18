@@ -1214,3 +1214,64 @@ schedule | 用户要求把周五全身C的深蹲改为4组×12次、20kg（待�
 
 - 本轮只压测，未改代码、未部署；App `7618cb6`，后端 `d03c195`。
 - N21 建议作为下一轮 P1；N20 为 P2。
+
+## 三十三、2026-11-19 N20/N21 复测（887efc1）：N21 通过；N20 卡片文案仍不一致
+
+- 环境：生产后端 `887efc1`；iOS `7618cb6`；账号 `macqa_coach`；真实 12 天计划 + app_context。
+- 生产代码校验：`agent.py`、`memory.py`、`routers/profile.py` 的 SHA-256 与 Mac 本地 `887efc1` 一致；`/health/ready` 200。
+
+### N20 仍未完全通过：payload 对齐了，卡片标题/摘要仍写 65kg
+
+用户：
+
+```text
+我想改成减脂65kg，目标日期12月31日
+```
+
+回复建议 68.5kg，并明确提示“目标卡已按 68.5kg 准备；如果仍想 65kg，先不要确认”。payload 已同步为：
+
+```json
+{"goal_type":"lose_fat","target_weight_kg":68.5,"target_date":"2026-12-31"}
+```
+
+但同一 action 的标题和摘要仍是旧值：
+
+```text
+title:   目标改为减脂，65kg，12月31日
+summary: 目标类型由增肌改为减脂，目标体重 65kg，目标日期 2026-12-31
+payload: target_weight_kg = 68.5
+```
+
+iOS 操作卡直接渲染 `action.title` 和 `action.summary`（`CoachChatActionCards.swift`），所以用户看到的仍是“65kg”，点确认后写入的却是 68.5kg。N20 的数值一致性只修到了 payload，未修到用户可见卡片，属于新的 **N22 P2/P1（可见值与执行值不一致）**。
+
+### N21 通过：未确认计划变更不再写长期记忆
+
+基线 `/agent/memories` 24 条；此前污染的 N21 记忆（“已改到周六”“待确认执行”等）已从列表隐藏。
+
+连续生成三类待确认卡但不执行：
+
+```text
+把周五全身 C 改到周日
+→ reschedule_training 卡，target_date 2026-11-22
+
+把周五全身 C 的深蹲改成 4 组 12 次 20kg
+→ modify_workout 卡，4 组 × 12 次、16kg（按用户现有器械调整）
+
+明天全身 C 不练了
+→ skip_training 卡
+```
+
+每次生成后重新拉取 `/agent/memories`，仍为 **24 条**，没有新增：
+
+- “已将/已把 … 改到/调整到”
+- “待确认执行”
+- 任何未执行却写成既成事实的 schedule 记忆
+
+功能探针“我这周五练什么？”返回周五全身 C 的原始动作和组次，没有被旧的“改到周六”记忆污染。回复中只保留已存在的软意愿“想换前弓步”，属于允许保留的偏好，不是已执行事实。
+
+### 结论
+
+- N17/N18 上轮已通过；N19 goal 记忆已过滤；N21 本轮通过。
+- **N20 仍未完全通过，新增 N22 P2/P1**：payload 已对齐到 68.5kg，但用户可见的 action title/summary 仍写 65kg；点确认会写入 68.5kg，可见值与执行值不一致。
+- 本轮不部署新版本。生产后端仍为 Windows 已部署的 `887efc1`；iOS 无代码变化，`7618cb6` 重新构建/安装到 Wu-Tang 仅用于确认可启动，不作为本轮功能发布。
+- Windows 下一轮需在 `_guard_goal_action_consistency()` 改写 payload 后，同步改写 `action.title` 和 `action.summary`（或让 iOS 从 payload 渲染目标卡），并补回归：card title/summary 与 payload 必须一致。
