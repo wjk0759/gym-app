@@ -20,6 +20,7 @@ from app.models import (
 from app.services.agent import (
     REVIEW_TZ,
     _deterministic_extra_turn,
+    _forced_food_log_intent,
     _forget_memory_turn,
     _guard_action_card_claims,
     _guard_pending_action_claims,
@@ -174,6 +175,36 @@ def test_food_correction_without_pending_asks_instead_of_new_log(db):
     assert "新记" in result["reply"]
 
 
+def _next_weekday(weekday: int) -> date:
+    today = datetime.now(REVIEW_TZ).date()
+    return today + timedelta(days=(weekday - today.isoweekday()) % 7)
+
+
+def _ios_plan_context(weekday: int = 5, title: str = "全身 C") -> dict:
+    target = _next_weekday(weekday)
+    return {
+        "plan": {
+            "id": PROGRAM_ID,
+            "days": [
+                {
+                    "id": DAY_ID,
+                    "title": title,
+                    "date": target.isoformat(),
+                    "week_index": 1,
+                    "exercises": [
+                        {"slug": "push-up", "name_zh": "俯卧撑"},
+                        {
+                            "slug": "goblet-squat",
+                            "name_zh": "高脚杯深蹲",
+                        },
+                    ],
+                }
+            ],
+        },
+        "today_day": {"id": DAY_ID},
+    }
+
+
 def test_bodyweight_reps_become_one_workout_card(db):
     result = asyncio.run(
         _multi_intent_action_turn(
@@ -192,7 +223,24 @@ def test_bodyweight_reps_become_one_workout_card(db):
     assert payload["kind"] == "strength"
     assert len(payload["sets"]) == 5
     assert payload["sets"][0]["slug"] == "push-up"
-    assert payload["sets"][0]["reps"] == 100
+    assert payload["sets"][0]["reps"] == 20
+    assert sum(item["reps"] for item in payload["sets"]) == 100
+
+
+def test_per_set_reps_are_not_divided_again(db):
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "深蹲5组每组20个",
+            {},
+        )
+    )
+
+    assert result is not None
+    payload = result["actions"][0]["payload"]
+    assert len(payload["sets"]) == 5
+    assert payload["sets"][0]["reps"] == 20
 
 
 def test_cardio_log_gets_a_confirmation_card(db):
@@ -229,6 +277,67 @@ def test_natural_language_skip_creates_a_card(db):
         "skip_training"
     ]
     assert result["actions"][0]["payload"]["day_id"] == DAY_ID
+
+
+def test_ios_context_skip_uses_day_date_field(db):
+    tomorrow = datetime.now(REVIEW_TZ).date() + timedelta(days=1)
+    context = _ios_plan_context(5)
+    context["plan"]["days"][0]["date"] = tomorrow.isoformat()
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "明天全身 C 不练了",
+            context,
+        )
+    )
+
+    assert result is not None
+    assert [action["type"] for action in result["actions"]] == [
+        "skip_training"
+    ]
+    assert result["actions"][0]["payload"]["day_id"] == DAY_ID
+
+
+def test_ios_context_delete_last_exercise_uses_day_date_field(db):
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "把周五全身 C 的最后一个动作删掉",
+            _ios_plan_context(5),
+        )
+    )
+
+    assert result is not None
+    assert [action["type"] for action in result["actions"]] == [
+        "modify_workout"
+    ]
+    assert result["actions"][0]["payload"]["changes"] == [
+        {"op": "remove", "slug": "goblet-squat"}
+    ]
+
+
+def test_explicit_body_metric_logging_creates_a_card(db):
+    result = asyncio.run(
+        _multi_intent_action_turn(
+            db,
+            USER_ID,
+            "记一下今天体重72kg",
+            {},
+        )
+    )
+
+    assert result is not None
+    assert [action["type"] for action in result["actions"]] == [
+        "log_body_metric"
+    ]
+    assert result["actions"][0]["payload"]["weight_kg"] == 72
+
+
+def test_explicit_body_metric_is_not_forced_into_food_tools():
+    assert not _forced_food_log_intent("记一下今天体重72kg")
+    assert not _forced_food_log_intent("今天体脂18%")
 
 
 def test_two_skip_dates_are_not_silently_reduced_to_one(db):

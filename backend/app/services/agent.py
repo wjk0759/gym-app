@@ -162,6 +162,9 @@ def _forced_food_log_intent(message: str) -> bool:
     text = message.strip()
     if any(token in text for token in ("打开饮食", "饮食页", "看看饮食")):
         return False
+    # Body metrics share "记一下" but must not be forced into the food tool set.
+    if re.search(r"体重|体脂|腰围|身体数据", text):
+        return False
     if _forced_workout_log_intent(text):
         return False
     # "今天训练改到明天，再记..." mixes a schedule change with food. Do not
@@ -695,6 +698,50 @@ def _body_metric_summary(payload: dict) -> str:
     return "、".join(parts) or "身体数据"
 
 
+_FOOD_CLAUSE_TOKENS = re.compile(
+    r"吃了|喝了|米饭|鸡|牛|鱼|虾|蛋|奶|面|菜|果|豆|薯|饼|粥|汤|"
+    r"咖啡|茶|酒|汁|粉|包|饺|麦|肉|肠|餐"
+)
+_BODY_QUESTION_TOKENS = re.compile(
+    r"多少|正常|怎么样|如何|算胖|算瘦|胖吗|瘦吗|吗|？|\?"
+)
+
+
+def _body_metric_action_turn(message: str) -> dict | None:
+    """Deterministic body-metric card for explicit logging turns.
+
+    "今天体重72kg" used to work only when the model chose the right tool;
+    "记一下今天体重72kg" was even forced into the food tool set and produced
+    no card. Parse body metrics before the model path instead.
+    """
+    if not _looks_like_body_metric_clause(message):
+        return None
+    if _FOOD_CLAUSE_TOKENS.search(message):
+        return None
+    if _BODY_QUESTION_TOKENS.search(message):
+        return None
+    parsed_date = parse_food_date(message)
+    today = datetime.now(REVIEW_TZ).date()
+    if parsed_date is not None and parsed_date != today:
+        return None
+    payload = _body_metric_payload(message)
+    if not payload:
+        return None
+    action = _build_body_metric_action(payload)
+    if action is None:
+        return {
+            "actions": [],
+            "reply": "这组身体数据超出可记录范围，请检查后再发。",
+        }
+    return {
+        "actions": [action],
+        "reply": (
+            f"身体数据识别好了：{_body_metric_summary(payload)}。"
+            "确认后写入今天身体数据。"
+        ),
+    }
+
+
 def _looks_like_regenerate_plan_request(message: str) -> bool:
     text = message.strip()
     if re.search(
@@ -760,7 +807,7 @@ def _strength_log_action_turn(
         " ",
         clean,
     )
-    clean = re.sub(r"\s*分\s*$", "", clean).strip(" ，,。")
+    clean = re.sub(r"\s*分(?:成)?\s*$", "", clean).strip(" ，,。")
     if not clean:
         return None
     exercise = db.execute(
@@ -786,11 +833,29 @@ def _strength_log_action_turn(
         return None
 
     reps_match = re.search(r"(\d+)\s*(次|个|reps?)", message, re.IGNORECASE)
-    if reps_match is None:
-        return None
-    reps = max(1, min(200, int(reps_match.group(1))))
+    per_set_match = re.search(
+        r"每\s*组\s*(?:做\s*)?(\d+)\s*(次|个|reps?)",
+        message,
+        re.IGNORECASE,
+    )
+    total_split_match = re.search(
+        r"(\d+)\s*(?:次|个|reps?)[^。；;\n]{0,16}?分(?:成)?\s*(\d+)\s*组",
+        message,
+        re.IGNORECASE,
+    )
     sets_match = re.search(r"(\d+)\s*组", message)
-    sets = max(1, min(10, int(sets_match.group(1)))) if sets_match else 3
+    if per_set_match is not None:
+        reps = max(1, min(200, int(per_set_match.group(1))))
+        sets = max(1, min(10, int(sets_match.group(1)))) if sets_match else 3
+    elif total_split_match is not None:
+        total = max(1, int(total_split_match.group(1)))
+        sets = max(1, min(10, int(total_split_match.group(2))))
+        reps = max(1, min(200, round(total / sets)))
+    elif reps_match is not None:
+        reps = max(1, min(200, int(reps_match.group(1))))
+        sets = max(1, min(10, int(sets_match.group(1)))) if sets_match else 3
+    else:
+        return None
     weight = 0.0
     weight_match = re.search(
         r"(\d+(?:\.\d+)?)\s*(kg|公斤|斤)",
@@ -986,6 +1051,29 @@ def _message_target_date(message: str) -> date | None:
     return today + timedelta(days=delta)
 
 
+def _plan_day_date(day: dict, states: dict[str, str]) -> date | None:
+    raw = states.get(str(day.get("id")).lower()) or str(day.get("date") or "")
+    if not raw:
+        return None
+    try:
+        return date.fromisoformat(str(raw)[:10])
+    except ValueError:
+        return None
+
+
+def _plan_day_weekday(day: dict, states: dict[str, str]) -> int | None:
+    raw = day.get("weekday")
+    if raw is not None:
+        try:
+            value = int(raw)
+        except (TypeError, ValueError):
+            value = 0
+        if 1 <= value <= 7:
+            return value
+    parsed = _plan_day_date(day, states)
+    return parsed.isoweekday() if parsed is not None else None
+
+
 def _match_plan_day(
     app_context: dict | None,
     message: str,
@@ -1010,12 +1098,13 @@ def _match_plan_day(
         dated = [
             item
             for item in days
-            if states.get(str(item.get("id")).lower()) == target_key
+            if _plan_day_date(item, states) == target_date
+            or states.get(str(item.get("id")).lower()) == target_key
         ]
         weekday_matches = [
             item
             for item in days
-            if int(item.get("weekday") or 0) == target_date.isoweekday()
+            if _plan_day_weekday(item, states) == target_date.isoweekday()
         ]
         current_week = int(plan.get("current_week") or 1)
         current_week_matches = [
@@ -1049,17 +1138,35 @@ def _match_plan_day(
     ]
     if len(current) == 1:
         return current[0]
+    if target_date is None and not letters:
+        today_day = app_context.get("today_day")
+        today_id = (
+            str(today_day.get("id") or "").lower()
+            if isinstance(today_day, dict)
+            else ""
+        )
+        if today_id:
+            for item in days:
+                if str(item.get("id") or "").lower() == today_id:
+                    return item
     return None
 
 
 def _plan_day_label(day: dict) -> str:
     weekday = day.get("weekday_label")
     if not weekday:
+        raw_weekday = day.get("weekday")
         try:
-            weekday = f"周{_weekday_label(int(day.get('weekday') or 0))}"
+            if raw_weekday is not None:
+                weekday = f"周{_weekday_label(int(raw_weekday))}"
         except (TypeError, ValueError):
-            weekday = "训练日"
-    return f"{weekday} {day.get('title') or '训练'}".strip()
+            weekday = None
+    if not weekday:
+        parsed = _plan_day_date(day, {})
+        if parsed is not None:
+            weekday = f"周{_weekday_label(parsed.isoweekday())}"
+    title = day.get("title") or "训练"
+    return f"{weekday} {title}".strip() if weekday else str(title)
 
 
 def _delete_last_exercise_turn(
@@ -1376,6 +1483,9 @@ async def _multi_intent_action_turn(
             ),
         }
     if not re.search(r"再记|再帮|再加|另外|还有|同时|顺便|并且|以及", message):
+        body_result = _body_metric_action_turn(message)
+        if body_result is not None:
+            return body_result
         delete_result = _delete_last_exercise_turn(
             db, user_id, message, app_context
         )
