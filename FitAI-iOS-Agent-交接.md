@@ -14,13 +14,13 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`1212661`（注释审查第二批：教练动作执行层；第一批饮食链路；iOS 饮食入口崩溃加固已复测；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`c0843c2`（注释审查第三批：API 契约/客户端入口/教练输入动作；前两批饮食链路、教练动作执行层；iOS 饮食入口崩溃加固已复测；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
 - **macOS AI 教练四轮压测（2026-11-19）**：N17/N18/N19/N21 通过；N20/N28 目标值同步已通过；N22 title/summary 同步已通过。
 - **macOS AI 教练五轮压测（2026-11-19）**：N23–N28 已由 Windows 修复（`e00708a`），Mac 复测全部通过并部署。
-- **代码注释审查（2026-11-19）**：第一批完成“今日饮食”iOS + `/diet` 路由；第二批完成教练动作执行层（`AppStore+AgentActions`、`CoachChatActionCards`、`CoachChatControlCards`）；行为未改，待 Mac 抽查。
+- **代码注释审查（2026-11-19）**：第一批“今日饮食”iOS + `/diet`；第二批教练动作执行层；第三批 API 契约/客户端入口/教练输入动作；行为未改，待 Mac 抽查。
 - **macOS 饮食入口崩溃复测（2026-11-19）**：`3b462d1` 已 build/安装 Wu-Tang；新增 `DietEntrySmokeTests`，今日饮食/本周计划/记一笔/发现饮食方案在 iPhone 17 + SE 均不崩。
 - **待办（macOS → Windows）**：本轮无阻断；若用户仍反馈饮食入口闪退，需要 `.ips/.crash` 栈。历史 P2 文案类（N3/N6/C7–C11 等）未逐条重测。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
@@ -75,6 +75,30 @@
 - Mac 需要做：
   - 抽查上述注释与实现是否一致。
   - 下一批：`APIModels` / `APIClient+Endpoints` / `CoachChatView+Actions`，然后训练计划、器械、身体、登录权限。
+
+### 2026-11-19 · Windows（代码注释审查第三批：API 契约与教练输入）
+
+- 提交：`c0843c2`，已推 `develop`；只加注释，无行为改动。
+- 范围：
+  - `Core/Services/APIModels.swift`
+  - `Core/Services/APIClient+Endpoints.swift`
+  - `Features/Coach/CoachChatView+Actions.swift`
+- 注释内容：
+  - DTO 只做 JSON key 映射，不承载业务规则；单位/可选字段语义
+  - `AgentAction` 的 type/payload 组合必须执行前校验
+  - `CoachPendingState` 的 draft/insight/card/proposal 语义
+  - `CoachReceipt` 字段按 capability 取用
+  - `RemoteFoodLog` 的 `client_id` 幂等键、计划餐来源、动作追溯
+  - API 客户端只负责路径/HTTP/幂等 header/解码，不合并本地状态
+  - `/agent/chat`、`runAgentAction`、`executeWorkoutAction` 的幂等和版本冲突
+  - 饮食生成 vs 只读已保存计划的区别
+  - 教练输入区文本/图片/视频三条互斥发送路径
+- 未做：
+  - 没有改请求、模型或执行逻辑
+  - 没有给未核对的训练计划/器械/身体/登录页面写注释
+- Mac 需要做：
+  - 抽查注释与实现是否一致。
+  - 下一批：训练计划/训练进行，然后器械、身体、登录权限、设置同步。
 
 ### 2026-11-19 · macOS（饮食入口崩溃加固复测通过 + 部署）
 
