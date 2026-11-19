@@ -1,6 +1,8 @@
 import Foundation
 import SwiftUI
 
+/// 忘记密码：手机号 + 短信验证码 + 新密码。
+/// 成功后才回登录页；失败保留输入，不写任何本地登录态。
 struct PasswordResetView: View {
     @Environment(AuthStore.self) private var auth
     @Environment(\.dismiss) private var dismiss

@@ -1,6 +1,8 @@
 import SwiftUI
 import AuthenticationServices
 
+/// 登录页：手机验证码 / 账号密码 / 第三方登录。
+/// 只收集输入并调用 AuthStore；token、session、onboarding 状态由 AuthStore 管。
 struct LoginView: View {
     @Environment(AuthStore.self) var auth
 

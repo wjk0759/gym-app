@@ -3,6 +3,9 @@ import Foundation
 import Observation
 import UIKit
 
+/// 认证状态与 token 生命周期的唯一入口。
+/// 负责恢复登录、验证码/密码/Apple/OAuth 登录、刷新 token、session touch、
+/// 退出和删除账号；页面只调用这里，不直接碰 Keychain/API。
 @Observable
 @MainActor
 final class AuthStore {

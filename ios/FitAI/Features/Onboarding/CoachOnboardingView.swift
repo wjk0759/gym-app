@@ -1,12 +1,8 @@
 import SwiftUI
 import UIKit
 
-/// Coach-led, one-question-at-a-time onboarding.
-///
-/// The old flow was a five-page form. This version keeps the same data model
-/// but gives each decision its own screen, uses visual references for body
-/// shape and body fat, recommends a starting point and ends with a report
-/// before the plan is generated.
+/// 教练式 onboarding：一次一个问题，收集档案/目标/器械/体型/体脂。
+/// 只维护草稿；点保存后写入 profile/goal，再由 AppStore 生成初始计划。
 struct CoachOnboardingView: View {
     @Environment(AppStore.self) var store
     @Environment(AuthStore.self) var auth

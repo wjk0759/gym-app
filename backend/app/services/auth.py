@@ -1,3 +1,10 @@
+"""Authentication, sessions, token hashing and OAuth/Apple exchange.
+
+Access tokens are short-lived JWTs; refresh tokens are stored hashed and
+rotated, with a short grace window for lost refresh responses. This module owns
+credentials and sessions only; feature entitlements live in access.py.
+"""
+
 from __future__ import annotations
 
 import base64

@@ -1,6 +1,9 @@
 import StoreKit
 import SwiftUI
 
+/// Pro 订阅页。
+/// StoreKit 只负责购买/恢复；购买成功后由 SubscriptionManager 同步服务端权益，
+/// 本页不会仅凭本地交易直接解锁功能。
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(SubscriptionManager.self) private var manager

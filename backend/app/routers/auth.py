@@ -1,3 +1,9 @@
+"""Authentication HTTP endpoints: SMS, password, OAuth, Apple, sessions and refresh.
+
+Token/session creation and validation live in services/auth; this router only
+validates request shape, maps errors and sets response metadata.
+"""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone

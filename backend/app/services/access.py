@@ -132,6 +132,7 @@ def seconds_until_business_day_reset(
 
 
 def access_snapshot(db: Session, user_id: str) -> dict:
+    """Serialize the server-authoritative Pro/trial/quota snapshot for clients."""
     entitlement = active_entitlement(db, user_id)
     training = db.get(FeatureTrial, (user_id, FEATURE_TRAINING_PLAN))
     meal = db.get(FeatureTrial, (user_id, FEATURE_MEAL_PLAN))
