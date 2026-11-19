@@ -1,11 +1,8 @@
 import SwiftUI
 
-/// The record tab as a printed training journal.
-///
-/// Everything the old screen could do is still here: month calendar, schedule
-/// changes, plan editing, workout history, period mode, progress and the plan
-/// version list. The difference is hierarchy: the month reads as a cover, the
-/// calendar as a date grid, and one selected day as a page.
+/// 记录 Tab 的训练手账首页。
+/// 月历、计划摘要、选中日详情和入口都从这里组装；
+/// 计划写入/改期/生成由 AppStore 和子页面处理，本 View 不直接写库。
 struct PlanHomeView: View {
     @Environment(AppStore.self) var store
 

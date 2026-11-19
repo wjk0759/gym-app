@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 训练/饮食复盘页：训练趋势、执行率、营养和最近记录。
+/// 数据来自 store/PlanReviewEngine 与 /diet/review；本页只读，不写计划。
 struct PlanReviewView: View {
     @Environment(AppStore.self) private var store
 

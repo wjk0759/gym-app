@@ -1,4 +1,9 @@
-"""Training schedule capability."""
+"""Training schedule capability.
+
+`resolve` maps a natural-language reschedule to one plan day + target date;
+`resolve_skip` maps skip/不练 to one day. Both are read-only resolvers; the
+runtime owns confirmation, execution and undo.
+"""
 
 from __future__ import annotations
 
@@ -256,6 +261,11 @@ def resolve(
     message: str,
     app_context: dict | None = None,
 ) -> dict:
+    """Resolve one reschedule request into a day_id + target date.
+
+    Read-only: returns ready/payload or a clarifying question. The runtime
+    builds the card and executes it; this function never writes.
+    """
     context = app_context if isinstance(app_context, dict) else {}
     today = datetime.now(DIET_TZ).date()
     plan = context.get("plan") if isinstance(context.get("plan"), dict) else {}
@@ -337,6 +347,7 @@ def resolve_skip(
     message: str,
     app_context: dict | None = None,
 ) -> dict:
+    """Resolve one skip request into a day_id/date; never writes."""
     context = app_context if isinstance(app_context, dict) else {}
     today = datetime.now(DIET_TZ).date()
     plan = context.get("plan") if isinstance(context.get("plan"), dict) else {}

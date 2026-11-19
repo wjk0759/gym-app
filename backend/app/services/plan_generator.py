@@ -387,6 +387,11 @@ def fallback_plan(
     weekdays: list[int] | None = None,
     focus: list[str] | None = None,
 ) -> dict:
+    """Build a deterministic weekly split from the filtered exercise pool.
+
+    Used when the LLM is disabled/unavailable or when a generated plan fails
+    hard validation. The result still goes through the same validator.
+    """
     normalized_weekdays = sorted({int(item) for item in (weekdays or []) if 1 <= int(item) <= 7})
     if normalized_weekdays:
         weekly_days = len(normalized_weekdays)
@@ -607,6 +612,12 @@ async def generate_plan(
     focus: list[str] | None = None,
     strict_equipment: bool = False,
 ) -> dict:
+    """Generate one validated plan, LLM when enabled, template otherwise.
+
+    The returned dict is already checked by `validate_plan` (or built by the
+    validated template path); callers still own persistence, versioning and
+    activation.
+    """
     # Fast path: the reasoning LLM is far too slow for plan generation (see
     # ai_jobs: plan=64s). The deterministic template is instant and already
     # validated, and matches the iOS local generator.

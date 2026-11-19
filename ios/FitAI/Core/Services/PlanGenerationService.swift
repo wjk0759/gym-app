@@ -1,10 +1,8 @@
 import Foundation
 
-/// Owns plan generation mechanics so AppStore stays a state container.
-///
-/// The service deliberately returns a plan instead of mutating AppStore:
-/// versioning, archiving, toasts, trial consumption and notifications remain
-/// in the store's orchestration path.
+/// 计划生成的结果边界。
+/// 远端路径只返回服务端计划；本地路径只返回模板计划。
+/// 版本号、归档、试用消耗、toast 和通知仍由 AppStore 编排。
 struct PlanGenerationService {
     var client: APIClient = .shared
 

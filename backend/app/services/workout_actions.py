@@ -1,4 +1,9 @@
-"""Server-side validation and execution for coach workout changes."""
+"""Server-side validation/execution for coach workout changes.
+
+`modify_workout` is the only write path for changing an active plan day:
+prepare_* validates plan version/slugs/equipment/injury; execute_* applies and
+records the before-state; undo_* restores it.
+"""
 
 from __future__ import annotations
 
@@ -190,6 +195,12 @@ def prepare_modify_workout(
     changes: list[dict[str, Any]],
     expected_plan_version: int | None = None,
 ) -> tuple[Program, ProgramDay, list[dict], list[dict]]:
+    """Validate a day edit without mutating the plan.
+
+    Rejects stale plan versions and any change that names an unknown,
+    unowned or injury-contraindicated exercise. Returns before/after payloads
+    for the dry-run response.
+    """
     program = load_program(db, plan_id)
     if program is None or program.user_id != user_id:
         raise WorkoutActionError("训练计划不存在")
@@ -215,6 +226,7 @@ def execute_modify_workout(
     changes: list[dict[str, Any]],
     expected_plan_version: int | None = None,
 ) -> tuple[dict, list[dict], int]:
+    """Apply a validated day edit, bump plan version, and return before-state."""
     program, day, before, after = prepare_modify_workout(
         db,
         user_id,
@@ -255,6 +267,7 @@ def undo_modify_workout(
     before: list[dict[str, Any]],
     expected_version: int,
 ) -> dict:
+    """Restore a day's before-state; refuses if the plan version has moved on."""
     program = load_program(db, plan_id)
     if program is None or program.user_id != user_id:
         raise WorkoutActionError("训练计划不存在")

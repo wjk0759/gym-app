@@ -1,5 +1,8 @@
 import SwiftUI
 
+/// 训练日期编辑页：按周把计划日拖到具体日期。
+/// 本地用 `PlanScheduleEngine` 校验/生成新日期，保存时同步到服务端；
+/// 页面本身不生成计划，也不改动作。
 struct PlanScheduleView: View {
     @Environment(AppStore.self) var store
     @Environment(\.dismiss) private var dismiss

@@ -1,6 +1,16 @@
 import Foundation
 
+/// 训练计划的 AppStore 状态编排。
+///
+/// 这里负责：生成前置检查、Pro/冷却/日限、远端生成与本地回退、
+/// 计划版本/归档、onboarding 预览、待确认计划、通知重排。
+/// 网络和模板生成细节分别在 `PlanGenerationService` / `PlanGenerator`。
 extension AppStore {
+    /// 生成/重排训练计划。
+    ///
+    /// 前置检查顺序：建档 -> 器械 -> 正在生成 -> 正在训练 -> Pro/冷却；
+    /// 远端优先，失败按网络/校验/服务不可用回退本地模板。
+    /// `onboarding` 时允许预览且不要求 Pro。
     func generatePlan(
         force: Bool = true,
         weeklyWeekdays: [Int]? = nil,
@@ -314,6 +324,9 @@ extension AppStore {
         persist()
     }
 
+    /// 把 onboarding 预览计划确认为正式计划。
+    /// 先尝试激活服务端计划；激活失败则保留本地副本并标记待同步。
+    /// 随后归档旧计划、替换本地 plan、持久化并同步。
     func confirmPendingPlan(openRecord: Bool = false) {
         guard let pending = pendingPlanPreview else { return }
         guard workoutDraft == nil else {

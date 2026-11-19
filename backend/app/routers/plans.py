@@ -1,3 +1,10 @@
+"""Training-plan endpoints: generation, history/current, activation, day edits, adjustment.
+
+This layer owns auth/access checks, generation leases/idempotency, request
+validation and response shaping; plan rules live in plan_generator/validator
+and workout_actions.
+"""
+
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -65,6 +72,7 @@ async def generate(
         default=None, alias="Idempotency-Key", max_length=64
     ),
 ):
+    """Generate/save a training plan with cooldown, daily limit and replay."""
     profile = db.get(Profile, user_id)
     if profile is None or profile.height_cm is None or profile.weight_kg is None:
         raise HTTPException(status_code=400, detail="请先完成身高、体重等基础档案")

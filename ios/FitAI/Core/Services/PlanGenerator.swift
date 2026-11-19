@@ -1,5 +1,11 @@
 import Foundation
 
+/// 本地训练计划生成器。
+///
+/// 只在远端生成不可用或用户明确走本地路径时使用：
+/// - 输入是档案、可用器械、偏好动作、历史训练和计划重量；
+/// - 输出纯 `TrainingPlan`，不写 AppStore、不发通知；
+/// - 不负责版本号、proposal、服务端同步。
 enum PlanGenerator {
     struct Adjustment {
         let headline: String
