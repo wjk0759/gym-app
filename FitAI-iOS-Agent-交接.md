@@ -36,7 +36,8 @@
   - iPhone 17 `FitAIUITests` **7/7**
   - iPhone SE 3 `FitAIUITests` **7/7**
   - clean `xcodegen generate` + `xcodebuild test` 通过；浅色/深色截图人工检查
-  - 未用真实账号真机回归；未合并/未部署
+  - try Release 已安装并启动 Wu-Tang `com.wjk.fitai`，API 为 `https://hk-api.jiaolianfit.cn/api/v1`
+  - 未用真实账号做完整回归；未合并/未部署
 - 已知边界：
   - 根 Tab 暂用 inline title；large title 在当前 `UINavigationBarAppearance` 下渲染为空，需单独修。
   - 设置、训练进行页、器械详情、进展等二级页只做字重/卡片/英文眉标收敛，尚未逐页重排。
