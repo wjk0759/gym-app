@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`7d03219`（训练日期锚点 / 频率提示修复；生产后端仍 `66694f9`，`/health/ready` **200**；Flyway **V44**；后端 **678 passed**、QA **76/76**、Ruff 通过；iOS Build CI 已触发）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`7d03219`（训练日期锚点 / 频率提示修复；生产后端仍 `66694f9`，`/health/ready` **200**；Flyway **V44**；后端 **678 passed**、QA **76/76**、Ruff 通过；iOS Build CI `7d03219` **成功**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -50,15 +50,15 @@
 - 验证：
   - 后端 `pytest tests` **678 passed**；QA **76/76**；Ruff 通过。
   - Swift 括号平衡；Windows 无 Xcode，未跑 Swift 测试/构建。
-  - iOS Build CI `7d03219` 已触发（run `44594942839`），结果待回填。
+  - iOS Build CI `7d03219` **全绿**（run `44594942839`：XcodeGen、SwiftLint、FitAIWorkoutCore tests、simulator build）；GitHub Backend Tests 也成功。
 - 这个账号（13428104171）：
   - 计划仍是 3 练/周（版本 11），排期日期 11/23–12/18；数据未改。
   - 新包上训练日期页应从 11/23 开始显示第 1 周 3/3，12 个训练日全部可见；顶部会提示档案 5 / 计划 3。
   - 旧包不要保存训练日期页，可能重写第 4 周。
   - 需要 5 练：在档案页点“更新并重排计划”，或在训练手账“重新生成计划”。
-- 对方需要做：Mac 拉取 → xcodegen → `FitAITests`（新增 4 个 boardStart 测试）→ 安装新包，按上面账号复测；iOS Build CI 结果回填。
+- 对方需要做：Mac 拉取 → xcodegen → `FitAITests`（新增 4 个 boardStart 测试）→ 安装新包，按上面账号复测；iOS Build CI 已全绿。
 - 禁止恢复：不要用 `createdAt` 当训练日期周锚点；不要让 repair 脚本强制“下一个周一”；不要把档案 5 自动改成 3。
-- 仍 BLOCKED：`FitAITests` / UI / 真机验证需 Mac；iOS Build CI 结果待出。
+- 仍 BLOCKED：`FitAITests` / UI / 真机验证需 Mac；CI 已全绿。
 
 ### 2026-11-19 · macOS（废弃代码清理复测 + 部署）
 
