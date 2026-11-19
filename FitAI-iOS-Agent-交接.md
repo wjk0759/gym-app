@@ -14,13 +14,13 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`ddcda62`（注释审查第四批：训练计划/日程/改课；前三批饮食、教练动作、API 契约；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`e8ce140`（注释审查第五批：训练进行/历史/复盘；第四批训练计划/日程/改课；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
 - **macOS AI 教练四轮压测（2026-11-19）**：N17/N18/N19/N21 通过；N20/N28 目标值同步已通过；N22 title/summary 同步已通过。
 - **macOS AI 教练五轮压测（2026-11-19）**：N23–N28 已由 Windows 修复（`e00708a`），Mac 复测全部通过并部署。
-- **代码注释审查（2026-11-19）**：第一批“今日饮食”iOS + `/diet`；第二批教练动作执行层；第三批 API 契约/客户端入口/教练输入动作；第四批训练计划/日程/改课；行为未改，待 Mac 抽查。
+- **代码注释审查（2026-11-19）**：第一批饮食；第二批教练动作；第三批 API 契约/教练输入；第四批训练计划/日程/改课；第五批训练进行/历史/复盘；行为未改，待 Mac 抽查。
 - **macOS 饮食入口崩溃复测（2026-11-19）**：`3b462d1` 已 build/安装 Wu-Tang；新增 `DietEntrySmokeTests`，今日饮食/本周计划/记一笔/发现饮食方案在 iPhone 17 + SE 均不崩。
 - **待办（macOS → Windows）**：本轮无阻断；若用户仍反馈饮食入口闪退，需要 `.ips/.crash` 栈。历史 P2 文案类（N3/N6/C7–C11 等）未逐条重测。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
@@ -121,6 +121,30 @@
 - Mac 需要做：
   - 抽查注释与实现是否一致。
   - 下一批：训练进行/训练历史，然后器械、身体、登录权限、设置同步。
+
+### 2026-11-19 · Windows（代码注释审查第五批：训练进行/历史/复盘）
+
+- 提交：`e8ce140`，已推 `develop`；只加注释，无行为改动；后端训练/草稿相关测试 12 passed，Ruff 通过。
+- 范围：
+  - iOS：`WorkoutSessionView`、`WorkoutSessionView+Actions`、`WorkoutSessionView+RestTimer`、`WorkoutHistoryView`、`WorkoutDetailView`、`WorkoutSubstitutionSheet`、`WorkoutOutcomeCard`、`ExerciseProgressView`、`AppStore+Workouts`、`ExerciseSubstitutionEngine`
+  - 后端：`routers/workouts.py`、`workout_draft.py`、`training_history.py`、`load_progression.py`
+- 注释内容：
+  - 训练页只持有本次训练状态；历史/同步/撤销归 AppStore
+  - 完成组：手表主导 vs 手机主导两条路径
+  - 草稿恢复只执行一次；普通进度节流落盘，新草稿立即落盘
+  - 休息计时以 `restEndDate` 为唯一截止时间，后台恢复时重算
+  - 训练历史只读，详情编辑先写本地 draft 再同步
+  - 替换面板只展示候选，不直接改计划/记录
+  - 训练结果卡从本地历史推导，训练刚结束未同步也能显示
+  - `/workouts` 的 client_id 幂等、slug/day 校验、WorkoutCompleted 事件
+  - 跨设备训练草稿 last-write-wins；训练历史和 e1RM 只读
+  - 负荷进阶规则与服务器一致，自重动作不生成重量
+- 未做：
+  - 没有改训练/草稿/同步逻辑
+  - 未逐行核对所有训练子视图，只给职责明确的文件加头注和关键路径注释
+- Mac 需要做：
+  - 抽查注释与实现是否一致。
+  - 下一批：器械库/器械识别/动作库，然后身体数据、登录权限、设置同步。
 
 ### 2026-11-19 · macOS（饮食入口崩溃加固复测通过 + 部署）
 
