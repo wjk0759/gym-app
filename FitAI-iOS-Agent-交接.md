@@ -14,13 +14,13 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`1b28b59`（注释审查第七批：身体数据/体型分析；第六批器械；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`42f4335`（注释审查第八批：登录/onboarding/权限；第七批身体数据；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
 - **macOS AI 教练四轮压测（2026-11-19）**：N17/N18/N19/N21 通过；N20/N28 目标值同步已通过；N22 title/summary 同步已通过。
 - **macOS AI 教练五轮压测（2026-11-19）**：N23–N28 已由 Windows 修复（`e00708a`），Mac 复测全部通过并部署。
-- **代码注释审查（2026-11-19）**：第一批饮食；第二批教练动作；第三批 API 契约/教练输入；第四批训练计划/日程/改课；第五批训练进行/历史/复盘；第六批器械库/识别/动作库；第七批身体数据/体型分析；行为未改，待 Mac 抽查。
+- **代码注释审查（2026-11-19）**：第一批饮食；第二批教练动作；第三批 API 契约/教练输入；第四批训练计划/日程/改课；第五批训练进行/历史/复盘；第六批器械库/识别/动作库；第七批身体数据/体型分析；第八批登录/onboarding/权限；行为未改，待 Mac 抽查。
 - **macOS 饮食入口崩溃复测（2026-11-19）**：`3b462d1` 已 build/安装 Wu-Tang；新增 `DietEntrySmokeTests`，今日饮食/本周计划/记一笔/发现饮食方案在 iPhone 17 + SE 均不崩。
 - **待办（macOS → Windows）**：本轮无阻断；若用户仍反馈饮食入口闪退，需要 `.ips/.crash` 栈。历史 P2 文案类（N3/N6/C7–C11 等）未逐条重测。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
@@ -186,6 +186,27 @@
 - Mac 需要做：
   - 抽查注释与实现是否一致。
   - 下一批：登录/onboarding/权限，然后设置/记忆/导出/同步/Watch。
+
+### 2026-11-19 · Windows（代码注释审查第八批：登录/onboarding/权限）
+
+- 提交：`42f4335`，已推 `develop`；只加注释，无行为改动；后端 auth/access/profile 测试 52 passed，Ruff 通过。
+- 范围：
+  - iOS：`LoginView`、`PasswordResetView`、`PaywallView`、`AuthStore`、`CoachOnboardingView`
+  - 后端：`routers/auth.py`、`services/auth.py`、`services/access.py`
+- 注释内容：
+  - 登录页只收集输入；token/session/onboarding 状态归 AuthStore
+  - AuthStore 统一处理恢复登录、验证码/密码/Apple/OAuth、刷新、session touch、退出/删号
+  - refresh token 只存 hash 并轮换，有短 grace window；服务端 access token 是短时 JWT
+  - 忘记密码成功后才回登录页，不提前写本地登录态
+  - Paywall 的 StoreKit 只触发服务端权益同步，不能本地直接解锁
+  - onboarding 只维护草稿，保存后才写 profile/goal 并生成计划
+  - access.py 是 Pro/trial/额度唯一判定；客户端只渲染 snapshot
+- 未做：
+  - 没有改认证/权限逻辑
+  - 未逐行核对 onboarding 所有步骤和 OAuth 细节
+- Mac 需要做：
+  - 抽查注释与实现是否一致。
+  - 下一批：设置/记忆/导出、同步、Watch/媒体/诊断。
 
 ### 2026-11-19 · macOS（饮食入口崩溃加固复测通过 + 部署）
 
