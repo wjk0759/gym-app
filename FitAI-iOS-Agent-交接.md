@@ -14,12 +14,13 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`3b462d1`（iOS 饮食入口崩溃加固已复测；`FitAITests` **140/140**、`FitAIUITests` **7/7**，新饮食 smoke 在 iPhone 17 + SE 通过；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**；iOS `3b462d1` 已装 Wu-Tang）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`9320056`（从 `3b462d1` 起补充饮食链路注释；iOS 饮食入口崩溃加固已复测，`FitAITests` **140/140**、`FitAIUITests` **7/7**，新饮食 smoke 在 iPhone 17 + SE 通过；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**；iOS `3b462d1` 已装 Wu-Tang）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
 - **macOS AI 教练四轮压测（2026-11-19）**：N17/N18/N19/N21 通过；N20/N28 目标值同步已通过；N22 title/summary 同步已通过。
 - **macOS AI 教练五轮压测（2026-11-19）**：N23–N28 已由 Windows 修复（`e00708a`），Mac 复测全部通过并部署。
+- **代码注释审查（2026-11-19）**：已开始按功能链路补注释；第一批完成“今日饮食”iOS + `/diet` 路由，行为未改，待 Mac 抽查注释是否与代码一致。
 - **macOS 饮食入口崩溃复测（2026-11-19）**：`3b462d1` 已 build/安装 Wu-Tang；新增 `DietEntrySmokeTests`，今日饮食/本周计划/记一笔/发现饮食方案在 iPhone 17 + SE 均不崩。
 - **待办（macOS → Windows）**：本轮无阻断；若用户仍反馈饮食入口闪退，需要 `.ips/.crash` 栈。历史 P2 文案类（N3/N6/C7–C11 等）未逐条重测。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
@@ -33,6 +34,25 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-19 · Windows（代码注释审查第一批：今日饮食）
+
+- 提交：`9320056`，已推 `develop`；只加注释，无行为改动；后端测试 25 passed（food/diet 相关），Ruff 通过。
+- 范围：
+  - iOS：`NutritionView`、`NutritionView+Layout`、`WeekDietPlanView`、`AddFoodView`、`FoodPhotoAnalysisView`、`NutritionService`、`AppStore+Nutrition`
+  - 后端：`routers/diet.py` 文件说明 + 关键路由 docstring
+- 注释内容只写已核对的职责：
+  - 页面是展示层还是写入层
+  - 已保存计划 vs 生成计划的区别
+  - 本地记录、服务端计划、目标缓存的归属
+  - 拍照识别“识别不写库，用户确认才加入”的边界
+  - `/diet` 路由的幂等、限流、访问控制和数据表
+- 未做：
+  - 没有给未核对的模块写注释
+  - 没有改任何逻辑
+- Mac 需要做：
+  - 抽查上述文件的注释与实现是否一致；有不对的直接指出。
+  - 下一批计划：教练动作卡 / AppStore+AgentActions / APIModels，然后训练计划、器械、身体、登录权限。
 
 ### 2026-11-19 · macOS（饮食入口崩溃加固复测通过 + 部署）
 
