@@ -14,13 +14,13 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`42f4335`（注释审查第八批：登录/onboarding/权限；第七批身体数据；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`b7e583d`（注释审查第九批：设置/记忆/导出/同步/Watch/App 入口；第八批登录权限；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
 - **macOS AI 教练四轮压测（2026-11-19）**：N17/N18/N19/N21 通过；N20/N28 目标值同步已通过；N22 title/summary 同步已通过。
 - **macOS AI 教练五轮压测（2026-11-19）**：N23–N28 已由 Windows 修复（`e00708a`），Mac 复测全部通过并部署。
-- **代码注释审查（2026-11-19）**：第一批饮食；第二批教练动作；第三批 API 契约/教练输入；第四批训练计划/日程/改课；第五批训练进行/历史/复盘；第六批器械库/识别/动作库；第七批身体数据/体型分析；第八批登录/onboarding/权限；行为未改，待 Mac 抽查。
+- **代码注释审查（2026-11-19）**：第一批饮食；第二批教练动作；第三批 API 契约/教练输入；第四批训练计划/日程/改课；第五批训练进行/历史/复盘；第六批器械库/识别/动作库；第七批身体数据/体型分析；第八批登录/onboarding/权限；第九批设置/记忆/导出/同步/Watch/App 入口；行为未改，待 Mac 抽查。
 - **macOS 饮食入口崩溃复测（2026-11-19）**：`3b462d1` 已 build/安装 Wu-Tang；新增 `DietEntrySmokeTests`，今日饮食/本周计划/记一笔/发现饮食方案在 iPhone 17 + SE 均不崩。
 - **待办（macOS → Windows）**：本轮无阻断；若用户仍反馈饮食入口闪退，需要 `.ips/.crash` 栈。历史 P2 文案类（N3/N6/C7–C11 等）未逐条重测。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
@@ -207,6 +207,29 @@
 - Mac 需要做：
   - 抽查注释与实现是否一致。
   - 下一批：设置/记忆/导出、同步、Watch/媒体/诊断。
+
+### 2026-11-19 · Windows（代码注释审查第九批：设置/记忆/导出/同步/Watch/App 入口）
+
+- 提交：`b7e583d`，已推 `develop`；只加注释，无行为改动；后端 sync/watch 测试 18 passed，Ruff 通过。
+- 范围：
+  - iOS：`SettingsView`、`AgentMemoryView`、`DataExportView`、`AppStore+Sync`、`AppStore+CloudSync`、`AppStore+Export`、`AgentMemoryService`、`HealthKitService`、`FitAIApp`、`RootView`、`MainTabView`
+  - 后端：`routers/sync.py`、`watch.py`、`videos.py`、`services/watch.py`
+- 注释内容：
+  - 设置页只做导航/分组；具体开关/连接在子页/AppStore
+  - 长期记忆页只读/删除，不编辑内容
+  - 数据导出只读快照，不修改数据
+  - 同步总入口按 pending 状态补传/拉取；云偏好用全量快照
+  - 训练/计划/饮食/身体/器械同步的职责边界
+  - HealthKit 只做授权/读取体重/写训练，不承接 UI/业务同步
+  - App 入口只创建全局 store 和环境；RootView 负责启动时序/分流；MainTabView 负责 Tab 和路径
+  - Watch 由手机端唯一访问服务器；媒体按发布资产选最佳衍生
+  - user_sync 只同步小型偏好/自定义食物/收藏/周期，大对象走专用接口
+- 未做：
+  - 没有改同步/设置/HealthKit/Watch 逻辑
+  - 未逐行核对所有设置子页和 Watch 传输分支
+- Mac 需要做：
+  - 抽查注释与实现是否一致。
+  - 剩余：少量 Features/公共组件/诊断与 Watch 细节；全量覆盖还需最后一批收尾。
 
 ### 2026-11-19 · macOS（饮食入口崩溃加固复测通过 + 部署）
 
