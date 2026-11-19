@@ -2,6 +2,9 @@ import PhotosUI
 import SwiftUI
 import UIKit
 
+/// 器械拍照识别页。
+/// 照片 -> 后端识别候选 -> 用户确认器械类型/动作 -> 加入个人器械库。
+/// 识别本身不写库，只有点保存才写。
 struct EquipmentRecognitionView: View {
     @Environment(AppStore.self) var store
     @Environment(\.dismiss) var dismiss

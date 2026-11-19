@@ -2,6 +2,12 @@
 # Do not edit by hand. Regenerate with:
 #   python scripts/vital/build_equipment_catalog_module.py
 
+"""Static equipment catalog v2 (equipment types, aliases and exercise mapping).
+
+Read-only data used by recognition matching and prompt construction; user
+ownership/availability is resolved separately in equipment_inventory.
+"""
+
 from __future__ import annotations
 
 

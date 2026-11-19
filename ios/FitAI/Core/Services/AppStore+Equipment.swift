@@ -76,6 +76,9 @@ enum PlanEquipmentCheck {
     }
 }
 
+/// 器械状态的上层入口。
+/// 把 onboarding 类型、个人器械库和通用器械三个来源投影成可用动作池；
+/// 所有写入都会刷新 profile 缓存并触发计划器械检查。
 extension AppStore {
     // MARK: - 计划池
 

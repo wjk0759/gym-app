@@ -229,6 +229,11 @@ async def recognize(
     user_id: str | None = None,
     ocr_text: str = "",
 ) -> dict:
+    """Recognize equipment from one image and return honest candidates.
+
+    Pro/vision availability errors are explicit; this function never
+    fabricates a random equipment match.
+    """
     if settings.use_mock_vision:
         return _unavailable(
             filename,

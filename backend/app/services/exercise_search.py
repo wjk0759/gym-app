@@ -86,6 +86,7 @@ def _search_text(item: dict) -> str:
 
 
 def search_exercises(query: str, limit: int = 3) -> list[dict]:
+    """Lexical search over the filtered exercise knowledge base."""
     query = query.strip()
     if not query:
         return []

@@ -194,6 +194,7 @@ def effective_equipment_types(
     user_id: str,
     profile_equipment: list[str] | None = None,
 ) -> list[str]:
+    """Resolve the effective equipment set from profile + library + universal."""
     entries = active_entries(db, user_id)
     if entries:
         types = {item.equipment_type for item in entries}

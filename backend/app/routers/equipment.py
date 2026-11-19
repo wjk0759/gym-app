@@ -1,3 +1,10 @@
+"""Equipment HTTP endpoints: recognition, action search, personal library, universal equipment.
+
+Recognition is Pro-gated, rate-limited and idempotent; it returns candidates but
+never writes the library. Library mutations go through equipment_inventory so
+the profile cache and plan pool stay consistent.
+"""
+
 from fastapi import APIRouter, File, Form, Header, HTTPException, Query, UploadFile
 from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError

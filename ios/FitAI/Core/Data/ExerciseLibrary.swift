@@ -1,6 +1,7 @@
 import Foundation
 
-/// One first-level category and its ordered second-level children.
+/// 本地动作库目录：肌群分类、动作元数据和检索。
+/// 只是静态数据/过滤，不写用户计划或器械库。
 struct ExerciseCategory: Identifiable {
     let l1: String
     let l2: [String]
