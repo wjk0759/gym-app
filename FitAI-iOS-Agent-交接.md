@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`c73abd7`（废弃代码清理批次 1，见下条；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**；后端 **675 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`66694f9`（废弃代码清理批次 1/2，见下两条；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**；后端 **675 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -35,6 +35,22 @@
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
 
+### 2026-11-19 · Windows（废弃代码清理批次 2：路由 / 待确认恢复）
+
+- 提交：`66694f9`，已推 `develop`；iOS-only，无路由/DB 变更。
+- 删除（0 引用）：
+  - `canRouteToCoachControl` + `shouldUseCoachFreeChat`：客户端意图正则已由服务端分流取代。
+  - `restoreAgentPendingState` + `APIClient.agentPendingState` + `AgentPendingState`：`RootView` 调用已在 `fd0f9be` 删除，链条只剩自引用。
+- 保留（用户要求，后续可能使用）：
+  - `VideoCatalog` / `Resources/videos.json` / `Exercise.videoURL` 及 2 个 `EquipmentItem(videoURL:)` 调用点。
+- 验证：
+  - 全仓符号扫描：被删符号 0 引用；修改的 4 个 Swift 文件括号平衡通过；`git diff --check` 通过。
+  - 后端未改，沿用 `675 passed` / QA `76/76`。
+  - **未验证**：Windows 无 Xcode，iOS build / SwiftLint 需 Mac。
+- 对方需要做：Mac 拉取后 `xcodegen generate` + build/test；不要恢复被删的路由/恢复函数，也不要误删视频链路。
+- 禁止恢复：`canRouteToCoachControl`、`shouldUseCoachFreeChat`、`restoreAgentPendingState`、`APIClient.agentPendingState`、`AgentPendingState`。
+- 仍 BLOCKED：iOS 编译/真机验证需 Mac。
+
 ### 2026-11-19 · Windows（废弃代码清理批次 1）
 
 - 提交：`c73abd7`，已推 `develop`；无行为/路由/DB 变更。
@@ -53,7 +69,7 @@
   - `VideoCatalog` 只被 `Exercise.videoURL` 调用；`videos.json` 是空 `{}`；`videoURL` 只有 2 个消费点，均有兜底。
 - 对方需要做：
   - Mac `git pull` → `xcodegen generate` → build/test；重点确认 PlanEditorView、Motion、EquipmentDetailView+Media、EquipmentPickerView、PlanReviewView、AppStore+AgentActions、APIClient+Endpoints、WatchAPIClient 编译。
-  - 批次 2 待产品确认后再删；不要恢复本批删掉的类型/文件。
+  - 批次 2 已处理：路由/待确认恢复已删，视频链路按用户要求保留（见上条）。
 - 禁止恢复：`FrameMotionBoard`、`LoopingVideoPlayer`、`ExercisePickerView`、`ValueStepperControl`、`APIClient.sendChat`、`addSelectedToLibrary`；`sendAgentChat` 与旧 `/coach/*` 端点仍在用，不要误删。
 - 仍 BLOCKED：iOS 编译/真机验证需 Mac；无新增外部阻断。
 
