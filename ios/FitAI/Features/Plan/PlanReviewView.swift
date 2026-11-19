@@ -481,8 +481,4 @@ struct PlanReviewView: View {
         case .muted: return Theme.tertiaryText
         }
     }
-
-    private func formatMinutes(_ value: Double) -> String {
-        value > 0 ? String(format: "%.0f", value) : "—"
-    }
 }

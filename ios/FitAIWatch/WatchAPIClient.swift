@@ -104,12 +104,6 @@ final class WatchAPIClient {
         )
     }
 
-    func refreshTokensIfNeeded() async throws {
-        guard let auth = credentials.auth else { throw notSignedIn }
-        if auth.expiresAt.timeIntervalSinceNow > 60 { return }
-        _ = try await refreshTokens()
-    }
-
     @discardableResult
     func refreshTokens() async throws -> WatchAuth {
         guard let auth = credentials.auth,

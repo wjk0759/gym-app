@@ -193,24 +193,6 @@ extension APIClient {
         )
     }
 
-    // MARK: - 对话
-
-    func sendChat(
-        message: String,
-        sessionID: UUID? = nil,
-        skill: CoachSkill = .trainer,
-        context: String? = nil
-    ) async throws -> ChatResponse {
-        var payload: [String: Any] = [
-            "message": message,
-            "skill": skill.rawValue
-        ]
-        if let sessionID { payload["session_id"] = sessionID.uuidString.lowercased() }
-        if let context { payload["context"] = context }
-        let body = try JSONSerialization.data(withJSONObject: payload)
-        return try await send(path: "coach/chat", method: "POST", body: body, timeout: 50)
-    }
-
     // MARK: - Agent
 
     /// `/agent/chat`：带 app_context、幂等 request id 和超时；返回 cards/proposal。

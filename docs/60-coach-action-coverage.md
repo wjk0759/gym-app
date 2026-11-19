@@ -143,7 +143,7 @@
 ### 2026-11-17 稳定性收口
 
 - 词表单一来源：`services/lexicon.py` 统一餐次、身体部位、器械标签/别名；其他模块禁止重复定义。
-- 饮食计划类型化：`diet_schema.py` 定义 DietPlan/Meal/Dish/Recipe；`sanitize_diet_plan` 对整个嵌套计划做字符串级不变量，未知字段也会清理；单日/一周/模板/AI 都走同一入口。
+- 饮食计划类型化：`diet_schema.py` 定义 DietPlan/Meal/Dish/Recipe；`apply_food_avoidance` 对整个嵌套计划做字符串级不变量，未知字段也会清理；单日/一周/模板/AI 都走同一入口。
 - 伤病结构化解析：`injury_parse.py` 把句子拆成 (部位, 恢复/持续) mention，再应用状态机；不再按单个说法堆 `elif`。
 - 器械统一库存 V44：`user_equipment_entries` 同时存 category（档案/通用）和 item（器械库）条目；计划可用性只读这一张表；`profile.equipment` 变成兼容缓存，由库存派生。
 - 路由优先级：`claims.py` 为动作替换 vs 档案器械、食物避开 vs 动作避开、餐单详情 vs 生成计划声明 positive/negative/priority；碰撞有矩阵测试。

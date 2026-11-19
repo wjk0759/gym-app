@@ -746,12 +746,6 @@ extension AppStore {
         persist()
     }
 
-    func dismissPendingUndo() {
-        pendingUndoDismissTask?.cancel()
-        pendingUndoDismissTask = nil
-        pendingUndo = nil
-    }
-
     func schedulePendingUndoDismissal(for id: String) {
         pendingUndoDismissTask?.cancel()
         pendingUndoDismissTask = Task { @MainActor [weak self] in

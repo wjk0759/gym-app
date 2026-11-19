@@ -227,6 +227,3 @@ def apply_food_avoidance(plan: dict, terms: list[str]) -> dict:
     # avoided term. This covers unknown fields added by future AI output.
     return _scrub_tree(plan, terms)
 
-
-sanitize_diet_plan = apply_food_avoidance
-

@@ -1,6 +1,6 @@
 # 30 · 动作演示视觉方案对比
 
-> 2026-11-06 当前状态：不启用 RepDB；legacy motion URL 已置空，`FrameMotionBoard` 仅保留给自有素材。以下为方案对比历史记录。
+> 2026-11-06 当前状态：不启用 RepDB；legacy motion URL 已置空；`FrameMotionBoard` 已在 2026-11 清理中移除。以下为方案对比历史记录。
 
 ## 1. RepDB Free（历史方案）
 

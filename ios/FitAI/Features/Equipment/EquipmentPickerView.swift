@@ -312,16 +312,4 @@ struct EquipmentPickerView: View {
             customDay = day
         }
     }
-
-    func addSelectedToLibrary() {
-        // 器械库只存器械，动作不再写入器械库。
-        let added = 0
-        if added > 0 {
-            Haptics.success()
-        } else {
-            Haptics.warning()
-        }
-        selectedExercises.removeAll()
-        showSelectionPanel = false
-    }
 }

@@ -290,10 +290,3 @@ def cancel_active_draft(db: Session, user_id: str, session_id: str | None) -> bo
     draft.status = "cancelled"
     db.flush()
     return True
-
-
-def consume_draft(db: Session, user_id: str, draft_id: str) -> None:
-    draft = db.get(AgentActionDraft, draft_id)
-    if draft is not None and draft.user_id == user_id:
-        draft.status = "consumed"
-        db.flush()

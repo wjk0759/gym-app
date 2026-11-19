@@ -263,12 +263,3 @@ def execute_ui(
     payload: dict,
 ) -> dict:
     return {"ui_action": payload}
-
-
-def undo_ui(
-    db: Session,
-    user_id: str,
-    action_id: str,
-    payload: dict,
-) -> dict:
-    return {"restored": False, "ui_action": payload}

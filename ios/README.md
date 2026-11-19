@@ -96,8 +96,9 @@ ios/
     └── Resources/
         ├── Info.plist
         ├── videos.json
-        ├── xunji_movements.json       # 当前 1,213 条动作
-        ├── legacy_exercises.json      # 旧 80 条历史动作，仅用于旧计划/记录
+        ├── vital_exercises.json       # 当前 1,394 条动作，可搜索/可新建
+        ├── xunji_movements.json       # 旧训记 57 条，仅用于旧计划/记录解析
+        ├── legacy_exercises.json      # 旧 FitAI 1,293 条，仅用于旧计划/记录解析
         └── Assets.xcassets
 ```
 
@@ -106,7 +107,7 @@ ios/
 | 模块 | 实现 | 接真实服务 |
 |---|---|---|
 | 计划生成 | `PlanGenerator` 规则引擎 | 调 `APIClient.generatePlan()` 或后端 |
-| 教练回复 | 关键词 + 安全规则 | 调 `APIClient.sendChat()` / SSE |
+| 教练回复 | 关键词 + 安全规则 | 调 `APIClient.agentChat()` 或 `/coach/turns` |
 | 器械识别 | 按图片哈希从动作库取候选 | 上传到 `POST /equipment/scan` |
 | 登录 | 固定 demo 用户 | Sign in with Apple + JWT |
 | 支付 | 无 | StoreKit 2 |

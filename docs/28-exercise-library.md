@@ -1,5 +1,9 @@
 # 28 · 动作库数据与导入
 
+> 历史说明（2026-11-19）：本文记录训记动作库切换阶段。当前 App 已切换到
+> `vital_exercises.json`（1,394 条）；`xunji_movements.json`（57 条）和
+> `legacy_exercises.json`（1,293 条）仅用于旧计划/记录的 slug 解析。
+
 ## 1. 当前数据规模
 
 当前 App 的动作库已切换为用户提供的训记动作清单：
@@ -78,7 +82,7 @@ backend\.venv\Scripts\python.exe tools\db\import_xunji_movements.py
 
 ## 5. RepDB Free 双帧示例
 
-> 2026-11-06 起已停用 RepDB：`xj_0011` / `xj_0320` 的 motion URL 已置空，`FrameMotionBoard` 仅保留给自有素材。以下为历史记录。
+> 2026-11-06 起已停用 RepDB：`xj_0011` / `xj_0320` 的 motion URL 已置空；`FrameMotionBoard` 已在 2026-11 清理中移除。以下为历史记录。
 
 当前只为两个动作配置了 RepDB Free 的 `start` / `peak` 图片，用于评估：
 
@@ -87,7 +91,7 @@ backend\.venv\Scripts\python.exe tools\db\import_xunji_movements.py
 | `xj_0011` / 器械推胸 | `chest-press-machine` | 双帧示例 |
 | `xj_0320` / 腿举 | `leg-press` | 双帧示例 |
 
-iOS 端在「动作详情 → 动作轨迹」中使用 `FrameMotionBoard`，每 900ms 在两张静态图之间淡入淡出。**没有生成 GIF、没有把两张图合成新的媒体文件、也没有复制 RepDB 数据集到公开仓库。**
+iOS 端曾在「动作详情 → 动作轨迹」中使用 `FrameMotionBoard`，每 900ms 在两张静态图之间淡入淡出；该组件已在 2026-11 清理中删除。**没有生成 GIF、没有把两张图合成新的媒体文件、也没有复制 RepDB 数据集到公开仓库。**
 
 RepDB Free 许可要求可见署名：
 

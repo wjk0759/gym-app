@@ -189,22 +189,6 @@ def _looks_like_swap_meal(message: str) -> bool:
     )
 
 
-def _last_action_capability(
-    db: Session,
-    user_id: str,
-    session_id: str,
-) -> str | None:
-    record = db.execute(
-        select(CoachActionRecord)
-        .where(
-            CoachActionRecord.user_id == user_id,
-            CoachActionRecord.session_id == session_id,
-        )
-        .order_by(CoachActionRecord.created_at.desc())
-    ).scalars().first()
-    return record.capability_id if record is not None else None
-
-
 def _minutes_since(value: datetime | None) -> int | None:
     if value is None:
         return None

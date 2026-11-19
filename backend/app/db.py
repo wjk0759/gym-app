@@ -42,7 +42,7 @@ SessionLocal = sessionmaker(
 
 if settings.database_url.startswith("sqlite") and ":memory:" not in settings.database_url:
     @event.listens_for(engine, "connect")
-    def _sqlite_pragmas(dbapi_connection, connection_record) -> None:
+    def _sqlite_pragmas(dbapi_connection, _connection_record) -> None:
         # WAL 让读写并发更顺畅，NORMAL 同步在开发/单机部署下减少 fsync 等待。
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA journal_mode=WAL")

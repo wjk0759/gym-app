@@ -238,7 +238,3 @@ def delete_user_photos(user_id: str) -> None:
         if child.is_dir():
             child.rmdir()
     directory.rmdir()
-
-
-def ensure_private_dirs() -> None:
-    BODY_PHOTO_DIR.mkdir(parents=True, exist_ok=True)
