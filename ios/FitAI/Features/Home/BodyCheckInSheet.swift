@@ -1,6 +1,8 @@
 import SwiftUI
 import UIKit
 
+/// 身体打卡 sheet：手动输入体重/体脂/腰围，写入 `body_metrics`。
+/// 只做输入校验和调用 `store.saveBodyCheckIn`；历史/目标缓存由 AppStore 维护。
 struct BodyCheckInSheet: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -166,6 +168,8 @@ struct BodyCheckInSheet: View {
         waistText = String(format: "%.1f", latest?.waistCM ?? store.currentWaistCM)
     }
 
+    /// 校验三项输入后写入 body_metrics；至少一项必填。
+    /// 空字段表示这次不更新该项，不会被写成 0。
     private func save() {
         let weight = optionalValue(weightText, range: 30...300, label: "体重填写 30–300 kg")
         let bodyFat = optionalValue(bodyFatText, range: 3...60, label: "体脂填写 3–60%")

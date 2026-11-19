@@ -1,5 +1,8 @@
 import Foundation
 
+/// 体型分析结果在 AppStore 中的状态入口。
+/// 负责本地历史插入、远端删除、把分析重点应用到计划，以及分析后打开教练；
+/// 不负责图片分析本身。
 extension AppStore {
     // MARK: - Body analysis
 

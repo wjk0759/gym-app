@@ -1,3 +1,9 @@
+"""Body endpoints: photo analysis, private photo retrieval, body metrics.
+
+Photos are private per user; analysis is Pro-gated/rate-limited/idempotent and
+does not become a body metric until the user records one.
+"""
+
 import uuid
 from datetime import date, datetime, time, timedelta, timezone
 
@@ -43,6 +49,7 @@ async def analyze_body(
         default=None, alias="X-Client-ID", max_length=36
     ),
 ):
+    """Analyze a body photo; result storage is separate from body metrics."""
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(status_code=415, detail="仅支持 jpeg/png/webp/heic 图片")
 
