@@ -7,7 +7,7 @@ import Foundation
 /// - 本地能做的动作（改期、跳过、目标、身体数据）直接改 AppStore；
 /// - 饮食/训练/改课等写操作走后端 action 接口；
 /// - 每个成功动作尽量生成 undo 状态，批量执行时整组撤销；
-/// - 执行结果回传 `/agent/actions/{id}`，但本地 UI 状态不依赖回传成功。
+/// - 执行结果回传 `/agent/actions/{id}/result`，但本地 UI 状态不依赖回传成功。
 extension AppStore {
     // MARK: - App Action 执行层
 

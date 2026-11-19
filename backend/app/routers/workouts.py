@@ -1,7 +1,7 @@
 """Workout session endpoints: create/list/detail/update/delete, summary and draft.
 
 Writes validate owned plan days and exercise slugs. Cross-device drafts are
-stored separately and are last-write-wins per user/day.
+stored separately: one last-write-wins draft per user, scoped by `day_id`.
 """
 
 from datetime import date, datetime, timedelta, timezone

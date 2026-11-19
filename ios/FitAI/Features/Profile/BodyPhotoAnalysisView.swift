@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 
 /// 体型照片分析页。
-/// 需要用户勾选同意 + Pro；优先远端视觉分析，网络/5xx 才回退本地模板。
+/// 需要用户勾选同意 + Pro；优先远端视觉分析，远端 AI 关闭/不可用或网络/5xx 才回退本地估算。
 /// 照片不保存在客户端；分析结果写入本地/远端历史后才可应用到计划。
 struct BodyPhotoAnalysisView: View {
     @Environment(AppStore.self) var store
@@ -341,7 +341,7 @@ struct BodyPhotoAnalysisView: View {
             .card(padding: 14)
     }
 
-    /// 分析入口：同意 + Pro 后优先远端；网络/5xx 才回退本地模板。
+    /// 分析入口：同意 + Pro 后优先远端；远端 AI 关闭/不可用或网络/5xx 才回退本地估算。
     /// 4xx（含权限/参数）不退本地，避免把失败伪装成分析结果。
     private func analyze() {
         guard let imageData, consent else { return }

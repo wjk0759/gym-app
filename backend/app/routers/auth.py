@@ -1,7 +1,8 @@
 """Authentication HTTP endpoints: SMS, password, OAuth, Apple, sessions and refresh.
 
-Token/session creation and validation live in services/auth; this router only
-validates request shape, maps errors and sets response metadata.
+Token/session creation and validation live in services/auth. This router maps
+HTTP input/errors, revokes other sessions on password set, records auth events,
+and seeds the dev-only demo user.
 """
 
 from __future__ import annotations

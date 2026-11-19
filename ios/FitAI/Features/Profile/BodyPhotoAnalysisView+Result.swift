@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// 体型分析结果卡：摘要/重点/建议和后续动作。只读分析结果。
+/// 体型分析结果卡：摘要/重点/建议和后续动作。
+/// 卡本身只渲染结果；应用计划/去教练由按钮调用 AppStore。
 extension BodyPhotoAnalysisView {
     func resultCard(_ analysis: BodyAnalysis) -> some View {
         VStack(alignment: .leading, spacing: 14) {

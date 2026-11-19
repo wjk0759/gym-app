@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// 训练页共用小组件：重量格式化、进度头、提示卡和总结卡。
-/// 纯展示/格式化，不持有训练状态。
+/// 通过 Binding 修改输入（感受/重量/次数），不持有训练状态。
 enum WorkoutWeightFormat {
     static func text(_ value: Double) -> String {
         if value.rounded() == value {

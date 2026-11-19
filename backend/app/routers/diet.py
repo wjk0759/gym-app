@@ -1,7 +1,8 @@
 """Diet HTTP endpoints: food logs, targets, day/week plans, swap/restore, review.
 
-Writes live in the diet/meal-plan services; this router owns request validation,
-access/rate limits, idempotent generation leases and response shaping.
+This router owns food-log CRUD plus request validation, access/rate limits,
+idempotent generation leases and response shaping; plan/swap writes go through
+the diet and meal-plan services.
 """
 
 import uuid

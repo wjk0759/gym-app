@@ -4,7 +4,7 @@ import SwiftUI
 import UIKit
 
 /// 个人器械库：手动添加、拍照识别、按器械查看关联动作和启用状态。
-/// 写入走 AppStore+Equipment；本页只负责展示、筛选和编辑入口。
+/// 器械写入走 AppStore+Equipment；本页负责展示、筛选和操作入口，置顶只写本地偏好。
 struct EquipmentLibraryView: View {
     @Environment(AppStore.self) private var store
     @AppStorage("pinnedEquipmentIDs") private var pinnedEquipmentIDsRaw = ""

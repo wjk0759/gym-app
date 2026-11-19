@@ -183,7 +183,7 @@ extension CoachChatView {
 
     /// 待确认动作列表。
     /// 卡片只负责展示 title/summary 和食物/训练摘要；确认后由 store 执行，
-    /// 忽略则只上报 rejected，不触发任何本地写入。
+    /// 忽略则只上报 rejected，不触发业务数据写入。
     var agentActionsCard: some View {
         CoachCard(border: Theme.cobalt.opacity(0.25)) {
             VStack(alignment: .leading, spacing: 10) {

@@ -14,15 +14,15 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`92ae9f8`（注释审查收尾：iOS 270 个 Swift 文件均有注释，后端模块头/关键函数覆盖；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**；后端 **675 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`92ae9f8`（Windows 注释批次；Mac 抽查后修正 14 处注释，行为未改；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**；后端 **675 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
 - **macOS AI 教练四轮压测（2026-11-19）**：N17/N18/N19/N21 通过；N20/N28 目标值同步已通过；N22 title/summary 同步已通过。
 - **macOS AI 教练五轮压测（2026-11-19）**：N23–N28 已由 Windows 修复（`e00708a`），Mac 复测全部通过并部署。
-- **代码注释审查（2026-11-19）**：九批完成；iOS 270/270 Swift 文件均有注释，后端模块头/关键函数覆盖；行为未改，待 Mac 抽查。
+- **代码注释审查（2026-11-19）**：Windows 九批 270/270 Swift 文件 + 后端模块头；Mac 抽查发现 14 处注释与实现不一致，已修正；另 1 处页脚文案称“只保存在本机”与训练同步不一致，待产品确认，未改 UI。
+- **待办（macOS → Windows）**：本轮无阻断；确认 `WorkoutHistoryView+Footer` 页脚文案是否改成“同步到云端”；若饮食入口仍闪退，需要 `.ips/.crash` 栈；历史 P2 文案类（N3/N6/C7–C11 等）未逐条重测。
 - **macOS 饮食入口崩溃复测（2026-11-19）**：`3b462d1` 已 build/安装 Wu-Tang；新增 `DietEntrySmokeTests`，今日饮食/本周计划/记一笔/发现饮食方案在 iPhone 17 + SE 均不崩。
-- **待办（macOS → Windows）**：本轮无阻断；若用户仍反馈饮食入口闪退，需要 `.ips/.crash` 栈。历史 P2 文案类（N3/N6/C7–C11 等）未逐条重测。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
 - Windows 已完成：真实 DeepSeek 视觉、AI 计划默认开启、视频入口隐藏、隐私标签补充、Apple 登录 entitlement、器械详情崩溃加固、男性椭圆/梯形 16–20% 体型图更新、香港 TestFlight 后端上线、阿里云短信验证码接通、Release 隐藏测试入口、头像上传/移除、设置页清理与第三方署名移除、今日→记录日期联动、训练阶段与按动作负荷、免费教练额度 3 条/天、饮食份量区间、文案精简、切换 Tab 回根页面、重复点 Tab 回根、页面顶部留白统一、Watch 共享训练核心
 - macOS 最近完成：品牌改名「叫练」；当前 iOS 构建/SwiftLint 通过，44 个单测 + UI 导航测试通过（本轮修复测试辅助）
@@ -261,6 +261,29 @@
 - 不要恢复：
   - 不要恢复 `LazyVGrid` 饮食工具行。
   - 不要让 diet day/meal 的 `ForEach` 用可能重复的业务 id。
+
+### 2026-11-19 · macOS（Windows 注释抽查：14 处修正）
+
+- 环境：`develop` `92ae9f8`；后端仍 `e00708a`；只改注释，无业务行为改动。
+- 结论：Windows 注释总体可读，但“只读/不写/唯一路径/只做导航”等边界描述有 14 处与实现不符，已修正；另发现 1 处页脚文案与训练同步机制矛盾，未改 UI。
+- 修正：
+  - `backend/app/routers/diet.py`：原文“Writes live in diet/meal-plan services”不对；router 直接 CRUD `food_logs`。改为 router owns food-log CRUD，plan/swap 才走 services。
+  - `backend/app/routers/auth.py`：原文“router only validates request shape”不对；router 还会撤销其他 session、写 `AuthEvent`、dev-login 建 user/profile。已写明。
+  - `backend/app/routers/workouts.py`：原文“draft per user/day”不准确；实际一个 user 一条 draft，`day_id` 只做作用域。已修正。
+  - `ios/FitAI/Features/Settings/SettingsView.swift`：原文“本页只做导航和分组”不对；本页直接调用 store 改设置、退出/注销账号、打开打卡/密码等。已改为“部分开关/账号操作在本页直接调用 store”。
+  - `ios/FitAI/Core/Services/AppStore+Equipment.swift`：原文“所有写入都会刷新 profile 缓存”不对；器械库/通用器械写入是同步 + 计划器械检查，onboarding 类型仍由 profile 维护。
+  - `ios/FitAI/Features/Equipment/EquipmentDetailView+Hero.swift`：原文“不写器械库”不完整；置顶会写本地置顶偏好。已注明。
+  - `ios/FitAI/Features/Equipment/EquipmentLibraryView.swift`：原文“只负责展示、筛选和编辑入口”不够；本页会删除、置顶、切换严格模式/通用器械。已改为“操作入口”。
+  - `ios/FitAI/Features/Coach/CoachChatView+Content.swift`：原文“不在这里发网络请求”不对；权益确认失败时重试会调用 `store.refreshAccess()`。已改为“不直接调 APIClient”。
+  - `ios/FitAI/Features/Profile/BodyPhotoAnalysisView+Result.swift`：原文“只读分析结果”不对；卡片有“应用到训练计划”“去 AI 教练”按钮。已改为“渲染结果，按钮调用 store”。
+  - `ios/FitAI/Core/Services/BodyAnalysisService.swift`：原文“analyze 只用于网络/5xx”不完整；远端 AI 关闭/不可用时也走本地估算。已改。
+  - `ios/FitAI/Features/Profile/BodyPhotoAnalysisView.swift`：同上，“网络/5xx 才回退”已改为“远端 AI 关闭/不可用或网络/5xx”。
+  - `ios/FitAI/Features/Workout/WorkoutSessionComponents.swift`：原文“纯展示/格式化”不对；总结卡/重量次数组件通过 Binding 修改感受、重量、次数。已改为“通过 Binding 修改输入，不持有训练状态”。
+  - `ios/FitAI/Features/Coach/CoachChatActionCards.swift`：原文“忽略不触发任何本地写入”太满；会清空并持久化 pending 状态。已改为“不触发业务数据写入”。
+  - `ios/FitAI/Core/Services/AppStore+AgentActions.swift`：原文回传路径 `/agent/actions/{id}` 不完整；实际是 `/agent/actions/{id}/result`。
+- 额外发现（未改）：
+  - `WorkoutHistoryView+Footer` 注释复述页脚“训练记录只保存在本机”，但 iOS 有 `syncPendingWorkouts` 和 `/workouts` 跨设备同步；这是 UI 文案/隐私表述问题，需产品确认后再改。
+- 验证：仅注释改动；`python3 -m py_compile` 三个后端 router 通过；iOS 模拟器 `xcodebuild build` 通过。未重跑业务测试，因为无行为变更。
 
 ### 2026-11-19 · Windows（iOS 饮食入口崩溃加固）
 

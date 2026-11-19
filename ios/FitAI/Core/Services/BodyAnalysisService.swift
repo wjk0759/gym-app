@@ -1,8 +1,8 @@
 import Foundation
 
 /// 体型分析的服务边界。
-/// `analyzeRemote` 调后端视觉分析；`analyze` 只是网络/5xx 时的本地确定性回退，
-/// 结果仍会明确标注为估算，不伪装成真实视觉结论。
+/// `analyzeRemote` 调后端视觉分析；`analyze` 在远端 AI 关闭/不可用或网络/5xx 时
+/// 作为本地确定性回退，结果仍会明确标注为估算，不伪装成真实视觉结论。
 enum BodyAnalysisService {
     private struct Variant {
         let summary: String
@@ -69,7 +69,7 @@ enum BodyAnalysisService {
         )
     }
 
-    /// 本地确定性回退，只用于网络/5xx；不是真实视觉结论。
+    /// 本地确定性回退，用于远端 AI 不可用/关闭或网络/5xx；不是真实视觉结论。
     static func analyze(imageData: Data) -> BodyAnalysis {
         let seed = imageData.reduce(0) { ($0 + Int($1)) % 100_000 }
         let variant = variants[seed % variants.count]
