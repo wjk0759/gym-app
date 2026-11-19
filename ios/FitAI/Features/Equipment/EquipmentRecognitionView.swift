@@ -152,7 +152,7 @@ struct EquipmentRecognitionView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("VISION / 器械识别")
+            Text("器械识别")
                 .font(AppType.overline)
                 .tracking(1.5)
                 .foregroundStyle(Theme.cobalt)

@@ -17,7 +17,6 @@ struct CoachOnboardingView: View {
     @State var noInjuries = true
     @State var injuryNote = ""
     @State var location: TrainingLocation = .gym
-    @State var welcomePhase = 0
     @State var showExitConfirm = false
     @State var isRestoringProfile = false
     @State var alertMessage = ""

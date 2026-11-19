@@ -15,33 +15,19 @@ struct WeatherBadgeView: View {
             Haptics.tap()
             showDetail = true
         } label: {
-            HStack(spacing: 7) {
+            HStack(spacing: 6) {
                 Image(systemName: symbolName)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(atmosphere.isPrecipitation ? atmosphere.accent(for: colorScheme) : Theme.cobalt)
-                    .frame(width: 19)
-
-                VStack(alignment: .leading, spacing: 1) {
-                    HStack(alignment: .firstTextBaseline, spacing: 3) {
-                        Text(primaryText)
-                            .font(.system(size: 15, weight: .bold, design: .default).monospacedDigit())
-                            .foregroundStyle(Theme.ink)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                        if weather.isRefreshing {
-                            ProgressView()
-                                .controlSize(.mini)
-                                .tint(Theme.secondaryText)
-                        }
-                    }
-
-                    Text(secondaryText)
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                Text(primaryText)
+                    .font(.system(size: 14, weight: .semibold, design: .default).monospacedDigit())
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(1)
+                if weather.isRefreshing {
+                    ProgressView()
+                        .controlSize(.mini)
+                        .tint(Theme.secondaryText)
                 }
-                .frame(maxWidth: 104, alignment: .leading)
             }
             .padding(.horizontal, 11)
             .padding(.vertical, 8)
@@ -64,6 +50,18 @@ struct WeatherBadgeView: View {
         }
     }
 
+    private var symbolName: String {
+        if weather.needsLocationPermission {
+            return "location.slash"
+        }
+        switch weather.snapshot?.alertKind {
+        case .thunder: return "cloud.bolt.rain.fill"
+        case .rain, .rainLikely, .typhoon: return "cloud.rain.fill"
+        case .snow: return "cloud.snow.fill"
+        case .none: return "cloud.sun.fill"
+        }
+    }
+
     private var primaryText: String {
         if let snapshot = weather.snapshot {
             return snapshot.temperatureText
@@ -80,46 +78,6 @@ struct WeatherBadgeView: View {
             return "重试"
         case .idle, .ready:
             return "天气"
-        }
-    }
-
-    private var secondaryText: String {
-        if let snapshot = weather.snapshot {
-            if weather.isStale {
-                return "\(snapshot.conditionLabel) · 待刷新"
-            }
-            let condition = atmosphere.isTyphoon ? "台风/大风" : snapshot.conditionLabel
-            return "\(condition) · \(snapshot.placeDisplayName)"
-        }
-        if weather.needsLocationPermission {
-            return "允许定位查看天气"
-        }
-        switch weather.state {
-        case .locating, .loading:
-            return "获取本地天气"
-        case .permissionDenied:
-            return "查看天气"
-        case .failed:
-            return "天气暂不可用"
-        case .idle, .ready:
-            return "点此查看"
-        }
-    }
-
-    private var symbolName: String {
-        if let snapshot = weather.snapshot {
-            return snapshot.symbolName
-        }
-        if weather.needsLocationPermission {
-            return "location.fill"
-        }
-        switch weather.state {
-        case .permissionDenied:
-            return "location.slash.fill"
-        case .failed:
-            return "cloud.slash.fill"
-        default:
-            return "cloud.sun.fill"
         }
     }
 
@@ -172,7 +130,7 @@ struct WeatherDetailSheet: View {
 
     private var currentCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("LOCAL / 本地天气")
+            Text("本地天气")
                 .font(AppType.overline)
                 .tracking(1.4)
                 .foregroundStyle(Theme.cobalt)

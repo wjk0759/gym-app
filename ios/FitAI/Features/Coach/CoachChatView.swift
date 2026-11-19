@@ -225,7 +225,7 @@ struct CoachChatView: View {
                 inputBar
             }
             .background(AppBackground())
-            .navigationTitle(store.planAdjustmentStage > 0 ? "调整计划" : "AI 私人教练")
+            .navigationTitle(store.planAdjustmentStage > 0 ? "调整计划" : "教练")
             .navigationBarTitleDisplayMode(.inline)
             .onChange(of: store.planAdjustmentRequested) { _, requested in
                 if requested {

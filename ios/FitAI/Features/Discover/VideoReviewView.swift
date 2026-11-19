@@ -84,7 +84,7 @@ struct VideoReviewView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("VISION / 视频点评")
+            Text("视频点评")
                 .font(AppType.overline)
                 .tracking(1.5)
                 .foregroundStyle(Theme.cobalt)

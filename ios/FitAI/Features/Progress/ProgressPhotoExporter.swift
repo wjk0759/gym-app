@@ -26,7 +26,7 @@ enum ProgressPhotoExporter {
             context.cgContext.fill(CGRect(origin: .zero, size: size))
 
             drawText(
-                "PROGRESS / 变化",
+                "变化",
                 at: CGPoint(x: 60, y: 56),
                 font: .systemFont(ofSize: 24, weight: .bold),
                 color: cobalt

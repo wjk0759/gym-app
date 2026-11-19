@@ -129,7 +129,7 @@ struct PlanScheduleView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("SCHEDULE / 训练日期")
+            Text("训练日期")
                 .font(AppType.overline)
                 .tracking(1.5)
                 .foregroundStyle(Theme.cobalt)

@@ -21,40 +21,14 @@ extension HomeV2View {
     var generatingCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("AI 正在编排")
-                    .font(AppType.overline)
-                    .tracking(1.2)
-                    .foregroundStyle(Theme.cobalt)
+                Text("正在生成计划")
+                    .font(AppType.hero)
+                    .foregroundStyle(Theme.ink)
                 Spacer()
                 ProgressView().tint(Theme.cobalt)
             }
-            Text("4 周计划")
-                .font(AppType.hero)
-                .foregroundStyle(Theme.ink)
-            Text("正在匹配动作、分配训练日、校验器械与伤病限制。")
-                .font(AppType.body)
-                .foregroundStyle(Theme.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 8) {
-                loadingPill("目标", done: true)
-                loadingPill("器械", done: true)
-                loadingPill("计划", done: false)
-            }
         }
         .editorialCard(accent: Theme.lime)
-    }
-
-    func loadingPill(_ title: String, done: Bool) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: done ? "checkmark" : "circle.dotted")
-                .font(.system(size: 9, weight: .bold))
-            Text(title)
-                .font(AppType.micro)
-        }
-        .foregroundStyle(done ? Theme.ink : Theme.secondaryText)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
-        .background(done ? Theme.lime : Theme.surface, in: Capsule())
     }
 
     func trainingCard(plan: TrainingPlan, day: PlanDay) -> some View {
@@ -67,17 +41,6 @@ extension HomeV2View {
         let isToday = Calendar.current.isDateInToday(selectedDate)
 
         return VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text(isToday ? "TODAY / 今天" : FitnessDate.short(selectedDate).uppercased())
-                    .font(AppType.overline)
-                    .tracking(1.2)
-                    .foregroundStyle(Theme.cobalt)
-                Spacer()
-                Text("第 \(store.currentPlanWeek) 周")
-                    .font(AppType.micro)
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-
             Text(day.title)
                 .font(AppType.hero)
                 .tracking(-0.7)
@@ -90,9 +53,9 @@ extension HomeV2View {
 
             if let period = store.periodDay(for: day.date ?? selectedDate) {
                 Text(period.mode == .rest
-                     ? "经期已设为休息：今天不安排力量训练。"
-                     : "经期第 \(period.day) 天：自动少 1 组，负重约 80%。")
-                    .font(AppType.micro)
+                     ? "经期休息"
+                     : "经期第 \(period.day) 天 · 轻量")
+                    .font(AppType.caption)
                     .foregroundStyle(Theme.cycle)
             }
 
@@ -147,7 +110,7 @@ extension HomeV2View {
                 HStack(spacing: 7) {
                     Image(systemName: "checkmark.seal.fill")
                         .foregroundStyle(Theme.cobalt)
-                    Text("今天已完成，记录已保存")
+                    Text("今天已完成")
                         .font(AppType.caption.weight(.semibold))
                         .foregroundStyle(Theme.ink)
                     Spacer()
@@ -196,13 +159,6 @@ extension HomeV2View {
             Text(store.deferredPlanPreview == nil ? "还没有训练计划" : "计划还等你确认")
                 .font(AppType.hero)
                 .foregroundStyle(Theme.ink)
-            Text(
-                store.deferredPlanPreview == nil
-                    ? "先让我按你的目标、器械和时间排一份 4 周计划。"
-                    : "上次生成的计划还在，确认后就能开始。"
-            )
-            .font(AppType.body)
-            .foregroundStyle(Theme.secondaryText)
             if store.deferredPlanPreview != nil {
                 Button("继续确认计划") {
                     store.resumeDeferredPlan()
@@ -228,14 +184,6 @@ extension HomeV2View {
             Text(period?.mode == .rest ? "经期休息日" : "今天休息")
                 .font(AppType.hero)
                 .foregroundStyle(Theme.ink)
-            Text(
-                period?.mode == .rest
-                    ? "计划保留，但今天不要求力量训练。补铁、蛋白质和睡眠优先。"
-                    : "恢复也是训练的一部分。睡够、吃够，下一次会更好。"
-            )
-            .font(AppType.body)
-            .foregroundStyle(Theme.secondaryText)
-            .fixedSize(horizontal: false, vertical: true)
             Button("看本周安排") {
                 showSchedule = true
             }

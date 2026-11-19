@@ -46,7 +46,7 @@ struct PlanReviewView: View {
 
     private var reviewHeaderPlaceholder: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("REVIEW / 数据复盘")
+            Text("数据复盘")
                 .font(AppType.overline)
                 .tracking(1.5)
                 .foregroundStyle(Theme.cobalt)
@@ -93,7 +93,7 @@ struct PlanReviewView: View {
 
     private func header(_ review: ReviewData) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("REVIEW / 数据复盘")
+            Text("数据复盘")
                 .font(AppType.overline)
                 .tracking(1.5)
                 .foregroundStyle(Theme.cobalt)
@@ -141,7 +141,7 @@ struct PlanReviewView: View {
         if let action = review.nextAction {
             VStack(alignment: .leading, spacing: 9) {
                 HStack(spacing: 6) {
-                    Text(action.kind == .nutrition ? "NEXT / 饮食" : action.kind == .plan ? "NEXT / 计划" : "NEXT / 训练")
+                    Text(action.kind == .nutrition ? "饮食" : action.kind == .plan ? "计划" : "训练")
                         .font(AppType.overline)
                         .tracking(1.2)
                         .foregroundStyle(Theme.cobalt)

@@ -47,7 +47,7 @@ struct EditFoodLogSheet: View {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("EDIT / 修改记录")
+                        Text("修改记录")
                             .font(AppType.overline)
                             .tracking(1.4)
                             .foregroundStyle(Theme.cobalt)

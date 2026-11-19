@@ -26,7 +26,7 @@ extension PlanHomeView {
                     .padding(.top, 2)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("EQUIPMENT / 器械变化")
+                    Text("器械变化")
                         .font(AppType.overline)
                         .tracking(1.2)
                         .foregroundStyle(Theme.cobalt)
@@ -77,7 +77,7 @@ extension PlanHomeView {
 
         return VStack(alignment: .leading, spacing: 11) {
             HStack {
-                Text("PLAN / 当前计划")
+                Text("当前计划")
                     .font(AppType.overline)
                     .tracking(1.2)
                     .foregroundStyle(Theme.cobalt)

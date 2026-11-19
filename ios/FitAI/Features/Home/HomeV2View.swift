@@ -64,7 +64,6 @@ struct HomeV2View: View {
                         markedKeys: markedKeys,
                         completedKeys: completedKeys
                     )
-                    coachNote
                     todaySection
                     quickActions
                     nutritionPulse

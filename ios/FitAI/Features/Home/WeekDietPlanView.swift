@@ -93,7 +93,7 @@ struct WeekDietPlanView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("MEAL PLAN / 本周饮食")
+            Text("本周饮食")
                 .font(AppType.overline)
                 .tracking(1.5)
                 .foregroundStyle(Theme.cobalt)

@@ -92,7 +92,7 @@ struct TrainingLibraryView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("TRAINING / 训练方案")
+            Text("训练方案")
                 .font(AppType.overline)
                 .tracking(1.5)
                 .foregroundStyle(Theme.cobalt)

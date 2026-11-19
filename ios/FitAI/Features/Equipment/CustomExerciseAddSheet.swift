@@ -84,7 +84,7 @@ struct CustomExerciseAddSheet: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("CUSTOM / 器械")
+            Text("器械")
                 .font(AppType.overline)
                 .tracking(1.5)
                 .foregroundStyle(Theme.cobalt)

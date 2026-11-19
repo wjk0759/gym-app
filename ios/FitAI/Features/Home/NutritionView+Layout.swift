@@ -19,14 +19,9 @@ extension NutritionView {
                         mode = item
                     }
                 } label: {
-                    VStack(spacing: 2) {
-                        Text(item.title)
-                            .font(AppType.caption.weight(.bold))
-                        Text(item.subtitle)
-                            .font(AppType.micro)
-                            .opacity(selected ? 0.68 : 0.55)
-                    }
-                    .foregroundStyle(selected ? Theme.onAccent : Theme.secondaryText)
+                    Text(item.title)
+                        .font(AppType.caption.weight(.bold))
+                        .foregroundStyle(selected ? Theme.onAccent : Theme.secondaryText)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 9)
                     .background(selected ? Theme.cobalt : Color.clear, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
@@ -49,7 +44,6 @@ extension NutritionView {
         HStack(alignment: .top, spacing: 8) {
             toolTile(
                 title: "拍照识别",
-                detail: "估算热量",
                 symbol: "camera.viewfinder",
                 accent: Theme.primary
             ) {
@@ -59,7 +53,6 @@ extension NutritionView {
             }
             toolTile(
                 title: "本周计划",
-                detail: "换饮食策略",
                 symbol: "calendar.badge.clock",
                 accent: Theme.ink,
                 foreground: Theme.onAccent
@@ -68,7 +61,6 @@ extension NutritionView {
             }
             toolTile(
                 title: "记一笔",
-                detail: "已吃食物",
                 symbol: "square.and.pencil",
                 accent: Theme.primary
             ) {
@@ -80,7 +72,6 @@ extension NutritionView {
 
     func toolTile(
         title: String,
-        detail: String,
         symbol: String,
         accent: Color,
         foreground: Color = Theme.onPrimary,
@@ -96,18 +87,11 @@ extension NutritionView {
                     .foregroundStyle(foreground)
                     .frame(width: 32, height: 32)
                     .background(accent, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(AppType.caption.weight(.semibold))
-                        .foregroundStyle(Theme.ink)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
-                    Text(detail)
-                        .font(AppType.micro)
-                        .foregroundStyle(Theme.tertiaryText)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                }
+                Text(title)
+                    .font(AppType.caption.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(11)
@@ -136,15 +120,6 @@ extension NutritionView {
                 macroPill("脂肪", value: totals.fat, target: targets.fat, color: Theme.primary)
                 macroPill("纤维", value: totals.fiber, target: targets.fiber, color: Theme.secondary)
             }
-            HStack(spacing: 6) {
-                Text("BMR \(targets.bmr) kcal")
-                Text("·")
-                Text("维持 \(targets.tdee) kcal")
-                Spacer()
-                Text(mode == .plan ? "按目标排餐" : "\(snapshot.logs.count) 条记录")
-            }
-            .font(AppType.micro)
-            .foregroundStyle(Theme.tertiaryText)
         }
     }
 
@@ -417,16 +392,7 @@ extension NutritionView {
                     .buttonStyle(SubtlePressStyle(scale: 0.92))
                 }
 
-                if logs.isEmpty {
-                    HStack(spacing: 8) {
-                        Image(systemName: "square.dashed")
-                            .foregroundStyle(Theme.tertiaryText)
-                        Text("还没有记录，点右上角加一条。")
-                            .font(AppType.micro)
-                            .foregroundStyle(Theme.tertiaryText)
-                    }
-                    .padding(.vertical, 6)
-                } else {
+                if !logs.isEmpty {
                     ForEach(logs) { log in
                         HStack(spacing: 8) {
                             VStack(alignment: .leading, spacing: 2) {
@@ -523,22 +489,10 @@ extension NutritionView {
     func header(snapshot: DayLogsSnapshot, targets: NutritionTargets) -> some View {
         let consumed = snapshot.totals
         let remainingKcal = max(0, targets.kcal - Int(consumed.kcal))
-        let remainingProtein = max(0, targets.protein - Int(consumed.protein))
         let goalLabel = isToday ? "今日" : "当天"
 
         let ratio = min(1, consumed.kcal / Double(max(1, targets.kcal)))
         return VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text(isToday ? "TODAY / 今日" : "DAY / 当天")
-                    .font(AppType.overline)
-                    .tracking(1.4)
-                    .foregroundStyle(Theme.cobalt)
-                Spacer()
-                Text(date.formatted(.dateTime.month().day().weekday(.wide)))
-                    .font(AppType.micro)
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-
             HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(alignment: .firstTextBaseline, spacing: 5) {
@@ -570,13 +524,6 @@ extension NutritionView {
                     }
             }
 
-            HStack(spacing: 6) {
-                Text("蛋白还差 \(remainingProtein)g")
-                Text("·")
-                Text("按 \(store.profile.goalType.label) 目标估算")
-            }
-            .font(AppType.micro)
-            .foregroundStyle(Theme.tertiaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .editorialCard(accent: Theme.lime)
@@ -585,7 +532,7 @@ extension NutritionView {
     @ViewBuilder
 
     var disclaimer: some View {
-        Text("饮食建议为估算，不构成医疗或疾病饮食处方。孕期、术后、糖尿病、肾病等特殊情况请咨询医生或营养师。")
+        Text("估算值，不构成医疗建议。")
             .font(.system(size: 9.5, weight: .medium))
             .foregroundStyle(Theme.tertiaryText)
             .frame(maxWidth: .infinity, alignment: .leading)

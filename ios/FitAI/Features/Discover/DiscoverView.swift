@@ -18,7 +18,6 @@ struct DiscoverView: View {
         NavigationStack(path: $navigationPath) {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    header
                     equipmentLibraryHero
                     quickGrid
                     toolGrid
@@ -71,92 +70,37 @@ struct DiscoverView: View {
         }
     }
 
-    // MARK: - Header
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text("EXPLORE / 发现")
-                .font(AppType.overline)
-                .tracking(1.5)
-                .foregroundStyle(Theme.cobalt)
-
-            Text("找点新练法")
-                .font(AppType.display)
-                .tracking(-0.9)
-                .foregroundStyle(Theme.ink)
-
-            Text("认器械，学动作，找方案。")
-                .font(AppType.body)
-                .foregroundStyle(Theme.secondaryText)
-        }
-    }
-
     // MARK: - Equipment library hero
 
     private var equipmentLibraryHero: some View {
         NavigationLink(value: TabRoute.equipmentLibrary) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .top, spacing: 14) {
-                    VStack(alignment: .leading, spacing: 7) {
-                        Text("MY EQUIPMENT / 我的器械库")
-                            .font(AppType.overline)
-                            .tracking(1.2)
-                            .foregroundStyle(Theme.cobalt)
-
-                        Text("把器械变成计划")
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("我的器械库")
                             .font(AppType.hero)
-                            .tracking(-0.6)
                             .foregroundStyle(Theme.ink)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        Text("已录入 \(store.equipmentSnapshot.libraryItems.count) 件 · 计划池 \(store.equipmentSnapshot.planPoolSlugs.count) 个动作")
+                        Text("\(store.equipmentSnapshot.libraryItems.count) 件 · \(store.equipmentSnapshot.planPoolSlugs.count) 个动作")
                             .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
-                            .fixedSize(horizontal: false, vertical: true)
                     }
 
                     Spacer(minLength: 4)
 
                     ZStack {
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .fill(Theme.primary)
                         Image(systemName: "square.stack.3d.up.fill")
-                            .font(.system(size: 34, weight: .black))
+                            .font(.system(size: 30, weight: .bold))
                             .foregroundStyle(Theme.onPrimary)
                     }
-                    .frame(width: 78, height: 78)
-                    .rotationEffect(.degrees(2))
-                    .padding(.top, 4)
-                }
-
-                HStack(spacing: 6) {
-                    heroPill("覆盖 \(store.planPoolBodyParts.count) 个部位", accent: true)
-                    heroPill(store.strictEquipmentMode ? "只用我的器械" : "优先我的器械")
+                    .frame(width: 66, height: 66)
                 }
             }
             .editorialCard(accent: Theme.lime)
         }
         .buttonStyle(CardPressStyle(scale: 0.985))
         .accessibilityLabel("打开我的器械库")
-    }
-
-    private func heroPill(_ text: String, accent: Bool = false) -> some View {
-        Text(text)
-            .font(.system(size: 9.5, weight: .semibold))
-            .foregroundStyle(accent ? Theme.ink : Theme.secondaryText)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 4)
-            .background(
-                accent ? Theme.lime.opacity(0.75) : Theme.paper,
-                in: Capsule(style: .continuous)
-            )
-            .overlay {
-                Capsule(style: .continuous)
-                    .stroke(
-                        accent ? Theme.ink.opacity(0.16) : Theme.stroke,
-                        lineWidth: 1
-                    )
-            }
     }
 
     // MARK: - Core entries
@@ -172,7 +116,6 @@ struct DiscoverView: View {
             NavigationLink(value: TabRoute.equipmentPicker) {
                 quickEntry(
                     title: "动作库",
-                    subtitle: "按训练类型和部位学",
                     icon: "figure.run",
                     accent: Theme.cobalt,
                     foreground: Theme.onAccent
@@ -186,7 +129,6 @@ struct DiscoverView: View {
             } label: {
                 quickEntry(
                     title: "训练方案",
-                    subtitle: "全身 / 推拉腿 / 五分",
                     icon: "calendar",
                     accent: Theme.lime
                 )
@@ -199,7 +141,6 @@ struct DiscoverView: View {
             } label: {
                 quickEntry(
                     title: "饮食方案",
-                    subtitle: "均衡 / 高蛋白 / 碳循环",
                     icon: "fork.knife",
                     accent: Theme.primary
                 )
@@ -214,7 +155,6 @@ struct DiscoverView: View {
             } label: {
                 quickEntry(
                     title: "体型分析",
-                    subtitle: "拍照看训练重点",
                     icon: "figure.stand",
                     accent: Theme.ink,
                     foreground: Theme.onAccent
@@ -226,7 +166,6 @@ struct DiscoverView: View {
 
     private func quickEntry(
         title: String,
-        subtitle: String,
         icon: String,
         accent: Color,
         foreground: Color = Theme.onPrimary
@@ -246,16 +185,9 @@ struct DiscoverView: View {
                     .foregroundStyle(Theme.tertiaryText)
             }
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(AppType.callout.weight(.semibold))
-                    .foregroundStyle(Theme.ink)
-                Text(subtitle)
-                    .font(.system(size: 9.5, weight: .medium))
-                    .foregroundStyle(Theme.tertiaryText)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-            }
+            Text(title)
+                .font(AppType.callout.weight(.semibold))
+                .foregroundStyle(Theme.ink)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(13)
@@ -290,7 +222,6 @@ struct DiscoverView: View {
                 } label: {
                     toolCard(
                         title: "拍照识别器械",
-                        subtitle: "加入器械库",
                         icon: "camera.viewfinder"
                     )
                 }
@@ -317,7 +248,6 @@ struct DiscoverView: View {
                 } label: {
                     toolCard(
                         title: "动作点评",
-                        subtitle: "拍照 / 视频",
                         icon: "camera.metering.center.weighted"
                     )
                 }
@@ -325,7 +255,7 @@ struct DiscoverView: View {
         }
     }
 
-    private func toolCard(title: String, subtitle: String, icon: String) -> some View {
+    private func toolCard(title: String, icon: String) -> some View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .font(.system(size: 14, weight: .bold))
@@ -336,17 +266,11 @@ struct DiscoverView: View {
                     in: RoundedRectangle(cornerRadius: 9, style: .continuous)
                 )
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(AppType.callout.weight(.semibold))
-                    .foregroundStyle(Theme.ink)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-                Text(subtitle)
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(Theme.tertiaryText)
-                    .lineLimit(1)
-            }
+            Text(title)
+                .font(AppType.callout.weight(.semibold))
+                .foregroundStyle(Theme.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
 
             Spacer(minLength: 0)
         }

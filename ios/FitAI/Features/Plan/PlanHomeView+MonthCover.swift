@@ -43,7 +43,7 @@ extension PlanHomeView {
 
         return VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("MONTH / \(monthLabel)")
+                Text("\(monthLabel)")
                     .font(AppType.overline)
                     .tracking(1.4)
                     .foregroundStyle(Theme.onMedia.opacity(0.9))

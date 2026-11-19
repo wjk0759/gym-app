@@ -37,7 +37,7 @@ struct WorkoutSummaryCard: View {
     var body: some View {
 VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
-                Text("SESSION / 训练详情")
+                Text("训练详情")
                     .font(AppType.overline)
                     .tracking(1.3)
                     .foregroundStyle(Theme.cobalt)

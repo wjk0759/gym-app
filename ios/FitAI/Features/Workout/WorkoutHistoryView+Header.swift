@@ -5,7 +5,7 @@ import SwiftUI
 extension WorkoutHistoryView {
     var header: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("WORKOUT LOG / 训练记录")
+            Text("训练记录")
                 .font(AppType.overline)
                 .tracking(1.5)
                 .foregroundStyle(Theme.cobalt)
@@ -28,7 +28,7 @@ extension WorkoutHistoryView {
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                Text("MONTH / \(monthShort)")
+                Text("\(monthShort)")
                     .font(AppType.overline)
                     .tracking(1.4)
                     .foregroundStyle(Theme.onMedia.opacity(0.9))

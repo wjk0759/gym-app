@@ -42,7 +42,7 @@ struct PlanPreviewSheet: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("PLAN / 第一版计划")
+            Text("第一版计划")
                 .font(AppType.overline)
                 .tracking(1.5)
                 .foregroundStyle(Theme.cobalt)

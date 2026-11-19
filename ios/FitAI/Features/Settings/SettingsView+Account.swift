@@ -5,7 +5,7 @@ extension SettingsView {
 
     var header: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("SETTINGS / 设置")
+            Text("设置")
                 .font(AppType.overline)
                 .tracking(1.5)
                 .foregroundStyle(Theme.cobalt)

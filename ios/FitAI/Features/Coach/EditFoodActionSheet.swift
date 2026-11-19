@@ -41,7 +41,7 @@ struct EditFoodActionSheet: View {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("ADJUST / 调整份量")
+                        Text("调整份量")
                             .font(AppType.overline)
                             .tracking(1.4)
                             .foregroundStyle(Theme.cobalt)

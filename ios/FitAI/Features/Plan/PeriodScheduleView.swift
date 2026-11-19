@@ -82,7 +82,7 @@ struct PeriodScheduleView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("CYCLE / 经期")
+            Text("经期")
                 .font(AppType.overline)
                 .tracking(1.5)
                 .foregroundStyle(Theme.cycle)

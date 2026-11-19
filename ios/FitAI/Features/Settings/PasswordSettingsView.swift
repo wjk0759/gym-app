@@ -23,7 +23,7 @@ struct PasswordSettingsView: View {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("SECURITY / 登录密码")
+                        Text("登录密码")
                             .font(AppType.overline)
                             .tracking(1.5)
                             .foregroundStyle(Theme.cobalt)

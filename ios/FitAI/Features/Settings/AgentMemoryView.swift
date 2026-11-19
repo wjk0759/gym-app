@@ -77,7 +77,7 @@ struct AgentMemoryView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("MEMORY / AI 记忆")
+            Text("AI 记忆")
                 .font(AppType.overline)
                 .tracking(1.5)
                 .foregroundStyle(Theme.cobalt)

@@ -65,22 +65,10 @@ extension PlanHomeView {
 
     var header: some View {
         HStack(alignment: .top, spacing: 14) {
-            VStack(alignment: .leading, spacing: 7) {
-                Text("TRAINING LOG / 记录")
-                    .font(AppType.overline)
-                    .tracking(1.5)
-                    .foregroundStyle(Theme.cobalt)
-
-                Text("训练手账")
-                    .font(AppType.display)
-                    .tracking(-0.9)
-                    .foregroundStyle(Theme.ink)
-
-                Text("翻回去看，才知道自己走了多远。")
-                    .font(AppType.body)
-                    .foregroundStyle(Theme.secondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            Text("训练手账")
+                .font(AppType.display)
+                .tracking(-0.9)
+                .foregroundStyle(Theme.ink)
 
             Spacer(minLength: 0)
 

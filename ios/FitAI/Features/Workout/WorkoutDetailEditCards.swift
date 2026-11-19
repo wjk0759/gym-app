@@ -5,7 +5,7 @@ extension WorkoutDetailView {
 
     var editSummaryCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("EDIT / 训练记录")
+            Text("训练记录")
                 .font(AppType.overline)
                 .tracking(1.3)
                 .foregroundStyle(Theme.cobalt)

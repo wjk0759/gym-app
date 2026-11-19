@@ -212,23 +212,15 @@ struct SectionTitle: View {
     var subtitle: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 9) {
-                Rectangle()
-                    .fill(Theme.lime)
-                    .frame(width: 9, height: 9)
-                    .rotationEffect(.degrees(45))
-                Text(title)
-                    .font(AppType.headline)
-                    .tracking(-0.2)
-                    .foregroundStyle(Theme.primaryText)
-            }
-            if let subtitle {
-                Text(subtitle)
-                    .font(AppType.caption)
-                    .foregroundStyle(Theme.secondaryText)
-                    .lineSpacing(2)
-            }
+        HStack(spacing: 9) {
+            Rectangle()
+                .fill(Theme.lime)
+                .frame(width: 9, height: 9)
+                .rotationEffect(.degrees(45))
+            Text(title)
+                .font(AppType.headline)
+                .tracking(-0.2)
+                .foregroundStyle(Theme.primaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

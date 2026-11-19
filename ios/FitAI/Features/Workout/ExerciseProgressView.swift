@@ -73,7 +73,7 @@ struct ExerciseProgressView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("EXERCISE / 动作历史")
+            Text("动作历史")
                 .font(AppType.overline)
                 .tracking(1.5)
                 .foregroundStyle(Theme.cobalt)

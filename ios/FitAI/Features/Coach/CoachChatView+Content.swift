@@ -21,7 +21,7 @@ extension CoachChatView {
         if store.planAdjustmentStage == 3 {
             return "需要再改可以继续说…"
         }
-        return "训练、饮食、恢复、计划都能问…"
+        return "给教练发消息"
     }
 
     var coachBadgeText: String {
@@ -59,30 +59,15 @@ extension CoachChatView {
 
     var welcome: some View {
         VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 12) {
-                    CoachMark(size: 58)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("我是你的教练")
-                            .font(AppType.title)
-                            .foregroundStyle(Theme.ink)
-                    }
-                }
-
-                Text(store.hasProAccess
-                     ? "把今天的情况、限制或照片发给我，我来判断下一步。"
-                     : "把今天的情况或限制发给我，我来判断下一步。")
-                    .font(AppType.body)
-                    .foregroundStyle(Theme.secondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                HStack(spacing: 8) {
+            HStack(spacing: 12) {
+                CoachMark(size: 52)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("教练")
+                        .font(AppType.title)
+                        .foregroundStyle(Theme.ink)
                     coachAccessBadge
-                    Spacer()
-                    Text("疼痛 / 孕期 / 术后会先拦")
-                        .font(AppType.micro)
-                        .foregroundStyle(Theme.tertiaryText)
                 }
+                Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .editorialCard(accent: Theme.lime)
@@ -94,7 +79,10 @@ extension CoachChatView {
                     .foregroundStyle(Theme.ink)
 
                 LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 180), spacing: 10)],
+                    columns: [
+                        GridItem(.flexible(), spacing: 10),
+                        GridItem(.flexible(), spacing: 10)
+                    ],
                     spacing: 10
                 ) {
                     ForEach(starters) { item in
@@ -111,7 +99,7 @@ extension CoachChatView {
                                     .multilineTextAlignment(.leading)
                                     .lineLimit(2)
                             }
-                            .frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
+                            .frame(maxWidth: .infinity, minHeight: 76, alignment: .topLeading)
                             .padding(12)
                             .background(
                                 Theme.ink.opacity(0.035),
