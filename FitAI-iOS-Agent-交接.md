@@ -14,13 +14,13 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`c0843c2`（注释审查第三批：API 契约/客户端入口/教练输入动作；前两批饮食链路、教练动作执行层；iOS 饮食入口崩溃加固已复测；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`ddcda62`（注释审查第四批：训练计划/日程/改课；前三批饮食、教练动作、API 契约；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
 - **macOS AI 教练四轮压测（2026-11-19）**：N17/N18/N19/N21 通过；N20/N28 目标值同步已通过；N22 title/summary 同步已通过。
 - **macOS AI 教练五轮压测（2026-11-19）**：N23–N28 已由 Windows 修复（`e00708a`），Mac 复测全部通过并部署。
-- **代码注释审查（2026-11-19）**：第一批“今日饮食”iOS + `/diet`；第二批教练动作执行层；第三批 API 契约/客户端入口/教练输入动作；行为未改，待 Mac 抽查。
+- **代码注释审查（2026-11-19）**：第一批“今日饮食”iOS + `/diet`；第二批教练动作执行层；第三批 API 契约/客户端入口/教练输入动作；第四批训练计划/日程/改课；行为未改，待 Mac 抽查。
 - **macOS 饮食入口崩溃复测（2026-11-19）**：`3b462d1` 已 build/安装 Wu-Tang；新增 `DietEntrySmokeTests`，今日饮食/本周计划/记一笔/发现饮食方案在 iPhone 17 + SE 均不崩。
 - **待办（macOS → Windows）**：本轮无阻断；若用户仍反馈饮食入口闪退，需要 `.ips/.crash` 栈。历史 P2 文案类（N3/N6/C7–C11 等）未逐条重测。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
@@ -99,6 +99,28 @@
 - Mac 需要做：
   - 抽查注释与实现是否一致。
   - 下一批：训练计划/训练进行，然后器械、身体、登录权限、设置同步。
+
+### 2026-11-19 · Windows（代码注释审查第四批：训练计划/日程/改课）
+
+- 提交：`ddcda62`，已推 `develop`；只加注释，无行为改动；后端计划/改课相关测试 30 passed，Ruff 通过。
+- 范围：
+  - iOS：`PlanGenerator`、`PlanGenerationService`、`AppStore+Plan`、`PlanHomeView`、`PlanScheduleView`、`PlanReviewView`
+  - 后端：`routers/plans.py`、`plan_generator.py`、`workout_actions.py`、`capabilities/training.py`
+- 注释内容：
+  - 本地模板生成 vs 远端生成 vs AppStore 编排的边界
+  - 计划生成前置检查、Pro/冷却/日限、onboarding 预览
+  - `confirmPendingPlan` 激活服务端失败时保留本地副本并标记待同步
+  - 日程页只改日期，不生成计划/不改动作
+  - 复盘页只读，训练数据来自 PlanReviewEngine，饮食来自 `/diet/review`
+  - `/plans/generate` 的幂等/限流/日限
+  - `workout_actions` 的准备/执行/撤销和版本冲突
+  - `capabilities/training.resolve` 只读解析，不写库
+- 未做：
+  - 没有改任何计划/改期逻辑
+  - 未核对 `PlanHomeView+*` 的所有扩展和 `PlanAdjustmentCoach` 细节，暂不写注释
+- Mac 需要做：
+  - 抽查注释与实现是否一致。
+  - 下一批：训练进行/训练历史，然后器械、身体、登录权限、设置同步。
 
 ### 2026-11-19 · macOS（饮食入口崩溃加固复测通过 + 部署）
 
