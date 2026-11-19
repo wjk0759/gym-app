@@ -153,7 +153,7 @@ static let apiBaseURL = URL(string: "http://192.168.1.20:8000/api/v1")!
 - 没有配置的动作会显示文字要领占位
 - 素材必须自制或购买授权，不要直接抓取平台视频
 - 生产环境建议 HLS + 签名 URL + 防盗链
-- 「动作轨迹」目前对 `器械推胸` / `腿举` 使用 RepDB Free 的 start/peak 双帧，由 `FrameMotionBoard` 在客户端交替显示；不是 GIF，也不分发 RepDB 数据集。免费版需保留 `Exercise data by RepDB (repdb.co)` 署名。
+- 「动作轨迹」/ `FrameMotionBoard` 已在 2026-11 清理中移除，不再使用 RepDB 双帧；视频入口仍由 `Exercise.videoURL` / `VideoCatalog` 控制，素材未上线时显示占位。若未来恢复 RepDB 素材，免费版需保留 `Exercise data by RepDB (repdb.co)` 署名。
 
 ## 仅手机 Release（Watch 签名未就绪时）
 
