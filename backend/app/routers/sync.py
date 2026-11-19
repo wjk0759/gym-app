@@ -1,3 +1,9 @@
+"""Small durable user-data sync: preferences, custom foods, favorites, dislikes, cycle.
+
+Full-snapshot last-write-wins for small collections; large/photo data has its
+own endpoints. `apply_sync` merges client payload into server rows.
+"""
+
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.exc import IntegrityError
 

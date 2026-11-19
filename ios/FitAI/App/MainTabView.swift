@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 主 Tab 容器：五个根页面、各自 NavigationPath、全局 route sheet。
+/// 切 Tab/重复点 Tab 会清空对应路径；业务数据不在这里。
 enum AppRoute: String, Identifiable, Hashable {
     case trainingSchedule = "training_schedule"
     case nutrition

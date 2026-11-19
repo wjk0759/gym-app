@@ -1,5 +1,7 @@
 import Foundation
 
+/// 本机数据导出：把 profile/plan/sessions/chat/food/body 等状态编码为 JSON。
+/// 只读快照，不删除或修改任何数据。
 extension AppStore {
     func exportData() -> String {
         let payload = ExportPayload(

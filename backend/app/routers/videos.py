@@ -1,3 +1,9 @@
+"""Exercise media lookup for phone/watch.
+
+Reads only published media assets and resolves the best derivative for the
+user's sex/preference; no user data is mutated.
+"""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request

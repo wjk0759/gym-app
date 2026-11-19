@@ -1,6 +1,8 @@
 import SwiftUI
 import UIKit
 
+/// 设置首页：账号、AI、训练、隐私和休息提醒入口。
+/// 具体开关/连接由各设置子页和 AppStore 处理；本页只做导航和分组。
 struct SettingsToolbarButton: View {
     var body: some View {
         NavigationLink(value: TabRoute.settings) {

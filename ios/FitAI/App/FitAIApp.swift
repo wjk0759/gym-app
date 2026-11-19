@@ -2,6 +2,8 @@ import SwiftUI
 import UIKit
 import UserNotifications
 
+/// App 入口：创建全局 store/auth/subscription/weather，注入环境和根视图。
+/// 业务状态不在这里，RootView 只负责登录/onboarding/主界面的路由。
 @main
 @MainActor
 struct FitAIApp: App {

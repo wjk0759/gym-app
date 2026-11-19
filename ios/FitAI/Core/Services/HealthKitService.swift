@@ -1,6 +1,8 @@
 import Foundation
 import HealthKit
 
+/// HealthKit 读写边界：授权、读取最新体重、写入力量训练。
+/// 不负责 UI 或业务同步；调用方仍走 AppStore 的 body/workout 流程。
 final class HealthKitService {
     static let shared = HealthKitService()
 

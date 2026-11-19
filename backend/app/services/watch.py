@@ -1,3 +1,9 @@
+"""Watch media selection from published exercise assets.
+
+Chooses the best derivative for the user's sex and returns absolute media URLs;
+this module is read-only.
+"""
+
 from __future__ import annotations
 
 from sqlalchemy import select

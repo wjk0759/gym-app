@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// AI 长期记忆列表：查看/删除教练记住的偏好和约束。
+/// 记忆由后端 memory 服务维护；本页只读/删除，不直接编辑内容。
 struct AgentMemoryView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppStore.self) private var store

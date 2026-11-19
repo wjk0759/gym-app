@@ -1,5 +1,7 @@
 import Foundation
 
+/// 可复用偏好（收藏/自定义食物/动作偏好/周期设置）的云同步。
+/// 数据量小，使用全量快照而不是游标；冲突按服务端时间/集合合并。
 extension AppStore {
     /// Push reusable food/exercise data and durable preferences, then merge
     /// anything another device added. Collections are small, so the first

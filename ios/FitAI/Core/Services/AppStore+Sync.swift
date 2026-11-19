@@ -1,5 +1,8 @@
 import Foundation
 
+/// 跨设备同步的总入口。
+/// 训练、计划日程、饮食/身体/器械草稿和用户偏好都在这里按 pending 状态补传/拉取；
+/// 具体 API 在 APIClient+Endpoints / APIClient+CloudSync，视图不直接调用。
 extension AppStore {
     /// 将本地训练记录补传到 FastAPI；失败时保持 pending，下次登录或完成训练再试。
     /// 创建、修改、删除共用一个串行通道，避免离线恢复时互相覆盖。

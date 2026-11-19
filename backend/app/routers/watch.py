@@ -1,3 +1,9 @@
+"""Watch bootstrap/session endpoints.
+
+The phone mints a dedicated watch auth session; bootstrap returns the active
+plan day plus published media derivatives for the watch.
+"""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request

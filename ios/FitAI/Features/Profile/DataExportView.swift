@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 数据导出页：生成 JSON 并调用系统分享。
+/// 导出的是本机状态快照，不修改任何业务数据。
 struct DataExportView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss

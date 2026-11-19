@@ -1,6 +1,8 @@
 import Combine
 import SwiftUI
 
+/// 根路由：恢复登录、hydration、onboarding 分流和主界面切换。
+/// 业务状态由 AppStore/AuthStore 持有；这里只处理启动时序和场景生命周期。
 struct RootView: View {
     @Environment(AppStore.self) private var store
     @Environment(AuthStore.self) private var auth
