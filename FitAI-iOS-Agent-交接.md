@@ -58,6 +58,7 @@
   - 需要 5 练：在档案页点“更新并重排计划”，或在训练手账“重新生成计划”。
 - 对方需要做：Mac 拉取 → xcodegen → `FitAITests`（新增 4 个 boardStart 测试）→ 安装新包，按上面账号复测；iOS Build CI 已全绿。
 - 禁止恢复：不要用 `createdAt` 当训练日期周锚点；不要让 repair 脚本强制“下一个周一”；不要把档案 5 自动改成 3。
+- 未做：`coach_context._current_week_index` 仍按“计划开始后的第一个周一”算 current_week；本轮只修排期页和 repair 脚本，未改教练上下文周计算。
 - 仍 BLOCKED：`FitAITests` / UI / 真机验证需 Mac；CI 已全绿。
 
 ### 2026-11-19 · macOS（废弃代码清理复测 + 部署）
