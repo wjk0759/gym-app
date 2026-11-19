@@ -3,7 +3,7 @@ import SwiftUI
 /// 训练历史页脚：说明记录是本机数据、编辑会影响容量/复盘。
 extension WorkoutHistoryView {
     var footer: some View {
-        Text("训练记录只保存在本机。编辑或删除后，训练容量和 AI 复盘数据会同步更新。")
+        Text("训练记录会同步到云端。编辑或删除后，训练容量和 AI 复盘数据会同步更新。")
             .font(.system(size: 9.5, weight: .medium))
             .foregroundStyle(Theme.tertiaryText)
             .fixedSize(horizontal: false, vertical: true)

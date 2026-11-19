@@ -23,6 +23,8 @@ struct FitAIApp: App {
         navAppearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterial)
         navAppearance.backgroundColor = .clear
         navAppearance.shadowColor = .clear
+        navAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label]
+        navAppearance.titleTextAttributes = [.foregroundColor: UIColor.label]
         UINavigationBar.appearance().standardAppearance = navAppearance
         UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
         UINavigationBar.appearance().compactAppearance = navAppearance

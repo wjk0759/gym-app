@@ -40,8 +40,6 @@ struct WeekDietPlanView: View {
         NavigationStack {
             AppScrollView {
                 VStack(spacing: 16) {
-                    header
-                    foodGuide
                     strategyCard
                     if let week,
                        let savedStrategy = week.strategy?.id,
@@ -89,44 +87,6 @@ struct WeekDietPlanView: View {
                 DietRecipeSheet(selection: selection)
             }
         }
-    }
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text("MEAL PLAN / 本周饮食")
-                .font(AppType.overline)
-                .tracking(1.5)
-                .foregroundStyle(Theme.cobalt)
-
-            Text("把饮食排成一周")
-                .font(AppType.hero)
-                .tracking(-0.6)
-                .foregroundStyle(Theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Text("AI 教练会按目标、训练日和饮食策略排本周餐单；每道菜都可以点开看家常做法。AI 暂不可用时会自动回退模板。")
-                .font(AppType.body)
-                .foregroundStyle(Theme.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var foodGuide: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("每餐这样搭")
-                .font(AppType.caption.weight(.semibold))
-                .foregroundStyle(Theme.ink)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 7) {
-                    foodGuideChip("蛋白 1 掌心", icon: "fish.fill", color: Theme.blue)
-                    foodGuideChip("蔬菜 2 拳", icon: "leaf.fill", color: Theme.secondary)
-                    foodGuideChip("主食 1 拳", icon: "takeoutbag.and.cup.and.straw.fill", color: Theme.warning)
-                    foodGuideChip("油脂 1 拇指", icon: "drop.fill", color: Theme.tertiaryText)
-                }
-            }
-        }
-        .card(padding: 12)
     }
 
     private func foodGuideChip(_ text: String, icon: String, color: Color) -> some View {

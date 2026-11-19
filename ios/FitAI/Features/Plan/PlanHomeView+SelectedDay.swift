@@ -27,10 +27,13 @@ extension PlanHomeView {
 
             if let plannedDay {
                 dayPlanMeta(plannedDay)
-                dayMetrics(plannedDay: plannedDay, sessions: daySessions, completed: planCompleted)
                 dayProgress(plannedDay: plannedDay, completed: planCompleted)
             } else if !daySessions.isEmpty {
-                dayMetrics(plannedDay: nil, sessions: daySessions, completed: false)
+                let minutes = daySessions.reduce(0) { $0 + $1.durationMinutes }
+                let volume = daySessions.reduce(0) { $0 + $1.volume }
+                Text("\(daySessions.count) 次 · \(minutes) 分钟 · \(Int(volume)) kg")
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.secondaryText)
             }
 
             periodBanner(period)
@@ -61,7 +64,7 @@ extension PlanHomeView {
 
             dayNutritionSection
         }
-        .editorialCard(accent: status.accent)
+        .card()
     }
 
     func dayStatus(
@@ -72,21 +75,21 @@ extension PlanHomeView {
         period: PeriodDay?
     ) -> DayStatus {
         if planCompleted {
-            return DayStatus(text: "已完成", accent: Theme.cobalt, filled: true)
+            return DayStatus(text: "已完成")
         }
         if inProgress {
-            return DayStatus(text: "进行中", accent: Theme.lime, filled: true)
+            return DayStatus(text: "进行中")
         }
         if planned {
-            return DayStatus(text: "计划日", accent: Theme.cobalt, filled: false)
+            return DayStatus(text: "计划日")
         }
         if hasSessions {
-            return DayStatus(text: "已记录", accent: Theme.cobalt, filled: true)
+            return DayStatus(text: "已记录")
         }
         if period?.mode == .rest {
-            return DayStatus(text: "休息日", accent: Theme.cycle, filled: false)
+            return DayStatus(text: "休息日")
         }
-        return DayStatus(text: "休息日", accent: Theme.tertiaryText, filled: false)
+        return DayStatus(text: "休息日")
     }
 
     func dayHeader(
@@ -98,67 +101,35 @@ extension PlanHomeView {
         let title = plannedDay?.title
             ?? sessions.first?.dayTitle
             ?? (period?.mode == .rest ? "经期休息" : "休息日")
-        let subtitle: String
-        if let plannedDay {
-            subtitle = plannedDay.focusText.isEmpty ? "按计划完成今天的训练。" : plannedDay.focusText
-        } else if !sessions.isEmpty {
-            let volume = sessions.reduce(0) { $0 + $1.volume }
-            subtitle = "\(sessions.count) 次训练 · 共 \(Int(volume)) kg 容量"
-        } else if period?.mode == .rest {
-            subtitle = "今天不要求力量训练。散步、拉伸和补铁优先。"
-        } else {
-            subtitle = "没有安排。休息、走路、拉伸，都算恢复。"
-        }
 
-        return VStack(alignment: .leading, spacing: 7) {
+        return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 8) {
                 Text(dayEyebrow(selectedDate))
-                    .font(AppType.overline)
-                    .tracking(1.1)
-                    .foregroundStyle(Theme.cobalt)
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.secondaryText)
 
                 Spacer(minLength: 0)
 
-                Text(status.text)
-                    .font(AppType.micro)
-                    .foregroundStyle(status.filled ? Theme.onAccent : Theme.secondaryText)
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 5)
-                    .background(
-                        status.filled
-                            ? status.accent
-                            : status.accent.opacity(0.12),
-                        in: Capsule(style: .continuous)
-                    )
-                    .overlay {
-                        Capsule(style: .continuous)
-                            .strokeBorder(
-                                Theme.ink.opacity(status.filled ? 0.14 : 0),
-                                lineWidth: 1
-                            )
-                    }
+                if plannedDay != nil || !sessions.isEmpty {
+                    Text(status.text)
+                        .font(AppType.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
             }
 
             Text(title)
                 .font(AppType.hero)
-                .tracking(-0.6)
                 .foregroundStyle(Theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Text(subtitle)
-                .font(AppType.caption)
-                .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     func dayPlanMeta(_ day: PlanDay) -> some View {
         HStack(spacing: 8) {
-            Text("第 \(day.weekIndex) 周 · \(day.exercises.count) 个动作 · \(day.estimatedMinutes) 分钟")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
+            Text("\(day.exercises.count) 个动作 · \(day.estimatedMinutes) 分钟")
+                .font(AppType.caption)
+                .foregroundStyle(Theme.secondaryText)
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
 
             Spacer(minLength: 4)
 
@@ -166,49 +137,13 @@ extension PlanHomeView {
                 Haptics.tap()
                 editingDay = day
             } label: {
-                Label("编辑计划", systemImage: "square.and.pencil")
-                    .font(AppType.caption.weight(.semibold))
-                    .foregroundStyle(Theme.onPrimary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(Theme.primary, in: Capsule())
+                Image(systemName: "square.and.pencil")
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundStyle(Theme.secondaryText)
+                    .frame(width: 32, height: 32)
             }
-            .buttonStyle(SubtlePressStyle(scale: 0.97))
+            .buttonStyle(.plain)
             .accessibilityLabel("编辑计划")
-            .accessibilityHint("编辑这一天的训练安排")
-        }
-    }
-
-    func dayMetrics(
-        plannedDay: PlanDay?,
-        sessions: [WorkoutSession],
-        completed: Bool
-    ) -> some View {
-        HStack(spacing: 8) {
-            if let plannedDay {
-                let plannedSets = store.plannedSets(for: plannedDay)
-                let doneSets = store.completedSets(for: plannedDay)
-                EditorialMetric(
-                    title: "动作",
-                    value: "\(plannedDay.exercises.count)",
-                    unit: "个"
-                )
-                EditorialMetric(
-                    title: "预计",
-                    value: "\(plannedDay.estimatedMinutes)",
-                    unit: "分钟"
-                )
-                EditorialMetric(
-                    title: "完成组",
-                    value: completed ? "\(plannedSets)" : "\(doneSets)/\(plannedSets)"
-                )
-            } else {
-                let minutes = sessions.reduce(0) { $0 + $1.durationMinutes }
-                let volume = sessions.reduce(0) { $0 + $1.volume }
-                EditorialMetric(title: "记录", value: "\(sessions.count)", unit: "次")
-                EditorialMetric(title: "时长", value: "\(minutes)", unit: "分钟")
-                EditorialMetric(title: "容量", value: "\(Int(volume))", unit: "kg")
-            }
         }
     }
 
@@ -245,14 +180,9 @@ extension PlanHomeView {
                     .foregroundStyle(Theme.cycle)
                     .padding(.top, 2)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("经期第 \(period.day) 天 · \(period.mode.title)")
-                        .font(AppType.caption.weight(.semibold))
-                        .foregroundStyle(Theme.ink)
-                    Text(period.mode.detail)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(Theme.secondaryText)
-                }
+                Text("经期第 \(period.day) 天 · \(period.mode.title)")
+                    .font(AppType.caption)
+                    .foregroundStyle(Theme.ink)
 
                 Spacer(minLength: 0)
             }
@@ -390,10 +320,6 @@ extension PlanHomeView {
             }
             .buttonStyle(SecondaryButtonStyle())
             .padding(.top, 2)
-        } else {
-            Text("未来日期：可先编辑计划，训练当天再记录。")
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
         }
     }
 
@@ -418,11 +344,7 @@ extension PlanHomeView {
                     .minimumScaleFactor(0.8)
             }
 
-            if logs.isEmpty {
-                Text("这天还没有饮食记录。")
-                    .font(AppType.caption)
-                    .foregroundStyle(Theme.tertiaryText)
-            } else {
+            if !logs.isEmpty {
                 ForEach(logs.prefix(3)) { log in
                     HStack(spacing: 8) {
                         Text(log.foodName)
@@ -451,8 +373,7 @@ extension PlanHomeView {
 
     func sectionLabel(_ title: String) -> some View {
         Text(title)
-            .font(AppType.overline)
-            .tracking(0.8)
-            .foregroundStyle(Theme.cobalt)
+            .font(AppType.caption)
+            .foregroundStyle(Theme.secondaryText)
     }
 }

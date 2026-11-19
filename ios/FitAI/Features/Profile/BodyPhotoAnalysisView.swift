@@ -77,7 +77,7 @@ struct BodyPhotoAnalysisView: View {
     private var hero: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                Text("VISION / 体型分析")
+                Text("体型分析")
                     .font(AppType.overline)
                     .tracking(1.5)
                     .foregroundStyle(Theme.cobalt)

@@ -26,23 +26,8 @@ struct PlanHomeView: View {
         let isNew: Bool
     }
 
-    struct MonthStats {
-        var sessions = 0
-        var foodDays = 0
-        var volume: Double = 0
-        var minutes = 0
-        var completedPlanDays = 0
-        var plannedDays = 0
-
-        var completion: Double {
-            plannedDays > 0 ? Double(completedPlanDays) / Double(plannedDays) : 0
-        }
-    }
-
     struct DayStatus {
         let text: String
-        let accent: Color
-        let filled: Bool
     }
 
     var calendar: Calendar { Calendar.current }
@@ -52,8 +37,6 @@ struct PlanHomeView: View {
             ScrollViewReader { proxy in
                 AppScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        topBar
-                        header
                         quickActions
                         equipmentReplanBanner
 
@@ -63,8 +46,6 @@ struct PlanHomeView: View {
                             calendarCard(plan: store.plan)
                             selectedDayCard(plan: store.plan)
                                 .id("selected-day")
-                            monthCover
-                            trainingDataCard
 
                             if let plan = store.plan {
                                 planSummaryCard(plan)
@@ -84,9 +65,44 @@ struct PlanHomeView: View {
                 }
                 .appTabBarClearance()
                 .background(AppBackground())
-                .navigationTitle("")
-                .navigationBarHidden(true)
+                .navigationTitle("训练手账")
+                .navigationBarTitleDisplayMode(.inline)
                 .appTabDestinations()
+                .toolbar {
+                    if !Calendar.current.isDateInToday(selectedDate) {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button("今天") {
+                                goToToday()
+                            }
+                            .font(AppType.body)
+                        }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu {
+                            Button {
+                                store.openCoach(prompt: "帮我调整这一天的训练：")
+                            } label: {
+                                Label("问教练", systemImage: "bubble.left.and.bubble.right")
+                            }
+                            Button {
+                                showHistory = true
+                            } label: {
+                                Label("计划历史", systemImage: "clock.arrow.circlepath")
+                            }
+                            if store.plan != nil {
+                                Button(role: .destructive) {
+                                    if store.requirePro(.trainingPlan) {
+                                        showRegenerate = true
+                                    }
+                                } label: {
+                                    Label("重新生成", systemImage: "arrow.clockwise")
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                        }
+                    }
+                }
                 .sheet(isPresented: $showHistory) {
                     PlanHistoryView()
                 }

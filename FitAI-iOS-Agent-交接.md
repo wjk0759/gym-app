@@ -11,6 +11,36 @@
 > Windows / macOS 两个 agent 的唯一同步入口。每次完成任务后，**先更新这里，再结束回复**。
 > 最新在上。写清楚：日期 / 端 / 提交 / 做了什么 / 验证结果 / 对方需要做什么 / 禁止恢复什么。
 > macOS 拉取后在本节顶部新增一条 `### 日期 · macOS`，写 build/test 结果和失败点。
+>
+> **当前分支：`try`（从 `develop` `a9ebaff` 起）。未合并 `develop`，未部署，未修改后端。** 设计说明见 `docs/61-notes-clean-redesign.md`。
+
+### 2026-11-20 · macOS（try：Notes-like clean pass）
+
+- 分支：`try`，基于 `develop` `a9ebaff`；只改 iOS，无后端/接口/路由变更；未部署。
+- 设计方向：一屏一主操作；优先改布局，不靠标语/提示/英文眉标解释；保留 lime + ink + paper + canvas 主题。
+- 设计系统：
+  - `AppType` 从海报式重字重改为系统半粗/常规；正文 16、标题 22、主标题 26。
+  - `editorialCard` 去掉粗黑边和顶部色条；`EditorialMetric` 去掉卡片底；`SectionTitle`/`EditorialHeader` 只渲染标题。
+  - 次要按钮改用 1px `Theme.stroke` 边框；删除 `TypewriterText`、`WeatherBadgeView`。
+  - 全仓去掉 `TODAY /`、`SESSION /`、`PLAN /` 等英文眉标，保留中文功能标签。
+- 页面：
+  - 今日：删问候/昵称大标题/教练笔记/天气药丸/目标周报折叠；只留周日期条、今日训练、3 个快捷操作、今日饮食。目标在「我的」，周复盘在「变化」。
+  - 记录：系统标题「训练手账」；删自定义眉标、月份印章、长文案；日历去图例/多圆点；选中日去掉重复状态和三列指标。
+  - 教练：删欢迎卡/配额徽标/本周状态；空状态改为 4 条建议问题；标题「教练」，输入占位「给教练发消息」。
+  - 发现：系统标题「发现」；器械 hero 改一行入口；训练/工具改分组列表行，去掉副标题。
+  - 我的：系统标题「我的」；删 `PROFILE /`、标语、Pro 解锁说明、目标免责声明、体型分析说明和累计摘要。
+  - 登录/Onboarding：删「AI 健身教练」「训练·饮食·复盘」「同步计划…」；Onboarding 欢迎页改 logo + 叫练 + 开始/恢复/退出，step 标题只留问题。
+- 删除未使用文件/代码：`GoalCardView`、`HomeV2View+CoachNote`、`PlanHomeView+Header`、`PlanHomeView+MonthCover`、`PlanHomeTrainingData`、`TypewriterText`、`WeatherBadgeView`、未使用的 metrics/legend。
+- 验证：
+  - `FitAITests` **140/140**
+  - iPhone 17 `FitAIUITests` **7/7**
+  - iPhone SE 3 `FitAIUITests` **7/7**
+  - clean `xcodegen generate` + `xcodebuild test` 通过；浅色/深色截图人工检查
+  - 未用真实账号真机回归；未合并/未部署
+- 已知边界：
+  - 根 Tab 暂用 inline title；large title 在当前 `UINavigationBarAppearance` 下渲染为空，需单独修。
+  - 设置、训练进行页、器械详情、进展等二级页只做字重/卡片/英文眉标收敛，尚未逐页重排。
+- 对方需要做：先在 `try` 验收首页/记录/教练/发现/我的 5 个根页面；确认方向后再合并 `develop`，不要直接把 try 推到生产。
 
 ### 最新状态
 

@@ -15,7 +15,7 @@ struct FocusAreasSheet: View {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     EditorialHeader(
-                        eyebrow: "FOCUS / 训练重点",
+                        eyebrow: "训练重点",
                         title: "想让计划多照顾哪里？",
                         subtitle: "可多选。"
                     )

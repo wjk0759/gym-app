@@ -30,8 +30,6 @@ struct CoachChatView: View {
     @State var attachmentError: String?
     @State var selectedDietRecipe: DietRecipeSelection?
     @State var editingFoodAction: AgentAction?
-    @State var accessWaitExpired = false
-    @State var accessRetryToken = 0
     @State var isPrependingHistory = false
     @FocusState var focused: Bool
 
@@ -225,7 +223,7 @@ struct CoachChatView: View {
                 inputBar
             }
             .background(AppBackground())
-            .navigationTitle(store.planAdjustmentStage > 0 ? "调整计划" : "AI 私人教练")
+            .navigationTitle(store.planAdjustmentStage > 0 ? "调整计划" : "教练")
             .navigationBarTitleDisplayMode(.inline)
             .onChange(of: store.planAdjustmentRequested) { _, requested in
                 if requested {
@@ -351,11 +349,6 @@ struct CoachChatView: View {
                 matching: .videos,
                 photoLibrary: .shared()
             )
-            .task(id: accessRetryToken) {
-                accessWaitExpired = false
-                try? await Task.sleep(for: .seconds(8))
-                accessWaitExpired = store.accessSnapshot == nil
-            }
         }
     }
 }

@@ -1,11 +1,8 @@
 import SwiftUI
 
-/// Coach-first Today screen.
-///
-/// The old Today was a dashboard with eight competing sections. This version
-/// keeps one primary action (today's training), one nutrition pulse and a
-/// quiet coach note. Goal, weekly review and history stay available in a
-/// disclosure below, so no capability is removed.
+/// Today: one date strip, today's training, three quick actions and one food row.
+/// Goal, weekly review and history live in Profile/Progress instead of a
+/// disclosure here, so this screen stays a single-purpose starting point.
 struct HomeV2View: View {
     @Environment(AppStore.self) var store
     @Environment(WeatherStore.self) var weather
@@ -54,8 +51,7 @@ struct HomeV2View: View {
     var body: some View {
         NavigationStack(path: $navigationPath) {
             AppScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    topBar
+                VStack(alignment: .leading, spacing: 20) {
                     if let advisory = weather.snapshot?.alertKind {
                         weatherBanner(advisory)
                     }
@@ -64,22 +60,21 @@ struct HomeV2View: View {
                         markedKeys: markedKeys,
                         completedKeys: completedKeys
                     )
-                    coachNote
                     todaySection
                     quickActions
                     nutritionPulse
                     if !store.missedPlanDays.isEmpty {
                         missedPlanCard
                     }
-                    moreSection
                 }
                 .padding(.horizontal, 20)
                 .appPageTopPadding()
             }
             .appTabBarClearance()
             .background(AppBackground())
-            .navigationTitle("")
-            .navigationBarHidden(true)
+            .navigationTitle("今天")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.visible, for: .navigationBar)
             .appTabDestinations()
             .fullScreenCover(isPresented: $showCompose, onDismiss: presentPendingWorkout) {
                 if let day = selectedDay {

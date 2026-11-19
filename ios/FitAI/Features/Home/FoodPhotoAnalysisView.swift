@@ -136,7 +136,7 @@ struct FoodPhotoAnalysisView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("VISION / 饮食识别")
+            Text("饮食识别")
                 .font(AppType.overline)
                 .tracking(1.5)
                 .foregroundStyle(Theme.cobalt)

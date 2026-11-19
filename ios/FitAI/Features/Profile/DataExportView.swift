@@ -12,7 +12,7 @@ struct DataExportView: View {
         NavigationStack {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("DATA / 导出")
+                    Text("导出")
                         .font(AppType.overline)
                         .tracking(1.5)
                         .foregroundStyle(Theme.cobalt)

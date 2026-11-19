@@ -118,7 +118,7 @@ struct DietRecipeSheet: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text("RECIPE / 菜谱")
+            Text("菜谱")
                 .font(AppType.overline)
                 .tracking(1.4)
                 .foregroundStyle(Theme.cobalt)

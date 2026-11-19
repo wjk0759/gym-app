@@ -27,7 +27,7 @@ struct WorkoutProgressHeader: View {
         return VStack(spacing: 9) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("SESSION / 训练进度")
+                    Text("训练进度")
                         .font(AppType.overline)
                         .tracking(1.2)
                         .foregroundStyle(Theme.cobalt)
@@ -116,7 +116,7 @@ struct WorkoutSessionSummaryCard: View {
     var body: some View {
 VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 5) {
-                Text("SESSION / 总结")
+                Text("总结")
                     .font(AppType.overline)
                     .tracking(1.2)
                     .foregroundStyle(Theme.cobalt)

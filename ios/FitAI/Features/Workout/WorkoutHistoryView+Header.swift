@@ -3,24 +3,6 @@ import SwiftUI
 /// 训练历史页头：月份切换、统计摘要。
 /// 只读 AppStore 历史。
 extension WorkoutHistoryView {
-    var header: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text("WORKOUT LOG / 训练记录")
-                .font(AppType.overline)
-                .tracking(1.5)
-                .foregroundStyle(Theme.cobalt)
-
-            Text("训练账本")
-                .font(AppType.display)
-                .tracking(-0.9)
-                .foregroundStyle(Theme.ink)
-
-            Text("练过的每一组，都算数。")
-                .font(AppType.body)
-                .foregroundStyle(Theme.secondaryText)
-        }
-    }
-
     func monthCover(_ sessions: [WorkoutSession]) -> some View {
         let volume = sessions.reduce(0) { $0 + $1.volume }
         let minutes = sessions.reduce(0) { $0 + $1.durationMinutes }
@@ -28,7 +10,7 @@ extension WorkoutHistoryView {
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                Text("MONTH / \(monthShort)")
+                Text("\(monthShort)")
                     .font(AppType.overline)
                     .tracking(1.4)
                     .foregroundStyle(Theme.onMedia.opacity(0.9))

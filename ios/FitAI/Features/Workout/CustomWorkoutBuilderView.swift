@@ -165,7 +165,7 @@ struct CustomWorkoutBuilderView: View {
     private var summaryCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("BUILD / 训练编排")
+                Text("训练编排")
                     .font(AppType.overline)
                     .tracking(1.3)
                     .foregroundStyle(Theme.cobalt)

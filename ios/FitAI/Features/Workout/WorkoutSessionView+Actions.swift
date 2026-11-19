@@ -468,7 +468,7 @@ extension WorkoutSessionView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 15) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("SESSION / 调整")
+                        Text("调整")
                             .font(AppType.overline)
                             .tracking(1.2)
                             .foregroundStyle(Theme.cobalt)

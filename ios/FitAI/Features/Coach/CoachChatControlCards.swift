@@ -96,8 +96,8 @@ extension CoachChatView {
             VStack(alignment: .leading, spacing: 10) {
                 CoachCardHeader(
                     eyebrow: pending.kind == "insight"
-                        ? "COACH / 洞察"
-                        : "COACH / 待确认",
+                        ? "洞察"
+                        : "待确认",
                     status: pending.kind == "draft"
                         ? "待补充"
                         : (pending.kind == "insight" ? "只读" : "待执行")
@@ -575,7 +575,7 @@ extension CoachChatView {
         CoachCard(border: Theme.primary.opacity(0.3)) {
             VStack(alignment: .leading, spacing: 9) {
                 CoachCardHeader(
-                    eyebrow: "COACH / 已完成",
+                    eyebrow: "已完成",
                     status: store.coachUndoActionID == nil
                         ? "已完成"
                         : (store.coachUndoExpiresAt == nil ? "可撤销" : "5 秒内可撤销")

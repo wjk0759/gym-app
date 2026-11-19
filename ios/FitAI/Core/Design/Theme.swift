@@ -163,14 +163,14 @@ struct SecondaryButtonStyle: ButtonStyle {
             .font(AppType.buttonSecondary)
             .foregroundStyle(Theme.ink)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 15)
+            .padding(.vertical, 14)
             .background {
-                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(Theme.paper)
             }
             .overlay {
-                RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .strokeBorder(Theme.ink.opacity(0.75), lineWidth: 1.2)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Theme.stroke, lineWidth: 1)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
@@ -212,25 +212,10 @@ struct SectionTitle: View {
     var subtitle: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 9) {
-                Rectangle()
-                    .fill(Theme.lime)
-                    .frame(width: 9, height: 9)
-                    .rotationEffect(.degrees(45))
-                Text(title)
-                    .font(AppType.headline)
-                    .tracking(-0.2)
-                    .foregroundStyle(Theme.primaryText)
-            }
-            if let subtitle {
-                Text(subtitle)
-                    .font(AppType.caption)
-                    .foregroundStyle(Theme.secondaryText)
-                    .lineSpacing(2)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        Text(title)
+            .font(AppType.headline)
+            .foregroundStyle(Theme.primaryText)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

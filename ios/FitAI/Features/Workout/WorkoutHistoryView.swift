@@ -46,7 +46,6 @@ struct WorkoutHistoryView: View {
 
         AppScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                header
                 monthCover(sessions)
                 calendarCard(sessions)
                 sessionsCard(sessions)

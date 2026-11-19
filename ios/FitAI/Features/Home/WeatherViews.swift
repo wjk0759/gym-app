@@ -3,134 +3,6 @@ import UIKit
 
 /// 天气徽标和详情 sheet。
 /// 只读 WeatherStore 快照；不触发定位或训练数据写入。
-struct WeatherBadgeView: View {
-    @Environment(WeatherStore.self) private var weather
-    @Environment(\.weatherAtmosphere) private var atmosphere
-    @Environment(\.colorScheme) private var colorScheme
-
-    @State private var showDetail = false
-
-    var body: some View {
-        Button {
-            Haptics.tap()
-            showDetail = true
-        } label: {
-            HStack(spacing: 7) {
-                Image(systemName: symbolName)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(atmosphere.isPrecipitation ? atmosphere.accent(for: colorScheme) : Theme.cobalt)
-                    .frame(width: 19)
-
-                VStack(alignment: .leading, spacing: 1) {
-                    HStack(alignment: .firstTextBaseline, spacing: 3) {
-                        Text(primaryText)
-                            .font(.system(size: 15, weight: .bold, design: .default).monospacedDigit())
-                            .foregroundStyle(Theme.ink)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                        if weather.isRefreshing {
-                            ProgressView()
-                                .controlSize(.mini)
-                                .tint(Theme.secondaryText)
-                        }
-                    }
-
-                    Text(secondaryText)
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                }
-                .frame(maxWidth: 104, alignment: .leading)
-            }
-            .padding(.horizontal, 11)
-            .padding(.vertical, 8)
-            .background {
-                SoftSurface(
-                    cornerRadius: 999,
-                    tint: Theme.ink.opacity(0.035),
-                    stroke: Theme.stroke
-                )
-            }
-        }
-        .buttonStyle(SubtlePressStyle(scale: 0.96))
-        .accessibilityLabel(accessibilityText)
-        .accessibilityHint("打开天气详情和出行提醒设置")
-        .sheet(isPresented: $showDetail) {
-            WeatherDetailSheet()
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(Theme.background)
-        }
-    }
-
-    private var primaryText: String {
-        if let snapshot = weather.snapshot {
-            return snapshot.temperatureText
-        }
-        if weather.needsLocationPermission {
-            return "开定位"
-        }
-        switch weather.state {
-        case .locating, .loading:
-            return "定位中"
-        case .permissionDenied:
-            return "开定位"
-        case .failed:
-            return "重试"
-        case .idle, .ready:
-            return "天气"
-        }
-    }
-
-    private var secondaryText: String {
-        if let snapshot = weather.snapshot {
-            if weather.isStale {
-                return "\(snapshot.conditionLabel) · 待刷新"
-            }
-            let condition = atmosphere.isTyphoon ? "台风/大风" : snapshot.conditionLabel
-            return "\(condition) · \(snapshot.placeDisplayName)"
-        }
-        if weather.needsLocationPermission {
-            return "允许定位查看天气"
-        }
-        switch weather.state {
-        case .locating, .loading:
-            return "获取本地天气"
-        case .permissionDenied:
-            return "查看天气"
-        case .failed:
-            return "天气暂不可用"
-        case .idle, .ready:
-            return "点此查看"
-        }
-    }
-
-    private var symbolName: String {
-        if let snapshot = weather.snapshot {
-            return snapshot.symbolName
-        }
-        if weather.needsLocationPermission {
-            return "location.fill"
-        }
-        switch weather.state {
-        case .permissionDenied:
-            return "location.slash.fill"
-        case .failed:
-            return "cloud.slash.fill"
-        default:
-            return "cloud.sun.fill"
-        }
-    }
-
-    private var accessibilityText: String {
-        guard let snapshot = weather.snapshot else {
-            return "天气，\(primaryText)"
-        }
-        return "\(snapshot.placeDisplayName)，\(snapshot.conditionLabel)，\(snapshot.temperatureText)"
-    }
-}
-
 struct WeatherDetailSheet: View {
     @Environment(WeatherStore.self) private var weather
     @Environment(\.weatherAtmosphere) private var atmosphere
@@ -172,7 +44,7 @@ struct WeatherDetailSheet: View {
 
     private var currentCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("LOCAL / 本地天气")
+            Text("本地天气")
                 .font(AppType.overline)
                 .tracking(1.4)
                 .foregroundStyle(Theme.cobalt)

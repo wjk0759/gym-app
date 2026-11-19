@@ -29,52 +29,6 @@ struct CoachMark: View {
 
 /// Character-by-character reveal with a haptic tick every few characters.
 /// Text is pre-measured with a hidden copy so lines never jump while typing.
-struct TypewriterText: View {
-    let text: String
-    var charDelay: Duration = .milliseconds(28)
-    var hapticEvery: Int = 3
-    var onComplete: (() -> Void)? = nil
-
-    @State private var count = 0
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        ZStack(alignment: .topLeading) {
-            Text(text)
-                .opacity(0)
-                .accessibilityHidden(true)
-            Text(String(text.prefix(count)))
-                .contentTransition(.opacity)
-        }
-        .accessibilityLabel(text)
-        .task(id: text) {
-            count = reduceMotion ? text.count : 0
-            guard !reduceMotion else {
-                onComplete?()
-                return
-            }
-
-            for index in text.indices {
-                if Task.isCancelled { return }
-                try? await Task.sleep(for: charDelay)
-                count = text.distance(from: text.startIndex, to: index) + 1
-
-                if text[index] == "\n" {
-                    try? await Task.sleep(for: .milliseconds(220))
-                } else if "，。！？；：".contains(text[index]) {
-                    try? await Task.sleep(for: .milliseconds(280))
-                }
-            }
-            onComplete?()
-        }
-        .sensoryFeedback(.impact(weight: .light), trigger: count / max(1, hapticEvery))
-        .onTapGesture {
-            count = text.count
-            onComplete?()
-        }
-    }
-}
-
 // MARK: - Week strip
 
 /// Seven-day strip centred on today: three days before, today, three after.
@@ -249,27 +203,11 @@ struct EditorialHeader: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let eyebrow {
-                Text(eyebrow.uppercased())
-                    .font(AppType.overline)
-                    .tracking(1.6)
-                    .foregroundStyle(Theme.cobalt)
-            }
-            Text(title)
-                .font(AppType.display)
-                .tracking(-0.9)
-                .foregroundStyle(Theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-            if let subtitle {
-                Text(subtitle)
-                    .font(AppType.body)
-                    .foregroundStyle(Theme.secondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .lineSpacing(2)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        Text(title)
+            .font(AppType.title)
+            .foregroundStyle(Theme.ink)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -302,11 +240,5 @@ struct EditorialMetric: View {
                 .foregroundStyle(Theme.tertiaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Theme.stroke, lineWidth: 1)
-        }
     }
 }

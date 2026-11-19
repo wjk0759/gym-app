@@ -24,44 +24,18 @@ extension LoginView {
     func header(compact: Bool) -> some View {
         HStack(spacing: 12) {
             CoachMark(size: compact ? 42 : 48)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("叫练")
-                    .font(AppType.title)
-                    .foregroundStyle(Theme.ink)
-                Text("AI 健身教练")
-                    .font(.system(size: 9.5, weight: .medium))
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-
+            Text("叫练")
+                .font(AppType.title)
+                .foregroundStyle(Theme.ink)
             Spacer(minLength: 0)
-
-            if !compact {
-                Text("训练 · 饮食 · 复盘")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Theme.cobalt)
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 5)
-                    .background(Theme.cobalt.opacity(0.08), in: Capsule())
-                    .overlay(
-                        Capsule()
-                            .strokeBorder(Theme.cobalt.opacity(0.16), lineWidth: 1)
-                    )
-            }
         }
     }
 
     func headline(compact: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("登录叫练")
-                .font(.system(size: compact ? 27 : 34, weight: .bold, design: .default))
-                .tracking(-0.5)
-                .foregroundStyle(Theme.ink)
-            Text("同步训练计划、记录和 AI 复盘")
-                .font(compact ? AppType.caption : AppType.body)
-                .foregroundStyle(Theme.secondaryText)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        Text("登录")
+            .font(.system(size: compact ? 27 : 34, weight: .semibold, design: .default))
+            .foregroundStyle(Theme.ink)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     func loginCard(compact: Bool) -> some View {
@@ -112,12 +86,6 @@ extension LoginView {
             .buttonStyle(PrimaryButtonStyle())
             .disabled(auth.isWorking)
 
-            Text(mode == .phone
-                 ? "未注册手机号将自动创建账号"
-                 : "未注册账号会引导完成注册")
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
-                .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(compact ? 16 : 18)
         .background {

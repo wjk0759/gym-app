@@ -4,67 +4,27 @@ extension CoachOnboardingView {
     // MARK: - Welcome
 
     var welcome: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 24) {
             Spacer(minLength: 40)
 
             CoachMark(size: 76)
-                .padding(.bottom, 28)
 
-            VStack(spacing: 16) {
-                if welcomePhase == 0 {
-                    TypewriterText(
-                        text: "您好，\n我是叫练",
-                        charDelay: .milliseconds(90),
-                        hapticEvery: 5
-                    ) {
-                        guard welcomePhase == 0 else { return }
-                        withAnimation(Motion.smooth) {
-                            welcomePhase = 1
-                        }
-                    }
-                    .font(AppType.editorial)
-                    .tracking(-1.4)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(Theme.ink)
-                } else {
-                    TypewriterText(
-                        text: "告诉我你的情况，\n我帮你生成起点报告",
-                        charDelay: .milliseconds(70),
-                        hapticEvery: 7
-                    )
-                    .font(AppType.hero)
-                    .tracking(-0.8)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(Theme.ink)
-                    .transition(.opacity)
-                }
-            }
-            .frame(maxWidth: 330)
+            Text("叫练")
+                .font(AppType.display)
+                .foregroundStyle(Theme.ink)
 
-            Spacer(minLength: 30)
+            Spacer(minLength: 24)
 
-            Button {
+            Button("开始") {
                 Haptics.impact(.light)
                 withAnimation(Motion.smooth) {
                     step = 1
                 }
-            } label: {
-                Text("开始")
             }
             .buttonStyle(PrimaryButtonStyle())
-            .opacity(welcomePhase == 0 ? 0.42 : 1)
-            .disabled(welcomePhase == 0)
             .padding(.horizontal, 26)
 
-            Button("退出登录") {
-                showExitConfirm = true
-            }
-            .font(AppType.caption)
-            .foregroundStyle(Theme.tertiaryText)
-            .buttonStyle(SubtlePressStyle())
-            .padding(.top, 14)
-
-            Button {
+            Button("恢复档案") {
                 Task { @MainActor in
                     isRestoringProfile = true
                     defer { isRestoringProfile = false }
@@ -82,27 +42,22 @@ extension CoachOnboardingView {
                         showAlert = true
                     }
                 }
-            } label: {
-                Text(
-                    isRestoringProfile
-                        ? "正在恢复档案…"
-                        : "已有档案？恢复并进入"
-                )
-                .font(AppType.caption)
-                .foregroundStyle(Theme.tertiaryText)
             }
-            .buttonStyle(SubtlePressStyle())
+            .font(AppType.body)
+            .foregroundStyle(Theme.secondaryText)
+            .buttonStyle(.plain)
             .disabled(isRestoringProfile)
-            .padding(.top, 8)
+
+            Button("退出登录") {
+                showExitConfirm = true
+            }
+            .font(AppType.body)
+            .foregroundStyle(Theme.secondaryText)
+            .buttonStyle(.plain)
             .padding(.bottom, 24)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppBackground())
-        .onTapGesture {
-            if welcomePhase == 0 {
-                withAnimation(Motion.quick) { welcomePhase = 1 }
-            }
-        }
     }
 
     // MARK: - Main flow

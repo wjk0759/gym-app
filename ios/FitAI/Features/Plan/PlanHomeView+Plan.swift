@@ -12,12 +12,6 @@ extension PlanHomeView {
     }
 
     func equipmentReplanCard(_ issue: PlanEquipmentIssue) -> some View {
-        let examples = issue.unavailableSlugs
-            .prefix(2)
-            .compactMap { ExerciseLibrary.exercise(slug: $0)?.nameZH }
-        let exampleText = examples.isEmpty
-            ? "。"
-            : "，比如\(examples.joined(separator: "、"))。"
         return VStack(alignment: .leading, spacing: 11) {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "wrench.and.screwdriver.fill")
@@ -26,17 +20,12 @@ extension PlanHomeView {
                     .padding(.top, 2)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("EQUIPMENT / 器械变化")
-                        .font(AppType.overline)
-                        .tracking(1.2)
-                        .foregroundStyle(Theme.cobalt)
-                    Text("当前计划需要重排")
+                    Text("器械有变化")
                         .font(AppType.headline)
                         .foregroundStyle(Theme.ink)
-                    Text("有 \(issue.count) 个动作不在可用器械范围内\(exampleText)")
+                    Text("\(issue.count) 个动作不在可用器械范围内")
                         .font(AppType.caption)
                         .foregroundStyle(Theme.secondaryText)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer(minLength: 0)
@@ -76,17 +65,6 @@ extension PlanHomeView {
         let progress = min(1, Double(completed) / Double(planned))
 
         return VStack(alignment: .leading, spacing: 11) {
-            HStack {
-                Text("PLAN / 当前计划")
-                    .font(AppType.overline)
-                    .tracking(1.2)
-                    .foregroundStyle(Theme.cobalt)
-                Spacer()
-                Text("v\(plan.version)")
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-
             Text(plan.title)
                 .font(AppType.headline)
                 .foregroundStyle(Theme.ink)
@@ -110,10 +88,8 @@ extension PlanHomeView {
                     .tint(Theme.cobalt)
             }
 
-            Button {
+            Button("调整计划") {
                 store.requestPlanAdjustment()
-            } label: {
-                Label("和教练聊聊，再调整计划", systemImage: "bubble.left.and.bubble.right")
             }
             .buttonStyle(SecondaryButtonStyle())
         }

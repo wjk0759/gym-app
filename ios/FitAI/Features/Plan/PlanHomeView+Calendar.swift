@@ -26,27 +26,17 @@ extension PlanHomeView {
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("月历")
-                        .font(AppType.headline)
-                        .foregroundStyle(Theme.ink)
-                }
-
-                Spacer(minLength: 4)
-
                 monthButton(systemName: "chevron.left") {
                     shiftMonth(-1)
                 }
 
-                VStack(spacing: 1) {
-                    Text("\(month)月")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(Theme.ink)
-                    Text(String(year))
-                        .font(.system(size: 8, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-                .frame(width: 62)
+                Spacer(minLength: 0)
+
+                Text("\(String(year))年\(month)月")
+                    .font(AppType.headline)
+                    .foregroundStyle(Theme.ink)
+
+                Spacer(minLength: 0)
 
                 monthButton(systemName: "chevron.right") {
                     shiftMonth(1)
@@ -79,14 +69,6 @@ extension PlanHomeView {
                 }
             }
             .motionAnimation(Motion.smooth, value: visibleMonth)
-
-            HStack(spacing: 11) {
-                legendDot(color: Theme.secondary, label: "完成", filled: true)
-                legendDot(color: Theme.primary, label: "计划", filled: false)
-                legendDot(color: Theme.primary, label: "饮食", filled: true)
-                legendDot(color: Theme.secondary, label: "经期", filled: false)
-            }
-            .padding(.top, 2)
         }
         .card()
     }
@@ -112,21 +94,6 @@ extension PlanHomeView {
                 }
         }
         .buttonStyle(SubtlePressStyle())
-    }
-
-    func legendDot(color: Color, label: String, filled: Bool) -> some View {
-        HStack(spacing: 5) {
-            Circle()
-                .fill(filled ? color : Color.clear)
-                .overlay {
-                    Circle()
-                        .stroke(color, lineWidth: filled ? 0 : 1)
-                }
-                .frame(width: 5, height: 5)
-            Text(label)
-                .font(.system(size: 9, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
-        }
     }
 
     func calendarCell(
@@ -176,30 +143,10 @@ extension PlanHomeView {
                     )
                     .frame(maxWidth: .infinity)
 
-                HStack(spacing: 2.5) {
-                    if isDone {
-                        Circle()
-                            .fill(Theme.secondary)
-                            .frame(width: 4, height: 4)
-                    } else if hasPlan || hasDraft {
-                        Circle()
-                            .stroke(isSelected ? Theme.onPrimary : Theme.primary, lineWidth: 1)
-                            .frame(width: 4, height: 4)
-                    }
-                    if hasFood {
-                        Circle()
-                            .fill(Theme.primary)
-                            .frame(width: 3.5, height: 3.5)
-                    }
-                    if hasPeriod {
-                        Circle()
-                            .stroke(Theme.cycle, lineWidth: 1)
-                            .frame(width: 3.5, height: 3.5)
-                    }
-                    if !isDone && !hasPlan && !hasDraft && !hasFood && !hasPeriod {
-                        Color.clear.frame(width: 4, height: 4)
-                    }
-                }
+                Circle()
+                    .fill(isSelected ? Theme.onPrimary : (isDone ? Theme.secondary : Theme.primary))
+                    .frame(width: 4, height: 4)
+                    .opacity(isDone || hasPlan || hasDraft || hasFood || hasPeriod ? 1 : 0)
                 .frame(height: 5)
             }
             .frame(maxWidth: .infinity)

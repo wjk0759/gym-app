@@ -166,7 +166,7 @@ struct PhysicalEquipmentDetailView: View {
             }
 
             VStack(alignment: .leading, spacing: 5) {
-                Text("EQUIPMENT / 器械")
+                Text("器械")
                     .font(AppType.overline)
                     .tracking(1.5)
                     .foregroundStyle(Theme.cobalt)

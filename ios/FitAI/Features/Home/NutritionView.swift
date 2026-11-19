@@ -41,13 +41,6 @@ struct NutritionView: View {
             case .log: return "我的记录"
             }
         }
-
-        var subtitle: String {
-            switch self {
-            case .plan: return "按目标排餐"
-            case .log: return "吃过什么"
-            }
-        }
     }
 
     init(date: Date = Date()) {

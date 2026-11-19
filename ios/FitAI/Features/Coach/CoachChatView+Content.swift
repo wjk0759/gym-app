@@ -2,7 +2,7 @@ import SwiftUI
 import PhotosUI
 import UIKit
 
-/// 教练对话内容层：欢迎卡、消息列表、输入栏和空状态布局。
+/// 教练对话内容层：空状态建议、消息列表、输入栏和附件布局。
 /// 只读 store 状态并转发发送/附件动作；不直接调用 APIClient，权益重试也走 store。
 extension CoachChatView {
     var inputPlaceholder: String {
@@ -21,145 +21,46 @@ extension CoachChatView {
         if store.planAdjustmentStage == 3 {
             return "需要再改可以继续说…"
         }
-        return "训练、饮食、恢复、计划都能问…"
-    }
-
-    var coachBadgeText: String {
-        if store.hasProAccess {
-            return store.useRemoteAI ? "远程 AI 已连接" : "本地建议"
-        }
-        guard store.accessSnapshot != nil else { return "权益确认中…" }
-        return store.shouldShowCoachQuotaCard ? "今日额度已用完" : "免费 AI 额度"
-    }
-
-    @ViewBuilder
-    var coachAccessBadge: some View {
-        if store.accessSnapshot != nil {
-            RecommendationBadge(text: coachBadgeText)
-        } else if accessWaitExpired {
-            Button {
-                Haptics.tap()
-                accessRetryToken += 1
-                Task { await store.refreshAccess() }
-            } label: {
-                RecommendationBadge(
-                    text: "权益确认失败 · 重试",
-                    style: .warning
-                )
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint("重新确认权益")
-        } else {
-            RecommendationBadge(
-                text: "权益确认中…",
-                style: .loading
-            )
-        }
+        return "给教练发消息"
     }
 
     var welcome: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 12) {
-                    CoachMark(size: 58)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("我是你的教练")
-                            .font(AppType.title)
-                            .foregroundStyle(Theme.ink)
-                    }
-                }
-
-                Text(store.hasProAccess
-                     ? "把今天的情况、限制或照片发给我，我来判断下一步。"
-                     : "把今天的情况或限制发给我，我来判断下一步。")
-                    .font(AppType.body)
-                    .foregroundStyle(Theme.secondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                HStack(spacing: 8) {
-                    coachAccessBadge
-                    Spacer()
-                    Text("疼痛 / 孕期 / 术后会先拦")
-                        .font(AppType.micro)
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .editorialCard(accent: Theme.lime)
-            .staggerIn(0)
-
-            VStack(alignment: .leading, spacing: 10) {
-                Text("快速开始")
-                    .font(AppType.headline)
-                    .foregroundStyle(Theme.ink)
-
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 180), spacing: 10)],
-                    spacing: 10
-                ) {
-                    ForEach(starters) { item in
-                        Button {
-                            send(item.text)
-                        } label: {
-                            VStack(alignment: .leading, spacing: 9) {
-                                Image(systemName: item.icon)
-                                    .font(AppType.headline)
-                                    .foregroundStyle(Theme.cobalt)
-                                Text(item.text)
-                                    .font(AppType.callout.weight(.semibold))
-                                    .foregroundStyle(Theme.ink)
-                                    .multilineTextAlignment(.leading)
-                                    .lineLimit(2)
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
-                            .padding(12)
-                            .background(
-                                Theme.ink.opacity(0.035),
-                                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            )
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(spacing: 0) {
+                ForEach(starters) { item in
+                    Button {
+                        send(item.text)
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: item.icon)
+                                .font(.system(size: 17, weight: .regular))
+                                .foregroundStyle(Theme.secondaryText)
+                                .frame(width: 24)
+                            Text(item.text)
+                                .font(AppType.body)
+                                .foregroundStyle(Theme.ink)
+                            Spacer(minLength: 0)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(Theme.tertiaryText)
                         }
-                        .buttonStyle(CardPressStyle(scale: 0.98))
+                        .padding(.vertical, 14)
+                    }
+                    .buttonStyle(.plain)
+                    if item.id != starters.last?.id {
+                        Divider()
                     }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .staggerIn(1)
-
-            weeklyRecap
-                .staggerIn(2)
+            .padding(.horizontal, 16)
+            .background(Theme.paper, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(Theme.stroke, lineWidth: 1)
+            }
 
             coachInboxSection
-                .staggerIn(3)
         }
-    }
-
-    var weeklyRecap: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            HStack {
-                Text("本周状态")
-                    .font(AppType.callout.weight(.semibold))
-                    .foregroundStyle(Theme.ink)
-                Spacer()
-                Text("第 \(store.currentPlanWeek) 周")
-                    .font(.system(size: 9.5, weight: .medium))
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-
-            Text("\(store.currentWeekCompletedCount)/\(store.currentWeekPlannedCount) 练 · 完成率 \(Int(store.weeklyCompletion * 100))%")
-                .font(AppType.caption)
-                .foregroundStyle(Theme.secondaryText)
-
-            Button {
-                send("帮我复盘一下本周训练，接下来应该怎么调整？")
-            } label: {
-                Label("让教练复盘本周", systemImage: "sparkles")
-                    .font(AppType.caption.weight(.semibold))
-                    .foregroundStyle(Theme.cobalt)
-            }
-            .buttonStyle(.plain)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .card(padding: 14)
     }
 
     func bubbleContent(_ message: ChatMessage) -> some View {

@@ -4,7 +4,11 @@ extension CoachOnboardingView {
     // MARK: - Components
 
     func stepTitle(eyebrow: String, title: String, subtitle: String) -> some View {
-        EditorialHeader(eyebrow: eyebrow, title: title, subtitle: subtitle)
+        Text(title)
+            .font(AppType.title)
+            .foregroundStyle(Theme.ink)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     func valueControl(

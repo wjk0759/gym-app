@@ -11,23 +11,8 @@ struct GlassSurface: View {
     var tint: Color = Theme.cardSurface
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(tint)
-
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.16),
-                            .clear
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .blendMode(.softLight)
-        }
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(tint)
     }
 }
 
@@ -84,15 +69,7 @@ struct EditorialCardModifier: ViewModifier {
             }
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(Theme.ink, lineWidth: 1.5)
-            }
-            .overlay(alignment: .topLeading) {
-                Rectangle()
-                    .fill(accent)
-                    .frame(width: 54, height: 5)
-                    .clipShape(Capsule())
-                    .padding(.leading, padding)
-                    .padding(.top, 10)
+                    .strokeBorder(Theme.stroke, lineWidth: 1)
             }
     }
 }

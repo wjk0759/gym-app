@@ -15,7 +15,6 @@ struct ProfileView: View {
         NavigationStack(path: $navigationPath) {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    header
                     accountCard
                     goalCard
                     metricsCard
@@ -28,7 +27,7 @@ struct ProfileView: View {
             }
             .appTabBarClearance()
             .background(AppBackground())
-            .navigationTitle("")
+            .navigationTitle("我的")
             .navigationBarTitleDisplayMode(.inline)
             .appTabDestinations()
             .toolbar {
@@ -49,26 +48,6 @@ struct ProfileView: View {
             .sheet(isPresented: $showBodyAnalysisHistory) {
                 BodyAnalysisHistoryView()
             }
-        }
-    }
-
-    // MARK: - Header
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text("PROFILE / 我的")
-                .font(AppType.overline)
-                .tracking(1.5)
-                .foregroundStyle(Theme.cobalt)
-
-            Text("我的档案")
-                .font(AppType.display)
-                .tracking(-0.9)
-                .foregroundStyle(Theme.ink)
-
-            Text("训练、身体和目标，都在这里。")
-                .font(AppType.body)
-                .foregroundStyle(Theme.secondaryText)
         }
     }
 
@@ -127,10 +106,6 @@ struct ProfileView: View {
                             .foregroundStyle(Theme.ink)
                         if let expires = store.accessSnapshot?.proExpiresAt {
                             Text("有效期至 \(expires.formatted(date: .abbreviated, time: .omitted))")
-                                .font(AppType.micro)
-                                .foregroundStyle(Theme.tertiaryText)
-                        } else if !store.hasProAccess {
-                            Text("解锁 App 内全部功能")
                                 .font(AppType.micro)
                                 .foregroundStyle(Theme.tertiaryText)
                         }
@@ -199,16 +174,6 @@ struct ProfileView: View {
                     value: String(format: "%.1f", store.currentThighCM),
                     label: "大腿围 · cm"
                 )
-            }
-
-            HStack(spacing: 6) {
-                Image(systemName: "chart.bar.fill")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(Theme.cobalt)
-                Text("累计 \(store.sessions.count) 次训练 · 总容量 \(Int(store.totalVolume)) kg")
-                    .font(.system(size: 9.5, weight: .medium))
-                    .foregroundStyle(Theme.tertiaryText)
-                Spacer(minLength: 0)
             }
 
             Button("记录今日身体数据") {
@@ -281,11 +246,6 @@ struct ProfileView: View {
                 value: store.profile.targetDate.formatted(date: .abbreviated, time: .omitted)
             )
 
-            Text("目标仅作方向，不追求极端速度。减重建议不超过 0.5kg/周。")
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 1)
         }
         .card()
     }
@@ -364,7 +324,7 @@ struct ProfileView: View {
                     .background(Theme.coral, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("体型照片分析")
+                    Text("体型分析")
                         .font(AppType.headline)
                         .foregroundStyle(Theme.ink)
                 }
@@ -383,11 +343,6 @@ struct ProfileView: View {
                         TagChip(text: muscle.label, selected: true)
                     }
                 }
-            } else {
-                Text("照片压缩后存私有目录，仅你本人可读；分析结果仅作训练重点参考。")
-                    .font(.system(size: 9.5, weight: .medium))
-                    .foregroundStyle(Theme.tertiaryText)
-                    .fixedSize(horizontal: false, vertical: true)
             }
 
             HStack(spacing: 10) {

@@ -129,7 +129,7 @@ struct WorkoutSubstitutionSheet: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("SUBSTITUTE / 换动作")
+            Text("换动作")
                 .font(AppType.overline)
                 .tracking(1.2)
                 .foregroundStyle(Theme.cobalt)
