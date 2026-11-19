@@ -3,6 +3,10 @@ import FitAIWorkoutCore
 import SwiftUI
 import UIKit
 
+/// 训练进行页。
+///
+/// 负责当前训练日的动作切换、组记录、休息计时、手表同步、草稿恢复和结束保存。
+/// 页面只持有本次训练状态；历史会话、远端同步和撤销由 AppStore 处理。
 struct WorkoutSessionView: View {
     @Environment(AppStore.self) var store
     @Environment(\.dismiss) var dismiss

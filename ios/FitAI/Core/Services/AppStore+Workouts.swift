@@ -1,5 +1,8 @@
 import Foundation
 
+/// 训练历史/草稿在 AppStore 中的状态入口。
+/// 负责本地 session 合并、草稿持久化/节流、远端计划合并和训练同步触发；
+/// 网络细节在 `WorkoutSyncService`。
 extension AppStore {
     func lastSet(for slug: String) -> SetLog? {
         for session in sessions {
@@ -141,6 +144,8 @@ extension AppStore {
 
     // MARK: - 训练与对话
 
+    /// 保存一次完成的训练：写本地 session、清掉同日草稿、触发远端同步。
+    /// `source` 区分 phone/watch；`sessionID` 允许手表/草稿复用同一 id。
     func record(
         day: PlanDay,
         sets: [SetLog],
@@ -205,6 +210,8 @@ extension AppStore {
         return plan.days.first { $0.id == draft.dayID }
     }
 
+    /// 保存训练草稿。新草稿或 `persistImmediately` 立即落盘；
+    /// 普通进度先更新内存并节流写盘，避免每组都做一次 I/O。
     func saveWorkoutDraft(_ draft: WorkoutDraft, persistImmediately: Bool = false) {
         let isNewDraft = workoutDraft?.dayID != draft.dayID
         workoutDraft = draft

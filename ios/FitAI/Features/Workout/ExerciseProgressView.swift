@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// 动作维度的历史与 PR，补上“记录之后能看懂自己有没有进步”这一块。
+/// 单个动作的历史和 PR：按 session 展示重量/次数，补上“有没有进步”。
+/// 只读本地会话，不写训练记录。
 struct ExerciseProgressView: View {
     @Environment(AppStore.self) private var store
 

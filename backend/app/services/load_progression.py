@@ -1,3 +1,9 @@
+"""Load progression rules shared by plan generation and coach adjustments.
+
+Keeps offline/template plans and server AI plans on the same increment policy:
+upper-body and lower-body progress at different rates, with stage-specific caps.
+"""
+
 from __future__ import annotations
 
 import re
@@ -105,6 +111,7 @@ def target_weight(
     week_index: int,
     reps: str | None,
 ) -> float | None:
+    """Estimate a starting/target weight from profile, equipment and history."""
     if exercise.equipment == "bodyweight":
         return None
 

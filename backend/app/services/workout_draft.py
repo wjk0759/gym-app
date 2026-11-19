@@ -1,4 +1,8 @@
-"""Cross-device workout draft storage."""
+"""Endurance/strength workout draft storage.
+
+One draft per user; the client owns the payload and timestamp. `day_id` scopes
+the draft to a plan day so starting another day does not resume the wrong one.
+"""
 
 from __future__ import annotations
 
@@ -35,6 +39,7 @@ def get_draft(db: Session, user_id: str) -> WorkoutDraftRecord | None:
 
 
 def upsert_draft(db: Session, user_id: str, payload: WorkoutDraftIn) -> tuple[bool, dict]:
+    """Last-write-wins draft upsert; returns (accepted, stored_payload)."""
     lock_user(db, user_id)
     item = db.get(WorkoutDraftRecord, user_id)
     incoming = _as_utc(payload.updated_at)

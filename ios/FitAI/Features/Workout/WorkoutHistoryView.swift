@@ -1,10 +1,7 @@
 import SwiftUI
 
-/// A month-by-month training ledger.
-///
-/// The record tab answers “what is this month?”. This screen answers “what did
-/// I actually lift?”: one month cover, one date grid, and the sessions that
-/// belong to the selected day. It reads like the next page of the same journal.
+/// 训练历史页：按月查看训练日和当天 session。
+/// 只读 AppStore 中的历史；编辑/删除由详情页处理。
 struct WorkoutHistoryView: View {
     @Environment(AppStore.self) var store
     @Environment(\.dismiss) var dismiss

@@ -1,6 +1,9 @@
 import FitAIWorkoutCore
 import SwiftUI
 
+/// 训练休息计时。
+/// 以 `restEndDate` 为唯一截止时间，前台 tick 只做显示；切后台/恢复时重新计算，
+/// 不依赖 Timer 持续运行。通知和 Live Activity 是可选副作用。
 extension WorkoutSessionView {
     static func restRemaining(until endDate: Date, now: Date = Date()) -> Int {
         max(0, Int(ceil(endDate.timeIntervalSince(now))))

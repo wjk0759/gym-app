@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// Post-workout comparison: planned vs completed, previous session, PR and the
-/// next load suggestion. This is intentionally derived from local history so it
-/// works immediately after finishing, even before the workout syncs.
+/// 训练结束后的即时对比：计划 vs 完成、上次同动作、PR 和下一次负荷建议。
+/// 全部从本地历史推导，训练刚结束、还没同步时也能显示。
 struct WorkoutOutcomeCard: View {
     @Environment(AppStore.self) private var store
 

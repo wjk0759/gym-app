@@ -1,3 +1,9 @@
+"""Workout session endpoints: create/list/detail/update/delete, summary and draft.
+
+Writes validate owned plan days and exercise slugs. Cross-device drafts are
+stored separately and are last-write-wins per user/day.
+"""
+
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, Query
@@ -72,6 +78,7 @@ def _owned_program_day_id(
 
 @router.post("", status_code=201)
 def create_workout(payload: WorkoutIn, user_id: CurrentUser, db: DBSession):
+    """Create a workout, idempotent by client_id, and emit WorkoutCompleted."""
     if payload.client_id:
         existing = db.execute(
             select(WorkoutSession).where(
@@ -178,6 +185,7 @@ def list_workouts(
     offset: int = Query(default=0, ge=0),
     include_sets: bool = Query(default=False),
 ):
+    """List sessions newest-first, optionally date-bounded and with sets."""
     query = select(WorkoutSession).where(WorkoutSession.user_id == user_id)
     if include_sets:
         query = query.options(selectinload(WorkoutSession.sets))

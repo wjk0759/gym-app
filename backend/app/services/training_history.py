@@ -1,3 +1,5 @@
+"""Read-only workout/exercise history, e1RM and performance summaries."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone

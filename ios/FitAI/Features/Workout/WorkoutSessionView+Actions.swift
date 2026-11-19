@@ -1,6 +1,8 @@
 import FitAIWorkoutCore
 import SwiftUI
 
+/// 训练进行页的行为层：记录组、切动作、草稿、手表命令、替换/调整和结束保存。
+/// 与 UI 分离，便于测试训练状态机；写历史仍走 AppStore。
 extension WorkoutSessionView {
     // MARK: - 行为
 
@@ -39,6 +41,8 @@ extension WorkoutSessionView {
         return false
     }
 
+    /// 完成一组：手表主导时发命令，手机主导时直接追加 SetLog 并启动休息。
+    /// `nextIndex` 按该动作已完成组数递增，自重动作重量记 0。
     func completeSet(_ exercise: PlanExercise) {
         let nextIndex = completedSets(for: exercise) + 1
         let isBodyweight = exercise.exercise?.equipment == .bodyweight
@@ -105,6 +109,7 @@ extension WorkoutSessionView {
         saveDraftIfNeeded()
     }
 
+    /// 从本地草稿恢复组数、当前动作、计时和休息状态；只执行一次。
     func loadDraftIfNeeded() {
         guard !didLoadDraft else { return }
         didLoadDraft = true

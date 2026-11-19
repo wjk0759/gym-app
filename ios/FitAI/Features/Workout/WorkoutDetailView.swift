@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 单次训练详情：查看/编辑组次、感受、备注，删除和动作替换。
+/// 修改先写本地 `draft`，保存时由 AppStore 同步远端。
 struct WorkoutDetailView: View {
     @Environment(AppStore.self) var store
     @Environment(\.dismiss) var dismiss

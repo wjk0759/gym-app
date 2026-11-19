@@ -1,5 +1,8 @@
 import Foundation
 
+/// 训练中动作替换候选的生成规则。
+/// 只读档案/器械/伤病/历史组合候选，不调用 AI，也不写计划；
+/// 选中后由训练页或计划页决定是否应用。
 struct ExerciseSubstitution: Identifiable, Hashable {
     let exercise: Exercise
     let reason: String

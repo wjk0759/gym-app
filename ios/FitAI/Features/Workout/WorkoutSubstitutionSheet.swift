@@ -1,5 +1,8 @@
 import SwiftUI
 
+/// 训练中动作替换面板。
+/// 候选由 `ExerciseSubstitutionEngine` 生成；这里只展示、筛选和回传选择，
+/// 不直接改计划或训练记录。
 struct WorkoutSubstitutionSheet: View {
     @Environment(\.dismiss) private var dismiss
 
