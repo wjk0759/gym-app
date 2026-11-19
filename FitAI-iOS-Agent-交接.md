@@ -14,13 +14,13 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`9320056`（从 `3b462d1` 起补充饮食链路注释；iOS 饮食入口崩溃加固已复测，`FitAITests` **140/140**、`FitAIUITests` **7/7**，新饮食 smoke 在 iPhone 17 + SE 通过；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**；iOS `3b462d1` 已装 Wu-Tang）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`1212661`（注释审查第二批：教练动作执行层；第一批饮食链路；iOS 饮食入口崩溃加固已复测；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
 - **macOS AI 教练四轮压测（2026-11-19）**：N17/N18/N19/N21 通过；N20/N28 目标值同步已通过；N22 title/summary 同步已通过。
 - **macOS AI 教练五轮压测（2026-11-19）**：N23–N28 已由 Windows 修复（`e00708a`），Mac 复测全部通过并部署。
-- **代码注释审查（2026-11-19）**：已开始按功能链路补注释；第一批完成“今日饮食”iOS + `/diet` 路由，行为未改，待 Mac 抽查注释是否与代码一致。
+- **代码注释审查（2026-11-19）**：第一批完成“今日饮食”iOS + `/diet` 路由；第二批完成教练动作执行层（`AppStore+AgentActions`、`CoachChatActionCards`、`CoachChatControlCards`）；行为未改，待 Mac 抽查。
 - **macOS 饮食入口崩溃复测（2026-11-19）**：`3b462d1` 已 build/安装 Wu-Tang；新增 `DietEntrySmokeTests`，今日饮食/本周计划/记一笔/发现饮食方案在 iPhone 17 + SE 均不崩。
 - **待办（macOS → Windows）**：本轮无阻断；若用户仍反馈饮食入口闪退，需要 `.ips/.crash` 栈。历史 P2 文案类（N3/N6/C7–C11 等）未逐条重测。
 - **Qwen/DashScope 已停用**：下文 2026-11-15 之前的 Qwen 记录仅作历史归档，不要恢复配置、不要重新接回。
@@ -53,6 +53,28 @@
 - Mac 需要做：
   - 抽查上述文件的注释与实现是否一致；有不对的直接指出。
   - 下一批计划：教练动作卡 / AppStore+AgentActions / APIModels，然后训练计划、器械、身体、登录权限。
+
+### 2026-11-19 · Windows（代码注释审查第二批：教练动作执行层）
+
+- 提交：`1212661`，已推 `develop`；只加注释 + 修正一处撤销文案（“5 分钟”→“5 秒”，与实际 5 秒窗口一致）。
+- 范围：
+  - `Core/Services/AppStore+AgentActions.swift`
+  - `Features/Coach/CoachChatActionCards.swift`
+  - `Features/Coach/CoachChatControlCards.swift`
+- 注释内容：
+  - `AgentAction` 执行层与渲染层的边界
+  - `agentAppContext` 为什么必须带 `day["date"]`、pending 饮食卡契约
+  - 确认执行时先清空卡片防止重复点击、按顺序执行、收集 undo
+  - 本地动作 vs 服务端 action 的写入路径
+  - 改课只合并服务端返回的单个训练日，不覆盖其他天
+  - 动作卡只展示/转发，pending 卡确认/取消走统一 store
+  - 回执卡的 5 秒撤销窗口
+- 未做：
+  - 没有改执行逻辑
+  - 没有给未核对的 `CoachChatView+Actions`、`APIModels` 写注释
+- Mac 需要做：
+  - 抽查上述注释与实现是否一致。
+  - 下一批：`APIModels` / `APIClient+Endpoints` / `CoachChatView+Actions`，然后训练计划、器械、身体、登录权限。
 
 ### 2026-11-19 · macOS（饮食入口崩溃加固复测通过 + 部署）
 
