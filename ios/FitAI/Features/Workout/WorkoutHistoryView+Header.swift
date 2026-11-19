@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 训练历史页头：月份切换、统计摘要。
+/// 只读 AppStore 历史。
 extension WorkoutHistoryView {
     var header: some View {
         VStack(alignment: .leading, spacing: 7) {

@@ -1,5 +1,7 @@
 import Foundation
 
+/// 同步/账号相关 wire DTO：/me、goal、cloud sync 快照。
+/// 只做 JSON 映射，不承载合并策略。
 struct RemoteMe: Decodable {
     let profile: RemoteMeProfile?
     let goal: RemoteMeGoal?

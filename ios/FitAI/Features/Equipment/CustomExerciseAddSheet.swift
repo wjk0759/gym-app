@@ -1,6 +1,8 @@
 import SwiftUI
 import UIKit
 
+/// 自定义动作表单：名称/肌群/器械/照片，校验后回传给调用方。
+/// 本页不直接写动作库；调用方决定加入个人库还是计划。
 struct CustomExerciseAddSheet: View {
     @Environment(\.dismiss) var dismiss
 

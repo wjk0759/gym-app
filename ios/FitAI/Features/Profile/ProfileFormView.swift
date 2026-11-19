@@ -1,6 +1,8 @@
 import Foundation
 import SwiftUI
 
+/// 档案表单字段集合：性别/身高/体重/经验/器械/目标等。
+/// 只编辑传入的 `draft`，保存由 ProfileEditView/onboarding 负责。
 struct ProfileFormView: View {
     @Binding var draft: UserProfile
     var step: Int? = nil

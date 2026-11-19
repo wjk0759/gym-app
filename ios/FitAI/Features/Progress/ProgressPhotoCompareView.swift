@@ -2,6 +2,8 @@ import Photos
 import SwiftUI
 import UIKit
 
+/// 进展照片前后对比：拖动分割线查看差异，支持导出对比图。
+/// 只读本地照片；导出通过系统分享。
 struct ProgressPhotoCompareView: View {
     let before: ProgressPhoto
     let after: ProgressPhoto

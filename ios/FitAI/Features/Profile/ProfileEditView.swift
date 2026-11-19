@@ -1,6 +1,8 @@
 import Foundation
 import SwiftUI
 
+/// 档案编辑页：加载当前档案到草稿，保存时写回 AppStore/profile。
+/// 取消不写；保存失败保留草稿并提示。
 struct ProfileEditView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss

@@ -2,6 +2,8 @@ import SwiftUI
 import PhotosUI
 import UIKit
 
+/// 教练对话内容层：欢迎卡、消息列表、输入栏和空状态布局。
+/// 只读 store 状态并转发发送/附件动作，不在这里发网络请求。
 extension CoachChatView {
     var inputPlaceholder: String {
         if imagePurpose == .food {

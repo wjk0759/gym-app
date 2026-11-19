@@ -1,5 +1,7 @@
 import Foundation
 
+/// Agent 动作撤销状态：本地改期/跳过/身体数据/训练记录如何恢复。
+/// 只负责生成 undo 快照和调用撤销，不决定何时展示。
 extension AppStore {
     func scheduleUndoState(for day: PlanDay) -> AgentUndoState? {
         guard let plan,

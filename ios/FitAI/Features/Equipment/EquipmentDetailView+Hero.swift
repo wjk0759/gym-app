@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 器械详情的头图和「所需器械」说明。
+/// 只读目录/个人库匹配结果，不写器械库。
 extension EquipmentItemDetailView {
 func equipmentInfoSection(for item: EquipmentItem) -> some View {
         let matches = matchingEquipment(for: item)

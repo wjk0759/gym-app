@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 修改密码设置：当前密码/新密码/确认，调用 AuthStore 完成。
+/// 成功/失败都只影响本页提示，不直接改本地 token。
 struct PasswordSettingsView: View {
     @Environment(AuthStore.self) private var auth
     @Environment(\.dismiss) private var dismiss

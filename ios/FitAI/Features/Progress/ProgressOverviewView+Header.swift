@@ -1,6 +1,8 @@
 import SwiftUI
 import Charts
 
+/// 进展总览页头：周期切换和核心趋势摘要。
+/// 只读本地/远端统计。
 extension ProgressOverviewView {
     var header: some View {
         VStack(alignment: .leading, spacing: 8) {

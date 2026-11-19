@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 训练详情/总结的复用卡片：动作分组、感受和 set 展示。
+/// 纯展示，不修改训练记录。
 struct WorkoutExerciseGroup: Identifiable {
     let slug: String
     var sets: [SetLog]

@@ -1,6 +1,8 @@
 import SwiftUI
 import UIKit
 
+/// 设置里的休息提醒：开关、时长、通知权限。
+/// 只改本地设置和通知排期，不影响训练页计时逻辑。
 extension SettingsView {
     var restTimerCard: some View {
         VStack(alignment: .leading, spacing: 12) {

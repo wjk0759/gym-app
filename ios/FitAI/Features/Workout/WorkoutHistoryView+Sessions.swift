@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 训练历史 session 列表：按选中日期过滤，点击进入详情。
+/// 只读；删除/编辑在详情页。
 extension WorkoutHistoryView {
     func sessionsCard(_ sessions: [WorkoutSession]) -> some View {
         let visible = visibleSessions(in: sessions)

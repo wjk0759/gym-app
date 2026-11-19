@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Onboarding 性别步骤：只改 onboarding draft。
 extension CoachOnboardingView {
     var sexStep: some View {
         VStack(alignment: .leading, spacing: 18) {

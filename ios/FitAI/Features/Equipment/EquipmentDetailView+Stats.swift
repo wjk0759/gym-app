@@ -1,6 +1,8 @@
 import SwiftUI
 import Charts
 
+/// 器械详情的统计页签：训练量/次数趋势按时间段切换。
+/// 数据从本地训练历史派生，只读。
 extension EquipmentItemDetailView {
 func statsContent(for item: EquipmentItem) -> some View {
         let stats = detailStats(for: item)

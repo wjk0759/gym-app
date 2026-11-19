@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 教练回复反馈：点赞/点踩原因和提交状态。
+/// 只上报反馈，不改对话或训练数据。
 extension CoachChatView {
     private static let feedbackReasons = [
         "inaccurate",

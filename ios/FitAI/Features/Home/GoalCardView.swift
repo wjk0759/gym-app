@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 首页目标卡：展示当前目标和身体打卡入口。
+/// 只读 profile/goal；打卡由回调打开 sheet。
 struct GoalCardView: View {
     @Environment(AppStore.self) private var store
 

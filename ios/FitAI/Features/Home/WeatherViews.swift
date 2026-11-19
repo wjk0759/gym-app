@@ -1,6 +1,8 @@
 import SwiftUI
 import UIKit
 
+/// 天气徽标和详情 sheet。
+/// 只读 WeatherStore 快照；不触发定位或训练数据写入。
 struct WeatherBadgeView: View {
     @Environment(WeatherStore.self) private var weather
     @Environment(\.weatherAtmosphere) private var atmosphere

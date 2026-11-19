@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 器械识别结果中的候选器械/动作列表。
+/// 只展示和回传选择；保存由识别页统一处理。
 extension EquipmentRecognitionView {
     var matchesSection: some View {
         VStack(alignment: .leading, spacing: 10) {

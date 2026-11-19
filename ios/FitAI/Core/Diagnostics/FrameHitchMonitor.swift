@@ -3,6 +3,7 @@ import Foundation
 import QuartzCore
 import UIKit
 
+/// DEBUG 帧卡顿监控：记录掉帧并上报诊断，不参与业务逻辑或 Release 行为。
 @MainActor
 final class FrameHitchMonitor {
     static let shared = FrameHitchMonitor()

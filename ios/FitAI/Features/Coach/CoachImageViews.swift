@@ -2,6 +2,8 @@ import ImageIO
 import SwiftUI
 import UIKit
 
+/// 教练消息里的图片/视频缩略图组件。
+/// 只负责解码、网格布局和点击预览，不负责上传或持久化。
 struct ChatMessageImageGrid: View {
     let messageID: UUID
     let images: [Data]

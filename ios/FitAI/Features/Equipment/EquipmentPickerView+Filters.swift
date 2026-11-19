@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 器械动作选择器的筛选/搜索工具行。
+/// 只改本地筛选状态，不写器械库或计划。
 extension EquipmentPickerView {
     var equipmentTools: some View {
         VStack(alignment: .leading, spacing: 9) {

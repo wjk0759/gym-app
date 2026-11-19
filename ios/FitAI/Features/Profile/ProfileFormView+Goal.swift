@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 档案表单里的目标卡片：目标类型/目标体重/目标日期。
+/// 只改 `draft`，不直接保存。
 extension ProfileFormView {
     var goalCard: some View {
         VStack(alignment: .leading, spacing: 16) {

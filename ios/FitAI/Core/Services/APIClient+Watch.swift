@@ -1,6 +1,8 @@
 import Foundation
 import FitAIWorkoutCore
 
+/// Watch 端 API：bootstrap、媒体、独立 watch session。
+/// 手机端铸造 watch 登录会话；watch 不直接持有主账号 token。
 struct RemoteWatchBootstrap: Decodable {
     let serverTime: Date
     let access: AccessSnapshot

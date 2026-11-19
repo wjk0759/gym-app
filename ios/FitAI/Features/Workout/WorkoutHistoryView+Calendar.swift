@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 训练历史月历：按天标记训练/休息，选择日期过滤右侧 session。
+/// 只改本页选中日期，不写训练数据。
 extension WorkoutHistoryView {
     func calendarCard(_ sessions: [WorkoutSession]) -> some View {
         let sessionsByDay = Dictionary(grouping: sessions) {

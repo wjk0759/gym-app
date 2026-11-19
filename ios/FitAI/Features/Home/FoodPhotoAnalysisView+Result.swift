@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// 饮食拍照识别结果卡：勾选/份量/汇总，加入今日饮食由父页处理。
 extension FoodPhotoAnalysisView {
     var resultCard: some View {
         VStack(alignment: .leading, spacing: 14) {

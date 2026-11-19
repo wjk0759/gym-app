@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 器械库列表行：缩略图、名称、关联动作数和置顶/更多入口。
+/// 只读展示，删除/编辑由父页确认。
 extension EquipmentLibraryView {
     func libraryRow(_ item: EquipmentItem, pinned: Set<String>) -> some View {
         HStack(spacing: 12) {

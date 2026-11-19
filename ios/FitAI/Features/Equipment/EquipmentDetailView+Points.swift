@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 器械详情的要点/注意事项页签。
+/// 文案来自目录/器械信息，只读展示。
 extension EquipmentItemDetailView {
 func pointsContent(for item: EquipmentItem) -> some View {
         VStack(alignment: .leading, spacing: 14) {

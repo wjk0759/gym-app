@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Onboarding 体脂/体型步骤：可视化选择，只改 onboarding draft。
 extension CoachOnboardingView {
     var bodyFatStep: some View {
         let selectedType = bodyType ?? recommendedBodyType

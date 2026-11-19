@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 器械库复用组件：滑动删除行、手动添加器械/动作的表单。
+/// 表单只收集输入，最终写入由父页/AppStore 完成。
 struct SwipeDeleteRow<Content: View>: View {
     let isOpen: Bool
     let onOpen: () -> Void
