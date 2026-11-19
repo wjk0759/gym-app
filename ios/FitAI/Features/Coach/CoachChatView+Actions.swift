@@ -2,6 +2,8 @@ import SwiftUI
 import PhotosUI
 import UIKit
 
+/// 教练输入区动作：发送文本/图片/视频、加载相册、处理控制面请求打开 sheet。
+/// 本文件只做输入校验和路由，真正的网络请求和会话状态由 AppStore 处理。
 extension CoachChatView {
     func consumeCoachEntryPrompt() {
         guard let prompt = store.coachEntryPrompt else { return }
@@ -10,6 +12,9 @@ extension CoachChatView {
         focused = true
     }
 
+    /// 发送当前输入。
+    /// 视频、图片、纯文本三条互斥路径；图片区分“饮食记录”和普通教练视觉，
+    /// 饮食图片只允许一张且走食物识别，不直接写库。
     func sendCurrent() {
         guard !store.isReplying, !isLoadingVideo, !isLoadingAttachments else { return }
         let caption = String(input.trimmingCharacters(in: .whitespacesAndNewlines).prefix(500))
@@ -85,9 +90,8 @@ extension CoachChatView {
         appendDraft(image: prepared, data: data)
     }
 
-    /// Present a coach sheet requested by a control-plane UI action.
-    /// `onChange` only fires while the view is mounted, so a brand-new coach
-    /// tab also checks the pending flags on appear.
+    /// 控制面 UI action 请求打开 sheet。
+    /// `onChange` 只在 view 已挂载时触发，所以新进入教练 Tab 时也要在 onAppear 调一次。
     func presentCoachSheetIfNeeded() {
         if store.coachEquipmentScanRequested {
             if store.requirePro(.equipmentScan) {
@@ -103,6 +107,8 @@ extension CoachChatView {
         }
     }
 
+    /// 相册多选加载：按剩余槽位、单张大小和总大小校验；
+    /// 校验失败的图片不会进入草稿，只设置 attachmentError。
     @MainActor
     func loadPickedPhotos() async {
         guard !isLoadingAttachments else { return }
@@ -212,6 +218,8 @@ extension CoachChatView {
         attachmentError = nil
     }
 
+    /// 纯文本发送入口：有远程 AI 或未开通 Pro 时走控制面；
+    /// 否则按“计划调整 / 排期 / 普通教练”分流。
     func send(_ text: String) {
         let trimmed = String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(500))
         guard !trimmed.isEmpty, !store.isReplying else { return }

@@ -1,5 +1,8 @@
 import Foundation
 
+// REST endpoint wrappers. This file owns request paths, HTTP methods,
+// idempotency headers and DTO decoding; it must not merge local state or decide
+// business policy. Those live in AppStore/Services.
 private struct WorkoutActionExecuteRequest: Encodable {
     let planID: String
     let dayID: String
@@ -210,6 +213,7 @@ extension APIClient {
 
     // MARK: - Agent
 
+    /// `/agent/chat`：带 app_context、幂等 request id 和超时；返回 cards/proposal。
     func agentChat(
         message: String,
         sessionID: UUID? = nil,
@@ -451,6 +455,8 @@ extension APIClient {
         )
     }
 
+    /// `/agent/actions/{id}/run`：服务端执行饮食/训练写入。
+    /// 幂等由 action id 保证；返回的 created/updated/deleted log 由 AppStore 合并。
     func runAgentAction(
         id: String,
         type: String,
@@ -475,6 +481,8 @@ extension APIClient {
         )
     }
 
+    /// 执行单个训练日改课；必须带 plan/day 和客户端已知的 plan version，
+    /// 服务端版本不一致会返回 409，由调用方提示重新生成方案。
     func executeWorkoutAction(
         actionID: String,
         planID: String,
@@ -775,6 +783,7 @@ extension APIClient {
 
     // MARK: - 饮食 / 外卖
 
+    /// 上传餐食照片做识别；只返回识别结果，不写 food_logs。
     func analyzeFood(
         imageData: Data,
         idempotencyKey: String? = nil
@@ -881,6 +890,7 @@ extension APIClient {
         return try decode(CoachFoodPhotoResult.self, from: data)
     }
 
+    /// 生成/重排某天餐单；`Idempotency-Key` 防止重试造成重复生成。
     func fetchDietPlan(
         dateString: String,
         idempotencyKey: String? = nil
@@ -948,6 +958,7 @@ extension APIClient {
         )
     }
 
+    /// 只读已保存日计划；404 映射为 nil，页面据此回退到模板。
     func fetchSavedDietPlan(dateString: String) async throws -> RemoteDietPlan? {
         let encoded = dateString.addingPercentEncoding(
             withAllowedCharacters: .urlQueryAllowed
@@ -976,6 +987,7 @@ extension APIClient {
         )
     }
 
+    /// 生成一周餐单；生成可能较慢，超时单独放宽到 180 秒。
     func fetchDietWeek(
         strategy: String,
         weekStart: String?,
@@ -995,6 +1007,7 @@ extension APIClient {
         )
     }
 
+    /// 只读已保存周计划；不触发任何生成。
     func fetchSavedDietWeek(weekStart: String?) async throws -> RemoteDietWeek {
         var path = "diet/plan/week"
         if let weekStart,

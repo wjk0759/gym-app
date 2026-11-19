@@ -1,5 +1,11 @@
 import Foundation
 
+/// REST wire DTOs.
+///
+/// 这些类型只负责 JSON key 映射和可选性，不承载业务规则：
+/// - 金额/重量/围度/热量字段的单位以字段名为准（kg、cm、kcal、g）；
+/// - 服务器用 snake_case，客户端属性用 camelCase；
+/// - 可选字段表示“服务端可能不返回”，不要在这里补默认业务值。
 struct AvatarResponse: Decodable {
     let avatarURL: String?
 
@@ -492,6 +498,8 @@ struct AgentActionPayload: Codable, Hashable {
     }
 }
 
+/// 一条待确认的客户端动作。`requires_confirmation` 决定是否展示确认按钮；
+/// `payload` 的字段随 `type` 变化，执行前必须检查 type/payload 组合。
 struct AgentAction: Codable, Identifiable, Hashable {
     let id: String
     let type: String
@@ -576,6 +584,8 @@ struct AgentPendingState: Decodable {
     }
 }
 
+/// Control-plane 的 pending 卡。
+/// `kind` 是 draft/insight/card/proposal；只有 card/proposal 才可确认执行。
 struct CoachPendingState: Decodable, Identifiable, Hashable {
     let id: UUID
     let kind: String
@@ -665,6 +675,8 @@ struct CoachHistoryResponse: Decodable {
     }
 }
 
+/// 动作执行成功的回执。字段按 capability 取用，例如饮食回执有 date/meal，
+/// 改期回执有 from_date/to_date；空字段表示该动作不适用。
 struct CoachReceipt: Decodable, Hashable {
     let summary: String?
     let capabilityID: String?
@@ -904,6 +916,8 @@ struct AgentWeeklyReview: Codable, Hashable, Identifiable {
     }
 }
 
+/// 服务端返回的饮食记录。`client_id` 是幂等键；`plan_date/plan_meal`
+/// 表示这条记录来自计划整餐，`source_action_id` 用于动作撤销/追溯。
 struct RemoteFoodLog: Decodable {
     let clientID: String
     let loggedAt: Date
@@ -942,6 +956,7 @@ struct RemoteFoodLogResponse: Decodable {
     let items: [RemoteFoodLog]
 }
 
+/// 身体指标远端行。日期以 `measured_at` 为准，不是本地记录时间。
 struct RemoteBodyMetric: Decodable {
     let clientID: String
     let measuredAt: Date
@@ -966,6 +981,8 @@ struct RemoteBodyMetricResponse: Decodable {
     let items: [RemoteBodyMetric]
 }
 
+/// 个人器械库远端行。`client_id` 是跨设备幂等键；
+/// `enabled_exercise_slugs` 是该器械关联到计划池的动作。
 struct RemoteEquipmentItem: Decodable {
     let clientID: String
     let name: String
