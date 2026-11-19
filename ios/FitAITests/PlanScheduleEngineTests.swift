@@ -303,6 +303,49 @@ final class PlanScheduleEngineTests: XCTestCase {
         XCTAssertEqual(result.failure?.message, "第 1 周只有 2 个训练位")
     }
 
+    func testBoardStartUsesFirstScheduledWeekOneDate() {
+        var plan = makePlan(offsets: [[7, 9, 11]])
+        plan.createdAt = date(1) // Tuesday 11/17
+
+        XCTAssertEqual(
+            key(PlanScheduleEngine.boardStartDate(for: plan)),
+            "2026-11-23"
+        )
+    }
+
+    func testBoardStartFallsBackToPlanStartWithoutDates() {
+        var plan = makePlan(offsets: [[0, 2, 4]])
+        plan.createdAt = date(1)
+        for index in plan.days.indices {
+            plan.days[index].date = nil
+        }
+
+        XCTAssertEqual(
+            key(PlanScheduleEngine.boardStartDate(for: plan)),
+            "2026-11-17"
+        )
+    }
+
+    func testBoardStartUsesMondayOfFirstScheduledWeek() {
+        var plan = makePlan(offsets: [[2, 4, 6]])
+        plan.createdAt = date(1)
+
+        XCTAssertEqual(
+            key(PlanScheduleEngine.boardStartDate(for: plan)),
+            "2026-11-16"
+        )
+    }
+
+    func testBoardStartKeepsRollingWeekOneTogether() {
+        var plan = makePlan(offsets: [[2, 4, 7]]) // Wed 11/18, Fri 11/20, Mon 11/23
+        plan.createdAt = date(1)
+
+        XCTAssertEqual(
+            key(PlanScheduleEngine.boardStartDate(for: plan)),
+            "2026-11-17"
+        )
+    }
+
     func testMissingWeekReturnsSpecificError() {
         let plan = makePlan()
         var dates = selection(from: plan)

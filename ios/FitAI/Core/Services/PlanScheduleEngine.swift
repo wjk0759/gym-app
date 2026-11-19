@@ -55,6 +55,27 @@ enum PlanScheduleEngine {
         return current
     }
 
+    /// Anchor the four-week board so every active week-1 date fits in block 1.
+    ///
+    /// Server-repaired plans are Monday-aligned, while freshly seeded plans
+    /// roll from `createdAt` and can span two calendar weeks (Wed/Fri/Mon).
+    /// Prefer Monday, but never start after the first week-1 date; otherwise
+    /// the first row would show only a partial week or hide later dates.
+    static func boardStartDate(for plan: TrainingPlan) -> Date {
+        let weekOneDates = plan.days
+            .filter { $0.weekIndex == 1 && $0.skippedAt == nil }
+            .compactMap { $0.date }
+        guard let first = weekOneDates.min(), let last = weekOneDates.max() else {
+            return FitnessDate.startOfDay(plan.planStartDate)
+        }
+        let latestStart = FitnessDate.addingDays(-6, to: last)
+        let monday = FitnessDate.monday(of: first)
+        if monday >= latestStart && monday <= first {
+            return monday
+        }
+        return latestStart <= first ? latestStart : first
+    }
+
     static func apply(
         to plan: TrainingPlan,
         selection: [Int: [Date]],

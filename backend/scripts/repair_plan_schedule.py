@@ -4,8 +4,10 @@ Some production rows store uppercase UUIDs in ``plan_day_states.day_id`` while
 ``program_days.id`` is lowercase. This script:
 
 1. normalizes ``day_id`` / ``plan_id`` to lowercase and collapses duplicates;
-2. moves week-1 dates that fall before the plan's first Monday to the correct
-   date and refreshes ``client_updated_at`` so clients receive the repair.
+2. moves dates that fall before the plan start to the weekday slot implied by
+   the plan start and refreshes ``client_updated_at`` so clients receive the
+   repair. Weekdays rotate around ``Program.start_date`` (same rule as iOS
+   ``PlanScheduleEngine.date(week:weekday:)``).
 
 Run from backend:
     python scripts/repair_plan_schedule.py
@@ -29,12 +31,19 @@ from app.db import SessionLocal  # noqa: E402
 from app.models import PlanDayState, Program, ProgramDay, utcnow  # noqa: E402
 
 
-def _first_week_start(program: Program):
+def _corrected_date(program: Program, day: ProgramDay):
+    """Mirror iOS ``PlanScheduleEngine.date(week:weekday:)``.
+
+    Week 1 starts at ``program.start_date`` and weekdays rotate around its
+    weekday. A Tuesday start therefore keeps Wednesday/Friday in the same
+    seven-day week instead of pushing them to the next Monday and leaving the
+    client's first week with a single workout.
+    """
     start = program.start_date
-    monday = start - timedelta(days=start.weekday())
-    if monday < start:
-        monday += timedelta(days=7)
-    return monday
+    offset = (int(day.weekday) - start.isoweekday()) % 7
+    return start + timedelta(
+        days=(int(day.week_index) - 1) * 7 + offset
+    )
 
 
 def _normalize_ids(db) -> int:
@@ -87,7 +96,6 @@ def main() -> None:
         )
         date_changes = 0
         for program in programs:
-            week_start = _first_week_start(program)
             days = {
                 str(day.id).lower(): day
                 for day in db.execute(
@@ -112,16 +120,12 @@ def main() -> None:
             for state in states:
                 if state.assigned_date is None:
                     continue
-                if state.assigned_date >= week_start:
+                if state.assigned_date >= program.start_date:
                     continue
                 day = days.get(str(state.day_id).lower())
                 if day is None:
                     continue
-                corrected = week_start + timedelta(
-                    days=(int(day.week_index) - 1) * 7
-                    + int(day.weekday)
-                    - 1
-                )
+                corrected = _corrected_date(program, day)
                 print(
                     f"{program.id} {state.day_id}: "
                     f"{state.assigned_date} -> {corrected}"

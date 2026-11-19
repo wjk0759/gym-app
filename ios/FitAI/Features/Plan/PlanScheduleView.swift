@@ -28,13 +28,17 @@ struct PlanScheduleView: View {
     }
 
     private var blocks: [ScheduleBlock] {
+        scheduleBlocks(from: startDate)
+    }
+
+    private func scheduleBlocks(from anchor: Date) -> [ScheduleBlock] {
         (0..<weeks).map { index in
-            let start = FitnessDate.addingDays(index * 7, to: startDate)
-            let dates = (0..<7).map { FitnessDate.addingDays($0, to: start) }
+            let blockStart = FitnessDate.addingDays(index * 7, to: anchor)
+            let dates = (0..<7).map { FitnessDate.addingDays($0, to: blockStart) }
             return ScheduleBlock(
                 id: index,
-                start: start,
-                end: FitnessDate.addingDays(6, to: start),
+                start: blockStart,
+                end: FitnessDate.addingDays(6, to: blockStart),
                 dates: dates
             )
         }
@@ -81,6 +85,9 @@ struct PlanScheduleView: View {
                     } else if isLoading {
                         loadingCard
                     } else {
+                        if showsFrequencyMismatch {
+                            frequencyMismatchCard
+                        }
                         overview
                         board
                         feedback
@@ -164,10 +171,49 @@ struct PlanScheduleView: View {
         .editorialCard(accent: Theme.lime)
     }
 
+    private var planWeeklyDays: Int {
+        guard let plan = store.plan else { return 0 }
+        if let weekly = plan.weeklyDays {
+            return min(7, max(1, weekly))
+        }
+        return min(7, max(1, plan.days.count / max(1, plan.weeks)))
+    }
+
+    private var profileWeeklyDays: Int {
+        min(7, max(1, store.profile.weeklyDays))
+    }
+
+    private var showsFrequencyMismatch: Bool {
+        store.plan != nil && planWeeklyDays != profileWeeklyDays
+    }
+
+    private var frequencyMismatchCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(Theme.warning)
+                Text("档案和当前计划不一致")
+                    .font(AppType.headline)
+                    .foregroundStyle(Theme.ink)
+            }
+            Text("档案是每周 \(profileWeeklyDays) 练，当前计划是每周 \(planWeeklyDays) 练。这一页按当前计划排日期。")
+                .font(AppType.caption)
+                .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("回训练手账重排计划") {
+                store.toast = "点「重新生成计划」即可按档案的每周 \(profileWeeklyDays) 练重排"
+                dismiss()
+            }
+            .font(AppType.caption.weight(.semibold))
+            .foregroundStyle(Theme.cobalt)
+        }
+        .editorialCard(accent: Theme.warning)
+    }
+
     private var overview: some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("今天起 \(weeks) 周")
+                Text("共 \(weeks) 周")
                     .font(AppType.headline)
                     .foregroundStyle(Theme.ink)
                 Text("每周最多 \(daysPerWeek) 练 · \(store.profile.split.title)")
@@ -395,9 +441,10 @@ struct PlanScheduleView: View {
 
     private func populateBoard(with plan: TrainingPlan) {
         daysPerWeek = min(7, max(1, plan.weeklyDays ?? max(1, plan.days.count / max(1, plan.weeks))))
-        startDate = FitnessDate.startOfDay(plan.planStartDate)
+        startDate = PlanScheduleEngine.boardStartDate(for: plan)
+        let board = scheduleBlocks(from: startDate)
         let offsets = defaultOffsets[daysPerWeek] ?? [0]
-        for block in blocks {
+        for block in board {
             let blockDays = plan.days.filter { $0.weekIndex == block.id + 1 }
             let blockKeys = Set(block.dates.map { FitnessDate.key($0) })
             var chosen = Array(Set(
