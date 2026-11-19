@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`66694f9`（废弃代码清理批次 1/2，见下两条；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**；后端 **675 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`66694f9`（废弃代码清理批次 1/2，iOS Build CI `66694f9` **成功**；生产后端仍 `e00708a`，`/health/ready` **200**；Flyway **V44**；后端 **675 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -46,10 +46,11 @@
 - 验证：
   - 全仓符号扫描：被删符号 0 引用；修改的 4 个 Swift 文件括号平衡通过；`git diff --check` 通过。
   - 后端未改，沿用 `675 passed` / QA `76/76`。
-  - **未验证**：Windows 无 Xcode，iOS build / SwiftLint 需 Mac。
-- 对方需要做：Mac 拉取后 `xcodegen generate` + build/test；不要恢复被删的路由/恢复函数，也不要误删视频链路。
+  - iOS Build CI `66694f9` **全绿**：XcodeGen、SwiftLint、FitAIWorkoutCore tests、simulator build 均通过（run `44546309271`）。
+  - **未覆盖**：`FitAITests` / UI tests 不在该 workflow 中，仍需 Mac 跑。
+- 对方需要做：Mac 拉取后跑 `FitAITests` / UI smoke；编译已由 CI 覆盖；不要恢复被删的路由/恢复函数，也不要误删视频链路。
 - 禁止恢复：`canRouteToCoachControl`、`shouldUseCoachFreeChat`、`restoreAgentPendingState`、`APIClient.agentPendingState`、`AgentPendingState`。
-- 仍 BLOCKED：iOS 编译/真机验证需 Mac。
+- 仍 BLOCKED：`FitAITests` / UI / 真机验证需 Mac。
 
 ### 2026-11-19 · Windows（废弃代码清理批次 1）
 
@@ -62,7 +63,7 @@
 - 验证：
   - `ruff check app tests scripts qa` 通过；`pytest tests` **675 passed**；`pytest qa` **76/76**。
   - 全仓符号扫描：被删符号代码 0 引用；`git diff --check` 通过；修改的 Swift 文件括号平衡检查通过。
-  - **未验证**：Windows 无 Xcode，未跑 iOS build / SwiftLint；需 Mac 拉取后 `xcodegen generate` + build/test。
+  - iOS Build CI `66694f9` 覆盖本批（同一构建），SwiftLint + simulator build 通过；`FitAITests` / UI tests 需 Mac。
 - 批次 2 未删，引用已确认：
   - `canRouteToCoachControl` / `shouldUseCoachFreeChat`：各只有声明，0 调用。
   - `restoreAgentPendingState`：0 调用；`APIClient.agentPendingState` 只被它调用。
@@ -71,7 +72,7 @@
   - Mac `git pull` → `xcodegen generate` → build/test；重点确认 PlanEditorView、Motion、EquipmentDetailView+Media、EquipmentPickerView、PlanReviewView、AppStore+AgentActions、APIClient+Endpoints、WatchAPIClient 编译。
   - 批次 2 已处理：路由/待确认恢复已删，视频链路按用户要求保留（见上条）。
 - 禁止恢复：`FrameMotionBoard`、`LoopingVideoPlayer`、`ExercisePickerView`、`ValueStepperControl`、`APIClient.sendChat`、`addSelectedToLibrary`；`sendAgentChat` 与旧 `/coach/*` 端点仍在用，不要误删。
-- 仍 BLOCKED：iOS 编译/真机验证需 Mac；无新增外部阻断。
+- 仍 BLOCKED：`FitAITests` / UI / 真机验证需 Mac；无新增外部阻断。
 
 ### 2026-11-19 · Windows（代码注释审查第一批：今日饮食）
 
