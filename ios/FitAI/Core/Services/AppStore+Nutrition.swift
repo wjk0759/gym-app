@@ -1,8 +1,14 @@
 import Foundation
 
+/// 饮食数据在 AppStore 中的唯一状态入口。
+///
+/// 负责目标缓存、FoodLog 合并、收藏/自定义食物和同步触发；
+/// `NutritionView`、`AddFoodView`、拍照识别都通过这里写入，避免各自维护一份状态。
 extension AppStore {
     // MARK: - Nutrition
 
+    /// 新增一条本地饮食记录并触发同步。
+    /// 先插入本地、再持久化、最后同步；远端合并由 `syncPendingUserData` 处理。
     func addFoodLog(_ log: FoodLog) {
         foodLogs.insert(log, at: 0)
         persist()

@@ -1,5 +1,11 @@
 import SwiftUI
 
+/// 饮食页的纯展示层。
+///
+/// 这里不直接发请求或写库，只负责：
+/// - 定制食谱 / 我的记录两种模式；
+/// - 工具入口（拍照、本周计划、记一笔）；
+/// - 宏量、餐单、记录行和空状态。
 extension NutritionView {
     // MARK: - Notebook layout
 
@@ -36,6 +42,9 @@ extension NutritionView {
         }
     }
 
+    /// 三个高频入口。三张卡必须等宽：
+    /// 拍照识别走 FoodVision， 本周计划走 WeekDietPlanView， 记一笔走 AddFoodView。
+    /// 这里只切换 sheet，不产生任何写入。
     var toolRow: some View {
         HStack(alignment: .top, spacing: 8) {
             toolTile(
@@ -111,6 +120,7 @@ extension NutritionView {
         .buttonStyle(CardPressStyle(scale: 0.985))
     }
 
+    /// 宏量条展示“已摄入 / 目标”，不是服务端计划值。
     func macroStrip(snapshot: DayLogsSnapshot, targets: NutritionTargets) -> some View {
         let totals = snapshot.totals
         return VStack(spacing: 8) {
@@ -231,6 +241,8 @@ extension NutritionView {
         }
     }
 
+    /// 计划餐卡：展示建议餐单、换餐/恢复/撤销，以及“记录整餐”。
+    /// `logs` 只用于判断这餐是否已经记录，不会改变计划本身。
     func planMealPage(
         _ suggestion: MealSuggestion,
         index: Int,
@@ -368,6 +380,8 @@ extension NutritionView {
         }
     }
 
+    /// 记录模式下的单餐卡片：列出本地 FoodLog，编辑/删除都只改本地和服务端记录，
+    /// 不会回写计划餐单。
     func logMealPage(_ meal: MealType, logs: [FoodLog]) -> some View {
         let suggestion = meals.first { mealType(for: $0) == meal }
         let target = suggestion?.kcal ?? 0

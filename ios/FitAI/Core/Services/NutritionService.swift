@@ -14,6 +14,7 @@ struct NutritionService {
         try await client.fetchFoodLogs()
     }
 
+    /// 生成/重排某天餐单；`idempotencyKey` 由页面在成功前复用。
     func fetchPlan(
         dateString: String,
         idempotencyKey: String? = nil
@@ -24,6 +25,7 @@ struct NutritionService {
         )
     }
 
+    /// 只读已保存计划；没有保存过时返回 nil，不触发生成。
     func fetchSavedPlan(dateString: String) async throws -> RemoteDietPlan? {
         try await client.fetchSavedDietPlan(dateString: dateString)
     }
@@ -48,6 +50,7 @@ struct NutritionService {
         try await client.fetchDietReview(from: from, to: to)
     }
 
+    /// 生成一周餐单；`weekStart` 为空时由服务端决定默认周。
     func fetchWeek(
         strategy: String,
         weekStart: String?,
@@ -60,6 +63,7 @@ struct NutritionService {
         )
     }
 
+    /// 只读已保存周计划；没有保存过时返回空 days，由页面展示生成入口。
     func fetchSavedWeek(weekStart: String?) async throws -> RemoteDietWeek {
         try await client.fetchSavedDietWeek(weekStart: weekStart)
     }

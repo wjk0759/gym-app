@@ -1,6 +1,9 @@
 import SwiftUI
 
-/// 饮食模块的「本周计划」子页：复用 meal_plans，展示一周策略与每日餐单。
+/// 一周饮食计划页。
+///
+/// 只读已保存计划；只有点“生成/重新生成”才创建/覆盖餐单。
+/// 策略选择本身不写库，生成时才把 strategy 传给后端。
 struct WeekDietPlanView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -339,6 +342,8 @@ struct WeekDietPlanView: View {
         .card()
     }
 
+    /// 只读取已保存周计划，不会触发生成。
+    /// 读完只在请求策略为空时同步当前策略，避免把用户手动选择改掉。
     @MainActor
     private func load() async {
         await store.refreshAccess()
@@ -355,6 +360,8 @@ struct WeekDietPlanView: View {
         }
     }
 
+    /// 显式生成/重排一周餐单。
+    /// 先过 Pro/试用门禁和 60 秒冷却，再带幂等 key 请求；成功后服务端返回整周数据。
     @MainActor
     private func generate() async {
         guard !isLoading else { return }

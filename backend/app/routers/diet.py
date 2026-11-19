@@ -1,3 +1,9 @@
+"""Diet HTTP endpoints: food logs, targets, day/week plans, swap/restore, review.
+
+Writes live in the diet/meal-plan services; this router owns request validation,
+access/rate limits, idempotent generation leases and response shaping.
+"""
+
 import uuid
 from datetime import date, datetime, time, timedelta, timezone
 
@@ -66,6 +72,11 @@ async def analyze_meal(
         default=None, alias="Idempotency-Key", max_length=64
     ),
 ):
+    """Analyze a meal photo without writing a food log.
+
+    Pro + rate limit + sanitized image are required. The result can be replayed
+    by idempotency key; the iOS photo page decides whether to add its items.
+    """
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(status_code=415, detail="仅支持 jpeg/png/webp/heic 图片")
 
@@ -158,6 +169,7 @@ def _apply_food_log(item: FoodLog, payload: FoodLogIn) -> None:
 
 @router.post("/logs", status_code=201)
 def upsert_food_log(payload: FoodLogIn, user_id: CurrentUser, db: DBSession):
+    """Idempotently create/update one local food log by ``client_id``."""
     item = db.execute(
         select(FoodLog).where(
             FoodLog.user_id == user_id,
@@ -191,6 +203,7 @@ def list_food_logs(
     date_to: date | None = Query(default=None, alias="to"),
     limit: int = Query(default=500, ge=1, le=1000),
 ):
+    """List the current user's logs, newest first, optionally date-bounded."""
     query = select(FoodLog).where(FoodLog.user_id == user_id)
     if date_from:
         query = query.where(
@@ -216,6 +229,7 @@ def list_food_logs(
 
 @router.delete("/logs/{client_id}")
 def delete_food_log(client_id: str, user_id: CurrentUser, db: DBSession):
+    """Delete one log by client id; 404 when it is not owned by this user."""
     item = db.execute(
         select(FoodLog).where(
             FoodLog.user_id == user_id,
@@ -235,6 +249,7 @@ def targets(
     db: DBSession,
     plan_date: date | None = Query(default=None, alias="date"),
 ):
+    """Return day targets, preferring the saved plan over the profile formula."""
     profile = db.get(Profile, user_id)
     if profile is None:
         raise HTTPException(status_code=404, detail="请先完成个人档案")
@@ -269,6 +284,7 @@ def review(
     date_from: date | None = Query(default=None, alias="from"),
     date_to: date | None = Query(default=None, alias="to"),
 ):
+    """Compare planned vs logged meals for the requested date range."""
     try:
         start_date, end_date = range_bounds(date_from, date_to, today=_today())
     except ValueError as exc:
@@ -328,6 +344,7 @@ def swap_meal(
     user_id: CurrentUser,
     db: DBSession,
 ):
+    """Swap one saved planned meal and keep the previous version for undo."""
     if meal not in MEAL_KEYS:
         raise HTTPException(status_code=422, detail="不支持的餐次")
     try:
@@ -347,6 +364,7 @@ def undo_swap_meal(
     user_id: CurrentUser,
     db: DBSession,
 ):
+    """Restore the meal version saved by the most recent swap."""
     if meal not in MEAL_KEYS:
         raise HTTPException(status_code=422, detail="不支持的餐次")
     try:
@@ -364,6 +382,7 @@ def restore_skipped_meal(
     user_id: CurrentUser,
     db: DBSession,
 ):
+    """Restore a meal that the user previously skipped."""
     if meal not in MEAL_KEYS:
         raise HTTPException(status_code=422, detail="不支持的餐次")
     try:
@@ -396,6 +415,11 @@ async def plan(
         default=None, alias="Idempotency-Key", max_length=64
     ),
 ):
+    """Generate and save one day of food plan.
+
+    Rate-limited and guarded by a generation lease; replaying the same
+    idempotency key returns the saved day instead of generating twice.
+    """
     profile = db.get(Profile, user_id)
     if profile is None:
         raise HTTPException(status_code=404, detail="请先完成个人档案")
@@ -521,6 +545,11 @@ async def plan_week(
         default=None, alias="Idempotency-Key", max_length=64
     ),
 ):
+    """Generate and save one week of food plan.
+
+    One MealPlan row is stored per day; week-level provenance is copied onto
+    each day so the GET endpoint can render strategy/AI badges.
+    """
     profile = db.get(Profile, user_id)
     if profile is None:
         raise HTTPException(status_code=404, detail="请先完成个人档案")
@@ -629,4 +658,5 @@ def get_plan_week(
     db: DBSession,
     week_start: date | None = Query(default=None),
 ):
+    """Read the saved week without generating or modifying anything."""
     return _week_payload(db, user_id, week_start_for(week_start or _today()))

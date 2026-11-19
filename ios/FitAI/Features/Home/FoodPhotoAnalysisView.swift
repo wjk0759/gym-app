@@ -2,6 +2,10 @@ import PhotosUI
 import SwiftUI
 import UIKit
 
+/// 饮食拍照识别页。
+///
+/// 流程：拍照/相册 -> 远端视觉识别（失败按条件回退本地估算）-> 用户改份量/勾选 ->
+/// 显式“加入今日饮食”。照片本身不保存，本页也不直接写库。
 struct FoodPhotoAnalysisView: View {
     @Environment(AppStore.self) var store
     @Environment(\.dismiss) var dismiss
@@ -318,6 +322,8 @@ struct FoodPhotoAnalysisView: View {
         isAnalyzing = false
     }
 
+    /// 把当前勾选项按所选餐次写入本地饮食记录，再由 AppStore 同步到服务端。
+    /// 只有用户点“加入今日饮食”才会调用。
     func addToToday() {
         let logs = selectedItems.map { item in
             FoodLog(

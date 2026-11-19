@@ -1,5 +1,11 @@
 import SwiftUI
 
+/// 今日/历史饮食页。
+///
+/// 页面本身只负责展示和收集用户操作：
+/// - 计划模式读取服务端日计划，没有服务端计划时回退到本地模板；
+/// - 记录模式按餐次展示本地 `FoodLog`；
+/// - 所有写入都通过 `AppStore` 或 `NutritionService`，View 不直接改数据源。
 struct NutritionView: View {
     @Environment(AppStore.self) var store
 
@@ -54,6 +60,7 @@ struct NutritionView: View {
         let byMeal: [MealType: [FoodLog]]
     }
 
+    /// 服务端确认过的目标优先；离线或首次刷新前用本地公式估算。
     var targets: NutritionTargets {
         serverTargets ?? store.nutritionTargets(for: date)
     }
@@ -62,6 +69,8 @@ struct NutritionView: View {
         Calendar.current.isDateInToday(date)
     }
 
+    /// 当前选中日期的本地饮食记录快照。
+    /// 这里只读 `store.foodLogs`，不包含服务端尚未合并的远端行。
     var daySnapshot: DayLogsSnapshot {
         let dayStart = FitnessDate.calendar.startOfDay(for: date)
         let logs = store.foodLogs.filter {
@@ -132,6 +141,9 @@ struct NutritionView: View {
         }
     }
 
+    /// 读取这一天已保存的服务端计划。
+    /// 404 代表“这天没有保存过计划”，会清空本地 `aiMeals` 回退到模板；
+    /// 其他网络错误保留当前展示，避免一次失败把整页餐单清空。
     @MainActor
     func loadSavedPlan() async {
         do {
@@ -242,6 +254,9 @@ struct NutritionView: View {
         }
     }
 
+    /// 生成/重排当天 AI 餐单。
+    /// `pendingPlanGenerationKey` 在成功前一直复用，服务端可据此做幂等；
+    /// 成功后清空，下一次点击才会创建新的生成请求。
     @MainActor
     func generateAIPlan() async {
         guard !isGeneratingPlan else { return }
@@ -288,6 +303,8 @@ struct NutritionView: View {
                 toolRow
                 macroStrip(snapshot: snapshot, targets: nutritionTargets)
 
+                // 计划模式看“应该吃什么”，记录模式看“实际吃了什么”；
+                // 两种模式共享同一份 targets 和日期。
                 if mode == .plan {
                     planHeader(snapshot: snapshot)
                     ForEach(Array(meals.enumerated()), id: \.offset) { pair in

@@ -1,5 +1,9 @@
 import SwiftUI
 
+/// 记录食物页：搜索食物库/自定义食物，选择份量后写入当天某一餐。
+///
+/// 页面只负责选择；真正写入由 `AppStore.addFoodLog(s)` 完成，
+/// 因此取消或返回不会产生半条记录。
 struct AddFoodView: View {
     @Environment(AppStore.self) var store
     @Environment(\.dismiss) private var dismiss
@@ -23,6 +27,7 @@ struct AddFoodView: View {
         query.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// 搜索结果合并自定义食物，最多 30 条；空查询时由下方分区展示收藏/最近/外食。
     private var results: [FoodItem] {
         Array(FoodLibrary.search(query, custom: store.customFoods).prefix(30))
     }
