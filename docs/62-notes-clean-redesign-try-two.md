@@ -86,6 +86,7 @@
 - iPhone SE 3：UI 7/7
 - clean `xcodegen generate` + `xcodebuild test` 通过
 - 浅色/深色模拟器截图人工检查
+- try-two Release 已安装并启动 Wu-Tang `com.wjk.fitai`，API 为 `https://hk-api.jiaolianfit.cn/api/v1`
 
 ## 未完成
 

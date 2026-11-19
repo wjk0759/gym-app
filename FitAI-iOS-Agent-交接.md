@@ -27,7 +27,7 @@
 - 饮食：保留热量环/模式切换/工具卡/宏量卡/餐卡；删除模式副标题、工具副标题、BMR 行、长免责声明和空记录提示。
 - 登录/Onboarding：去掉「AI 健身教练」「训练·饮食·复盘」「同步计划…」；欢迎页改 logo + 叫练 + 开始/恢复/退出，step 标题只留问题。
 - 删除未使用 `HomeV2View+CoachNote`、`loadingPill`、`TypewriterText`，清理旧 weather helper。
-- 验证：`FitAITests` **140/140**、iPhone 17 UI **7/7**、SE UI **7/7**；clean `xcodegen` + `xcodebuild test` 通过；浅色/深色截图人工检查。
+- 验证：`FitAITests` **140/140**、iPhone 17 UI **7/7**、SE UI **7/7**；clean `xcodegen` + `xcodebuild test` 通过；浅色/深色截图人工检查；Release 已安装并启动 Wu-Tang。
 - 未完成：根 Tab 仍用 inline title（首页自定义大标题）；设置/训练进行/器械详情/进展等二级页只做字重/卡片/眉标收敛，未逐页重排；未用真实账号/真机完整回归。
 - 对方需要做：先在 `try-two` 验收 5 个根页面；确认后再合并 `develop`，不要直接把 try-two 推到生产。
 
