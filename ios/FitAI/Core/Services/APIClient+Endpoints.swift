@@ -331,14 +331,6 @@ extension APIClient {
         )
     }
 
-    func agentPendingState() async throws -> AgentPendingState {
-        try await send(
-            path: "agent/pending",
-            method: "GET",
-            body: nil
-        )
-    }
-
     func updateAgentPendingAction(
         id: String,
         summary: String,

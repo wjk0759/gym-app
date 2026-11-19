@@ -75,65 +75,6 @@ extension AppStore {
         }
     }
 
-    /// 服务端保存最近一张待确认卡和草稿；换设备或重装后可恢复。
-    func restoreAgentPendingState() {
-        guard AuthTokenStore.shared.accessToken != nil,
-              CoachChatPolicy.transport(
-                  hasPro: hasProAccess,
-                  remoteEnabled: useRemoteAI
-              ) == .agent,
-              !isReplying,
-              !isExecutingAgentActions else { return }
-        let accountID = currentUserID
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            do {
-                let state = try await APIClient.shared.agentPendingState()
-                guard self.currentUserID == accountID,
-                      !self.isReplying,
-                      !self.isExecutingAgentActions else { return }
-                if let proposal = state.proposal {
-                    if self.agentProposal == nil {
-                        self.agentProposal = proposal
-                        if let sessionID = state.sessionID {
-                            self.agentSessionID = sessionID
-                        }
-                    }
-                } else if self.agentProposal != nil {
-                    self.agentProposal = nil
-                }
-                if let card = state.pendingAction, !card.actions.isEmpty {
-                    if self.agentActions.isEmpty {
-                        self.agentSessionID = state.sessionID
-                        self.agentRunID = card.runID
-                        self.agentActions = card.actions
-                    }
-                    self.pendingDraft = nil
-                    self.persist()
-                    return
-                }
-                if !self.agentActions.isEmpty {
-                    // 其他设备已确认/忽略，本地卡片不能继续执行。
-                    self.agentActions = []
-                    self.agentRunID = nil
-                }
-                if let draft = state.pendingDraft {
-                    if let sessionID = state.sessionID {
-                        self.agentSessionID = sessionID
-                    }
-                    if self.pendingDraft == nil {
-                        self.pendingDraft = draft
-                    }
-                } else if self.pendingDraft != nil {
-                    self.pendingDraft = nil
-                }
-                self.persist()
-            } catch {
-                // 网络不可用时保留本地持久化的卡和草稿。
-            }
-        }
-    }
-
     // MARK: - Coach Agent
 
     /// 后台生成的周复盘会落到 AgentRun，前台只读取结果；同一周默认复用缓存。

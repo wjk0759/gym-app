@@ -570,20 +570,6 @@ struct AgentPendingActionPatchRequest: Encodable {
     let payload: AgentActionPayload
 }
 
-struct AgentPendingState: Decodable {
-    let sessionID: UUID?
-    let pendingAction: AgentPendingActionCard?
-    let pendingDraft: AgentPendingDraft?
-    let proposal: AgentPlanProposal?
-
-    enum CodingKeys: String, CodingKey {
-        case sessionID = "session_id"
-        case pendingAction = "pending_action"
-        case pendingDraft = "pending_draft"
-        case proposal
-    }
-}
-
 /// Control-plane 的 pending 卡。
 /// `kind` 是 draft/insight/card/proposal；只有 card/proposal 才可确认执行。
 struct CoachPendingState: Decodable, Identifiable, Hashable {
