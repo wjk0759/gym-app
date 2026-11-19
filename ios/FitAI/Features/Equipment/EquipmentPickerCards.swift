@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// 器械选择器的图标/卡片复用组件。纯展示，不写数据。
 enum EquipmentPickerSymbols {
     static func muscle(_ muscle: MuscleGroup) -> String {
         switch muscle {

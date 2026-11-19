@@ -1,3 +1,5 @@
+"""Avatar image normalization, private storage and public URL generation."""
+
 from __future__ import annotations
 
 import io

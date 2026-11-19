@@ -1,3 +1,5 @@
+"""Training-stage estimation from completed workout history (beginner/intermediate/advanced)."""
+
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone

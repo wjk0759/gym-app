@@ -1,5 +1,6 @@
 import Foundation
 
+/// 器械使用指南静态目录（设置/步骤/提示），只读资源。
 struct EquipmentGuide: Decodable {
     let setup: String
     let steps: [String]

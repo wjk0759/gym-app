@@ -1,3 +1,5 @@
+"""Cross-device training schedule read/write endpoints."""
+
 from fastapi import APIRouter, Query
 
 from ..deps import CurrentUser, DBSession

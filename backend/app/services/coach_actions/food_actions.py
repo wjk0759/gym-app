@@ -1,3 +1,8 @@
+"""Server-side food-log actions used by coach cards.
+
+Validates ownership/slots and writes/undoes food rows; no LLM calls here.
+"""
+
 from __future__ import annotations
 
 from datetime import date, datetime, time, timezone

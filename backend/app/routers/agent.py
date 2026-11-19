@@ -1,3 +1,5 @@
+"""Agent HTTP endpoints: chat, photo food, pending cards, action run/undo, proposals, memories."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile

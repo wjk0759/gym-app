@@ -1,3 +1,5 @@
+"""App Store Server Notifications and entitlement reconciliation endpoints."""
+
 import secrets
 
 from fastapi import APIRouter, Header, HTTPException

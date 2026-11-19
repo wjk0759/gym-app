@@ -1,5 +1,6 @@
 import Foundation
 
+/// 云偏好/训练草稿 API。只做请求和映射，合并策略在 AppStore。
 extension APIClient {
     func fetchCloudSync() async throws -> RemoteCloudSync {
         let data: Data = try await send(path: "sync", method: "GET", body: nil)

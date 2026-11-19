@@ -1,3 +1,5 @@
+"""Server-side dispatch for confirmed coach action cards (food/workout/meal-plan)."""
+
 from __future__ import annotations
 
 from sqlalchemy import select

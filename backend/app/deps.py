@@ -1,3 +1,5 @@
+"""FastAPI dependencies: current user, DB session and auth header parsing."""
+
 import uuid
 from typing import Annotated
 

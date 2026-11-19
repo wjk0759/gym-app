@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// 体型/体脂可视化选择组件。只负责展示和选择，不写档案。
 struct BodyTypeThumbnail: View {
     let type: BodyType
     var sex: Sex = .male

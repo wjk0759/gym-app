@@ -1,5 +1,6 @@
 import Foundation
 
+/// 本地视频目录映射（动作 slug -> 视频 URL），只读资源。
 enum VideoCatalog {
     private static let mapping: [String: URL] = {
         guard let url = Bundle.main.url(forResource: "videos", withExtension: "json"),

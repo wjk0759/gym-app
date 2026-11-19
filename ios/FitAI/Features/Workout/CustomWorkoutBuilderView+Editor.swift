@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// 自选训练编辑器的字段/元信息布局。只改本地 draft，保存由父页处理。
 extension CustomWorkoutBuilderView {
     func metaText(_ info: Exercise?) -> String {
         guard let info else { return "" }

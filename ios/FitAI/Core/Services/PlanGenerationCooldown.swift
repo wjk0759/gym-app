@@ -1,5 +1,6 @@
 import Foundation
 
+/// 计划生成冷却：30 秒客户端提示，实际限流/日限仍由服务端决定。
 enum PlanGenerationCooldown {
     static let seconds: TimeInterval = 30
 

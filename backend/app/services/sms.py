@@ -1,3 +1,5 @@
+"""Aliyun SMS delivery for phone login/reset verification codes."""
+
 from __future__ import annotations
 
 import json

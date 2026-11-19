@@ -1,5 +1,7 @@
 import Foundation
 
+/// 本地教练规则：安全关键词、快捷回答和离线兜底。
+/// 不持有状态、不发请求；在线教练由 AppStore/CoachControl 处理。
 enum CoachService {
     private static let safetyRules: [([String], String)] = [
         (

@@ -1,3 +1,5 @@
+"""Private equipment photo storage and URL handling."""
+
 from __future__ import annotations
 
 import io

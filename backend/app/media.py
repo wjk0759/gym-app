@@ -1,3 +1,5 @@
+"""Media root resolution and public URL helpers (public vs private media roots)."""
+
 from __future__ import annotations
 
 from pathlib import Path

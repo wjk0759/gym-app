@@ -1,3 +1,5 @@
+"""Registry mapping coach action types to their payload models and executors."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
