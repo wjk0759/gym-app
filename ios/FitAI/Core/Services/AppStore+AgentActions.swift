@@ -1,8 +1,21 @@
 import Foundation
 
+/// 已确认动作卡的执行层。
+///
+/// 职责边界：
+/// - 输入是用户点过“确认并执行”的 `AgentAction`；
+/// - 本地能做的动作（改期、跳过、目标、身体数据）直接改 AppStore；
+/// - 饮食/训练/改课等写操作走后端 action 接口；
+/// - 每个成功动作尽量生成 undo 状态，批量执行时整组撤销；
+/// - 执行结果回传 `/agent/actions/{id}`，但本地 UI 状态不依赖回传成功。
 extension AppStore {
     // MARK: - App Action 执行层
 
+    /// 构造 `/agent/chat` 的 `app_context`。
+    ///
+    /// 只把模型决策真正需要的字段送过去：今天、当前 Tab、待确认饮食卡、
+    /// 体型/器械上下文，以及计划日和动作。`date` 是 iOS 计划日解析的
+    /// 关键字段，不能用后端的 `day_states.assigned_date` 假设替代。
     func agentAppContext(pendingActions: [AgentAction] = []) -> [String: Any] {
         var context: [String: Any] = [
             "today": FitnessDate.key(Date()),
@@ -142,6 +155,11 @@ extension AppStore {
         }
     }
 
+    /// 执行当前卡片组。
+    ///
+    /// 先把卡片从列表清掉，避免执行中重复点击；按顺序执行并收集 undo。
+    /// 所有成功动作共用一个 5 秒撤销窗口，失败数只影响最后的 toast，
+    /// 不会自动回滚已经成功的动作。
     func executeAgentActions() {
         guard !agentActions.isEmpty, !isExecutingAgentActions else { return }
         let actions = agentActions
@@ -239,6 +257,10 @@ extension AppStore {
         return "executed"
     }
 
+    /// 单个动作的执行分派。
+    ///
+    /// 本地动作直接改 AppStore；服务端动作必须等接口成功后再合并远端结果。
+    /// `undo` 只在确实产生本地/服务端写入时赋值，失败路径保持为空。
     private func executeAgentAction(
         _ action: AgentAction,
         undo: inout AgentUndoState?
@@ -623,6 +645,8 @@ extension AppStore {
             .first
     }
 
+    /// 服务端改课只返回被修改的训练日；这里只替换该日动作并更新版本，
+    /// 不覆盖其他训练日的本地状态。
     func mergeServerWorkoutPlan(
         _ updated: TrainingPlan,
         into current: TrainingPlan,
@@ -657,6 +681,10 @@ extension AppStore {
         return nil
     }
 
+    /// 应用计划草案。
+    ///
+    /// 必须没有进行中的训练；成功后归档旧计划、替换当前计划，并把草案里的
+    /// 训练日/时长/重点同步到 profile。失败只提示，不破坏当前计划。
     func applyAgentProposal() {
         guard let proposal = agentProposal, !isAgentWorking else { return }
         guard workoutDraft == nil else {

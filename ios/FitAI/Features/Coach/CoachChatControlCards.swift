@@ -1,5 +1,9 @@
 import SwiftUI
 
+/// 教练控制面卡片：inbox、pending 确认卡、执行回执和撤销。
+///
+/// 与 `AgentAction` 卡不同，这里对接 `/coach` control-plane 的 pending 状态；
+/// 确认/取消调用 store，卡片本身不执行写操作。
 extension CoachChatView {
     @ViewBuilder
     var coachInboxSection: some View {
@@ -72,6 +76,9 @@ extension CoachChatView {
         }
     }
 
+    /// 服务端 control-plane 的待确认/只读卡。
+    /// 按 capability 选择不同展示；只有 card/proposal 才显示确认按钮，
+    /// insight 只读，draft 只提示继续输入。
     @ViewBuilder
     var coachControlCards: some View {
         if let pending = store.coachPending {
@@ -82,6 +89,8 @@ extension CoachChatView {
         }
     }
 
+    /// 单个 pending 卡。展示内容由 capability_id 决定，
+    /// 但确认/取消始终走同一个 store 方法，避免各能力自己写库。
     func coachPendingCard(_ pending: CoachPendingState) -> some View {
         CoachCard(border: Theme.cobalt.opacity(0.25)) {
             VStack(alignment: .leading, spacing: 10) {
@@ -560,6 +569,8 @@ extension CoachChatView {
         }
     }
 
+    /// 执行成功后的回执卡：显示结果和 5 秒撤销窗口；
+    /// 完成只关闭回执，不撤销已经执行的动作。
     private func coachReceiptCard(_ receipt: CoachReceipt) -> some View {
         CoachCard(border: Theme.primary.opacity(0.3)) {
             VStack(alignment: .leading, spacing: 9) {

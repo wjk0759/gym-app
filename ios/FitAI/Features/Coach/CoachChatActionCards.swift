@@ -1,5 +1,9 @@
 import SwiftUI
 
+/// 教练对话里的动作卡渲染层。
+///
+/// 这里只展示 `AgentAction` / `AgentPlanProposal` / undo 状态，并转发按钮事件；
+/// 真正的执行、服务端写入和撤销都在 `AppStore+AgentActions`。
 extension CoachChatView {
     var adjustmentBanner: some View {
         VStack(alignment: .leading, spacing: 9) {
@@ -132,7 +136,7 @@ extension CoachChatView {
             CoachInlineBanner(
                 icon: "arrow.uturn.backward.circle.fill",
                 title: "已执行：\(undo.title)",
-                message: "5 分钟内可以撤销这次操作",
+                message: "5 秒内可以撤销这次操作",
                 actionTitle: "撤销",
                 action: { store.undoLastAgentAction() }
             )
@@ -177,6 +181,9 @@ extension CoachChatView {
         .padding(.vertical, 4)
     }
 
+    /// 待确认动作列表。
+    /// 卡片只负责展示 title/summary 和食物/训练摘要；确认后由 store 执行，
+    /// 忽略则只上报 rejected，不触发任何本地写入。
     var agentActionsCard: some View {
         CoachCard(border: Theme.cobalt.opacity(0.25)) {
             VStack(alignment: .leading, spacing: 10) {
@@ -314,6 +321,8 @@ extension CoachChatView {
         }
     }
 
+    /// 本周饮食计划卡：展示只读计划，允许今天已到餐次直接“记录”整餐。
+    /// “去记录”只切 Tab 并打开饮食页，不写任何数据。
     func dietWeekCard(_ week: RemoteDietWeek) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -523,6 +532,7 @@ extension CoachChatView {
         store.enabledExerciseSlugs.contains(candidate.exercise.slug)
     }
 
+    /// 计划草案卡：展示变更和训练参数，用户点“应用”才替换正式计划。
     func agentProposalCard(_ proposal: AgentPlanProposal) -> some View {
         CoachCard(border: Theme.cobalt.opacity(0.25)) {
             VStack(alignment: .leading, spacing: 9) {
