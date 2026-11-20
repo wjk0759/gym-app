@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`7d03219`（训练日期锚点 / 频率提示修复；Mac 已跑 `FitAITests` **144/144**、UI **7/7**，iOS `7d03219` 已装 Wu-Tang；生产后端仍 `66694f9`，`/health/ready` **200**；Flyway **V44**；后端 **678 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`a2f8307`（中国区 ICP 备案站点 + HTTPS；iOS App 代码仍 `7d03219`；Mac 已跑 `FitAITests` **144/144**、UI **7/7**，iOS `7d03219` 已装 Wu-Tang；生产后端仍 `66694f9`，`/health/ready` **200**；Flyway **V44**；后端 **678 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -35,6 +35,34 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-20 · Windows（中国区 ICP 备案站点上线）
+
+- 提交：`c7a6cf5`（站点）+ `b19204c` / `a2f8307`（部署脚本与 HTTPS 文档），已推 `develop`。
+- 服务器：阿里云 ECS `120.25.248.179`，Alibaba Cloud Linux 3；Nginx 1.24 已安装并启动。
+- 站点：`https://jiaolianfit.cn/`、`https://www.jiaolianfit.cn/`；页面 `index/privacy/support` 已上传到 `/var/www/jiaolian`。
+- HTTPS：Let's Encrypt 证书，域名 `jiaolianfit.cn` + `www.jiaolianfit.cn`，到期 `2027-02-18`，自动续期；HTTP 301 到 HTTPS。
+- 验证：
+  - `https://jiaolianfit.cn/` 200
+  - `https://jiaolianfit.cn/privacy` 200
+  - `https://jiaolianfit.cn/support` 200
+  - `https://www.jiaolianfit.cn/` 200
+  - `http://jiaolianfit.cn/` 301 -> HTTPS
+  - `nginx -t` 通过，`systemctl is-active nginx` = active
+- 未做：
+  - ICP 备案尚未提交；需要先在阿里云申请“备案服务号”
+  - 站点首页/隐私/支持页的 ICP 备案号仍是占位符
+  - 隐私政策仍注明当前 TestFlight/香港后端；正式中国区迁移后再更新
+  - App/后端尚未迁移到这台 ECS
+- 对方需要做：
+  - 用户/运营：ECS 控制台申请备案服务号 → 阿里云首次备案；同时提交 App 备案和生成式 AI 登记
+  - ICP 下来后把备案号替换到三个页面底部，并链接 `https://beian.miit.gov.cn/`
+  - 后续再把 API/MySQL/媒体迁到大陆
+- 禁止恢复/注意：
+  - 不要用 `deploy-site.ps1` 直接覆盖已有 Nginx 配置；默认会保留，确需重建用 `-RewriteNginxConfig`，然后重跑 certbot
+  - 不要把 `try_files $uri $uri.html` 删掉，否则 `/privacy`、`/support` 会 404
+  - 不要把 App 后端直接占用 80/443 顶掉备案站点
+- 仍 BLOCKED：ICP 备案号、App 备案号、生成式 AI 登记；大陆后端迁移。
 
 ### 2026-11-20 · macOS（训练日期锚点修复复测 + 部署）
 
