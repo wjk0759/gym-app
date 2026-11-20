@@ -36,15 +36,40 @@ cd deploy\cn
 .\deploy-site.ps1 -Server 1.2.3.4 -Domain jiaolianfit.cn -User root -Key C:\Users\Administrator\.ssh\id_ed25519
 ```
 
+重新部署时默认保留服务器上已有的 Nginx 配置，避免覆盖 HTTPS 证书配置。只有确实要重建配置时才加：
+
+```powershell
+.\deploy-site.ps1 -Server 1.2.3.4 -Domain jiaolianfit.cn -RewriteNginxConfig
+```
+
+重建配置后需要重新运行一次 certbot。
+
+## HTTPS
+
+域名解析、80/443 安全组都通过后，在服务器执行：
+
+```bash
+dnf install -y certbot python3-certbot-nginx
+certbot --nginx -d jiaolianfit.cn -d www.jiaolianfit.cn \
+  --non-interactive --agree-tos -m wjk0759@163.com --redirect
+```
+
+证书会自动续期。验证：
+
+```bash
+curl -I https://jiaolianfit.cn/
+curl -I https://jiaolianfit.cn/privacy
+```
+
 ## 部署后检查
 
 ```bash
-curl -I http://<域名>/
-curl -I http://<域名>/privacy
-curl -I http://<域名>/support
+curl -I https://<域名>/
+curl -I https://<域名>/privacy
+curl -I https://<域名>/support
 ```
 
-三个地址都应返回 `200`。
+三个地址都应返回 `200`。HTTP 会自动 301 到 HTTPS。
 
 ## ICP 备案
 

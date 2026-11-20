@@ -7,7 +7,8 @@ param(
 
     [string]$User = "root",
     [string]$Key = "$HOME\.ssh\id_ed25519",
-    [string]$RemoteRoot = "/var/www/jiaolian"
+    [string]$RemoteRoot = "/var/www/jiaolian",
+    [switch]$RewriteNginxConfig
 )
 
 $ErrorActionPreference = "Stop"
@@ -28,9 +29,15 @@ ssh -i $Key $target "if ! command -v nginx >/dev/null 2>&1; then if command -v d
 ssh -i $Key $target "mkdir -p $RemoteRoot && cp -r $remoteTmp/* $RemoteRoot/"
 
 Write-Host "==> Writing nginx site config"
-$nginx = Get-Content (Join-Path $PSScriptRoot "nginx.conf") -Raw
-$nginx = $nginx.Replace("__DOMAIN__", $serverNames)
-$nginx | ssh -i $Key $target "cat > /etc/nginx/conf.d/jiaolian.conf"
+$configExists = (ssh -i $Key $target "test -f /etc/nginx/conf.d/jiaolian.conf && echo yes || echo no").Trim()
+if ($configExists -eq "yes" -and -not $RewriteNginxConfig) {
+    Write-Host "    Existing config found; keeping it (pass -RewriteNginxConfig to replace, then rerun certbot)"
+} else {
+    $nginx = Get-Content (Join-Path $PSScriptRoot "nginx.conf") -Raw
+    $nginx = $nginx.Replace("__DOMAIN__", $serverNames)
+    $nginx | ssh -i $Key $target "cat > /etc/nginx/conf.d/jiaolian.conf"
+    Write-Host "    Config written"
+}
 
 Write-Host "==> Testing and reloading nginx"
 ssh -i $Key $target "nginx -t && systemctl enable --now nginx && systemctl reload nginx"
