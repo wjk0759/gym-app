@@ -151,6 +151,80 @@ def _day_date(
     ).isoformat()
 
 
+def _bodyweight_recommend(
+    item: PlanExercise,
+    performance: dict | None,
+) -> dict:
+    """Progress bodyweight strength by reps first, then by set count."""
+    exercise = item.exercise
+    name = exercise.name_zh if exercise else item.exercise_slug
+    bottom, top = _rep_range(item.reps)
+    base = {
+        "slug": item.exercise_slug,
+        "name": name,
+        "kind": "reps",
+        "current_weight_kg": None,
+        "target_weight_kg": None,
+        "current_sets": item.sets,
+        "target_sets": item.sets,
+        "current_reps": item.reps,
+        "target_reps": item.reps,
+        "action": "hold",
+        "rep_target": f"{bottom}-{top}" if bottom != top else str(bottom),
+    }
+    if performance is None:
+        base["reason"] = "还没有训练记录"
+        return base
+    reps = performance.get("reps") or []
+    avg_rpe = performance.get("average_rpe")
+    if not reps:
+        base["reason"] = "上一轮没有完成次数"
+        return base
+    if (avg_rpe is not None and avg_rpe >= 9) or min(reps) < bottom:
+        if int(item.sets or 0) > 1:
+            base.update(
+                {
+                    "kind": "sets",
+                    "target_sets": int(item.sets) - 1,
+                    "action": "down",
+                    "reason": (
+                        f"上一组 RPE {avg_rpe}"
+                        if avg_rpe is not None
+                        else "次数低于目标"
+                    ),
+                }
+            )
+        else:
+            new_bottom = max(1, bottom - 1)
+            base.update(
+                {
+                    "target_reps": (
+                        f"{new_bottom}-{top}"
+                        if bottom != top
+                        else str(new_bottom)
+                    ),
+                    "action": "down",
+                    "reason": "只有一组，先把次数降下来",
+                }
+            )
+    elif avg_rpe is not None and avg_rpe <= 8 and max(reps) >= top:
+        new_top = top + 2
+        base.update(
+            {
+                "target_reps": (
+                    f"{bottom}-{new_top}" if bottom != top else str(new_top)
+                ),
+                "action": "up",
+                "reason": f"上一组 RPE {avg_rpe}，次数到 {max(reps)}",
+            }
+        )
+    else:
+        base["reason"] = (
+            f"上一组 RPE {avg_rpe}" if avg_rpe is not None else "还没记录 RPE"
+        )
+    return base
+
+
 def _recommend(
     item: PlanExercise,
     performance: dict | None,
@@ -159,14 +233,31 @@ def _recommend(
     exercise = item.exercise
     name = exercise.name_zh if exercise else item.exercise_slug
     equipment = exercise.equipment if exercise else None
+    if current is None or float(current) <= 0:
+        if (
+            exercise is not None
+            and exercise.equipment == "bodyweight"
+            and exercise.training_type_code == "strength"
+        ):
+            return _bodyweight_recommend(item, performance)
+        return {
+            "slug": item.exercise_slug,
+            "name": name,
+            "kind": "weight",
+            "current_weight_kg": current,
+            "target_weight_kg": current,
+            "action": "hold",
+            "reason": "没有可用重量或记录",
+        }
     base = {
         "slug": item.exercise_slug,
         "name": name,
+        "kind": "weight",
         "current_weight_kg": current,
         "target_weight_kg": current,
         "action": "hold",
     }
-    if current is None or float(current) <= 0 or performance is None:
+    if performance is None:
         base["reason"] = "没有可用重量或记录"
         return base
     bottom, top = _rep_range(item.reps)
@@ -201,6 +292,23 @@ def _recommend(
         )
     base["rep_target"] = f"{bottom}-{top}" if bottom != top else str(bottom)
     return base
+
+
+def target_brief(target: dict) -> str:
+    if target.get("kind") == "reps":
+        return (
+            f"{target['name']} {target.get('current_reps')}"
+            f"→{target.get('target_reps')} 次"
+        )
+    if target.get("kind") == "sets":
+        return (
+            f"{target['name']} {target.get('current_sets')}"
+            f"→{target.get('target_sets')} 组"
+        )
+    return (
+        f"{target['name']} {float(target['current_weight_kg']):g}"
+        f"→{float(target['target_weight_kg']):g}kg"
+    )
 
 
 def build_plan(
@@ -247,21 +355,29 @@ def build_plan(
         wins: list[str] = []
         for item in sorted(day.exercises, key=lambda row: row.order_index):
             value = dict(next(row for row in before if row["id"] == item.id))
-            # Progression currently only owns weighted strength work. Mobility,
-            # bodyweight and cardio rows should not flood the weekly review.
-            if item.weight_kg is None or float(item.weight_kg) <= 0:
+            exercise = item.exercise
+            weighted = item.weight_kg is not None and float(item.weight_kg) > 0
+            bodyweight_strength = (
+                exercise is not None
+                and exercise.equipment == "bodyweight"
+                and exercise.training_type_code == "strength"
+            )
+            # Mobility, stretching and cardio rows should not flood the review.
+            if not weighted and not bodyweight_strength:
                 adjusted.append(value)
                 continue
             target = _recommend(item, performance.get(item.exercise_slug))
             targets.append(target)
-            if target["action"] in {"up", "down"} and target["target_weight_kg"]:
-                value["weight_kg"] = target["target_weight_kg"]
+            if target["action"] in {"up", "down"}:
+                if target.get("kind") == "reps":
+                    value["reps"] = target["target_reps"]
+                elif target.get("kind") == "sets":
+                    value["sets"] = target["target_sets"]
+                elif target.get("target_weight_kg") is not None:
+                    value["weight_kg"] = target["target_weight_kg"]
                 changed = True
                 arrow = "↑" if target["action"] == "up" else "↓"
-                wins.append(
-                    f"{target['name']} {float(target['current_weight_kg']):g}"
-                    f"→{float(target['target_weight_kg']):g}kg {arrow}"
-                )
+                wins.append(target_brief(target) + f" {arrow}")
             adjusted.append(value)
         if not changed:
             continue
@@ -303,7 +419,7 @@ def build_plan(
     truncated = max(0, len(actions) - MAX_PROGRESSION_DAYS)
     actions = actions[:MAX_PROGRESSION_DAYS]
     lines = "；".join(
-        f"{item['name']} {item['current_weight_kg']}→{item['target_weight_kg']}kg"
+        target_brief(item)
         for item in targets
         if item["action"] in {"up", "down"}
     )
@@ -350,21 +466,28 @@ def format_facts(plan: dict) -> str:
         return str(plan.get("question") or "暂时没有可用的进阶建议。")
     lines = [f"下周进阶建议（第 {plan['week_index']} 周）："]
     for item in (plan.get("targets") or [])[:8]:
-        current = item.get("current_weight_kg")
-        target = item.get("target_weight_kg")
+        kind = item.get("kind")
         if item["action"] == "hold":
-            weight = (
-                f"{float(current):g}kg"
-                if current is not None
-                else "原重量"
-            )
+            if kind == "reps":
+                current = item.get("current_reps")
+                keep = f"{current} 次" if current else "原次数"
+            elif kind == "sets":
+                current = item.get("current_sets")
+                keep = f"{current} 组" if current else "原组数"
+            else:
+                current = item.get("current_weight_kg")
+                keep = (
+                    f"{float(current):g}kg"
+                    if current is not None
+                    else "原重量"
+                )
             lines.append(
-                f"{item['name']}：保持 {weight}（{item.get('reason') or '先稳住'}）。"
+                f"{item['name']}：保持 {keep}（{item.get('reason') or '先稳住'}）。"
             )
         else:
             arrow = "加" if item["action"] == "up" else "降"
             lines.append(
-                f"{item['name']}：{current}→{target}kg，{arrow}；"
+                f"{target_brief(item)}，{arrow}；"
                 f"目标 {item.get('rep_target')} 次。"
             )
     return "\n".join(lines)

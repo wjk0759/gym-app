@@ -3838,7 +3838,10 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
     context = build_coach_context(db, user_id)
     nutrition = context.get("nutrition_7d") or {}
     program = active_program(db, user_id)
-    from .coach_control.progression import build_plan as build_progression_plan
+    from .coach_control.progression import (
+        build_plan as build_progression_plan,
+    )
+    from .coach_control.progression import target_brief
     from .coach_control.readiness import snapshot as readiness_snapshot
 
     readiness = readiness_snapshot(db, user_id, now=now)
@@ -3967,12 +3970,10 @@ def generate_weekly_review(db: Session, user_id: str) -> dict:
             item
             for item in progression.get("targets") or []
             if item.get("action") in {"up", "down"}
-            and item.get("target_weight_kg") is not None
         ]
         if changed:
             preview = "、".join(
-                f"{item['name']} {float(item['current_weight_kg']):g}"
-                f"→{float(item['target_weight_kg']):g}kg"
+                target_brief(item)
                 for item in changed[:2]
             )
             actions.append(f"下周按动作调整：{preview}；可在教练里确认后写入")
