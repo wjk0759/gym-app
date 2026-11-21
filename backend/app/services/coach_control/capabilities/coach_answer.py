@@ -71,6 +71,38 @@ async def resolve(
                 + str(equipment.get("name"))
                 + (f"。{detail}" if detail else "")
             )
+        active = app_context.get("active_workout")
+        if isinstance(active, dict) and active.get("current_name"):
+            lines = [
+                f"进行中的训练：{active.get('title') or '训练'}",
+                f"当前动作：{active.get('current_name')}",
+            ]
+            planned = active.get("planned_sets")
+            completed = active.get("completed_sets")
+            if planned:
+                lines.append(
+                    f"当前动作计划 {planned} 组，已完成 {completed or 0} 组"
+                )
+            last_set = active.get("last_set")
+            if isinstance(last_set, dict):
+                weight = float(last_set.get("weight_kg") or 0)
+                reps = int(last_set.get("reps") or 0)
+                rpe = last_set.get("rpe")
+                load = "自重" if weight <= 0 else f"{weight:g} kg"
+                rpe_text = f"RPE {rpe}" if rpe is not None else "未记 RPE"
+                lines.append(f"上一组：{load} × {reps} 次，{rpe_text}")
+                if rpe is not None and float(rpe) >= 9:
+                    lines.append(
+                        "上一组 RPE 偏高：不要建议加重量，优先保持或降 5%，"
+                        "并确认动作没有变形。"
+                    )
+            feeling = active.get("feeling")
+            if isinstance(feeling, int) and feeling <= 2:
+                lines.append("主观感受偏低：先降 1 组或降 5%，不要硬顶。")
+            context_parts.append(
+                "当前训练（客户端实时状态，只能据此回答，不要编造未给出的组数）：\n"
+                + "\n".join(lines)
+            )
     result = await coach_reply(
         db,
         profile,

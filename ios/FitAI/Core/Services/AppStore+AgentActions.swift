@@ -122,6 +122,41 @@ extension AppStore {
                 "planned_sets": plannedSets(for: today),
             ]
         }
+        if let draft = workoutDraft {
+            let exercises = draft.exercises
+                ?? plan.days.first(where: { $0.id == draft.dayID })?.exercises
+                ?? []
+            let current = exercises.indices.contains(draft.currentIndex)
+                ? exercises[draft.currentIndex]
+                : nil
+            let currentLogs = current.map { exercise in
+                draft.logs.filter { $0.slug == exercise.slug }
+            } ?? []
+            let lastSet = currentLogs.last(where: { $0.completed })
+                ?? currentLogs.last
+            var active: [String: Any] = [
+                "day_id": draft.dayID.uuidString,
+                "title": draft.dayTitle,
+                "current_index": draft.currentIndex,
+                "elapsed_seconds": Int(draft.elapsedSeconds),
+                "feeling": draft.feeling,
+                "completed_sets": currentLogs.filter(\.completed).count,
+            ]
+            if let current {
+                active["current_slug"] = current.slug
+                active["current_name"] = current.exercise?.nameZH ?? current.slug
+                active["planned_sets"] = current.sets
+                active["target_reps"] = current.reps
+            }
+            if let lastSet {
+                active["last_set"] = [
+                    "weight_kg": lastSet.weightKG,
+                    "reps": lastSet.reps,
+                    "rpe": lastSet.rpe,
+                ]
+            }
+            context["active_workout"] = active
+        }
         return context
     }
 
