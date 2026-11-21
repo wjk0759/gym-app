@@ -158,6 +158,16 @@
   - Release 3 剩余：定时主动推送调度、训练页内嵌 co-pilot 浮层、自重动作进阶。
   - Mac build + 真机验证现有提醒/建档/co-pilot/进阶卡。
 - 仍 BLOCKED：N33 话术、iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
+### 2026-11-21 · macOS（f9ed8da Release 3 复测：readiness/co-pilot 通过，N34/N37 阻断）
+
+- 环境：生产后端 `f9ed8da`；iOS 源码 `f9ed8da`，真机仍 `7d03219`；账号 `macqa_coach`；真实 3 练计划 + `app_context`。
+- **通过**：N29/N30/N31/N33 继续通过；readiness 两问均 `coach.answer` 且无写卡；`这周复盘` payload 含 readiness/no_data/acwr；active_workout RPE 9.5 时“下一组怎么练”降 18kg×8、“还能加吗”明确别加，均无 pending。
+- **N34 P1/P2 仍阻断**：“下周一到周三出差”仍只有训练建议，无顺延/跳过卡；加“顺延/跳过”才出 batch。
+- **N37 P2 新发现**：active_workout 回复“这组做完，深蹲换前弓步”，但计划实际仍是持瓶自重深蹲；旧 `preference friday_full_body_c_lunge` / `weekly_schedule` 仍被当成当前计划。
+- **N32 P2**：“第一周每天练什么”仍不列每天。
+- **N35/N36 P2**：30 天阻塞窗口仍回下一练；多习惯“喝水和睡觉”仍只生成 hydration。
+- iOS：`FitAITests` 144/144、iPhone 17 UI 7/7、SE UI 7/7；clean build/test 通过；未安装新包。
+- 本轮未部署；N34/N37 优先，N32/N35/N36 一起收口。
 
 ### 2026-11-21 · Windows（Release 3：训练中 co-pilot）
 

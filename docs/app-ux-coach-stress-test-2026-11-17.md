@@ -1831,3 +1831,59 @@ Windows 规格里的示例：
 
 - 本轮未部署：iOS 真机仍 `7d03219`，新 iOS 源码未安装；生产后端仍 `3d40b36`。
 - N34 优先；N32/N35/N36 一起收口。
+
+## 四十、2026-11-21 `f9ed8da` Release 3 复测：readiness/co-pilot 通过，N34/N37 仍阻断
+
+- 环境：生产后端 `f9ed8da`；iOS 源码 `f9ed8da`（未装真机，真机仍 `7d03219`）；账号 `macqa_coach`；真实 3 练计划 + `app_context`。
+- iOS：`FitAITests` **144/144**、iPhone 17 UI **7/7**、SE UI **7/7**；clean build/test 通过。
+- 结论：readiness、自适应复盘、active_workout co-pilot 的基本回答通过；N34/N37 仍阻断，N32/N35/N36 仍 P2。本轮不部署。
+
+### 已通过
+
+- **N29/N30/N31/N33 继续通过**（见第三十九节）：上周吃了什么、加一组、旧记忆过滤、伤病档案问答。
+- **N32 P2**：`第一周每天练什么` 仍只答“本周 3 练，已完成 0 次”，不列每天。
+- **readiness**：
+  - `我最近恢复得怎么样` → `coach.answer`，如实说 28 天无训练、无法判断，无 pending。
+  - `我最近太累了，训练怎么办` → `coach.answer`，给轻量建议，不生成计划卡。
+- **weekly review**：`这周复盘` → `review.weekly`，payload 含 `readiness_status=no_data`、ACWR null、急性/慢性负荷；符合无数据状态。
+- **active_workout co-pilot**：
+  - 合成“持瓶自重深蹲、计划 4 组、完成 2 组、上一组 20kg×8 RPE 9.5、感受 2”。
+  - `下一组怎么练` → 不建议加重量，建议降到 18kg×8、休息 2.5 分钟；无 pending。
+  - `这个重量还能加吗` → 明确“先别加”，守 20kg×8，不加次数；无 pending。
+  - 说明 active_workout 上下文注入和 RPE 硬规则生效。
+
+### N34 仍 P1/P2：canonical 生活事件不出卡
+
+```text
+下周一到周三出差
+→ intent=coach.answer, pending=None
+→ “那就把课压在周六、周日两天，今天全身 A…”
+```
+
+仍然只有建议，没有顺延/跳过卡，也没有追问。加动作词才正常：
+
+- `下周一到周三出差，训练顺延到之后` → `coach.batch` 2 个 reschedule。
+- `下周一到周三出差，训练跳过不补了` → `coach.batch` 2 个 skip。
+- `下周一加班，训练改到周二` → 单张 `training.reschedule`。
+
+### N37 P2：co-pilot 把旧偏好当成当前计划
+
+active_workout 回复结尾：
+
+```text
+这组做完，深蹲换前弓步，后面还有两组。
+```
+
+当前计划实际是 `vital-bodyweight-squat-with-bottles-hand`（持瓶自重深蹲），没有执行换成前弓步。来源是旧 `preference friday_full_body_c_lunge`（“用户希望…”），但模型把它当成已应用计划。
+
+`/coach/memories` 仍返回 `friday_full_body_c_lunge` 和 `weekly_schedule`（C 移至周日）；这些软意愿/旧 schedule 不应被描述为当前动作。
+
+### N35/N36 仍 P2
+
+- `接下来30天都在外地，训练怎么办` → `training.preview_next` 回答下一练，没有说明 30 天无法排。
+- `每天10点提醒我喝水和睡觉` → 只生成 hydration，sleep 丢弃；单习惯/关闭/无时间追问正常。
+
+### 部署状态
+
+- 本轮未部署：iOS 真机仍 `7d03219`，新 iOS 源码未安装；后端仍 `f9ed8da`。
+- N34/N37 优先；N32/N35/N36 一起收口。
