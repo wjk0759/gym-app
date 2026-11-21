@@ -1,0 +1,636 @@
+{
+  "generated_at": "2026-11-21T13:11:09.973310+00:00",
+  "model": "deepseek-flash",
+  "total": 13,
+  "passed": 13,
+  "pass_rate": 1.0,
+  "cases": [
+    {
+      "name": "readiness_high_load",
+      "message": "我最近恢复得怎么样",
+      "intent": "coach.answer",
+      "latency_ms": 4124,
+      "reply": "恢复压力偏高。近 7 天你练了 5 次，前 3 周加起来才 1 次，负荷直接翻上去，平均 RPE 还到 9——加得太猛，不是恢复慢。\n\n今天腿日先收着：徒手深蹲 3 组，每组留 3 次余力就停，不练到力竭。这两天有睡不好或者动作发飘吗？",
+      "pending": {},
+      "checks": [
+        {
+          "name": "intent",
+          "passed": true,
+          "detail": "coach.answer"
+        },
+        {
+          "name": "no_card",
+          "passed": true,
+          "detail": "{}"
+        },
+        {
+          "name": "status",
+          "passed": true,
+          "detail": "恢复压力偏高。近 7 天你练了 5 次，前 3 周加起来才 1 次，负荷直接翻上去，平均 RPE 还到 9——加得太猛，不是恢复慢。\n\n今天腿日先收着：徒手深蹲 3 组，每组留 3 次余力就停，不练到力竭。这两天有睡不好或者动作发飘吗？"
+        },
+        {
+          "name": "has_numbers",
+          "passed": true,
+          "detail": "恢复压力偏高。近 7 天你练了 5 次，前 3 周加起来才 1 次，负荷直接翻上去，平均 RPE 还到 9——加得太猛，不是恢复慢。\n\n今天腿日先收着：徒手深蹲 3 组，每组留 3 次余力就停，不练到力竭。这两天有睡不好或者动作发飘吗？"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "weekly_review",
+      "message": "这周复盘",
+      "intent": "review.weekly",
+      "latency_ms": 27,
+      "reply": "本周计划 3 次，完成 0 次，计划完成率 0%；跳过 0 次，错过 2 次，总容量 0 kg。",
+      "pending": {
+        "id": "10f28d07-b364-4303-b7e2-c8ce9b3866e1",
+        "kind": "insight",
+        "capability_id": "review.weekly",
+        "payload": {
+          "summary": "本周计划 3 次，完成 0 次，计划完成率 0%；跳过 0 次，错过 2 次，总容量 0 kg。",
+          "wins": [
+            "建立了本周训练基线"
+          ],
+          "watchouts": [
+            "有 2 次计划训练未完成",
+            "平均 RPE 偏高，恢复压力较大",
+            "近 7 天负荷明显高于前 3 周平均"
+          ],
+          "actions": [
+            "先补 1 次 45 分钟训练，优先保留主项，不必把错过的次数全部补回来",
+            "下一次同动作降 1 组或降 5% 重量，把 RPE 控制在 7–8",
+            "下周安排减载：主项降 1 组或 5% 重量，RPE 控制在 7–8，连续两天疲劳就休息"
+          ],
+          "stats": {
+            "sessions": 4,
+            "planned": 3,
+            "completion_rate": 0.0,
+            "planned_days": 3,
+            "completed_plan_days": 0,
+            "skipped_plan_days": 0,
+            "missed_plan_days": 2,
+            "adherence_rate": 0.0,
+            "volume_kg": 0.0,
+            "average_rpe": 9.0,
+            "readiness_status": "high_risk",
+            "acute_load": 4050,
+            "chronic_weekly_load": 1215,
+            "acwr": 3.33,
+            "progression_ready": true,
+            "average_duration_min": 90,
+            "previous_volume_kg": 0.0,
+            "nutrition_logged_days": 0,
+            "diet_planned_meals": 0,
+            "diet_logged_plan_meals": 0,
+            "diet_adherence_rate": null,
+            "diet_planned_kcal": 0,
+            "diet_actual_kcal": 0,
+            "plan_title": "四周评估计划"
+          },
+          "readiness": {
+            "status": "high_risk",
+            "summary": "近 7 天负荷明显高于前 3 周平均，恢复压力偏高。",
+            "actions": [
+              "本周先减载：主项降 1 组或降 5% 重量，下一次 RPE 控制在 7。",
+              "连续两天疲劳、睡不好或动作发飘时，直接安排休息，不要硬顶。"
+            ],
+            "load_estimated": false,
+            "acwr": 3.33,
+            "acute_load": 4050,
+            "chronic_weekly_load": 1215,
+            "sessions_7d": 5,
+            "sessions_28d": 6,
+            "average_rpe_7d": 9.0,
+            "volume_7d_kg": 0,
+            "days_since_last": 1
+          },
+          "progression": {
+            "ready": true,
+            "week_index": 2,
+            "targets": [
+              {
+                "slug": "push-up",
+                "name": "俯卧撑",
+                "kind": "reps",
+                "current_weight_kg": null,
+                "target_weight_kg": null,
+                "current_sets": 3,
+                "target_sets": 3,
+                "current_reps": "10-12",
+                "target_reps": "10-12",
+                "action": "hold",
+                "rep_target": "10-12",
+                "reason": "还没有训练记录"
+              },
+              {
+                "slug": "dumbbell-curl",
+                "name": "哑铃弯举",
+                "kind": "weight",
+                "current_weight_kg": 8,
+                "target_weight_kg": 8,
+                "action": "hold",
+                "reason": "没有可用重量或记录"
+              },
+              {
+                "slug": "air-squat",
+                "name": "徒手深蹲",
+                "kind": "sets",
+                "current_weight_kg": null,
+                "target_weight_kg": null,
+                "current_sets": 3,
+                "target_sets": 2,
+                "current_reps": "10-12",
+                "target_reps": "10-12",
+                "action": "down",
+                "rep_target": "10-12",
+                "reason": "上一组 RPE 9.0"
+              }
+            ],
+            "days": [
+              {
+                "capability_id": "training.edit_day_exercise",
+                "payload": {
+                  "plan_id": "eval-program",
+                  "day_id": "eval-w2-d6",
+                  "date": "2026-11-28",
+                  "title": "腿",
+                  "before": [
+                    {
+                      "id": "eval-ex-2-6",
+                      "order_index": 1,
+                      "slug": "air-squat",
+                      "sets": 3,
+                      "reps": "10-12",
+                      "weight_kg": null,
+                      "rest_sec": 60,
+                      "rpe": 7,
+                      "notes": null
+                    }
+                  ],
+                  "exercises": [
+                    {
+                      "id": "eval-ex-2-6",
+                      "order_index": 1,
+                      "slug": "air-squat",
+                      "sets": 2,
+                      "reps": "10-12",
+                      "weight_kg": null,
+                      "rest_sec": 60,
+                      "rpe": 7,
+                      "notes": null
+                    }
+                  ],
+                  "summary": "下周 2026-11-28 的「腿」：徒手深蹲 3→2 组（10-12 次） ↓。",
+                  "wins": [
+                    "徒手深蹲 3→2 组（10-12 次） ↓"
+                  ],
+                  "watchouts": [],
+                  "actions": []
+                },
+                "summary": "下周 2026-11-28 的「腿」：徒手深蹲 3→2 组（10-12 次） ↓。"
+              }
+            ],
+            "truncated": 0,
+            "summary": "下周进阶建议：徒手深蹲 3→2 组（10-12 次）。"
+          },
+          "generated_at": "2026-11-21T13:10:51.273684+00:00",
+          "week_start": "2026-11-16"
+        },
+        "status": "pending",
+        "action_id": null,
+        "expires_at": "2026-11-21T13:40:51.290014"
+      },
+      "checks": [
+        {
+          "name": "intent",
+          "passed": true,
+          "detail": "review.weekly"
+        },
+        {
+          "name": "readiness",
+          "passed": true,
+          "detail": "{'sessions': 4, 'planned': 3, 'completion_rate': 0.0, 'planned_days': 3, 'completed_plan_days': 0, 'skipped_plan_days': 0, 'missed_plan_days': 2, 'adherence_rate': 0.0, 'volume_kg': 0.0, 'average_rpe': 9.0, 'readiness_status': 'high_risk', 'acute_load': 4050, 'chronic_weekly_load': 1215, 'acwr': 3.33, 'progression_ready': True, 'average_duration_min': 90, 'previous_volume_kg': 0.0, 'nutrition_logged_days': 0, 'diet_planned_meals': 0, 'diet_logged_plan_meals': 0, 'diet_adherence_rate': None, 'diet_planned_kcal': 0, 'diet_actual_kcal': 0, 'plan_title': '四周评估计划'}"
+        },
+        {
+          "name": "down_target",
+          "passed": true,
+          "detail": "[{'id': 'eval-ex-2-6', 'order_index': 1, 'slug': 'air-squat', 'sets': 2, 'reps': '10-12', 'weight_kg': None, 'rest_sec': 60, 'rpe': 7, 'notes': None}]"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "progression_down_read",
+      "message": "下周徒手深蹲加多少",
+      "intent": "coach.answer",
+      "latency_ms": 2980,
+      "reply": "徒手深蹲没重量可加，下周是降不是加：3 组减到 2 组，每组 10–12 次，下蹲慢 2 秒，蹲到大腿平行就够。\n\n想上负荷就抱个哑铃在胸前做，但你手上哑铃最重几公斤？",
+      "pending": {},
+      "checks": [
+        {
+          "name": "intent",
+          "passed": true,
+          "detail": "coach.answer"
+        },
+        {
+          "name": "no_card",
+          "passed": true,
+          "detail": "{}"
+        },
+        {
+          "name": "down_advice",
+          "passed": true,
+          "detail": "徒手深蹲没重量可加，下周是降不是加：3 组减到 2 组，每组 10–12 次，下蹲慢 2 秒，蹲到大腿平行就够。\n\n想上负荷就抱个哑铃在胸前做，但你手上哑铃最重几公斤？"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "progression_down_apply",
+      "message": "帮我按建议改下周",
+      "intent": "training.edit_day_exercise",
+      "latency_ms": 13,
+      "reply": "下周进阶建议：徒手深蹲 3→2 组（10-12 次）。 确认后一次性写入下周计划，整组可撤销。",
+      "pending": {
+        "id": "0a532c9f-4ee2-4375-8d5b-9f43c712eca3",
+        "kind": "proposal",
+        "capability_id": "training.edit_day_exercise",
+        "payload": {
+          "plan_id": "eval-program",
+          "day_id": "eval-w2-d6",
+          "date": "2026-11-28",
+          "title": "腿",
+          "before": [
+            {
+              "id": "eval-ex-2-6",
+              "order_index": 1,
+              "slug": "air-squat",
+              "sets": 3,
+              "reps": "10-12",
+              "weight_kg": null,
+              "rest_sec": 60,
+              "rpe": 7,
+              "notes": null
+            }
+          ],
+          "exercises": [
+            {
+              "id": "eval-ex-2-6",
+              "order_index": 1,
+              "slug": "air-squat",
+              "sets": 2,
+              "reps": "10-12",
+              "weight_kg": null,
+              "rest_sec": 60,
+              "rpe": 7,
+              "notes": null
+            }
+          ],
+          "summary": "下周 2026-11-28 的「腿」：徒手深蹲 3→2 组（10-12 次） ↓。",
+          "wins": [
+            "徒手深蹲 3→2 组（10-12 次） ↓"
+          ],
+          "watchouts": [],
+          "actions": []
+        },
+        "status": "pending",
+        "action_id": null,
+        "expires_at": "2026-11-21T13:40:54.284312"
+      },
+      "checks": [
+        {
+          "name": "capability",
+          "passed": true,
+          "detail": "training.edit_day_exercise"
+        },
+        {
+          "name": "leg_target",
+          "passed": true,
+          "detail": "[{'id': 'eval-ex-2-6', 'order_index': 1, 'slug': 'air-squat', 'sets': 2, 'reps': '10-12', 'weight_kg': None, 'rest_sec': 60, 'rpe': 7, 'notes': None}]"
+        },
+        {
+          "name": "sets_after_confirm",
+          "passed": true,
+          "detail": "2"
+        },
+        {
+          "name": "sets_after_undo",
+          "passed": true,
+          "detail": "3"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "progression_up_read",
+      "message": "下周徒手深蹲加多少",
+      "intent": "coach.answer",
+      "latency_ms": 1811,
+      "reply": "徒手深蹲不加重量，加次数：3 组，每组目标 12–14 次，最后一组留 2 次余力就行。\n\n今天正好是腿日，先按这个做一遍，感受哪组开始变慢，回来告诉我。",
+      "pending": {},
+      "checks": [
+        {
+          "name": "intent",
+          "passed": true,
+          "detail": "coach.answer"
+        },
+        {
+          "name": "no_card",
+          "passed": true,
+          "detail": "{}"
+        },
+        {
+          "name": "rep_target",
+          "passed": true,
+          "detail": "徒手深蹲不加重量，加次数：3 组，每组目标 12–14 次，最后一组留 2 次余力就行。\n\n今天正好是腿日，先按这个做一遍，感受哪组开始变慢，回来告诉我。"
+        },
+        {
+          "name": "sets_not_invented",
+          "passed": true,
+          "detail": "徒手深蹲不加重量，加次数：3 组，每组目标 12–14 次，最后一组留 2 次余力就行。\n\n今天正好是腿日，先按这个做一遍，感受哪组开始变慢，回来告诉我。"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "progression_up_apply",
+      "message": "帮我按建议改下周",
+      "intent": "training.edit_day_exercise",
+      "latency_ms": 13,
+      "reply": "下周进阶建议：徒手深蹲 3 组 10-12→10-14 次。 确认后一次性写入下周计划，整组可撤销。",
+      "pending": {
+        "id": "780355ce-61cb-4fd2-88cc-bf5163f6170c",
+        "kind": "proposal",
+        "capability_id": "training.edit_day_exercise",
+        "payload": {
+          "plan_id": "eval-program",
+          "day_id": "eval-w2-d6",
+          "date": "2026-11-28",
+          "title": "腿",
+          "before": [
+            {
+              "id": "535fdbce-160f-4f9c-9640-a3d2d0f6a3c4",
+              "order_index": 1,
+              "slug": "air-squat",
+              "sets": 3,
+              "reps": "10-12",
+              "weight_kg": null,
+              "rest_sec": 60,
+              "rpe": 7,
+              "notes": null
+            }
+          ],
+          "exercises": [
+            {
+              "id": "535fdbce-160f-4f9c-9640-a3d2d0f6a3c4",
+              "order_index": 1,
+              "slug": "air-squat",
+              "sets": 3,
+              "reps": "10-14",
+              "weight_kg": null,
+              "rest_sec": 60,
+              "rpe": 7,
+              "notes": null
+            }
+          ],
+          "summary": "下周 2026-11-28 的「腿」：徒手深蹲 3 组 10-12→10-14 次 ↑。",
+          "wins": [
+            "徒手深蹲 3 组 10-12→10-14 次 ↑"
+          ],
+          "watchouts": [],
+          "actions": []
+        },
+        "status": "pending",
+        "action_id": null,
+        "expires_at": "2026-11-21T13:40:56.136643"
+      },
+      "checks": [
+        {
+          "name": "capability",
+          "passed": true,
+          "detail": "training.edit_day_exercise"
+        },
+        {
+          "name": "leg_target",
+          "passed": true,
+          "detail": "[{'id': '535fdbce-160f-4f9c-9640-a3d2d0f6a3c4', 'order_index': 1, 'slug': 'air-squat', 'sets': 3, 'reps': '10-14', 'weight_kg': None, 'rest_sec': 60, 'rpe': 7, 'notes': None}]"
+        },
+        {
+          "name": "reps_after_confirm",
+          "passed": true,
+          "detail": "10-14"
+        },
+        {
+          "name": "reps_after_undo",
+          "passed": true,
+          "detail": "10-12"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "injury",
+      "message": "我有伤病吗",
+      "intent": "coach.answer",
+      "latency_ms": 1085,
+      "reply": "记录里没有伤病。你要是哪块疼，直接说位置和疼法，我按这个调整动作。",
+      "pending": {},
+      "checks": [
+        {
+          "name": "intent",
+          "passed": true,
+          "detail": "coach.answer"
+        },
+        {
+          "name": "no_card",
+          "passed": true,
+          "detail": "{}"
+        },
+        {
+          "name": "no_injury",
+          "passed": true,
+          "detail": "记录里没有伤病。你要是哪块疼，直接说位置和疼法，我按这个调整动作。"
+        },
+        {
+          "name": "no_fabrication",
+          "passed": true,
+          "detail": "记录里没有伤病。你要是哪块疼，直接说位置和疼法，我按这个调整动作。"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "plan_explanation",
+      "message": "为什么这样安排计划",
+      "intent": "coach.answer",
+      "latency_ms": 3865,
+      "reply": "第 1 周先摸清底细，不追求训练量：每个训练日只安排一个动作，重点看动作质量和出勤；每周 3 次、每次 45 分钟，这个频率是你下限，先稳定下来。\n\n你最近 30 天只练了 6 次，等出勤稳定到每周 3 次，第 2 周再增加动作。\n\n今天深蹲 3 组 15 次，RPE 7，做完告诉我腿是什么感觉。",
+      "pending": {},
+      "checks": [
+        {
+          "name": "intent",
+          "passed": true,
+          "detail": "coach.answer"
+        },
+        {
+          "name": "no_card",
+          "passed": true,
+          "detail": "{}"
+        },
+        {
+          "name": "plan_terms",
+          "passed": true,
+          "detail": "第 1 周先摸清底细，不追求训练量：每个训练日只安排一个动作，重点看动作质量和出勤；每周 3 次、每次 45 分钟，这个频率是你下限，先稳定下来。\n\n你最近 30 天只练了 6 次，等出勤稳定到每周 3 次，第 2 周再增加动作。\n\n今天深蹲 3 组 15 次，RPE 7，做完告诉我腿是什么感觉。"
+        },
+        {
+          "name": "not_generated",
+          "passed": true,
+          "detail": "第 1 周先摸清底细，不追求训练量：每个训练日只安排一个动作，重点看动作质量和出勤；每周 3 次、每次 45 分钟，这个频率是你下限，先稳定下来。\n\n你最近 30 天只练了 6 次，等出勤稳定到每周 3 次，第 2 周再增加动作。\n\n今天深蹲 3 组 15 次，RPE 7，做完告诉我腿是什么感觉。"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "week2",
+      "message": "第二周每天练什么",
+      "intent": "training.week_schedule",
+      "latency_ms": 11,
+      "reply": "第 2 周（11-24–11-28）计划 3 练，已完成 1 次。\n• 周二 11月24日：推（待训练）\n• 周四 11月26日：拉（待训练）\n• 周六 11月28日：腿（已完成）",
+      "pending": {
+        "id": "f5deedf6-707a-4d46-9499-807198e43205",
+        "kind": "insight",
+        "capability_id": "training.week_schedule",
+        "payload": {
+          "summary": "第 2 周（11-24–11-28）计划 3 练，已完成 1 次。",
+          "wins": [
+            "周二 11月24日：推（待训练）",
+            "周四 11月26日：拉（待训练）",
+            "周六 11月28日：腿（已完成）"
+          ],
+          "watchouts": [],
+          "actions": []
+        },
+        "status": "pending",
+        "action_id": null,
+        "expires_at": "2026-11-21T13:41:01.106594"
+      },
+      "checks": [
+        {
+          "name": "intent",
+          "passed": true,
+          "detail": "training.week_schedule"
+        },
+        {
+          "name": "insight",
+          "passed": true,
+          "detail": "{'id': 'f5deedf6-707a-4d46-9499-807198e43205', 'kind': 'insight', 'capability_id': 'training.week_schedule', 'payload': {'summary': '第 2 周（11-24–11-28）计划 3 练，已完成 1 次。', 'wins': ['周二 11月24日：推（待训练）', '周四 11月26日：拉（待训练）', '周六 11月28日：腿（已完成）'], 'watchouts': [], 'actions': []}, 'status': 'pending', 'action_id': None, 'expires_at': '2026-11-21T13:41:01.106594'}"
+        },
+        {
+          "name": "bullets",
+          "passed": true,
+          "detail": "第 2 周（11-24–11-28）计划 3 练，已完成 1 次。\n• 周二 11月24日：推（待训练）\n• 周四 11月26日：拉（待训练）\n• 周六 11月28日：腿（已完成）"
+        },
+        {
+          "name": "week_label",
+          "passed": true,
+          "detail": "第 2 周（11-24–11-28）计划 3 练，已完成 1 次。\n• 周二 11月24日：推（待训练）\n• 周四 11月26日：拉（待训练）\n• 周六 11月28日：腿（已完成）"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "profile_gap",
+      "message": "我还缺什么档案",
+      "intent": "coach.answer",
+      "latency_ms": 1844,
+      "reply": "档案齐了，没缺项。目标、频率、时间、器械、伤病都填全了。\n\n今天周六是腿日，徒手深蹲安排上了吗？",
+      "pending": {},
+      "checks": [
+        {
+          "name": "intent",
+          "passed": true,
+          "detail": "coach.answer"
+        },
+        {
+          "name": "complete",
+          "passed": true,
+          "detail": "档案齐了，没缺项。目标、频率、时间、器械、伤病都填全了。\n\n今天周六是腿日，徒手深蹲安排上了吗？"
+        },
+        {
+          "name": "no_false_gap",
+          "passed": true,
+          "detail": "档案齐了，没缺项。目标、频率、时间、器械、伤病都填全了。\n\n今天周六是腿日，徒手深蹲安排上了吗？"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "diet_empty",
+      "message": "最近饮食怎么样",
+      "intent": "coach.answer",
+      "latency_ms": 1616,
+      "reply": "近 7 天一条饮食记录都没有，我这边看不到你吃了什么，没法评估。\n\n今天先把晚餐记下来：吃了什么、大概多少，够了。你今天打算先记哪一顿？",
+      "pending": {},
+      "checks": [
+        {
+          "name": "intent",
+          "passed": true,
+          "detail": "coach.answer"
+        },
+        {
+          "name": "empty",
+          "passed": true,
+          "detail": "近 7 天一条饮食记录都没有，我这边看不到你吃了什么，没法评估。\n\n今天先把晚餐记下来：吃了什么、大概多少，够了。你今天打算先记哪一顿？"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "exercise_howto",
+      "message": "深蹲怎么做",
+      "intent": "coach.answer",
+      "latency_ms": 2838,
+      "reply": "脚与肩同宽、脚尖略外八，先屈髋再屈膝，膝盖始终跟着脚尖方向，下到大腿接近平行，起身时蹬地、髋膝一起伸。4 组、每组 15 次，最后两次明显吃力才算练到。\n\n徒手对你这个体重偏轻，今天先按这个做，感觉稳了下次抱个哑铃到胸前做。",
+      "pending": {},
+      "checks": [
+        {
+          "name": "intent",
+          "passed": true,
+          "detail": "coach.answer"
+        },
+        {
+          "name": "no_card",
+          "passed": true,
+          "detail": "{}"
+        },
+        {
+          "name": "technique",
+          "passed": true,
+          "detail": "脚与肩同宽、脚尖略外八，先屈髋再屈膝，膝盖始终跟着脚尖方向，下到大腿接近平行，起身时蹬地、髋膝一起伸。4 组、每组 15 次，最后两次明显吃力才算练到。\n\n徒手对你这个体重偏轻，今天先按这个做，感觉稳了下次抱个哑铃到胸前做。"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "today",
+      "message": "今天周几",
+      "intent": "coach.answer",
+      "latency_ms": 2565,
+      "reply": "周六，按计划是腿日。徒手深蹲 4 组，每组做到还剩 2–3 次就停，45 分钟够用。今天练吗？",
+      "pending": {},
+      "checks": [
+        {
+          "name": "intent",
+          "passed": true,
+          "detail": "coach.answer"
+        },
+        {
+          "name": "weekday",
+          "passed": true,
+          "detail": "expected=周六 reply=周六，按计划是腿日。徒手深蹲 4 组，每组做到还剩 2–3 次就停，45 分钟够用。今天练吗？"
+        }
+      ],
+      "passed": true
+    }
+  ]
+}

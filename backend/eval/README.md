@@ -184,3 +184,24 @@ Update `PRICE_*` in `runner.py` only when the official rate card changes.
 
 Video is deliberately converted to keyframes on iOS before upload. The backend
 never accepts a movie file.
+
+## Coach control quality baseline
+
+`eval/coach_control_quality.py` evaluates the new `/coach` control plane with a
+real model while seeding facts into a temporary SQLite database. Numbers,
+readiness and progression targets are deterministic; only wording comes from
+the model. It covers high-load readiness, weekly review, bodyweight progression
+down/up (including confirm/undo), injury fabrication, plan explanation, week-2
+schedule, profile completeness, empty diet history, exercise instructions and
+today's weekday.
+
+Run from `backend` with a real `LLM_API_KEY` in `.env`:
+
+```powershell
+.\.venv\Scripts\python.exe -m eval.coach_control_quality
+```
+
+The result is written to `eval/baselines/coach_control_quality.json`. The
+baseline accepted on 2026-11-21 is **13/13** on `deepseek-flash`; rerun it after
+prompt, context or capability changes. This is separate from the legacy
+`eval.runner` bank, which drives `/agent`.
