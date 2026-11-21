@@ -260,6 +260,20 @@ extension CoachChatView {
             guard pending.payload?.enabled != false else {
                 return "关闭\(labels)提醒"
             }
+            // 多习惯可以各有各的时间；只显示第一项会把“喝水 10:00、
+            // 睡眠 22:00”说成两项都是 10:00。
+            let times = Set(items.map { item in
+                "\(item.hour ?? pending.payload?.hour ?? 19):\(item.minute ?? pending.payload?.minute ?? 0)"
+            })
+            if items.count > 1, times.count > 1 {
+                let details = items.map { item in
+                    let hour = item.hour ?? pending.payload?.hour ?? 19
+                    let minute = item.minute ?? pending.payload?.minute ?? 0
+                    return "\(habitReminderLabel(item.kind)) \(String(format: "%02d:%02d", hour, minute))"
+                }
+                .joined(separator: "、")
+                return "每天 \(details) 提醒"
+            }
             let hour = items.first?.hour ?? pending.payload?.hour ?? 19
             let minute = items.first?.minute ?? pending.payload?.minute ?? 0
             return "每天 \(String(format: "%02d:%02d", hour, minute)) 提醒\(labels)"
