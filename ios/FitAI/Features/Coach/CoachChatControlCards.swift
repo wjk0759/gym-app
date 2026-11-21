@@ -254,12 +254,23 @@ extension CoachChatView {
     }
 
     private func reminderPendingText(_ pending: CoachPendingState) -> String {
+        let label = habitReminderLabel(pending.payload?.kind)
         guard pending.payload?.enabled != false else {
-            return "关闭训练提醒"
+            return "关闭\(label)提醒"
         }
         let hour = pending.payload?.hour ?? 19
         let minute = pending.payload?.minute ?? 0
-        return String(format: "每天 %02d:%02d 提醒训练", hour, minute)
+        return "每天 \(String(format: "%02d:%02d", hour, minute)) 提醒\(label)"
+    }
+
+    private func habitReminderLabel(_ kind: String?) -> String {
+        switch kind {
+        case "hydration": return "喝水"
+        case "protein": return "蛋白质"
+        case "sleep": return "睡眠"
+        case "weight": return "称重"
+        default: return "训练"
+        }
     }
 
     private func dietEditPendingContent(_ pending: CoachPendingState) -> some View {

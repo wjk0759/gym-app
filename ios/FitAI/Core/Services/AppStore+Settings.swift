@@ -31,6 +31,30 @@ extension AppStore {
         markPreferencesDirty()
     }
 
+    /// Habit reminders are local-only: the server parses the intent and shows a
+    /// confirmation card, but each device must schedule its own notification.
+    @MainActor
+    func enableHabitReminder(kind: String, hour: Int, minute: Int) async -> Bool {
+        let granted = await NotificationScheduler.shared.requestAuthorization()
+        notificationsEnabled = granted
+        guard granted else {
+            persist()
+            return false
+        }
+        let scheduled = await NotificationScheduler.shared.scheduleHabitReminder(
+            kind: kind,
+            hour: hour,
+            minute: minute
+        )
+        persist()
+        return scheduled
+    }
+
+    func disableHabitReminder(kind: String) {
+        NotificationScheduler.shared.cancelHabitReminder(kind: kind)
+        persist()
+    }
+
     /// Reconcile the account-level reminder intent with this device's
     /// notification permission and current plan. Called after cloud sync and
     /// when opening settings, so a device that never granted permission cannot

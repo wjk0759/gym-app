@@ -87,6 +87,7 @@ REVIEW = "review.weekly"
 GOAL = "profile.update_goal"
 UPDATE_PROFILE = "profile.update"
 ONBOARD = "profile.onboard"
+LIFE_EVENT = "training.life_event"
 UPDATE_INJURIES = "profile.update_injuries"
 UPDATE_EQUIPMENT = "profile.update_equipment"
 EQUIPMENT_ADD = "equipment.add"
@@ -150,7 +151,10 @@ def _looks_like_training_slot_answer(message: str) -> bool:
     return bool(
         re.search(
             r"周[一二三四五六日天]|星期[一二三四五六日天]|礼拜[一二三四五六日天]|"
-            r"今天|明天|后天|\d{1,2}月\d{1,2}[日号]|\d{4}[-/.]\d{1,2}[-/.]\d{1,2}",
+            r"今天|明天|后天|\d{1,2}月\d{1,2}[日号]|\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|"
+            r"\d{1,2}月\d{1,2}[日号]?\s*(?:到|至|-|~|—)\s*"
+            r"(?:\d{1,2}月)?\d{1,2}[日号]?|"
+            r"\d{1,2}[日号]?\s*(?:到|至|-|~|—)\s*\d{1,2}[日号]?",
             value,
         )
     )
@@ -556,7 +560,8 @@ def _looks_like_reminders(message: str) -> bool:
     return bool(
         re.search(r"提醒|闹钟", message)
         and re.search(
-            r"改|设|开|关|点|每天|早上|上午|中午|下午|晚上|点半|[0-9]",
+            r"改|设|开|关|点|每天|早上|上午|中午|下午|晚上|点半|"
+            r"喝水|饮水|补水|蛋白|睡眠|睡觉|称重|[0-9]",
             message,
         )
     )
@@ -806,6 +811,15 @@ def _looks_like_onboarding(message: str) -> bool:
             r"开始建档|帮我建档|设置档案|录入档案",
             message,
         )
+    )
+
+
+def _looks_like_life_event(message: str) -> bool:
+    """A trip/work/family event must also mention training to be a reschedule."""
+    from .life_events import EVENT_WORDS, TRAINING_WORDS
+
+    return bool(
+        EVENT_WORDS.search(message) and TRAINING_WORDS.search(message)
     )
 
 
@@ -3544,6 +3558,21 @@ async def handle_turn(
             else:
                 onboarding_draft = dict(pending.payload or {})
                 intent_override = ONBOARD
+        elif pending.capability_id == LIFE_EVENT:
+            if not (
+                _looks_like_training_slot_answer(text)
+                or re.search(r"跳过|都跳过|算了|不补", text)
+            ):
+                cancel_pending(db, session, pending)
+                pending = None
+            else:
+                stored = pending.payload.get("app_context")
+                if isinstance(stored, dict):
+                    context = {**stored, **context}
+                text = (
+                    f"{pending.payload.get('message') or ''} {text}"
+                ).strip()[:2000]
+                intent_override = LIFE_EVENT
         elif pending.capability_id == DIET:
             if not _looks_like_diet_slot_answer(text):
                 cancel_pending(db, session, pending)
@@ -3698,6 +3727,8 @@ async def handle_turn(
 
     if intent_override is None and _looks_like_onboarding(text):
         intent_override = ONBOARD
+    if intent_override is None and _looks_like_life_event(text):
+        intent_override = LIFE_EVENT
 
     if intent_override is None and _looks_like_plan_configure(text):
         from .capabilities.plan_configure import resolve as resolve_configure
@@ -4489,7 +4520,68 @@ async def handle_turn(
             "pending": serialize_pending(active),
         }
 
-    if intent_override == ONBOARD:
+    if intent_override == LIFE_EVENT:
+        from .life_events import resolve as resolve_life_event
+
+        resolution = resolve_life_event(db, user_id, text, context)
+        if resolution.get("ready"):
+            payload = resolution["payload"]
+            actions = payload.get("batch") or []
+            reply = str(
+                resolution.get("reply")
+                or payload.get("reply")
+                or "生活安排已经排好，确认后生效。"
+            )
+            if len(actions) == 1:
+                # A batch card is defined as two or more actions. For a single
+                # affected session, show the underlying reschedule/skip card so
+                # the normal confirmation path can execute it.
+                action = actions[0]
+                return _finish_pending(
+                    db,
+                    session,
+                    turn,
+                    started,
+                    capability_id=str(action.get("capability_id") or ""),
+                    payload=dict(action.get("payload") or {}),
+                    reply=reply,
+                )
+            return _finish_pending(
+                db,
+                session,
+                turn,
+                started,
+                capability_id=BATCH,
+                payload=payload,
+                reply=reply,
+            )
+        if resolution.get("terminal"):
+            return _finish_reply(
+                db,
+                session,
+                turn,
+                started,
+                intent=LIFE_EVENT,
+                reply=str(
+                    resolution.get("question")
+                    or "这段时间不用改训练。"
+                ),
+            )
+        return _finish_pending(
+            db,
+            session,
+            turn,
+            started,
+            capability_id=LIFE_EVENT,
+            payload={"message": text, "app_context": context},
+            reply=str(
+                resolution.get("question")
+                or "这次哪几天不方便？"
+            ),
+            kind="draft",
+        )
+
+    elif intent_override == ONBOARD:
         from .onboarding import resolve as resolve_onboarding
 
         resolution = resolve_onboarding(
@@ -6006,19 +6098,38 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
         elif pending.capability_id == OPEN_SCREEN_UI:
             summary = f"已准备打开「{pending.payload.get('title') or '页面'}」"
         else:
-            summary = (
-                "训练提醒已关闭。"
-                if pending.payload.get("enabled") is False
-                else (
-                    "训练提醒已设为 "
-                    f"{int(pending.payload.get('hour') or 0):02d}:"
-                    f"{int(pending.payload.get('minute') or 0):02d}。"
+            habit_kind = pending.payload.get("kind")
+            habit_label = {
+                "hydration": "喝水",
+                "protein": "蛋白质",
+                "sleep": "睡眠",
+                "weight": "称重",
+            }.get(habit_kind)
+            if habit_label is not None:
+                summary = (
+                    f"{habit_label}提醒已关闭。"
+                    if pending.payload.get("enabled") is False
+                    else (
+                        f"{habit_label}提醒已设为 "
+                        f"{int(pending.payload.get('hour') or 0):02d}:"
+                        f"{int(pending.payload.get('minute') or 0):02d}。"
+                    )
                 )
-            )
+            else:
+                summary = (
+                    "训练提醒已关闭。"
+                    if pending.payload.get("enabled") is False
+                    else (
+                        "训练提醒已设为 "
+                        f"{int(pending.payload.get('hour') or 0):02d}:"
+                        f"{int(pending.payload.get('minute') or 0):02d}。"
+                    )
+                )
         receipt = {
             "summary": summary,
             "day_id": pending.payload.get("day_id"),
             "screen": pending.payload.get("screen"),
+            "kind": pending.payload.get("kind"),
             "enabled": pending.payload.get("enabled"),
             "hour": pending.payload.get("hour"),
             "minute": pending.payload.get("minute"),

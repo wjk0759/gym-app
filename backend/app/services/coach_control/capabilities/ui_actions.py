@@ -205,6 +205,34 @@ def resolve_open(message: str) -> dict:
     }
 
 
+# Habit reminders are still local notifications on the iPhone. The server only
+# picks the kind, time and confirmation copy; iOS owns the actual UNNotification.
+HABIT_LABELS = {
+    "hydration": "喝水",
+    "protein": "蛋白质",
+    "sleep": "睡眠",
+    "weight": "称重",
+}
+HABIT_WORDS = {
+    "喝水": "hydration",
+    "饮水": "hydration",
+    "补水": "hydration",
+    "蛋白": "protein",
+    "蛋白质": "protein",
+    "睡觉": "sleep",
+    "睡眠": "sleep",
+    "上床": "sleep",
+    "称重": "weight",
+}
+
+
+def _reminder_kind(message: str) -> str:
+    for word, kind in HABIT_WORDS.items():
+        if word in message:
+            return kind
+    return "training"
+
+
 def _reminder_time(message: str) -> tuple[int, int] | None:
     clock = re.search(r"(\d{1,2})\s*[:：]\s*(\d{1,2})", message)
     if clock is not None:
@@ -231,12 +259,21 @@ def _reminder_time(message: str) -> tuple[int, int] | None:
 
 
 def resolve_reminders(message: str) -> dict:
+    kind = _reminder_kind(message)
+    label = HABIT_LABELS.get(kind)
     enabled = not bool(re.search(r"关闭|关掉|不要|取消", message))
     if not enabled:
+        payload: dict = {"enabled": False}
+        if label is not None:
+            payload["kind"] = kind
         return {
             "ready": True,
-            "payload": {"enabled": False},
-            "summary": "准备关闭训练提醒。",
+            "payload": payload,
+            "summary": (
+                f"准备关闭{label}提醒。"
+                if label is not None
+                else "准备关闭训练提醒。"
+            ),
         }
     parsed = _reminder_time(message)
     if parsed is None:
@@ -245,6 +282,19 @@ def resolve_reminders(message: str) -> dict:
             "questions": ["提醒设在几点？可以说“早上7点”或“20:30”。"],
         }
     hour, minute = parsed
+    if label is not None:
+        return {
+            "ready": True,
+            "payload": {
+                "enabled": True,
+                "kind": kind,
+                "hour": hour,
+                "minute": minute,
+            },
+            "summary": (
+                f"准备设置每天 {hour:02d}:{minute:02d} 的{label}提醒。"
+            ),
+        }
     return {
         "ready": True,
         "payload": {

@@ -75,6 +75,59 @@ final class NotificationScheduler {
         return scheduled
     }
 
+    /// 每日习惯提醒：喝水、蛋白质、睡眠、称重。与按训练日生成的一次性提醒
+    /// 分开存放，关闭训练提醒时不会误删习惯提醒。
+    @discardableResult
+    func scheduleHabitReminder(kind: String, hour: Int, minute: Int) async -> Bool {
+        let identifier = "habit-\(kind)"
+        center.removePendingNotificationRequests(withIdentifiers: [identifier])
+
+        let content = UNMutableNotificationContent()
+        switch kind {
+        case "hydration":
+            content.title = "喝口水"
+            content.body = "别等渴了才想起来，先补一杯。"
+        case "protein":
+            content.title = "补蛋白质"
+            content.body = "下一餐优先安排蛋白质，别拖到晚上。"
+        case "sleep":
+            content.title = "准备收尾"
+            content.body = "早点睡，恢复也是训练的一部分。"
+        case "weight":
+            content.title = "上秤记一下"
+            content.body = "看趋势，不看单日波动。"
+        default:
+            return false
+        }
+        content.sound = .default
+        content.userInfo = ["kind": "habit", "habit": kind]
+
+        var components = DateComponents()
+        components.hour = hour
+        components.minute = minute
+        let trigger = UNCalendarNotificationTrigger(
+            dateMatching: components,
+            repeats: true
+        )
+        let request = UNNotificationRequest(
+            identifier: identifier,
+            content: content,
+            trigger: trigger
+        )
+        do {
+            try await center.add(request)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    func cancelHabitReminder(kind: String) {
+        center.removePendingNotificationRequests(
+            withIdentifiers: ["habit-\(kind)"]
+        )
+    }
+
     func cancelAll() {
         center.removeAllPendingNotificationRequests()
     }
