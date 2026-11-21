@@ -1,0 +1,305 @@
+"""Read-only ledger facts for the coach answer prompt.
+
+The coach model is good at explaining and asking follow-ups, but it must not
+invent counts, totals or recent records. These helpers read the user's
+training, nutrition, body and plan rows and return a compact fact block for
+``coach_answer``. Nothing in this module writes or mutates data.
+
+The functions are intentionally deterministic: numbers, dates and exercise
+names come from the database, while the LLM only turns them into natural
+language. This keeps the "ask my data" path cheap and auditable.
+"""
+
+from __future__ import annotations
+
+import re
+from collections import Counter
+from datetime import datetime, timedelta, timezone
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from ...models import (
+    Exercise,
+    FoodLog,
+    Profile,
+    Program,
+    SetLog,
+    WorkoutSession,
+    utcnow,
+)
+from ..queries import active_goal
+
+
+def _as_utc(value: datetime) -> datetime:
+    """Normalize SQLite's naive datetimes before formatting or comparing."""
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _days_from_message(message: str, default: int) -> int:
+    """Use a small, predictable window instead of asking the model to infer one."""
+    if any(word in message for word in ("上周", "本周", "这周")):
+        return 7
+    if any(word in message for word in ("上个月", "本月", "这个月", "30天")):
+        return 30
+    if any(word in message for word in ("三个月", "90天", "3个月")):
+        return 90
+    if "半年" in message:
+        return 180
+    return default
+
+
+def _fmt_kg(value: float | None) -> str:
+    return "—" if value is None else f"{value:.1f} kg"
+
+
+def _exercise_name_map(db: Session, slugs: set[str]) -> dict[str, str]:
+    """Resolve slugs to Chinese names; fall back to the slug when missing."""
+    if not slugs:
+        return {}
+    rows = db.execute(
+        select(Exercise.slug, Exercise.name_zh).where(Exercise.slug.in_(slugs))
+    ).all()
+    return {slug: name or slug for slug, name in rows}
+
+
+def _matching_exercise(db: Session, message: str) -> tuple[str, str] | None:
+    """Return the longest exercise name mentioned in the message.
+
+    Exercise names overlap (深蹲 / 杠铃深蹲), so the longest match is the least
+    surprising interpretation. The catalogue is small enough for this scan.
+    """
+    matches: list[tuple[str, str]] = []
+    for slug, name in db.execute(select(Exercise.slug, Exercise.name_zh)).all():
+        if name and name in message:
+            matches.append((slug, name))
+    if not matches:
+        return None
+    return max(matches, key=lambda item: len(item[1]))
+
+
+def _training_summary(db: Session, user_id: str, message: str) -> str:
+    """Summarize recent sessions, volume and an optional exercise focus."""
+    days = _days_from_message(message, 28)
+    since = utcnow() - timedelta(days=days)
+    sessions = (
+        db.execute(
+            select(WorkoutSession)
+            .where(
+                WorkoutSession.user_id == user_id,
+                WorkoutSession.started_at >= since,
+            )
+            .order_by(WorkoutSession.started_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+    if not sessions:
+        return f"训练（最近 {days} 天）：没有训练记录。"
+
+    session_ids = [item.id for item in sessions]
+    sets = (
+        db.execute(select(SetLog).where(SetLog.session_id.in_(session_ids)))
+        .scalars()
+        .all()
+    )
+    completed = [item for item in sets if item.completed]
+    volume = sum(
+        float(item.weight_kg or 0) * int(item.reps or 0)
+        for item in completed
+        if item.weight_kg is not None and item.reps is not None
+    )
+    sets_by_session = Counter(item.session_id for item in sets)
+    recent = "；".join(
+        f"{_as_utc(item.started_at).strftime('%m/%d')} "
+        f"{item.duration_min or '—'} 分钟 "
+        f"{sets_by_session.get(item.id, 0)} 组"
+        for item in sessions[:3]
+    )
+    lines = [
+        f"训练（最近 {days} 天）：{len(sessions)} 次，"
+        f"{len(completed)} 组，总容量 {volume:.0f} kg。",
+        f"最近训练：{recent}。",
+    ]
+
+    match = _matching_exercise(db, message)
+    if match is not None:
+        slug, name = match
+        focused = [item for item in completed if item.exercise_slug == slug]
+        if focused:
+            focused_volume = sum(
+                float(item.weight_kg or 0) * int(item.reps or 0)
+                for item in focused
+                if item.weight_kg is not None and item.reps is not None
+            )
+            best = max(
+                (float(item.weight_kg) for item in focused if item.weight_kg is not None),
+                default=None,
+            )
+            lines.append(
+                f"{name}：{len(focused)} 组，最大重量 {_fmt_kg(best)}，"
+                f"总容量 {focused_volume:.0f} kg。"
+            )
+        else:
+            lines.append(f"{name}：这个窗口没有训练记录。")
+
+    top_slugs = [slug for slug, _ in Counter(
+        item.exercise_slug for item in completed
+    ).most_common(3)]
+    names = _exercise_name_map(db, set(top_slugs))
+    if top_slugs:
+        lines.append("练得最多：" + "、".join(names.get(slug, slug) for slug in top_slugs) + "。")
+    return "\n".join(lines)
+
+
+def _nutrition_summary(db: Session, user_id: str, message: str) -> str:
+    """Summarize food-log totals; never estimate missing macros here."""
+    days = _days_from_message(message, 7)
+    since = utcnow() - timedelta(days=days)
+    logs = (
+        db.execute(
+            select(FoodLog)
+            .where(
+                FoodLog.user_id == user_id,
+                FoodLog.logged_at >= since,
+            )
+            .order_by(FoodLog.logged_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+    if not logs:
+        return f"饮食（最近 {days} 天）：没有饮食记录。"
+
+    total_kcal = sum(float(item.kcal or 0) for item in logs)
+    total_protein = sum(float(item.protein or 0) for item in logs)
+    total_carbs = sum(float(item.carbs or 0) for item in logs)
+    total_fat = sum(float(item.fat or 0) for item in logs)
+    logged_days = len({_as_utc(item.logged_at).date() for item in logs})
+    recent = "、".join(
+        f"{_as_utc(item.logged_at).strftime('%m/%d')} {item.food_name}"
+        for item in logs[:3]
+    )
+    return (
+        f"饮食（最近 {days} 天）：记录 {logged_days} 天 / {len(logs)} 条，"
+        f"热量 {total_kcal:.0f} kcal，蛋白质 {total_protein:.0f} g，"
+        f"碳水 {total_carbs:.0f} g，脂肪 {total_fat:.0f} g。"
+        f"\n最近记录：{recent}。"
+    )
+
+
+def _plan_summary(program: Program | None) -> str:
+    """Describe the active plan structure so the model can explain it truthfully."""
+    if program is None:
+        return "计划：当前没有生效中的训练计划。"
+    days = sorted(
+        program.days,
+        key=lambda item: (item.week_index, item.weekday),
+    )
+    first_week = [item for item in days if item.week_index == 1]
+    if not first_week:
+        return f"计划：{program.title}；没有第 1 周训练日明细。"
+    day_lines = []
+    for item in first_week:
+        weekday = "一二三四五六日"[max(0, min(6, item.weekday - 1))]
+        focus = "、".join(item.focus or [])
+        day_lines.append(
+            f"周{weekday} {item.title}"
+            + (f"（{focus}）" if focus else "")
+            + f"，{len(item.exercises)} 个动作"
+        )
+    return (
+        f"计划：{program.title}；{program.weeks} 周，"
+        f"每周 {len(first_week)} 练；开始日期 {program.start_date}。"
+        f"\n第 1 周：{'；'.join(day_lines)}。"
+    )
+
+
+def _body_summary(db: Session, user_id: str) -> str:
+    """Reuse the deterministic body review instead of asking the model to do math."""
+    # Imported lazily: importing the capabilities package from module scope
+    # would circle back through coach_answer and insights.
+    from .capabilities.body_review import resolve as resolve_body_review
+
+    payload = resolve_body_review(db, user_id).get("payload") or {}
+    summary = str(payload.get("summary") or "").strip()
+    wins = [str(item) for item in payload.get("wins") or []]
+    watchouts = [str(item) for item in payload.get("watchouts") or []]
+    lines = [f"身体趋势：{summary}"] if summary else []
+    if wins:
+        lines.append("数据点：" + "、".join(wins) + "。")
+    if watchouts:
+        lines.append("注意：" + "、".join(watchouts) + "。")
+    return "\n".join(lines) or "身体趋势：暂时没有可用数据。"
+
+
+def _profile_summary(db: Session, profile: Profile) -> str:
+    """List missing onboarding fields without treating optional data as required."""
+    missing: list[str] = []
+    if profile.birth_date is None:
+        missing.append("出生日期")
+    if profile.height_cm is None:
+        missing.append("身高")
+    if profile.weight_kg is None:
+        missing.append("体重")
+    if not profile.onboarded_at:
+        missing.append("完成建档")
+    goal = active_goal(db, profile.user_id)
+    if goal is None:
+        missing.append("训练目标")
+    if not missing:
+        return "档案：基础档案已完整。"
+    return "档案：还缺 " + "、".join(missing) + "。"
+
+
+def build_readonly_context(
+    db: Session,
+    user_id: str,
+    message: str,
+    program: Program | None = None,
+) -> str | None:
+    """Return a fact block for the coach prompt, or None when not relevant.
+
+    The caller is the free-form answer capability. Keeping this gate narrow
+    avoids injecting large ledger summaries into ordinary coaching advice.
+    """
+    text = message.strip()
+    if not text:
+        return None
+
+    # Do not turn a failed write action into a data summary. The answer
+    # capability is also the fallback for action gaps, so only inject ledger
+    # facts when the user is actually asking about existing data.
+    action_only = re.search(
+        r"记录一下|记一下|帮我记|改成|改为|删除|删掉|添加|开始|跳过|生成|调整|换|设置|取消",
+        text,
+    )
+    question = re.search(r"多少|几次|怎么样|为什么|吗|呢|？|\?", text)
+    if action_only and not question:
+        return None
+
+    sections: list[str] = []
+    if any(word in text for word in ("建档", "档案", "资料", "还缺", "完善")):
+        profile = db.get(Profile, user_id)
+        if profile is not None:
+            sections.append(_profile_summary(db, profile))
+    if any(
+        word in text
+        for word in ("训练", "练了", "练过", "次数", "进步", "重量", "容量", "深蹲", "卧推", "硬拉", "跑步", "有氧")
+    ):
+        sections.append(_training_summary(db, user_id, text))
+    if any(word in text for word in ("饮食", "吃", "热量", "蛋白", "碳水", "脂肪", "餐")):
+        sections.append(_nutrition_summary(db, user_id, text))
+    if any(word in text for word in ("体重", "体脂", "腰围", "围度", "身体", "变化", "减脂", "增肌")):
+        sections.append(_body_summary(db, user_id))
+    if any(word in text for word in ("计划", "安排", "为什么", "分化", "频率", "训练日")):
+        sections.append(_plan_summary(program))
+
+    if not sections:
+        return None
+    return (
+        "以下是服务端实时查询到的事实，只能基于这些事实回答，不要编造：\n"
+        + "\n".join(sections)
+    )

@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from ....models import Profile, Program
 from ...coach import coach_reply
+from ..insights import build_readonly_context
 from ..registry import Capability, register
 
 CAPABILITY = register(
@@ -46,6 +47,17 @@ async def resolve(
     memory_book: str | None = None,
 ) -> dict:
     context_parts: list[str] = []
+    # The answer prompt owns wording, not arithmetic. Append the relevant
+    # server-side facts so "how many / did I improve / why this plan" answers
+    # use real rows instead of the model guessing from the profile snapshot.
+    insight = build_readonly_context(
+        db,
+        profile.user_id,
+        message,
+        program,
+    )
+    if insight:
+        context_parts.append(insight)
     if isinstance(app_context, dict):
         body_context = str(app_context.get("body_analysis_context") or "").strip()
         if body_context:
