@@ -748,7 +748,8 @@ def _looks_like_single_exercise_edit(message: str) -> bool:
     return bool(
         re.search(
             r"换成|替换成|替换为|改成|加到|调到|删掉|去掉|删除|"
-            r"加上|加一个|加个|增加|再加",
+            r"加上|加一个|加个|增加|再加|"
+            r"[加减多少]\s*[一二两三四五六七八九十\d]*\s*组",
             message,
         )
         or (
@@ -1158,6 +1159,12 @@ def _looks_like_food(message: str) -> bool:
     if re.search(r"体重|体脂|腰围|臂围|腿围|训练计划|计划改成|卧推|深蹲|硬拉|划船|推举|飞鸟|弯举|下压|引体", message):
         return False
     if re.search(r"不想吃|没吃|不吃|吃不下|没胃口|不想喝|没喝", message):
+        return False
+    # Broad-window questions ("上周吃了什么") belong to coach.answer and its
+    # 7-day food-log summary, not to the food-writing parser.
+    if re.search(r"上周|最近|这周|本周|上个月|本月|几天", message) and re.search(
+        r"吃了什么|吃了哪些|吃了啥|饮食|摄入", message
+    ):
         return False
     if re.search(r"多少|热量|卡路里|为什么|怎么|吗|？|\?", message):
         return False

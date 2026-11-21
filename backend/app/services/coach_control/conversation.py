@@ -35,7 +35,11 @@ from ...models import (
     Profile,
 )
 from ..equipment_inventory import effective_equipment_types
-from ..memory import latest_session_summary, read_relevant_memories
+from ..memory import (
+    is_pending_action_fact,
+    latest_session_summary,
+    read_relevant_memories,
+)
 from ..queries import active_goal, active_program
 from .state import get_active_pending
 
@@ -209,8 +213,21 @@ def build_memory_book(db: Session, user_id: str) -> str:
     )
     for item in memories:
         content = str(item.content or "").strip()
-        if content:
-            lines.append(f"- {content[:200]}")
+        if not content:
+            continue
+        # A pending/executed action fact is not a durable user preference. Old
+        # injury memories must not contradict an empty profile.injuries list.
+        if is_pending_action_fact(item.kind, content):
+            continue
+        if item.kind == "goal":
+            continue
+        if (
+            item.kind == "injury"
+            and profile is not None
+            and not (profile.injuries or [])
+        ):
+            continue
+        lines.append(f"- {content[:200]}")
     return "\n".join(lines)[:6000]
 
 

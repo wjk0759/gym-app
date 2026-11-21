@@ -186,3 +186,24 @@ def test_habit_reminder_routes_to_confirmation_card(db):
     assert result["pending"]["kind"] == "card"
     assert result["pending"]["payload"]["kind"] == "hydration"
     assert result["pending"]["payload"]["hour"] == 10
+
+
+def test_plan_explanation_without_context_stays_read_only(db):
+    result = asyncio.run(
+        runtime.handle_turn(db, "user-1", "为什么这样安排计划？")
+    )
+
+    assert result["intent"] == "coach.answer"
+    assert result["pending"] is None
+
+
+def test_broad_diet_history_is_read_only(db):
+    assert not runtime._looks_like_food("我上周吃了什么")
+    assert not runtime._looks_like_diet_review("我上周吃了什么")
+
+    result = asyncio.run(
+        runtime.handle_turn(db, "user-1", "我上周吃了什么")
+    )
+
+    assert result["intent"] == "coach.answer"
+    assert result["pending"] is None

@@ -37,6 +37,7 @@ from ..services.coach_control.state import (
     serialize_pending,
     serialize_session,
 )
+from ..services.memory import is_pending_action_fact
 from ..services.rate_limit import enforce as enforce_rate_limit
 from ..services.safety import assess_safety
 
@@ -644,8 +645,16 @@ def coach_memories(user_id: CurrentUser, db: DBSession):
         .scalars()
         .all()
     )
-    return {
-        "items": [
+    profile = db.get(Profile, user_id)
+    items = []
+    for item in rows:
+        if item.kind == "goal":
+            continue
+        if is_pending_action_fact(item.kind, item.content):
+            continue
+        if item.kind == "injury" and profile is not None and not profile.injuries:
+            continue
+        items.append(
             {
                 "id": item.id,
                 "kind": item.kind,
@@ -657,9 +666,8 @@ def coach_memories(user_id: CurrentUser, db: DBSession):
                     item.updated_at.isoformat() if item.updated_at else None
                 ),
             }
-            for item in rows
-        ]
-    }
+        )
+    return {"items": items}
 
 
 @router.delete("/memories/{memory_id}")

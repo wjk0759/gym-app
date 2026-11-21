@@ -47,6 +47,20 @@ _EXERCISE_HINT = re.compile(
     r"臂屈伸|腿举|推胸|蝴蝶机|夹胸|侧平举|后束|卷腹|臀桥"
 )
 _SETS = re.compile(r"(\d+)\s*组")
+_SET_DELTA = re.compile(r"(加|减|多|少)\s*([一二两三四五六七八九十\d])\s*组")
+_SET_COUNTS = {
+    "一": 1,
+    "两": 2,
+    "二": 2,
+    "三": 3,
+    "四": 4,
+    "五": 5,
+    "六": 6,
+    "七": 7,
+    "八": 8,
+    "九": 9,
+    "十": 10,
+}
 _REPS = re.compile(r"(\d+)(?:\s*[-~到]\s*(\d+))?\s*次")
 _WEIGHT = re.compile(r"(\d+(?:\.\d+)?)\s*(?:kg|公斤)", re.IGNORECASE)
 _REST = re.compile(r"休息\s*(\d+)\s*秒")
@@ -102,6 +116,35 @@ def _match_exercise(day: ProgramDay, message: str):
             )
             if len(core) >= 2 and core in message:
                 score = len(core)
+        if score == 0:
+            # Program names often carry a long prefix ("持瓶自重深蹲") while
+            # the user says only the movement ("深蹲"). Match the shared
+            # movement keyword so the edit card still resolves.
+            for token in (
+                "深蹲",
+                "卧推",
+                "硬拉",
+                "划船",
+                "推举",
+                "飞鸟",
+                "弯举",
+                "下压",
+                "引体",
+                "臂屈伸",
+                "腿举",
+                "推胸",
+                "夹胸",
+                "侧平举",
+                "后束",
+                "卷腹",
+                "臀桥",
+                "箭步蹲",
+                "腿弯举",
+                "腿屈伸",
+            ):
+                if token in name and token in message:
+                    score = len(token)
+                    break
         if score and (best is None or score > best[0]):
             best = (score, item)
     return best[1] if best is not None else None
@@ -186,13 +229,24 @@ def _parse_after(message: str, current, new_slug: str | None) -> dict | None:
     if new_slug is not None:
         after["weight_kg"] = None
         changed = True
-    match = _SETS.search(message)
-    if match:
-        value = int(match.group(1))
+    delta = _SET_DELTA.search(message)
+    if delta is not None:
+        sign = -1 if delta.group(1) in {"减", "少"} else 1
+        raw = delta.group(2)
+        amount = int(raw) if raw.isdigit() else _SET_COUNTS.get(raw, 0)
+        value = int(current.sets or 0) + sign * amount
         if not 1 <= value <= 10:
             return None
         after["sets"] = value
         changed = True
+    else:
+        match = _SETS.search(message)
+        if match:
+            value = int(match.group(1))
+            if not 1 <= value <= 10:
+                return None
+            after["sets"] = value
+            changed = True
     match = _REPS.search(message)
     if match:
         low = int(match.group(1))

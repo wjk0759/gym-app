@@ -4956,6 +4956,68 @@ def test_edit_exercises_falls_back_to_the_next_focus_day(db):
     assert len(turn["pending"]["payload"]["exercises"]) == 2
 
 
+def test_edit_single_exercise_set_delta_with_short_name(db):
+    import asyncio
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    monday = today - timedelta(days=today.weekday())
+    db.add(
+        Exercise(
+            slug="goblet-squat-test",
+            name_zh="持瓶自重深蹲",
+            name_en="goblet squat",
+            muscle_group="legs",
+            equipment="bodyweight",
+            is_compound=True,
+            contraindications=[],
+        )
+    )
+    db.commit()
+    program = Program(
+        user_id="user-1",
+        title="测试腿计划",
+        goal_type="build_muscle",
+        version=1,
+        status="active",
+        start_date=monday,
+        weeks=4,
+    )
+    db.add(program)
+    db.flush()
+    day = ProgramDay(
+        program_id=program.id,
+        week_index=1,
+        weekday=today.isoweekday(),
+        title="腿",
+    )
+    db.add(day)
+    db.flush()
+    db.add(
+        PlanExercise(
+            program_day_id=day.id,
+            exercise_slug="goblet-squat-test",
+            order_index=1,
+            sets=3,
+            reps="12",
+            rest_sec=60,
+        )
+    )
+    db.commit()
+
+    turn = asyncio.run(
+        runtime.handle_turn(db, "user-1", "把今天的深蹲加一组")
+    )
+
+    assert turn["intent"] == "training.edit_day_exercise"
+    assert turn["pending"]["kind"] == "proposal"
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    updated = db.get(ProgramDay, day.id)
+    assert updated.exercises[0].sets == 4
+    runtime.undo_action(db, "user-1", confirmed["action_id"])
+    db.refresh(updated)
+    assert updated.exercises[0].sets == 3
+
+
 def test_edit_single_exercise_swap_and_sets(db):
     import asyncio
 
@@ -6478,6 +6540,52 @@ def test_session_summary_is_written_and_excluded_from_the_memory_book(db, monkey
     from app.services.coach_control.conversation import build_memory_book
 
     assert saved.content not in build_memory_book(db, "user-1")
+
+
+def test_memory_book_hides_pending_and_stale_injury_facts(db):
+    from app.models import AIMemory
+    from app.services.coach_control.conversation import build_memory_book
+
+    db.add_all(
+        [
+            AIMemory(
+                user_id="user-1",
+                kind="preference",
+                memory_key="weekly_schedule",
+                content="我每周二、四、六练",
+                active=True,
+            ),
+            AIMemory(
+                user_id="user-1",
+                kind="injury",
+                memory_key="chest_pain",
+                content="用户有胸口不适",
+                active=True,
+            ),
+            AIMemory(
+                user_id="user-1",
+                kind="preference",
+                memory_key="pending_plan",
+                content="已确认执行：把深蹲换成前弓步",
+                active=True,
+            ),
+            AIMemory(
+                user_id="user-1",
+                kind="goal",
+                memory_key="old_goal",
+                content="目标是减脂",
+                active=True,
+            ),
+        ]
+    )
+    db.commit()
+
+    text = build_memory_book(db, "user-1")
+
+    assert "每周二、四、六" in text
+    assert "胸口不适" not in text
+    assert "前弓步" not in text
+    assert "减脂" not in text
 
 
 def test_keyword_memory_retrieval_finds_old_constraints(db):
