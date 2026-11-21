@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`3d40b36`（AI 教练 Release 1 + Release 2 + Mac P1 修复：只读问答、建档、生活事件重排、习惯提醒；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒改动但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **708 passed**、QA **76/76**、Ruff 通过；**N29/N30/N31/N32 已修，N33 仍 P2；建档 complete-profile 通过**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`d5b1195`（AI 教练 Release 1 + Release 2 + Release 3 readiness/自适应复盘 + Mac P1 修复；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒改动但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **715 passed**、QA **76/76**、Ruff 通过；**N29/N30/N31/N32 已修，N33 仍 P2；建档 complete-profile 通过**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -69,6 +69,38 @@
   - 不要把习惯提醒标识改成 `workout-*`；不要用关闭训练提醒去删 `habit-*`。
   - 不要声称习惯提醒跨设备同步。
 - 仍 BLOCKED：iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
+
+### 2026-11-21 · Windows（Release 3：恢复/readiness + 自适应复盘）
+
+- 提交：`d5b1195`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
+- 新增 `backend/app/services/coach_control/readiness.py`：
+  - 只用服务端已有数据：训练次数、时长、RPE、容量。
+  - 计算 7 天急性负荷、28 天周均负荷、ACWR、平均 RPE、距上次训练天数。
+  - 状态：`no_data` / `baseline` / `fresh` / `balanced` / `strained` / `high_risk`。
+  - 明确不使用/不编造睡眠、HRV、静息心率；这是训练负荷信号，不是医学诊断。
+- 只读问答：
+  - “我最近恢复得怎么样 / 太累了 / 身体状态怎么样 / 今天能练吗”走 `coach.answer`，注入 readiness 事实。
+  - 不会因为“太累”自动生成新计划；明确说“计划太累了，减量”仍然走 `training.adjust_plan`。
+- 自适应复盘：
+  - `review.weekly` 增加 readiness 数据和 high-load 减载 / low-load 进阶建议。
+  - 高负荷：建议下周主项降 1 组或 5% 重量，RPE 7–8。
+  - 低负荷且距上次训练较久：建议主项加 2.5% 或 +1 次。
+- 主动教练：
+  - 训练记录事件后，如果 readiness 为 `high_risk` / `strained`，创建一条 `recovery` inbox 提醒。
+  - 同一用户 3 天内最多一条，避免刷屏；payload 带“我恢复得怎么样？” prompt。
+- 生产冒烟（`test_reviewer`）：
+  - “我最近恢复得怎么样” → `coach.answer`，按 no_data 诚实回答。
+  - “我最近太累了，训练怎么办” → `coach.answer`，没有生成计划卡。
+  - “这周复盘” → `review.weekly`，payload 含 readiness no_data。
+- 验证：后端 **715 passed**、QA **76/76**、Ruff 通过。
+- iOS：本切片无代码改动；readiness 走现有文本回答，复盘走现有 insight 卡。
+- 未验证：
+  - 高负荷 ACWR 的实际生产数据只做了单元测试；没有用真实高负荷账号跑完整对话。
+  - 主动 recovery inbox 只做单元测试，没有在 App 收件箱真机确认。
+- 下一步：
+  - Release 3 剩余：训练中 co-pilot、主动推送调度、更细的按动作自适应。
+  - Mac 构建 + 真机验证习惯提醒/建档/readiness 复盘。
+- 仍 BLOCKED：N33 话术、iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
 
 ### 2026-11-21 · Windows（Mac P1 修复：N29/N30/N31/N32）
 
