@@ -219,10 +219,12 @@ def snapshot(
         days_since_last=days_since_last,
     )
     summary, actions = _copy(status)
+    load_estimated = any(rpes.get(item.id) is None for item in sessions)
     return {
         "status": status,
         "summary": summary,
         "actions": actions,
+        "load_estimated": load_estimated,
         "acwr": round(acwr, 2) if acwr is not None else None,
         "acute_load": round(acute_load),
         "chronic_weekly_load": round(chronic_weekly),

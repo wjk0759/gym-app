@@ -262,6 +262,13 @@ def _reminder_time(message: str) -> tuple[int, int] | None:
 
 def resolve_reminders(message: str) -> dict:
     kinds = _reminder_kinds(message)
+    if kinds and re.search(r"训练|训练日", message):
+        return {
+            "ready": False,
+            "questions": [
+                "训练提醒和习惯提醒要分开设置：先设训练提醒，还是先设喝水/睡眠？"
+            ],
+        }
     kind = kinds[0] if kinds else "training"
     labels = "、".join(HABIT_LABELS.get(item, item) for item in kinds)
     enabled = not bool(re.search(r"关闭|关掉|不要|取消", message))

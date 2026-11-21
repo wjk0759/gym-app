@@ -74,6 +74,7 @@ def seeded(db):
             muscle_group="legs",
             equipment="barbell",
             instructions="保持背部挺直，膝盖对齐脚尖。",
+            contraindications=["knee_pain"],
         )
     )
     program = Program(
@@ -262,6 +263,7 @@ def test_exercise_explanation_uses_catalogue(db, seeded):
     assert "动作：深蹲" in context
     assert "主要部位：腿" in context
     assert "动作要点：保持背部挺直" in context
+    assert "动作禁忌标签：膝" in context
 
 
 def test_equipment_guidance_lists_common_exercises(db, seeded):

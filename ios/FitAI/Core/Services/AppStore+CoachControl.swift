@@ -38,7 +38,10 @@ extension AppStore {
 
     func sendCoachControlTurn(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !isCoachControlWorking, !isReplying else { return }
+        guard !trimmed.isEmpty,
+              !isCoachControlWorking,
+              !isWorkoutCoachWorking,
+              !isReplying else { return }
         cancelActiveChatRequest()
         chat.append(ChatMessage(role: .user, text: trimmed))
         isCoachControlWorking = true
@@ -134,6 +137,10 @@ extension AppStore {
     ) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !isWorkoutCoachWorking else { return }
+        guard !isReplying, !isCoachControlWorking else {
+            workoutCoachReply = "先等当前这条回复完成。"
+            return
+        }
         isWorkoutCoachWorking = true
         workoutCoachReply = nil
         var appContext = agentAppContext()
@@ -152,13 +159,33 @@ extension AppStore {
                 self.coachSessionID = response.session.id
                 self.coachSession = response.session
                 self.coachPending = response.pending
+                let reply: String
                 if response.pending != nil {
-                    self.workoutCoachReply = response.reply
+                    reply = response.reply
                         + "\n\n这个操作需要回教练页确认。"
                 } else {
-                    self.workoutCoachReply = response.reply
+                    reply = response.reply
                 }
+                self.workoutCoachReply = reply
+                // Keep the training question visible in the main coach ledger
+                // instead of leaving it only in the transient sheet.
+                self.chat.append(
+                    ChatMessage(
+                        role: .user,
+                        text: trimmed,
+                        serverMessageID: "coach-\(response.turnID)-user"
+                    )
+                )
+                self.chat.append(
+                    ChatMessage(
+                        role: .assistant,
+                        text: reply,
+                        serverMessageID: "coach-\(response.turnID)-assistant"
+                    )
+                )
                 self.persist()
+            } catch let error as APIError where error.isCoachQuotaExhausted {
+                self.workoutCoachReply = "今日免费 AI 教练额度已用完，回教练页查看额度或稍后再试。"
             } catch {
                 self.workoutCoachReply = "教练暂时没回，先按上一组的感觉练。"
             }

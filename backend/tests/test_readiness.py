@@ -54,7 +54,7 @@ def _add_session(
     days_ago: int,
     *,
     duration: int = 60,
-    rpe: float = 7,
+    rpe: float | None = 7,
 ) -> None:
     started = datetime.now(timezone.utc) - timedelta(days=days_ago)
     db.add(
@@ -101,6 +101,23 @@ def test_readiness_without_data_is_honest(db):
     assert payload["sessions_28d"] == 0
     assert payload["acwr"] is None
     assert "没有训练记录" in payload["summary"]
+
+
+def test_readiness_marks_missing_rpe_as_estimated(db):
+    _add_session(db, "no-rpe", 1, rpe=None)
+    db.commit()
+
+    payload = snapshot(db, "user-1")
+    context = build_readonly_context(
+        db,
+        "user-1",
+        "我最近恢复得怎么样",
+        None,
+    )
+
+    assert payload["load_estimated"] is True
+    assert context is not None
+    assert "负荷为估算值" in context
 
 
 def test_recovery_question_gets_readiness_facts(db):

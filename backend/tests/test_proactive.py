@@ -139,3 +139,19 @@ def test_proactive_deduplicates_missed_training(db):
 
     assert first["created"] == 1
     assert second["created"] == 0
+
+
+def test_proactive_endpoint_rejects_missing_or_wrong_token(db, monkeypatch):
+    from fastapi import HTTPException
+
+    from app.routers import coach_control as coach_router
+
+    monkeypatch.setattr(coach_router.settings, "proactive_cron_token", "")
+    with pytest.raises(HTTPException) as missing:
+        coach_router.run_proactive(db, None)
+    assert missing.value.status_code == 503
+
+    monkeypatch.setattr(coach_router.settings, "proactive_cron_token", "secret")
+    with pytest.raises(HTTPException) as wrong:
+        coach_router.run_proactive(db, "wrong")
+    assert wrong.value.status_code == 401

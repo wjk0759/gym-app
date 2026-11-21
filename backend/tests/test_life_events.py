@@ -240,6 +240,17 @@ def test_multiple_habit_reminders_are_kept_together(db):
     assert {item["hour"] for item in items} == {10}
 
 
+def test_training_and_habit_reminders_ask_for_separation(db):
+    from app.services.coach_control.capabilities.ui_actions import (
+        resolve_reminders,
+    )
+
+    resolution = resolve_reminders("每天10点提醒我训练和喝水")
+
+    assert resolution["ready"] is False
+    assert "分开" in resolution["questions"][0]
+
+
 def test_first_week_schedule_lists_each_day(db):
     context = _plan_context()
     for item in context["plan"]["days"]:

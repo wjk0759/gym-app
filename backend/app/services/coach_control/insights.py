@@ -385,6 +385,8 @@ def _recovery_summary(db: Session, user_id: str) -> str:
         f"恢复状态：{payload['summary']}",
         "负荷指标：" + "，".join(metrics) + "。",
     ]
+    if payload.get("load_estimated"):
+        lines.append("说明：部分训练没有记录 RPE，负荷为估算值。")
     actions = [str(item) for item in payload.get("actions") or []]
     if actions:
         lines.append("建议：" + "；".join(actions))
@@ -411,6 +413,21 @@ MUSCLE_LABELS = {
     "core": "核心",
     "cardio": "有氧",
     "full_body": "全身",
+}
+CONTRAINDICATION_LABELS = {
+    "knee_pain": "膝",
+    "lower_back": "腰背",
+    "shoulder_pain": "肩",
+    "elbow_pain": "肘",
+    "wrist_pain": "腕",
+}
+EQUIPMENT_CATEGORY_LABELS = {
+    "machine": "固定器械",
+    "cable": "绳索",
+    "free_weight": "自由重量",
+    "bodyweight": "徒手",
+    "cardio": "有氧",
+    "other": "其他",
 }
 
 
@@ -443,7 +460,10 @@ def _exercise_summary(db: Session, message: str) -> str | None:
     if exercise.contraindications:
         parts.append(
             "动作禁忌标签："
-            + "、".join(str(item) for item in exercise.contraindications[:5])
+            + "、".join(
+                CONTRAINDICATION_LABELS.get(str(item), str(item))
+                for item in exercise.contraindications[:5]
+            )
             + "（只是动作标签，不代表用户有这些伤病）"
         )
     return "；".join(parts)
@@ -491,7 +511,10 @@ def _equipment_guidance_summary(db: Session, message: str) -> str | None:
         .scalars()
         .all()
     )
-    lines = [f"器械：{equipment.name_zh}（{equipment.category}）"]
+    lines = [
+        f"器械：{equipment.name_zh}"
+        f"（{EQUIPMENT_CATEGORY_LABELS.get(equipment.category, equipment.category)}）"
+    ]
     if names:
         lines.append("常见动作：" + "、".join(names))
     lines.append(

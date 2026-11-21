@@ -16,6 +16,7 @@ same user. The service is deterministic and never calls the LLM.
 from __future__ import annotations
 
 import json
+import logging
 from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy import select
@@ -38,6 +39,7 @@ from .readiness import snapshot as readiness_snapshot
 RECOVERY_COOLDOWN_DAYS = 7
 MISSED_COOLDOWN_DAYS = 3
 MISSED_LOOKBACK_DAYS = 3
+logger = logging.getLogger(__name__)
 
 
 def _recent_inbox(
@@ -214,14 +216,30 @@ def run(
     )
     created: list[dict] = []
     for user in users:
-        if db.get(Profile, user.id) is None:
+        # Lock one user row at a time. A cron retry or a manual endpoint call
+        # cannot create a duplicate nudge while this user is being processed;
+        # committing per user keeps the lock window short.
+        locked = db.execute(
+            select(User)
+            .where(User.id == user.id)
+            .with_for_update()
+        ).scalar_one_or_none()
+        if locked is None:
             continue
-        item = _recovery_nudge(db, user.id, moment)
-        if item is None:
-            item = _missed_training_nudge(db, user.id, moment)
+        if db.get(Profile, user.id) is None:
+            db.commit()
+            continue
+        try:
+            item = _recovery_nudge(db, user.id, moment)
+            if item is None:
+                item = _missed_training_nudge(db, user.id, moment)
+            db.commit()
+        except Exception:  # noqa: BLE001 - one user must not stop the scan
+            db.rollback()
+            logger.exception("proactive scan failed user=%s", user.id)
+            continue
         if item is not None:
             created.append(item)
-    db.flush()
     return {
         "scanned": len(users),
         "created": len(created),

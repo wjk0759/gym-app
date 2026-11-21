@@ -360,7 +360,8 @@ def resolve(
             "terminal": True,
             "question": (
                 f"这次跨度有 {(end - start).days + 1} 天，逐次顺延会把整个计划推乱。"
-                "建议这段时间先跳过，回来后再重新排；要跳过的话直接说“都跳过”。"
+                "建议这段时间先不要按原计划排，回来后再重新生成或调整；"
+                "如果要逐次跳过，请把范围缩小到一周内再告诉我。"
             ),
         }
 
@@ -387,8 +388,8 @@ def resolve(
             "terminal": True,
             "question": (
                 f"这段时间有 {len(affected)} 次训练，一次最多处理 "
-                f"{MAX_EVENT_ACTIONS} 次。把范围缩小到一周内，"
-                "或者先告诉我最想保留哪几次。"
+                f"{MAX_EVENT_ACTIONS} 次。请把范围缩小到一周内，"
+                "再告诉我哪几天不方便。"
             ),
         }
 
