@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`4607b96`（AI 教练 Release 1：只读问答 + 日历/反编造伤病 + 路由/记忆修复 + 对话式建档；生产 API 已部署；iOS App 仍 `7d03219`；`FitAITests` **144/144**、UI **7/7** 基线；`/health/ready` **200**；Flyway **V44**；后端 **697 passed**、QA **76/76**、Ruff 通过；**Mac 复测 N29/N30/N31 仍 P1、N32/N33 P2；建档 complete-profile 通过，本轮不部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`69ef672`（AI 教练 Release 1 + Release 2：只读问答、建档、生活事件重排、习惯提醒；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含本轮提醒改动但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **704 passed**、QA **76/76**、Ruff 通过；**Mac 复测 N29/N30/N31 仍 P1、N32/N33 P2；建档 complete-profile 通过**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -35,6 +35,40 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-21 · Windows（Release 2：生活事件重排 + 习惯提醒）
+
+- 提交：`69ef672`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
+- 生活事件重排：
+  - 新增 `backend/app/services/coach_control/life_events.py`。
+  - 识别“下周一到周三出差 / 11月24到26号 / 明天加班 / 周末婚礼 / 下周出差三天”等阻塞窗口。
+  - 找出窗口内的计划训练，按计划通常间隔把训练顺延到之后最近的空档。
+  - 1 次受影响直接出 `training.reschedule` 卡；2–5 次出一张 `coach.batch` 卡；说“跳过/不补了”则改成 `training.skip`。
+  - 超过 5 次或 30 天排不下时直接说明，不生成半截方案。
+  - 全部复用现有 `training.execute` / `execute_skip`，单次和整组都能撤销。
+  - 生产冒烟：`test_reviewer` + 合成 4 周计划，“下周一到周二出差”返回 1 次顺延卡（11/23 胸日 → 11/26）；确认 200，撤销 200，`PlanDayState` 已清理。
+- 习惯提醒：
+  - `ui.configure_reminders` 新增 `kind`：`hydration`（喝水）、`protein`（蛋白质）、`sleep`（睡眠）、`weight`（称重）。
+  - 例：“每天10点提醒我喝水”“晚上10点提醒我睡觉”“关闭喝水提醒”。
+  - 服务端负责意图、时间、确认卡文案和 receipt；iOS 负责真正排本地通知。
+  - iOS 新增 `NotificationScheduler.scheduleHabitReminder` / `cancelHabitReminder`，使用 `habit-<kind>` 标识，和 `workout-*` 分开，关闭训练提醒不会误删习惯提醒。
+  - `AppStore+Settings` 新增 `enableHabitReminder` / `disableHabitReminder`；`AppStore+CoachControl` 按 `kind` 分流；教练卡显示“每天 10:00 提醒喝水”。
+  - 生产冒烟：`每天10点提醒我喝水` 返回 `ui.configure_reminders` 卡（kind=hydration），确认 receipt “喝水提醒已设为 10:00”。
+- 验证：
+  - 后端 **704 passed**、QA **76/76**、Ruff 通过；新增 7 个测试覆盖窗口解析、顺延、跳过、单卡路由、draft 续答和习惯提醒。
+  - 生产 API `/health/ready` 200。
+- 未验证 / 需要 Mac：
+  - **iOS 本轮改动未在 Windows 构建或跑测试**；需要 `xcodegen generate`、Release build、SwiftLint、`FitAITests`，并在真机确认习惯提醒能收到本地通知。
+  - 习惯提醒是**本机通知**，没有做跨设备云端同步；换设备需要重新设置。训练提醒仍走现有 `reminder_hour` / `notifications_enabled` 同步。
+  - 生活事件多动作 batch 只做了单元测试，生产冒烟只跑了单动作确认+撤销。
+- 下一步：
+  - Mac 构建 + 真机验证提醒和 batch 卡。
+  - 进 Release 3：训练中 co-pilot、恢复/readiness、自适应周期化、主动教练。
+- 禁止恢复：
+  - 不要让 `coach.batch` 只含 1 个动作（服务端会拒绝）；生活事件单动作必须走底层能力卡。
+  - 不要把习惯提醒标识改成 `workout-*`；不要用关闭训练提醒去删 `habit-*`。
+  - 不要声称习惯提醒跨设备同步。
+- 仍 BLOCKED：iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
 
 ### 2026-11-21 · macOS（4607b96 复测：N29–N33 + 建档 complete-profile）
 
