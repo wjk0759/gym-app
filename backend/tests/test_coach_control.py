@@ -5382,6 +5382,8 @@ def test_week_schedule_lists_next_week(db):
     assert turn["intent"] == "training.week_schedule"
     assert turn["pending"]["kind"] == "insight"
     assert "下周" in turn["reply"]
+    assert "• " in turn["reply"]
+    assert "? " not in turn["reply"]
     assert any("胸" in item for item in turn["pending"]["payload"]["wins"])
     assert any("背" in item for item in turn["pending"]["payload"]["wins"])
 
@@ -6043,6 +6045,23 @@ def test_reminders_via_control_plane(db):
 
     turn = asyncio.run(runtime.handle_turn(db, "user-1", "训练提醒"))
     assert turn["intent"] == "coach.answer"
+
+
+def test_multi_habit_reminder_receipt_lists_each_time(db):
+    import asyncio
+
+    turn = asyncio.run(
+        runtime.handle_turn(
+            db,
+            "user-1",
+            "每天10点提醒我喝水，晚上10点提醒我睡觉",
+        )
+    )
+    assert turn["intent"] == "ui.configure_reminders"
+    confirmed = runtime.confirm_pending(db, "user-1", turn["pending"]["id"])
+    summary = confirmed["receipt"]["summary"]
+    assert "喝水 10:00" in summary
+    assert "睡眠 22:00" in summary
 
 
 def test_reminder_resolution_variants():

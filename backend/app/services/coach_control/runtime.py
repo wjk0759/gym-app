@@ -1610,11 +1610,11 @@ def _training_reply(payload: dict) -> str:
 
 def _week_reply(payload: dict) -> str:
     """Chat text must include the daily lines; the card already shows wins."""
-    summary = str(payload.get("summary") or "????????????")
+    summary = str(payload.get("summary") or "本周暂时没有训练安排。")
     wins = [str(item) for item in payload.get("wins") or []]
     if not wins:
         return summary
-    return summary + "\n" + "\n".join(f"? {line}" for line in wins)
+    return summary + "\n" + "\n".join(f"• {line}" for line in wins)
 
 
 def _pending_reply(
@@ -6259,19 +6259,46 @@ def confirm_pending(db: Session, user_id: str, pending_id: str) -> dict:
             habit_kind = pending.payload.get("kind")
             habit_label = habit_labels.get(habit_kind)
             if reminder_items:
-                labels = "、".join(
-                    habit_labels.get(str(item.get("kind")), str(item.get("kind")))
-                    for item in reminder_items
-                    if isinstance(item, dict)
-                )
-                first = reminder_items[0] if isinstance(reminder_items[0], dict) else {}
+                valid_items = [
+                    item for item in reminder_items if isinstance(item, dict)
+                ]
+                parts = []
+                for item in valid_items:
+                    item_hour = int(
+                        item.get("hour")
+                        or pending.payload.get("hour")
+                        or 0
+                    )
+                    item_minute = int(
+                        item.get("minute")
+                        or pending.payload.get("minute")
+                        or 0
+                    )
+                    parts.append(
+                        (
+                            habit_labels.get(
+                                str(item.get("kind")),
+                                str(item.get("kind")),
+                            ),
+                            item_hour,
+                            item_minute,
+                        )
+                    )
+                labels = "、".join(label for label, _, _ in parts)
                 if pending.payload.get("enabled") is False:
                     summary = f"{labels}提醒已关闭。"
-                else:
+                elif len({(hour, minute) for _, hour, minute in parts}) == 1:
                     summary = (
                         f"{labels}提醒已设为 "
-                        f"{int(first.get('hour') or pending.payload.get('hour') or 0):02d}:"
-                        f"{int(first.get('minute') or pending.payload.get('minute') or 0):02d}。"
+                        f"{parts[0][1]:02d}:{parts[0][2]:02d}。"
+                    )
+                else:
+                    summary = (
+                        "、".join(
+                            f"{label} {hour:02d}:{minute:02d}"
+                            for label, hour, minute in parts
+                        )
+                        + " 提醒已设置。"
                     )
             elif habit_label is not None:
                 summary = (

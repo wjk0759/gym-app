@@ -345,6 +345,19 @@ def test_multiple_habit_reminders_are_kept_together(db):
     assert {item["hour"] for item in items} == {10}
 
 
+def test_multiple_habit_reminders_keep_their_own_times(db):
+    from app.services.coach_control.capabilities.ui_actions import (
+        resolve_reminders,
+    )
+
+    resolution = resolve_reminders("每天10点提醒我喝水，晚上10点提醒我睡觉")
+
+    assert resolution["ready"] is True
+    items = resolution["payload"]["reminder_items"]
+    times = {item["kind"]: (item["hour"], item["minute"]) for item in items}
+    assert times == {"hydration": (10, 0), "sleep": (22, 0)}
+
+
 def test_training_and_habit_reminders_ask_for_separation(db):
     from app.services.coach_control.capabilities.ui_actions import (
         resolve_reminders,

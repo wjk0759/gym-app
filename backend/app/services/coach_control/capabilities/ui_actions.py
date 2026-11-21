@@ -235,29 +235,99 @@ def _reminder_kinds(message: str) -> list[str]:
     return kinds
 
 
-def _reminder_time(message: str) -> tuple[int, int] | None:
-    clock = re.search(r"(\d{1,2})\s*[:：]\s*(\d{1,2})", message)
-    if clock is not None:
-        hour, minute = int(clock.group(1)), int(clock.group(2))
+_TIME_RE = re.compile(
+    r"(?P<clock_hour>\d{1,2})\s*[:：]\s*(?P<clock_minute>\d{1,2})"
+    r"|(?P<period>早上|上午|中午|下午|晚上|傍晚)?\s*"
+    r"(?P<point_hour>\d{1,2})\s*点\s*(?P<point_minute>半|\d{1,2})?"
+)
+
+
+def _time_matches(message: str) -> list[tuple[int, int, int, int]]:
+    """Return every clock time with its position in the message."""
+    matches: list[tuple[int, int, int, int]] = []
+    for match in _TIME_RE.finditer(message):
+        if match.group("clock_hour") is not None:
+            hour = int(match.group("clock_hour"))
+            minute = int(match.group("clock_minute"))
+        else:
+            hour = int(match.group("point_hour"))
+            raw_minute = match.group("point_minute")
+            minute = 30 if raw_minute == "半" else int(raw_minute or 0)
+            period = match.group("period") or ""
+            if period in {"下午", "晚上", "傍晚"} and hour < 12:
+                hour += 12
+            if period == "中午" and hour < 11:
+                hour += 12
         if 0 <= hour <= 23 and 0 <= minute <= 59:
-            return hour, minute
+            matches.append((match.start(), match.end(), hour, minute))
+    return matches
+
+
+def _reminder_time(message: str) -> tuple[int, int] | None:
+    matches = _time_matches(message)
+    if not matches:
         return None
-    point = re.search(
-        r"(早上|上午|中午|下午|晚上|傍晚)?\s*(\d{1,2})\s*点\s*(半|\d{1,2})?",
-        message,
-    )
-    if point is None:
-        return None
-    hour = int(point.group(2))
-    minute = 30 if point.group(3) == "半" else int(point.group(3) or 0)
-    period = point.group(1) or ""
-    if period in {"下午", "晚上", "傍晚"} and hour < 12:
-        hour += 12
-    if period == "中午" and hour < 11:
-        hour += 12
-    if 0 <= hour <= 23 and 0 <= minute <= 59:
-        return hour, minute
-    return None
+    return matches[0][2], matches[0][3]
+
+
+def _clauses(message: str) -> list[tuple[int, int]]:
+    clauses: list[tuple[int, int]] = []
+    start = 0
+    for match in re.finditer(r"[，,。；;、\n]", message):
+        clauses.append((start, match.start()))
+        start = match.end()
+    clauses.append((start, len(message)))
+    return clauses
+
+
+def _reminder_times(
+    message: str,
+    kinds: list[str],
+) -> dict[str, tuple[int, int]]:
+    """Assign each habit the clock time from its own clause.
+
+    "每天10点喝水，晚上10点睡觉" used to set both habits to 10:00 because
+    only the first time was parsed. Looking inside the habit's clause first
+    keeps the times the user actually attached to each habit, while a single
+    time still applies to every habit (e.g. "每天10点提醒我喝水和睡觉").
+    """
+    matches = _time_matches(message)
+    if not matches:
+        return {}
+    distinct = {(hour, minute) for _, _, hour, minute in matches}
+    if len(distinct) == 1:
+        hour, minute = matches[0][2], matches[0][3]
+        return {kind: (hour, minute) for kind in kinds}
+
+    positions: dict[str, int] = {}
+    for word, kind in HABIT_WORDS.items():
+        index = message.find(word)
+        if index >= 0 and kind not in positions:
+            positions[kind] = index
+    clauses = _clauses(message)
+
+    default = (matches[0][2], matches[0][3])
+    result: dict[str, tuple[int, int]] = {}
+    for kind in kinds:
+        index = positions.get(kind)
+        if index is None:
+            result[kind] = default
+            continue
+        clause = next(
+            (
+                (start, end)
+                for start, end in clauses
+                if start <= index < end
+            ),
+            (0, len(message)),
+        )
+        in_clause = [
+            item for item in matches if clause[0] <= item[0] < clause[1]
+        ]
+        pool = in_clause or matches
+        chosen = min(pool, key=lambda item: abs(item[0] - index))
+        result[kind] = (chosen[2], chosen[3])
+    return result
 
 
 def resolve_reminders(message: str) -> dict:
@@ -287,26 +357,43 @@ def resolve_reminders(message: str) -> dict:
                 else "准备关闭训练提醒。"
             ),
         }
+    time_map = _reminder_times(message, kinds) if len(kinds) > 1 else {}
     parsed = _reminder_time(message)
-    if parsed is None:
+    if parsed is None and not time_map:
         return {
             "ready": False,
             "questions": ["提醒设在几点？可以说“早上7点”或“20:30”。"],
         }
-    hour, minute = parsed
+    hour, minute = parsed or next(iter(time_map.values()))
     if len(kinds) > 1:
+        items = []
+        for item in kinds:
+            item_hour, item_minute = time_map.get(item, (hour, minute))
+            items.append(
+                {
+                    "kind": item,
+                    "hour": item_hour,
+                    "minute": item_minute,
+                }
+            )
+        distinct = {(item["hour"], item["minute"]) for item in items}
+        if len(distinct) == 1:
+            summary = (
+                f"准备设置每天 {hour:02d}:{minute:02d} 的{labels}提醒。"
+            )
+        else:
+            summary = "准备设置 " + "、".join(
+                f"{HABIT_LABELS.get(item['kind'], item['kind'])} "
+                f"{item['hour']:02d}:{item['minute']:02d}"
+                for item in items
+            ) + " 提醒。"
         return {
             "ready": True,
             "payload": {
                 "enabled": True,
-                "reminder_items": [
-                    {"kind": item, "hour": hour, "minute": minute}
-                    for item in kinds
-                ],
+                "reminder_items": items,
             },
-            "summary": (
-                f"准备设置每天 {hour:02d}:{minute:02d} 的{labels}提醒。"
-            ),
+            "summary": summary,
         }
     if kinds:
         return {
