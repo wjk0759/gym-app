@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`69ef672`（AI 教练 Release 1 + Release 2：只读问答、建档、生活事件重排、习惯提醒；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含本轮提醒改动但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **704 passed**、QA **76/76**、Ruff 通过；**Mac 复测 N29/N30/N31 仍 P1、N32/N33 P2；建档 complete-profile 通过**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`3d40b36`（AI 教练 Release 1 + Release 2 + Mac P1 修复：只读问答、建档、生活事件重排、习惯提醒；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒改动但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **708 passed**、QA **76/76**、Ruff 通过；**N29/N30/N31/N32 已修，N33 仍 P2；建档 complete-profile 通过**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -69,6 +69,27 @@
   - 不要把习惯提醒标识改成 `workout-*`；不要用关闭训练提醒去删 `habit-*`。
   - 不要声称习惯提醒跨设备同步。
 - 仍 BLOCKED：iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
+
+### 2026-11-21 · Windows（Mac P1 修复：N29/N30/N31/N32）
+
+- 提交：`3d40b36`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
+- **N29 已修**：`我上周吃了什么` 不再进入 `diet.log_food`；宽窗口饮食问题统一交给 `coach.answer` 的 7 天事实。生产冒烟返回 `intent=coach.answer`，回复“上周没有饮食记录”。
+- **N30 已修**：
+  - 支持“加一组/减一组/多两组”这类组数增量，不再要求“加一组”带阿拉伯数字。
+  - 动作名支持短名匹配：计划里是“持瓶自重深蹲”，用户说“深蹲”也能命中。
+  - `加/减组` 的 before→after 会进入 undo。
+  - 新增回归：`把今天的深蹲加一组` → `training.edit_day_exercise`，确认后 3 组变 4 组，撤销回 3 组。
+- **N31 已修**：
+  - `build_memory_book` 过滤 pending/已执行动作事实、旧 `goal` 记忆，以及 profile 伤病为空时的旧 `injury` 记忆。
+  - `/coach/memories` 同样过滤 pending、goal 和与空伤病档案冲突的 injury 记忆。
+  - 生产冒烟的计划解释不再引用“胸口不适”。
+- **N32 已修**：无 `app_context` 的“为什么这样安排计划”返回 `coach.answer`，不生成计划；新增回归测试。
+- **N33 未修**：`我有伤病吗` 仍可能走安全模板；下一轮和 Mac 一起确认期望话术，再决定是读档案还是安全提示。
+- 验证：后端 **708 passed**、QA **76/76**、Ruff 通过；生产冒烟 N29/N32 通过。
+- 需要 Mac：
+  - 重新 build/test，复测 N29–N33。
+  - 验证本轮习惯提醒（本地通知）和建档 batch 卡。
+- 仍 BLOCKED：iOS 构建/真机验收、N33 话术、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
 
 ### 2026-11-21 · macOS（4607b96 复测：N29–N33 + 建档 complete-profile）
 
