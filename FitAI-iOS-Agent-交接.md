@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`b561d9d`（AI 教练阶段 3 代码收口：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练和多习惯提醒但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **735 passed**、QA **76/76**、Ruff 通过；**Mac 复测 22adfbc：N29/N30/N31/N33/N37 通过；N32/N34/N35/N36 已修待复测**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`8be7e96`（AI 教练阶段 3 代码收口 + 硬化：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练、多习惯提醒和并发保护但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **738 passed**、QA **76/76**、Ruff 通过；**Mac 复测 22adfbc：N29/N30/N31/N33/N37 通过；N32/N34/N35/N36 已修待复测**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -80,6 +80,31 @@
   - 不要把习惯提醒标识改成 `workout-*`；不要用关闭训练提醒去删 `habit-*`。
   - 不要声称习惯提醒跨设备同步。
 - 仍 BLOCKED：iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
+
+### 2026-11-21 · Windows（阶段 3 硬化：内嵌教练并发 / 主动教练锁）
+
+- 提交：`8be7e96`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
+- 内嵌教练：
+  - `askWorkoutCoach` 现在和主教练的 `isReplying` / `isCoachControlWorking` 互斥，避免同一 session 并发两轮。
+  - 训练中提问和服务端回复会以 `serverMessageID` 追加到主聊天，关闭 sheet 后仍可追溯。
+  - 免费额度耗尽会明确提示“今日免费 AI 教练额度已用完”，不再只显示“暂时没回”。
+- 主动教练：
+  - 每个用户处理前 `SELECT ... FOR UPDATE` 锁用户行，逐用户 commit；cron 重试/手动接口并发不会重复创建提醒。
+  - 单个用户异常只跳过该用户，不中断整轮扫描。
+  - 生产 CLI 复跑：扫描 16 人，`created=0`。
+- 其他完善：
+  - 动作禁忌标签映射中文（膝/腰背/肩/肘/腕），器械分类映射中文（固定器械/绳索/自由重量/有氧/徒手）。
+  - readiness 在未记 RPE 时返回 `load_estimated=true`，提示“负荷为估算值”。
+  - “训练提醒 + 喝水提醒”会先要求分开设置，不再静默丢掉训练提醒。
+  - 长事件/超过 5 次的文案不再邀请无法接上的“都跳过/保留哪几次”，改为要求缩小范围重说。
+  - `backend/.env.example` 补充 `PROACTIVE_CRON_TOKEN`；新增 proactive 端点 503/401 测试。
+- 验证：后端 **738 passed**、QA **76/76**、Ruff 通过。
+- 仍需注意：
+  - 主动教练还**没有用户级 opt-out**；要加需要 `user_preferences` schema + Flyway + iOS 设置开关，未在阶段 3 内做。
+  - 主动教练扫描上限 500 人且无分页，规模上来前需要补。
+- 需要 Mac：
+  - 重新 build；验证内嵌教练并发保护/主聊天追加、多习惯提醒、N32/N34/N35/N36。
+- 仍 BLOCKED：APNs、iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
 
 ### 2026-11-21 · Windows（阶段 3 收口：动作/器械解释）
 
