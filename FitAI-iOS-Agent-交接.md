@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`271e67e`（AI 教练 Release 1 + Release 2 + Release 3 readiness/自适应复盘/训练中 co-pilot/按动作进阶（含自重）/主动教练定时；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒和 active_workout 上下文但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **728 passed**、QA **76/76**、Ruff 通过；**N29/N30/N31/N33/N37 已通过；N32 P2；N34 P1/P2、N35/N36 P2；本轮不部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`bdac942`（AI 教练 Release 1 + Release 2 + Release 3 readiness/自适应复盘/训练中 co-pilot（含内嵌浮层）/按动作进阶（含自重）/主动教练定时；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout 和训练页内嵌教练但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **728 passed**、QA **76/76**、Ruff 通过；**Mac 复测 22adfbc：N29/N30/N31/N33/N37 通过；N32 P2；N34 P1/P2、N35/N36 P2；本轮不部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -80,6 +80,34 @@
   - 不要把习惯提醒标识改成 `workout-*`；不要用关闭训练提醒去删 `habit-*`。
   - 不要声称习惯提醒跨设备同步。
 - 仍 BLOCKED：iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
+
+### 2026-11-21 · Windows（Release 3：训练页内嵌 co-pilot 浮层）
+
+- 提交：`bdac942`，已推 `develop`；本轮只改 iOS，后端未变（728 passed）。
+- 训练页顶部新增“训练中教练”按钮：
+  - 不离开训练页，弹出 `WorkoutCoachSheet`。
+  - 快捷问题：下一组怎么练 / 这个重量行吗 / 还要练几组。
+  - 也支持输入框自由提问。
+- 上下文：
+  - `WorkoutSessionView` 直接从当前动作、已完成组数、上一组重量/次数/RPE、已训练时间、主观感受构造 `active_workout`。
+  - 不再依赖 `workoutDraft` 已保存；训练刚开始、还没完成第一组时也能用。
+- 安全：
+  - 只读建议直接显示在 sheet。
+  - 如果服务端返回 pending（需要改计划等），sheet 会提示“这个操作需要回教练页确认”，不在训练页自动执行。
+- 未验证：
+  - **iOS 未在 Windows 构建**；`WorkoutCoachSheet`、`AppStore.askWorkoutCoach`、`workoutCoachContext` 的 Swift 编译需要 Mac 确认。
+  - 内嵌 sheet 与现有 substitution/valueEditor 两个 sheet 的共存需要真机确认。
+- 需要 Mac：
+  - `xcodegen generate` → Release build / SwiftLint / `FitAITests`。
+  - 真机：训练页 → 教练按钮 → 快捷问题 → 回复出现；完成一组后 RPE/组数更新；切回训练不丢状态。
+  - 验证 RPE 9 时不会建议加重量。
+- 下一步：
+  - Release 3 收尾只剩 APNs/Notifications V2（BLOCKED）和 N33 话术。
+  - Mac 构建 + 真机验收。
+- 禁止恢复：
+  - 不要要求必须保存 draft 才发送 `active_workout`。
+  - 不要在训练页自动确认服务端 pending 卡。
+- 仍 BLOCKED：APNs、N33 话术、iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
 
 ### 2026-11-21 · Windows（Release 3：自重动作进阶）
 
