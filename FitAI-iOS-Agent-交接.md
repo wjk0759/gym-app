@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`3252f59`（AI 教练 Release 1 只读数据问答；生产 API 已部署该后端版本；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码仍 `7d03219`，Mac 已跑 `FitAITests` **144/144**、UI **7/7**，iOS `7d03219` 已装 Wu-Tang；`/health/ready` **200**；Flyway **V44**；后端 **683 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`1595c36`（AI 教练 Release 1 只读问答 + 日历窗口/反编造伤病修复；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码仍 `7d03219`，Mac 已跑 `FitAITests` **144/144**、UI **7/7**，iOS `7d03219` 已装 Wu-Tang；`/health/ready` **200**；Flyway **V44**；后端 **687 passed**、QA **76/76**、Ruff 通过）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -35,6 +35,33 @@
 - 成本提醒：3 条/天 ≈ 21 条/周，是原 10 条/周的约 2.1 倍；上线后监控 DeepSeek 账单和异常调用
 - Mac 待办：`git pull` → `xcodegen generate` → Release build/test → 验证计划生成/教练调整按动作读取历史重量、训练阶段显示、3 条/天额度文案；验证今日选日期→记录页自动选中、返回今日回到今天、编辑计划按钮明显；验证切换 Tab 和重复点当前 Tab 都回到各根页面；验证 Tab 栏普通点击/滑动未被 reselect observer 拦截；逐页确认顶部 16pt 留白没有 double padding；验证免费文字额度 >0 不弹订阅、拍照/视频/器械显示 Pro 标识；验证改手机时间不能刷新余额；用 `https://hk-api.jiaolianfit.cn/api/v1` 真机验证 Apple 登录、手机验证码、头像相册/拍照、建档、AI 计划、教练、拍照；确认 Release 无「开发服务器」「测试连接」「服务状态」、无 RepDB/RawPheasant 署名；确认男性椭圆/梯形 16–20% 新图；键盘问题已定位为 Xcode 调试环境，未改产品代码；本轮新增：验证训练页内嵌循环动画/全屏、Reduce Motion、音乐不中断、切后台暂停，以及 Watch 动作页播放 `watch_url`；部署 V37 后用两个设备/重装验证待确认卡与草稿恢复，并验证训练修改/删除撤销
 - 仍 BLOCKED：IAP 商品与协议、App Store Server API Key/Issuer/p8、Notifications V2 URL、TestFlight 外部 Beta 审核、App Store Connect 上传凭证/App 记录、正式 1,500 动作 × 男女素材采购与映射、Watch 真机安装验证、TestFlight/App Store 真机验收
+
+### 2026-11-21 · Windows（只读冒烟修复：日历窗口 + 反编造伤病）
+
+- 提交：`99f49de`（日历窗口、北京时间显示、计划动作名、伤病事实、提示词护栏）、`1595c36`（档案完整明确、器械中文、计划模板周几、反编造伤病/体态的后处理）；均已推 `develop`；生产 API 已重建，`/health/ready` 200。
+- 真实账号 `13428104171`（user_id `9e2bb3c7-a83f-4873-86a1-352ffd5fde6b`）只读冒烟，直接调用 `coach_answer.resolve`：
+  - “我上周练了几次”：`上周 2 次，24 组，总容量 14280 kg`；训练日期显示为北京时间 11/12。
+  - “最近饮食怎么样”：7 天记录 2 天 / 8 条，3582 kcal，蛋白质 207 g。
+  - “为什么这样安排计划”：4 周 5 练；回答只使用模板周几和真实动作名。
+  - “我还缺什么档案”：基础档案完整、伤病记录无；不再编造缺器械/睡眠。
+- 冒烟发现并修复：
+  - “上周”曾被算成最近 7 天 → 改为中国时区日历窗口（上周/本周/上个月/本月）。
+  - 模型编造“腰旧伤 / 肱骨前移 / 治疗矫正” → 提示词加事实边界；`reply_guard.strip_unsupported_injury_claims` 在档案无伤病记录时删除相关句子并加说明。这是确定性后处理，不依赖模型自觉。
+  - 档案完整却被答成缺器械/睡眠 → 事实块明确写“没有缺失项”、已填器械、频率，并要求只列事实里的缺失项。
+  - 计划解释把胸背说成同一天、猜用户实际训练日 → 去掉内部 taxonomy code，给出模板周几 + 每日动作，并注明实际日期以 App 日程为准。
+- 验证：后端 **687 passed**、QA **76/76**、Ruff 通过；生产 4 个问题冒烟均返回且无编造伤病；`/health/ready` 200。
+- 未验证：
+  - 没有用真实账号跑完整 `/coach/turns` 写链路（避免写 `coach_turns`、抽记忆、消耗教练额度）；额度、确认卡、撤销、记忆和端到端延迟仍未真实账号验收。
+  - iOS 无代码改动，聊天 UI 直接显示文本。
+- 下一步：
+  - 用 `test_reviewer` 或临时账号跑完整 `/coach/turns`：额度、确认卡、记忆、延迟。
+  - Release 1 收口：对话式建档 slot-filling（复用 `profile.update` / `body.log_weight` / `profile.update_goal` / `profile.update_equipment`）。
+  - 然后进 Release 2：生活事件重排 + 提醒/习惯。
+- 禁止恢复：
+  - 不要让模型推断伤病、体态、旧伤或“治疗/矫正/康复”；`strip_unsupported_injury_claims` 不能删。
+  - 不要把“档案完整”答成缺睡眠/饮食/器械；档案事实只列真实缺失项。
+  - 不要把计划模板周几说成用户实际训练日期。
+- 仍 BLOCKED：完整链路真实账号验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
 
 ### 2026-11-21 · Windows（AI 教练 Release 1：只读数据问答）
 
