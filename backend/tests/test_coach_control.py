@@ -6684,6 +6684,26 @@ def test_keyword_memory_retrieval_finds_old_constraints(db):
     assert any("膝盖" in item for item in results)
 
 
+def test_keyword_memory_retrieval_hides_conflicting_height(db):
+    from app.models import AIMemory
+    from app.services.memory import read_relevant_memories
+
+    db.add(
+        AIMemory(
+            user_id="user-1",
+            kind="constraint",
+            memory_key="height_cm",
+            content="身高 180cm",
+            active=True,
+        )
+    )
+    db.commit()
+
+    results = read_relevant_memories(db, "user-1", "我的身高是多少")
+
+    assert not any("180" in item for item in results)
+
+
 def test_conversation_context_keeps_fifty_turns_and_memory(db):
     from app.models import AIMemory, CoachSession, CoachTurn
     from app.services.coach_control.conversation import (

@@ -678,6 +678,7 @@ def read_relevant_memories(
     limit: int = 4,
 ) -> list[str]:
     """Keyword retrieval over durable memories; no vector store required."""
+    profile = db.get(Profile, user_id)
     rows = (
         db.execute(
             select(AIMemory)
@@ -696,6 +697,11 @@ def read_relevant_memories(
         item
         for item in rows
         if not is_pending_action_fact(item.kind, item.content)
+        and not memory_conflicts_with_profile(
+            profile,
+            item.memory_key,
+            item.content,
+        )
     ]
     if not rows:
         return []
