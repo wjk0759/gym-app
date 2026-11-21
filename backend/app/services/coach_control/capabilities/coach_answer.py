@@ -14,7 +14,10 @@ from sqlalchemy.orm import Session
 
 from ....models import Profile, Program
 from ...coach import coach_reply
-from ...reply_guard import strip_unsupported_injury_claims
+from ...reply_guard import (
+    strip_defensive_meta_commentary,
+    strip_unsupported_injury_claims,
+)
 from ..insights import build_readonly_context
 from ..registry import Capability, register
 
@@ -126,13 +129,12 @@ async def resolve(
     # explaining plan choices. Deterministic cleanup runs after the model and
     # before the text is persisted by the control plane.
     if not result.get("safety_flag"):
-        result = {
-            **result,
-            "reply": strip_unsupported_injury_claims(
-                str(result.get("reply") or ""),
-                has_injury_record=bool(
-                    [item for item in (profile.injuries or []) if str(item).strip()]
-                ),
+        reply = strip_unsupported_injury_claims(
+            str(result.get("reply") or ""),
+            has_injury_record=bool(
+                [item for item in (profile.injuries or []) if str(item).strip()]
             ),
-        }
+        )
+        reply = strip_defensive_meta_commentary(reply)
+        result = {**result, "reply": reply}
     return result

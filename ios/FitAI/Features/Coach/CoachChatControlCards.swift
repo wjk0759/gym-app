@@ -501,7 +501,7 @@ extension CoachChatView {
             if let lines = pending.payload?.wins, !lines.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(lines, id: \.self) { line in
-                        Text("· \(line)")
+                        Text("• \(line)")
                             .font(AppType.caption)
                             .foregroundStyle(Theme.secondaryText)
                             .fixedSize(horizontal: false, vertical: true)

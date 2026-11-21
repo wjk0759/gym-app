@@ -159,6 +159,40 @@ def strip_unsupported_injury_claims(
     return body + "\n" + _INJURY_CLAIM_FOOTER
 
 
+# The model sometimes turns a repeated question into a defensive meta-comment
+# ("这个问题问第三遍了，是你在测我吗？"). The user may simply have forgotten the
+# answer or be checking the data; keep the answer and drop the accusation.
+_DEFENSIVE_META_RE = re.compile(
+    r"(?:这个问题|你).{0,8}"
+    r"(?:问第?[一二三四五六七八九十\d]+遍|问过.{0,6}(?:几遍|好几遍|很多遍))|"
+    r"(?:你|是不是).{0,8}(?:在测我|测试我|考我)|"
+    r"是档案显示不对|档案显示不对|"
+    r"不是刚(?:说|告诉)过|"
+    r"别(?:再)?重复问"
+)
+
+
+def strip_defensive_meta_commentary(reply: str) -> str:
+    """Remove repeated-question accusations while keeping the actual answer."""
+    text = (reply or "").strip()
+    if not text or not _DEFENSIVE_META_RE.search(text):
+        return reply
+    kept: list[str] = []
+    for sentence in re.split(r"(?<=[。！？!?；;\n])", text):
+        match = _DEFENSIVE_META_RE.search(sentence)
+        if match is None:
+            if sentence.strip():
+                kept.append(sentence)
+            continue
+        prefix = sentence[: match.start()].strip(" \t，,；;")
+        if prefix:
+            kept.append(prefix.rstrip("。！？!?；;，,") + "。")
+    body = "".join(kept).strip()
+    if not body:
+        return "我在。直接问我就行，我会按档案数据回答。"
+    return body
+
+
 def _window(text: str, match: re.Match[str]) -> str:
     before = text[max(0, match.start() - 8) : match.start()]
     inside = match.group(0)

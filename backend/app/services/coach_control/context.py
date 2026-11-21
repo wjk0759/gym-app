@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ...models import CoachActionRecord, DomainEvent, Program, utcnow
-from ..coach_context import build_coach_context
+from ..coach_context import build_coach_context, plan_day_date
 
 CONTEXT_VERSION = "coach-control-v1"
 
@@ -123,16 +123,11 @@ def with_plan_context(
         start = date.fromisoformat(str(plan.get("start_date")))
     except (TypeError, ValueError):
         start = None
-    start_week = None
-    if start is not None:
-        start_week = start - timedelta(days=start.weekday())
-        if start_week < start:
-            start_week += timedelta(days=7)
     today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
-    # Allow a workout explicitly added for today even when the plan's first
-    # Monday is still in the future (e.g. generate a plan on Sunday and add a
-    # Sunday session). Older stale pre-start dates still fall back.
-    earliest = start_week
+    # Allow a workout explicitly added for today even when the plan has not
+    # started yet (e.g. generate a plan on Sunday and add a Sunday session).
+    # Older stale pre-start dates still fall back.
+    earliest = start
     if earliest is None or today < earliest:
         earliest = today
     normalized = []
@@ -146,9 +141,7 @@ def with_plan_context(
         if start is not None:
             week_index = int(item.get("week_index") or 1)
             weekday = int(item.get("weekday") or 1)
-            computed = start_week + timedelta(
-                days=(week_index - 1) * 7 + weekday - 1
-            )
+            computed = plan_day_date(start, week_index, weekday)
         selected = None
         if assigned:
             try:

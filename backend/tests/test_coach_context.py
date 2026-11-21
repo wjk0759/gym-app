@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -29,6 +29,7 @@ from app.services.coach_context import (
     build_coach_context,
     context_as_text,
     fit_context_to_budget,
+    plan_day_date,
 )
 from app.services.coach_control.context import with_plan_context
 
@@ -462,6 +463,15 @@ def test_app_plan_gets_server_version_and_start_date(db, seeded):
     assert context["plan"]["version"] == 2
     assert context["plan"]["start_date"] == today.isoformat()
     assert context["plan"]["weeks"] == 4
+
+
+def test_plan_day_date_uses_a_rolling_week_anchor():
+    start = date(2026, 11, 18)  # Wednesday
+
+    assert plan_day_date(start, 1, 3) == start
+    assert plan_day_date(start, 1, 5) == start + timedelta(days=2)
+    assert plan_day_date(start, 1, 1) == start + timedelta(days=5)
+    assert plan_day_date(start, 2, 3) == start + timedelta(days=7)
 
 
 def test_building_context_does_not_touch_memory_timestamps(db, seeded):

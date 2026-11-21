@@ -217,15 +217,31 @@ def _weekday_label(value: int) -> str:
     ]
 
 
+def plan_day_date(
+    start_date: date,
+    week_index: int,
+    weekday: int,
+) -> date:
+    """Mirror iOS ``Plan.date(week:weekday:)``.
+
+    The four-week board is a rolling window anchored on the plan generation
+    day, not a Monday-to-Sunday calendar. A plan generated on Wednesday can
+    still have its first Wednesday/Friday sessions in week 1; shifting them to
+    the next Monday would disagree with the App plan board.
+    """
+    start_weekday = start_date.isoweekday()
+    offset = (int(weekday) - start_weekday + 7) % 7
+    return start_date + timedelta(
+        days=(int(week_index) - 1) * 7 + offset
+    )
+
+
 def _current_week_index(program: Program, today: date) -> int:
     if not program.start_date:
         return 1
-    week_start = program.start_date - timedelta(days=program.start_date.weekday())
-    if week_start < program.start_date:
-        week_start += timedelta(days=7)
-    if today < week_start:
+    if today < program.start_date:
         return 1
-    week = (today - week_start).days // 7 + 1
+    week = (today - program.start_date).days // 7 + 1
     return max(1, min(int(program.weeks or 1), week))
 
 
@@ -584,21 +600,14 @@ def plan_days_with_dates(
         if value
     }
 
-    start_week = program.start_date - timedelta(
-        days=program.start_date.weekday()
-    )
-    # A plan generated mid-week starts its first template week on the next
-    # Monday, matching what the app shows and what with_plan_context does.
-    if start_week < program.start_date:
-        start_week += timedelta(days=7)
-
     result: list[dict] = []
     for day in days:
         state = states.get(str(day.id).lower())
         assigned = state.assigned_date if state is not None else None
-        computed = start_week + timedelta(
-            days=(int(day.week_index or 1) - 1) * 7
-            + (int(day.weekday or 1) - 1)
+        computed = plan_day_date(
+            program.start_date,
+            int(day.week_index or 1),
+            int(day.weekday or 1),
         )
         when = assigned or computed
         if start is not None and when < start:

@@ -223,8 +223,8 @@ extension CoachChatView {
     var coachQuickActions: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                CoachQuickActionButton(title: "训练计划", icon: "calendar") {
-                    send("帮我安排今天的训练")
+                CoachQuickActionButton(title: "今天练什么", icon: "calendar") {
+                    send("今天练什么")
                 }
                 CoachQuickActionButton(title: "饮食方案", icon: "fork.knife") {
                     showDietLibrary = true

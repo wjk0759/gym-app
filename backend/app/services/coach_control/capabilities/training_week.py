@@ -98,7 +98,10 @@ def resolve(db: Session, user_id: str, message: str, context: dict) -> dict:
             if when is not None:
                 chosen.append((when, item))
         chosen.sort(key=lambda pair: pair[0])
-        label = f"第 {plan_week} 周"
+        # Plan weeks are rolling blocks from the generation day, not calendar
+        # Monday-Sunday weeks; label them explicitly so "第 2 周" is not
+        # confused with "下周".
+        label = f"计划第 {plan_week} 周"
         start = chosen[0][0] if chosen else today
         end = chosen[-1][0] if chosen else today
     else:

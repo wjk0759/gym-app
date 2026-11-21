@@ -2,7 +2,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.services.reply_guard import review_reply
+from app.services.reply_guard import (
+    review_reply,
+    strip_defensive_meta_commentary,
+)
 
 
 @pytest.mark.parametrize(
@@ -111,3 +114,25 @@ def test_multiple_rules_are_reported():
 
     assert review.safety_flag == "injury_guard"
     assert set(review.rules) == {"train_through_pain", "supplement_dose"}
+
+
+def test_removes_defensive_repeated_question_commentary():
+    reply = "175cm。这个问题问第三遍了，是档案显示不对，还是你在测我？"
+
+    cleaned = strip_defensive_meta_commentary(reply)
+
+    assert cleaned == "175cm。"
+
+
+def test_removes_defensive_clause_but_keeps_the_answer():
+    cleaned = strip_defensive_meta_commentary("175cm 这个问题问第三遍了")
+
+    assert "175cm" in cleaned
+    assert "第三遍" not in cleaned
+
+
+def test_all_defensive_commentary_gets_a_neutral_fallback():
+    cleaned = strip_defensive_meta_commentary("这个问题问第三遍了，别重复问。")
+
+    assert "第三遍" not in cleaned
+    assert "直接问我" in cleaned
