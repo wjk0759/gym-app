@@ -14,7 +14,7 @@
 
 ### 最新状态
 
-- `develop` 代码 HEAD：`b5494c6`（AI 教练 Release 1 + Release 2 + Release 3 readiness/自适应复盘/训练中 co-pilot（含内嵌浮层）/按动作进阶（含自重）/主动教练定时 + Mac N32/N34/N35/N36 修复；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、训练页内嵌教练和多习惯提醒但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **732 passed**、QA **76/76**、Ruff 通过；**Mac 复测 22adfbc：N29/N30/N31/N33/N37 通过；N32/N34/N35/N36 已修待复测；本轮不部署**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
+- `develop` 代码 HEAD：`b561d9d`（AI 教练阶段 3 代码收口：只读问答、建档、生活事件、提醒/习惯、readiness/自适应复盘、训练中 co-pilot、按动作进阶（含自重）、主动教练定时、动作/器械解释；生产 API 已部署；中国区 ICP 站点 `jiaolianfit.cn` 已上线 HTTPS；iOS App 代码含习惯提醒、active_workout、内嵌教练和多习惯提醒但 **未在 Windows 构建**，Mac 需重新 build/test；`/health/ready` **200**；Flyway **V44**；后端 **735 passed**、QA **76/76**、Ruff 通过；**Mac 复测 22adfbc：N29/N30/N31/N33/N37 通过；N32/N34/N35/N36 已修待复测**）；`main`/`testing` 仍为 `10d1ad5`（本轮只推 `develop`）；本文件的最新同步提交见 `git log -1`
 - **macOS 全 App UX 审计（2026-11-17）**：`docs/app-ux-stress-test-2026-11-17.md`；F1–F6、F8 已复测通过；F7 命名与 F9 Debug 横幅未动。
 - **macOS App + AI 教练压测（2026-11-17 / 11-18 复测）**：`docs/app-ux-coach-stress-test-2026-11-17.md`；C2/C3/C4/C6 通过；C1b/C5/C1c 已修复；注册、可选体型/体脂 6 档、跳过路径通过；生成冷却/计划限制通过。
 - **macOS AI 教练二轮压测（2026-11-19）**：N1 通过；N2/N4/N5 复测通过；N3 文案、N6 proposal 摘要仍为 P2。
@@ -80,6 +80,29 @@
   - 不要把习惯提醒标识改成 `workout-*`；不要用关闭训练提醒去删 `habit-*`。
   - 不要声称习惯提醒跨设备同步。
 - 仍 BLOCKED：iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
+
+### 2026-11-21 · Windows（阶段 3 收口：动作/器械解释）
+
+- 提交：`b561d9d`，已推 `develop`；生产 API 已重建，`/health/ready` 200。
+- 动作解释：
+  - “深蹲怎么做 / 这个动作练哪里 / 动作要点” 从动作库读取主要部位、器械、动作说明、难度/复合动作和禁忌标签。
+  - 禁忌标签明确标注“只是动作标签，不代表用户有这些伤病”，不让模型做医疗推断。
+  - 修复路由：这类问题不再被 `diet.meal_detail` 的“怎么做”抢走。
+- 器械指导：
+  - “坐姿划船机怎么用 / 器械怎么调” 解析器械目录，列出常见动作，并给通用设置清单（座椅/把手高度、轻重量试一组、不憋气、疼痛就停）。
+- 训练中 co-pilot：
+  - `active_workout` 里带当前动作时，回答会追加该动作的动作要点。
+- 生产冒烟：
+  - “深蹲怎么做” → `coach.answer`，给站距、屈髋、膝盖方向和组次，无 pending。
+  - “坐姿划船机怎么用” → `coach.answer`，给座椅高度、肩胛启动、节奏和试重，无 pending。
+- 验证：后端 **735 passed**、QA **76/76**、Ruff 通过；新增 2 个动作/器械测试和 co-pilot 动作要点断言。
+- 阶段 3 状态：
+  - 14 项代码能力已收口：建档、只读数据、计划解释、生活事件、提醒/习惯、动作解释、进度/减载、身体趋势、器械指导、训练中 co-pilot、恢复/readiness、自适应周期化、自重/负重进阶、主动教练定时。
+  - **不再进入阶段 4**；后续只做 Mac 构建/复测、APNs 外部条件和备案。
+- 需要 Mac：
+  - 重新 build；复测动作/器械解释、内嵌教练、习惯提醒、N32/N34/N35/N36。
+  - 真机确认收件箱主动提醒、习惯通知、多习惯排程。
+- 仍 BLOCKED：APNs/Notifications V2、iOS 构建/真机验收、真实用户写链路验收、真实 LLM 答案质量 eval、AI 登记、ICP/App 备案。
 
 ### 2026-11-21 · Windows（Mac N32/N34/N35/N36 修复）
 
