@@ -199,9 +199,16 @@ def run(
     *,
     now: datetime | None = None,
     limit: int = 500,
+    offset: int = 0,
 ) -> dict:
-    """Scan active users and create at most one proactive item per run."""
+    """Scan active users and create at most one proactive item per run.
+
+    ``next_offset`` is set when the page was full so the CLI can continue
+    through the whole user base instead of stopping at the first 500.
+    """
     moment = now or utcnow()
+    page_size = max(1, min(limit, 2000))
+    page_offset = max(0, offset)
     users = (
         db.execute(
             select(User)
@@ -209,8 +216,9 @@ def run(
                 User.status == "active",
                 User.deleted_at.is_(None),
             )
-            .order_by(User.created_at)
-            .limit(max(1, min(limit, 2000)))
+            .order_by(User.created_at, User.id)
+            .offset(page_offset)
+            .limit(page_size)
         )
         .scalars()
         .all()
@@ -249,6 +257,11 @@ def run(
         "scanned": len(users),
         "created": len(created),
         "items": created,
+        "next_offset": (
+            page_offset + len(users)
+            if len(users) == page_size
+            else None
+        ),
     }
 
 
@@ -256,9 +269,31 @@ def main() -> None:
     from ...db import SessionLocal
 
     with SessionLocal() as db:
-        result = run(db)
+        offset = 0
+        scanned = 0
+        created: list[dict] = []
+        pages = 0
+        while True:
+            result = run(db, offset=offset)
+            pages += 1
+            scanned += int(result.get("scanned") or 0)
+            created.extend(result.get("items") or [])
+            next_offset = result.get("next_offset")
+            if not next_offset:
+                break
+            offset = int(next_offset)
         db.commit()
-        print(json.dumps(result, ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "scanned": scanned,
+                    "created": len(created),
+                    "items": created,
+                    "pages": pages,
+                },
+                ensure_ascii=False,
+            )
+        )
 
 
 if __name__ == "__main__":

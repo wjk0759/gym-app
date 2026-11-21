@@ -10,7 +10,14 @@ import secrets
 from datetime import timedelta
 from typing import Any, Literal
 
-from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
+from fastapi import (
+    APIRouter,
+    File,
+    Form,
+    Header,
+    HTTPException,
+    UploadFile,
+)
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, func, or_, select
 
@@ -89,6 +96,8 @@ def upload_client_diagnostic(
 def run_proactive(
     db: DBSession,
     token: str | None = Header(default=None, alias="X-Cron-Token"),
+    offset: int = 0,
+    limit: int = 500,
 ):
     """Daily cron entry point. Disabled until a token is configured."""
     expected = settings.proactive_cron_token
@@ -96,7 +105,7 @@ def run_proactive(
         raise HTTPException(status_code=503, detail="主动教练未配置")
     if not token or not secrets.compare_digest(token, expected):
         raise HTTPException(status_code=401, detail="无效的调度凭证")
-    result = proactive.run(db)
+    result = proactive.run(db, offset=offset, limit=limit)
     db.commit()
     return result
 

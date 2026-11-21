@@ -154,6 +154,18 @@ def test_proactive_respects_user_opt_out(db):
     assert db.execute(select(CoachInbox)).scalars().all() == []
 
 
+def test_proactive_pages_through_users(db):
+    now = datetime(2026, 11, 21, 9, tzinfo=TZ)
+
+    first = run(db, now=now, limit=1, offset=0)
+    second = run(db, now=now, limit=1, offset=1)
+
+    assert first["scanned"] == 1
+    assert first["next_offset"] == 1
+    assert second["scanned"] == 0
+    assert second["next_offset"] is None
+
+
 def test_proactive_endpoint_rejects_missing_or_wrong_token(db, monkeypatch):
     from fastapi import HTTPException
 
